@@ -33,6 +33,13 @@ object DotNetTemplates {
         BUILT_IN
     }
 
+    /** Installed item templates (`dotnet new list --type item`); empty when the CLI is unavailable. Blocking. */
+    fun loadItemTemplates(): List<DotNetTemplate> = try {
+        parseList(DotNetCli.execute(DotNetCli.commandLine(null, "new", "list", "--type", "item"), 60_000).stdout)
+    } catch (_: Exception) {
+        emptyList()
+    }
+
     /** `net8.0`-style monikers of the installed SDKs, newest first. */
     fun loadFrameworks(): List<String> = try {
         parseSdkList(DotNetCli.execute(DotNetCli.commandLine(null, "--list-sdks"), 30_000).stdout)

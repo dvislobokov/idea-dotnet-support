@@ -103,5 +103,12 @@ object DotNetCli {
             .notify(project)
     }
 
+    fun notifyInfo(project: Project, title: String, content: String = "") {
+        NotificationGroupManager.getInstance().getNotificationGroup(NOTIFICATION_GROUP)
+            .createNotification(title, content.replace("
+", "<br>"), NotificationType.INFORMATION)
+            .notify(project)
+    }
+
     const val NOTIFICATION_GROUP = ".NET"
 }
