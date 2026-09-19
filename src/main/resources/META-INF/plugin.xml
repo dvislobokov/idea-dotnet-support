@@ -1,0 +1,64 @@
+<idea-plugin>
+    <id>io.github.dotnetsupport</id>
+    <name>C# Project Support</name>
+    <vendor>dvislobokov</vendor>
+
+    <description><![CDATA[
+        Basic support for C# / .NET projects in IntelliJ-based IDEs:
+        <ul>
+            <li>Rider-like <b>Solution</b> view: solutions (.sln, .slnx), solution folders, projects and their dependencies</li>
+            <li>C# syntax highlighting, commenting, brace matching</li>
+            <li>MSBuild project files (.csproj, .props, .targets) are treated as XML</li>
+        </ul>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.xml</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType name="C#"
+                  implementationClass="io.github.dotnetsupport.lang.CSharpFileType"
+                  fieldName="INSTANCE"
+                  language="C#"
+                  extensions="cs;csx"/>
+        <fileType name="Visual Studio Solution"
+                  implementationClass="io.github.dotnetsupport.solution.SolutionFileType"
+                  fieldName="INSTANCE"
+                  extensions="sln"/>
+        <fileType name="Visual Studio Solution (XML)"
+                  implementationClass="io.github.dotnetsupport.solution.SolutionXmlFileType"
+                  language="XML"
+                  fieldName="INSTANCE"
+                  extensions="slnx"/>
+        <fileType name="MSBuild"
+                  implementationClass="io.github.dotnetsupport.msbuild.MsBuildFileType"
+                  language="XML"
+                  fieldName="INSTANCE"
+                  extensions="csproj;fsproj;vbproj;shproj;proj;props;targets"/>
+
+        <fileType name=".NET XML"
+                  implementationClass="io.github.dotnetsupport.msbuild.DotNetXmlFileType"
+                  language="XML"
+                  fieldName="INSTANCE"
+                  extensions="xaml;axaml;resx;nuspec;ruleset;runsettings;config"/>
+        <fileIconProvider implementation="io.github.dotnetsupport.DotNetFileIconProvider"/>
+
+        <lang.parserDefinition language="C#"
+                               implementationClass="io.github.dotnetsupport.lang.CSharpParserDefinition"/>
+        <lang.syntaxHighlighterFactory language="C#"
+                                       implementationClass="io.github.dotnetsupport.lang.CSharpSyntaxHighlighterFactory"/>
+        <lang.commenter language="C#"
+                        implementationClass="io.github.dotnetsupport.lang.CSharpCommenter"/>
+        <lang.braceMatcher language="C#"
+                           implementationClass="io.github.dotnetsupport.lang.CSharpBraceMatcher"/>
+        <lang.quoteHandler language="C#"
+                           implementationClass="io.github.dotnetsupport.lang.CSharpQuoteHandler"/>
+
+        <projectViewPane implementation="io.github.dotnetsupport.view.SolutionViewPane"/>
+    </extensions>
+
+    <projectListeners>
+        <listener class="io.github.dotnetsupport.view.SolutionFilesListener"
+                  topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+    </projectListeners>
+</idea-plugin>
