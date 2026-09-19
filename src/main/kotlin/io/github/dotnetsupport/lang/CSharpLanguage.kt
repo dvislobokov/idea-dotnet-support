@@ -12,6 +12,7 @@ object CSharpLanguage : Language("C#")
 
 object CSharpFileType : LanguageFileType(CSharpLanguage) {
     override fun getName(): String = "C#"
+    override fun getDisplayName(): String = "C#"
     override fun getDescription(): String = "C# source file"
     override fun getDefaultExtension(): String = "cs"
     override fun getIcon(): Icon = DotNetIcons.CSharp

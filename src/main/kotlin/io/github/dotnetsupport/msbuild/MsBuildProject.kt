@@ -17,8 +17,22 @@ data class MsBuildProject(
     val assemblies: List<String> = emptyList(),
     /** `PackageVersion` items of a `Directory.Packages.props` (central package management). */
     val packageVersions: Map<String, String> = emptyMap(),
+    val sdk: String? = null,
+    val outputType: String? = null,
+    val rootNamespace: String? = null,
+    val implicitUsings: Boolean = false,
 ) {
+    val isTestProject: Boolean
+        get() = packages.any { it.name.equals("Microsoft.NET.Test.Sdk", ignoreCase = true) || it.name.equals("xunit.v3", ignoreCase = true) }
+
+    /** Something `dotnet run` can start: an executable or a web / worker SDK project. */
+    val isRunnable: Boolean
+        get() = outputType.equals("Exe", ignoreCase = true) || outputType.equals("WinExe", ignoreCase = true) ||
+            RUNNABLE_SDKS.any { sdk.orEmpty().startsWith(it, ignoreCase = true) }
+
     companion object {
+        private val RUNNABLE_SDKS = listOf("Microsoft.NET.Sdk.Web", "Microsoft.NET.Sdk.Worker", "Microsoft.NET.Sdk.BlazorWebAssembly")
+
         fun parse(text: CharSequence): MsBuildProject {
             val root = try {
                 JDOMUtil.load(text)
@@ -31,12 +45,18 @@ data class MsBuildProject(
             val projects = LinkedHashSet<String>()
             val assemblies = LinkedHashSet<String>()
             val versions = LinkedHashMap<String, String>()
+            var outputType: String? = null
+            var rootNamespace: String? = null
+            var implicitUsings = false
 
             // Element names are compared without namespace: old-style projects declare the msbuild/2003 one.
             for (element in root.descendants()) {
                 when (element.name) {
                     "TargetFramework", "TargetFrameworks" -> frameworks += splitList(element.textTrim)
                     "TargetFrameworkVersion" -> frameworks += splitList(element.textTrim).map { "net" + it.removePrefix("v").replace(".", "") }
+                    "OutputType" -> outputType = outputType ?: element.textTrim.takeIf { it.isNotEmpty() }
+                    "RootNamespace" -> rootNamespace = rootNamespace ?: element.textTrim.takeIf { it.isNotEmpty() && '$' !in it }
+                    "ImplicitUsings" -> implicitUsings = element.textTrim.lowercase() in setOf("enable", "true")
                     "PackageReference" -> for (name in includes(element)) {
                         packages[name.lowercase()] = PackageReference(name, itemMetadata(element, "Version"))
                     }
@@ -48,7 +68,13 @@ data class MsBuildProject(
                     "Reference" -> assemblies += includes(element).map { it.substringBefore(',').trim() }
                 }
             }
-            return MsBuildProject(frameworks.toList(), packages.values.toList(), projects.toList(), assemblies.toList(), versions)
+            return MsBuildProject(
+                frameworks.toList(), packages.values.toList(), projects.toList(), assemblies.toList(), versions,
+                sdk = root.getAttributeValue("Sdk")?.substringBefore('/'),
+                outputType = outputType,
+                rootNamespace = rootNamespace,
+                implicitUsings = implicitUsings,
+            )
         }
 
         private fun Element.descendants(): Sequence<Element> =

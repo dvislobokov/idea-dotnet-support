@@ -55,7 +55,64 @@
                            implementationClass="io.github.dotnetsupport.lang.CSharpQuoteHandler"/>
 
         <projectViewPane implementation="io.github.dotnetsupport.view.SolutionViewPane"/>
+        <postStartupActivity implementation="io.github.dotnetsupport.view.SolutionViewActivator"/>
+        <notificationGroup id=".NET" displayType="BALLOON"/>
+
+        <configurationType implementation="io.github.dotnetsupport.run.DotNetConfigurationType"/>
+        <postStartupActivity implementation="io.github.dotnetsupport.run.DotNetRunConfigurationStartupActivity"/>
+        <runConfigurationProducer implementation="io.github.dotnetsupport.run.DotNetRunConfigurationProducer"/>
+        <runLineMarkerContributor language="C#"
+                                  implementationClass="io.github.dotnetsupport.run.MainMethodRunLineMarkerContributor"/>
+
+        <directoryProjectGenerator implementation="io.github.dotnetsupport.newproject.DotNetProjectGenerator"/>
+        <internalFileTemplate name="CSharp Class"/>
+        <internalFileTemplate name="CSharp Interface"/>
+        <internalFileTemplate name="CSharp Record"/>
+        <internalFileTemplate name="CSharp Struct"/>
+        <internalFileTemplate name="CSharp Enum"/>
+        <defaultTemplatePropertiesProvider implementation="io.github.dotnetsupport.templates.CSharpTemplatePropertiesProvider"/>
     </extensions>
+
+    <actions>
+        <action id="DotNet.NewCSharpFile" class="io.github.dotnetsupport.templates.CreateCSharpFileAction">
+            <add-to-group group-id="NewGroup" anchor="first"/>
+        </action>
+
+        <group id="DotNet.SolutionViewPopup">
+            <separator/>
+            <group id="DotNet.AddToSolution" class="io.github.dotnetsupport.actions.AddToSolutionGroup"
+                   text="Add" popup="true" icon="AllIcons.General.Add">
+                <action id="DotNet.AddNewProject" class="io.github.dotnetsupport.actions.AddNewProjectToSolutionAction"
+                        text="New Project..."/>
+                <action id="DotNet.AddExistingProject" class="io.github.dotnetsupport.actions.AddExistingProjectAction"
+                        text="Existing Project..."/>
+                <action id="DotNet.NewSolutionFolder" class="io.github.dotnetsupport.actions.NewSolutionFolderAction"
+                        text="New Solution Folder..."/>
+                <action id="DotNet.AddProjectReference" class="io.github.dotnetsupport.actions.AddProjectReferenceAction"
+                        text="Project Reference..."/>
+            </group>
+            <action id="DotNet.BuildSelected" class="io.github.dotnetsupport.build.BuildSelected" text="Build"
+                    icon="AllIcons.Actions.Compile"/>
+            <action id="DotNet.RebuildSelected" class="io.github.dotnetsupport.build.RebuildSelected" text="Rebuild"/>
+            <action id="DotNet.CleanSelected" class="io.github.dotnetsupport.build.CleanSelected" text="Clean"/>
+            <action id="DotNet.RemoveFromSolution" class="io.github.dotnetsupport.actions.RemoveProjectFromSolutionAction"
+                    text="Remove from Solution..."/>
+            <separator/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="WeighingNewGroup"/>
+        </group>
+
+        <group id="DotNet.ToolsMenu" text=".NET" popup="true">
+            <action id="DotNet.BuildSolution" class="io.github.dotnetsupport.build.BuildSolution" text="Build Solution"
+                    icon="AllIcons.Actions.Compile"/>
+            <action id="DotNet.RebuildSolution" class="io.github.dotnetsupport.build.RebuildSolution" text="Rebuild Solution"/>
+            <action id="DotNet.CleanSolution" class="io.github.dotnetsupport.build.CleanSolution" text="Clean Solution"/>
+            <action id="DotNet.RestoreSolution" class="io.github.dotnetsupport.build.RestoreSolution" text="Restore NuGet Packages"/>
+            <separator/>
+            <action id="DotNet.NewProject" class="io.github.dotnetsupport.actions.NewDotNetProjectAction"
+                    text="New .NET Project..."/>
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </group>
+    </actions>
 
     <projectListeners>
         <listener class="io.github.dotnetsupport.view.SolutionFilesListener"

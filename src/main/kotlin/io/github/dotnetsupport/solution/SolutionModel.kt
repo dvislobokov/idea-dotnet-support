@@ -17,6 +17,18 @@ class Solution(val root: SlnFolder) {
 
     fun findFolder(id: String): SlnFolder? = findFolder(root, id)
 
+    /** Names of the folder and its ancestors joined with `/`, the form `dotnet sln add --solution-folder` expects. */
+    fun folderPath(id: String): String? = folderPath(root, id, "")
+
+    private fun folderPath(folder: SlnFolder, id: String, prefix: String): String? {
+        for (child in folder.folders) {
+            val path = if (prefix.isEmpty()) child.name else "$prefix/${child.name}"
+            if (child.id == id) return path
+            folderPath(child, id, path)?.let { return it }
+        }
+        return null
+    }
+
     private fun collectProjects(folder: SlnFolder, result: MutableList<SlnProject>) {
         result += folder.projects
         folder.folders.forEach { collectProjects(it, result) }

@@ -13,6 +13,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiDirectory
 import com.intellij.psi.PsiManager
 import io.github.dotnetsupport.DotNetIcons
 import io.github.dotnetsupport.solution.SlnFolder
@@ -27,6 +28,7 @@ import io.github.dotnetsupport.solution.SolutionService
 
 data class SolutionKey(val solutionFile: VirtualFile)
 data class SolutionFolderKey(val solutionFile: VirtualFile, val folderId: String)
+data class ProjectKey(val solutionFile: VirtualFile, val project: SlnProject)
 
 private const val FOLDER_WEIGHT = 1
 private const val PROJECT_WEIGHT = 2
@@ -51,7 +53,7 @@ abstract class SolutionViewNode<T : Any>(project: Project, value: T, settings: V
     protected fun folderChildren(solutionFile: VirtualFile, folder: SlnFolder): List<AbstractTreeNode<*>> {
         val result = ArrayList<AbstractTreeNode<*>>()
         folder.folders.mapTo(result) { SolutionFolderNode(nodeProject, SolutionFolderKey(solutionFile, it.id), settings) }
-        folder.projects.mapTo(result) { DotNetProjectNode(nodeProject, solutionFile, it, settings) }
+        folder.projects.mapTo(result) { DotNetProjectNode(nodeProject, ProjectKey(solutionFile, it), settings) }
         val psiManager = PsiManager.getInstance(nodeProject)
         folder.files
             .mapNotNull { solutionFile.parent?.findFileByRelativePath(it) }
@@ -88,6 +90,7 @@ class SolutionNode(project: Project, key: SolutionKey, settings: ViewSettings?) 
 
     private val solution: Solution get() = solutions.solution(value.solutionFile)
     override val navigationFile: VirtualFile get() = value.solutionFile
+    override fun getVirtualFile(): VirtualFile = value.solutionFile
 
     override fun getChildren(): Collection<AbstractTreeNode<*>> = folderChildren(value.solutionFile, solution.root)
 
@@ -120,14 +123,11 @@ class SolutionFolderNode(project: Project, key: SolutionFolderKey, settings: Vie
     }
 }
 
-class DotNetProjectNode(
-    project: Project,
-    private val solutionFile: VirtualFile,
-    slnProject: SlnProject,
-    settings: ViewSettings?,
-) : SolutionViewNode<SlnProject>(project, slnProject, settings) {
+class DotNetProjectNode(project: Project, key: ProjectKey, settings: ViewSettings?) :
+    SolutionViewNode<ProjectKey>(project, key, settings) {
 
-    private val projectFile: VirtualFile? get() = value.resolveFile(solutionFile)
+    private val solutionFile: VirtualFile get() = value.solutionFile
+    private val projectFile: VirtualFile? get() = value.project.resolveFile(solutionFile)
     override val navigationFile: VirtualFile? get() = projectFile
     override fun getVirtualFile(): VirtualFile? = projectFile
 
@@ -159,12 +159,26 @@ class DotNetProjectNode(
 
     override fun getTypeSortWeight(sortByType: Boolean): Int = PROJECT_WEIGHT
 
+    /**
+     * The node stands for the project directory as well: when a file or a folder is created or deleted
+     * right in it, the project view looks for the node representing that directory to rebuild its children.
+     */
+    override fun canRepresent(element: Any?): Boolean {
+        if (super.canRepresent(element)) return true
+        val directory = projectFile?.parent ?: return false
+        return when (element) {
+            is VirtualFile -> element == directory
+            is PsiDirectory -> element.virtualFile == directory
+            else -> false
+        }
+    }
+
     override fun update(presentation: PresentationData) {
         val projectFile = projectFile
         presentation.setIcon(DotNetIcons.Project)
-        presentation.presentableText = value.name
+        presentation.presentableText = value.project.name
         presentation.locationString =
-            if (projectFile == null) "not found: ${value.path}"
+            if (projectFile == null) "not found: ${value.project.path}"
             else solutions.msBuildProject(projectFile).targetFrameworks.joinToString(", ").ifEmpty { null }
     }
 }

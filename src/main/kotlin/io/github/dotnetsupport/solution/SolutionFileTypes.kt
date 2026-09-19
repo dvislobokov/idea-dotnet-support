@@ -9,6 +9,7 @@ import javax.swing.Icon
 
 object SolutionFileType : LanguageFileType(PlainTextLanguage.INSTANCE, true) {
     override fun getName(): String = "Visual Studio Solution"
+    override fun getDisplayName(): String = "Visual Studio Solution"
     override fun getDescription(): String = "Visual Studio solution"
     override fun getDefaultExtension(): String = "sln"
     override fun getIcon(): Icon = DotNetIcons.Solution
@@ -16,6 +17,7 @@ object SolutionFileType : LanguageFileType(PlainTextLanguage.INSTANCE, true) {
 
 object SolutionXmlFileType : XmlLikeFileType(XMLLanguage.INSTANCE) {
     override fun getName(): String = "Visual Studio Solution (XML)"
+    override fun getDisplayName(): String = "Visual Studio Solution (XML)"
     override fun getDescription(): String = "Visual Studio solution (XML format)"
     override fun getDefaultExtension(): String = "slnx"
     override fun getIcon(): Icon = DotNetIcons.Solution

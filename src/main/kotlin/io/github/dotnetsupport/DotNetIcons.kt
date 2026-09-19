@@ -5,6 +5,9 @@ import javax.swing.Icon
 
 object DotNetIcons {
     @JvmField val CSharp: Icon = load("csharp")
+
+    /** Glyph of the "New Class/Interface" popup. */
+    @JvmField val CSharpType: Icon = load("csharpType")
     @JvmField val FSharp: Icon = load("fsharp")
     @JvmField val VisualBasic: Icon = load("vb")
 
