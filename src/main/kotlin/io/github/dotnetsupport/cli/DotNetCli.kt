@@ -59,6 +59,15 @@ object DotNetCli {
             .withEnvironment("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1")
     }
 
+    private val SECRET_OPTIONS = setOf("-p", "--password", "--api-key", "-k")
+
+    /** The command line for logs and progress texts: values of password-like options are masked. */
+    fun displayString(command: GeneralCommandLine): String {
+        val parameters = command.parametersList.list
+        val masked = parameters.mapIndexed { i, parameter -> if (i > 0 && parameters[i - 1] in SECRET_OPTIONS) "********" else parameter }
+        return (listOf("dotnet") + masked).joinToString(" ") { if (' ' in it) "\"$it\"" else it }
+    }
+
     /** Runs a short command and captures its output. Must not be called on EDT. */
     @Throws(ExecutionException::class)
     fun execute(commandLine: GeneralCommandLine, timeoutMs: Int = TIMEOUT_MS): ProcessOutput =
@@ -89,7 +98,7 @@ object DotNetCli {
             private fun runCommands(indicator: ProgressIndicator): Boolean {
                 for (command in commands) {
                     if (indicator.isCanceled) return false
-                    indicator.text2 = command.commandLineString
+                    indicator.text2 = displayString(command)
                     output.commandStarted(command)
                     val result = try {
                         val handler = CapturingProcessHandler(command)

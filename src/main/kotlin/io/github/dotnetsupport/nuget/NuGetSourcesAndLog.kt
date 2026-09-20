@@ -59,8 +59,9 @@ class NuGetSourcesPanel(private val project: Project, private val onChanged: () 
             add(configFiles, BorderLayout.SOUTH)
         })
         val actions = DefaultActionGroup(
-            action("Add Source...", AllIcons.General.Add, { true }) { addSource() },
-            action("Remove Source", AllIcons.General.Remove, { selected() != null }) { removeSource() },
+            action("New Feed...", AllIcons.General.Add, { true }) { addSource() },
+            action("Edit Feed...", AllIcons.Actions.Edit, { selected() != null }) { editSource(selected()) },
+            action("Remove Feed", AllIcons.General.Remove, { selected() != null }) { removeSource() },
             action("Enable / Disable", AllIcons.Actions.Checked, { selected() != null }) { toggleSource() },
             action("Refresh", AllIcons.Actions.Refresh, { true }) { reload() },
         )
@@ -94,22 +95,30 @@ class NuGetSourcesPanel(private val project: Project, private val onChanged: () 
         onChanged()
     }
 
-    private fun addSource() {
-        val dialog = AddSourceDialog(project, model.sources.map { it.name.lowercase() }.toSet())
-        if (!dialog.showAndGet()) return
-        service.changeSources("Adding NuGet source ${dialog.sourceName}", "add", "source", dialog.url, "--name", dialog.sourceName, onSuccess = ::changed)
+    private fun addSource() = editSource(null)
+
+    /** The flags of an existing source are read from its config file first, off the EDT. */
+    private fun editSource(existing: NuGetSource?) {
+        ApplicationManager.getApplication().executeOnPooledThread {
+            val flags = existing?.let { service.sourceFlags(it.name) } ?: (false to false)
+            ApplicationManager.getApplication().invokeLater({
+                val otherNames = model.sources.filter { it !== existing }.map { it.name.lowercase() }.toSet()
+                val dialog = NuGetSourceDialog(project, existing, otherNames, flags)
+                if (dialog.showAndGet()) service.saveSource(dialog.settings, existing, ::changed)
+            }, ModalityState.any())
+        }
     }
 
     private fun removeSource() {
         val source = selected() ?: return
-        val answer = Messages.showYesNoDialog(project, "Remove the package source '${source.name}'?\n${source.url}", "Remove Source", Messages.getQuestionIcon())
-        if (answer == Messages.YES) service.changeSources("Removing NuGet source ${source.name}", "remove", "source", source.name, onSuccess = ::changed)
+        val answer = Messages.showYesNoDialog(project, "Remove the feed '${source.name}'?", "Remove Feed", Messages.getQuestionIcon())
+        if (answer == Messages.YES) service.changeSources("Removing NuGet feed ${source.name}", listOf(listOf("remove", "source", source.name)), ::changed)
     }
 
     private fun toggleSource() {
         val source = selected() ?: return
         val command = if (source.isEnabled) "disable" else "enable"
-        service.changeSources("${command.replaceFirstChar(Char::uppercase)} NuGet source ${source.name}", command, "source", source.name, onSuccess = ::changed)
+        service.changeSources("${command.replaceFirstChar(Char::uppercase)} NuGet feed ${source.name}", listOf(listOf(command, "source", source.name)), ::changed)
     }
 
     private fun action(text: String, icon: javax.swing.Icon, enabled: () -> Boolean, perform: () -> Unit): AnAction =
@@ -130,33 +139,6 @@ class NuGetSourcesPanel(private val project: Project, private val onChanged: () 
         override fun getColumnName(column: Int): String = listOf("Enabled", "Name", "URL")[column]
         override fun getColumnClass(column: Int): Class<*> = if (column == 0) java.lang.Boolean::class.java else String::class.java
         override fun getValueAt(row: Int, column: Int): Any = sources[row].let { listOf(it.isEnabled, it.name, it.url)[column] }
-    }
-
-    private class AddSourceDialog(project: Project, private val existingNames: Set<String>) : DialogWrapper(project) {
-        private val nameField = JBTextField()
-        private val urlField = JBTextField("https://")
-
-        val sourceName: String get() = nameField.text.trim()
-        val url: String get() = urlField.text.trim()
-
-        init {
-            title = "Add NuGet Source"
-            init()
-        }
-
-        override fun getPreferredFocusedComponent(): JComponent = nameField
-
-        override fun createCenterPanel(): JComponent = panel {
-            row("Name:") { cell(nameField).align(AlignX.FILL) }
-            row("URL or folder:") { cell(urlField).align(AlignX.FILL).comment("A V3 feed (<code>.../index.json</code>) or a local folder with <code>.nupkg</code> files") }
-        }.apply { preferredSize = Dimension(520, preferredSize.height) }
-
-        override fun doValidate(): ValidationInfo? = when {
-            sourceName.isEmpty() -> ValidationInfo("Specify the name of the source", nameField)
-            sourceName.lowercase() in existingNames -> ValidationInfo("A source with this name already exists", nameField)
-            url.isEmpty() || url == "https://" -> ValidationInfo("Specify the URL or the folder of the source", urlField)
-            else -> null
-        }
     }
 }
 

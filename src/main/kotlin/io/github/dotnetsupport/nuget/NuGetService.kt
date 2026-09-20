@@ -1,9 +1,11 @@
 package io.github.dotnetsupport.nuget
 
 import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.io.HttpRequests
 import io.github.dotnetsupport.cli.CommandOutput
@@ -15,18 +17,18 @@ import java.net.URLEncoder
 import java.util.concurrent.ConcurrentHashMap
 
 /** NuGet V3 feeds. [fetch] is the HTTP GET, replaceable in tests. Every method blocks: call from a background thread. */
-class NuGetClient(private val fetch: (String) -> String = { HttpRequests.request(it).connectTimeout(10_000).readTimeout(20_000).readString() }) {
+class NuGetClient(private val fetch: (url: String, source: String) -> String = ::fetchWithCredentials) {
     private val indexes = ConcurrentHashMap<String, NuGetResponses.ServiceIndex>()
 
     private fun index(source: String): NuGetResponses.ServiceIndex? =
-        runCatching { indexes.getOrPut(source) { NuGetResponses.parseServiceIndex(fetch(source)) } }.getOrNull()
+        runCatching { indexes.getOrPut(source) { NuGetResponses.parseServiceIndex(fetch(source, source)) } }.getOrNull()
 
     /** Packages from all [sources]; a package found in several feeds is taken from the first one. */
     fun search(query: String, includePrerelease: Boolean, sources: List<String>, take: Int = 40): List<NuGetPackageInfo> =
         sources.flatMap { source ->
             val url = index(source)?.searchUrl ?: return@flatMap emptyList()
             runCatching {
-                NuGetResponses.parseSearch(fetch("$url?q=${URLEncoder.encode(query, Charsets.UTF_8)}&take=$take&prerelease=$includePrerelease&semVerLevel=2.0.0"))
+                NuGetResponses.parseSearch(fetch("$url?q=${URLEncoder.encode(query, Charsets.UTF_8)}&take=$take&prerelease=$includePrerelease&semVerLevel=2.0.0", source))
             }.getOrDefault(emptyList())
         }.distinctBy { it.id.lowercase() }
 
@@ -34,7 +36,7 @@ class NuGetClient(private val fetch: (String) -> String = { HttpRequests.request
     fun versions(packageId: String, sources: List<String>): List<String> =
         sources.firstNotNullOfOrNull { source ->
             val base = index(source)?.packageBaseUrl ?: return@firstNotNullOfOrNull null
-            runCatching { NuGetResponses.parseVersions(fetch("$base${packageId.lowercase()}/index.json")) }.getOrNull()?.takeIf { it.isNotEmpty() }
+            runCatching { NuGetResponses.parseVersions(fetch("$base${packageId.lowercase()}/index.json", source)) }.getOrNull()?.takeIf { it.isNotEmpty() }
         }.orEmpty()
 
     /** Description, license and dependencies of a concrete version; null when no feed has its `.nuspec`. */
@@ -42,9 +44,23 @@ class NuGetClient(private val fetch: (String) -> String = { HttpRequests.request
         val id = packageId.lowercase()
         return sources.firstNotNullOfOrNull { source ->
             val base = index(source)?.packageBaseUrl ?: return@firstNotNullOfOrNull null
-            runCatching { NuGetResponses.parseNuspec(fetch("$base$id/${version.lowercase()}/$id.nuspec")) }.getOrNull()
+            runCatching { NuGetResponses.parseNuspec(fetch("$base$id/${version.lowercase()}/$id.nuspec", source)) }.getOrNull()
         }
     }
+}
+
+/** HTTP GET of a feed resource; a private feed gets the credentials stored for its source (Basic authentication). */
+private fun fetchWithCredentials(url: String, source: String): String {
+    val credentials = NuGetCredentialStore.get(source)
+    return HttpRequests.request(url).connectTimeout(10_000).readTimeout(20_000)
+        .tuner { connection ->
+            val password = credentials?.getPasswordAsString()
+            if (credentials?.userName != null && password != null) {
+                val token = java.util.Base64.getEncoder().encodeToString("${credentials.userName}:$password".toByteArray())
+                connection.setRequestProperty("Authorization", "Basic $token")
+            }
+        }
+        .readString()
 }
 
 class InstalledPackage(
@@ -72,7 +88,7 @@ class NuGetLog : CommandOutput {
         listeners.forEach { it(text, isError) }
     }
 
-    override fun commandStarted(command: GeneralCommandLine) = print("> ${command.commandLineString}\n")
+    override fun commandStarted(command: GeneralCommandLine) = print("> ${DotNetCli.displayString(command)}\n")
     override fun text(text: String, isError: Boolean) = print(text, isError)
 
     override fun commandFinished(exitCode: Int) =
@@ -156,10 +172,46 @@ class NuGetService(private val project: Project) {
         runCatching { DotNetCli.execute(DotNetCli.commandLine(workDirectory(), "nuget", "config", "paths"), 30_000).stdout }
             .getOrDefault("").lines().map { it.trim() }.filter { it.isNotEmpty() && File(it).isFile }
 
-    /** `dotnet nuget add | remove | enable | disable source ...` */
-    fun changeSources(title: String, vararg arguments: String, onSuccess: () -> Unit) {
-        val commands = DotNetCli.commandLinesOrNotify(project, title) { listOf(DotNetCli.commandLine(workDirectory(), "nuget", *arguments)) } ?: return
-        DotNetCli.runInBackground(project, title, commands, output = log, onSuccess = onSuccess)
+    /** `dotnet nuget add | update | remove | enable | disable source ...`, one argument list per command. */
+    fun changeSources(title: String, commands: List<List<String>>, onSuccess: () -> Unit) {
+        val commandLines = DotNetCli.commandLinesOrNotify(project, title) { commands.map { DotNetCli.commandLine(workDirectory(), "nuget", *it.toTypedArray()) } } ?: return
+        DotNetCli.runInBackground(project, title, commandLines, output = log, onSuccess = onSuccess)
+    }
+
+    private fun declaringConfig(sourceName: String): File? =
+        configPaths().map(::File).firstOrNull { NuGetConfigEditor.declares(it.readText(), sourceName) }
+
+    /** "Allow insecure connections" and "Disable TLS certificate validation" of a source, from the config file that declares it. Blocking. */
+    fun sourceFlags(sourceName: String): Pair<Boolean, Boolean> {
+        val config = declaringConfig(sourceName)?.readText() ?: return false to false
+        return NuGetConfigEditor.flag(config, sourceName, NuGetConfigEditor.ALLOW_INSECURE) to NuGetConfigEditor.flag(config, sourceName, NuGetConfigEditor.DISABLE_TLS)
+    }
+
+    /** Adds or updates a source: the CLI for what it supports, then the attributes it has no options for, then the IDE copy of the credentials. */
+    fun saveSource(settings: NuGetSourceSettings, existing: NuGetSource?, onSuccess: () -> Unit) {
+        val commands = buildList {
+            add(settings.cliArguments(isNew = existing == null))
+            if (settings.isEnabled != (existing?.isEnabled ?: true)) add(listOf(if (settings.isEnabled) "enable" else "disable", "source", settings.name))
+        }
+        val title = (if (existing == null) "Adding" else "Updating") + " NuGet feed ${settings.name}"
+        changeSources(title, commands) {
+            ApplicationManager.getApplication().executeOnPooledThread {
+                declaringConfig(settings.name)?.let { file ->
+                    val text = file.readText()
+                    val updated = NuGetConfigEditor.setFlag(
+                        NuGetConfigEditor.setFlag(text, settings.name, NuGetConfigEditor.ALLOW_INSECURE, settings.allowInsecureConnections),
+                        settings.name, NuGetConfigEditor.DISABLE_TLS, settings.disableTlsCertificateValidation,
+                    )
+                    if (updated != text) {
+                        file.writeText(updated)
+                        VfsUtil.markDirtyAndRefresh(true, false, false, file)
+                    }
+                }
+                // an edit that leaves the credentials empty keeps the stored ones
+                if (settings.password != null || existing == null) NuGetCredentialStore.set(settings.url, settings.user, settings.password)
+                ApplicationManager.getApplication().invokeLater(onSuccess, project.disposed)
+            }
+        }
     }
 
     companion object {

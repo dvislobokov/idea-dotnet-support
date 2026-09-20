@@ -148,7 +148,7 @@ class NuGetTest : BasePlatformTestCase() {
 
     fun testClientAcrossFeeds() {
         val requested = ArrayList<String>()
-        val client = NuGetClient { url ->
+        val client = NuGetClient { url, _ ->
             requested += url
             when {
                 url == "https://a/index.json" -> """{"resources":[{"@id":"https://a/query","@type":"SearchQueryService"},{"@id":"https://a/flat/","@type":"PackageBaseAddress/3.0.0"}]}"""

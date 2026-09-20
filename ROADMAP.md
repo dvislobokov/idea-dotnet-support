@@ -46,7 +46,8 @@
 - [x] Окно NuGet: вкладка Sources (фиды всех уровней `nuget.config`, добавить / удалить / включить / выключить, ссылки на файлы конфигурации) и вкладка Log (команды `dotnet` и их вывод)
 - [x] Потоковый вывод команд `dotnet`: NuGet — построчно во вкладку Log; создание проектов, `dotnet sln`, EF, шаблоны, конвертация — задачами в Build tool window (окно открывается само только при ошибке), отмена прогресса убивает процесс
 - [x] Карточка пакета по образцу Rider (шапка, Version с кнопками «во все проекты», сворачиваемые Info и Dependencies со сводкой, список проектов с кнопками-иконками), однотонная иконка окна для обеих тем и нового UI
-- [ ] Окно NuGet: README пакета, правка версий в `Directory.Packages.props` при CPM, учётные данные приватных фидов
+- [x] Диалог фида как в Rider (New / Edit): Name, URL, User, Password, Enabled, Allow insecure connections, Disable TLS certificate validation; учётные данные — в `nuget.config` через CLI и в хранилище паролей IDE для поиска по приватным фидам; пароли замаскированы в логах и прогрессе
+- [ ] Окно NuGet: README пакета, правка версий в `Directory.Packages.props` при CPM, выбор файла конфигурации для нового фида (сейчас — куда пишет CLI, т.е. пользовательский)
 - [ ] Устаревшие и уязвимые пакеты (`dotnet list package --outdated --vulnerable --format json`)
 - [ ] csproj: completion имён и версий пакетов, inlay «доступна новая версия», quick-fix обновления
 - [ ] Авто-`dotnet restore` при изменении csproj
@@ -126,6 +127,51 @@
 - [ ] Вставка `DateTime`-форматов, конвертация строки в verbatim / raw
 - [ ] Инъекция RegExp в строки `[StringSyntax]` / `Regex(...)` (даёт встроенный Check RegExp)
 - [ ] `.resx` ↔ CSV / JSON для переводчиков, проверка недостающих ключей между культурами
+
+## Инструменты, часть 2 — как в Rider и IDEA Ultimate
+То, что в Rider сделано панелями и переключателями, а в IDEA Ultimate есть для Java. По-прежнему без семантики языка:
+`dotnet` CLI, файлы проекта, уже написанные парсеры. ★ — взять первыми, в скобках — оценка трудоёмкости.
+
+### Панели и переключатели Rider
+- [ ] ★ File nesting: `appsettings.*.json` под `appsettings.json`, `Foo.razor.cs` / `Foo.razor.css` под `Foo.razor`, `*.Designer.cs` под `.resx`, `*.xaml.cs` под `.xaml` — через `ProjectViewNestingRulesProvider` (пара часов)
+- [ ] ★ Переключатель конфигурации решения в тулбаре: Debug / Release и target framework; подставляется в сборку, запуск и тесты (`-c`, `--framework`) (день)
+- [ ] ★ Analyze .NET Stack Trace: вставить стектрейс из лога или тикета → кликабельные кадры (фильтр уже есть; час-два)
+- [ ] Unit Tests explorer: окно со всеми тестами solution без запуска (токенное обнаружение уже есть), запуск выделенного, группировка проект / namespace / класс
+- [ ] Continuous testing: `dotnet watch test` с тем же деревом результатов, рабочая кнопка «Toggle auto-test»
+- [ ] Декомпиляция сборок из Dependencies через `ilspycmd` → C# read-only в редакторе
+- [ ] Сводка по скорости сборки: `-clp:PerformanceSummary` → таблица «что тормозит» по таргетам и задачам; сохранение binlog (`-bl`) для MSBuild Structured Log Viewer
+- [ ] Окно MSBuild targets (аналог окна Gradle): `dotnet msbuild -targets`, запуск любого таргета, включая свои из `Directory.Build.targets`
+
+### Веб-разработка на ASP.NET
+- [ ] ★ HTTPS dev-сертификат: `dotnet dev-certs https --check` при открытии web-проекта, баннер «сертификат не доверен» с кнопкой Trust
+- [ ] ★ `dotnet user-jwts`: диалог создания dev-токена (роли, scope, срок), вставка в `.http` как `Authorization: Bearer …`, список выданных токенов
+- [ ] HTTP Client environments: `http-client.env.json` из `applicationUrl` профилей `launchSettings.json`
+- [ ] Services / Run Dashboard (как Spring Boot в IDEA Ultimate): наши конфигурации в окне Services — статус, адрес «listening on» ссылкой, перезапуск, несколько сервисов списком
+- [ ] Проверка AOT / trimming: «Check AOT compatibility» → `dotnet publish -r <rid>`, предупреждения `IL2xxx` / `IL3xxx` отдельным списком с переходом к коду
+- [ ] User Secrets: проверка, что ключ из `appsettings.json` перекрыт секретом (дополнение к пункту из раздела «Данные и API»)
+
+### Зависимости (аналог Dependency Analyzer и Package Checker)
+- [ ] ★ Update All: обновить все пакеты проекта / solution одним действием с предпросмотром списка
+- [ ] ★ Консолидация версий: один пакет с разными версиями в проектах solution → «привести к одной» (область Solution уже показывает `multiple`)
+- [ ] Конфликты версий: `NU1605` / `NU1608` / `NU1107` и `project.assets.json` → дерево «кто какую версию требует и какая победила»
+- [ ] Кэши NuGet: `dotnet nuget locals all --list`, размеры папок, очистка http-cache / global-packages / temp
+- [ ] Pack & Push: run configuration `dotnet pack` + `dotnet nuget push`, API-ключ в хранилище паролей IDE, выбор фида из вкладки Sources
+- [ ] Bump version: major / minor / patch для `Version` в `.csproj` или `Directory.Build.props`
+
+### SDK и окружение
+- [ ] Страница «.NET на этой машине»: `dotnet --info`, `dotnet sdk check` (устаревшие и снятые с поддержки SDK / runtime), вместе с проверкой `global.json`
+- [ ] Шаблоны: `dotnet new search`, `dotnet new install / uninstall / update` из диалога New Project (сейчас видны только установленные)
+- [ ] Upgrade Assistant: `upgrade-assistant analyze` перед сменой target framework, отчёт о несовместимостях
+
+### Производительность и эксперименты
+- [ ] BenchmarkDotNet: ▶ у `[Benchmark]`, запуск в Release, результаты из `BenchmarkDotNet.Artifacts/results/*.csv` таблицей (Mean, Error, Allocated), сравнение с предыдущим прогоном
+- [ ] C# REPL: `csharprepl` или `dotnet-script` в консольном tool window, «выполнить выделенное из редактора»
+
+### Порядок
+1. File nesting, переключатель Debug / Release + framework, Analyze Stack Trace.
+2. Dev-certs и `user-jwts`; Update All и консолидация версий в окне NuGet.
+3. Services / Run Dashboard, тест-эксплорер с continuous testing, конфликты версий.
+4. Остальное — по запросу: декомпиляция и BenchmarkDotNet эффектны, но нужны реже.
 
 ## Вне рамок (нужна семантика языка)
 Полный парсер выражений, разрешение ссылок, типизация, инспекции, completion по типам, рефакторинги, собственный форматтер,
