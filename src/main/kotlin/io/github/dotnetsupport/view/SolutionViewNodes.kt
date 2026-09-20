@@ -4,6 +4,7 @@ import com.intellij.icons.AllIcons
 import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.projectView.ProjectViewNode
 import com.intellij.ide.projectView.ViewSettings
+import com.intellij.ide.projectView.impl.NestingTreeStructureProvider
 import com.intellij.ide.projectView.impl.nodes.ProjectViewDirectoryHelper
 import com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode
 import com.intellij.ide.projectView.impl.nodes.PsiFileNode
@@ -140,18 +141,21 @@ class DotNetProjectNode(project: Project, key: ProjectKey, settings: ViewSetting
             .mapNotNullTo(HashSet()) { it.resolveFile(solutionFile)?.parent }
             .apply { remove(projectFile.parent) }
 
-        val result = ArrayList<AbstractTreeNode<*>>()
-        result += DependenciesNode(nodeProject, DependenciesKey(projectFile), settings)
-        ProjectViewDirectoryHelper.getInstance(nodeProject).getDirectoryChildren(directory, settings, true).filterTo(result) { child ->
+        // "Show All Files" of Rider: build output and the project file itself are hidden unless asked for
+        val showAll = SolutionViewSettings.isShowAllFiles(nodeProject)
+        val content = ProjectViewDirectoryHelper.getInstance(nodeProject).getDirectoryChildren(directory, settings, true).filter { child ->
             val file = (child as? ProjectViewNode<*>)?.virtualFile
             when {
                 file == null -> true
-                file == projectFile -> false
-                file.isDirectory -> file.name.lowercase() !in HIDDEN_PROJECT_DIRECTORIES && file !in otherProjectDirs
+                file == projectFile -> showAll
+                file.isDirectory -> file !in otherProjectDirs && (showAll || file.name.lowercase() !in HIDDEN_PROJECT_DIRECTORIES)
                 else -> true
             }
         }
-        return result
+        // The platform nests files (appsettings.Development.json under appsettings.json) only below directory nodes;
+        // the project directory is represented by this node, so its direct children are nested here.
+        val nested = NestingTreeStructureProvider().modify(PsiDirectoryNode(nodeProject, directory, settings), content, settings)
+        return listOf(DependenciesNode(nodeProject, DependenciesKey(projectFile), settings)) + nested
     }
 
     override fun contains(file: VirtualFile): Boolean =

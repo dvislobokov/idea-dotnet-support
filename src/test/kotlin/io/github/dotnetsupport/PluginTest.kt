@@ -292,7 +292,7 @@ class PluginTest : BasePlatformTestCase() {
             web.options.programArguments = "--port 5000 \"two words\""
             val path = web.options.projectPath!!
             assertEquals(
-                listOf("run", "--project", path, "--launch-profile", "http", "--", "--port", "5000", "two words"),
+                listOf("run", "--project", path, "-c", "Debug", "--launch-profile", "http", "--", "--port", "5000", "two words"),
                 web.buildCommandLine().parametersList.list,
             )
         }

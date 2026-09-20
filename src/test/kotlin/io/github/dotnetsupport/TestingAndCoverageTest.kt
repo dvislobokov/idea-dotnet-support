@@ -171,7 +171,7 @@ class TestingAndCoverageTest : BasePlatformTestCase() {
         val results = File("C:/tmp/results")
         assertEquals(
             listOf(
-                "test", "C:/src/Calc.Tests/Calc.Tests.csproj", "--filter", "FullyQualifiedName~Calc.Tests.CalculatorTests.",
+                "test", "C:/src/Calc.Tests/Calc.Tests.csproj", "-c", "Debug", "--filter", "FullyQualifiedName~Calc.Tests.CalculatorTests.",
                 "--logger", "trx;LogFileName=results.trx", "--results-directory", results.path, "--collect:XPlat Code Coverage", "--no-build",
             ),
             configuration.buildCommandLine(results).parametersList.list,

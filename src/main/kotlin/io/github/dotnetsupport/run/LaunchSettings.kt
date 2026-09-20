@@ -12,7 +12,10 @@ import java.io.StringReader
 object LaunchSettings {
     private val TRAILING_COMMA = Regex(""",(\s*[}\]])""")
 
-    class Profile(val name: String, val launchBrowser: Boolean, val launchUrl: String?)
+    class Profile(val name: String, val launchBrowser: Boolean, val launchUrl: String?, val applicationUrl: String? = null) {
+        /** `https://localhost:7001;http://localhost:5000` lists every address the profile listens on. */
+        val applicationUrls: List<String> get() = applicationUrl.orEmpty().split(';').map { it.trim().trimEnd('/') }.filter { it.isNotEmpty() }
+    }
 
     /** Profiles `dotnet run --launch-profile` accepts, i.e. the ones with `"commandName": "Project"`. */
     fun profiles(json: String): List<Profile> {
@@ -28,7 +31,7 @@ object LaunchSettings {
             val profile = value as? JsonObject ?: return@mapNotNull null
             fun primitive(key: String) = profile.get(key)?.takeIf { it.isJsonPrimitive }?.asJsonPrimitive
             if (primitive("commandName")?.asString != "Project") return@mapNotNull null
-            Profile(name, launchBrowser = primitive("launchBrowser")?.let { it.isBoolean && it.asBoolean } == true, launchUrl = primitive("launchUrl")?.asString)
+            Profile(name, launchBrowser = primitive("launchBrowser")?.let { it.isBoolean && it.asBoolean } == true, launchUrl = primitive("launchUrl")?.asString, applicationUrl = primitive("applicationUrl")?.asString)
         }
     }
 

@@ -17,8 +17,6 @@ import com.intellij.execution.testframework.sm.runner.ui.SMTRunnerConsoleView
 import com.intellij.openapi.util.io.FileUtil
 import io.github.dotnetsupport.coverage.DotNetCoverageService
 import io.github.dotnetsupport.run.DotNetRunConfiguration
-import io.github.dotnetsupport.run.DotNetStackTraceFilter
-import io.github.dotnetsupport.run.MsBuildConsoleFilter
 
 /** `dotnet test` with the test tree instead of a plain console. */
 class DotNetTestRunState(private val configuration: DotNetRunConfiguration, environment: ExecutionEnvironment) : CommandLineState(environment) {
@@ -35,8 +33,6 @@ class DotNetTestRunState(private val configuration: DotNetRunConfiguration, envi
         val handler = startProcess()
         val properties = DotNetTestConsoleProperties(configuration, executor, resultsDirectory)
         val console = SMTestRunnerConnectionUtil.createAndAttachConsole(TEST_FRAMEWORK_NAME, handler, properties)
-        console.addMessageFilter(MsBuildConsoleFilter(configuration.project))
-        console.addMessageFilter(DotNetStackTraceFilter(configuration.project))
 
         if (configuration.options.collectCoverage) {
             handler.addProcessListener(object : ProcessListener {

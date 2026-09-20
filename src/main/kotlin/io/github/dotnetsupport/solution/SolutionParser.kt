@@ -22,6 +22,8 @@ object SolutionParser {
         var currentFolder: SlnFolder? = null
         var inSolutionItems = false
         var inNestedProjects = false
+        var inConfigurations = false
+        val configurations = LinkedHashSet<String>()
 
         for (rawLine in text.lineSequence()) {
             val line = rawLine.trim()
@@ -41,7 +43,13 @@ object SolutionParser {
                 line.startsWith("ProjectSection(SolutionItems)") -> inSolutionItems = true
                 line == "EndProjectSection" -> inSolutionItems = false
                 line.startsWith("GlobalSection(NestedProjects)") -> inNestedProjects = true
-                line == "EndGlobalSection" -> inNestedProjects = false
+                line.startsWith("GlobalSection(SolutionConfigurationPlatforms)") -> inConfigurations = true
+                line == "EndGlobalSection" -> {
+                    inNestedProjects = false
+                    inConfigurations = false
+                }
+                // Debug|Any CPU = Debug|Any CPU
+                inConfigurations -> line.substringBefore('|').trim().takeIf { it.isNotEmpty() }?.let(configurations::add)
                 inSolutionItems -> {
                     val file = line.substringBefore('=').trim()
                     if (file.isNotEmpty()) currentFolder?.files?.add(normalizePath(file))
@@ -55,7 +63,7 @@ object SolutionParser {
         val root = SlnFolder("", Solution.ROOT_ID)
         for (folder in folders.values) (folders[parents[folder.id]] ?: root).folders += folder
         for (project in projects.values) (folders[parents[project.id]] ?: root).projects += project
-        return Solution(root)
+        return Solution(root, configurations.toList())
     }
 
     fun parseSlnx(text: CharSequence): Solution {
@@ -79,7 +87,9 @@ object SolutionParser {
             }
             if (folder !== root) readSlnxItems(folderElement, folder)
         }
-        return Solution(root)
+        // <Configurations><BuildType Name="Debug" /></Configurations>; absent when the defaults are used
+        val configurations = xml.getChild("Configurations")?.getChildren("BuildType").orEmpty().mapNotNull { it.getAttributeValue("Name") }
+        return Solution(root, configurations)
     }
 
     private fun readSlnxItems(element: Element, folder: SlnFolder) {

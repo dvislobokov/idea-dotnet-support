@@ -12,7 +12,8 @@ class SlnFolder(val name: String, val id: String) {
     val files: MutableList<String> = mutableListOf()
 }
 
-class Solution(val root: SlnFolder) {
+/** [configurations]: build configurations the solution declares (`Debug`, `Release`, ...), in the order of the file. */
+class Solution(val root: SlnFolder, val configurations: List<String> = emptyList()) {
     val allProjects: List<SlnProject> = buildList { collectProjects(root, this) }
 
     fun findFolder(id: String): SlnFolder? = findFolder(root, id)

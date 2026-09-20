@@ -20,6 +20,7 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.vfs.VfsUtil
 import io.github.dotnetsupport.build.BuildViewCommandOutput
+import io.github.dotnetsupport.settings.DotNetSettings
 import java.io.File
 import java.nio.charset.StandardCharsets
 
@@ -36,7 +37,12 @@ interface CommandOutput {
 object DotNetCli {
     private const val TIMEOUT_MS = 10 * 60 * 1000
 
-    fun findExecutable(): String? {
+    /** The executable to run: the one from Settings | Tools | .NET, otherwise the auto-detected one. */
+    fun findExecutable(): String? =
+        DotNetSettings.getInstance().dotnetPath.takeIf { it.isNotEmpty() && File(it).isFile } ?: detectExecutable()
+
+    /** PATH first, then the default installation directories. */
+    fun detectExecutable(): String? {
         val name = if (SystemInfo.isWindows) "dotnet.exe" else "dotnet"
         PathEnvironmentVariableUtil.findInPath(name)?.let { return it.path }
         val wellKnown = if (SystemInfo.isWindows) {

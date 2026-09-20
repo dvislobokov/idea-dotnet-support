@@ -8,6 +8,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
+import io.github.dotnetsupport.settings.DotNetSettings
 import io.github.dotnetsupport.solution.SolutionService
 import io.github.dotnetsupport.view.resolveFile
 
@@ -23,6 +24,7 @@ class DotNetRunConfigurationGenerator(private val project: Project) {
 
     /** Collects targets in the background and registers the missing configurations on EDT. */
     fun schedule() {
+        if (!DotNetSettings.getInstance().createRunConfigurations) return
         ApplicationManager.getApplication().executeOnPooledThread {
             if (project.isDisposed) return@executeOnPooledThread
             val targets = ReadAction.compute<List<Target>, RuntimeException> { if (project.isDisposed) emptyList() else collectTargets() }

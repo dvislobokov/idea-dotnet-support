@@ -55,7 +55,8 @@
 - [ ] Тесты: результаты по мере выполнения, а не после завершения (свой VSTest-логгер или протокол Microsoft.Testing.Platform)
 
 ## Заход 4 — проект и окружение
-- [ ] Страница настроек: путь к `dotnet`, выбор SDK, учёт `global.json`, уведомление об отсутствующем SDK
+- [x] Страница настроек (Settings | Tools | .NET): путь к `dotnet` с проверкой, список установленных SDK, статус `global.json` проекта, переключатели поведения (автосоздание run configurations, окно Build при каждой сборке, автопереключение на Solution view)
+- [x] Уведомление при открытии solution: `dotnet` не найден, или `global.json` требует неустановленный SDK (политики `rollForward` сверены с настоящим CLI)
 - [ ] New Project в IntelliJ IDEA (`GeneratorNewProjectWizard`)
 - [ ] Project Properties (TargetFramework, OutputType, Nullable, LangVersion, RootNamespace)
 - [ ] Честное содержимое проекта: `Compile Remove`, linked files, `DependentUpon`-вложение
@@ -77,7 +78,8 @@
 - [ ] Сворачивание стектрейсов (кадры `System.*` / `Microsoft.*`)
 - [x] ★ Автооткрытие браузера по «Now listening on: http://…» с `launchUrl` профиля; включается галочкой, для сгенерированных конфигураций — по `launchBrowser`
 - [ ] ★ Раскраска уровней логов `Microsoft.Extensions.Logging` (`info` / `warn` / `fail`) в консоли
-- [ ] Вкладка Endpoints: маршруты из `MapGet` / `MapPost` / `[HttpGet]` / `[Route]` по токенам, переход к коду, генерация запроса в `.http`
+- [x] Окно Endpoints: маршруты minimal API (`MapGet`…, `MapGroup` через переменные и цепочки, `MapMethods`, `MapHealthChecks`) и контроллеров (`[Route]` на классе, `[HttpGet("{id}")]`, `[controller]` / `[action]`, абсолютные шаблоны) по токенам; переход к коду, запрос в `<Project>.http` с переменной хоста из `launchSettings.json`, открыть в браузере, копировать URL; значок на полях у каждого маршрута
+- [ ] Endpoints: маршруты из констант и `nameof`, группы, объявленные в другом файле (extension-методы `MapXxxEndpoints`), Razor Pages и `MapHub`, поиск маршрута через Search Everywhere
 - [ ] Hot Reload для `dotnet watch`: кнопка Restart, индикатор «изменения применены / нужен перезапуск»
 - [ ] Переключатель окружения (`ASPNETCORE_ENVIRONMENT` / `DOTNET_ENVIRONMENT`) по имеющимся `appsettings.*.json`
 - [ ] Compound-конфигурация: запуск нескольких проектов solution разом
@@ -105,7 +107,6 @@
 - [x] Конвертация `.sln` → `.slnx` (`dotnet sln migrate`; обратного направления в CLI нет)
 - [ ] Окно глобальных и локальных tools: `dotnet tool list`, установка, обновление, запуск
 - [ ] Workloads: `dotnet workload list / install`, подсказка об отсутствующем workload (MAUI, wasm)
-- [ ] Проверка SDK: `global.json` требует неустановленную версию → уведомление со ссылкой
 
 ### Данные и API
 - [ ] EF Core: список миграций со статусом applied / pending (`migrations list --json`), SQL-скрипт между миграциями, `dbcontext scaffold` с диалогом, `dbcontext info`
@@ -133,14 +134,16 @@
 `dotnet` CLI, файлы проекта, уже написанные парсеры. ★ — взять первыми, в скобках — оценка трудоёмкости.
 
 ### Панели и переключатели Rider
-- [ ] ★ File nesting: `appsettings.*.json` под `appsettings.json`, `Foo.razor.cs` / `Foo.razor.css` под `Foo.razor`, `*.Designer.cs` под `.resx`, `*.xaml.cs` под `.xaml` — через `ProjectViewNestingRulesProvider` (пара часов)
-- [ ] ★ Переключатель конфигурации решения в тулбаре: Debug / Release и target framework; подставляется в сборку, запуск и тесты (`-c`, `--framework`) (день)
-- [ ] ★ Analyze .NET Stack Trace: вставить стектрейс из лога или тикета → кликабельные кадры (фильтр уже есть; час-два)
-- [ ] Unit Tests explorer: окно со всеми тестами solution без запуска (токенное обнаружение уже есть), запуск выделенного, группировка проект / namespace / класс
+- [x] ★ File nesting: `appsettings.*.json` под `appsettings.json`, `Foo.razor.cs` / `Foo.razor.css` под `Foo.razor`, `*.Designer.cs` под `.resx`, `*.xaml.cs` под `.xaml` — через `ProjectViewNestingRulesProvider` (пара часов)
+- [x] ★ Переключатель конфигурации решения в тулбаре: Debug / Release и target framework; подставляется в сборку, запуск и тесты (`-c`, `--framework`) (день)
+- [x] ★ Analyze .NET Stack Trace: вставить стектрейс из лога или тикета → кликабельные кадры (фильтр уже есть; час-два)
+- [x] Unit Tests explorer: окно со всеми тестами solution без запуска (токенное обнаружение уже есть), запуск выделенного, группировка проект / namespace / класс
 - [ ] Continuous testing: `dotnet watch test` с тем же деревом результатов, рабочая кнопка «Toggle auto-test»
 - [ ] Декомпиляция сборок из Dependencies через `ilspycmd` → C# read-only в редакторе
-- [ ] Сводка по скорости сборки: `-clp:PerformanceSummary` → таблица «что тормозит» по таргетам и задачам; сохранение binlog (`-bl`) для MSBuild Structured Log Viewer
-- [ ] Окно MSBuild targets (аналог окна Gradle): `dotnet msbuild -targets`, запуск любого таргета, включая свои из `Directory.Build.targets`
+- [x] Сводка по скорости сборки: Tools → .NET → Measure Build Performance — `-clp:PerformanceSummary` → таблицы «что тормозит» по таргетам, задачам и проектам
+- [ ] Сохранение binlog (`-bl`) для MSBuild Structured Log Viewer
+- [x] Run MSBuild Target…: список таргетов проекта с поиском (`dotnet msbuild -targets`), свои из проекта и `Directory.Build.*` наверху, запуск с выводом в Build tool window
+- [x] Show All Files в панели Solution: показать `bin`, `obj` и файл проекта (меню настроек Project view)
 
 ### Веб-разработка на ASP.NET
 - [ ] ★ HTTPS dev-сертификат: `dotnet dev-certs https --check` при открытии web-проекта, баннер «сертификат не доверен» с кнопкой Trust

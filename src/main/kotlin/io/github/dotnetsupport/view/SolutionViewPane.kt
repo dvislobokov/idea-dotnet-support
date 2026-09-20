@@ -41,10 +41,7 @@ class SolutionViewPane(project: Project) : AbstractProjectViewPaneWithAsyncSuppo
         override fun getWeight(): Float = WEIGHT.toFloat()
     }
 
-    override fun createStructure(): ProjectAbstractTreeStructureBase = object : ProjectTreeStructure(myProject, ID) {
-        override fun createRoot(project: Project, settings: ViewSettings): AbstractTreeNode<*> =
-            SolutionRootNode(project, settings)
-    }
+    override fun createStructure(): ProjectAbstractTreeStructureBase = SolutionTreeStructure(myProject)
 
     override fun createTree(treeModel: DefaultTreeModel): ProjectViewTree = object : ProjectViewTree(treeModel) {
         override fun toString(): String = "$title ${super.toString()}"
@@ -64,6 +61,11 @@ class SolutionViewPane(project: Project) : AbstractProjectViewPaneWithAsyncSuppo
         // Must be unique among all panes; the platform ones use small numbers.
         private const val WEIGHT = 42
     }
+}
+
+/** The structure applies the tree structure providers of the platform (file nesting among them) to the children of our nodes too. */
+class SolutionTreeStructure(project: Project) : ProjectTreeStructure(project, SolutionViewPane.ID) {
+    override fun createRoot(project: Project, settings: ViewSettings): AbstractTreeNode<*> = SolutionRootNode(project, settings)
 }
 
 /** Rebuilds the Solution pane when a solution or MSBuild file changes on disk, or the content of a project root changes. */

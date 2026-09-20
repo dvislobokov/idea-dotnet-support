@@ -59,10 +59,15 @@
                            implementationClass="io.github.dotnetsupport.lang.CSharpQuoteHandler"/>
 
         <projectViewPane implementation="io.github.dotnetsupport.view.SolutionViewPane"/>
+        <projectViewNestingRulesProvider implementation="io.github.dotnetsupport.view.DotNetNestingRulesProvider"/>
         <postStartupActivity implementation="io.github.dotnetsupport.view.SolutionViewActivator"/>
         <notificationGroup id=".NET" displayType="BALLOON"/>
+        <projectConfigurable parentId="tools" id="io.github.dotnetsupport.settings" displayName=".NET"
+                             instance="io.github.dotnetsupport.settings.DotNetSettingsConfigurable"/>
+        <postStartupActivity implementation="io.github.dotnetsupport.sdk.SdkCheckActivity"/>
 
         <configurationType implementation="io.github.dotnetsupport.run.DotNetConfigurationType"/>
+        <consoleFilterProvider implementation="io.github.dotnetsupport.run.DotNetConsoleFilterProvider"/>
         <postStartupActivity implementation="io.github.dotnetsupport.run.DotNetRunConfigurationStartupActivity"/>
         <runConfigurationProducer implementation="io.github.dotnetsupport.run.DotNetRunConfigurationProducer"/>
         <runLineMarkerContributor language="C#"
@@ -71,6 +76,11 @@
         <runLineMarkerContributor language="C#"
                                   implementationClass="io.github.dotnetsupport.testing.DotNetTestRunLineMarkerContributor"/>
         <iconMapper mappingFile="DotNetIconMappings.json"/>
+        <toolWindow id="Endpoints" anchor="bottom" icon="AllIcons.General.Web"
+                    factoryClass="io.github.dotnetsupport.endpoints.EndpointsToolWindowFactory"/>
+        <codeInsight.lineMarkerProvider language="C#" implementationClass="io.github.dotnetsupport.endpoints.EndpointLineMarkerProvider"/>
+        <toolWindow id="Unit Tests" anchor="left" secondary="true" icon="AllIcons.Nodes.Test"
+                    factoryClass="io.github.dotnetsupport.testing.TestExplorerToolWindowFactory"/>
         <toolWindow id="NuGet" anchor="bottom" icon="/icons/nugetToolWindow.svg"
                     factoryClass="io.github.dotnetsupport.nuget.NuGetToolWindowFactory"/>
         <toolWindow id=".NET Coverage" anchor="right" secondary="true" icon="AllIcons.General.RunWithCoverage"
@@ -115,6 +125,8 @@
                     text="Manage NuGet Packages..." icon="/icons/nuget.svg"/>
             <action id="DotNet.RunTestsWithCoverage" class="io.github.dotnetsupport.testing.RunTestsWithCoverageAction"
                     text="Run Tests with Coverage" icon="AllIcons.General.RunWithCoverage"/>
+            <action id="DotNet.RunMsBuildTarget" class="io.github.dotnetsupport.build.RunMsBuildTargetAction"
+                    text="Run MSBuild Target..." icon="AllIcons.Nodes.Target"/>
             <action id="DotNet.CleanSelected" class="io.github.dotnetsupport.build.CleanSelected" text="Clean"/>
             <action id="DotNet.ConvertToSlnx" class="io.github.dotnetsupport.actions.ConvertSolutionToSlnxAction"
                     text="Convert to .slnx..."/>
@@ -129,11 +141,26 @@
             <add-to-group group-id="GenerateGroup" anchor="last"/>
         </action>
 
+        <action id="DotNet.BuildConfiguration" class="io.github.dotnetsupport.build.BuildConfigurationSelector"
+                text="Build Configuration" description="Configuration and target framework for build, run and tests">
+            <add-to-group group-id="MainToolbarRight" anchor="first"/>
+            <add-to-group group-id="NavBarToolBar" anchor="first"/>
+        </action>
+        <action id="DotNet.AnalyzeStackTrace" class="io.github.dotnetsupport.run.AnalyzeDotNetStackTraceAction"
+                text="Analyze .NET Stack Trace..." description="Paste a stack trace and navigate its frames"/>
+
+        <action id="DotNet.ShowAllFiles" class="io.github.dotnetsupport.view.ShowAllFilesAction"
+                text="Show All Files" description="Show bin, obj and the project files in the Solution view">
+            <add-to-group group-id="ProjectView.ToolWindow.SecondaryActions" anchor="first"/>
+        </action>
+
         <group id="DotNet.ToolsMenu" text=".NET" popup="true">
             <action id="DotNet.BuildSolution" class="io.github.dotnetsupport.build.BuildSolution" text="Build Solution"
                     icon="AllIcons.Actions.Compile"/>
             <action id="DotNet.RebuildSolution" class="io.github.dotnetsupport.build.RebuildSolution" text="Rebuild Solution"/>
             <action id="DotNet.CleanSolution" class="io.github.dotnetsupport.build.CleanSolution" text="Clean Solution"/>
+            <action id="DotNet.BuildPerformance" class="io.github.dotnetsupport.build.BuildPerformanceAction"
+                    text="Measure Build Performance" description="Rebuild with the MSBuild performance summary: the slowest targets and tasks"/>
             <action id="DotNet.RestoreSolution" class="io.github.dotnetsupport.build.RestoreSolution" text="Restore NuGet Packages"/>
             <separator/>
             <group id="DotNet.EfCore" text="EF Core" popup="true">
@@ -145,6 +172,7 @@
             <action id="DotNet.NewProject" class="io.github.dotnetsupport.actions.NewDotNetProjectAction"
                     text="New .NET Project..."/>
             <reference ref="DotNet.InsertGuid"/>
+            <reference ref="DotNet.AnalyzeStackTrace"/>
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </group>
     </actions>

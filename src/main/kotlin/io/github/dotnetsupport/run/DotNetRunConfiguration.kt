@@ -21,6 +21,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.NotNullLazyValue
 import com.intellij.util.execution.ParametersListUtil
 import io.github.dotnetsupport.DotNetIcons
+import io.github.dotnetsupport.build.DotNetBuildSettings
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.testing.DotNetTestRunState
 import java.io.File
@@ -89,10 +90,6 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
 
     private fun runState(environment: ExecutionEnvironment): RunProfileState =
         object : CommandLineState(environment) {
-            init {
-                addConsoleFilters(MsBuildConsoleFilter(project), DotNetStackTraceFilter(project))
-            }
-
             override fun startProcess(): ProcessHandler {
                 val handler = KillableColoredProcessHandler(buildCommandLine())
                 // `dotnet watch` opens the browser itself when the profile asks for it
@@ -116,11 +113,13 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
         val programArguments = ParametersListUtil.parse(options.programArguments.orEmpty())
         val profile = options.launchProfile?.takeIf { it.isNotBlank() }?.let { listOf("--launch-profile", it) }.orEmpty()
 
+        // Debug / Release and the target framework chosen in the toolbar
+        val selected = DotNetBuildSettings.getInstance(project).runArguments(projectPath)
         val arguments = when (options.command) {
-            DotNetCommand.RUN -> listOf("run", "--project", projectPath) + profile + separated(programArguments)
-            DotNetCommand.WATCH -> listOf("watch", "--project", projectPath, "run") + profile + separated(programArguments)
+            DotNetCommand.RUN -> listOf("run", "--project", projectPath) + selected + profile + separated(programArguments)
+            DotNetCommand.WATCH -> listOf("watch", "--project", projectPath, "run") + selected + profile + separated(programArguments)
             // For tests the arguments are options of `dotnet test` itself (--filter, --logger, ...).
-            DotNetCommand.TEST -> listOf("test", projectPath) + testArguments(testResultsDirectory) + programArguments
+            DotNetCommand.TEST -> listOf("test", projectPath) + selected + testArguments(testResultsDirectory) + programArguments
         }
         val workDirectory = options.workingDirectory?.takeIf { it.isNotBlank() } ?: File(projectPath).parent
         return DotNetCli.commandLine(workDirectory, *arguments.toTypedArray())
