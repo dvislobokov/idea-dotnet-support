@@ -47,6 +47,10 @@
                                implementationClass="io.github.dotnetsupport.lang.CSharpParserDefinition"/>
         <lang.syntaxHighlighterFactory language="C#"
                                        implementationClass="io.github.dotnetsupport.lang.CSharpSyntaxHighlighterFactory"/>
+        <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpIdentifierAnnotator"/>
+        <colorSettingsPage implementation="io.github.dotnetsupport.lang.CSharpColorSettingsPage"/>
+        <additionalTextAttributes scheme="Default" file="colorSchemes/CSharpDefault.xml"/>
+        <additionalTextAttributes scheme="Darcula" file="colorSchemes/CSharpDarcula.xml"/>
         <lang.commenter language="C#"
                         implementationClass="io.github.dotnetsupport.lang.CSharpCommenter"/>
         <lang.braceMatcher language="C#"
@@ -78,6 +82,11 @@
             <add-to-group group-id="NewGroup" anchor="first"/>
         </action>
 
+        <group id="DotNet.NewItems" class="io.github.dotnetsupport.templates.NewDotNetItemGroup"
+               text=".NET" description="C#, ASP.NET, Razor, test, EF Core and configuration items" popup="true">
+            <add-to-group group-id="NewGroup" anchor="after" relative-to-action="DotNet.NewCSharpFile"/>
+        </group>
+
         <group id="DotNet.SolutionViewPopup">
             <separator/>
             <group id="DotNet.AddToSolution" class="io.github.dotnetsupport.actions.AddToSolutionGroup"
@@ -95,11 +104,18 @@
                     icon="AllIcons.Actions.Compile"/>
             <action id="DotNet.RebuildSelected" class="io.github.dotnetsupport.build.RebuildSelected" text="Rebuild"/>
             <action id="DotNet.CleanSelected" class="io.github.dotnetsupport.build.CleanSelected" text="Clean"/>
+            <action id="DotNet.ConvertToSlnx" class="io.github.dotnetsupport.actions.ConvertSolutionToSlnxAction"
+                    text="Convert to .slnx..."/>
             <action id="DotNet.RemoveFromSolution" class="io.github.dotnetsupport.actions.RemoveProjectFromSolutionAction"
                     text="Remove from Solution..."/>
             <separator/>
             <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="WeighingNewGroup"/>
         </group>
+
+        <action id="DotNet.InsertGuid" class="io.github.dotnetsupport.actions.InsertGuidAction"
+                text="Insert New GUID" description="Insert a new GUID at every caret">
+            <add-to-group group-id="GenerateGroup" anchor="last"/>
+        </action>
 
         <group id="DotNet.ToolsMenu" text=".NET" popup="true">
             <action id="DotNet.BuildSolution" class="io.github.dotnetsupport.build.BuildSolution" text="Build Solution"
@@ -108,8 +124,15 @@
             <action id="DotNet.CleanSolution" class="io.github.dotnetsupport.build.CleanSolution" text="Clean Solution"/>
             <action id="DotNet.RestoreSolution" class="io.github.dotnetsupport.build.RestoreSolution" text="Restore NuGet Packages"/>
             <separator/>
+            <group id="DotNet.EfCore" text="EF Core" popup="true">
+                <action id="DotNet.EfAddMigration" class="io.github.dotnetsupport.templates.EfAction$AddMigration" text="Add Migration..."/>
+                <action id="DotNet.EfRemoveMigration" class="io.github.dotnetsupport.templates.EfAction$RemoveMigration" text="Remove Last Migration"/>
+                <action id="DotNet.EfUpdateDatabase" class="io.github.dotnetsupport.templates.EfAction$UpdateDatabase" text="Update Database"/>
+            </group>
+            <separator/>
             <action id="DotNet.NewProject" class="io.github.dotnetsupport.actions.NewDotNetProjectAction"
                     text="New .NET Project..."/>
+            <reference ref="DotNet.InsertGuid"/>
             <add-to-group group-id="ToolsMenu" anchor="last"/>
         </group>
     </actions>

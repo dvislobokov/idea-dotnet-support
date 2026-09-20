@@ -17,7 +17,7 @@ import io.github.dotnetsupport.view.resolveFile
  */
 @Service(Service.Level.PROJECT)
 class DotNetRunConfigurationGenerator(private val project: Project) {
-    data class Target(val name: String, val projectPath: String, val launchProfile: String?) {
+    data class Target(val name: String, val projectPath: String, val launchProfile: String?, val openBrowser: Boolean = false) {
         val key: String get() = "$projectPath|${launchProfile.orEmpty()}"
     }
 
@@ -37,9 +37,9 @@ class DotNetRunConfigurationGenerator(private val project: Project) {
             .distinctBy { it.second }
             .filter { (_, file) -> solutions.msBuildProject(file).let { it.isRunnable && !it.isTestProject } }
             .flatMap { (name, file) ->
-                val profiles = LaunchSettings.projectProfiles(file)
+                val profiles = LaunchSettings.profiles(file)
                 if (profiles.isEmpty()) listOf(Target(name, file.path, null))
-                else profiles.map { Target("$name: $it", file.path, it) }
+                else profiles.map { Target("$name: ${it.name}", file.path, it.name, openBrowser = it.launchBrowser) } // as the profile asks
             }
     }
 
@@ -57,6 +57,7 @@ class DotNetRunConfigurationGenerator(private val project: Project) {
             (settings.configuration as DotNetRunConfiguration).options.apply {
                 projectPath = target.projectPath
                 launchProfile = target.launchProfile
+                openBrowser = target.openBrowser
             }
             settings.storeInLocalWorkspace()
             runManager.addConfiguration(settings)

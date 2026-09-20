@@ -167,7 +167,11 @@ class PluginTest : BasePlatformTestCase() {
         myFixture.addFileToProject("src/App/Models/keep.txt", "")
         myFixture.tempDirFixture.findOrCreateDir("src/App/Empty") // a folder that has just been created
         assertEquals(listOf("Dependencies", "Empty", "Models", "Program.cs"), app.children.map { it.describe() }.sorted())
-        val groups = app.children.first().children.toList()
+        // Dependencies -> Imports + one node per target framework; the project is not restored, so the data is from the csproj
+        val dependencies = app.children.first().children.toList()
+        assertEquals(listOf("Imports", ".NET 8.0 (not restored)"), dependencies.map { it.describe() })
+        assertTrue(dependencies[0].children.map { it.describe() }.contains("Directory.Packages.props"))
+        val groups = dependencies[1].children.toList()
         assertEquals(listOf("Packages", "Projects"), groups.map { it.describe() })
         assertEquals(listOf("Serilog (4.1.0)"), groups[0].children.map { it.describe() })
         assertEquals(listOf("Core"), groups[1].children.map { it.describe() })
@@ -223,7 +227,7 @@ class PluginTest : BasePlatformTestCase() {
         myFixture.addFileToProject("Web/Web.csproj", """<Project Sdk="Microsoft.NET.Sdk.Web"/>""")
         myFixture.addFileToProject(
             "Web/Properties/launchSettings.json",
-            """{ "profiles": { "http": { "commandName": "Project" }, "https": { "commandName": "Project" }, "IIS": { "commandName": "IISExpress" } } }""",
+            """{ "profiles": { "http": { "commandName": "Project", "launchBrowser": true }, "https": { "commandName": "Project" }, "IIS": { "commandName": "IISExpress" } } }""",
         )
         myFixture.addFileToProject("Tool/Tool.csproj", """<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup></Project>""")
         myFixture.addFileToProject("Lib/Lib.csproj", """<Project Sdk="Microsoft.NET.Sdk"/>""")
@@ -243,8 +247,8 @@ class PluginTest : BasePlatformTestCase() {
             .map { it.name to it.resolveFile(sln)!! }
             .filter { (_, file) -> solutions.msBuildProject(file).let { it.isRunnable && !it.isTestProject } }
             .flatMap { (name, file) ->
-                LaunchSettings.projectProfiles(file).ifEmpty { listOf(null) }
-                    .map { DotNetRunConfigurationGenerator.Target(if (it == null) name else "$name: $it", file.path, it) }
+                LaunchSettings.profiles(file).ifEmpty { listOf(null) }
+                    .map { DotNetRunConfigurationGenerator.Target(if (it == null) name else "$name: ${it.name}", file.path, it?.name, openBrowser = it?.launchBrowser == true) }
             }
         assertEquals(listOf("Web: http", "Web: https", "Tool"), targets.map { it.name })
 
@@ -253,6 +257,10 @@ class PluginTest : BasePlatformTestCase() {
         generator.register(targets)
         assertEquals(listOf("Tool", "Web: http", "Web: https"), names())
         assertEquals("Web: http", runManager.selectedConfiguration?.name)
+        // the browser is opened for the profiles that ask for it
+        fun opensBrowser(name: String) = (runManager.allSettings.first { it.name == name }.configuration as DotNetRunConfiguration).options.openBrowser
+        assertTrue(opensBrowser("Web: http"))
+        assertFalse(opensBrowser("Web: https"))
 
         // a deleted configuration is not generated again, and nothing is duplicated
         runManager.removeConfiguration(runManager.allSettings.first { it.name == "Tool" })

@@ -62,6 +62,7 @@ class DotNetRunConfigurationOptions : LocatableRunConfigurationOptions() {
     var workingDirectory by string()
     var environment by map<String, String>()
     var passParentEnvironment by property(true)
+    var openBrowser by property(false)
 }
 
 class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, name: String) :
@@ -81,15 +82,24 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState =
         object : CommandLineState(environment) {
             init {
-                addConsoleFilters(MsBuildConsoleFilter(project))
+                addConsoleFilters(MsBuildConsoleFilter(project), DotNetStackTraceFilter(project))
             }
 
             override fun startProcess(): ProcessHandler {
                 val handler = KillableColoredProcessHandler(buildCommandLine())
+                // `dotnet watch` opens the browser itself when the profile asks for it
+                if (options.openBrowser && options.command == DotNetCommand.RUN) handler.addProcessListener(ListeningUrlListener(launchUrl()))
                 ProcessTerminatedListener.attach(handler)
                 return handler
             }
         }
+
+    /** `launchUrl` of the selected profile, or of the first one, which is what `dotnet run` uses by default. */
+    private fun launchUrl(): String? {
+        val profiles = LaunchSettings.profiles(File(options.projectPath.orEmpty()))
+        val selected = options.launchProfile?.takeIf { it.isNotBlank() }
+        return (if (selected == null) profiles.firstOrNull() else profiles.find { it.name == selected })?.launchUrl
+    }
 
     fun buildCommandLine(): GeneralCommandLine {
         val options = options

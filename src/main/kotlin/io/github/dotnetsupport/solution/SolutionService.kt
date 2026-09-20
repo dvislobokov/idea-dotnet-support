@@ -8,6 +8,7 @@ import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import io.github.dotnetsupport.msbuild.MsBuildProject
+import io.github.dotnetsupport.msbuild.ProjectAssets
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 
@@ -18,6 +19,7 @@ class SolutionService(private val project: Project) {
 
     private val solutions = ConcurrentHashMap<VirtualFile, Cached<Solution>>()
     private val msBuildProjects = ConcurrentHashMap<VirtualFile, Cached<MsBuildProject>>()
+    private val assetsFiles = ConcurrentHashMap<VirtualFile, Cached<ProjectAssets>>()
 
     /** Solution files in the root of the opened directory. */
     fun solutionFiles(): List<VirtualFile> {
@@ -32,6 +34,12 @@ class SolutionService(private val project: Project) {
 
     fun msBuildProject(file: VirtualFile): MsBuildProject =
         cached(msBuildProjects, file, MsBuildProject::parse)
+
+    /** What `dotnet restore` resolved for the project; empty until it is restored. */
+    fun assets(projectFile: VirtualFile): ProjectAssets {
+        val file = projectFile.parent?.findFileByRelativePath("obj/project.assets.json") ?: return ProjectAssets.EMPTY
+        return cached(assetsFiles, file, ProjectAssets::parse)
+    }
 
     /** Version from the nearest `Directory.Packages.props` up the directory tree. */
     fun centralPackageVersion(projectFile: VirtualFile, packageName: String): String? {

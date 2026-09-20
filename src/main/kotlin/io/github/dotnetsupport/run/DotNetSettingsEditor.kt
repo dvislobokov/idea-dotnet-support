@@ -7,6 +7,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.ui.RawCommandLineEditor
+import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.panel
 import io.github.dotnetsupport.solution.SolutionService
@@ -22,6 +23,7 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
     private val arguments = RawCommandLineEditor()
     private val workingDirectory = TextFieldWithBrowseButton()
     private val environment = EnvironmentVariablesComponent()
+    private val openBrowser = JBCheckBox("Open browser when the application starts listening")
 
     override fun createEditor(): JComponent {
         projectCombo.model = DefaultComboBoxModel(solutionProjectPaths().toTypedArray())
@@ -43,6 +45,7 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
             }
             row("Working directory:") { cell(workingDirectory).align(AlignX.FILL).comment("Project directory by default") }
             row { cell(environment).align(AlignX.FILL) }
+            row { cell(openBrowser).comment("For <code>dotnet run</code>: the first \"Now listening on\" address plus <code>launchUrl</code> of the profile") }
         }
     }
 
@@ -55,6 +58,7 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
         workingDirectory.text = options.workingDirectory.orEmpty()
         environment.envs = options.environment
         environment.isPassParentEnvs = options.passParentEnvironment
+        openBrowser.isSelected = options.openBrowser
     }
 
     override fun applyEditorTo(configuration: DotNetRunConfiguration) {
@@ -66,6 +70,7 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
         options.workingDirectory = workingDirectory.text.ifBlank { null }
         options.environment = environment.envs.toMutableMap()
         options.passParentEnvironment = environment.isPassParentEnvs
+        options.openBrowser = openBrowser.isSelected
     }
 
     private fun selectedProjectPath(): String = (projectCombo.editor.item as? String).orEmpty().trim()

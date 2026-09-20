@@ -105,8 +105,7 @@ object DotNetCli {
 
     fun notifyInfo(project: Project, title: String, content: String = "") {
         NotificationGroupManager.getInstance().getNotificationGroup(NOTIFICATION_GROUP)
-            .createNotification(title, content.replace("
-", "<br>"), NotificationType.INFORMATION)
+            .createNotification(title, content.replace("\n", "<br>"), NotificationType.INFORMATION)
             .notify(project)
     }
 

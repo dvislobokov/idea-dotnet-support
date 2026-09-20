@@ -127,7 +127,7 @@ object ItemTemplates {
         cli("packagesProps", "Directory.Packages.props", "packagesprops", "Directory.Packages.props"),
         cli("editorConfig", ".editorconfig", "editorconfig", ".editorconfig"),
         cli("gitignore", ".gitignore", "gitignore", ".gitignore"),
-        cli("toolManifest", "dotnet-tools.json", "tool-manifest", ".config/dotnet-tools.json"),
+        cli("toolManifest", "dotnet-tools.json", "tool-manifest", "dotnet-tools.json"),
         ItemTemplate("dockerfile", "Dockerfile", ItemCategory.CONFIG, listOf(ItemFile("Dockerfile", "Dockerfile")), fixedName = "Dockerfile"),
         ItemTemplate(
             "githubWorkflow", "GitHub Actions Workflow", ItemCategory.CONFIG,

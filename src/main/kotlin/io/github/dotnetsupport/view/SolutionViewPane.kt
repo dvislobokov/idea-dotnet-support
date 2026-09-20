@@ -93,6 +93,7 @@ class SolutionFilesListener(private val project: Project) : BulkFileListener {
 
     private fun affectsSolutionStructure(path: String): Boolean {
         val extension = path.substringAfterLast('.', "").lowercase()
-        return extension in SOLUTION_EXTENSIONS || extension in MSBUILD_EXTENSIONS
+        // project.assets.json: a restore has changed what the Dependencies nodes show
+        return extension in SOLUTION_EXTENSIONS || extension in MSBUILD_EXTENSIONS || path.endsWith("/obj/project.assets.json")
     }
 }

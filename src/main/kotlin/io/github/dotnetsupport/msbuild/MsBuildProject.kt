@@ -21,6 +21,8 @@ data class MsBuildProject(
     val outputType: String? = null,
     val rootNamespace: String? = null,
     val implicitUsings: Boolean = false,
+    /** Explicit `<Import Project="...">` paths that do not depend on properties. */
+    val imports: List<String> = emptyList(),
 ) {
     val isTestProject: Boolean
         get() = packages.any { it.name.equals("Microsoft.NET.Test.Sdk", ignoreCase = true) || it.name.equals("xunit.v3", ignoreCase = true) }
@@ -48,6 +50,7 @@ data class MsBuildProject(
             var outputType: String? = null
             var rootNamespace: String? = null
             var implicitUsings = false
+            val imports = LinkedHashSet<String>()
 
             // Element names are compared without namespace: old-style projects declare the msbuild/2003 one.
             for (element in root.descendants()) {
@@ -56,6 +59,7 @@ data class MsBuildProject(
                     "TargetFrameworkVersion" -> frameworks += splitList(element.textTrim).map { "net" + it.removePrefix("v").replace(".", "") }
                     "OutputType" -> outputType = outputType ?: element.textTrim.takeIf { it.isNotEmpty() }
                     "RootNamespace" -> rootNamespace = rootNamespace ?: element.textTrim.takeIf { it.isNotEmpty() && '$' !in it }
+                    "Import" -> element.getAttributeValue("Project")?.takeIf { it.isNotBlank() && '$' !in it }?.let { imports += it.replace('\\', '/') }
                     "ImplicitUsings" -> implicitUsings = element.textTrim.lowercase() in setOf("enable", "true")
                     "PackageReference" -> for (name in includes(element)) {
                         packages[name.lowercase()] = PackageReference(name, itemMetadata(element, "Version"))
@@ -74,6 +78,7 @@ data class MsBuildProject(
                 outputType = outputType,
                 rootNamespace = rootNamespace,
                 implicitUsings = implicitUsings,
+                imports = imports.toList(),
             )
         }
 
