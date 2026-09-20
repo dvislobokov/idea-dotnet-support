@@ -57,6 +57,28 @@ object DotNetSdks {
     }
 }
 
+/** What the SDK that will run a command in a directory can do. */
+object SdkFeatures {
+    private val RUN_ENVIRONMENT_OPTION = SdkVersion.parse("9.0.200")!!
+    private var cached: Pair<Long, List<SdkVersion>>? = null
+
+    /** The installed SDKs, asked from the CLI at most once in a minute. Blocking on a miss. */
+    @Synchronized fun installedVersions(): List<SdkVersion> {
+        val now = System.currentTimeMillis()
+        cached?.takeIf { now - it.first < 60_000 && it.second.isNotEmpty() }?.let { return it.second }
+        return DotNetSdks.installed().map { it.version }.also { cached = now to it }
+    }
+
+    /** `dotnet run -e NAME=VALUE` appeared in SDK 9.0.200; an older CLI fails on the unknown option. */
+    fun supportsRunEnvironmentOption(sdk: SdkVersion?): Boolean = sdk != null && sdk >= RUN_ENVIRONMENT_OPTION
+
+    /** The SDK `dotnet` picks in [directory]: `global.json` decides, otherwise the newest one. */
+    fun sdkFor(directory: VirtualFile?, installed: List<SdkVersion> = installedVersions()): SdkVersion? {
+        val globalJson = GlobalJson.find(directory)?.second
+        return if (globalJson != null) globalJson.resolve(installed) else installed.maxOrNull()
+    }
+}
+
 /** The `sdk` section of `global.json`: the SDK a repository asks for and how far from it the CLI may roll forward. */
 class GlobalJson(val version: SdkVersion?, val rollForward: String, val allowPrerelease: Boolean) {
 

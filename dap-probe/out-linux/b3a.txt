@@ -1,0 +1,62 @@
+
+===== bp-features =====
+   ~ initialized null
+-> setBreakpoints {"source": {"path": "<dap>/t/App/Rest.cs"}, "breakpoints": [{"line": 160, "hitCondition": "3"}]} | 8ms ok=True {"breakpoints": [{"id": 1, "verified": false, "message": "No loaded module with symbols contains code for this location.", "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 160}]}
+   ~ process {"name": "App.dll", "systemProcessId": 1758, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 160, "column": 13, "endLine": 160, "endColumn": 47}}
+   ~ stopped {"reason": "breakpoint", "threadId": 1758, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   stack: DebugTarget.Output.Sleeper():160  total=3
+   eval[watch] i                                              -> 2 : int  (62ms)
+   set {'hitCondition': '>= 5'} -> ok=True verified=True message=null
+   ~ stopped {"reason": "breakpoint", "threadId": 1758, "allThreadsStopped": true, "hitBreakpointIds": [2]}
+   eval[watch] i                                              -> 7 : int  (1ms)
+   set {'hitCondition': '% 4'} -> ok=True verified=True message=null
+   ~ stopped {"reason": "breakpoint", "threadId": 1758, "allThreadsStopped": true, "hitBreakpointIds": [3]}
+   eval[watch] i                                              -> 11 : int  (1ms)
+   set {'hitCondition': 'abc'} -> ok=True verified=True message=null
+   ~ stopped {"reason": "breakpoint", "threadId": 1758, "allThreadsStopped": true, "hitBreakpointIds": [4]}
+   eval[watch] i                                              -> 12 : int  (1ms)
+   set {'condition': 'i == 12'} -> ok=True verified=True message=null
+   ! NO stopped event within 4s (expected {'condition': 'i == 12'})
+   ~ stopped {"reason": "pause", "threadId": 1758, "allThreadsStopped": true}
+   set {'condition': 'i =='} -> ok=True verified=True message=null
+   ~ stopped {"reason": "breakpoint", "threadId": 1758, "allThreadsStopped": true, "hitBreakpointIds": [6]}
+   eval[watch] i                                              -> 33 : int  (0ms)
+   non-stdout output: ["Breakpoint condition 'i ==' failed: Invalid expression: Expected expression\n"]
+   set {'condition': 'i + 1'} -> ok=True verified=True message=null
+   ! NO stopped event within 4s (expected {'condition': 'i + 1'})
+   ~ stopped {"reason": "pause", "threadId": 1758, "allThreadsStopped": true}
+   set {'condition': 'missing > 1'} -> ok=True verified=True message=null
+   ~ stopped {"reason": "breakpoint", "threadId": 1758, "allThreadsStopped": true, "hitBreakpointIds": [8]}
+   eval[watch] i                                              -> 54 : int  (0ms)
+   non-stdout output: ["Breakpoint condition 'missing > 1' failed: The name 'missing' does not exist in the current context.\n"]
+   set {'condition': 'i / (i - i) > 0'} -> ok=True verified=True message=null
+   ~ stopped {"reason": "breakpoint", "threadId": 1758, "allThreadsStopped": true, "hitBreakpointIds": [9]}
+   eval[watch] i                                              -> 55 : int  (0ms)
+   non-stdout output: ["Breakpoint condition 'i / (i - i) > 0' failed: DivideByZeroException: Attempted to divide by zero.\n"]
+   set {'logMessage': 'i is {i} and twice is {i * 2} {{braces}} {missing}'} -> ok=True verified=True message=null
+   ! NO stopped event within 4s (expected {'logMessage': 'i is {i} and twice is {i * 2} {{braces}} {missing}'})
+   non-stdout output: ["i is 56 and twice is 112 {braces} <error: The name 'missing' does not exist in the current context.>\n", "i is 57 and twice is 114 {braces} <error: The name 'missing' does not exist in the current context.>\n", "i is 58 and twice is 116 {braces} <error: The name 'missing' does not exist in the cur...(2120)
+   ~ stopped {"reason": "pause", "threadId": 1758, "allThreadsStopped": true}
+   set {'condition': 'i % 2 == 0', 'logMessage': 'even {i}'} -> ok=True verified=True message=null
+   ! NO stopped event within 4s (expected {'condition': 'i % 2 == 0', 'logMessage': 'even {i}'})
+   non-stdout output: ["even 76\n", "even 78\n", "even 80\n", "even 82\n", "even 84\n", "even 86\n", "even 88\n", "even 90\n", "even 92\n", "even 94\n"]
+   ~ stopped {"reason": "pause", "threadId": 1758, "allThreadsStopped": true}
+-> setBreakpoints {"source": {"path": "<dap>/t/App/Rest.cs"}, "breakpoints": [{"line": 160}]} | 2ms ok=True {"breakpoints": [{"id": 12, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 160, "column": 13, "endLine": 160, "endColumn": 47}]}
+   ~ stopped {"reason": "breakpoint", "threadId": 1758, "allThreadsStopped": true, "hitBreakpointIds": [12]}
+   breakpoint added while running hit: True
+-> setFunctionBreakpoints {"breakpoints": [{"name": "DebugTarget.Output.Sleeper"}]} | 4ms ok=True {"breakpoints": [{"id": 13, "verified": true}]}
+-> setFunctionBreakpoints {"breakpoints": [{"name": "Console.WriteLine"}]} | 0ms ok=True {"breakpoints": [{"id": 14, "verified": false, "message": "No loaded module with symbols contains a function named 'Console.WriteLine'."}]}
+-> setFunctionBreakpoints {"breakpoints": [{"name": "System.Console.WriteLine"}]} | 0ms ok=True {"breakpoints": [{"id": 15, "verified": false, "message": "No loaded module with symbols contains a function named 'System.Console.WriteLine'."}]}
+-> setFunctionBreakpoints {"breakpoints": [{"name": "NoSuch.Method"}]} | 0ms ok=True {"breakpoints": [{"id": 16, "verified": false, "message": "No loaded module with symbols contains a function named 'NoSuch.Method'."}]}
+-> setFunctionBreakpoints {"breakpoints": [{"name": "DebugTarget.Output.Sleeper(int)"}]} | 0ms ok=True {"breakpoints": [{"id": 17, "verified": false, "message": "No loaded module with symbols contains a function named 'DebugTarget.Output.Sleeper(int'."}]}
+-> setFunctionBreakpoints {"breakpoints": [{"name": "System.Threading.Thread.Sleep"}]} | 0ms ok=True {"breakpoints": [{"id": 18, "verified": false, "message": "No loaded module with symbols contains a function named 'System.Threading.Thread.Sleep'."}]}
+   ! NO stopped event within 5s (expected function breakpoint on Thread.Sleep)
+-> setBreakpoints {"source": {"path": "<dap>/t/App/Rest.cs"}, "breakpoints": [{"line": 1}, {"line": 99999}, {"line": 0}, {"line": -5}]} | 2ms ok=True {"breakpoints": [{"id": 19, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 6, "column": 5, "endLine": 6, "endColumn": 6}, {"id": 20, "verified": false, "message": "No loaded module with symbols contains code for this location.", "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 99999}, {"id": 21, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 6, "column": 5, "endLine": 6, "endColumn": 6}, {"id": 22, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 6, "column": 5, "endLine": 6, "endColumn": 6}]}
+-> setBreakpoints {"source": {"path": "<dap>/t/App/NoSuchFile.cs"}, "breakpoints": [{"line": 3}]} | 1ms ok=True {"breakpoints": [{"id": 23, "verified": false, "message": "No loaded module with symbols contains code for this location.", "source": {"name": "NoSuchFile.cs", "path": "<dap>/t/App/NoSuchFile.cs"}, "line": 3}]}
+-> setBreakpoints {"source": {"path": "<dap>/t/App/Rest.cs"}, "breakpoints": [{"line": 160}]} | 1ms ok=True {"breakpoints": [{"id": 24, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 160, "column": 13, "endLine": 160, "endColumn": 47}]}
+-> setBreakpoints {"source": {"path": "<dap>/t/App/Rest.cs"}, "breakpoints": [{"line": 160}]} | 1ms ok=True {"breakpoints": [{"id": 25, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 160, "column": 13, "endLine": 160, "endColumn": 47}]}
+-> setBreakpoints {"source": {"path": "/PROBE/T/APP/REST.CS"}, "breakpoints": [{"line": 160}]} | 1ms ok=True {"breakpoints": [{"id": 26, "verified": false, "message": "No loaded module with symbols contains code for this location.", "source": {"name": "REST.CS", "path": "/PROBE/T/APP/REST.CS"}, "line": 160}]}
+-> setBreakpoints {"source": {"name": "Rest.cs"}, "breakpoints": [{"line": 160}]} | 1ms ok=False Only breakpoints in files with a path are supported.
+-> setBreakpoints {"source": {"path": "<dap>/t/App/Rest.cs"}, "lines": [160]} | 1ms ok=True {"breakpoints": []}
+   adapter exit code: 0

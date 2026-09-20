@@ -1,0 +1,109 @@
+
+===== closures =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 547, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 106, "column": 13, "endLine": 106, "endColumn": 37}}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 2, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 113, "column": 13, "endLine": 113, "endColumn": 36}}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 3, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 90, "column": 9, "endLine": 90, "endColumn": 31}}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 4, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 120, "column": 9, "endLine": 120, "endColumn": 43}}
+   ~ stopped {"reason": "breakpoint", "threadId": 547, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   stack: DebugTarget.Closures.Run.AnonymousMethod__0():106 <- DebugTarget.Closures.Run():109 <- Program.<Main>$():14 <- [External Code]:0  total=4
+   Locals.n = 5  : int  ref=0
+   Locals.scaled = 0  : int  ref=0
+   Locals.factor = 3  : int  ref=0
+   Locals.prefix = "n="  : string  ref=0
+   eval[watch] factor                                         -> 3 : int  (38ms)
+   eval[watch] prefix                                         -> "n=" : string  (1ms)
+   eval[watch] n * factor                                     -> 15 : int  (62ms)
+   eval[watch] this                                           -> ERROR Keyword 'this' is not available in the current context.  (2ms)
+   eval[watch] Value                                          -> ERROR The name 'Value' does not exist in the current context.  (9ms)
+   eval[watch] StaticReadonly                                 -> 0 : int  (2ms)
+   eval[watch] Closures.StaticReadonly                        -> 0 : int  (2ms)
+   ~ stopped {"reason": "breakpoint", "threadId": 547, "allThreadsStopped": true, "hitBreakpointIds": [2]}
+   stack: DebugTarget.Closures.Run.Local():113 <- DebugTarget.Closures.Run():116 <- Program.<Main>$():14 <- [External Code]:0  total=4
+   Locals.x = 4  : int  ref=0
+   Locals.inner = 0  : int  ref=0
+   Locals.factor = 3  : int  ref=0
+   Locals.prefix = "n="  : string  ref=0
+   eval[watch] factor                                         -> 3 : int  (1ms)
+   eval[watch] prefix                                         -> "n=" : string  (1ms)
+   eval[watch] n * factor                                     -> ERROR The name 'n' does not exist in the current context.  (1ms)
+   eval[watch] this                                           -> ERROR Keyword 'this' is not available in the current context.  (1ms)
+   eval[watch] Value                                          -> ERROR The name 'Value' does not exist in the current context.  (1ms)
+   eval[watch] StaticReadonly                                 -> 0 : int  (1ms)
+   eval[watch] Closures.StaticReadonly                        -> 0 : int  (1ms)
+   ~ stopped {"reason": "breakpoint", "threadId": 547, "allThreadsStopped": true, "hitBreakpointIds": [3]}
+   stack: DebugTarget.Box<int>.Map<int>():90 <- DebugTarget.Closures.Run():119 <- Program.<Main>$():14 <- [External Code]:0  total=4
+   Locals.this = {DebugTarget.Box<int>}  : DebugTarget.Box<int>  ref=16
+   Locals.f = {System.Func<int, int>}  : System.Func<int, int>  ref=17
+   Locals.mapped = 0  : int  ref=0
+   eval[watch] factor                                         -> ERROR The name 'factor' does not exist in the current context.  (3ms)
+   eval[watch] prefix                                         -> ERROR The name 'prefix' does not exist in the current context.  (1ms)
+   eval[watch] n * factor                                     -> ERROR The name 'n' does not exist in the current context.  (1ms)
+   eval[watch] this                                           -> {DebugTarget.Box<int>} : DebugTarget.Box<int> ref=18  (1ms)
+   eval[watch] Value                                          -> 21 : int  (1ms)
+   eval[watch] StaticReadonly                                 -> ERROR The name 'StaticReadonly' does not exist in the current context.  (1ms)
+   eval[watch] Closures.StaticReadonly                        -> 0 : int  (1ms)
+   ~ stopped {"reason": "breakpoint", "threadId": 547, "allThreadsStopped": true, "hitBreakpointIds": [4]}
+   stack: DebugTarget.Closures.Run():120 <- Program.<Main>$():14 <- [External Code]:0  total=3
+   Locals.format = {System.Func<int, string>}  : System.Func<int, string>  ref=23
+   Locals.box = {DebugTarget.Box<int>}  : DebugTarget.Box<int>  ref=24
+   Locals.factor = 3  : int  ref=0
+   Locals.prefix = "n="  : string  ref=0
+   eval[watch] factor                                         -> 3 : int  (1ms)
+   eval[watch] prefix                                         -> "n=" : string  (1ms)
+   eval[watch] n * factor                                     -> ERROR The name 'n' does not exist in the current context.  (1ms)
+   eval[watch] this                                           -> ERROR Keyword 'this' is not available in the current context.  (0ms)
+   eval[watch] Value                                          -> ERROR The name 'Value' does not exist in the current context.  (1ms)
+   eval[watch] StaticReadonly                                 -> 0 : int  (1ms)
+   eval[watch] Closures.StaticReadonly                        -> 0 : int  (1ms)
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 10s (expected None)
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
+
+===== output =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 582, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 136, "column": 9, "endLine": 136, "endColumn": 42}}
+   ~ stopped {"reason": "breakpoint", "threadId": 582, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   category stdout  : 2 events, 1751 chars; head='scenario output\nstdout line\nКириллица и emoji 🙂 €\nno newline\nbulk 0\nbu' tail='lk 192\nbulk 193\nbulk 194\nbulk 195\nbulk 196\nbulk 197\nbulk 198\nbulk 199\n'
+   category stderr  : 1 events, 12 chars; head='stderr line\n' tail='stderr line\n'
+   category console : 2 events, 35 chars; head='debug trace line\ndebugger log line\n' tail='debug trace line\ndebugger log line\n'
+   bulk lines present: 200 of 200; cyrillic ok: True; 'no newline' ok: True
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
+
+===== stdin =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 616, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 143, "column": 9, "endLine": 143, "endColumn": 58}}
+   ~ stopped {"reason": "breakpoint", "threadId": 616, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   stdin: stop={"reason": "breakpoint", "threadId": 616, "allThreadsStopped": true, "hitBreakpointIds": [1]} output='scenario stdin\ntype something:\n'
+   stack: DebugTarget.Output.Stdin():143 <- Program.<Main>$():16  total=3
+   eval[watch] line                                           -> null : string  (46ms)
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
+
+===== launch-env =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 650, "isLocalProcess": true, "startMethod": "launch"}
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   end: exited={'exitCode': 0} terminated=True
+   output: 'scenario env\nargs=env|a b|quo"te|ünï\ncwd=/probe/t/App\nMY_VAR=from-dap\nPATH set=False\ndebugger attached=True\ndone\n'
+   adapter exit code: 0
+
+===== launch-exitcode =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 684, "isLocalProcess": true, "startMethod": "launch"}
+   ~ exited {"exitCode": 3}
+   ~ terminated null
+   end: exited={'exitCode': 3} terminated=True
+   output: 'scenario exitcode\n'
+   adapter exit code: 0

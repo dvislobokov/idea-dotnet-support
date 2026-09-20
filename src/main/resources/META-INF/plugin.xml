@@ -69,6 +69,7 @@
 
         <configurationType implementation="io.github.dotnetsupport.run.DotNetConfigurationType"/>
         <consoleFilterProvider implementation="io.github.dotnetsupport.run.DotNetConsoleFilterProvider"/>
+        <console.folding implementation="io.github.dotnetsupport.run.DotNetStackTraceFolding"/>
         <postStartupActivity implementation="io.github.dotnetsupport.run.DotNetRunConfigurationStartupActivity"/>
         <runConfigurationProducer implementation="io.github.dotnetsupport.run.DotNetRunConfigurationProducer"/>
         <runLineMarkerContributor language="C#"

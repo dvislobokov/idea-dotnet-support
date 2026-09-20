@@ -21,6 +21,7 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
     private val projectCombo = ComboBox<String>().apply { isEditable = true }
     private val commandCombo = ComboBox(DotNetCommand.entries.toTypedArray())
     private val profileCombo = ComboBox<String>().apply { isEditable = true }
+    private val environmentCombo = ComboBox<String>().apply { isEditable = true }
     private val arguments = RawCommandLineEditor()
     private val workingDirectory = TextFieldWithBrowseButton()
     private val environment = EnvironmentVariablesComponent()
@@ -30,7 +31,10 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
 
     override fun createEditor(): JComponent {
         projectCombo.model = DefaultComboBoxModel(solutionProjectPaths().toTypedArray())
-        projectCombo.addActionListener { reloadProfiles(selectedProfile()) }
+        projectCombo.addActionListener {
+            reloadProfiles(selectedProfile())
+            reloadEnvironments(selectedEnvironment())
+        }
         workingDirectory.addBrowseFolderListener(
             project,
             FileChooserDescriptorFactory.createSingleFolderDescriptor().withTitle("Working Directory"),
@@ -42,6 +46,9 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
             row("Command:") { cell(commandCombo) }
             row("Launch profile:") {
                 cell(profileCombo).align(AlignX.FILL).comment("From Properties/launchSettings.json; empty for the default one")
+            }
+            row("Environment:") {
+                cell(environmentCombo).comment("ASPNETCORE_ENVIRONMENT and DOTNET_ENVIRONMENT; wins over the launch profile (<code>dotnet run -e</code>, SDK 9.0.200+). Empty: whatever the profile says")
             }
             row("Arguments:") {
                 cell(arguments).align(AlignX.FILL).comment("Program arguments for run and watch, <code>dotnet test</code> options for test")
@@ -61,6 +68,7 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
         projectCombo.editor.item = options.projectPath.orEmpty()
         commandCombo.selectedItem = options.command
         reloadProfiles(options.launchProfile.orEmpty())
+        reloadEnvironments(options.environmentName.orEmpty())
         arguments.text = options.programArguments.orEmpty()
         workingDirectory.text = options.workingDirectory.orEmpty()
         environment.envs = options.environment
@@ -75,6 +83,7 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
         options.projectPath = selectedProjectPath().ifBlank { null }
         options.command = commandCombo.selectedItem as DotNetCommand
         options.launchProfile = selectedProfile().ifBlank { null }
+        options.environmentName = selectedEnvironment().ifBlank { null }
         options.programArguments = arguments.text.ifBlank { null }
         options.workingDirectory = workingDirectory.text.ifBlank { null }
         options.environment = environment.envs.toMutableMap()
@@ -86,6 +95,15 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
 
     private fun selectedProjectPath(): String = (projectCombo.editor.item as? String).orEmpty().trim()
     private fun selectedProfile(): String = (profileCombo.editor.item as? String).orEmpty().trim()
+
+    private fun selectedEnvironment(): String = (environmentCombo.editor.item as? String).orEmpty().trim()
+
+    /** The three standard names plus the ones the project has an `appsettings.<Name>.json` for. */
+    private fun reloadEnvironments(selected: String) {
+        val names = DotNetRunConfiguration.environmentNames(File(selectedProjectPath()))
+        environmentCombo.model = DefaultComboBoxModel((listOf("") + names).toTypedArray())
+        environmentCombo.editor.item = selected
+    }
 
     private fun reloadProfiles(selected: String) {
         val profiles = LaunchSettings.projectProfiles(File(selectedProjectPath()))

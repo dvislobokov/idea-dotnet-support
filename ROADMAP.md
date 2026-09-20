@@ -76,13 +76,13 @@
 
 ### Запуск и наблюдение за приложением
 - [x] ★ Кликабельные стектрейсы в консоли Run (`at Type.Method() in File.cs:line 42`, в т.ч. локализованные)
-- [ ] Сворачивание стектрейсов (кадры `System.*` / `Microsoft.*`)
+- [x] Сворачивание стектрейсов в консолях: кадры `System.*` / `Microsoft.*` и разделители «End of stack trace…» → «<N framework frames>» (в т.ч. локализованные и в Thread Dump)
 - [x] ★ Автооткрытие браузера по «Now listening on: http://…» с `launchUrl` профиля; включается галочкой, для сгенерированных конфигураций — по `launchBrowser`
-- [ ] ★ Раскраска уровней логов `Microsoft.Extensions.Logging` (`info` / `warn` / `fail`) в консоли
+- [x] ★ Раскраска уровней логов в консоли: `Microsoft.Extensions.Logging` (`info:` / `warn:` / `fail:` / `crit:` / `dbug:` / `trce:`), Serilog (`[… INF]`), NLog / log4net (`|WARN|`, `[ERROR]`); цвета — Console Colors → Log console
 - [x] Окно Endpoints: маршруты minimal API (`MapGet`…, `MapGroup` через переменные и цепочки, `MapMethods`, `MapHealthChecks`) и контроллеров (`[Route]` на классе, `[HttpGet("{id}")]`, `[controller]` / `[action]`, абсолютные шаблоны) по токенам; переход к коду, запрос в `<Project>.http` с переменной хоста из `launchSettings.json`, открыть в браузере, копировать URL; значок на полях у каждого маршрута
 - [ ] Endpoints: маршруты из констант и `nameof`, группы, объявленные в другом файле (extension-методы `MapXxxEndpoints`), Razor Pages и `MapHub`, поиск маршрута через Search Everywhere
 - [ ] Hot Reload для `dotnet watch`: кнопка Restart, индикатор «изменения применены / нужен перезапуск»
-- [ ] Переключатель окружения (`ASPNETCORE_ENVIRONMENT` / `DOTNET_ENVIRONMENT`) по имеющимся `appsettings.*.json`
+- [x] Окружение в run configuration: список из `appsettings.<Name>.json` + Development / Staging / Production; задаёт `ASPNETCORE_ENVIRONMENT` и `DOTNET_ENVIRONMENT`, перебивает launch-профиль через `dotnet run -e` (SDK 9.0.200+, с учётом `global.json`; на старых SDK — только переменные)
 - [ ] Compound-конфигурация: запуск нескольких проектов solution разом
 
 ### Диагностика без отладчика
@@ -181,6 +181,61 @@
 2. Dev-certs и `user-jwts`; Update All и консолидация версий в окне NuGet.
 3. Services / Run Dashboard, тест-эксплорер с continuous testing, конфликты версий.
 4. Остальное — по запросу: декомпиляция и BenchmarkDotNet эффектны, но нужны реже.
+
+## Собственный LSP-клиент (план, не начато)
+Подробности — оценка, решения по устройству, риски, способ проверки — в `LSP_PLAN.md`.
+
+Семантика языка через language server без LSP4IJ и без платформенного LSP API (в бесплатных IDE он только с 2026.2):
+свой JSON-RPC поверх stdio + интеграция с обычными точками расширения платформы. Первый сервер — `roslyn-language-server`
+(MIT, у пользователя стоит 5.12), клиент при этом не привязан к нему: сервер описывается определением (команда, типы файлов,
+особенности протокола). Эвристики плагина (раскраска, тесты, endpoints) остаются запасным вариантом, когда сервера нет.
+Оценки — в днях работы разработчика; узкое место — проверка редакторного UX в живой IDE, headless-тесты его не покрывают.
+
+### Фаза 0 — разведка (0,5–1 д), решение «идём / не идём»
+- [ ] Запустить сервер скриптом, снять реальный трафик: `initialize`, открытие solution (`solution/open` / `--autoLoadProjects`), `workspace/projectInitializationComplete`, pull-диагностика, completion + resolve, динамическая регистрация
+- [ ] Замерить время загрузки solution, память процесса, требования к runtime; записать нестандартные методы Roslyn (`_vs_onAutoInsert`, `_roslyn_restore`, вложенные code actions)
+
+### Фаза 1 — транспорт и жизненный цикл (2–3 д)
+- [ ] JSON-RPC 2.0: фрейминг `Content-Length`, запросы / ответы / уведомления, `$/cancelRequest`, `$/progress`, таймауты; свои DTO на Gson только под используемые методы (без lsp4j)
+- [ ] Процесс сервера на проект: старт по требованию, перезапуск с backoff, stderr, `window/logMessage` / `showMessage`, `workspace/configuration`, `client/registerCapability`
+- [ ] URI ↔ путь (Windows: `file:///c%3A/`, регистр диска), позиции UTF-16 ↔ offset
+- [ ] Настройки на странице .NET: путь к серверу (как у остальных tools), аргументы, уровень логов, выключатель; виджет статуса (loading / ready / crashed), действие Restart, окно с логом и трассой JSON
+- [ ] Тесты: сценарный фейковый сервер на in-memory pipe; тот же транспорт потом годится для DAP (netcoredbg): фрейминг одинаковый
+
+### Фаза 2 — синхронизация документов и диагностика (2–3 д) — первая видимая польза
+- [ ] `didOpen` / инкрементальный `didChange` / `didSave` / `didClose`, версии документов; `workspace/didChangeWatchedFiles` из VFS (файлы, созданные нашими же действиями New)
+- [ ] Pull-диагностика (`textDocument/diagnostic`) → `ExternalAnnotator`: severity, `unnecessary` серым, `deprecated` зачёркнутым, код правила со ссылкой; отбрасывание ответов для устаревшей версии
+- [ ] Состояние «solution загружается»: без ложных ошибок до `projectInitializationComplete`
+
+### Фаза 3 — навигация и документация (2–3 д)
+- [ ] Definition / type definition / implementation через `GotoDeclarationHandler`, включая metadata-as-source (декомпилированные исходники фреймворка — «dotPeek бесплатно»)
+- [ ] Hover → документация (markdown → HTML), подсветка вхождений (`documentHighlight`)
+- [ ] Find Usages через `customUsageSearcher`, Go to Symbol / Class через `workspace/symbol`
+
+### Фаза 4 — completion и signature help (3–4 д) — самое чувствительное к UX
+- [ ] `CompletionContributor`: отмена при наборе, `isIncomplete`, `filterText` / `sortText` / `preselect`, commit characters, `itemDefaults`
+- [ ] `completionItem/resolve`: `textEdit` + `additionalTextEdits` (авто-`using`), сниппеты LSP → live template
+- [ ] Signature help на `(` и `,`
+
+### Фаза 5 — правки кода (3–4 д)
+- [ ] Применение `WorkspaceEdit`: `documentChanges`, создание / переименование / удаление файлов, проверка версий, одна undo-команда; `workspace/applyEdit`
+- [ ] Rename (`prepareRename` + `rename`), форматирование файла / диапазона (`AsyncDocumentFormattingService`), on-type, `///` через `_vs_onAutoInsert`
+- [ ] Code actions: quick fix у диагностики и intentions под кареткой (предзагрузка, потому что intentions синхронные), вложенные действия и Fix All Roslyn
+
+### Фаза 6 — семантическая полировка (2–3 д)
+- [ ] Semantic tokens → наша палитра Rider вместо эвристического классификатора (он остаётся фолбэком)
+- [ ] Inlay hints, Structure view и breadcrumbs из `documentSymbol`, folding, code lens со ссылками; call / type hierarchy — по желанию
+
+### Фаза 7 — надёжность (2–3 д, частично по ходу)
+- [ ] Большие solution, несколько solution в проекте, штормы перезапусков, батчинг `didChange`, dumb mode
+- [ ] Предупреждение, если тот же сервер уже подключён через LSP4IJ (двойной запуск)
+- [ ] Второй сервер как проверка общности: `csharp-ls`; определения серверов в настройках
+
+### Итог
+- MVP (фазы 0–3): 7–10 д — ошибки компилятора в редакторе, переходы, документация, поиск использований
+- «Ощущается как IDE» (+ фаза 4): 10–14 д
+- Полный объём (фазы 0–7): 17–25 д. «Весь LSP 3.17» не цель: реализуется то, что отдаёт Roslyn (~35 методов), без notebook / moniker / linked editing
+- Риски: синхронные API платформы против асинхронного сервера (intentions, structure view, parameter info — решается кэшем последнего ответа); недокументированные расширения Roslyn в prerelease-версиях (фиксировать версию, хранить снятый трафик как фикстуры); память и время старта сервера; сопровождение (LSP4IJ делали годами, но у нас один язык и один-два сервера)
 
 ## Вне рамок (нужна семантика языка)
 Полный парсер выражений, разрешение ссылок, типизация, инспекции, completion по типам, рефакторинги, собственный форматтер,

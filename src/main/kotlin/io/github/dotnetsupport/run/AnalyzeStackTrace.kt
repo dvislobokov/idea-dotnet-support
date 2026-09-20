@@ -26,7 +26,7 @@ import javax.swing.JPanel
  * windows, the stack trace analyzer), not only in the ones the plugin starts itself.
  */
 class DotNetConsoleFilterProvider : ConsoleFilterProvider {
-    override fun getDefaultFilters(project: Project): Array<Filter> = arrayOf(DotNetStackTraceFilter(project), MsBuildConsoleFilter(project), ThreadDumpFilter(project))
+    override fun getDefaultFilters(project: Project): Array<Filter> = arrayOf(DotNetStackTraceFilter(project), MsBuildConsoleFilter(project), ThreadDumpFilter(project), LogLevelFilter())
 }
 
 /** Paste a stack trace from a log or a ticket and get it with clickable frames. */

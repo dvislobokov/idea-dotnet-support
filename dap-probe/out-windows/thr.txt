@@ -1,0 +1,154 @@
+
+===== threads =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 21760, "isLocalProcess": true, "startMethod": "launch"}
+   ~ thread {"reason": "started", "threadId": 17780}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>\\t\\App\\Rest.cs"}, "line": 40, "column": 13, "endLine": 40, "endColumn": 35}}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 2, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>\\t\\App\\Rest.cs"}, "line": 31, "column": 9, "endLine": 31, "endColumn": 52}}
+   ~ thread {"reason": "started", "threadId": 6604}
+   ~ thread {"reason": "started", "threadId": 26284}
+   ~ thread {"reason": "started", "threadId": 30048}
+   ~ stopped {"reason": "breakpoint", "threadId": 6604, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   stopped: {"reason": "breakpoint", "threadId": 6604, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+-> threads  | 9ms ok=True {"threads": [{"id": 26284, "name": "worker-2"}, {"id": 6604, "name": "worker-1"}, {"id": 17780, "name": "Main Thread"}, {"id": 4536, "name": ".NET Thread"}, {"id": 26028, "name": ".NET Thread"}, {"id": 30048, "name": "worker-3"}]}
+   thread 26284 worker-2        : DebugTarget.Threads.Worker() <- DebugTarget.Threads.Run.AnonymousMethod__2() <- [External Code]
+   thread 6604 worker-1        : DebugTarget.Threads.Worker() <- DebugTarget.Threads.Run.AnonymousMethod__2() <- [External Code]
+   thread 17780 Main Thread     : [External Code] <- DebugTarget.Threads.Run() <- Program.<Main>$()
+   thread 4536 .NET Thread     : 
+   thread 26028 .NET Thread     : 
+   thread 30048 worker-3        : DebugTarget.Threads.Worker() <- DebugTarget.Threads.Run.AnonymousMethod__2() <- [External Code]
+   ~ stopped {"reason": "breakpoint", "threadId": 26284, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   second stop: {"reason": "breakpoint", "threadId": 26284, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   ~ stopped {"reason": "breakpoint", "threadId": 30048, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   end: exited=None terminated=False
+   adapter exit code: 0
+
+===== pause =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 30624, "isLocalProcess": true, "startMethod": "launch"}
+   ~ stopped {"reason": "pause", "threadId": 28968, "allThreadsStopped": true}
+-> pause {"threadId": 0} | 7ms ok=True null
+   paused: {"reason": "pause", "threadId": 28968, "allThreadsStopped": true}
+   thread 11276 .NET Thread   : 
+   thread 29576 .NET Thread   : 
+   thread 28968 Main Thread   : [External Code]:0 <- DebugTarget.Output.Sleeper():161 <- Program.<Main>$():18 <- [External Code]:0
+   stack: [External Code]:0 <- DebugTarget.Output.Sleeper():161 <- Program.<Main>$():18 <- [External Code]:0  total=4
+   Locals.i = 5  : int  ref=0
+   eval[watch] i                                              -> 5 : int  (35ms)
+-> pause {"threadId": 0} | 0ms ok=True null
+-> continue {"threadId": 28968} | 1ms ok=True {"allThreadsContinued": true}
+-> terminate  | 0ms ok=True null
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
+
+===== exceptions-all =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 25104, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>\\t\\App\\Rest.cs"}, "line": 63, "column": 9, "endLine": 63, "endColumn": 46}}
+   ~ stopped {"reason": "exception", "description": "Exception thrown: DebugTarget.ShopException", "threadId": 22888, "text": "custom", "allThreadsStopped": true}
+   stop: {"reason": "exception", "description": "Exception thrown: DebugTarget.ShopException", "threadId": 22888, "text": "custom", "allThreadsStopped": true} | DebugTarget.Exceptions.Run() @ Rest.cs:55:15
+-> exceptionInfo {"threadId": 22888} | 34ms ok=True {"exceptionId": "DebugTarget.ShopException", "description": "custom", "breakMode": "always", "details": {"message": "custom", "typeName": "ShopException", "fullTypeName": "DebugTarget.ShopException", "stackTrace": "   at DebugTarget.Exceptions.Run() in <dap>\\t\\App\\Rest.cs:line 55"}}
+   eval[watch] $exception                                     -> {DebugTarget.ShopException: custom} : DebugTarget.ShopException ref=4  (42ms)
+   eval[watch] $exception.Message                             -> "custom" : string  (12ms)
+   ~ stopped {"reason": "exception", "description": "Exception thrown: System.FormatException", "threadId": 22888, "text": "The input string 'not a number' was not in a correct format.", "allThreadsStopped": true}
+   stop: {"reason": "exception", "description": "Exception thrown: System.FormatException", "threadId": 22888, "text": "The input string 'not a number' was not in a correct format.", "allThreadsStopped": true} | [External Code] @ ?:0:0
+-> exceptionInfo {"threadId": 22888} | 2ms ok=True {"exceptionId": "System.FormatException", "description": "The input string 'not a number' was not in a correct format.", "breakMode": "always", "details": {"message": "The input string 'not a number' was not in a correct format.", "typeName": "FormatException", "fullTypeName": "System.FormatException", "stackTrace": "   at System.Number.ThrowFormatException[TChar](ReadOnlySpan`1 value)\r\n   at System.Int32.Parse(String s)\r\n   at DebugTarget.Exceptions.Run() in <dap>\\t\\App\\Rest.cs:line 58"}}
+   eval[watch] $exception                                     -> ERROR No information is available for external code.  (1ms)
+   eval[watch] $exception.Message                             -> ERROR No information is available for external code.  (0ms)
+   ~ stopped {"reason": "exception", "description": "Exception thrown: System.ArgumentNullException", "threadId": 22888, "text": "Value cannot be null.", "allThreadsStopped": true}
+   stop: {"reason": "exception", "description": "Exception thrown: System.ArgumentNullException", "threadId": 22888, "text": "Value cannot be null.", "allThreadsStopped": true} | DebugTarget.Exceptions.Nested() @ Rest.cs:68:15
+-> exceptionInfo {"threadId": 22888} | 1ms ok=True {"exceptionId": "System.ArgumentNullException", "description": "Value cannot be null.", "breakMode": "always", "details": {"message": "Value cannot be null.", "typeName": "ArgumentNullException", "fullTypeName": "System.ArgumentNullException", "stackTrace": "   at DebugTarget.Exceptions.Nested() in <dap>\\t\\App\\Rest.cs:line 68"}}
+   eval[watch] $exception                                     -> {System.ArgumentNullException: Value cannot be null.} : System.ArgumentNullException ref=13  (2ms)
+   eval[watch] $exception.Message                             -> "Value cannot be null. (Parameter 'arg')" : string  (1ms)
+   ~ stopped {"reason": "exception", "description": "Exception thrown: System.InvalidOperationException", "threadId": 22888, "text": "wrapped", "allThreadsStopped": true}
+   stop: {"reason": "exception", "description": "Exception thrown: System.InvalidOperationException", "threadId": 22888, "text": "wrapped", "allThreadsStopped": true} | DebugTarget.Exceptions.Nested() @ Rest.cs:69:35
+-> exceptionInfo {"threadId": 22888} | 2ms ok=True {"exceptionId": "System.InvalidOperationException", "description": "wrapped", "breakMode": "always", "details": {"message": "wrapped", "typeName": "InvalidOperationException", "fullTypeName": "System.InvalidOperationException", "stackTrace": "   at DebugTarget.Exceptions.Nested() in <dap>\\t\\App\\Rest.cs:line 69", "innerException": [{"message": "Value cannot be null.", "typeName": "ArgumentNullException", "fullTypeName": "System.ArgumentNullException", "stackTrace": "   at DebugTarget.Exceptions.Nested() in <dap>\\t\\App\\Rest.cs:line 68"}]}}
+   eval[watch] $exception                                     -> {System.InvalidOperationException: wrapped} : System.InvalidOperationException ref=18  (2ms)
+   eval[watch] $exception.Message                             -> "wrapped" : string  (1ms)
+   ~ stopped {"reason": "breakpoint", "threadId": 22888, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   stop: {"reason": "breakpoint", "threadId": 22888, "allThreadsStopped": true, "hitBreakpointIds": [1]} | DebugTarget.Exceptions.Run() @ Rest.cs:63:9
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 10s (expected None)
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
+
+===== exceptions-user-unhandled =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 29248, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>\\t\\App\\Rest.cs"}, "line": 63, "column": 9, "endLine": 63, "endColumn": 46}}
+   ~ stopped {"reason": "breakpoint", "threadId": 24172, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   stop: {"reason": "breakpoint", "threadId": 24172, "allThreadsStopped": true, "hitBreakpointIds": [1]} | DebugTarget.Exceptions.Run() @ Rest.cs:63:9
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 10s (expected None)
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
+
+===== exceptions-none =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 23928, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>\\t\\App\\Rest.cs"}, "line": 63, "column": 9, "endLine": 63, "endColumn": 46}}
+   ~ stopped {"reason": "breakpoint", "threadId": 26004, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   stop: {"reason": "breakpoint", "threadId": 26004, "allThreadsStopped": true, "hitBreakpointIds": [1]} | DebugTarget.Exceptions.Run() @ Rest.cs:63:9
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 10s (expected None)
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
+
+===== unhandled-user-unhandled =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 5680, "isLocalProcess": true, "startMethod": "launch"}
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 10s (expected unhandled exception)
+   end: exited={'exitCode': 0} terminated=True
+   stderr tail: 'ude\\C--Users-dvislobokov-idea-dotnet-support\\a88a38e3-6023-42eb-b354-2b03ee9a496f\\scratchpad\\dap\\t\\App\\Program.cs:line 12\r\n   at Program.<Main>(String[] args)\r\n'
+   adapter exit code: 0
+
+===== unhandled-none =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 27700, "isLocalProcess": true, "startMethod": "launch"}
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 10s (expected unhandled exception)
+   end: exited={'exitCode': 0} terminated=True
+   stderr tail: 'ude\\C--Users-dvislobokov-idea-dotnet-support\\a88a38e3-6023-42eb-b354-2b03ee9a496f\\scratchpad\\dap\\t\\App\\Program.cs:line 12\r\n   at Program.<Main>(String[] args)\r\n'
+   adapter exit code: 0
+
+===== asyncunhandled-user-unhandled =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 22932, "isLocalProcess": true, "startMethod": "launch"}
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 10s (expected unhandled exception)
+   end: exited={'exitCode': 0} terminated=True
+   stderr tail: 'ude\\C--Users-dvislobokov-idea-dotnet-support\\a88a38e3-6023-42eb-b354-2b03ee9a496f\\scratchpad\\dap\\t\\App\\Program.cs:line 13\r\n   at Program.<Main>(String[] args)\r\n'
+   adapter exit code: 0
+
+===== asyncunhandled-none =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 11916, "isLocalProcess": true, "startMethod": "launch"}
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 10s (expected unhandled exception)
+   end: exited={'exitCode': 0} terminated=True
+   stderr tail: 'ude\\C--Users-dvislobokov-idea-dotnet-support\\a88a38e3-6023-42eb-b354-2b03ee9a496f\\scratchpad\\dap\\t\\App\\Program.cs:line 13\r\n   at Program.<Main>(String[] args)\r\n'
+   adapter exit code: 0
+
+===== exceptions-conditions =====
+   ~ initialized null
+-> setExceptionBreakpoints {"filters": [], "filterOptions": [{"filterId": "all", "condition": "DebugTarget.ShopException, System.Format*"}]} | 7ms ok=True null
+   ~ process {"name": "App.dll", "systemProcessId": 8356, "isLocalProcess": true, "startMethod": "launch"}
+   ~ stopped {"reason": "exception", "description": "Exception thrown: DebugTarget.ShopException", "threadId": 28664, "text": "custom", "allThreadsStopped": true}
+   stop: {"reason": "exception", "description": "Exception thrown: DebugTarget.ShopException", "threadId": 28664, "text": "custom", "allThreadsStopped": true}
+   ~ stopped {"reason": "exception", "description": "Exception thrown: System.FormatException", "threadId": 28664, "text": "The input string 'not a number' was not in a correct format.", "allThreadsStopped": true}
+   stop: {"reason": "exception", "description": "Exception thrown: System.FormatException", "threadId": 28664, "text": "The input string 'not a number' was not in a correct format.", "allThreadsStopped": true}
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 8s (expected None)
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
