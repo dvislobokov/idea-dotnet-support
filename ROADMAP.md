@@ -162,9 +162,11 @@
 - [ ] Bump version: major / minor / patch для `Version` в `.csproj` или `Directory.Build.props`
 
 ### SDK и окружение
-- [ ] Страница «.NET на этой машине»: `dotnet --info`, `dotnet sdk check` (устаревшие и снятые с поддержки SDK / runtime), вместе с проверкой `global.json`
-- [ ] Шаблоны: `dotnet new search`, `dotnet new install / uninstall / update` из диалога New Project (сейчас видны только установленные)
-- [ ] Upgrade Assistant: `upgrade-assistant analyze` перед сменой target framework, отчёт о несовместимостях
+- [x] «.NET on This Machine» (Tools → .NET и ссылка со страницы настроек): сводка из `dotnet --info`, таблицы SDK и runtime со статусом поддержки из `dotnet sdk check` (актуален / есть патч или поддержка скоро кончится / снят с поддержки), какой SDK выбран для проекта с учётом `global.json`, полный `--info` с копированием
+- [x] Шаблоны: ссылка «More templates...» в New Project и Add New Project → поиск пакетов шаблонов на nuget.org (`packageType=Template`, то же, что ищет `dotnet new search`), установка, список установленных, проверка обновлений, Update All, удаление; вывод команд в логе диалога
+- [ ] Шаблоны: поиск по настроенным приватным фидам, установка конкретной версии, параметры шаблона (`dotnet new <t> --help`) в диалоге New Project
+- [x] Upgrade Assistant: «Analyze Upgrade to Newer .NET...» для проекта или solution — `upgrade-assistant analyze` с выбором целевого framework, отчёт таблицей (severity, правило, что найдено, место) с переходом к коду и ссылкой на документацию; предложение установить tool, если его нет
+- [ ] Upgrade Assistant: применение исправлений (`upgrade-assistant upgrade`), HTML-отчёт, фильтр по severity / проекту
 
 ### Производительность и эксперименты
 - [ ] BenchmarkDotNet: ▶ у `[Benchmark]`, запуск в Release, результаты из `BenchmarkDotNet.Artifacts/results/*.csv` таблицей (Mean, Error, Allocated), сравнение с предыдущим прогоном

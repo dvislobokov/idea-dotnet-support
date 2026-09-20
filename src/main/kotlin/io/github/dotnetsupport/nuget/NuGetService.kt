@@ -23,12 +23,12 @@ class NuGetClient(private val fetch: (url: String, source: String) -> String = :
     private fun index(source: String): NuGetResponses.ServiceIndex? =
         runCatching { indexes.getOrPut(source) { NuGetResponses.parseServiceIndex(fetch(source, source)) } }.getOrNull()
 
-    /** Packages from all [sources]; a package found in several feeds is taken from the first one. */
-    fun search(query: String, includePrerelease: Boolean, sources: List<String>, take: Int = 40): List<NuGetPackageInfo> =
+    /** Packages from all [sources]; a package found in several feeds is taken from the first one. [packageType]: `Template`, `DotnetTool`. */
+    fun search(query: String, includePrerelease: Boolean, sources: List<String>, take: Int = 40, packageType: String? = null): List<NuGetPackageInfo> =
         sources.flatMap { source ->
             val url = index(source)?.searchUrl ?: return@flatMap emptyList()
             runCatching {
-                NuGetResponses.parseSearch(fetch("$url?q=${URLEncoder.encode(query, Charsets.UTF_8)}&take=$take&prerelease=$includePrerelease&semVerLevel=2.0.0", source))
+                NuGetResponses.parseSearch(fetch("$url?q=${URLEncoder.encode(query, Charsets.UTF_8)}&take=$take&prerelease=$includePrerelease&semVerLevel=2.0.0" + packageType?.let { "&packageType=$it" }.orEmpty(), source))
             }.getOrDefault(emptyList())
         }.distinctBy { it.id.lowercase() }
 

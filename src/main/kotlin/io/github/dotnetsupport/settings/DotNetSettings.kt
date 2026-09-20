@@ -21,6 +21,7 @@ import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.ui.UIUtil
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.sdk.DotNetEnvironmentDialog
 import io.github.dotnetsupport.sdk.DotNetSdks
 import io.github.dotnetsupport.sdk.GlobalJson
 import java.io.File
@@ -84,6 +85,7 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
                 }
                 row("Installed SDKs:") { cell(sdkList) }.topGap(com.intellij.ui.dsl.builder.TopGap.SMALL)
                 row("global.json:") { cell(globalJsonStatus) }
+                row("") { link("Support status of SDKs and runtimes, dotnet --info...") { DotNetEnvironmentDialog(project).show() } }
             }
             group("Behavior") {
                 row { checkBox("Create run configurations for the runnable projects of a solution").bindSelected(settings::createRunConfigurations) }

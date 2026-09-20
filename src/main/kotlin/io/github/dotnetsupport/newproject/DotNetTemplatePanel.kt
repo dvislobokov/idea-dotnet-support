@@ -44,6 +44,15 @@ class DotNetTemplatePanel {
 
     fun addRows(panel: Panel) = with(panel) {
         row("Template:") { cell(templateCombo) }
+        // Only the installed templates are listed: the rest of nuget.org is one dialog away. A row of its own:
+        // next to the combo box the link did not fit into the narrow New Project dialog.
+        row("") {
+            link("More templates...") {
+                val dialog = TemplatePackagesDialog(templateCombo)
+                dialog.show()
+                if (dialog.isChanged) loadFromCli()
+            }
+        }
         row("Language:") { cell(languageCombo) }
         row("Framework:") { cell(frameworkCombo).comment("Not every template supports every framework") }
     }

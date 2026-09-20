@@ -61,6 +61,7 @@
         <projectViewPane implementation="io.github.dotnetsupport.view.SolutionViewPane"/>
         <projectViewNestingRulesProvider implementation="io.github.dotnetsupport.view.DotNetNestingRulesProvider"/>
         <postStartupActivity implementation="io.github.dotnetsupport.view.SolutionViewActivator"/>
+        <postStartupActivity implementation="io.github.dotnetsupport.view.ToolWindowsSetup"/>
         <notificationGroup id=".NET" displayType="BALLOON"/>
         <projectConfigurable parentId="tools" id="io.github.dotnetsupport.settings" displayName=".NET"
                              instance="io.github.dotnetsupport.settings.DotNetSettingsConfigurable"/>
@@ -79,7 +80,7 @@
         <toolWindow id="Endpoints" anchor="bottom" icon="AllIcons.General.Web"
                     factoryClass="io.github.dotnetsupport.endpoints.EndpointsToolWindowFactory"/>
         <codeInsight.lineMarkerProvider language="C#" implementationClass="io.github.dotnetsupport.endpoints.EndpointLineMarkerProvider"/>
-        <toolWindow id="Unit Tests" anchor="left" secondary="true" icon="AllIcons.Nodes.Test"
+        <toolWindow id="Unit Tests" anchor="left" secondary="false" icon="/icons/unitTestsToolWindow.svg"
                     factoryClass="io.github.dotnetsupport.testing.TestExplorerToolWindowFactory"/>
         <toolWindow id="NuGet" anchor="bottom" icon="/icons/nugetToolWindow.svg"
                     factoryClass="io.github.dotnetsupport.nuget.NuGetToolWindowFactory"/>
@@ -127,6 +128,8 @@
                     text="Run Tests with Coverage" icon="AllIcons.General.RunWithCoverage"/>
             <action id="DotNet.RunMsBuildTarget" class="io.github.dotnetsupport.build.RunMsBuildTargetAction"
                     text="Run MSBuild Target..." icon="AllIcons.Nodes.Target"/>
+            <action id="DotNet.AnalyzeUpgrade" class="io.github.dotnetsupport.upgrade.AnalyzeUpgradeAction"
+                    text="Analyze Upgrade to Newer .NET..." description="Run the .NET Upgrade Assistant analysis: packages, project properties and APIs that block a newer target framework"/>
             <action id="DotNet.CleanSelected" class="io.github.dotnetsupport.build.CleanSelected" text="Clean"/>
             <action id="DotNet.ConvertToSlnx" class="io.github.dotnetsupport.actions.ConvertSolutionToSlnxAction"
                     text="Convert to .slnx..."/>
@@ -171,6 +174,9 @@
             <separator/>
             <action id="DotNet.NewProject" class="io.github.dotnetsupport.actions.NewDotNetProjectAction"
                     text="New .NET Project..."/>
+            <action id="DotNet.Environment" class="io.github.dotnetsupport.sdk.DotNetEnvironmentAction"
+                    text=".NET on This Machine..." description="SDKs and runtimes with their support status, dotnet --info, global.json"/>
+            <reference ref="DotNet.AnalyzeUpgrade"/>
             <reference ref="DotNet.InsertGuid"/>
             <reference ref="DotNet.AnalyzeStackTrace"/>
             <add-to-group group-id="ToolsMenu" anchor="last"/>

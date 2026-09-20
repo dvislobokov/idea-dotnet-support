@@ -71,7 +71,9 @@ object DotNetCli {
     fun displayString(command: GeneralCommandLine): String {
         val parameters = command.parametersList.list
         val masked = parameters.mapIndexed { i, parameter -> if (i > 0 && parameters[i - 1] in SECRET_OPTIONS) "********" else parameter }
-        return (listOf("dotnet") + masked).joinToString(" ") { if (' ' in it) "\"$it\"" else it }
+        // other tools (upgrade-assistant) go through the same runner
+        val executable = File(command.exePath).nameWithoutExtension
+        return (listOf(executable) + masked).joinToString(" ") { if (' ' in it) "\"$it\"" else it }
     }
 
     /** Runs a short command and captures its output. Must not be called on EDT. */
