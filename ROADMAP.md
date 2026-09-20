@@ -41,11 +41,17 @@
 ## Заход 3 — NuGet и тесты
 - [x] Dependencies как в Rider: Imports (Sdk.props / Sdk.targets, Directory.Build.*, явные `<Import>`), узел на каждый TFM, Packages с разрешёнными версиями и транзитивными зависимостями, Projects, Assemblies, Analyzers, Frameworks со сборками — из `obj/project.assets.json`
 - [ ] Dependencies: вложенные импорты внутри Sdk.props / Sdk.targets, анализаторы самого SDK, транзитивные проекты
-- [ ] Окно NuGet: поиск (API v3, источники из `nuget.config`), установка / обновление / удаление, CPM
+- [x] Окно NuGet: пакеты проекта с доступными обновлениями, поиск по фидам (API v3, источники из `dotnet nuget list source`), установка / обновление / откат / удаление через `dotnet add|remove package`, prerelease
+- [x] Окно NuGet как в Rider: область «Solution / проект», единый список Installed + Available с иконками пакетов и действиями в строке, карточка пакета (версии, таблица проектов с Install / Update / Downgrade / Remove, зависимости по фреймворкам из `.nuspec`, лицензия, ссылки, теги)
+- [x] Окно NuGet: вкладка Sources (фиды всех уровней `nuget.config`, добавить / удалить / включить / выключить, ссылки на файлы конфигурации) и вкладка Log (команды `dotnet` и их вывод)
+- [x] Потоковый вывод команд `dotnet`: NuGet — построчно во вкладку Log; создание проектов, `dotnet sln`, EF, шаблоны, конвертация — задачами в Build tool window (окно открывается само только при ошибке), отмена прогресса убивает процесс
+- [x] Карточка пакета по образцу Rider (шапка, Version с кнопками «во все проекты», сворачиваемые Info и Dependencies со сводкой, список проектов с кнопками-иконками), однотонная иконка окна для обеих тем и нового UI
+- [ ] Окно NuGet: README пакета, правка версий в `Directory.Packages.props` при CPM, учётные данные приватных фидов
 - [ ] Устаревшие и уязвимые пакеты (`dotnet list package --outdated --vulnerable --format json`)
 - [ ] csproj: completion имён и версий пакетов, inlay «доступна новая версия», quick-fix обновления
 - [ ] Авто-`dotnet restore` при изменении csproj
-- [ ] Тесты: `dotnet test --logger trx` → дерево результатов (SMTRunner), перезапуск упавших, gutter у `[Fact]`/`[Test]`/`[TestMethod]`
+- [x] Тесты: дерево результатов из TRX (SMTRunner), переход к исходнику, перезапуск упавших, ▶ у тестовых методов и классов (xUnit / NUnit / MSTest) с `--filter`
+- [ ] Тесты: результаты по мере выполнения, а не после завершения (свой VSTest-логгер или протокол Microsoft.Testing.Platform)
 
 ## Заход 4 — проект и окружение
 - [ ] Страница настроек: путь к `dotnet`, выбор SDK, учёт `global.json`, уведомление об отсутствующем SDK
@@ -82,7 +88,8 @@
 - [ ] `dotnet-dump` / `dotnet-gcdump`: снятие дампа, таблицы `dumpheap -stat`, `clrstack`, `threads`
 
 ### Качество кода силами компилятора
-- [ ] Покрытие тестов: `dotnet test --collect:"XPlat Code Coverage"` → Cobertura XML → подсветка строк на полях, сводка по проектам (после тест-раннера из захода 3)
+- [x] Покрытие тестов: `--collect:"XPlat Code Coverage"` (coverlet) → Cobertura → полосы на полях редактора (покрыто / частично / нет), сводка по файлам в окне «.NET Coverage»
+- [ ] Покрытие: сводка по проектам и методам, покрытие для выбранного теста, хранение нескольких запусков
 - [ ] Анализаторы Roslyn через сборку: включение `EnforceCodeStyleInBuild` / `AnalysisLevel`, вкладка Problems с группировкой по правилу, «подавить в `.editorconfig`»
 - [ ] `dotnet format --verify-no-changes` как проверка перед коммитом
 - [ ] Устаревшие (`--deprecated`) пакеты и лицензии пакетов по метаданным NuGet

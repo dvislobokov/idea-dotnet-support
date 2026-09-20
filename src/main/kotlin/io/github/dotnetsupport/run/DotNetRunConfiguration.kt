@@ -22,6 +22,7 @@ import com.intellij.openapi.util.NotNullLazyValue
 import com.intellij.util.execution.ParametersListUtil
 import io.github.dotnetsupport.DotNetIcons
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.testing.DotNetTestRunState
 import java.io.File
 
 enum class DotNetCommand(val title: String) {
@@ -63,6 +64,10 @@ class DotNetRunConfigurationOptions : LocatableRunConfigurationOptions() {
     var environment by map<String, String>()
     var passParentEnvironment by property(true)
     var openBrowser by property(false)
+
+    /** `dotnet test --filter`: set by the gutter icons and by "Rerun Failed Tests". */
+    var testFilter by string()
+    var collectCoverage by property(false)
 }
 
 class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, name: String) :
@@ -80,6 +85,9 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
     }
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState =
+        if (options.command == DotNetCommand.TEST) DotNetTestRunState(this, environment) else runState(environment)
+
+    private fun runState(environment: ExecutionEnvironment): RunProfileState =
         object : CommandLineState(environment) {
             init {
                 addConsoleFilters(MsBuildConsoleFilter(project), DotNetStackTraceFilter(project))
@@ -101,7 +109,8 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
         return (if (selected == null) profiles.firstOrNull() else profiles.find { it.name == selected })?.launchUrl
     }
 
-    fun buildCommandLine(): GeneralCommandLine {
+    /** [testResultsDirectory]: where `dotnet test` writes the TRX report (and coverage) the test tree is built from. */
+    fun buildCommandLine(testResultsDirectory: File? = null): GeneralCommandLine {
         val options = options
         val projectPath = options.projectPath.orEmpty()
         val programArguments = ParametersListUtil.parse(options.programArguments.orEmpty())
@@ -111,7 +120,7 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
             DotNetCommand.RUN -> listOf("run", "--project", projectPath) + profile + separated(programArguments)
             DotNetCommand.WATCH -> listOf("watch", "--project", projectPath, "run") + profile + separated(programArguments)
             // For tests the arguments are options of `dotnet test` itself (--filter, --logger, ...).
-            DotNetCommand.TEST -> listOf("test", projectPath) + programArguments
+            DotNetCommand.TEST -> listOf("test", projectPath) + testArguments(testResultsDirectory) + programArguments
         }
         val workDirectory = options.workingDirectory?.takeIf { it.isNotBlank() } ?: File(projectPath).parent
         return DotNetCli.commandLine(workDirectory, *arguments.toTypedArray())
@@ -120,6 +129,16 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
                 if (options.passParentEnvironment) GeneralCommandLine.ParentEnvironmentType.CONSOLE
                 else GeneralCommandLine.ParentEnvironmentType.NONE
             )
+    }
+
+    private fun testArguments(resultsDirectory: File?): List<String> = buildList {
+        options.testFilter?.takeIf { it.isNotBlank() }?.let { add("--filter"); add(it) }
+        if (resultsDirectory != null) {
+            add("--logger"); add("trx;LogFileName=results.trx")
+            add("--results-directory"); add(resultsDirectory.path)
+        }
+        // coverlet: needs the coverlet.collector package in the test project (the templates of `dotnet new` have it)
+        if (options.collectCoverage) add("--collect:XPlat Code Coverage")
     }
 
     private fun separated(programArguments: List<String>): List<String> =

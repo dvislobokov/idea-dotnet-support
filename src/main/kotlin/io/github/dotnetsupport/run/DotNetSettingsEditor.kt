@@ -8,6 +8,7 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.ui.RawCommandLineEditor
 import com.intellij.ui.components.JBCheckBox
+import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.panel
 import io.github.dotnetsupport.solution.SolutionService
@@ -24,6 +25,8 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
     private val workingDirectory = TextFieldWithBrowseButton()
     private val environment = EnvironmentVariablesComponent()
     private val openBrowser = JBCheckBox("Open browser when the application starts listening")
+    private val testFilter = JBTextField()
+    private val collectCoverage = JBCheckBox("Collect coverage (coverlet)")
 
     override fun createEditor(): JComponent {
         projectCombo.model = DefaultComboBoxModel(solutionProjectPaths().toTypedArray())
@@ -45,6 +48,10 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
             }
             row("Working directory:") { cell(workingDirectory).align(AlignX.FILL).comment("Project directory by default") }
             row { cell(environment).align(AlignX.FILL) }
+            row("Test filter:") {
+                cell(testFilter).align(AlignX.FILL).comment("For <code>dotnet test</code>: <code>--filter</code> expression, e.g. <code>FullyQualifiedName~OrderTests</code>")
+            }
+            row { cell(collectCoverage).comment("For <code>dotnet test</code>: needs the <code>coverlet.collector</code> package in the test project") }
             row { cell(openBrowser).comment("For <code>dotnet run</code>: the first \"Now listening on\" address plus <code>launchUrl</code> of the profile") }
         }
     }
@@ -59,6 +66,8 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
         environment.envs = options.environment
         environment.isPassParentEnvs = options.passParentEnvironment
         openBrowser.isSelected = options.openBrowser
+        testFilter.text = options.testFilter.orEmpty()
+        collectCoverage.isSelected = options.collectCoverage
     }
 
     override fun applyEditorTo(configuration: DotNetRunConfiguration) {
@@ -71,6 +80,8 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
         options.environment = environment.envs.toMutableMap()
         options.passParentEnvironment = environment.isPassParentEnvs
         options.openBrowser = openBrowser.isSelected
+        options.testFilter = testFilter.text.trim().ifEmpty { null }
+        options.collectCoverage = collectCoverage.isSelected
     }
 
     private fun selectedProjectPath(): String = (projectCombo.editor.item as? String).orEmpty().trim()

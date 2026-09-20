@@ -67,6 +67,14 @@
         <runConfigurationProducer implementation="io.github.dotnetsupport.run.DotNetRunConfigurationProducer"/>
         <runLineMarkerContributor language="C#"
                                   implementationClass="io.github.dotnetsupport.run.MainMethodRunLineMarkerContributor"/>
+        <runConfigurationProducer implementation="io.github.dotnetsupport.testing.DotNetTestConfigurationProducer"/>
+        <runLineMarkerContributor language="C#"
+                                  implementationClass="io.github.dotnetsupport.testing.DotNetTestRunLineMarkerContributor"/>
+        <iconMapper mappingFile="DotNetIconMappings.json"/>
+        <toolWindow id="NuGet" anchor="bottom" icon="/icons/nugetToolWindow.svg"
+                    factoryClass="io.github.dotnetsupport.nuget.NuGetToolWindowFactory"/>
+        <toolWindow id=".NET Coverage" anchor="right" secondary="true" icon="AllIcons.General.RunWithCoverage"
+                    factoryClass="io.github.dotnetsupport.coverage.CoverageToolWindowFactory"/>
 
         <directoryProjectGenerator implementation="io.github.dotnetsupport.newproject.DotNetProjectGenerator"/>
         <internalFileTemplate name="CSharp Class"/>
@@ -103,6 +111,10 @@
             <action id="DotNet.BuildSelected" class="io.github.dotnetsupport.build.BuildSelected" text="Build"
                     icon="AllIcons.Actions.Compile"/>
             <action id="DotNet.RebuildSelected" class="io.github.dotnetsupport.build.RebuildSelected" text="Rebuild"/>
+            <action id="DotNet.ManageNuGet" class="io.github.dotnetsupport.nuget.ManageNuGetPackagesAction"
+                    text="Manage NuGet Packages..." icon="/icons/nuget.svg"/>
+            <action id="DotNet.RunTestsWithCoverage" class="io.github.dotnetsupport.testing.RunTestsWithCoverageAction"
+                    text="Run Tests with Coverage" icon="AllIcons.General.RunWithCoverage"/>
             <action id="DotNet.CleanSelected" class="io.github.dotnetsupport.build.CleanSelected" text="Clean"/>
             <action id="DotNet.ConvertToSlnx" class="io.github.dotnetsupport.actions.ConvertSolutionToSlnxAction"
                     text="Convert to .slnx..."/>

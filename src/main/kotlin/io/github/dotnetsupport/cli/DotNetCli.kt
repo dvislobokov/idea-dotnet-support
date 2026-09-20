@@ -4,6 +4,9 @@ import com.intellij.execution.ExecutionException
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.configurations.PathEnvironmentVariableUtil
 import com.intellij.execution.process.CapturingProcessHandler
+import com.intellij.execution.process.ProcessEvent
+import com.intellij.execution.process.ProcessListener
+import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.execution.process.ProcessOutput
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
@@ -13,10 +16,22 @@ import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.vfs.VfsUtil
+import io.github.dotnetsupport.build.BuildViewCommandOutput
 import java.io.File
 import java.nio.charset.StandardCharsets
+
+/** Where the output of background `dotnet` commands goes while they run. Called on a background thread. */
+interface CommandOutput {
+    fun commandStarted(command: GeneralCommandLine)
+    fun text(text: String, isError: Boolean)
+    fun commandFinished(exitCode: Int)
+
+    /** All commands are done, or the run has stopped at a failure or a cancellation. */
+    fun finished(succeeded: Boolean) {}
+}
 
 object DotNetCli {
     private const val TIMEOUT_MS = 10 * 60 * 1000
@@ -50,37 +65,55 @@ object DotNetCli {
         CapturingProcessHandler(commandLine).runProcess(timeoutMs)
 
     /**
-     * Runs [commands] one after another in a background task; stops at the first failure and reports it.
-     * [refresh] are re-read from disk afterwards, then [onSuccess] is invoked on EDT.
+     * Runs [commands] one after another in a background task, streaming what they print into [output] as it arrives;
+     * stops at the first failure and reports it. [refresh] are re-read from disk afterwards, then [onSuccess] is invoked on EDT.
+     * Without an explicit [output] the commands show up as a task of the Build tool window.
      */
     fun runInBackground(
         project: Project,
         title: String,
         commands: List<GeneralCommandLine>,
         refresh: List<File> = emptyList(),
+        output: CommandOutput = BuildViewCommandOutput(project, title),
         onSuccess: () -> Unit = {},
     ) {
         FileDocumentManager.getInstance().saveAllDocuments()
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, title, true) {
             override fun run(indicator: ProgressIndicator) {
+                val succeeded = runCommands(indicator)
+                output.finished(succeeded)
+                refreshFiles(refresh)
+                if (succeeded) ApplicationManager.getApplication().invokeLater(onSuccess, project.disposed)
+            }
+
+            private fun runCommands(indicator: ProgressIndicator): Boolean {
                 for (command in commands) {
-                    indicator.checkCanceled()
+                    if (indicator.isCanceled) return false
                     indicator.text2 = command.commandLineString
-                    val output = try {
-                        execute(command)
+                    output.commandStarted(command)
+                    val result = try {
+                        val handler = CapturingProcessHandler(command)
+                        handler.addProcessListener(object : ProcessListener {
+                            override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
+                                if (outputType !== ProcessOutputTypes.SYSTEM) output.text(event.text, outputType === ProcessOutputTypes.STDERR)
+                            }
+                        })
+                        // cancelling the progress kills the process
+                        handler.runProcessWithProgressIndicator(indicator, TIMEOUT_MS, true)
                     } catch (e: ExecutionException) {
+                        output.text(e.message.orEmpty() + "\n", true)
                         notifyError(project, title, e.message.orEmpty())
-                        return
+                        return false
                     }
-                    if (output.exitCode != 0) {
-                        val details = (output.stderr.ifBlank { output.stdout }).trim().lines().takeLast(15).joinToString("\n")
-                        notifyError(project, "$title: exit code ${output.exitCode}", details)
-                        refreshFiles(refresh)
-                        return
+                    output.commandFinished(result.exitCode)
+                    if (result.isCancelled) return false
+                    if (result.exitCode != 0) {
+                        val details = (result.stderr.ifBlank { result.stdout }).trim().lines().takeLast(15).joinToString("\n")
+                        notifyError(project, "$title: exit code ${result.exitCode}", details)
+                        return false
                     }
                 }
-                refreshFiles(refresh)
-                ApplicationManager.getApplication().invokeLater(onSuccess, project.disposed)
+                return true
             }
         })
     }

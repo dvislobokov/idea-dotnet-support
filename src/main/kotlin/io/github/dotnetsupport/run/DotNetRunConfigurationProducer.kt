@@ -33,7 +33,9 @@ class DotNetRunConfigurationProducer : LazyRunConfigurationProducer<DotNetRunCon
 
     override fun isConfigurationFromContext(configuration: DotNetRunConfiguration, context: ConfigurationContext): Boolean {
         val (projectFile, command) = target(context) ?: return false
-        return configuration.options.projectPath == projectFile.path && configuration.options.command == command
+        // a configuration with a filter runs a part of the project: it belongs to the test producer
+        return configuration.options.projectPath == projectFile.path && configuration.options.command == command &&
+            configuration.options.testFilter.isNullOrBlank()
     }
 
     private fun target(context: ConfigurationContext): Pair<VirtualFile, DotNetCommand>? {
