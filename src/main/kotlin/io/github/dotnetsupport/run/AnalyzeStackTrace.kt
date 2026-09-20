@@ -14,6 +14,7 @@ import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextArea
 import com.intellij.unscramble.AnalyzeStacktraceUtil
 import com.intellij.util.ui.JBUI
+import io.github.dotnetsupport.monitor.ThreadDumpFilter
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.datatransfer.DataFlavor
@@ -25,7 +26,7 @@ import javax.swing.JPanel
  * windows, the stack trace analyzer), not only in the ones the plugin starts itself.
  */
 class DotNetConsoleFilterProvider : ConsoleFilterProvider {
-    override fun getDefaultFilters(project: Project): Array<Filter> = arrayOf(DotNetStackTraceFilter(project), MsBuildConsoleFilter(project))
+    override fun getDefaultFilters(project: Project): Array<Filter> = arrayOf(DotNetStackTraceFilter(project), MsBuildConsoleFilter(project), ThreadDumpFilter(project))
 }
 
 /** Paste a stack trace from a log or a ticket and get it with clickable frames. */

@@ -36,6 +36,7 @@ import com.intellij.util.ui.JBUI
 import io.github.dotnetsupport.actions.SolutionContext
 import io.github.dotnetsupport.build.BuildViewCommandOutput
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.cli.DotNetTool
 import io.github.dotnetsupport.newproject.DotNetTemplates
 import io.github.dotnetsupport.solution.SolutionService
 import java.awt.BorderLayout
@@ -135,11 +136,7 @@ class UpgradeReport(val target: String, val projects: Int, val effort: Int, val 
 object UpgradeAssistant {
     const val PACKAGE = "upgrade-assistant"
 
-    /** The global tool: on PATH, or in `~/.dotnet/tools` when the shell profile was not re-read after the installation. */
-    fun findExecutable(): File? {
-        val name = if (SystemInfo.isWindows) "$PACKAGE.exe" else PACKAGE
-        return PathEnvironmentVariableUtil.findInPath(name) ?: File(System.getProperty("user.home"), ".dotnet/tools/$name").takeIf { it.isFile }
-    }
+    fun findExecutable(): File? = DotNetTool.UPGRADE_ASSISTANT.find()
 
     fun commandLine(executable: File, target: File, targetFramework: String, report: File): GeneralCommandLine =
         GeneralCommandLine(executable.path, "analyze", target.path, "--non-interactive", "--targetFramework", targetFramework,
@@ -166,7 +163,7 @@ class AnalyzeUpgradeAction : AnAction(), DumbAware {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
         val target = target(e) ?: return
-        val executable = UpgradeAssistant.findExecutable() ?: return offerInstallation(project)
+        val executable = UpgradeAssistant.findExecutable() ?: return DotNetTool.UPGRADE_ASSISTANT.offerInstallation(project, TITLE)
 
         val frameworks = ProgressManager.getInstance().runProcessWithProgressSynchronously<List<String>, Exception>(
             { DotNetTemplates.loadFrameworks() }, "Looking for Installed SDKs", true, project)
@@ -191,19 +188,6 @@ class AnalyzeUpgradeAction : AnAction(), DumbAware {
                 else -> UpgradeReportDialog(project, target.name, parsed).show()
             }
         }
-    }
-
-    private fun offerInstallation(project: Project) {
-        NotificationGroupManager.getInstance().getNotificationGroup(DotNetCli.NOTIFICATION_GROUP)
-            .createNotification(TITLE, "The .NET Upgrade Assistant (the <code>upgrade-assistant</code> global tool) is not installed.", NotificationType.INFORMATION)
-            .addAction(NotificationAction.createSimpleExpiring("Install") {
-                val commands = DotNetCli.commandLinesOrNotify(project, TITLE) { listOf(DotNetCli.commandLine(null, "tool", "install", "--global", UpgradeAssistant.PACKAGE)) }
-                if (commands != null) DotNetCli.runInBackground(project, "Installing ${UpgradeAssistant.PACKAGE}", commands) {
-                    DotNetCli.notifyInfo(project, TITLE, "The tool is installed: run the analysis again.")
-                }
-            })
-            .addAction(NotificationAction.createSimple("About the Tool") { BrowserUtil.browse("https://learn.microsoft.com/dotnet/core/porting/upgrade-assistant-overview") })
-            .notify(project)
     }
 
     /** Progress bars of the tool are drawn with escape sequences even when colors are off. */

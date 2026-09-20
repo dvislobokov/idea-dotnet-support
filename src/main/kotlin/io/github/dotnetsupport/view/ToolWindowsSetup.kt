@@ -11,6 +11,7 @@ import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.openapi.wm.ex.ToolWindowManagerListener
 import com.intellij.ui.content.ContentManagerEvent
 import com.intellij.ui.content.ContentManagerListener
+import io.github.dotnetsupport.monitor.MonitorToolWindowFactory
 import io.github.dotnetsupport.solution.SolutionService
 import io.github.dotnetsupport.testing.UnitTestsWindowDecoration
 
@@ -22,6 +23,7 @@ class ToolWindowsSetup : ProjectActivity {
             if (project.isDisposed) return@invokeLater
             keepBuildWindow(project)
             showUnitTestsButton(project)
+            moveMonitorToTheRight(project)
             keepUnitTestsDecoration(project)
         }
     }
@@ -41,6 +43,15 @@ class ToolWindowsSetup : ProjectActivity {
         })
     }
 
+    /** The first version of the monitor lived at the bottom; a layout saved then would keep it there. Once. */
+    private fun moveMonitorToTheRight(project: Project) {
+        val properties = PropertiesComponent.getInstance(project)
+        if (properties.getBoolean(MONITOR_PLACED_KEY)) return
+        val window = ToolWindowManager.getInstance(project).getToolWindow(MonitorToolWindowFactory.ID) ?: return
+        properties.setValue(MONITOR_PLACED_KEY, true)
+        if (window.anchor != ToolWindowAnchor.RIGHT) window.setAnchor(ToolWindowAnchor.RIGHT, null)
+    }
+
     /** A safety net for [io.github.dotnetsupport.testing.DotNetTestRunner]: a leftover "Run" title is undone whenever the tool windows change. */
     private fun keepUnitTestsDecoration(project: Project) {
         val window = ToolWindowManager.getInstance(project).getToolWindow(UNIT_TESTS_ID) ?: return
@@ -57,9 +68,9 @@ class ToolWindowsSetup : ProjectActivity {
     }
 
     /**
-     * In the new UI a tool window gets its stripe button when it is shown for the first time (setShowStripeButton is
-     * ignored there), and until then it hides under "More tool windows". So the window is opened once, at the bottom,
-     * where Rider has it: the Explorer tab and the sessions of the test runs. Afterwards its place belongs to the user.
+     * Layouts saved by the earlier versions of the plugin keep the window on the left; once, it is moved to the bottom,
+     * where Rider has it (the Explorer tab and the sessions of the test runs). Afterwards its place belongs to the user.
+     * The stripe button itself needs no help: the platform creates it at registration.
      */
     private fun showUnitTestsButton(project: Project) {
         val properties = PropertiesComponent.getInstance(project)
@@ -70,11 +81,11 @@ class ToolWindowsSetup : ProjectActivity {
         window.setAnchor(ToolWindowAnchor.BOTTOM, null)
         window.setSplitMode(false, null)
         if (!window.isAvailable) window.isAvailable = true
-        window.show()
     }
 
     companion object {
         const val UNIT_TESTS_ID = "Unit Tests"
+        private const val MONITOR_PLACED_KEY = "dotnet.monitor.window.on.the.right"
         private const val UNIT_TESTS_PLACED_KEY = "dotnet.unit.tests.window.at.bottom"
     }
 }

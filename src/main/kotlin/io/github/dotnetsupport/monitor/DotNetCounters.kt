@@ -1,9 +1,8 @@
 package io.github.dotnetsupport.monitor
 
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.execution.configurations.PathEnvironmentVariableUtil
 import com.intellij.execution.process.CapturingProcessHandler
-import com.intellij.openapi.util.SystemInfo
+import io.github.dotnetsupport.cli.DotNetTool
 import java.io.File
 
 /** A process `dotnet-counters ps` can attach to. */
@@ -37,11 +36,7 @@ object DotNetCounters {
     /** System.Runtime alone for a console application costs nothing; the web providers are silent when unused. */
     const val PROVIDERS = "System.Runtime,Microsoft.AspNetCore.Hosting,Microsoft.AspNetCore.Server.Kestrel,System.Net.Http"
 
-    /** The global tool: on PATH, or in `~/.dotnet/tools` when the shell profile was not re-read after the installation. */
-    fun findExecutable(): File? {
-        val name = if (SystemInfo.isWindows) "$PACKAGE.exe" else PACKAGE
-        return PathEnvironmentVariableUtil.findInPath(name) ?: File(System.getProperty("user.home"), ".dotnet/tools/$name").takeIf { it.isFile }
-    }
+    fun findExecutable(): File? = DotNetTool.COUNTERS.find()
 
     /** `monitor` needs a real console (it fails when redirected); `collect` appends to the file every interval, and the file is followed. */
     fun collectCommand(executable: File, pid: Long, output: File): GeneralCommandLine =

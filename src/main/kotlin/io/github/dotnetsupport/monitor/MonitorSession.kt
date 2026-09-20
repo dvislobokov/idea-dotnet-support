@@ -59,6 +59,10 @@ class MonitorSession(
     private val refusedPids = HashSet<Long>()
     @Volatile private var disposed = false
 
+    /** The process the numbers belong to: the application behind `dotnet run`, not the launcher. */
+    @Volatile var applicationPid: Long = target.pid
+        private set
+
     fun start() {
         task = AppExecutorUtil.getAppScheduledExecutorService().scheduleWithFixedDelay({ runCatching { tick() } }, 0, 1, TimeUnit.SECONDS)
     }
@@ -75,6 +79,7 @@ class MonitorSession(
         // The launcher (`dotnet run`, `dotnet watch`) and the build nodes it leaves behind are not the application:
         // what is measured is the application process with its own children.
         val application = pickApplication(processes, refusedPids)
+        applicationPid = application.pid()
         val usage = ProcessSampler.sample(listOf(application) + application.descendants().filter { it.isAlive }.toList())
         val now = System.nanoTime()
         val cpu = previousCpu?.let { ProcessSampler.cpuPercent(it, usage.cpuTime, now - previousTime) } ?: 0.0
@@ -222,6 +227,5 @@ class DotNetProcessStartListener(private val project: Project) : ExecutionListen
     override fun processStarted(executorId: String, env: ExecutionEnvironment, handler: ProcessHandler) {
         val configuration = env.runProfile as? DotNetRunConfiguration ?: return
         RunningDotNetProcesses.getInstance(project).started(configuration.name, handler)
-        MonitorToolWindowFactory.revealOnce(project)
     }
 }

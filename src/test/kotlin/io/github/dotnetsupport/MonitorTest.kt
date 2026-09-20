@@ -142,6 +142,7 @@ class MonitorTest : TestCase() {
 
     fun testChart() {
         assertEquals(listOf(1.0, 1.0, 50.0, 100.0, 200.0, 5000.0), listOf(0.0, 0.7, 42.0, 100.0, 101.0, 4200.0).map(ChartFormats::niceMax))
+        assertEquals(listOf("128.0 MB", "1 KB", "2.00 GB"), listOf(100e6, 600.0, 1.5e9).map { ChartFormats.bytes(ChartFormats.niceMaxBytes(it)).replace(',', '.') })
         assertEquals("78.4 MB", ChartFormats.bytes(78.4 * 1024 * 1024).replace(',', '.'))
         assertEquals("512 B", ChartFormats.bytes(512.0))
         assertEquals("42%", ChartFormats.percent(42.3))

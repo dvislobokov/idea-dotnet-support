@@ -85,7 +85,7 @@
                     factoryClass="io.github.dotnetsupport.testing.TestExplorerToolWindowFactory"/>
         <toolWindow id="NuGet" anchor="bottom" icon="/icons/nugetToolWindow.svg"
                     factoryClass="io.github.dotnetsupport.nuget.NuGetToolWindowFactory"/>
-        <toolWindow id=".NET Monitor" anchor="bottom" icon="/icons/monitorToolWindow.svg"
+        <toolWindow id=".NET Monitor" anchor="right" icon="/icons/monitorToolWindow.svg"
                     factoryClass="io.github.dotnetsupport.monitor.MonitorToolWindowFactory"/>
         <toolWindow id=".NET Coverage" anchor="right" secondary="true" icon="AllIcons.General.RunWithCoverage"
                     factoryClass="io.github.dotnetsupport.coverage.CoverageToolWindowFactory"/>

@@ -1,6 +1,5 @@
 package io.github.dotnetsupport.monitor
 
-import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
@@ -19,7 +18,7 @@ import com.intellij.ui.components.ActionLink
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
-import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.cli.DotNetTool
 import java.awt.BasicStroke
 import java.awt.BorderLayout
 import java.awt.Color
@@ -42,21 +41,9 @@ class MonitorToolWindowFactory : ToolWindowFactory, DumbAware {
     }
 
     companion object {
+        // The stripe button is there from the registration on: the platform (ToolWindowManagerImpl.isButtonNeeded) gives one
+        // to every available window of a non-bundled plugin unless the saved layout says show_stripe_button="false".
         const val ID = ".NET Monitor"
-        private const val REVEALED_KEY = "dotnet.monitor.window.revealed"
-
-        /**
-         * In the new UI a tool window gets its stripe button when it is shown for the first time, so the window opens
-         * once, with the first .NET process started in the project; afterwards it opens only when asked.
-         */
-        fun revealOnce(project: Project) {
-            val properties = PropertiesComponent.getInstance(project)
-            if (properties.getBoolean(REVEALED_KEY)) return
-            properties.setValue(REVEALED_KEY, true)
-            ApplicationManager.getApplication().invokeLater({
-                ToolWindowManager.getInstance(project).getToolWindow(ID)?.show()
-            }, project.disposed)
-        }
     }
 }
 
@@ -71,15 +58,15 @@ class ShowMonitorAction : AnAction(), DumbAware {
 }
 
 class MonitorPanel(private val project: Project, parent: Disposable) : JPanel(BorderLayout()), Disposable {
-    private val processes = ComboBox<MonitorTarget>().apply { prototypeDisplayValue = MonitorTarget(0, "awesomeProject.Web: https (123456)", false) }
+    private val processes = ComboBox<MonitorTarget>()
     private val status = JBLabel().apply { foreground = UIUtil.getContextHelpForeground() }
     private val installLink = ActionLink("Install dotnet-counters") { installCounters() }
     private var session: MonitorSession? = null
     private var updatingList = false
 
     private val cpu = TimeSeriesChart("CPU", ChartFormats::percent, fixedMax = 100.0, "of ${Runtime.getRuntime().availableProcessors()} cores" to CPU_COLOR)
-    private val memory = TimeSeriesChart("Memory", ChartFormats::bytes, null, "working set" to MEMORY_COLOR, "GC heap" to HEAP_COLOR)
-    private val allocations = TimeSeriesChart("Allocation rate", { ChartFormats.bytes(it) + "/s" }, null, "allocated" to HEAP_COLOR)
+    private val memory = TimeSeriesChart("Memory", ChartFormats::bytes, null, "working set" to MEMORY_COLOR, "GC heap" to HEAP_COLOR).apply { scale = ChartFormats::niceMaxBytes }
+    private val allocations = TimeSeriesChart("Allocation rate", { ChartFormats.bytes(it) + "/s" }, null, "allocated" to HEAP_COLOR).apply { scale = ChartFormats::niceMaxBytes }
     private val gcPause = TimeSeriesChart("Time in GC", ChartFormats::percent, null, "pause" to GC_COLOR)
     private val gcCount = TimeSeriesChart("GC collections", { ChartFormats.number(it) + "/s" }, null, "all generations" to GC_COLOR)
     private val requests = TimeSeriesChart("Active requests", ChartFormats::number, null, "server" to REQUEST_COLOR, "HttpClient" to CLIENT_COLOR)
@@ -91,19 +78,41 @@ class MonitorPanel(private val project: Project, parent: Disposable) : JPanel(Bo
     init {
         Disposer.register(parent, this)
         val refresh = JButton("Refresh").apply { addActionListener { reloadProcesses(select = null) } }
-        val top = JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(8), JBUI.scale(4))).apply {
-            add(JBLabel("Process:"))
-            add(processes)
-            add(refresh)
+        // A narrow panel on the right, as the Monitoring of Rider: the process on top, the charts one under another.
+        val chooser = JPanel(BorderLayout(JBUI.scale(6), 0)).apply {
+            add(processes, BorderLayout.CENTER)
+            add(refresh, BorderLayout.EAST)
+        }
+        val threadDump = JButton("Thread Dump").apply {
+            toolTipText = "Stacks of all managed threads (dotnet-stack): where the application is stuck"
+            addActionListener { session?.let { Diagnostics.threadDump(project, it.applicationPid, it.target.title) } }
+        }
+        val heapSnapshot = JButton("Heap Snapshot").apply {
+            toolTipText = "Objects of the managed heap by type (dotnet-gcdump); the process runs a full garbage collection"
+            addActionListener { session?.let { Diagnostics.heapSnapshot(project, it.applicationPid, it.target.title) } }
+        }
+        val snapshots = JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(6), 0)).apply {
+            add(threadDump)
+            add(heapSnapshot)
+        }
+        val notes = JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(6), 0)).apply {
             add(status)
             add(installLink)
         }
-        val grid = JPanel(GridLayout(0, 3, JBUI.scale(8), JBUI.scale(8))).apply {
+        val top = JPanel(BorderLayout(0, JBUI.scale(4))).apply {
+            border = JBUI.Borders.empty(6, 8, 2, 8)
+            add(chooser, BorderLayout.NORTH)
+            add(snapshots, BorderLayout.CENTER)
+            add(notes, BorderLayout.SOUTH)
+        }
+        val column = JPanel(GridLayout(0, 1, 0, JBUI.scale(10))).apply {
             border = JBUI.Borders.empty(4, 8, 8, 8)
             charts.forEach { add(it) }
         }
+        // NORTH: the charts keep their height instead of stretching over a tall panel
+        val content = JPanel(BorderLayout()).apply { add(column, BorderLayout.NORTH) }
         add(top, BorderLayout.NORTH)
-        add(ScrollPaneFactory.createScrollPane(grid, true), BorderLayout.CENTER)
+        add(ScrollPaneFactory.createScrollPane(content, true).apply { horizontalScrollBarPolicy = javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER }, BorderLayout.CENTER)
 
         processes.addActionListener { if (!updatingList) (processes.selectedItem as? MonitorTarget)?.let(::monitor) }
         RunningDotNetProcesses.getInstance(project).subscribe(this) { started ->
@@ -123,7 +132,7 @@ class MonitorPanel(private val project: Project, parent: Disposable) : JPanel(Bo
                 .map { MonitorTarget(it.pid, it.toString(), withChildren = false) }
             ApplicationManager.getApplication().invokeLater({
                 installLink.isVisible = tool == null
-                if (tool == null) status.text = "CPU and memory only: the counters of the runtime need the dotnet-counters tool."
+                if (tool == null) status.text = "CPU and memory only."
                 val current = select ?: session?.target ?: processes.selectedItem as? MonitorTarget
                 updatingList = true
                 processes.model = DefaultComboBoxModel((own + others).toTypedArray())
@@ -170,16 +179,11 @@ class MonitorPanel(private val project: Project, parent: Disposable) : JPanel(Bo
         }
     }
 
-    private fun installCounters() {
-        val commands = DotNetCli.commandLinesOrNotify(project, "Install dotnet-counters") {
-            listOf(DotNetCli.commandLine(null, "tool", "install", "--global", DotNetCounters.PACKAGE))
-        } ?: return
-        DotNetCli.runInBackground(project, "Installing ${DotNetCounters.PACKAGE}", commands) {
-            val target = session?.target
-            session?.dispose()
-            session = null
-            reloadProcesses(select = target)
-        }
+    private fun installCounters() = DotNetTool.COUNTERS.install(project) {
+        val target = session?.target
+        session?.dispose()
+        session = null
+        reloadProcesses(select = target)
     }
 
     override fun dispose() {
@@ -214,6 +218,13 @@ object ChartFormats {
         else -> "${value.toLong()} B"
     }
 
+    /** The same in binary units, so that the scale reads "128 MB" and not "95,4 MB". */
+    fun niceMaxBytes(value: Double): Double {
+        var unit = 1.0
+        while (value / unit >= 1024) unit *= 1024
+        return listOf(1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0, 512.0, 1024.0).first { it * unit >= value } * unit
+    }
+
     /** The top of the scale: 1, 2 or 5 times a power of ten, not below the largest value. */
     fun niceMax(value: Double): Double {
         if (value <= 0 || value.isNaN()) return 1.0
@@ -234,9 +245,12 @@ class TimeSeriesChart(
     private val values = series.map { DoubleArray(CAPACITY) { Double.NaN } }
     private var size = 0
 
+    /** Rounds the largest value up to the top of the scale. */
+    var scale: (Double) -> Double = ChartFormats::niceMax
+
     init {
-        preferredSize = Dimension(JBUI.scale(260), JBUI.scale(130))
-        minimumSize = Dimension(JBUI.scale(180), JBUI.scale(110))
+        preferredSize = Dimension(JBUI.scale(240), JBUI.scale(112))
+        minimumSize = Dimension(JBUI.scale(120), JBUI.scale(96))
     }
 
     fun add(vararg sample: Double?) {
@@ -264,6 +278,9 @@ class TimeSeriesChart(
         try {
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
             g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+            // a JComponent has no font of its own until it gets a parent
+            val baseFont = font ?: UIUtil.getLabelFont()
+            g.font = baseFont
             val metrics = g.fontMetrics
             val header = metrics.height * 2 + JBUI.scale(4)
             val left = JBUI.scale(2)
@@ -272,13 +289,13 @@ class TimeSeriesChart(
             if (plotWidth <= 0 || plotHeight <= 0) return
 
             g.color = UIUtil.getLabelForeground()
-            g.font = font.deriveFont(java.awt.Font.BOLD)
+            g.font = baseFont.deriveFont(java.awt.Font.BOLD)
             g.drawString(title, left, metrics.ascent)
-            g.font = font
+            g.font = baseFont
             g.color = UIUtil.getContextHelpForeground()
             g.drawString(legend(), left, metrics.height + metrics.ascent)
 
-            val max = fixedMax ?: ChartFormats.niceMax(values.maxOf { array -> array.filter { !it.isNaN() }.maxOrNull() ?: 0.0 })
+            val max = fixedMax ?: scale(values.maxOf { array -> array.filter { !it.isNaN() }.maxOrNull() ?: 0.0 })
             val scaleText = format(max)
             g.drawString(scaleText, width - left - metrics.stringWidth(scaleText), metrics.ascent)
 
