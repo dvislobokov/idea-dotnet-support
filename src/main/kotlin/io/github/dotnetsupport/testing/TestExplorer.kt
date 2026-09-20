@@ -84,7 +84,9 @@ object TestExplorerModel {
 class TestExplorerToolWindowFactory : ToolWindowFactory, DumbAware {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val panel = TestExplorerPanel(project)
-        toolWindow.contentManager.addContent(toolWindow.contentManager.factory.createContent(panel, "", false))
+        // The first tab, never closed; the test runs add their sessions after it (see DotNetTestRunner).
+        val explorer = toolWindow.contentManager.factory.createContent(panel, "Explorer", false).apply { isCloseable = false }
+        toolWindow.contentManager.addContent(explorer, 0)
     }
 }
 

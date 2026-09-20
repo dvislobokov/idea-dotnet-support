@@ -70,10 +70,9 @@ class DotNetCoverageService(private val project: Project) : Disposable {
         title = runName
         refreshEditors()
         listeners.forEach { it() }
-        ToolWindowManager.getInstance(project).getToolWindow(CoverageToolWindowFactory.ID)?.apply {
-            isAvailable = true
-            show()
-        }
+        // The window is always available. It used to appear with the first run, but then a layout that remembered it
+        // as open made setAvailable(true) fail an assertion of the platform.
+        ToolWindowManager.getInstance(project).getToolWindow(CoverageToolWindowFactory.ID)?.show()
     }
 
     fun clear() {

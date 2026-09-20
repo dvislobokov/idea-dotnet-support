@@ -73,6 +73,7 @@
         <runConfigurationProducer implementation="io.github.dotnetsupport.run.DotNetRunConfigurationProducer"/>
         <runLineMarkerContributor language="C#"
                                   implementationClass="io.github.dotnetsupport.run.MainMethodRunLineMarkerContributor"/>
+        <programRunner implementation="io.github.dotnetsupport.testing.DotNetTestRunner" order="first"/>
         <runConfigurationProducer implementation="io.github.dotnetsupport.testing.DotNetTestConfigurationProducer"/>
         <runLineMarkerContributor language="C#"
                                   implementationClass="io.github.dotnetsupport.testing.DotNetTestRunLineMarkerContributor"/>
@@ -80,10 +81,12 @@
         <toolWindow id="Endpoints" anchor="bottom" icon="AllIcons.General.Web"
                     factoryClass="io.github.dotnetsupport.endpoints.EndpointsToolWindowFactory"/>
         <codeInsight.lineMarkerProvider language="C#" implementationClass="io.github.dotnetsupport.endpoints.EndpointLineMarkerProvider"/>
-        <toolWindow id="Unit Tests" anchor="left" secondary="false" icon="/icons/unitTestsToolWindow.svg"
+        <toolWindow id="Unit Tests" anchor="bottom" canCloseContents="true" icon="/icons/unitTestsToolWindow.svg"
                     factoryClass="io.github.dotnetsupport.testing.TestExplorerToolWindowFactory"/>
         <toolWindow id="NuGet" anchor="bottom" icon="/icons/nugetToolWindow.svg"
                     factoryClass="io.github.dotnetsupport.nuget.NuGetToolWindowFactory"/>
+        <toolWindow id=".NET Monitor" anchor="bottom" icon="/icons/monitorToolWindow.svg"
+                    factoryClass="io.github.dotnetsupport.monitor.MonitorToolWindowFactory"/>
         <toolWindow id=".NET Coverage" anchor="right" secondary="true" icon="AllIcons.General.RunWithCoverage"
                     factoryClass="io.github.dotnetsupport.coverage.CoverageToolWindowFactory"/>
 
@@ -174,6 +177,8 @@
             <separator/>
             <action id="DotNet.NewProject" class="io.github.dotnetsupport.actions.NewDotNetProjectAction"
                     text="New .NET Project..."/>
+            <action id="DotNet.Monitor" class="io.github.dotnetsupport.monitor.ShowMonitorAction"
+                    text="Monitor .NET Process" description="CPU, memory, GC, requests and exceptions of a running .NET process"/>
             <action id="DotNet.Environment" class="io.github.dotnetsupport.sdk.DotNetEnvironmentAction"
                     text=".NET on This Machine..." description="SDKs and runtimes with their support status, dotnet --info, global.json"/>
             <reference ref="DotNet.AnalyzeUpgrade"/>
@@ -184,6 +189,8 @@
     </actions>
 
     <projectListeners>
+        <listener class="io.github.dotnetsupport.monitor.DotNetProcessStartListener"
+                  topic="com.intellij.execution.ExecutionListener"/>
         <listener class="io.github.dotnetsupport.view.SolutionFilesListener"
                   topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
     </projectListeners>

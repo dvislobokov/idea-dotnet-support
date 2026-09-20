@@ -247,8 +247,20 @@ class SdkEnvironmentTest : BasePlatformTestCase() {
             "expui/unitTestsToolWindow@20x20.svg", "expui/unitTestsToolWindow@20x20_dark.svg")
         names.forEach { assertNotNull(it, javaClass.getResource("/icons/$it")) }
         val pluginXml = javaClass.getResource("/META-INF/plugin.xml")!!.readText()
-        assertTrue("<toolWindow id=\"Unit Tests\" anchor=\"left\" secondary=\"false\" icon=\"/icons/unitTestsToolWindow.svg\"" in pluginXml)
+        assertTrue("<toolWindow id=\"Unit Tests\" anchor=\"bottom\" canCloseContents=\"true\" icon=\"/icons/unitTestsToolWindow.svg\"" in pluginXml)
         assertTrue("\"unitTestsToolWindow.svg\": \"icons/unitTestsToolWindow.svg\"" in javaClass.getResource("/DotNetIconMappings.json")!!.readText())
+    }
+
+    fun testTestsRunInTheUnitTestsWindow() {
+        val type = io.github.dotnetsupport.run.DotNetConfigurationType.instance
+        fun configuration(command: io.github.dotnetsupport.run.DotNetCommand) =
+            io.github.dotnetsupport.run.DotNetRunConfiguration(project, type.factory, "c").apply { options.command = command }
+        // our runner takes `dotnet test` and only it; `dotnet run` stays with the default runner and the Run window
+        val tests = com.intellij.execution.runners.ProgramRunner.getRunner("Run", configuration(io.github.dotnetsupport.run.DotNetCommand.TEST))
+        assertEquals("DotNetTestRunner", tests?.runnerId)
+        val run = com.intellij.execution.runners.ProgramRunner.getRunner("Run", configuration(io.github.dotnetsupport.run.DotNetCommand.RUN))
+        assertNotNull(run)
+        assertFalse(run is io.github.dotnetsupport.testing.DotNetTestRunner)
     }
 
     fun testActionsAreRegistered() {

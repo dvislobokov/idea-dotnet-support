@@ -23,9 +23,6 @@ import javax.swing.table.AbstractTableModel
 
 /** Per-file summary of the last coverage run; double click opens the file with the gutter stripes. */
 class CoverageToolWindowFactory : ToolWindowFactory, DumbAware {
-    // appears with the first coverage run
-    override fun shouldBeAvailable(project: Project): Boolean = false
-
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val service = DotNetCoverageService.getInstance(project)
         val model = CoverageTableModel(project)

@@ -2,7 +2,8 @@
   "icons": {
     "expui": {
       "nugetToolWindow.svg": "icons/nugetToolWindow.svg",
-      "unitTestsToolWindow.svg": "icons/unitTestsToolWindow.svg"
+      "unitTestsToolWindow.svg": "icons/unitTestsToolWindow.svg",
+      "monitorToolWindow.svg": "icons/monitorToolWindow.svg"
     }
   }
 }
