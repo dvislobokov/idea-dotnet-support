@@ -49,8 +49,9 @@
 - [x] Диалог фида как в Rider (New / Edit): Name, URL, User, Password, Enabled, Allow insecure connections, Disable TLS certificate validation; учётные данные — в `nuget.config` через CLI и в хранилище паролей IDE для поиска по приватным фидам; пароли замаскированы в логах и прогрессе
 - [ ] Окно NuGet: README пакета, правка версий в `Directory.Packages.props` при CPM, выбор файла конфигурации для нового фида (сейчас — куда пишет CLI, т.е. пользовательский)
 - [ ] Устаревшие и уязвимые пакеты (`dotnet list package --outdated --vulnerable --format json`)
-- [ ] csproj: completion имён и версий пакетов, inlay «доступна новая версия», quick-fix обновления
-- [ ] Авто-`dotnet restore` при изменении csproj
+- [x] csproj / `Directory.Packages.props`: сетевой completion пакетов — id в `Include` / `Update` у PackageReference / PackageVersion / GlobalPackageReference / PackageDownload (поиск по фидам solution, порядок фида, версия, загрузки, ✓ verified; от 2 символов, перезапрос при наборе), версии в `Version` / `VersionOverride` (атрибутом и тегом; новые сверху, prerelease — по настройке или когда набирается `-`); выбор пакета дописывает `Version="<последняя>"`, кроме CPM и когда версия уже есть; запрос в пуле с отменой при следующем символе, кеш на 5 минут
+- [ ] csproj: inlay «доступна новая версия», quick-fix обновления
+- [x] Авто-`dotnet restore` при изменении csproj (настройка на странице NuGet, см. «Заход 4»)
 - [x] Тесты: дерево результатов из TRX (SMTRunner), переход к исходнику, перезапуск упавших, ▶ у тестовых методов и классов (xUnit / NUnit / MSTest) с `--filter`
 - [ ] Тесты: результаты по мере выполнения, а не после завершения (свой VSTest-логгер или протокол Microsoft.Testing.Platform)
 
@@ -73,7 +74,8 @@
 - [ ] Редактирование шаблонов генераторов пользователем (сейчас зашиты в плагин)
 
 ## Заход 5 — файлы проекта и конфигурации
-- [ ] MSBuild: XSD, completion свойств и значений, навигация по `Import` / `ProjectReference` / `$(Property)`, битые пути
+- [x] MSBuild-файлы (`.csproj`, `.props`, `.targets`, …): собственная составная схема вместо XSD — JSON-фрагменты в `resources/msbuildSchema` (ядро SDK, NuGet / CPM, упаковка, publish / trimming / AOT, анализ кода, ASP.NET / OpenAPI, SDK-контейнеры, тесты и coverlet, gRPC / Protobuf, EF Core, MinVer / GitVersion / SourceLink, WPF / WinForms / MAUI / Avalonia): ~290 свойств, ~50 item-ов с метаданными. Схема открытая: неизвестный тег — не ошибка. По ней: completion тегов по месту (свойства в PropertyGroup, item-ы в ItemGroup, метаданные в item-е, задачи в Target, структура в Project), атрибутов (Include / Remove / Update, метаданные атрибутами, Condition, атрибуты Target / Import / задач) и значений (в т.ч. элемента списка `a;b`); фрагменты инструментов, на которые проект ссылается (пакет или SDK, в т.ч. через `PackageVersion`), идут первыми, остальные — серым с «needs <пакет>»; вставка тега в готовом виде (`<Nullable>|</Nullable>`, `<PackageReference Include="|" />`); Ctrl+Q в файле и в списке completion (описание, значения, пакет, ссылка на документацию); предупреждение о значении вне закрытого перечисления (не для `$(…)`); подсветка `$(Property)`, `@(Item)`, `%(Metadata)`
+- [ ] MSBuild: навигация по `Import` / `ProjectReference` / `$(Property)`, битые пути, completion `$(…)` по свойствам файла и `Directory.Build.props`, страница цветов для ссылок
 - [ ] JSON Schema для `appsettings.json`, `launchSettings.json`, `global.json`
 - [ ] Редактор `.resx` (таблица, несколько культур)
 - [ ] `.sln`: подсветка и сворачивание секций

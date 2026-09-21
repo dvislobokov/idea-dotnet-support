@@ -1,0 +1,33 @@
+{
+  "id": "publish",
+  "title": "Publish, trimming, AOT",
+  "url": "https://learn.microsoft.com/dotnet/core/deploying/",
+  "properties": [
+    { "name": "PublishSingleFile", "doc": "Publish the application as one executable.", "values": "bool" },
+    { "name": "IncludeNativeLibrariesForSelfExtract", "doc": "Put the native libraries into the single file too; they are extracted on start.", "values": "bool" },
+    { "name": "IncludeAllContentForSelfExtract", "doc": "Put every file into the single file and extract them on start.", "values": "bool" },
+    { "name": "EnableCompressionInSingleFile", "doc": "Compress the assemblies inside the single file: smaller, slower start.", "values": "bool" },
+    { "name": "PublishTrimmed", "doc": "Remove the unused code from a self-contained application.", "values": "bool" },
+    { "name": "TrimMode", "doc": "Trim every assembly, or only the ones that opted in.", "values": ["full", "partial"] },
+    { "name": "PublishAot", "doc": "Compile to native code ahead of time: no JIT, fast start, no runtime code generation.", "values": "bool" },
+    { "name": "PublishReadyToRun", "doc": "Precompile the assemblies: faster start, bigger files, the JIT is still there.", "values": "bool" },
+    { "name": "PublishReadyToRunComposite", "doc": "One composite ReadyToRun image for the framework and the application.", "values": "bool" },
+    { "name": "IsAotCompatible", "doc": "The library is AOT-compatible: turns on the trim, single-file and AOT analyzers.", "values": "bool" },
+    { "name": "IsTrimmable", "doc": "The library can be trimmed: turns on the trim analyzer.", "values": "bool" },
+    { "name": "EnableTrimAnalyzer", "doc": "Warn about code that is not safe to trim.", "values": "bool" },
+    { "name": "EnableSingleFileAnalyzer", "doc": "Warn about APIs that do not work in a single file (Assembly.Location).", "values": "bool" },
+    { "name": "EnableAotAnalyzer", "doc": "Warn about code that does not work under native AOT.", "values": "bool" },
+    { "name": "SuppressTrimAnalysisWarnings", "doc": "Hide the trim warnings.", "values": "bool" },
+    { "name": "TrimmerSingleWarn", "doc": "One warning per assembly instead of one per call site.", "values": "bool" },
+    { "name": "OptimizationPreference", "doc": "What native AOT optimizes for.", "values": ["Size", "Speed"] },
+    { "name": "StripSymbols", "doc": "Keep the debug symbols of a native AOT executable in a separate file.", "values": "bool" },
+    { "name": "DebuggerSupport", "doc": "false: trim what only a debugger needs.", "values": "bool" },
+    { "name": "EventSourceSupport", "doc": "false: trim EventSource.", "values": "bool" },
+    { "name": "UseSystemResourceKeys", "doc": "Trim the exception messages of the framework; resource keys are shown instead.", "values": "bool" },
+    { "name": "JsonSerializerIsReflectionEnabledByDefault", "doc": "false: System.Text.Json works with source-generated contexts only.", "values": "bool" },
+    { "name": "PublishDir", "doc": "Where dotnet publish puts the application." },
+    { "name": "PublishProfile", "doc": "A .pubxml of Properties/PublishProfiles to publish with." },
+    { "name": "PublishRelease", "doc": "dotnet publish uses the Release configuration (the default since SDK 8).", "values": "bool" },
+    { "name": "PackRelease", "doc": "dotnet pack uses the Release configuration (the default since SDK 8).", "values": "bool" }
+  ]
+}

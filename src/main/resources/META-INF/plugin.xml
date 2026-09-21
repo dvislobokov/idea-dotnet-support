@@ -58,6 +58,13 @@
         <lang.quoteHandler language="C#"
                            implementationClass="io.github.dotnetsupport.lang.CSharpQuoteHandler"/>
 
+        <!-- MSBuild files: completion, documentation and checks from the schema of resources/msbuildSchema -->
+        <xml.tagNameProvider implementation="io.github.dotnetsupport.msbuild.MsBuildTagNameProvider"/>
+        <completion.contributor language="XML" order="first" implementationClass="io.github.dotnetsupport.msbuild.MsBuildCompletionContributor"/>
+        <completion.contributor language="XML" order="first" implementationClass="io.github.dotnetsupport.msbuild.MsBuildPackageCompletionContributor"/>
+        <annotator language="XML" implementationClass="io.github.dotnetsupport.msbuild.MsBuildAnnotator"/>
+        <lang.documentationProvider language="XML" order="first" implementationClass="io.github.dotnetsupport.msbuild.MsBuildDocumentationProvider"/>
+
         <projectViewPane implementation="io.github.dotnetsupport.view.SolutionViewPane"/>
         <projectViewNodeDecorator implementation="io.github.dotnetsupport.view.BuildOutputDecorator"/>
         <projectViewNestingRulesProvider implementation="io.github.dotnetsupport.view.DotNetNestingRulesProvider"/>

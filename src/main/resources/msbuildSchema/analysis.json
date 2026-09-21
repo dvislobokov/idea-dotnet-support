@@ -1,0 +1,19 @@
+{
+  "id": "analysis",
+  "title": "Code analysis",
+  "url": "https://learn.microsoft.com/dotnet/core/project-sdk/msbuild-props#code-analysis-properties",
+  "properties": [
+    { "name": "AnalysisLevel", "doc": "Which set of the .NET analyzer rules is on: a version, optionally with a mode (latest-recommended).", "open": true, "values": ["latest", "latest-recommended", "latest-all", "latest-minimum", "preview", "9.0", "8.0", "7.0", "6.0", "5.0", "none"] },
+    { "name": "AnalysisMode", "doc": "How many of the rules are on.", "open": true, "values": ["None", "Default", "Minimum", "Recommended", "All"] },
+    { "name": "EnableNETAnalyzers", "doc": "The code quality analyzers of the SDK (CAxxxx).", "values": "bool" },
+    { "name": "EnforceCodeStyleInBuild", "doc": "The code style rules (IDExxxx) of .editorconfig are checked by the build too.", "values": "bool" },
+    { "name": "RunAnalyzers", "doc": "false: no analyzers at all, at build and in the IDE.", "values": "bool" },
+    { "name": "RunAnalyzersDuringBuild", "doc": "false: a faster build, the analyzers run in the IDE only.", "values": "bool" },
+    { "name": "RunAnalyzersDuringLiveAnalysis", "doc": "false: the analyzers run at build only.", "values": "bool" },
+    { "name": "CodeAnalysisTreatWarningsAsErrors", "doc": "false: CA warnings stay warnings under TreatWarningsAsErrors.", "values": "bool" },
+    { "name": "CodeAnalysisRuleSet", "doc": "A .ruleset file; superseded by .editorconfig." },
+    { "name": "ReportAnalyzer", "doc": "Report how long each analyzer and generator has taken.", "values": "bool" },
+    { "name": "ErrorLog", "doc": "Write the diagnostics to a SARIF file: build.sarif,version=2.1." },
+    { "name": "GenerateDocumentationFile", "doc": "Needed by the rules about XML comments and by IDE0005 (unused usings) at build.", "values": "bool" }
+  ]
+}
