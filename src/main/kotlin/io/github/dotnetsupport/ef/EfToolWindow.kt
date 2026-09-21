@@ -184,7 +184,7 @@ private class EfMigrationsPanel(private val project: Project, toolWindow: ToolWi
 
     private fun reload() {
         ApplicationManager.getApplication().executeOnPooledThread {
-            val loaded = ReadAction.compute<List<EfProjectNode>, RuntimeException> { if (project.isDisposed) emptyList() else EfToolWindowModel.load(project) }
+            val loaded = ReadAction.computeBlocking<List<EfProjectNode>, RuntimeException> { if (project.isDisposed) emptyList() else EfToolWindowModel.load(project) }
             ApplicationManager.getApplication().invokeLater({
                 projects = loaded
                 rebuild()

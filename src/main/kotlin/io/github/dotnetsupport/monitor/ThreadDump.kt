@@ -114,7 +114,7 @@ class ThreadDumpFilter(private val project: Project) : Filter {
         val frame = ThreadFrame(match.groupValues[1].removeSuffix(".il"), match.groupValues[2], "")
         if (!frame.isUserCode) return null
         val (type, method) = frame.source() ?: return null
-        val (file, lineNumber) = ReadAction.compute<Pair<VirtualFile, Int>?, RuntimeException> { locate(frame.module, type, method) } ?: return null
+        val (file, lineNumber) = ReadAction.computeBlocking<Pair<VirtualFile, Int>?, RuntimeException> { locate(frame.module, type, method) } ?: return null
 
         val member = match.groups[2]!!.range
         val lineStart = entireLength - line.length

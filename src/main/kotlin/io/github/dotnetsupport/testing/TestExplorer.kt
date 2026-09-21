@@ -2,6 +2,7 @@ package io.github.dotnetsupport.testing
 
 import com.intellij.execution.ProgramRunnerUtil
 import com.intellij.execution.RunManager
+import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.ActionManager
@@ -31,6 +32,7 @@ import com.intellij.util.ui.tree.TreeUtil
 import io.github.dotnetsupport.DotNetIcons
 import io.github.dotnetsupport.run.DotNetCommand
 import io.github.dotnetsupport.run.DotNetConfigurationType
+import io.github.dotnetsupport.run.DotNetProcessAttacher
 import io.github.dotnetsupport.run.DotNetRunConfiguration
 import io.github.dotnetsupport.solution.SolutionService
 import io.github.dotnetsupport.view.resolveFile
@@ -129,6 +131,8 @@ private class TestExplorerPanel(private val project: Project) : SimpleToolWindow
         setContent(ScrollPaneFactory.createScrollPane(tree))
         val actions = DefaultActionGroup(
             action("Run Selected Tests", AllIcons.Actions.Execute, { tree.selectionCount > 0 }) { runSelected(coverage = false) },
+            // needs a debugger to attach to the test host: without one the button stays disabled
+            action("Debug Selected Tests", AllIcons.Actions.StartDebugger, { tree.selectionCount > 0 && DotNetProcessAttacher.find() != null }) { runSelected(coverage = false, debug = true) },
             action("Run Selected Tests with Coverage", AllIcons.General.RunWithCoverage, { tree.selectionCount > 0 }) { runSelected(coverage = true) },
             action("Refresh", AllIcons.Actions.Refresh, { true }) { reload() },
             action("Expand All", AllIcons.Actions.Expandall, { true }) { TreeUtil.expandAll(tree) },
@@ -140,7 +144,7 @@ private class TestExplorerPanel(private val project: Project) : SimpleToolWindow
 
     private fun reload() {
         ApplicationManager.getApplication().executeOnPooledThread {
-            val projects = ReadAction.compute<List<TestProject>, RuntimeException> { if (project.isDisposed) emptyList() else TestExplorerModel.discover(project) }
+            val projects = ReadAction.computeBlocking<List<TestProject>, RuntimeException> { if (project.isDisposed) emptyList() else TestExplorerModel.discover(project) }
             ApplicationManager.getApplication().invokeLater({
                 root.removeAllChildren()
                 for (testProject in projects) {
@@ -157,7 +161,7 @@ private class TestExplorerPanel(private val project: Project) : SimpleToolWindow
     }
 
     /** One run per project: `dotnet test` takes a single project, the selection inside it becomes the filter. */
-    private fun runSelected(coverage: Boolean) {
+    private fun runSelected(coverage: Boolean, debug: Boolean = false) {
         val selected = tree.selectionPaths.orEmpty().map { it.lastPathComponent as DefaultMutableTreeNode }
         val byProject = LinkedHashMap<TestProject, MutableList<TestTarget>?>()
         for (node in selected) {
@@ -178,7 +182,7 @@ private class TestExplorerPanel(private val project: Project) : SimpleToolWindow
                 collectCoverage = coverage
             }
             runManager.setTemporaryConfiguration(settings)
-            ProgramRunnerUtil.executeConfiguration(settings, DefaultRunExecutor.getRunExecutorInstance())
+            ProgramRunnerUtil.executeConfiguration(settings, if (debug) DefaultDebugExecutor.getDebugExecutorInstance() else DefaultRunExecutor.getRunExecutorInstance())
         }
     }
 

@@ -1,8 +1,18 @@
 # Отладка через DAP: план интеграции
 
-Статус: **план; начат только слой 1** (2026-09-21). Отладчик — `dotnet-debugger` (MIT, на ICorDebug, говорит по Debug Adapter
+Статус: **запасной путь** (2026-09-21): действующий план — `PLATFORM_DAP_PLAN.md`, отладчик на платформенном DAP-клиенте; слои 1–3 отсюда нужны,
+только если платформа упрётся или для IDE без модуля DAP. Таблица соответствия и особенности адаптера ниже действуют в обоих случаях. Отладчик — `dotnet-debugger` (MIT, на ICorDebug, говорит по Debug Adapter
 Protocol), ставится как dotnet tool: пакет `dotnet-debugger-dap`, команда `dotnet-debugger`. Результаты его проверки на
 Windows и Linux — в `dap-probe/FINDINGS.md`, там же скрипты, которыми можно прогнать любую новую версию.
+
+## Платформенный DAP (найдено 2026-09-21, при переходе на 2026.1)
+В платформе 261 есть модуль `intellij.platform.dap` (`lib/intellij.platform.dap.jar`, `visibility="public"`, весь API `@Experimental`): клиент протокола, сессия,
+точки останова, стек, переменные, evaluate и мост в XDebugger (`DapProgramRunner`, пакет `xdebugger`). Точки расширения:
+`com.intellij.platform.dap.debugAdapterSupportProvider` (`DebugAdapterSupportProvider` → `DebugAdapterDescriptor`) и `...launchArgumentsProvider`
+(`DapLaunchArgumentsProvider`). Таймауты — ключи реестра `dap.timeout.*`, трассировка — `dap.message.trace.dir`. Им пользуются JS-отладчик и Jupyter.
+Прежде чем писать свой клиент (слои 1–3 ниже), попробовать описать `dotnet-debugger` через этот модуль. Не проверено: есть ли модуль в GoLand / PyCharm /
+WebStorm / Rider (он `productModuleV2`, включается по продуктам) и как он переживает особенности адаптера из `dap-probe/FINDINGS.md`
+(постраничные `variables`, долгие запросы).
 
 ## Решения
 - **Отладчик — обычный dotnet tool плагина**, как `dotnet-counters`: строка на странице Settings | Tools | .NET (путь, Install /

@@ -170,4 +170,12 @@ class EndpointsTest : BasePlatformTestCase() {
         myFixture.configureFromExistingVirtualFile(api.endpoints[0].file)
         assertEquals(2, myFixture.findAllGutters().size)
     }
+
+    /** IntelliJ IDEA has an "Endpoints" tool window of its own: ours keeps the name, but not the id. */
+    fun testToolWindowIdDoesNotClashWithTheOneOfIdea() {
+        val pluginXml = javaClass.getResource("/META-INF/plugin.xml")!!.readText()
+        assertFalse("<toolWindow id=\"Endpoints\"" in pluginXml)
+        assertTrue("<toolWindow id=\"${io.github.dotnetsupport.endpoints.EndpointsToolWindowFactory.ID}\"" in pluginXml)
+        assertEquals("Endpoints", io.github.dotnetsupport.endpoints.EndpointsToolWindowFactory.TITLE)
+    }
 }

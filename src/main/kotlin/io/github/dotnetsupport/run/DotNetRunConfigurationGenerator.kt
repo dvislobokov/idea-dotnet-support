@@ -27,7 +27,7 @@ class DotNetRunConfigurationGenerator(private val project: Project) {
         if (!DotNetSettings.getInstance().createRunConfigurations) return
         ApplicationManager.getApplication().executeOnPooledThread {
             if (project.isDisposed) return@executeOnPooledThread
-            val targets = ReadAction.compute<List<Target>, RuntimeException> { if (project.isDisposed) emptyList() else collectTargets() }
+            val targets = ReadAction.computeBlocking<List<Target>, RuntimeException> { if (project.isDisposed) emptyList() else collectTargets() }
             if (targets.isNotEmpty()) ApplicationManager.getApplication().invokeLater({ register(targets) }, project.disposed)
         }
     }

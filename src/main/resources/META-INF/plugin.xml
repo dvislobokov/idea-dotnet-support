@@ -15,6 +15,16 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.xml</depends>
 
+    <!-- optional parts: a module is loaded only where its dependencies are (see the descriptor of the module next to META-INF) -->
+    <content>
+        <module name="io.github.dotnetsupport.dap"/>
+    </content>
+
+    <extensionPoints>
+        <!-- who can attach a debugger to a .NET process: the module with the debugger, where it is loaded -->
+        <extensionPoint qualifiedName="io.github.dotnetsupport.processAttacher" interface="io.github.dotnetsupport.run.DotNetProcessAttacher" dynamic="true"/>
+    </extensionPoints>
+
     <extensions defaultExtensionNs="com.intellij">
         <fileType name="C#"
                   implementationClass="io.github.dotnetsupport.lang.CSharpFileType"
@@ -48,6 +58,24 @@
         <lang.syntaxHighlighterFactory language="C#"
                                        implementationClass="io.github.dotnetsupport.lang.CSharpSyntaxHighlighterFactory"/>
         <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpIdentifierAnnotator"/>
+        <!-- on the declarations CSharpDeclarations finds by tokens -->
+        <lang.psiStructureViewFactory language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpStructureViewFactory"/>
+        <breadcrumbsInfoProvider implementation="io.github.dotnetsupport.lang.CSharpBreadcrumbsProvider"/>
+        <lang.foldingBuilder language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpFoldingBuilder"/>
+        <fileBasedIndex implementation="io.github.dotnetsupport.lang.CSharpDeclarationIndex"/>
+        <gotoClassContributor implementation="io.github.dotnetsupport.lang.CSharpGotoClassContributor"/>
+        <gotoSymbolContributor implementation="io.github.dotnetsupport.lang.CSharpGotoSymbolContributor"/>
+        <!-- the compiler diagnostics of the last build, in the editor -->
+        <externalAnnotator language="C#" implementationClass="io.github.dotnetsupport.build.BuildProblemsAnnotator"/>
+        <defaultLiveTemplates file="/liveTemplates/CSharp.xml"/>
+        <liveTemplateContext contextId="CSHARP" implementation="io.github.dotnetsupport.lang.CSharpTemplateContext"/>
+        <liveTemplateMacro implementation="io.github.dotnetsupport.lang.CSharpTypeNameMacro"/>
+        <typedHandler implementation="io.github.dotnetsupport.lang.CSharpDocCommentTypedHandler"/>
+        <!-- indentation while typing, by the rules of resources/csharpIndent/rules.json; whole files are formatted by CSharpier / dotnet format -->
+        <lineIndentProvider implementation="io.github.dotnetsupport.lang.CSharpLineIndentProvider"/>
+        <typedHandler implementation="io.github.dotnetsupport.lang.CSharpBracketTypedHandler"/>
+        <enterHandlerDelegate order="first" implementation="io.github.dotnetsupport.lang.CSharpEnterAfterBraceHandler"/>
+        <enterHandlerDelegate implementation="io.github.dotnetsupport.lang.CSharpDocCommentEnterHandler"/>
         <colorSettingsPage implementation="io.github.dotnetsupport.lang.CSharpColorSettingsPage"/>
         <additionalTextAttributes scheme="Default" file="colorSchemes/CSharpDefault.xml"/>
         <additionalTextAttributes scheme="Darcula" file="colorSchemes/CSharpDarcula.xml"/>
@@ -73,7 +101,7 @@
         <notificationGroup id=".NET" displayType="BALLOON"/>
         <projectConfigurable parentId="tools" id="io.github.dotnetsupport.settings" displayName=".NET"
                              instance="io.github.dotnetsupport.settings.DotNetSettingsConfigurable"/>
-        <!-- the pages of Rider under Tools | .NET; what the plugin has nothing behind yet is on them too, locked -->
+        <!-- the pages of Rider under Tools | .NET, with the options the plugin has something behind -->
         <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.build" displayName="Toolset and Build"
                              instance="io.github.dotnetsupport.build.DotNetBuildConfigurable"/>
         <applicationConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.nuget" displayName="NuGet"
@@ -82,6 +110,8 @@
                                  instance="io.github.dotnetsupport.coverage.CoverageSettingsConfigurable"/>
         <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.debugger" displayName="Debugger"
                              instance="io.github.dotnetsupport.settings.DotNetDebuggerConfigurable"/>
+        <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.languageServer" displayName="Language Server"
+                             instance="io.github.dotnetsupport.lsp.RoslynLanguageServerConfigurable"/>
         <langCodeStyleSettingsProvider implementation="io.github.dotnetsupport.lang.CSharpCodeStyleSettingsProvider"/>
         <projectViewNodeDecorator implementation="io.github.dotnetsupport.coverage.CoverageProjectViewDecorator"/>
         <postStartupActivity implementation="io.github.dotnetsupport.build.BuildAfterSolutionIsLoaded"/>
@@ -96,11 +126,14 @@
         <runLineMarkerContributor language="C#"
                                   implementationClass="io.github.dotnetsupport.run.MainMethodRunLineMarkerContributor"/>
         <programRunner implementation="io.github.dotnetsupport.testing.DotNetTestRunner" order="first"/>
+        <stepsBeforeRunProvider implementation="io.github.dotnetsupport.run.BuildProjectBeforeRunTaskProvider"/>
         <runConfigurationProducer implementation="io.github.dotnetsupport.testing.DotNetTestConfigurationProducer"/>
         <runLineMarkerContributor language="C#"
                                   implementationClass="io.github.dotnetsupport.testing.DotNetTestRunLineMarkerContributor"/>
         <iconMapper mappingFile="DotNetIconMappings.json"/>
-        <toolWindow id="Endpoints" anchor="bottom" icon="AllIcons.General.Web"
+        <!-- the id is not "Endpoints": IntelliJ IDEA has a tool window of its own with that id (Microservices), and the second
+             registration fails. The name on the stripe is still "Endpoints": the factory sets it. -->
+        <toolWindow id="DotNetEndpoints" anchor="bottom" icon="AllIcons.General.Web"
                     factoryClass="io.github.dotnetsupport.endpoints.EndpointsToolWindowFactory"/>
         <codeInsight.lineMarkerProvider language="C#" implementationClass="io.github.dotnetsupport.endpoints.EndpointLineMarkerProvider"/>
         <toolWindow id="Unit Tests" anchor="bottom" canCloseContents="true" icon="/icons/unitTestsToolWindow.svg"
@@ -273,6 +306,10 @@
             <reference ref="DotNet.AnalyzeUpgrade"/>
             <reference ref="DotNet.InsertGuid"/>
             <reference ref="DotNet.AnalyzeStackTrace"/>
+            <separator/>
+            <!-- a diagnostic: is the LSP / DAP API of the platform there in this IDE and with this license -->
+            <action id="DotNet.PlatformApiProbe" class="io.github.dotnetsupport.probe.PlatformApiProbeAction"
+                    text="Probe Platform LSP / DAP API..." description="Check which LSP and DAP API of the platform this IDE has; the result can be copied as JSON"/>
             <add-to-group group-id="MainMenu" anchor="after" relative-to-action="ToolsMenu"/>
         </group>
     </actions>

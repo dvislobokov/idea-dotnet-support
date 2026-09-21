@@ -42,6 +42,16 @@ import javax.swing.tree.DefaultMutableTreeNode
 import javax.swing.tree.DefaultTreeModel
 
 class EndpointsToolWindowFactory : ToolWindowFactory, DumbAware {
+    /** The id of the window is internal (see plugin.xml); this is what the stripe button and the header say. */
+    override fun init(toolWindow: ToolWindow) {
+        toolWindow.stripeTitle = TITLE
+    }
+
+    companion object {
+        const val ID = "DotNetEndpoints"
+        const val TITLE = "Endpoints"
+    }
+
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val panel = EndpointsPanel(project, toolWindow)
         toolWindow.contentManager.addContent(toolWindow.contentManager.factory.createContent(panel, "", false))
@@ -144,7 +154,7 @@ private class EndpointsPanel(private val project: Project, toolWindow: ToolWindo
 
     private fun reload() {
         ApplicationManager.getApplication().executeOnPooledThread {
-            val projects = ReadAction.compute<List<EndpointsOfProject>, RuntimeException> { if (project.isDisposed) emptyList() else EndpointsModel.discover(project) }
+            val projects = ReadAction.computeBlocking<List<EndpointsOfProject>, RuntimeException> { if (project.isDisposed) emptyList() else EndpointsModel.discover(project) }
             ApplicationManager.getApplication().invokeLater({
                 val expanded = TreeUtil.collectExpandedPaths(tree).isNotEmpty()
                 root.removeAllChildren()

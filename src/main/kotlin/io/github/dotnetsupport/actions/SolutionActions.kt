@@ -136,7 +136,7 @@ class AddNewProjectToSolutionAction : NewDotNetProjectAction(requiresSelection =
 
 class AddExistingProjectAction : SolutionAction() {
     override fun perform(project: Project, context: SolutionContext) {
-        val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()
+        val descriptor = FileChooserDescriptorFactory.singleFile()
             .withFileFilter(DotNetProjects::isProjectFile)
             .withTitle("Add Existing Project")
         val projectFile = FileChooser.chooseFile(descriptor, project, context.solutionFile.parent) ?: return

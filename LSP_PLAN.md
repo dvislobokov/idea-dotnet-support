@@ -42,6 +42,12 @@
   `workspace/_roslyn_projectNeedsRestore`, вложенные code actions и Fix All.
 - Результат: снятый трафик как тестовые фикстуры, список особенностей, уточнённые оценки.
 
+**Сделано заранее (2026-09-21):** зонд `tools/roslyn-lsp/probe.py` и сводка в `tools/roslyn-lsp/README.md` — аргументы запуска сервера 5.12,
+`capabilities`, 80 секций `workspace/configuration`, нестандартные методы (`solution/open`, `project/open`, `workspace/projectInitializationComplete`,
+`workspace/_roslyn_restore`, …). Настройки и чистые функции для клиента уже есть: `lsp/RoslynLanguageServerSettings.kt`
+(`RoslynLanguageServer.arguments(...)` — командная строка, `RoslynLanguageServer.configuration(...)` — ответ на `workspace/configuration`,
+отступы берутся из Code Style через `RoslynCodeStyle`), страница Settings | Tools | .NET | Language Server, tool `DotNetTool.ROSLYN_LANGUAGE_SERVER`.
+
 ### Фаза 1 — транспорт и жизненный цикл (2–3 д)
 - JSON-RPC 2.0: фрейминг, запросы / ответы / уведомления, `$/cancelRequest`, `$/progress` (work done → фоновая задача IDE), таймауты.
 - Процесс сервера на проект: старт по требованию (есть solution или открыт `.cs`), перезапуск с backoff, stderr,

@@ -102,7 +102,8 @@ class IdentifierColorsTest : BasePlatformTestCase() {
         assertEquals(listOf("Program:CSHARP_TYPE", "Main:CSHARP_METHOD", "Console:CSHARP_TYPE", "WriteLine:CSHARP_METHOD"), highlighted)
 
         // the bundled scheme gives the keys their Rider colors
-        val scheme = EditorColorsManager.getInstance().getScheme("Default")
+        // nullable since 2026.1
+        val scheme = checkNotNull(EditorColorsManager.getInstance().getScheme("Default"))
         assertEquals(0x6B2FBA, scheme.getAttributes(CSharpIdentifierAnnotator.TYPE).foregroundColor.rgb and 0xFFFFFF)
         assertEquals(0x00855F, scheme.getAttributes(CSharpIdentifierAnnotator.METHOD).foregroundColor.rgb and 0xFFFFFF)
         assertEquals(0x0093A1, scheme.getAttributes(CSharpIdentifierAnnotator.MEMBER).foregroundColor.rgb and 0xFFFFFF)

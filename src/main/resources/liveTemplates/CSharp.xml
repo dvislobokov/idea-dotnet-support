@@ -1,0 +1,209 @@
+<templateSet group="C#">
+  <template name="ctor" value="public $CLASS$($PARAMS$)&#10;{&#10;    $END$&#10;}" description="Constructor" toReformat="false" toShortenFQNames="false">
+    <variable name="CLASS" expression="csharpTypeName()" defaultValue="" alwaysStopAt="false"/>
+    <variable name="PARAMS" expression="" defaultValue="" alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="prop" value="public $TYPE$ $NAME$ { get; set; }$END$" description="Auto-property" toReformat="false" toShortenFQNames="false">
+    <variable name="TYPE" expression="" defaultValue='"int"' alwaysStopAt="true"/>
+    <variable name="NAME" expression="" defaultValue='"MyProperty"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="propg" value="public $TYPE$ $NAME$ { get; private set; }$END$" description="Auto-property with a private setter" toReformat="false" toShortenFQNames="false">
+    <variable name="TYPE" expression="" defaultValue='"int"' alwaysStopAt="true"/>
+    <variable name="NAME" expression="" defaultValue='"MyProperty"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="propi" value="public $TYPE$ $NAME$ { get; init; }$END$" description="Init-only property" toReformat="false" toShortenFQNames="false">
+    <variable name="TYPE" expression="" defaultValue='"int"' alwaysStopAt="true"/>
+    <variable name="NAME" expression="" defaultValue='"MyProperty"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="propr" value="public required $TYPE$ $NAME$ { get; init; }$END$" description="Required init-only property" toReformat="false" toShortenFQNames="false">
+    <variable name="TYPE" expression="" defaultValue='"string"' alwaysStopAt="true"/>
+    <variable name="NAME" expression="" defaultValue='"MyProperty"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="propfull" value="private $TYPE$ $FIELD$;&#10;&#10;public $TYPE$ $NAME$&#10;{&#10;    get =&gt; $FIELD$;&#10;    set =&gt; $FIELD$ = value;&#10;}$END$" description="Property with a backing field" toReformat="false" toShortenFQNames="false">
+    <variable name="TYPE" expression="" defaultValue='"int"' alwaysStopAt="true"/>
+    <variable name="FIELD" expression="" defaultValue='"_myProperty"' alwaysStopAt="true"/>
+    <variable name="NAME" expression="" defaultValue='"MyProperty"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="cw" value="Console.WriteLine($END$);" description="Console.WriteLine" toReformat="false" toShortenFQNames="false">
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="foreach" value="foreach (var $ITEM$ in $COLLECTION$)&#10;{&#10;    $END$&#10;}" description="foreach loop" toReformat="false" toShortenFQNames="false">
+    <variable name="ITEM" expression="" defaultValue='"item"' alwaysStopAt="true"/>
+    <variable name="COLLECTION" expression="" defaultValue='"collection"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="for" value="for (var $I$ = 0; $I$ &lt; $LENGTH$; $I$++)&#10;{&#10;    $END$&#10;}" description="for loop" toReformat="false" toShortenFQNames="false">
+    <variable name="I" expression="" defaultValue='"i"' alwaysStopAt="true"/>
+    <variable name="LENGTH" expression="" defaultValue='"length"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="forr" value="for (var $I$ = $LENGTH$ - 1; $I$ &gt;= 0; $I$--)&#10;{&#10;    $END$&#10;}" description="Reverse for loop" toReformat="false" toShortenFQNames="false">
+    <variable name="I" expression="" defaultValue='"i"' alwaysStopAt="true"/>
+    <variable name="LENGTH" expression="" defaultValue='"length"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="if" value="if ($CONDITION$)&#10;{&#10;    $END$&#10;}" description="if statement" toReformat="false" toShortenFQNames="false">
+    <variable name="CONDITION" expression="" defaultValue='"true"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="else" value="else&#10;{&#10;    $END$&#10;}" description="else block" toReformat="false" toShortenFQNames="false">
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="while" value="while ($CONDITION$)&#10;{&#10;    $END$&#10;}" description="while loop" toReformat="false" toShortenFQNames="false">
+    <variable name="CONDITION" expression="" defaultValue='"true"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="do" value="do&#10;{&#10;    $END$&#10;} while ($CONDITION$);" description="do...while loop" toReformat="false" toShortenFQNames="false">
+    <variable name="CONDITION" expression="" defaultValue='"true"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="switch" value="switch ($VALUE$)&#10;{&#10;    case $CASE$:&#10;        $END$&#10;        break;&#10;    default:&#10;        break;&#10;}" description="switch statement" toReformat="false" toShortenFQNames="false">
+    <variable name="VALUE" expression="" defaultValue='"value"' alwaysStopAt="true"/>
+    <variable name="CASE" expression="" defaultValue='"0"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="try" value="try&#10;{&#10;    $END$&#10;}&#10;catch ($EXCEPTION$ e)&#10;{&#10;    throw;&#10;}" description="try...catch" toReformat="false" toShortenFQNames="false">
+    <variable name="EXCEPTION" expression="" defaultValue='"Exception"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="tryf" value="try&#10;{&#10;    $END$&#10;}&#10;finally&#10;{&#10;}" description="try...finally" toReformat="false" toShortenFQNames="false">
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="using" value="using (var $NAME$ = $RESOURCE$)&#10;{&#10;    $END$&#10;}" description="using statement" toReformat="false" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue='"resource"' alwaysStopAt="true"/>
+    <variable name="RESOURCE" expression="" defaultValue='"resource"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="lock" value="lock ($LOCK$)&#10;{&#10;    $END$&#10;}" description="lock statement" toReformat="false" toShortenFQNames="false">
+    <variable name="LOCK" expression="" defaultValue='"_lock"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="thr" value="throw new $EXCEPTION$($END$);" description="throw new" toReformat="false" toShortenFQNames="false">
+    <variable name="EXCEPTION" expression="" defaultValue='"InvalidOperationException"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="svm" value="static void Main(string[] args)&#10;{&#10;    $END$&#10;}" description="static void Main" toReformat="false" toShortenFQNames="false">
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="sam" value="static async Task Main(string[] args)&#10;{&#10;    $END$&#10;}" description="static async Task Main" toReformat="false" toShortenFQNames="false">
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="class" value="public class $NAME$&#10;{&#10;    $END$&#10;}" description="Class" toReformat="false" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue='"MyClass"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="interface" value="public interface $NAME$&#10;{&#10;    $END$&#10;}" description="Interface" toReformat="false" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue='"IMyInterface"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="record" value="public record $NAME$($END$);" description="Record" toReformat="false" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue='"MyRecord"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="struct" value="public readonly struct $NAME$&#10;{&#10;    $END$&#10;}" description="Struct" toReformat="false" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue='"MyStruct"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="enum" value="public enum $NAME$&#10;{&#10;    $END$&#10;}" description="Enum" toReformat="false" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue='"MyEnum"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="fact" value="[Fact]&#10;public void $NAME$()&#10;{&#10;    $END$&#10;}" description="xUnit test" toReformat="false" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue='"Test"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="theory" value="[Theory]&#10;[InlineData($DATA$)]&#10;public void $NAME$($PARAMS$)&#10;{&#10;    $END$&#10;}" description="xUnit theory" toReformat="false" toShortenFQNames="false">
+    <variable name="DATA" expression="" defaultValue="" alwaysStopAt="true"/>
+    <variable name="NAME" expression="" defaultValue='"Test"' alwaysStopAt="true"/>
+    <variable name="PARAMS" expression="" defaultValue="" alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="test" value="[Test]&#10;public void $NAME$()&#10;{&#10;    $END$&#10;}" description="NUnit test" toReformat="false" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue='"Test"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="testm" value="[TestMethod]&#10;public void $NAME$()&#10;{&#10;    $END$&#10;}" description="MSTest test method" toReformat="false" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue='"Test"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="region" value="#region $NAME$&#10;&#10;$END$&#10;&#10;#endregion" description="#region" toReformat="false" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue='"Name"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+  <template name="nn" value="ArgumentNullException.ThrowIfNull($ARG$);$END$" description="ArgumentNullException.ThrowIfNull" toReformat="false" toShortenFQNames="false">
+    <variable name="ARG" expression="" defaultValue='"value"' alwaysStopAt="true"/>
+    <context>
+      <option name="CSHARP" value="true"/>
+    </context>
+  </template>
+</templateSet>

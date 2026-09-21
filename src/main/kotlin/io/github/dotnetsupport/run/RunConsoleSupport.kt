@@ -46,8 +46,11 @@ class DotNetStackTraceFilter(private val project: Project) : Filter {
 class ListeningUrlListener(private val launchUrl: String?) : ProcessListener {
     private val opened = AtomicBoolean()
 
-    override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
-        val url = ListeningUrl.parse(event.text) ?: return
+    override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) = textAvailable(event.text)
+
+    /** For output that does not come from a process handler: a debugger gets it from the debug adapter. */
+    fun textAvailable(text: String) {
+        val url = ListeningUrl.parse(text) ?: return
         // Kestrel reports every endpoint (http and https): the first one is enough
         if (opened.compareAndSet(false, true)) BrowserUtil.browse(ListeningUrl.browserUrl(url, launchUrl))
     }

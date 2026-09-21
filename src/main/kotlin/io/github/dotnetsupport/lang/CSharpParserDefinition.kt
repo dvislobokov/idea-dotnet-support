@@ -13,23 +13,20 @@ import com.intellij.psi.tree.IFileElementType
 import com.intellij.psi.tree.TokenSet
 
 /**
- * There is no real C# parser yet: the file is a flat list of tokens.
- * That is enough for highlighting, commenting, brace matching and word selection.
+ * There is no real C# parser: [CSharpTreeBuilder] groups the tokens into a node per declaration (namespace, type, member),
+ * which is what Structure view, breadcrumbs, folding and Go to Class need. Inside a member the tokens are a flat list:
+ * enough for highlighting, commenting, brace matching and word selection.
  */
 class CSharpParserDefinition : ParserDefinition {
     override fun createLexer(project: Project?): Lexer = CSharpLexer()
 
-    override fun createParser(project: Project?): PsiParser = PsiParser { root, builder ->
-        val file = builder.mark()
-        while (!builder.eof()) builder.advanceLexer()
-        file.done(root)
-        builder.treeBuilt
-    }
+    override fun createParser(project: Project?): PsiParser = PsiParser(CSharpTreeBuilder::build)
 
     override fun getFileNodeType(): IFileElementType = FILE
     override fun getCommentTokens(): TokenSet = CSharpTokenTypes.COMMENTS
     override fun getStringLiteralElements(): TokenSet = CSharpTokenTypes.STRINGS
-    override fun createElement(node: ASTNode): PsiElement = ASTWrapperPsiElement(node)
+    override fun createElement(node: ASTNode): PsiElement =
+        if (CSharpElementTypes.kindOf(node.elementType) != null) CSharpDeclaration(node) else ASTWrapperPsiElement(node)
     override fun createFile(viewProvider: FileViewProvider): PsiFile = CSharpFile(viewProvider)
 
     companion object {

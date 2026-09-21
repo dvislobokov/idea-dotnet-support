@@ -173,7 +173,7 @@ class DotNetProjectNode(project: Project, key: ProjectKey, settings: ViewSetting
 
         // "Show All Files" of Rider: build output and the project file itself are hidden unless asked for
         val showAll = SolutionViewSettings.isShowAllFiles(nodeProject)
-        val content = ProjectViewDirectoryHelper.getInstance(nodeProject).getDirectoryChildren(directory, settings, true).filter { child ->
+        val content = ProjectViewDirectoryHelper.getInstance(nodeProject).getDirectoryChildren(directory, settings, true).map(::shortNamed).filter { child ->
             val file = (child as? ProjectViewNode<*>)?.virtualFile
             when {
                 file == null -> true
@@ -186,6 +186,22 @@ class DotNetProjectNode(project: Project, key: ProjectKey, settings: ViewSetting
         // the project directory is represented by this node, so its direct children are nested here.
         val nested = NestingTreeStructureProvider().modify(PsiDirectoryNode(nodeProject, directory, settings), content, settings)
         return listOf(DependenciesNode(nodeProject, DependenciesKey(projectFile), settings)) + nested
+    }
+
+    /**
+     * A folder right under the project. With the Java plugin around (IntelliJ IDEA) a directory whose parent node is not a
+     * directory is presented as a package with its full name, `src.App.Models`; here it is a folder of a .NET project.
+     */
+    private fun shortNamed(node: AbstractTreeNode<*>): AbstractTreeNode<*> {
+        val directory = (node as? PsiDirectoryNode)?.value ?: return node
+        return object : PsiDirectoryNode(nodeProject, directory, settings) {
+            override fun updateImpl(data: PresentationData) {
+                super.updateImpl(data)
+                data.clearText()
+                data.presentableText = directory.name
+                data.locationString = null
+            }
+        }
     }
 
     override fun contains(file: VirtualFile): Boolean =

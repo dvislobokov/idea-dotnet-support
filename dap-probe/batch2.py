@@ -91,6 +91,32 @@ def huge():
     walk("huge", "huge", ["huge"], evals=["million.Count", "million[999999]", "hugeString.Length", "hugeString", "bigDict[\"key99999\"]", "cycle.Next.Next.Next.Name"], per_stop=check, max_stops=1, stop_timeout=60)
 
 
+def intellij_paging():
+    """What the DAP client of the JetBrains platform does to a big collection: filter "named" first (no start/count),
+    then pages of filter "indexed". The named answer must not contain (or cost) the elements. Also: threads sorted by id."""
+    import json
+    def check(s, stop, fid, v, index):
+        for name in ["million", "bigDict", "bytes"]:
+            if name not in v:
+                continue
+            print("   %s indexedVariables=%s namedVariables=%s" % (name, v[name].get("indexedVariables"), v[name].get("namedVariables")))
+            for paging in ({"filter": "named"}, {"filter": "indexed", "start": 0, "count": 100}, {"filter": "indexed", "start": 100, "count": 100}):
+                t0 = time.time()
+                r = s.request("variables", dict({"variablesReference": v[name]["variablesReference"]}, **paging), show=False, timeout=120)
+                items = (r.get("body") or {}).get("variables", [])
+                indexed = [i for i in items if i["name"].startswith("[")]
+                verdict = ""
+                if paging["filter"] == "named" and indexed:
+                    verdict = " <-- BUG: %d indexed children in a 'named' answer" % len(indexed)
+                if paging["filter"] == "indexed" and len(indexed) != len(items):
+                    verdict = " <-- BUG: named children in an 'indexed' answer"
+                print("   %s %s -> %d items, %d bytes, %.0fms %s names=%s%s" % (name, paging, len(items), len(json.dumps(r)), (time.time() - t0) * 1000,
+                      "" if r.get("success") else "FAILED " + short(r.get("message")), short([i["name"] for i in items[:3]]), verdict))
+        ids = [t["id"] for t in (s.request("threads", show=False).get("body") or {}).get("threads", [])]
+        print("   threads %s sorted=%s" % (ids, ids == sorted(ids)))
+    walk("intellij-paging", "huge", ["huge"], per_stop=check, max_stops=1, stop_timeout=60)
+
+
 def evil():
     def check(s, stop, fid, v, index):
         if index > 0:
@@ -270,7 +296,7 @@ def async_stepping():
     s.close()
 
 
-ALL = {f.__name__: f for f in (spans, debugattrs, debugger_break, deep, huge, evil, unicode_names, patterns, asynciter, parallel, deadlock, staticctor, filters, crashes,
+ALL = {f.__name__: f for f in (spans, debugattrs, debugger_break, deep, huge, intellij_paging, evil, unicode_names, patterns, asynciter, parallel, deadlock, staticctor, filters, crashes,
                                dynamic_code, multiline, generics, finalizer, childproc, refparams, async_stepping)}
 
 if __name__ == "__main__":

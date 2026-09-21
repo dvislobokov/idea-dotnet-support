@@ -51,6 +51,8 @@ enum class DotNetTool(val packageId: String, val purpose: String, val documentat
     // the package and the command it installs are named differently
     DEBUGGER("dotnet-debugger-dap", "Debug: the debug adapter (DAP) behind the Debug button", "https://github.com/dvislobokov/dotnet-debugger", command = "dotnet-debugger"),
 
+    ROSLYN_LANGUAGE_SERVER("roslyn-language-server", "C# language server (Roslyn): Settings | Tools | .NET | Language Server", "https://www.nuget.org/packages/roslyn-language-server"),
+
     // a tool from the manifest of a repository wins over this one, see EfTool
     EF("dotnet-ef", "EF Core: migrations and database commands", "https://learn.microsoft.com/ef/core/cli/dotnet"),
 
@@ -60,7 +62,8 @@ enum class DotNetTool(val packageId: String, val purpose: String, val documentat
     /** The executable the package puts into the tools directory. */
     val command: String = command ?: packageId
 
-    private val executableNames: List<String> get() = (listOf(command) + olderCommands).map { if (SystemInfo.isWindows) "$it.exe" else it }
+    /** On Windows a tool is an `.exe` shim, or a `.cmd` one when the package is specific to a runtime (`roslyn-language-server`). */
+    private val executableNames: List<String> get() = (listOf(command) + olderCommands).flatMap { executableNames(it, SystemInfo.isWindows) }
 
     /** The path set in the settings, when the file is there. */
     fun configured(): File? = DotNetSettings.getInstance().toolPath(this).takeIf { it.isNotEmpty() }?.let(::File)?.takeIf { it.isFile }
@@ -111,3 +114,6 @@ enum class DotNetTool(val packageId: String, val purpose: String, val documentat
             .notify(project)
     }
 }
+
+/** The file names a tool called [command] may have in a tools directory. */
+fun executableNames(command: String, windows: Boolean): List<String> = if (windows) listOf("$command.exe", "$command.cmd") else listOf(command)

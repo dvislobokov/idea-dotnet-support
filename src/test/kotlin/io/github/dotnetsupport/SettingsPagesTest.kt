@@ -19,13 +19,11 @@ import io.github.dotnetsupport.coverage.DotNetCoverageService
 import io.github.dotnetsupport.coverage.FileCoverage
 import io.github.dotnetsupport.coverage.LineCoverage
 import io.github.dotnetsupport.coverage.NewCoverageAction
-import io.github.dotnetsupport.lang.CSharpIndentOptionsEditor
 import io.github.dotnetsupport.lang.CSharpLanguage
 import io.github.dotnetsupport.nuget.NuGetAutoRestore
 import io.github.dotnetsupport.nuget.NuGetSettings
 import io.github.dotnetsupport.nuget.NuGetSettingsConfigurable
 import io.github.dotnetsupport.settings.DotNetDebuggerConfigurable
-import io.github.dotnetsupport.settings.Unavailable
 import java.io.File
 import java.time.LocalDateTime
 import javax.swing.JCheckBox
@@ -136,37 +134,30 @@ class SettingsPagesTest : BasePlatformTestCase() {
         assertNull(CoverageProjectViewDecorator.linesUnder(report, "C:/repo/Other", isDirectory = true))
     }
 
-    /** Every page of Rider is there, and what is not supported is locked rather than missing. */
-    fun testPagesFollowRider() {
+    /** Every page of Rider is there, with the options the plugin has something behind and nothing else: no disabled placeholders. */
+    fun testPagesHaveOnlyWorkingOptions() {
         fun build(page: UnnamedConfigurable): JComponent = page.createComponent()!!.also { page.reset() }
         fun JComponent.checkBoxes(): List<JCheckBox> = UIUtil.findComponentsOfType(this, JCheckBox::class.java)
-        fun JComponent.padlocks(): Int = UIUtil.findComponentsOfType(this, JLabel::class.java).count { it.icon === Unavailable.ICON }
 
-        val nuget = build(NuGetSettingsConfigurable())
-        assertEquals(
-            listOf("Include prerelease", "Include unlisted", "Search in dotnetfeed*.blob feeds", "Remove dependencies", "Force uninstall, even if there are dependencies on it",
-                "Automatically restore missing packages when necessary", "Smart Restore on Build", "Do not use the HTTP cache", "Allow interactive authentication",
-                "Use bundled Azure credential provider (Experimental)"),
-            nuget.checkBoxes().map { it.text },
+        val pages = mapOf(
+            "nuget" to build(NuGetSettingsConfigurable()), "build" to build(DotNetBuildConfigurable(project)),
+            "debugger" to build(DotNetDebuggerConfigurable(project)), "coverage" to build(CoverageSettingsConfigurable()),
         )
-        assertEquals(listOf("Include prerelease", "Automatically restore missing packages when necessary", "Smart Restore on Build", "Do not use the HTTP cache", "Allow interactive authentication"),
-            nuget.checkBoxes().filter { it.isEnabled }.map { it.text })
-        // the legend and one per locked option
-        assertEquals(1 + 11, nuget.padlocks())
+        assertEquals(
+            listOf("Include prerelease", "Automatically restore missing packages when necessary", "Smart Restore on Build", "Do not use the HTTP cache", "Allow interactive authentication"),
+            pages.getValue("nuget").checkBoxes().map { it.text },
+        )
+        assertEquals(listOf("Run build after solution is loaded", "Restore NuGet packages before build", "Write MSBuild log to file"), pages.getValue("build").checkBoxes().map { it.text })
+        assertEquals(listOf("Enable external source debug", "Allow property evaluations and other implicit function calls"), pages.getValue("debugger").checkBoxes().map { it.text })
+        // off, unlike in Rider: there is no decompiler, see DotNetSettings
+        assertFalse(pages.getValue("debugger").checkBoxes().first { it.text == "Enable external source debug" }.isSelected)
+        assertEquals(listOf("Activate Coverage View", "Show coverage in the project view"), pages.getValue("coverage").checkBoxes().map { it.text })
 
-        val buildPage = build(DotNetBuildConfigurable(project))
-        assertEquals(listOf("Run build after solution is loaded", "Restore NuGet packages before build", "Write MSBuild log to file"), buildPage.checkBoxes().filter { it.isEnabled }.map { it.text })
-        assertTrue(buildPage.checkBoxes().any { it.text == "Use ReSharper Build" && !it.isEnabled })
-
-        val debugger = build(DotNetDebuggerConfigurable(project))
-        assertTrue("nothing to debug with yet", debugger.checkBoxes().none { it.isEnabled })
-        assertEquals(DotNetDebuggerConfigurable.optionCount, debugger.checkBoxes().size)
-        assertEquals(32, DotNetDebuggerConfigurable.optionCount)
-        assertTrue(debugger.checkBoxes().first { it.text == "Show return values" }.isSelected)
-
-        val coverage = build(CoverageSettingsConfigurable())
-        assertEquals(0, coverage.padlocks())
-        assertEquals(listOf("Activate Coverage View", "Show coverage in the project view"), coverage.checkBoxes().map { it.text })
+        for ((name, page) in pages) {
+            val disabled = UIUtil.findComponentsOfType(page, JComponent::class.java)
+                .filter { !it.isEnabled && (it is JCheckBox || it is javax.swing.JComboBox<*> || it is javax.swing.JTextField || it is javax.swing.JSpinner || it is javax.swing.JButton) }
+            assertTrue("$name has disabled controls: " + disabled.map { it.javaClass.simpleName }, disabled.isEmpty())
+        }
 
         val pluginXml = javaClass.getResource("/META-INF/plugin.xml")!!.readText()
         for (page in listOf("build", "nuget", "coverage", "debugger")) {
@@ -181,8 +172,7 @@ class SettingsPagesTest : BasePlatformTestCase() {
         assertEquals(4, indent.INDENT_SIZE)
         assertFalse(indent.USE_TAB_CHARACTER)
 
-        val panel = CSharpIndentOptionsEditor().createPanel()
-        val locked = UIUtil.findComponentsOfType(panel, JCheckBox::class.java).filter { !it.isEnabled }.map { it.text }
-        assertTrue(locked.toString(), "Indent nested 'using' statements" in locked && "Use line continuation indent inside parentheses" in locked)
+        // the indent options of the platform and nothing that would need a formatter inside the IDE
+        assertEquals(com.intellij.application.options.SmartIndentOptionsEditor::class.java, provider.indentOptionsEditor!!.javaClass)
     }
 }

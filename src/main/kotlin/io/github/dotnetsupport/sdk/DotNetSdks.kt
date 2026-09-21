@@ -2,6 +2,7 @@ package io.github.dotnetsupport.sdk
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.google.gson.Strictness
 import com.google.gson.stream.JsonReader
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.vfs.VfsUtilCore
@@ -106,7 +107,7 @@ class GlobalJson(val version: SdkVersion?, val rollForward: String, val allowPre
         fun parse(text: String): GlobalJson? {
             val root = try {
                 // comments are allowed in global.json
-                JsonParser.parseReader(JsonReader(StringReader(text)).apply { isLenient = true }) as? JsonObject
+                JsonParser.parseReader(JsonReader(StringReader(text)).apply { strictness = Strictness.LENIENT }) as? JsonObject
             } catch (_: Exception) {
                 null
             }

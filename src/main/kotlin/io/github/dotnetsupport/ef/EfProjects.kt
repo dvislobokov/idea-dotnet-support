@@ -2,6 +2,7 @@ package io.github.dotnetsupport.ef
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.google.gson.Strictness
 import com.google.gson.stream.JsonReader
 import com.intellij.openapi.components.BaseState
 import com.intellij.openapi.components.Service
@@ -107,7 +108,7 @@ object EfProjects {
     fun connectionStringReferences(json: String): List<String> {
         val root = try {
             // JSONC, as launchSettings.json: comments for the lenient reader, trailing commas removed
-            JsonParser.parseReader(JsonReader(StringReader(json.replace(TRAILING_COMMA, "$1"))).apply { isLenient = true }) as? JsonObject
+            JsonParser.parseReader(JsonReader(StringReader(json.replace(TRAILING_COMMA, "$1"))).apply { strictness = Strictness.LENIENT }) as? JsonObject
         } catch (_: Exception) {
             null
         }

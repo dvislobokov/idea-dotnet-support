@@ -1,0 +1,35 @@
+<!-- A content module of the plugin: everything that needs the DAP module of the platform (2026.1+, not in every IDE) lives here,
+     so where that module is absent only this part is switched off and the rest of the plugin loads. Classes: io.github.dotnetsupport.dap. -->
+<idea-plugin package="io.github.dotnetsupport.dap">
+    <dependencies>
+        <module name="intellij.platform.dap"/>
+    </dependencies>
+
+    <extensions defaultExtensionNs="io.github.dotnetsupport">
+        <processAttacher implementation="io.github.dotnetsupport.dap.DotNetProcessAttacherImpl"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- names of the stopped program in Evaluate, watches and breakpoint conditions; first, and it stops the others there -->
+        <completion.contributor language="C#" order="first" implementationClass="io.github.dotnetsupport.dap.DotNetExpressionCompletionContributor"/>
+        <xdebugger.attachDebuggerProvider implementation="io.github.dotnetsupport.dap.DotNetAttachDebuggerProvider"/>
+        <platform.dap.launchArgumentsProvider implementation="io.github.dotnetsupport.dap.DotNetDapLaunchArgumentsProvider"/>
+        <platform.dap.debugAdapterSupportProvider implementation="io.github.dotnetsupport.dap.DotNetDebugAdapterSupportProvider"/>
+        <!-- breakpoints in .cs make sense only with the debugger, so their types are a part of this module -->
+        <xdebugger.breakpointType implementation="io.github.dotnetsupport.dap.CSharpLineBreakpointType"/>
+        <xdebugger.breakpointType implementation="io.github.dotnetsupport.dap.DotNetExceptionBreakpointType"/>
+        <registryKey key="dotnet.debugger.adapter.log" defaultValue="true"
+                     description="Write the log of the dotnet-debugger adapter for every debug session (menu .NET | Show Debugger Logs)"/>
+    </extensions>
+
+    <actions>
+        <action id="DotNet.Debugger.ShowLogs" class="io.github.dotnetsupport.dap.ShowDebuggerLogsAction" text="Show Debugger Logs"
+                description="Open the directory with the logs of the debug adapter and the traces of the protocol">
+            <add-to-group group-id="DotNet.MainMenu" anchor="last"/>
+        </action>
+        <action id="DotNet.Debugger.TraceProtocol" class="io.github.dotnetsupport.dap.TraceDebuggerProtocolAction" text="Trace Debugger Protocol"
+                description="Write every DAP message of the debug sessions that start from now on next to the debugger logs">
+            <add-to-group group-id="DotNet.MainMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>

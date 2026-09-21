@@ -2,6 +2,7 @@ package io.github.dotnetsupport.run
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.google.gson.Strictness
 import com.google.gson.stream.JsonReader
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
@@ -12,7 +13,11 @@ import java.io.StringReader
 object LaunchSettings {
     private val TRAILING_COMMA = Regex(""",(\s*[}\]])""")
 
-    class Profile(val name: String, val launchBrowser: Boolean, val launchUrl: String?, val applicationUrl: String? = null) {
+    /** [environmentVariables] and [commandLineArgs] are applied by `dotnet run` itself; a debugger that starts the program has to do it. */
+    class Profile(
+        val name: String, val launchBrowser: Boolean, val launchUrl: String?, val applicationUrl: String? = null,
+        val environmentVariables: Map<String, String> = emptyMap(), val commandLineArgs: String? = null,
+    ) {
         /** `https://localhost:7001;http://localhost:5000` lists every address the profile listens on. */
         val applicationUrls: List<String> get() = applicationUrl.orEmpty().split(';').map { it.trim().trimEnd('/') }.filter { it.isNotEmpty() }
     }
@@ -22,7 +27,7 @@ object LaunchSettings {
         val root = try {
             // launchSettings.json is JSONC: the lenient reader takes the comments, trailing commas have to go.
             val text = json.replace(TRAILING_COMMA, "$1")
-            JsonParser.parseReader(JsonReader(StringReader(text)).apply { isLenient = true }) as? JsonObject
+            JsonParser.parseReader(JsonReader(StringReader(text)).apply { strictness = Strictness.LENIENT }) as? JsonObject
         } catch (_: Exception) {
             null
         }
@@ -31,7 +36,12 @@ object LaunchSettings {
             val profile = value as? JsonObject ?: return@mapNotNull null
             fun primitive(key: String) = profile.get(key)?.takeIf { it.isJsonPrimitive }?.asJsonPrimitive
             if (primitive("commandName")?.asString != "Project") return@mapNotNull null
-            Profile(name, launchBrowser = primitive("launchBrowser")?.let { it.isBoolean && it.asBoolean } == true, launchUrl = primitive("launchUrl")?.asString, applicationUrl = primitive("applicationUrl")?.asString)
+            val environment = (profile.get("environmentVariables") as? JsonObject)?.entrySet().orEmpty()
+                .filter { it.value.isJsonPrimitive }.associate { it.key to it.value.asString }
+            Profile(
+                name, launchBrowser = primitive("launchBrowser")?.let { it.isBoolean && it.asBoolean } == true, launchUrl = primitive("launchUrl")?.asString,
+                applicationUrl = primitive("applicationUrl")?.asString, environmentVariables = environment, commandLineArgs = primitive("commandLineArgs")?.asString,
+            )
         }
     }
 

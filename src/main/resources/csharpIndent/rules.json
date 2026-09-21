@@ -1,0 +1,327 @@
+{
+  "version": 1,
+  "about": [
+    "Indentation of a C# line while typing (Enter, a typed closing brace). The first rule whose `when` holds decides.",
+    "when.context: code | blockComment | string | preprocessor - where the line starts.",
+    "when.first: what the line itself begins with; when.previous: what the code before it ends with. Literals, or @sets, or <empty> / <none>.",
+    "when.scope: the innermost bracket that is still open: none | block | switch | list | paren | bracket.",
+    "  block: bodies of namespaces, types, members, statements, lambdas; switch: the body of a switch statement;",
+    "  list: object / collection / array initializers, enum bodies, switch expressions, `with` and property patterns.",
+    "when.state (all of): statementStart | inCaseSection | afterControlHeader | afterAttribute | previousLineInScope.",
+    "when.option: a csharp_indent_* option of .editorconfig with the value it has to have (and the default without a file).",
+    "indent.anchor: column0 | keep | previousLine | statementStart | scopeOpen | matchingOpen | caseLabel | keyword (with `keywords`).",
+    "indent.add: none | indent | continuation | star. Sizes come from Code Style | C# (and so from indent_size of .editorconfig).",
+    "examples: lines of code, the line in question starts with `>`; `expect` is its indent in columns with indent = continuation = 4."
+  ],
+  "sets": {
+    "closeBrackets": ["}", ")", "]"],
+    "leadingContinuation": [".", "?.", "??", "?", ":", "&&", "||", "+", "-", "*", "/", "%", "|", "&", "^", "==", "!=", "<=", ">=", "<<", "=>", "=", "is", "as", "and", "or", "where", "when", "select", "from", "orderby", "group", "join", "let", "into", "on", "equals", "by", "ascending", "descending"],
+    "trailingContinuation": ["=", "+", "-", "*", "/", "%", "&&", "||", "|", "&", "^", "??", "?", "==", "!=", "<=", ">=", "=>", "return", "is", "as", "and", "or", "in", "new", "await", "throw", "yield", "when"],
+    "controlKeywords": ["if", "for", "foreach", "while", "using", "lock", "fixed", "else", "do"],
+    "chainedKeywords": ["else", "catch", "finally"]
+  },
+  "rules": [
+    {
+      "id": "string.keep",
+      "about": "Inside a verbatim or raw string the text is data: nothing is moved.",
+      "when": {"context": "string"},
+      "indent": {"anchor": "keep", "add": "none"},
+      "examples": [
+        {"code": ["var sql = @\"select *", ">from t\";"], "expect": null}
+      ]
+    },
+    {
+      "id": "blockComment.star",
+      "about": "Lines of /* ... */ line up under the first one, one column in when it opens the comment (the ` * ` style).",
+      "when": {"context": "blockComment"},
+      "indent": {"anchor": "previousLine", "add": "star"},
+      "examples": [
+        {"code": ["    /* first", ">second */"], "expect": 5},
+        {"code": ["    /*", "     * text", ">* more */"], "expect": 5}
+      ]
+    },
+    {
+      "id": "preprocessor.region",
+      "about": "#region and #endregion are indented as the code they wrap.",
+      "when": {"context": "preprocessor", "firstMatches": "^#\\s*(region|endregion)\\b", "scope": ["block", "switch", "list"]},
+      "indent": {"anchor": "scopeOpen", "add": "indent"},
+      "examples": [
+        {"code": ["class A", "{", ">#region Props", "}"], "expect": 4}
+      ]
+    },
+    {
+      "id": "preprocessor.column0",
+      "about": "#if, #else, #endif, #pragma, #nullable, #define go to the first column, as Visual Studio puts them.",
+      "when": {"context": "preprocessor"},
+      "indent": {"anchor": "column0", "add": "none"},
+      "examples": [
+        {"code": ["class A", "{", "    void M()", "    {", ">#if DEBUG", "    }", "}"], "expect": 0},
+        {"code": [">#region Top"], "expect": 0}
+      ]
+    },
+    {
+      "id": "close.brace.indented",
+      "about": "csharp_indent_braces = true: the braces are indented together with their content (GNU style).",
+      "when": {"first": ["}"], "option": {"name": "csharp_indent_braces", "is": "true", "default": "false"}},
+      "indent": {"anchor": "matchingOpen", "add": "indent"},
+      "examples": []
+    },
+    {
+      "id": "close.bracket",
+      "about": "A closing }, ) or ] stands under the line its opening bracket belongs to.",
+      "when": {"first": "@closeBrackets"},
+      "indent": {"anchor": "matchingOpen", "add": "none"},
+      "examples": [
+        {"code": ["class A", "{", "    void M()", "    {", "        Call();", ">}", "}"], "expect": 4},
+        {"code": ["class A {", "    void M() {", "        Call();", "    }", ">}"], "expect": 0},
+        {"code": ["    var x = Call(", "        a,", "        b", ">);"], "expect": 4},
+        {"code": ["    var list = new List<int>", "    {", "        1,", ">};"], "expect": 4},
+        {"code": ["    Run(() =>", "    {", "        Work();", ">});"], "expect": 4},
+        {"code": ["    public void M(int a,", "        int b) {", "        Work();", ">}"], "expect": 4},
+        {"code": ["    switch (x)", "    {", "        case 1:", "            {", "                Work();", ">}"], "expect": 12}
+      ]
+    },
+    {
+      "id": "switch.section.block.flat",
+      "about": "csharp_indent_case_contents_when_block = false: a block that is the body of a section stands under its label.",
+      "when": {"first": ["{"], "scope": ["switch"], "state": ["statementStart", "inCaseSection"], "option": {"name": "csharp_indent_case_contents_when_block", "is": "false", "default": "true"}},
+      "indent": {"anchor": "caseLabel", "add": "none"},
+      "examples": []
+    },
+    {
+      "id": "switch.section.block",
+      "about": "A block that is the body of a switch section is indented as the statements of the section are.",
+      "when": {"first": ["{"], "scope": ["switch"], "state": ["statementStart", "inCaseSection"]},
+      "indent": {"anchor": "caseLabel", "add": "indent"},
+      "examples": [
+        {"code": ["    switch (x)", "    {", "        case 1:", ">{"], "expect": 12}
+      ]
+    },
+    {
+      "id": "open.brace.indented",
+      "about": "csharp_indent_braces = true: an opening brace on its own line is indented too.",
+      "when": {"first": ["{"], "option": {"name": "csharp_indent_braces", "is": "true", "default": "false"}},
+      "indent": {"anchor": "statementStart", "add": "indent"},
+      "examples": []
+    },
+    {
+      "id": "open.brace",
+      "about": "An opening brace on its own line (Allman style) stands under the start of what it belongs to: the member, the statement, the `new`.",
+      "when": {"first": ["{"]},
+      "indent": {"anchor": "statementStart", "add": "none"},
+      "examples": [
+        {"code": ["namespace N", "{", "    public class A", ">{"], "expect": 4},
+        {"code": ["        if (a &&", "            b)", ">{"], "expect": 8},
+        {"code": ["    var x = new Foo", ">{"], "expect": 4},
+        {"code": ["    return Ok(new Result", ">{"], "expect": 4},
+        {"code": ["    Run(() =>", ">{"], "expect": 4},
+        {"code": ["    [Obsolete]", "    public void M()", ">{"], "expect": 4}
+      ]
+    },
+    {
+      "id": "switch.label.flat",
+      "about": "csharp_indent_switch_labels = false: case labels stand under `switch`.",
+      "when": {"first": ["case", "default"], "scope": ["switch"], "option": {"name": "csharp_indent_switch_labels", "is": "false", "default": "true"}},
+      "indent": {"anchor": "scopeOpen", "add": "none"},
+      "examples": []
+    },
+    {
+      "id": "switch.label",
+      "about": "case and default labels are one level inside the switch, wherever the previous section has ended.",
+      "when": {"first": ["case", "default"], "scope": ["switch"]},
+      "indent": {"anchor": "scopeOpen", "add": "indent"},
+      "examples": [
+        {"code": ["    switch (x)", "    {", ">case 1:"], "expect": 8},
+        {"code": ["    switch (x)", "    {", "        case 1:", "            Work();", "            break;", ">default:"], "expect": 8},
+        {"code": ["    switch (x) {", "        case 1:", "            return;", ">case 2:"], "expect": 8}
+      ]
+    },
+    {
+      "id": "switch.section.flat",
+      "about": "csharp_indent_case_contents = false: the statements of a section stand under their label.",
+      "when": {"scope": ["switch"], "state": ["statementStart", "inCaseSection"], "option": {"name": "csharp_indent_case_contents", "is": "false", "default": "true"}},
+      "indent": {"anchor": "caseLabel", "add": "none"},
+      "examples": []
+    },
+    {
+      "id": "switch.section",
+      "about": "The statements of a switch section are one level inside their label, the first one and the ones after it.",
+      "when": {"scope": ["switch"], "state": ["statementStart", "inCaseSection"]},
+      "indent": {"anchor": "caseLabel", "add": "indent"},
+      "examples": [
+        {"code": ["    switch (x)", "    {", "        case 1:", ">Work();"], "expect": 12},
+        {"code": ["    switch (x)", "    {", "        case 1:", "            Work();", ">break;"], "expect": 12},
+        {"code": ["    switch (x)", "    {", "        case 1:", "        case 2:", ">"], "expect": 12}
+      ]
+    },
+    {
+      "id": "chained.keyword.after.block",
+      "about": "else, catch and finally after a closing brace stand under that brace.",
+      "when": {"first": "@chainedKeywords", "previous": ["}"]},
+      "indent": {"anchor": "previousLine", "add": "none"},
+      "examples": [
+        {"code": ["        if (a)", "        {", "            Work();", "        }", ">else"], "expect": 8},
+        {"code": ["    try", "    {", "    }", ">catch (Exception e)"], "expect": 4}
+      ]
+    },
+    {
+      "id": "else.after.statement",
+      "about": "else after a body without braces goes back to its `if`.",
+      "when": {"first": ["else"], "previous": [";"]},
+      "indent": {"anchor": "keyword", "keywords": ["if"], "add": "none"},
+      "examples": [
+        {"code": ["        if (a)", "            Work();", ">else"], "expect": 8},
+        {"code": ["    if (a)", "        Work();", "    else if (b)", "        Other();", ">else"], "expect": 4}
+      ]
+    },
+    {
+      "id": "while.of.do",
+      "about": "`while` that ends a do-block stands under `do`.",
+      "when": {"first": ["while"], "previous": ["}"], "state": ["statementStart"]},
+      "indent": {"anchor": "previousLine", "add": "none"},
+      "examples": [
+        {"code": ["    do", "    {", "        Work();", "    }", ">while (more);"], "expect": 4}
+      ]
+    },
+    {
+      "id": "nested.using.flat",
+      "about": "A using / lock / fixed right under another one is not indented: the stack of resources reads as one header.",
+      "when": {"first": ["using", "lock", "fixed"], "state": ["afterControlHeader"]},
+      "indent": {"anchor": "statementStart", "add": "none"},
+      "examples": [
+        {"code": ["    using (var a = A())", ">using (var b = B())"], "expect": 4}
+      ]
+    },
+    {
+      "id": "control.body.without.braces",
+      "about": "The single statement after if (...), for, foreach, while, using, lock, fixed, else or do without braces is one level in.",
+      "when": {"state": ["afterControlHeader"]},
+      "indent": {"anchor": "statementStart", "add": "indent"},
+      "examples": [
+        {"code": ["        if (a)", ">return;"], "expect": 12},
+        {"code": ["        foreach (var x in xs)", ">Work(x);"], "expect": 12},
+        {"code": ["        if (a)", "            Work();", "        else", ">Other();"], "expect": 12},
+        {"code": ["    if (a &&", "        b)", ">return;"], "expect": 8},
+        {"code": ["    else if (b)", ">Work();"], "expect": 8}
+      ]
+    },
+    {
+      "id": "list.element",
+      "about": "Elements of an initializer, an enum or a switch expression are one level inside its braces.",
+      "when": {"scope": ["list"], "state": ["statementStart"]},
+      "indent": {"anchor": "scopeOpen", "add": "indent"},
+      "examples": [
+        {"code": ["    var x = new Foo", "    {", ">A = 1,"], "expect": 8},
+        {"code": ["    var x = new Foo", "    {", "        A = 1,", ">B = 2"], "expect": 8},
+        {"code": ["public enum State", "{", "    New,", ">Closed"], "expect": 4},
+        {"code": ["    var s = x switch", "    {", "        1 => \"a\",", ">_ => \"b\","], "expect": 8},
+        {"code": ["    var x = Call(", "        new Foo {", ">A = 1"], "expect": 12},
+        {"code": ["    int[] a = {", ">1,"], "expect": 8}
+      ]
+    },
+    {
+      "id": "block.statement",
+      "about": "A new statement or member is one level inside the braces around it, however the previous one was wrapped.",
+      "when": {"scope": ["block", "switch"], "state": ["statementStart"]},
+      "indent": {"anchor": "scopeOpen", "add": "indent"},
+      "examples": [
+        {"code": ["class A", "{", ">int x;"], "expect": 4},
+        {"code": ["class A", "{", "    void M()", "    {", "        var q = xs", "            .Where(x => x > 0)", "            .ToList();", ">return;"], "expect": 8},
+        {"code": ["class A {", "    void M() {", ">Work();"], "expect": 8},
+        {"code": ["void M()", "{", "    if (a)", "        Work();", ">Next();"], "expect": 4},
+        {"code": ["    Run(() =>", "    {", ">Work();"], "expect": 8},
+        {"code": ["    public void M(int a,", "        int b) {", ">Work();"], "expect": 8},
+        {"code": ["class A", "{", "    [Obsolete]", ">public void M() { }"], "expect": 4},
+        {"code": ["class A", "{", "    void M() { }", "", ">void N() { }"], "expect": 4}
+      ]
+    },
+    {
+      "id": "top.level",
+      "about": "Outside of any braces - usings, a file-scoped namespace, its types, a top-level program - everything starts in the first column.",
+      "when": {"scope": ["none"], "state": ["statementStart"]},
+      "indent": {"anchor": "column0", "add": "none"},
+      "examples": [
+        {"code": ["namespace Shop;", "", ">public class A"], "expect": 0},
+        {"code": ["using System;", ">using System.Linq;"], "expect": 0},
+        {"code": ["[assembly: InternalsVisibleTo(\"Tests\")]", ">namespace N;"], "expect": 0}
+      ]
+    },
+    {
+      "id": "argument.first",
+      "about": "The first argument on a new line after ( or [ is a continuation of the line the bracket is on.",
+      "when": {"scope": ["paren", "bracket"], "previous": ["(", "["]},
+      "indent": {"anchor": "scopeOpen", "add": "continuation"},
+      "examples": [
+        {"code": ["    var x = Call(", ">a,"], "expect": 8},
+        {"code": ["    var x = Outer(Inner(", ">a"], "expect": 8},
+        {"code": ["        Call(", "            Nested(", ">a"], "expect": 16}
+      ]
+    },
+    {
+      "id": "argument.next",
+      "about": "The next argument lines up with the previous one when that one has started a line of its own.",
+      "when": {"scope": ["paren", "bracket"], "previous": [","], "state": ["previousLineInScope"]},
+      "indent": {"anchor": "statementStart", "add": "none"},
+      "examples": [
+        {"code": ["    var x = Call(", "        a,", ">b);"], "expect": 8},
+        {"code": ["    var x = Call(", "        first", "            .Value,", ">second);"], "expect": 8}
+      ]
+    },
+    {
+      "id": "argument.wrapped",
+      "about": "Arguments that start on the line of the bracket wrap with a continuation indent.",
+      "when": {"scope": ["paren", "bracket"], "previous": [","]},
+      "indent": {"anchor": "scopeOpen", "add": "continuation"},
+      "examples": [
+        {"code": ["    public void M(int a,", ">int b)"], "expect": 8}
+      ]
+    },
+    {
+      "id": "for.header.part",
+      "about": "The parts of a for header after `;` wrap as arguments do.",
+      "when": {"scope": ["paren"], "previous": [";"]},
+      "indent": {"anchor": "scopeOpen", "add": "continuation"},
+      "examples": [
+        {"code": ["    for (var i = 0;", ">i < n;"], "expect": 8}
+      ]
+    },
+    {
+      "id": "continuation.leading",
+      "about": "A line that begins with `.`, `?.`, an operator, `=>`, `where`, a base list `:` or a query keyword continues the statement: one continuation indent from where the statement starts.",
+      "when": {"first": "@leadingContinuation"},
+      "indent": {"anchor": "statementStart", "add": "continuation"},
+      "examples": [
+        {"code": ["        var q = xs", ">.Where(x => x > 0)"], "expect": 12},
+        {"code": ["        var q = xs", "            .Where(x => x > 0)", ">.ToList();"], "expect": 12},
+        {"code": ["        var ok = a", ">&& b;"], "expect": 12},
+        {"code": ["    public class A<T>", ">where T : class"], "expect": 8},
+        {"code": ["    public A(int x)", ">: base(x)"], "expect": 8},
+        {"code": ["        var v = c", ">? a"], "expect": 12},
+        {"code": ["    var r = Call(", "        first", ">.Value,"], "expect": 12}
+      ]
+    },
+    {
+      "id": "continuation.trailing",
+      "about": "After a line that ends with an operator, `=`, `=>`, `return`, `new`, `await` the statement goes on: one continuation indent from its start.",
+      "when": {"previous": "@trailingContinuation"},
+      "indent": {"anchor": "statementStart", "add": "continuation"},
+      "examples": [
+        {"code": ["        var total =", ">a + b;"], "expect": 12},
+        {"code": ["        var total = a +", ">b;"], "expect": 12},
+        {"code": ["    public int Count =>", ">_items.Count;"], "expect": 8},
+        {"code": ["        return", ">a;"], "expect": 12},
+        {"code": ["        var total = a +", "            b +", ">c;"], "expect": 12}
+      ]
+    },
+    {
+      "id": "continuation.other",
+      "about": "Anything else that is not the start of a statement - a wrapped declaration, a name on the next line - continues it.",
+      "when": {},
+      "indent": {"anchor": "statementStart", "add": "continuation"},
+      "examples": [
+        {"code": ["    public static async Task<IReadOnlyList<Order>>", ">FindAsync(int id)"], "expect": 8},
+        {"code": ["    public class A", ">"], "expect": 8, "note": "an empty line after an unfinished header; typing { moves it back, see open.brace"}
+      ]
+    }
+  ]
+}

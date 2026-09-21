@@ -47,6 +47,11 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
 
         /** Package id of a global tool -> its executable; a tool without an entry is looked up on PATH and in `~/.dotnet/tools`. */
         var toolPaths by map<String, String>()
+
+        // Settings | Tools | .NET | Debugger
+        /** Off, unlike in Rider: there is no decompiler behind it, stepping into code without symbols ends in frames with no source. */
+        var debugExternalSource by property(false)
+        var debugAllowImplicitEvaluation by property(true)
     }
 
     var dotnetPath: String
@@ -64,6 +69,14 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
     var switchToSolutionView: Boolean
         get() = state.switchToSolutionView
         set(value) { state.switchToSolutionView = value }
+
+    var debugExternalSource: Boolean
+        get() = state.debugExternalSource
+        set(value) { state.debugExternalSource = value }
+
+    var debugAllowImplicitEvaluation: Boolean
+        get() = state.debugAllowImplicitEvaluation
+        set(value) { state.debugAllowImplicitEvaluation = value }
 
     fun toolPath(tool: DotNetTool): String = state.toolPaths[tool.packageId].orEmpty()
 

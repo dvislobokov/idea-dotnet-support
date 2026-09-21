@@ -3,6 +3,7 @@ package io.github.dotnetsupport.testing
 import com.intellij.execution.configurations.RunProfile
 import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.configurations.RunnerSettings
+import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.executors.DefaultRunExecutor
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessHandler
@@ -19,6 +20,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.wm.ToolWindowManager
 import io.github.dotnetsupport.run.DotNetCommand
+import io.github.dotnetsupport.run.DotNetProcessAttacher
 import io.github.dotnetsupport.run.DotNetRunConfiguration
 import io.github.dotnetsupport.view.ToolWindowsSetup
 
@@ -29,8 +31,10 @@ import io.github.dotnetsupport.view.ToolWindowsSetup
 class DotNetTestRunner : GenericProgramRunner<RunnerSettings>() {
     override fun getRunnerId(): String = "DotNetTestRunner"
 
+    /** Debug is the same run with the test host waiting for a debugger, so it needs somebody to attach one. */
     override fun canRun(executorId: String, profile: RunProfile): Boolean =
-        executorId == DefaultRunExecutor.EXECUTOR_ID && profile is DotNetRunConfiguration && profile.options.command == DotNetCommand.TEST
+        profile is DotNetRunConfiguration && profile.options.command == DotNetCommand.TEST &&
+            (executorId == DefaultRunExecutor.EXECUTOR_ID || executorId == DefaultDebugExecutor.EXECUTOR_ID && DotNetProcessAttacher.find() != null)
 
     override fun doExecute(state: RunProfileState, environment: ExecutionEnvironment): RunContentDescriptor? {
         FileDocumentManager.getInstance().saveAllDocuments()

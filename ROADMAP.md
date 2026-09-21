@@ -28,12 +28,16 @@
 - [x] Автовыбор панели Solution при первом открытии папки с solution
 
 ## Заход 2 — навигация и редактор без парсера
-- [ ] Сканер объявлений поверх лексера (namespace / типы / члены по балансу скобок)
-- [ ] Structure view, breadcrumbs, folding (блоки, `#region`, `using`, комментарии)
-- [ ] Go to Class / Go to Symbol (индекс по файлам), переход между partial-частями, Related file (`.xaml` ↔ `.xaml.cs`, `.razor` ↔ `.razor.cs`, тест ↔ класс)
+- [x] Сканер объявлений поверх лексера (`CSharpDeclarations`): namespace (в т.ч. file-scoped), типы, члены (поля, свойства, индексаторы, методы, конструкторы, операторы, события, делегаты, enum-члены) по заголовку до `{` / `;` / `=` / `=>` и балансу скобок; generic-методы, tuple-типы, явные реализации интерфейсов, атрибуты, top-level program; на недописанном коде — меньше объявлений, без исключений. Парсер строит по нему PSI-узел на объявление (`CSharpDeclaration`), внутри членов токены остаются плоскими
+- [x] Structure view и File Structure (иконки вида и видимости, сигнатуры), breadcrumbs, folding: тела объявлений, блок `using`, `#region` (с именем), серии `///` и `//`, блочные комментарии; `using` и doc-комментарии сворачиваются по настройкам платформы
+- [x] Go to Class / Go to Symbol: `FileBasedIndex` по именам типов и членов, элемент с контейнером и файлом
+- [ ] Переход между partial-частями, Related file (`.xaml` ↔ `.xaml.cs`, `.razor` ↔ `.razor.cs`, тест ↔ класс)
 - [ ] Reformat Code через `dotnet format` (+ при сохранении)
-- [ ] Ошибки последней сборки как аннотации в редакторе (ExternalAnnotator)
-- [ ] Live templates (`ctor`, `prop`, `cw`, `foreach`, `svm`, `fact`...), Enter в `///` и `/* */`, заготовка `/// <summary>`
+- [x] Ошибки и предупреждения последней сборки в редакторе (`BuildProblems` + ExternalAnnotator): подчёркнуто слово по колонке компилятора, сообщение с кодом; диагностика следует за своей строкой при правках выше и исчезает, когда строку исправили; следующая сборка заменяет всё
+- [x] Live templates для C# (33: `ctor` с именем типа, `prop*`, `cw`, циклы, `try`, `using`, `svm`, типы, `fact` / `theory` / `test` / `testm`, `region`…), Enter внутри `///` продолжает комментарий, третий `/` над объявлением даёт `<summary>` с `<param>` и `<returns>`
+- [x] Отступы при наборе (Enter, набранные `{` `}` `)` `]`) — `LineIndentProvider` на движке правил из JSON (`resources/csharpIndent/rules.json`): упорядоченный список «условия → якорь + добавка», первое подошедшее выигрывает; 29 правил с примерами внутри (тест прогоняет все примеры и реальный файл построчно). Покрыто: блоки и K&R / Allman, аргументы и их перенос, цепочки `.`/операторы и возврат к началу оператора после `;`, тело без скобок у `if` / `for` / `else`…, `else` / `catch` / `finally`, `switch` (метки, секции, блок секции), инициализаторы / enum / switch-выражения, атрибуты, `#region` и `#if`, `/* */`, verbatim / raw-строки не трогаются. Размеры — из Code Style → C# (и `indent_size` / `indent_style` из `.editorconfig`), опции `csharp_indent_braces`, `csharp_indent_switch_labels`, `csharp_indent_case_contents`, `csharp_indent_case_contents_when_block` — из `.editorconfig`. Enter после `{`: если ниже есть `}` на «своём» отступе, вторая не вставляется, даже когда скобки файла не сходятся из-за недописанного кода (платформа считает скобки, а не раскладку). Форматирование файла целиком остаётся за CSharpier / `dotnet format`
+- [ ] Отступы: Auto-Indent Lines и вставка фрагмента по тем же правилам, метки `goto` (`csharp_indent_labels`), продолжение `//` по Enter (как в VS Code)
+- [ ] Enter в `/* */`
 - [ ] TODO-индекс, WordsScanner (текстовый Find Usages), spellchecker
 - [ ] Неактивные ветки `#if` по `DefineConstants`
 - [ ] Переименование файла вместе с типом
@@ -61,7 +65,11 @@
   - **Toolset and Build** (на проект, workspace): MSBuild global properties (`-p:` для build / rebuild / clean / restore, `--property:` для run), Run build after solution is loaded, Restore NuGet packages before build (`--no-restore`), число процессов (`-m:N`), verbosity вывода, лог MSBuild в файл (`-fl -flp:`, папка, verbosity). Замок: Mono, версия MSBuild, авто-загрузка SDK, ReSharper Build, targets пропущенных проектов, design-time build
   - **NuGet** (на машину): Include prerelease (начальное состояние чекбокса окна и Upgrade Packages), автоматический restore после изменения `*.csproj` / `Directory.Packages.props` / `nuget.config` (в Log окна NuGet), Smart Restore on Build (`--no-restore`, пока `project.assets.json` новее всего, что решает состав пакетов), `--no-cache`, `--interactive`. Замок: unlisted, blob-фиды, dependency behavior, file conflict, uninstall-опции, restore engine, формат пакетов, credential providers
   - **Coverage**: что делать с новым покрытием (спросить / не применять / заменить / добавить к показанному — попадания суммируются), Activate Coverage View, проценты покрытия у файлов и папок в Project / Solution view
-  - **Debugger**: целиком под замком до появления отладчика (`DAP_PLAN.md`) — список того, что он будет учитывать, со значениями по умолчанию Rider
+  - **Debugger**: Enable external source debug (= не Just My Code) и Allow property evaluations and other implicit function calls
+  - **Language Server**: параметры `roslyn-language-server` — запуск (лог, авто-загрузка проектов, генераторы, доп. аргументы) и настройки,
+    которые сервер запрашивает через `workspace/configuration` (анализ, проекты, completion, навигация, code lens, inlay hints, правки,
+    генерация кода; прочее — строками `секция = значение`). Клиента LSP ещё нет: настройки хранятся для него
+  - Выключенные опции-заглушки «как в Rider, под замком» убраны со всех страниц (2026-09-21): на страницах только работающее
   - **Editor | Code Style | C#**: Tabs and Indents настоящие (ими отступает редактор, EditorConfig IDE их переопределяет), остальное с первой вкладки Rider и прочие вкладки — под замком (нужен форматтер внутри IDE)
 - [x] Окно NuGet: вертикальный тулбар как в Rider — Restore (solution или проект из «Packages for»), Upgrade Packages in Solution, показать / скрыть карточку пакета, Settings, Help
 - [x] Страница настроек (Settings | Tools | .NET): путь к `dotnet` с проверкой, список установленных SDK, статус `global.json` проекта, переключатели поведения (автосоздание run configurations, окно Build при каждой сборке, автопереключение на Solution view)
@@ -96,6 +104,7 @@
 
 ### Диагностика без отладчика
 - [x] ★ Окно «.NET Monitor» (справа, графики столбиком, как Monitoring в Rider): CPU и память процесса приложения средствами ОС (без внешних инструментов; `dotnet run` / `watch` — лаунчер, меряется его дочернее приложение) и счётчики рантайма через `dotnet-counters collect` (GC heap, скорость аллокаций, время в GC, сборки/с, активные запросы сервера и HttpClient, p95 длительности запроса, исключения и lock contention, очередь thread pool); процессы из IDE подхватываются сами, остальные .NET-процессы машины — из списка; имена счётчиков .NET 9+ и старых рантаймов; предложение установить tool
+- [x] Monitor: в списке только процессы, запущенные из IDE; остальные .NET-процессы машины — по галочке «All .NET processes» (запоминается). Программа под отладчиком тоже попадает в список: её pid берётся из события `process` адаптера (**вживую не проверено**)
 - [ ] Monitor: свои `Meter` приложения по имени, запросы/с, EF Core и Kestrel, пауза и масштаб времени, строка состояния в Services
 - [x] ★ Thread Dump в .NET Monitor (`dotnet-stack report`): потоки с кодом приложения наверху, одинаковые стеки свёрнуты, кадры проекта кликабельны (тип ищется по имени файла, метод — в файле; async, лямбды, конструкторы разворачиваются в исходные имена)
 - [x] ★ Heap Snapshot в .NET Monitor (`dotnet-gcdump report`): куча по типам (объекты, байты), фильтр, сравнение с любым более ранним снимком того же процесса — Δ объектов и Δ байт, поиск утечек
@@ -205,10 +214,43 @@
 3. Services / Run Dashboard, тест-эксплорер с continuous testing, конфликты версий.
 4. Остальное — по запросу: декомпиляция и BenchmarkDotNet эффектны, но нужны реже.
 
+## Платформа
+- [x] Минимальная версия — 2026.1 (`sinceBuild = 261`), сборка и тесты на IntelliJ IDEA 2026.1.4, Kotlin API 2.3. Папки под узлом проекта в панели Solution получили короткие имена и в IDEA (Java-плагин называл их как пакеты). Убраны устаревшие `ReadAction.compute`, `DaemonCodeAnalyzer.restart()`, `isLenient`, `createSingleFileDescriptor`
+- [ ] События окна Build: конструкторы `*BuildEventImpl` / `MessageEventImpl` устарели (не «к удалению»), замена — `BuildEvents` с builder-ами, пока `@Experimental`; перейти, когда стабилизируется
+- [x] Диагностика «меню .NET → Probe Platform LSP / DAP API...»: есть ли в этой IDE (и с этой лицензией) модули LSP и DAP — точки расширения и кто в них зарегистрирован, ключи реестра, сервисы, program runner, классы lsp4j, и сверка всех классов API с эталоном IDEA 2026.1.4 (`resources/platformProbe/expected.json`, член = `имя/число параметров`); видны ли классы загрузчику плагина без зависимости на модуль. Таблица с фильтром «Problems only», **Copy as JSON** (без имени владельца лицензии). Анализ API — `docs/platform-lsp-dap.html`
+- [x] Content-модуль плагина `io.github.dotnetsupport.dap` с зависимостью на `intellij.platform.dap`: всё, что опирается на платформенный DAP, живёт в нём, без DAP выключается только он. Пока в нём заготовка `DotNetDapLaunchArgumentsProvider` (ни к чему не применима) — по ней диагностика видит, что модуль загрузился и классы DAP ему видны
+- [ ] Проверить наличие `intellij.platform.dap` и LSP API в GoLand / PyCharm / WebStorm / Rider 2026.1+ (в IDEA Ultimate есть) — диагностикой выше
+
 ## Отладка через DAP (план; начат слой 1)
+**Действующий план — `PLATFORM_DAP_PLAN.md`**: платформенный DAP-клиент (2026.1+) вместо своего, этапы 0–6. Слои ниже — запасной путь со своим клиентом.
 Отладчик `dotnet-debugger` (dotnet tool `dotnet-debugger-dap`) + свой DAP-клиент + платформенный XDebugger. Подробности,
 соответствие API и ограничения адаптера — в `DAP_PLAN.md`; результаты проверки адаптера — в `dap-probe/FINDINGS.md`.
 - [x] Отладчик в списке .NET Tools на странице настроек: путь, Install / Update (id пакета и команда разные)
+- [x] Платформенный DAP, этап 0: разведка API по байткоду — схема вызовов и поправки к этапам в «Журнале» `PLATFORM_DAP_PLAN.md`
+- [x] Платформенный DAP, этап 1 (проверено вживую 2026-09-21): Debug у конфигурации «.NET Project» с командой `dotnet run` уходит в
+  платформенный DAP-клиент — описание адаптера `dotnet-debugger`, аргументы `launch` (профиль `launchSettings.json`: переменные, `applicationUrl`,
+  аргументы; имя окружения), точки останова на строках `.cs` (на строках с исполняемым кодом, включая top-level statements), before-run task
+  «Build .NET Project» (наш Build, ошибка отменяет запуск; для Debug выясняет `TargetPath`; у Run / watch / test ничего не делает — они собирают сами).
+  Конфигурация без задачи собирается перед `launch` самим дескриптором. Логи: лог адаптера на каждую сессию, меню .NET → Show Debugger Logs /
+  Trace Debugger Protocol. Обход ошибки платформы с выбором остановившегося потока (`DotNetPresentationFactory`).
+  Точки останова на исключениях — только заготовка типа (этап 3). В IDE без модуля DAP кнопка Debug, как и раньше, выключена
+- [x] Платформенный DAP, этап 2 (проверено вживую пользователем и UI-роботом 2026-09-21; «Save all files on debugger launch» вернулась под
+  замок — платформа сохраняет файлы сама): свой процесс адаптера с жёстким завершением (без ошибки
+  `Cannot send Ctrl+C` на Stop, зависший адаптер убивается), `launchBrowser` при отладке, аргументы `launchSettingsProfile: ""` / `configuration` /
+  `allowImplicitFuncEval`, на странице Debugger работают Save all files on debugger launch, Enable external source debug (= не Just My Code),
+  Allow property evaluations and other implicit function calls
+- [x] Платформенный DAP, этап 3 (проверено UI-роботом 2026-09-21; ограничение адаптера: `unhandled` не выключается): точки останова на исключениях как «Break when» в Rider — типы
+  (`System.IO.*, !System.OperationCanceledException`) и когда: thrown / user-unhandled / unhandled; по умолчанию включена «Any exception
+  (user-unhandled, unhandled)», «+» в диалоге Breakpoints добавляет точку под конкретные типы. Set Value (F2) через `setExpression`.
+  Hover над переменной в редакторе (выражение под курсором — по токенам)
+- [x] Платформенный DAP, этап 4 (проверено UI-роботом 2026-09-21): hit count (`5`, `>= 3`, `% 10`…) и logpoints (`total = {total}`) у точек останова
+  `.cs` — панель в диалоге Breakpoints; поля дописываются в `setBreakpoints` на пути к адаптеру, синхронизация точек остаётся штатной. У точки
+  появилось и поле Condition
+- [x] Платформенный DAP, этап 5 (проверено UI-роботом 2026-09-21): Run | Attach to Process для .NET-процессов (Stop отсоединяется, процесс живёт),
+  отладка тестов — Debug у ▶ в редакторе, у конфигурации `dotnet test` и «Debug Selected Tests» в окне Unit Tests (`VSTEST_HOST_DEBUG`, начальный
+  `Debugger.Break()` хоста пропускается). Не проверено: проекты на Microsoft.Testing.Platform
+- [ ] Платформенный DAP, этап 6 (по желанию): значения в редакторе, async-стек, `runInTerminal` (ввод в консольную программу), Set Next Statement,
+  completion в Evaluate, второй адаптер
 - [ ] Слой 1: DAP-клиент — фрейминг, корреляция ответов, события, обратные запросы; тесты на фейковом адаптере
 - [ ] Слой 2: MVP — Debug у run configurations, точки останова на строках, кадры, переменные (постранично), шаги, evaluate, консоль
 - [ ] Слой 3: условия / hit count / logpoints, исключения, Set Value, watches, Run to Cursor, attach, restart

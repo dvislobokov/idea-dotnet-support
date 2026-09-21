@@ -11,6 +11,7 @@ import com.intellij.execution.configurations.LocatableRunConfigurationOptions
 import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.configurations.RuntimeConfigurationError
+import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.process.KillableColoredProcessHandler
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessTerminatedListener
@@ -25,6 +26,7 @@ import io.github.dotnetsupport.DotNetIcons
 import io.github.dotnetsupport.build.DotNetBuildSettings
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.sdk.SdkFeatures
+import io.github.dotnetsupport.settings.DotNetSettings
 import io.github.dotnetsupport.testing.DotNetTestRunState
 import java.io.File
 
@@ -90,8 +92,13 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
         if (DotNetCli.findExecutable() == null) throw RuntimeConfigurationError("The 'dotnet' executable is not found on PATH")
     }
 
-    override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState =
-        if (options.command == DotNetCommand.TEST) DotNetTestRunState(this, environment) else runState(environment)
+    override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState = when {
+        // under Debug the test host waits for the debugger that DotNetTestRunner attaches
+        options.command == DotNetCommand.TEST -> DotNetTestRunState(this, environment, debug = executor.id == DefaultDebugExecutor.EXECUTOR_ID)
+        // A debugger starts the program itself (see debugLaunchArguments), and the runner of the platform still executes the state first.
+        executor.id == DefaultDebugExecutor.EXECUTOR_ID && options.command == DotNetCommand.RUN -> RunProfileState { _, _ -> null }
+        else -> runState(environment)
+    }
 
     private fun runState(environment: ExecutionEnvironment): RunProfileState =
         object : CommandLineState(environment) {
@@ -104,12 +111,21 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
             }
         }
 
-    /** `launchUrl` of the selected profile, or of the first one, which is what `dotnet run` uses by default. */
-    private fun launchUrl(): String? {
+    /** The selected profile, or the first one, which is what `dotnet run` uses by default. */
+    fun launchProfile(): LaunchSettings.Profile? {
         val profiles = LaunchSettings.profiles(File(options.projectPath.orEmpty()))
         val selected = options.launchProfile?.takeIf { it.isNotBlank() }
-        return (if (selected == null) profiles.firstOrNull() else profiles.find { it.name == selected })?.launchUrl
+        return if (selected == null) profiles.firstOrNull() else profiles.find { it.name == selected }
     }
+
+    private fun launchUrl(): String? = launchProfile()?.launchUrl
+
+    /** The `launch` request for a debug adapter, see [DotNetLaunchArguments]. */
+    fun debugLaunchArguments(): Map<String, Any> = DotNetLaunchArguments.build(
+        options.projectPath.orEmpty(), ParametersListUtil.parse(options.programArguments.orEmpty()), options.workingDirectory,
+        options.environment, options.environmentName, launchProfile(), DotNetBuildSettings.getInstance(project).configuration,
+        justMyCode = !DotNetSettings.getInstance().debugExternalSource, allowImplicitEvaluation = DotNetSettings.getInstance().debugAllowImplicitEvaluation,
+    )
 
     /** [testResultsDirectory]: where `dotnet test` writes the TRX report (and coverage) the test tree is built from. */
     fun buildCommandLine(testResultsDirectory: File? = null): GeneralCommandLine {

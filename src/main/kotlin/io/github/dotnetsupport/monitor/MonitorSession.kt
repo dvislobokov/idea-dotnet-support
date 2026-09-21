@@ -218,6 +218,19 @@ class RunningDotNetProcesses {
         listeners.forEach { it(target) }
     }
 
+    /**
+     * A process the IDE has started without a process handler of its own: under a debugger the program is started by the debug adapter,
+     * which reports the process id. Returns what to call when the process is gone.
+     */
+    fun started(name: String, pid: Long): () -> Unit {
+        val target = MonitorTarget(pid, "$name ($pid)", withChildren = false)
+        targets.add(0, target)
+        listeners.forEach { it(target) }
+        return {
+            if (targets.remove(target)) listeners.forEach { it(null) }
+        }
+    }
+
     companion object {
         fun getInstance(project: Project): RunningDotNetProcesses = project.service()
     }

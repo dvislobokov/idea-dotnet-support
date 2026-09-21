@@ -12,9 +12,11 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.wm.ToolWindowManager
+import com.intellij.ide.util.PropertiesComponent
 import com.intellij.ui.JBColor
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.ActionLink
+import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
@@ -64,6 +66,15 @@ class MonitorPanel(private val project: Project, parent: Disposable) : JPanel(Bo
     private var session: MonitorSession? = null
     private var updatingList = false
 
+    /** Off by default: a machine of a developer runs dozens of `dotnet` processes (build servers, language servers) nobody wants to pick from. */
+    private val allProcesses = JBCheckBox("All .NET processes", PropertiesComponent.getInstance().getBoolean(ALL_PROCESSES_KEY, false)).apply {
+        toolTipText = "Also list the .NET processes that were not started from this IDE (dotnet-counters ps)"
+        addActionListener {
+            PropertiesComponent.getInstance().setValue(ALL_PROCESSES_KEY, isSelected, false)
+            reloadProcesses(select = null)
+        }
+    }
+
     private val cpu = TimeSeriesChart("CPU", ChartFormats::percent, fixedMax = 100.0, "of ${Runtime.getRuntime().availableProcessors()} cores" to CPU_COLOR)
     private val memory = TimeSeriesChart("Memory", ChartFormats::bytes, null, "working set" to MEMORY_COLOR, "GC heap" to HEAP_COLOR).apply { scale = ChartFormats::niceMaxBytes }
     private val allocations = TimeSeriesChart("Allocation rate", { ChartFormats.bytes(it) + "/s" }, null, "allocated" to HEAP_COLOR).apply { scale = ChartFormats::niceMaxBytes }
@@ -94,6 +105,7 @@ class MonitorPanel(private val project: Project, parent: Disposable) : JPanel(Bo
         val snapshots = JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(6), 0)).apply {
             add(threadDump)
             add(heapSnapshot)
+            add(allProcesses)
         }
         val notes = JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(6), 0)).apply {
             add(status)
@@ -121,13 +133,13 @@ class MonitorPanel(private val project: Project, parent: Disposable) : JPanel(Bo
         reloadProcesses(select = RunningDotNetProcesses.getInstance(project).targets().firstOrNull())
     }
 
-    /** The processes started from the IDE first, then the other .NET processes of the machine (they need `dotnet-counters ps`). */
+    /** The processes started from the IDE; with "All .NET processes" the other ones of the machine after them (they need `dotnet-counters ps`). */
     private fun reloadProcesses(select: MonitorTarget?) {
         ApplicationManager.getApplication().executeOnPooledThread {
             val tool = DotNetCounters.findExecutable()
             val own = RunningDotNetProcesses.getInstance(project).targets()
             val ownPids = own.flatMap { target -> ProcessSampler.tree(target.pid).map { it.pid() } }.toSet()
-            val others = tool?.let(DotNetCounters::processes).orEmpty()
+            val others = (if (allProcesses.isSelected) tool?.let(DotNetCounters::processes).orEmpty() else emptyList())
                 .filter { it.pid !in ownPids && it.pid != ProcessHandle.current().pid() && it.name != DotNetCounters.PACKAGE }
                 .map { MonitorTarget(it.pid, it.toString(), withChildren = false) }
             ApplicationManager.getApplication().invokeLater({
@@ -192,6 +204,7 @@ class MonitorPanel(private val project: Project, parent: Disposable) : JPanel(Bo
     }
 
     private companion object {
+        const val ALL_PROCESSES_KEY = "io.github.dotnetsupport.monitor.allProcesses"
         val CPU_COLOR = JBColor(Color(0x3574F0), Color(0x548AF7))
         val MEMORY_COLOR = JBColor(Color(0x208A3C), Color(0x5FAD65))
         val HEAP_COLOR = JBColor(Color(0xC77D00), Color(0xF2C55C))
@@ -299,11 +312,22 @@ class TimeSeriesChart(
             val scaleText = format(max)
             g.drawString(scaleText, width - left - metrics.stringWidth(scaleText), metrics.ascent)
 
-            g.color = JBColor.border()
-            for (line in 0..2) {
-                val y = header + plotHeight * line / 2
-                g.drawLine(left, y, left + plotWidth, y)
+            // The plot stands out from the tool window as in Rider: a panel lighter than the tool window in every theme.
+            val arc = JBUI.scale(8)
+            g.color = PLOT_BACKGROUND
+            g.fillRoundRect(left, header, plotWidth, plotHeight, arc, arc)
+            g.color = GRID_COLOR
+            for (line in 1..3) {
+                val y = header + plotHeight * line / 4
+                g.drawLine(left + 1, y, left + plotWidth - 1, y)
             }
+            g.color = JBColor.border()
+            g.drawRoundRect(left, header, plotWidth - 1, plotHeight - 1, arc, arc)
+
+            // the lines keep off the frame: a flat zero or a full scale would be drawn over it
+            val inset = JBUI.scale(3)
+            val clip = g.clip
+            g.clipRect(left + 1, header + 1, plotWidth - 2, plotHeight - 2)
 
             values.forEachIndexed { index, array ->
                 val path = Path2D.Double()
@@ -314,7 +338,7 @@ class TimeSeriesChart(
                     val value = array[i]
                     if (value.isNaN()) { drawing = false; continue }
                     val x = left + plotWidth * i.toDouble() / (CAPACITY - 1)
-                    val y = header + plotHeight * (1 - (value / max).coerceIn(0.0, 1.0))
+                    val y = header + inset + (plotHeight - inset * 2) * (1 - (value / max).coerceIn(0.0, 1.0))
                     if (drawing) path.lineTo(x, y) else { path.moveTo(x, y); if (firstX == 0.0) firstX = x }
                     drawing = true
                     lastX = x
@@ -324,6 +348,7 @@ class TimeSeriesChart(
                 g.stroke = BasicStroke(JBUI.scale(1).toFloat() * 1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
                 g.draw(path)
             }
+            g.clip = clip
         } finally {
             g.dispose()
         }
@@ -331,5 +356,9 @@ class TimeSeriesChart(
 
     companion object {
         const val CAPACITY = 300
+
+        /** Lighter than the tool window in both themes: white on the light grey, a raised grey on the dark one. */
+        val PLOT_BACKGROUND = JBColor(Color(0xFFFFFF), Color(0x393B40))
+        val GRID_COLOR = JBColor(Color(0xEBECF0), Color(0x4A4D53))
     }
 }
