@@ -112,6 +112,27 @@ class RunConsoleTest : BasePlatformTestCase() {
         assertEquals("9.0.103", SdkFeatures.sdkFor(directory, installed)?.text)
     }
 
+    fun testRunProjectReusesTheConfigurationOfTheProject() {
+        val projectFile = myFixture.addFileToProject("Tool/Tool.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"/>").virtualFile
+        val target = io.github.dotnetsupport.run.RunProjectTarget(projectFile, DotNetCommand.RUN)
+        val runManager = com.intellij.execution.RunManager.getInstance(project)
+
+        // nothing runs the project yet: a new configuration, not registered until the action executes it
+        val created = target.settings(project)
+        assertEquals("Tool", created.name)
+        assertEquals(projectFile.path, (created.configuration as DotNetRunConfiguration).options.projectPath)
+        assertFalse(runManager.allSettings.contains(created))
+
+        runManager.addConfiguration(created)
+        try {
+            assertSame(created, target.settings(project))
+            // `dotnet test` of the same project is another thing to run
+            assertNotSame(created, io.github.dotnetsupport.run.RunProjectTarget(projectFile, DotNetCommand.TEST).settings(project))
+        } finally {
+            runManager.removeConfiguration(created)
+        }
+    }
+
     fun testEnvironmentNamesComeFromAppSettings() {
         val directory = com.intellij.openapi.util.io.FileUtil.createTempDirectory("web", null, true)
         listOf("appsettings.json", "appsettings.Development.json", "appsettings.QA.json", "appsettings.Local-Docker.json", "appsettings.json.bak", "other.Staging.json")

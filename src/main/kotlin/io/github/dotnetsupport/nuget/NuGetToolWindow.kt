@@ -61,14 +61,19 @@ class NuGetToolWindowFactory : ToolWindowFactory, DumbAware {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val manager = toolWindow.contentManager
         val packages = NuGetPanel(project, toolWindow)
-        manager.addContent(manager.factory.createContent(packages, "Packages", false))
+        manager.addContent(manager.factory.createContent(packages, PACKAGES, false))
         // a changed source list changes what the search finds
-        manager.addContent(manager.factory.createContent(NuGetSourcesPanel(project) { packages.loadSourcesAndReload() }, "Sources", false))
-        manager.addContent(manager.factory.createContent(NuGetLogPanel(project, toolWindow.disposable), "Log", false))
+        manager.addContent(manager.factory.createContent(NuGetSourcesPanel(project) { packages.loadSourcesAndReload() }, SOURCES, false))
+        manager.addContent(manager.factory.createContent(NuGetFoldersPanel(project), FOLDERS, false))
+        manager.addContent(manager.factory.createContent(NuGetLogPanel(project, toolWindow.disposable), LOG, false))
     }
 
     companion object {
         const val ID = "NuGet"
+        const val PACKAGES = "Packages"
+        const val SOURCES = "Sources"
+        const val FOLDERS = "Folders"
+        const val LOG = "Log"
     }
 }
 
@@ -161,6 +166,7 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
         versionCombo.addActionListener { if (versionCombo.isPopupVisible || versionCombo.hasFocus()) selectedPackage()?.let { showDetails() } }
 
         service.requestListeners += ::selectRequestedProject
+        service.packagesChangedListeners += ::reload
         reloadScopes()
         loadSourcesAndReload()
     }
@@ -179,6 +185,12 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
     }
 
     private fun selectRequestedProject() {
+        if (service.solutionRequested) {
+            service.solutionRequested = false
+            if (scopeCombo.itemCount > 0) scopeCombo.selectedIndex = 0
+            searchField.text = ""
+            return
+        }
         val requested = service.requestedProject ?: return
         if ((0 until scopeCombo.itemCount).none { scopeCombo.getItemAt(it).file == requested }) reloadScopes()
         (0 until scopeCombo.itemCount).firstOrNull { scopeCombo.getItemAt(it).file == requested }?.let { scopeCombo.selectedIndex = it }

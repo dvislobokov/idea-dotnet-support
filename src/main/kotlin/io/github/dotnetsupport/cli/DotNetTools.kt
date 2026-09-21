@@ -20,25 +20,29 @@ import java.io.File
  * the path from Settings | Tools | .NET, then PATH, then `~/.dotnet/tools` (a shell profile that was not re-read
  * after the installation leaves the directory out of PATH).
  */
-enum class DotNetTool(val packageId: String, val purpose: String, val documentation: String, command: String? = null) {
+enum class DotNetTool(val packageId: String, val purpose: String, val documentation: String, command: String? = null, private val olderCommands: List<String> = emptyList()) {
     COUNTERS("dotnet-counters", ".NET Monitor: GC, allocations, requests, exceptions", "https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-counters"),
     STACK("dotnet-stack", ".NET Monitor: Thread Dump", "https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-stack"),
     GCDUMP("dotnet-gcdump", ".NET Monitor: Heap Snapshot", "https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-gcdump"),
     UPGRADE_ASSISTANT("upgrade-assistant", "Analyze Upgrade to Newer .NET", "https://learn.microsoft.com/dotnet/core/porting/upgrade-assistant-overview"),
 
     // the package and the command it installs are named differently
-    DEBUGGER("dotnet-debugger-dap", "Debug: the debug adapter (DAP) behind the Debug button", "https://github.com/dvislobokov/dotnet-debugger", command = "dotnet-debugger");
+    DEBUGGER("dotnet-debugger-dap", "Debug: the debug adapter (DAP) behind the Debug button", "https://github.com/dvislobokov/dotnet-debugger", command = "dotnet-debugger"),
+
+    // 1.x installs `csharpier`, 0.x installed `dotnet-csharpier`; a tool from the manifest of a repository wins over this one
+    CSHARPIER("csharpier", "Reformat Code with CSharpier", "https://csharpier.com", olderCommands = listOf("dotnet-csharpier"));
 
     /** The executable the package puts into the tools directory. */
     val command: String = command ?: packageId
 
-    private val executableName: String get() = if (SystemInfo.isWindows) "$command.exe" else command
+    private val executableNames: List<String> get() = (listOf(command) + olderCommands).map { if (SystemInfo.isWindows) "$it.exe" else it }
 
     /** The path set in the settings, when the file is there. */
     fun configured(): File? = DotNetSettings.getInstance().toolPath(this).takeIf { it.isNotEmpty() }?.let(::File)?.takeIf { it.isFile }
 
-    fun detect(): File? =
-        PathEnvironmentVariableUtil.findInPath(executableName) ?: File(System.getProperty("user.home"), ".dotnet/tools/$executableName").takeIf { it.isFile }
+    fun detect(): File? = executableNames.firstNotNullOfOrNull { name ->
+        PathEnvironmentVariableUtil.findInPath(name) ?: File(System.getProperty("user.home"), ".dotnet/tools/$name").takeIf { it.isFile }
+    }
 
     fun find(): File? = configured() ?: detect()
 

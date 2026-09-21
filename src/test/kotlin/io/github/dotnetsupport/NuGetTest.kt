@@ -139,11 +139,23 @@ class NuGetTest : BasePlatformTestCase() {
         val toolWindow = com.intellij.toolWindow.ToolWindowHeadlessManagerImpl.MockToolWindow(project)
         try {
             io.github.dotnetsupport.nuget.NuGetToolWindowFactory().createToolWindowContent(project, toolWindow)
-            assertEquals(listOf("Packages", "Sources", "Log"), toolWindow.contentManager.contents.map { it.displayName })
+            assertEquals(listOf("Packages", "Sources", "Folders", "Log"), toolWindow.contentManager.contents.map { it.displayName })
         } finally {
             // the IDE disposes a tool window with its project; the mock has to be disposed by hand (the Log tab owns a console editor)
             com.intellij.openapi.util.Disposer.dispose(toolWindow.disposable)
         }
+    }
+
+    fun testMenuIsInTheMainMenuBar() {
+        val actions = com.intellij.openapi.actionSystem.ActionManager.getInstance()
+        val mainMenu = actions.getAction("MainMenu") as com.intellij.openapi.actionSystem.DefaultActionGroup
+        val dotNet = actions.getAction("DotNet.MainMenu")
+        assertTrue(mainMenu.childActionsOrStubs.any { it === dotNet || actions.getId(it) == "DotNet.MainMenu" })
+
+        val nuGet = actions.getAction("DotNet.NuGet") as com.intellij.openapi.actionSystem.DefaultActionGroup
+        val ids = nuGet.childActionsOrStubs.mapNotNull { actions.getId(it) }
+        assertEquals("DotNet.NuGet.QuickList", ids.first())
+        assertTrue(ids.containsAll(listOf("DotNet.RestoreSolution", "DotNet.NuGet.ForceRestore", "DotNet.NuGet.UpgradeSolution", "DotNet.NuGet.ShowFolders", "DotNet.NuGet.Settings")))
     }
 
     fun testClientAcrossFeeds() {

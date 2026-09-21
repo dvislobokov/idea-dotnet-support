@@ -47,7 +47,7 @@ class MonitorToolWindowFactory : ToolWindowFactory, DumbAware {
     }
 }
 
-/** Tools | .NET | Monitor .NET Process */
+/** .NET | Monitor .NET Process */
 class ShowMonitorAction : AnAction(), DumbAware {
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 

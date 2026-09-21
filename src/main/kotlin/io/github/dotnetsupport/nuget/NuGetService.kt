@@ -73,6 +73,9 @@ class InstalledPackage(
     val version: String? get() = resolvedVersion ?: declaredVersion
 }
 
+/** A package of [projectFile] that can go from the version [from] to the newer [to]. */
+class PackageUpgrade(val projectName: String, val projectFile: VirtualFile, val packageId: String, val from: String, val to: String)
+
 /**
  * Text of the "Log" tab: the commands of the NuGet window and what they print, as it arrives.
  * Kept here so that nothing is lost while the tab is not created yet.
@@ -116,7 +119,13 @@ class NuGetService(private val project: Project) {
 
     /** Project to show when the tool window is opened from the Solution view. */
     var requestedProject: VirtualFile? = null
+
+    /** "Manage NuGet Packages for Solution": the window is asked for the solution scope; reset once shown. */
+    var solutionRequested = false
     val requestListeners = ArrayList<() -> Unit>()
+
+    /** Called on EDT when packages were changed from outside of the window, e.g. by "Upgrade Packages in Solution". */
+    val packagesChangedListeners = ArrayList<() -> Unit>()
 
     fun projects(): List<Pair<String, VirtualFile>> {
         val solutions = SolutionService.getInstance(project)
@@ -150,6 +159,45 @@ class NuGetService(private val project: Project) {
 
     fun remove(projectFiles: List<VirtualFile>, packageId: String, onSuccess: () -> Unit) =
         run("Removing $packageId", projectFiles, onSuccess) { listOf("remove", it.path, "package", packageId) }
+
+    /** Packages of the solution that have a newer stable version in the feeds. Blocking: asks the feeds for every package. */
+    fun outdated(): List<PackageUpgrade> {
+        val feeds = sources()
+        val latest = HashMap<String, NuGetVersion?>()
+        return projects().flatMap { (name, file) ->
+            installed(file).mapNotNull { pkg ->
+                // a floating or a missing version is not a version to upgrade from
+                val current = pkg.version?.let(NuGetVersion::parse) ?: return@mapNotNull null
+                val newest = latest.getOrPut(pkg.id.lowercase()) { NuGetVersion.latest(client.versions(pkg.id, feeds), includePrerelease = false)?.let(NuGetVersion::parse) }
+                if (newest != null && current < newest) PackageUpgrade(name, file, pkg.id, current.text, newest.text) else null
+            }
+        }
+    }
+
+    fun upgrade(upgrades: List<PackageUpgrade>, onSuccess: () -> Unit) {
+        if (upgrades.isEmpty()) return
+        val title = "Upgrading NuGet packages"
+        val commands = DotNetCli.commandLinesOrNotify(project, title) {
+            upgrades.map { DotNetCli.commandLine(it.projectFile.parent.path, "add", it.projectFile.path, "package", it.packageId, "--version", it.to) }
+        } ?: return
+        DotNetCli.runInBackground(project, title, commands, refresh = upgrades.map { File(it.projectFile.parent.path) }.distinct(), output = log, onSuccess = onSuccess)
+    }
+
+    /** The folders NuGet keeps packages and caches in: `global-packages`, `http-cache`, `temp`, `plugins-cache`. Blocking. */
+    fun localFolders(): List<Pair<String, String>> =
+        runCatching { DotNetCli.execute(DotNetCli.commandLine(workDirectory(), "nuget", "locals", "all", "--list", "--force-english-output"), 30_000).stdout }
+            .getOrDefault("").lines().mapNotNull { line ->
+                val name = line.substringBefore(": ", "").trim()
+                val path = line.substringAfter(": ", "").trim()
+                if (name.isEmpty() || path.isEmpty()) null else name to path
+            }
+
+    /** `dotnet nuget locals <name> --clear` */
+    fun clearLocalFolder(name: String, onSuccess: () -> Unit) {
+        val title = "Clearing NuGet $name"
+        val commands = DotNetCli.commandLinesOrNotify(project, title) { listOf(DotNetCli.commandLine(workDirectory(), "nuget", "locals", name, "--clear")) } ?: return
+        DotNetCli.runInBackground(project, title, commands, output = log, onSuccess = onSuccess)
+    }
 
     private fun run(title: String, projectFiles: List<VirtualFile>, onSuccess: () -> Unit, arguments: (VirtualFile) -> List<String>) {
         if (projectFiles.isEmpty()) return

@@ -18,12 +18,17 @@ import com.intellij.openapi.util.text.StringUtil
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.AlignX
+import com.intellij.ui.dsl.builder.bindItem
 import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.ui.AsyncProcessIcon
 import com.intellij.util.ui.UIUtil
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetTool
+import io.github.dotnetsupport.format.CSharpierLocator
+import io.github.dotnetsupport.format.CSharpierUnavailable
+import io.github.dotnetsupport.format.DotNetFormattingSettings
+import io.github.dotnetsupport.format.FormatterChoice
 import io.github.dotnetsupport.sdk.DotNetEnvironmentDialog
 import io.github.dotnetsupport.sdk.DotNetSdks
 import io.github.dotnetsupport.sdk.GlobalJson
@@ -82,6 +87,17 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
     private val sdkList = JBLabel()
     private val globalJsonStatus = JBLabel()
     private val toolRows = DotNetTool.entries.associateWith { ToolRow(it) }
+    private val formatting get() = DotNetFormattingSettings.getInstance(project)
+    private val formatterStatus = JBLabel().apply { foreground = UIUtil.getContextHelpForeground() }
+
+    /** What the choice means for this project right now: which tool, which version, from where. */
+    private fun refreshFormatter(choice: FormatterChoice) {
+        ApplicationManager.getApplication().executeOnPooledThread {
+            val directory = project.guessProjectDir()?.let { File(it.path) }
+            val text = describeFormatter(choice, directory)
+            ApplicationManager.getApplication().invokeLater({ formatterStatus.text = text }, ModalityState.any())
+        }
+    }
 
     /** Path field, what was found and the Install / Update button of one global tool. */
     private inner class ToolRow(val tool: DotNetTool) {
@@ -173,6 +189,14 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
                     row("") { cell(toolRow.status) }
                 }
             }
+            group("Formatting") {
+                row("Formatter:") {
+                    comboBox(FormatterChoice.entries).bindItem({ formatting.formatter }, { formatting.formatter = it ?: FormatterChoice.AUTO })
+                        .onChanged { refreshFormatter(it.selectedItem as? FormatterChoice ?: FormatterChoice.AUTO) }
+                        .comment("Behind Reformat Code and \"Reformat code\" of Actions on Save for C# files. Kept with the project: a team formats one way. CSharpier formats whole files only.")
+                }
+                row("") { cell(formatterStatus) }
+            }
             group("Behavior") {
                 row { checkBox("Create run configurations for the runnable projects of a solution").bindSelected(settings::createRunConfigurations) }
                 row {
@@ -184,10 +208,27 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
         }.also {
             refreshInformation(settings.dotnetPath)
             toolRows.values.forEach { it.refresh() }
+            refreshFormatter(formatting.formatter)
         }
     }
 
     companion object {
+        /** Blocking: a global CSharpier is asked for its version. */
+        fun describeFormatter(choice: FormatterChoice, directory: File?): String {
+            val resolved = if (choice != FormatterChoice.AUTO) choice else if (CSharpierLocator.isUsedBy(directory)) FormatterChoice.CSHARPIER else FormatterChoice.DOTNET_FORMAT
+            val prefix = if (choice == FormatterChoice.AUTO) "For this project: " else ""
+            return when (resolved) {
+                FormatterChoice.CSHARPIER -> try {
+                    prefix + CSharpierLocator.find(directory).description
+                } catch (e: CSharpierUnavailable) {
+                    prefix + "CSharpier, but " + e.message.orEmpty().replaceFirstChar { it.lowercase() } + " Install it in .NET Tools above."
+                }
+                FormatterChoice.DOTNET_FORMAT -> prefix + "dotnet format whitespace, from the SDK" +
+                    if (choice == FormatterChoice.AUTO) " (no .csharpierrc, no csharpier in a tool manifest)" else ""
+                else -> "Reformat Code leaves C# files alone."
+            }
+        }
+
         /** The last meaningful line of `dotnet tool update`: "Tool 'x' (version '1.2.3') was successfully installed." or the error. */
         fun installationSummary(exitCode: Int, output: String): String {
             val lines = output.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()

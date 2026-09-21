@@ -142,7 +142,7 @@ class DotNetEnvironment(
     }
 }
 
-/** Tools | .NET | .NET on This Machine */
+/** .NET | .NET on This Machine */
 class DotNetEnvironmentAction : AnAction(), DumbAware {
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
     override fun actionPerformed(e: AnActionEvent) = DotNetEnvironmentDialog(e.project).show()

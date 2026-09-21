@@ -97,7 +97,11 @@
 - [x] Покрытие тестов: `--collect:"XPlat Code Coverage"` (coverlet) → Cobertura → полосы на полях редактора (покрыто / частично / нет), сводка по файлам в окне «.NET Coverage»
 - [ ] Покрытие: сводка по проектам и методам, покрытие для выбранного теста, хранение нескольких запусков
 - [ ] Анализаторы Roslyn через сборку: включение `EnforceCodeStyleInBuild` / `AnalysisLevel`, вкладка Problems с группировкой по правилу, «подавить в `.editorconfig`»
-- [ ] `dotnet format --verify-no-changes` как проверка перед коммитом
+- [x] Форматирование C#: Reformat Code / Actions on Save / перед коммитом через платформенный сервис форматирования. Настройка Formatter на странице .NET (Auto / CSharpier / dotnet format / None, хранится с проектом); Auto берёт CSharpier, только если репозиторий им пользуется (`.csharpierrc*`, запись в `dotnet-tools.json` или `.config/dotnet-tools.json`, пакет `CSharpier.MsBuild`)
+- [x] CSharpier: обе линейки CLI (0.x `dotnet-csharpier`, 1.x `csharpier format`), приоритет у tool из манифеста репозитория, HTTP-сервер CSharpier на проект (7–12 мс на файл) с откатом на разовый запуск через stdin, несохранённый текст без записи на диск, кнопка `dotnet tool restore`, строка в .NET Tools
+- [x] `dotnet format whitespace --folder` как интерактивный форматтер: копия файла в зеркале каталогов с цепочкой `.editorconfig`, без загрузки MSBuild (~1,3 с)
+- [x] Format / Verify Formatting для проекта и solution: `csharpier format|check` или `dotnet format [--verify-no-changes]`, вывод в окно Build
+- [ ] Форматирование: четвёртый вариант — сервером Roslyn (после LSP), форматирование `.csproj` / XML через CSharpier 1.x, позиция ошибки ссылкой в уведомлении
 - [ ] Устаревшие (`--deprecated`) пакеты и лицензии пакетов по метаданным NuGet
 - [ ] Неиспользуемые пакеты и ссылки: эвристика по `using`, предупреждение без автоудаления
 - [ ] `.editorconfig` для C#: completion и документация опций `csharp_*` / `dotnet_*`, выбор severity правил
@@ -127,7 +131,7 @@
 ### Мелочи редактора без парсера
 - [ ] ★ Запуск одиночного `.cs` (`dotnet run file.cs`, .NET 10) и `.csx`: run configuration и ▶, scratch-файлы C#
 - [ ] ★ Paste Special: JSON → record-ы / классы с `JsonPropertyName`; XML → классы
-- [x] Insert New GUID (Generate, Tools → .NET; мультикурсор)
+- [x] Insert New GUID (Generate, меню .NET; мультикурсор)
 - [ ] Вставка `DateTime`-форматов, конвертация строки в verbatim / raw
 - [ ] Инъекция RegExp в строки `[StringSyntax]` / `Regex(...)` (даёт встроенный Check RegExp)
 - [ ] `.resx` ↔ CSV / JSON для переводчиков, проверка недостающих ключей между культурами
@@ -144,7 +148,7 @@
 - [x] Окно Unit Tests внизу, как в Rider: вкладка Explorer плюс сессии — результаты `dotnet test` идут в это окно, а не в Run (свой program runner, повторный запуск переиспользует вкладку); окна Build и .NET Coverage не исчезают с панели
 - [ ] Continuous testing: `dotnet watch test` с тем же деревом результатов, рабочая кнопка «Toggle auto-test»
 - [ ] Декомпиляция сборок из Dependencies через `ilspycmd` → C# read-only в редакторе
-- [x] Сводка по скорости сборки: Tools → .NET → Measure Build Performance — `-clp:PerformanceSummary` → таблицы «что тормозит» по таргетам, задачам и проектам
+- [x] Сводка по скорости сборки: меню .NET → Measure Build Performance — `-clp:PerformanceSummary` → таблицы «что тормозит» по таргетам, задачам и проектам
 - [ ] Сохранение binlog (`-bl`) для MSBuild Structured Log Viewer
 - [x] Run MSBuild Target…: список таргетов проекта с поиском (`dotnet msbuild -targets`), свои из проекта и `Directory.Build.*` наверху, запуск с выводом в Build tool window
 - [x] Show All Files в панели Solution: показать `bin`, `obj` и файл проекта (меню настроек Project view)
@@ -166,7 +170,7 @@
 - [ ] Bump version: major / minor / patch для `Version` в `.csproj` или `Directory.Build.props`
 
 ### SDK и окружение
-- [x] «.NET on This Machine» (Tools → .NET и ссылка со страницы настроек): сводка из `dotnet --info`, таблицы SDK и runtime со статусом поддержки из `dotnet sdk check` (актуален / есть патч или поддержка скоро кончится / снят с поддержки), какой SDK выбран для проекта с учётом `global.json`, полный `--info` с копированием
+- [x] «.NET on This Machine» (меню .NET и ссылка со страницы настроек): сводка из `dotnet --info`, таблицы SDK и runtime со статусом поддержки из `dotnet sdk check` (актуален / есть патч или поддержка скоро кончится / снят с поддержки), какой SDK выбран для проекта с учётом `global.json`, полный `--info` с копированием
 - [x] Шаблоны: ссылка «More templates...» в New Project и Add New Project → поиск пакетов шаблонов на nuget.org (`packageType=Template`, то же, что ищет `dotnet new search`), установка, список установленных, проверка обновлений, Update All, удаление; вывод команд в логе диалога
 - [ ] Шаблоны: поиск по настроенным приватным фидам, установка конкретной версии, параметры шаблона (`dotnet new <t> --help`) в диалоге New Project
 - [x] Upgrade Assistant: «Analyze Upgrade to Newer .NET...» для проекта или solution — `upgrade-assistant analyze` с выбором целевого framework, отчёт таблицей (severity, правило, что найдено, место) с переходом к коду и ссылкой на документацию; предложение установить tool, если его нет

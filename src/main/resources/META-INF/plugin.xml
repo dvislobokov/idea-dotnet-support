@@ -70,6 +70,7 @@
         <configurationType implementation="io.github.dotnetsupport.run.DotNetConfigurationType"/>
         <consoleFilterProvider implementation="io.github.dotnetsupport.run.DotNetConsoleFilterProvider"/>
         <console.folding implementation="io.github.dotnetsupport.run.DotNetStackTraceFolding"/>
+        <formattingService implementation="io.github.dotnetsupport.format.DotNetFormattingService"/>
         <postStartupActivity implementation="io.github.dotnetsupport.run.DotNetRunConfigurationStartupActivity"/>
         <runConfigurationProducer implementation="io.github.dotnetsupport.run.DotNetRunConfigurationProducer"/>
         <runLineMarkerContributor language="C#"
@@ -123,6 +124,10 @@
                 <action id="DotNet.AddProjectReference" class="io.github.dotnetsupport.actions.AddProjectReferenceAction"
                         text="Project Reference..."/>
             </group>
+            <action id="DotNet.RunProject" class="io.github.dotnetsupport.run.RunSelectedProjectAction" text="Run Project"
+                    icon="AllIcons.Actions.Execute" description="Run the selected executable or test project"/>
+            <action id="DotNet.DebugProject" class="io.github.dotnetsupport.run.DebugSelectedProjectAction" text="Debug Project"
+                    icon="AllIcons.Actions.StartDebugger" description="Debug the selected executable project"/>
             <action id="DotNet.BuildSelected" class="io.github.dotnetsupport.build.BuildSelected" text="Build"
                     icon="AllIcons.Actions.Compile"/>
             <action id="DotNet.RebuildSelected" class="io.github.dotnetsupport.build.RebuildSelected" text="Rebuild"/>
@@ -134,6 +139,10 @@
                     text="Run MSBuild Target..." icon="AllIcons.Nodes.Target"/>
             <action id="DotNet.AnalyzeUpgrade" class="io.github.dotnetsupport.upgrade.AnalyzeUpgradeAction"
                     text="Analyze Upgrade to Newer .NET..." description="Run the .NET Upgrade Assistant analysis: packages, project properties and APIs that block a newer target framework"/>
+            <action id="DotNet.FormatSelected" class="io.github.dotnetsupport.format.FormatSelectedAction" text="Format"
+                    description="Format the project or solution with the formatter of the repository: CSharpier or dotnet format"/>
+            <action id="DotNet.VerifyFormatting" class="io.github.dotnetsupport.format.VerifyFormattingAction" text="Verify Formatting"
+                    description="Check that everything is formatted, the way a CI does: csharpier check / dotnet format --verify-no-changes"/>
             <action id="DotNet.CleanSelected" class="io.github.dotnetsupport.build.CleanSelected" text="Clean"/>
             <action id="DotNet.ConvertToSlnx" class="io.github.dotnetsupport.actions.ConvertSolutionToSlnxAction"
                     text="Convert to .slnx..."/>
@@ -161,15 +170,47 @@
             <add-to-group group-id="ProjectView.ToolWindow.SecondaryActions" anchor="first"/>
         </action>
 
-        <group id="DotNet.ToolsMenu" text=".NET" popup="true">
+        <!-- a menu of the main menu bar, next to Tools -->
+        <group id="DotNet.MainMenu" text=".NET" popup="true">
+            <reference ref="DotNet.RunProject"/>
+            <reference ref="DotNet.DebugProject"/>
+            <separator/>
             <action id="DotNet.BuildSolution" class="io.github.dotnetsupport.build.BuildSolution" text="Build Solution"
                     icon="AllIcons.Actions.Compile"/>
             <action id="DotNet.RebuildSolution" class="io.github.dotnetsupport.build.RebuildSolution" text="Rebuild Solution"/>
             <action id="DotNet.CleanSolution" class="io.github.dotnetsupport.build.CleanSolution" text="Clean Solution"/>
             <action id="DotNet.BuildPerformance" class="io.github.dotnetsupport.build.BuildPerformanceAction"
                     text="Measure Build Performance" description="Rebuild with the MSBuild performance summary: the slowest targets and tasks"/>
-            <action id="DotNet.RestoreSolution" class="io.github.dotnetsupport.build.RestoreSolution" text="Restore NuGet Packages"/>
             <separator/>
+            <group id="DotNet.NuGet" text="NuGet" popup="true" icon="/icons/nuget.svg">
+                <action id="DotNet.NuGet.QuickList" class="io.github.dotnetsupport.nuget.NuGetQuickListAction" text="NuGet Quick List"
+                        description="Popup with the NuGet actions">
+                    <keyboard-shortcut keymap="$default" first-keystroke="alt shift N"/>
+                </action>
+                <separator/>
+                <action id="DotNet.RestoreSolution" class="io.github.dotnetsupport.build.RestoreSolution" text="NuGet _Restore"
+                        icon="AllIcons.Actions.Download"/>
+                <action id="DotNet.NuGet.ForceRestore" class="io.github.dotnetsupport.nuget.NuGetForceRestoreAction" text="NuGet _Force Restore"
+                        icon="AllIcons.Actions.Download" description="dotnet restore --force --no-cache: resolve every dependency again"/>
+                <action id="DotNet.NuGet.OpenPackagesFolder" class="io.github.dotnetsupport.nuget.OpenNuGetPackagesFolderAction"
+                        text="Open 'packages' F_older" description="Open the global packages folder in the file manager"/>
+                <separator/>
+                <action id="DotNet.NuGet.ManageForSolution" class="io.github.dotnetsupport.nuget.ManageNuGetPackagesForSolutionAction"
+                        text="Manage NuGet Packages for Solution"/>
+                <separator/>
+                <action id="DotNet.NuGet.UpgradeSolution" class="io.github.dotnetsupport.nuget.UpgradePackagesInSolutionAction"
+                        text="Upgrade Packages in Solution" icon="AllIcons.Actions.Upload"
+                        description="Move every package of the solution to its latest stable version"/>
+                <separator/>
+                <action id="DotNet.NuGet.ShowToolWindow" class="io.github.dotnetsupport.nuget.ShowNuGetToolWindowAction" text="Show NuGet Tool Window"/>
+                <action id="DotNet.NuGet.ShowPackages" class="io.github.dotnetsupport.nuget.ShowNuGetPackagesAction" text="Show NuGet Packages"/>
+                <action id="DotNet.NuGet.ShowSources" class="io.github.dotnetsupport.nuget.ShowNuGetSourcesAction" text="Show NuGet Sources"/>
+                <action id="DotNet.NuGet.ShowFolders" class="io.github.dotnetsupport.nuget.ShowNuGetFoldersAction" text="Show NuGet Folders"/>
+                <action id="DotNet.NuGet.ShowLog" class="io.github.dotnetsupport.nuget.ShowNuGetLogAction" text="Show NuGet Log"/>
+                <separator/>
+                <action id="DotNet.NuGet.Settings" class="io.github.dotnetsupport.nuget.OpenNuGetConfigAction" text="NuGet Settings"
+                        icon="AllIcons.General.Settings" description="Open the nuget.config that applies to the solution"/>
+            </group>
             <group id="DotNet.EfCore" text="EF Core" popup="true">
                 <action id="DotNet.EfAddMigration" class="io.github.dotnetsupport.templates.EfAction$AddMigration" text="Add Migration..."/>
                 <action id="DotNet.EfRemoveMigration" class="io.github.dotnetsupport.templates.EfAction$RemoveMigration" text="Remove Last Migration"/>
@@ -182,10 +223,12 @@
                     text="Monitor .NET Process" description="CPU, memory, GC, requests and exceptions of a running .NET process"/>
             <action id="DotNet.Environment" class="io.github.dotnetsupport.sdk.DotNetEnvironmentAction"
                     text=".NET on This Machine..." description="SDKs and runtimes with their support status, dotnet --info, global.json"/>
+            <reference ref="DotNet.FormatSelected"/>
+            <reference ref="DotNet.VerifyFormatting"/>
             <reference ref="DotNet.AnalyzeUpgrade"/>
             <reference ref="DotNet.InsertGuid"/>
             <reference ref="DotNet.AnalyzeStackTrace"/>
-            <add-to-group group-id="ToolsMenu" anchor="last"/>
+            <add-to-group group-id="MainMenu" anchor="after" relative-to-action="ToolsMenu"/>
         </group>
     </actions>
 

@@ -4,6 +4,7 @@ import com.intellij.execution.filters.TextConsoleBuilderFactory
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.execution.ui.ConsoleViewContentType
 import com.intellij.icons.AllIcons
+import com.intellij.ide.actions.RevealFileAction
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionUpdateThread
@@ -139,6 +140,68 @@ class NuGetSourcesPanel(private val project: Project, private val onChanged: () 
         override fun getColumnName(column: Int): String = listOf("Enabled", "Name", "URL")[column]
         override fun getColumnClass(column: Int): Class<*> = if (column == 0) java.lang.Boolean::class.java else String::class.java
         override fun getValueAt(row: Int, column: Int): Any = sources[row].let { listOf(it.isEnabled, it.name, it.url)[column] }
+    }
+}
+
+/** "Folders" tab: where NuGet keeps the packages and its caches (`dotnet nuget locals all --list`), with the way to open and to clear them. */
+class NuGetFoldersPanel(private val project: Project) : SimpleToolWindowPanel(false, true) {
+    private val service = NuGetService.getInstance(project)
+    private val model = FoldersModel()
+    private val table = JBTable(model).apply {
+        setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
+        emptyText.text = "Loading folders..."
+        columnModel.getColumn(0).preferredWidth = JBUI.scale(160)
+        columnModel.getColumn(1).preferredWidth = JBUI.scale(620)
+    }
+
+    init {
+        setContent(ScrollPaneFactory.createScrollPane(table))
+        val actions = DefaultActionGroup(
+            action("Open in File Manager", AllIcons.Actions.MenuOpen, { selected() != null }) { selected()?.let { RevealFileAction.openDirectory(java.io.File(it.second)) } },
+            action("Clear", AllIcons.Actions.GC, { selected() != null }) { clear() },
+            action("Refresh", AllIcons.Actions.Refresh, { true }) { reload() },
+        )
+        toolbar = ActionManager.getInstance().createActionToolbar("NuGetFolders", actions, false).also { it.targetComponent = table }.component
+        reload()
+    }
+
+    private fun selected(): Pair<String, String>? = table.selectedRow.takeIf { it >= 0 }?.let { model.folders[it] }
+
+    private fun reload() {
+        ApplicationManager.getApplication().executeOnPooledThread {
+            val folders = service.localFolders()
+            ApplicationManager.getApplication().invokeLater({
+                if (project.isDisposed) return@invokeLater
+                model.folders = folders
+                model.fireTableDataChanged()
+                table.emptyText.text = "No folders reported by 'dotnet nuget locals'"
+            }, ModalityState.any())
+        }
+    }
+
+    private fun clear() {
+        val (name, path) = selected() ?: return
+        val answer = Messages.showYesNoDialog(project, "Delete everything in '$name'?\n$path", "Clear NuGet Folder", Messages.getWarningIcon())
+        if (answer == Messages.YES) service.clearLocalFolder(name, ::reload)
+    }
+
+    private fun action(text: String, icon: javax.swing.Icon, enabled: () -> Boolean, perform: () -> Unit): AnAction =
+        object : AnAction(text, null, icon), DumbAware {
+            override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
+            override fun update(e: AnActionEvent) {
+                e.presentation.isEnabled = enabled()
+            }
+
+            override fun actionPerformed(e: AnActionEvent) = perform()
+        }
+
+    private class FoldersModel : AbstractTableModel() {
+        var folders: List<Pair<String, String>> = emptyList()
+
+        override fun getRowCount(): Int = folders.size
+        override fun getColumnCount(): Int = 2
+        override fun getColumnName(column: Int): String = listOf("Folder", "Path")[column]
+        override fun getValueAt(row: Int, column: Int): Any = folders[row].let { if (column == 0) it.first else it.second }
     }
 }
 
