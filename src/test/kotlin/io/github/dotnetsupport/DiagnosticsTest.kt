@@ -185,6 +185,18 @@ class DiagnosticsTest : BasePlatformTestCase() {
         assertEquals(listOf("report", "--process-id", "42"), Diagnostics.threadDumpCommand(File("dotnet-stack"), 42).parametersList.list)
         assertEquals(listOf("report", "--process-id", "42"), Diagnostics.heapReportCommand(File("dotnet-gcdump"), 42).parametersList.list)
 
+        // the debugger is a tool like the others, but its package and its command are named differently
+        assertEquals("dotnet-debugger-dap" to "dotnet-debugger", DotNetTool.DEBUGGER.packageId to DotNetTool.DEBUGGER.command)
+        assertEquals(listOf("tool", "update", "--global", "dotnet-debugger-dap"), DotNetTool.DEBUGGER.installCommand())
+        assertEquals("dotnet-counters", DotNetTool.COUNTERS.command)
+
+        // what the settings page shows when the installation ends
+        assertEquals("Tool 'dotnet-stack' (version '10.0.1') was successfully installed.",
+            DotNetSettingsConfigurable.installationSummary(0, "You can invoke the tool using the following command: dotnet-stack\r\nTool 'dotnet-stack' (version '10.0.1') was successfully installed.\r\n\r\n"))
+        assertEquals("Failed (exit code 1): error NU1101: Unable to find package dotnet-stak.",
+            DotNetSettingsConfigurable.installationSummary(1, "error NU1101: Unable to find package dotnet-stak.\nThe tool package could not be restored.\n"))
+        assertEquals("Failed (exit code -1): no output", DotNetSettingsConfigurable.installationSummary(-1, ""))
+
         // the page shows a row per tool and notices an edited path
         val page = DotNetSettingsConfigurable(project)
         try {

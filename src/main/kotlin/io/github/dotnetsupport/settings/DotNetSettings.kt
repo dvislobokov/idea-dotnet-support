@@ -14,11 +14,13 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import com.intellij.openapi.util.text.StringUtil
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.panel
+import com.intellij.util.ui.AsyncProcessIcon
 import com.intellij.util.ui.UIUtil
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetTool
@@ -86,11 +88,40 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
         val path = TextFieldWithBrowseButton().apply {
             addBrowseFolderListener(project, FileChooserDescriptorFactory.createSingleFileNoJarsDescriptor().withTitle("${tool.packageId} Executable"))
         }
-        val install = javax.swing.JButton("Install").apply {
-            addActionListener {
-                isEnabled = false
-                tool.install(project) { refresh() }
+        val install = javax.swing.JButton("Install").apply { addActionListener { runInstallation() } }
+        val progress = AsyncProcessIcon("installing ${tool.packageId}").apply { isVisible = false }
+        val status = JBLabel().apply { isVisible = false }
+
+        /**
+         * The page lives in a modal dialog: a background task reporting to the Build tool window would be invisible, and
+         * its completion callback would wait for the dialog to close. So the command runs here, and its last line is shown.
+         */
+        private fun runInstallation() {
+            install.isEnabled = false
+            progress.isVisible = true
+            progress.resume()
+            show("Running: dotnet ${tool.installCommand().joinToString(" ")}", isError = false)
+            val output = StringBuffer()
+            ApplicationManager.getApplication().executeOnPooledThread {
+                val exitCode = tool.installBlocking { text ->
+                    output.append(text)
+                    val line = text.lineSequence().lastOrNull { it.isNotBlank() }?.trim() ?: return@installBlocking
+                    ApplicationManager.getApplication().invokeLater({ show(line, isError = false) }, ModalityState.any())
+                }
+                ApplicationManager.getApplication().invokeLater({
+                    progress.suspend()
+                    progress.isVisible = false
+                    show(installationSummary(exitCode, output.toString()), isError = exitCode != 0)
+                    status.toolTipText = "<html><pre>" + StringUtil.escapeXmlEntities(output.toString().trim()) + "</pre></html>"
+                    refresh()
+                }, ModalityState.any())
             }
+        }
+
+        private fun show(text: String, isError: Boolean) {
+            status.text = text
+            status.foreground = if (isError) UIUtil.getErrorForeground() else UIUtil.getContextHelpForeground()
+            status.isVisible = true
         }
 
         fun refresh() {
@@ -136,7 +167,10 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
                         cell(toolRow.path).resizableColumn().align(AlignX.FILL)
                             .validationOnApply { if (it.text.isNotBlank() && !File(it.text.trim()).isFile) error("The file does not exist") else null }
                         cell(toolRow.install)
+                        cell(toolRow.progress)
                     }.rowComment(toolRow.tool.purpose)
+                    // what the installation is doing and how it ended; empty until Install is pressed
+                    row("") { cell(toolRow.status) }
                 }
             }
             group("Behavior") {
@@ -150,6 +184,16 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
         }.also {
             refreshInformation(settings.dotnetPath)
             toolRows.values.forEach { it.refresh() }
+        }
+    }
+
+    companion object {
+        /** The last meaningful line of `dotnet tool update`: "Tool 'x' (version '1.2.3') was successfully installed." or the error. */
+        fun installationSummary(exitCode: Int, output: String): String {
+            val lines = output.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
+            if (exitCode == 0) return lines.lastOrNull() ?: "Done."
+            val reason = lines.lastOrNull { "error" in it.lowercase() } ?: lines.lastOrNull() ?: "no output"
+            return "Failed (exit code $exitCode): $reason"
         }
     }
 

@@ -1,11 +1,16 @@
 package io.github.dotnetsupport.cli
 
 import com.intellij.execution.configurations.PathEnvironmentVariableUtil
+import com.intellij.execution.process.CapturingProcessHandler
+import com.intellij.execution.process.ProcessEvent
+import com.intellij.execution.process.ProcessListener
+import com.intellij.execution.process.ProcessOutputTypes
 import com.intellij.ide.BrowserUtil
 import com.intellij.notification.NotificationAction
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.SystemInfo
 import io.github.dotnetsupport.settings.DotNetSettings
 import java.io.File
@@ -39,6 +44,24 @@ enum class DotNetTool(val packageId: String, val purpose: String, val documentat
 
     /** `install` fails for an installed tool and `update` installs a missing one, so `update` serves both. */
     fun installCommand(): List<String> = listOf("tool", "update", "--global", packageId)
+
+    /**
+     * Installs or updates the tool on the calling (background) thread, handing over what `dotnet` prints as it arrives.
+     * For places with their own progress UI, such as the settings page: a modal dialog hides the Build tool window.
+     * Returns the exit code, or -1 with the reason passed to [onText] when `dotnet` cannot be started.
+     */
+    fun installBlocking(onText: (String) -> Unit): Int = try {
+        val handler = CapturingProcessHandler(DotNetCli.commandLine(null, *installCommand().toTypedArray()).withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en"))
+        handler.addProcessListener(object : ProcessListener {
+            override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
+                if (outputType !== ProcessOutputTypes.SYSTEM) onText(event.text)
+            }
+        })
+        handler.runProcess(600_000).exitCode
+    } catch (e: Exception) {
+        onText(e.message.orEmpty())
+        -1
+    }
 
     /** Installs or updates the tool in a background task; [onSuccess] runs on EDT. */
     fun install(project: Project, onSuccess: () -> Unit = {}) {

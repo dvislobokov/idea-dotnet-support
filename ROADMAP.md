@@ -182,6 +182,16 @@
 3. Services / Run Dashboard, тест-эксплорер с continuous testing, конфликты версий.
 4. Остальное — по запросу: декомпиляция и BenchmarkDotNet эффектны, но нужны реже.
 
+## Отладка через DAP (план; начат слой 1)
+Отладчик `dotnet-debugger` (dotnet tool `dotnet-debugger-dap`) + свой DAP-клиент + платформенный XDebugger. Подробности,
+соответствие API и ограничения адаптера — в `DAP_PLAN.md`; результаты проверки адаптера — в `dap-probe/FINDINGS.md`.
+- [x] Отладчик в списке .NET Tools на странице настроек: путь, Install / Update (id пакета и команда разные)
+- [ ] Слой 1: DAP-клиент — фрейминг, корреляция ответов, события, обратные запросы; тесты на фейковом адаптере
+- [ ] Слой 2: MVP — Debug у run configurations, точки останова на строках, кадры, переменные (постранично), шаги, evaluate, консоль
+- [ ] Слой 3: условия / hit count / logpoints, исключения, Set Value, watches, Run to Cursor, attach, restart
+- [ ] Слой 4: отладка тестов (`VSTEST_HOST_DEBUG=1` + attach)
+- [ ] Слой 5: значения в редакторе, async-стек, `runInTerminal`, netcoredbg как второй адаптер
+
 ## Собственный LSP-клиент (план, не начато)
 Подробности — оценка, решения по устройству, риски, способ проверки — в `LSP_PLAN.md`.
 
