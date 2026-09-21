@@ -9,6 +9,7 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.TokenType
+import io.github.dotnetsupport.lsp.RoslynServerStatus
 
 enum class FoldKind { BODY, USINGS, REGION, DOC_COMMENT, COMMENT }
 
@@ -105,7 +106,9 @@ object CSharpFolding {
 
 class CSharpFoldingBuilder : FoldingBuilderEx(), DumbAware {
     override fun buildFoldRegions(root: PsiElement, document: Document, quick: Boolean): Array<FoldingDescriptor> =
-        CSharpFolding.regions(document.immutableCharSequence)
+        // the LSP client of the platform folds every language by the ranges of the server: two builders would fold everything twice
+        if (RoslynServerStatus.isReady(root.project)) FoldingDescriptor.EMPTY_ARRAY
+        else CSharpFolding.regions(document.immutableCharSequence)
             .filter { it.range.endOffset <= document.textLength }
             .map { FoldingDescriptor(root.node, it.range, null, it.placeholder, CSharpFolding.collapsedByDefault(it.kind), emptySet()) }
             .toTypedArray()

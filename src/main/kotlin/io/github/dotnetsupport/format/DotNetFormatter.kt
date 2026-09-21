@@ -17,9 +17,12 @@ import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VfsUtilCore
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.lang.CSharpFileType
+import io.github.dotnetsupport.lsp.RoslynPolicy
+import io.github.dotnetsupport.lsp.RoslynServerStatus
 import io.github.dotnetsupport.msbuild.DotNetProjects
 import io.github.dotnetsupport.settings.DotNetSettingsConfigurable
 import java.io.File
@@ -27,7 +30,7 @@ import java.io.File
 enum class FormatterChoice(val title: String) {
     AUTO("Auto: CSharpier when the repository uses it, otherwise dotnet format"),
     CSHARPIER("CSharpier"),
-    DOTNET_FORMAT("dotnet format (whitespace, by .editorconfig; about a second per file)"),
+    DOTNET_FORMAT("dotnet format (whitespace, by .editorconfig; about a second per file, instant with the language server)"),
     NONE("None");
 
     override fun toString(): String = title
@@ -46,6 +49,10 @@ class DotNetFormattingSettings : SimplePersistentStateComponent<DotNetFormatting
         set(value) { state.formatter = value }
 
     /** What [FormatterChoice.AUTO] means for a file in [directory]. */
+    /** [resolve] for a file of the project: its directory and the text of the project that owns it. */
+    fun resolve(file: VirtualFile): FormatterChoice =
+        resolve(VfsUtilCore.virtualToIoFile(file).parentFile, DotNetProjects.findOwningProject(file)?.let { runCatching { VfsUtilCore.loadText(it) }.getOrNull() })
+
     fun resolve(directory: File?, projectFileText: String? = null): FormatterChoice = when (val choice = formatter) {
         FormatterChoice.AUTO -> if (CSharpierLocator.isUsedBy(directory, projectFileText)) FormatterChoice.CSHARPIER else FormatterChoice.DOTNET_FORMAT
         else -> choice
@@ -109,8 +116,13 @@ class DotNetFormattingService : AsyncDocumentFormattingService() {
     // whole files only: CSharpier cannot format a fragment, and a fragment of `dotnet format` is not worth a second
     override fun getFeatures(): Set<FormattingService.Feature> = emptySet()
 
-    override fun canFormat(file: PsiFile): Boolean =
-        file.virtualFile?.fileType == CSharpFileType && DotNetFormattingSettings.getInstance(file.project).formatter != FormatterChoice.NONE
+    override fun canFormat(file: PsiFile): Boolean {
+        val virtualFile = file.virtualFile?.takeIf { it.fileType == CSharpFileType } ?: return false
+        val settings = DotNetFormattingSettings.getInstance(file.project)
+        if (settings.formatter == FormatterChoice.NONE) return false
+        // the whitespace formatter of Roslyn is what the language server runs, without a process per file: left to the LSP client
+        return !RoslynServerStatus.isReady(file.project) || !RoslynPolicy.formatsByServer(settings.resolve(virtualFile), true)
+    }
 
     override fun getNotificationGroupId(): String = DotNetCli.NOTIFICATION_GROUP
     override fun getName(): String = ".NET formatter"

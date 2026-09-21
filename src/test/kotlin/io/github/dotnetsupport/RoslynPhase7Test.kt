@@ -1,0 +1,99 @@
+package io.github.dotnetsupport
+
+import com.google.gson.JsonParser
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import io.github.dotnetsupport.roslyn.RoslynDecompiled
+import io.github.dotnetsupport.roslyn.RoslynFileRename
+import io.github.dotnetsupport.roslyn.RoslynGotoImplementationAction
+import io.github.dotnetsupport.roslyn.RoslynNavigation
+import java.io.File
+
+/** Phase 7 of LSP_PLAN.md: Go to Implementation, decompiled sources, the file renamed with its type. The server is not started. */
+class RoslynPhase7Test : BasePlatformTestCase() {
+    private fun record(name: String) = File(javaClass.getResource("/roslyn/capture-5.12/01-initialize.json")!!.toURI()).parentFile
+        .listFiles()!!.single { it.name.endsWith("-$name.json") }.let { JsonParser.parseString(it.readText()).asJsonObject }
+
+    /** The action of the platform, replaced under its own id: its shortcut and texts stay, other languages still get the handler of the platform. */
+    fun testGotoImplementationIsReplaced() {
+        val action = ActionManager.getInstance().getAction("GotoImplementation")
+        assertTrue(action.javaClass.name, action is RoslynGotoImplementationAction)
+        assertFalse(action.templatePresentation.text.isNullOrBlank())
+    }
+
+    fun testWordAt() {
+        val text = "shape.Area();"
+        assertEquals("Area", RoslynNavigation.wordAt(text, text.indexOf("Area")))
+        assertEquals("Area", RoslynNavigation.wordAt(text, text.indexOf("Area") + 2))
+        assertEquals("Area", RoslynNavigation.wordAt(text, text.indexOf("(")))
+        assertEquals("", RoslynNavigation.wordAt(text, text.length))
+        assertEquals("shape", RoslynNavigation.wordAt(text, 0))
+    }
+
+    /** The answer the server gives for a call of an interface method (recorded): points at the names of the implementations. */
+    fun testImplementationsAsRecorded() {
+        val locations = record("phase7_implementation_of_a_call_of_an_interface_method").getAsJsonArray("result")
+        assertEquals(2, locations.size())
+        assertTrue(locations.all { it.asJsonObject.get("uri").asString.endsWith("/Console/Scenarios.cs") })
+    }
+
+    /** The head of a decompiled file as Roslyn writes it (recorded), and where such files live. */
+    fun testDecompiledSource() {
+        val head = record("phase7_decompiled_file_head").getAsJsonObject("result")
+        val origin = RoslynDecompiled.origin(head.getAsJsonArray("head").joinToString("\n") { it.asString })!!
+        assertEquals("System.Console", origin.assembly)
+        assertEquals("9.0.0.0", origin.version)
+        assertTrue(origin.path!!.endsWith("System.Console.dll"))
+        assertTrue(RoslynDecompiled.isDecompiledPath(head.get("uri").asString))
+        // the definitions inside a decompiled file lead to other decompiled files
+        assertTrue(RoslynDecompiled.isDecompiledPath(record("phase7_decompiled_definition").getAsJsonArray("result")[0].asJsonObject.get("uri").asString))
+        assertTrue(RoslynDecompiled.isDecompiledPath("C:\\Users\\me\\AppData\\Local\\Temp\\MetadataAsSource\\a\\b\\List.cs"))
+        assertFalse(RoslynDecompiled.isDecompiledPath("C:/work/Shop/Order.cs"))
+        assertNull(RoslynDecompiled.origin("namespace Shop;\nclass Order { }"))
+        // and the server does not report problems in it
+        assertEquals(0, record("phase7_decompiled_diagnostic").getAsJsonObject("result").getAsJsonArray("items").size())
+    }
+
+    fun testDecompiledFileIsReadOnly() {
+        val decompiled = myFixture.addFileToProject("MetadataAsSource/1/DecompilationMetadataAsSourceFileProvider/2/Console.cs",
+            "#region Assembly System.Console, Version=10.0.0.0, Culture=neutral\n// C:\\packs\\System.Console.dll\n#endregion\nnamespace System;").virtualFile
+        val ordinary = myFixture.addFileToProject("Phase7/Order.cs", "class Order { }").virtualFile
+        val access = io.github.dotnetsupport.roslyn.RoslynDecompiledWritingAccess(project)
+        assertFalse(access.isPotentiallyWritable(decompiled))
+        assertTrue(access.isPotentiallyWritable(ordinary))
+        assertEquals(listOf(decompiled), access.requestWriting(listOf(decompiled, ordinary)).toList())
+        assertEquals("Console.cs [System.Console]", io.github.dotnetsupport.roslyn.RoslynDecompiledTabTitle().getEditorTabTitle(project, decompiled))
+        assertNull(io.github.dotnetsupport.roslyn.RoslynDecompiledTabTitle().getEditorTabTitle(project, ordinary))
+    }
+
+    /** The recorded rename of `Scenarios` edits the text of two files and renames no file: that is what the plugin adds. */
+    fun testServerRenamesNoFile() {
+        val changes = record("phase7_rename_of_a_type_named_as_its_file").getAsJsonObject("result").getAsJsonArray("documentChanges")
+        assertTrue(changes.size() >= 2)
+        assertTrue("only text edits", changes.all { it.asJsonObject.has("edits") && !it.asJsonObject.has("kind") })
+    }
+
+    fun testWhichFileIsRenamed() {
+        val order = "namespace Shop;\n\npublic class Order\n{\n    public void Order2() { }\n}\n"
+        val nameAt = order.indexOf("Order\n")
+        val program = "var order = new Order();"
+        fun edited(vararg files: Pair<String, Pair<String, List<Int>>>) = files.associate { (path, value) -> path to (value.first as CharSequence to value.second) }
+
+        assertEquals("C:/w/Order.cs", RoslynFileRename.fileToRename(edited("C:/w/Program.cs" to (program to listOf(16)), "C:/w/Order.cs" to (order to listOf(nameAt))), "Order", "Purchase"))
+        assertEquals("backslashes", "C:\\w\\Order.cs", RoslynFileRename.fileToRename(edited("C:\\w\\Order.cs" to (order to listOf(nameAt))), "Order", "Purchase"))
+        // the edit is already in: the type is found under its new name
+        val applied = order.replaceFirst("class Order", "class Purchase")
+        assertEquals("C:/w/Order.cs", RoslynFileRename.fileToRename(edited("C:/w/Order.cs" to (applied to listOf(nameAt))), "Order", "Purchase"))
+        // not the declaration of the type: a method elsewhere in the file with the name of the file
+        assertNull(RoslynFileRename.fileToRename(edited("C:/w/Order.cs" to (order to listOf(order.indexOf("Order2")))), "Order", "Purchase"))
+        // the file is named otherwise, the name is not valid, nothing changes
+        assertNull(RoslynFileRename.fileToRename(edited("C:/w/Orders.cs" to (order to listOf(nameAt))), "Order", "Purchase"))
+        assertNull(RoslynFileRename.fileToRename(edited("C:/w/Order.cs" to (order to listOf(nameAt))), "Order", "Pur chase"))
+        assertNull(RoslynFileRename.fileToRename(edited("C:/w/Order.cs" to (order to listOf(nameAt))), "Order", "Order"))
+
+        assertTrue(RoslynFileRename.isApplied(applied, "Order", "Purchase"))
+        assertFalse(RoslynFileRename.isApplied(order, "Order", "Purchase"))
+        assertTrue(RoslynFileRename.isIdentifier("@class"))
+        assertFalse(RoslynFileRename.isIdentifier("1st"))
+    }
+}

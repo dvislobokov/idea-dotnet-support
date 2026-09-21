@@ -56,6 +56,7 @@ class Server:
             if length is None:
                 continue
             message = json.loads(stream.read(length).decode("utf-8"))
+            message["_bytes"] = length  # the size on the wire, for bench.py
             self._handle(message)
 
     def _handle(self, message):

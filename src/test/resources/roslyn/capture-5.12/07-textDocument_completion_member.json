@@ -1,0 +1,95 @@
+{
+ "method": "textDocument/completion",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "position": {
+   "line": 260,
+   "character": 15
+  },
+  "context": {
+   "triggerKind": 2,
+   "triggerCharacter": "."
+  }
+ },
+ "ms": 27.9,
+ "result": {
+  "isIncomplete": true,
+  "itemDefaults": {
+   "commitCharacters": [],
+   "editRange": {
+    "start": {
+     "line": 260,
+     "character": 15
+    },
+    "end": {
+     "line": 260,
+     "character": 15
+    }
+   },
+   "data": {
+    "ResultId": 2,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  "items": [
+   {
+    "label": "Age",
+    "kind": 10,
+    "sortText": "0000",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Equals",
+    "kind": 2,
+    "sortText": "0001",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Friend",
+    "kind": 10,
+    "sortText": "0002",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "GetHashCode",
+    "kind": 2,
+    "sortText": "0003",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "GetType",
+    "kind": 2,
+    "sortText": "0004",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "IsAdult",
+    "kind": 10,
+    "sortText": "0005",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Name",
+    "kind": 10,
+    "sortText": "0006",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Notes",
+    "kind": 10,
+    "sortText": "0007",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ToString",
+    "kind": 2,
+    "sortText": "0008",
+    "insertTextFormat": 1
+   }
+  ]
+ }
+}

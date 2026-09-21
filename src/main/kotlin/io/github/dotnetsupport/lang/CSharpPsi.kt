@@ -1,5 +1,6 @@
 package io.github.dotnetsupport.lang
 
+import com.intellij.openapi.util.Condition
 import com.intellij.extapi.psi.ASTWrapperPsiElement
 import com.intellij.icons.AllIcons
 import com.intellij.ide.structureView.StructureViewBuilder
@@ -65,6 +66,15 @@ object CSharpStructure {
     fun of(file: PsiFile): CSharpFileStructure = CachedValuesManager.getCachedValue(file) {
         CachedValueProvider.Result.create(CSharpDeclarations.scan(file.viewProvider.contents), file)
     }
+}
+
+/**
+ * A declaration is a named PSI element, so the rename of the platform takes it for its own and ends in [CSharpDeclaration.setName]
+ * ("needs a language server") even when a language server is there: the rename of the LSP client is registered last. Vetoed,
+ * the rename of the platform steps aside and the one of the server is what Shift+F6 does.
+ */
+class CSharpRenameVeto : Condition<PsiElement> {
+    override fun value(element: PsiElement): Boolean = element is CSharpDeclaration
 }
 
 /** A namespace, a type or a member. Everything about it beyond its kind comes from [CSharpStructure]. */

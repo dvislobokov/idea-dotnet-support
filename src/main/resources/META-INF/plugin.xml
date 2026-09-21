@@ -18,6 +18,7 @@
     <!-- optional parts: a module is loaded only where its dependencies are (see the descriptor of the module next to META-INF) -->
     <content>
         <module name="io.github.dotnetsupport.dap"/>
+        <module name="io.github.dotnetsupport.roslyn"/>
     </content>
 
     <extensionPoints>
@@ -61,6 +62,8 @@
         <!-- on the declarations CSharpDeclarations finds by tokens -->
         <lang.psiStructureViewFactory language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpStructureViewFactory"/>
         <breadcrumbsInfoProvider implementation="io.github.dotnetsupport.lang.CSharpBreadcrumbsProvider"/>
+        <!-- a declaration is a named element only for navigation: renaming is the business of the language server -->
+        <vetoRenameCondition implementation="io.github.dotnetsupport.lang.CSharpRenameVeto"/>
         <lang.foldingBuilder language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpFoldingBuilder"/>
         <fileBasedIndex implementation="io.github.dotnetsupport.lang.CSharpDeclarationIndex"/>
         <gotoClassContributor implementation="io.github.dotnetsupport.lang.CSharpGotoClassContributor"/>

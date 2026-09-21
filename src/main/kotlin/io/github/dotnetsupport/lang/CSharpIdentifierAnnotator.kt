@@ -13,12 +13,15 @@ import com.intellij.openapi.options.colors.ColorSettingsPage
 import com.intellij.openapi.project.DumbAware
 import com.intellij.psi.PsiElement
 import io.github.dotnetsupport.DotNetIcons
+import io.github.dotnetsupport.lsp.RoslynServerStatus
 import javax.swing.Icon
 
 /** Colors types, methods and members. Runs once per file: the PSI is flat, the classifier works on the token stream. */
 class CSharpIdentifierAnnotator : Annotator, DumbAware {
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
         if (element !is CSharpFile) return
+        // the semantic tokens of the language server say the same exactly, in the same colors (also while they come from its cache)
+        if (RoslynServerStatus.colorsIdentifiers(element.project, element.virtualFile)) return
         for ((range, kind) in CSharpIdentifierClassifier.classify(element.viewProvider.contents)) {
             holder.newSilentAnnotation(HighlightSeverity.INFORMATION).range(range).textAttributes(keyFor(kind)).create()
         }

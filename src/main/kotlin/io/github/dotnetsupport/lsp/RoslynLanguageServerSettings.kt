@@ -7,6 +7,7 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
 import com.intellij.util.execution.ParametersListUtil
+import com.intellij.util.messages.Topic
 
 /** `--logLevel` of the server. */
 enum class RoslynLogLevel { None, Critical, Error, Warning, Information, Debug, Trace }
@@ -23,6 +24,8 @@ enum class SourceGeneratorExecution { Automatic, Balanced }
 @State(name = "DotNetRoslynLanguageServer", storages = [Storage("dotnet-support.xml")])
 class RoslynLanguageServerSettings : SimplePersistentStateComponent<RoslynLanguageServerSettings.Settings>(Settings()) {
     class Settings : BaseState() {
+        /** Off: the server is never started, C# stays on the heuristics of the plugin. */
+        var enabled by property(true)
         var logLevel by enum(RoslynLogLevel.Information)
 
         /** Empty: a folder next to the logs of the IDE. */
@@ -50,7 +53,16 @@ class RoslynLanguageServerSettings : SimplePersistentStateComponent<RoslynLangua
         state.options = state.options.toMutableMap().apply { if (value == option.default) remove(option.section) else put(option.section, value) }
     }
 
+    /** The page was applied: [restart] when the command line of the server changed, otherwise its options only. */
+    fun interface Listener {
+        fun settingsChanged(restart: Boolean)
+    }
+
     companion object {
+        /** The bridge to the client of the server: it lives in a content module the rest of the plugin must not refer to. */
+        @JvmField
+        val CHANGED: Topic<Listener> = Topic.create("DotNetRoslynLanguageServerSettings", Listener::class.java)
+
         fun getInstance(): RoslynLanguageServerSettings = service()
     }
 }
@@ -67,13 +79,13 @@ class RoslynOption(val group: String, val section: String, val label: String, va
  * always answered with an explicit value, so what the page shows is what the server works with.
  */
 object RoslynOptions {
-    private val SCOPES = listOf("openDocuments", "fullSolution", "none")
+    private val SCOPES = listOf("openFiles", "fullSolution", "none")
 
     private fun toggle(group: String, section: String, label: String, default: Boolean, comment: String? = null) = RoslynOption(group, section, label, default.toString(), comment = comment)
 
     val ALL: List<RoslynOption> = listOf(
-        RoslynOption("Analysis", "background_analysis.dotnet_compiler_diagnostics_scope", "Compiler diagnostics for:", "openDocuments", SCOPES),
-        RoslynOption("Analysis", "background_analysis.dotnet_analyzer_diagnostics_scope", "Analyzer diagnostics for:", "openDocuments", SCOPES,
+        RoslynOption("Analysis", "background_analysis.dotnet_compiler_diagnostics_scope", "Compiler diagnostics for:", "openFiles", SCOPES),
+        RoslynOption("Analysis", "background_analysis.dotnet_analyzer_diagnostics_scope", "Analyzer diagnostics for:", "openFiles", SCOPES,
             "\"fullSolution\" analyzes every file of the solution in the background: accurate, and heavy on a large solution"),
 
         toggle("Projects", "projects.dotnet_enable_automatic_restore", "Restore NuGet packages when a project needs it", true),
@@ -125,16 +137,44 @@ object RoslynOptions {
 /** The indents the server formats with; they come from the code style of the IDE, not from the page of the server. */
 class RoslynCodeStyle(val tabWidth: Int, val indentSize: Int, val useTabs: Boolean, val endOfLine: String?, val insertFinalNewline: Boolean?)
 
+/** What the server is told to load: `solution/open` or, when there is no solution, `project/open`. */
+sealed interface RoslynWorkspaceTarget {
+    data class Solution(val path: String) : RoslynWorkspaceTarget
+    data class Projects(val paths: List<String>) : RoslynWorkspaceTarget
+
+    /** Several solutions and none of them chosen yet: the server holds one at a time, and which one is for the user to say. */
+    data class Choice(val solutions: List<String>) : RoslynWorkspaceTarget
+}
+
 object RoslynLanguageServer {
     /**
-     * The arguments after the executable. `--stdio` is how the client talks to the server; with [clientProcessId] the server exits
-     * when the IDE is gone, whatever happens to the pipes.
+     * [solutions] (anywhere under the opened folder) win over loose [projects]: a solution is always opened by the plugin. The only one
+     * is opened as is; of several the one [chosen] before, while it is still there.
      */
-    fun arguments(settings: RoslynLanguageServerSettings.Settings, defaultLogDirectory: String, clientProcessId: Long?): List<String> = buildList {
+    fun workspaceTarget(solutions: List<String>, chosen: String?, projects: List<String>): RoslynWorkspaceTarget? = when {
+        solutions.size == 1 -> RoslynWorkspaceTarget.Solution(solutions.single())
+        chosen != null && chosen in solutions -> RoslynWorkspaceTarget.Solution(chosen)
+        solutions.isNotEmpty() -> RoslynWorkspaceTarget.Choice(solutions.sortedBy { it.lowercase() })
+        projects.isNotEmpty() -> RoslynWorkspaceTarget.Projects(projects.sortedBy { it.lowercase() })
+        else -> null
+    }
+
+    /** `file:///c%3A/w` -> `file:///c:/w`: the drive colon as the server expects it in the URI of a folder. */
+    fun plainDriveUri(uri: String): String = Regex("^(file:///[A-Za-z])%3[Aa]").replace(uri) { it.groupValues[1] + ":" }
+
+    /** Everything of the settings that ends up on the command line: a change here needs a restart of the server. */
+    fun commandLineKey(settings: RoslynLanguageServerSettings.Settings): List<String> = listOf(settings.enabled.toString()) + arguments(settings, "", null)
+
+    /**
+     * The arguments after the executable. `--stdio` is how the client talks to the server; with [clientProcessId] the server exits
+     * when the IDE is gone, whatever happens to the pipes. With [solutionFound] the plugin names the solution (`solution/open`), and
+     * `--autoLoadProjects` on top of that would load everything twice, or another solution than the chosen one.
+     */
+    fun arguments(settings: RoslynLanguageServerSettings.Settings, defaultLogDirectory: String, clientProcessId: Long?, solutionFound: Boolean = false): List<String> = buildList {
         add("--stdio")
         add("--logLevel"); add(settings.logLevel.name)
         add("--extensionLogDirectory"); add(settings.logDirectory?.takeIf { it.isNotBlank() } ?: defaultLogDirectory)
-        if (settings.autoLoadProjects) {
+        if (settings.autoLoadProjects && !solutionFound) {
             add("--autoLoadProjects")
             if (settings.autoLoadProjectsLimit > 0) add(settings.autoLoadProjectsLimit.toString())
         }

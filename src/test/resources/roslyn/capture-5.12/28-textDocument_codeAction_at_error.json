@@ -1,0 +1,568 @@
+{
+ "method": "textDocument/codeAction",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "range": {
+   "start": {
+    "line": 258,
+    "character": 21
+   },
+   "end": {
+    "line": 258,
+    "character": 32
+   }
+  },
+  "context": {
+   "diagnostics": [
+    {
+     "range": {
+      "start": {
+       "line": 258,
+       "character": 21
+      },
+      "end": {
+       "line": 258,
+       "character": 32
+      }
+     },
+     "severity": 1,
+     "code": "CS0103",
+     "codeDescription": {
+      "href": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS0103)"
+     },
+     "message": "The name 'MissingType' does not exist in the current context",
+     "tags": [
+      2147483642,
+      2147483645
+     ]
+    }
+   ],
+   "triggerKind": 1
+  }
+ },
+ "ms": 544.1,
+ "result": [
+  {
+   "title": "Extract method",
+   "kind": "refactor.extract",
+   "data": {
+    "UniqueIdentifier": "Extract method",
+    "CustomTags": [
+     "Extract Method Code Action Provider"
+    ],
+    "Range": {
+     "start": {
+      "line": 258,
+      "character": 21
+     },
+     "end": {
+      "line": 258,
+      "character": 32
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    },
+    "CodeActionPath": [
+     "Extract method"
+    ],
+    "NestedCodeActions": []
+   }
+  },
+  {
+   "title": "Extract local function",
+   "kind": "refactor.extract",
+   "data": {
+    "UniqueIdentifier": "Extract local function",
+    "CustomTags": [
+     "Extract Method Code Action Provider"
+    ],
+    "Range": {
+     "start": {
+      "line": 258,
+      "character": 21
+     },
+     "end": {
+      "line": 258,
+      "character": 32
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    },
+    "CodeActionPath": [
+     "Extract local function"
+    ],
+    "NestedCodeActions": []
+   }
+  },
+  {
+   "title": "Generate variable 'MissingType'",
+   "kind": "quickfix",
+   "command": {
+    "title": "Generate variable 'MissingType'",
+    "command": "roslyn.client.nestedCodeAction",
+    "arguments": [
+     {
+      "UniqueIdentifier": "Generate variable 'MissingType'",
+      "CustomTags": [
+       "GenerateVariable"
+      ],
+      "Range": {
+       "start": {
+        "line": 258,
+        "character": 21
+       },
+       "end": {
+        "line": 258,
+        "character": 32
+       }
+      },
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      },
+      "CodeActionPath": [
+       "Generate variable 'MissingType'"
+      ],
+      "NestedCodeActions": [
+       {
+        "title": "Generate property 'MissingType'",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Generate property 'MissingType'",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 258,
+           "character": 21
+          },
+          "end": {
+           "line": 258,
+           "character": 32
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Generate variable 'MissingType'",
+          "Generate property 'MissingType'"
+         ]
+        }
+       },
+       {
+        "title": "Generate field 'MissingType'",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Generate field 'MissingType'",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 258,
+           "character": 21
+          },
+          "end": {
+           "line": 258,
+           "character": 32
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Generate variable 'MissingType'",
+          "Generate field 'MissingType'"
+         ]
+        }
+       },
+       {
+        "title": "Generate read-only field 'MissingType'",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Generate read-only field 'MissingType'",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 258,
+           "character": 21
+          },
+          "end": {
+           "line": 258,
+           "character": 32
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Generate variable 'MissingType'",
+          "Generate read-only field 'MissingType'"
+         ]
+        }
+       },
+       {
+        "title": "Generate local 'MissingType'",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Generate local 'MissingType'",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 258,
+           "character": 21
+          },
+          "end": {
+           "line": 258,
+           "character": 32
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Generate variable 'MissingType'",
+          "Generate local 'MissingType'"
+         ]
+        }
+       },
+       {
+        "title": "Generate parameter 'MissingType'",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Generate parameter 'MissingType'",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 258,
+           "character": 21
+          },
+          "end": {
+           "line": 258,
+           "character": 32
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Generate variable 'MissingType'",
+          "Generate parameter 'MissingType'"
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "data": {
+    "UniqueIdentifier": "Generate variable 'MissingType'",
+    "CustomTags": [
+     "GenerateVariable"
+    ],
+    "Range": {
+     "start": {
+      "line": 258,
+      "character": 21
+     },
+     "end": {
+      "line": 258,
+      "character": 32
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    },
+    "CodeActionPath": [
+     "Generate variable 'MissingType'"
+    ],
+    "NestedCodeActions": [
+     {
+      "title": "Generate property 'MissingType'",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Generate property 'MissingType'",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 258,
+         "character": 21
+        },
+        "end": {
+         "line": 258,
+         "character": 32
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Generate variable 'MissingType'",
+        "Generate property 'MissingType'"
+       ]
+      }
+     },
+     {
+      "title": "Generate field 'MissingType'",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Generate field 'MissingType'",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 258,
+         "character": 21
+        },
+        "end": {
+         "line": 258,
+         "character": 32
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Generate variable 'MissingType'",
+        "Generate field 'MissingType'"
+       ]
+      }
+     },
+     {
+      "title": "Generate read-only field 'MissingType'",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Generate read-only field 'MissingType'",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 258,
+         "character": 21
+        },
+        "end": {
+         "line": 258,
+         "character": 32
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Generate variable 'MissingType'",
+        "Generate read-only field 'MissingType'"
+       ]
+      }
+     },
+     {
+      "title": "Generate local 'MissingType'",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Generate local 'MissingType'",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 258,
+         "character": 21
+        },
+        "end": {
+         "line": 258,
+         "character": 32
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Generate variable 'MissingType'",
+        "Generate local 'MissingType'"
+       ]
+      }
+     },
+     {
+      "title": "Generate parameter 'MissingType'",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Generate parameter 'MissingType'",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 258,
+         "character": 21
+        },
+        "end": {
+         "line": 258,
+         "character": 32
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Generate variable 'MissingType'",
+        "Generate parameter 'MissingType'"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "title": "Generate type 'MissingType'",
+   "kind": "quickfix",
+   "command": {
+    "title": "Generate type 'MissingType'",
+    "command": "roslyn.client.nestedCodeAction",
+    "arguments": [
+     {
+      "UniqueIdentifier": "Generate type 'MissingType'",
+      "CustomTags": [
+       "GenerateType"
+      ],
+      "Range": {
+       "start": {
+        "line": 258,
+        "character": 21
+       },
+       "end": {
+        "line": 258,
+        "character": 32
+       }
+      },
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      },
+      "CodeActionPath": [
+       "Generate type 'MissingType'"
+      ],
+      "NestedCodeActions": [
+       {
+        "title": "Generate class 'MissingType'",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Generate class 'MissingType'",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 258,
+           "character": 21
+          },
+          "end": {
+           "line": 258,
+           "character": 32
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Generate type 'MissingType'",
+          "Generate class 'MissingType'"
+         ]
+        }
+       },
+       {
+        "title": "Generate nested class 'MissingType'",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Generate nested class 'MissingType'",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 258,
+           "character": 21
+          },
+          "end": {
+           "line": 258,
+           "character": 32
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Generate type 'MissingType'",
+          "Generate nested class 'MissingType'"
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "data": {
+    "UniqueIdentifier": "Generate type 'MissingType'",
+    "CustomTags": [
+     "GenerateType"
+    ],
+    "Range": {
+     "start": {
+      "line": 258,
+      "character": 21
+     },
+     "end": {
+      "line": 258,
+      "character": 32
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    },
+    "CodeActionPath": [
+     "Generate type 'MissingType'"
+    ],
+    "NestedCodeActions": [
+     {
+      "title": "Generate class 'MissingType'",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Generate class 'MissingType'",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 258,
+         "character": 21
+        },
+        "end": {
+         "line": 258,
+         "character": 32
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Generate type 'MissingType'",
+        "Generate class 'MissingType'"
+       ]
+      }
+     },
+     {
+      "title": "Generate nested class 'MissingType'",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Generate nested class 'MissingType'",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 258,
+         "character": 21
+        },
+        "end": {
+         "line": 258,
+         "character": 32
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Generate type 'MissingType'",
+        "Generate nested class 'MissingType'"
+       ]
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

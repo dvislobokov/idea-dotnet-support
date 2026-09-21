@@ -1,0 +1,24 @@
+{
+ "method": "textDocument/hover",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "position": {
+   "line": 259,
+   "character": 35
+  }
+ },
+ "ms": 0.8,
+ "error": {
+  "code": -32000,
+  "message": "Server was requested to shut down.",
+  "data": {
+   "type": "System.InvalidOperationException",
+   "message": "Server was requested to shut down.",
+   "stack": "   at Microsoft.CommonLanguageServerProtocol.Framework.AbstractLanguageServer`1.DelegatingEntryPoint.InvokeAsync(IRequestExecutionQueue`1 queue, Object requestObject, ILspServices lspServices, CancellationToken cancellationToken) in /_/src/LanguageServer/Microsoft.CommonLanguageServerProtocol.Framework/AbstractLanguageServer.cs:line 217",
+   "code": -2146233079,
+   "inner": null
+  }
+ }
+}

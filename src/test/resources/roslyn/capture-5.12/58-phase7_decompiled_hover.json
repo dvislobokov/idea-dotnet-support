@@ -1,0 +1,29 @@
+{
+ "method": "textDocument/hover",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/home/AppData/Local/Temp/MetadataAsSource/76f4b3c900d648f88ff8e8f43f85fe11/DecompilationMetadataAsSourceFileProvider/02179b9e171b45a3bd18b90a47be11bc/Console.cs"
+  },
+  "position": {
+   "line": 328,
+   "character": 24
+  }
+ },
+ "ms": 249.1,
+ "result": {
+  "contents": {
+   "kind": "markdown",
+   "value": "```csharp\r\nclass System.IO.TextWriter\r\n```\r\n  \r\nRepresents a writer that can write a sequential series of characters\\. This class is abstract\\.  \r\n"
+  },
+  "range": {
+   "start": {
+    "line": 328,
+    "character": 22
+   },
+   "end": {
+    "line": 328,
+    "character": 32
+   }
+  }
+ }
+}

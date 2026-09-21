@@ -1,0 +1,15 @@
+# What does not survive the way server -> lsp4j -> server, one `method path` per line (RoslynCapturedTrafficTest.testWhatLsp4jLoses).
+# A NEW line after the server or the platform is updated is something to look at before it is pasted here: the two `tags` lines below
+# are the numbers of Visual Studio (2147483642...) that lsp4j reads as nulls, and sent back in textDocument/codeAction they made the
+# server refuse every quick fix. RoslynServerWrapper drops the nulls on the way out.
+textDocument/codeAction [].diagnostics[].tags[]
+textDocument/diagnostic items[].tags[]
+
+# Extensions of Roslyn / Visual Studio the plugin does not use: harmless.
+codeAction/resolveFixAll scope
+initialize _roslyn_processId
+initialize capabilities._vs_onAutoInsertProvider._vs_triggerCharacters[]
+textDocument/documentSymbol [].children[].children[].children[].glyph
+textDocument/documentSymbol [].children[].children[].glyph
+textDocument/documentSymbol [].children[].glyph
+textDocument/documentSymbol [].glyph

@@ -1,0 +1,21 @@
+{
+ "method": "(note)",
+ "result": {
+  "uri": "file:///c:/home/AppData/Local/Temp/MetadataAsSource/76f4b3c900d648f88ff8e8f43f85fe11/DecompilationMetadataAsSourceFileProvider/02179b9e171b45a3bd18b90a47be11bc/Console.cs",
+  "lines": 1587,
+  "head": [
+   "#region Assembly System.Console, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+   "// c:/home\\.nuget\\packages\\microsoft.netcore.app.ref\\9.0.20\\ref\\net9.0\\System.Console.dll",
+   "#endregion",
+   "",
+   "#nullable enable",
+   "",
+   "using System.Diagnostics.CodeAnalysis;",
+   "using System.IO;",
+   "using System.Runtime.CompilerServices;",
+   "using System.Runtime.Versioning;",
+   "using System.Text;",
+   ""
+  ]
+ }
+}

@@ -1,0 +1,67 @@
+{
+ "method": "textDocument/documentHighlight",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "position": {
+   "line": 259,
+   "character": 35
+  }
+ },
+ "ms": 54.7,
+ "result": [
+  {
+   "range": {
+    "start": {
+     "line": 252,
+     "character": 15
+    },
+    "end": {
+     "line": 252,
+     "character": 21
+    }
+   },
+   "kind": 1
+  },
+  {
+   "range": {
+    "start": {
+     "line": 263,
+     "character": 20
+    },
+    "end": {
+     "line": 263,
+     "character": 26
+    }
+   },
+   "kind": 2
+  },
+  {
+   "range": {
+    "start": {
+     "line": 250,
+     "character": 35
+    },
+    "end": {
+     "line": 250,
+     "character": 41
+    }
+   },
+   "kind": 2
+  },
+  {
+   "range": {
+    "start": {
+     "line": 259,
+     "character": 33
+    },
+    "end": {
+     "line": 259,
+     "character": 39
+    }
+   },
+   "kind": 2
+  }
+ ]
+}

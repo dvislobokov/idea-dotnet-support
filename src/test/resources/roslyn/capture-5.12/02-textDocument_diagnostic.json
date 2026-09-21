@@ -1,0 +1,304 @@
+{
+ "method": "textDocument/diagnostic",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  }
+ },
+ "ms": 2245.1,
+ "result": {
+  "kind": "full",
+  "resultId": "PublicDocumentPullDiagnosticsHandler(category: ):1",
+  "items": [
+   {
+    "range": {
+     "start": {
+      "line": 130,
+      "character": 23
+     },
+     "end": {
+      "line": 130,
+      "character": 26
+     }
+    },
+    "severity": 3,
+    "code": "IDE0039",
+    "codeDescription": {
+     "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0039"
+    },
+    "message": "Use local function",
+    "tags": [
+     2147483642,
+     2147483645
+    ]
+   },
+   {
+    "range": {
+     "start": {
+      "line": 259,
+      "character": 8
+     },
+     "end": {
+      "line": 259,
+      "character": 14
+     }
+    },
+    "severity": 4,
+    "code": "IDE0002",
+    "codeDescription": {
+     "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0002"
+    },
+    "message": "Name can be simplified",
+    "tags": [
+     2147483641,
+     2147483643,
+     2147483640,
+     2147483645,
+     1
+    ]
+   },
+   {
+    "range": {
+     "start": {
+      "line": 68,
+      "character": 29
+     },
+     "end": {
+      "line": 68,
+      "character": 32
+     }
+    },
+    "severity": 3,
+    "code": "IDE0300",
+    "codeDescription": {
+     "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0300"
+    },
+    "message": "Collection initialization can be simplified",
+    "tags": [
+     2147483642,
+     2147483645
+    ]
+   },
+   {
+    "range": {
+     "start": {
+      "line": 68,
+      "character": 29
+     },
+     "end": {
+      "line": 68,
+      "character": 34
+     }
+    },
+    "severity": 4,
+    "code": "IDE0300",
+    "codeDescription": {
+     "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0300"
+    },
+    "message": "Collection initialization can be simplified",
+    "tags": [
+     2147483641,
+     2147483643,
+     2147483640,
+     2147483645,
+     1
+    ],
+    "relatedInformation": [
+     {
+      "location": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs",
+       "range": {
+        "start": {
+         "line": 68,
+         "character": 29
+        },
+        "end": {
+         "line": 68,
+         "character": 34
+        }
+       }
+      },
+      "message": "Collection initialization can be simplified"
+     }
+    ]
+   },
+   {
+    "range": {
+     "start": {
+      "line": 68,
+      "character": 42
+     },
+     "end": {
+      "line": 68,
+      "character": 45
+     }
+    },
+    "severity": 3,
+    "code": "IDE0300",
+    "codeDescription": {
+     "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0300"
+    },
+    "message": "Collection initialization can be simplified",
+    "tags": [
+     2147483642,
+     2147483645
+    ]
+   },
+   {
+    "range": {
+     "start": {
+      "line": 68,
+      "character": 42
+     },
+     "end": {
+      "line": 68,
+      "character": 47
+     }
+    },
+    "severity": 4,
+    "code": "IDE0300",
+    "codeDescription": {
+     "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0300"
+    },
+    "message": "Collection initialization can be simplified",
+    "tags": [
+     2147483641,
+     2147483643,
+     2147483640,
+     2147483645,
+     1
+    ],
+    "relatedInformation": [
+     {
+      "location": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs",
+       "range": {
+        "start": {
+         "line": 68,
+         "character": 42
+        },
+        "end": {
+         "line": 68,
+         "character": 47
+        }
+       }
+      },
+      "message": "Collection initialization can be simplified"
+     }
+    ]
+   },
+   {
+    "range": {
+     "start": {
+      "line": 257,
+      "character": 12
+     },
+     "end": {
+      "line": 257,
+      "character": 18
+     }
+    },
+    "severity": 3,
+    "code": "IDE0059",
+    "codeDescription": {
+     "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0059"
+    },
+    "message": "Unnecessary assignment of a value to 'unused'",
+    "tags": [
+     2147483642,
+     2147483645,
+     1
+    ]
+   },
+   {
+    "range": {
+     "start": {
+      "line": 263,
+      "character": 14
+     },
+     "end": {
+      "line": 263,
+      "character": 19
+     }
+    },
+    "severity": 3,
+    "code": "IDE0059",
+    "codeDescription": {
+     "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0059"
+    },
+    "message": "Unnecessary assignment of a value to 'messy'",
+    "tags": [
+     2147483642,
+     2147483645,
+     1
+    ]
+   },
+   {
+    "range": {
+     "start": {
+      "line": 261,
+      "character": 22
+     },
+     "end": {
+      "line": 261,
+      "character": 27
+     }
+    },
+    "severity": 3,
+    "code": "CA1859",
+    "codeDescription": {
+     "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1859"
+    },
+    "message": "Change type of variable 'shape' from 'Playground.ICaptureShape' to 'Playground.CaptureSquare' for improved performance",
+    "tags": [
+     2147483642,
+     2147483645
+    ]
+   },
+   {
+    "range": {
+     "start": {
+      "line": 258,
+      "character": 21
+     },
+     "end": {
+      "line": 258,
+      "character": 32
+     }
+    },
+    "severity": 1,
+    "code": "CS0103",
+    "codeDescription": {
+     "href": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS0103)"
+    },
+    "message": "The name 'MissingType' does not exist in the current context",
+    "tags": [
+     2147483642,
+     2147483645
+    ]
+   },
+   {
+    "range": {
+     "start": {
+      "line": 257,
+      "character": 12
+     },
+     "end": {
+      "line": 257,
+      "character": 18
+     }
+    },
+    "severity": 2,
+    "code": "CS0219",
+    "codeDescription": {
+     "href": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS0219)"
+    },
+    "message": "The variable 'unused' is assigned but its value is never used",
+    "tags": [
+     2147483642,
+     2147483645
+    ]
+   }
+  ]
+ }
+}

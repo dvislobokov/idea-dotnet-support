@@ -1,5 +1,6 @@
 package io.github.dotnetsupport.lsp
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.BoundConfigurable
@@ -31,8 +32,9 @@ class RoslynLanguageServerConfigurable(private val project: Project) : BoundConf
 
     override fun createPanel(): DialogPanel = panel {
         row {
-            comment("<code>roslyn-language-server</code>, the C# language server of Roslyn. The language server client of the plugin is not there yet: these settings are kept for it and change nothing today.")
+            comment("<code>roslyn-language-server</code>, the C# language server of Roslyn: errors of the compiler, completion, navigation, refactorings. It starts when a C# file is opened.")
         }
+        row { checkBox("Use the language server for C#").bindSelected(state::enabled) }
         group("Server") {
             row("Executable:") {
                 label(DotNetTool.ROSLYN_LANGUAGE_SERVER.find()?.path ?: "not found")
@@ -48,8 +50,8 @@ class RoslynLanguageServerConfigurable(private val project: Project) : BoundConf
             }
             lateinit var autoLoad: com.intellij.ui.dsl.builder.Cell<javax.swing.JCheckBox>
             row {
-                autoLoad = checkBox("Find and load the projects of the opened folder").bindSelected(state::autoLoadProjects)
-                    .comment("<code>--autoLoadProjects</code>. Off: the client names the solution or the projects to load")
+                autoLoad = checkBox("Let the server find the projects of a folder without a solution").bindSelected(state::autoLoadProjects)
+                    .comment("<code>--autoLoadProjects</code>. A solution is always opened by the plugin; of several solutions the one chosen in .NET | Select Solution for Language Server")
             }
             indent {
                 row("At most:") {
@@ -72,6 +74,13 @@ class RoslynLanguageServerConfigurable(private val project: Project) : BoundConf
                     .comment("<code>section = value</code> per line, as the server names them, e.g. <code>completion.dotnet_trigger_completion_on_deletion = true</code>; they win over the options above")
             }
         }
+    }
+
+    override fun apply() {
+        val before = RoslynLanguageServer.commandLineKey(state)
+        super.apply()
+        val restart = RoslynLanguageServer.commandLineKey(state) != before
+        ApplicationManager.getApplication().messageBus.syncPublisher(RoslynLanguageServerSettings.CHANGED).settingsChanged(restart)
     }
 
     private fun Panel.option(option: RoslynOption) {

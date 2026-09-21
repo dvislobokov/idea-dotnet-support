@@ -1,0 +1,29 @@
+{
+ "method": "textDocument/hover",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "position": {
+   "line": 259,
+   "character": 35
+  }
+ },
+ "ms": 39.8,
+ "result": {
+  "contents": {
+   "kind": "markdown",
+   "value": "```csharp\r\nint LspCapture.Target(int value)\r\n```\r\n  \r\nDoc of&nbsp;LspCapture\\.Target\\(int\\)\\.  \r\n"
+  },
+  "range": {
+   "start": {
+    "line": 259,
+    "character": 33
+   },
+   "end": {
+    "line": 259,
+    "character": 39
+   }
+  }
+ }
+}

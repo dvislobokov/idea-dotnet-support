@@ -82,7 +82,7 @@ class RoslynLanguageServerTest : BasePlatformTestCase() {
             ),
             settings, style,
         )
-        assertEquals(listOf(true, true, "fullSolution", "openDocuments", null, true, true, 500, false, 2, "tab", true, null, null), answer)
+        assertEquals(listOf(true, true, "fullSolution", "openFiles", null, true, true, 500, false, 2, "tab", true, null, null), answer)
 
         // back to the default: nothing is stored, the answer is still explicit
         settings.setValue(inlay, "false")
@@ -98,8 +98,9 @@ class RoslynLanguageServerTest : BasePlatformTestCase() {
         page.reset()
         try {
             val boxes = UIUtil.findComponentsOfType(component, JCheckBox::class.java)
-            // the toggles of the catalog and "Find and load the projects"
-            assertEquals(RoslynOptions.ALL.count { it.isToggle } + 1, boxes.size)
+            // the toggles of the catalog, "Use the language server for C#" and "Find and load the projects"
+            assertEquals(RoslynOptions.ALL.count { it.isToggle } + 2, boxes.size)
+            assertTrue(boxes.first { it.text == "Use the language server for C#" }.isSelected)
             assertTrue(boxes.all { it.isEnabled })
             assertTrue(boxes.first { it.text == "References" }.isSelected)
             assertFalse(boxes.first { it.text == "Parameter names" }.isSelected)
