@@ -19,6 +19,7 @@ import com.intellij.openapi.vfs.newvfs.events.VFileDeleteEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent
 import com.intellij.psi.PsiDirectory
+import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
 import io.github.dotnetsupport.DotNetIcons
 import io.github.dotnetsupport.msbuild.DotNetProjects
@@ -42,7 +43,6 @@ class SolutionViewPane(project: Project) : AbstractProjectViewPaneWithAsyncSuppo
     }
 
     override fun createStructure(): ProjectAbstractTreeStructureBase = SolutionTreeStructure(myProject)
-
     override fun createTree(treeModel: DefaultTreeModel): ProjectViewTree = object : ProjectViewTree(treeModel) {
         override fun toString(): String = "$title ${super.toString()}"
     }
@@ -55,7 +55,31 @@ class SolutionViewPane(project: Project) : AbstractProjectViewPaneWithAsyncSuppo
         return if (psiDirectory != null) arrayOf(psiDirectory) else super.getSelectedDirectoriesInAmbiguousCase(userObject)
     }
 
+    /**
+     * A project or solution node dragged into the editor opens its file, as in Rider. The drag source of the platform takes
+     * the PSI of the selection, and the values of these nodes are keys. Only for a drag: as PSI for everything else the
+     * node would hand its file to Delete, Rename and Move, which mean something different for a project.
+     */
+    override fun getElementsFromNode(node: Any?): List<PsiElement> {
+        val elements = super.getElementsFromNode(node)
+        if (elements.isNotEmpty()) return elements
+        val file = when (val value = getValueFromNode(node)) {
+            is SolutionKey -> value.solutionFile
+            is ProjectKey -> value.project.resolveFile(value.solutionFile)
+            else -> null
+        } ?: return elements
+        if (!file.isValid || !isCalledByDragSource()) return elements
+        return listOfNotNull(PsiManager.getInstance(myProject).findFile(file))
+    }
+
+    /** The drag source is a private class of the platform with no hook of its own; when it is renamed, the drag just stops working. */
+    private fun isCalledByDragSource(): Boolean =
+        StackWalker.getInstance().walk { frames -> frames.limit(DRAG_SOURCE_DEPTH).anyMatch { "DragSource" in it.className } }
+
     companion object {
+        // the selection is walked through iterables: a few dozen frames between the drag source and the node
+        private const val DRAG_SOURCE_DEPTH = 40L
+
         const val ID = "DotNetSolutionView"
 
         // Must be unique among all panes; the platform ones use small numbers.

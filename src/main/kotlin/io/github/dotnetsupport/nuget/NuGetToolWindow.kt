@@ -5,6 +5,11 @@ import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.actionSystem.ToggleAction
+import com.intellij.openapi.options.ShowSettingsUtil
+import io.github.dotnetsupport.solution.SolutionService
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.DumbAware
@@ -149,11 +154,14 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
                 list.cursor = java.awt.Cursor.getPredefinedCursor(if (rowActionAt(e) != null) java.awt.Cursor.HAND_CURSOR else java.awt.Cursor.DEFAULT_CURSOR)
             }
         })
+        val detailsPane = ScrollPaneFactory.createScrollPane(details, true)
         add(JBSplitter(false, 0.5f).apply {
             firstComponent = ScrollPaneFactory.createScrollPane(list)
-            secondComponent = ScrollPaneFactory.createScrollPane(details, true)
+            secondComponent = detailsPane
         }, BorderLayout.CENTER)
+        add(sideToolbar(detailsPane), BorderLayout.WEST)
 
+        prerelease.isSelected = NuGetSettings.getInstance().includePrerelease
         scopeCombo.addActionListener { reload() }
         prerelease.addActionListener { reload() }
         searchField.addDocumentListener(object : DocumentAdapter() {
@@ -169,6 +177,34 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
         service.packagesChangedListeners += ::reload
         reloadScopes()
         loadSourcesAndReload()
+    }
+
+    /** The vertical toolbar of Rider's window: Restore, Upgrade, the details pane, Settings, Help. */
+    private fun sideToolbar(detailsPane: JComponent): JComponent {
+        fun action(text: String, description: String, icon: javax.swing.Icon, perform: () -> Unit): AnAction = object : AnAction(text, description, icon), DumbAware {
+            override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
+            override fun actionPerformed(e: AnActionEvent) = perform()
+        }
+        val restore = action("Restore", "dotnet restore for the solution, or for the project chosen in \"Packages for\"", AllIcons.Actions.Download) {
+            val target = (scopeCombo.selectedItem as? Scope)?.file ?: SolutionService.getInstance(project).solutionFiles().firstOrNull()
+            if (target != null) service.restore(listOf(target))
+        }
+        val toggleDetails = object : ToggleAction("Show Package Details", "Show or hide the card of the selected package", AllIcons.Actions.PreviewDetails), DumbAware {
+            override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
+            override fun isSelected(e: AnActionEvent): Boolean = detailsPane.isVisible
+            override fun setSelected(e: AnActionEvent, state: Boolean) {
+                detailsPane.isVisible = state
+                detailsPane.parent?.revalidate()
+            }
+        }
+        val settings = action("NuGet Settings", "Settings | Tools | .NET | NuGet", AllIcons.General.Settings) {
+            ShowSettingsUtil.getInstance().showSettingsDialog(project, NuGetSettingsConfigurable::class.java)
+        }
+        val help = action("Help", "NuGet in the .NET CLI", AllIcons.Actions.Help) { BrowserUtil.browse("https://learn.microsoft.com/nuget/consume-packages/install-use-packages-dotnet-cli") }
+        val group = DefaultActionGroup(restore)
+        ActionManager.getInstance().getAction("DotNet.NuGet.UpgradeSolution")?.let(group::add)
+        group.addAll(toggleDetails, settings, help)
+        return ActionManager.getInstance().createActionToolbar("DotNetNuGetSide", group, false).also { it.targetComponent = this }.component
     }
 
     // ---- scope and data ----

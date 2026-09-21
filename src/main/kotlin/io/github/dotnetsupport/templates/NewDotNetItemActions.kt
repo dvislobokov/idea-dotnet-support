@@ -22,6 +22,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 import io.github.dotnetsupport.DotNetIcons
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.ef.EfAction
 import io.github.dotnetsupport.msbuild.DotNetProjects
 import io.github.dotnetsupport.msbuild.MsBuildProject
 import io.github.dotnetsupport.solution.SolutionService
@@ -60,7 +61,8 @@ class NewDotNetItemGroup : ActionGroup(), DumbAware {
                     ItemCategory.RESOURCES -> add(ResxCultureAction())
                     ItemCategory.EFCORE -> {
                         addSeparator()
-                        add(EfAction.AddMigration()); add(EfAction.RemoveMigration()); add(EfAction.UpdateDatabase())
+                        // the rest of `dotnet ef` is in .NET | EF Core
+                        add(EfAction.AddMigration().apply { templatePresentation.text = "Migration..." })
                     }
                     else -> {}
                 }
@@ -298,33 +300,3 @@ class ResxCultureAction : AnAction("Copy of Selected .resx for Culture...", null
     }
 }
 
-/** `dotnet ef` commands for the project of the selected directory. */
-sealed class EfAction(text: String, private val asksName: Boolean, private vararg val command: String) : AnAction(text), DumbAware {
-    class AddMigration : EfAction("Migration...", true, "migrations", "add")
-    class RemoveMigration : EfAction("Remove Last Migration", false, "migrations", "remove")
-    class UpdateDatabase : EfAction("Update Database", false, "database", "update")
-
-    override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
-
-    override fun update(e: AnActionEvent) {
-        e.presentation.isEnabledAndVisible = e.project != null && projectFile(e) != null
-    }
-
-    override fun actionPerformed(e: AnActionEvent) {
-        val project = e.project ?: return
-        val projectFile = projectFile(e) ?: return
-        val name = if (!asksName) null else {
-            Messages.showInputDialog(project, "Migration name:", "Add Migration", null, "", NameValidator(identifier = true))?.trim() ?: return
-        }
-        val title = "dotnet ef ${command.joinToString(" ")}" + name?.let { " $it" }.orEmpty()
-        val commands = DotNetCli.commandLinesOrNotify(project, title) {
-            listOf(DotNetCli.commandLine(projectFile.parent.path, "ef", *command, *listOfNotNull(name).toTypedArray(), "--project", projectFile.path))
-        } ?: return
-        DotNetCli.runInBackground(project, title, commands, refresh = listOf(File(projectFile.parent.path))) {
-            DotNetCli.notifyInfo(project, "$title: done")
-        }
-    }
-
-    private fun projectFile(e: AnActionEvent): VirtualFile? =
-        (e.targetDirectory() ?: e.getData(CommonDataKeys.VIRTUAL_FILE))?.let(DotNetProjects::findOwningProject)
-}

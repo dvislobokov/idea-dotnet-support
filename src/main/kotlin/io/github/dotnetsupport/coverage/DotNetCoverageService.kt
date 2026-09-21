@@ -1,6 +1,8 @@
 package io.github.dotnetsupport.coverage
 
+import com.intellij.ide.projectView.ProjectView
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
@@ -62,24 +64,49 @@ class DotNetCoverageService(private val project: Project) : Disposable {
             return
         }
         val merged = files.map { CoberturaParser.parse(it.readText()) }.reduce(CoverageReport::merge)
-        ApplicationManager.getApplication().invokeLater({ show(merged, runName) }, project.disposed)
+        ApplicationManager.getApplication().invokeLater({ gathered(merged, runName) }, project.disposed)
+    }
+
+    /** New coverage of a run: what becomes of the shown one is decided by Settings | Tools | .NET | Coverage. */
+    fun gathered(newReport: CoverageReport, runName: String) {
+        var action = CoverageSettings.getInstance().onNewCoverage
+        if (action == NewCoverageAction.ASK) {
+            action = if (report.files.isEmpty()) NewCoverageAction.REPLACE else when (Messages.showDialog(
+                project, "Coverage of '$runName' is gathered, and coverage of '$title' is shown.", "Apply Coverage",
+                arrayOf("Replace", "Add to Shown", "Do Not Apply"), 0, Messages.getQuestionIcon(),
+            )) {
+                0 -> NewCoverageAction.REPLACE
+                1 -> NewCoverageAction.ADD
+                else -> NewCoverageAction.DO_NOT_APPLY
+            }
+        }
+        when (action) {
+            NewCoverageAction.DO_NOT_APPLY -> return
+            NewCoverageAction.ADD -> if (report.files.isEmpty()) show(newReport, runName) else show(report.merge(newReport), "$title + $runName")
+            else -> show(newReport, runName)
+        }
     }
 
     fun show(newReport: CoverageReport, runName: String) {
         report = newReport
         title = runName
-        refreshEditors()
-        listeners.forEach { it() }
+        changed()
         // The window is always available. It used to appear with the first run, but then a layout that remembered it
         // as open made setAvailable(true) fail an assertion of the platform.
-        ToolWindowManager.getInstance(project).getToolWindow(CoverageToolWindowFactory.ID)?.show()
+        if (CoverageSettings.getInstance().activateView) ToolWindowManager.getInstance(project).getToolWindow(CoverageToolWindowFactory.ID)?.show()
     }
 
     fun clear() {
         report = CoverageReport.EMPTY
         title = ""
+        changed()
+    }
+
+    private fun changed() {
         refreshEditors()
         listeners.forEach { it() }
+        // the percents next to the files of the project view
+        ProjectView.getInstance(project).refresh()
     }
 
     fun coverageOf(path: String): FileCoverage? {

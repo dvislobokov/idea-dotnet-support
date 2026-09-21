@@ -13,6 +13,11 @@ Windows и Linux — в `dap-probe/FINDINGS.md`, там же скрипты, к�
 - **Платформенный XDebugger API** (есть во всех IDE на платформе, включая GoLand): UI отладки не пишется, пишется мост.
 - Клиент не привязан к одному адаптеру: netcoredbg говорит тем же DAP с похожими аргументами `launch`, его можно подключить позже.
 
+- **Настройки уже размечены**: страница Settings | Tools | .NET | Debugger (`DotNetDebuggerConfigurable`) перечисляет опции Rider под
+  замком. По мере слоёв замки снимаются: слой 2 — Save all files on launch, Allow property evaluations + Evaluation timeout, Truncate
+  long strings; слой 3 — Process exceptions outside of my code, Show return values, hex, fully qualified names, Disable JIT optimization
+  (`justMyCode` / `enableStepFiltering` в `launch`). Blazor WASM, Predictive debugger, JIT-отладчик Windows — вне плана.
+
 ## Соответствие XDebugger ↔ DAP
 | Платформа | DAP |
 |---|---|

@@ -1,5 +1,7 @@
 package io.github.dotnetsupport.cli
 
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.intellij.execution.configurations.PathEnvironmentVariableUtil
 import com.intellij.execution.process.CapturingProcessHandler
 import com.intellij.execution.process.ProcessEvent
@@ -15,6 +17,26 @@ import com.intellij.openapi.util.SystemInfo
 import io.github.dotnetsupport.settings.DotNetSettings
 import java.io.File
 
+/** Local tools of a repository: `dotnet-tools.json`, which `dotnet <command>` resolves from the working directory upwards. */
+object DotNetToolManifest {
+    // SDK 10 writes the manifest next to the sources, older ones into .config
+    private val LOCATIONS = listOf("dotnet-tools.json", ".config/dotnet-tools.json")
+
+    /** The version of [packageId] in `{ "tools": { "dotnet-ef": { "version": "9.0.0", ... } } }`; the package id is case-insensitive. */
+    fun parse(json: String, packageId: String): String? {
+        val tools = runCatching { (JsonParser.parseString(json) as? JsonObject)?.get("tools") as? JsonObject }.getOrNull() ?: return null
+        val entry = tools.entrySet().firstOrNull { it.key.equals(packageId, ignoreCase = true) }?.value as? JsonObject ?: return null
+        return entry.get("version")?.takeIf { it.isJsonPrimitive }?.asString
+    }
+
+    /** The nearest manifest at or above [directory] that lists [packageId]: its directory and the version of the tool. */
+    fun find(directory: File?, packageId: String): Pair<File, String>? = generateSequence(directory) { it.parentFile }.firstNotNullOfOrNull { dir ->
+        LOCATIONS.firstNotNullOfOrNull { name ->
+            File(dir, name).takeIf { it.isFile }?.let { manifest -> parse(runCatching { manifest.readText() }.getOrDefault(""), packageId) }
+        }?.let { dir to it }
+    }
+}
+
 /**
  * The global tools (`dotnet tool install --global ...`) the plugin drives. Where each one is looked for:
  * the path from Settings | Tools | .NET, then PATH, then `~/.dotnet/tools` (a shell profile that was not re-read
@@ -28,6 +50,9 @@ enum class DotNetTool(val packageId: String, val purpose: String, val documentat
 
     // the package and the command it installs are named differently
     DEBUGGER("dotnet-debugger-dap", "Debug: the debug adapter (DAP) behind the Debug button", "https://github.com/dvislobokov/dotnet-debugger", command = "dotnet-debugger"),
+
+    // a tool from the manifest of a repository wins over this one, see EfTool
+    EF("dotnet-ef", "EF Core: migrations and database commands", "https://learn.microsoft.com/ef/core/cli/dotnet"),
 
     // 1.x installs `csharpier`, 0.x installed `dotnet-csharpier`; a tool from the manifest of a repository wins over this one
     CSHARPIER("csharpier", "Reformat Code with CSharpier", "https://csharpier.com", olderCommands = listOf("dotnet-csharpier"));

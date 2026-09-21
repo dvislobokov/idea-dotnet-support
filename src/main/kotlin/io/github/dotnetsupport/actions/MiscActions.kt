@@ -3,14 +3,20 @@ package io.github.dotnetsupport.actions
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.actionSystem.PlatformCoreDataKeys
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.Document
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.view.ProjectKey
+import io.github.dotnetsupport.view.SolutionKey
+import io.github.dotnetsupport.view.resolveFile
 import java.io.File
 import java.util.UUID
 
@@ -46,6 +52,37 @@ class ConvertSolutionToSlnxAction : SolutionAction() {
             solutionFile.extension.equals("sln", ignoreCase = true) && solutionFile.parent?.findChild(slnxName(solutionFile)) == null
 
         fun slnxName(solutionFile: VirtualFile): String = solutionFile.nameWithoutExtension + ".slnx"
+    }
+}
+
+/**
+ * Edit 'App.csproj' / Edit 'App.slnx' on the node of a project or a solution, as in Rider: the node stands for the file,
+ * which itself is hidden from the tree, so this is the way to its text.
+ */
+class EditProjectFileAction : AnAction(), DumbAware {
+    override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
+
+    override fun update(e: AnActionEvent) {
+        val file = file(e)
+        e.presentation.isEnabledAndVisible = file != null
+        if (file != null) e.presentation.text = "Edit '${file.name}'"
+    }
+
+    override fun actionPerformed(e: AnActionEvent) {
+        val project = e.project ?: return
+        file(e)?.let { FileEditorManager.getInstance(project).openFile(it, true) }
+    }
+
+    companion object {
+        /** The file behind the selected solution or project node; not for the nodes inside a project. */
+        fun file(e: AnActionEvent): VirtualFile? {
+            val item = e.getData(PlatformCoreDataKeys.SELECTED_ITEMS)?.singleOrNull() ?: return null
+            return when (val value = (item as? AbstractTreeNode<*>)?.value ?: item) {
+                is SolutionKey -> value.solutionFile
+                is ProjectKey -> value.project.resolveFile(value.solutionFile)
+                else -> null
+            }?.takeIf { it.isValid }
+        }
     }
 }
 

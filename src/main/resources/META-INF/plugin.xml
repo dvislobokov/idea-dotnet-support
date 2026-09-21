@@ -59,12 +59,25 @@
                            implementationClass="io.github.dotnetsupport.lang.CSharpQuoteHandler"/>
 
         <projectViewPane implementation="io.github.dotnetsupport.view.SolutionViewPane"/>
+        <projectViewNodeDecorator implementation="io.github.dotnetsupport.view.BuildOutputDecorator"/>
         <projectViewNestingRulesProvider implementation="io.github.dotnetsupport.view.DotNetNestingRulesProvider"/>
         <postStartupActivity implementation="io.github.dotnetsupport.view.SolutionViewActivator"/>
         <postStartupActivity implementation="io.github.dotnetsupport.view.ToolWindowsSetup"/>
         <notificationGroup id=".NET" displayType="BALLOON"/>
         <projectConfigurable parentId="tools" id="io.github.dotnetsupport.settings" displayName=".NET"
                              instance="io.github.dotnetsupport.settings.DotNetSettingsConfigurable"/>
+        <!-- the pages of Rider under Tools | .NET; what the plugin has nothing behind yet is on them too, locked -->
+        <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.build" displayName="Toolset and Build"
+                             instance="io.github.dotnetsupport.build.DotNetBuildConfigurable"/>
+        <applicationConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.nuget" displayName="NuGet"
+                                 instance="io.github.dotnetsupport.nuget.NuGetSettingsConfigurable"/>
+        <applicationConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.coverage" displayName="Coverage"
+                                 instance="io.github.dotnetsupport.coverage.CoverageSettingsConfigurable"/>
+        <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.debugger" displayName="Debugger"
+                             instance="io.github.dotnetsupport.settings.DotNetDebuggerConfigurable"/>
+        <langCodeStyleSettingsProvider implementation="io.github.dotnetsupport.lang.CSharpCodeStyleSettingsProvider"/>
+        <projectViewNodeDecorator implementation="io.github.dotnetsupport.coverage.CoverageProjectViewDecorator"/>
+        <postStartupActivity implementation="io.github.dotnetsupport.build.BuildAfterSolutionIsLoaded"/>
         <postStartupActivity implementation="io.github.dotnetsupport.sdk.SdkCheckActivity"/>
 
         <configurationType implementation="io.github.dotnetsupport.run.DotNetConfigurationType"/>
@@ -89,6 +102,9 @@
                     factoryClass="io.github.dotnetsupport.nuget.NuGetToolWindowFactory"/>
         <toolWindow id=".NET Monitor" anchor="right" icon="/icons/monitorToolWindow.svg"
                     factoryClass="io.github.dotnetsupport.monitor.MonitorToolWindowFactory"/>
+        <codeInsight.lineMarkerProvider language="C#" implementationClass="io.github.dotnetsupport.ef.EfLineMarkerProvider"/>
+        <toolWindow id="EF Core" anchor="bottom" icon="AllIcons.Nodes.DataTables"
+                    factoryClass="io.github.dotnetsupport.ef.EfToolWindowFactory"/>
         <toolWindow id=".NET Coverage" anchor="right" secondary="true" icon="AllIcons.General.RunWithCoverage"
                     factoryClass="io.github.dotnetsupport.coverage.CoverageToolWindowFactory"/>
 
@@ -124,6 +140,8 @@
                 <action id="DotNet.AddProjectReference" class="io.github.dotnetsupport.actions.AddProjectReferenceAction"
                         text="Project Reference..."/>
             </group>
+            <action id="DotNet.EditProjectFile" class="io.github.dotnetsupport.actions.EditProjectFileAction" text="Edit Project File"
+                    icon="AllIcons.Actions.Edit" description="Open the .csproj of the project or the solution file in the editor"/>
             <action id="DotNet.RunProject" class="io.github.dotnetsupport.run.RunSelectedProjectAction" text="Run Project"
                     icon="AllIcons.Actions.Execute" description="Run the selected executable or test project"/>
             <action id="DotNet.DebugProject" class="io.github.dotnetsupport.run.DebugSelectedProjectAction" text="Debug Project"
@@ -133,6 +151,28 @@
             <action id="DotNet.RebuildSelected" class="io.github.dotnetsupport.build.RebuildSelected" text="Rebuild"/>
             <action id="DotNet.ManageNuGet" class="io.github.dotnetsupport.nuget.ManageNuGetPackagesAction"
                     text="Manage NuGet Packages..." icon="/icons/nuget.svg"/>
+            <group id="DotNet.EfCore" class="io.github.dotnetsupport.ef.EfCoreGroup" text="EF Core" popup="true">
+                <action id="DotNet.EfAddMigration" class="io.github.dotnetsupport.ef.EfAction$AddMigration" text="Add Migration..."
+                        description="dotnet ef migrations add"/>
+                <action id="DotNet.EfRemoveMigration" class="io.github.dotnetsupport.ef.EfAction$RemoveMigration" text="Remove Last Migration..."
+                        description="dotnet ef migrations remove"/>
+                <separator/>
+                <action id="DotNet.EfUpdateDatabase" class="io.github.dotnetsupport.ef.EfAction$UpdateDatabase" text="Update Database..."
+                        description="dotnet ef database update: apply the migrations, or revert to an earlier one"/>
+                <action id="DotNet.EfGenerateScript" class="io.github.dotnetsupport.ef.EfAction$GenerateScript" text="Generate SQL Script..."
+                        description="dotnet ef migrations script"/>
+                <action id="DotNet.EfDropDatabase" class="io.github.dotnetsupport.ef.EfAction$DropDatabase" text="Drop Database..."
+                        description="dotnet ef database drop, after showing which database it is"/>
+                <separator/>
+                <action id="DotNet.EfCreateBundle" class="io.github.dotnetsupport.ef.EfAction$CreateBundle" text="Create Migration Bundle..."
+                        description="dotnet ef migrations bundle: an executable that applies the migrations without the SDK and the sources"/>
+                <action id="DotNet.EfScaffold" class="io.github.dotnetsupport.ef.EfAction$ScaffoldDbContext" text="Scaffold DbContext from Database..."
+                        description="dotnet ef dbcontext scaffold: entity classes and a DbContext from an existing database"/>
+                <separator/>
+                <action id="DotNet.EfShowMigrations" class="io.github.dotnetsupport.ef.ShowEfToolWindowAction" text="Show Migrations"
+                        icon="AllIcons.Nodes.DataTables" description="The EF Core tool window: migrations of every DbContext with their status in the database"/>
+                <action id="DotNet.EfInstallTool" class="io.github.dotnetsupport.ef.InstallEfToolAction" text="Install or Update dotnet-ef"/>
+            </group>
             <action id="DotNet.RunTestsWithCoverage" class="io.github.dotnetsupport.testing.RunTestsWithCoverageAction"
                     text="Run Tests with Coverage" icon="AllIcons.General.RunWithCoverage"/>
             <action id="DotNet.RunMsBuildTarget" class="io.github.dotnetsupport.build.RunMsBuildTargetAction"
@@ -166,8 +206,10 @@
                 text="Analyze .NET Stack Trace..." description="Paste a stack trace and navigate its frames"/>
 
         <action id="DotNet.ShowAllFiles" class="io.github.dotnetsupport.view.ShowAllFilesAction"
-                text="Show All Files" description="Show bin, obj and the project files in the Solution view">
+                text="Show All Files" description="Show bin, obj and the project files in the Solution view" icon="AllIcons.Actions.ToggleVisibility">
             <add-to-group group-id="ProjectView.ToolWindow.SecondaryActions" anchor="first"/>
+            <!-- the eye of Rider in the title of the tool window; the action shows itself for the Solution view only -->
+            <add-to-group group-id="ProjectViewToolbar" anchor="first"/>
         </action>
 
         <!-- a menu of the main menu bar, next to Tools -->
@@ -211,11 +253,7 @@
                 <action id="DotNet.NuGet.Settings" class="io.github.dotnetsupport.nuget.OpenNuGetConfigAction" text="NuGet Settings"
                         icon="AllIcons.General.Settings" description="Open the nuget.config that applies to the solution"/>
             </group>
-            <group id="DotNet.EfCore" text="EF Core" popup="true">
-                <action id="DotNet.EfAddMigration" class="io.github.dotnetsupport.templates.EfAction$AddMigration" text="Add Migration..."/>
-                <action id="DotNet.EfRemoveMigration" class="io.github.dotnetsupport.templates.EfAction$RemoveMigration" text="Remove Last Migration"/>
-                <action id="DotNet.EfUpdateDatabase" class="io.github.dotnetsupport.templates.EfAction$UpdateDatabase" text="Update Database"/>
-            </group>
+            <reference ref="DotNet.EfCore"/>
             <separator/>
             <action id="DotNet.NewProject" class="io.github.dotnetsupport.actions.NewDotNetProjectAction"
                     text="New .NET Project..."/>
@@ -236,6 +274,8 @@
         <listener class="io.github.dotnetsupport.monitor.DotNetProcessStartListener"
                   topic="com.intellij.execution.ExecutionListener"/>
         <listener class="io.github.dotnetsupport.view.SolutionFilesListener"
+                  topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+        <listener class="io.github.dotnetsupport.nuget.NuGetAutoRestore$Listener"
                   topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
     </projectListeners>
 </idea-plugin>

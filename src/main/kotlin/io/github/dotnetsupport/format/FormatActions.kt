@@ -1,5 +1,6 @@
 package io.github.dotnetsupport.format
 
+import com.intellij.execution.ExecutionException
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
@@ -42,6 +43,8 @@ abstract class FormatTargetAction(private val verify: Boolean) : AnAction(), Dum
         val command = try {
             commandLine(project, target, verify)
         } catch (e: CSharpierUnavailable) {
+            return DotNetCli.notifyError(project, title, e.message.orEmpty())
+        } catch (e: ExecutionException) { // no SDK
             return DotNetCli.notifyError(project, title, e.message.orEmpty())
         } ?: return DotNetCli.notifyInfo(project, title, "No formatter is selected in Settings | Tools | .NET.")
         DotNetCli.runInBackground(project, title, listOf(command), refresh = listOf(target.parentFile)) {

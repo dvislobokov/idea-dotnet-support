@@ -65,12 +65,17 @@ object DotNetCli {
             .withEnvironment("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1")
     }
 
-    private val SECRET_OPTIONS = setOf("-p", "--password", "--api-key", "-k")
+    // --connection: a connection string of `dotnet ef`, usually with a password in it
+    private val SECRET_OPTIONS = setOf("-p", "--password", "--api-key", "-k", "--connection")
 
     /** The command line for logs and progress texts: values of password-like options are masked. */
     fun displayString(command: GeneralCommandLine): String {
         val parameters = command.parametersList.list
-        val masked = parameters.mapIndexed { i, parameter -> if (i > 0 && parameters[i - 1] in SECRET_OPTIONS) "********" else parameter }
+        val masked = parameters.mapIndexed { i, parameter ->
+            // `ef dbcontext scaffold <connection string>` is positional; `Name=ConnectionStrings:Default` is a reference, not a secret
+            val scaffoldConnection = i > 1 && parameters[i - 1] == "scaffold" && parameters[i - 2] == "dbcontext" && !parameter.startsWith("Name=", ignoreCase = true)
+            if (i > 0 && parameters[i - 1] in SECRET_OPTIONS || scaffoldConnection) "********" else parameter
+        }
         // other tools (upgrade-assistant) go through the same runner
         val executable = File(command.exePath).nameWithoutExtension
         return (listOf(executable) + masked).joinToString(" ") { if (' ' in it) "\"$it\"" else it }
@@ -92,8 +97,17 @@ object DotNetCli {
         commands: List<GeneralCommandLine>,
         refresh: List<File> = emptyList(),
         output: CommandOutput = BuildViewCommandOutput(project, title),
+        /** Called on the background thread with the output of the failed command; true when it has reported the failure itself. */
+        onFailure: (ProcessOutput) -> Boolean = { false },
         onSuccess: () -> Unit = {},
     ) {
+        // callers that had to block to build the commands (a tool asked for its version) come from a pooled thread
+        val application = ApplicationManager.getApplication()
+        if (!application.isDispatchThread) {
+            application.invokeLater({ runInBackground(project, title, commands, refresh, output, onFailure, onSuccess) }, project.disposed)
+            return
+        }
+        // saving documents and starting a task are for EDT
         FileDocumentManager.getInstance().saveAllDocuments()
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, title, true) {
             override fun run(indicator: ProgressIndicator) {
@@ -125,6 +139,7 @@ object DotNetCli {
                     output.commandFinished(result.exitCode)
                     if (result.isCancelled) return false
                     if (result.exitCode != 0) {
+                        if (onFailure(result)) return false
                         val details = (result.stderr.ifBlank { result.stdout }).trim().lines().takeLast(15).joinToString("\n")
                         notifyError(project, "$title: exit code ${result.exitCode}", details)
                         return false

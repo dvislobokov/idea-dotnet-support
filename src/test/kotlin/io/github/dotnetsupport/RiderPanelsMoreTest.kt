@@ -121,6 +121,15 @@ class RiderPanelsMoreTest : BasePlatformTestCase() {
         assertEquals(listOf("Dependencies", "Program.cs"), children())
         SolutionViewSettings.setShowAllFiles(project, true)
         assertEquals(listOf("App.csproj", "Dependencies", "Program.cs", "bin", "obj"), children())
+
+        // what Show All Files adds is painted as ignored: build output with its content, and the project file
+        val app = sln.parent.findChild("App")!!
+        fun outside(path: String) = io.github.dotnetsupport.view.BuildOutputDecorator.isOutsideOfProject(app.findFileByRelativePath(path)!!)
+        assertTrue(outside("bin") && outside("bin/Debug/App.txt") && outside("obj/project.assets.json") && outside("App.csproj"))
+        assertFalse(outside("Program.cs"))
+        // a folder that is merely called bin, without a project next to it
+        val tools = myFixture.addFileToProject("App/Tools/bin/run.sh", "").virtualFile
+        assertFalse(io.github.dotnetsupport.view.BuildOutputDecorator.isOutsideOfProject(tools))
     }
 
     fun testRegistration() {

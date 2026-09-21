@@ -157,6 +157,12 @@ class NuGetService(private val project: Project) {
     fun install(projectFiles: List<VirtualFile>, packageId: String, version: String, onSuccess: () -> Unit) =
         run("Installing $packageId $version", projectFiles, onSuccess) { listOf("add", it.path, "package", packageId, "--version", version) }
 
+    /** `dotnet restore` of solutions or projects, with the options of Settings | Tools | .NET | NuGet; the package lists are refreshed afterwards. */
+    fun restore(targets: List<VirtualFile>, onSuccess: () -> Unit = {}) =
+        run("Restoring NuGet packages", targets, { packagesChangedListeners.toList().forEach { it() }; onSuccess() }) {
+            listOf("restore", it.path, "-nologo") + NuGetSettings.getInstance().restoreArguments()
+        }
+
     fun remove(projectFiles: List<VirtualFile>, packageId: String, onSuccess: () -> Unit) =
         run("Removing $packageId", projectFiles, onSuccess) { listOf("remove", it.path, "package", packageId) }
 
@@ -168,7 +174,7 @@ class NuGetService(private val project: Project) {
             installed(file).mapNotNull { pkg ->
                 // a floating or a missing version is not a version to upgrade from
                 val current = pkg.version?.let(NuGetVersion::parse) ?: return@mapNotNull null
-                val newest = latest.getOrPut(pkg.id.lowercase()) { NuGetVersion.latest(client.versions(pkg.id, feeds), includePrerelease = false)?.let(NuGetVersion::parse) }
+                val newest = latest.getOrPut(pkg.id.lowercase()) { NuGetVersion.latest(client.versions(pkg.id, feeds), NuGetSettings.getInstance().includePrerelease)?.let(NuGetVersion::parse) }
                 if (newest != null && current < newest) PackageUpgrade(name, file, pkg.id, current.text, newest.text) else null
             }
         }

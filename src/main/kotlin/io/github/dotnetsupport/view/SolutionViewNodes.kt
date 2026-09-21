@@ -5,6 +5,7 @@ import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.projectView.ProjectViewNode
 import com.intellij.ide.projectView.ViewSettings
 import com.intellij.ide.projectView.impl.NestingTreeStructureProvider
+import com.intellij.ide.projectView.impl.nodes.AbstractPsiBasedNode
 import com.intellij.ide.projectView.impl.nodes.ProjectViewDirectoryHelper
 import com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode
 import com.intellij.ide.projectView.impl.nodes.PsiFileNode
@@ -13,8 +14,10 @@ import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vfs.VfsUtilCore
+import com.intellij.openapi.vcs.FileStatus
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDirectory
+import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
 import io.github.dotnetsupport.DotNetIcons
 import io.github.dotnetsupport.solution.SlnFolder
@@ -51,17 +54,46 @@ abstract class SolutionViewNode<T : Any>(project: Project, value: T, settings: V
         navigationFile?.let { OpenFileDescriptor(nodeProject, it).navigate(requestFocus) }
     }
 
-    protected fun folderChildren(solutionFile: VirtualFile, folder: SlnFolder): List<AbstractTreeNode<*>> {
-        val result = ArrayList<AbstractTreeNode<*>>()
-        folder.folders.mapTo(result) { SolutionFolderNode(nodeProject, SolutionFolderKey(solutionFile, it.id), settings) }
-        folder.projects.mapTo(result) { DotNetProjectNode(nodeProject, ProjectKey(solutionFile, it), settings) }
-        val psiManager = PsiManager.getInstance(nodeProject)
-        folder.files
-            .mapNotNull { solutionFile.parent?.findFileByRelativePath(it) }
-            .mapNotNull { psiManager.findFile(it) }
-            .mapTo(result) { PsiFileNode(nodeProject, it, settings) }
-        return result
-    }
+}
+
+/**
+ * A node that stands for a file which is not shown by itself: the solution and the project. PSI-based, because that is
+ * what the drag source of the project view asks a node to be before a drag starts: dragged into the editor, the node
+ * opens its file, as in Rider. Unlike a regular PSI node it stays in the tree when the file is missing (a project that
+ * the solution lists, but that is not on disk).
+ */
+abstract class SolutionFileNode<T : Any>(project: Project, value: T, settings: ViewSettings?) : AbstractPsiBasedNode<T>(project, value, settings) {
+    protected val nodeProject: Project get() = project!!
+    protected val solutions: SolutionService get() = SolutionService.getInstance(nodeProject)
+
+    protected abstract val file: VirtualFile?
+    protected abstract fun children(): Collection<AbstractTreeNode<*>>
+    protected abstract fun present(presentation: PresentationData)
+
+    override fun extractPsiFromValue(): PsiElement? = file?.takeIf { it.isValid }?.let { PsiManager.getInstance(nodeProject).findFile(it) }
+    override fun getChildrenImpl(): Collection<AbstractTreeNode<*>> = children()
+    override fun updateImpl(data: PresentationData) = present(data)
+    override fun getVirtualFile(): VirtualFile? = file
+
+    // the base class drops a node without PSI; these nodes say "not found" instead
+    override fun validate(): Boolean = value != null
+    override fun isValid(): Boolean = value != null
+    override fun update(data: PresentationData) = if (extractPsiFromValue() == null) present(data) else super.update(data)
+
+    // the name of a project is not the place for the VCS color of its .csproj
+    override fun getFileStatus(): FileStatus = FileStatus.NOT_CHANGED
+}
+
+internal fun folderChildren(project: Project, settings: ViewSettings?, solutionFile: VirtualFile, folder: SlnFolder): List<AbstractTreeNode<*>> {
+    val result = ArrayList<AbstractTreeNode<*>>()
+    folder.folders.mapTo(result) { SolutionFolderNode(project, SolutionFolderKey(solutionFile, it.id), settings) }
+    folder.projects.mapTo(result) { DotNetProjectNode(project, ProjectKey(solutionFile, it), settings) }
+    val psiManager = PsiManager.getInstance(project)
+    folder.files
+        .mapNotNull { solutionFile.parent?.findFileByRelativePath(it) }
+        .mapNotNull { psiManager.findFile(it) }
+        .mapTo(result) { PsiFileNode(project, it, settings) }
+    return result
 }
 
 fun SlnProject.resolveFile(solutionFile: VirtualFile): VirtualFile? =
@@ -87,19 +119,18 @@ class SolutionRootNode(project: Project, settings: ViewSettings?) : SolutionView
 }
 
 class SolutionNode(project: Project, key: SolutionKey, settings: ViewSettings?) :
-    SolutionViewNode<SolutionKey>(project, key, settings) {
+    SolutionFileNode<SolutionKey>(project, key, settings) {
 
     private val solution: Solution get() = solutions.solution(value.solutionFile)
-    override val navigationFile: VirtualFile get() = value.solutionFile
-    override fun getVirtualFile(): VirtualFile = value.solutionFile
+    override val file: VirtualFile get() = value.solutionFile
 
-    override fun getChildren(): Collection<AbstractTreeNode<*>> = folderChildren(value.solutionFile, solution.root)
+    override fun children(): Collection<AbstractTreeNode<*>> = folderChildren(nodeProject, settings, value.solutionFile, solution.root)
 
     override fun contains(file: VirtualFile): Boolean =
         value.solutionFile.parent?.let { VfsUtilCore.isAncestor(it, file, false) } == true ||
             solution.root.contains(value.solutionFile, file)
 
-    override fun update(presentation: PresentationData) {
+    override fun present(presentation: PresentationData) {
         val count = solution.allProjects.size
         presentation.setIcon(DotNetIcons.Solution)
         presentation.presentableText = value.solutionFile.nameWithoutExtension
@@ -113,7 +144,7 @@ class SolutionFolderNode(project: Project, key: SolutionFolderKey, settings: Vie
     private val folder: SlnFolder? get() = solutions.solution(value.solutionFile).findFolder(value.folderId)
 
     override fun getChildren(): Collection<AbstractTreeNode<*>> =
-        folder?.let { folderChildren(value.solutionFile, it) }.orEmpty()
+        folder?.let { folderChildren(nodeProject, settings, value.solutionFile, it) }.orEmpty()
 
     override fun contains(file: VirtualFile): Boolean = folder?.contains(value.solutionFile, file) == true
     override fun getTypeSortWeight(sortByType: Boolean): Int = FOLDER_WEIGHT
@@ -125,14 +156,13 @@ class SolutionFolderNode(project: Project, key: SolutionFolderKey, settings: Vie
 }
 
 class DotNetProjectNode(project: Project, key: ProjectKey, settings: ViewSettings?) :
-    SolutionViewNode<ProjectKey>(project, key, settings) {
+    SolutionFileNode<ProjectKey>(project, key, settings) {
 
     private val solutionFile: VirtualFile get() = value.solutionFile
     private val projectFile: VirtualFile? get() = value.project.resolveFile(solutionFile)
-    override val navigationFile: VirtualFile? get() = projectFile
-    override fun getVirtualFile(): VirtualFile? = projectFile
+    override val file: VirtualFile? get() = projectFile
 
-    override fun getChildren(): Collection<AbstractTreeNode<*>> {
+    override fun children(): Collection<AbstractTreeNode<*>> {
         val projectFile = projectFile ?: return emptyList()
         val directory = projectFile.parent?.let { PsiManager.getInstance(nodeProject).findDirectory(it) } ?: return emptyList()
 
@@ -177,7 +207,7 @@ class DotNetProjectNode(project: Project, key: ProjectKey, settings: ViewSetting
         }
     }
 
-    override fun update(presentation: PresentationData) {
+    override fun present(presentation: PresentationData) {
         val projectFile = projectFile
         presentation.setIcon(DotNetIcons.Project)
         presentation.presentableText = value.project.name

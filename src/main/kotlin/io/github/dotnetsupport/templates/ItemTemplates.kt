@@ -5,6 +5,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.IncorrectOperationException
+import io.github.dotnetsupport.ef.EfDesignTimeFactory
 import io.github.dotnetsupport.msbuild.DotNetProjects
 import io.github.dotnetsupport.msbuild.MsBuildProject
 import io.github.dotnetsupport.solution.SolutionService
@@ -111,6 +112,7 @@ object ItemTemplates {
 
         csharp("dbContext", "DbContext", ItemCategory.EFCORE, "dbContext.cs", suffix = "Context"),
         csharp("entityConfiguration", "Entity Type Configuration", ItemCategory.EFCORE, "entityConfiguration.cs", suffix = "Configuration", prompt = "Entity name"),
+        csharp(EfDesignTimeFactory.TEMPLATE_ID, "Design-Time DbContext Factory", ItemCategory.EFCORE, "designTimeFactory.cs", suffix = "Factory", prompt = "DbContext name"),
 
         ItemTemplate(
             "appsettings", "appsettings.{Environment}.json", ItemCategory.CONFIG,
@@ -210,7 +212,9 @@ object ItemCreator {
         val (name, baseName) = names(template, path.lastOrNull().orEmpty())
 
         val context = ItemContext(project, targetDirectory)
-        val variables = context.variables(name, baseName) + extraVariables
+        // the factory is written for the database provider of the project
+        val efVariables = if (template.id == EfDesignTimeFactory.TEMPLATE_ID) EfDesignTimeFactory.variables(project, context.projectFile) else emptyMap()
+        val variables = context.variables(name, baseName) + efVariables + extraVariables
         val planned = template.files.map { TemplateRenderer.substitute(it.fileName, variables) to it }
         planned.firstOrNull { (fileName, _) -> targetDirectory.findFileByRelativePath(fileName) != null }
             ?.let { throw IncorrectOperationException("File '${it.first}' already exists") }
