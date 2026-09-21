@@ -65,7 +65,7 @@ class DotNetDebugProcess(
     override fun getEditorsProvider(): XDebuggerEditorsProvider = editors
 
     override val presentationFactory: DapXDebuggerPresentationFactory =
-        DotNetPresentationFactory(stopped) { (session.currentStackFrame as? DefaultDapXStackFrame)?.frame?.id }
+        DotNetPresentationFactory(stopped, { (session.currentStackFrame as? DefaultDapXStackFrame)?.frame?.id }, { session.currentStackFrame?.sourcePosition })
 
     /** The handler of line breakpoints is the one of the platform; exception breakpoints it leaves to the debugger. */
     private val handlers: Array<XBreakpointHandler<*>> by lazy { arrayOf(*super.getBreakpointHandlers(), DotNetExceptionBreakpointHandler(dapDebugSession)) }
@@ -117,7 +117,9 @@ class DotNetDebugProcess(
  * and then a step is sent for a thread the adapter does not know ("nothing happens" on F8). The states of the threads are no help:
  * the platform sets them asynchronously, after the context may have been made. So the id is taken from the event itself, see [StoppedThread].
  */
-class DotNetPresentationFactory(private val stopped: StoppedThread, private val currentFrameId: () -> Int?) : DefaultDapXDebuggerPresentationFactory() {
+class DotNetPresentationFactory(
+    private val stopped: StoppedThread, private val currentFrameId: () -> Int?, private val currentPosition: () -> XSourcePosition? = { null },
+) : DefaultDapXDebuggerPresentationFactory() {
     override fun createSuspendContext(commandProcessor: DapCommandProcessor, threads: List<DapThread>, activeThread: DapThread?): DapXSuspendContext =
         super.createSuspendContext(commandProcessor, threads, StoppedThread.choose(threads.map { it to it.id }, stopped.id) ?: activeThread)
 
@@ -125,7 +127,7 @@ class DotNetPresentationFactory(private val stopped: StoppedThread, private val 
         DotNetStackFrame(this, commandProcessor, thread, frame)
 
     override fun createValue(commandProcessor: DapCommandProcessor, variable: DapVariable, icon: Icon?): XNamedValue =
-        DotNetValue(this, commandProcessor, variable, icon, currentFrameId)
+        DotNetValue(this, commandProcessor, variable, icon, currentFrameId, currentPosition)
 }
 
 /** The frame of the platform with an evaluator that knows what is under the mouse, see [HoverEvaluator]. */

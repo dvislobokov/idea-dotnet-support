@@ -498,4 +498,35 @@ class DebugLaunchTest : BasePlatformTestCase() {
         assertEquals("C#", file.language.id)
         assertEquals(true, file.getUserData(io.github.dotnetsupport.dap.DotNetEditorsProvider.EXPRESSION))
     }
+
+    fun testLinesThatShowTheValueOfAVariable() {
+        val code = """
+            class Shop
+            {
+                int total = 1;
+                void Other() { var total = 5; }
+                void Run(int x)
+                {
+                    var total = x * 2;
+                    var text = "total";
+                    // total in a comment
+                    order.total = 3;
+                    Console.WriteLine(total + x);
+                    total++;
+                }
+            }
+        """.trimIndent()
+        val inline = io.github.dotnetsupport.lang.CSharpInlineValues
+        // stopped at `Console.WriteLine`: the lines of this method up to it; not the field, not the other method, not what is below
+        assertEquals(listOf(6, 10), inline.lines(code, "total", 10))
+        assertEquals(listOf(4, 6, 10), inline.lines(code, "x", 10))
+        assertEquals(listOf(6), inline.lines(code, "total", 6))
+        assertEquals(emptyList<Int>(), inline.lines(code, "missing", 10))
+        assertEquals(emptyList<Int>(), inline.lines(code, "this", 10))
+        assertEquals(emptyList<Int>(), inline.lines(code, "total", 99))
+
+        // top-level statements have no member around them
+        val program = listOf("var count = 1;", "count += 2;", "Console.WriteLine(count);", "count = 0;", "").joinToString("\n")
+        assertEquals(listOf(0, 1, 2), inline.lines(program, "count", 2))
+    }
 }

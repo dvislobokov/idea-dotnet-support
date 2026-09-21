@@ -4,7 +4,7 @@
 поставить точку останова, запустить отладку, нажать кнопку в диалоге, прочитать тексты компонентов, снять картинку окна.
 
 Основа — [JetBrains Remote Robot](https://github.com/JetBrains/intellij-ui-test-robot): плагин `robot-server` внутри IDE открывает HTTP-порт
-`127.0.0.1:8082` (только локально). Подключён задачей `runIdeForUiTests` в `build.gradle.kts`; `robot-server` — единственное, что сборка скачивает
+`127.0.0.1:8583` (только локально). Подключён задачей `runIdeForUiTests` в `build.gradle.kts`; `robot-server` — единственное, что сборка скачивает
 (из репозитория плагинов JetBrains), и только для этой задачи.
 
 ## Запуск
@@ -33,7 +33,7 @@ python tools/ui-robot/robot.py wait     # дождаться порта (око�
 | `click XPATH` | клик по первому совпадению |
 | `shot OUT.png [XPATH]` | картинка компонента; без XPath — главное окно |
 | `js FILE.js [--edt]` | выполнить JavaScript (Rhino) внутри IDE: доступен весь API платформы |
-| `tree OUT.html` | дерево компонентов с готовыми XPath (то же показывает `http://127.0.0.1:8082` в браузере) |
+| `tree OUT.html` | дерево компонентов с готовыми XPath (то же показывает `http://127.0.0.1:8583` в браузере) |
 
 Типовой сценарий:
 
@@ -56,7 +56,7 @@ python robot.py action Exit && python robot.py click "//div[@class='MyDialog']//
 Скрипты-шаблоны с `__ПОДСТАНОВКАМИ__`: `state.js`, `evaluate.js`, `set_value.js` (через модификатор значения, как F2), `run_to.js` (Run to Cursor),
 `add_exception_bp.js` / `default_bp.js` / `exception_bps.js` (точки на исключения), `debugger_settings.js`, `edit_unsaved.js`, `stop_all.js`.
 Для этапов 4–5: `line_bp_extras.js` (hit count и log message точки), `line_bp_condition.js`, `test_configuration.js` (конфигурация `dotnet test` с
-фильтром), `attach.js` (подключиться к PID, как Attach to Process), `sessions.js` (все отладочные сессии), `resume_all.js`, `show_settings.js`.
+фильтром), `attach.js` (подключиться к PID, как Attach to Process), `sessions.js` (все отладочные сессии), `resume_all.js`, `show_settings.js`, `complete.js` (completion в поле Evaluate: текст → элементы списка).
 В `sed`-подстановках — флаг `g`: плейсхолдер бывает в строке дважды. PID процесса — через PowerShell (`Get-Process`), `tasklist | grep` путает кодировка.
 
 Работать на копии проекта (`build/ui-robot/debug-playground`, без `.idea`, `bin`, `obj`): каталог `.idea` у песочницы и у рабочей IDE общий,

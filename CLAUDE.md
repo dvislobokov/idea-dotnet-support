@@ -32,7 +32,7 @@ export JAVA_HOME="C:\Program Files\JetBrains\IntelliJ IDEA 2026.1.4\jbr"   # JBR
   Kotlin падал с `GC overhead limit exceeded` посреди полной компиляции.
 - Упавшие тесты: `build/test-results/test/TEST-*.xml` (grep по `<failure`), отчёт — `build/reports/tests/test/index.html`.
 - GUI агент может проверить сам через UI-робота: `./gradlew.bat runIdeForUiTests` (в фоне) поднимает песочницу IDE с Remote Robot на
-  `127.0.0.1:8082`, `tools/ui-robot/robot.py` открывает проект, ставит точки останова, запускает Debug, кликает и снимает окно IDE (команды и
+  `127.0.0.1:8583`, `tools/ui-robot/robot.py` открывает проект, ставит точки останова, запускает Debug, кликает и снимает окно IDE (команды и
   оговорки — в `tools/ui-robot/README.md`; снимать только компоненты IDE, не весь экран; после проверки песочницу закрыть). Чего так не видно
   (подсказки по наведению, ощущение скорости, вторая тема), по-прежнему просить пользователя посмотреть вживую и прямо говорить, что не проверено.
 - Если `compileKotlin` висит минутами и падает с `OutOfMemoryError` при заданной памяти — это почти наверняка конструкция в новом коде,

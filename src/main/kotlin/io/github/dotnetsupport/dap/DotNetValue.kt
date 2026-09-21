@@ -4,10 +4,17 @@ import com.intellij.platform.dap.DapCommandProcessor
 import com.intellij.platform.dap.DapVariable
 import com.intellij.platform.dap.xdebugger.AbstractDapXValue
 import com.intellij.platform.dap.xdebugger.DapXDebuggerPresentationFactory
+import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.util.ThreeState
+import com.intellij.xdebugger.XDebuggerUtil
 import com.intellij.xdebugger.XExpression
+import com.intellij.xdebugger.XSourcePosition
+import com.intellij.xdebugger.frame.XInlineDebuggerDataCallback
 import com.intellij.xdebugger.frame.XValueModifier
 import com.intellij.xdebugger.frame.presentation.XRegularValuePresentation
 import com.intellij.xdebugger.frame.presentation.XValuePresentation
+import io.github.dotnetsupport.lang.CSharpInlineValues
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.future.await
 import org.eclipse.lsp4j.debug.SetExpressionArguments
@@ -23,7 +30,22 @@ import javax.swing.Icon
  */
 class DotNetValue(
     factory: DapXDebuggerPresentationFactory, commandProcessor: DapCommandProcessor, variable: DapVariable, icon: Icon?, private val currentFrameId: () -> Int?,
+    private val currentPosition: () -> XSourcePosition? = { null },
 ) : AbstractDapXValue(factory, commandProcessor, variable, icon) {
+
+    /**
+     * Values in the editor, next to the code (the "Show values inline" of the platform): the value tells on which lines it belongs.
+     * Only for what is a name of its own in the code, a local or a parameter; `person.Name` of an expanded object is not looked for.
+     */
+    override fun computeInlineDebuggerData(callback: XInlineDebuggerDataCallback): ThreeState {
+        val name = variable.name
+        if (variable.evaluateName?.takeIf { it.isNotBlank() } != name) return ThreeState.NO
+        val position = currentPosition() ?: return ThreeState.NO
+        val document = ReadAction.compute<com.intellij.openapi.editor.Document?, RuntimeException> { FileDocumentManager.getInstance().getDocument(position.file) } ?: return ThreeState.NO
+        val lines = CSharpInlineValues.lines(document.immutableCharSequence, name, position.line)
+        for (line in lines) XDebuggerUtil.getInstance().createPosition(position.file, line)?.let(callback::computed)
+        return if (lines.isEmpty()) ThreeState.NO else ThreeState.YES
+    }
 
     override fun createValuePresentation(variable: DapVariable, hasChildren: Boolean, isLazy: Boolean): XValuePresentation =
         if (variable.value.isNotEmpty()) XRegularValuePresentation(variable.value, variable.type) else XRegularValuePresentation("", variable.type, "")

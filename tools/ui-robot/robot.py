@@ -1,4 +1,4 @@
-"""Drives the sandbox IDE started with `./gradlew runIdeForUiTests` through the Remote Robot server (http://127.0.0.1:8082).
+"""Drives the sandbox IDE started with `./gradlew runIdeForUiTests` through the Remote Robot server (http://127.0.0.1:8583).
 
     python robot.py wait                         wait until the server answers
     python robot.py windows                      frames and dialogs of the IDE
@@ -12,7 +12,7 @@
     python robot.py breakpoint FILE LINE         toggle a line breakpoint (LINE is 1-based)
     python robot.py run CONFIGURATION [Debug]    start a run configuration by name, with the Run or the Debug executor
     python robot.py js FILE.js [--edt]           run JavaScript inside the IDE, print what it returns
-    python robot.py tree OUT.html                the component tree with XPaths (what http://127.0.0.1:8082 shows)
+    python robot.py tree OUT.html                the component tree with XPaths (what http://127.0.0.1:8583 shows)
 
 Pictures are always of a component of the IDE, painted by the component itself: the `/screenshot` of the server captures the
 whole desktop with whatever else is on it, and is deliberately not used.
@@ -24,7 +24,7 @@ import time
 import urllib.error
 import urllib.request
 
-BASE = "http://127.0.0.1:8082"
+BASE = "http://127.0.0.1:8583"
 MAIN_WINDOWS = ["//div[@class='IdeFrameImpl']", "//div[@class='FlatWelcomeFrame']"]
 DIALOGS = "//div[@class='MyDialog']"
 
