@@ -64,6 +64,68 @@ class RoslynPhase7Test : BasePlatformTestCase() {
         assertEquals("params takes the rest", 15 until 36, signatures.rangeOf(listOf("string format", "params object?[]? arg"), 5))
     }
 
+    /** Alt+Enter lists every action once: refactorings as context actions, fixes of a diagnostic with that diagnostic (kinds as recorded). */
+    fun testEveryCodeActionOnce() {
+        val policy = io.github.dotnetsupport.roslyn.RoslynCodeActionPolicy
+        fun action(title: String, kind: String?, vararg codes: String) = org.eclipse.lsp4j.CodeAction(title).apply {
+            this.kind = kind
+            diagnostics = codes.map { org.eclipse.lsp4j.Diagnostic().apply { code = org.eclipse.lsp4j.jsonrpc.messages.Either.forLeft(it) } }
+        }
+        val useImplicitType = action("Use implicit type", "refactor")
+        val extract = action("Extract method", "refactor.extract")
+        val remove = action("Remove unused variable", "quickfix", "CS0219")
+        val suppress = action("Suppress or configure issues", "quickfix")
+
+        assertFalse("a refactoring is a context action", policy.isFixOfDiagnostic(useImplicitType))
+        assertFalse(policy.isFixOfDiagnostic(extract))
+        assertTrue(policy.isFixOfDiagnostic(remove))
+        assertTrue(policy.isFixOfDiagnostic(suppress))
+
+        assertTrue(policy.isContextAction(useImplicitType))
+        assertFalse("listed with its diagnostic already", policy.isContextAction(remove))
+        assertTrue("a fix that names no diagnostic stays where it comes", policy.isContextAction(suppress))
+        assertTrue("no kind at all", policy.isContextAction(action("Something", null)) && policy.isFixOfDiagnostic(action("Something", null)))
+    }
+
+    /** The tail and the type of a completion row, from the documentation of a resolved item (strings as the server sent them). */
+    fun testSignatureTails() {
+        val tails = io.github.dotnetsupport.roslyn.RoslynSignatureTail
+        val nl = "\r\n"
+        val writeLine = tails.parse("```csharp${nl}void Console.WriteLine()$nl```$nl&nbsp;\\(\\+ 18 overloads\\)  ${nl}Writes the current line terminator.", "WriteLine")!!
+        assertEquals("()  +18 overloads", writeLine.tail)
+        assertEquals("void", writeLine.type)
+        val beep = tails.parse("```csharp${nl}void Console.Beep()$nl```$nl&nbsp;\\(\\+ 1 overload\\)", "Beep")!!
+        assertEquals("()  +1 overload", beep.tail)
+        val title = tails.parse("```csharp${nl}string Console.Title { get; set; }$nl```", "Title")!!
+        assertNull("a property has no parameters", title.tail)
+        assertEquals("string", title.type)
+        val readLine = tails.parse("```csharp${nl}string? Console.ReadLine()$nl```", "ReadLine")!!
+        assertEquals("()", readLine.tail)
+        assertEquals("string?", readLine.type)
+        val generic = tails.parse("```csharp${nl}Task<Dictionary<string, int>> Service.LoadAsync<T>(T key, CancellationToken token)$nl```", "LoadAsync")!!
+        assertEquals("<T>(T key, CancellationToken token)", generic.tail)
+        assertEquals("a type with a space inside its generic arguments", "Task<Dictionary<string, int>>", generic.type)
+        val local = tails.parse("```csharp$nl(local variable) int count$nl```", "count")!!
+        assertEquals("int", local.type)
+        assertNull("no signature, no tail", tails.parse("Just text", "WriteLine"))
+    }
+
+    /** `await` comes with the typed text as its edit (`p`): it is matched by its label, so it leaves the list for `p` and stays for `aw`. */
+    fun testAwaitIsMatchedByItsLabel() {
+        val policy = io.github.dotnetsupport.roslyn.RoslynCompletionPolicy
+        val await = org.eclipse.lsp4j.CompletionItem("await").apply { textEditText = "p"; kind = org.eclipse.lsp4j.CompletionItemKind.Keyword }
+        assertEquals("await", policy.lookupStringOverride(await))
+        assertNull("an ordinary item", policy.lookupStringOverride(org.eclipse.lsp4j.CompletionItem("person")))
+        assertNull("the edit is the label", policy.lookupStringOverride(org.eclipse.lsp4j.CompletionItem("typeof").apply { textEditText = "typeof" }))
+
+        // what the platform builds for it: the edit as the lookup string, the label beside it
+        val platform = com.intellij.codeInsight.lookup.LookupElementBuilder.create(await, "p").withLookupString("await")
+        assertTrue("before: p matches", com.intellij.codeInsight.completion.impl.CamelHumpMatcher("p").prefixMatches(platform))
+        val fixed = io.github.dotnetsupport.roslyn.MatchedByLabel(platform, "await")
+        assertFalse(com.intellij.codeInsight.completion.impl.CamelHumpMatcher("p").prefixMatches(fixed))
+        assertTrue(com.intellij.codeInsight.completion.impl.CamelHumpMatcher("aw").prefixMatches(fixed))
+    }
+
     fun testWordAt() {
         val text = "shape.Area();"
         assertEquals("Area", RoslynNavigation.wordAt(text, text.indexOf("Area")))

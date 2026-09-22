@@ -25,6 +25,7 @@ import com.intellij.platform.lsp.api.LspIntegrationProvider
 import com.intellij.platform.lsp.api.LspServer
 import com.intellij.platform.lsp.api.LspServerListener
 import com.intellij.platform.lsp.api.LspServerNotificationsHandler
+import com.intellij.platform.lsp.api.customization.LspCodeActionsCustomizer
 import com.intellij.platform.lsp.api.customization.LspCodeLensCustomizer
 import com.intellij.platform.lsp.api.customization.LspCompletionCustomizer
 import com.intellij.platform.lsp.api.customization.LspCodeLensSupport
@@ -208,6 +209,9 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
 
         // a chosen method gets its parentheses and the parameter info, see the class
         override val completionCustomizer: LspCompletionCustomizer = RoslynCompletionSupport()
+
+        // Alt+Enter without the same row twice, see the class
+        override val codeActionsCustomizer: LspCodeActionsCustomizer = RoslynCodeActionsSupport()
 
         // Reformat Code: the server does the work of `dotnet format whitespace`; CSharpier and "None" stay what the project has chosen
         override val formattingCustomizer: LspFormattingCustomizer = object : LspFormattingSupport() {

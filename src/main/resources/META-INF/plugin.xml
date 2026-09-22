@@ -68,6 +68,9 @@
         <!-- a declaration is a named element only for navigation: renaming is the business of the language server -->
         <vetoRenameCondition implementation="io.github.dotnetsupport.lang.CSharpRenameVeto"/>
         <lang.foldingBuilder language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpFoldingBuilder"/>
+        <!-- TODO / FIXME in the comments of C#: the TODO tool window and the highlighting -->
+        <todoIndexer filetype="C#" implementationClass="io.github.dotnetsupport.lang.CSharpTodoIndexer"/>
+        <indexPatternBuilder implementation="io.github.dotnetsupport.lang.CSharpIndexPatternBuilder"/>
         <fileBasedIndex implementation="io.github.dotnetsupport.lang.CSharpDeclarationIndex"/>
         <gotoClassContributor implementation="io.github.dotnetsupport.lang.CSharpGotoClassContributor"/>
         <gotoSymbolContributor implementation="io.github.dotnetsupport.lang.CSharpGotoSymbolContributor"/>

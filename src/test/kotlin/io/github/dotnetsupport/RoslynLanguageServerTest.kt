@@ -84,10 +84,13 @@ class RoslynLanguageServerTest : BasePlatformTestCase() {
         )
         assertEquals(listOf(true, true, "fullSolution", "openFiles", null, true, true, 500, false, 2, "tab", true, null, null), answer)
 
-        // back to the default: nothing is stored, the answer is still explicit
+        // type hints are on by default: off is stored, back to the default stores nothing, and the answer is explicit either way
         settings.setValue(inlay, "false")
-        assertFalse(inlay.section in settings.state.options)
+        assertEquals("false", settings.state.options[inlay.section])
         assertEquals(listOf(false), RoslynLanguageServer.configuration(listOf("csharp|${inlay.section}"), settings, null))
+        settings.setValue(inlay, "true")
+        assertFalse(inlay.section in settings.state.options)
+        assertEquals(listOf(true), RoslynLanguageServer.configuration(listOf("csharp|${inlay.section}"), settings, null))
         settings.setValue(binlog, "C:/logs/binlog")
         assertEquals(listOf("C:/logs/binlog", null), RoslynLanguageServer.configuration(listOf(binlog.section, "csharp|code_style.formatting.indentation_and_spacing.tab_width"), settings, null))
     }
@@ -103,12 +106,13 @@ class RoslynLanguageServerTest : BasePlatformTestCase() {
             assertTrue(boxes.first { it.text == "Use the language server for C#" }.isSelected)
             assertTrue(boxes.all { it.isEnabled })
             assertTrue(boxes.first { it.text == "References" }.isSelected)
-            assertFalse(boxes.first { it.text == "Parameter names" }.isSelected)
+            // on by default (2026-09-22)
+            assertTrue(boxes.first { it.text == "Parameter names" }.isSelected)
 
-            boxes.first { it.text == "Parameter names" }.isSelected = true
+            boxes.first { it.text == "Parameter names" }.isSelected = false
             assertTrue(page.isModified)
             page.apply()
-            assertEquals("true", settings.state.options["inlay_hints.dotnet_enable_inlay_hints_for_parameters"])
+            assertEquals("false", settings.state.options["inlay_hints.dotnet_enable_inlay_hints_for_parameters"])
         } finally {
             page.disposeUIResources()
         }

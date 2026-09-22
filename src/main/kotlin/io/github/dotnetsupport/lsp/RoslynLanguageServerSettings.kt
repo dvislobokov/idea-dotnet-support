@@ -109,17 +109,19 @@ object RoslynOptions {
         toggle("Code Lens", "code_lens.dotnet_enable_references_code_lens", "References", true),
         toggle("Code Lens", "code_lens.dotnet_enable_tests_code_lens", "Run and debug tests", true),
 
-        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_parameters", "Parameter names", false),
-        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_literal_parameters", "Parameter names: for literals", false),
-        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_indexer_parameters", "Parameter names: for indexers", false),
-        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_object_creation_parameters", "Parameter names: for 'new' expressions", false),
+        // on by default as in Rider (decision of the user 2026-09-22): names of literal / indexer / new arguments, types of var and lambda
+        // parameters; "everything else", new() and collection expressions stay off: they make a line noisy
+        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_parameters", "Parameter names", true),
+        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_literal_parameters", "Parameter names: for literals", true),
+        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_indexer_parameters", "Parameter names: for indexers", true),
+        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_object_creation_parameters", "Parameter names: for 'new' expressions", true),
         toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_other_parameters", "Parameter names: for everything else", false),
         toggle("Inlay Hints", "inlay_hints.dotnet_suppress_inlay_hints_for_parameters_that_differ_only_by_suffix", "Parameter names: not when the names differ only by suffix", true),
         toggle("Inlay Hints", "inlay_hints.dotnet_suppress_inlay_hints_for_parameters_that_match_method_intent", "Parameter names: not when the name matches the intent of the method", true),
         toggle("Inlay Hints", "inlay_hints.dotnet_suppress_inlay_hints_for_parameters_that_match_argument_name", "Parameter names: not when the argument has the same name", true),
-        toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_types", "Types", false),
-        toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_implicit_variable_types", "Types: of 'var' variables", false),
-        toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_lambda_parameter_types", "Types: of lambda parameters", false),
+        toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_types", "Types", true),
+        toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_implicit_variable_types", "Types: of 'var' variables", true),
+        toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_lambda_parameter_types", "Types: of lambda parameters", true),
         toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_implicit_object_creation", "Types: of 'new()' expressions", false),
         toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_collection_expressions", "Types: of collection expressions", false),
 
