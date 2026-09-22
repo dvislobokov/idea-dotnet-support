@@ -172,3 +172,8 @@ object NuGetResponses {
     private fun JsonElement.asStringOrNull(): String? = takeIf { it.isJsonPrimitive }?.asString
     private fun JsonArray?.orEmpty(): List<JsonElement> = this?.toList() ?: emptyList()
 }
+
+/** What the NuGet window shows while `dotnet add|remove|restore package` runs and when it has ended. */
+class NuGetOperation(val title: String, val state: State) {
+    enum class State { RUNNING, DONE, FAILED }
+}

@@ -12,6 +12,7 @@ import com.intellij.openapi.options.ShowSettingsUtil
 import io.github.dotnetsupport.solution.SolutionService
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
@@ -121,6 +122,9 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
     private val list = JBList(listModel)
     private val details = ViewportWidthPanel()
     private val versionCombo = ComboBox<String>()
+    /** A `dotnet add | remove | restore package` of the window runs: the buttons of the card wait for it. */
+    @Volatile private var operationRunning = false
+    private val operationListener: (NuGetOperation) -> Unit = ::showOperation
 
     private val alarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, toolWindow.disposable)
     private val icons = PackageIcons { list.repaint(); details.repaint() }
@@ -136,13 +140,17 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
     private var dependenciesExpanded = false
 
     init {
-        add(JPanel(FlowLayout(FlowLayout.LEFT, 8, 4)).apply {
-            add(JBLabel("Packages for:")); add(scopeCombo)
-            searchField.textEditor.columns = 30
-            searchField.textEditor.emptyText.text = "Search packages"
-            add(searchField); add(prerelease)
-            add(ActionLink("Refresh") { loadSourcesAndReload() })
+        add(JPanel(BorderLayout()).apply {
+            add(JPanel(FlowLayout(FlowLayout.LEFT, 8, 4)).apply {
+                add(JBLabel("Packages for:")); add(scopeCombo)
+                searchField.textEditor.columns = 30
+                searchField.textEditor.emptyText.text = "Search packages"
+                add(searchField); add(prerelease)
+                add(ActionLink("Refresh") { loadSourcesAndReload() })
+            }, BorderLayout.CENTER)
         }, BorderLayout.NORTH)
+        service.operationListeners += operationListener
+        com.intellij.openapi.util.Disposer.register(toolWindow.disposable) { service.operationListeners.remove(operationListener) }
 
         list.selectionMode = ListSelectionModel.SINGLE_SELECTION
         list.cellRenderer = RowRenderer()
@@ -240,14 +248,31 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
 
     fun loadSourcesAndReload() = background(sourceRequests, { service.sources() }) { sources = it; reload() }
 
+    /** What every project of the solution references, read in the background by [reload]: the list and the card are drawn from it on EDT. */
+    @Volatile private var installedByProject: Map<VirtualFile, List<InstalledPackage>> = emptyMap()
+    private val installedRequests = AtomicInteger()
+
+    /**
+     * The packages the projects reference come from their files and `project.assets.json`: read off EDT (read on EDT, it was a slow operation
+     * the IDE reported after every install), then the list is drawn.
+     */
     private fun reload() {
+        background(installedRequests, {
+            ReadAction.compute<Map<VirtualFile, List<InstalledPackage>>, RuntimeException> { service.projects().associate { (_, file) -> file to service.installed(file) } }
+        }) { all ->
+            installedByProject = all
+            reloadList()
+        }
+    }
+
+    private fun reloadList() {
         val query = searchField.text.trim()
         val includePrerelease = prerelease.isSelected
         val selectedId = selectedPackage()?.id
 
         // package id -> the projects of the scope that reference it
         val installed = LinkedHashMap<String, MutableMap<VirtualFile, InstalledPackage>>()
-        for ((_, file) in scopeProjects()) for (pkg in service.installed(file)) installed.getOrPut(pkg.id.lowercase()) { LinkedHashMap() }[file] = pkg
+        for ((_, file) in scopeProjects()) for (pkg in installedByProject[file].orEmpty()) installed.getOrPut(pkg.id.lowercase()) { LinkedHashMap() }[file] = pkg
         val installedRows = installed.values
             .map { Row.Package(it.values.first().id, it, null) }
             .filter { query.isEmpty() || it.id.contains(query, ignoreCase = true) }
@@ -493,7 +518,7 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
 
     private fun installedPackage(row: Row.Package, projectFile: VirtualFile): InstalledPackage? =
         // a project outside of the scope may have the package too: the card shows the whole solution
-        row.installedIn[projectFile] ?: service.installed(projectFile).find { it.id.equals(row.id, ignoreCase = true) }
+        row.installedIn[projectFile] ?: installedByProject[projectFile].orEmpty().find { it.id.equals(row.id, ignoreCase = true) }
 
     /** `> Title  summary` that toggles on click. */
     private fun sectionHeader(title: String, summary: String, expanded: Boolean, toggle: () -> Unit): JComponent =
@@ -513,8 +538,9 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
     }
 
     /** A bordered icon button like the ones of the Rider NuGet window; a disabled action keeps its place, so the columns stay aligned. */
-    private fun iconButton(icon: Icon, tooltip: String, enabled: Boolean, action: () -> Unit): JComponent =
-        JBLabel(if (enabled) icon else com.intellij.openapi.util.IconLoader.getDisabledIcon(icon)).apply {
+    private fun iconButton(icon: Icon, tooltip: String, isEnabled: Boolean, action: () -> Unit): JComponent {
+        val enabled = isEnabled && !operationRunning
+        return JBLabel(if (enabled) icon else com.intellij.openapi.util.IconLoader.getDisabledIcon(icon)).apply {
             horizontalAlignment = JBLabel.CENTER
             preferredSize = JBUI.size(BUTTON_SIZE, BUTTON_SIZE)
             border = JBUI.Borders.customLine(JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground(), 1)
@@ -524,6 +550,7 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
                 onSingleClick(this, action)
             }
         }
+    }
 
     /**
      * A click by press and release, as [ClickListener] counts it: `mouseClicked` of Swing does not come when the mouse moves by a pixel between the
@@ -575,6 +602,13 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
     }
 
     // ---- operations ----
+
+    /** The command and its output are in the Build tool window; here only the buttons of the card follow it. */
+    private fun showOperation(what: NuGetOperation) {
+        operationRunning = what.state == NuGetOperation.State.RUNNING
+        // while a command runs the buttons of the card are disabled: a second click would queue another dotnet run
+        selectedPackage()?.let { renderCard(it) }
+    }
 
     private fun install(row: Row.Package, projects: List<VirtualFile>, version: String?) {
         service.install(projects, row.id, version ?: return) { reload() }

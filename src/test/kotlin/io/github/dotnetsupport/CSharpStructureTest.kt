@@ -1,5 +1,6 @@
 package io.github.dotnetsupport
 
+import com.intellij.openapi.components.service
 import com.intellij.navigation.NavigationItem
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
@@ -136,6 +137,28 @@ class CSharpStructureTest : BasePlatformTestCase() {
         assertTrue(names(symbols).containsAll(listOf("GotoCustomer", "Display", "Total", "_limit")))
         // the method of the class and the one of the interface
         assertEquals(2, items(symbols, "Total").count { (it as CSharpDeclaration).containingFile.name == "OrderService.cs" })
+    }
+
+    /** A ready server answers the same question through `workspace/symbol`: the files it has loaded are left to it, the rest is not. */
+    fun testGotoLeavesTheFilesOfTheServerToIt() {
+        val inside = myFixture.addFileToProject("Covered/Inside.cs", "namespace Shop;\npublic class CoveredType { }\n")
+        myFixture.addFileToProject("Loose/Outside.cs", "namespace Shop;\npublic class LooseType { }\n")
+        val classes = CSharpGotoClassContributor()
+        fun items(name: String): List<NavigationItem> =
+            ArrayList<NavigationItem>().also { classes.processElementsWithName(name, { item -> it.add(item); true }, FindSymbolParameters.simple(project, false)) }
+
+        val status = project.service<io.github.dotnetsupport.lsp.RoslynServerStatus>()
+        try {
+            assertEquals("no server: both are ours", 1, items("CoveredType").size)
+            status.isReady = true
+            status.loadedRoots = listOf(inside.virtualFile.parent.path)
+            assertEquals("the server knows this file", 0, items("CoveredType").size)
+            assertEquals("a file outside of what it has loaded stays ours", 1, items("LooseType").size)
+        } finally {
+            // the light project is shared with the other tests of the class and between classes
+            status.isReady = false
+            status.loadedRoots = emptyList()
+        }
     }
 
     /** The features that read the file by tokens do not notice that the tree has got deeper. */

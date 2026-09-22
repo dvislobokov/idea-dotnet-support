@@ -166,6 +166,12 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
             is RoslynWorkspaceTarget.Solution -> phase(RoslynPhase.LOADING, target.path.substringAfterLast('/'))
             else -> phase(RoslynPhase.LOADING, null)
         }
+        // what the server will know about: Go to Class / Symbol of the plugin leaves these files to it, see RoslynServerStatus.covers
+        project.service<RoslynServerStatus>().loadedRoots = when (target) {
+            is RoslynWorkspaceTarget.Solution -> listOf(target.path.substringBeforeLast('/'))
+            is RoslynWorkspaceTarget.Projects -> target.paths.map { it.substringBeforeLast('/') }
+            else -> emptyList()
+        }
         when (target) {
             is RoslynWorkspaceTarget.Solution -> client.sendNotification { (it as RoslynServer).openSolution(SolutionOpenParams(uri(client.descriptor, target.path))) }
             // nothing is loaded before the user has answered, and nothing is reported as an error meanwhile
@@ -238,6 +244,7 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
         // back to the heuristics: colors, folding and the problems of the last build are theirs again
         project.service<RoslynServerStatus>().isReady = false
         project.service<RoslynServerStatus>().coloredFromCache.clear()
+        project.service<RoslynServerStatus>().loadedRoots = emptyList()
         DaemonCodeAnalyzer.getInstance(project).restart()
     }
 

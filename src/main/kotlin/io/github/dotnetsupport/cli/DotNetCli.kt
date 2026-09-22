@@ -11,6 +11,7 @@ import com.intellij.execution.process.ProcessOutput
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.WriteIntentReadAction
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -36,6 +37,7 @@ interface CommandOutput {
 
 object DotNetCli {
     private const val TIMEOUT_MS = 10 * 60 * 1000
+    private const val HEARTBEAT_S = 30L
 
     /** The executable to run: the one from Settings | Tools | .NET, otherwise the auto-detected one. */
     fun findExecutable(): String? =
@@ -81,10 +83,35 @@ object DotNetCli {
         return (listOf(executable) + masked).joinToString(" ") { if (' ' in it) "\"$it\"" else it }
     }
 
-    /** Runs a short command and captures its output. Must not be called on EDT. */
+    /** Runs a short command and captures its output. Must not be called on EDT. Written to the command log with its result, see [DotNetLogs]. */
     @Throws(ExecutionException::class)
-    fun execute(commandLine: GeneralCommandLine, timeoutMs: Int = TIMEOUT_MS): ProcessOutput =
-        CapturingProcessHandler(commandLine).runProcess(timeoutMs)
+    fun execute(commandLine: GeneralCommandLine, timeoutMs: Int = TIMEOUT_MS): ProcessOutput {
+        DotNetLogs.commandStarted("run", commandLine)
+        val started = System.currentTimeMillis()
+        val result = try {
+            CapturingProcessHandler(commandLine).also(::closeInput).runProcess(timeoutMs)
+        } catch (e: ExecutionException) {
+            DotNetLogs.command("run", "cannot start: ${e.message}")
+            throw e
+        }
+        DotNetLogs.command("run", resultText(result, System.currentTimeMillis() - started) +
+            if (result.exitCode != 0) "\n" + (result.stderr.ifBlank { result.stdout }).trim().lines().takeLast(20).joinToString("\n") else "")
+        return result
+    }
+
+    /**
+     * No command of the plugin reads its input. Open, it lets a command that decides to ask (NuGet for the credentials of a feed) wait for an
+     * answer nobody can give, until the timeout; closed, the question fails at once and says why.
+     */
+    private fun closeInput(handler: CapturingProcessHandler) {
+        runCatching { handler.processInput?.close() }
+    }
+
+    private fun resultText(result: ProcessOutput, ms: Long): String = when {
+        result.isTimeout -> "timed out after ${ms / 1000} s"
+        result.isCancelled -> "cancelled after ${ms / 1000} s"
+        else -> "exit code ${result.exitCode} in ${"%.1f".format(ms / 1000.0)} s"
+    }
 
     /**
      * Runs [commands] one after another in a background task, streaming what they print into [output] as it arrives;
@@ -107,8 +134,9 @@ object DotNetCli {
             application.invokeLater({ runInBackground(project, title, commands, refresh, output, onFailure, onSuccess) }, project.disposed)
             return
         }
-        // saving documents and starting a task are for EDT
-        FileDocumentManager.getInstance().saveAllDocuments()
+        // saving documents and starting a task are for EDT, and saving needs the write-intent lock: an action has it, a mouse listener of
+        // Swing (the buttons of the NuGet window) does not, and the save threw there - no command, no log, nothing (reported)
+        WriteIntentReadAction.run { FileDocumentManager.getInstance().saveAllDocuments() }
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, title, true) {
             override fun run(indicator: ProgressIndicator) {
                 val succeeded = runCommands(indicator)
@@ -122,20 +150,36 @@ object DotNetCli {
                     if (indicator.isCanceled) return false
                     indicator.text2 = displayString(command)
                     output.commandStarted(command)
+                    DotNetLogs.commandStarted(title, command)
+                    val started = System.currentTimeMillis()
+                    val lastOutput = java.util.concurrent.atomic.AtomicLong(started)
+                    // a command that stands still leaves a mark every half a minute: the log shows how long, and after what
+                    val heartbeat = com.intellij.util.concurrency.AppExecutorUtil.getAppScheduledExecutorService().scheduleWithFixedDelay({
+                        val now = System.currentTimeMillis()
+                        DotNetLogs.command(title, "... still running: ${(now - started) / 1000} s, nothing printed for ${(now - lastOutput.get()) / 1000} s")
+                    }, HEARTBEAT_S, HEARTBEAT_S, java.util.concurrent.TimeUnit.SECONDS)
                     val result = try {
                         val handler = CapturingProcessHandler(command)
+                        closeInput(handler)
                         handler.addProcessListener(object : ProcessListener {
                             override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
-                                if (outputType !== ProcessOutputTypes.SYSTEM) output.text(event.text, outputType === ProcessOutputTypes.STDERR)
+                                if (outputType === ProcessOutputTypes.SYSTEM) return
+                                lastOutput.set(System.currentTimeMillis())
+                                output.text(event.text, outputType === ProcessOutputTypes.STDERR)
+                                DotNetLogs.command(if (outputType === ProcessOutputTypes.STDERR) "$title | err" else title, event.text)
                             }
                         })
                         // cancelling the progress kills the process
                         handler.runProcessWithProgressIndicator(indicator, TIMEOUT_MS, true)
                     } catch (e: ExecutionException) {
+                        DotNetLogs.command(title, "cannot start: ${e.message}")
                         output.text(e.message.orEmpty() + "\n", true)
                         notifyError(project, title, e.message.orEmpty())
                         return false
+                    } finally {
+                        heartbeat.cancel(false)
                     }
+                    DotNetLogs.command(title, resultText(result, System.currentTimeMillis() - started))
                     output.commandFinished(result.exitCode)
                     if (result.isCancelled) return false
                     if (result.exitCode != 0) {

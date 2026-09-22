@@ -89,7 +89,10 @@ object RoslynOptions {
             "\"fullSolution\" analyzes every file of the solution in the background: accurate, and heavy on a large solution"),
 
         toggle("Projects", "projects.dotnet_enable_automatic_restore", "Restore NuGet packages when a project needs it", true),
-        toggle("Projects", "projects.dotnet_enable_file_based_programs", "Support file-based programs (a .cs file run with 'dotnet run file.cs')", true),
+        // off by default (2026-09-22, decision of the user): with it on, a .cs file created and opened while the solution is loaded is taken as a
+        // program of its own and stays one until its tab is reopened - no errors in it, no types from the other files (seen live)
+        toggle("Projects", "projects.dotnet_enable_file_based_programs", "Support file-based programs (a .cs file run with 'dotnet run file.cs')", false,
+            comment = "On: a new .cs file of a project is analysed on its own until its tab is reopened"),
         toggle("Projects", "projects.dotnet_enable_file_based_programs_when_ambiguous", "Treat a loose .cs file as a file-based program when it is ambiguous", false),
         RoslynOption("Projects", "projects.dotnet_binary_log_path", "Folder for MSBuild binary logs of project loading:", "", comment = "Empty: no binary logs"),
 

@@ -325,6 +325,8 @@
             <reference ref="DotNet.InsertGuid"/>
             <reference ref="DotNet.AnalyzeStackTrace"/>
             <separator/>
+            <action id="DotNet.ShowPluginLogs" class="io.github.dotnetsupport.cli.ShowPluginLogsAction" text="Show Plugin Logs"
+                    description="Open ~/idea-dotnet-logs: every dotnet command of the plugin with its output, the logs of the debugger, the language server and the builds"/>
             <action id="DotNet.Debugger.ShowLogs" class="io.github.dotnetsupport.debugger.ShowDebuggerLogsAction" text="Show Debugger Logs"
                     description="Open the directory with the logs of the debug adapter and the traces of the protocol"/>
             <action id="DotNet.Debugger.TraceProtocol" class="io.github.dotnetsupport.debugger.TraceDebuggerProtocolAction" text="Trace Debugger Protocol"

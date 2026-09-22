@@ -5,7 +5,6 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.ToggleAction
-import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.util.registry.Registry
 import java.io.File
@@ -16,7 +15,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 /**
- * What to look at when a debug session misbehaves, all in `<log directory of the IDE>/dotnet-debugger`: the log of the adapter itself
+ * What to look at when a debug session misbehaves, all in `~/idea-dotnet-logs/dotnet-debugger` (see `DotNetLogs`): the log of the adapter itself
  * (`dotnet-debugger --log=FILE`, one file per session) and, when switched on, every DAP message both ways (`protocol/`).
  */
 object DotNetDebuggerLogs {
@@ -28,7 +27,7 @@ object DotNetDebuggerLogs {
     private const val KEEP = 20
     private val STAMP = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
 
-    val directory: Path get() = Path.of(PathManager.getLogPath(), "dotnet-debugger")
+    val directory: Path get() = io.github.dotnetsupport.cli.DotNetLogs.directory("dotnet-debugger")
     val protocolDirectory: Path get() = directory.resolve("protocol")
 
     fun adapterLogName(time: LocalDateTime): String = "adapter-${STAMP.format(time)}.log"

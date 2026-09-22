@@ -2,14 +2,17 @@ package io.github.dotnetsupport.nuget
 
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.io.HttpRequests
+import io.github.dotnetsupport.build.BuildViewCommandOutput
 import io.github.dotnetsupport.cli.CommandOutput
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.cli.DotNetLogs
 import io.github.dotnetsupport.solution.SolutionService
 import io.github.dotnetsupport.view.resolveFile
 import java.io.File
@@ -205,12 +208,44 @@ class NuGetService(private val project: Project) {
         DotNetCli.runInBackground(project, title, commands, output = log, onSuccess = onSuccess)
     }
 
+    /** Told what is running and how it ended, so that the window can show it: without this only the progress of the IDE says anything. */
+    val operationListeners = ArrayList<(NuGetOperation) -> Unit>()
+
+    private fun notifyOperation(operation: NuGetOperation) =
+        ApplicationManager.getApplication().invokeLater({ if (!project.isDisposed) operationListeners.toList().forEach { it(operation) } }, ModalityState.any())
+
     private fun run(title: String, projectFiles: List<VirtualFile>, onSuccess: () -> Unit, arguments: (VirtualFile) -> List<String>) {
         if (projectFiles.isEmpty()) return
         val commands = DotNetCli.commandLinesOrNotify(project, title) {
             projectFiles.map { DotNetCli.commandLine(it.parent.path, *arguments(it).toTypedArray()) }
         } ?: return
-        DotNetCli.runInBackground(project, title, commands, refresh = projectFiles.map { File(it.parent.path) }, output = log, onSuccess = onSuccess)
+        notifyOperation(NuGetOperation(title, NuGetOperation.State.RUNNING))
+        try {
+            runCommands(title, commands, projectFiles, onSuccess)
+        } catch (e: RuntimeException) {
+            // the window must not keep its buttons disabled for a command that never started
+            notifyOperation(NuGetOperation(title, NuGetOperation.State.FAILED))
+            DotNetLogs.command(title, "cannot start: $e")
+            throw e
+        }
+    }
+
+    private fun runCommands(title: String, commands: List<GeneralCommandLine>, projectFiles: List<VirtualFile>, onSuccess: () -> Unit) {
+        // `finished` comes in every case (a failure, a cancellation, a command that could not start), so the window never keeps a stale "running"
+        // the progress is the one of the IDE at the bottom; the output goes to the Build tool window (it comes up by itself only at a failure,
+        // decision of the user) and to the Log tab of the NuGet window
+        val build = BuildViewCommandOutput(project, title)
+        val output = object : CommandOutput {
+            override fun commandStarted(command: GeneralCommandLine) { build.commandStarted(command); log.commandStarted(command) }
+            override fun text(text: String, isError: Boolean) { build.text(text, isError); log.text(text, isError) }
+            override fun commandFinished(exitCode: Int) { build.commandFinished(exitCode); log.commandFinished(exitCode) }
+            override fun finished(succeeded: Boolean) {
+                build.finished(succeeded)
+                log.finished(succeeded)
+                notifyOperation(NuGetOperation(title, if (succeeded) NuGetOperation.State.DONE else NuGetOperation.State.FAILED))
+            }
+        }
+        DotNetCli.runInBackground(project, title, commands, refresh = projectFiles.map { File(it.parent.path) }, output = output, onSuccess = onSuccess)
     }
 
     private fun workDirectory(): String? = SolutionService.getInstance(project).solutionFiles().firstOrNull()?.parent?.path

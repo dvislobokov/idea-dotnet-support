@@ -37,7 +37,7 @@ class DotNetTestRunner : GenericProgramRunner<RunnerSettings>() {
             (executorId == DefaultRunExecutor.EXECUTOR_ID || executorId == DefaultDebugExecutor.EXECUTOR_ID && DotNetProcessAttacher.find() != null)
 
     override fun doExecute(state: RunProfileState, environment: ExecutionEnvironment): RunContentDescriptor? {
-        FileDocumentManager.getInstance().saveAllDocuments()
+        com.intellij.openapi.application.WriteIntentReadAction.run { FileDocumentManager.getInstance().saveAllDocuments() }
         val result = state.execute(environment.executor, this) ?: return null
         val project = environment.project
         val descriptor = RunContentBuilder(result, environment).showRunContent(sessionToReuse(project, environment.runProfile.name) ?: environment.contentToReuse)

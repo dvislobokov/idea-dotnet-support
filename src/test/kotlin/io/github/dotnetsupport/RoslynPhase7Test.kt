@@ -21,6 +21,27 @@ class RoslynPhase7Test : BasePlatformTestCase() {
         assertFalse(action.templatePresentation.text.isNullOrBlank())
     }
 
+    /** A method chosen in completion gets `()` (Roslyn sends the bare name), except as an event handler and when chosen by `.` / `;`. */
+    fun testParenthesesOfAChosenMethod() {
+        val policy = io.github.dotnetsupport.roslyn.RoslynCompletionPolicy
+        assertTrue(policy.isCallable(org.eclipse.lsp4j.CompletionItemKind.Method))
+        assertFalse("a property", policy.isCallable(org.eclipse.lsp4j.CompletionItemKind.Property))
+        assertFalse("new Person: the type", policy.isCallable(org.eclipse.lsp4j.CompletionItemKind.Class))
+
+        val call = "        Console.WriteLine"
+        val start = call.indexOf("WriteLine")
+        assertTrue("Enter", policy.addsParentheses(com.intellij.codeInsight.lookup.Lookup.NORMAL_SELECT_CHAR, call, start, call.length))
+        assertTrue("Tab", policy.addsParentheses(com.intellij.codeInsight.lookup.Lookup.REPLACE_SELECT_CHAR, call, start, call.length))
+        assertTrue("typed (", policy.addsParentheses('(', call, start, call.length))
+        assertFalse("typed .", policy.addsParentheses('.', call, start, call.length))
+
+        val subscription = "void M()\n{\n    PriceFeed.Changed += OnChanged"
+        assertFalse("an event handler is a method group", policy.addsParentheses(com.intellij.codeInsight.lookup.Lookup.NORMAL_SELECT_CHAR, subscription,
+            subscription.indexOf("OnChanged"), subscription.length))
+        val later = "x += 1;\nFoo"
+        assertTrue("+= of another line", policy.addsParentheses(com.intellij.codeInsight.lookup.Lookup.NORMAL_SELECT_CHAR, later, later.indexOf("Foo"), later.length))
+    }
+
     fun testWordAt() {
         val text = "shape.Area();"
         assertEquals("Area", RoslynNavigation.wordAt(text, text.indexOf("Area")))

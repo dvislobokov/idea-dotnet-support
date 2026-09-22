@@ -4,6 +4,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VirtualFile
 import io.github.dotnetsupport.format.FormatterChoice
 import io.github.dotnetsupport.lang.CSharpIdentifierAnnotator
@@ -24,8 +25,23 @@ class RoslynServerStatus {
     /** Files colored by semantic tokens of the server taken from the cache of the plugin, while the solution is still loading. */
     val coloredFromCache: MutableSet<VirtualFile> = ConcurrentHashMap.newKeySet()
 
+    /** Directories of what the server has loaded (the solution, or the projects): the files it knows about are in them. */
+    @Volatile
+    var loadedRoots: List<String> = emptyList()
+
     companion object {
         fun isReady(project: Project): Boolean = !project.isDisposed && project.service<RoslynServerStatus>().isReady
+
+        /**
+         * The server answers about [file]: it is ready and the file is in what it has loaded. For the places where the plugin has its own
+         * answer for the same question and would double the one of the server — Go to Class / Symbol. A file outside (a project that is in
+         * no solution, a loose file) stays with the plugin.
+         */
+        fun covers(project: Project, file: VirtualFile): Boolean {
+            if (!isReady(project)) return false
+            val roots = project.service<RoslynServerStatus>().loadedRoots
+            return roots.any { FileUtil.isAncestor(it, file.path, false) }
+        }
 
         /** The server colors the identifiers of [file]: it is ready, or its tokens of this very text are shown from the cache. */
         fun colorsIdentifiers(project: Project, file: VirtualFile?): Boolean =

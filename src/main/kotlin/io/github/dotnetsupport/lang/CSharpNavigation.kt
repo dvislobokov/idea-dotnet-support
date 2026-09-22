@@ -17,6 +17,7 @@ import com.intellij.util.indexing.IdFilter
 import com.intellij.util.indexing.ScalarIndexExtension
 import com.intellij.util.io.EnumeratorStringDescriptor
 import com.intellij.util.io.KeyDescriptor
+import io.github.dotnetsupport.lsp.RoslynServerStatus
 
 /**
  * Names of the types and members of every C# file, for Go to Class and Go to Symbol. The key carries the kind
@@ -45,6 +46,11 @@ class CSharpDeclarationIndex : ScalarIndexExtension<String>() {
     }
 }
 
+/**
+ * Go to Class / Go to Symbol from the index of the plugin. Where the language server is ready and knows the file, it answers the same
+ * question through `workspace/symbol` of the platform, and both answers were shown as two rows of one type: those files are left to it
+ * (`RoslynServerStatus.covers`). Everything else — while the server loads, a project that is in no solution, a loose file — stays here.
+ */
 abstract class CSharpGotoContributor(private val types: Boolean, private val members: Boolean) : ChooseByNameContributorEx, DumbAware {
     override fun processNames(processor: Processor<in String>, scope: GlobalSearchScope, filter: IdFilter?) {
         FileBasedIndex.getInstance().processAllKeys(CSharpDeclarationIndex.NAME, { key ->
@@ -59,6 +65,7 @@ abstract class CSharpGotoContributor(private val types: Boolean, private val mem
         val files = keys.flatMapTo(LinkedHashSet()) { index.getContainingFiles(CSharpDeclarationIndex.NAME, it, parameters.searchScope) }
         val psiManager = PsiManager.getInstance(parameters.project)
         for (file in files) {
+            if (RoslynServerStatus.covers(parameters.project, file)) continue
             val psiFile = psiManager.findFile(file) ?: continue
             for (declaration in PsiTreeUtil.findChildrenOfType(psiFile, CSharpDeclaration::class.java)) {
                 val matches = declaration.name == name && declaration.kind != DeclarationKind.NAMESPACE && (if (declaration.kind.isType) types else members)

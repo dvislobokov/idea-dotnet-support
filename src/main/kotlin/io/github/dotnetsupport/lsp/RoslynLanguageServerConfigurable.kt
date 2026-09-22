@@ -1,7 +1,6 @@
 package io.github.dotnetsupport.lsp
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.options.ShowSettingsUtil
@@ -98,6 +97,6 @@ class RoslynLanguageServerConfigurable(private val project: Project) : BoundConf
     }
 
     companion object {
-        fun defaultLogDirectory(): File = File(PathManager.getLogPath(), "roslyn-language-server")
+        fun defaultLogDirectory(): File = io.github.dotnetsupport.cli.DotNetLogs.directory("roslyn-language-server").toFile()
     }
 }
