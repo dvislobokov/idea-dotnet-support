@@ -79,6 +79,11 @@
         <defaultLiveTemplates file="/liveTemplates/CSharp.xml"/>
         <liveTemplateContext contextId="CSHARP" implementation="io.github.dotnetsupport.lang.CSharpTemplateContext"/>
         <liveTemplateMacro implementation="io.github.dotnetsupport.lang.CSharpTypeNameMacro"/>
+        <!-- postfix templates (expr.if, value.var, items.foreach...): a Rider/ReSharper feature the Roslyn server does not send -->
+        <codeInsight.template.postfixTemplateProvider language="C#"
+                                                      implementationClass="io.github.dotnetsupport.lang.CSharpPostfixTemplateProvider"/>
+        <!-- grey-text argument guards and constructor assignments, accepted with Tab; the server sends no such thing -->
+        <inline.completion.provider implementation="io.github.dotnetsupport.lang.CSharpInlineIdiomsProvider"/>
         <typedHandler implementation="io.github.dotnetsupport.lang.CSharpDocCommentTypedHandler"/>
         <!-- indentation while typing, by the rules of resources/csharpIndent/rules.json; whole files are formatted by CSharpier / dotnet format -->
         <lineIndentProvider implementation="io.github.dotnetsupport.lang.CSharpLineIndentProvider"/>

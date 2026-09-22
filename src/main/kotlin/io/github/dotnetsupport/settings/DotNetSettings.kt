@@ -45,6 +45,9 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
         var openBuildWindowOnEveryBuild by property(true)
         var switchToSolutionView by property(true)
 
+        /** Grey-text argument guards and constructor assignments, accepted with Tab. */
+        var inlineIdioms by property(true)
+
         /** Package id of a global tool -> its executable; a tool without an entry is looked up on PATH and in `~/.dotnet/tools`. */
         var toolPaths by map<String, String>()
 
@@ -69,6 +72,10 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
     var switchToSolutionView: Boolean
         get() = state.switchToSolutionView
         set(value) { state.switchToSolutionView = value }
+
+    var inlineIdioms: Boolean
+        get() = state.inlineIdioms
+        set(value) { state.inlineIdioms = value }
 
     var debugExternalSource: Boolean
         get() = state.debugExternalSource
@@ -217,6 +224,10 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
                         .comment("When off, it opens only if the build fails")
                 }
                 row { checkBox("Switch the Project tool window to the Solution view when a solution is opened for the first time").bindSelected(settings::switchToSolutionView) }
+                row {
+                    checkBox("Suggest argument guards and constructor assignments as you type").bindSelected(settings::inlineIdioms)
+                        .comment("Grey text inside a null/empty check or an empty constructor, accepted with Tab")
+                }
             }
         }.also {
             refreshInformation(settings.dotnetPath)
