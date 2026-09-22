@@ -148,6 +148,7 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
         isLoaded = false
         phase(RoslynPhase.STARTING, null)
         project.service<RoslynServerStatus>().isReady = false
+        project.service<RoslynResponseMemo>().invalidate()
         // "the first request of a kind" means the first one of this process
         project.service<RoslynRequestStats>().reset()
         project.service<RoslynServerStatus>().coloredFromCache.clear()
@@ -245,6 +246,7 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
         project.service<RoslynServerStatus>().isReady = false
         project.service<RoslynServerStatus>().coloredFromCache.clear()
         project.service<RoslynServerStatus>().loadedRoots = emptyList()
+        project.service<RoslynResponseMemo>().invalidate()
         DaemonCodeAnalyzer.getInstance(project).restart()
     }
 
@@ -260,6 +262,8 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
         phase(RoslynPhase.READY)
         // from here on the heuristics of the plugin step aside, see RoslynServerStatus
         project.service<RoslynServerStatus>().isReady = true
+        // the answers given while the projects were loading are of a workspace that is not there any more
+        project.service<RoslynResponseMemo>().invalidate()
         LOG.info("Roslyn workspace is loaded")
         // the files opened while it was loading have been shown without the errors of the compiler
         if (!project.isDisposed) DaemonCodeAnalyzer.getInstance(project).restart()

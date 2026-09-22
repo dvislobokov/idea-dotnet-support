@@ -38,6 +38,7 @@ import java.util.concurrent.CompletableFuture
  * - semantic tokens come from [RoslynTokensCache] while the solution loads, and the answers of a loaded server go into it;
  * - the answer of a rename of a type goes to [RoslynFileRename], which renames the file of the type as well;
  * - every request is timed into [RoslynRequestStats].
+ * - an answer to a question asked again in the same state of the workspace comes from [RoslynResponseMemo];
  * The hook (`LspClientManager.addLsp4jServerWrapper`) is `@Internal` in the platform.
  */
 @Suppress("UnstableApiUsage", "DEPRECATION")
@@ -47,8 +48,10 @@ class RoslynServerWrapper : Lsp4jServerWrapper {
         val project = lspServer.project
         val stats = project.service<RoslynRequestStats>()
         val tokens = CachedTokens(project, lspServer)
+        val memo = project.service<RoslynResponseMemo>().apply { invalidate() }
         val documents = proxy(TextDocumentService::class.java, lsp4jServer.textDocumentService) { method, arguments, proceed ->
             val argument = arguments.firstOrNull()
+            if (method.name in RoslynResponseMemo.CHANGES) memo.invalidate()
             when (method.name) {
                 "codeAction" -> (argument as? CodeActionParams)?.context?.diagnostics?.forEach(::dropUnknownTags)
                 "rename" -> (argument as? RenameParams)?.let { params ->
@@ -72,15 +75,38 @@ class RoslynServerWrapper : Lsp4jServerWrapper {
                     }
                 }
             }
+            if (method.name in RoslynResponseMemo.CACHEABLE) remembered(memo, stats, method, arguments, proceed) else timed(stats, method, proceed)
+        }
+        val workspace = proxy(WorkspaceService::class.java, lsp4jServer.workspaceService) { method, _, proceed ->
+            if (method.name in RoslynResponseMemo.CHANGES) memo.invalidate()
             timed(stats, method, proceed)
         }
-        val workspace = proxy(WorkspaceService::class.java, lsp4jServer.workspaceService) { method, _, proceed -> timed(stats, method, proceed) }
         return proxy(RoslynServer::class.java, lsp4jServer) { method, _, proceed ->
             when (method.name) {
                 "getTextDocumentService" -> documents
                 "getWorkspaceService" -> workspace
-                else -> timed(stats, method, proceed)
+                // solution/open, project/open, initialize, shutdown: what the server knows changes
+                else -> {
+                    memo.invalidate()
+                    timed(stats, method, proceed)
+                }
             }
+        }
+    }
+
+    /** The answer of this generation if the same question has been asked already (see [RoslynResponseMemo]), otherwise the server's, kept. */
+    private fun remembered(memo: RoslynResponseMemo, stats: RoslynRequestStats, method: Method, arguments: Array<out Any?>, proceed: () -> Any?): Any? {
+        val adapter = RoslynResponseMemo.adapter(method) ?: return timed(stats, method, proceed)
+        val key = RoslynResponseMemo.key(lspName(method), arguments)
+        memo.get(key)?.let { json ->
+            runCatching { adapter.fromJson(json) }.onSuccess { copy ->
+                stats.record(lspName(method), 0.0, fromCache = true)
+                return CompletableFuture.completedFuture(copy)
+            }
+        }
+        val askedIn = memo.current
+        return timed(stats, method, proceed).also { future ->
+            (future as? CompletableFuture<*>)?.thenAccept { answer -> runCatching { memo.put(key, askedIn, adapter.toJson(answer)) } }
         }
     }
 
