@@ -50,6 +50,11 @@
 - [x] Окно NuGet: вкладка Sources (фиды всех уровней `nuget.config`, добавить / удалить / включить / выключить, ссылки на файлы конфигурации) и вкладка Log (команды `dotnet` и их вывод)
 - [x] Потоковый вывод команд `dotnet`: NuGet — построчно во вкладку Log; создание проектов, `dotnet sln`, EF, шаблоны, конвертация — задачами в Build tool window (окно открывается само только при ошибке), отмена прогресса убивает процесс
 - [x] Карточка пакета по образцу Rider (шапка, Version с кнопками «во все проекты», сворачиваемые Info и Dependencies со сводкой, список проектов с кнопками-иконками), однотонная иконка окна для обеих тем и нового UI
+- [x] Кнопки-иконки окна NuGet срабатывают надёжно (2026-09-22, по сообщению пользователя «кнопки установки ничего не делают»): были на `mouseClicked`,
+  а Swing не шлёт это событие, если между нажатием и отпусканием мышь сдвинулась хотя бы на пиксель или кнопку успела пересоздать перерисовка
+  карточки (версии, nuspec, выбор версии). Теперь платформенный `ClickListener` (нажатие + отпускание с допуском), двойной клик не устанавливает
+  дважды; «+» в строке списка при области Solution больше не молчит, а открывает карточку пакета со списком проектов. Проверено в живой IDE
+  событиями «нажатие и отпускание со сдвигом, без клика»: пакет ставится
 - [x] Диалог фида как в Rider (New / Edit): Name, URL, User, Password, Enabled, Allow insecure connections, Disable TLS certificate validation; учётные данные — в `nuget.config` через CLI и в хранилище паролей IDE для поиска по приватным фидам; пароли замаскированы в логах и прогрессе
 - [ ] Окно NuGet: README пакета, правка версий в `Directory.Packages.props` при CPM, выбор файла конфигурации для нового фида (сейчас — куда пишет CLI, т.е. пользовательский)
 - [ ] Устаревшие и уязвимые пакеты (`dotnet list package --outdated --vulnerable --format json`)
@@ -60,7 +65,7 @@
 - [ ] Тесты: результаты по мере выполнения, а не после завершения (свой VSTest-логгер или протокол Microsoft.Testing.Platform)
 
 ## Заход 4 — проект и окружение
-- [x] Настройки инструментов на той же странице: пути к `dotnet-counters`, `dotnet-stack`, `dotnet-gcdump`, `upgrade-assistant` (пусто — PATH и `~/.dotnet/tools`), кнопка Install / Update у каждого
+- [x] Настройки инструментов на той же странице: пути к `dotnet-counters`, `dotnet-stack`, `dotnet-gcdump`, `dotnet-dump`, `upgrade-assistant` (пусто — PATH и `~/.dotnet/tools`), кнопка Install / Update у каждого
 - [x] Страницы настроек по образцу Rider, дочерние к Settings | Tools | .NET, опция в опцию; то, за чем у плагина пока ничего нет, показано выключенным с замком и причиной в подсказке (`settings/RiderSettingsUi.kt`):
   - **Toolset and Build** (на проект, workspace): MSBuild global properties (`-p:` для build / rebuild / clean / restore, `--property:` для run), Run build after solution is loaded, Restore NuGet packages before build (`--no-restore`), число процессов (`-m:N`), verbosity вывода, лог MSBuild в файл (`-fl -flp:`, папка, verbosity). Замок: Mono, версия MSBuild, авто-загрузка SDK, ReSharper Build, targets пропущенных проектов, design-time build
   - **NuGet** (на машину): Include prerelease (начальное состояние чекбокса окна и Upgrade Packages), автоматический restore после изменения `*.csproj` / `Directory.Packages.props` / `nuget.config` (в Log окна NuGet), Smart Restore on Build (`--no-restore`, пока `project.assets.json` новее всего, что решает состав пакетов), `--no-cache`, `--interactive`. Замок: unlisted, blob-фиды, dependency behavior, file conflict, uninstall-опции, restore engine, формат пакетов, credential providers
@@ -110,7 +115,16 @@
 - [x] ★ Thread Dump в .NET Monitor (`dotnet-stack report`): потоки с кодом приложения наверху, одинаковые стеки свёрнуты, кадры проекта кликабельны (тип ищется по имени файла, метод — в файле; async, лямбды, конструкторы разворачиваются в исходные имена)
 - [x] ★ Heap Snapshot в .NET Monitor (`dotnet-gcdump report`): куча по типам (объекты, байты), фильтр, сравнение с любым более ранним снимком того же процесса — Δ объектов и Δ байт, поиск утечек
 - [ ] `dotnet-trace`: запись трассы, просмотр flame graph (speedscope во встроенном браузере)
-- [ ] `dotnet-dump`: снятие полного дампа, таблицы `dumpheap -stat`, `clrstack`, `gcroot`; сохранение `.gcdump` в файл; пути удержания объекта
+- [x] ★ Memory Dump в .NET Monitor (`dotnet-dump`, проверено UI-роботом 2026-09-22 на сценарии `leak` из `debug-playground`), аналог «кто держит объект» из dotMemory:
+  дамп `--type Heap` (процесс не останавливается, секунды), один `dotnet-dump analyze` держится открытым на всё время диалога (команды — миллисекунды);
+  типы кучи с фильтром → объекты типа (первая 1000) → для объекта пути удержания (`gcroot`: корень — handle / локальная кадра / очередь финализации,
+  дальше объект за объектом), поля (`dumpobj`, ссылка открывается двойным кликом, Back) и сколько он удерживает (`objsize`); вкладка SOS Console —
+  любая команда (`dumpasync`, `syncblk`, `clrstack -all`, `finalizequeue`…); Save Dump As… (открывается в VS / WinDbg / PerfView). Дамп лежит во
+  временном каталоге IDE и удаляется при закрытии. Факты пробы: без терминала `analyze` завершает ответ строкой `<END_COMMAND_OUTPUT>` (ошибку —
+  `<END_COMMAND_ERROR>`), приглашения нет; подпись `static variable: …` у шага `gcroot` — догадка SOS, бывает не про то поле, показывается как есть
+- [ ] Memory Dump, дальше: сравнение двух дампов по типам (как у Heap Snapshot), тип поля вместо усечённого `...CoreLib]]`, группировка одинаковых путей
+  удержания; сохранение `.gcdump` Heap Snapshot в файл; график поколений GC (gen0/1/2/LOH/POH); retained size и дерево доминаторов — только своим
+  помощником на ClrMD (отдельное архитектурное решение)
 
 ### Качество кода силами компилятора
 - [x] Покрытие тестов: `--collect:"XPlat Code Coverage"` (coverlet) → Cobertura → полосы на полях редактора (покрыто / частично / нет), сводка по файлам в окне «.NET Coverage»

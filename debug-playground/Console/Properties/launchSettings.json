@@ -35,5 +35,9 @@
       "commandName": "Project",
       "commandLineArgs": "input"
     },
+    "Leak": {
+      "commandName": "Project",
+      "commandLineArgs": "leak"
+    },
   }
 }

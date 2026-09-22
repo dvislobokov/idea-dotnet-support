@@ -20,6 +20,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.wm.ToolWindowManager
+import com.intellij.ui.ClickListener
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.JBSplitter
 import com.intellij.ui.ScrollPaneFactory
@@ -146,9 +147,13 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
         list.selectionMode = ListSelectionModel.SINGLE_SELECTION
         list.cellRenderer = RowRenderer()
         list.fixedCellHeight = JBUI.scale(ROW_HEIGHT)
-        list.addMouseListener(object : MouseAdapter() {
-            override fun mouseClicked(e: MouseEvent) = rowActionAt(e)?.invoke() ?: Unit
-        })
+        object : ClickListener() {
+            override fun onClick(event: MouseEvent, clickCount: Int): Boolean {
+                val action = rowActionAt(event) ?: return false
+                if (clickCount == 1) action()
+                return true
+            }
+        }.installOn(list)
         list.addMouseMotionListener(object : MouseAdapter() {
             override fun mouseMoved(e: MouseEvent) {
                 list.cursor = java.awt.Cursor.getPredefinedCursor(if (rowActionAt(e) != null) java.awt.Cursor.HAND_CURSOR else java.awt.Cursor.DEFAULT_CURSOR)
@@ -294,9 +299,12 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
         }
     }
 
-    /** "+" installs into the project of the scope; for the solution scope the projects are chosen in the card. */
-    private fun primaryInstall(row: Row.Package): (() -> Unit)? {
-        val target = (scopeCombo.selectedItem as? Scope)?.file ?: return null
+    /**
+     * "+" installs into the project of the scope. For the solution scope the projects are chosen in the card: "+" opens it (it used to do nothing
+     * there, which read as a broken button).
+     */
+    private fun primaryInstall(row: Row.Package): () -> Unit {
+        val target = (scopeCombo.selectedItem as? Scope)?.file ?: return { list.setSelectedValue(row, true) }
         return { install(row, listOf(target), row.latest ?: row.found?.version) }
     }
 
@@ -496,9 +504,7 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
             append(title, SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES)
             if (!expanded && summary.isNotBlank()) append("  $summary", SimpleTextAttributes.REGULAR_ATTRIBUTES)
             cursor = java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR)
-            addMouseListener(object : MouseAdapter() {
-                override fun mouseClicked(e: MouseEvent) = toggle()
-            })
+            onSingleClick(this, toggle)
         }
 
     private fun wrappedText(text: String): JComponent = com.intellij.ui.components.JBTextArea(text).apply {
@@ -515,11 +521,20 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
             if (enabled) {
                 toolTipText = tooltip
                 cursor = java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR)
-                addMouseListener(object : MouseAdapter() {
-                    override fun mouseClicked(e: MouseEvent) = action()
-                })
+                onSingleClick(this, action)
             }
         }
+
+    /**
+     * A click by press and release, as [ClickListener] counts it: `mouseClicked` of Swing does not come when the mouse moves by a pixel between the
+     * two, which made the buttons of the card look dead (reported). A double click is one action: an install must not run twice.
+     */
+    private fun onSingleClick(component: JComponent, action: () -> Unit) = object : ClickListener() {
+        override fun onClick(event: MouseEvent, clickCount: Int): Boolean {
+            if (clickCount == 1) action()
+            return true
+        }
+    }.installOn(component)
 
     /**
      * Every project of the solution: name on the left, the installed version in a column that starts in the middle,

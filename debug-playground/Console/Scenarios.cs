@@ -8,7 +8,7 @@ namespace Playground;
 /// </summary>
 public static class Scenarios
 {
-    /// <summary>Run without arguments. The rest (evil, crash, wait, input) are asked for by name: they hang, crash, never end or wait for input.</summary>
+    /// <summary>Run without arguments. The rest (evil, crash, wait, input, leak) are asked for by name: they hang, crash, never end or wait for input.</summary>
     public static readonly string[] Safe =
         ["variables", "collections", "strings", "expensive", "setvalue", "stepping", "library", "closures", "exceptions", "async", "threads", "environment", "output"];
 
@@ -33,6 +33,7 @@ public static class Scenarios
             case "crash": Crash(); break;
             case "wait": Wait(); break;
             case "input": Input(); break;
+            case "leak": Leak(); break;
             default: Console.WriteLine($"Unknown scenario '{name}'"); break;
         }
     }
@@ -233,6 +234,22 @@ public static class Scenarios
         Console.Write("Your name: ");
         var name = Console.ReadLine();
         Console.WriteLine($"Hello, {name}! ({name?.Length ?? -1} chars)"); // BP:input — type «Ада» in the console: the stop shows name = "Ада", the output below it too
+    }
+
+    /// <summary>
+    /// `leak`: memory that only grows, for the .NET Monitor (Heap Snapshot, Memory Dump). Two classic leaks: a static cache nobody trims, and
+    /// subscribers of a static event that are never unsubscribed (the event holds them). Every second: 200 orders, one subscriber.
+    /// </summary>
+    private static void Leak()
+    {
+        Console.WriteLine($"Process id {Environment.ProcessId}; take snapshots a few seconds apart and compare them.");
+        for (var second = 0; ; second++)
+        {
+            for (var i = 0; i < 200; i++) LeakyCache.Remember(new CachedOrder(second * 200 + i, $"order-{second}-{i}", new byte[1024]));
+            _ = new PriceWatcher($"watcher-{second}"); // subscribes itself to PriceFeed.Changed and is never unsubscribed
+            Thread.Sleep(1000);
+            if (second % 10 == 0) Console.WriteLine($"{LeakyCache.Count} orders, {PriceFeed.Subscribers} watchers");
+        }
     }
 
     /// <summary>`crash`: an unhandled exception. Known gap of the adapter: it does not stop here and reports exit code 0.</summary>

@@ -102,9 +102,14 @@ class MonitorPanel(private val project: Project, parent: Disposable) : JPanel(Bo
             toolTipText = "Objects of the managed heap by type (dotnet-gcdump); the process runs a full garbage collection"
             addActionListener { session?.let { Diagnostics.heapSnapshot(project, it.applicationPid, it.target.title) } }
         }
+        val memoryDump = JButton("Memory Dump").apply {
+            toolTipText = "A dump of the process memory (dotnet-dump): objects of a type, who holds each of them, their fields"
+            addActionListener { session?.let { MemoryDumps.take(project, it.applicationPid, it.target.title) } }
+        }
         val snapshots = JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(6), 0)).apply {
             add(threadDump)
             add(heapSnapshot)
+            add(memoryDump)
             add(allProcesses)
         }
         val notes = JPanel(FlowLayout(FlowLayout.LEFT, JBUI.scale(6), 0)).apply {

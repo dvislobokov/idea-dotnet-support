@@ -5,14 +5,15 @@ Solution для живой проверки отладчика плагина (�
 
 | Проект | Зачем |
 |---|---|
-| `Console` | сценарии по одному на проверку (`Scenarios.cs`), точка входа — top-level statements. Без аргументов идут все безопасные сценарии; `evil`, `crash`, `wait`, `input` — только по имени (профили `launchSettings.json`) |
+| `Console` | сценарии по одному на проверку (`Scenarios.cs`), точка входа — top-level statements. Без аргументов идут все безопасные сценарии; `evil`, `crash`, `wait`, `input`, `leak` — только по имени (профили `launchSettings.json`) |
 | `Lib` | код другого проекта solution: шаг в него, точка останова в нём, сопоставление путей |
 | `Web` | ASP.NET Core: профили `http` / `https` / `no browser`, `launchBrowser`, `launchUrl`, переменные профиля, точка останова в обработчике |
 | `MultiTarget` | `net9.0;net10.0`: отладчик запускает фреймворк, выбранный в тулбаре (или первый при «Default») |
 | `Tests` | xUnit: отладка тестов (`BP:test`, `BP:theory`) |
 | `Broken` | не компилируется, **в solution не входит** (ломал бы Build Solution): конфигурацию «.NET Project» для `Broken.csproj` создать руками |
 
-Профили `Console`: `All` (всё безопасное), `Launch` (аргументы и окружение), `Threads`, `Evil`, `Crash`, `Wait`, `Input` (ввод с консоли).
+Профили `Console`: `All` (всё безопасное), `Launch` (аргументы и окружение), `Threads`, `Evil`, `Crash`, `Wait`, `Input` (ввод с консоли),
+`Leak` (память растёт: статический кэш и подписчики статического события — для .NET Monitor).
 
 ## Чек-лист
 
@@ -72,6 +73,13 @@ Solution для живой проверки отладчика плагина (�
 - [ ] точка в цикле `Wait` срабатывает; Stop отсоединяет — программа продолжает печатать `tick`, в том числе если Stop нажат на точке останова
 - [ ] `Tests/PricingTests.cs`: Debug у ▶ возле теста → остановка на `BP:test` (без промежуточной остановки во внешнем коде), F7 в `Lib`; Resume → тест зелёный, сессия закрывается сама
 - [ ] `BP:theory` — остановка на каждую строку `InlineData`; окно Unit Tests → «Debug Selected Tests»
+
+### .NET Monitor — Memory Dump (2026-09-22 пройден UI-роботом, кроме Save Dump As и перехода по полям двойным кликом)
+- [ ] `Console: Leak` через Run; окно .NET Monitor → Memory Dump → диалог «Memory of …» за секунды; фильтр `PriceWatcher` → объекты типа;
+      Who Holds It: strong handle → `System.Object[]` → `EventHandler<Decimal>` → … → `PriceWatcher`; у объекта «keeps alive …»
+- [ ] `CachedOrder`: путь через `Dictionary<Int32, CachedOrder>` и его `Entry[]`; Fields: двойной клик по `<Name>k__BackingField` открывает строку, Back возвращает
+- [ ] SOS Console: `dumpheap -stat -type Playground`, `syncblk`, `clrstack -all`; неизвестная команда — ошибка текстом SOS
+- [ ] Close → в `<tmp IDE>/dotnet-dumps` файла нет, процесса `dotnet-dump` нет; Save Dump As… сохраняет `.dmp`
 
 ### Слой 5 — полировка (2026-09-22 пройден UI-роботом, кроме контекстного меню редактора на глаз)
 - [ ] `Console: Input`: в консоли отладки `Your name: `, набрать `Ада` + Enter → остановка на `BP:input`, `name = "Ада"`, `name.Length = 3`;

@@ -38,6 +38,42 @@ public class ThrowingProperty
     public int Value => throw new InvalidOperationException("getter failed");
 }
 
+// ---------------------------------------------------------------- the `leak` scenario: who holds these objects is what Memory Dump answers
+
+public record CachedOrder(int Id, string Name, byte[] Payload);
+
+/// <summary>A cache without eviction: a static dictionary is a GC root, everything in it lives forever.</summary>
+public static class LeakyCache
+{
+    private static readonly Dictionary<int, CachedOrder> Orders = new();
+
+    public static void Remember(CachedOrder order) => Orders[order.Id] = order;
+    public static int Count => Orders.Count;
+}
+
+public static class PriceFeed
+{
+    public static event EventHandler<decimal>? Changed;
+    public static int Subscribers => Changed?.GetInvocationList().Length ?? 0;
+}
+
+/// <summary>Subscribes in the constructor and never unsubscribes: the static event keeps every watcher alive.</summary>
+public class PriceWatcher
+{
+    private readonly string _name;
+    private readonly List<decimal> _history = new();
+
+    public PriceWatcher(string name)
+    {
+        _name = name;
+        PriceFeed.Changed += OnChanged;
+    }
+
+    private void OnChanged(object? sender, decimal price) => _history.Add(price);
+
+    public override string ToString() => _name;
+}
+
 public class EndlessGetter
 {
     public int Forever

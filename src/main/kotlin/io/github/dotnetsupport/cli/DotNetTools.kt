@@ -46,6 +46,7 @@ enum class DotNetTool(val packageId: String, val purpose: String, val documentat
     COUNTERS("dotnet-counters", ".NET Monitor: GC, allocations, requests, exceptions", "https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-counters"),
     STACK("dotnet-stack", ".NET Monitor: Thread Dump", "https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-stack"),
     GCDUMP("dotnet-gcdump", ".NET Monitor: Heap Snapshot", "https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-gcdump"),
+    DUMP("dotnet-dump", ".NET Monitor: Memory Dump, who holds an object", "https://learn.microsoft.com/dotnet/core/diagnostics/dotnet-dump"),
     UPGRADE_ASSISTANT("upgrade-assistant", "Analyze Upgrade to Newer .NET", "https://learn.microsoft.com/dotnet/core/porting/upgrade-assistant-overview"),
 
     // the package and the command it installs are named differently
