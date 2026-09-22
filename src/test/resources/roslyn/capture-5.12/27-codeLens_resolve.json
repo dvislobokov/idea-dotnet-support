@@ -1,0 +1,53 @@
+{
+ "method": "codeLens/resolve",
+ "params": {
+  "range": {
+   "start": {
+    "line": 254,
+    "character": 16
+   },
+   "end": {
+    "line": 254,
+    "character": 19
+   }
+  },
+  "data": {
+   "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+   "ListIndex": 33,
+   "TextDocument": {
+    "uri": "file:///c:/playground/Console/Scenarios.cs"
+   }
+  }
+ },
+ "ms": 14.1,
+ "result": {
+  "range": {
+   "start": {
+    "line": 254,
+    "character": 16
+   },
+   "end": {
+    "line": 254,
+    "character": 19
+   }
+  },
+  "command": {
+   "title": "0 references",
+   "command": "roslyn.client.peekReferences",
+   "arguments": [
+    "file:///c:/playground/Console/Scenarios.cs",
+    {
+     "line": 254,
+     "character": 16
+    }
+   ]
+  },
+  "data": {
+   "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+   "ListIndex": 33,
+   "TextDocument": {
+    "uri": "file:///c:/playground/Console/Scenarios.cs"
+   }
+  }
+ }
+}

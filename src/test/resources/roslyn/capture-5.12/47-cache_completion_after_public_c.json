@@ -1,0 +1,226 @@
+{
+ "method": "textDocument/completion",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "position": {
+   "line": 250,
+   "character": 12
+  },
+  "context": {
+   "triggerKind": 1
+  }
+ },
+ "ms": 49.1,
+ "result": {
+  "isIncomplete": true,
+  "itemDefaults": {
+   "commitCharacters": [
+    " ",
+    "{",
+    "}",
+    "[",
+    "]",
+    "(",
+    ")",
+    ".",
+    ",",
+    ":",
+    ";",
+    "+",
+    "-",
+    "*",
+    "/",
+    "%",
+    "&",
+    "|",
+    "^",
+    "!",
+    "~",
+    "=",
+    "<",
+    ">",
+    "?",
+    {
+     "_truncated": 5
+    }
+   ],
+   "editRange": {
+    "start": {
+     "line": 250,
+     "character": 11
+    },
+    "end": {
+     "line": 250,
+     "character": 12
+    }
+   },
+   "data": {
+    "ResultId": 3,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  "items": [
+   {
+    "label": "char",
+    "kind": 14,
+    "sortText": "0000",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "class",
+    "kind": 14,
+    "sortText": "0001",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "closed",
+    "kind": 14,
+    "sortText": "0002",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "const",
+    "kind": 14,
+    "sortText": "0003",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "CancellationToken",
+    "kind": 22,
+    "sortText": "0004",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "CancellationTokenRegistration",
+    "kind": 22,
+    "sortText": "0005",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "CancellationTokenSource",
+    "kind": 7,
+    "sortText": "0006",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "CannotUnloadAppDomainException",
+    "kind": 7,
+    "sortText": "0007",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "CaptureCircle",
+    "kind": 7,
+    "sortText": "0008",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "CaptureShapeBase",
+    "kind": 7,
+    "sortText": "0009",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "CaptureSquare",
+    "kind": 7,
+    "sortText": "0010",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Char",
+    "kind": 22,
+    "sortText": "0011",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "CharEnumerator",
+    "kind": 7,
+    "sortText": "0012",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ClientCertificateOption",
+    "kind": 13,
+    "sortText": "0013",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "CLSCompliantAttribute",
+    "kind": 7,
+    "sortText": "0014",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "CollectionExtensions",
+    "kind": 7,
+    "sortText": "0015",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Color",
+    "kind": 13,
+    "sortText": "0016",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Comparer<>",
+    "kind": 7,
+    "sortText": "0017Comparer",
+    "filterText": "Comparer",
+    "insertTextFormat": 1,
+    "textEditText": "Comparer"
+   },
+   {
+    "label": "Comparison<>",
+    "kind": 7,
+    "sortText": "0018Comparison",
+    "filterText": "Comparison",
+    "insertTextFormat": 1,
+    "textEditText": "Comparison"
+   },
+   {
+    "label": "CompressedStack",
+    "kind": 7,
+    "sortText": "0019",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ConcurrentExclusiveSchedulerPair",
+    "kind": 7,
+    "sortText": "0020",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ConditionalAttribute",
+    "kind": 7,
+    "sortText": "0021",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ConfigureAwaitOptions",
+    "kind": 13,
+    "sortText": "0022",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Console",
+    "kind": 7,
+    "sortText": "0023",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ConsoleCancelEventArgs",
+    "kind": 7,
+    "sortText": "0024",
+    "insertTextFormat": 1
+   },
+   {
+    "_truncated": 975
+   }
+  ]
+ }
+}

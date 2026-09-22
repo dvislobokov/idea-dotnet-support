@@ -1,0 +1,7 @@
+bin/
+obj/
+logs/
+tools/
+__pycache__/
+t/*#1*/
+compare.txt

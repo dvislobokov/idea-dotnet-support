@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<list>
+    <option name="CSHARP_KEYWORD">
+        <value><option name="FOREGROUND" value="6C95EB"/></value>
+    </option>
+    <option name="CSHARP_TYPE">
+        <value><option name="FOREGROUND" value="C191FF"/></value>
+    </option>
+    <option name="CSHARP_METHOD">
+        <value><option name="FOREGROUND" value="39CC9B"/></value>
+    </option>
+    <option name="CSHARP_MEMBER">
+        <value><option name="FOREGROUND" value="66C3CC"/></value>
+    </option>
+    <option name="CSHARP_STRING">
+        <value><option name="FOREGROUND" value="C9A26D"/></value>
+    </option>
+    <option name="CSHARP_NUMBER">
+        <value><option name="FOREGROUND" value="ED94C0"/></value>
+    </option>
+    <option name="CSHARP_LINE_COMMENT">
+        <value><option name="FOREGROUND" value="85C46C"/></value>
+    </option>
+    <option name="CSHARP_BLOCK_COMMENT">
+        <value><option name="FOREGROUND" value="85C46C"/></value>
+    </option>
+    <option name="CSHARP_DOC_COMMENT">
+        <value><option name="FOREGROUND" value="85C46C"/></value>
+    </option>
+    <option name="CSHARP_PREPROCESSOR">
+        <value><option name="FOREGROUND" value="6C95EB"/></value>
+    </option>
+</list>

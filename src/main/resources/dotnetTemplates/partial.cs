@@ -1,0 +1,3 @@
+${MODIFIERS}partial ${KIND} ${NAME}
+{
+}

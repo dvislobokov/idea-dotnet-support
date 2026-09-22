@@ -1,0 +1,489 @@
+{
+ "method": "textDocument/codeLens",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  }
+ },
+ "ms": 13.8,
+ "result": [
+  {
+   "range": {
+    "start": {
+     "line": 8,
+     "character": 20
+    },
+    "end": {
+     "line": 8,
+     "character": 29
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 0,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 11,
+     "character": 36
+    },
+    "end": {
+     "line": 11,
+     "character": 40
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 1,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 14,
+     "character": 29
+    },
+    "end": {
+     "line": 14,
+     "character": 32
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 2,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 40,
+     "character": 24
+    },
+    "end": {
+     "line": 40,
+     "character": 33
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 3,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 62,
+     "character": 24
+    },
+    "end": {
+     "line": 62,
+     "character": 35
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 4,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 75,
+     "character": 24
+    },
+    "end": {
+     "line": 75,
+     "character": 31
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 5,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 83,
+     "character": 24
+    },
+    "end": {
+     "line": 83,
+     "character": 33
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 6,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 90,
+     "character": 24
+    },
+    "end": {
+     "line": 90,
+     "character": 32
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 7,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 104,
+     "character": 24
+    },
+    "end": {
+     "line": 104,
+     "character": 32
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 8,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 112,
+     "character": 26
+    },
+    "end": {
+     "line": 112,
+     "character": 31
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 9,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 118,
+     "character": 23
+    },
+    "end": {
+     "line": 118,
+     "character": 30
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 10,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 120,
+     "character": 24
+    },
+    "end": {
+     "line": 120,
+     "character": 31
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 11,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 127,
+     "character": 24
+    },
+    "end": {
+     "line": 127,
+     "character": 32
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 12,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 136,
+     "character": 36
+    },
+    "end": {
+     "line": 136,
+     "character": 43
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 13,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 144,
+     "character": 24
+    },
+    "end": {
+     "line": 144,
+     "character": 34
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 14,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 165,
+     "character": 30
+    },
+    "end": {
+     "line": 165,
+     "character": 35
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 15,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 173,
+     "character": 35
+    },
+    "end": {
+     "line": 173,
+     "character": 42
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 16,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 179,
+     "character": 24
+    },
+    "end": {
+     "line": 179,
+     "character": 31
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 17,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 198,
+     "character": 24
+    },
+    "end": {
+     "line": 198,
+     "character": 47
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 18,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 211,
+     "character": 24
+    },
+    "end": {
+     "line": 211,
+     "character": 30
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 19,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 222,
+     "character": 24
+    },
+    "end": {
+     "line": 222,
+     "character": 28
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 20,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 229,
+     "character": 24
+    },
+    "end": {
+     "line": 229,
+     "character": 29
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 21,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 232,
+     "character": 24
+    },
+    "end": {
+     "line": 232,
+     "character": 28
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 22,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 243,
+     "character": 17
+    },
+    "end": {
+     "line": 243,
+     "character": 30
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 23,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "range": {
+    "start": {
+     "line": 243,
+     "character": 40
+    },
+    "end": {
+     "line": 243,
+     "character": 44
+    }
+   },
+   "data": {
+    "SyntaxVersion": "2026-09-21T20:28:46.0704598Z-10086-0",
+    "ListIndex": 24,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "_truncated": 9
+  }
+ ]
+}

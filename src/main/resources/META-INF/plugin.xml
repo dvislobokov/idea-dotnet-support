@@ -1,0 +1,360 @@
+<idea-plugin>
+    <id>io.github.dotnetsupport</id>
+    <name>C# Project Support</name>
+    <vendor>dvislobokov</vendor>
+
+    <description><![CDATA[
+        Basic support for C# / .NET projects in IntelliJ-based IDEs:
+        <ul>
+            <li>Rider-like <b>Solution</b> view: solutions (.sln, .slnx), solution folders, projects and their dependencies</li>
+            <li>C# syntax highlighting, commenting, brace matching</li>
+            <li>MSBuild project files (.csproj, .props, .targets) are treated as XML</li>
+        </ul>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.xml</depends>
+
+    <!-- optional parts: a module is loaded only where its dependencies are (see the descriptor of the module next to META-INF) -->
+    <content>
+        <module name="io.github.dotnetsupport.roslyn"/>
+    </content>
+
+    <extensions defaultExtensionNs="io.github.dotnetsupport">
+        <processAttacher implementation="io.github.dotnetsupport.debugger.DotNetProcessAttacherImpl"/>
+    </extensions>
+
+    <extensionPoints>
+        <!-- who can attach a debugger to a .NET process: the module with the debugger, where it is loaded -->
+        <extensionPoint qualifiedName="io.github.dotnetsupport.processAttacher" interface="io.github.dotnetsupport.run.DotNetProcessAttacher" dynamic="true"/>
+    </extensionPoints>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType name="C#"
+                  implementationClass="io.github.dotnetsupport.lang.CSharpFileType"
+                  fieldName="INSTANCE"
+                  language="C#"
+                  extensions="cs;csx"/>
+        <fileType name="Visual Studio Solution"
+                  implementationClass="io.github.dotnetsupport.solution.SolutionFileType"
+                  fieldName="INSTANCE"
+                  extensions="sln"/>
+        <fileType name="Visual Studio Solution (XML)"
+                  implementationClass="io.github.dotnetsupport.solution.SolutionXmlFileType"
+                  language="XML"
+                  fieldName="INSTANCE"
+                  extensions="slnx"/>
+        <fileType name="MSBuild"
+                  implementationClass="io.github.dotnetsupport.msbuild.MsBuildFileType"
+                  language="XML"
+                  fieldName="INSTANCE"
+                  extensions="csproj;fsproj;vbproj;shproj;proj;props;targets"/>
+
+        <fileType name=".NET XML"
+                  implementationClass="io.github.dotnetsupport.msbuild.DotNetXmlFileType"
+                  language="XML"
+                  fieldName="INSTANCE"
+                  extensions="xaml;axaml;resx;nuspec;ruleset;runsettings;config"/>
+        <fileIconProvider implementation="io.github.dotnetsupport.DotNetFileIconProvider"/>
+
+        <lang.parserDefinition language="C#"
+                               implementationClass="io.github.dotnetsupport.lang.CSharpParserDefinition"/>
+        <lang.syntaxHighlighterFactory language="C#"
+                                       implementationClass="io.github.dotnetsupport.lang.CSharpSyntaxHighlighterFactory"/>
+        <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpIdentifierAnnotator"/>
+        <!-- on the declarations CSharpDeclarations finds by tokens -->
+        <lang.psiStructureViewFactory language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpStructureViewFactory"/>
+        <breadcrumbsInfoProvider implementation="io.github.dotnetsupport.lang.CSharpBreadcrumbsProvider"/>
+        <!-- a declaration is a named element only for navigation: renaming is the business of the language server -->
+        <vetoRenameCondition implementation="io.github.dotnetsupport.lang.CSharpRenameVeto"/>
+        <lang.foldingBuilder language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpFoldingBuilder"/>
+        <!-- TODO / FIXME in the comments of C#: the TODO tool window and the highlighting -->
+        <todoIndexer filetype="C#" implementationClass="io.github.dotnetsupport.lang.CSharpTodoIndexer"/>
+        <indexPatternBuilder implementation="io.github.dotnetsupport.lang.CSharpIndexPatternBuilder"/>
+        <fileBasedIndex implementation="io.github.dotnetsupport.lang.CSharpDeclarationIndex"/>
+        <gotoClassContributor implementation="io.github.dotnetsupport.lang.CSharpGotoClassContributor"/>
+        <gotoSymbolContributor implementation="io.github.dotnetsupport.lang.CSharpGotoSymbolContributor"/>
+        <!-- the compiler diagnostics of the last build, in the editor -->
+        <externalAnnotator language="C#" implementationClass="io.github.dotnetsupport.build.BuildProblemsAnnotator"/>
+        <defaultLiveTemplates file="/liveTemplates/CSharp.xml"/>
+        <liveTemplateContext contextId="CSHARP" implementation="io.github.dotnetsupport.lang.CSharpTemplateContext"/>
+        <liveTemplateMacro implementation="io.github.dotnetsupport.lang.CSharpTypeNameMacro"/>
+        <typedHandler implementation="io.github.dotnetsupport.lang.CSharpDocCommentTypedHandler"/>
+        <!-- indentation while typing, by the rules of resources/csharpIndent/rules.json; whole files are formatted by CSharpier / dotnet format -->
+        <lineIndentProvider implementation="io.github.dotnetsupport.lang.CSharpLineIndentProvider"/>
+        <typedHandler implementation="io.github.dotnetsupport.lang.CSharpBracketTypedHandler"/>
+        <enterHandlerDelegate order="first" implementation="io.github.dotnetsupport.lang.CSharpEnterAfterBraceHandler"/>
+        <enterHandlerDelegate implementation="io.github.dotnetsupport.lang.CSharpDocCommentEnterHandler"/>
+        <colorSettingsPage implementation="io.github.dotnetsupport.lang.CSharpColorSettingsPage"/>
+        <additionalTextAttributes scheme="Default" file="colorSchemes/CSharpDefault.xml"/>
+        <additionalTextAttributes scheme="Darcula" file="colorSchemes/CSharpDarcula.xml"/>
+        <lang.commenter language="C#"
+                        implementationClass="io.github.dotnetsupport.lang.CSharpCommenter"/>
+        <lang.braceMatcher language="C#"
+                           implementationClass="io.github.dotnetsupport.lang.CSharpBraceMatcher"/>
+        <lang.quoteHandler language="C#"
+                           implementationClass="io.github.dotnetsupport.lang.CSharpQuoteHandler"/>
+
+        <!-- MSBuild files: completion, documentation and checks from the schema of resources/msbuildSchema -->
+        <xml.tagNameProvider implementation="io.github.dotnetsupport.msbuild.MsBuildTagNameProvider"/>
+        <completion.contributor language="XML" order="first" implementationClass="io.github.dotnetsupport.msbuild.MsBuildCompletionContributor"/>
+        <completion.contributor language="XML" order="first" implementationClass="io.github.dotnetsupport.msbuild.MsBuildPackageCompletionContributor"/>
+        <annotator language="XML" implementationClass="io.github.dotnetsupport.msbuild.MsBuildAnnotator"/>
+        <lang.documentationProvider language="XML" order="first" implementationClass="io.github.dotnetsupport.msbuild.MsBuildDocumentationProvider"/>
+
+        <projectViewPane implementation="io.github.dotnetsupport.view.SolutionViewPane"/>
+        <projectViewNodeDecorator implementation="io.github.dotnetsupport.view.BuildOutputDecorator"/>
+        <projectViewNestingRulesProvider implementation="io.github.dotnetsupport.view.DotNetNestingRulesProvider"/>
+        <postStartupActivity implementation="io.github.dotnetsupport.view.SolutionViewActivator"/>
+        <postStartupActivity implementation="io.github.dotnetsupport.view.ToolWindowsSetup"/>
+        <notificationGroup id=".NET" displayType="BALLOON"/>
+        <projectConfigurable parentId="tools" id="io.github.dotnetsupport.settings" displayName=".NET"
+                             instance="io.github.dotnetsupport.settings.DotNetSettingsConfigurable"/>
+        <!-- the pages of Rider under Tools | .NET, with the options the plugin has something behind -->
+        <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.build" displayName="Toolset and Build"
+                             instance="io.github.dotnetsupport.build.DotNetBuildConfigurable"/>
+        <applicationConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.nuget" displayName="NuGet"
+                                 instance="io.github.dotnetsupport.nuget.NuGetSettingsConfigurable"/>
+        <applicationConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.coverage" displayName="Coverage"
+                                 instance="io.github.dotnetsupport.coverage.CoverageSettingsConfigurable"/>
+        <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.debugger" displayName="Debugger"
+                             instance="io.github.dotnetsupport.settings.DotNetDebuggerConfigurable"/>
+        <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.languageServer" displayName="Language Server"
+                             instance="io.github.dotnetsupport.lsp.RoslynLanguageServerConfigurable"/>
+        <langCodeStyleSettingsProvider implementation="io.github.dotnetsupport.lang.CSharpCodeStyleSettingsProvider"/>
+        <projectViewNodeDecorator implementation="io.github.dotnetsupport.coverage.CoverageProjectViewDecorator"/>
+        <postStartupActivity implementation="io.github.dotnetsupport.build.BuildAfterSolutionIsLoaded"/>
+        <postStartupActivity implementation="io.github.dotnetsupport.sdk.SdkCheckActivity"/>
+
+        <configurationType implementation="io.github.dotnetsupport.run.DotNetConfigurationType"/>
+        <consoleFilterProvider implementation="io.github.dotnetsupport.run.DotNetConsoleFilterProvider"/>
+        <console.folding implementation="io.github.dotnetsupport.run.DotNetStackTraceFolding"/>
+        <formattingService implementation="io.github.dotnetsupport.format.DotNetFormattingService"/>
+        <postStartupActivity implementation="io.github.dotnetsupport.run.DotNetRunConfigurationStartupActivity"/>
+        <runConfigurationProducer implementation="io.github.dotnetsupport.run.DotNetRunConfigurationProducer"/>
+        <runLineMarkerContributor language="C#"
+                                  implementationClass="io.github.dotnetsupport.run.MainMethodRunLineMarkerContributor"/>
+        <programRunner implementation="io.github.dotnetsupport.testing.DotNetTestRunner" order="first"/>
+        <!-- the debugger: the plugin's own DAP client on the XDebugger API, which every IDE has (the DAP module of the platform is
+             absent from IntelliJ IDEA Community and its forks) -->
+        <programRunner implementation="io.github.dotnetsupport.debugger.DotNetDebugRunner"/>
+        <xdebugger.breakpointType implementation="io.github.dotnetsupport.debugger.CSharpLineBreakpointType"/>
+        <xdebugger.breakpointType implementation="io.github.dotnetsupport.debugger.DotNetExceptionBreakpointType"/>
+        <xdebugger.attachDebuggerProvider implementation="io.github.dotnetsupport.debugger.DotNetAttachDebuggerProvider"/>
+        <!-- names of the stopped program in Evaluate, watches and breakpoint conditions; first, and it stops the others there -->
+        <completion.contributor language="C#" order="first" implementationClass="io.github.dotnetsupport.debugger.DotNetExpressionCompletionContributor"/>
+        <registryKey key="dotnet.debugger.adapter.log" defaultValue="true"
+                     description="Write the log of the dotnet-debugger adapter for every debug session (menu .NET | Show Debugger Logs)"/>
+        <registryKey key="dotnet.debugger.protocol.trace" defaultValue="false"
+                     description="Write every DAP message of the debug sessions next to the debugger logs (menu .NET | Trace Debugger Protocol)"/>
+        <stepsBeforeRunProvider implementation="io.github.dotnetsupport.run.BuildProjectBeforeRunTaskProvider"/>
+        <runConfigurationProducer implementation="io.github.dotnetsupport.testing.DotNetTestConfigurationProducer"/>
+        <runLineMarkerContributor language="C#"
+                                  implementationClass="io.github.dotnetsupport.testing.DotNetTestRunLineMarkerContributor"/>
+        <iconMapper mappingFile="DotNetIconMappings.json"/>
+        <!-- the id is not "Endpoints": IntelliJ IDEA has a tool window of its own with that id (Microservices), and the second
+             registration fails. The name on the stripe is still "Endpoints": the factory sets it. -->
+        <toolWindow id="DotNetEndpoints" anchor="bottom" icon="AllIcons.General.Web"
+                    factoryClass="io.github.dotnetsupport.endpoints.EndpointsToolWindowFactory"/>
+        <codeInsight.lineMarkerProvider language="C#" implementationClass="io.github.dotnetsupport.endpoints.EndpointLineMarkerProvider"/>
+        <toolWindow id="Unit Tests" anchor="bottom" canCloseContents="true" icon="/icons/unitTestsToolWindow.svg"
+                    factoryClass="io.github.dotnetsupport.testing.TestExplorerToolWindowFactory"/>
+        <toolWindow id="NuGet" anchor="bottom" icon="/icons/nugetToolWindow.svg"
+                    factoryClass="io.github.dotnetsupport.nuget.NuGetToolWindowFactory"/>
+        <toolWindow id=".NET Monitor" anchor="right" icon="/icons/monitorToolWindow.svg"
+                    factoryClass="io.github.dotnetsupport.monitor.MonitorToolWindowFactory"/>
+        <codeInsight.lineMarkerProvider language="C#" implementationClass="io.github.dotnetsupport.ef.EfLineMarkerProvider"/>
+        <toolWindow id="EF Core" anchor="bottom" icon="AllIcons.Nodes.DataTables"
+                    factoryClass="io.github.dotnetsupport.ef.EfToolWindowFactory"/>
+        <toolWindow id=".NET Coverage" anchor="right" secondary="true" icon="AllIcons.General.RunWithCoverage"
+                    factoryClass="io.github.dotnetsupport.coverage.CoverageToolWindowFactory"/>
+
+        <directoryProjectGenerator implementation="io.github.dotnetsupport.newproject.DotNetProjectGenerator"/>
+        <!-- The IDEA-family module wizard (incl. forks like GIGA IDE) reads this EP; the directoryProjectGenerator above serves the small IDEs' welcome dialog. -->
+        <newProjectWizard.generator implementation="io.github.dotnetsupport.newproject.DotNetNewProjectWizard"/>
+        <internalFileTemplate name="CSharp Class"/>
+        <internalFileTemplate name="CSharp Interface"/>
+        <internalFileTemplate name="CSharp Record"/>
+        <internalFileTemplate name="CSharp Struct"/>
+        <internalFileTemplate name="CSharp Enum"/>
+        <defaultTemplatePropertiesProvider implementation="io.github.dotnetsupport.templates.CSharpTemplatePropertiesProvider"/>
+    </extensions>
+
+    <actions>
+        <action id="DotNet.NewCSharpFile" class="io.github.dotnetsupport.templates.CreateCSharpFileAction">
+            <add-to-group group-id="NewGroup" anchor="first"/>
+        </action>
+
+        <group id="DotNet.NewItems" class="io.github.dotnetsupport.templates.NewDotNetItemGroup"
+               text=".NET" description="C#, ASP.NET, Razor, test, EF Core and configuration items" popup="true">
+            <add-to-group group-id="NewGroup" anchor="after" relative-to-action="DotNet.NewCSharpFile"/>
+        </group>
+
+        <group id="DotNet.SolutionViewPopup">
+            <separator/>
+            <group id="DotNet.AddToSolution" class="io.github.dotnetsupport.actions.AddToSolutionGroup"
+                   text="Add" popup="true" icon="AllIcons.General.Add">
+                <action id="DotNet.AddNewProject" class="io.github.dotnetsupport.actions.AddNewProjectToSolutionAction"
+                        text="New Project..."/>
+                <action id="DotNet.AddExistingProject" class="io.github.dotnetsupport.actions.AddExistingProjectAction"
+                        text="Existing Project..."/>
+                <action id="DotNet.NewSolutionFolder" class="io.github.dotnetsupport.actions.NewSolutionFolderAction"
+                        text="New Solution Folder..."/>
+                <action id="DotNet.AddProjectReference" class="io.github.dotnetsupport.actions.AddProjectReferenceAction"
+                        text="Project Reference..."/>
+            </group>
+            <action id="DotNet.EditProjectFile" class="io.github.dotnetsupport.actions.EditProjectFileAction" text="Edit Project File"
+                    icon="AllIcons.Actions.Edit" description="Open the .csproj of the project or the solution file in the editor"/>
+            <action id="DotNet.RunProject" class="io.github.dotnetsupport.run.RunSelectedProjectAction" text="Run Project"
+                    icon="AllIcons.Actions.Execute" description="Run the selected executable or test project"/>
+            <action id="DotNet.DebugProject" class="io.github.dotnetsupport.run.DebugSelectedProjectAction" text="Debug Project"
+                    icon="AllIcons.Actions.StartDebugger" description="Debug the selected executable project"/>
+            <action id="DotNet.BuildSelected" class="io.github.dotnetsupport.build.BuildSelected" text="Build"
+                    icon="AllIcons.Actions.Compile"/>
+            <action id="DotNet.RebuildSelected" class="io.github.dotnetsupport.build.RebuildSelected" text="Rebuild"/>
+            <action id="DotNet.ManageNuGet" class="io.github.dotnetsupport.nuget.ManageNuGetPackagesAction"
+                    text="Manage NuGet Packages..." icon="/icons/nuget.svg"/>
+            <group id="DotNet.EfCore" class="io.github.dotnetsupport.ef.EfCoreGroup" text="EF Core" popup="true">
+                <action id="DotNet.EfAddMigration" class="io.github.dotnetsupport.ef.EfAction$AddMigration" text="Add Migration..."
+                        description="dotnet ef migrations add"/>
+                <action id="DotNet.EfRemoveMigration" class="io.github.dotnetsupport.ef.EfAction$RemoveMigration" text="Remove Last Migration..."
+                        description="dotnet ef migrations remove"/>
+                <separator/>
+                <action id="DotNet.EfUpdateDatabase" class="io.github.dotnetsupport.ef.EfAction$UpdateDatabase" text="Update Database..."
+                        description="dotnet ef database update: apply the migrations, or revert to an earlier one"/>
+                <action id="DotNet.EfGenerateScript" class="io.github.dotnetsupport.ef.EfAction$GenerateScript" text="Generate SQL Script..."
+                        description="dotnet ef migrations script"/>
+                <action id="DotNet.EfDropDatabase" class="io.github.dotnetsupport.ef.EfAction$DropDatabase" text="Drop Database..."
+                        description="dotnet ef database drop, after showing which database it is"/>
+                <separator/>
+                <action id="DotNet.EfCreateBundle" class="io.github.dotnetsupport.ef.EfAction$CreateBundle" text="Create Migration Bundle..."
+                        description="dotnet ef migrations bundle: an executable that applies the migrations without the SDK and the sources"/>
+                <action id="DotNet.EfScaffold" class="io.github.dotnetsupport.ef.EfAction$ScaffoldDbContext" text="Scaffold DbContext from Database..."
+                        description="dotnet ef dbcontext scaffold: entity classes and a DbContext from an existing database"/>
+                <separator/>
+                <action id="DotNet.EfShowMigrations" class="io.github.dotnetsupport.ef.ShowEfToolWindowAction" text="Show Migrations"
+                        icon="AllIcons.Nodes.DataTables" description="The EF Core tool window: migrations of every DbContext with their status in the database"/>
+                <action id="DotNet.EfInstallTool" class="io.github.dotnetsupport.ef.InstallEfToolAction" text="Install or Update dotnet-ef"/>
+            </group>
+            <action id="DotNet.RunTestsWithCoverage" class="io.github.dotnetsupport.testing.RunTestsWithCoverageAction"
+                    text="Run Tests with Coverage" icon="AllIcons.General.RunWithCoverage"/>
+            <action id="DotNet.RunMsBuildTarget" class="io.github.dotnetsupport.build.RunMsBuildTargetAction"
+                    text="Run MSBuild Target..." icon="AllIcons.Nodes.Target"/>
+            <action id="DotNet.AnalyzeUpgrade" class="io.github.dotnetsupport.upgrade.AnalyzeUpgradeAction"
+                    text="Analyze Upgrade to Newer .NET..." description="Run the .NET Upgrade Assistant analysis: packages, project properties and APIs that block a newer target framework"/>
+            <action id="DotNet.FormatSelected" class="io.github.dotnetsupport.format.FormatSelectedAction" text="Format"
+                    description="Format the project or solution with the formatter of the repository: CSharpier or dotnet format"/>
+            <action id="DotNet.VerifyFormatting" class="io.github.dotnetsupport.format.VerifyFormattingAction" text="Verify Formatting"
+                    description="Check that everything is formatted, the way a CI does: csharpier check / dotnet format --verify-no-changes"/>
+            <action id="DotNet.CleanSelected" class="io.github.dotnetsupport.build.CleanSelected" text="Clean"/>
+            <action id="DotNet.ConvertToSlnx" class="io.github.dotnetsupport.actions.ConvertSolutionToSlnxAction"
+                    text="Convert to .slnx..."/>
+            <action id="DotNet.RemoveFromSolution" class="io.github.dotnetsupport.actions.RemoveProjectFromSolutionAction"
+                    text="Remove from Solution..."/>
+            <separator/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="WeighingNewGroup"/>
+        </group>
+
+        <action id="DotNet.InsertGuid" class="io.github.dotnetsupport.actions.InsertGuidAction"
+                text="Insert New GUID" description="Insert a new GUID at every caret">
+            <add-to-group group-id="GenerateGroup" anchor="last"/>
+        </action>
+
+        <action id="DotNet.BuildConfiguration" class="io.github.dotnetsupport.build.BuildConfigurationSelector"
+                text="Build Configuration" description="Configuration and target framework for build, run and tests">
+            <add-to-group group-id="MainToolbarRight" anchor="first"/>
+            <add-to-group group-id="NavBarToolBar" anchor="first"/>
+        </action>
+        <action id="DotNet.AnalyzeStackTrace" class="io.github.dotnetsupport.run.AnalyzeDotNetStackTraceAction"
+                text="Analyze .NET Stack Trace..." description="Paste a stack trace and navigate its frames"/>
+
+        <action id="DotNet.ShowAllFiles" class="io.github.dotnetsupport.view.ShowAllFilesAction"
+                text="Show All Files" description="Show bin, obj and the project files in the Solution view" icon="AllIcons.Actions.ToggleVisibility">
+            <add-to-group group-id="ProjectView.ToolWindow.SecondaryActions" anchor="first"/>
+            <!-- the eye of Rider in the title of the tool window; the action shows itself for the Solution view only -->
+            <add-to-group group-id="ProjectViewToolbar" anchor="first"/>
+        </action>
+
+        <!-- a menu of the main menu bar, next to Tools -->
+        <group id="DotNet.MainMenu" text=".NET" popup="true">
+            <reference ref="DotNet.RunProject"/>
+            <reference ref="DotNet.DebugProject"/>
+            <separator/>
+            <action id="DotNet.BuildSolution" class="io.github.dotnetsupport.build.BuildSolution" text="Build Solution"
+                    icon="AllIcons.Actions.Compile"/>
+            <action id="DotNet.RebuildSolution" class="io.github.dotnetsupport.build.RebuildSolution" text="Rebuild Solution"/>
+            <action id="DotNet.CleanSolution" class="io.github.dotnetsupport.build.CleanSolution" text="Clean Solution"/>
+            <action id="DotNet.BuildPerformance" class="io.github.dotnetsupport.build.BuildPerformanceAction"
+                    text="Measure Build Performance" description="Rebuild with the MSBuild performance summary: the slowest targets and tasks"/>
+            <separator/>
+            <group id="DotNet.NuGet" text="NuGet" popup="true" icon="/icons/nuget.svg">
+                <action id="DotNet.NuGet.QuickList" class="io.github.dotnetsupport.nuget.NuGetQuickListAction" text="NuGet Quick List"
+                        description="Popup with the NuGet actions">
+                    <keyboard-shortcut keymap="$default" first-keystroke="alt shift N"/>
+                </action>
+                <separator/>
+                <action id="DotNet.RestoreSolution" class="io.github.dotnetsupport.build.RestoreSolution" text="NuGet _Restore"
+                        icon="AllIcons.Actions.Download"/>
+                <action id="DotNet.NuGet.ForceRestore" class="io.github.dotnetsupport.nuget.NuGetForceRestoreAction" text="NuGet _Force Restore"
+                        icon="AllIcons.Actions.Download" description="dotnet restore --force --no-cache: resolve every dependency again"/>
+                <action id="DotNet.NuGet.OpenPackagesFolder" class="io.github.dotnetsupport.nuget.OpenNuGetPackagesFolderAction"
+                        text="Open 'packages' F_older" description="Open the global packages folder in the file manager"/>
+                <separator/>
+                <action id="DotNet.NuGet.ManageForSolution" class="io.github.dotnetsupport.nuget.ManageNuGetPackagesForSolutionAction"
+                        text="Manage NuGet Packages for Solution"/>
+                <separator/>
+                <action id="DotNet.NuGet.UpgradeSolution" class="io.github.dotnetsupport.nuget.UpgradePackagesInSolutionAction"
+                        text="Upgrade Packages in Solution" icon="AllIcons.Actions.Upload"
+                        description="Move every package of the solution to its latest stable version"/>
+                <separator/>
+                <action id="DotNet.NuGet.ShowToolWindow" class="io.github.dotnetsupport.nuget.ShowNuGetToolWindowAction" text="Show NuGet Tool Window"/>
+                <action id="DotNet.NuGet.ShowPackages" class="io.github.dotnetsupport.nuget.ShowNuGetPackagesAction" text="Show NuGet Packages"/>
+                <action id="DotNet.NuGet.ShowSources" class="io.github.dotnetsupport.nuget.ShowNuGetSourcesAction" text="Show NuGet Sources"/>
+                <action id="DotNet.NuGet.ShowFolders" class="io.github.dotnetsupport.nuget.ShowNuGetFoldersAction" text="Show NuGet Folders"/>
+                <action id="DotNet.NuGet.ShowLog" class="io.github.dotnetsupport.nuget.ShowNuGetLogAction" text="Show NuGet Log"/>
+                <separator/>
+                <action id="DotNet.NuGet.Settings" class="io.github.dotnetsupport.nuget.OpenNuGetConfigAction" text="NuGet Settings"
+                        icon="AllIcons.General.Settings" description="Open the nuget.config that applies to the solution"/>
+            </group>
+            <reference ref="DotNet.EfCore"/>
+            <separator/>
+            <action id="DotNet.NewProject" class="io.github.dotnetsupport.actions.NewDotNetProjectAction"
+                    text="New .NET Project..."/>
+            <action id="DotNet.Monitor" class="io.github.dotnetsupport.monitor.ShowMonitorAction"
+                    text="Monitor .NET Process" description="CPU, memory, GC, requests and exceptions of a running .NET process"/>
+            <action id="DotNet.Environment" class="io.github.dotnetsupport.sdk.DotNetEnvironmentAction"
+                    text=".NET on This Machine..." description="SDKs and runtimes with their support status, dotnet --info, global.json"/>
+            <reference ref="DotNet.FormatSelected"/>
+            <reference ref="DotNet.VerifyFormatting"/>
+            <reference ref="DotNet.AnalyzeUpgrade"/>
+            <reference ref="DotNet.InsertGuid"/>
+            <reference ref="DotNet.AnalyzeStackTrace"/>
+            <separator/>
+            <action id="DotNet.ShowPluginLogs" class="io.github.dotnetsupport.cli.ShowPluginLogsAction" text="Show Plugin Logs"
+                    description="Open ~/idea-dotnet-logs: every dotnet command of the plugin with its output, the logs of the debugger, the language server and the builds"/>
+            <action id="DotNet.Debugger.ShowLogs" class="io.github.dotnetsupport.debugger.ShowDebuggerLogsAction" text="Show Debugger Logs"
+                    description="Open the directory with the logs of the debug adapter and the traces of the protocol"/>
+            <action id="DotNet.Debugger.TraceProtocol" class="io.github.dotnetsupport.debugger.TraceDebuggerProtocolAction" text="Trace Debugger Protocol"
+                    description="Write every DAP message of the debug sessions that start from now on next to the debugger logs"/>
+            <!-- a diagnostic: is the LSP / DAP API of the platform there in this IDE and with this license -->
+            <action id="DotNet.PlatformApiProbe" class="io.github.dotnetsupport.probe.PlatformApiProbeAction"
+                    text="Probe Platform LSP / DAP API..." description="Check which LSP and DAP API of the platform this IDE has; the result can be copied as JSON"/>
+            <add-to-group group-id="MainMenu" anchor="after" relative-to-action="ToolsMenu"/>
+        </group>
+
+        <!-- Set Next Statement of Rider: next to Run to Cursor in the editor menu while debugging -->
+        <action id="DotNet.Debugger.SetNextStatement" class="io.github.dotnetsupport.debugger.SetNextStatementAction" text="Set Next Statement"
+                icon="AllIcons.Actions.Forward" description="Make the line under the caret the next one to run, without running the code in between">
+            <add-to-group group-id="EditorPopupMenuDebug" anchor="after" relative-to-action="ForceRunToCursor"/>
+        </action>
+    </actions>
+
+    <projectListeners>
+        <listener class="io.github.dotnetsupport.monitor.DotNetProcessStartListener"
+                  topic="com.intellij.execution.ExecutionListener"/>
+        <listener class="io.github.dotnetsupport.view.SolutionFilesListener"
+                  topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+        <listener class="io.github.dotnetsupport.nuget.NuGetAutoRestore$Listener"
+                  topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+    </projectListeners>
+</idea-plugin>

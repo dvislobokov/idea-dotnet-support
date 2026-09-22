@@ -1,0 +1,205 @@
+{
+ "method": "textDocument/foldingRange",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  }
+ },
+ "ms": 25.7,
+ "result": [
+  {
+   "startLine": 254,
+   "startCharacter": 21,
+   "endLine": 264,
+   "endCharacter": 5,
+   "kind": "implementation",
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 250,
+   "startCharacter": 4,
+   "endLine": 251,
+   "endCharacter": 46,
+   "kind": "comment",
+   "collapsedText": "/// <summary>Doc of Target."
+  },
+  {
+   "startLine": 248,
+   "startCharacter": 23,
+   "endLine": 265,
+   "endCharacter": 1,
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 235,
+   "startCharacter": 36,
+   "endLine": 239,
+   "endCharacter": 9,
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 232,
+   "startCharacter": 30,
+   "endLine": 240,
+   "endCharacter": 5,
+   "kind": "implementation",
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 222,
+   "startCharacter": 30,
+   "endLine": 226,
+   "endCharacter": 5,
+   "kind": "implementation",
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 211,
+   "startCharacter": 32,
+   "endLine": 217,
+   "endCharacter": 5,
+   "kind": "implementation",
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 198,
+   "startCharacter": 49,
+   "endLine": 209,
+   "endCharacter": 5,
+   "kind": "implementation",
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 189,
+   "startCharacter": 31,
+   "endLine": 193,
+   "endCharacter": 9,
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 181,
+   "startCharacter": 37,
+   "endLine": 185,
+   "endCharacter": 9,
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 179,
+   "startCharacter": 33,
+   "endLine": 194,
+   "endCharacter": 5,
+   "kind": "implementation",
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 173,
+   "startCharacter": 53,
+   "endLine": 177,
+   "endCharacter": 5,
+   "kind": "implementation",
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 165,
+   "startCharacter": 37,
+   "endLine": 171,
+   "endCharacter": 5,
+   "kind": "implementation",
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 159,
+   "startCharacter": 33,
+   "endLine": 162,
+   "endCharacter": 9,
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 155,
+   "startCharacter": 11,
+   "endLine": 158,
+   "endCharacter": 9,
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 150,
+   "startCharacter": 31,
+   "endLine": 153,
+   "endCharacter": 9,
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 146,
+   "startCharacter": 11,
+   "endLine": 149,
+   "endCharacter": 9,
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 144,
+   "startCharacter": 36,
+   "endLine": 163,
+   "endCharacter": 5,
+   "kind": "implementation",
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 136,
+   "startCharacter": 45,
+   "endLine": 140,
+   "endCharacter": 5,
+   "kind": "implementation",
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 127,
+   "startCharacter": 34,
+   "endLine": 134,
+   "endCharacter": 5,
+   "kind": "implementation",
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 120,
+   "startCharacter": 33,
+   "endLine": 125,
+   "endCharacter": 5,
+   "kind": "implementation",
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 112,
+   "startCharacter": 46,
+   "endLine": 116,
+   "endCharacter": 5,
+   "kind": "implementation",
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 104,
+   "startCharacter": 34,
+   "endLine": 110,
+   "endCharacter": 5,
+   "kind": "implementation",
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 95,
+   "startCharacter": 35,
+   "endLine": 98,
+   "endCharacter": 9,
+   "collapsedText": "..."
+  },
+  {
+   "startLine": 90,
+   "startCharacter": 34,
+   "endLine": 100,
+   "endCharacter": 5,
+   "kind": "implementation",
+   "collapsedText": "..."
+  },
+  {
+   "_truncated": 10
+  }
+ ]
+}

@@ -1,0 +1,842 @@
+{
+ "method": "(requests of the server)",
+ "result": [
+  {
+   "jsonrpc": "2.0",
+   "id": 3,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "7cd0e82b-afa0-40a1-b7b0-3ff7eeb8a9b3",
+      "method": "textDocument/diagnostic",
+      "registerOptions": {
+       "identifier": "NonLocal",
+       "interFileDependencies": true,
+       "workspaceDiagnostics": false
+      }
+     },
+     {
+      "id": "c92d20f9-ff13-4b6f-bbf7-d555afebf32b",
+      "method": "textDocument/diagnostic",
+      "registerOptions": {
+       "identifier": "XamlDiagnostics",
+       "interFileDependencies": true,
+       "workspaceDiagnostics": false
+      }
+     },
+     {
+      "id": "8a86185d-ce1b-4809-a6ba-1ef2fcaf0947",
+      "method": "textDocument/diagnostic",
+      "registerOptions": {
+       "identifier": "syntax",
+       "interFileDependencies": true,
+       "workspaceDiagnostics": false
+      }
+     },
+     {
+      "id": "f31c1b3b-691d-4f32-8b5b-49d6cb0fb8c3",
+      "method": "textDocument/diagnostic",
+      "registerOptions": {
+       "workDoneProgress": true,
+       "identifier": "HotReloadDiagnostics",
+       "interFileDependencies": true,
+       "workspaceDiagnostics": true
+      }
+     },
+     {
+      "id": "06a1f849-742e-4124-83a9-88d571d63e28",
+      "method": "textDocument/diagnostic",
+      "registerOptions": {
+       "identifier": "DocumentAnalyzerSemantic",
+       "interFileDependencies": true,
+       "workspaceDiagnostics": false
+      }
+     },
+     {
+      "id": "be7ce8fb-1570-45ac-ba42-2661a2adf05e",
+      "method": "textDocument/diagnostic",
+      "registerOptions": {
+       "identifier": "DocumentCompilerSemantic",
+       "interFileDependencies": true,
+       "workspaceDiagnostics": false
+      }
+     },
+     {
+      "id": "4af7463f-38f7-4a08-a184-f9666c527a69",
+      "method": "textDocument/diagnostic",
+      "registerOptions": {
+       "identifier": "DocumentAnalyzerSyntax",
+       "interFileDependencies": true,
+       "workspaceDiagnostics": false
+      }
+     },
+     {
+      "id": "89e75b31-07ce-4fd0-8f0e-32b64f656fe9",
+      "method": "textDocument/diagnostic",
+      "registerOptions": {
+       "workDoneProgress": true,
+       "identifier": "enc",
+       "interFileDependencies": true,
+       "workspaceDiagnostics": true
+      }
+     },
+     {
+      "id": "f91a0dc3-e8ea-46dc-845c-34266dfaee55",
+      "method": "textDocument/diagnostic",
+      "registerOptions": {
+       "workDoneProgress": true,
+       "identifier": "WorkspaceDocumentsAndProject",
+       "interFileDependencies": true,
+       "workspaceDiagnostics": true
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 4,
+   "method": "window/workDoneProgress/create",
+   "params": {
+    "token": "326ac38e-a0c4-4349-ae19-65ad5f6a393d"
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 6,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "9d085650-f0c1-4383-a2a1-1f493363d6b9",
+      "method": "textDocument/signatureHelp",
+      "registerOptions": {
+       "documentSelector": [
+        {
+         "language": "aspnetcorerazor",
+         "pattern": "**/*.{razor,cshtml}"
+        }
+       ],
+       "triggerCharacters": [
+        "(",
+        ",",
+        "<"
+       ],
+       "retriggerCharacters": [
+        ">",
+        ")"
+       ]
+      }
+     },
+     {
+      "id": "7c0e5660-989e-496c-b0d8-7f24218d99a3",
+      "method": "textDocument/codeLens",
+      "registerOptions": {
+       "documentSelector": [
+        {
+         "language": "aspnetcorerazor",
+         "pattern": "**/*.{razor,cshtml}"
+        }
+       ],
+       "resolveProvider": true
+      }
+     },
+     {
+      "id": "79427f1d-181f-4f95-89de-38f5a47d060c",
+      "method": "textDocument/diagnostic",
+      "registerOptions": {
+       "documentSelector": [
+        {
+         "language": "aspnetcorerazor",
+         "pattern": "**/*.{razor,cshtml}"
+        }
+       ],
+       "interFileDependencies": false,
+       "workspaceDiagnostics": false
+      }
+     },
+     {
+      "id": "c31c6804-de76-4a9c-a9d7-242996722e04",
+      "method": "textDocument/prepareCallHierarchy",
+      "registerOptions": {
+       "documentSelector": [
+        {
+         "language": "aspnetcorerazor",
+         "pattern": "**/*.{razor,cshtml}"
+        }
+       ]
+      }
+     },
+     {
+      "id": "1ad90f49-51fc-47a7-b6a8-b93b4a8c5d37",
+      "method": "textDocument/documentColor",
+      "registerOptions": {
+       "documentSelector": [
+        {
+         "language": "aspnetcorerazor",
+         "pattern": "**/*.{razor,cshtml}"
+        }
+       ]
+      }
+     },
+     {
+      "id": "50a9270f-0e56-49af-b7db-a909c01b1590",
+      "method": "textDocument/documentHighlight",
+      "registerOptions": {
+       "documentSelector": [
+        {
+         "language": "aspnetcorerazor",
+         "pattern": "**/*.{razor,cshtml}"
+        }
+       ]
+      }
+     },
+     {
+      "id": "aaa6481a-b7de-415d-8dc3-1d96fe653879",
+      "method": "textDocument/documentSymbol",
+      "registerOptions": {
+       "documentSelector": [
+        {
+         "language": "aspnetcorerazor",
+         "pattern": "**/*.{razor,cshtml}"
+        }
+       ]
+      }
+     },
+     {
+      "id": "0e69ed3a-c237-4b30-9638-e54e508b5b00",
+      "method": "textDocument/formatting",
+      "registerOptions": {
+       "documentSelector": [
+        {
+         "language": "aspnetcorerazor",
+         "pattern": "**/*.{razor,cshtml}"
+        }
+       ]
+      }
+     },
+     {
+      "id": "d151ab22-ee2b-44f6-92ff-7dc253305378",
+      "method": "textDocument/references",
+      "registerOptions": {
+       "documentSelector": [
+        {
+         "language": "aspnetcorerazor",
+         "pattern": "**/*.{razor,cshtml}"
+        }
+       ]
+      }
+     },
+     {
+      "id": "15bc41f4-da25-442d-8007-499b3d315935",
+      "method": "textDocument/onTypeFormatting",
+      "registerOptions": {
+       "documentSelector": [
+        {
+         "language": "aspnetcorerazor",
+         "pattern": "**/*.{razor,cshtml}"
+        }
+       ],
+       "firstTriggerCharacter": "}",
+       "moreTriggerCharacter": [
+        ";",
+        "\n",
+        "{"
+       ]
+      }
+     },
+     {
+      "id": "3f150fa8-5048-4d27-ae00-c4b0edfca180",
+      "method": "textDocument/rangeFormatting",
+      "registerOptions": {
+       "documentSelector": [
+        {
+         "language": "aspnetcorerazor",
+         "pattern": "**/*.{razor,cshtml}"
+        }
+       ]
+      }
+     },
+     {
+      "id": "867d6d57-e916-4c8c-a154-dc677f19446f",
+      "method": "textDocument/rename",
+      "registerOptions": {
+       "documentSelector": [
+        {
+         "language": "aspnetcorerazor",
+         "pattern": "**/*.{razor,cshtml}"
+        }
+       ],
+       "prepareProvider": true
+      }
+     },
+     {
+      "id": "576fadfa-2183-421f-96a5-3ef34d3a9927",
+      "method": "textDocument/selectionRange",
+      "registerOptions": {
+       "documentSelector": [
+        {
+         "language": "aspnetcorerazor",
+         "pattern": "**/*.{razor,cshtml}"
+        }
+       ]
+      }
+     },
+     {
+      "id": "747887f2-20f1-4d42-abc5-491560248db4",
+      "method": "textDocument/foldingRange",
+      "registerOptions": {
+       "documentSelector": [
+        {
+         "language": "aspnetcorerazor",
+         "pattern": "**/*.{razor,cshtml}"
+        }
+       ]
+      }
+     },
+     {
+      "id": "39671418-2b4a-4e58-b38f-97f8c15a1e53",
+      "method": "textDocument/inlayHint",
+      "registerOptions": {
+       "documentSelector": [
+        {
+         "language": "aspnetcorerazor",
+         "pattern": "**/*.{razor,cshtml}"
+        }
+       ],
+       "resolveProvider": true
+      }
+     },
+     {
+      "id": "af057549-6260-42dc-b453-9409d3b8a9ee",
+      "method": "textDocument/prepareTypeHierarchy",
+      "registerOptions": {
+       "documentSelector": [
+        {
+         "language": "aspnetcorerazor",
+         "pattern": "**/*.{razor,cshtml}"
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 7,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "926f298c-6124-4cc7-af05-ab2fbf02cedf",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/playground/MultiTarget",
+          "pattern": "**/*{.cs,.razor,.cshtml}"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 8,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "0f8a9e28-1542-477f-a0e0-9a12c20c157a",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/playground/MultiTarget",
+          "pattern": "**/*{.cs,.cshtml,.razor}"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 9,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "4c0ce262-527a-48ae-b70d-7a1e03b932f0",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/playground/MultiTarget",
+          "pattern": "MultiTarget.csproj"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 10,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "1ac6b95f-440c-48be-988c-83863efbd8a9",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/playground/MultiTarget/obj/Debug/net9.0",
+          "pattern": "MultiTarget.GeneratedMSBuildEditorConfig.editorconfig"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 11,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "e7a5ea5a-be08-411e-a8e5-7f48a6ecd56c",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///C:/Program%20Files/dotnet/sdk/10.0.401/Sdks/Microsoft.NET.Sdk/analyzers/build/config",
+          "pattern": "analysislevel_9_default.globalconfig"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 12,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "570966bd-74cd-4ef1-aaaa-de9a3041449d",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/playground/MultiTarget/obj",
+          "pattern": "project.assets.json"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 13,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "98080b7a-00b8-4ecb-943d-e7671a7816da",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///C:/Program%20Files%20(x86)/Reference%20Assemblies/Microsoft/Framework",
+          "pattern": "**/*.dll"
+         }
+        },
+        {
+         "globPattern": {
+          "baseUri": "file:///C:/Program%20Files/dotnet/packs",
+          "pattern": "**/*.dll"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 14,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "3d994c03-4e5f-4196-951b-cd6993ee9468",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/home/.nuget/packages/microsoft.netcore.app.ref/9.0.20/ref/net9.0",
+          "pattern": "Microsoft.CSharp.dll"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 15,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "5459db96-1fe1-4f4d-9705-cb42108713fa",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/home/.nuget/packages/microsoft.netcore.app.ref/9.0.20/ref/net9.0",
+          "pattern": "Microsoft.VisualBasic.Core.dll"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 16,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "6571139f-8bf8-48bd-91a9-979cee3fe1f2",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/home/.nuget/packages/microsoft.netcore.app.ref/9.0.20/ref/net9.0",
+          "pattern": "Microsoft.VisualBasic.dll"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 17,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "696741ef-3af5-44ba-94a9-35f3fceec5c6",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/home/.nuget/packages/microsoft.netcore.app.ref/9.0.20/ref/net9.0",
+          "pattern": "Microsoft.Win32.Primitives.dll"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 18,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "9fbd8405-643f-4990-bfc5-c3c7a1277987",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/home/.nuget/packages/microsoft.netcore.app.ref/9.0.20/ref/net9.0",
+          "pattern": "Microsoft.Win32.Registry.dll"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 19,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "fe4978a5-2dda-4716-bc03-4d2c9000896f",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/home/.nuget/packages/microsoft.netcore.app.ref/9.0.20/ref/net9.0",
+          "pattern": "mscorlib.dll"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 20,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "c573f447-d258-4de8-aa74-e8e3af30ab19",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/home/.nuget/packages/microsoft.netcore.app.ref/9.0.20/ref/net9.0",
+          "pattern": "netstandard.dll"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 21,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "3a2fb37c-b8fa-4d52-8c4a-da0ea32486ca",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/home/.nuget/packages/microsoft.netcore.app.ref/9.0.20/ref/net9.0",
+          "pattern": "System.AppContext.dll"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 22,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "2c211f46-e05d-4e49-89b1-1a8d84812732",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/home/.nuget/packages/microsoft.netcore.app.ref/9.0.20/ref/net9.0",
+          "pattern": "System.Buffers.dll"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 23,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "4db6900e-ffb8-44ac-87f8-817c2d16693f",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/home/.nuget/packages/microsoft.netcore.app.ref/9.0.20/ref/net9.0",
+          "pattern": "System.Collections.Concurrent.dll"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 24,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "6ed6c20e-a2d6-45d2-8145-9877772fca75",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/home/.nuget/packages/microsoft.netcore.app.ref/9.0.20/ref/net9.0",
+          "pattern": "System.Collections.dll"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 25,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "297d10f8-1af6-4a83-bd2c-c6fcce4a5723",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/home/.nuget/packages/microsoft.netcore.app.ref/9.0.20/ref/net9.0",
+          "pattern": "System.Collections.Immutable.dll"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 26,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "7c224feb-d913-42f4-9ee9-b0695c10068f",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/home/.nuget/packages/microsoft.netcore.app.ref/9.0.20/ref/net9.0",
+          "pattern": "System.Collections.NonGeneric.dll"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 27,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "2e6c2ce8-8ffd-4fd7-84ac-b4ff5307d00b",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/home/.nuget/packages/microsoft.netcore.app.ref/9.0.20/ref/net9.0",
+          "pattern": "System.Collections.Specialized.dll"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 28,
+   "method": "client/registerCapability",
+   "params": {
+    "registrations": [
+     {
+      "id": "9efb1090-722d-43e3-9306-09177ccbc817",
+      "method": "workspace/didChangeWatchedFiles",
+      "registerOptions": {
+       "watchers": [
+        {
+         "globPattern": {
+          "baseUri": "file:///c:/home/.nuget/packages/microsoft.netcore.app.ref/9.0.20/ref/net9.0",
+          "pattern": "System.ComponentModel.Annotations.dll"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "_truncated": 15
+  }
+ ]
+}

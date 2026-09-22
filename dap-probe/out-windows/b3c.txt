@@ -1,0 +1,70 @@
+Exception ignored while finalizing file <_io.BufferedWriter name=7>:
+Traceback (most recent call last):
+  File "C:\Users\dvislobokov\AppData\Local\Temp\claude\C--Users-dvislobokov-idea-dotnet-support\a88a38e3-6023-42eb-b354-2b03ee9a496f\scratchpad\dap\batch3.py", line 227, in protocol_abuse
+    s = Session("protocol-wrong-state")
+OSError: [Errno 22] Invalid argument
+
+===== protocol-before-initialize =====
+-> threads  | 88ms ok=True {"threads": []}
+   ~ process {"name": "App.dll", "systemProcessId": 20144, "isLocalProcess": true, "startMethod": "launch"}
+-> launch {"program": "<dap>\\t\\App\\bin\\Debug\\net10.0\\App.dll"} | 29ms ok=True null
+-> evaluate {"expression": "1+1"} | 2ms ok=False The debuggee is not running.
+-> noSuchCommand {"x": 1} | 1ms ok=False Unsupported request 'noSuchCommand'.
+   adapter exit code: 0
+
+===== protocol-garbage =====
+   ~ initialized null
+-> threads  | 1395ms ok=False ADAPTER EXITED (code None)
+   adapter alive after garbage: True (exit code None)
+   ! cannot write to adapter: OSError(22, 'Invalid argument')
+   adapter exit code: 1
+
+===== protocol-wrong-state =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 30264, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>\\t\\App\\Rest.cs"}, "line": 160, "column": 13, "endLine": 160, "endColumn": 47}}
+   ~ stopped {"reason": "breakpoint", "threadId": 1644, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   stack: DebugTarget.Output.Sleeper():160 <- Program.<Main>$():18  total=3
+   -- while running:
+-> stackTrace {"threadId": 1644} | 1ms ok=False The debuggee is running.
+-> scopes {"frameId": 1} | 0ms ok=False The debuggee is running.
+-> variables {"variablesReference": 4} | 0ms ok=False The debuggee is running.
+-> evaluate {"expression": "i", "frameId": 1} | 1ms ok=False The debuggee is running.
+-> evaluate {"expression": "1 + 1"} | 0ms ok=False The debuggee is running.
+-> next {"threadId": 1644} | 0ms ok=False The debuggee is running.
+-> continue {"threadId": 1644} | 0ms ok=True {"allThreadsContinued": true}
+   ~ stopped {"reason": "pause", "threadId": 1644, "allThreadsStopped": true}
+-> pause {"threadId": 123456} | 3ms ok=True null
+   -- while stopped again ({"reason": "pause", "threadId": 1644, "allThreadsStopped": true}):
+-> variables {"variablesReference": 4} | 0ms ok=False Unknown variables reference 4.
+-> variables {"variablesReference": 987654} | 0ms ok=False Unknown variables reference 987654.
+-> scopes {"frameId": 987654} | 0ms ok=False Unknown frame 987654.
+-> stackTrace {"threadId": 987654} | 19ms ok=False Error HRESULT ERROR_INVALID_PARAMETER has been returned from a call to a COM component.
+-> stackTrace  | 0ms ok=False Error HRESULT ERROR_INVALID_PARAMETER has been returned from a call to a COM component.
+-> evaluate {"frameId": 1} | 0ms ok=False Unknown frame 1.
+-> continue {"threadId": 987654} | 0ms ok=True {"allThreadsContinued": true}
+   ! NO stopped event within 3s (expected (should NOT resume on a wrong thread id?))
+-> source {"sourceReference": 0, "source": {"path": "<dap>\\t\\App\\Rest.cs"}} | 2ms ok=False Unknown source reference 0.
+-> source {"sourceReference": 42} | 0ms ok=False Unknown source reference 42.
+-> completions {"text": "Conso", "column": 6} | 0ms ok=False Unsupported request 'completions'.
+-> stepInTargets {"frameId": 1} | 0ms ok=False Unsupported request 'stepInTargets'.
+-> dataBreakpointInfo {"name": "i"} | 0ms ok=False Unsupported request 'dataBreakpointInfo'.
+-> readMemory {"memoryReference": "0x0", "count": 8} | 0ms ok=False Unsupported request 'readMemory'.
+-> disassemble {"memoryReference": "0x0", "instructionCount": 4} | 0ms ok=False Unsupported request 'disassemble'.
+-> configurationDone  | 0ms ok=True null
+-> launch {"program": "<dap>\\t\\App\\bin\\Debug\\net10.0\\App.dll"} | 1ms ok=False A debuggee is already running.
+-> initialize {"adapterID": "again"} | 0ms ok=True {"supportsConfigurationDoneRequest": true, "supportsTerminateRequest": true, "su...(1476)
+   ~ initialized null
+   adapter exit code: 0
+
+===== protocol-spam =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 16292, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>\\t\\App\\Rest.cs"}, "line": 160, "column": 13, "endLine": 160, "endColumn": 47}}
+   ~ stopped {"reason": "breakpoint", "threadId": 17356, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   10 x next without waiting: ok=1 failed=9 first failure=The debuggee is running.
+   ~ stopped {"reason": "step", "threadId": 17356, "allThreadsStopped": true}
+   stopped events seen: 2
+-> cancel {"requestId": 1} | 3ms ok=True null
+-> cancel {"requestId": 99999} | 0ms ok=True null
+   adapter exit code: 0

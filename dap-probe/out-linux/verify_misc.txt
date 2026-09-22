@@ -1,0 +1,98 @@
+RESULT exit code of 'unhandled' without a debugger: -6 (0xFFFFFFFA)
+RESULT exit code of 'threadcrash' without a debugger: -6 (0xFFFFFFFA)
+
+===== v-async-stepin =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 2817, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 8, "column": 9, "endLine": 8, "endColumn": 43}}
+   ~ stopped {"reason": "breakpoint", "threadId": 2839, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+RESULT at DebugTarget.AsyncCode.Run() @ Rest.cs:8:9
+   ~ stopped {"reason": "step", "threadId": 2839, "allThreadsStopped": true}
+RESULT stepIn on 'await Compute(first)' -> DebugTarget.AsyncCode.Run() @ Rest.cs:8:9
+   stack: DebugTarget.AsyncCode.Run():8 <- [External Code]:0  total=2
+   adapter exit code: 0
+
+===== v-async-inner-stepout =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 2856, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 16, "column": 9, "endLine": 16, "endColumn": 29}}
+   ~ stopped {"reason": "breakpoint", "threadId": 2876, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+RESULT at DebugTarget.AsyncCode.Compute() @ Rest.cs:16:9
+   ~ stopped {"reason": "step", "threadId": 2878, "allThreadsStopped": true}
+RESULT stepOut of the async method Compute -> DebugTarget.AsyncCode.Run() @ Rest.cs:8:9
+   adapter exit code: 0
+
+===== v-async-step-past-end =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 2895, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 16, "column": 9, "endLine": 16, "endColumn": 29}}
+   ~ stopped {"reason": "breakpoint", "threadId": 2915, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   ~ stopped {"reason": "step", "threadId": 2915, "allThreadsStopped": true}
+RESULT next #1 inside Compute -> DebugTarget.AsyncCode.Compute() @ Rest.cs:17:9
+   ~ stopped {"reason": "step", "threadId": 2917, "allThreadsStopped": true}
+RESULT next #2 inside Compute -> DebugTarget.AsyncCode.Compute() @ Rest.cs:18:9
+   ~ stopped {"reason": "step", "threadId": 2917, "allThreadsStopped": true}
+RESULT next #3 inside Compute -> DebugTarget.AsyncCode.Compute() @ Rest.cs:19:5
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 10s (expected None)
+RESULT next #4 inside Compute -> NO STOP (ran to the end)
+   adapter exit code: 0
+
+===== v-stepout-exception =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 2936, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Stepping.cs", "path": "<dap>/t/App/Stepping.cs"}, "line": 14, "column": 9, "endLine": 14, "endColumn": 39}}
+   ~ stopped {"reason": "breakpoint", "threadId": 2936, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+RESULT at DebugTarget.Stepping.Run() @ Stepping.cs:14:9
+   ~ stopped {"reason": "step", "threadId": 2936, "allThreadsStopped": true}
+RESULT stepOut of Stepping.Run (it throws and catches inside) -> DebugTarget.Stepping.Run() @ Stepping.cs:25:9
+   adapter exit code: 0
+
+===== v-goto =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 2970, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 160, "column": 13, "endLine": 160, "endColumn": 47}}
+   ~ stopped {"reason": "breakpoint", "threadId": 2970, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+-> gotoTargets {"source": {"path": "<dap>/t/App/Rest.cs"}, "line": 161} | 11ms ok=True {"targets": [{"id": 1, "label": "Line 161", "line": 161, "column": 13, "endLine": 161, "endColumn": 31}]}
+-> goto {"threadId": 2970, "targetId": 1} | 1ms ok=True null
+   ~ stopped {"reason": "goto", "threadId": 2970, "allThreadsStopped": true}
+RESULT after goto: {"reason": "goto", "threadId": 2970, "allThreadsStopped": true} | DebugTarget.Output.Sleeper() @ Rest.cs:161:13
+-> gotoTargets {"source": {"path": "<dap>/t/Lib/Calculator.cs"}, "line": 10} | 0ms ok=True {"targets": []}
+-> setBreakpoints {"source": {"path": "<dap>/t/App/Rest.cs"}, "breakpoints": [{"line": 0}, {"line": -5}, {"line": 99999}]} | 2ms ok=True {"breakpoints": [{"id": 2, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 6, "column": 5, "endLine": 6, "endColumn": 6}, {"id": 3, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 6, "column": 5, "endLine": 6, "endColumn": 6}, {"id": 4, "verified": false, "message": "No loaded module with symbols contains code for this location.", "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 99999}]}
+   adapter exit code: 0
+
+===== v-strings =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 3004, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Variables.cs", "path": "<dap>/t/App/Variables.cs"}, "line": 51, "column": 9, "endLine": 51, "endColumn": 46}}
+   ~ stopped {"reason": "breakpoint", "threadId": 3004, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+RESULT string of   100 chars -> 102 chars returned, type=string, head="qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...(102)
+RESULT string of  1000 chars -> 1002 chars returned, type=string, head="qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...(1002)
+RESULT string of  1023 chars -> 1025 chars returned, type=string, head="qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...(1025)
+RESULT string of  1024 chars -> 1026 chars returned, type=string, head="qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...(1026)
+RESULT string of  1025 chars -> 1027 chars returned, type=string, head="qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...(1027)
+RESULT string of  4095 chars -> 4097 chars returned, type=string, head="qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...(4097)
+RESULT string of  4096 chars -> 4098 chars returned, type=string, head="qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...(4098)
+RESULT string of  4097 chars -> 4099 chars returned, type=string, head="qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...(4099)
+RESULT string of  5000 chars -> 5002 chars returned, type=string, head="qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq...(5002)
+RESULT clipboard context for the 5000-char string: <error: startIndex ('0') must be less than or equal to '-904'. (Parameter 'startIndex')
+Actual value was 0.>
+   adapter exit code: 0
+
+===== v-tostring =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 3038, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 186, "column": 9, "endLine": 186, "endColumn": 87}}
+   ~ stopped {"reason": "breakpoint", "threadId": 3038, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+RESULT listing locals with a hanging ToString() took 5.6s: {"throwing": "{DebugTarget.ThrowingToString}", "hanging": "{DebugTarget.HangingToString}", "evil": "{DebugTarget.EvilProperties}", "holder": "{System.Threading.Thread}"}
+   adapter exit code: 0
+
+===== v-terminate =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 3074, "isLocalProcess": true, "startMethod": "launch"}
+-> terminate  | 0ms ok=True null
+   ~ exited {"exitCode": 137}
+   ~ terminated null
+   end: exited={'exitCode': 137} terminated=True
+   adapter exit code: 0

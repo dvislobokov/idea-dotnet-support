@@ -1,0 +1,28 @@
+{
+ "method": "textDocument/definition",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "position": {
+   "line": 259,
+   "character": 35
+  }
+ },
+ "ms": 13.4,
+ "result": [
+  {
+   "uri": "file:///c:/playground/Console/Scenarios.cs",
+   "range": {
+    "start": {
+     "line": 252,
+     "character": 15
+    },
+    "end": {
+     "line": 252,
+     "character": 21
+    }
+   }
+  }
+ ]
+}

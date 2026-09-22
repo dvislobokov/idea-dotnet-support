@@ -1,0 +1,92 @@
+{
+ "method": "codeAction/resolve",
+ "params": {
+  "title": "Introduce constant for '1'",
+  "kind": "refactor",
+  "data": {
+   "UniqueIdentifier": "Introduce constant for '1'",
+   "CustomTags": [],
+   "Range": {
+    "start": {
+     "line": 257,
+     "character": 12
+    },
+    "end": {
+     "line": 257,
+     "character": 22
+    }
+   },
+   "TextDocument": {
+    "uri": "file:///c:/playground/Console/Scenarios.cs"
+   },
+   "CodeActionPath": [
+    "Introduce constant",
+    "Introduce constant for '1'"
+   ]
+  }
+ },
+ "ms": 191.7,
+ "result": {
+  "title": "Introduce constant for '1'",
+  "kind": "refactor",
+  "edit": {
+   "documentChanges": [
+    {
+     "textDocument": {
+      "version": null,
+      "uri": "file:///c:/playground/Console/Scenarios.cs"
+     },
+     "edits": [
+      {
+       "range": {
+        "start": {
+         "line": 249,
+         "character": 1
+        },
+        "end": {
+         "line": 249,
+         "character": 1
+        }
+       },
+       "newText": "\r\n    private const int V = 1;\r\n\r"
+      },
+      {
+       "range": {
+        "start": {
+         "line": 257,
+         "character": 21
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "newText": "V"
+      }
+     ]
+    }
+   ]
+  },
+  "data": {
+   "UniqueIdentifier": "Introduce constant for '1'",
+   "CustomTags": [],
+   "Range": {
+    "start": {
+     "line": 257,
+     "character": 12
+    },
+    "end": {
+     "line": 257,
+     "character": 22
+    }
+   },
+   "TextDocument": {
+    "uri": "file:///c:/playground/Console/Scenarios.cs"
+   },
+   "CodeActionPath": [
+    "Introduce constant",
+    "Introduce constant for '1'"
+   ]
+  }
+ }
+}

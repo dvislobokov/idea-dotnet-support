@@ -1,0 +1,43 @@
+{
+  // JSONC on purpose: comments and the trailing comma below are what real files have
+  "profiles": {
+    "All": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "PLAYGROUND_FROM_PROFILE": "yes",
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    },
+    "Launch": {
+      "commandName": "Project",
+      "commandLineArgs": "environment output",
+      "environmentVariables": {
+        "PLAYGROUND_FROM_PROFILE": "yes"
+      }
+    },
+    "Threads": {
+      "commandName": "Project",
+      "commandLineArgs": "threads async"
+    },
+    "Evil": {
+      "commandName": "Project",
+      "commandLineArgs": "evil"
+    },
+    "Crash": {
+      "commandName": "Project",
+      "commandLineArgs": "crash"
+    },
+    "Wait": {
+      "commandName": "Project",
+      "commandLineArgs": "wait"
+    },
+    "Input": {
+      "commandName": "Project",
+      "commandLineArgs": "input"
+    },
+    "Leak": {
+      "commandName": "Project",
+      "commandLineArgs": "leak"
+    },
+  }
+}

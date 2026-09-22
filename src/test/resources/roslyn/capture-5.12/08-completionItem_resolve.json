@@ -1,0 +1,32 @@
+{
+ "method": "completionItem/resolve",
+ "params": {
+  "label": "Age",
+  "kind": 10,
+  "sortText": "0000",
+  "insertTextFormat": 1,
+  "data": {
+   "ResultId": 2,
+   "TextDocument": {
+    "uri": "file:///c:/playground/Console/Scenarios.cs"
+   }
+  }
+ },
+ "ms": 44.8,
+ "result": {
+  "label": "Age",
+  "kind": 10,
+  "documentation": {
+   "kind": "markdown",
+   "value": "```csharp\r\nint Person.Age { get; set; }\r\n```\r\n"
+  },
+  "sortText": "0000",
+  "insertTextFormat": 1,
+  "data": {
+   "ResultId": 2,
+   "TextDocument": {
+    "uri": "file:///c:/playground/Console/Scenarios.cs"
+   }
+  }
+ }
+}

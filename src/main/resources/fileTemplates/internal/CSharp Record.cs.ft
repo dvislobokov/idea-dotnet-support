@@ -1,0 +1,1 @@
+${NAMESPACE_HEADER}${INDENT}public record ${NAME}();${NAMESPACE_FOOTER}

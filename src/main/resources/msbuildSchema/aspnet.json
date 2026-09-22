@@ -1,0 +1,42 @@
+{
+  "id": "aspnet",
+  "title": "ASP.NET Core",
+  "packages": ["Microsoft.AspNetCore.OpenApi", "Swashbuckle.AspNetCore", "NSwag.AspNetCore", "Microsoft.Extensions.ApiDescription.Server", "Microsoft.Extensions.ApiDescription.Client"],
+  "sdks": ["Microsoft.NET.Sdk.Web", "Microsoft.NET.Sdk.Razor", "Microsoft.NET.Sdk.Worker", "Microsoft.NET.Sdk.BlazorWebAssembly"],
+  "url": "https://learn.microsoft.com/aspnet/core/razor-pages/sdk",
+  "properties": [
+    { "name": "UserSecretsId", "doc": "The id of the user secrets store of the project (dotnet user-secrets)." },
+    { "name": "AspNetCoreHostingModel", "doc": "How IIS hosts the application.", "values": ["InProcess", "OutOfProcess"] },
+    { "name": "PreserveCompilationContext", "doc": "Keep the reference assemblies for compiling at run time (Razor runtime compilation).", "values": "bool" },
+    { "name": "AddRazorSupportForMvc", "doc": "A Razor class library with MVC views and Razor Pages.", "values": "bool" },
+    { "name": "RazorLangVersion", "doc": "The version of the Razor language.", "open": true, "values": ["latest", "9.0", "8.0", "7.0", "6.0"] },
+    { "name": "StaticWebAssetBasePath", "doc": "The URL prefix of the static web assets of a Razor class library; _content/<PackageId> by default." },
+    { "name": "GenerateEmbeddedFilesManifest", "doc": "Write the manifest ManifestEmbeddedFileProvider reads.", "values": "bool" },
+    { "name": "SpaRoot", "doc": "The folder of the single-page application of the project." },
+    { "name": "SpaProxyServerUrl", "doc": "The URL of the front-end development server." },
+    { "name": "SpaProxyLaunchCommand", "doc": "The command that starts the front-end development server, e.g. npm start." },
+    { "name": "TypeScriptCompileBlocked", "doc": "Leave the TypeScript files to the front-end tooling.", "values": "bool" },
+    { "name": "RunAOTCompilation", "doc": "Compile a Blazor WebAssembly application ahead of time on publish.", "values": "bool" },
+    { "name": "BlazorWebAssemblyLoadAllGlobalizationData", "doc": "Load the ICU data of every culture.", "values": "bool" },
+    { "name": "BlazorEnableTimeZoneSupport", "doc": "false: drop the time zone data from a Blazor WebAssembly application.", "values": "bool" },
+    { "name": "WasmEnableThreads", "doc": "Multithreading in WebAssembly (experimental).", "values": "bool" },
+    { "name": "OpenApiGenerateDocuments", "doc": "Generate the OpenAPI documents of the application during the build.", "values": "bool" },
+    { "name": "OpenApiGenerateDocumentsOnBuild", "doc": "Generate the OpenAPI documents on every build.", "values": "bool" },
+    { "name": "OpenApiDocumentsDirectory", "doc": "Where the generated OpenAPI documents go." },
+    { "name": "OpenApiGenerateDocumentsOptions", "doc": "Options of the document generator, e.g. --file-name my-api." }
+  ],
+  "items": [
+    { "name": "OpenApiReference", "files": true, "doc": "An OpenAPI document a typed client is generated from during the build.", "metadata": [
+      { "name": "CodeGenerator", "doc": "The generator of the client.", "open": true, "values": ["NSwagCSharp", "NSwagTypeScript", "Kiota"] },
+      { "name": "Namespace", "doc": "The namespace of the generated client." },
+      { "name": "ClassName", "doc": "The class name of the generated client." },
+      { "name": "OutputPath", "doc": "The generated file." },
+      { "name": "Options", "doc": "Options passed to the generator." }
+    ] },
+    { "name": "OpenApiProjectReference", "doc": "A web project whose OpenAPI document a typed client is generated from.", "metadata": [
+      { "name": "CodeGenerator", "doc": "The generator of the client.", "open": true, "values": ["NSwagCSharp", "NSwagTypeScript"] },
+      { "name": "Namespace", "doc": "The namespace of the generated client." },
+      { "name": "ClassName", "doc": "The class name of the generated client." }
+    ] }
+  ]
+}

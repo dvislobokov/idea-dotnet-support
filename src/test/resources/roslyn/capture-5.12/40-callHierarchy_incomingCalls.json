@@ -1,0 +1,98 @@
+{
+ "method": "callHierarchy/incomingCalls",
+ "params": {
+  "item": {
+   "name": "LspCapture.Target(int)",
+   "kind": 6,
+   "detail": "Playground.LspCapture",
+   "uri": "file:///c:/playground/Console/Scenarios.cs",
+   "range": {
+    "start": {
+     "line": 252,
+     "character": 4
+    },
+    "end": {
+     "line": 252,
+     "character": 46
+    }
+   },
+   "selectionRange": {
+    "start": {
+     "line": 252,
+     "character": 15
+    },
+    "end": {
+     "line": 252,
+     "character": 21
+    }
+   },
+   "data": {
+    "SymbolKeyData": "7 \"C#\" (M \"Target\" (D (N \"Playground\" 0 (N \"\" 1 (U (S \"Playground.Console\" 5) 4) 3) 2) \"LspCapture\" 0 ! ! 0 0 0 (% 0) 1) 0 0 (% 1 0) ! (% 1 (D (N \"System\" 0 (N \"\" 1 (U (S \"System.Runtime\" 10) 9) 8) 7) \"Int32\" 0 ! ! 0 0 0 (% 0) 6)) 0)",
+    "ProjectGuid": "d057ca81-2e3c-4f19-bac1-7b300e036374",
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  }
+ },
+ "ms": 16.6,
+ "result": [
+  {
+   "from": {
+    "name": "LspCapture.Use()",
+    "kind": 6,
+    "detail": "Playground.LspCapture",
+    "uri": "file:///c:/playground/Console/Scenarios.cs",
+    "range": {
+     "start": {
+      "line": 254,
+      "character": 4
+     },
+     "end": {
+      "line": 264,
+      "character": 5
+     }
+    },
+    "selectionRange": {
+     "start": {
+      "line": 254,
+      "character": 16
+     },
+     "end": {
+      "line": 254,
+      "character": 19
+     }
+    },
+    "data": {
+     "SymbolKeyData": "7 \"C#\" (M \"Use\" (D (N \"Playground\" 0 (N \"\" 1 (U (S \"Playground.Console\" 5) 4) 3) 2) \"LspCapture\" 0 ! ! 0 0 0 (% 0) 1) 0 0 (% 0) ! (% 0) 0)",
+     "ProjectGuid": "d057ca81-2e3c-4f19-bac1-7b300e036374",
+     "TextDocument": {
+      "uri": "file:///c:/playground/Console/Scenarios.cs"
+     }
+    }
+   },
+   "fromRanges": [
+    {
+     "start": {
+      "line": 259,
+      "character": 33
+     },
+     "end": {
+      "line": 259,
+      "character": 39
+     }
+    },
+    {
+     "start": {
+      "line": 263,
+      "character": 20
+     },
+     "end": {
+      "line": 263,
+      "character": 26
+     }
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,40 @@
+
+===== crash-threadcrash =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 6176, "isLocalProcess": true, "startMethod": "launch"}
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 25s (expected crash stop or exit)
+   end: exited={'exitCode': 0} terminated=True
+   stderr head: 'Unhandled exception. System.InvalidOperationException: worker crashed\r\n   at DebugTarget.Atypical.<>c.<ThreadCrash>b__20_0() in C:\\Users\\dvislobokov\\AppData\\Local\\Temp\\claude\\C--Users-dvislobokov-idea'
+   adapter exit code: 0
+
+===== crash-stackoverflow =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 23440, "isLocalProcess": true, "startMethod": "launch"}
+   ~ exited {"exitCode": -2147023895}
+   ~ terminated null
+   ! NO stopped event within 25s (expected crash stop or exit)
+   end: exited={'exitCode': -2147023895} terminated=True
+   stderr head: 'Stack overflow.\r\nRepeated 24083 times:\r\n--------------------------------\r\n   at DebugTarget.Atypical.Overflow(Int32)\r\n--------------------------------\r\n   at Program+<<Main>$>d__0.MoveNext()\r\n   at Sy'
+   adapter exit code: 0
+
+===== crash-failfast =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 10176, "isLocalProcess": true, "startMethod": "launch"}
+   ~ exited {"exitCode": -2146232797}
+   ~ terminated null
+   ! NO stopped event within 25s (expected crash stop or exit)
+   end: exited={'exitCode': -2146232797} terminated=True
+   stderr head: 'Process terminated.\r\nfail fast requested\r\n   at System.Environment.FailFast(System.Runtime.CompilerServices.StackCrawlMarkHandle, System.String, System.Runtime.CompilerServices.ObjectHandleOnStack, Sy'
+   adapter exit code: 0
+
+===== crash-envexit =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 12716, "isLocalProcess": true, "startMethod": "launch"}
+   ~ exited {"exitCode": 7}
+   ~ terminated null
+   ! NO stopped event within 25s (expected crash stop or exit)
+   end: exited={'exitCode': 7} terminated=True
+   stderr head: ''
+   adapter exit code: 0
