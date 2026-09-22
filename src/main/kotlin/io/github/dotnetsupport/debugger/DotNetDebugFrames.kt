@@ -17,6 +17,7 @@ import com.intellij.xdebugger.frame.XStackFrame
 import com.intellij.xdebugger.frame.XSuspendContext
 import com.intellij.xdebugger.frame.XValueChildrenList
 import com.intellij.xdebugger.frame.XValueGroup
+import com.intellij.xdebugger.impl.frame.XStackFrameWithSeparatorAbove
 import io.github.dotnetsupport.lang.CSharpHoverExpression
 
 /** All threads of the program at a stop; the active one is the thread the `stopped` event named, with its top frames already known. */
@@ -36,7 +37,11 @@ class DotNetSuspendContext(
     override fun getExecutionStacks(): Array<XExecutionStack> = (listOfNotNull(active) + stacks.filter { it !== active }).toTypedArray()
 }
 
-/** One thread. Frames come in pages (`stackTrace` with `startFrame` / `levels`): a deep recursion is not read whole at every stop. */
+/**
+ * One thread. Frames come in pages (`stackTrace` with `startFrame` / `levels`): a deep recursion is not read whole at every stop.
+ * After the real frames the adapter lists the async call stack, the methods awaiting the running one, behind a frame of its own with
+ * the hint `label` ("[Async Call Stack]"): that frame is not shown, it becomes the separator above the first awaiting method, as in Rider.
+ */
 class DotNetExecutionStack(
     private val process: DotNetDebugProcess, val threadId: Int, name: String, private val known: List<JsonObject>?,
 ) : XExecutionStack(name.ifBlank { "Thread $threadId" }, AllIcons.Debugger.ThreadSuspended) {
@@ -44,22 +49,25 @@ class DotNetExecutionStack(
 
     override fun getTopFrame(): XStackFrame? = top
 
+    /** The frames shown are fewer than the frames of the adapter (labels are left out): the adapter's are always read from the first. */
     override fun computeStackFrames(firstFrameIndex: Int, container: XStackFrameContainer) {
+        val frames = StackFrames(skip = firstFrameIndex) { frame, caption -> DotNetStackFrame(process, frame, caption) }
         // what the stop has fetched already goes first, without a request
-        val ready = known?.drop(firstFrameIndex)?.map { DotNetStackFrame(process, it) }.orEmpty()
         val done = known != null && known.size < DotNetDebugProcess.FIRST_FRAMES
+        val ready = frames.next(known.orEmpty())
         if (ready.isNotEmpty() || done) container.addStackFrames(ready, done)
-        if (!done) page(firstFrameIndex + ready.size, container)
+        if (!done) page(known?.size ?: 0, frames, container)
     }
 
-    private fun page(start: Int, container: XStackFrameContainer) {
+    private fun page(start: Int, frames: StackFrames<DotNetStackFrame>, container: XStackFrameContainer) {
         if (start >= MAX_FRAMES) return container.addStackFrames(emptyList(), true)
-        process.stackTrace(threadId, start, PAGE).whenComplete { frames, error ->
+        process.stackTrace(threadId, start, PAGE).whenComplete { received, error ->
             if (container.isObsolete) return@whenComplete
             if (error != null) return@whenComplete container.errorOccurred(DotNetDebugProcess.errorText(error))
-            val last = frames.size < PAGE
-            container.addStackFrames(frames.map { DotNetStackFrame(process, it) }, last)
-            if (!last) page(start + frames.size, container)
+            val last = received.size < PAGE
+            val shown = frames.next(received)
+            if (shown.isNotEmpty() || last) container.addStackFrames(shown, last)
+            if (!last) page(start + received.size, frames, container)
         }
     }
 
@@ -70,15 +78,38 @@ class DotNetExecutionStack(
 }
 
 /**
- * A frame of the protocol. Without a source (external code) it has no position and is gray, as `[External Code]` in Rider. The
- * variables are the scopes of the adapter: the first (the locals) is shown open, the others as groups.
+ * Frames of the adapter, page after page, into frames of the IDE: a label is not shown but becomes the caption of the frame after it
+ * (a label may end one page and its frame begin the next); the first [skip] frames shown are dropped.
  */
-class DotNetStackFrame(private val process: DotNetDebugProcess, private val frame: JsonObject) : XStackFrame() {
+class StackFrames<T>(private var skip: Int = 0, private val make: (frame: JsonObject, caption: String?) -> T) {
+    private var caption: String? = null
+
+    fun next(frames: List<JsonObject>): List<T> = frames.mapNotNull { frame ->
+        if (frame.string("presentationHint") == "label") {
+            caption = frame.string("name").orEmpty().trim().removeSurrounding("[", "]").ifBlank { null }
+            return@mapNotNull null
+        }
+        val shown = make(frame, caption)
+        caption = null
+        if (skip > 0) { skip--; null } else shown
+    }
+}
+
+/**
+ * A frame of the protocol. Without a source (external code) it has no position and is gray, as `[External Code]` in Rider. The
+ * variables are the scopes of the adapter: the first (the locals) is shown open, the others as groups. [caption]: the first frame of
+ * the async call stack has a separator above it with this text.
+ */
+class DotNetStackFrame(private val process: DotNetDebugProcess, private val frame: JsonObject, private val caption: String? = null) :
+    XStackFrame(), XStackFrameWithSeparatorAbove {
     val id: Int = frame.int("id") ?: 0
     private val name = frame.string("name").orEmpty()
     private val path = frame.getAsJsonObject("source")?.string("path")
     private val line = (frame.int("line") ?: 1) - 1
-    private val subtle = frame.string("presentationHint") in setOf("subtle", "label") || path == null
+    private val subtle = frame.string("presentationHint") == "subtle" || path == null
+
+    override fun hasSeparatorAbove(): Boolean = caption != null
+    override fun getCaptionAboveOf(): String? = caption
 
     private val position: XSourcePosition? by lazy {
         val file = path?.let { LocalFileSystem.getInstance().findFileByPath(it) } ?: return@lazy null

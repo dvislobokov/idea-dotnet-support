@@ -45,7 +45,7 @@ class DebugLaunchTest : BasePlatformTestCase() {
         assertFalse("program" in arguments)
         assertEquals(listOf("--seed", "a b"), arguments["args"])
         assertEquals(java.io.File("C:/src/App").path, java.io.File(arguments["cwd"] as String).path)
-        assertEquals("internalConsole", arguments["console"])
+        assertEquals("integratedTerminal", arguments["console"])
         assertEquals(true, arguments["justMyCode"])
         assertEquals(
             mapOf(

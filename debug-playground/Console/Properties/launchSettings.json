@@ -31,5 +31,9 @@
       "commandName": "Project",
       "commandLineArgs": "wait"
     },
+    "Input": {
+      "commandName": "Project",
+      "commandLineArgs": "input"
+    },
   }
 }

@@ -43,7 +43,8 @@ object DotNetLaunchArguments {
             "justMyCode" to justMyCode,
             // off: values are described without running the code of the program (ToString(), getters, [DebuggerDisplay])
             "allowImplicitFuncEval" to allowImplicitEvaluation,
-            "console" to "internalConsole",
+            // the adapter asks the plugin to start the program (runInTerminal): then the debug console can give it input
+            "console" to "integratedTerminal",
         ).apply { if (!configuration.isNullOrBlank()) put("configuration", configuration) } // for the adapter that looks for the output itself
     }
 

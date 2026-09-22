@@ -8,7 +8,7 @@ namespace Playground;
 /// </summary>
 public static class Scenarios
 {
-    /// <summary>Run without arguments. The rest (evil, crash, wait) are asked for by name: they hang, crash or never end.</summary>
+    /// <summary>Run without arguments. The rest (evil, crash, wait, input) are asked for by name: they hang, crash, never end or wait for input.</summary>
     public static readonly string[] Safe =
         ["variables", "collections", "strings", "expensive", "setvalue", "stepping", "library", "closures", "exceptions", "async", "threads", "environment", "output"];
 
@@ -32,6 +32,7 @@ public static class Scenarios
             case "evil": Evil(); break;
             case "crash": Crash(); break;
             case "wait": Wait(); break;
+            case "input": Input(); break;
             default: Console.WriteLine($"Unknown scenario '{name}'"); break;
         }
     }
@@ -224,6 +225,14 @@ public static class Scenarios
     {
         var evil = new EndlessGetter();
         Console.WriteLine(evil.GetHashCode()); // BP:evil — expand `evil`, then press Stop while it is being evaluated
+    }
+
+    /// <summary>`input`: reads a line typed in the debug console (the program is started by the IDE: runInTerminal).</summary>
+    private static void Input()
+    {
+        Console.Write("Your name: ");
+        var name = Console.ReadLine();
+        Console.WriteLine($"Hello, {name}! ({name?.Length ?? -1} chars)"); // BP:input — type «Ада» in the console: the stop shows name = "Ада", the output below it too
     }
 
     /// <summary>`crash`: an unhandled exception. Known gap of the adapter: it does not stop here and reports exit code 0.</summary>

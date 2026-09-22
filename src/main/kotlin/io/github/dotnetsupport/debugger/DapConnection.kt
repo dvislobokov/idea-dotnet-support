@@ -43,7 +43,7 @@ class DapConnection(
     interface Listener {
         fun event(event: String, body: JsonObject)
 
-        /** A request of the adapter (`runInTerminal`, `startDebugging`): the body of the answer, or null to refuse it. */
+        /** A request of the adapter (`runInTerminal`, `startDebugging`): the body of the answer, null to refuse it, an exception to fail it with its message. */
         fun request(command: String, arguments: JsonObject): JsonObject? = null
 
         /** The input has ended or broke: the adapter is gone. */
@@ -137,14 +137,17 @@ class DapConnection(
                 .onFailure { LOG.error("DAP event ${message.string("event")}", it) }
             "request" -> {
                 val command = message.string("command").orEmpty()
-                val body = runCatching { listener.request(command, message.getAsJsonObject("arguments") ?: JsonObject()) }.getOrNull()
+                val answer = runCatching { listener.request(command, message.getAsJsonObject("arguments") ?: JsonObject()) }
+                answer.exceptionOrNull()?.let { LOG.info("DAP request $command of the adapter failed", it) }
+                val body = answer.getOrNull()
                 val response = JsonObject().apply {
                     addProperty("seq", seq.getAndIncrement())
                     addProperty("type", "response")
                     addProperty("request_seq", message.int("seq") ?: 0)
                     addProperty("command", command)
                     addProperty("success", body != null)
-                    if (body != null) add("body", body) else addProperty("message", "$command is not supported by this client")
+                    if (body != null) add("body", body)
+                    else addProperty("message", answer.exceptionOrNull()?.let { it.message ?: it.javaClass.simpleName } ?: "$command is not supported by this client")
                 }
                 runCatching { send(response) }
             }

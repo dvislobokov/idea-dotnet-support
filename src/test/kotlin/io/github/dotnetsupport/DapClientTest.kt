@@ -6,6 +6,8 @@ import io.github.dotnetsupport.debugger.DapClosedException
 import io.github.dotnetsupport.debugger.DapConnection
 import io.github.dotnetsupport.debugger.DapException
 import io.github.dotnetsupport.debugger.DapFraming
+import io.github.dotnetsupport.debugger.DebugTerminal
+import io.github.dotnetsupport.debugger.StackFrames
 import io.github.dotnetsupport.debugger.DotNetDebugProcess
 import io.github.dotnetsupport.debugger.DotNetExceptionBreakpointHandler
 import io.github.dotnetsupport.debugger.DotNetLineBreakpointHandler
@@ -39,10 +41,11 @@ class DapClientTest : TestCase() {
         val trace = StringWriter()
         @Volatile var closed = false
         @Volatile var answerToRequest: JsonObject? = json("shellProcessId" to 1)
+        @Volatile var failRequest: Exception? = null
 
         val connection = DapConnection(clientInput, clientOutput, object : DapConnection.Listener {
             override fun event(event: String, body: JsonObject) { events.put(event to body) }
-            override fun request(command: String, arguments: JsonObject): JsonObject? = answerToRequest
+            override fun request(command: String, arguments: JsonObject): JsonObject? = failRequest?.let { throw it } ?: answerToRequest
             override fun closed() { closed = true }
         }, trace)
 
@@ -109,6 +112,12 @@ class DapClientTest : TestCase() {
         adapter.answerToRequest = null
         adapter.send("""{"seq":7,"type":"request","command":"startDebugging","arguments":{}}""")
         assertEquals(false, adapter.received().get("success").asBoolean)
+        // a request the client could not do: the adapter gets the reason, and shows it as the reason the launch failed
+        adapter.failRequest = IllegalStateException("Cannot run program \"dotnet-debugger\"")
+        adapter.send("""{"seq":8,"type":"request","command":"runInTerminal","arguments":{"args":["dotnet-debugger"]}}""")
+        val refused = adapter.received()
+        assertEquals(false, refused.get("success").asBoolean)
+        assertEquals("Cannot run program \"dotnet-debugger\"", refused.string("message"))
 
         // every message both ways goes to the trace
         assertTrue(adapter.trace.toString().contains("-> {\"seq\":1,\"type\":\"request\",\"command\":\"setExpression\""))
@@ -171,6 +180,33 @@ class DapClientTest : TestCase() {
         assertEquals("""{"expression":"person.Age","value":"37","frameId":12}""", arguments.toString())
         assertFalse("no frame, no frameId", DotNetValue.setExpressionArguments("x", "1", null).has("frameId"))
         assertEquals("boom", DotNetDebugProcess.errorText(IllegalStateException("boom")))
+    }
+
+    /** The async call stack comes after a frame with the hint `label`: it is not shown, it is the caption above the next frame. */
+    fun testAsyncCallStackLabel() {
+        fun frame(id: Int, name: String, hint: String? = null) = json("id" to id, "name" to name, "presentationHint" to hint)
+        val frames = StackFrames { frame, caption -> "${frame.string("name")}${caption?.let { " [$it]" }.orEmpty()}" }
+        assertEquals(listOf("MoveNext()", "Start()"), frames.next(listOf(frame(1, "MoveNext()"), frame(2, "Start()"))))
+        // the label ends one page, its frame begins the next
+        assertEquals(listOf("[External Code]"), frames.next(listOf(frame(3, "[External Code]", "subtle"), frame(4, "[Async Call Stack]", "label"))))
+        assertEquals(listOf("Program.Main() [Async Call Stack]", "Program.Run()"), frames.next(listOf(frame(5, "Program.Main()"), frame(6, "Program.Run()"))))
+
+        // the frames the platform has already got are skipped by what is shown, the labels do not count
+        val rest = StackFrames(skip = 2) { frame, caption -> frame.int("id") to caption }
+        assertEquals(listOf(4 to "Async Call Stack", 5 to null),
+            rest.next(listOf(frame(1, "a"), frame(2, "b"), frame(3, "[Async Call Stack]", "label"), frame(4, "c"), frame(5, "d"))))
+    }
+
+    /** The program started for `runInTerminal`: its console is switched to UTF-8 by the adapter's own helper mode, input is re-encoded. */
+    fun testTerminal() {
+        val exe = listOf("C:/tools/dotnet-debugger.exe", "--run-in-terminal", "50123", "token", "--", "C:/app/App.exe", "--run-in-terminal")
+        assertEquals(listOf("C:/tools/dotnet-debugger.exe", "--console-utf8", "42"), DebugTerminal.utf8ConsoleCommand(exe, 42))
+        val dll = listOf("C:/dotnet/dotnet.exe", "C:/tools/dotnet-debugger.dll", "--run-in-terminal", "1", "t", "--", "App.exe")
+        assertEquals(listOf("C:/dotnet/dotnet.exe", "C:/tools/dotnet-debugger.dll", "--console-utf8", "7"), DebugTerminal.utf8ConsoleCommand(dll, 7))
+        assertNull("not the helper of this adapter", DebugTerminal.utf8ConsoleCommand(listOf("App.exe", "a"), 1))
+
+        val cp1251 = charset("windows-1251")
+        assertEquals("привет", String(DebugTerminal.transcode("привет".toByteArray(cp1251), cp1251, Charsets.UTF_8), Charsets.UTF_8))
     }
 
     private fun assertThrowsExecution(block: () -> Unit): ExecutionException {

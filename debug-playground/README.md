@@ -5,14 +5,14 @@ Solution для живой проверки отладчика плагина (�
 
 | Проект | Зачем |
 |---|---|
-| `Console` | сценарии по одному на проверку (`Scenarios.cs`), точка входа — top-level statements. Без аргументов идут все безопасные сценарии; `evil`, `crash`, `wait` — только по имени (профили `launchSettings.json`) |
+| `Console` | сценарии по одному на проверку (`Scenarios.cs`), точка входа — top-level statements. Без аргументов идут все безопасные сценарии; `evil`, `crash`, `wait`, `input` — только по имени (профили `launchSettings.json`) |
 | `Lib` | код другого проекта solution: шаг в него, точка останова в нём, сопоставление путей |
 | `Web` | ASP.NET Core: профили `http` / `https` / `no browser`, `launchBrowser`, `launchUrl`, переменные профиля, точка останова в обработчике |
 | `MultiTarget` | `net9.0;net10.0`: отладчик запускает фреймворк, выбранный в тулбаре (или первый при «Default») |
 | `Tests` | xUnit: отладка тестов (`BP:test`, `BP:theory`) |
 | `Broken` | не компилируется, **в solution не входит** (ломал бы Build Solution): конфигурацию «.NET Project» для `Broken.csproj` создать руками |
 
-Профили `Console`: `All` (всё безопасное), `Launch` (аргументы и окружение), `Threads`, `Evil`, `Crash`, `Wait`.
+Профили `Console`: `All` (всё безопасное), `Launch` (аргументы и окружение), `Threads`, `Evil`, `Crash`, `Wait`, `Input` (ввод с консоли).
 
 ## Чек-лист
 
@@ -72,3 +72,11 @@ Solution для живой проверки отладчика плагина (�
 - [ ] точка в цикле `Wait` срабатывает; Stop отсоединяет — программа продолжает печатать `tick`, в том числе если Stop нажат на точке останова
 - [ ] `Tests/PricingTests.cs`: Debug у ▶ возле теста → остановка на `BP:test` (без промежуточной остановки во внешнем коде), F7 в `Lib`; Resume → тест зелёный, сессия закрывается сама
 - [ ] `BP:theory` — остановка на каждую строку `InlineData`; окно Unit Tests → «Debug Selected Tests»
+
+### Слой 5 — полировка (2026-09-22 пройден UI-роботом, кроме контекстного меню редактора на глаз)
+- [ ] `Console: Input`: в консоли отладки `Your name: `, набрать `Ада` + Enter → остановка на `BP:input`, `name = "Ада"`, `name.Length = 3`;
+      Resume → `Hello, Ада! (3 chars)`, `Done.`; после сессии нет процессов `dotnet-debugger --run-in-terminal`
+- [ ] `Console: Threads`, `BP:async-inner`: в кадрах `Compute()`, `[External Code]`, разделитель «Async Call Stack», под ним `Async()`, `Run()`,
+      `Program.<Main>$`; у кадра `Async()` видны `before`, `value`, `after`
+- [ ] `BP:variables`: ПКМ в редакторе на строке `long big = …` → Set Next Statement — текущая строка стала ею, F8 идёт дальше; на строке другого метода —
+      сообщение «Cannot set the next statement», позиция не меняется; без отладки пункта в меню нет

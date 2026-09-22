@@ -44,6 +44,7 @@ class DotNetDebugProcess(
     private val lineBreakpoints = DotNetLineBreakpointHandler(this)
     private val exceptionBreakpoints = DotNetExceptionBreakpointHandler(this)
     private val editors = DotNetEditorsProvider()
+    private val terminal = DebugTerminal(this::print)
 
     @Volatile var capabilities: JsonObject = JsonObject()
         private set
@@ -82,7 +83,7 @@ class DotNetDebugProcess(
         connection.request("initialize", json(
             "clientID" to "intellij", "clientName" to "IntelliJ Platform", "adapterID" to "coreclr", "locale" to "en-us",
             "pathFormat" to "path", "linesStartAt1" to true, "columnsStartAt1" to true,
-            "supportsVariableType" to true, "supportsVariablePaging" to true, "supportsRunInTerminalRequest" to false,
+            "supportsVariableType" to true, "supportsVariablePaging" to true, "supportsRunInTerminalRequest" to true,
         )).thenCompose { answer ->
             capabilities = answer
             connection.request(if (start.attach) "attach" else "launch", DapConnection.GSON.toJsonTree(start.arguments))
@@ -107,6 +108,12 @@ class DotNetDebugProcess(
             "exited" -> exitCode = body.int("exitCode")
             "terminated" -> AppExecutorUtil.getAppExecutorService().execute { shutdown(detach = false, programGone = true) }
         }
+    }
+
+    /** The program is started by the plugin (`console: integratedTerminal`), so that the debug console can give it input. */
+    override fun request(command: String, arguments: JsonObject): JsonObject? = when (command) {
+        "runInTerminal" -> terminal.start(arguments)
+        else -> null
     }
 
     override fun closed() {
@@ -230,6 +237,26 @@ class DotNetDebugProcess(
         lineBreakpoints.runTo(position.file.path, position.line).thenRun { resume(context) }
     }
 
+    val canSetNextStatement: Boolean get() = capabilities.bool("supportsGotoTargetsRequest") == true
+
+    /**
+     * Set Next Statement: the adapter says where the line can be jumped to (`gotoTargets`, within the method of the top frame), `goto`
+     * moves the thread there without running anything and stops again (`stopped`, reason `goto`).
+     */
+    fun setNextStatement(position: XSourcePosition) {
+        val threadId = threadOf(session.suspendContext) ?: return
+        connection.request("gotoTargets", json("source" to json("path" to position.file.path), "line" to position.line + 1), REQUEST_TIMEOUT_MS)
+            .thenCompose { answer ->
+                val target = answer.objects("targets").firstNotNullOfOrNull { it.int("id") }
+                    ?: throw DapException("gotoTargets", "The next statement cannot be set to this line")
+                connection.request("goto", json("threadId" to threadId, "targetId" to target), REQUEST_TIMEOUT_MS)
+            }
+            .exceptionally { error ->
+                session.reportMessage("Cannot set the next statement: ${errorText(error)}", com.intellij.openapi.ui.MessageType.WARNING)
+                null
+            }
+    }
+
     override fun stopAsync(): Promise<Any> {
         AppExecutorUtil.getAppExecutorService().execute { shutdown(detach = start.attach, programGone = false) }
         return stopped
@@ -255,6 +282,7 @@ class DotNetDebugProcess(
         } finally {
             connection.close()
             adapter.stop()
+            terminal.stop()
             forgetDebuggee?.invoke()
             handler.finish(exitCode)
             stopped.setResult(Unit)
@@ -272,7 +300,7 @@ class DotNetDebugProcess(
         }
 
         override fun detachIsDefault(): Boolean = start.attach
-        override fun getProcessInput(): OutputStream? = null
+        override fun getProcessInput(): OutputStream? = if (start.attach) null else terminal.input
 
         fun finish(code: Int?) {
             if (!isProcessTerminated) notifyProcessTerminated(code ?: 0)
