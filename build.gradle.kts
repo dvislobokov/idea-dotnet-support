@@ -25,8 +25,6 @@ dependencies {
         } else {
             intellijIdea(providers.gradleProperty("platformVersion"))
         }
-        // for the content module io.github.dotnetsupport.dap only: the rest of the plugin must not touch these classes
-        bundledModule("intellij.platform.dap")
         testFramework(TestFrameworkType.Platform)
     }
     testImplementation("junit:junit:4.13.2")

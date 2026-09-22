@@ -48,17 +48,22 @@ class PlatformApiProbeTest : BasePlatformTestCase() {
         println("Platform API probe in tests: " + PlatformApiProbeDialog.summary(report))
     }
 
-    /** What needs the DAP module of the platform is a content module: the plugin loads without it where there is no DAP. */
-    fun testDapPartIsAContentModule() {
+    /**
+     * The debugger is the plugin's own DAP client on XDebugger and needs no module of the platform: IntelliJ IDEA Community and its forks
+     * (GIGA IDE) have no DAP module at all. What needs the LSP module of the platform is still a content module of its own.
+     */
+    fun testDebuggerNeedsNoModuleOfThePlatform() {
         val pluginXml = javaClass.getResource("/META-INF/plugin.xml")!!.readText()
-        // the descriptor the tests see went through patchPluginXml, which reformats it
-        assertTrue(Regex("""<module name="io\.github\.dotnetsupport\.dap"\s*/>""").containsMatchIn(pluginXml))
         assertFalse("intellij.platform.dap" in pluginXml)
-        val module = javaClass.getResource("/io.github.dotnetsupport.dap.xml")!!.readText()
-        assertTrue("package=\"io.github.dotnetsupport.dap\"" in module)
-        assertTrue(Regex("""<module name="intellij\.platform\.dap"\s*/>""").containsMatchIn(module))
-        // every class the module registers is in its package, and nothing outside of it refers to the package
-        Regex("implementation=\"([^\"]+)\"").findAll(module).forEach { assertTrue(it.groupValues[1], it.groupValues[1].startsWith("io.github.dotnetsupport.dap.")) }
+        assertFalse("io.github.dotnetsupport.dap" in pluginXml)
+        assertNull(javaClass.getResource("/io.github.dotnetsupport.dap.xml"))
+        assertTrue("io.github.dotnetsupport.debugger.DotNetDebugRunner" in pluginXml)
+        // the descriptor the tests see went through patchPluginXml, which reformats it
+        assertTrue(Regex("""<module name="io\.github\.dotnetsupport\.roslyn"\s*/>""").containsMatchIn(pluginXml))
+        val module = javaClass.getResource("/io.github.dotnetsupport.roslyn.xml")!!.readText()
+        assertTrue(Regex("""<module name="intellij\.platform\.lsp\.impl"\s*/>""").containsMatchIn(module))
+        // every class the module registers is in its package
+        Regex("(?:implementation|class)=\"(io\\.github[^\"]+)\"").findAll(module).forEach { assertTrue(it.groupValues[1], it.groupValues[1].startsWith("io.github.dotnetsupport.roslyn.")) }
     }
 
     fun testJsonIsCompact() {

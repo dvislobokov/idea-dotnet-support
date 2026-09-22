@@ -158,19 +158,20 @@ class DebugLaunchTest : BasePlatformTestCase() {
 
     fun testDebugStartsNothingByItself() {
         val configuration = configuration()
-        val runner = ProgramRunner.getRunner(DefaultDebugExecutor.EXECUTOR_ID, configuration) ?: return // no DAP in this IDE: no Debug at all
+        val runner = ProgramRunner.getRunner(DefaultDebugExecutor.EXECUTOR_ID, configuration)!!
         val environment = ExecutionEnvironmentBuilder(project, DefaultDebugExecutor.getDebugExecutorInstance()).runProfile(configuration).runner(runner).build()
-        // the runner of the platform executes the state before the session, and the program is started by the adapter
+        // under a debugger the program is started by the adapter: the state of the configuration starts nothing
         assertNull(configuration.getState(DefaultDebugExecutor.getDebugExecutorInstance(), environment).execute(DefaultDebugExecutor.getDebugExecutorInstance(), runner))
     }
 
-    fun testOnlyDebugOfRunGoesToTheDapRunner() {
-        val dap = "DebugAdapterRunner" // getRunnerId() of the platform runner; the id in its plugin.xml is another string
-        if (ProgramRunner.findRunnerById(dap) == null) return // an IDE without the DAP module
-        assertEquals(dap, ProgramRunner.getRunner(DefaultDebugExecutor.EXECUTOR_ID, configuration())?.runnerId)
-        assertFalse(dap == ProgramRunner.getRunner(DefaultRunExecutor.EXECUTOR_ID, configuration())?.runnerId)
-        assertFalse(dap == ProgramRunner.getRunner(DefaultDebugExecutor.EXECUTOR_ID, configuration(DotNetCommand.WATCH))?.runnerId)
-        assertFalse(dap == ProgramRunner.getRunner(DefaultDebugExecutor.EXECUTOR_ID, configuration(DotNetCommand.TEST))?.runnerId)
+    /** The debugger of the plugin is its own and is there in every IDE: IntelliJ IDEA Community and its forks have no DAP module. */
+    fun testOnlyDebugOfRunGoesToTheDebugRunner() {
+        val runner = "DotNetDebugRunner"
+        assertEquals(runner, ProgramRunner.getRunner(DefaultDebugExecutor.EXECUTOR_ID, configuration())?.runnerId)
+        assertFalse(runner == ProgramRunner.getRunner(DefaultRunExecutor.EXECUTOR_ID, configuration())?.runnerId)
+        assertFalse(runner == ProgramRunner.getRunner(DefaultDebugExecutor.EXECUTOR_ID, configuration(DotNetCommand.WATCH))?.runnerId)
+        assertFalse(runner == ProgramRunner.getRunner(DefaultDebugExecutor.EXECUTOR_ID, configuration(DotNetCommand.TEST))?.runnerId)
+        assertNull("no runner of the platform DAP client", ProgramRunner.findRunnerById("DebugAdapterRunner")?.takeIf { it.canRun(DefaultDebugExecutor.EXECUTOR_ID, configuration()) })
     }
 
     fun testBuildBeforeLaunch() {
@@ -184,12 +185,12 @@ class DebugLaunchTest : BasePlatformTestCase() {
         assertFalse(BuildProjectBeforeRunTaskProvider.isNeeded(DefaultDebugExecutor.EXECUTOR_ID, DotNetCommand.TEST))
     }
 
-    fun testBreakpointTypesOfTheDapModule() {
-        val module = javaClass.getResource("/io.github.dotnetsupport.dap.xml")!!.readText()
-        for (extension in listOf("platform.dap.launchArgumentsProvider", "platform.dap.debugAdapterSupportProvider", "xdebugger.breakpointType")) {
-            assertTrue(extension, "<$extension " in module)
-        }
-        val type = XBreakpointType.EXTENSION_POINT_NAME.extensionList.firstOrNull { it.id == "dotnet-line" } as? XLineBreakpointType<*> ?: return // no DAP here
+    fun testBreakpointTypes() {
+        val pluginXml = javaClass.getResource("/META-INF/plugin.xml")!!.readText()
+        assertTrue("io.github.dotnetsupport.debugger.CSharpLineBreakpointType" in pluginXml)
+        // the ids are the ones of the breakpoints users have saved
+        val type = XBreakpointType.EXTENSION_POINT_NAME.extensionList.first { it.id == "dotnet-line" } as XLineBreakpointType<*>
+        assertTrue(type is io.github.dotnetsupport.debugger.CSharpLineBreakpointType)
         val file = myFixture.addFileToProject("debugLaunch/Program.cs", "using System;\n\nConsole.WriteLine(1);\n// done\n").virtualFile
         assertFalse(type.canPutAt(file, 0, project))
         assertTrue(type.canPutAt(file, 2, project))
@@ -198,48 +199,17 @@ class DebugLaunchTest : BasePlatformTestCase() {
     }
 
     fun testDebuggerLogs() {
-        val module = javaClass.getResource("/io.github.dotnetsupport.dap.xml")!!.readText()
-        for (id in listOf("DotNet.Debugger.ShowLogs", "DotNet.Debugger.TraceProtocol", "dotnet.debugger.adapter.log")) assertTrue(id, "\"$id\"" in module)
-        // the log class is a part of the DAP module, reached by name as the rest of the plugin would have to
-        val logs = runCatching { Class.forName("io.github.dotnetsupport.dap.DotNetDebuggerLogs").getField("INSTANCE").get(null) }.getOrNull() ?: return
-        logs as io.github.dotnetsupport.dap.DotNetDebuggerLogs
+        val pluginXml = javaClass.getResource("/META-INF/plugin.xml")!!.readText()
+        for (id in listOf("DotNet.Debugger.ShowLogs", "DotNet.Debugger.TraceProtocol", "dotnet.debugger.adapter.log", "dotnet.debugger.protocol.trace")) assertTrue(id, "\"$id\"" in pluginXml)
+        val logs = io.github.dotnetsupport.debugger.DotNetDebuggerLogs
         assertEquals("adapter-20260921-140509.log", logs.adapterLogName(java.time.LocalDateTime.of(2026, 9, 21, 14, 5, 9)))
         val names = listOf("adapter-20260921-100000.log", "protocol", "adapter-20260921-120000.log", "adapter-20260920-235959.log", "notes.txt")
         assertEquals(listOf("adapter-20260921-100000.log", "adapter-20260920-235959.log"), logs.outdated(names, keep = 1))
         assertEquals(emptyList<String>(), logs.outdated(names, keep = 3))
-        val command = io.github.dotnetsupport.dap.DotNetDebugAdapterDescriptor.adapterCommandLine(java.io.File("/tools/dotnet-debugger"), java.io.File("/logs/a.log"))
+        assertEquals(listOf("protocol-20260920-1.log"), logs.outdated(listOf("protocol-20260921-1.log", "protocol-20260920-1.log"), keep = 1, prefix = "protocol-"))
+        val command = io.github.dotnetsupport.debugger.DebugAdapterProcess.commandLine(java.io.File("/tools/dotnet-debugger"), java.io.File("/logs/a.log"))
         assertEquals(listOf("--log=" + java.io.File("/logs/a.log").path), command.parametersList.list)
-        assertEquals(emptyList<String>(), io.github.dotnetsupport.dap.DotNetDebugAdapterDescriptor.adapterCommandLine(java.io.File("/tools/dotnet-debugger"), null).parametersList.list)
-    }
-
-    fun testStoppedThreadIsTheOneOfTheEvent() {
-        // ids of OS threads come unsorted, which is what the lookup of the platform stumbles on
-        val threads = listOf("pool" to 45476, "worker" to 57308, "main" to 53520, "io" to 18136)
-        fun choose(threads: List<Pair<String, Int>>, stopped: Int?) = io.github.dotnetsupport.dap.StoppedThread.choose(threads, stopped)
-        assertEquals("main", choose(threads, 53520))
-        assertNull(choose(threads, null))
-        assertNull(choose(threads, 1)) // a thread that has exited: the choice of the platform stays
-        assertNull(choose(emptyList(), 1))
-
-        // the id is known as soon as the event arrives, whatever the platform does with the event afterwards
-        val stopped = io.github.dotnetsupport.dap.StoppedThread()
-        val seen = ArrayList<Int>()
-        val platform = java.lang.reflect.Proxy.newProxyInstance(javaClass.classLoader, arrayOf(com.intellij.platform.dap.DapEventConsumer::class.java)) { _, method, arguments ->
-            if (method.name == "stopped") seen += (arguments[0] as org.eclipse.lsp4j.debug.StoppedEventArguments).threadId
-            null
-        } as com.intellij.platform.dap.DapEventConsumer
-        val consumer = stopped.recording(platform)
-        consumer.stopped(org.eclipse.lsp4j.debug.StoppedEventArguments().apply { threadId = 52904 })
-        consumer.initialized()
-        assertEquals(52904, stopped.id)
-        assertEquals(listOf(52904), seen)
-
-        // a stop at an exception is passed on as a stop of one thread: the platform would ask every thread for the exception and fail
-        fun event(reason: String, all: Boolean?) = org.eclipse.lsp4j.debug.StoppedEventArguments().apply { this.reason = reason; allThreadsStopped = all; threadId = 1 }
-        assertEquals(false, stopped.forPlatform(event("exception", true)).allThreadsStopped)
-        assertEquals(true, stopped.forPlatform(event("breakpoint", true)).allThreadsStopped)
-        assertEquals(true, stopped.forPlatform(event("step", true)).allThreadsStopped)
-        assertNull(stopped.forPlatform(event("exception", null)).allThreadsStopped)
+        assertEquals(emptyList<String>(), io.github.dotnetsupport.debugger.DebugAdapterProcess.commandLine(java.io.File("/tools/dotnet-debugger"), null).parametersList.list)
     }
 
     fun testDebuggerSettingsReachTheAdapter() {
@@ -269,28 +239,6 @@ class DebugLaunchTest : BasePlatformTestCase() {
             settings.debugExternalSource = before.first
             settings.debugAllowImplicitEvaluation = before.second
         }
-    }
-
-    fun testDebuggedProgramIsKnownToTheMonitor() {
-        val processes = io.github.dotnetsupport.monitor.RunningDotNetProcesses.getInstance(project)
-        val platform = java.lang.reflect.Proxy.newProxyInstance(javaClass.classLoader, arrayOf(com.intellij.platform.dap.DapEventConsumer::class.java)) { _, _, _ -> null }
-            as com.intellij.platform.dap.DapEventConsumer
-        val debuggee = io.github.dotnetsupport.dap.MonitoredDebuggee("Web: http", processes)
-        val consumer = debuggee.recording(platform)
-
-        consumer.process(org.eclipse.lsp4j.debug.ProcessEventArguments().apply { name = "Playground.Web.dll"; systemProcessId = 20604 })
-        val target = processes.targets().single { it.pid == 20604L }
-        assertEquals("Web: http (20604)", target.title)
-        assertFalse("the id is the one of the program itself, not of a `dotnet run` above it", target.withChildren)
-
-        consumer.exited(org.eclipse.lsp4j.debug.ExitedEventArguments())
-        consumer.terminated(org.eclipse.lsp4j.debug.TerminatedEventArguments())
-        assertTrue(processes.targets().none { it.pid == 20604L })
-
-        // the adapter was killed: no events, the end of the session forgets the process
-        consumer.process(org.eclipse.lsp4j.debug.ProcessEventArguments().apply { systemProcessId = 20605 })
-        debuggee.forget()
-        assertTrue(processes.targets().none { it.pid == 20605L })
     }
 
     /** `|` marks the mouse; the expected expression, or null when a hover must show nothing. */
@@ -337,7 +285,7 @@ class DebugLaunchTest : BasePlatformTestCase() {
     }
 
     fun testExceptionBreakpointType() {
-        val type = XBreakpointType.EXTENSION_POINT_NAME.extensionList.firstOrNull { it.id == "dotnet-exception" } as? io.github.dotnetsupport.dap.DotNetExceptionBreakpointType ?: return // no DAP here
+        val type = XBreakpointType.EXTENSION_POINT_NAME.extensionList.first { it.id == "dotnet-exception" } as io.github.dotnetsupport.debugger.DotNetExceptionBreakpointType
         assertTrue(type.isAddBreakpointButtonVisible)
 
         // every thrown exception is too noisy to be the default
@@ -347,44 +295,20 @@ class DebugLaunchTest : BasePlatformTestCase() {
         assertEquals(setOf(DotNetExceptionFilter.USER_UNHANDLED, DotNetExceptionFilter.UNHANDLED), default.properties!!.filters)
         assertEquals("Any exception (user-unhandled, unhandled)", type.getDisplayText(default))
 
-        val added = com.intellij.openapi.application.WriteAction.computeAndWait<io.github.dotnetsupport.dap.DotNetExceptionBreakpoint, RuntimeException> { type.addBreakpoint(project, null) }
+        val added = com.intellij.openapi.application.WriteAction.computeAndWait<io.github.dotnetsupport.debugger.DotNetExceptionBreakpoint, RuntimeException> { type.addBreakpoint(project, null) }
         try {
             assertEquals(setOf(DotNetExceptionFilter.THROWN), added.properties!!.filters)
             added.properties!!.types = "Playground.Lib.ShopException"
             assertEquals("Playground.Lib.ShopException (thrown)", type.getDisplayText(added))
 
             // what is saved with the breakpoint comes back
-            val restored = io.github.dotnetsupport.dap.DotNetExceptionBreakpointProperties()
-            restored.loadState(com.intellij.util.xmlb.XmlSerializer.deserialize(com.intellij.util.xmlb.XmlSerializer.serialize(added.properties!!.state), io.github.dotnetsupport.dap.DotNetExceptionBreakpointProperties.State::class.java))
+            val restored = io.github.dotnetsupport.debugger.DotNetExceptionBreakpointProperties()
+            restored.loadState(com.intellij.util.xmlb.XmlSerializer.deserialize(com.intellij.util.xmlb.XmlSerializer.serialize(added.properties!!.state), io.github.dotnetsupport.debugger.DotNetExceptionBreakpointProperties.State::class.java))
             assertEquals("Playground.Lib.ShopException", restored.types)
             assertEquals(setOf(DotNetExceptionFilter.THROWN), restored.filters)
         } finally {
             com.intellij.openapi.application.WriteAction.runAndWait<RuntimeException> { manager.removeBreakpoint(added) }
         }
-    }
-
-    fun testSetValueRequest() {
-        val arguments = io.github.dotnetsupport.dap.DotNetValue.setExpressionArguments("person.Age", " 37 ", 12)
-        assertEquals("person.Age", arguments.expression)
-        assertEquals("37", arguments.value)
-        assertEquals(12, arguments.frameId)
-        assertNull(io.github.dotnetsupport.dap.DotNetValue.setExpressionArguments("x", "1", null).frameId)
-
-        // the text of the adapter, not the wrappers of the futures around it
-        val response = org.eclipse.lsp4j.jsonrpc.ResponseErrorException(org.eclipse.lsp4j.jsonrpc.messages.ResponseError(1, "Cannot convert 'abc' to int", null))
-        assertEquals("Cannot convert 'abc' to int", io.github.dotnetsupport.dap.DotNetValue.errorText(java.util.concurrent.ExecutionException(response)))
-        assertEquals("boom", io.github.dotnetsupport.dap.DotNetValue.errorText(IllegalStateException("boom")))
-    }
-
-    fun testNoExceptionBreakpointsIsSaidAloud() {
-        val none = io.github.dotnetsupport.dap.NoExceptionBreakpoints
-        assertTrue(none.isActive(true, setOf(DotNetExceptionFilter.UNHANDLED)))
-        assertFalse(none.isActive(false, setOf(DotNetExceptionFilter.UNHANDLED)))
-        assertFalse(none.isActive(true, emptySet()))
-        // an explicit empty list: an adapter that hears nothing applies the defaults of its filters
-        val arguments = none.emptyFilters()
-        assertEquals(0, arguments.filters.size)
-        assertEquals(0, arguments.filterOptions.size)
     }
 
     fun testTestHostProcessId() {
@@ -424,24 +348,19 @@ class DebugLaunchTest : BasePlatformTestCase() {
 
     fun testDebugOfTestsNeedsSomebodyToAttach() {
         val tests = configuration(DotNetCommand.TEST)
-        val runner = ProgramRunner.getRunner(DefaultDebugExecutor.EXECUTOR_ID, tests)
-        if (io.github.dotnetsupport.run.DotNetProcessAttacher.find() == null) {
-            assertNull("no debugger module: no Debug for tests", runner)
-            return
-        }
-        assertEquals("DotNetTestRunner", runner?.runnerId)
+        assertNotNull("the debugger of the plugin is always there to attach", io.github.dotnetsupport.run.DotNetProcessAttacher.find())
+        assertEquals("DotNetTestRunner", ProgramRunner.getRunner(DefaultDebugExecutor.EXECUTOR_ID, tests)?.runnerId)
         assertEquals("DotNetTestRunner", ProgramRunner.getRunner(DefaultRunExecutor.EXECUTOR_ID, tests)?.runnerId)
 
-        val module = javaClass.getResource("/io.github.dotnetsupport.dap.xml")!!.readText()
-        assertTrue("<processAttacher " in module && "<xdebugger.attachDebuggerProvider " in module)
-        // an attach session goes to the runner of the platform DAP client with the `attach` request
-        val profile = Class.forName("io.github.dotnetsupport.dap.DotNetAttachProfile").getConstructor(Long::class.java, String::class.java, Boolean::class.java).newInstance(4242L, "testhost", false)
-            as com.intellij.execution.configurations.RunProfile
-        assertEquals("DebugAdapterRunner", ProgramRunner.getRunner(DefaultDebugExecutor.EXECUTOR_ID, profile)?.runnerId)
+        val pluginXml = javaClass.getResource("/META-INF/plugin.xml")!!.readText()
+        assertTrue("<processAttacher " in pluginXml && "<xdebugger.attachDebuggerProvider " in pluginXml)
+        // an attach session goes to the debug runner of the plugin with the `attach` request
+        val profile = io.github.dotnetsupport.debugger.DotNetAttachProfile(4242L, "testhost")
+        assertEquals("DotNetDebugRunner", ProgramRunner.getRunner(DefaultDebugExecutor.EXECUTOR_ID, profile)?.runnerId)
     }
 
     fun testLineBreakpointKeepsItsHitCountAndLogMessage() {
-        val type = XBreakpointType.EXTENSION_POINT_NAME.extensionList.firstOrNull { it.id == "dotnet-line" } ?: return // no DAP here
+        val type = XBreakpointType.EXTENSION_POINT_NAME.extensionList.first { it.id == "dotnet-line" }
         // both ways a breakpoint gets its properties: made in the editor, read from the workspace file
         val file = myFixture.addFileToProject("debugLaunch/Extras.cs", "class C { void M() { } }").virtualFile
         val created = (type as XLineBreakpointType<*>).createBreakpointProperties(file, 0)
@@ -449,9 +368,9 @@ class DebugLaunchTest : BasePlatformTestCase() {
         assertNotNull("a saved hit count would be dropped on load", loaded)
         assertEquals(created!!.javaClass, loaded!!.javaClass)
 
-        val properties = io.github.dotnetsupport.dap.DotNetLineBreakpointProperties().apply { hitCondition = ">= 3"; logMessage = "total = {total}" }
-        val restored = io.github.dotnetsupport.dap.DotNetLineBreakpointProperties()
-        restored.loadState(com.intellij.util.xmlb.XmlSerializer.deserialize(com.intellij.util.xmlb.XmlSerializer.serialize(properties.state), io.github.dotnetsupport.dap.DotNetLineBreakpointProperties.State::class.java))
+        val properties = io.github.dotnetsupport.debugger.DotNetLineBreakpointProperties().apply { hitCondition = ">= 3"; logMessage = "total = {total}" }
+        val restored = io.github.dotnetsupport.debugger.DotNetLineBreakpointProperties()
+        restored.loadState(com.intellij.util.xmlb.XmlSerializer.deserialize(com.intellij.util.xmlb.XmlSerializer.serialize(properties.state), io.github.dotnetsupport.debugger.DotNetLineBreakpointProperties.State::class.java))
         assertEquals(">= 3" to "total = {total}", restored.hitCondition to restored.logMessage)
     }
 
@@ -487,16 +406,15 @@ class DebugLaunchTest : BasePlatformTestCase() {
     }
 
     fun testExpressionEditorsAreCSharpFragments() {
-        val module = javaClass.getResource("/io.github.dotnetsupport.dap.xml")!!.readText()
-        assertTrue("DotNetExpressionCompletionContributor" in module)
-        val provider = runCatching { Class.forName("io.github.dotnetsupport.dap.DotNetEditorsProvider").getDeclaredConstructor().newInstance() }.getOrNull()
-            as? com.intellij.xdebugger.evaluation.XDebuggerEditorsProvider ?: return // no DAP here
+        val pluginXml = javaClass.getResource("/META-INF/plugin.xml")!!.readText()
+        assertTrue("io.github.dotnetsupport.debugger.DotNetExpressionCompletionContributor" in pluginXml)
+        val provider: com.intellij.xdebugger.evaluation.XDebuggerEditorsProvider = io.github.dotnetsupport.debugger.DotNetEditorsProvider()
         assertEquals("C#", provider.fileType.name)
         val document = provider.createDocument(project, com.intellij.xdebugger.impl.breakpoints.XExpressionImpl.fromText("person.Age"), null, com.intellij.xdebugger.evaluation.EvaluationMode.EXPRESSION)
         assertEquals("person.Age", document.text)
         val file = com.intellij.psi.PsiDocumentManager.getInstance(project).getPsiFile(document)!!
         assertEquals("C#", file.language.id)
-        assertEquals(true, file.getUserData(io.github.dotnetsupport.dap.DotNetEditorsProvider.EXPRESSION))
+        assertEquals(true, file.getUserData(io.github.dotnetsupport.debugger.DotNetEditorsProvider.EXPRESSION))
     }
 
     fun testLinesThatShowTheValueOfAVariable() {

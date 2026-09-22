@@ -219,13 +219,14 @@
 - [x] Минимальная версия — 2026.1 (`sinceBuild = 261`), сборка и тесты на IntelliJ IDEA 2026.1.4, Kotlin API 2.3. Папки под узлом проекта в панели Solution получили короткие имена и в IDEA (Java-плагин называл их как пакеты). Убраны устаревшие `ReadAction.compute`, `DaemonCodeAnalyzer.restart()`, `isLenient`, `createSingleFileDescriptor`
 - [ ] События окна Build: конструкторы `*BuildEventImpl` / `MessageEventImpl` устарели (не «к удалению»), замена — `BuildEvents` с builder-ами, пока `@Experimental`; перейти, когда стабилизируется
 - [x] Диагностика «меню .NET → Probe Platform LSP / DAP API...»: есть ли в этой IDE (и с этой лицензией) модули LSP и DAP — точки расширения и кто в них зарегистрирован, ключи реестра, сервисы, program runner, классы lsp4j, и сверка всех классов API с эталоном IDEA 2026.1.4 (`resources/platformProbe/expected.json`, член = `имя/число параметров`); видны ли классы загрузчику плагина без зависимости на модуль. Таблица с фильтром «Problems only», **Copy as JSON** (без имени владельца лицензии). Анализ API — `docs/platform-lsp-dap.html`
-- [x] Content-модуль плагина `io.github.dotnetsupport.dap` с зависимостью на `intellij.platform.dap`: всё, что опирается на платформенный DAP, живёт в нём, без DAP выключается только он. Пока в нём заготовка `DotNetDapLaunchArgumentsProvider` (ни к чему не применима) — по ней диагностика видит, что модуль загрузился и классы DAP ему видны
-- [ ] Проверить наличие `intellij.platform.dap` и LSP API в GoLand / PyCharm / WebStorm / Rider 2026.1+ (в IDEA Ultimate есть) — диагностикой выше
+- [x] ~~Content-модуль `io.github.dotnetsupport.dap` на `intellij.platform.dap`~~ — убран 2026-09-22 вместе с переходом отладчика на свой DAP-клиент (модуля DAP нет в IDEA Community и её форках)
+- [ ] Проверить наличие LSP API в GoLand / PyCharm / WebStorm / Rider 2026.1+ (в IDEA Ultimate есть) — диагностикой выше; отладчику платформенный DAP больше не нужен
 
-## Отладка через DAP (план; начат слой 1)
-**Действующий план — `PLATFORM_DAP_PLAN.md`**: платформенный DAP-клиент (2026.1+) вместо своего, этапы 0–6. Слои ниже — запасной путь со своим клиентом.
-Отладчик `dotnet-debugger` (dotnet tool `dotnet-debugger-dap`) + свой DAP-клиент + платформенный XDebugger. Подробности,
-соответствие API и ограничения адаптера — в `DAP_PLAN.md`; результаты проверки адаптера — в `dap-probe/FINDINGS.md`.
+## Отладка через DAP (слои 1–4 сделаны, осталась полировка)
+Отладчик `dotnet-debugger` (dotnet tool `dotnet-debugger-dap`) + свой DAP-клиент (пакет `debugger`) + платформенный XDebugger — работает в любой IDE
+на платформе. **Действующий план — `DAP_PLAN.md`** (соответствие API, ограничения адаптера); результаты проверки адаптера — `dap-probe/FINDINGS.md`.
+Пункты «Платформенный DAP, этап N» ниже сделаны сначала на платформенном DAP-клиенте (`PLATFORM_DAP_PLAN.md`, теперь история), 2026-09-22 всё
+перенесено на свой клиент и проверено заново; обходы платформы (`DotNetPresentationFactory`, переписывание `setBreakpoints`) при этом ушли.
 - [x] Отладчик в списке .NET Tools на странице настроек: путь, Install / Update (id пакета и команда разные)
 - [x] Платформенный DAP, этап 0: разведка API по байткоду — схема вызовов и поправки к этапам в «Журнале» `PLATFORM_DAP_PLAN.md`
 - [x] Платформенный DAP, этап 1 (проверено вживую 2026-09-21): Debug у конфигурации «.NET Project» с командой `dotnet run` уходит в
@@ -252,13 +253,11 @@
   `Debugger.Break()` хоста пропускается). Не проверено: проекты на Microsoft.Testing.Platform
 - [x] Платформенный DAP, этап 6, completion в Evaluate / watches / условиях точек останова (проверено UI-роботом 2026-09-21): имена берутся у
   остановленной программы — локальные и члены `this`, после `значение.` — его члены; поля выражений стали фрагментами C# с подсветкой
-- [ ] Платформенный DAP, этап 6 (по желанию), остальное: значения в редакторе, async-стек, `runInTerminal` (ввод в консольную программу),
-  Set Next Statement, второй адаптер
-- [ ] Слой 1: DAP-клиент — фрейминг, корреляция ответов, события, обратные запросы; тесты на фейковом адаптере
-- [ ] Слой 2: MVP — Debug у run configurations, точки останова на строках, кадры, переменные (постранично), шаги, evaluate, консоль
-- [ ] Слой 3: условия / hit count / logpoints, исключения, Set Value, watches, Run to Cursor, attach, restart
-- [ ] Слой 4: отладка тестов (`VSTEST_HOST_DEBUG=1` + attach)
-- [ ] Слой 5: значения в редакторе, async-стек, `runInTerminal`, netcoredbg как второй адаптер
+- [x] Свой DAP-клиент вместо платформенного (проверено вживую 2026-09-22): `DapConnection` (фрейминг, корреляция по `request_seq`, события,
+  закрытие; тесты `DapClientTest`), `DotNetDebugProcess` на XDebugger — всё из этапов 0–6 выше, кнопка Debug работает и в IDE без модуля DAP.
+  Кадры порциями, переменные постранично (`start` / `count`), Run to Cursor, значения в редакторе
+- [ ] Слой 5 (полировка): async-стек, `runInTerminal` (ввод в консольную программу), Set Next Statement (`gotoTargets` / `goto`), `restart`,
+  второй адаптер (netcoredbg)
 
 ## C# через roslyn-language-server (действующий план, фаза 1 сделана)
 Подробности — решения, замеры сервера, устройство трёх слоёв (сервер, кэш ответов, свои индексы плагина), риски — в `LSP_PLAN.md`.

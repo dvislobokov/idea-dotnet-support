@@ -6,8 +6,8 @@ Rider-подобная работа с .NET **без LSP, Roslyn и (пока) �
 `lang/CSharpDeclarations` находит объявления (namespace / типы / члены), по ним парсер строит PSI-узлы `CSharpDeclaration` (Structure view, breadcrumbs,
 folding, Go to Class); внутри членов токены плоские. Меняешь, что сканер считает объявлением, — подними `VERSION` у `CSharpDeclarationIndex`.
 
-Планы и статус: `ROADMAP.md` (чек-лист фич, ведётся по-русски), **`PLATFORM_DAP_PLAN.md`** (отладчик на платформенном DAP-клиенте: этапы и промпт для сессии;
-действующий план), `DAP_PLAN.md` (свой DAP-клиент — запасной путь и справка по адаптеру), `LSP_PLAN.md` (C# через `roslyn-language-server`: платформенный LSP-клиент, кэш ответов, свои индексы плагина; действующий план). Анализ платформенных API LSP / DAP —
+Планы и статус: `ROADMAP.md` (чек-лист фич, ведётся по-русски), **`DAP_PLAN.md`** (отладчик на своём DAP-клиенте, пакет `debugger`: действующий план, справка по адаптеру
+и что осталось), `PLATFORM_DAP_PLAN.md` (история: отладчик на платформенном DAP-клиенте, этапы 0–6 и журнал находок — перенесён на свой клиент 2026-09-22), `LSP_PLAN.md` (C# через `roslyn-language-server`: платформенный LSP-клиент, кэш ответов, свои индексы плагина; действующий план). Анализ платформенных API LSP / DAP —
 `docs/platform-lsp-dap.html`, скрипты и дамп — `tools/platform-api/`; зонд и факты о `roslyn-language-server` — `tools/roslyn-lsp/`. Клиент сервера — content-модуль `io.github.dotnetsupport.roslyn` (фаза 1 сделана). `dap-probe/` — питоновские эксперименты с отладчиком, к сборке плагина не относятся. `debug-playground/` — .NET solution
 для живой проверки отладчика пользователем (сценарии с маркерами `// BP:`, чек-лист по этапам в его `README.md`), к сборке тоже не относится.
 
@@ -56,10 +56,10 @@ export JAVA_HOME="C:\Program Files\JetBrains\IntelliJ IDEA 2026.1.4\jbr"   # JBR
 | `format` | CSharpier / `dotnet format` за Reformat Code |
 | `monitor`, `endpoints`, `upgrade`, `sdk`, `settings`, `templates`, `newproject`, `lang` | по названию |
 
-Регистрация всего — `src/main/resources/META-INF/plugin.xml`. Исключение — то, чему нужен платформенный DAP (`intellij.platform.dap`, есть не в каждой IDE):
-это content-модуль плагина `io.github.dotnetsupport.dap` — дескриптор `resources/io.github.dotnetsupport.dap.xml` (зависимость на модуль платформы и свои
-расширения), классы строго в пакете `io.github.dotnetsupport.dap` (у модуля свой загрузчик по префиксу пакета). Остальной код на этот пакет и на классы
-`com.intellij.platform.dap.*` ссылаться не должен: без DAP модуль не грузится, а плагин обязан работать. Так же устроен клиент `roslyn-language-server`:
+Регистрация всего — `src/main/resources/META-INF/plugin.xml`. Отладчик — в основной части, пакет `debugger`: свой DAP-клиент (`DapConnection`) на XDebugger API,
+который есть в каждой IDE. На платформенный DAP (`intellij.platform.dap`) не опираться: его нет в IntelliJ IDEA Community и её форках (с него ушли 2026-09-22,
+находки — в `PLATFORM_DAP_PLAN.md`). Исключение из «всё в plugin.xml» — то, чему нужен модуль платформы, которого есть не в каждой IDE: это content-модуль
+плагина со своим дескриптором, классы строго в его пакете (свой загрузчик по префиксу пакета), остальной код на этот пакет ссылаться не должен. Так устроен клиент `roslyn-language-server`:
 модуль `io.github.dotnetsupport.roslyn` (`resources/io.github.dotnetsupport.roslyn.xml`, зависит от `intellij.platform.lsp.impl`), пакет именно `roslyn` — в `lsp`
 лежит страница настроек основной части. Из основной части в модуль — только через топик (`RoslynLanguageServerSettings.CHANGED`). Формы ответов сервера не угадывать: `tools/roslyn-lsp/capture.py` снимает трафик (фикстуры — `src/test/resources/roslyn/capture-5.12`,
 тест на потери в lsp4j — `RoslynCapturedTrafficTest`); у платформенного LSP-клиента два поколения API — переопределять обе перегрузки (`LspClient` и устаревшую `LspServer`).

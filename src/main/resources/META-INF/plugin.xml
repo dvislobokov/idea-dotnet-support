@@ -17,9 +17,12 @@
 
     <!-- optional parts: a module is loaded only where its dependencies are (see the descriptor of the module next to META-INF) -->
     <content>
-        <module name="io.github.dotnetsupport.dap"/>
         <module name="io.github.dotnetsupport.roslyn"/>
     </content>
+
+    <extensions defaultExtensionNs="io.github.dotnetsupport">
+        <processAttacher implementation="io.github.dotnetsupport.debugger.DotNetProcessAttacherImpl"/>
+    </extensions>
 
     <extensionPoints>
         <!-- who can attach a debugger to a .NET process: the module with the debugger, where it is loaded -->
@@ -129,6 +132,18 @@
         <runLineMarkerContributor language="C#"
                                   implementationClass="io.github.dotnetsupport.run.MainMethodRunLineMarkerContributor"/>
         <programRunner implementation="io.github.dotnetsupport.testing.DotNetTestRunner" order="first"/>
+        <!-- the debugger: the plugin's own DAP client on the XDebugger API, which every IDE has (the DAP module of the platform is
+             absent from IntelliJ IDEA Community and its forks) -->
+        <programRunner implementation="io.github.dotnetsupport.debugger.DotNetDebugRunner"/>
+        <xdebugger.breakpointType implementation="io.github.dotnetsupport.debugger.CSharpLineBreakpointType"/>
+        <xdebugger.breakpointType implementation="io.github.dotnetsupport.debugger.DotNetExceptionBreakpointType"/>
+        <xdebugger.attachDebuggerProvider implementation="io.github.dotnetsupport.debugger.DotNetAttachDebuggerProvider"/>
+        <!-- names of the stopped program in Evaluate, watches and breakpoint conditions; first, and it stops the others there -->
+        <completion.contributor language="C#" order="first" implementationClass="io.github.dotnetsupport.debugger.DotNetExpressionCompletionContributor"/>
+        <registryKey key="dotnet.debugger.adapter.log" defaultValue="true"
+                     description="Write the log of the dotnet-debugger adapter for every debug session (menu .NET | Show Debugger Logs)"/>
+        <registryKey key="dotnet.debugger.protocol.trace" defaultValue="false"
+                     description="Write every DAP message of the debug sessions next to the debugger logs (menu .NET | Trace Debugger Protocol)"/>
         <stepsBeforeRunProvider implementation="io.github.dotnetsupport.run.BuildProjectBeforeRunTaskProvider"/>
         <runConfigurationProducer implementation="io.github.dotnetsupport.testing.DotNetTestConfigurationProducer"/>
         <runLineMarkerContributor language="C#"
@@ -310,6 +325,10 @@
             <reference ref="DotNet.InsertGuid"/>
             <reference ref="DotNet.AnalyzeStackTrace"/>
             <separator/>
+            <action id="DotNet.Debugger.ShowLogs" class="io.github.dotnetsupport.debugger.ShowDebuggerLogsAction" text="Show Debugger Logs"
+                    description="Open the directory with the logs of the debug adapter and the traces of the protocol"/>
+            <action id="DotNet.Debugger.TraceProtocol" class="io.github.dotnetsupport.debugger.TraceDebuggerProtocolAction" text="Trace Debugger Protocol"
+                    description="Write every DAP message of the debug sessions that start from now on next to the debugger logs"/>
             <!-- a diagnostic: is the LSP / DAP API of the platform there in this IDE and with this license -->
             <action id="DotNet.PlatformApiProbe" class="io.github.dotnetsupport.probe.PlatformApiProbeAction"
                     text="Probe Platform LSP / DAP API..." description="Check which LSP and DAP API of the platform this IDE has; the result can be copied as JSON"/>

@@ -40,7 +40,8 @@ object PlatformApiProbe {
     const val PLUGIN_MODULE = "plugin module"
 
     /** Content modules of the plugin by the area they need: the prefix of their classes is how their extensions are told. */
-    private val OWN_MODULES = mapOf("dap" to "io.github.dotnetsupport.dap")
+    // the debugger needs no module of the platform any more: it is the plugin's own DAP client on XDebugger
+    private val OWN_MODULES = mapOf("lsp" to "io.github.dotnetsupport.roslyn")
 
     private const val EXPECTED = "/platformProbe/expected.json"
 

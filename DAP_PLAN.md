@@ -1,7 +1,9 @@
 # Отладка через DAP: план интеграции
 
-Статус: **запасной путь** (2026-09-21): действующий план — `PLATFORM_DAP_PLAN.md`, отладчик на платформенном DAP-клиенте; слои 1–3 отсюда нужны,
-только если платформа упрётся или для IDE без модуля DAP. Таблица соответствия и особенности адаптера ниже действуют в обоих случаях. Отладчик — `dotnet-debugger` (MIT, на ICorDebug, говорит по Debug Adapter
+Статус: **действующий план, слои 1–4 сделаны и проверены вживую (2026-09-22)**; остался слой 5 (полировка). Код — пакет `debugger` в основной части
+плагина. История: 2026-09-21 отладчик был сделан на платформенном DAP-клиенте (`PLATFORM_DAP_PLAN.md`, этапы 0–5 и completion), 2026-09-22 перенесён
+на свой клиент: модуля `intellij.platform.dap` нет в IntelliJ IDEA Community и её форках. Находки того плана (журнал) — про адаптер и XDebugger, они
+действуют и здесь. Отладчик — `dotnet-debugger` (MIT, на ICorDebug, говорит по Debug Adapter
 Protocol), ставится как dotnet tool: пакет `dotnet-debugger-dap`, команда `dotnet-debugger`. Результаты его проверки на
 Windows и Linux — в `dap-probe/FINDINGS.md`, там же скрипты, которыми можно прогнать любую новую версию.
 
@@ -10,9 +12,9 @@ Windows и Linux — в `dap-probe/FINDINGS.md`, там же скрипты, к�
 точки останова, стек, переменные, evaluate и мост в XDebugger (`DapProgramRunner`, пакет `xdebugger`). Точки расширения:
 `com.intellij.platform.dap.debugAdapterSupportProvider` (`DebugAdapterSupportProvider` → `DebugAdapterDescriptor`) и `...launchArgumentsProvider`
 (`DapLaunchArgumentsProvider`). Таймауты — ключи реестра `dap.timeout.*`, трассировка — `dap.message.trace.dir`. Им пользуются JS-отладчик и Jupyter.
-Прежде чем писать свой клиент (слои 1–3 ниже), попробовать описать `dotnet-debugger` через этот модуль. Не проверено: есть ли модуль в GoLand / PyCharm /
-WebStorm / Rider (он `productModuleV2`, включается по продуктам) и как он переживает особенности адаптера из `dap-probe/FINDINGS.md`
-(постраничные `variables`, долгие запросы).
+Отладчик на нём был сделан (`PLATFORM_DAP_PLAN.md`) и заменён своим клиентом 2026-09-22: модуль включается по продуктам (`productModuleV2`,
+набор `ide.ultimate`), в IntelliJ IDEA Community и её форках его нет, а плагин обязан отлаживать везде. Попутно исчезли и обходы платформы
+(выбор остановившегося потока, переписывание `setBreakpoints` на пути к адаптеру ради hit count / logpoints, свой evaluator для hover).
 
 ## Решения
 - **Отладчик — обычный dotnet tool плагина**, как `dotnet-counters`: строка на странице Settings | Tools | .NET (путь, Install /
@@ -23,10 +25,9 @@ WebStorm / Rider (он `productModuleV2`, включается по продук
 - **Платформенный XDebugger API** (есть во всех IDE на платформе, включая GoLand): UI отладки не пишется, пишется мост.
 - Клиент не привязан к одному адаптеру: netcoredbg говорит тем же DAP с похожими аргументами `launch`, его можно подключить позже.
 
-- **Настройки уже размечены**: страница Settings | Tools | .NET | Debugger (`DotNetDebuggerConfigurable`) перечисляет опции Rider под
-  замком. По мере слоёв замки снимаются: слой 2 — Save all files on launch, Allow property evaluations + Evaluation timeout, Truncate
-  long strings; слой 3 — Process exceptions outside of my code, Show return values, hex, fully qualified names, Disable JIT optimization
-  (`justMyCode` / `enableStepFiltering` в `launch`). Blazor WASM, Predictive debugger, JIT-отладчик Windows — вне плана.
+- **Настройки** — страница Settings | Tools | .NET | Debugger (`DotNetDebuggerConfigurable`), формулировки Rider, но только опции, за которыми
+  есть реализация (заглушки под замком убраны 2026-09-21); новая опция появляется вместе с тем, что она включает. Blazor WASM, Predictive debugger,
+  JIT-отладчик Windows — вне плана.
 
 ## Соответствие XDebugger ↔ DAP
 | Платформа | DAP |
@@ -44,20 +45,21 @@ WebStorm / Rider (он `productModuleV2`, включается по продук
 | Консоль | события `output` (stdout / stderr / console) |
 | Attach to Process | `XAttachDebuggerProvider` → `attach` с `processId` |
 
-## Слои и оценки (дни работы разработчика)
-1. **Инструмент и DAP-клиент (1 д).** Запись в `.NET Tools`; транспорт (фрейминг, поток чтения), клиент: запросы с
-   корреляцией по `request_seq` (ответы приходят не по порядку — на этом уже обожглась проверочная обвязка), события,
-   обратные запросы (`runInTerminal`), ошибки, закрытие. Тесты на фейковом адаптере через pipe + проба на настоящем.
-   *Сделано из этого: запись инструмента (`DotNetTool.DEBUGGER`).*
-2. **MVP отладки (3–4 д).** Debug у наших run configurations (сборка своим билдом → `launch` с `program`, `args`, `cwd`,
-   `env`, включая поле Environment), точки останова на строках, остановка, кадры, переменные, шаги, evaluate, консоль, Stop.
-3. **Полнота (2–3 д).** Условия / hit count / logpoints, исключения, Set Value, watches, Run to Cursor, attach, restart.
-4. **Отладка тестов (1–2 д).** `dotnet test` с `VSTEST_HOST_DEBUG=1` → attach по напечатанному PID; Debug у ▶ тестов и в
-   окне Unit Tests.
-5. **Полировка (2 д).** Значения прямо в редакторе, async-стек, многопоточность, запуск в терминале (`runInTerminal`),
-   второй адаптер (netcoredbg).
+## Слои
+1. **Инструмент и DAP-клиент — сделано.** `DotNetTool.DEBUGGER` в `.NET Tools`; `DapConnection`: фрейминг `Content-Length`, корреляция по
+   `request_seq` (ответы приходят не по порядку), события, запросы адаптера, ошибки (`DapException` с текстом адаптера), закрытие
+   (`DapClosedException` всем ждущим). `DebugAdapterProcess` — процесс адаптера, останавливается убийством дерева. Тесты — `DapClientTest`.
+2. **MVP отладки — сделано.** `DotNetDebugRunner` / `DotNetDebugProcess`: Debug у «.NET Project» (сборка своим билдом, аргументы `launch` — `DotNetLaunchArguments`),
+   точки останова на строках, остановка, потоки, кадры порциями, переменные постранично, шаги, pause, evaluate / watches / hover, консоль, Stop.
+3. **Полнота — сделано.** Условия / hit count / logpoints (`DotNetLineBreakpointProperties`), исключения как «Break when» Rider (`exceptionInfo`
+   для описания), Set Value через `setExpression`, Run to Cursor, attach (`DotNetAttachDebuggerProvider`, повторный attach не предлагается),
+   completion в выражениях. *Не сделано:* `restart`.
+4. **Отладка тестов — сделано.** `VSTEST_HOST_DEBUG=1` → attach к тестовому хосту через `DotNetProcessAttacher`; Debug у ▶, у конфигурации `dotnet test`
+   и в окне Unit Tests. Не проверено: проекты на Microsoft.Testing.Platform.
+5. **Полировка — осталось.** Async-стек, запуск в терминале (`runInTerminal`, ввод в консольную программу), Set Next Statement (`gotoTargets` / `goto`),
+   `restart`, второй адаптер (netcoredbg). Значения в редакторе в коде есть (`computeInlineDebuggerData`).
 
-Итого 9–12 дней. Узкое место то же, что всюду: UX отладки проверяется только в живой IDE.
+Узкое место то же, что всюду: UX отладки проверяется только в живой IDE (UI-робот — `tools/ui-robot`, сценарии — `debug-playground`).
 
 ## Что клиент обязан учитывать (по `dap-probe/FINDINGS.md`)
 - `variables` — только постранично: без `start` / `count` большой список убивает адаптер на Linux (OOM) и на минуты
