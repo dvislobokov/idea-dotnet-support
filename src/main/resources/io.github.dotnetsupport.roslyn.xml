@@ -16,6 +16,8 @@
         <editorNotificationProvider implementation="io.github.dotnetsupport.roslyn.RoslynDecompiledBanner"/>
         <!-- adds no items: makes the first letter after a space start the popup again, see the class -->
         <completion.contributor language="C#" order="first" implementationClass="io.github.dotnetsupport.roslyn.RoslynCompletionRestart"/>
+        <!-- Ctrl+P: every overload as a row, as in Rider; the handler of the platform for LSP shows the active signature only -->
+        <codeInsight.parameterInfo language="C#" implementationClass="io.github.dotnetsupport.roslyn.RoslynParameterInfoHandler"/>
         <!-- no items of its own: it is how the widget of language services gets redrawn when Roslyn goes from loading to ready -->
         <platform.lang.lsWidget.itemsProvider implementation="io.github.dotnetsupport.roslyn.RoslynWidgetUpdater"/>
     </extensions>

@@ -16,6 +16,12 @@ import org.eclipse.lsp4j.CompletionItemKind
  * show the overloads for (reported). Now `()` go after it with the caret inside, and the parameter info pops up at once.
  */
 class RoslynCompletionSupport : LspCompletionSupport() {
+    /**
+     * `(` is a trigger character of Roslyn, and the platform opened the whole list of types with an empty prefix next to the parameter info
+     * (seen on a screenshot of the user). After `(` Rider and Visual Studio show the parameters only; the list comes once a name is typed.
+     */
+    override fun isTriggerCharacterRespected(c: Char): Boolean = RoslynCompletionPolicy.isTrigger(c)
+
     override fun createLookupElement(parameters: CompletionParameters, item: CompletionItem): LookupElement? {
         val element = super.createLookupElement(parameters, item) ?: return null
         if (!RoslynCompletionPolicy.isCallable(item.kind)) return element
@@ -48,6 +54,9 @@ class RoslynCompletionSupport : LspCompletionSupport() {
 object RoslynCompletionPolicy {
     private val CALLABLE = setOf(CompletionItemKind.Method, CompletionItemKind.Function)
     private val SUBSCRIPTION = Regex("""[+-]=\s*$""")
+
+    /** The trigger characters of Roslyn that open the list; `(` opens the parameter info instead, see [RoslynCompletionSupport]. */
+    fun isTrigger(c: Char): Boolean = c != '('
 
     /** Methods, extension methods included (Roslyn sends them as `Method`); a constructor comes as its type, which is not called by name. */
     fun isCallable(kind: CompletionItemKind?): Boolean = kind in CALLABLE

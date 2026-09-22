@@ -34,12 +34,34 @@ class RoslynPhase7Test : BasePlatformTestCase() {
         assertTrue("Tab", policy.addsParentheses(com.intellij.codeInsight.lookup.Lookup.REPLACE_SELECT_CHAR, call, start, call.length))
         assertTrue("typed (", policy.addsParentheses('(', call, start, call.length))
         assertFalse("typed .", policy.addsParentheses('.', call, start, call.length))
+        assertFalse("( opens the parameter info, not the list of types", policy.isTrigger('('))
+        assertTrue(policy.isTrigger('.'))
+        assertTrue(policy.isTrigger(' '))
 
         val subscription = "void M()\n{\n    PriceFeed.Changed += OnChanged"
         assertFalse("an event handler is a method group", policy.addsParentheses(com.intellij.codeInsight.lookup.Lookup.NORMAL_SELECT_CHAR, subscription,
             subscription.indexOf("OnChanged"), subscription.length))
         val later = "x += 1;\nFoo"
         assertTrue("+= of another line", policy.addsParentheses(com.intellij.codeInsight.lookup.Lookup.NORMAL_SELECT_CHAR, later, later.indexOf("Foo"), later.length))
+    }
+
+    /** Ctrl+P lists every overload; the parameters come from the label of the signature, as Roslyn names a parameter by its name only. */
+    fun testParametersOfASignature() {
+        val signatures = io.github.dotnetsupport.roslyn.RoslynSignatures
+        fun signature(label: String, vararg names: String) = org.eclipse.lsp4j.SignatureInformation(label).apply {
+            parameters = names.map { org.eclipse.lsp4j.ParameterInformation(it) }
+        }
+        assertEquals(emptyList<String>(), signatures.parameters(signature("void Console.WriteLine()")))
+        assertEquals(listOf("string format", "object? arg0"), signatures.parameters(signature("void Console.WriteLine(string format, object? arg0)", "format", "arg0")))
+        assertEquals("commas inside generic arguments do not split", listOf("Dictionary<string, int> map", "params ReadOnlySpan<object?> arg"),
+            signatures.parameters(signature("void M(Dictionary<string, int> map, params ReadOnlySpan<object?> arg)", "map", "arg")))
+        assertEquals("a generic method", listOf("T value"), signatures.parameters(signature("void List<T>.Add<T>(T value)", "value")))
+
+        val two = listOf("string format", "object? arg0")
+        assertEquals(0 until 13, signatures.rangeOf(two, 0))
+        assertEquals(15 until 27, signatures.rangeOf(two, 1))
+        assertNull("past the last parameter", signatures.rangeOf(two, 2))
+        assertEquals("params takes the rest", 15 until 36, signatures.rangeOf(listOf("string format", "params object?[]? arg"), 5))
     }
 
     fun testWordAt() {
