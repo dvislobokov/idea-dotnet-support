@@ -101,8 +101,21 @@ class CSharpIdiomsTest : TestCase() {
             <caret>
                 }
             }""".trimIndent())!!.trim()
-        assertTrue(suggestion, suggestion.startsWith("this.port = port;"))
+        // the reference parameter gets a null check first, then both are assigned; the value parameter is not null-checked
+        assertTrue(suggestion, suggestion.startsWith("ArgumentNullException.ThrowIfNull(host);"))
+        assertTrue(suggestion, suggestion.contains("this.port = port;"))
         assertTrue(suggestion, suggestion.contains("this.host = host;"))
+        assertFalse(suggestion, suggestion.contains("ThrowIfNull(port)"))
+    }
+
+    fun testConstructorThrowIfNullWithoutAssignment() {
+        // a reference parameter with no backing member still gets its null check
+        assertEquals("ArgumentNullException.ThrowIfNull(logger);", body("""
+            class Service {
+                public Service(ILogger logger) {
+            <caret>
+                }
+            }""".trimIndent()))
     }
 
     fun testConstructorAssignmentToBackingField() {

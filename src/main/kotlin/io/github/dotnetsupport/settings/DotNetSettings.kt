@@ -48,6 +48,9 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
         /** Grey-text argument guards and constructor assignments, accepted with Tab. */
         var inlineIdioms by property(true)
 
+        /** Tab at the end of a statement appends the missing `;`. */
+        var tabFinishesStatement by property(true)
+
         /** Package id of a global tool -> its executable; a tool without an entry is looked up on PATH and in `~/.dotnet/tools`. */
         var toolPaths by map<String, String>()
 
@@ -76,6 +79,10 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
     var inlineIdioms: Boolean
         get() = state.inlineIdioms
         set(value) { state.inlineIdioms = value }
+
+    var tabFinishesStatement: Boolean
+        get() = state.tabFinishesStatement
+        set(value) { state.tabFinishesStatement = value }
 
     var debugExternalSource: Boolean
         get() = state.debugExternalSource
@@ -227,6 +234,10 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
                 row {
                     checkBox("Suggest argument guards and constructor assignments as you type").bindSelected(settings::inlineIdioms)
                         .comment("Grey text inside a null/empty check or an empty constructor, accepted with Tab")
+                }
+                row {
+                    checkBox("Finish a statement with the missing semicolon on Tab").bindSelected(settings::tabFinishesStatement)
+                        .comment("Tab at the end of a statement appends ; — never inside indentation, a template or a completion popup")
                 }
             }
         }.also {

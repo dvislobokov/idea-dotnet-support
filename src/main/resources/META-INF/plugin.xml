@@ -84,6 +84,10 @@
                                                       implementationClass="io.github.dotnetsupport.lang.CSharpPostfixTemplateProvider"/>
         <!-- grey-text argument guards and constructor assignments, accepted with Tab; the server sends no such thing -->
         <inline.completion.provider implementation="io.github.dotnetsupport.lang.CSharpInlineIdiomsProvider"/>
+        <!-- Complete Statement (Ctrl+Shift+Enter): closing braces/parentheses and the caret placed to keep typing -->
+        <lang.smartEnterProcessor language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpSmartEnterProcessor"/>
+        <!-- Tab finishes a statement with the missing `;`, delegating to the normal Tab everywhere else -->
+        <editorActionHandler action="EditorTab" implementationClass="io.github.dotnetsupport.lang.CSharpTabFinishStatementHandler"/>
         <typedHandler implementation="io.github.dotnetsupport.lang.CSharpDocCommentTypedHandler"/>
         <!-- indentation while typing, by the rules of resources/csharpIndent/rules.json; whole files are formatted by CSharpier / dotnet format -->
         <lineIndentProvider implementation="io.github.dotnetsupport.lang.CSharpLineIndentProvider"/>

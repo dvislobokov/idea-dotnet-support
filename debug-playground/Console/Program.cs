@@ -12,5 +12,19 @@ foreach (var name in names)
     await Scenarios.Run(name); // Step Into (F7) goes to Scenarios.Run, Step Over (F8) runs the scenario
 }
 
+foreach (var item in names)
+{
+
+}
+
+if (names == null)
+{
+
+}
+else
+{
+
+}
+
 Console.WriteLine("Done.");
 return 0;

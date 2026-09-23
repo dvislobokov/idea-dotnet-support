@@ -3,6 +3,13 @@ using Playground.Lib;
 
 namespace Playground;
 
+public class Per {
+    public Per(IAsyncDisposable disposable)
+    {
+        ArgumentNullException.ThrowIfNull(disposable);
+    }
+}
+
 /// <summary>
 /// One method per thing to check in the debugger. Lines worth a breakpoint are marked `// BP:name`, the comment says what to look at.
 /// </summary>

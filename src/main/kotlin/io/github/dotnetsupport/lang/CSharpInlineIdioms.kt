@@ -105,25 +105,75 @@ object CSharpIdioms {
         return null
     }
 
-    // --- constructor assignments ---
+    // --- constructor guards and assignments ---
 
-    /** In an empty constructor body, the `field = param;` for each parameter that has a matching field or property of the type. */
+    /** In an empty constructor body: `ArgumentNullException.ThrowIfNull(p)` for the reference parameters, then `field = p;` for the assignable ones. */
     private fun constructorAssignments(lines: List<Line>, path: List<CSharpDeclarationInfo>): Suggestion? {
         val above = lines.first()
         // the body must be empty here: the line above is the brace or header that opens it
         if (above.code != "{" && !above.code.endsWith("{")) return null
         val constructor = path.lastOrNull()?.takeIf { it.kind == DeclarationKind.CONSTRUCTOR } ?: return null
         val type = path.lastOrNull { it.kind.isType } ?: return null
-        val parameters = CSharpDocComments.parameterNames(constructor.parameters)
+        val parameters = parseParameters(constructor.parameters)
         if (parameters.isEmpty()) return null
 
         val members = type.children.filter { (it.kind == DeclarationKind.FIELD || it.kind == DeclarationKind.PROPERTY) && "static" !in it.modifiers && "const" !in it.modifiers }
+        // null checks first, as Rider generates them: only reference parameters can be null
+        val guards = parameters.filter { isReferenceType(it.type) }.map { "ArgumentNullException.ThrowIfNull(${it.name});" }
         val assignments = parameters.mapNotNull { parameter ->
-            val member = members.firstOrNull { normalize(it.name) == normalize(parameter) } ?: return@mapNotNull null
-            if (member.name == parameter) "this.${member.name} = $parameter;" else "${member.name} = $parameter;"
+            val member = members.firstOrNull { normalize(it.name) == normalize(parameter.name) } ?: return@mapNotNull null
+            if (member.name == parameter.name) "this.${member.name} = ${parameter.name};" else "${member.name} = ${parameter.name};"
         }
-        if (assignments.isEmpty()) return null
-        return Suggestion(assignments, above.indent)
+        val body = guards + assignments
+        if (body.isEmpty()) return null
+        return Suggestion(body, above.indent)
+    }
+
+    private class Parameter(val type: String, val name: String)
+
+    /** `(ILogger logger, int retries = 0)` -> the (type, name) of each parameter; modifiers and default values dropped. */
+    private fun parseParameters(parameters: String?): List<Parameter> {
+        val inner = parameters?.trim()?.removePrefix("(")?.removeSuffix(")")?.takeIf { it.isNotBlank() } ?: return emptyList()
+        val result = ArrayList<Parameter>()
+        var depth = 0
+        val current = StringBuilder()
+        for (c in "$inner,") {
+            when {
+                c in "<([{" -> depth++
+                c in ">)]}" -> depth--
+            }
+            if (c == ',' && depth <= 0) {
+                parameter(current.toString())?.let { result += it }
+                current.clear()
+            } else current.append(c)
+        }
+        return result
+    }
+
+    private val PARAMETER_MODIFIERS = setOf("params", "ref", "out", "in", "this", "scoped", "readonly")
+
+    private fun parameter(part: String): Parameter? {
+        val words = part.substringBefore('=').trim().split(Regex("\\s+")).filter { it.isNotBlank() && it !in PARAMETER_MODIFIERS }
+        if (words.size < 2) return null
+        return Parameter(words.dropLast(1).joinToString(" "), words.last())
+    }
+
+    private val VALUE_TYPES = setOf(
+        "int", "long", "short", "byte", "sbyte", "uint", "ulong", "ushort", "bool", "char", "float", "double", "decimal", "nint", "nuint",
+        "Int32", "Int64", "Int16", "Byte", "SByte", "UInt32", "UInt64", "UInt16", "Boolean", "Char", "Single", "Double", "Decimal", "IntPtr", "UIntPtr",
+        "DateTime", "DateTimeOffset", "TimeSpan", "Guid",
+    )
+
+    /** Whether `ThrowIfNull` fits the type: arrays and most named types yes, the primitive value types, nullable values and generic parameters no. */
+    private fun isReferenceType(type: String): Boolean {
+        val t = type.trim()
+        if (t.endsWith("]")) return true // an array is a reference
+        if (t.endsWith("*")) return false // a pointer is not null-checked like this
+        val base = t.removeSuffix("?").substringAfterLast('.')
+        if (base in VALUE_TYPES) return false
+        // a generic type parameter (T, TKey, ...) may be a value type: do not guess a null check for it
+        if (base.length == 1 && base[0].isUpperCase() || Regex("^T[A-Z]").containsMatchIn(base)) return false
+        return true
     }
 
     /** `_port`, `m_port`, `Port`, `port` all reduce to `port`, so a parameter finds its backing member whatever the convention. */

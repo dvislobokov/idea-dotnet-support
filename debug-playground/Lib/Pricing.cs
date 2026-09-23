@@ -21,4 +21,11 @@ public record OrderLine(string Name, decimal Price, int Quantity);
 public class ShopException(string message, int code) : Exception(message)
 {
     public int Code { get; } = code;
+
+    public void CheckPrice(int? price){
+        if(price == null){
+            throw new ArgumentNullException(nameof(price));
+        }
+    }
 }
+
