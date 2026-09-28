@@ -5,6 +5,15 @@ import org.jdom.Element
 
 data class PackageReference(val name: String, val version: String?)
 
+/** `<Compile Remove="Legacy\**" />`: files of [itemType] the project leaves out of the default globs. */
+data class ItemRemove(val itemType: String, val glob: MsBuildGlob)
+
+/**
+ * An item whose `Include` points outside of the project directory, shown inside the project under [link]
+ * (`Link="Shared\Util.cs"`, or `LinkBase="Shared"` plus the path under the wildcard, or just the file name).
+ */
+data class LinkedItem(val itemType: String, val include: MsBuildGlob, val link: String?, val linkBase: String?)
+
 /**
  * What can be read from an MSBuild file statically, without evaluating it:
  * conditions, imports and property expansion are ignored.
@@ -23,6 +32,14 @@ data class MsBuildProject(
     val implicitUsings: Boolean = false,
     /** Explicit `<Import Project="...">` paths that do not depend on properties. */
     val imports: List<String> = emptyList(),
+    /** `Remove` of the file items: what is taken out of the default globs of the SDK. */
+    val removes: List<ItemRemove> = emptyList(),
+    /** `DefaultItemExcludes` without the `$(DefaultItemExcludes)` it usually starts with: excluded from every default glob. */
+    val defaultItemExcludes: List<MsBuildGlob> = emptyList(),
+    /** File items included from outside of the project directory. */
+    val linkedItems: List<LinkedItem> = emptyList(),
+    /** Path of a file relative to the project (lower case, `/`) -> the file it is nested under, `<DependentUpon>`. */
+    val dependentUpon: Map<String, String> = emptyMap(),
 ) {
     val isTestProject: Boolean
         get() = packages.any { it.name.equals("Microsoft.NET.Test.Sdk", ignoreCase = true) || it.name.equals("xunit.v3", ignoreCase = true) }
@@ -32,8 +49,18 @@ data class MsBuildProject(
         get() = outputType.equals("Exe", ignoreCase = true) || outputType.equals("WinExe", ignoreCase = true) ||
             RUNNABLE_SDKS.any { sdk.orEmpty().startsWith(it, ignoreCase = true) }
 
+    /** Whether the SDK treats `wwwroot` as content: web and Razor SDKs. */
+    val isWebSdk: Boolean get() = WEB_SDKS.any { sdk.orEmpty().startsWith(it, ignoreCase = true) }
+
     companion object {
         private val RUNNABLE_SDKS = listOf("Microsoft.NET.Sdk.Web", "Microsoft.NET.Sdk.Worker", "Microsoft.NET.Sdk.BlazorWebAssembly")
+        private val WEB_SDKS = listOf("Microsoft.NET.Sdk.Web", "Microsoft.NET.Sdk.Razor", "Microsoft.NET.Sdk.BlazorWebAssembly")
+
+        /** Items that stand for files of the project, the ones the Solution view shows. */
+        val FILE_ITEMS: Set<String> = setOf(
+            "Compile", "None", "Content", "EmbeddedResource", "Page", "Resource", "ApplicationDefinition", "AdditionalFiles",
+            "AvaloniaResource", "AvaloniaXaml", "MauiXaml", "MauiCss", "MauiImage", "TypeScriptCompile", "Protobuf",
+        )
 
         fun parse(text: CharSequence): MsBuildProject {
             val root = try {
@@ -51,10 +78,27 @@ data class MsBuildProject(
             var rootNamespace: String? = null
             var implicitUsings = false
             val imports = LinkedHashSet<String>()
+            val removes = ArrayList<ItemRemove>()
+            val excludes = ArrayList<MsBuildGlob>()
+            val linked = ArrayList<LinkedItem>()
+            val dependent = LinkedHashMap<String, String>()
 
             // Element names are compared without namespace: old-style projects declare the msbuild/2003 one.
             for (element in root.descendants()) {
+                if (element.name in FILE_ITEMS) {
+                    splitList(element.getAttributeValue("Remove")).mapTo(removes) { ItemRemove(element.name, MsBuildGlob(it)) }
+                    for (include in includes(element)) {
+                        if (isOutside(include)) linked += LinkedItem(element.name, MsBuildGlob(include), itemMetadata(element, "Link"), itemMetadata(element, "LinkBase"))
+                    }
+                    val parent = itemMetadata(element, "DependentUpon")
+                    if (parent != null) {
+                        for (path in includes(element) + splitList(element.getAttributeValue("Update"))) {
+                            if (!isOutside(path) && !MsBuildGlob(path).hasWildcards) dependent[MsBuildGlob.normalize(path).lowercase()] = parent.replace('\\', '/').substringAfterLast('/')
+                        }
+                    }
+                }
                 when (element.name) {
+                    "DefaultItemExcludes" -> splitList(element.textTrim).filter { !it.startsWith("$(") }.mapTo(excludes, ::MsBuildGlob)
                     "TargetFramework", "TargetFrameworks" -> frameworks += splitList(element.textTrim)
                     "TargetFrameworkVersion" -> frameworks += splitList(element.textTrim).map { "net" + it.removePrefix("v").replace(".", "") }
                     "OutputType" -> outputType = outputType ?: element.textTrim.takeIf { it.isNotEmpty() }
@@ -79,7 +123,17 @@ data class MsBuildProject(
                 rootNamespace = rootNamespace,
                 implicitUsings = implicitUsings,
                 imports = imports.toList(),
+                removes = removes,
+                defaultItemExcludes = excludes,
+                linkedItems = linked,
+                dependentUpon = dependent,
             )
+        }
+
+        /** `..\Shared\X.cs`, `C:\...`, `/...`, `$(SolutionDir)...`: not a path inside the project directory. */
+        private fun isOutside(include: String): Boolean {
+            val path = MsBuildGlob.normalize(include)
+            return path.startsWith("../") || path == ".." || path.startsWith("/") || path.startsWith("$(") || (path.length > 1 && path[1] == ':')
         }
 
         private fun Element.descendants(): Sequence<Element> =

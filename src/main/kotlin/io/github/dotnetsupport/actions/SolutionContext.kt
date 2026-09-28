@@ -7,9 +7,10 @@ import com.intellij.openapi.actionSystem.PlatformCoreDataKeys
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import io.github.dotnetsupport.msbuild.DotNetProjects
-import io.github.dotnetsupport.solution.SOLUTION_EXTENSIONS
 import io.github.dotnetsupport.solution.SlnProject
 import io.github.dotnetsupport.solution.SolutionService
+import io.github.dotnetsupport.solution.isSolutionFilterFile
+import io.github.dotnetsupport.solution.isSolutionOrFilterFile
 import io.github.dotnetsupport.view.DependenciesKey
 import io.github.dotnetsupport.view.DependencyGroupKey
 import io.github.dotnetsupport.view.ProjectKey
@@ -24,6 +25,9 @@ class SolutionContext(
     val project: SlnProject? = null,
 ) {
     val projectFile: VirtualFile? get() = project?.resolveFile(solutionFile)
+
+    /** The selection is under a `.slnf`: builds and runs, but `dotnet sln` cannot edit it. */
+    val isFilter: Boolean get() = isSolutionFilterFile(solutionFile)
 
     companion object {
         /** Context of the selected Solution view node; null when something else is selected. */
@@ -55,7 +59,7 @@ class SolutionContext(
                 return if (context.project != null) context.projectFile else context.solutionFile
             }
             val file = e.getData(CommonDataKeys.VIRTUAL_FILE) ?: return null
-            if (!file.isDirectory && file.extension?.lowercase() in SOLUTION_EXTENSIONS) return file
+            if (isSolutionOrFilterFile(file)) return file
             return DotNetProjects.findOwningProject(file)
         }
     }

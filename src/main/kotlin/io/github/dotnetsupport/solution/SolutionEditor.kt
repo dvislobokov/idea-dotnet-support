@@ -55,6 +55,25 @@ object SolutionEditor {
         return text.replaceRange(selfClosed.range, "<Solution>$eol$folder</Solution>")
     }
 
+    /**
+     * A project renamed: [oldPath] -> [newPath] (relative to the solution, any separators) and its display name -> [newName].
+     * `.sln`: the `Project(...) = "Name", "path", "{id}"` line; `.slnx`: `Path` and `DisplayName` of the `<Project>`.
+     */
+    fun renameProject(text: String, extension: String?, oldPath: String, newPath: String, newName: String): String {
+        val old = oldPath.replace('\\', '/').split('/').map(Regex::escape).joinToString("[\\\\/]")
+        if (extension.equals("slnx", ignoreCase = true)) {
+            val project = Regex("""<Project(\s[^>]*?)Path\s*=\s*"$old"([^>]*)>""", RegexOption.IGNORE_CASE)
+            return project.replace(text) { match ->
+                val rest = match.groupValues[2].replace(Regex("""\sDisplayName\s*=\s*"[^"]*""""), "")
+                "<Project${match.groupValues[1]}Path=\"${escapeXml(newPath.replace('\\', '/'))}\"$rest>"
+            }
+        }
+        val line = Regex("""^(\s*Project\("\{[^}]+}"\)\s*=\s*)"[^"]*"(\s*,\s*)"$old"(\s*,\s*"\{[^}]+}".*)$""", setOf(RegexOption.IGNORE_CASE, RegexOption.MULTILINE))
+        return line.replace(text) { match ->
+            "${match.groupValues[1]}\"$newName\"${match.groupValues[2]}\"${newPath.replace('/', '\\')}\"${match.groupValues[3]}"
+        }
+    }
+
     private fun escapeXml(value: String): String =
         value.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;")
 }

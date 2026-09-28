@@ -6,6 +6,10 @@
         <module name="intellij.platform.lsp.impl"/>
     </dependencies>
 
+    <extensions defaultExtensionNs="io.github.dotnetsupport">
+        <namespaceAdjuster implementation="io.github.dotnetsupport.roslyn.RoslynNamespaceAdjuster"/>
+    </extensions>
+
     <extensions defaultExtensionNs="com.intellij">
         <platform.lsp.integrationProvider implementation="io.github.dotnetsupport.roslyn.RoslynLspIntegrationProvider"/>
         <!-- Ctrl + hover: the platform resolves LSP references only during Go to Declaration; last, so a click still goes its way -->

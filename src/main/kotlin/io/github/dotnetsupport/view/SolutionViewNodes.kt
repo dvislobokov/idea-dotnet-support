@@ -106,7 +106,7 @@ private fun SlnFolder.contains(solutionFile: VirtualFile, file: VirtualFile): Bo
 
 class SolutionRootNode(project: Project, settings: ViewSettings?) : SolutionViewNode<Project>(project, project, settings) {
     override fun getChildren(): Collection<AbstractTreeNode<*>> {
-        val solutionFiles = solutions.solutionFiles()
+        val solutionFiles = solutions.allSolutionFiles()
         if (solutionFiles.isNotEmpty()) return solutionFiles.map { SolutionNode(nodeProject, SolutionKey(it), settings) }
 
         // Not a .NET directory: behave like the regular project view.
@@ -131,10 +131,16 @@ class SolutionNode(project: Project, key: SolutionKey, settings: ViewSettings?) 
             solution.root.contains(value.solutionFile, file)
 
     override fun present(presentation: PresentationData) {
+        val solution = solution
         val count = solution.allProjects.size
         presentation.setIcon(DotNetIcons.Solution)
         presentation.presentableText = value.solutionFile.nameWithoutExtension
-        presentation.locationString = if (count == 1) "1 project" else "$count projects"
+        presentation.locationString = when {
+            // a filter: how much of the solution it shows, as the title of Visual Studio does
+            solution.filtered -> "$count of ${solution.totalProjects} projects"
+            count == 1 -> "1 project"
+            else -> "$count projects"
+        }
     }
 }
 
@@ -185,7 +191,9 @@ class DotNetProjectNode(project: Project, key: ProjectKey, settings: ViewSetting
         // The platform nests files (appsettings.Development.json under appsettings.json) only below directory nodes;
         // the project directory is represented by this node, so its direct children are nested here.
         val nested = NestingTreeStructureProvider().modify(PsiDirectoryNode(nodeProject, directory, settings), content, settings)
-        return listOf(DependenciesNode(nodeProject, DependenciesKey(projectFile), settings)) + nested
+        // files the project file brings in from outside of its directory, at the places their Link names
+        val linked = linkedNodes(nodeProject, projectFile, contentOf(nodeProject, projectFile).linkedFiles(directory.virtualFile), "", settings)
+        return listOf(DependenciesNode(nodeProject, DependenciesKey(projectFile), settings)) + nested + linked
     }
 
     /**

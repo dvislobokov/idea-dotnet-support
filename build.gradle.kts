@@ -63,6 +63,7 @@ val runIdeForUiTests by intellijPlatformTesting.runIde.registering {
     plugins {
         robotServerPlugin()
     }
+
 }
 
 intellijPlatform {

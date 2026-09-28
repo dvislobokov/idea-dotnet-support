@@ -36,12 +36,15 @@ abstract class SolutionAction : AnAction(), DumbAware {
 
     override fun update(e: AnActionEvent) {
         val context = SolutionContext.fromSelection(e)
-        e.presentation.isEnabledAndVisible = context != null && isAvailable(context)
+        e.presentation.isEnabledAndVisible = context != null && (worksOnFilter || !context.isFilter) && isAvailable(context)
     }
 
     override fun actionPerformed(e: AnActionEvent) {
         perform(e.project ?: return, SolutionContext.fromSelection(e) ?: return)
     }
+
+    /** Whether the action makes sense under a solution filter (`.slnf`); the ones that run `dotnet sln` do not. */
+    protected open val worksOnFilter: Boolean get() = false
 
     protected open fun isAvailable(context: SolutionContext): Boolean = true
     protected abstract fun perform(project: Project, context: SolutionContext)
@@ -65,7 +68,8 @@ open class NewDotNetProjectAction @JvmOverloads constructor(private val requires
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
-        e.presentation.isEnabledAndVisible = e.project != null && (!requiresSelection || SolutionContext.fromSelection(e) != null)
+        val context = SolutionContext.fromSelection(e)
+        e.presentation.isEnabledAndVisible = e.project != null && (!requiresSelection || (context != null && !context.isFilter))
     }
 
     override fun actionPerformed(e: AnActionEvent) {
@@ -193,6 +197,7 @@ class NewSolutionFolderAction : SolutionAction() {
 }
 
 class AddProjectReferenceAction : SolutionAction() {
+    override val worksOnFilter: Boolean get() = true // edits the project file, not the solution
     override fun isAvailable(context: SolutionContext): Boolean = context.projectFile != null
 
     override fun perform(project: Project, context: SolutionContext) {

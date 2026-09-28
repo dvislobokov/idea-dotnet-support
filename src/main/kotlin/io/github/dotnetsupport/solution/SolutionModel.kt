@@ -12,9 +12,15 @@ class SlnFolder(val name: String, val id: String) {
     val files: MutableList<String> = mutableListOf()
 }
 
-/** [configurations]: build configurations the solution declares (`Debug`, `Release`, ...), in the order of the file. */
-class Solution(val root: SlnFolder, val configurations: List<String> = emptyList()) {
+/**
+ * [configurations]: build configurations the solution declares (`Debug`, `Release`, ...), in the order of the file.
+ * [filtered]: the view of a solution through a `.slnf` filter, which listed [total] projects before the filter was applied.
+ */
+class Solution(val root: SlnFolder, val configurations: List<String> = emptyList(), val filtered: Boolean = false, val total: Int = -1) {
     val allProjects: List<SlnProject> = buildList { collectProjects(root, this) }
+
+    /** How many projects the unfiltered solution has. */
+    val totalProjects: Int get() = if (total >= 0) total else allProjects.size
 
     fun findFolder(id: String): SlnFolder? = findFolder(root, id)
 

@@ -9,6 +9,7 @@ import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import io.github.dotnetsupport.DotNetIcons
 import io.github.dotnetsupport.cli.DotNetInstallation
@@ -217,6 +218,16 @@ class DependencyNode(project: Project, key: DependencyKey, settings: ViewSetting
         // a package brings in its own dependencies; a package already met on the way down is not expanded again
         value.kind == DependencyKind.PACKAGES ->
             target?.findPackage(value.name)?.dependencies.orEmpty().filter { name -> (value.parents + value.name).none { it.equals(name, ignoreCase = true) } }
+        // a referenced project brings its own project references (transitively, as the compiler sees them); a cycle is not expanded again
+        value.kind == DependencyKind.PROJECTS -> {
+            val referenced = navigationFile ?: return emptyList()
+            val root = value.projectFile.parent ?: return emptyList()
+            solutions.msBuildProject(referenced).projectReferences
+                .mapNotNull { referenced.parent?.findFileByRelativePath(it) }
+                .filter { it != value.projectFile }
+                .mapNotNull { VfsUtilCore.findRelativePath(root, it, '/') }
+                .filter { name -> (value.parents + value.name).none { it.equals(name, ignoreCase = true) } }
+        }
         value.parents.isNotEmpty() -> emptyList() // an assembly of an analyzer package or of a framework
         value.kind == DependencyKind.ANALYZERS -> target?.findPackage(value.name)?.analyzers.orEmpty()
         value.kind == DependencyKind.FRAMEWORKS ->
@@ -230,7 +241,7 @@ class DependencyNode(project: Project, key: DependencyKey, settings: ViewSetting
     override fun contains(file: VirtualFile): Boolean = false
 
     override fun update(presentation: PresentationData) {
-        val isAssembly = value.parents.isNotEmpty() && value.kind != DependencyKind.PACKAGES
+        val isAssembly = value.parents.isNotEmpty() && value.kind != DependencyKind.PACKAGES && value.kind != DependencyKind.PROJECTS
         when {
             isAssembly || value.kind == DependencyKind.ASSEMBLIES -> {
                 presentation.setIcon(DotNetIcons.Assembly)

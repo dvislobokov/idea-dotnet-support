@@ -27,7 +27,7 @@ import io.github.dotnetsupport.msbuild.DotNetProjects
 import io.github.dotnetsupport.run.DotNetCommand
 import io.github.dotnetsupport.run.DotNetConfigurationType
 import io.github.dotnetsupport.run.DotNetRunConfiguration
-import io.github.dotnetsupport.solution.SOLUTION_EXTENSIONS
+import io.github.dotnetsupport.solution.isSolutionOrFilterFile
 import io.github.dotnetsupport.solution.SolutionService
 
 /** Tests of a file, tokenized once per change of the file rather than once per identifier the gutter asks about. */
@@ -109,7 +109,7 @@ class RunTestsWithCoverageAction : AnAction(), DumbAware {
         val project = e.project ?: return null
         val file = SolutionContext.buildTarget(e) ?: return null
         return when {
-            file.extension?.lowercase() in SOLUTION_EXTENSIONS -> file
+            isSolutionOrFilterFile(file) -> file
             SolutionService.getInstance(project).msBuildProject(file).isTestProject -> file
             else -> null
         }

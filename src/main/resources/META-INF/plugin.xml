@@ -27,6 +27,8 @@
     <extensionPoints>
         <!-- who can attach a debugger to a .NET process: the module with the debugger, where it is loaded -->
         <extensionPoint qualifiedName="io.github.dotnetsupport.processAttacher" interface="io.github.dotnetsupport.run.DotNetProcessAttacher" dynamic="true"/>
+        <!-- who changes the namespace of a moved file together with its usages: the module of the language server -->
+        <extensionPoint qualifiedName="io.github.dotnetsupport.namespaceAdjuster" interface="io.github.dotnetsupport.lang.CSharpNamespaceAdjuster" dynamic="true"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -67,6 +69,8 @@
         <breadcrumbsInfoProvider implementation="io.github.dotnetsupport.lang.CSharpBreadcrumbsProvider"/>
         <!-- a declaration is a named element only for navigation: renaming is the business of the language server -->
         <vetoRenameCondition implementation="io.github.dotnetsupport.lang.CSharpRenameVeto"/>
+        <!-- a .cs file moved to another folder gets the namespace of the folder -->
+        <moveFileHandler implementation="io.github.dotnetsupport.lang.CSharpMoveFileHandler"/>
         <lang.foldingBuilder language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpFoldingBuilder"/>
         <!-- TODO / FIXME in the comments of C#: the TODO tool window and the highlighting -->
         <todoIndexer filetype="C#" implementationClass="io.github.dotnetsupport.lang.CSharpTodoIndexer"/>
@@ -104,6 +108,8 @@
 
         <projectViewPane implementation="io.github.dotnetsupport.view.SolutionViewPane"/>
         <projectViewNodeDecorator implementation="io.github.dotnetsupport.view.BuildOutputDecorator"/>
+        <!-- the content of a project as the SDK sees it: Remove / DefaultItemExcludes hide, DependentUpon nests; Solution view only -->
+        <treeStructureProvider implementation="io.github.dotnetsupport.view.ProjectContentStructureProvider"/>
         <projectViewNestingRulesProvider implementation="io.github.dotnetsupport.view.DotNetNestingRulesProvider"/>
         <postStartupActivity implementation="io.github.dotnetsupport.view.SolutionViewActivator"/>
         <postStartupActivity implementation="io.github.dotnetsupport.view.ToolWindowsSetup"/>
@@ -170,6 +176,8 @@
                     factoryClass="io.github.dotnetsupport.coverage.CoverageToolWindowFactory"/>
 
         <directoryProjectGenerator implementation="io.github.dotnetsupport.newproject.DotNetProjectGenerator"/>
+        <!-- the New Project dialog of IntelliJ IDEA lists generator wizards, not directory generators -->
+        <newProjectWizard.generator implementation="io.github.dotnetsupport.newproject.DotNetNewProjectWizard"/>
         <internalFileTemplate name="CSharp Class"/>
         <internalFileTemplate name="CSharp Interface"/>
         <internalFileTemplate name="CSharp Record"/>
@@ -200,9 +208,15 @@
                         text="New Solution Folder..."/>
                 <action id="DotNet.AddProjectReference" class="io.github.dotnetsupport.actions.AddProjectReferenceAction"
                         text="Project Reference..."/>
+                <action id="DotNet.AddAssemblyReference" class="io.github.dotnetsupport.actions.AddAssemblyReferenceAction"
+                        text="Assembly Reference..." description="Reference a .dll by its path (HintPath)"/>
             </group>
+            <action id="DotNet.RenameProject" class="io.github.dotnetsupport.actions.RenameProjectAction" text="Rename Project..."
+                    description="Rename the project file and optionally its directory; the solution, project references and run configurations follow"/>
             <action id="DotNet.EditProjectFile" class="io.github.dotnetsupport.actions.EditProjectFileAction" text="Edit Project File"
                     icon="AllIcons.Actions.Edit" description="Open the .csproj of the project or the solution file in the editor"/>
+            <action id="DotNet.ProjectProperties" class="io.github.dotnetsupport.actions.ProjectPropertiesAction" text="Properties..."
+                    icon="AllIcons.General.Settings" description="Target frameworks, output type, nullable, language version, warnings, package metadata of the project"/>
             <action id="DotNet.RunProject" class="io.github.dotnetsupport.run.RunSelectedProjectAction" text="Run Project"
                     icon="AllIcons.Actions.Execute" description="Run the selected executable or test project"/>
             <action id="DotNet.DebugProject" class="io.github.dotnetsupport.run.DebugSelectedProjectAction" text="Debug Project"

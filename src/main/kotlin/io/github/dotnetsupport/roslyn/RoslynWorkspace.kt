@@ -29,9 +29,7 @@ import com.intellij.openapi.ui.popup.JBPopupListener
 import com.intellij.openapi.ui.popup.LightweightWindowEvent
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.openapi.vfs.VirtualFileVisitor
 import com.intellij.platform.lsp.api.LspClient
 import com.intellij.platform.lsp.api.LspClientDescriptor
 import com.intellij.platform.lsp.api.LspClientManager
@@ -44,7 +42,7 @@ import io.github.dotnetsupport.lsp.RoslynPhase
 import io.github.dotnetsupport.lsp.RoslynPolicy
 import io.github.dotnetsupport.lsp.RoslynServerStatus
 import io.github.dotnetsupport.lsp.RoslynWorkspaceTarget
-import io.github.dotnetsupport.msbuild.DotNetProjects
+import io.github.dotnetsupport.solution.SolutionFinder
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
@@ -125,21 +123,9 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
 
     /** Walks the opened folder; a solution deep inside counts as well as the one in its root. Not for EDT. */
     fun scan(): Found {
-        val solutions = mutableListOf<String>()
-        val projects = mutableListOf<String>()
-        project.guessProjectDir()?.let { root ->
-            VfsUtilCore.visitChildrenRecursively(root, object : VirtualFileVisitor<Unit>() {
-                override fun visitFile(file: VirtualFile): Boolean {
-                    if (file.isDirectory) return file == root || (file.name !in SKIPPED_DIRECTORIES && !file.name.startsWith("."))
-                    when {
-                        file.extension?.lowercase() in SOLUTION_EXTENSIONS -> solutions += file.path
-                        DotNetProjects.isProjectFile(file) -> projects += file.path
-                    }
-                    return true
-                }
-            })
-        }
-        return Found(solutions, projects).also { found = it }
+        // the same walk as the Solution view: the same solutions in the same order
+        val files = project.guessProjectDir()?.let { SolutionFinder.find(it, includeProjects = true) } ?: SolutionFinder.Found.EMPTY
+        return Found(files.solutions.map { it.path }, files.projects.map { it.path }).also { found = it }
     }
 
     fun workspaceTarget(files: Found = scan()): RoslynWorkspaceTarget? = RoslynLanguageServer.workspaceTarget(files.solutions, absolute(state.solution), files.projects)
@@ -336,9 +322,6 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
 
         /** Where the server writes its log: the folder of the settings page, or the one next to the logs of the IDE. */
         fun logDirectory(): File = RoslynLanguageServerSettings.getInstance().state.logDirectory?.takeIf { it.isNotBlank() }?.let(::File) ?: RoslynLanguageServerConfigurable.defaultLogDirectory()
-
-        private val SOLUTION_EXTENSIONS = setOf("sln", "slnx")
-        private val SKIPPED_DIRECTORIES = setOf("bin", "obj", "node_modules", "packages")
     }
 }
 

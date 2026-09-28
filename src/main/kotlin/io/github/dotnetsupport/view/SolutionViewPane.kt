@@ -26,6 +26,8 @@ import io.github.dotnetsupport.msbuild.DotNetProjects
 import io.github.dotnetsupport.msbuild.MSBUILD_EXTENSIONS
 import io.github.dotnetsupport.run.DotNetRunConfigurationGenerator
 import io.github.dotnetsupport.solution.SOLUTION_EXTENSIONS
+import io.github.dotnetsupport.solution.SOLUTION_FILTER_EXTENSION
+import io.github.dotnetsupport.solution.SolutionService
 import javax.swing.Icon
 import javax.swing.tree.DefaultTreeModel
 
@@ -95,6 +97,8 @@ class SolutionTreeStructure(project: Project) : ProjectTreeStructure(project, So
 /** Rebuilds the Solution pane when a solution or MSBuild file changes on disk, or the content of a project root changes. */
 class SolutionFilesListener(private val project: Project) : BulkFileListener {
     override fun after(events: List<VFileEvent>) {
+        // A solution came or went, possibly with its directory: the list of solutions is walked again on the next question.
+        if (events.any { isSolutionFile(it.path) || it.file?.isDirectory == true }) SolutionService.getInstance(project).solutionFilesChanged()
         // New projects and launch profiles get their run configurations.
         if (events.any { affectsSolutionStructure(it.path) || it.path.endsWith("/launchSettings.json") }) {
             DotNetRunConfigurationGenerator.getInstance(project).schedule()
@@ -120,6 +124,9 @@ class SolutionFilesListener(private val project: Project) : BulkFileListener {
     private fun affectsSolutionStructure(path: String): Boolean {
         val extension = path.substringAfterLast('.', "").lowercase()
         // project.assets.json: a restore has changed what the Dependencies nodes show
-        return extension in SOLUTION_EXTENSIONS || extension in MSBUILD_EXTENSIONS || path.endsWith("/obj/project.assets.json")
+        return isSolutionFile(path) || extension in MSBUILD_EXTENSIONS || path.endsWith("/obj/project.assets.json")
     }
+
+    private fun isSolutionFile(path: String): Boolean =
+        path.substringAfterLast('.', "").lowercase().let { it in SOLUTION_EXTENSIONS || it == SOLUTION_FILTER_EXTENSION }
 }

@@ -4,6 +4,7 @@ import com.intellij.ide.highlighter.XmlLikeFileType
 import com.intellij.lang.xml.XMLLanguage
 import com.intellij.openapi.fileTypes.LanguageFileType
 import com.intellij.openapi.fileTypes.PlainTextLanguage
+import com.intellij.openapi.vfs.VirtualFile
 import io.github.dotnetsupport.DotNetIcons
 import javax.swing.Icon
 
@@ -23,4 +24,12 @@ object SolutionXmlFileType : XmlLikeFileType(XMLLanguage.INSTANCE) {
     override fun getIcon(): Icon = DotNetIcons.Solution
 }
 
+/** Files `dotnet sln` edits. A filter (`.slnf`) is a solution for `dotnet build` / `test` and for the Solution view, but not for `dotnet sln`. */
 val SOLUTION_EXTENSIONS: Set<String> = setOf("sln", "slnx")
+const val SOLUTION_FILTER_EXTENSION: String = "slnf"
+
+fun isSolutionFilterFile(file: VirtualFile): Boolean = !file.isDirectory && file.extension.equals(SOLUTION_FILTER_EXTENSION, ignoreCase = true)
+
+/** A solution or a solution filter: what can be built, tested and shown as a solution. */
+fun isSolutionOrFilterFile(file: VirtualFile): Boolean =
+    !file.isDirectory && (file.extension?.lowercase() in SOLUTION_EXTENSIONS || isSolutionFilterFile(file))

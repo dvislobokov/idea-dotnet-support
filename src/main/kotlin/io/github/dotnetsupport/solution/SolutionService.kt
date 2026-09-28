@@ -18,19 +18,48 @@ class SolutionService(private val project: Project) {
     private class Cached<T>(val stamp: Long, val value: T)
 
     private val solutions = ConcurrentHashMap<VirtualFile, Cached<Solution>>()
+    private val filters = ConcurrentHashMap<VirtualFile, Cached<SolutionFilter?>>()
     private val msBuildProjects = ConcurrentHashMap<VirtualFile, Cached<MsBuildProject>>()
     private val assetsFiles = ConcurrentHashMap<VirtualFile, Cached<ProjectAssets>>()
 
-    /** Solution files in the root of the opened directory. */
-    fun solutionFiles(): List<VirtualFile> {
-        val baseDir = project.guessProjectDir() ?: return emptyList()
-        return baseDir.children
-            .filter { !it.isDirectory && it.extension?.lowercase() in SOLUTION_EXTENSIONS }
-            .sortedBy { it.name.lowercase() }
+    /** The solutions of the opened folder, found by the last walk; dropped by [solutionFilesChanged] when files come and go. */
+    @Volatile private var found: Pair<VirtualFile, SolutionFinder.Found>? = null
+
+    /** Solution files (`.sln`, `.slnx`) of the opened directory, the ones in its root first (see [SolutionFinder]). */
+    fun solutionFiles(): List<VirtualFile> = find().solutions.filter { it.isValid }
+
+    /** Solution filters (`.slnf`) of the opened directory. */
+    fun solutionFilters(): List<VirtualFile> = find().filters.filter { it.isValid }
+
+    /** What the Solution view shows at its root: solutions and the filters of them. */
+    fun allSolutionFiles(): List<VirtualFile> = solutionFiles() + solutionFilters()
+
+    /** A solution or a filter file appeared, disappeared or moved: the next question walks the folder again. */
+    fun solutionFilesChanged() {
+        found = null
     }
 
-    fun solution(file: VirtualFile): Solution =
-        cached(solutions, file) { SolutionParser.parse(it, file.extension) }
+    private fun find(): SolutionFinder.Found {
+        val baseDir = project.guessProjectDir() ?: return SolutionFinder.Found.EMPTY
+        found?.takeIf { it.first == baseDir }?.let { return it.second }
+        return SolutionFinder.find(baseDir).also { found = baseDir to it }
+    }
+
+    /** [file] is a solution or a filter; for a filter, the solution it names as seen through it (nothing when the solution is not on disk). */
+    fun solution(file: VirtualFile): Solution {
+        if (isSolutionFilterFile(file)) {
+            val filter = solutionFilter(file) ?: return Solution(SlnFolder("", Solution.ROOT_ID), filtered = true, total = 0)
+            val solutionFile = filter.solutionFile(file) ?: return Solution(SlnFolder("", Solution.ROOT_ID), filtered = true, total = 0)
+            return filter.apply(solution(solutionFile))
+        }
+        return cached(solutions, file) { SolutionParser.parse(it, file.extension) }
+    }
+
+    fun solutionFilter(file: VirtualFile): SolutionFilter? = cached(filters, file, SolutionFilter::parse)
+
+    /** The solution a filter file points at. */
+    fun SolutionFilter.solutionFile(filterFile: VirtualFile): VirtualFile? =
+        filterFile.parent?.findFileByRelativePath(solutionPath)?.takeIf { !it.isDirectory && it.extension?.lowercase() in SOLUTION_EXTENSIONS }
 
     fun msBuildProject(file: VirtualFile): MsBuildProject =
         cached(msBuildProjects, file, MsBuildProject::parse)

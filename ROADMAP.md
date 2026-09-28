@@ -43,10 +43,14 @@
 - [ ] WordsScanner (текстовый Find Usages), spellchecker
 - [ ] Неактивные ветки `#if` по `DefineConstants`
 - [ ] Переименование файла вместе с типом
+- [x] Move `.cs` в другую папку (2026-09-29, по сообщению пользователя «мув не проводит полный рефакторинг»): `CSharpMoveFileHandler` после
+  переноса спрашивает и меняет namespace на namespace папки — рефакторингом Roslyn «Change namespace to '…'» через EP
+  `io.github.dotnetsupport.namespaceAdjuster` (реализация в модуле `roslyn`, обновляет usages по solution; сервер видит перенос с задержкой —
+  повторные запросы `codeAction`), без сервера — только объявление в файле + нотификация. Серверный путь вживую не проверен
 
 ## Заход 3 — NuGet и тесты
 - [x] Dependencies как в Rider: Imports (Sdk.props / Sdk.targets, Directory.Build.*, явные `<Import>`), узел на каждый TFM, Packages с разрешёнными версиями и транзитивными зависимостями, Projects, Assemblies, Analyzers, Frameworks со сборками — из `obj/project.assets.json`
-- [ ] Dependencies: вложенные импорты внутри Sdk.props / Sdk.targets, анализаторы самого SDK, транзитивные проекты
+- [ ] Dependencies: вложенные импорты внутри Sdk.props / Sdk.targets, анализаторы самого SDK (транзитивные проекты — сделаны 2026-09-28)
 - [x] Окно NuGet: пакеты проекта с доступными обновлениями, поиск по фидам (API v3, источники из `dotnet nuget list source`), установка / обновление / откат / удаление через `dotnet add|remove package`, prerelease
 - [x] Окно NuGet как в Rider: область «Solution / проект», единый список Installed + Available с иконками пакетов и действиями в строке, карточка пакета (версии, таблица проектов с Install / Update / Downgrade / Remove, зависимости по фреймворкам из `.nuspec`, лицензия, ссылки, теги)
 - [x] Окно NuGet: вкладка Sources (фиды всех уровней `nuget.config`, добавить / удалить / включить / выключить, ссылки на файлы конфигурации) и вкладка Log (команды `dotnet` и их вывод)
@@ -91,10 +95,24 @@
 - [x] Окно NuGet: вертикальный тулбар как в Rider — Restore (solution или проект из «Packages for»), Upgrade Packages in Solution, показать / скрыть карточку пакета, Settings, Help
 - [x] Страница настроек (Settings | Tools | .NET): путь к `dotnet` с проверкой, список установленных SDK, статус `global.json` проекта, переключатели поведения (автосоздание run configurations, окно Build при каждой сборке, автопереключение на Solution view)
 - [x] Уведомление при открытии solution: `dotnet` не найден, или `global.json` требует неустановленный SDK (политики `rollForward` сверены с настоящим CLI)
-- [ ] New Project в IntelliJ IDEA (`GeneratorNewProjectWizard`)
-- [ ] Project Properties (TargetFramework, OutputType, Nullable, LangVersion, RootNamespace)
-- [ ] Честное содержимое проекта: `Compile Remove`, linked files, `DependentUpon`-вложение
-- [ ] Переименование / перемещение проекта, unload / reload, solution filters (`.slnf`), drag-and-drop в дереве
+- [x] New Project в IntelliJ IDEA (2026-09-28): `GeneratorNewProjectWizard` «.NET» (EP `newProjectWizard.generator`), шаги имя / папка / Git +
+  панель шаблона; `isEnabled()` только в IDEA — в GoLand / PyCharm / WebStorm остаётся `DirectoryProjectGenerator`, иначе две записи. **Вживую не проверен**
+- [x] Project Properties (2026-09-26): ПКМ проекта → Properties… — Application / Build / Package по образцу Rider (target frameworks, OutputType,
+  Nullable, LangVersion, ImplicitUsings, warnings, анализаторы, метаданные пакета); правки в безусловную `PropertyGroup` через документ по
+  смещениям PSI (форматирование файла сохраняется; `addSubTag` платформы переформатировал группу отступом IDE), пустое значение убирает тег.
+  Условные группы не редактируются
+- [x] Честное содержимое проекта (2026-09-26): `Remove` по типу item-а, под который файл попадает у SDK (`.cs` → Compile, `.resx` → EmbeddedResource,
+  `wwwroot` в web-SDK → Content, прочее → None), `DefaultItemExcludes`; спрятанное возвращает Show All Files серым; `DependentUpon` вкладывает
+  файл под родителя; linked-файлы (`Include` за пределами проекта, `Link` / `LinkBase` / `%(RecursiveDir)`) — по пути Link с бейджем.
+  `TreeStructureProvider` только для Solution view (узлы с `settings is SolutionTreeStructure`). Осторожно с KDoc: `dir/**/*` в комментарии
+  открывает вложенный комментарий Kotlin
+- [x] Solution filters `.slnf` (2026-09-26): узел в панели Solution с «N of M projects», проекты по списку фильтра, пустые solution folders обрезаны;
+  сборка / тесты / Add Project Reference работают, правки solution через `dotnet sln` под фильтром скрыты. Solution ищутся по всей открытой папке
+  (`SolutionFinder`, мимо `bin` / `obj` / `node_modules` / `packages` / dot-папок, корневые первыми, кэш до изменения файлов) — панель и language server одним поиском
+- [x] Rename Project (2026-09-28): файл, по галочке папка, `.sln` / `.slnx` (`SolutionEditor.renameProject`), `ProjectReference` остальных проектов
+  (`MsBuildItemEditor.renameProjectReference`), run configurations — одной командой. Add → Assembly Reference… (`HintPath`). Транзитивные
+  проекты в Dependencies → Projects (по `.csproj` ссылок, цикл не раскрывается второй раз)
+- [ ] Перемещение проекта, unload / reload, drag-and-drop в дереве
 - [ ] Publish, `dotnet tool restore`, user secrets
 - [ ] Редактирование шаблонов генераторов пользователем (сейчас зашиты в плагин)
 

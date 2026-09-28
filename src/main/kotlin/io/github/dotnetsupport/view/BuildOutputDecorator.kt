@@ -5,6 +5,7 @@ import com.intellij.ide.projectView.ProjectView
 import com.intellij.ide.projectView.ProjectViewNode
 import com.intellij.ide.projectView.ProjectViewNodeDecorator
 import com.intellij.openapi.vcs.FileStatus
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.ui.UIUtil
 import io.github.dotnetsupport.msbuild.DotNetProjects
@@ -20,7 +21,15 @@ class BuildOutputDecorator : ProjectViewNodeDecorator {
         // the nodes of a project and of a solution are those files too, and they are the project
         if (node is SolutionFileNode<*> || ProjectView.getInstance(project).currentViewId != SolutionViewPane.ID) return
         val file = node.virtualFile ?: return
-        if (isOutsideOfProject(file)) data.forcedTextForeground = FileStatus.IGNORED.color ?: UIUtil.getInactiveTextColor()
+        if (isOutsideOfProject(file) || isExcludedByProject(project, file)) data.forcedTextForeground = FileStatus.IGNORED.color ?: UIUtil.getInactiveTextColor()
+    }
+
+    /** Taken out of the project by its file (`<Compile Remove>`, `DefaultItemExcludes`); visible with "Show All Files" only. */
+    private fun isExcludedByProject(project: com.intellij.openapi.project.Project, file: VirtualFile): Boolean {
+        val projectFile = DotNetProjects.findOwningProject(file) ?: return false
+        val path = projectFile.parent?.let { VfsUtilCore.getRelativePath(file, it, '/') } ?: return false
+        val content = contentOf(project, projectFile)
+        return if (file.isDirectory) content.isExcludedDirectory(path) else content.isExcluded(path)
     }
 
     companion object {
