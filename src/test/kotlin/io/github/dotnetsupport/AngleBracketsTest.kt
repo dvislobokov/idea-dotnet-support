@@ -53,6 +53,20 @@ class AngleBracketsTest : BasePlatformTestCase() {
         assertEquals("new List<T1|>", typed("new List<caret>", "<T1"))
     }
 
+    fun testSemicolonStepsOverTheOneThatEndsTheLine() {
+        assertEquals("Console.WriteLine(x);|", typed("Console.WriteLine(x<caret>);", ");"))
+        assertEquals("Console.WriteLine();|\nnext();", typed("Console.WriteLine()<caret>;\nnext();", ";"))
+        assertEquals("something follows: typed", "for (;|;)", typed("for (<caret>;)", ";"))
+        assertEquals("var x = 1;|", typed("var x = 1<caret>", ";"))
+        assertEquals("a;| // note", typed("a<caret> // note", ";"))
+    }
+
+    fun testParenthesisEntersTheCallAfterTypeArguments() {
+        assertEquals("services.AddSingleton<IClock>(|);", typed("services.AddSingleton<IClock><caret>();", "("))
+        assertEquals("the whole of it by hand", "services.AddSingleton<IClock>(|)", typed("services.AddSingleton<<caret>>()", "IClock>("))
+        assertEquals("arguments are there: a pair of its own", "Make<int>(|)(1)", typed("Make<int><caret>(1)", "("))
+    }
+
     fun testBackspaceTakesThePair() {
         myFixture.configureByText("Angle.cs", "new List<caret>")
         myFixture.type("<")

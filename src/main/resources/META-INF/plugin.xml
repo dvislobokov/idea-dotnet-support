@@ -100,6 +100,8 @@
         <!-- `<` of a generic gets its `>`: the brace matcher cannot list a bracket that is an operator as often -->
         <typedHandler implementation="io.github.dotnetsupport.lang.CSharpAngleBracketTypedHandler"/>
         <backspaceHandlerDelegate implementation="io.github.dotnetsupport.lang.CSharpAngleBracketBackspaceHandler"/>
+        <!-- `;` typed before the `;` at the end of the line steps over it (the completion of a void method puts `();`) -->
+        <typedHandler implementation="io.github.dotnetsupport.lang.CSharpSemicolonTypedHandler"/>
         <enterHandlerDelegate order="first" implementation="io.github.dotnetsupport.lang.CSharpEnterAfterBraceHandler"/>
         <enterHandlerDelegate implementation="io.github.dotnetsupport.lang.CSharpDocCommentEnterHandler"/>
         <!-- postfix templates (expr.if, list.foreach, x.return...) and Surround With, by tokens -->

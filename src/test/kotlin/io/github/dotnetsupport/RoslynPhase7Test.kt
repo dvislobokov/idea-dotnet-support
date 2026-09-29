@@ -56,6 +56,37 @@ class RoslynPhase7Test : BasePlatformTestCase() {
         assertTrue("+= of another line", policy.addsParentheses(com.intellij.codeInsight.lookup.Lookup.NORMAL_SELECT_CHAR, later, later.indexOf("Foo"), later.length))
     }
 
+    /** A method that returns nothing is a statement: `Console.WriteLine(|);`, as Rider completes it. */
+    fun testSemicolonAfterAVoidMethod() {
+        val policy = io.github.dotnetsupport.roslyn.RoslynCompletionPolicy
+        fun call(type: String?, tail: String?, rest: String = "") = policy.call(type, tail, rest).let { it.text.substring(0, it.caret) + "|" + it.text.substring(it.caret) }
+
+        assertEquals("(|);", call("void", "(string? value)  +18 overloads"))
+        assertEquals("(|);", call("void", "(string? value)", "   "))
+        assertEquals("no arguments in any overload: the caret goes after the call", "();|", call("void", "()"))
+        assertEquals("overloads may take arguments", "(|);", call("void", "()  +18 overloads"))
+        assertEquals("a value is used by what follows", "(|)", call("string", "(int index)"))
+        assertEquals("()|", call("string", "()"))
+        assertEquals("Task is awaited or assigned as often", "(|)", call("Task", "(CancellationToken token)"))
+        assertEquals("the body of a lambda in an argument", "(|)", call("void", "(string? value)", ");"))
+        assertEquals("the semicolon is there", "(|)", call("void", "(string? value)", ";"))
+        assertEquals("not resolved yet", "(|)", call(null, null))
+
+        // the type and the tail come from the documentation of the resolved item, as the server sends it
+        val tail = io.github.dotnetsupport.roslyn.RoslynSignatureTail.parse("```csharp\nvoid Console.WriteLine()\n```\n&nbsp;\\(\\+ 18 overloads\\)", "WriteLine")!!
+        assertEquals("void", tail.type)
+        assertEquals("(|);", call(tail.type, tail.tail))
+
+        assertEquals(");", policy.restOfLine("Foo(x => Bar);\nnext", "Foo(x => Bar".length).toString())
+        assertEquals("", policy.restOfLine("Bar", 3).toString())
+
+        // the resolved item is taken from a class of the platform by name: it must be there, with the method
+        val holder = Class.forName(policy.COMPLETION_OBJECT)
+        assertEquals(org.eclipse.lsp4j.CompletionItem::class.java, holder.getMethod("getCompletionItem").returnType)
+        assertNull(policy.resolvedItem("not the object of the platform"))
+        assertNull(policy.resolvedItem(null))
+    }
+
     /** Ctrl+P lists every overload; the parameters come from the label of the signature, as Roslyn names a parameter by its name only. */
     fun testParametersOfASignature() {
         val signatures = io.github.dotnetsupport.roslyn.RoslynSignatures

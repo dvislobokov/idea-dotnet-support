@@ -14,7 +14,8 @@ import org.eclipse.lsp4j.CompletionItemKind
 /**
  * Completion of the server with what a client of Roslyn adds itself, as Rider and VS Code do: a method comes as its bare name
  * (`WriteLine`, plain text), so a chosen method got no parentheses, the caret stayed after the name and Ctrl+P had no argument list to
- * show the overloads for (reported). Now `()` go after it with the caret inside, and the parameter info pops up at once.
+ * show the overloads for (reported). Now `()` go after it with the caret inside, and the parameter info pops up at once. A method that
+ * returns nothing gets its `;` as well (reported: Rider completes `Console.WriteLine(|);`).
  */
 class RoslynCompletionSupport : LspCompletionSupport() {
     /**
@@ -38,17 +39,44 @@ class RoslynCompletionSupport : LspCompletionSupport() {
         val callable = RoslynCompletionPolicy.isCallable(item.kind, item.label)
         // a type gets its parentheses only after `new`: `new HttpClient(|)`, as Rider completes a constructor
         val type = RoslynCompletionPolicy.isType(item.kind)
-        val withParentheses = if (!callable && !type) element
+        // `List<>`, `AddSingleton<>`: the server says the item is generic, and inserts the bare name
+        val generic = RoslynCompletionPolicy.isGeneric(item.label)
+        val genericType = generic && RoslynCompletionPolicy.isGenericType(item.kind)
+        val withParentheses = if (!callable && !type && !genericType) element
         // the insertion of the platform first (the text edit of the item, the `using` of its resolve), then the parentheses
         else LookupElementDecorator.withInsertHandler(element) { context: InsertionContext, decorator: LookupElementDecorator<LookupElement> ->
             decorator.delegate.handleInsert(context)
-            if (callable || RoslynCompletionPolicy.afterNew(context.document.charsSequence, context.startOffset)) addParentheses(context)
+            val afterNew = RoslynCompletionPolicy.afterNew(context.document.charsSequence, context.startOffset)
+            when {
+                callable -> addParentheses(context, signature(decorator, item), generic && RoslynCompletionPolicy.needsTypeArguments(resolved(decorator, item)))
+                genericType -> addTypeArguments(context, constructed = afterNew && type)
+                afterNew -> addParentheses(context, null, false)
+            }
         }
         // what is in scope above what is merely spelled alike: `names` before `nameof`, as Rider orders the list
         return PrioritizedLookupElement.withPriority(withParentheses, RoslynCompletionPolicy.priority(item.kind, item.preselect == true))
     }
 
-    private fun addParentheses(context: InsertionContext) {
+    /**
+     * What is known of the method when it is chosen: the platform resolves the rows in sight, and the resolved item (with the signature
+     * in its documentation) is kept by the object of the lookup element, not by the item the element was made of.
+     */
+    private fun signature(element: LookupElement, item: CompletionItem): RoslynSignatureTail.Tail? = RoslynSignatureTail.of(resolved(element, item))
+
+    private fun resolved(element: LookupElement, item: CompletionItem): CompletionItem = RoslynCompletionPolicy.resolvedItem(element.`object`) ?: item
+
+    /** `List<|>`, and `new List<|>()` for a class or a struct after `new`. */
+    private fun addTypeArguments(context: InsertionContext, constructed: Boolean) {
+        val document = context.document
+        val offset = context.tailOffset
+        val text = document.charsSequence
+        if (!RoslynCompletionPolicy.addsTypeArguments(context.completionChar, text, context.startOffset, offset)) return
+        document.insertString(offset, if (constructed) "<>()" else "<>")
+        context.editor.caretModel.moveToOffset(offset + 1)
+        context.commitDocument()
+    }
+
+    private fun addParentheses(context: InsertionContext, signature: RoslynSignatureTail.Tail?, typeArguments: Boolean) {
         val document = context.document
         val offset = context.tailOffset
         val text = document.charsSequence
@@ -59,8 +87,15 @@ class RoslynCompletionSupport : LspCompletionSupport() {
         if (offset < text.length && text[offset] == '(') {
             context.editor.caretModel.moveToOffset(offset + 1)
         } else {
-            document.insertString(offset, "()")
-            context.editor.caretModel.moveToOffset(offset + 1)
+            // a void method is a statement and nothing else: `Console.WriteLine(|);`, as Rider completes it
+            val call = RoslynCompletionPolicy.call(signature?.type, signature?.tail, RoslynCompletionPolicy.restOfLine(text, offset), typeArguments)
+            document.insertString(offset, call.text)
+            context.editor.caretModel.moveToOffset(offset + call.caret)
+            if (call.caret > 1 || typeArguments) {
+                // nothing to type between the parentheses, or the type arguments come first: no parameter info yet
+                context.commitDocument()
+                return
+            }
         }
         context.commitDocument()
         AutoPopupController.getInstance(context.project).autoPopupParameterInfo(context.editor, null)
@@ -127,6 +162,109 @@ object RoslynCompletionPolicy {
     fun isCallable(kind: CompletionItemKind?, label: String? = null): Boolean =
         kind in CALLABLE || kind == CompletionItemKind.Keyword && label in KEYWORDS_WITH_PARENTHESES
 
+    const val COMPLETION_OBJECT = "com.intellij.platform.lsp.impl.features.completion.LspCompletionObject"
+
+    /**
+     * The item of a lookup element of the platform, resolved when the platform has resolved it. The class is internal to the platform
+     * (there is no API to ask for the resolved item), hence by name: when it is renamed, methods get their plain `()` and the test says so.
+     */
+    fun resolvedItem(lookupObject: Any?): CompletionItem? {
+        if (lookupObject == null || lookupObject.javaClass.name != COMPLETION_OBJECT) return null
+        return runCatching { lookupObject.javaClass.getMethod("getCompletionItem").invoke(lookupObject) as? CompletionItem }.getOrNull()
+    }
+
+    /** What goes after the name of a chosen method, and where the caret lands in it. */
+    class Call(val text: String, val caret: Int)
+
+    /**
+     * `()` with the caret inside; `();` for a method that returns nothing, when nothing follows on the line: such a call can only be a
+     * statement (or the body of a lambda or of an expression-bodied member, and there something follows). For a method that takes no
+     * arguments in any of its overloads the caret goes after the call. [type] and [tail] are the ones of [RoslynSignatureTail]: null when
+     * the item is not resolved yet, and then the method gets its plain `()`.
+     */
+    fun call(type: String?, tail: String?, restOfLine: CharSequence, typeArguments: Boolean = false): Call {
+        val statement = type == "void" && restOfLine.isBlank()
+        val text = (if (typeArguments) "<>" else "") + (if (statement) "();" else "()")
+        // `AddSingleton<|>()`: the type arguments are what is typed first
+        return Call(text, if (typeArguments || tail != "()") 1 else text.length)
+    }
+
+    /** The label of a generic method or type, as the server sends it: `AddSingleton<>`, `List<>`. */
+    fun isGeneric(label: String?): Boolean = label != null && label.length > 2 && label.endsWith("<>")
+
+    private val GENERIC_TYPES = setOf(CompletionItemKind.Class, CompletionItemKind.Struct, CompletionItemKind.Interface)
+
+    fun isGenericType(kind: CompletionItemKind?): Boolean = kind in GENERIC_TYPES
+
+    /**
+     * Whether a chosen generic type gets `<>`: chosen by Enter or Tab, nothing of the kind follows already, and not in a documentation
+     * comment, where a type is written `List{T}`.
+     */
+    fun addsTypeArguments(completionChar: Char, text: CharSequence, nameStart: Int, nameEnd: Int): Boolean {
+        if (completionChar != Lookup.NORMAL_SELECT_CHAR && completionChar != Lookup.REPLACE_SELECT_CHAR) return false
+        if (nameStart !in 0..text.length || nameEnd !in nameStart..text.length) return false
+        if (nameEnd < text.length && (text[nameEnd] == '<' || text[nameEnd] == '{')) return false
+        val lineStart = text.lastIndexOf('\n', nameStart - 1) + 1
+        return !text.subSequence(lineStart, nameStart).trimStart().startsWith("//")
+    }
+
+    /**
+     * Whether the type arguments of a generic method have to be written: true when one of them is in no parameter, so nothing infers
+     * it — `AddSingleton<TService>()`, `OfType<TResult>()`, `Convert<TSource, TResult>(TSource value)`; false for `Select` and `Same<T>(T
+     * value)`. An extension method is shown by its receiver (`IEnumerable<int>.First<int>()`), which is its first parameter. The
+     * signature is the one of the documentation of the resolved item, the first overload of several; not resolved: false.
+     */
+    fun needsTypeArguments(item: CompletionItem): Boolean {
+        val markdown = RoslynSignatureTail.markdown(item) ?: return false
+        return needsTypeArguments(markdown, item.label?.removeSuffix("<>") ?: return false)
+    }
+
+    fun needsTypeArguments(markdown: String, name: String): Boolean {
+        val signature = RoslynSignatureTail.signature(markdown) ?: return false
+        val at = Regex("""(?<=[.\s])""" + Regex.escape(name) + """<""").find(signature) ?: return false
+        val open = at.range.last
+        val close = closing(signature, open, '<', '>') ?: return false
+        val arguments = io.github.dotnetsupport.lang.CSharpScopeNames.splitTopLevel(signature.substring(open + 1, close))
+        val parametersOpen = close + 1
+        if (signature.getOrNull(parametersOpen) != '(') return false
+        val parametersClose = closing(signature, parametersOpen, '(', ')') ?: return false
+        var inferredFrom = signature.substring(parametersOpen, parametersClose + 1)
+        // the receiver alone: what stands before it is the type the method returns
+        if (signature.startsWith("(extension)")) inferredFrom += " " + receiver(signature.substring(0, at.range.first))
+        return arguments.any { argument -> !Regex("""(?<![\w.])""" + Regex.escape(argument) + """(?!\w)""").containsMatchIn(inferredFrom) }
+    }
+
+    /** `IEnumerable<int>` of `(extension) IEnumerable<TResult> IEnumerable<int>.`: the last word outside of angle brackets. */
+    private fun receiver(before: String): String {
+        val text = before.trimEnd().removeSuffix(".")
+        var depth = 0
+        for (i in text.indices.reversed()) {
+            when (text[i]) {
+                '>' -> depth++
+                '<' -> depth--
+                ' ' -> if (depth == 0) return text.substring(i + 1)
+            }
+        }
+        return text
+    }
+
+    private fun closing(text: String, open: Int, left: Char, right: Char): Int? {
+        var depth = 0
+        for (i in open until text.length) {
+            when (text[i]) {
+                left -> depth++
+                right -> if (--depth == 0) return i
+            }
+        }
+        return null
+    }
+
+    fun restOfLine(text: CharSequence, offset: Int): CharSequence {
+        if (offset !in 0..text.length) return ""
+        val end = text.indexOf('\n', offset).let { if (it < 0) text.length else it }
+        return text.subSequence(offset, end)
+    }
+
     /**
      * Whether a chosen method gets `()`. Only when it is chosen by Enter, Tab or `(` — a `.` or `;` typed to choose it means the user goes
      * on typing as they want. Not after `+=` / `-=`: that subscribes the method to an event, a method group without a call.
@@ -146,15 +284,23 @@ object RoslynSignatureTail {
     private val MEMBERS = setOf(CompletionItemKind.Method, CompletionItemKind.Function, CompletionItemKind.Property, CompletionItemKind.Field,
         CompletionItemKind.Variable, CompletionItemKind.Constant, CompletionItemKind.Event)
     private val CODE_BLOCK = Regex("""```[a-z]*[ \t]*\r?\n(.+?)\r?\n""")
-    private val OVERLOADS = Regex("""\+\s*(\d+)\s+overloads?""")
+    // the server separates the words with no-break spaces, and says `generic overloads` of a generic method
+    private val OVERLOADS = Regex("""\+[\s\u00A0]*(\d+)[\s\u00A0]+(?:generic[\s\u00A0]+)?overloads?""")
     private val KIND_PREFIX = Regex("""^\([^)]*\)\s*""")
 
     fun of(item: CompletionItem): Tail? {
         if (item.kind !in MEMBERS) return null
-        val documentation = item.documentation ?: return null
-        val markdown = if (documentation.isRight) documentation.right?.value else documentation.left
-        return parse(markdown ?: return null, item.label ?: return null)
+        // the label of a generic is `AddSingleton<>`, the signature has `AddSingleton<TService>`
+        return parse(markdown(item) ?: return null, item.label?.removeSuffix("<>") ?: return null)
     }
+
+    fun markdown(item: CompletionItem): String? {
+        val documentation = item.documentation ?: return null
+        return if (documentation.isRight) documentation.right?.value else documentation.left
+    }
+
+    /** The first line of the code block, the kind in parentheses kept: `(extension) T IServiceProvider.GetRequiredService<T>() where ...`. */
+    fun signature(markdown: String): String? = CODE_BLOCK.find(markdown)?.groupValues?.get(1)?.trim()
 
     /**
      * The documentation of `WriteLine`: a csharp code block with `void Console.WriteLine()`, then `&nbsp;\(\+ 18 overloads\)`. Also

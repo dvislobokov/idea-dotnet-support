@@ -139,3 +139,20 @@ python tools/roslyn-lsp/bench.py debug-playground/DebugPlayground.sln   # --file
 - `prepareTypeHierarchy` на свойстве и `onTypeFormatting` после `;` — `null`.
 - Секции настроек: `razor.format.attribute_indent_style`, `razor.format.code_block_brace_on_next_line`,
   `razor.completion.commit_elements_with_space`, `razor.advanced.show_all_c_sharp_code_actions`, `html.auto_closing_tags`.
+
+## Generic в completion
+
+Снято `capture_generics.py` 2026-09-29 на той же площадке `out/razor-playground`; сводка — фикстура
+`src/test/resources/roslyn/capture-5.12-generics` (тест `GenericCompletionTest`).
+
+- Обобщённый метод и тип приходят с меткой `Имя<>` (`AddSingleton<>`, `Select<>`, `List<>`, `Task<>`), а вставляется голое имя:
+  `textEditText` = `filterText` = `AddSingleton`. `insertText` и `labelDetails` нет.
+- Обобщённая и обычная версии одного имени — **две строки**: `AddSingleton` (kind 2) и `AddSingleton<>` (kind 2), `Task` и `Task<>` (kind 7).
+- Сигнатура — только в документации resolved-элемента, первая строка блока кода; перегрузки свёрнуты в одну строку, показана первая:
+  `(extension) IServiceCollection IServiceCollection.AddSingleton<TService>() where TService : class`, ниже `(+ 4 generic overloads)`.
+  Слова в «+ 4 generic overloads» разделены **неразрывными пробелами** (U+00A0), у обобщённых добавлено слово `generic`.
+- У extension-метода первый параметр показан как получатель, и аргументы типа, выведенные из него, уже подставлены:
+  `IEnumerable<TResult> IEnumerable<int>.Select<int, TResult>(Func<int, int, TResult> selector)`.
+- Нужно ли писать аргументы типа, сервер не говорит. Клиент решает по сигнатуре: аргумент, которого нет ни в параметрах, ни в получателе
+  extension-метода, вывести не из чего (`AddSingleton<TService>()`, `OfType<TResult>()`, `Array.Empty<T>()`,
+  `Convert<TSource, TResult>(TSource value)`); `Select`, `Same<T>(T value)` — выводятся.

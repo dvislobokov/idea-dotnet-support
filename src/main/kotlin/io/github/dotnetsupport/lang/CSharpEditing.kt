@@ -84,6 +84,10 @@ object CSharpAngleBrackets {
         }
     }
 
+    /** `(` typed between the `>` of type arguments and an empty `()`: the call is entered, not a second pair put. */
+    fun entersCall(text: CharSequence, offset: Int): Boolean =
+        offset > 0 && text[offset - 1] == '>' && text.getOrNull(offset) == '(' && text.getOrNull(offset + 1) == ')'
+
     private fun opensGenericBefore(text: CharSequence, offset: Int): Boolean {
         var start = offset
         while (start > 0 && (text[start - 1].isLetterOrDigit() || text[start - 1] == '_')) start--
@@ -103,6 +107,12 @@ class CSharpAngleBracketTypedHandler : com.intellij.codeInsight.editorActions.Ty
             forget(editor)
             editor.document.deleteString(offset, offset + 1)
             return Result.CONTINUE
+        }
+        if (c == '(' && CSharpAngleBrackets.entersCall(text, offset)) {
+            // `AddSingleton<IClock>|()`, as the completion of a generic method leaves it: the parentheses are there already
+            editor.caretModel.moveToOffset(offset + 1)
+            com.intellij.codeInsight.AutoPopupController.getInstance(project).autoPopupParameterInfo(editor, null)
+            return Result.STOP
         }
         if (c != '>' || !CSharpAngleBrackets.closesGeneric(text, offset)) return Result.CONTINUE
         if (pair != null) forget(editor)
@@ -160,5 +170,28 @@ class CSharpAngleBracketBackspaceHandler : com.intellij.codeInsight.editorAction
         if (editor.document.immutableCharSequence.getOrNull(offset) != '>') return false
         editor.document.deleteString(offset, offset + 1)
         return true
+    }
+}
+
+/**
+ * `;` typed right before the `;` that ends the line steps over it: the completion of a void method puts `();` with the caret inside,
+ * and after the arguments the hand types `)` and `;` as it always does. Inside `for (;;)` something follows the `;`, so it is typed.
+ */
+object CSharpSemicolons {
+    fun stepsOver(text: CharSequence, offset: Int): Boolean {
+        if (text.getOrNull(offset) != ';') return false
+        var i = offset + 1
+        while (i < text.length && text[i] != '\n') { if (!text[i].isWhitespace()) return false; i++ }
+        return true
+    }
+}
+
+class CSharpSemicolonTypedHandler : com.intellij.codeInsight.editorActions.TypedHandlerDelegate() {
+    override fun beforeCharTyped(c: Char, project: com.intellij.openapi.project.Project, editor: com.intellij.openapi.editor.Editor, file: PsiFile, fileType: com.intellij.openapi.fileTypes.FileType): Result {
+        if (c != ';' || file !is CSharpFile || editor.caretModel.caretCount != 1) return Result.CONTINUE
+        val offset = editor.caretModel.offset
+        if (!CSharpSemicolons.stepsOver(editor.document.immutableCharSequence, offset)) return Result.CONTINUE
+        editor.caretModel.moveToOffset(offset + 1)
+        return Result.STOP
     }
 }
