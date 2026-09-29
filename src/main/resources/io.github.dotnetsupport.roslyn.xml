@@ -12,14 +12,22 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <platform.lsp.integrationProvider implementation="io.github.dotnetsupport.roslyn.RoslynLspIntegrationProvider"/>
+        <!-- the server starts with the project, not with the first opened .cs: the problems of the whole solution need it -->
+        <postStartupActivity implementation="io.github.dotnetsupport.roslyn.RoslynStartupActivity"/>
         <!-- Ctrl + hover: the platform resolves LSP references only during Go to Declaration; last, so a click still goes its way -->
         <psi.implicitReferenceProvider order="last" implementation="io.github.dotnetsupport.roslyn.RoslynCtrlHoverReferenceProvider"/>
         <!-- what Roslyn decompiles for Go to Declaration into the framework or a package: read-only, and it says where it comes from -->
         <writingAccessProvider implementation="io.github.dotnetsupport.roslyn.RoslynDecompiledWritingAccess"/>
         <editorTabTitleProvider implementation="io.github.dotnetsupport.roslyn.RoslynDecompiledTabTitle"/>
         <editorNotificationProvider implementation="io.github.dotnetsupport.roslyn.RoslynDecompiledBanner"/>
+        <!-- several solutions in the folder and none chosen: the file is analyzed by nobody until one is -->
+        <editorNotificationProvider implementation="io.github.dotnetsupport.roslyn.RoslynSolutionBanner"/>
         <!-- adds no items: makes the first letter after a space start the popup again, see the class -->
         <completion.contributor language="C#" order="first" implementationClass="io.github.dotnetsupport.roslyn.RoslynCompletionRestart"/>
+        <!-- a lambda first in the list where a delegate is expected, see the class -->
+        <completion.contributor language="C#" order="first" implementationClass="io.github.dotnetsupport.roslyn.RoslynLambdaCompletion"/>
+        <!-- the same lambda as gray text after `(` and `,`, accepted with Tab -->
+        <inline.completion.provider implementation="io.github.dotnetsupport.roslyn.RoslynLambdaGhost"/>
         <!-- Ctrl+P: every overload as a row, as in Rider; the handler of the platform for LSP shows the active signature only -->
         <codeInsight.parameterInfo language="C#" implementationClass="io.github.dotnetsupport.roslyn.RoslynParameterInfoHandler"/>
         <!-- no items of its own: it is how the widget of language services gets redrawn when Roslyn goes from loading to ready -->
@@ -37,6 +45,10 @@
     <actions>
         <!-- the action of the platform with its id, shortcut and texts; only C# files with a loaded server go to the server -->
         <action id="GotoImplementation" class="io.github.dotnetsupport.roslyn.RoslynGotoImplementationAction" overrides="true"/>
+        <!-- Alt+Insert: the generators of the server (constructor, Equals, overrides, Implement interface...) as one list -->
+        <action id="DotNet.Roslyn.Generate" class="io.github.dotnetsupport.roslyn.RoslynGenerateAction" text="Generate..." description="Constructor, Equals and GetHashCode, overrides, the members of an interface: what the C# language server can generate at the caret">
+            <add-to-group group-id="GenerateGroup" anchor="first"/>
+        </action>
         <action id="DotNet.Roslyn.SelectSolution" class="io.github.dotnetsupport.roslyn.SelectRoslynSolutionAction" text="Select Solution for Language Server..."
                 description="Choose which of the solutions of the opened folder the C# language server loads">
             <add-to-group group-id="DotNet.MainMenu" anchor="last"/>

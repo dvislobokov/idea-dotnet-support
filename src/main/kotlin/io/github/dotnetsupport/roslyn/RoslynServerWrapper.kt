@@ -14,6 +14,9 @@ import com.intellij.psi.PsiManager
 import com.intellij.util.concurrency.AppExecutorUtil
 import io.github.dotnetsupport.lsp.RoslynServerStatus
 import org.eclipse.lsp4j.CodeActionParams
+import org.eclipse.lsp4j.DidCloseTextDocumentParams
+import org.eclipse.lsp4j.DocumentDiagnosticReport
+import org.eclipse.lsp4j.DocumentDiagnosticParams
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.RenameParams
 import org.eclipse.lsp4j.SemanticTokens
@@ -64,6 +67,17 @@ class RoslynServerWrapper : Lsp4jServerWrapper {
                         }, AppExecutorUtil.getAppExecutorService())
                     }
                 }
+                // the errors of an open document, for the Project Errors tab: see RoslynSolutionProblems.documentReport
+                "diagnostic" -> (argument as? DocumentDiagnosticParams)?.textDocument?.uri?.let { uri ->
+                    return@proxy timed(stats, method, proceed).also { future ->
+                        (future as? CompletableFuture<*>)?.thenAcceptAsync({ report ->
+                            val full = (report as? DocumentDiagnosticReport)?.takeIf { it.isLeft }?.left ?: return@thenAcceptAsync
+                            val file = lspServer.descriptor.findFileByUri(uri) ?: return@thenAcceptAsync
+                            project.service<RoslynSolutionProblems>().documentReport(uri, file, full.items.orEmpty())
+                        }, AppExecutorUtil.getAppExecutorService())
+                    }
+                }
+                "didClose" -> (argument as? DidCloseTextDocumentParams)?.textDocument?.uri?.let { project.service<RoslynSolutionProblems>().documentClosed(it) }
                 "semanticTokensFull" -> {
                     val request = (argument as? SemanticTokensParams)?.let(tokens::request)
                     request?.let(tokens::cached)?.let { cached ->

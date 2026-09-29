@@ -1,0 +1,928 @@
+{
+ "method": "workspace/diagnostic",
+ "params": {
+  "previousResultIds": []
+ },
+ "ms": 3763,
+ "result": {
+  "items": [
+   {
+    "uri": "file:///c:/playground/NewProject/Pages/Error.cshtml.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):1",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/NewProject/Pages/Index.cshtml.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):2",
+    "items": [
+     {
+      "range": {
+       "start": {
+        "line": 0,
+        "character": 0
+       },
+       "end": {
+        "line": 0,
+        "character": 31
+       }
+      },
+      "severity": 4,
+      "code": "IDE0005",
+      "codeDescription": {
+       "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0005"
+      },
+      "message": "Директива using не нужна.",
+      "tags": [
+       2147483641,
+       2147483643,
+       2147483640,
+       2147483645,
+       1
+      ]
+     }
+    ]
+   },
+   {
+    "uri": "file:///c:/playground/NewProject/Pages/Privacy.cshtml.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):3",
+    "items": [
+     {
+      "range": {
+       "start": {
+        "line": 0,
+        "character": 0
+       },
+       "end": {
+        "line": 0,
+        "character": 31
+       }
+      },
+      "severity": 4,
+      "code": "IDE0005",
+      "codeDescription": {
+       "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0005"
+      },
+      "message": "Директива using не нужна.",
+      "tags": [
+       2147483641,
+       2147483643,
+       2147483640,
+       2147483645,
+       1
+      ]
+     }
+    ]
+   },
+   {
+    "uri": "file:///c:/playground/NewProject/Program.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):4",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/NewProject/obj/Debug/net10.0/NewProject.GlobalUsings.g.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):5",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/NewProject/obj/Debug/net10.0/.NETCoreApp,Version=v10.0.AssemblyAttributes.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):6",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/NewProject/obj/Debug/net10.0/NewProject.AssemblyInfo.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):7",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/NewProject/obj/Debug/net10.0/NewProject.RazorAssemblyInfo.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):8",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/NewProject/Pages/Error.cshtml",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):9",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/NewProject/Pages/Index.cshtml",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):10",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/NewProject/Pages/Privacy.cshtml",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):11",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/NewProject/Pages/Shared/_ValidationScriptsPartial.cshtml",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):12",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/NewProject/Pages/_ViewImports.cshtml",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):13",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/NewProject/Pages/_ViewStart.cshtml",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):14",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/NewProject/Pages/Shared/_Layout.cshtml",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):15",
+    "items": []
+   },
+   {
+    "uri": "roslyn-source-generated://fd35653e-b10a-45db-99e3-45241b09aa80/Pages%2FShared%2F_Layout_cshtml.g.cs?documentId=114fba3e-b55c-6f83-1871-cb573924be56&hintName=Pages%2FShared%2F_Layout_cshtml.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=C%3A%5CUsers%5Cdvislobokov%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):16",
+    "items": []
+   },
+   {
+    "uri": "roslyn-source-generated://fd35653e-b10a-45db-99e3-45241b09aa80/Pages%2FPrivacy_cshtml.g.cs?documentId=12412e30-4863-2ae3-ad2e-da6d2cd4dfb0&hintName=Pages%2FPrivacy_cshtml.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=C%3A%5CUsers%5Cdvislobokov%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):17",
+    "items": []
+   },
+   {
+    "uri": "roslyn-source-generated://fd35653e-b10a-45db-99e3-45241b09aa80/Pages%2FIndex_cshtml.g.cs?documentId=1f1f5c1f-cc0e-7c74-04e3-af5c2364c43c&hintName=Pages%2FIndex_cshtml.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=C%3A%5CUsers%5Cdvislobokov%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):18",
+    "items": []
+   },
+   {
+    "uri": "roslyn-source-generated://fd35653e-b10a-45db-99e3-45241b09aa80/Pages%2F_ViewImports_cshtml.g.cs?documentId=58adb556-82f6-66e0-409e-577777efb5ca&hintName=Pages%2F_ViewImports_cshtml.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=C%3A%5CUsers%5Cdvislobokov%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):19",
+    "items": []
+   },
+   {
+    "uri": "roslyn-source-generated://fd35653e-b10a-45db-99e3-45241b09aa80/Pages%2FError_cshtml.g.cs?documentId=942c51b4-a5db-347b-bcf0-1083b3b8bac1&hintName=Pages%2FError_cshtml.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=C%3A%5CUsers%5Cdvislobokov%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):20",
+    "items": []
+   },
+   {
+    "uri": "roslyn-source-generated://fd35653e-b10a-45db-99e3-45241b09aa80/PublicTopLevelProgram.Generated.g.cs?documentId=c67ba516-7ba2-1b34-ca76-d765055a1170&hintName=PublicTopLevelProgram.Generated.g.cs&assemblyName=Microsoft.AspNetCore.App.SourceGenerators&assemblyVersion=10.0.12.0&typeName=Microsoft.AspNetCore.SourceGenerators.PublicProgramSourceGenerator&assemblyPath=C%3A%5CProgram%20Files%5Cdotnet%5Cpacks%5CMicrosoft.AspNetCore.App.Ref%5C10.0.12%5Canalyzers%5Cdotnet%5Ccs%5CMicrosoft.AspNetCore.App.SourceGenerators.dll",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):21",
+    "items": []
+   },
+   {
+    "uri": "roslyn-source-generated://fd35653e-b10a-45db-99e3-45241b09aa80/Pages%2FShared%2F_ValidationScriptsPartial_cshtml.g.cs?documentId=dd620c20-caa6-5c61-aee8-da0f2391ff28&hintName=Pages%2FShared%2F_ValidationScriptsPartial_cshtml.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=C%3A%5CUsers%5Cdvislobokov%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):22",
+    "items": []
+   },
+   {
+    "uri": "roslyn-source-generated://fd35653e-b10a-45db-99e3-45241b09aa80/Pages%2F_ViewStart_cshtml.g.cs?documentId=e3cfd51c-1aa0-b836-9904-6c753e4cd37f&hintName=Pages%2F_ViewStart_cshtml.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=C%3A%5CUsers%5Cdvislobokov%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):23",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/NewProject/NewProject.csproj",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):24",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Lib/Pricing.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):25",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Lib/obj/Debug/net9.0/Lib.GlobalUsings.g.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):26",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Lib/obj/Debug/net9.0/.NETCoreApp,Version=v9.0.AssemblyAttributes.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):27",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Lib/obj/Debug/net9.0/Lib.AssemblyInfo.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):28",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Lib/Lib.csproj",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):29",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/MultiTarget/Program.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):30",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/MultiTarget/obj/Debug/net9.0/MultiTarget.GlobalUsings.g.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):31",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/MultiTarget/obj/Debug/net9.0/.NETCoreApp,Version=v9.0.AssemblyAttributes.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):32",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/MultiTarget/obj/Debug/net9.0/MultiTarget.AssemblyInfo.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):33",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/MultiTarget/MultiTarget.csproj",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):34",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/MultiTarget/Program.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):35",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/MultiTarget/obj/Debug/net10.0/MultiTarget.GlobalUsings.g.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):36",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/MultiTarget/obj/Debug/net10.0/.NETCoreApp,Version=v10.0.AssemblyAttributes.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):37",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/MultiTarget/obj/Debug/net10.0/MultiTarget.AssemblyInfo.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):38",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/MultiTarget/MultiTarget.csproj",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):39",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Tests/PricingTests.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):40",
+    "items": [
+     {
+      "range": {
+       "start": {
+        "line": 21,
+        "character": 34
+       },
+       "end": {
+        "line": 21,
+        "character": 37
+       }
+      },
+      "severity": 3,
+      "code": "IDE0300",
+      "codeDescription": {
+       "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0300"
+      },
+      "message": "Инициализацию коллекции можно упростить.",
+      "tags": [
+       2147483642,
+       2147483645
+      ]
+     },
+     {
+      "range": {
+       "start": {
+        "line": 21,
+        "character": 34
+       },
+       "end": {
+        "line": 21,
+        "character": 39
+       }
+      },
+      "severity": 4,
+      "code": "IDE0300",
+      "codeDescription": {
+       "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0300"
+      },
+      "message": "Инициализацию коллекции можно упростить.",
+      "tags": [
+       2147483641,
+       2147483643,
+       2147483640,
+       2147483645,
+       1
+      ],
+      "relatedInformation": [
+       {
+        "location": {
+         "uri": "file:///c:/playground/Tests/PricingTests.cs",
+         "range": {
+          "start": {
+           "line": 21,
+           "character": 34
+          },
+          "end": {
+           "line": 21,
+           "character": 39
+          }
+         }
+        },
+        "message": "Инициализацию коллекции можно упростить."
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "uri": "file:///C:/Users/dvislobokov/.nuget/packages/microsoft.net.test.sdk/17.12.0/build/netcoreapp3.1/Microsoft.NET.Test.Sdk.Program.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):41",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Tests/obj/Debug/net9.0/Tests.GlobalUsings.g.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):42",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Tests/obj/Debug/net9.0/.NETCoreApp,Version=v9.0.AssemblyAttributes.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):43",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Tests/obj/Debug/net9.0/Tests.AssemblyInfo.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):44",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Tests/Tests.csproj",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):45",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Web/Program.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):46",
+    "items": [
+     {
+      "range": {
+       "start": {
+        "line": 5,
+        "character": 75
+       },
+       "end": {
+        "line": 5,
+        "character": 76
+       }
+      },
+      "severity": 1,
+      "code": "CS1526",
+      "codeDescription": {
+       "href": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS1526)"
+      },
+      "message": "В выражении new после типа требуется список аргументов либо \"()\", []\" или \"{}\".",
+      "tags": [
+       2147483642,
+       2147483645
+      ]
+     },
+     {
+      "range": {
+       "start": {
+        "line": 50,
+        "character": 0
+       },
+       "end": {
+        "line": 52,
+        "character": 0
+       }
+      },
+      "severity": 4,
+      "code": "IDE0035",
+      "codeDescription": {
+       "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0035"
+      },
+      "message": "Обнаружен недостижимый код",
+      "tags": [
+       2147483641,
+       2147483643,
+       2147483640,
+       2147483645,
+       1
+      ],
+      "relatedInformation": [
+       {
+        "location": {
+         "uri": "file:///c:/playground/Web/Program.cs",
+         "range": {
+          "start": {
+           "line": 50,
+           "character": 0
+          },
+          "end": {
+           "line": 52,
+           "character": 0
+          }
+         }
+        },
+        "message": "Обнаружен недостижимый код"
+       }
+      ]
+     },
+     {
+      "range": {
+       "start": {
+        "line": 5,
+        "character": 29
+       },
+       "end": {
+        "line": 5,
+        "character": 41
+       }
+      },
+      "severity": 4,
+      "code": "IDE0001",
+      "codeDescription": {
+       "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0001"
+      },
+      "message": "Имя может быть упрощено",
+      "tags": [
+       2147483641,
+       2147483643,
+       2147483640,
+       2147483645,
+       1
+      ]
+     }
+    ]
+   },
+   {
+    "uri": "file:///c:/playground/Web/obj/Debug/net9.0/Web.GlobalUsings.g.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):47",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Web/obj/Debug/net9.0/.NETCoreApp,Version=v9.0.AssemblyAttributes.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):48",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Web/obj/Debug/net9.0/Web.AssemblyInfo.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):49",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Web/Web.csproj",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):50",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Console/Program.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):51",
+    "items": [
+     {
+      "range": {
+       "start": {
+        "line": 20,
+        "character": 3
+       },
+       "end": {
+        "line": 20,
+        "character": 4
+       }
+      },
+      "severity": 1,
+      "code": "CS1525",
+      "codeDescription": {
+       "href": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS1525)"
+      },
+      "message": "Недопустимый термин \"/\" в выражении",
+      "tags": [
+       2147483642,
+       2147483645
+      ]
+     },
+     {
+      "range": {
+       "start": {
+        "line": 20,
+        "character": 4
+       },
+       "end": {
+        "line": 20,
+        "character": 4
+       }
+      },
+      "severity": 1,
+      "code": "CS1525",
+      "codeDescription": {
+       "href": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS1525)"
+      },
+      "message": "Недопустимый термин \"}\" в выражении",
+      "tags": [
+       2147483642,
+       2147483645
+      ]
+     },
+     {
+      "range": {
+       "start": {
+        "line": 20,
+        "character": 4
+       },
+       "end": {
+        "line": 20,
+        "character": 4
+       }
+      },
+      "severity": 1,
+      "code": "CS1002",
+      "codeDescription": {
+       "href": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS1002)"
+      },
+      "message": "Требуется \";\".",
+      "tags": [
+       2147483642,
+       2147483645
+      ]
+     }
+    ]
+   },
+   {
+    "uri": "file:///c:/playground/Console/Scenarios.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):52",
+    "items": [
+     {
+      "range": {
+       "start": {
+        "line": 70,
+        "character": 29
+       },
+       "end": {
+        "line": 70,
+        "character": 32
+       }
+      },
+      "severity": 3,
+      "code": "IDE0300",
+      "codeDescription": {
+       "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0300"
+      },
+      "message": "Инициализацию коллекции можно упростить.",
+      "tags": [
+       2147483642,
+       2147483645
+      ]
+     },
+     {
+      "range": {
+       "start": {
+        "line": 70,
+        "character": 29
+       },
+       "end": {
+        "line": 70,
+        "character": 34
+       }
+      },
+      "severity": 4,
+      "code": "IDE0300",
+      "codeDescription": {
+       "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0300"
+      },
+      "message": "Инициализацию коллекции можно упростить.",
+      "tags": [
+       2147483641,
+       2147483643,
+       2147483640,
+       2147483645,
+       1
+      ],
+      "relatedInformation": [
+       {
+        "location": {
+         "uri": "file:///c:/playground/Console/Scenarios.cs",
+         "range": {
+          "start": {
+           "line": 70,
+           "character": 29
+          },
+          "end": {
+           "line": 70,
+           "character": 34
+          }
+         }
+        },
+        "message": "Инициализацию коллекции можно упростить."
+       }
+      ]
+     },
+     {
+      "range": {
+       "start": {
+        "line": 70,
+        "character": 42
+       },
+       "end": {
+        "line": 70,
+        "character": 45
+       }
+      },
+      "severity": 3,
+      "code": "IDE0300",
+      "codeDescription": {
+       "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0300"
+      },
+      "message": "Инициализацию коллекции можно упростить.",
+      "tags": [
+       2147483642,
+       2147483645
+      ]
+     },
+     {
+      "range": {
+       "start": {
+        "line": 70,
+        "character": 42
+       },
+       "end": {
+        "line": 70,
+        "character": 47
+       }
+      },
+      "severity": 4,
+      "code": "IDE0300",
+      "codeDescription": {
+       "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0300"
+      },
+      "message": "Инициализацию коллекции можно упростить.",
+      "tags": [
+       2147483641,
+       2147483643,
+       2147483640,
+       2147483645,
+       1
+      ],
+      "relatedInformation": [
+       {
+        "location": {
+         "uri": "file:///c:/playground/Console/Scenarios.cs",
+         "range": {
+          "start": {
+           "line": 70,
+           "character": 42
+          },
+          "end": {
+           "line": 70,
+           "character": 47
+          }
+         }
+        },
+        "message": "Инициализацию коллекции можно упростить."
+       }
+      ]
+     },
+     {
+      "range": {
+       "start": {
+        "line": 132,
+        "character": 23
+       },
+       "end": {
+        "line": 132,
+        "character": 26
+       }
+      },
+      "severity": 3,
+      "code": "IDE0039",
+      "codeDescription": {
+       "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0039"
+      },
+      "message": "Использовать локальную функцию",
+      "tags": [
+       2147483642,
+       2147483645
+      ]
+     }
+    ]
+   },
+   {
+    "uri": "file:///c:/playground/Console/Types.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):53",
+    "items": [
+     {
+      "range": {
+       "start": {
+        "line": 47,
+        "character": 66
+       },
+       "end": {
+        "line": 47,
+        "character": 69
+       }
+      },
+      "severity": 3,
+      "code": "IDE0028",
+      "codeDescription": {
+       "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0028"
+      },
+      "message": "Инициализацию коллекции можно упростить.",
+      "tags": [
+       2147483642,
+       2147483645
+      ]
+     },
+     {
+      "range": {
+       "start": {
+        "line": 63,
+        "character": 46
+       },
+       "end": {
+        "line": 63,
+        "character": 49
+       }
+      },
+      "severity": 3,
+      "code": "IDE0028",
+      "codeDescription": {
+       "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0028"
+      },
+      "message": "Инициализацию коллекции можно упростить.",
+      "tags": [
+       2147483642,
+       2147483645
+      ]
+     },
+     {
+      "range": {
+       "start": {
+        "line": 37,
+        "character": 15
+       },
+       "end": {
+        "line": 37,
+        "character": 20
+       }
+      },
+      "severity": 3,
+      "code": "CA1822",
+      "codeDescription": {
+       "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822"
+      },
+      "message": "Член \"Value\" не обращается к данным экземпляров, поэтому его можно пометить как статический.",
+      "tags": [
+       2147483642,
+       2147483645
+      ]
+     },
+     {
+      "range": {
+       "start": {
+        "line": 78,
+        "character": 15
+       },
+       "end": {
+        "line": 78,
+        "character": 22
+       }
+      },
+      "severity": 3,
+      "code": "CA1822",
+      "codeDescription": {
+       "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822"
+      },
+      "message": "Член \"Forever\" не обращается к данным экземпляров, поэтому его можно пометить как статический.",
+      "tags": [
+       2147483642,
+       2147483645
+      ]
+     }
+    ]
+   },
+   {
+    "uri": "file:///c:/playground/Console/obj/Debug/net9.0/Console.GlobalUsings.g.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):54",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Console/obj/Debug/net9.0/.NETCoreApp,Version=v9.0.AssemblyAttributes.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):55",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Console/obj/Debug/net9.0/Console.AssemblyInfo.cs",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):56",
+    "items": []
+   },
+   {
+    "uri": "file:///c:/playground/Console/Console.csproj",
+    "version": null,
+    "kind": "full",
+    "resultId": "PublicWorkspacePullDiagnosticsHandler(category: ):57",
+    "items": []
+   }
+  ]
+ }
+}

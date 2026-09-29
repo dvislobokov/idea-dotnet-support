@@ -20,6 +20,7 @@ import com.intellij.platform.lang.lsWidget.LanguageServiceWidgetItem
 import com.intellij.platform.lang.lsWidget.LanguageServiceWidgetItemsProvider
 import com.intellij.platform.lsp.api.Lsp4jClient
 import com.intellij.platform.lsp.api.LspClient
+import com.intellij.platform.lsp.api.LspClientManager
 import com.intellij.platform.lsp.api.LspClientDescriptor
 import com.intellij.platform.lsp.api.LspIntegrationProvider
 import com.intellij.platform.lsp.api.LspServer
@@ -71,16 +72,10 @@ fun isCSharpSource(file: VirtualFile): Boolean = !file.isDirectory && file.exten
 /** Starts `roslyn-language-server` on the platform LSP client when the first C# file of the opened folder shows up in an editor. */
 class RoslynLspIntegrationProvider : LspIntegrationProvider {
     override fun fileOpened(project: Project, file: VirtualFile, clientStarter: LspIntegrationProvider.LspClientStarter) {
-        if (!isCSharpSource(file) || !RoslynLanguageServerSettings.getInstance().state.enabled) return
-        // every test that opens a C# file would start the real server of the machine
-        if (ApplicationManager.getApplication().isUnitTestMode && !startInTests) return
+        if (!isCSharpSource(file)) return
         val root = project.guessProjectDir() ?: return
         if (!VfsUtilCore.isAncestor(root, file, true)) return
-        val executable = DotNetTool.ROSLYN_LANGUAGE_SERVER.find()
-        val workspace = project.service<RoslynWorkspace>()
-        if (executable == null) return workspace.offerInstallation()
-        workspace.wrapServer()
-        clientStarter.ensureClientStarted(RoslynClientDescriptor(project, root, executable))
+        descriptor(project)?.let(clientStarter::ensureClientStarted)
     }
 
     override fun createWidgetItem(lspClient: LspClient, currentFile: VirtualFile?): LspClientWidgetItem = RoslynWidgetItem(lspClient, currentFile)
@@ -89,6 +84,24 @@ class RoslynLspIntegrationProvider : LspIntegrationProvider {
         /** For a test of [fileOpened] itself, with a starter that starts nothing. */
         @Volatile
         var startInTests: Boolean = false
+
+        /** The descriptor of the server of the opened folder, or null when the server is switched off or not installed (then the installation is offered). */
+        fun descriptor(project: Project): RoslynClientDescriptor? {
+            if (!RoslynLanguageServerSettings.getInstance().state.enabled) return null
+            // every test that opens a C# file would start the real server of the machine
+            if (ApplicationManager.getApplication().isUnitTestMode && !startInTests) return null
+            val root = project.guessProjectDir() ?: return null
+            val workspace = project.service<RoslynWorkspace>()
+            val executable = DotNetTool.ROSLYN_LANGUAGE_SERVER.find() ?: run { workspace.offerInstallation(); return null }
+            workspace.wrapServer()
+            return RoslynClientDescriptor(project, root, executable)
+        }
+
+        /** Starts the server of the folder when it is not running: at the opening of the project ([RoslynStartupActivity]), not only of a file. */
+        fun ensureStarted(project: Project) {
+            val descriptor = descriptor(project) ?: return
+            LspClientManager.getInstance(project).ensureClientStarted(RoslynLspIntegrationProvider::class.java, descriptor)
+        }
     }
 }
 
@@ -109,7 +122,11 @@ class RoslynWidgetItem(client: LspClient, file: VirtualFile?) : LspClientWidgetI
  * A provider of that widget gets the function that redraws it, and that is all this one is for: it has no items of its own.
  */
 class RoslynWidgetUpdater : LanguageServiceWidgetItemsProvider() {
-    override fun createWidgetItems(project: Project, currentFile: VirtualFile?): List<LanguageServiceWidgetItem> = emptyList()
+    /** The platform shows the row of the server for a C# file only; the solution is loaded whatever file is open, so the row stays. */
+    override fun createWidgetItems(project: Project, currentFile: VirtualFile?): List<LanguageServiceWidgetItem> {
+        if (currentFile != null && isCSharpSource(currentFile)) return emptyList()
+        return project.service<RoslynWorkspace>().clients.map { RoslynWidgetItem(it, currentFile) }
+    }
 
     override fun registerWidgetUpdaters(project: Project, widgetDisposable: Disposable, updateWidget: () -> Unit) {
         val workspace = project.service<RoslynWorkspace>()

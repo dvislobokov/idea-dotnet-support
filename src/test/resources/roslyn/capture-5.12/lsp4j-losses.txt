@@ -13,3 +13,4 @@ textDocument/documentSymbol [].children[].children[].children[].glyph
 textDocument/documentSymbol [].children[].children[].glyph
 textDocument/documentSymbol [].children[].glyph
 textDocument/documentSymbol [].glyph
+workspace/diagnostic items[].items[].tags[]

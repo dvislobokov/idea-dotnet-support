@@ -52,6 +52,7 @@ class RoslynSolutionProblems(override val project: Project) : Disposable, Proble
     private val resultIds = HashMap<String, String>()
     private val generation = AtomicInteger()
     private val scopeHintShown = AtomicBoolean()
+    private var detailed = 0
 
     override fun dispose() = stop()
 
@@ -59,10 +60,12 @@ class RoslynSolutionProblems(override val project: Project) : Disposable, Proble
     fun start(client: LspClient) {
         val myGeneration = generation.incrementAndGet()
         if (!isFullSolutionScope()) {
+            loopRunning = false
             clear()
             hintAboutScope()
             return
         }
+        loopRunning = true
         ApplicationManager.getApplication().executeOnPooledThread {
             while (generation.get() == myGeneration && !project.isDisposed) {
                 val report = try {
@@ -72,16 +75,38 @@ class RoslynSolutionProblems(override val project: Project) : Disposable, Proble
                     null
                 }
                 if (generation.get() != myGeneration) break
-                if (report == null) { Thread.sleep(RETRY_MS); continue }
+                if (report == null) { LOG.info("workspace/diagnostic: no answer, asking again in ${RETRY_MS / 1000} s"); Thread.sleep(RETRY_MS); continue }
                 val changed = apply(client, report)
+                LOG.info("workspace/diagnostic: ${report.items.orEmpty().size} documents, $changed changed, ${synchronized(shown) { shown.values.sumOf { it.size } }} problems shown")
                 if (changed == 0) Thread.sleep(IDLE_MS) // an answer without changes: not a busy loop
             }
         }
     }
 
+    /**
+     * The diagnostics of an open document, from the `textDocument/diagnostic` the platform asks for the editor: Roslyn leaves the open
+     * documents out of `workspace/diagnostic` (seen in the sandbox 2026-09-29: the errors of the open Program.cs were nowhere in the tab),
+     * so the tab gets them from here. The key is the same uri: when the document is closed, the workspace answer takes over.
+     */
+    fun documentReport(uri: String, file: VirtualFile, diagnostics: List<Diagnostic>) {
+        publish(uri, diagnostics.mapNotNull { toProblem(file, it) })
+    }
+
+    /**
+     * A closed document: while the workspace answers cover the solution, its problems stay as they are until the next answer replaces
+     * them (the same ones keep their rows: clearing here and adding again a moment later made the tab flicker on every closed tab).
+     * Without the workspace loop nothing would replace them, so they go.
+     */
+    fun documentClosed(uri: String) {
+        if (!loopRunning) publish(uri, emptyList())
+    }
+
+    @Volatile private var loopRunning = false
+
     /** The server is gone: what it reported is gone too. */
     fun stop() {
         generation.incrementAndGet()
+        loopRunning = false
         clear()
     }
 
@@ -93,9 +118,16 @@ class RoslynSolutionProblems(override val project: Project) : Disposable, Proble
         for (entry in report.items.orEmpty()) {
             if (!entry.isLeft) continue // unchanged since the previous result id
             val full = entry.left
+            // the result id first: a document that is skipped below would come back "changed" with every answer otherwise
+            synchronized(shown) { full.resultId?.let { resultIds[full.uri] = it } }
+            // documents of source generators (`roslyn-source-generated://`) are not files of the project
+            if (!full.uri.startsWith("file:")) continue
             val file = client.descriptor.findFileByUri(full.uri)
             val problems = if (file == null) emptyList() else full.items.orEmpty().mapNotNull { toProblem(file, it) }
-            synchronized(shown) { full.resultId?.let { resultIds[full.uri] = it } }
+            // what a document with diagnostics turned into: the trail for "the tab is empty" (2026-09-29, seen in the sandbox)
+            if (full.items.orEmpty().isNotEmpty() && problems.isEmpty() && detailed++ < DETAILED_LINES) {
+                LOG.info("workspace/diagnostic: ${full.uri.substringAfterLast('/')}: ${full.items.size} diagnostics, severities ${full.items.map { it.severity }.distinct()}, file ${if (file == null) "not found" else "found"}, 0 problems")
+            }
             if (publish(full.uri, problems)) changed++
         }
         return changed
@@ -160,5 +192,6 @@ class RoslynSolutionProblems(override val project: Project) : Disposable, Proble
         private const val REQUEST_TIMEOUT_MS = 10 * 60 * 1000 // the server holds the request until the workspace changes
         private const val RETRY_MS = 5_000L
         private const val IDLE_MS = 1_000L
+        private const val DETAILED_LINES = 12
     }
 }

@@ -397,6 +397,12 @@
 - [x] Parameter Info у extension-методов (2026-09-29, по скриншоту пользователя: строки вида «extension) IServiceCollection … AddSingleton(Type serviceType»):
   label Roslyn начинается с `(extension)`, а список параметров брался от первой скобки; теперь — последняя сбалансированная группа скобок
   (`RoslynSignatures.splitParameterList`)
+- [x] Лямбда там, где ждут делегат (2026-09-29, идея пользователя): `LambdaSuggestions` разбирает тип параметра из label `signatureHelp`
+  (`Func` / `Action` / `Predicate` / `Expression<Func>` / `EventHandler` / `Comparison` / `Converter`, имена из типов); два слоя —
+  пункт списка completion первым (`RoslynLambdaCompletion`, приоритет 200, inline и блочный варианты) и серый inline-текст после `(` / `,`
+  (`RoslynLambdaGhost`, EP `inline.completion.provider`, `InlineCompletionSingleSuggestion.build`). Вживую не проверено
+- [x] `typeof` / `nameof` / `sizeof` / `checked` / `unchecked` из completion получают `()` с кареткой внутри, как в Rider (2026-09-29, по сообщению пользователя)
+- [x] `new HttpClient` + Tab → `new HttpClient(|)` с Parameter Info (2026-09-29, по сообщению пользователя): тип (Class / Struct), выбранный сразу после `new`, получает скобки
 - [x] Inlay hints включены по умолчанию (решение пользователя 2026-09-22): имена параметров у литералов, индексаторов и `new`, типы у `var` и параметров
   лямбд; «всё остальное», `new()` и collection expressions — выключены. Проверено в песочнице: `Scenarios.cs` — `year:`, `month:`, `DateTime`…
 - [x] Go to Class / Symbol без дублей: пока сервер готов, свой индекс не отдаёт файлы загруженного solution (их отдаёт `workspace/symbol`);
@@ -430,6 +436,16 @@
 - [x] Type / Call Hierarchy и Go to Base (2026-09-29): окно Hierarchy платформы (`typeHierarchyProvider` / `callHierarchyProvider` для C#) на
   `prepareTypeHierarchy` + `supertypes` / `subtypes` и `prepareCallHierarchy` + `incomingCalls` / `outgoingCalls`; элементы — `FakePsiElement`
   с файлом и позицией; Ctrl+U (`codeInsight.gotoSuper`) на типе — базовые типы. Вживую не проверено
+- [x] Сервер стартует с проектом, а не с первым открытым `.cs` (2026-09-29, по сообщению пользователя): `RoslynStartupActivity` →
+  `LspClientManager.ensureClientStarted` для папки с solution / проектами; строка сервера в виджете language services показывается и для
+  не-C#-файлов (`RoslynWidgetUpdater.createWidgetItems`) — раньше при закрытии всех `.cs` строка пропадала, хотя сервер жил (в логе
+  «Stopping LSP server normally» появляется только от Restart / настроек / закрытия проекта). Документы `roslyn-source-generated://` в
+  `workspace/diagnostic` пропускаются; в лог пишется «workspace/diagnostic: N documents, M changed, K problems shown»
+- [x] Problems: открытые файлы тоже (2026-09-29, по скриншоту пользователя — вкладка Project Errors пуста, а в открытом Program.cs ошибки):
+  Roslyn не включает открытые документы в `workspace/diagnostic` (лог: только Types.cs / PricingTests.cs / *.cshtml.cs с Information / Hint;
+  у зонда, где ничего не открыто, — все файлы), их даёт `textDocument/diagnostic`, который платформа спрашивает для редактора. Обёртка
+  сервера перехватывает эти ответы и `didClose` и кладёт в те же Project Errors под тем же uri. `resultId` теперь запоминается и для
+  пропущенных generated-документов — иначе сервер отвечал ими каждые 1,5 с
 - [x] Problems по всему solution (2026-09-29): `workspace/diagnostic` → `ProblemsCollector` (вкладка Project Errors). Зонд `scratchpad/wsdiag.py`
   на сервере 5.12: отвечает только при `dotnet_compiler_diagnostics_scope = fullSolution`; повторный запрос висит до изменения в workspace —
   держим один запрос постоянно (таймаут 10 мин, перезапуск). Коллектор Problems — не слушатель топика, а его источник: проблемы отдаются ему

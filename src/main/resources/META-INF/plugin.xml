@@ -71,6 +71,16 @@
         <vetoRenameCondition implementation="io.github.dotnetsupport.lang.CSharpRenameVeto"/>
         <!-- a .cs file moved to another folder gets the namespace of the folder -->
         <moveFileHandler implementation="io.github.dotnetsupport.lang.CSharpMoveFileHandler"/>
+        <!-- banners above a C# file: no language server, no project, excluded, not restored -->
+        <editorNotificationProvider implementation="io.github.dotnetsupport.lang.CSharpEditorBanners"/>
+        <!-- the .NET options of .editorconfig (csharp_*, dotnet_*) that the EditorConfig plugin ships but shows only in Rider -->
+        <postStartupActivity implementation="io.github.dotnetsupport.lang.EditorConfigDotNetSupport"/>
+        <!-- Alt+Enter on the file: the namespace of the folder, a type into its own file, the file named after its type, a partial part, a test -->
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.AdjustNamespaceIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.MoveTypeToFileIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.RenameFileToTypeIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.AddPartialPartIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.CreateTestIntention</className><category>C#</category></intentionAction>
         <lang.foldingBuilder language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpFoldingBuilder"/>
         <!-- TODO / FIXME in the comments of C#: the TODO tool window and the highlighting -->
         <todoIndexer filetype="C#" implementationClass="io.github.dotnetsupport.lang.CSharpTodoIndexer"/>

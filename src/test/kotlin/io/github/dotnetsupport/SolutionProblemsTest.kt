@@ -50,6 +50,17 @@ class SolutionProblemsTest : BasePlatformTestCase() {
         assertEquals(1, disappeared.size)
         assertEquals(1, collector.getFileProblemCount(file))
 
+        // an open document reports through textDocument/diagnostic under the same key; closing it clears until the workspace answers
+        problems.documentReport(uri, file, listOf(diagnostic(0, "CS0103", DiagnosticSeverity.Error, "The name 'x' does not exist"), diagnostic(3, "CS8600", DiagnosticSeverity.Warning, "Converting null literal")))
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        assertEquals(2, collector.getFileProblemCount(file))
+        // no workspace loop in tests: a closed document is cleared (with the loop its rows wait for the next workspace answer)
+        problems.documentClosed(uri)
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        assertEquals(0, collector.getFileProblemCount(file))
+        problems.publish(uri, listOf(warning))
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+
         // the server is gone: so are its problems
         problems.stop()
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()

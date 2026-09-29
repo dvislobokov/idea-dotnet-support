@@ -35,11 +35,14 @@ class RoslynCompletionSupport : LspCompletionSupport() {
     override fun createLookupElement(parameters: CompletionParameters, item: CompletionItem): LookupElement? {
         val created = super.createLookupElement(parameters, item) ?: return null
         val element = RoslynCompletionPolicy.lookupStringOverride(item)?.let { label -> MatchedByLabel(created, label) } ?: created
-        val withParentheses = if (!RoslynCompletionPolicy.isCallable(item.kind)) element
+        val callable = RoslynCompletionPolicy.isCallable(item.kind, item.label)
+        // a type gets its parentheses only after `new`: `new HttpClient(|)`, as Rider completes a constructor
+        val type = RoslynCompletionPolicy.isType(item.kind)
+        val withParentheses = if (!callable && !type) element
         // the insertion of the platform first (the text edit of the item, the `using` of its resolve), then the parentheses
         else LookupElementDecorator.withInsertHandler(element) { context: InsertionContext, decorator: LookupElementDecorator<LookupElement> ->
             decorator.delegate.handleInsert(context)
-            addParentheses(context)
+            if (callable || RoslynCompletionPolicy.afterNew(context.document.charsSequence, context.startOffset)) addParentheses(context)
         }
         // what is in scope above what is merely spelled alike: `names` before `nameof`, as Rider orders the list
         return PrioritizedLookupElement.withPriority(withParentheses, RoslynCompletionPolicy.priority(item.kind, item.preselect == true))
@@ -104,8 +107,25 @@ object RoslynCompletionPolicy {
     /** The trigger characters of Roslyn that open the list; `(` opens the parameter info instead, see [RoslynCompletionSupport]. */
     fun isTrigger(c: Char): Boolean = c != '('
 
-    /** Methods, extension methods included (Roslyn sends them as `Method`); a constructor comes as its type, which is not called by name. */
-    fun isCallable(kind: CompletionItemKind?): Boolean = kind in CALLABLE
+    private val TYPES = setOf(CompletionItemKind.Class, CompletionItemKind.Struct)
+    private val NEW_BEFORE = Regex("""\bnew\s+$""")
+
+    /** A class or a struct: with `new` before it, the item is a constructor call. */
+    fun isType(kind: CompletionItemKind?): Boolean = kind in TYPES
+
+    /** `new ` right before the name at [nameStart], on the same line. */
+    fun afterNew(text: CharSequence, nameStart: Int): Boolean {
+        if (nameStart !in 0..text.length) return false
+        val lineStart = text.lastIndexOf('\n', nameStart - 1) + 1
+        return NEW_BEFORE.containsMatchIn(text.subSequence(lineStart, nameStart))
+    }
+
+    /** The keywords that are written with parentheses, as Rider completes them: `typeof(|)`, `nameof(|)`, `sizeof(|)`, `checked(|)`. */
+    private val KEYWORDS_WITH_PARENTHESES = setOf("typeof", "nameof", "sizeof", "checked", "unchecked", "stackalloc")
+
+    /** Methods, extension methods included (Roslyn sends them as `Method`), and the keyword operators; a constructor comes as its type, which is not called by name. */
+    fun isCallable(kind: CompletionItemKind?, label: String? = null): Boolean =
+        kind in CALLABLE || kind == CompletionItemKind.Keyword && label in KEYWORDS_WITH_PARENTHESES
 
     /**
      * Whether a chosen method gets `()`. Only when it is chosen by Enter, Tab or `(` — a `.` or `;` typed to choose it means the user goes

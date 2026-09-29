@@ -27,6 +27,17 @@ class RoslynPhase7Test : BasePlatformTestCase() {
         assertTrue(policy.isCallable(org.eclipse.lsp4j.CompletionItemKind.Method))
         assertFalse("a property", policy.isCallable(org.eclipse.lsp4j.CompletionItemKind.Property))
         assertFalse("new Person: the type", policy.isCallable(org.eclipse.lsp4j.CompletionItemKind.Class))
+        // the keyword operators get their parentheses as in Rider; other keywords do not
+        assertTrue(policy.isCallable(org.eclipse.lsp4j.CompletionItemKind.Keyword, "typeof"))
+        assertTrue(policy.isCallable(org.eclipse.lsp4j.CompletionItemKind.Keyword, "nameof"))
+        assertFalse(policy.isCallable(org.eclipse.lsp4j.CompletionItemKind.Keyword, "return"))
+        assertFalse(policy.isCallable(org.eclipse.lsp4j.CompletionItemKind.Keyword, "default"))
+        // a type chosen right after `new` is a constructor call
+        assertTrue(policy.isType(org.eclipse.lsp4j.CompletionItemKind.Class))
+        assertTrue(policy.afterNew("var c = new HttpClient", "var c = new HttpClient".indexOf("HttpClient")))
+        assertTrue(policy.afterNew("x = new	HttpClient", "x = new	HttpClient".indexOf("HttpClient")))
+        assertFalse(policy.afterNew("var c = HttpClient", "var c = HttpClient".indexOf("HttpClient")))
+        assertFalse("renew is not new", policy.afterNew("renew Foo", 6))
 
         val call = "        Console.WriteLine"
         val start = call.indexOf("WriteLine")
