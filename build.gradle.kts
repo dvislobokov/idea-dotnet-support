@@ -66,6 +66,15 @@ val runIdeForUiTests by intellijPlatformTesting.runIde.registering {
 
 }
 
+// The page about the plugin has one source, docs/demo.html (opened from the repository for demos); the plugin carries it as
+// welcome/index.html and shows it in an editor tab after the installation (WelcomePage).
+tasks.processResources {
+    from("docs/demo.html") {
+        into("welcome")
+        rename { "index.html" }
+    }
+}
+
 intellijPlatform {
     buildSearchableOptions = false
     pluginConfiguration {

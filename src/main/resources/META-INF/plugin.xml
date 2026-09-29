@@ -129,6 +129,8 @@
         <projectViewNestingRulesProvider implementation="io.github.dotnetsupport.view.DotNetNestingRulesProvider"/>
         <postStartupActivity implementation="io.github.dotnetsupport.view.SolutionViewActivator"/>
         <postStartupActivity implementation="io.github.dotnetsupport.view.ToolWindowsSetup"/>
+        <!-- the page about the plugin, once after the installation and after an update -->
+        <postStartupActivity implementation="io.github.dotnetsupport.welcome.WelcomePageActivity"/>
         <notificationGroup id=".NET" displayType="BALLOON"/>
         <projectConfigurable parentId="tools" id="io.github.dotnetsupport.settings" displayName=".NET"
                              instance="io.github.dotnetsupport.settings.DotNetSettingsConfigurable"/>
@@ -365,6 +367,8 @@
             <reference ref="DotNet.InsertGuid"/>
             <reference ref="DotNet.AnalyzeStackTrace"/>
             <separator/>
+            <action id="DotNet.Welcome" class="io.github.dotnetsupport.welcome.ShowWelcomePageAction" text="Welcome to C# Project Support"
+                    description="What the plugin can do and where to start"/>
             <action id="DotNet.ShowPluginLogs" class="io.github.dotnetsupport.cli.ShowPluginLogsAction" text="Show Plugin Logs"
                     description="Open ~/idea-dotnet-logs: every dotnet command of the plugin with its output, the logs of the debugger, the language server and the builds"/>
             <action id="DotNet.Debugger.ShowLogs" class="io.github.dotnetsupport.debugger.ShowDebuggerLogsAction" text="Show Debugger Logs"
