@@ -6,13 +6,22 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
+import com.intellij.ui.ScreenUtil
+import com.intellij.ui.ScrollPaneFactory
+import com.intellij.util.ui.JBUI
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.Panel
 import com.intellij.ui.dsl.builder.panel
 import java.awt.BorderLayout
+import java.awt.Dimension
+import java.awt.GraphicsEnvironment
+import java.awt.Rectangle
+import java.awt.Window
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JComponent
 import javax.swing.JPanel
+import javax.swing.ScrollPaneConstants
+import javax.swing.Scrollable
 import javax.swing.SwingUtilities
 
 class DotNetTemplateSettings(
@@ -158,12 +167,27 @@ class DotNetTemplatePanel {
         // the frameworks the template names, else the installed SDKs
         if (frameworks.isNotEmpty()) setFrameworks(frameworks) else if (installedFrameworks.isNotEmpty()) setFrameworks(installedFrameworks)
         optionsPanel.removeAll()
-        if (loaded.isNotEmpty()) optionsPanel.add(optionRows(loaded), BorderLayout.CENTER)
+        if (loaded.isNotEmpty()) optionsPanel.add(TemplateOptionsView.scrolled(optionRows(loaded), screenOf(optionsPanel).height), BorderLayout.CENTER)
         optionsPanel.revalidate()
         optionsPanel.repaint()
         // the dialog was packed before the rows came
-        SwingUtilities.getWindowAncestor(optionsPanel)?.let { window -> if (window.isShowing) window.pack() }
+        SwingUtilities.getWindowAncestor(optionsPanel)?.let { window -> if (window.isShowing) fit(window) }
     }
+
+    /** The window grows to hold the rows, never beyond its screen, and stays on it; it does not shrink back under the hands. */
+    private fun fit(window: Window) {
+        val screen = ScreenUtil.getScreenRectangle(window)
+        val size = TemplateOptionsLayout.windowSize(window.size, window.preferredSize, screen.size)
+        val bounds = Rectangle(window.location, size)
+        ScreenUtil.moveToFit(bounds, screen, null)
+        window.bounds = bounds
+        window.validate()
+    }
+
+    private fun screenOf(component: JComponent): Rectangle =
+        if (component.isShowing) ScreenUtil.getScreenRectangle(component)
+        else if (GraphicsEnvironment.isHeadless()) Rectangle(0, 0, 1920, 1080)
+        else GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
 
     private fun optionRows(loaded: List<TemplateOption>): JComponent = panel {
         for (option in loaded) {
@@ -182,9 +206,11 @@ class DotNetTemplatePanel {
                     } else {
                         val combo = ComboBox(option.choices.map { it.value }.toTypedArray())
                         combo.selectedItem = option.choices.firstOrNull { it.value.equals(option.default, ignoreCase = true) }?.value ?: option.choices.firstOrNull()?.value
-                        combo.renderer = com.intellij.ui.SimpleListCellRenderer.create { label, value, _ ->
+                        // the description in the list only: in the box itself it made the box, and the dialog with it, as wide as the longest one
+                        combo.isSwingPopup = false
+                        combo.renderer = com.intellij.ui.SimpleListCellRenderer.create { label, value, index ->
                             val choice = option.choices.firstOrNull { it.value == value }
-                            label.text = if (choice?.description.isNullOrEmpty()) value.orEmpty() else "$value — ${choice!!.description}"
+                            label.text = if (index < 0 || choice?.description.isNullOrEmpty()) value.orEmpty() else "$value — ${choice!!.description}"
                         }
                         controls[option.name] = { combo.selectedItem as? String ?: "" }
                         cell(combo).comment(hint)
@@ -202,4 +228,62 @@ class DotNetTemplatePanel {
     private companion object {
         const val DEFAULT_FRAMEWORK = "(template default)"
     }
+}
+
+/**
+ * The rows of a template with many options (`webapi` has a dozen, a template of nuget.org any number) did not fit the screen: the
+ * dialog grew with them and its buttons went below the edge. The rows scroll now, in a viewport that is never higher than
+ * [TemplateOptionsLayout.viewportHeight] lets it be.
+ */
+object TemplateOptionsView {
+    fun scrolled(rows: JComponent, screenHeight: Int): JComponent {
+        val view = ViewportWidePanel(rows)
+        val scroll = ScrollPaneFactory.createScrollPane(view, true)
+        scroll.horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+        scroll.verticalScrollBar.unitIncrement = JBUI.scale(TemplateOptionsLayout.WHEEL_STEP)
+        scroll.isOpaque = false
+        scroll.viewport.isOpaque = false
+        val content = view.preferredSize
+        val height = TemplateOptionsLayout.viewportHeight(content.height, screenHeight, JBUI.scale(TemplateOptionsLayout.MAX_HEIGHT))
+        val scrollBar = if (height < content.height) scroll.verticalScrollBar.preferredSize.width else 0
+        scroll.preferredSize = Dimension(minOf(content.width, JBUI.scale(TemplateOptionsLayout.MAX_WIDTH)) + scrollBar, height)
+        return scroll
+    }
+
+    /** As wide as the viewport, so a long comment wraps instead of asking for a horizontal scroll bar. */
+    private class ViewportWidePanel(content: JComponent) : JPanel(BorderLayout()), Scrollable {
+        init {
+            isOpaque = false
+            add(content, BorderLayout.NORTH)
+        }
+
+        override fun getPreferredScrollableViewportSize(): Dimension = preferredSize
+        override fun getScrollableUnitIncrement(visibleRect: Rectangle, orientation: Int, direction: Int): Int = JBUI.scale(TemplateOptionsLayout.WHEEL_STEP)
+        override fun getScrollableBlockIncrement(visibleRect: Rectangle, orientation: Int, direction: Int): Int =
+            (visibleRect.height - JBUI.scale(TemplateOptionsLayout.WHEEL_STEP)).coerceAtLeast(1)
+        override fun getScrollableTracksViewportWidth(): Boolean = true
+        override fun getScrollableTracksViewportHeight(): Boolean = false
+    }
+}
+
+/** How much room the options of a template may take: numbers only, the panel applies them. */
+object TemplateOptionsLayout {
+    /** Unscaled pixels. */
+    const val MAX_HEIGHT = 320
+    const val MAX_WIDTH = 620
+    const val WHEEL_STEP = 20
+
+    /** The share of the screen height the rows may take, and the one a window may. */
+    private const val ROWS_SHARE = 0.4
+    private const val WINDOW_SHARE = 0.9
+
+    /** The height of the viewport for rows [contentHeight] high: all of them while they fit, [maxHeight] or 40% of the screen at most. */
+    fun viewportHeight(contentHeight: Int, screenHeight: Int, maxHeight: Int): Int =
+        minOf(contentHeight, maxHeight, (screenHeight * ROWS_SHARE).toInt()).coerceAtLeast(0)
+
+    /** The size of the window: what it [wanted] where that is more than it has [current]ly, within 90% of the [screen]. */
+    fun windowSize(current: Dimension, wanted: Dimension, screen: Dimension): Dimension = Dimension(
+        maxOf(current.width, wanted.width).coerceAtMost((screen.width * WINDOW_SHARE).toInt()),
+        maxOf(current.height, wanted.height).coerceAtMost((screen.height * WINDOW_SHARE).toInt()),
+    )
 }
