@@ -97,6 +97,9 @@
         <!-- indentation while typing, by the rules of resources/csharpIndent/rules.json; whole files are formatted by CSharpier / dotnet format -->
         <lineIndentProvider implementation="io.github.dotnetsupport.lang.CSharpLineIndentProvider"/>
         <typedHandler implementation="io.github.dotnetsupport.lang.CSharpBracketTypedHandler"/>
+        <!-- `<` of a generic gets its `>`: the brace matcher cannot list a bracket that is an operator as often -->
+        <typedHandler implementation="io.github.dotnetsupport.lang.CSharpAngleBracketTypedHandler"/>
+        <backspaceHandlerDelegate implementation="io.github.dotnetsupport.lang.CSharpAngleBracketBackspaceHandler"/>
         <enterHandlerDelegate order="first" implementation="io.github.dotnetsupport.lang.CSharpEnterAfterBraceHandler"/>
         <enterHandlerDelegate implementation="io.github.dotnetsupport.lang.CSharpDocCommentEnterHandler"/>
         <!-- postfix templates (expr.if, list.foreach, x.return...) and Surround With, by tokens -->

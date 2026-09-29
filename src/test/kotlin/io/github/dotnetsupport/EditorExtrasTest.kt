@@ -76,6 +76,11 @@ class EditorExtrasTest : BasePlatformTestCase() {
         assertEquals("Invoice.cs", myFixture.file.virtualFile.name)
     }
 
+    fun testGhostTextProviderIsRegistered() {
+        val providers = com.intellij.codeInsight.inline.completion.InlineCompletionProvider.EP_NAME.extensionList.map { it.javaClass.simpleName }
+        assertTrue(providers.toString(), "CSharpGhostTextProvider" in providers)
+    }
+
     fun testEditorConfigDotNetSupportIsSwitchedOnWhenThePluginIsThere() {
         val on = EditorConfigDotNetSupport.enable()
         if (on) assertTrue(com.intellij.openapi.util.registry.Registry.`is`(EditorConfigDotNetSupport.DOTNET_KEY))
