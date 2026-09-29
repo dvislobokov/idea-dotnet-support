@@ -79,6 +79,11 @@ tasks.processResources {
         include("Program.cs", "AssemblyIndexer.csproj")
         into("indexer")
     }
+    // the watcher of allocations, the same way
+    from("allocwatch") {
+        include("Program.cs", "AllocWatch.csproj")
+        into("allocwatch")
+    }
 }
 
 intellijPlatform {

@@ -8,7 +8,7 @@ namespace Playground;
 /// </summary>
 public static class Scenarios
 {
-    /// <summary>Run without arguments. The rest (evil, crash, wait, input, leak) are asked for by name: they hang, crash, never end or wait for input.</summary>
+    /// <summary>Run without arguments. The rest (evil, crash, wait, input, leak, allocations) are asked for by name: they hang, crash, never end or wait for input.</summary>
     public static readonly string[] Safe =
         ["variables", "collections", "strings", "expensive", "setvalue", "stepping", "library", "closures", "exceptions", "async", "threads", "environment", "output"];
 
@@ -34,6 +34,8 @@ public static class Scenarios
             case "wait": Wait(); break;
             case "input": Input(); break;
             case "leak": Leak(); break;
+            case "allocations": AllocationScenario.Run(); break;
+            case "allocations-fast": AllocationScenario.RunFast(); break;
             default: Console.WriteLine($"Unknown scenario '{name}'"); break;
         }
     }

@@ -23,9 +23,9 @@
         <!-- several solutions in the folder and none chosen: the file is analyzed by nobody until one is -->
         <editorNotificationProvider implementation="io.github.dotnetsupport.roslyn.RoslynSolutionBanner"/>
         <!-- adds no items: makes the first letter after a space start the popup again, see the class -->
-        <completion.contributor language="C#" order="first" implementationClass="io.github.dotnetsupport.roslyn.RoslynCompletionRestart"/>
+        <completion.contributor language="C#" order="first, after dotnetCaseInsensitive" implementationClass="io.github.dotnetsupport.roslyn.RoslynCompletionRestart"/>
         <!-- a lambda first in the list where a delegate is expected, see the class -->
-        <completion.contributor language="C#" order="first" implementationClass="io.github.dotnetsupport.roslyn.RoslynLambdaCompletion"/>
+        <completion.contributor language="C#" order="first, after dotnetCaseInsensitive" implementationClass="io.github.dotnetsupport.roslyn.RoslynLambdaCompletion"/>
         <!-- the same lambda as gray text after `(` and `,`, accepted with Tab -->
         <inline.completion.provider implementation="io.github.dotnetsupport.roslyn.RoslynLambdaGhost"/>
         <!-- Ctrl+P: every overload as a row, as in Rider; the handler of the platform for LSP shows the active signature only -->

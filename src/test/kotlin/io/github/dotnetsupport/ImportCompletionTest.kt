@@ -120,6 +120,12 @@ class ImportCompletionTest : BasePlatformTestCase() {
             complete("class A\n{\n    void M()\n    {\n        WriteLi<caret>\n    }\n}\n", "WriteLine"))
     }
 
+    fun testTheCaseOfTheLettersDoesNotMatter() {
+        val expected = "using System;\n\nclass A\n{\n    void M()\n    {\n        Console.WriteLine(|);\n    }\n}\n"
+        assertEquals("all small", expected, complete("class A\n{\n    void M()\n    {\n        writeli<caret>\n    }\n}\n", "WriteLine"))
+        assertEquals("all capital", expected, complete("class A\n{\n    void M()\n    {\n        WRITELI<caret>\n    }\n}\n", "WriteLine"))
+    }
+
     fun testNoUsingWhereTheNamespaceIsSeen() {
         assertEquals("imported by the file",
             "using System;\n\nclass A\n{\n    void M()\n    {\n        Console.WriteLine(|);\n    }\n}\n",

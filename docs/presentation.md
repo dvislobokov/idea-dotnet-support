@@ -1,7 +1,7 @@
 ---
 marp: true
 title: C# Project Support
-description: C# и .NET в IntelliJ IDEA, GoLand, PyCharm и WebStorm
+description: Разработка на C# и .NET в IntelliJ IDEA, GoLand, PyCharm и WebStorm
 lang: ru
 paginate: true
 size: 16:9
@@ -42,7 +42,7 @@ style: |
   strong { color: var(--text); font-weight: 600; }
   a { color: var(--text); }
   ul, ol { margin: 0; padding-left: 28px; }
-  li { margin: 0 0 10px; }
+  li { margin: 0 0 14px; }
   li::marker { color: var(--magenta); }
   code {
     font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
@@ -59,20 +59,21 @@ style: |
     padding: 20px 24px;
     font-size: 21px;
     line-height: 1.6;
-    margin: 0 0 18px;
+    margin: 0 0 24px;
   }
   pre code { background: none; padding: 0; font-size: 1em; color: #c3c5cc; }
   pre code .hljs-keyword, pre code .hljs-built_in { color: #cf8e6d; }
   pre code .hljs-title, pre code .hljs-type { color: #56a8f5; }
   pre code .hljs-string { color: #6aab73; }
+  pre code .hljs-subst { color: #c3c5cc; }
   pre code .hljs-number, pre code .hljs-literal { color: #2aacb8; }
-  pre code .hljs-comment { color: #7a7e85; font-style: italic; }
+  pre code .hljs-comment { color: #f08a3c; font-style: italic; }
   section table { display: table; border-collapse: collapse; width: 100%; font-size: 23px; margin: 0 0 24px; }
   section table th, section table td {
     background: none !important;
     border: 0 !important;
     border-bottom: 1px solid var(--line) !important;
-    padding: 11px 22px 11px 0;
+    padding: 12px 22px 12px 0;
     text-align: left;
     vertical-align: top;
     color: var(--text-2);
@@ -96,11 +97,25 @@ style: |
   section.part { justify-content: center !important; padding: 72px 96px; }
   section.part h1 { font-size: 64px; }
   section.part p { font-size: 28px; margin-top: 22px; max-width: 28em; }
-  section.cols ul { columns: 2; column-gap: 56px; }
-  section.cols li { break-inside: avoid; }
   section.small { font-size: 23px; }
   section.small table { font-size: 21px; }
   section.small table th, section.small table td { padding-top: 8px; padding-bottom: 8px; }
+  /* a list as cards: the statement in bold, its explanation under it */
+  section.cards ul { list-style: none; padding: 0; margin: 10px 0 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  section.cards li { margin: 0; padding: 26px 28px 28px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; font-size: 23px; line-height: 1.4; }
+  section.cards li strong { display: block; font-size: 28px; line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 12px; }
+  section.cards > p { font-size: 29px; max-width: 34em; margin-bottom: 22px; }
+  section.cards.six li { padding: 20px 24px 22px; font-size: 21px; }
+  section.cards.six li strong { font-size: 25px; margin-bottom: 8px; }
+  /* the steps: cards with their numbers */
+  section.steps ol { list-style: none; padding: 0; margin: 10px 0 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; counter-reset: step; }
+  section.steps li { counter-increment: step; margin: 0; padding: 22px 28px 28px; border-top: 3px solid var(--line); font-size: 23px; line-height: 1.4; }
+  section.steps li::before { content: counter(step); display: block; font-size: 64px; font-weight: 700; line-height: 1; margin-bottom: 14px; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  section.steps li strong { display: block; font-size: 28px; line-height: 1.15; margin-bottom: 10px; }
+  section.steps > p { margin-top: 30px; color: var(--text-3); font-size: 23px; }
+  /* a feature: what it gives, in three statements */
+  section.feature > p { font-size: 29px; max-width: 34em; margin-bottom: 24px; }
+  section.feature li { font-size: 26px; }
 ---
 
 <!-- _class: lead -->
@@ -108,314 +123,243 @@ style: |
 
 # C# и .NET в той IDE, которая у вас уже открыта
 
-Редактор на Roslyn, отладчик, тесты, NuGet и EF Core в IntelliJ IDEA, GoLand, PyCharm и WebStorm
+Полный цикл разработки на .NET в IntelliJ IDEA, GoLand, PyCharm и WebStorm
 
-Плагин C# Project Support, версия 0.1.0. Платформа IntelliJ 2026.1 и новее
-
----
-
-## Зачем это нужно
-
-- В команде несколько языков, а IDE хочется одну. Сервис на Go, рядом API на C#, и оба открыты в GoLand.
-- Rider решает задачу целиком, но это отдельный продукт и отдельное окно.
-- Плагин даёт основной рабочий цикл на C# внутри любой IDE платформы IntelliJ.
-
-### Рабочий цикл
-
-Открыть solution, написать код, собрать, запустить, отладить, прогнать тесты, поставить пакет.
-
-> Работает и в бесплатной IntelliJ IDEA Community.
+Плагин C# Project Support, версия 0.1.0
 
 ---
 
-## Как устроено
+<!-- _class: cards -->
 
-| Что | Кто делает |
+## .NET в команде с несколькими языками
+
+Сервисы на Go, Python и TypeScript живут в одной IDE. Сервисы на .NET требуют другой.
+
+- **Два рабочих места** Каждому разработчику нужны две IDE, два набора настроек и два набора привычек.
+- **Потери на переключении** Внимание уходит на инструмент, а не на задачу: другие окна, другие клавиши.
+- **Долгий ввод в проект** Новый сотрудник настраивает и осваивает два окружения вместо одного.
+
+---
+
+<!-- _class: cards -->
+
+## .NET становится частью вашей IDE
+
+Плагин добавляет полный рабочий цикл: код, сборка, запуск, отладка, тесты и пакеты.
+
+- **Одна IDE на весь стек** Сервисы на .NET рядом с остальным кодом команды. Одни настройки и одно окно.
+- **Работает в бесплатной IDEA** Все возможности, включая отладчик, доступны в IntelliJ IDEA Community.
+- **Компилятор Microsoft внутри** Ошибки и исправления даёт Roslyn: тот же компилятор, который собирает ваш код.
+
+---
+
+## Кому это нужно
+
+| Кто | Что получает |
 |---|---|
-| Семантика C# | `roslyn-language-server`, тот же компилятор, что в Visual Studio |
-| Отладка | свой клиент протокола DAP и адаптер `dotnet-debugger-dap` |
-| Сборка, тесты, пакеты | `dotnet` CLI |
-| Диагностика процесса | `dotnet-counters`, `dotnet-stack`, `dotnet-gcdump`, `dotnet-dump` |
-| Подсветка, структура, отступы | лексер и сканер объявлений плагина |
-
-Собственного парсера C# в плагине нет. Пока сервер грузится, работают эвристики по токенам. Когда сервер готов, они ему уступают.
+| Команды с несколькими языками | Единое рабочее место для всего стека |
+| Разработчики на Go, Python, TypeScript | Работа с сервисами .NET без смены IDE |
+| Команды на IntelliJ IDEA Community | Отладка и тесты .NET без дополнительных продуктов |
+| Руководители разработки | Один набор инструментов и быстрый ввод новых сотрудников |
 
 ---
 
 <!-- _class: part -->
 
-# Редактор
+# Что получает разработчик
 
-Семантику даёт Roslyn. Скорость набора даёт слой, которому сервер не нужен.
-
----
-
-## Редактор понимает код
-
-<!-- _class: cols -->
-
-- **Ошибки** компилятора и анализаторов в редакторе
-- **Problems** по всем файлам solution, а не только по открытым
-- **Completion** с автоматическим `using`
-- **Parameter Info** со всеми перегрузками
-- **Quick Doc**, inlay hints, семантическая раскраска
-- **Alt+Enter**: исправления и рефакторинги Roslyn
-- **Fix All** по документу, проекту и solution
-- **Rename** с переименованием файла
-- **Generate** по Alt+Insert: конструктор, Equals, overrides
-- Опции C# в `.editorconfig` с подсказками
+Пять возможностей, которые заметны в первый же день работы.
 
 ---
 
-## Серый текст по Tab
+<!-- _class: feature -->
 
-Продолжение предлагается только там, где оно одно.
+## Редактор, который дописывает за вас
+
+Меньше набора: редактор предлагает готовые строки и находит ошибки до сборки.
 
 ```csharp
 public string Customer          // { get; set; }
-private readonly List<OrderLine> _lines =      // new();
-public Order(                   // string customer, Guid id)
-{
-                                // _customer = customer;
-}
 repository.Save(                // order, cancellationToken
-services.AddSingleton<IClock>(  // serviceProvider =>
+WriteLi                         // Console.WriteLine(); и using System;
 ```
 
-Ещё четыре случая: namespace по папке, имя типа по имени файла, `ILogger<Класс>`, `catch (Exception e)`.
+- **Продолжение строки** появляется серым текстом, остаётся нажать Tab
+- **Готовые вызовы** подставляются целиком, нужное пространство имён подключается само
+- **Ошибки видны во всём решении**, Alt+Enter исправляет их в файле, проекте или везде сразу
 
 ---
 
-## Где серый текст молчит
+<!-- _class: feature -->
 
-| Набрано | Почему нет подсказки |
+## Отладчик, к которому не нужно привыкать
+
+Стандартное окно Debug со всеми его возможностями. Причина ошибки находится быстрее, когда значения видны прямо в коде.
+
+- **Остановка там, где нужно:** условия, счётчики попаданий, исключения выбранного типа
+- **Состояние перед глазами:** значения рядом с кодом, вычисление выражений, стек асинхронных вызовов
+- **Любой сценарий:** приложение, отдельный тест или уже работающий процесс
+
+> Поддерживается современный .NET: .NET Core и .NET 5 и новее.
+
+---
+
+<!-- _class: feature -->
+
+## Видно, какая строка расходует память
+
+Запустите приложение, и рядом с кодом появятся измеренные значения.
+
+```csharp
+return new byte[1024];          // 19.3 MB/s, 18.4K obj/s, byte[]  95%
+names[i] = $"order-{i}";        // 884 KB/s, 18.8K obj/s, string  4.3%
+```
+
+- **Измерение, а не предположение:** данные снимаются с работающей программы
+- **Понятно, с чего начать:** доля строки показывает, что оптимизировать первым
+- **Без подготовки:** обычный запуск из IDE, без профилировщика и специальной сборки
+
+---
+
+<!-- _class: feature -->
+
+## Решение целиком, а не папка с файлами
+
+Проекты, зависимости и конфигурации показаны так, как их видит сборка.
+
+- **Любой формат:** `.sln`, `.slnx` и фильтры `.slnf`, несколько решений в одной папке
+- **Зависимости под контролем:** пакеты, проекты и анализаторы по каждой целевой платформе
+- **Сборка и запуск в один клик:** ошибки со ссылками на код, профили запуска, окно Services
+- **Новый проект за минуту:** шаблоны `dotnet new` с параметрами в диалоге IDE
+
+---
+
+<!-- _class: feature -->
+
+## Тесты и покрытие в одном окне
+
+xUnit, NUnit, MSTest и TUnit: запуск, отладка и покрытие без командной строки.
+
+- **Запуск от места в коде:** один тест, класс или только упавшие
+- **Покрытие на виду:** в редакторе, по файлам и в дереве проекта
+- **Быстрый старт:** тестовый класс для выбранного типа создаётся из Alt+Enter
+
+---
+
+<!-- _class: cards six -->
+
+## Всё остальное тоже на месте
+
+- **NuGet** Поиск, установка и обновление пакетов по всему решению, включая приватные источники.
+- **EF Core** Миграции, обновление базы данных и SQL-скрипты из меню.
+- **Мониторинг** Процессор, память и сборка мусора работающего приложения, снимки кучи и дампы.
+- **Endpoints** Все маршруты API одним списком, запрос к любому из них в один клик.
+- **Единый стиль кода** CSharpier или `dotnet format` по привычной комбинации клавиш.
+- **Шаблоны** Заготовки файлов и типовых конструкций вместо однотипного кода вручную.
+
+---
+
+<!-- _class: part -->
+
+# Почему этому можно доверять
+
+Плагин не изобретает своё: он соединяет IDE со стандартными инструментами .NET.
+
+---
+
+## Построено на стандартных инструментах
+
+| Задача | На чём работает |
 |---|---|
-| `public Order FindLatest` | глагол в имени, это метод |
-| `public Task<Order> Latest` | тип `Task`, это метод |
-| `private readonly Order _order = ` | справа с той же вероятностью вызов |
-| `Save(` без переменной с именем параметра | нечего подставить |
-| открыт список completion | Tab принадлежит списку |
+| Анализ кода | Roslyn, компилятор Microsoft |
+| Сборка, тесты, пакеты | `dotnet` CLI, тот же, что на сервере сборки |
+| Отладка | Стандартное окно Debug платформы IntelliJ |
+| Интерфейс | Привычные окна IDE: Run, Services, Build, Problems |
 
-Семь подсказок из девяти считаются по токенам. Они появляются мгновенно и работают, пока solution ещё грузится.
+Результат в IDE совпадает с результатом на сервере сборки: проект собирается и проверяется одними и теми же средствами.
 
----
-
-## Набор без ожидания
-
-<!-- _class: cols -->
-
-- **Лямбда первой в списке** там, где ожидается делегат
-- **Переменные выше ключевых слов** в completion
-- **Скобки после** `typeof`, `nameof`, `new HttpClient`
-- **Парная** `>` у generic: `AddSingleton<|>()`
-- Пара снимается сама на сравнении `Count<5`
-- **21 postfix-шаблон**: `expr.notnull`, `list.foreach`
-- **33 live templates**: `ctor`, `prop`, `foreach`
-- **Surround With** для выражений и строк
-- **Отступы** по правилам Allman и K&R
-- Действия файла: namespace по папке, тип в свой файл
+> Каждую сборку плагина проверяют 447 автоматических тестов.
 
 ---
-
-## Навигация
-
-- **Объявление и реализации**, в том числе по Ctrl и наведению
-- **Декомпилированный код** фреймворка и пакетов, только для чтения
-- **Type Hierarchy** и **Call Hierarchy** в стандартном окне Hierarchy
-- **Go to Base** и производные типы
-- **Usages** по клику на code lens над объявлением
-- **Go to Class** и Structure по индексу плагина, без сервера
-
-### Перенос файла
-
-Перетащили `.cs` в другую папку: плагин предложит сменить namespace вместе со всеми использованиями.
-
----
-
-<!-- _class: part -->
-
-# Отладка, запуск, тесты
-
-Стандартные окна IDE: Debug, Run, Services, Build.
-
----
-
-## Отладчик
-
-<!-- _class: cols -->
-
-- **Точки останова**: условие, счётчик попаданий, сообщение в лог
-- **Остановка на исключениях** с фильтром по типам
-- Шаги, Run to Cursor, **Set Next Statement**
-- **Асинхронный стек**, кадры фреймворка серым
-- Variables постранично, **изменение значений**
-- Evaluate и Watches с completion
-- **Значения в редакторе** рядом с кодом
-- **Attach** к процессу
-- **Отладка тестов**
-- Ввод в консоль отлаживаемого приложения
-
-> Только .NET Core и .NET 5 и новее. Hot Reload и Smart Step Into нет.
-
----
-
-## Solution и проект
-
-- **Форматы**: `.sln`, `.slnx`, фильтры `.slnf`, несколько solution в папке
-- **Dependencies** по каждой целевой платформе: пакеты с транзитивными, проекты, сборки, анализаторы
-- **Честное содержимое**: скрыты файлы, убранные через `Compile Remove`, показаны связанные файлы
-- **New Project** с опциями шаблона из `dotnet new`
-- **Properties**: три вкладки, правки не ломают форматирование `.csproj`
-- **Rename Project**: файл, папка, solution и все ссылки одной отменяемой командой
-- **Completion в** `.csproj` по схеме MSBuild, включая id и версии пакетов
-
----
-
-## Сборка и запуск
-
-- **Build, Rebuild, Clean, Restore** с деревом ошибок в окне Build
-- Переключатель **Debug и Release** и целевой платформы в тулбаре
-- **Run configurations** создаются сами по `launchSettings.json`
-- Режимы `run`, `watch` и `test`, профиль запуска, окружение
-- Окно **Services**: статус, консоли, ссылка на адрес приложения
-- В консоли кликабельные стектрейсы и раскраска уровней логов
-- **Measure Build Performance**: самые медленные targets и tasks
-
----
-
-## Тесты и покрытие
-
-- **Фреймворки**: xUnit, NUnit, MSTest, TUnit
-- **Раннеры**: VSTest и Microsoft.Testing.Platform
-- Окно **Unit Tests**: дерево проекта и сессии результатов
-- Запуск от метода и класса, фильтр, **повтор упавших**
-- **Run with Coverage**: полосы в редакторе, окно по файлам, проценты в дереве проекта
-- **Create test** для выбранного класса из Alt+Enter
-
-> Дерево результатов строится после завершения прогона. Консоль идёт вживую.
-
----
-
-<!-- _class: part -->
-
-# Вокруг кода
-
-Пакеты, база данных, диагностика процесса, веб.
-
----
-
-## NuGet и EF Core
-
-### NuGet
-
-- Окно пакетов по solution или проекту, карточка с версиями и зависимостями
-- Приватные фиды с учётными данными, обновление всех пакетов разом
-- Авто-restore при правке `.csproj`
-
-### EF Core
-
-- Add и Remove Migration, Update Database с откатом, SQL-скрипт, scaffold, bundle
-- Окно миграций со статусом applied и pending
-- Startup-проект и `DbContext` подбираются сами, команда видна до запуска
-
----
-
-## Диагностика и веб
-
-### .NET Monitor
-
-- Графики процесса: CPU, память, GC, запросы, исключения
-- Дамп потоков со свёрнутыми одинаковыми стеками
-- Снимки кучи с разницей между ними
-- Memory dump: типы, объекты и **кто держит объект**
-
-### Endpoints
-
-- Маршруты minimal API и контроллеров по проектам
-- HTTP-запрос в `.http` в один клик, переход к коду, открытие в браузере
-
----
-
-## Сравнение с Rider
 
 <!-- _class: small -->
 
-| Область | Rider | C# Project Support |
+## Плагин и Rider: что выбрать
+
+| Область | C# Project Support | Rider |
 |---|---|---|
-| Модель кода | ReSharper, свой парсер | Roslyn language server и эвристики |
-| Ошибки | компилятор и 2 500 инспекций | компилятор и анализаторы Roslyn |
-| Рефакторинги | больше 60 | Rename и рефакторинги Roslyn |
-| Навигация | полная | объявления, реализации, иерархии |
-| Отладчик | CoreCLR, .NET Framework, Mono | CoreCLR |
-| Тесты | результаты вживую | результаты после прогона |
-| NuGet, EF Core | есть | есть, NuGet только V3 |
-| Razor и Blazor | полный язык | пока нет |
-| Где работает | только Rider | IDEA, GoLand, PyCharm, WebStorm |
+| Где работает | IDEA, GoLand, PyCharm, WebStorm | Отдельная IDE |
+| Анализ кода | Компилятор и анализаторы Roslyn | Собственный движок, 2 500 инспекций |
+| Рефакторинги | Переименование и рефакторинги Roslyn | Более 60 |
+| Отладчик | Современный .NET | .NET, .NET Framework, Mono |
+| Расход памяти по строкам | Измеренные значения | Пометки без измерения |
+| Тесты | Результаты после прогона | Результаты по ходу прогона |
+| Razor и Blazor | В разработке | Полная поддержка |
+
+**Плагин** подходит командам, где .NET является частью стека. **Rider** подходит командам, где .NET является основной платформой и нужны глубокие инспекции.
 
 ---
 
-## Чего в плагине нет
+## Что пока не поддерживается
 
-- **Razor, Blazor, XAML, F#, VB.NET.** Только значки, шаблоны файлов и группировка в дереве.
-- **Publish и контейнеры.** Нет публикации в папку, IIS, Azure и Docker.
-- **Hot Reload.** `dotnet watch` доступен как режим запуска, при отладке изменений на лету нет.
-- **Отладка .NET Framework и Mono**, удалённая отладка.
-- **Инспекции и Code Cleanup ReSharper.**
-- **Профилирование CPU.**
+- **Razor, Blazor, XAML, F# и VB.NET**
+- **Публикация:** в папку, IIS, Azure и контейнеры
+- **Hot Reload** при отладке
+- **Отладка .NET Framework и Mono**, удалённая отладка
+- **Инспекции ReSharper и профилирование процессора**
 
-> Это следствие подхода: семантика живёт во внешнем сервере, и плагин умеет то, что умеет сервер.
+> Расход памяти измеряется по выборке событий среды выполнения: строка, которая выделяет мало, появляется не сразу.
 
 ---
 
-## Что дальше
+## План развития
 
-| Направление | Состояние |
+| Направление | Что это даст |
 |---|---|
-| Razor и Blazor | сервер отвечает на запросы для `.razor` и `.cshtml`, трафик снят, клиент не подключён |
-| Значки в списке Alt+Enter | спроектировано: вид действия, Incoming и Outgoing Calls |
-| Серый текст, третья партия | пара для DI-регистрации, заполнение инициализатора объекта |
-| Надёжность сервера | большие solution, перезапуски |
+| Razor и Blazor | Веб-интерфейсы на .NET в том же редакторе |
+| Расход памяти | Сравнение двух запусков и причина выделения рядом со значением |
+| Подсказки по библиотекам | Типы и методы пакетов, которые ещё не подключены к проекту |
+| Большие решения | Устойчивая работа и быстрая загрузка на крупных проектах |
 
-> Всё, что сделано в последние дни, покрыто тестами, но большая часть ещё не проверена вживую в IDE.
-
----
-
-## С чего начать
-
-1. **Поставьте инструменты.** Settings, Tools, .NET, .NET Tools. Нужны `roslyn-language-server` и `dotnet-debugger-dap`.
-2. **Откройте папку с solution.** Именно папку, не файл. Панель проекта переключится на Solution.
-3. **Дождитесь загрузки.** Виджет внизу покажет «Roslyn: имя solution».
-
-### Под рукой
-
-- Страница о плагине: меню .NET, пункт Welcome to C# Project Support
-- Логи плагина: `~/idea-dotnet-logs`
+> Версия 0.1.0 находится в раннем доступе: часть возможностей проходит проверку на реальных проектах.
 
 ---
 
-## Сценарий демо на 10 минут
+<!-- _class: steps -->
+
+## Три шага до первой строки кода
+
+1. **Установите инструменты** Settings, Tools, .NET, .NET Tools. Нужны сервер языка и отладчик.
+2. **Откройте папку с решением** Панель проекта переключится на Solution.
+3. **Работайте** Подсветка и подсказки доступны сразу, полный анализ включается после загрузки.
+
+Проект менять не нужно: плагин читает те же файлы решения и проектов, что и `dotnet` CLI.
+
+---
 
 <!-- _class: small -->
+
+## Сценарий демонстрации на 12 минут
 
 | Минута | Что показать |
 |---|---|
-| 0:00 | Открыть папку. Панель Solution, Dependencies по платформам |
-| 1:00 | Services: запуск веб-проекта, ссылка на адрес, окно Endpoints |
-| 2:30 | Набор кода: свойство и конструктор серым текстом, лямбда в `AddSingleton` |
-| 4:00 | Alt+Enter и Fix All in Solution, Rename, Type Hierarchy |
-| 5:30 | Отладка: остановка на исключении, Evaluate, Set Next Statement |
-| 7:00 | Unit Tests: Run with Coverage, повтор упавших |
-| 8:00 | NuGet: поиск и установка пакета |
-| 9:00 | EF Core: Add Migration, статус миграций |
-| 9:30 | .NET Monitor: снимки кучи, memory dump, кто держит объект |
+| 0:00 | Открыть папку с решением: панель Solution, зависимости по платформам |
+| 1:00 | Запустить веб-проект из Services: ссылка на адрес, окно Endpoints |
+| 2:30 | Набрать код: свойство и конструктор серым текстом, `WriteLi` и Tab |
+| 4:00 | Alt+Enter и Fix All in Solution, переименование класса |
+| 5:30 | Отладка: остановка на исключении, Evaluate, значения в коде |
+| 7:00 | Расход памяти: Show Allocations in Editor, значения у строк |
+| 8:30 | Тесты: Run with Coverage, повтор упавших |
+| 10:00 | NuGet и EF Core: установка пакета, новая миграция |
+| 11:00 | Мониторинг: графики, снимки кучи |
 
 ---
 
 <!-- _class: lead -->
 <!-- _paginate: false -->
 
-# Спасибо
+# Попробуйте на своём проекте
+
+Установите плагин и откройте папку с решением. До первой строки кода три шага.
 
 C# Project Support, `io.github.dotnetsupport`
-
-Подробное сравнение с Rider лежит в `COMPARE.md`, планы в `ROADMAP.md`

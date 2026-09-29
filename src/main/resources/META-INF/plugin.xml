@@ -136,6 +136,9 @@
         <postStartupActivity implementation="io.github.dotnetsupport.welcome.WelcomePageActivity"/>
         <!-- the index of the assemblies of the projects, made in the background by the indexer the plugin builds on this machine -->
         <postStartupActivity implementation="io.github.dotnetsupport.index.AssemblyIndexStartup"/>
+        <!-- what the lines of the sources allocate, measured in the running program and written at the end of the lines -->
+        <postStartupActivity implementation="io.github.dotnetsupport.allocations.AllocationsStartup"/>
+        <editor.linePainter implementation="io.github.dotnetsupport.allocations.AllocationsLinePainter"/>
         <!-- static members of types that are not imported, by the bare name: WriteLi -> Console.WriteLine and the using -->
         <completion.contributor language="C#" implementationClass="io.github.dotnetsupport.index.ImportCompletionContributor"/>
         <notificationGroup id=".NET" displayType="BALLOON"/>
@@ -178,7 +181,9 @@
         <xdebugger.breakpointType implementation="io.github.dotnetsupport.debugger.DotNetExceptionBreakpointType"/>
         <xdebugger.attachDebuggerProvider implementation="io.github.dotnetsupport.debugger.DotNetAttachDebuggerProvider"/>
         <!-- names of the stopped program in Evaluate, watches and breakpoint conditions; first, and it stops the others there -->
-        <completion.contributor language="C#" order="first" implementationClass="io.github.dotnetsupport.debugger.DotNetExpressionCompletionContributor"/>
+        <!-- the case of what is typed does not matter in C#: the first of all, the ones after it get its matcher -->
+        <completion.contributor language="C#" id="dotnetCaseInsensitive" order="first" implementationClass="io.github.dotnetsupport.lang.CSharpCaseInsensitiveCompletion"/>
+        <completion.contributor language="C#" order="first, after dotnetCaseInsensitive" implementationClass="io.github.dotnetsupport.debugger.DotNetExpressionCompletionContributor"/>
         <!-- gray text of a declaration that continues one way only: { get; set; }, new(), _name = name; -->
         <inline.completion.provider implementation="io.github.dotnetsupport.lang.CSharpGhostTextProvider"/>
         <registryKey key="dotnet.debugger.adapter.log" defaultValue="true"
@@ -375,6 +380,11 @@
                     text="New .NET Project..."/>
             <action id="DotNet.Monitor" class="io.github.dotnetsupport.monitor.ShowMonitorAction"
                     text="Monitor .NET Process" description="CPU, memory, GC, requests and exceptions of a running .NET process"/>
+            <!-- next to the monitor, where what is measured in a running program is looked for; and in the menu of the editor of a C# file -->
+            <action id="DotNet.Allocations" class="io.github.dotnetsupport.allocations.ToggleAllocationsAction" text="Show Allocations in Editor"
+                    description="Listen to the program started from the IDE and write at the end of every line what it allocates: bytes and objects a second, types, share">
+                <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            </action>
             <action id="DotNet.Environment" class="io.github.dotnetsupport.sdk.DotNetEnvironmentAction"
                     text=".NET on This Machine..." description="SDKs and runtimes with their support status, dotnet --info, global.json"/>
             <reference ref="DotNet.FormatSelected"/>
