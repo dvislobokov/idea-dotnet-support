@@ -73,6 +73,12 @@ tasks.processResources {
         into("welcome")
         rename { "index.html" }
     }
+    // The indexer of assemblies goes as its source: the plugin builds it on the machine of the user, with the SDK that is there
+    // (IndexerTool). One source, indexer/ of the repository.
+    from("indexer") {
+        include("Program.cs", "AssemblyIndexer.csproj")
+        into("indexer")
+    }
 }
 
 intellijPlatform {

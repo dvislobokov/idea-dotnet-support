@@ -111,6 +111,8 @@ class SolutionFilesListener(private val project: Project) : BulkFileListener {
         if (events.any { affectsSolutionStructure(it.path) || it.path.endsWith("/launchSettings.json") }) {
             DotNetRunConfigurationGenerator.getInstance(project).schedule()
         }
+        // restore has changed what the projects are compiled against
+        if (events.any { it.path.endsWith("/obj/project.assets.json") || isSolutionFile(it.path) }) io.github.dotnetsupport.index.AssemblyIndexService.getInstance(project).schedule()
         if (events.none { affectsSolutionStructure(it.path) || changesProjectRoot(it) }) return
         ApplicationManager.getApplication().invokeLater({
             ProjectView.getInstance(project).getProjectViewPaneById(SolutionViewPane.ID)?.updateFromRoot(true)

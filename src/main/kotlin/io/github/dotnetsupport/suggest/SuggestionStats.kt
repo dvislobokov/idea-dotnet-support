@@ -43,6 +43,9 @@ object SuggestionRules {
     const val SIGNAL_NAME = "name"
     const val SIGNAL_LOCAL = "declared nearby"
     const val SIGNAL_USED = "chosen before"
+
+    /** An item of the index of assemblies: a static member of a type that was not imported. */
+    const val SIGNAL_INDEX = "not imported"
 }
 
 /**

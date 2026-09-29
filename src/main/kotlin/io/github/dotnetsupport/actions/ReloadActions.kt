@@ -45,6 +45,7 @@ object SolutionReload {
             if (project.isDisposed) return@Runnable
             SolutionService.getInstance(project).reload(projectFile)
             DotNetRunConfigurationGenerator.getInstance(project).schedule()
+            io.github.dotnetsupport.index.AssemblyIndexService.getInstance(project).schedule()
             ProjectView.getInstance(project).getProjectViewPaneById(SolutionViewPane.ID)?.updateFromRoot(true)
             project.messageBus.syncPublisher(SolutionReloadListener.TOPIC).reloaded(projectFile)
             StatusBar.Info.set(if (projectFile == null) "Solution reloaded" else "${projectFile.nameWithoutExtension} reloaded", project)

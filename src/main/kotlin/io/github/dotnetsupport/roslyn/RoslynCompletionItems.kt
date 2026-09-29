@@ -12,6 +12,7 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
 import com.intellij.platform.lsp.api.customization.LspCompletionSupport
+import io.github.dotnetsupport.lang.CSharpCalls
 import io.github.dotnetsupport.suggest.SuggestionStats
 import org.eclipse.lsp4j.CompletionItem
 import org.eclipse.lsp4j.CompletionItemKind
@@ -319,53 +320,12 @@ object RoslynCompletionPolicy {
         return null
     }
 
-    private val CHAIN = Regex("""(?:(?:this|base|[A-Za-z_]\w*)\??\.)+$""")
-    private val AWAIT = Regex("""\bawait\s+$""")
-    private val RETURN = Regex("""(?:^|[\s({;])return\s+$""")
-    private val ARROW = Regex("""=>\s*$""")
-    private val ASSIGNMENT = Regex("""(?:^|[^=!<>])=\s*$""")
-    private val DECLARED = Regex("""(?:^|[\s({;])[A-Za-z_][\w.<>,\[\]? ]*\s+[A-Za-z_]\w*\s*=\s*$""")
+    /** See [CSharpCalls.endsStatement]: shared with the items of the index of assemblies. */
+    fun endsStatement(text: CharSequence, nameStart: Int): Boolean = CSharpCalls.endsStatement(text, nameStart)
 
-    /**
-     * Whether the call whose name begins at [nameStart] is the last thing of its statement, whatever it returns: the value of a
-     * declaration (`decimal sum = Total(|);`), of an assignment, of `return`, of an expression body. An assignment in the braces of an
-     * object initializer ends with a comma, not with a semicolon.
-     */
-    fun endsStatement(text: CharSequence, nameStart: Int): Boolean {
-        if (nameStart !in 0..text.length) return false
-        val lineStart = text.lastIndexOf('\n', nameStart - 1) + 1
-        val line = text.subSequence(lineStart, nameStart).toString().replace(CHAIN, "").replace(AWAIT, "")
-        if (RETURN.containsMatchIn(line) || ARROW.containsMatchIn(line)) return true
-        if (!ASSIGNMENT.containsMatchIn(line)) return false
-        return DECLARED.containsMatchIn(line) || !inInitializer(text, lineStart)
-    }
+    fun inInitializer(text: CharSequence, offset: Int): Boolean = CSharpCalls.inInitializer(text, offset)
 
-    /** The brace that is open at [offset] belongs to `new Order { ... }` or `with { ... }`, not to a block of statements. */
-    fun inInitializer(text: CharSequence, offset: Int): Boolean {
-        var depth = 0
-        var i = offset - 1
-        while (i >= 0) {
-            when (text[i]) {
-                '}' -> depth++
-                '{' -> if (depth == 0) break else depth--
-            }
-            i--
-        }
-        if (i < 0) return false
-        var before = i - 1
-        while (before >= 0 && text[before].isWhitespace()) before--
-        if (before < 0) return false
-        // a block follows `)` of a header, `=>` of a lambda, `else`, `try`, `do`, `finally`; an initializer follows a type or `with`
-        if (text[before] == ')' || (text[before] == '>' && before > 0 && text[before - 1] == '=')) return false
-        val word = text.subSequence(0, before + 1).takeLastWhile { it.isLetter() }.toString()
-        return word !in setOf("else", "try", "do", "finally", "checked", "unchecked", "unsafe", "get", "set", "init", "add", "remove")
-    }
-
-    fun restOfLine(text: CharSequence, offset: Int): CharSequence {
-        if (offset !in 0..text.length) return ""
-        val end = text.indexOf('\n', offset).let { if (it < 0) text.length else it }
-        return text.subSequence(offset, end)
-    }
+    fun restOfLine(text: CharSequence, offset: Int): CharSequence = CSharpCalls.restOfLine(text, offset)
 
     /**
      * Whether a chosen method gets `()`. Only when it is chosen by Enter, Tab or `(` — a `.` or `;` typed to choose it means the user goes

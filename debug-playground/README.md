@@ -124,3 +124,20 @@ Solution для живой проверки плагина: отладчика (
 - [ ] изменить `Console.csproj` внешним редактором (например `Nullable` на `disable`), Reload Project → Properties… показывает новое значение
 - [ ] меню .NET → Reload Solution / Reload Project '<имя>' (проект — по файлу в редакторе); без файла проекта пункт Reload Project выключен
 
+## Редактор: то, что не импортировано — `Console/Editor/ImportCompletion.cs`
+
+Элементы приходят из индекса сборок, а не от сервера: работают до появления «Roslyn: DebugPlayground.sln». Первый запуск IDE собирает
+индексатор и индексирует сборки solution — в `idea.log` строки «The indexer of assemblies is built for net…» и «Index of assemblies: …».
+
+- [ ] в `idea.log` обе строки есть; в `<system IDE>/dotnet-support/indexer/<хэш>-net…/bin` лежит `AssemblyIndexer.dll`, в `…/index/v1` — файлы `.dnix`
+- [ ] `TYPE:import-void`: `WriteLi` → `Console.WriteLine(|);`, подсказка параметров открыта, нового `using` нет (System подключён неявно)
+- [ ] `TYPE:import-using`: `Stopw` → `Stopwatch.StartNew();` и `using System.Diagnostics;` вверху файла
+- [ ] `TYPE:import-value`: `var path = Combi` → `Path.Combine(|);`
+- [ ] `TYPE:import-property`: `var now = UtcN` → `DateTime.UtcNow` без скобок
+- [ ] `TYPE:import-generic`: `var none = Empt` → `Array.Empty<|>();`
+- [ ] `TYPE:import-expected`: `int length = Ma` → члены `Math`, дающие `int`, выше остальных
+- [ ] `TYPE:import-silent-dot`, `import-silent-name`, `import-silent-short`: `Console.WriteLine` **не** предлагается после точки, на месте имени переменной и на двух буквах
+- [ ] `TYPE:import-package`: `Assert.Equal` предлагается в проекте `Tests` и **не** предлагается в `Console`
+- [ ] две IDE с одним solution, открытые одновременно при пустом кэше: индексатор собран один раз, в `idea.log` второй IDE «Index of assemblies» — за десятки миллисекунд (всё уже проиндексировано)
+- [ ] `TYPE:import-stats`: в .NET → Suggestion Statistics причина `not imported`
+

@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Playground.Editor;
 
 /// <summary>
@@ -35,6 +37,8 @@ public class CompletionRanking
         Name = customerName;
 
         Run(cancellationToken);
+
+        Console.WriteLine("Hello");
 
 
 

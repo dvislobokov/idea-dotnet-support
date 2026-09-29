@@ -10,7 +10,10 @@ folding, Go to Class); внутри членов токены плоские. М
 и что осталось), `PLATFORM_DAP_PLAN.md` (история: отладчик на платформенном DAP-клиенте, этапы 0–6 и журнал находок — перенесён на свой клиент 2026-09-22), `LSP_PLAN.md` (C# через `roslyn-language-server`: платформенный LSP-клиент, кэш ответов, свои индексы плагина; действующий план). Анализ платформенных API LSP / DAP —
 `docs/platform-lsp-dap.html`, скрипты и дамп — `tools/platform-api/`; зонд и факты о `roslyn-language-server` — `tools/roslyn-lsp/`. Клиент сервера — content-модуль `io.github.dotnetsupport.roslyn` (фаза 1 сделана). `dap-probe/` — питоновские эксперименты с отладчиком, к сборке плагина не относятся. `debug-playground/` — .NET solution
 для живой проверки плагина пользователем: отладчика (сценарии с маркерами `// BP:`) и редактора (сценарии набора с маркерами `// TYPE:`), чек-лист — в его
-`README.md`; к сборке тоже не относится.
+`README.md`; к сборке тоже не относится. `indexer/` — индексатор сборок .NET на C# (`Program.cs`): плагин несёт его
+**исходником** (сборка плагина кладёт `Program.cs` и `.csproj` в ресурсы, dll в репозитории нет) и собирает на машине пользователя под тот SDK, что там
+стоит (`index/IndexerTool`). Формат индекса, замеры и блокировки — `indexer/README.md`; читатель и completion — пакет `index`. Меняешь формат — подними
+`Program.FormatVersion` и `AssemblyIndex.FORMAT_VERSION` вместе и пересоздай фикстуры `src/test/resources/index` (команда — в README индексатора).
 
 ## Сборка и проверка
 

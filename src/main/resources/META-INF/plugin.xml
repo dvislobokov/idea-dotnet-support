@@ -134,6 +134,10 @@
         <postStartupActivity implementation="io.github.dotnetsupport.view.ToolWindowsSetup"/>
         <!-- the page about the plugin, once after the installation and after an update -->
         <postStartupActivity implementation="io.github.dotnetsupport.welcome.WelcomePageActivity"/>
+        <!-- the index of the assemblies of the projects, made in the background by the indexer the plugin builds on this machine -->
+        <postStartupActivity implementation="io.github.dotnetsupport.index.AssemblyIndexStartup"/>
+        <!-- static members of types that are not imported, by the bare name: WriteLi -> Console.WriteLine and the using -->
+        <completion.contributor language="C#" implementationClass="io.github.dotnetsupport.index.ImportCompletionContributor"/>
         <notificationGroup id=".NET" displayType="BALLOON"/>
         <projectConfigurable parentId="tools" id="io.github.dotnetsupport.settings" displayName=".NET"
                              instance="io.github.dotnetsupport.settings.DotNetSettingsConfigurable"/>
