@@ -1,6 +1,7 @@
 package io.github.dotnetsupport.roslyn
 
 import com.intellij.codeInsight.inline.completion.DefaultInlineCompletionInsertHandler
+import com.intellij.codeInsight.inline.completion.InlineCompletion
 import com.intellij.codeInsight.inline.completion.InlineCompletionEvent
 import com.intellij.codeInsight.inline.completion.InlineCompletionInsertEnvironment
 import com.intellij.codeInsight.inline.completion.InlineCompletionInsertHandler
@@ -11,13 +12,18 @@ import com.intellij.codeInsight.inline.completion.InlineCompletionRequest
 import com.intellij.codeInsight.inline.completion.elements.InlineCompletionGrayTextElement
 import com.intellij.codeInsight.inline.completion.suggestion.InlineCompletionSingleSuggestion
 import com.intellij.codeInsight.inline.completion.suggestion.InlineCompletionSuggestion
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.readAction
+import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.components.service
 import com.intellij.openapi.util.UserDataHolderBase
 import io.github.dotnetsupport.lang.CSharpFile
+import io.github.dotnetsupport.lang.CSharpArguments
 import io.github.dotnetsupport.lang.CSharpGhostText
 import io.github.dotnetsupport.lang.CSharpLocalCalls
 import io.github.dotnetsupport.lang.CSharpScopeNames
+import io.github.dotnetsupport.lang.CSharpScopeTypes
 import io.github.dotnetsupport.lang.GhostPlace
 import io.github.dotnetsupport.suggest.SuggestionRules
 import io.github.dotnetsupport.suggest.SuggestionStats
@@ -34,7 +40,7 @@ import org.eclipse.lsp4j.SignatureHelpParams
  * no delegate, the same place gets the arguments that are at hand ([ArgumentSuggestions]).
  */
 class RoslynLambdaGhost : InlineCompletionProvider {
-    override val id: InlineCompletionProviderID = InlineCompletionProviderID("io.github.dotnetsupport.lambda")
+    override val id: InlineCompletionProviderID = ID
 
     override fun isEnabled(event: InlineCompletionEvent): Boolean {
         val request = event.toRequest() ?: return false
@@ -48,11 +54,11 @@ class RoslynLambdaGhost : InlineCompletionProvider {
         val offset = request.endOffset
         if (!LambdaSuggestions.atArgumentStart(text, offset)) return InlineCompletionSingleSuggestion.build(UserDataHolderBase()) {}
         val file = request.file
-        val visible = CSharpScopeNames.visibleAt(text, offset)
+        val visible = CSharpScopeTypes.at(text, offset)
         // a method of this very file: its parameters are in the text, the server need not be asked (and at the first argument it often
         // cannot answer yet: `(` is typed in no time, and the question gets to the server before the change of the document does —
         // reported: `Save(` offered nothing, `Save(order, ` offered the token)
-        val local = CSharpLocalCalls.at(text, offset)?.let { call -> ArgumentSuggestions.forParameters(call.parameters, call.active, visible) }
+        val local = CSharpLocalCalls.at(text, offset)?.let { call -> CSharpArguments.list(call.parameters, call.active, visible) }
         val workspace = file.project.service<RoslynWorkspace>()
         val client = workspace.clients.firstOrNull()?.takeIf { workspace.isLoaded }
         val virtualFile = file.virtualFile
@@ -95,11 +101,26 @@ class RoslynLambdaGhost : InlineCompletionProvider {
         }
     }
 
-    private companion object {
-        const val TIMEOUT_MS = 1_500
+    companion object {
+        val ID = InlineCompletionProviderID("io.github.dotnetsupport.lambda")
+
+        /**
+         * The gray text of the arguments for the caret of [editor], asked for by the plugin itself: a method chosen in the completion
+         * list is not typed, so nothing tells the inline completion that an argument list has just begun (reported: `Save(` typed by
+         * hand offered `order, cancellationToken`, `Sa` + Tab offered nothing).
+         */
+        fun offer(editor: Editor) {
+            ApplicationManager.getApplication().invokeLater({
+                if (editor.isDisposed) return@invokeLater
+                val handler = InlineCompletion.getHandlerOrNull(editor) ?: return@invokeLater
+                runCatching { handler.invokeEvent(InlineCompletionEvent.ManualCall(editor, ID, UserDataHolderBase())) }
+            }, ModalityState.nonModal())
+        }
+
+        private const val TIMEOUT_MS = 1_500
 
         /** The first question at once, the next ones when the server has had the time to take the change in. */
-        val RETRY_AFTER_MS = longArrayOf(0, 150, 350)
+        private val RETRY_AFTER_MS = longArrayOf(0, 150, 350)
     }
 }
 
@@ -112,6 +133,12 @@ object ArgumentSuggestions {
     fun forHelp(help: SignatureHelp, visible: Set<String>): String? {
         val signature = help.signatures.orEmpty().getOrNull(help.activeSignature ?: 0) ?: return null
         return forParameters(RoslynSignatures.parameters(signature), help.activeParameter ?: 0, visible)
+    }
+
+    /** With the types of what is at hand: a parameter called otherwise finds the variable of its type (`token` — `cancellationToken`). */
+    fun forHelp(help: SignatureHelp, symbols: Map<String, CSharpScopeTypes.Symbol>): String? {
+        val signature = help.signatures.orEmpty().getOrNull(help.activeSignature ?: 0) ?: return null
+        return CSharpArguments.list(RoslynSignatures.parameters(signature), help.activeParameter ?: 0, symbols)
     }
 
     /** [declared]: `Order order`, `CancellationToken cancellationToken = default`, as the label of the signature has them. */

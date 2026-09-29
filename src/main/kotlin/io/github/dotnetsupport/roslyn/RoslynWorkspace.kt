@@ -309,6 +309,20 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
 
     fun restart() = LspClientManager.getInstance(project).stopAndRestartClientsIfNeeded(RoslynLspIntegrationProvider::class.java)
 
+    /**
+     * Reload Solution starts the server anew: it is the one way to make it forget everything. Reload Project tells it that the file
+     * of the project has changed, which makes it load that project again and leaves the rest of the solution as it is.
+     */
+    fun reloaded(projectFile: VirtualFile?) {
+        if (projectFile == null) return restart()
+        for (client in clients) {
+            val uri = runCatching { client.descriptor.getFileUri(projectFile) }.getOrNull() ?: continue
+            val event = org.eclipse.lsp4j.FileEvent(uri, org.eclipse.lsp4j.FileChangeType.Changed)
+            client.sendNotification { it.workspaceService.didChangeWatchedFiles(org.eclipse.lsp4j.DidChangeWatchedFilesParams(listOf(event))) }
+        }
+        project.service<RoslynResponseMemo>().invalidate()
+    }
+
     fun showLog() = RevealFileAction.openDirectory(logDirectory().apply { mkdirs() })
 
     fun settingsChanged(restart: Boolean) {
@@ -373,3 +387,9 @@ class ShowRoslynServerLogAction : AnAction(), DumbAware {
         RevealFileAction.openDirectory(RoslynWorkspace.logDirectory().apply { mkdirs() })
     }
 }
+
+/** Reload Solution / Reload Project of the main part: the server reloads with them. */
+class RoslynReloadListener(private val project: Project) : io.github.dotnetsupport.actions.SolutionReloadListener {
+    override fun reloaded(projectFile: VirtualFile?) = project.service<RoslynWorkspace>().reloaded(projectFile)
+}
+

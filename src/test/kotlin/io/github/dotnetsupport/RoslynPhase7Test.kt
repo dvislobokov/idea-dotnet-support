@@ -86,6 +86,38 @@ class RoslynPhase7Test : BasePlatformTestCase() {
         for (name in stale.METHODS) assertTrue(name, org.eclipse.lsp4j.services.TextDocumentService::class.java.methods.any { it.name == name })
     }
 
+    /** A call that is the value of a declaration, of an assignment or of `return` ends its statement: `decimal sum = Total(|);`. */
+    fun testSemicolonAfterACallThatEndsAStatement() {
+        val policy = io.github.dotnetsupport.roslyn.RoslynCompletionPolicy
+        fun ends(text: String) = policy.endsStatement(text, text.length - text.takeLastWhile { it.isLetterOrDigit() }.length)
+        val method = "class A\n{\n    void M()\n    {\n        "
+
+        assertTrue(ends(method + "decimal sum = To"))
+        assertTrue(ends(method + "decimal sum = Total"))
+        assertTrue(ends(method + "var sum = "))
+        assertTrue(ends(method + "List<Order> found = repository.Find"))
+        assertTrue(ends(method + "var order = await repository.Load"))
+        assertTrue(ends(method + "sum = To"))
+        assertTrue(ends(method + "sum += To"))
+        assertTrue(ends(method + "return To"))
+        assertTrue("an expression body", ends("class A\n{\n    decimal Sum => To"))
+        assertTrue(ends(method + "if (ready)\n        {\n            sum = To"))
+
+        assertFalse("a statement of its own: only a void method is one for sure", ends(method + "To"))
+        assertFalse("a comparison", ends(method + "if (sum == To"))
+        assertFalse(ends(method + "if (sum >= To"))
+        assertFalse("an argument", ends(method + "Save(To"))
+        assertFalse("an object initializer ends with a comma", ends(method + "var order = new Order\n        {\n            Total = To"))
+        assertFalse(ends(method + "var copy = order with\n        {\n            Total = To"))
+        assertTrue("a lambda with a block", ends(method + "Action a = () =>\n        {\n            sum = To"))
+
+        fun call(type: String?, rest: String, endsStatement: Boolean) = policy.call(type, "(Order order)", rest, false, endsStatement).let { it.text.substring(0, it.caret) + "|" + it.text.substring(it.caret) }
+        assertEquals("(|);", call("decimal", "", true))
+        assertEquals("not resolved yet: the place is enough", "(|);", call(null, "", true))
+        assertEquals("something follows", "(|)", call("decimal", " + 1;", true))
+        assertEquals("(|)", call("decimal", "", false))
+    }
+
     /** A method that returns nothing is a statement: `Console.WriteLine(|);`, as Rider completes it. */
     fun testSemicolonAfterAVoidMethod() {
         val policy = io.github.dotnetsupport.roslyn.RoslynCompletionPolicy

@@ -258,6 +258,10 @@ class GhostTextTest {
             private void Save(Order order, CancellationToken cancellationToken) { }
             private void Save2(Order order) { }
             private void Save2(Order order, int priority) { }
+            private void Run(CancellationToken token) { }
+            private double Ratio(Missing missing) => 0;
+            private bool IsReady() => true;
+            private float Scale(int count, string unit = "px") => 0;
 
             public async Task<Order> Handle(Order order, string customerName, CancellationToken cancellationToken)
             {
@@ -283,15 +287,20 @@ class GhostTextTest {
 
         assertEquals("the one local string over the field and the property", "customerName;", inService("string label = |"))
         assertNull("two local strings, neither is named so", inService("var text = \"x\"; string label = |"))
-        assertNull("a method is not offered: its arguments are anybody's guess", inService("decimal sum = |"))
-        assertNull("nothing of the type", inService("double ratio = |"))
+        assertEquals("a method that gives the type, with what it takes", "Total(order);", inService("decimal sum = |"))
+        assertEquals("tal(order);", inService("decimal sum = To|"))
+        assertEquals("no arguments to find", "IsReady();", inService("bool ready = |"))
+        assertEquals("the optional ones are left out", "Scale(count);", inService("float scale = |"))
+        assertNull("a method whose argument is not at hand is not offered", inService("double ratio = |"))
+        assertNull("nothing of the type", inService("long big = |"))
         assertNull("no type and no name to go by", inService("var x = |"))
         assertNull("not what is typed", inService("int amount = zz|"))
         assertNull("typed in full", inService("int amount = count|"))
         assertNull("text after the caret", inService("int amount = | + 1;"))
         assertNull("after a dot", inService("int amount = order.|"))
         assertNull("a comparison", inService("if (count == |"))
-        assertNull("itself", inService("count = |"))
+        assertEquals("never itself: the property of the same name and type", "Count;", inService("count = |"))
+        assertEquals("a string whose name is a part of this one", "Name;", inService("customerName = |"))
     }
 
     @Test
@@ -316,6 +325,28 @@ class GhostTextTest {
         // and what is offered for it
         val visible = setOf("order", "cancellationToken", "count")
         assertEquals("order, cancellationToken", ArgumentSuggestions.forParameters(listOf("Order order", "CancellationToken cancellationToken"), 0, visible))
+    }
+
+    @Test
+    fun `arguments by the type where the name is another`() {
+        val text = service.replace("§", "|")
+        val offset = text.indexOf('|')
+        val symbols = io.github.dotnetsupport.lang.CSharpScopeTypes.at(text.removeRange(offset, offset + 1), offset)
+        fun arguments(active: Int, vararg declared: String) = io.github.dotnetsupport.lang.CSharpArguments.list(declared.toList(), active, symbols)
+
+        assertEquals("the parameter is called `token`: the one CancellationToken at hand", "cancellationToken", arguments(0, "CancellationToken token"))
+        assertEquals("order, cancellationToken", arguments(0, "Order order", "CancellationToken cancellationToken"))
+        assertEquals("the one Order, whatever the parameter is called", "order", arguments(0, "Order item"))
+        assertNull("two ints, the local and the property, and neither is called so", arguments(0, "int number"))
+        assertEquals("the one of them called so", "count", arguments(0, "int count"))
+        assertEquals("by the name among several of the type: the whole name first", "Name", arguments(0, "string name"))
+        assertNull("two end as the parameter does: `Name` and `customerName`", arguments(0, "string theCustomerName"))
+        assertEquals("a field with an underscore", "_title", arguments(0, "string title"))
+        assertNull("several strings, none is called so", arguments(0, "string label"))
+        assertNull("nothing of the type", arguments(0, "Guid id"))
+        assertNull("a method is not an argument", arguments(0, "decimal total"))
+        assertEquals("the row ends where nothing is found", "order", arguments(0, "Order order", "Guid id", "CancellationToken token"))
+        assertNull(arguments(0, "out Order order"))
     }
 
     @Test

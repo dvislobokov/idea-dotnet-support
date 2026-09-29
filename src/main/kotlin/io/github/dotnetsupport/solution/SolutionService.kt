@@ -39,6 +39,29 @@ class SolutionService(private val project: Project) {
         found = null
     }
 
+    /**
+     * Reload Solution / Reload Project: what was parsed is forgotten, whatever the time stamps say. [projectFile] null: everything,
+     * the list of solutions included.
+     */
+    fun reload(projectFile: VirtualFile? = null) {
+        if (projectFile == null) {
+            found = null
+            solutions.clear()
+            filters.clear()
+            msBuildProjects.clear()
+            assetsFiles.clear()
+            return
+        }
+        msBuildProjects.remove(projectFile)
+        val directory = projectFile.parent
+        assetsFiles.keys.removeIf { it.parent?.parent == directory }
+        // the props and targets around it are read through the same cache
+        msBuildProjects.keys.removeIf { !it.isValid || it.extension?.lowercase() in IMPORTED }
+    }
+
+    /** How many files are parsed and kept: for the tests of the reload. */
+    val cachedFiles: Int get() = solutions.size + filters.size + msBuildProjects.size + assetsFiles.size
+
     private fun find(): SolutionFinder.Found {
         val baseDir = project.guessProjectDir() ?: return SolutionFinder.Found.EMPTY
         found?.takeIf { it.first == baseDir }?.let { return it.second }
@@ -95,6 +118,8 @@ class SolutionService(private val project: Project) {
     }
 
     companion object {
+        private val IMPORTED = setOf("props", "targets")
+
         fun getInstance(project: Project): SolutionService = project.service()
     }
 }

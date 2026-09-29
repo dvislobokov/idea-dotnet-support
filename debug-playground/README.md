@@ -98,17 +98,29 @@ Solution для живой проверки плагина: отладчика (
 
 ### Порядок списка completion и статистика подсказок — `Console/Editor/CompletionRanking.cs`
 - [ ] `TYPE:expected-type`: `int amount = ` → сразу серый текст `count;`, Tab принимает; по Ctrl+Space — `count` первым, затем `Count`; строки и ключевые слова ниже
-- [ ] `TYPE:method-by-type`: `decimal sum = ` → метод `Total` выше переменных
+- [ ] `TYPE:method-by-type`: `decimal sum = ` → серый текст `Total(order);`; по Ctrl+Space `Total` выше переменных, выбранный из списка даёт `Total(|);` с серым `order` внутри
 - [ ] `TYPE:parameter-name`: `Save(` → серый текст `order, cancellationToken` сразу после скобки (и до загрузки solution: `Save` объявлен в этом файле); после `order, ` — `cancellationToken`
+- [ ] `TYPE:parameter-name`, через список: `Sa` + Tab (или Enter) → `Save(|);` и тот же серый текст `order, cancellationToken`
 - [ ] `TYPE:parameter-type`: `Send(` → строки (`customerName`, `text`, `_title`, `Name`) выше `count` и `order`
-- [ ] `TYPE:partial-name`: `Run(` → `cancellationToken` первым (параметр называется `token`)
+- [ ] `TYPE:partial-name`: `Run(` → серый текст `cancellationToken` (параметр называется `token`, подбор по типу); то же после `Ru` + Tab
 - [ ] `TYPE:assignment`: `Name = ` → строки первыми
 - [ ] `TYPE:return`: `return ` → серый текст `order;` (метод `async Task<RankedOrder>`)
-- [ ] `TYPE:value-silent`: `string label = ` и `decimal sum = ` → серого текста **нет** (несколько строк на выбор; метод не предлагается)
+- [ ] `TYPE:value-silent`: `string label = ` → серого текста **нет** (несколько строк на выбор, ни одна не названа так)
 - [ ] `TYPE:after-dot`: `int amount = order.` → `Amount` первым по имени; `Quantity` (тоже `int`) **не** поднят — типы членов чужих типов плагину неизвестны
 - [ ] `TYPE:declared-nearby`: `var copy = ` → `text`, `count` выше полей `_orders`, `_title`
 - [ ] `TYPE:chosen-before`: трижды выбрать `_orders`, затем набрать `_` → `_orders` выше `_title`; Reset в статистике возвращает порядок сервера
 - [ ] список внутри скобок вызова открывается без заметной задержки (там добавился запрос `signatureHelp`, таймаут 400 мс)
 - [ ] `TYPE:stats-ghost`: `public string Title`, Tab по серому тексту → в .NET → Suggestion Statistics строка `auto-property`: shown 1, taken 1, 100%
 - [ ] `TYPE:stats-list`: в отчёте «Completion list: N chosen», большинство в `position first`, внизу причины `expected type` / `name` / `declared nearby`; Copy и Reset работают
+
+## Solution view
+
+### Reload Solution / Reload Project
+- [ ] не переключаясь из IDE, создать файл мимо неё (из встроенного терминала: `mkdir Console/Outside` и `echo "class Outside { }" > Console/Outside/Outside.cs`) —
+      в дереве его нет; ПКМ на проекте `Console` → **Reload Project** → папка `Outside` и файл появились, в статус-баре «Console reloaded»
+- [ ] кнопка Reload Solution в заголовке окна Project (рядом с «глазом») видна только в Solution view; после нажатия виджет сервера проходит
+      `Roslyn: starting...` → `loading` → `Roslyn: DebugPlayground.sln`
+- [ ] Reload Project сервер не перезапускает: виджет остаётся `Roslyn: DebugPlayground.sln`, ошибки в новом файле появляются в Problems
+- [ ] изменить `Console.csproj` внешним редактором (например `Nullable` на `disable`), Reload Project → Properties… показывает новое значение
+- [ ] меню .NET → Reload Solution / Reload Project '<имя>' (проект — по файлу в редакторе); без файла проекта пункт Reload Project выключен
 

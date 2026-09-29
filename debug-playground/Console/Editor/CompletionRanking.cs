@@ -25,28 +25,39 @@ public class CompletionRanking
         int count = 0;
         var text = "x";
         await Task.Yield();
-        Save(order, cancellationToken);
 
-        int amount =
+        Save(order, cancellationToken);
+        int amount = count;
+        decimal sum = Total(order);
+
+        Run(cancellationToken);
+
+        Name = customerName;
+
+        Run(cancellationToken);
+
+
 
         // TYPE:expected-type — `int amount = `. EXPECT: gray `count;` at once, Tab takes it. With Ctrl+Space instead: `count` first, then `Count`;
         // `customerName`, `text`, `_title` and the keywords are below
 
-        // TYPE:method-by-type — `decimal sum = ` and Ctrl+Space. EXPECT: the method `Total` above the variables `count`, `customerName`, `text`
+        // TYPE:method-by-type — `decimal sum = `. EXPECT: gray `Total(order);`, Tab takes it. With Ctrl+Space instead: the method `Total` above
+        // the variables; chosen from the list it becomes `Total(|);` with the gray `order` inside — the semicolon is there though Total returns a value
 
         // TYPE:parameter-name — `Save(`. EXPECT: gray `order, cancellationToken` right after the parenthesis, before the solution is loaded as well
-        // (`Save` is declared in this file). After `order, ` — gray `cancellationToken`
+        // (`Save` is declared in this file). After `order, ` — gray `cancellationToken`.
+        // The same when the method comes from the list: type `Sa`, choose `Save` with Tab or Enter. EXPECT: `Save(|);` and the gray `order, cancellationToken`
 
         // TYPE:parameter-type — `Send(` and Ctrl+Space. EXPECT: the strings `customerName`, `text` (locals), then `_title`, `Name` above `count` and `order`
 
-        // TYPE:partial-name — `Run(`. EXPECT: `cancellationToken` first: the parameter is called `token`
+        // TYPE:partial-name — `Run(`. EXPECT: gray `cancellationToken`: the parameter is called `token`, and it is the one CancellationToken at hand.
+        // The same after `Ru` + Tab: `Run(|);` and the gray `cancellationToken`
 
         // TYPE:assignment — `Name = ` and Ctrl+Space. EXPECT: strings first (`customerName`, `text`, `_title`), `count` below them
 
         // TYPE:return — `return `. EXPECT: gray `order;`: the method is async and returns Task<RankedOrder>, and `order` is the one RankedOrder at hand
 
-        // TYPE:value-silent — `string label = `. EXPECT: NO gray text: `customerName`, `text`, `_title`, `Name` are all strings and none is called so.
-        // `decimal sum = ` — no gray text either: `Total` is a method, its arguments are not guessed
+        // TYPE:value-silent — `string label = `. EXPECT: NO gray text: `customerName`, `text`, `_title`, `Name` are all strings and none is called so
 
         // TYPE:after-dot — `int amount = order.`. EXPECT: `Amount` first (the name); `Quantity` is an int as well and is NOT moved up:
         // the types of members of other types are not known to the plugin, only their names

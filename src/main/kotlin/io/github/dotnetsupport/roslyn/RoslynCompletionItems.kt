@@ -105,7 +105,8 @@ class RoslynCompletionSupport : LspCompletionSupport() {
             context.editor.caretModel.moveToOffset(offset + 1)
         } else {
             // a void method is a statement and nothing else: `Console.WriteLine(|);`, as Rider completes it
-            val call = RoslynCompletionPolicy.call(signature?.type, signature?.tail, RoslynCompletionPolicy.restOfLine(text, offset), typeArguments)
+            val call = RoslynCompletionPolicy.call(signature?.type, signature?.tail, RoslynCompletionPolicy.restOfLine(text, offset), typeArguments,
+                RoslynCompletionPolicy.endsStatement(text, start))
             document.insertString(offset, call.text)
             context.editor.caretModel.moveToOffset(offset + call.caret)
             // chosen before the platform has resolved it: the plain `()` now, the rest when the server answers
@@ -121,6 +122,8 @@ class RoslynCompletionSupport : LspCompletionSupport() {
         }
         context.commitDocument()
         AutoPopupController.getInstance(context.project).autoPopupParameterInfo(context.editor, null)
+        // the caret is where the first argument begins: what is at hand for it is offered as if `(` had been typed
+        RoslynLambdaGhost.offer(context.editor)
     }
 }
 
@@ -130,6 +133,7 @@ class RoslynCompletionSupport : LspCompletionSupport() {
  * `<|>()` of a generic one whose type arguments nothing infers.
  */
 private fun completeWhenResolved(context: InsertionContext, item: CompletionItem, offset: Int, generic: Boolean) {
+    val start = context.startOffset
     val project = context.project
     val editor = context.editor
     val document = context.document
@@ -144,12 +148,14 @@ private fun completeWhenResolved(context: InsertionContext, item: CompletionItem
             val text = document.charsSequence
             if (offset + 2 > text.length || text.subSequence(offset, offset + 2).toString() != "()") return@invokeLater
             val call = RoslynCompletionPolicy.call(signature.type, signature.tail, RoslynCompletionPolicy.restOfLine(text, offset + 2),
-                generic && RoslynCompletionPolicy.needsTypeArguments(resolved))
+                generic && RoslynCompletionPolicy.needsTypeArguments(resolved), RoslynCompletionPolicy.endsStatement(text, start))
             if (call.text == "()" && call.caret == 1) return@invokeLater
             WriteCommandAction.runWriteCommandAction(project, "Complete Call", null, {
                 document.replaceString(offset, offset + 2, call.text)
                 editor.caretModel.moveToOffset(offset + call.caret)
             })
+            // the change has taken the gray text of the arguments away
+            if (call.caret == 1 && !call.text.startsWith("<")) RoslynLambdaGhost.offer(editor)
         }, ModalityState.nonModal())
     }
 }
@@ -236,8 +242,8 @@ object RoslynCompletionPolicy {
      * arguments in any of its overloads the caret goes after the call. [type] and [tail] are the ones of [RoslynSignatureTail]: null when
      * the item is not resolved yet, and then the method gets its plain `()`.
      */
-    fun call(type: String?, tail: String?, restOfLine: CharSequence, typeArguments: Boolean = false): Call {
-        val statement = type == "void" && restOfLine.isBlank()
+    fun call(type: String?, tail: String?, restOfLine: CharSequence, typeArguments: Boolean = false, endsStatement: Boolean = false): Call {
+        val statement = (type == "void" || endsStatement) && restOfLine.isBlank()
         val text = (if (typeArguments) "<>" else "") + (if (statement) "();" else "()")
         // `AddSingleton<|>()`: the type arguments are what is typed first
         return Call(text, if (typeArguments || tail != "()") 1 else text.length)
@@ -311,6 +317,48 @@ object RoslynCompletionPolicy {
             }
         }
         return null
+    }
+
+    private val CHAIN = Regex("""(?:(?:this|base|[A-Za-z_]\w*)\??\.)+$""")
+    private val AWAIT = Regex("""\bawait\s+$""")
+    private val RETURN = Regex("""(?:^|[\s({;])return\s+$""")
+    private val ARROW = Regex("""=>\s*$""")
+    private val ASSIGNMENT = Regex("""(?:^|[^=!<>])=\s*$""")
+    private val DECLARED = Regex("""(?:^|[\s({;])[A-Za-z_][\w.<>,\[\]? ]*\s+[A-Za-z_]\w*\s*=\s*$""")
+
+    /**
+     * Whether the call whose name begins at [nameStart] is the last thing of its statement, whatever it returns: the value of a
+     * declaration (`decimal sum = Total(|);`), of an assignment, of `return`, of an expression body. An assignment in the braces of an
+     * object initializer ends with a comma, not with a semicolon.
+     */
+    fun endsStatement(text: CharSequence, nameStart: Int): Boolean {
+        if (nameStart !in 0..text.length) return false
+        val lineStart = text.lastIndexOf('\n', nameStart - 1) + 1
+        val line = text.subSequence(lineStart, nameStart).toString().replace(CHAIN, "").replace(AWAIT, "")
+        if (RETURN.containsMatchIn(line) || ARROW.containsMatchIn(line)) return true
+        if (!ASSIGNMENT.containsMatchIn(line)) return false
+        return DECLARED.containsMatchIn(line) || !inInitializer(text, lineStart)
+    }
+
+    /** The brace that is open at [offset] belongs to `new Order { ... }` or `with { ... }`, not to a block of statements. */
+    fun inInitializer(text: CharSequence, offset: Int): Boolean {
+        var depth = 0
+        var i = offset - 1
+        while (i >= 0) {
+            when (text[i]) {
+                '}' -> depth++
+                '{' -> if (depth == 0) break else depth--
+            }
+            i--
+        }
+        if (i < 0) return false
+        var before = i - 1
+        while (before >= 0 && text[before].isWhitespace()) before--
+        if (before < 0) return false
+        // a block follows `)` of a header, `=>` of a lambda, `else`, `try`, `do`, `finally`; an initializer follows a type or `with`
+        if (text[before] == ')' || (text[before] == '>' && before > 0 && text[before - 1] == '=')) return false
+        val word = text.subSequence(0, before + 1).takeLastWhile { it.isLetter() }.toString()
+        return word !in setOf("else", "try", "do", "finally", "checked", "unchecked", "unsafe", "get", "set", "init", "add", "remove")
     }
 
     fun restOfLine(text: CharSequence, offset: Int): CharSequence {

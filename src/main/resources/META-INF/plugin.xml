@@ -226,6 +226,15 @@
 
         <group id="DotNet.SolutionViewPopup">
             <separator/>
+            <action id="DotNet.ReloadSolution" class="io.github.dotnetsupport.actions.ReloadSolutionAction" text="Reload Solution"
+                    description="Read the solution and its projects from the disk again and load them into the language server anew"
+                    icon="AllIcons.Actions.Refresh">
+                <!-- next to the eye in the title of the tool window; shows itself for the Solution view only -->
+                <add-to-group group-id="ProjectViewToolbar" anchor="first"/>
+            </action>
+            <action id="DotNet.ReloadProject" class="io.github.dotnetsupport.actions.ReloadProjectAction" text="Reload Project"
+                    description="Read the project from the disk again: its file, its folder, what restore has resolved for it"
+                    icon="AllIcons.Actions.Refresh"/>
             <group id="DotNet.AddToSolution" class="io.github.dotnetsupport.actions.AddToSolutionGroup"
                    text="Add" popup="true" icon="AllIcons.General.Add">
                 <action id="DotNet.AddNewProject" class="io.github.dotnetsupport.actions.AddNewProjectToSolutionAction"
@@ -369,6 +378,9 @@
             <reference ref="DotNet.AnalyzeUpgrade"/>
             <reference ref="DotNet.InsertGuid"/>
             <reference ref="DotNet.AnalyzeStackTrace"/>
+            <separator/>
+            <reference ref="DotNet.ReloadSolution"/>
+            <reference ref="DotNet.ReloadProject"/>
             <separator/>
             <action id="DotNet.Welcome" class="io.github.dotnetsupport.welcome.ShowWelcomePageAction" text="Welcome to C# Project Support"
                     description="What the plugin can do and where to start"/>

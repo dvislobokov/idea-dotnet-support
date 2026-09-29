@@ -7,7 +7,18 @@ package io.github.dotnetsupport.lang
  * the kind of an item and nothing of its type.
  */
 object CSharpScopeTypes {
-    class Symbol(val type: String?, /** A local or a parameter of the member. */ val local: Boolean, /** The line of the declaration, from 0. */ val line: Int)
+    class Symbol(
+        /** Of a method: what it returns. */
+        val type: String?,
+        /** A local or a parameter of the member. */
+        val local: Boolean,
+        /** The line of the declaration, from 0. */
+        val line: Int,
+        /** `(Order order, int count)` of a method, null for everything that is not called. */
+        val parameters: String? = null,
+    ) {
+        val isMethod: Boolean get() = parameters != null
+    }
 
     private val TYPE_KEYWORDS = setOf("var", "int", "string", "bool", "double", "long", "object", "char", "byte", "float", "decimal", "short", "uint", "ulong", "ushort", "sbyte", "dynamic")
     private val PARAMETER_MODIFIERS = Regex("""^(?:(?:this|ref|out|in|params|scoped|readonly)\s+)+""")
@@ -19,7 +30,10 @@ object CSharpScopeTypes {
         for (type in path.filter { it.kind.isType }) {
             for (member in type.children) {
                 if (member.kind != DeclarationKind.FIELD && member.kind != DeclarationKind.PROPERTY && member.kind != DeclarationKind.METHOD) continue
-                symbols[member.name] = Symbol(member.type, local = false, line = lineOf(text, member.nameRange.startOffset))
+                val parameters = if (member.kind == DeclarationKind.METHOD) member.parameters ?: "()" else null
+                // overloads: which of them is meant is not for the text to say
+                if (parameters != null && type.children.count { it.kind == DeclarationKind.METHOD && it.name == member.name } > 1) continue
+                symbols[member.name] = Symbol(member.type, local = false, line = lineOf(text, member.nameRange.startOffset), parameters = parameters)
             }
         }
         val member = path.lastOrNull { !it.kind.isType && it.kind != DeclarationKind.NAMESPACE }
@@ -281,10 +295,42 @@ object CSharpLocalCalls {
 }
 
 /**
- * The value that is wanted, offered as gray text without being asked for: `int amount = ` with one `int` at hand gives `count;`.
- * From the names of the file and the types written there ([CSharpScopeTypes]); a method is never offered, its arguments are
- * anybody's guess. Silent unless one candidate stands clear of the others: by its type, then by its name, then by being a local
- * declared nearby.
+ * The arguments of a call that are at hand. For every parameter, from the one at the caret on and while they go in a row: the
+ * variable named as the parameter is (`order`, `_order`); else the one variable of the type of the parameter; among several of that
+ * type, the one whose name shares its end with the name of the parameter (`token` — `cancellationToken`). Nothing of the kind: the
+ * row ends there. `out` and `ref` want more than a name, `params` takes any number of them.
+ */
+object CSharpArguments {
+    private val MODIFIED = Regex("""^(?:out|ref|params|this)\s""")
+
+    /** [declared]: `Order order`, `CancellationToken cancellationToken = default`, as a signature has them. */
+    fun list(declared: List<String>, active: Int, symbols: Map<String, CSharpScopeTypes.Symbol>): String? {
+        val arguments = ArrayList<String>()
+        for (parameter in declared.drop(active.coerceAtLeast(0))) {
+            val head = parameter.trim()
+            if (MODIFIED.containsMatchIn(head)) break
+            val (name, type) = CSharpScopeTypes.parameters(head).singleOrNull() ?: break
+            arguments += pick(type, name, symbols) ?: break
+        }
+        return arguments.takeIf { it.isNotEmpty() }?.joinToString(", ")
+    }
+
+    fun pick(type: String?, name: String, symbols: Map<String, CSharpScopeTypes.Symbol>): String? {
+        val values = symbols.filterValues { !it.isMethod }
+        listOf(name, "_$name").firstOrNull { it in values }?.let { return it }
+        val fitting = values.filter { CSharpTypeNames.matches(type, it.value.type) }.keys
+        fitting.singleOrNull()?.let { return it }
+        // `name` — `Name` before `customerName`: the whole name over a part of it
+        fitting.filter { CSharpNameLikeness.of(name, it) == CSharpNameLikeness.Likeness.EXACT }.singleOrNull()?.let { return it }
+        return fitting.filter { CSharpNameLikeness.of(name, it) == CSharpNameLikeness.Likeness.PARTIAL }.singleOrNull()
+    }
+}
+
+/**
+ * The value that is wanted, offered as gray text without being asked for: `int amount = ` with one `int` at hand gives `count;`,
+ * `decimal sum = ` with a method that returns one and takes what is at hand gives `Total(order);`. From the names of the file and
+ * the types written there ([CSharpScopeTypes]). Silent unless one candidate stands clear of the others: by its type, then by its
+ * name, then by being a local declared nearby; a method is offered only with all of its arguments found.
  */
 object CSharpValueGhost {
     private const val TYPE = 25
@@ -312,11 +358,19 @@ object CSharpValueGhost {
         val expected = CSharpExpectations.at(text, start, symbols) ?: return null
         val line = CSharpScopeTypes.lineOf(text, start)
         val typeKnown = CSharpTypeNames.isSpecific(expected.type)
-        val methods = CSharpDeclarations.scan(text).pathTo(start).filter { it.kind.isType }
-            .flatMap { type -> type.children.filter { it.kind == DeclarationKind.METHOD }.map { it.name } }.toSet()
+        val calls = HashMap<String, String>()
 
         val scored = symbols.entries.mapNotNull { (name, symbol) ->
-            if (name == expected.name || name in methods || !name.startsWith(typed)) return@mapNotNull null
+            if (name == expected.name || !name.startsWith(typed)) return@mapNotNull null
+            if (symbol.isMethod) {
+                // a call is offered whole or not at all: `Total(order)`, not `Total(`
+                val parameters = CSharpScopeTypes.parameters(symbol.parameters.orEmpty())
+                val required = parameters.size - CSharpScopeNames.splitTopLevel(symbol.parameters.orEmpty().trim().removePrefix("(").removeSuffix(")")).count { '=' in it }
+                val declared = parameters.map { (parameter, written) -> listOfNotNull(written, parameter).joinToString(" ") }
+                val arguments = if (parameters.isEmpty()) "" else CSharpArguments.list(declared, 0, symbols) ?: return@mapNotNull null
+                if (parameters.isNotEmpty() && arguments.split(", ").size < required) return@mapNotNull null
+                calls[name] = "($arguments)"
+            }
             val fits = CSharpTypeNames.matches(expected.type, symbol.type)
             // the type is known and this is of another one (or of nobody knows which)
             if (typeKnown && !fits) return@mapNotNull null
@@ -338,7 +392,7 @@ object CSharpValueGhost {
         val head = text.subSequence(lineStart, start)
         // `for (int i = `, `using (var x = `: the statement does not end here
         val inside = head.count { it == '(' } > head.count { it == ')' }
-        return best.first.substring(typed.length) + (if (inside) "" else ";")
+        return best.first.substring(typed.length) + calls[best.first].orEmpty() + (if (inside) "" else ";")
     }
 }
 

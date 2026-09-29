@@ -66,4 +66,8 @@
             <add-to-group group-id="DotNet.MainMenu" anchor="last"/>
         </action>
     </actions>
+    <projectListeners>
+        <!-- Reload Solution / Reload Project: the server reloads with the Solution view -->
+        <listener class="io.github.dotnetsupport.roslyn.RoslynReloadListener" topic="io.github.dotnetsupport.actions.SolutionReloadListener"/>
+    </projectListeners>
 </idea-plugin>
