@@ -36,6 +36,10 @@
 - [x] Ошибки и предупреждения последней сборки в редакторе (`BuildProblems` + ExternalAnnotator): подчёркнуто слово по колонке компилятора, сообщение с кодом; диагностика следует за своей строкой при правках выше и исчезает, когда строку исправили; следующая сборка заменяет всё
 - [x] Live templates для C# (33: `ctor` с именем типа, `prop*`, `cw`, циклы, `try`, `using`, `svm`, типы, `fact` / `theory` / `test` / `testm`, `region`…), Enter внутри `///` продолжает комментарий, третий `/` над объявлением даёт `<summary>` с `<param>` и `<returns>`
 - [x] Отступы при наборе (Enter, набранные `{` `}` `)` `]`) — `LineIndentProvider` на движке правил из JSON (`resources/csharpIndent/rules.json`): упорядоченный список «условия → якорь + добавка», первое подошедшее выигрывает; 29 правил с примерами внутри (тест прогоняет все примеры и реальный файл построчно). Покрыто: блоки и K&R / Allman, аргументы и их перенос, цепочки `.`/операторы и возврат к началу оператора после `;`, тело без скобок у `if` / `for` / `else`…, `else` / `catch` / `finally`, `switch` (метки, секции, блок секции), инициализаторы / enum / switch-выражения, атрибуты, `#region` и `#if`, `/* */`, verbatim / raw-строки не трогаются. Размеры — из Code Style → C# (и `indent_size` / `indent_style` из `.editorconfig`), опции `csharp_indent_braces`, `csharp_indent_switch_labels`, `csharp_indent_case_contents`, `csharp_indent_case_contents_when_block` — из `.editorconfig`. Enter после `{`: если ниже есть `}` на «своём» отступе, вторая не вставляется, даже когда скобки файла не сходятся из-за недописанного кода (платформа считает скобки, а не раскладку). Форматирование файла целиком остаётся за CSharpier / `dotnet format`
+- [x] Postfix templates и Surround With (2026-09-29): `CSharpExpressions.before` находит выражение перед точкой по токенам (цепочка имён / вызовов /
+  индексаторов / литералов, `?.`, префиксы `new` / `await` / `!`), `startsStatement` — где можно ставить statement-шаблон; 21 шаблон
+  (`codeInsight.template.postfixTemplateProvider`), ключ с точкой, платформа сама убирает `.key` перед `expand`. Surround With
+  (`lang.surroundDescriptor`): statement-обёртки целыми строками с отступом на единицу глубже, `#region` / `#if`, `(expr)` / `!(expr)`
 - [ ] Отступы: Auto-Indent Lines и вставка фрагмента по тем же правилам, метки `goto` (`csharp_indent_labels`), продолжение `//` по Enter (как в VS Code)
 - [ ] Enter в `/* */`
 - [x] TODO-индекс (2026-09-22): TODO / FIXME и прочие шаблоны Settings | Editor | TODO в комментариях C# (`//`, `///`, `/* */`) — окно TODO,
@@ -78,6 +82,12 @@
 - [x] Авто-`dotnet restore` при изменении csproj (настройка на странице NuGet, см. «Заход 4»)
 - [x] Тесты: дерево результатов из TRX (SMTRunner), переход к исходнику, перезапуск упавших, ▶ у тестовых методов и классов (xUnit / NUnit / MSTest) с `--filter`
 - [ ] Тесты: результаты по мере выполнения, а не после завершения (свой VSTest-логгер или протокол Microsoft.Testing.Platform)
+- [x] Microsoft.Testing.Platform (2026-09-29): распознавание (`EnableMSTestRunner` / `UseMicrosoftTestingPlatformRunner` / `TUnit` / `MSTest.Sdk` /
+  пакеты платформы), три режима `dotnet test` (VSTest; MTP с `TestingPlatformDotnetTestSupport` — опции после `--`; раннер SDK 10 по `global.json`
+  `test.runner` или `dotnet.config` — `--project` и опции напрямую), TRX `--report-trx` / `--report-xunit-trx` в наш каталог, фильтры по
+  фреймворку (MSTest — VSTest-выражение, xunit.v3 — `--filter-class` / `--filter-method`, TUnit — `--treenode-filter`), покрытие `--coverage`.
+  Отладки MTP-тестов нет (нет хоста, ждущего отладчик; `TESTINGPLATFORM_LAUNCH_ATTACH_DEBUGGER` — только JIT-отладчик Windows) — нотификация.
+  Факты: `dotnet test --help` в обоих режимах SDK 10.0.401, имена опций из `Microsoft.Testing.Platform.dll` 1.5. Вживую не проверено
 
 ## Заход 4 — проект и окружение
 - [x] Настройки инструментов на той же странице: пути к `dotnet-counters`, `dotnet-stack`, `dotnet-gcdump`, `dotnet-dump`, `upgrade-assistant` (пусто — PATH и `~/.dotnet/tools`), кнопка Install / Update у каждого
@@ -119,7 +129,7 @@
 ## Заход 5 — файлы проекта и конфигурации
 - [x] MSBuild-файлы (`.csproj`, `.props`, `.targets`, …): собственная составная схема вместо XSD — JSON-фрагменты в `resources/msbuildSchema` (ядро SDK, NuGet / CPM, упаковка, publish / trimming / AOT, анализ кода, ASP.NET / OpenAPI, SDK-контейнеры, тесты и coverlet, gRPC / Protobuf, EF Core, MinVer / GitVersion / SourceLink, WPF / WinForms / MAUI / Avalonia): ~290 свойств, ~50 item-ов с метаданными. Схема открытая: неизвестный тег — не ошибка. По ней: completion тегов по месту (свойства в PropertyGroup, item-ы в ItemGroup, метаданные в item-е, задачи в Target, структура в Project), атрибутов (Include / Remove / Update, метаданные атрибутами, Condition, атрибуты Target / Import / задач) и значений (в т.ч. элемента списка `a;b`); фрагменты инструментов, на которые проект ссылается (пакет или SDK, в т.ч. через `PackageVersion`), идут первыми, остальные — серым с «needs <пакет>»; вставка тега в готовом виде (`<Nullable>|</Nullable>`, `<PackageReference Include="|" />`); Ctrl+Q в файле и в списке completion (описание, значения, пакет, ссылка на документацию); предупреждение о значении вне закрытого перечисления (не для `$(…)`); подсветка `$(Property)`, `@(Item)`, `%(Metadata)`
 - [ ] MSBuild: навигация по `Import` / `ProjectReference` / `$(Property)`, битые пути, completion `$(…)` по свойствам файла и `Directory.Build.props`, страница цветов для ссылок
-- [ ] JSON Schema для `appsettings.json`, `launchSettings.json`, `global.json`
+- [x] ~~JSON Schema для `appsettings.json`, `launchSettings.json`, `global.json`~~ — даёт каталог SchemaStore JSON-плагина платформы (проверено по каталогу 2026-09-29), своей схемы не нужно
 - [ ] Редактор `.resx` (таблица, несколько культур)
 - [ ] `.sln`: подсветка и сворачивание секций
 
@@ -229,7 +239,9 @@
 - [ ] ★ HTTPS dev-сертификат: `dotnet dev-certs https --check` при открытии web-проекта, баннер «сертификат не доверен» с кнопкой Trust
 - [ ] ★ `dotnet user-jwts`: диалог создания dev-токена (роли, scope, срок), вставка в `.http` как `Authorization: Bearer …`, список выданных токенов
 - [ ] HTTP Client environments: `http-client.env.json` из `applicationUrl` профилей `launchSettings.json`
-- [ ] Services / Run Dashboard (как Spring Boot в IDEA Ultimate): наши конфигурации в окне Services — статус, адрес «listening on» ссылкой, перезапуск, несколько сервисов списком
+- [x] Services / Run Dashboard (2026-09-29): `runDashboardDefaultTypesProvider` ставит «.NET Project» в окно Services, `runDashboardCustomizer` дописывает
+  ссылку на «Now listening on» (адрес хранится на process handler — `ListeningAddressRecorder`, и у Run, и у Debug). Вживую не проверено
+- [x] F2 на узле проекта — Rename Project (`renameHandler`), Delete — Remove from Solution (DeleteProvider из `uiDataSnapshot` панели) (2026-09-29)
 - [ ] Проверка AOT / trimming: «Check AOT compatibility» → `dotnet publish -r <rid>`, предупреждения `IL2xxx` / `IL3xxx` отдельным списком с переходом к коду
 - [ ] User Secrets: проверка, что ключ из `appsettings.json` перекрыт секретом (дополнение к пункту из раздела «Данные и API»)
 
@@ -244,7 +256,11 @@
 ### SDK и окружение
 - [x] «.NET on This Machine» (меню .NET и ссылка со страницы настроек): сводка из `dotnet --info`, таблицы SDK и runtime со статусом поддержки из `dotnet sdk check` (актуален / есть патч или поддержка скоро кончится / снят с поддержки), какой SDK выбран для проекта с учётом `global.json`, полный `--info` с копированием
 - [x] Шаблоны: ссылка «More templates...» в New Project и Add New Project → поиск пакетов шаблонов на nuget.org (`packageType=Template`, то же, что ищет `dotnet new search`), установка, список установленных, проверка обновлений, Update All, удаление; вывод команд в логе диалога
-- [ ] Шаблоны: поиск по настроенным приватным фидам, установка конкретной версии, параметры шаблона (`dotnet new <t> --help`) в диалоге New Project
+- [x] Параметры шаблона в New Project / Add New Project (2026-09-29): `TemplateOptions.parse` разбирает секцию «Template options» из `dotnet new <t> --help`
+  (choice / bool / text, choices с описаниями, Default, Multiple values, Enabled if), панель перестраивается при смене шаблона и языка (кэш по паре),
+  в `dotnet new` уходит только отличное от умолчания; Framework берётся из `--framework` шаблона. Фикстуры — `src/test/resources/dotnetNew` (SDK 10.0.401).
+  Вживую не проверено
+- [ ] Шаблоны: поиск по настроенным приватным фидам, установка конкретной версии
 - [x] Upgrade Assistant: «Analyze Upgrade to Newer .NET...» для проекта или solution — `upgrade-assistant analyze` с выбором целевого framework, отчёт таблицей (severity, правило, что найдено, место) с переходом к коду и ссылкой на документацию; предложение установить tool, если его нет
 - [ ] Upgrade Assistant: применение исправлений (`upgrade-assistant upgrade`), HTML-отчёт, фильтр по severity / проекту
 
@@ -375,6 +391,12 @@
   `Title  string`), как в Rider. Roslyn их не присылает, берутся из сигнатуры в документации: платформа resolve'ит видимые строки в фоне и
   перерисовывает их, так что хвост появляется через мгновение. `await` больше не висит в списке при любом вводе: Roslyn даёт ему
   `textEditText`, равный набранному (`p`), а платформа делала его строкой поиска — теперь он ищется по названию. Список типов после `(` не открывается
+- [x] Порядок completion как в Rider (2026-09-29, по сообщению пользователя «на `n` сначала `nameof`, потом моя `names`»): `PrioritizedLookupElement` по
+  `CompletionItemKind` — локальные / параметры / члены → методы → типы → ключевые слова, `preselect` сервера сверху (`RoslynCompletionPolicy.priority`).
+  **Вживую не проверено** — посмотреть, что weigher приоритета сильнее сортировки по `sortText`
+- [x] Parameter Info у extension-методов (2026-09-29, по скриншоту пользователя: строки вида «extension) IServiceCollection … AddSingleton(Type serviceType»):
+  label Roslyn начинается с `(extension)`, а список параметров брался от первой скобки; теперь — последняя сбалансированная группа скобок
+  (`RoslynSignatures.splitParameterList`)
 - [x] Inlay hints включены по умолчанию (решение пользователя 2026-09-22): имена параметров у литералов, индексаторов и `new`, типы у `var` и параметров
   лямбд; «всё остальное», `new()` и collection expressions — выключены. Проверено в песочнице: `Scenarios.cs` — `year:`, `month:`, `DateTime`…
 - [x] Go to Class / Symbol без дублей: пока сервер готов, свой индекс не отдаёт файлы загруженного solution (их отдаёт `workspace/symbol`);
@@ -405,6 +427,13 @@
   - **Посмотреть руками**: выбор мышью в списке реализаций (робот теряет popup вместе с фокусом окна); настоящий Shift+F6 на классе — переименуется
     ли файл после inline-rename платформы (робот проверил путь «ответ сервера → правка → файл», но не сам шаблон платформы); Ctrl+Z после такого
     переименования — откатываются текст и файл двумя шагами, не одним
+- [x] Type / Call Hierarchy и Go to Base (2026-09-29): окно Hierarchy платформы (`typeHierarchyProvider` / `callHierarchyProvider` для C#) на
+  `prepareTypeHierarchy` + `supertypes` / `subtypes` и `prepareCallHierarchy` + `incomingCalls` / `outgoingCalls`; элементы — `FakePsiElement`
+  с файлом и позицией; Ctrl+U (`codeInsight.gotoSuper`) на типе — базовые типы. Вживую не проверено
+- [x] Problems по всему solution (2026-09-29): `workspace/diagnostic` → `ProblemsCollector` (вкладка Project Errors). Зонд `scratchpad/wsdiag.py`
+  на сервере 5.12: отвечает только при `dotnet_compiler_diagnostics_scope = fullSolution`; повторный запрос висит до изменения в workspace —
+  держим один запрос постоянно (таймаут 10 мин, перезапуск). Коллектор Problems — не слушатель топика, а его источник: проблемы отдаются ему
+  напрямую и по тем же объектам снимаются. Ошибки и предупреждения, без hints. Вживую не проверено
 - [ ] Фаза 8: надёжность — большие и несколько solution, перезапуски, dumb mode (LSP4IJ не учитываем — решение 2026-09-21)
 
 ## Вне рамок (нужна семантика языка)

@@ -5,6 +5,8 @@ import org.jdom.Element
 
 data class PackageReference(val name: String, val version: String?)
 
+enum class TestFramework { XUNIT, NUNIT, MSTEST, TUNIT }
+
 /** `<Compile Remove="Legacy\**" />`: files of [itemType] the project leaves out of the default globs. */
 data class ItemRemove(val itemType: String, val glob: MsBuildGlob)
 
@@ -40,9 +42,35 @@ data class MsBuildProject(
     val linkedItems: List<LinkedItem> = emptyList(),
     /** Path of a file relative to the project (lower case, `/`) -> the file it is nested under, `<DependentUpon>`. */
     val dependentUpon: Map<String, String> = emptyMap(),
+    /** Properties of the test runner: `EnableMSTestRunner`, `UseMicrosoftTestingPlatformRunner`, `TestingPlatformDotnetTestSupport`, when true. */
+    val testingPlatformProperties: Set<String> = emptySet(),
 ) {
     val isTestProject: Boolean
-        get() = packages.any { it.name.equals("Microsoft.NET.Test.Sdk", ignoreCase = true) || it.name.equals("xunit.v3", ignoreCase = true) }
+        get() = packages.any { it.name.equals("Microsoft.NET.Test.Sdk", ignoreCase = true) || it.name.equals("xunit.v3", ignoreCase = true) || it.name.equals("TUnit", ignoreCase = true) ||
+            it.name.startsWith("Microsoft.Testing.Platform", ignoreCase = true) } || sdk.equals("MSTest.Sdk", ignoreCase = true)
+
+    /** The test framework the project uses, by its packages; null when none is known. */
+    val testFramework: TestFramework?
+        get() = when {
+            packages.any { it.name.equals("TUnit", ignoreCase = true) } -> TestFramework.TUNIT
+            packages.any { it.name.equals("xunit", ignoreCase = true) || it.name.equals("xunit.v3", ignoreCase = true) || it.name.startsWith("xunit.v3.", ignoreCase = true) } -> TestFramework.XUNIT
+            packages.any { it.name.equals("NUnit", ignoreCase = true) } -> TestFramework.NUNIT
+            packages.any { it.name.equals("MSTest", ignoreCase = true) || it.name.equals("MSTest.TestFramework", ignoreCase = true) } || sdk.equals("MSTest.Sdk", ignoreCase = true) -> TestFramework.MSTEST
+            else -> null
+        }
+
+    /**
+     * The tests run on Microsoft.Testing.Platform (the test project is an executable) rather than on VSTest: the MSTest runner,
+     * xunit.v3 with its runner, TUnit, `MSTest.Sdk`, a direct reference to the platform.
+     */
+    val usesTestingPlatform: Boolean
+        get() = testingPlatformProperties.any { it.equals("EnableMSTestRunner", ignoreCase = true) || it.equals("UseMicrosoftTestingPlatformRunner", ignoreCase = true) } ||
+            sdk.equals("MSTest.Sdk", ignoreCase = true) ||
+            packages.any { it.name.equals("TUnit", ignoreCase = true) || it.name.equals("Microsoft.Testing.Platform", ignoreCase = true) || it.name.equals("Microsoft.Testing.Platform.MSBuild", ignoreCase = true) }
+
+    /** `TestingPlatformDotnetTestSupport`: `dotnet test` of SDK 8 / 9 hands the arguments after `--` to the platform instead of running VSTest. */
+    val testingPlatformDotnetTestSupport: Boolean
+        get() = testingPlatformProperties.any { it.equals("TestingPlatformDotnetTestSupport", ignoreCase = true) }
 
     /** Something `dotnet run` can start: an executable or a web / worker SDK project. */
     val isRunnable: Boolean
@@ -82,6 +110,7 @@ data class MsBuildProject(
             val excludes = ArrayList<MsBuildGlob>()
             val linked = ArrayList<LinkedItem>()
             val dependent = LinkedHashMap<String, String>()
+            val testingPlatform = LinkedHashSet<String>()
 
             // Element names are compared without namespace: old-style projects declare the msbuild/2003 one.
             for (element in root.descendants()) {
@@ -99,6 +128,8 @@ data class MsBuildProject(
                 }
                 when (element.name) {
                     "DefaultItemExcludes" -> splitList(element.textTrim).filter { !it.startsWith("$(") }.mapTo(excludes, ::MsBuildGlob)
+                    "EnableMSTestRunner", "UseMicrosoftTestingPlatformRunner", "TestingPlatformDotnetTestSupport" ->
+                        if (element.textTrim.equals("true", ignoreCase = true)) testingPlatform += element.name
                     "TargetFramework", "TargetFrameworks" -> frameworks += splitList(element.textTrim)
                     "TargetFrameworkVersion" -> frameworks += splitList(element.textTrim).map { "net" + it.removePrefix("v").replace(".", "") }
                     "OutputType" -> outputType = outputType ?: element.textTrim.takeIf { it.isNotEmpty() }
@@ -127,6 +158,7 @@ data class MsBuildProject(
                 defaultItemExcludes = excludes,
                 linkedItems = linked,
                 dependentUpon = dependent,
+                testingPlatformProperties = testingPlatform,
             )
         }
 

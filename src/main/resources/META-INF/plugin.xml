@@ -89,6 +89,9 @@
         <typedHandler implementation="io.github.dotnetsupport.lang.CSharpBracketTypedHandler"/>
         <enterHandlerDelegate order="first" implementation="io.github.dotnetsupport.lang.CSharpEnterAfterBraceHandler"/>
         <enterHandlerDelegate implementation="io.github.dotnetsupport.lang.CSharpDocCommentEnterHandler"/>
+        <!-- postfix templates (expr.if, list.foreach, x.return...) and Surround With, by tokens -->
+        <codeInsight.template.postfixTemplateProvider language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpPostfixTemplateProvider"/>
+        <lang.surroundDescriptor language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpSurroundDescriptor"/>
         <colorSettingsPage implementation="io.github.dotnetsupport.lang.CSharpColorSettingsPage"/>
         <additionalTextAttributes scheme="Default" file="colorSchemes/CSharpDefault.xml"/>
         <additionalTextAttributes scheme="Darcula" file="colorSchemes/CSharpDarcula.xml"/>
@@ -133,6 +136,11 @@
         <postStartupActivity implementation="io.github.dotnetsupport.sdk.SdkCheckActivity"/>
 
         <configurationType implementation="io.github.dotnetsupport.run.DotNetConfigurationType"/>
+        <!-- the Services tool window lists the .NET Project configurations, with the address a web application listens on -->
+        <runDashboardDefaultTypesProvider implementation="io.github.dotnetsupport.run.DotNetRunDashboardTypes"/>
+        <runDashboardCustomizer implementation="io.github.dotnetsupport.run.DotNetRunDashboardCustomizer"/>
+        <!-- F2 on the node of a project is Rename Project (Delete is Remove from Solution: the delete provider of the pane) -->
+        <renameHandler implementation="io.github.dotnetsupport.view.ProjectNodeRenameHandler"/>
         <consoleFilterProvider implementation="io.github.dotnetsupport.run.DotNetConsoleFilterProvider"/>
         <console.folding implementation="io.github.dotnetsupport.run.DotNetStackTraceFolding"/>
         <formattingService implementation="io.github.dotnetsupport.format.DotNetFormattingService"/>

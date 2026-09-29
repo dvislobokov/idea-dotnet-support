@@ -3,6 +3,7 @@ package io.github.dotnetsupport.roslyn
 import com.intellij.codeInsight.AutoPopupController
 import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.InsertionContext
+import com.intellij.codeInsight.completion.PrioritizedLookupElement
 import com.intellij.codeInsight.lookup.Lookup
 import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementDecorator
@@ -34,12 +35,14 @@ class RoslynCompletionSupport : LspCompletionSupport() {
     override fun createLookupElement(parameters: CompletionParameters, item: CompletionItem): LookupElement? {
         val created = super.createLookupElement(parameters, item) ?: return null
         val element = RoslynCompletionPolicy.lookupStringOverride(item)?.let { label -> MatchedByLabel(created, label) } ?: created
-        if (!RoslynCompletionPolicy.isCallable(item.kind)) return element
+        val withParentheses = if (!RoslynCompletionPolicy.isCallable(item.kind)) element
         // the insertion of the platform first (the text edit of the item, the `using` of its resolve), then the parentheses
-        return LookupElementDecorator.withInsertHandler(element) { context: InsertionContext, decorator: LookupElementDecorator<LookupElement> ->
+        else LookupElementDecorator.withInsertHandler(element) { context: InsertionContext, decorator: LookupElementDecorator<LookupElement> ->
             decorator.delegate.handleInsert(context)
             addParentheses(context)
         }
+        // what is in scope above what is merely spelled alike: `names` before `nameof`, as Rider orders the list
+        return PrioritizedLookupElement.withPriority(withParentheses, RoslynCompletionPolicy.priority(item.kind, item.preselect == true))
     }
 
     private fun addParentheses(context: InsertionContext) {
@@ -68,6 +71,23 @@ internal class MatchedByLabel(delegate: LookupElement, private val label: String
 }
 
 object RoslynCompletionPolicy {
+    /**
+     * The order of the list when several items match the prefix, as Rider has it: the names of the scope (locals, parameters, members)
+     * first, then methods, then types, and the keywords last; what the server preselects stays on top. The server sends `sortText` in
+     * alphabetical order, which puts the keyword `nameof` above the variable `names` on a typed `n`.
+     */
+    fun priority(kind: CompletionItemKind?, preselect: Boolean): Double {
+        val base = when (kind) {
+            CompletionItemKind.Variable, CompletionItemKind.Field, CompletionItemKind.Property, CompletionItemKind.EnumMember, CompletionItemKind.Event, CompletionItemKind.Constant -> 40.0
+            CompletionItemKind.Method, CompletionItemKind.Function, CompletionItemKind.Constructor -> 30.0
+            CompletionItemKind.Class, CompletionItemKind.Struct, CompletionItemKind.Interface, CompletionItemKind.Enum, CompletionItemKind.TypeParameter, CompletionItemKind.Module -> 20.0
+            CompletionItemKind.Keyword -> 0.0
+            CompletionItemKind.Snippet -> -10.0
+            else -> 10.0
+        }
+        return if (preselect) base + 100.0 else base
+    }
+
     private val CALLABLE = setOf(CompletionItemKind.Method, CompletionItemKind.Function)
     private val SUBSCRIPTION = Regex("""[+-]=\s*$""")
 

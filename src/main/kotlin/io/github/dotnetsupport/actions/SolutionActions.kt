@@ -156,17 +156,24 @@ class AddExistingProjectAction : SolutionAction() {
 class RemoveProjectFromSolutionAction : SolutionAction() {
     override fun isAvailable(context: SolutionContext): Boolean = context.project != null
 
-    override fun perform(project: Project, context: SolutionContext) {
-        val slnProject = context.project ?: return
-        val answer = Messages.showYesNoDialog(
-            project,
-            "Remove project '${slnProject.name}' from ${context.solutionFile.name}?\nThe files stay on disk.",
-            "Remove from Solution", Messages.getQuestionIcon(),
-        )
-        if (answer != Messages.YES) return
-        // The path as it is written in the solution: works for projects whose files are gone as well.
-        runDotNet(project, "Removing ${slnProject.name} from ${context.solutionFile.name}", context,
-            "sln", context.solutionFile.path, "remove", slnProject.path)
+    override fun perform(project: Project, context: SolutionContext) = removeWithQuestion(project, context)
+
+    companion object {
+        /** The question and `dotnet sln remove`: also what Delete on the node does. */
+        fun removeWithQuestion(project: Project, context: SolutionContext) {
+            val slnProject = context.project ?: return
+            val answer = Messages.showYesNoDialog(
+                project,
+                "Remove project '${slnProject.name}' from ${context.solutionFile.name}?\nThe files stay on disk.",
+                "Remove from Solution", Messages.getQuestionIcon(),
+            )
+            if (answer != Messages.YES) return
+            // The path as it is written in the solution: works for projects whose files are gone as well.
+            val directory = context.solutionFile.parent.path
+            val title = "Removing ${slnProject.name} from ${context.solutionFile.name}"
+            val commands = DotNetCli.commandLinesOrNotify(project, title) { listOf(DotNetCli.commandLine(directory, "sln", context.solutionFile.path, "remove", slnProject.path)) } ?: return
+            DotNetCli.runInBackground(project, title, commands, refresh = listOf(File(directory)))
+        }
     }
 }
 

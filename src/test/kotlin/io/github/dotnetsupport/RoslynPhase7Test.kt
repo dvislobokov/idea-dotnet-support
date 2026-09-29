@@ -201,4 +201,24 @@ class RoslynPhase7Test : BasePlatformTestCase() {
         assertTrue(RoslynFileRename.isIdentifier("@class"))
         assertFalse(RoslynFileRename.isIdentifier("1st"))
     }
+
+    fun testCompletionOrderPutsTheScopeAboveKeywords() {
+        val policy = io.github.dotnetsupport.roslyn.RoslynCompletionPolicy
+        val variable = policy.priority(org.eclipse.lsp4j.CompletionItemKind.Variable, preselect = false)
+        val method = policy.priority(org.eclipse.lsp4j.CompletionItemKind.Method, preselect = false)
+        val type = policy.priority(org.eclipse.lsp4j.CompletionItemKind.Class, preselect = false)
+        val keyword = policy.priority(org.eclipse.lsp4j.CompletionItemKind.Keyword, preselect = false)
+        assertTrue(variable > method && method > type && type > keyword)
+        assertTrue(policy.priority(org.eclipse.lsp4j.CompletionItemKind.Keyword, preselect = true) > variable)
+        assertTrue(policy.priority(null, preselect = false) > keyword)
+    }
+
+    fun testSignatureParametersOfExtensionAndGenericMethods() {
+        val signatures = io.github.dotnetsupport.roslyn.RoslynSignatures
+        assertEquals(listOf("Type serviceType", "object implementationInstance"), signatures.splitParameterList("(extension) IServiceCollection IServiceCollection.AddSingleton(Type serviceType, object implementationInstance)"))
+        assertEquals(listOf("Func<IServiceProvider, TImplementation> implementationFactory"), signatures.splitParameterList("(extension) IServiceCollection IServiceCollection.AddSingleton<TService, TImplementation>(Func<IServiceProvider, TImplementation> implementationFactory)"))
+        assertEquals(emptyList<String>(), signatures.splitParameterList("(extension) IServiceCollection IServiceCollection.AddSingleton<TService>()"))
+        assertEquals(listOf("string format", "params object?[] args"), signatures.splitParameterList("void Console.WriteLine(string format, params object?[] args)"))
+        assertEquals(listOf("(int a, int b) pair"), signatures.splitParameterList("void M((int a, int b) pair)"))
+    }
 }

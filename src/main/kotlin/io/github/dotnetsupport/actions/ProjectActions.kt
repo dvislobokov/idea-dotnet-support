@@ -29,12 +29,7 @@ import javax.swing.JComponent
 class RenameProjectAction : SolutionAction() {
     override fun isAvailable(context: SolutionContext): Boolean = context.projectFile != null
 
-    override fun perform(project: Project, context: SolutionContext) {
-        val projectFile = context.projectFile ?: return
-        val dialog = RenameProjectDialog(project, projectFile)
-        if (!dialog.showAndGet()) return
-        rename(project, context, dialog.newName, dialog.renameDirectory)
-    }
+    override fun perform(project: Project, context: SolutionContext) = renameWithDialog(project, context)
 
     private class RenameProjectDialog(project: Project, projectFile: VirtualFile) : DialogWrapper(project) {
         private val oldName = projectFile.nameWithoutExtension
@@ -66,6 +61,14 @@ class RenameProjectAction : SolutionAction() {
     }
 
     companion object {
+        /** The dialog and the rename: also what F2 on the node does. */
+        fun renameWithDialog(project: Project, context: SolutionContext) {
+            val projectFile = context.projectFile ?: return
+            val dialog = RenameProjectDialog(project, projectFile)
+            if (!dialog.showAndGet()) return
+            rename(project, context, dialog.newName, dialog.renameDirectory)
+        }
+
         /** The rename itself, in one undoable command. */
         fun rename(project: Project, context: SolutionContext, newName: String, renameDirectory: Boolean) {
             val projectFile = context.projectFile ?: return

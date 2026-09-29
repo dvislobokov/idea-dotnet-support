@@ -224,6 +224,7 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
 
     fun serverStopped(shutdownNormally: Boolean) {
         isLoaded = false
+        project.service<RoslynSolutionProblems>().stop()
         opened = false
         if (project.isDisposed) return
         phase(RoslynPhase.STARTING, null)
@@ -259,6 +260,8 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
         val client = clients.firstOrNull()
         val file = if (project.isDisposed) null else RoslynWarmUp.fileToWarmUp(project)
         if (client != null && file != null) ApplicationManager.getApplication().executeOnPooledThread { RoslynWarmUp.run(project, client, file) }
+        // the errors of the whole solution for the Problems tool window
+        if (client != null) project.service<RoslynSolutionProblems>().start(client)
     }
 
     /**

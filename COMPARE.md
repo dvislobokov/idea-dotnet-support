@@ -121,7 +121,7 @@ desktop (WPF / WinForms / Avalonia / MAUI), библиотеки и NuGet-авт
 | Add → Assembly Reference (dll по пути) | ✅ | ✅ | 2026-09-28: Add → Assembly Reference… — выбор `.dll`, `<Reference Include><HintPath>` относительным путём в новой `ItemGroup`, форматирование файла сохраняется. Тест `ProjectActionsTest` |
 | Add → COM / Framework (GAC) reference, Browse по GAC | ✅ (Windows) | ❌ | |
 | Remove from Solution | ✅ | ✅ | `dotnet sln remove`, файлы остаются |
-| Rename проекта | ✅ | ✅ | 2026-09-28: ПКМ проекта → Rename Project… — файл проекта, по галочке папка, запись в `.sln` / `.slnx`, `ProjectReference` остальных проектов, run configurations; одна отменяемая команда. AssemblyName / RootNamespace не трогаются (без явных значений SDK берёт новое имя файла). Тест `ProjectActionsTest` |
+| Rename проекта | ✅ | ✅ | 2026-09-28: ПКМ проекта → Rename Project… (2026-09-29: и **F2 / Shift+F6** на узле — `renameHandler`) — файл проекта, по галочке папка, запись в `.sln` / `.slnx`, `ProjectReference` остальных проектов, run configurations; одна отменяемая команда. **Delete** на узле проекта = Remove from Solution с вопросом (файлы не трогаются). AssemblyName / RootNamespace не меняются. Тесты `ProjectActionsTest`, `ServicesAndNodeActionsTest` |
 | Move проекта в другой solution folder / на диске, Unload / Reload | ✅ | ❌ / 🚫 | move — через Remove + Add Existing (или правка `.sln`); unload не имеет смысла без per-project модели: код грузит только language server целым solution |
 | Drag-and-drop в дереве | ✅ | 🟡 | только перетаскивание узла solution/проекта в редактор (открывает файл); перестановок/переносов нет |
 | Edit '`App.csproj`' / '`App.slnx`' | ✅ | ✅ | ПКМ узла |
@@ -149,8 +149,8 @@ desktop (WPF / WinForms / Avalonia / MAUI), библиотеки и NuGet-авт
 | Folding | ✅ | ✅ | тела объявлений, блок `using`, `#region` с именем, серии `///` и `//`, `/* */`; по настройкам платформы; при готовом сервере — уступает LSP folding |
 | Go to Class / Symbol | ✅ | ✅ | `FileBasedIndex` по именам типов и членов; без namespace-квалификации; при готовом сервере файлы solution отдаёт `workspace/symbol`, индекс — остальное |
 | Live templates | ✅ (шаблоны ReSharper) | ✅ | 33: `ctor` (имя типа макросом), `prop/propg/propi/propr/propfull`, `cw`, `for/forr/foreach/while/do`, `if/else/switch`, `try/tryf/using/lock/thr`, `svm/sam`, `class/interface/record/struct/enum`, `fact/theory/test/testm`, `region`, `nn` |
-| Postfix templates (`.if`, `.foreach`, `.var`, `.return`…) | ✅ | ❌ | |
-| Surround with | ✅ | ❌ | |
+| Postfix templates (`.if`, `.foreach`, `.var`, `.return`…) | ✅ | ✅ | 2026-09-29: 21 шаблон по токенам (выражение перед точкой — `CSharpExpressions`: цепочки имён, вызовы, индексаторы, литералы, `new`, `await`, `!`, `?.`): statement-шаблоны `if` `else` `null` `notnull` `while` `lock` `switch` `foreach` `using` `var` `return` `throw` `yield` `cw` — только в начале statement; expression-шаблоны `not` `par` `await` `nameof` `typeof` `new` `str` — везде. Тип выражения не известен — предлагаются все. Тест `PostfixAndSurroundTest` (в т.ч. раскрытие по Tab) |
+| Surround with (Ctrl+Alt+T) | ✅ | ✅ | 2026-09-29: `if`, `if/else`, `while`, `for`, `foreach`, `try/catch`, `try/finally`, `try/catch/finally`, `using`, `lock`, `{ }`, `#region`, `#if` — целыми строками с отступом на единицу глубже; для выделения в строке — `(expr)`, `!(expr)`. Тест `PostfixAndSurroundTest` |
 | Doc-комментарии: `///` → `<summary>` + `<param>` + `<returns>`, Enter продолжает `///` | ✅ | ✅ | |
 | Enter в `/* */` | ✅ | ❌ | |
 | Отступы при наборе (Enter, `{ } ) ]`) | форматтер | ✅ | движок на 29 JSON-правилах: K&R / Allman, аргументы и переносы, цепочки `.`, тела без скобок, `else/catch/finally`, `switch` (метки/секции/блоки), инициализаторы, атрибуты, `#region/#if`, `/* */`, verbatim/raw не трогаются; `csharp_indent_*` из `.editorconfig`; уступает onTypeFormatting сервера |
@@ -178,7 +178,7 @@ IDE на платформе по данным `docs/platform-lsp-dap.html`; GoLa
 |---|---|---|---|
 | Ошибки компилятора в редакторе | ✅ мгновенно | ✅ | pull-диагностика, только после `projectInitializationComplete` (нет ложных ошибок при загрузке); область — open files / full solution / none (настройка) |
 | Диагностика анализаторов (Roslyn analyzers, `.editorconfig` severity) | ✅ + свои 2 500 инспекций | 🟡 | только анализаторы Roslyn проекта и IDE-анализаторы сервера; инспекций ReSharper нет |
-| Ошибки в закрытых файлах / Solution-Wide Analysis / окно Problems по solution | ✅ | ❌ | платформа не умеет `workspace/diagnostic`; есть только «ошибки последней сборки» (4.6) |
+| Ошибки в закрытых файлах / Solution-Wide Analysis / окно Problems по solution | ✅ | ✅ | 2026-09-29: Problems → **Project Errors** — ошибки и предупреждения всего solution из `workspace/diagnostic` (закрытые файлы включительно; hints анализаторов не попадают). Работает **только при «Compiler diagnostics for: fullSolution»** (Settings → .NET → Language Server; иначе одна нотификация с кнопкой Open Settings) — зонд 2026-09-29: сервер 5.12 иначе отвечает пустым списком. Модель как в VS Code: один вечный запрос, ответ приходит при изменениях (playground — 3,9 с, 33 файла). Тест `SolutionProblemsTest`; **вживую не проверено** |
 | Completion | ✅ (smart, import, statement) | ✅ | Roslyn: члены, типы из неимпортированных namespace (авто-`using`, опция), имена для новых членов, regex, аргументы; после пробела перезапуск первой буквой (`RoslynCompletionRestart`); хвосты «`()  +18 overloads  void`» из resolve; `()` после метода + Parameter Info; `await` не залипает; `(` не открывает список |
 | Parameter Info (Ctrl+P) | все перегрузки | ✅ | свой обработчик: все перегрузки списком, текущий параметр подсвечен, неподходящие серые |
 | Quick Documentation (Ctrl+Q), hover | ✅ | ✅ | сервер (с remarks — опция) |
@@ -186,7 +186,9 @@ IDE на платформе по данным `docs/platform-lsp-dap.html`; GoLa
 | Ctrl+наведение (подчёркивание, «рука») | ✅ | ✅ 🔬 | свой `implicitReferenceProvider`, 300 мс таймаут; «как выглядит под мышью — посмотреть руками» |
 | Go to Type Declaration | ✅ | 🟡 | `typeDefinition` есть у сервера и кэшируется; отдельное действие не проверялось |
 | Go to Implementation (Ctrl+Alt+B) | ✅ | ✅ | своё действие поверх платформенного: 0 / 1 / список |
-| Go to Base / Derived, Type Hierarchy, Call Hierarchy | ✅ | ❌ | сервер объявляет `typeHierarchy`/`callHierarchy`, платформенный LSP-клиент их не использует, в плагине не сделано |
+| Type Hierarchy (Ctrl+H) | ✅ | ✅ | 2026-09-29: окно Hierarchy платформы на `prepareTypeHierarchy` / `supertypes` / `subtypes` сервера — три вида (supertypes, subtypes, полная), уровень за уровнем, циклы не раскрываются; строка — имя + контейнер, иконка по `SymbolKind`. Тест `RoslynHierarchyTest` (на захваченном трафике 42–44); **вживую не проверено** |
+| Call Hierarchy (Ctrl+Alt+H) | ✅ | ✅ | 2026-09-29: callers / callees через `prepareCallHierarchy` / `incomingCalls` / `outgoingCalls`; рекурсия показывается один раз. Тест на фикстурах 39–41; **вживую не проверено** |
+| Go to Base (Ctrl+U) / Derived | ✅ | 🟡 | 2026-09-29: Ctrl+U на **типе** — базовые типы из `typeHierarchy/supertypes` (один — переход, несколько — список); на члене сервер «базового члена» не даёт — подсказка. Derived = Go to Implementation (Ctrl+Alt+B) |
 | Find Usages / Show Usages | ✅ (группировка, фильтры) | 🟡 | `references` через сервер; code lens «N references» → Show Usages; без группировки по типу использования, без «read/write» |
 | Подсветка вхождений под кареткой | ✅ | ✅ | `documentHighlight` включён явно |
 | Rename (Shift+F6) | ✅ (файлы, строки, комментарии, перегрузки) | ✅ 🔬 | LSP rename + переименование файла `<Тип>.cs` плагином; диалог не проверен роботом; Ctrl+Z — два шага |
@@ -231,7 +233,7 @@ IDE на платформе по данным `docs/platform-lsp-dap.html`; GoLa
 | NuGet completion в `PackageReference` / `PackageVersion` / `GlobalPackageReference` / `PackageDownload` | ✅ | ✅ | id по фидам solution (от 2 символов, загрузки, ✓ verified), версии (новые сверху, prerelease по настройке или после `-`), авто-`Version="…"` кроме CPM; кэш 5 мин |
 | csproj: inlay «есть новая версия», quick-fix обновления | ✅ | ❌ | |
 | `Directory.Build.props` / `Directory.Packages.props` | ✅ | 🟡 | completion по схеме, показ в Imports, чтение версий CPM; правки CPM из окна NuGet — нет |
-| `appsettings.json`, `launchSettings.json`, `global.json` — JSON Schema | ✅ | ❌ | обычный JSON платформы; nesting и иконки есть |
+| `appsettings.json`, `launchSettings.json`, `global.json`, `dotnet-tools.json` — JSON Schema | ✅ | ➖ | даёт JSON-плагин платформы: каталог SchemaStore (включён по умолчанию, Settings → Languages → JSON Schema Mappings → Remote catalog) сопоставляет `appsettings.json` / `appsettings.*.json`, `launchsettings.json`, `global.json`, `dotnet-tools.json` — проверено по каталогу 2026-09-29. В IDEA Community JSON-плагин есть; своей схемы плагину не нужно |
 | `.resx` редактор (таблица, культуры, Localization Manager) | ✅ | ❌ | как XML; генератор копии для культуры |
 | `.editorconfig` для C# (completion `csharp_*`, severity) | ✅ | 🟡 | платформенный `.editorconfig`-плагин даёт базовое; `csharp_*`-опции и описания — нет |
 | `.http` (HTTP Client) | ✅ | ➖/🟡 | генерация запросов из Endpoints в `<Project>.http`; исполнение — HTTP Client платформы (есть в IDEA Ultimate / GoLand / PyCharm Pro / WebStorm, нет в Community) |
@@ -282,7 +284,7 @@ IDE на платформе по данным `docs/platform-lsp-dap.html`; GoLa
 | Раскраска уровней логов (MEL `info:`/`fail:`, Serilog `[INF]`, NLog/log4net `|WARN|`) | ✅ | ✅ | цвета Console Colors → Log console |
 | Автооткрытие браузера по «Now listening on» + `launchUrl` | ✅ | ✅ | галочка; `0.0.0.0`/`[::]` → localhost |
 | Analyze .NET Stack Trace (вставить из буфера) | ✅ | ✅ | из буфера, если похоже на стектрейс |
-| Services / Run Dashboard (статус, адрес, перезапуск нескольких) | ✅ | ❌ | |
+| Services / Run Dashboard (статус, адрес, перезапуск нескольких) | ✅ | ✅ | 2026-09-29: конфигурации «.NET Project» — в окне **Services** по умолчанию (`runDashboardDefaultTypesProvider`): консоли, статус, перезапуск списком; у запущенного веб-приложения рядом с именем — ссылка на адрес из «Now listening on» (`runDashboardCustomizer`), и при Run, и при Debug. Тест `ServicesAndNodeActionsTest`; **вживую не проверено** |
 | Ввод в консоль запущенной программы | ✅ | ✅ | Run — платформа; Debug — через `runInTerminal` (4.8) |
 | Запуск одиночного `.cs` (`dotnet run file.cs`, .NET 10) / `.csx` | ✅ (10 / scripts) | ❌ | file-based programs в LS выключены; run configuration нет |
 | Remote run (SSH, WSL, Docker) | ✅ | ❌ | |
@@ -346,7 +348,7 @@ IDE на платформе по данным `docs/platform-lsp-dap.html`; GoLa
 | Run tests with coverage | ✅ (dotCover, statement-level) | ✅ | coverlet `--collect:"XPlat Code Coverage"` → Cobertura: полосы в gutter (покрыто / частично по веткам / нет), окно «.NET Coverage» (File, Lines, Covered/Total, Branches, худшие сверху), проценты у файлов и папок в Project / Solution view, политика при новом покрытии (Ask / Replace / Add / Do not apply) |
 | Coverage: по проектам / методам / классам, несколько прогонов с историей, экспорт | ✅ | ❌ | только по файлам; «Add» суммирует хиты |
 | Continuous testing (`dotnet watch test`) | ✅ | ❌ | |
-| Microsoft.Testing.Platform, TUnit | ✅ | 🟡 | `dotnet test` запустит; TRX и debug-attach не проверены; в explorer TUnit-атрибуты не распознаются |
+| Microsoft.Testing.Platform (MSTest runner, xunit.v3 runner, TUnit, `MSTest.Sdk`) | ✅ | 🟡 | 2026-09-29: проект распознаётся (`EnableMSTestRunner`, `UseMicrosoftTestingPlatformRunner`, пакеты `TUnit` / `Microsoft.Testing.Platform*`, SDK `MSTest.Sdk`); три режима `dotnet test`: VSTest (и MTP через bridge), MTP с `TestingPlatformDotnetTestSupport` (опции после `--`), MTP-раннер SDK 10 (`global.json` `test.runner` / `dotnet.config` → `--project`, опции напрямую); TRX через `--report-trx` (xunit.v3 — `--report-xunit-trx`) в наш каталог результатов → то же дерево; фильтры ▶ / explorer конвертируются: MSTest — VSTest-выражение, xunit.v3 — `--filter-class` / `--filter-method`, TUnit — `--treenode-filter` (несколько классов — шире, чем выбрано); покрытие — `--coverage … cobertura` (нужен `Microsoft.Testing.Extensions.CodeCoverage`). **Нет**: отладка MTP-тестов (у платформы нет хоста, ждущего отладчик — нотификация; путь — отладка exe как .NET Project или Attach), live-результаты. Тест `TestingPlatformTest`; **вживую не проверено** |
 | Test categories / traits, фильтр по ним, `.runsettings` | ✅ | 🟡 | `--filter` можно набрать в поле «Test filter» руками; `.runsettings` — через аргументы |
 | Параллельный запуск, retry, тайм-ауты из UI | ✅ | ❌ | |
 | Генерация теста для класса | ✅ | ✅ | «Test for Selected Class» (ищет/создаёт тест-проект, выбирает xUnit/NUnit/MSTest по пакетам) |
@@ -442,7 +444,8 @@ IDE на платформе по данным `docs/platform-lsp-dap.html`; GoLa
 | Проверка `dotnet` при открытии, `global.json` vs установленные SDK | ✅ | ✅ | политики `rollForward` (disable / patch / feature / minor / major / latest*), `allowPrerelease`; нотификации Download SDK / Open global.json |
 | «.NET on This Machine» | 🟡 (Toolset page) | ✅ | `dotnet --info`, таблицы SDK / runtime со статусом поддержки из `dotnet sdk check`, какой SDK выбран, Copy, Download |
 | Управление tools плагина (путь, Install / Update) | — | ✅ | dotnet-counters, dotnet-stack, dotnet-gcdump, dotnet-dump, upgrade-assistant, dotnet-debugger-dap, roslyn-language-server, dotnet-ef, csharpier; поиск: настройки → PATH → `~/.dotnet/tools`; манифест репозитория приоритетнее (ef, csharpier) |
-| Шаблоны `dotnet new`: поиск на nuget.org, установка, обновление, удаление | ✅ | ✅ | «More templates…»; приватные фиды и параметры шаблона — нет |
+| Шаблоны `dotnet new`: поиск на nuget.org, установка, обновление, удаление | ✅ | ✅ | «More templates…»; приватные фиды — нет |
+| Параметры шаблона в New Project (`--test-runner`, `--use-program-main`, `--auth`, …) | ✅ | ✅ | 2026-09-29: под строкой Framework — опции выбранного шаблона из `dotnet new <t> --help` (choice → список с описаниями, bool → галочка, text → поле, multiple → значения через `;`, «Applies when» из `Enabled if`); в `dotnet new` уходит только отличное от умолчания; список Framework — из `--framework` шаблона. Так создаётся и MTP-проект: `mstest` → Test runner = Microsoft.Testing.Platform / MSTest, `--sdk`, Coverage tool. Работает и для шаблонов сообщества (TUnit, xunit3). `--framework` и `--no-restore` не показываются. Тест `TemplateOptionsTest` (фикстуры `src/test/resources/dotnetNew`); **вживую не проверено** |
 | Upgrade Assistant | ✅ (внутри) | 🟡 | только `analyze`: выбор TFM, таблица Severity / Issue / Found / Location с переходом и документацией; `upgrade` — нет |
 | Форматирование проекта / solution, Verify Formatting (как CI) | ✅ (Code Cleanup) | ✅ | CSharpier (0.x и 1.x, HTTP-сервер на проект 7–12 мс, откат на stdin, `dotnet tool restore`) или `dotnet format [--verify-no-changes]` |
 | Логи плагина | — | ✅ | `~/idea-dotnet-logs`, меню .NET → Show Plugin Logs; пароли маскированы, старше 14 дней удаляются; stdin команд закрыт (интерактивный запрос падает сразу) |
@@ -462,7 +465,7 @@ IDE на платформе по данным `docs/platform-lsp-dap.html`; GoLa
 | Editor \| Code Style \| C# | десятки вкладок | 🟡 только Tabs and Indents |
 | Editor \| Color Scheme \| C# | ✅ | ✅ 18 ключей |
 | Editor \| Inspections \| C# | 2 500+ | ❌ |
-| Editor \| Live / File / Postfix templates | ✅ | 🟡 live — есть (33), file templates — только 5 внутренних, postfix — нет |
+| Editor \| Live / File / Postfix templates | ✅ | 🟡 live — есть (33), postfix — 21 (страница Postfix Completion платформы: можно выключать), file templates — только 5 внутренних |
 | Принцип «на странице только то, что работает» | — | ✅ решение пользователя 2026-09-21, тест `SettingsPagesTest` |
 
 ### 4.17 Что даёт хост-IDE бесплатно
@@ -513,10 +516,10 @@ GoLand / PyCharm Pro), HTTP Client (те же), Docker / Kubernetes плагин
 1. Razor / Blazor / `.cshtml` — нет языка вообще (для web-разработчиков на Blazor / MVC это блокер).
 2. Результаты тестов только после завершения `dotnet test` (свой VSTest-логгер или Microsoft.Testing.Platform).
 3. Hot Reload (`dotnet watch` без индикации; при отладке — нет).
-4. Type / Call hierarchy, Go to Base / Derived, Find Usages с группировкой (через сервер: `typeHierarchy`, `callHierarchy`).
-5. Проблемы по всему solution (Problems view) — только «ошибки последней сборки», и те выключаются при готовом сервере.
+4. ~~Type / Call hierarchy, Go to Base~~ — сделаны 2026-09-29; остались Find Usages с группировкой и Go to Base для членов.
+5. ~~Проблемы по всему solution~~ — сделано 2026-09-29 (Problems → Project Errors при scope fullSolution).
 6. Publish (папка / контейнер / `.pubxml`).
-7. Compound run configuration и Services-окно для микросервисов.
+7. Compound run configuration (Services-окно — сделано 2026-09-29).
 
 **P1 — заметный разрыв с Rider:**
 8. Уязвимые / устаревшие / deprecated пакеты, консолидация версий, конфликты NU1xxx, «почему пакет здесь».
@@ -524,7 +527,7 @@ GoLand / PyCharm Pro), HTTP Client (те же), Docker / Kubernetes плагин
 10. ~~Project Properties, rename проекта, `.slnf`, `Compile Remove` / linked files~~ — сделаны 2026-09-26…28; остались move проекта, unload / reload, drag-and-drop в дереве, Configuration Manager.
 11. Code Style / Inspections для C# из UI (severity в `.editorconfig` с completion `csharp_*` / `dotnet_*`).
 12. Spellchecker, Find Usages текстовый, неактивный `#if`, partial-навигация, Related files.
-13. Postfix templates, Surround with, Generate-меню (Alt+Insert).
+13. ~~Postfix templates, Surround with~~ — сделаны 2026-09-29; осталось Generate-меню (Alt+Insert).
 14. `.NET Executable` / Static Method конфигурации, запуск одиночного `.cs` (.NET 10) и `.csx`.
 15. `.resx` редактор; JSON Schema для `appsettings` / `launchSettings` / `global.json`; `.sln` подсветка.
 16. XAML: только XML (для WPF / Avalonia / MAUI — есть шаблоны и nesting, нет completion / preview).
@@ -579,6 +582,7 @@ GoLand / PyCharm Pro), HTTP Client (те же), Docker / Kubernetes плагин
 | Собрать / пересобрать / очистить / restore | меню **.NET** (solution) или ПКМ по узлу (проект / выделение); из редактора — Build собирает проект текущего файла |
 | Debug / Release и TFM | переключатель в правой части главного тулбара («Debug \| .NET 9.0») |
 | Запустить / отладить проект под курсором | ПКМ узла → Run / Debug Project; gutter ▶ у `Main`; меню .NET → Run / Debug Project |
+| Несколько сервисов разом, адреса, перезапуск | окно **Services**: все конфигурации «.NET Project», у веб-приложения ссылка на адрес |
 | Пакеты | окно **NuGet** внизу (Packages / Sources / Folders / Log) или **Alt+Shift+N** (Quick List); ПКМ проекта → Manage NuGet Packages… |
 | Тесты | окно **Unit Tests** внизу (Explorer + сессии); ▶ у метода / класса; ПКМ проекта → Run Tests with Coverage |
 | Покрытие | окно **.NET Coverage** справа; полосы в gutter; проценты в дереве (Settings → Coverage) |
@@ -598,10 +602,11 @@ GoLand / PyCharm Pro), HTTP Client (те же), Docker / Kubernetes плагин
 ### 7.3 Редактор C# — что ожидать
 - **Alt+Enter** — quick fixes и рефакторинги Roslyn, включая «Fix All in Document / Project / Solution» и вложенные варианты. Refactor-меню платформы с C# почти не работает — идти через Alt+Enter.
 - **Shift+F6** — rename через сервер; файл `<Тип>.cs` переименуется вслед за типом. Ctrl+Z откатывает в два шага.
-- **Ctrl+B / Ctrl+клик** — объявление (в т.ч. декомпилят фреймворка, read-only, баннер «Decompiled from…»). **Ctrl+Alt+B** — реализации. **Ctrl+Alt+F7** / клик по code lens «N references» — usages.
+- **Ctrl+B / Ctrl+клик** — объявление (в т.ч. декомпилят фреймворка, read-only, баннер «Decompiled from…»). **Ctrl+Alt+B** — реализации. **Ctrl+U** на типе — базовые типы. **Ctrl+H** — Type Hierarchy, **Ctrl+Alt+H** — Call Hierarchy (окно Hierarchy). **Ctrl+Alt+F7** / клик по code lens «N references» — usages.
+- Ошибки всего solution — окно **Problems → Project Errors**, если в Settings → .NET → Language Server стоит «Compiler diagnostics for: fullSolution» (по умолчанию openFiles — тогда там пусто и приходит подсказка).
 - **Ctrl+P** — все перегрузки. **Ctrl+Q** — документация сервера. Ввод `(` открывает Parameter Info, не список.
 - Inlay hints: имена параметров у литералов / `new` / индексаторов, типы у `var` / лямбд — выключаются в Settings → .NET → Language Server → Inlay Hints.
-- `///` над членом → `<summary>` + `<param>` + `<returns>`. Live templates: `ctor`, `prop`, `propfull`, `cw`, `foreach`, `svm`, `fact`, `test`, `nn`, `region` …
+- `///` над членом → `<summary>` + `<param>` + `<returns>`. Live templates: `ctor`, `prop`, `propfull`, `cw`, `foreach`, `svm`, `fact`, `test`, `nn`, `region` … Postfix: `expr.if` / `.notnull` / `.foreach` / `.var` / `.return` / `.await` / `.not` / `.par` + Tab. Surround With: Ctrl+Alt+T на выделении (`if`, `try/catch`, `using`, `#region`…).
 - Пока solution грузится: раскраска из дискового кэша сервера (мгновенно) или эвристика, Structure / folding / Go to Class — эвристика; ошибок не показывается.
 - Ошибки в **закрытых** файлах в редакторе не появятся — смотреть окно Build после сборки.
 - Форматирование: Auto = CSharpier, если в репозитории `.csharpierrc*` / `dotnet-tools.json` с csharpier / `CSharpier.MsBuild`, иначе `dotnet format` (сервером, когда загружен). Работает и в Actions on Save / перед коммитом.
@@ -736,10 +741,11 @@ Run Project, Debug Project · Build / Rebuild / Clean Solution, Measure Build Pe
 ### 9.4 Тесты (43 класса) → области
 | Область | Тесты |
 |---|---|
-| Язык / редактор | CSharpDeclarationsTest, CSharpEditorAssistTest, CSharpEnterAfterBraceTest, CSharpIndentRulesTest, CSharpStructureTest, CSharpTodoTest, IdentifierColorsTest, ItemTemplatesTest, FormattingTest |
-| Roslyn LS | RoslynLanguageServerTest, RoslynLspClientTest, RoslynPolicyTest, RoslynCacheTest, RoslynResponseMemoTest, RoslynCapturedTrafficTest (фикстуры `src/test/resources/roslyn/capture-5.12`), RoslynPhase7Test |
+| Язык / редактор | CSharpDeclarationsTest, CSharpEditorAssistTest, CSharpEnterAfterBraceTest, CSharpIndentRulesTest, CSharpStructureTest, CSharpTodoTest, IdentifierColorsTest, ItemTemplatesTest, FormattingTest, PostfixAndSurroundTest, TemplateOptionsTest |
+| Roslyn LS | RoslynLanguageServerTest, RoslynLspClientTest, RoslynPolicyTest, RoslynCacheTest, RoslynResponseMemoTest, RoslynCapturedTrafficTest (фикстуры `src/test/resources/roslyn/capture-5.12`), RoslynPhase7Test, RoslynHierarchyTest, SolutionProblemsTest, MoveFileTest |
+| Тесты .NET | TestingAndCoverageTest, TestingPlatformTest |
 | Solution / MSBuild / NuGet | ParsersTest, DependenciesTreeTest, EditProjectFileTest, SolutionDiscoveryTest, ProjectPropertiesTest, ProjectContentTest, ProjectActionsTest, NewProjectWizardTest, MsBuildSchemaTest, MsBuildPackageCompletionTest, NuGetTest, NuGetSourcesTest, RiderPanelsTest, RiderPanelsMoreTest |
-| Сборка / запуск / тесты / покрытие | CliFormatsTest, CommandStreamingTest, RunConsoleTest, TestingAndCoverageTest, DiagnosticsTest, DotNetLogsTest, ToolsTest |
+| Сборка / запуск / тесты / покрытие | CliFormatsTest, CommandStreamingTest, RunConsoleTest, TestingAndCoverageTest, DiagnosticsTest, DotNetLogsTest, ToolsTest, ServicesAndNodeActionsTest |
 | Отладчик | DapClientTest, DebugLaunchTest |
 | Monitor / EF / Endpoints / SDK | MonitorTest, MemoryDumpTest, EfCoreTest, EndpointsTest, SdkEnvironmentTest, SettingsAndSdkTest |
 | Настройки / плагин | SettingsPagesTest, PluginTest, PlatformApiProbeTest |

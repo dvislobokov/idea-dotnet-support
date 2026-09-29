@@ -65,6 +65,7 @@ class DotNetDebugProcess(
 
     init {
         if (start.openBrowser) handler.addProcessListener(ListeningUrlListener(start.launchUrl))
+        io.github.dotnetsupport.run.ListeningAddressRecorder.attach(handler)
     }
 
     override fun getEditorsProvider(): XDebuggerEditorsProvider = editors

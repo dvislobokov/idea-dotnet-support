@@ -3,8 +3,17 @@ package io.github.dotnetsupport.newproject
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.ui.ComboBox
+import com.intellij.ui.components.JBCheckBox
+import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.JBTextField
+import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.Panel
+import com.intellij.ui.dsl.builder.panel
+import java.awt.BorderLayout
 import javax.swing.DefaultComboBoxModel
+import javax.swing.JComponent
+import javax.swing.JPanel
+import javax.swing.SwingUtilities
 
 class DotNetTemplateSettings(
     val template: DotNetTemplate,
@@ -12,6 +21,8 @@ class DotNetTemplateSettings(
     val language: String?,
     /** Null for the default framework of the template. */
     val framework: String?,
+    /** Options of the template that differ from their defaults, as arguments: `--test-runner MSTest --sdk`. */
+    val templateOptions: List<String> = emptyList(),
 ) {
     val projectExtension: String
         get() = when (language ?: template.defaultLanguage) {
@@ -27,17 +38,31 @@ class DotNetTemplateSettings(
         add("-o"); add(outputDirectory)
         language?.let { add("-lang"); add(it) }
         framework?.let { add("-f"); add(it) }
+        addAll(templateOptions)
     }
 }
 
-/** Template / language / framework rows shared by the New Project wizard and the "Add New Project" dialog. */
+/**
+ * Template / language / framework rows shared by the New Project wizard and the "Add New Project" dialog, plus the options of the chosen
+ * template (`dotnet new <template> --help`): the test runner of `mstest`, `--use-program-main` of `console`, the authentication of `webapi`,
+ * whatever a template of nuget.org declares.
+ */
 class DotNetTemplatePanel {
     private val templateCombo = ComboBox(DefaultComboBoxModel(DotNetTemplates.BUILT_IN.toTypedArray())).apply { isSwingPopup = false }
     private val languageCombo = ComboBox<String>()
     private val frameworkCombo = ComboBox(arrayOf(DEFAULT_FRAMEWORK)).apply { isEditable = true }
+    private val optionsPanel = JPanel(BorderLayout())
+    private val optionsStatus = JBLabel("")
+
+    /** The options of the template shown now and the controls holding their values. */
+    private var options: List<TemplateOption> = emptyList()
+    private val controls = HashMap<String, () -> String>()
+    private val optionsCache = HashMap<String, Pair<List<TemplateOption>, List<String>>>()
+    private var installedFrameworks: List<String> = emptyList()
 
     init {
-        templateCombo.addActionListener { updateLanguages() }
+        templateCombo.addActionListener { updateLanguages(); loadOptions() }
+        languageCombo.addActionListener { loadOptions() }
         updateLanguages()
         loadFromCli()
     }
@@ -55,6 +80,8 @@ class DotNetTemplatePanel {
         }
         row("Language:") { cell(languageCombo) }
         row("Framework:") { cell(frameworkCombo).comment("Not every template supports every framework") }
+        row { cell(optionsStatus) }
+        row { cell(optionsPanel).align(AlignX.FILL) }
     }
 
     val settings: DotNetTemplateSettings
@@ -65,6 +92,7 @@ class DotNetTemplatePanel {
                 template,
                 language = (languageCombo.selectedItem as? String)?.takeIf { template.languages.size > 1 },
                 framework = framework.takeIf { it.isNotEmpty() && it != DEFAULT_FRAMEWORK },
+                templateOptions = TemplateOptions.arguments(options, controls.mapValues { it.value() }),
             )
         }
 
@@ -83,14 +111,91 @@ class DotNetTemplatePanel {
             val frameworks = DotNetTemplates.loadFrameworks()
             ApplicationManager.getApplication().invokeLater({
                 val selected = (templateCombo.selectedItem as? DotNetTemplate)?.shortName
+                installedFrameworks = frameworks
                 templateCombo.model = DefaultComboBoxModel(templates.toTypedArray())
                 templateCombo.selectedItem = templates.find { it.shortName == selected } ?: templates.find { it.shortName == "console" } ?: templates.firstOrNull()
                 updateLanguages()
-
-                val framework = frameworkCombo.editor.item
-                frameworkCombo.model = DefaultComboBoxModel((listOf(DEFAULT_FRAMEWORK) + frameworks).toTypedArray())
-                frameworkCombo.editor.item = framework
+                setFrameworks(frameworks)
+                loadOptions()
             }, ModalityState.any())
+        }
+    }
+
+    private fun setFrameworks(frameworks: List<String>) {
+        val framework = frameworkCombo.editor.item
+        frameworkCombo.model = DefaultComboBoxModel((listOf(DEFAULT_FRAMEWORK) + frameworks).toTypedArray())
+        frameworkCombo.editor.item = framework
+    }
+
+    /** `dotnet new <template> --help` for the chosen template and language, once per pair; the rows are rebuilt when it arrives. */
+    private fun loadOptions() {
+        val template = templateCombo.selectedItem as? DotNetTemplate ?: return
+        val language = (languageCombo.selectedItem as? String)?.takeIf { template.languages.size > 1 }
+        val key = "${template.shortName}|${language.orEmpty()}"
+        optionsCache[key]?.let { (loaded, frameworks) -> return showOptions(loaded, frameworks) }
+        optionsStatus.text = "Loading the options of the template..."
+        showOptions(emptyList(), emptyList())
+        ApplicationManager.getApplication().executeOnPooledThread {
+            val help = try {
+                val arguments = listOfNotNull("new", template.shortName, "--help", language?.let { "--language" }, language)
+                io.github.dotnetsupport.cli.DotNetCli.execute(io.github.dotnetsupport.cli.DotNetCli.commandLine(null, *arguments.toTypedArray()).withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en"), 60_000).stdout
+            } catch (_: Exception) {
+                ""
+            }
+            val loaded = TemplateOptions.parse(help)
+            val frameworks = TemplateOptions.frameworks(help)
+            ApplicationManager.getApplication().invokeLater({
+                optionsCache[key] = loaded to frameworks
+                if ((templateCombo.selectedItem as? DotNetTemplate)?.shortName == template.shortName) showOptions(loaded, frameworks)
+            }, ModalityState.any())
+        }
+    }
+
+    private fun showOptions(loaded: List<TemplateOption>, frameworks: List<String>) {
+        options = loaded
+        controls.clear()
+        optionsStatus.text = if (loaded.isEmpty()) "" else "Options of the template:"
+        // the frameworks the template names, else the installed SDKs
+        if (frameworks.isNotEmpty()) setFrameworks(frameworks) else if (installedFrameworks.isNotEmpty()) setFrameworks(installedFrameworks)
+        optionsPanel.removeAll()
+        if (loaded.isNotEmpty()) optionsPanel.add(optionRows(loaded), BorderLayout.CENTER)
+        optionsPanel.revalidate()
+        optionsPanel.repaint()
+        // the dialog was packed before the rows came
+        SwingUtilities.getWindowAncestor(optionsPanel)?.let { window -> if (window.isShowing) window.pack() }
+    }
+
+    private fun optionRows(loaded: List<TemplateOption>): JComponent = panel {
+        for (option in loaded) {
+            val hint = listOfNotNull(option.description.takeIf { it.isNotEmpty() }, option.enabledIf?.let { "Applies when: $it" }).joinToString(" ")
+            when (option.kind) {
+                TemplateOption.Kind.BOOL -> row {
+                    val box = JBCheckBox(option.label, option.isBoolDefaultTrue)
+                    controls[option.name] = { box.isSelected.toString() }
+                    cell(box).comment(hint)
+                }
+                TemplateOption.Kind.CHOICE -> row("${option.label}:") {
+                    if (option.multiple) {
+                        val field = JBTextField(option.default.orEmpty())
+                        controls[option.name] = { field.text }
+                        cell(field).align(AlignX.FILL).comment("$hint Several values separated by ;: ${option.choices.joinToString(", ") { it.value }}")
+                    } else {
+                        val combo = ComboBox(option.choices.map { it.value }.toTypedArray())
+                        combo.selectedItem = option.choices.firstOrNull { it.value.equals(option.default, ignoreCase = true) }?.value ?: option.choices.firstOrNull()?.value
+                        combo.renderer = com.intellij.ui.SimpleListCellRenderer.create { label, value, _ ->
+                            val choice = option.choices.firstOrNull { it.value == value }
+                            label.text = if (choice?.description.isNullOrEmpty()) value.orEmpty() else "$value — ${choice!!.description}"
+                        }
+                        controls[option.name] = { combo.selectedItem as? String ?: "" }
+                        cell(combo).comment(hint)
+                    }
+                }
+                TemplateOption.Kind.TEXT -> row("${option.label}:") {
+                    val field = JBTextField(option.default.orEmpty())
+                    controls[option.name] = { field.text }
+                    cell(field).align(AlignX.FILL).comment(hint)
+                }
+            }
         }
     }
 

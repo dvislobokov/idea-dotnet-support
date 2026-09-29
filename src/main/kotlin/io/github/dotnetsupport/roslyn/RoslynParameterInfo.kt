@@ -89,20 +89,32 @@ object RoslynSignatures {
         return splitParameterList(label)
     }
 
-    /** What is between the parentheses of the call part (`(` after the name, generic arguments aside), split at the top-level commas. */
+    /**
+     * What is between the parentheses of the call, split at the top-level commas. The call's list is the last balanced group of the
+     * label: an extension method is labelled `(extension) IServiceCollection IServiceCollection.AddSingleton(Type serviceType)`, and
+     * the first `(` of that is not the one (seen in the hint as a row of garbage per overload).
+     */
     fun splitParameterList(label: String): List<String> {
-        val open = label.indexOf('(').takeIf { it >= 0 } ?: return emptyList()
-        val close = label.lastIndexOf(')').takeIf { it > open } ?: return emptyList()
+        val close = label.lastIndexOf(')').takeIf { it >= 0 } ?: return emptyList()
+        var depth = 0
+        var open = -1
+        for (i in close downTo 0) {
+            when (label[i]) {
+                ')' -> depth++
+                '(' -> { depth--; if (depth == 0) { open = i; break } }
+            }
+        }
+        if (open < 0) return emptyList()
         val inside = label.substring(open + 1, close)
         if (inside.isBlank()) return emptyList()
         val parts = ArrayList<String>()
-        var depth = 0
+        var nesting = 0
         var start = 0
         for ((i, c) in inside.withIndex()) {
             when (c) {
-                '<', '(', '[', '{' -> depth++
-                '>', ')', ']', '}' -> depth--
-                ',' -> if (depth == 0) { parts += inside.substring(start, i).trim(); start = i + 1 }
+                '<', '(', '[', '{' -> nesting++
+                '>', ')', ']', '}' -> nesting--
+                ',' -> if (nesting == 0) { parts += inside.substring(start, i).trim(); start = i + 1 }
             }
         }
         parts += inside.substring(start).trim()

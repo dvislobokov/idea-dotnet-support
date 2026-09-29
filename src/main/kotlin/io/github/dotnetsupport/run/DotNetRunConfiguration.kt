@@ -25,6 +25,10 @@ import com.intellij.util.execution.ParametersListUtil
 import io.github.dotnetsupport.DotNetIcons
 import io.github.dotnetsupport.build.DotNetBuildSettings
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.msbuild.MsBuildProject
+import io.github.dotnetsupport.solution.SolutionService
+import io.github.dotnetsupport.testing.TestMode
+import io.github.dotnetsupport.testing.TestingPlatform
 import io.github.dotnetsupport.sdk.SdkFeatures
 import io.github.dotnetsupport.settings.DotNetSettings
 import io.github.dotnetsupport.testing.DotNetTestRunState
@@ -104,6 +108,7 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
         object : CommandLineState(environment) {
             override fun startProcess(): ProcessHandler {
                 val handler = KillableColoredProcessHandler(buildCommandLine())
+                ListeningAddressRecorder.attach(handler) // the address, for the row of the Services tool window
                 // `dotnet watch` opens the browser itself when the profile asks for it
                 if (options.openBrowser && options.command == DotNetCommand.RUN) handler.addProcessListener(ListeningUrlListener(launchUrl()))
                 ProcessTerminatedListener.attach(handler)
@@ -139,8 +144,8 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
         val arguments = when (options.command) {
             DotNetCommand.RUN -> listOf("run", "--project", projectPath) + selected + profile + environmentArguments(projectPath) + separated(programArguments)
             DotNetCommand.WATCH -> listOf("watch", "--project", projectPath, "run") + selected + profile + environmentArguments(projectPath) + separated(programArguments)
-            // For tests the arguments are options of `dotnet test` itself (--filter, --logger, ...).
-            DotNetCommand.TEST -> listOf("test", projectPath) + selected + testArguments(testResultsDirectory) + programArguments
+            // For tests the arguments are options of `dotnet test` itself (--filter, --logger, ...), or of Microsoft.Testing.Platform.
+            DotNetCommand.TEST -> testArguments(projectPath, selected, testResultsDirectory, programArguments)
         }
         val workDirectory = options.workingDirectory?.takeIf { it.isNotBlank() } ?: File(projectPath).parent
         return DotNetCli.commandLine(workDirectory, *arguments.toTypedArray())
@@ -172,14 +177,18 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
         return variables.flatMap { (name, value) -> listOf("-e", "$name=$value") }
     }
 
-    private fun testArguments(resultsDirectory: File?): List<String> = buildList {
-        options.testFilter?.takeIf { it.isNotBlank() }?.let { add("--filter"); add(it) }
-        if (resultsDirectory != null) {
-            add("--logger"); add("trx;LogFileName=results.trx")
-            add("--results-directory"); add(resultsDirectory.path)
-        }
-        // coverlet: needs the coverlet.collector package in the test project (the templates of `dotnet new` have it)
-        if (options.collectCoverage) add("--collect:XPlat Code Coverage")
+    /** VSTest or Microsoft.Testing.Platform, by the project and the `global.json`; see [TestingPlatform]. */
+    private fun testArguments(projectPath: String, selected: List<String>, resultsDirectory: File?, extra: List<String>): List<String> {
+        val projectFile = LocalFileSystem.getInstance().findFileByPath(projectPath)
+        val msBuild = projectFile?.let { SolutionService.getInstance(project).msBuildProject(it) } ?: MsBuildProject()
+        val mode = TestingPlatform.mode(msBuild, TestingPlatform.isRunnerConfigured(projectFile?.parent))
+        return TestingPlatform.arguments(mode, msBuild.testFramework, projectPath, selected, options.testFilter, resultsDirectory, options.collectCoverage, extra)
+    }
+
+    /** How the tests of this configuration run; the debugger of VSTest hosts does not apply to the platform. */
+    fun testMode(): TestMode {
+        val projectFile = LocalFileSystem.getInstance().findFileByPath(options.projectPath.orEmpty()) ?: return TestMode.VSTEST
+        return TestingPlatform.mode(SolutionService.getInstance(project).msBuildProject(projectFile), TestingPlatform.isRunnerConfigured(projectFile.parent))
     }
 
     private fun separated(programArguments: List<String>): List<String> =

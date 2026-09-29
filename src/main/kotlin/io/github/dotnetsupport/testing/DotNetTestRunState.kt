@@ -15,6 +15,7 @@ import com.intellij.execution.testframework.autotest.ToggleAutoTestAction
 import com.intellij.execution.testframework.sm.SMTestRunnerConnectionUtil
 import com.intellij.execution.testframework.sm.runner.ui.SMTRunnerConsoleView
 import com.intellij.openapi.util.io.FileUtil
+import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.coverage.DotNetCoverageService
 import io.github.dotnetsupport.run.DotNetProcessAttacher
 import io.github.dotnetsupport.run.DotNetRunConfiguration
@@ -28,10 +29,13 @@ class DotNetTestRunState(private val configuration: DotNetRunConfiguration, envi
 
     override fun startProcess(): ProcessHandler {
         val commandLine = configuration.buildCommandLine(resultsDirectory)
+        val vsTest = configuration.testMode() == TestMode.VSTEST
         // The test host prints its process id and waits for a debugger. In English: the line is found by its words first.
-        if (debug) commandLine.withEnvironment(TestHostDebug.VARIABLE, "1").withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en").withEnvironment("VSTEST_UI_LANGUAGE", "en")
+        if (debug && vsTest) commandLine.withEnvironment(TestHostDebug.VARIABLE, "1").withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en").withEnvironment("VSTEST_UI_LANGUAGE", "en")
         val handler = KillableColoredProcessHandler(commandLine)
-        if (debug) attachDebuggerToTestHosts(handler)
+        if (debug && vsTest) attachDebuggerToTestHosts(handler)
+        // the platform has no host that waits for a debugger: the tests run, and the debugger is for Attach to Process (or the run of the executable under it)
+        if (debug && !vsTest) DotNetCli.notifyInfo(configuration.project, "Tests on Microsoft.Testing.Platform run without the debugger", "The test project is an executable: debug it as a .NET Project with the arguments of the platform, or attach to the process. The results are below.")
         ProcessTerminatedListener.attach(handler)
         return handler
     }

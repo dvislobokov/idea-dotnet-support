@@ -10,6 +10,8 @@ import com.intellij.ide.projectView.impl.ProjectAbstractTreeStructureBase
 import com.intellij.ide.projectView.impl.ProjectTreeStructure
 import com.intellij.ide.projectView.impl.ProjectViewTree
 import com.intellij.ide.util.treeView.AbstractTreeNode
+import com.intellij.openapi.actionSystem.DataSink
+import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
@@ -72,6 +74,12 @@ class SolutionViewPane(project: Project) : AbstractProjectViewPaneWithAsyncSuppo
         } ?: return elements
         if (!file.isValid || !isCalledByDragSource()) return elements
         return listOfNotNull(PsiManager.getInstance(myProject).findFile(file))
+    }
+
+    /** Delete on the node of a project is Remove from Solution; anything else keeps the delete provider of the platform. */
+    override fun uiDataSnapshot(sink: DataSink) {
+        super.uiDataSnapshot(sink)
+        if (selectedUserObjects.singleOrNull()?.let { (it as? AbstractTreeNode<*>)?.value ?: it } is ProjectKey) sink[PlatformDataKeys.DELETE_ELEMENT_PROVIDER] = ProjectNodeDeleteProvider()
     }
 
     /** The drag source is a private class of the platform with no hook of its own; when it is renamed, the drag just stops working. */
