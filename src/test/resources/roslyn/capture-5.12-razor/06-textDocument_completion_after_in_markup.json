@@ -1,0 +1,246 @@
+{
+ "method": "textDocument/completion",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  },
+  "position": {
+   "line": 20,
+   "character": 13
+  },
+  "context": {
+   "triggerKind": 2,
+   "triggerCharacter": "@"
+  }
+ },
+ "ms": 124.5,
+ "result": {
+  "items": [
+   {
+    "label": "do",
+    "kind": 14,
+    "sortText": "do",
+    "filterText": "do",
+    "insertText": "do",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "for",
+    "kind": 14,
+    "sortText": "for",
+    "filterText": "for",
+    "insertText": "for",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "foreach",
+    "kind": 14,
+    "sortText": "foreach",
+    "filterText": "foreach",
+    "insertText": "foreach",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "if",
+    "kind": 14,
+    "sortText": "if",
+    "filterText": "if",
+    "insertText": "if",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "lock",
+    "kind": 14,
+    "sortText": "lock",
+    "filterText": "lock",
+    "insertText": "lock",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "switch",
+    "kind": 14,
+    "sortText": "switch",
+    "filterText": "switch",
+    "insertText": "switch",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "try",
+    "kind": 14,
+    "sortText": "try",
+    "filterText": "try",
+    "insertText": "try",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "while",
+    "kind": 14,
+    "sortText": "while",
+    "filterText": "while",
+    "insertText": "while",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "AbandonedMutexException",
+    "kind": 7,
+    "sortText": "0000",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "AccessViolationException",
+    "kind": 7,
+    "sortText": "0001",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "Action",
+    "kind": 7,
+    "sortText": "0002",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "Action<>",
+    "kind": 7,
+    "sortText": "0003Action",
+    "filterText": "Action",
+    "insertTextFormat": 1,
+    "textEditText": "Action",
+    "commitCharacters": []
+   },
+   {
+    "label": "Activator",
+    "kind": 7,
+    "sortText": "0004",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "ActivatorUtilities",
+    "kind": 7,
+    "sortText": "0005",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "ActivatorUtilitiesConstructorAttribute",
+    "kind": 7,
+    "sortText": "0006",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "ActivityTrackingOptions",
+    "kind": 13,
+    "sortText": "0007",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "AggregateException",
+    "kind": 7,
+    "sortText": "0008",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "AllowCookieRedirectAttribute",
+    "kind": 7,
+    "sortText": "0009",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "AntiforgeryApplicationBuilderExtensions",
+    "kind": 7,
+    "sortText": "0010",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "AntiforgeryRequestToken",
+    "kind": 7,
+    "sortText": "0011",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "AntiforgeryServiceCollectionExtensions",
+    "kind": 7,
+    "sortText": "0012",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "AntiforgeryStateProvider",
+    "kind": 7,
+    "sortText": "0013",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "AntiforgeryToken",
+    "kind": 7,
+    "sortText": "0014",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "ApartmentState",
+    "kind": 13,
+    "sortText": "0015",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "App",
+    "kind": 7,
+    "sortText": "0016",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "_truncated": 982
+   }
+  ],
+  "isIncomplete": true,
+  "itemDefaults": {
+   "commitCharacters": [
+    " "
+   ],
+   "editRange": {
+    "start": {
+     "line": 20,
+     "character": 13
+    },
+    "end": {
+     "line": 20,
+     "character": 13
+    }
+   },
+   "data": {
+    "data": {
+     "Data1": {
+      "_resultId": 2
+     },
+     "Data2": {
+      "Data1": {
+       "_resultId": 1
+      },
+      "Data2": {
+       "ResultId": 1,
+       "TextDocument": {
+        "uri": "roslyn-source-generated://d365b113-2b44-4129-9edf-4ace6c2937ce/Components%2FPages%2FCounter_razor.g.cs?documentId=062349b0-9f08-fafe-1b7b-c3ab275f9846&hintName=Components%2FPages%2FCounter_razor.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll"
+       }
+      }
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+    }
+   }
+  }
+ }
+}

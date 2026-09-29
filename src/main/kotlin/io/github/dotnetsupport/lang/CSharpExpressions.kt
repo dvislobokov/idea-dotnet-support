@@ -10,7 +10,7 @@ import com.intellij.psi.tree.IElementType
  * and literals; an operator, a keyword or a statement boundary ends it. Nothing here needs the types of anything.
  */
 object CSharpExpressions {
-    private class Token(val type: IElementType, val text: String, val start: Int, val end: Int) {
+    internal class Token(val type: IElementType, val text: String, val start: Int, val end: Int) {
         val isIdentifier get() = type == CSharpTokenTypes.IDENTIFIER
         val isLiteral get() = type == CSharpTokenTypes.STRING || type == CSharpTokenTypes.CHAR || type == CSharpTokenTypes.NUMBER
         fun isKeyword(vararg words: String) = type == CSharpTokenTypes.KEYWORD && text in words
@@ -20,7 +20,7 @@ object CSharpExpressions {
     /** Keywords that are expressions or their parts: `this.Name`, `base.Total`, `default`, `null`, `true`. */
     private val EXPRESSION_KEYWORDS = arrayOf("this", "base", "null", "true", "false", "default", "typeof", "nameof", "sizeof", "int", "string", "bool", "double", "long", "object", "char", "byte", "float", "decimal", "short", "uint", "ulong", "var")
 
-    private fun tokenize(text: CharSequence): List<Token> {
+    internal fun tokenize(text: CharSequence): List<Token> {
         val lexer = CSharpLexer()
         lexer.start(text)
         val tokens = ArrayList<Token>()

@@ -1,0 +1,29 @@
+{
+ "method": "textDocument/hover",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Pages/Pages/Index.cshtml"
+  },
+  "position": {
+   "line": 11,
+   "character": 7
+  }
+ },
+ "ms": 7.3,
+ "result": {
+  "contents": {
+   "kind": "markdown",
+   "value": "```csharp\r\nIndexModel Pages_Index.Model { get; }\r\n```\r\n  \r\n"
+  },
+  "range": {
+   "start": {
+    "line": 11,
+    "character": 4
+   },
+   "end": {
+    "line": 11,
+    "character": 9
+   }
+  }
+ }
+}

@@ -1,0 +1,237 @@
+{
+ "method": "textDocument/completion",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Pages/Pages/Index.cshtml"
+  },
+  "position": {
+   "line": 11,
+   "character": 10
+  },
+  "context": {
+   "triggerKind": 2,
+   "triggerCharacter": "."
+  }
+ },
+ "ms": 26.6,
+ "result": {
+  "items": [
+   {
+    "label": "BadRequest",
+    "kind": 2,
+    "sortText": "0000",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Challenge",
+    "kind": 2,
+    "sortText": "0001",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Content",
+    "kind": 2,
+    "sortText": "0002",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Equals",
+    "kind": 2,
+    "sortText": "0003",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "File",
+    "kind": 2,
+    "sortText": "0004",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Forbid",
+    "kind": 2,
+    "sortText": "0005",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "GetHashCode",
+    "kind": 2,
+    "sortText": "0006",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "GetType",
+    "kind": 2,
+    "sortText": "0007",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "HttpContext",
+    "kind": 10,
+    "sortText": "0008",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "LocalRedirect",
+    "kind": 2,
+    "sortText": "0009",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "LocalRedirectPermanent",
+    "kind": 2,
+    "sortText": "0010",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "LocalRedirectPermanentPreserveMethod",
+    "kind": 2,
+    "sortText": "0011",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "LocalRedirectPreserveMethod",
+    "kind": 2,
+    "sortText": "0012",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "MetadataProvider",
+    "kind": 10,
+    "sortText": "0013",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ModelState",
+    "kind": 10,
+    "sortText": "0014",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "NotFound",
+    "kind": 2,
+    "sortText": "0015",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "OnGet",
+    "kind": 2,
+    "sortText": "0016",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "OnPageHandlerExecuted",
+    "kind": 2,
+    "sortText": "0017",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "OnPageHandlerExecuting",
+    "kind": 2,
+    "sortText": "0018",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "OnPageHandlerExecutionAsync",
+    "kind": 2,
+    "sortText": "0019",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "OnPageHandlerSelected",
+    "kind": 2,
+    "sortText": "0020",
+    "insertTextFormat": 1,
+    "commitCharacters": []
+   },
+   {
+    "label": "OnPageHandlerSelectionAsync",
+    "kind": 2,
+    "sortText": "0021",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Page",
+    "kind": 2,
+    "sortText": "0022",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "PageContext",
+    "kind": 10,
+    "sortText": "0023",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Partial",
+    "kind": 2,
+    "sortText": "0024",
+    "insertTextFormat": 1
+   },
+   {
+    "_truncated": 30
+   }
+  ],
+  "isIncomplete": true,
+  "itemDefaults": {
+   "commitCharacters": [
+    " ",
+    "{",
+    "}",
+    "[",
+    "]",
+    "(",
+    ")",
+    ".",
+    ",",
+    ":",
+    ";",
+    "+",
+    "-",
+    "*",
+    "/",
+    "%",
+    "&",
+    "|",
+    "^",
+    "!",
+    "~",
+    "=",
+    "<",
+    ">",
+    "?",
+    {
+     "_truncated": 5
+    }
+   ],
+   "editRange": {
+    "start": {
+     "line": 11,
+     "character": 10
+    },
+    "end": {
+     "line": 11,
+     "character": 10
+    }
+   },
+   "data": {
+    "data": {
+     "Data1": {
+      "_resultId": 5
+     },
+     "Data2": {
+      "ResultId": 2,
+      "TextDocument": {
+       "uri": "roslyn-source-generated://68a2c966-0e35-4cac-89a3-ec366d89d3e2/Pages%2FIndex_cshtml.g.cs?documentId=2db04555-0c5e-c4fe-e67a-0896558a379b&hintName=Pages%2FIndex_cshtml.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll"
+      }
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Pages/Pages/Index.cshtml"
+    }
+   }
+  }
+ }
+}

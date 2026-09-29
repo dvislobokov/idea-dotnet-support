@@ -176,7 +176,9 @@
 - [ ] Форматирование: четвёртый вариант — сервером Roslyn (после LSP), форматирование `.csproj` / XML через CSharpier 1.x, позиция ошибки ссылкой в уведомлении
 - [ ] Устаревшие (`--deprecated`) пакеты и лицензии пакетов по метаданным NuGet
 - [ ] Неиспользуемые пакеты и ссылки: эвристика по `using`, предупреждение без автоудаления
-- [ ] `.editorconfig` для C#: completion и документация опций `csharp_*` / `dotnet_*`, выбор severity правил
+- [x] `.editorconfig` для C# (2026-09-29): completion и документация опций `csharp_*` / `dotnet_*` / naming rules / severity — описания платформенного EditorConfig-плагина, включаются ключами реестра `editor.config.csharp.support` и `editor.config.resharper.support` (`EditorConfigDotNetSupport`). Вживую не проверено
+- [x] Баннеры над файлом C# (2026-09-29, `CSharpEditorBanners`, `RoslynSolutionBanner`): нет сервера, файл вне проекта, исключён из проекта, проект не восстановлен, solution не выбран; «Don't Show Again» на каждый вид. Тест `EditorExtrasTest`. Вживую не проверено
+- [x] Intentions уровня файла (2026-09-29, `CSharpIntentions`): Change namespace, Move type to file, Rename file to type, Add partial part, Create test; описания в `intentionDescriptions/`. Alt+Insert → Generate... (`RoslynGenerateAction`): code actions Roslyn «Generate / Implement …» списком. Вживую не проверено
 
 ### Проект и зависимости
 - [ ] ★ «Почему этот пакет здесь»: цепочка до транзитивной зависимости по `project.assets.json` (аналог `dotnet nuget why`)
@@ -451,6 +453,7 @@
   держим один запрос постоянно (таймаут 10 мин, перезапуск). Коллектор Problems — не слушатель топика, а его источник: проблемы отдаются ему
   напрямую и по тем же объектам снимаются. Ошибки и предупреждения, без hints. Вживую не проверено
 - [ ] Фаза 8: надёжность — большие и несколько solution, перезапуски, dumb mode (LSP4IJ не учитываем — решение 2026-09-21)
+- [ ] Razor / Blazor через тот же сервер. Снимок трафика сделан 2026-09-29 (`tools/roslyn-lsp/capture_razor.py`, фикстуры `src/test/resources/roslyn/capture-5.12-razor`, факты — раздел «Razor» в `tools/roslyn-lsp/README.md`): languageId `aspnetcorerazor`, C#-половина работает целиком, позиции — в координатах `.razor`. Дальше: (1) тип файла Razor и фильтр клиента (`isSupportedFile` / `getLanguageId`); (2) диагностика, completion, hover, навигация, rename; (3) semantic tokens — у Razor своя легенда сверх 85 типов C# (индексы 85–104); (4) HTML-половина: `razor/updateHtml` и запросы сервера к клиенту (`textDocument/completion`, `foldingRange`, `formatting`, `documentColor`) — отвечать силами HTML-поддержки платформы
 
 ## Вне рамок (нужна семантика языка)
 Полный парсер выражений, разрешение ссылок, типизация, инспекции, completion по типам, рефакторинги, собственный форматтер,

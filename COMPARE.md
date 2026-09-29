@@ -168,6 +168,8 @@ desktop (WPF / WinForms / Avalonia / MAUI), библиотеки и NuGet-авт
 | Файлы New → C# Class / Interface / Record / Struct / Enum | ✅ | ✅ | namespace = RootNamespace + путь; file-scoped по `csharp_style_namespace_declarations` из `.editorconfig`, иначе по TFM (≥ .NET 6 — file-scoped) |
 | New → .NET ▸ генераторы | Rider: свои шаблоны файлов | ✅ | 30 генераторов: C# (Exception, Attribute, Extensions, Delegate, Top-level Program, Partial Part), ASP.NET (API/MVC Controller, Minimal API Endpoints, Middleware, Action Filter, Background Service, Health Check, Options+Registration), Razor/Blazor (Component, Component+code-behind, Razor Page, View, Layout, `_Imports.razor`, `_ViewImports.cshtml`), Tests (xUnit/NUnit/MSTest class, Fixture, Test for Selected Class), EF Core (DbContext, Entity Type Configuration, Design-Time Factory, Migration…), Configuration (`appsettings.{Env}.json`, `launchSettings.json`, `global.json`, `nuget.config`, `Directory.Build.props/targets`, `Directory.Packages.props`, `.editorconfig`, `.gitignore`, `dotnet-tools.json`, Dockerfile, GitHub Actions workflow), Resources (`.resx`, копия `.resx` для культуры, XAML UserControl/Window), «From SDK Template…» (любой item-шаблон `dotnet new`) |
 | Редактирование шаблонов пользователем | ✅ | ❌ | зашиты в плагин |
+| Баннеры над файлом C# | ✅ (solution не загружен, файл вне проекта…) | ✅ 🔬 | 2026-09-29: нет `roslyn-language-server` (Install / Settings…), файл не входит ни в один проект, файл исключён из проекта (`Compile Remove`), проект не восстановлен (Restore), несколько solution — не выбран (Select Solution...); у каждого «Don't Show Again». Вживую не проверено |
+| Alt+Enter без сервера: действия уровня файла | ✅ | ✅ 🔬 | 2026-09-29: Change namespace to match folder (с usages, когда сервер загружен), Move type to its own file, Rename file to match type, Add partial part, Create test — по сканеру объявлений, работают и пока сервер грузится. Вживую не проверено |
 
 ### 4.3 Редактор C#: слой Roslyn language server
 
@@ -213,9 +215,9 @@ IDE на платформе по данным `docs/platform-lsp-dap.html`; GoLa
 | Функция | Rider | Плагин | Комментарий |
 |---|---|---|---|
 | Rename, Extract Method / Interface / Class / Base class, Inline, Move type to file / namespace, Change Signature, Introduce Variable / Field / Parameter, Safe Delete, Convert (property ↔ method, anonymous → named, …), Pull Up / Push Down | 60+ | 🟡 | только рефакторинги, которые Roslyn отдаёт как code actions: Rename, Extract method / interface / class, Introduce variable / constant / parameter / field, Inline, Move type to file / namespace, Change signature, Convert (foreach ↔ LINQ, switch ↔ expression, …), Generate, Pull up (базовые); вызываются через Alt+Enter, а не Refactor-меню; Ctrl+Alt+M / Ctrl+Alt+V и т.п. не привязаны |
-| Alt+Insert: конструктор, свойства, Equals/GetHashCode, overrides, implement missing members, delegating members | ✅ | 🟡 | через Alt+Enter «Generate …» Roslyn (constructor, Equals, overrides, implement interface); отдельного Generate-меню нет (кроме Insert GUID) |
+| Alt+Insert: конструктор, свойства, Equals/GetHashCode, overrides, implement missing members, delegating members | ✅ | 🟡 🔬 | 2026-09-29: пункт «Generate...» первым в Alt+Insert (`RoslynGenerateAction`): code actions Roslyn в позиции курсора, отобранные по названию (Generate constructor / Equals / GetHashCode / overrides, Implement interface / abstract class, Add DebuggerDisplay, Extract interface), списком; то же остаётся в Alt+Enter. Своего диалога выбора членов нет — показывает сервер не всё (нет delegating members, нет выбора полей галочками). Вживую не проверено |
 | Code Cleanup (профили) | ✅ | 🟡 | Fix All по solution для конкретного правила; `dotnet format` / CSharpier для всего проекта (меню .NET → Format) |
-| Inspection severity, подавление, `.editorconfig` из UI | ✅ | ❌ | правится руками в `.editorconfig` (без completion) |
+| Inspection severity, подавление, `.editorconfig` из UI | ✅ | 🟡 | из UI нет; в `.editorconfig` — руками, с completion и документацией опций (см. 4.5); подавление — code action Roslyn «Suppress or configure issues» |
 | Structural Search & Replace для C# | ✅ | ❌ | |
 | Naming rules, code style enforcement | ✅ | 🟡 | только что даёт сервер из `.editorconfig` |
 | Unused code dimming, «unused using» | ✅ | ✅ | серые `using` и диагностики IDE0xxx от сервера |
@@ -225,7 +227,7 @@ IDE на платформе по данным `docs/platform-lsp-dap.html`; GoLa
 
 | Файл / язык | Rider | Плагин | Комментарий |
 |---|---|---|---|
-| Razor / Blazor (`.razor`, `.cshtml`) | полный язык: completion, навигация, диагностика, tag helpers | ❌ | иконки, шаблоны файлов, nesting; редактор — plain text / HTML платформы |
+| Razor / Blazor (`.razor`, `.cshtml`) | полный язык: completion, навигация, диагностика, tag helpers | ❌ (сервер умеет) | иконки, шаблоны файлов, nesting; редактор — plain text / HTML платформы. 2026-09-29 снят трафик (`tools/roslyn-lsp/capture_razor.py`): сервер 5.12 через Razor cohost отвечает для `.razor` / `.cshtml` на диагностику, completion, hover, signature help, definition / references, rename, code actions, semantic tokens, code lens, inlay hints, call hierarchy — C#-половина целиком. HTML-половину (теги, атрибуты, folding, форматирование) сервер спрашивает у клиента. Клиент плагина пока отдаёт серверу только `.cs` |
 | XAML (WPF, Avalonia, MAUI) | полный язык, preview (Avalonia через плагин) | 🟡 | как XML; nesting `.xaml.cs`; шаблоны UserControl / Window WPF; фрагмент схемы MSBuild `desktop` |
 | WinForms designer | ✅ (Windows) | ❌ | |
 | F#, VB.NET | ✅ | ❌ | иконки, типы проектов в дереве |
@@ -236,7 +238,7 @@ IDE на платформе по данным `docs/platform-lsp-dap.html`; GoLa
 | `Directory.Build.props` / `Directory.Packages.props` | ✅ | 🟡 | completion по схеме, показ в Imports, чтение версий CPM; правки CPM из окна NuGet — нет |
 | `appsettings.json`, `launchSettings.json`, `global.json`, `dotnet-tools.json` — JSON Schema | ✅ | ➖ | даёт JSON-плагин платформы: каталог SchemaStore (включён по умолчанию, Settings → Languages → JSON Schema Mappings → Remote catalog) сопоставляет `appsettings.json` / `appsettings.*.json`, `launchsettings.json`, `global.json`, `dotnet-tools.json` — проверено по каталогу 2026-09-29. В IDEA Community JSON-плагин есть; своей схемы плагину не нужно |
 | `.resx` редактор (таблица, культуры, Localization Manager) | ✅ | ❌ | как XML; генератор копии для культуры |
-| `.editorconfig` для C# (completion `csharp_*`, severity) | ✅ | 🟡 | платформенный `.editorconfig`-плагин даёт базовое; `csharp_*`-опции и описания — нет |
+| `.editorconfig` для C# (completion `csharp_*`, severity) | ✅ | ✅ 🔬 | 2026-09-29: описания опций .NET (`csharp_*`, `dotnet_*`, naming rules, severity правил) и ReSharper лежат в платформенном EditorConfig-плагине, но выключены ключами реестра `editor.config.csharp.support` / `editor.config.resharper.support` (их включает Rider) — плагин включает их при открытии проекта (`EditorConfigDotNetSupport`): completion и документация опций. Вживую не проверено |
 | `.http` (HTTP Client) | ✅ | ➖/🟡 | генерация запросов из Endpoints в `<Project>.http`; исполнение — HTTP Client платформы (есть в IDEA Ultimate / GoLand / PyCharm Pro / WebStorm, нет в Community) |
 | `.sln`: подсветка, сворачивание секций | ✅ | ❌ | plain text |
 | `.proto`, gRPC | ✅ | 🟡 | только фрагмент схемы MSBuild (`Protobuf` item) |
@@ -419,7 +421,7 @@ IDE на платформе по данным `docs/platform-lsp-dap.html`; GoLa
 | Endpoints: маршруты из констант / `nameof` / других файлов, Razor Pages, `MapHub`, Search Everywhere | ✅ | ❌ | нет разрешения символов |
 | HTTP Client + генерация запросов | ✅ | 🟡 | генерация в `<Project>.http` с `@<Project>_HostAddress`; исполнение — платформа |
 | HTTP Client environments из `launchSettings` (`http-client.env.json`) | ✅ | ❌ | |
-| Razor / Blazor редактирование | ✅ | ❌ | 4.5 |
+| Razor / Blazor редактирование | ✅ | ❌ | 4.5: сервер умеет, клиент не подключён |
 | HTTPS dev-сертификат (`dev-certs --check`, Trust) | ✅ | ❌ | |
 | `user-jwts` | ✅ | ❌ | |
 | OpenAPI / Swagger: генерация клиента, просмотр спецификации | ✅ | ❌ | |
@@ -514,7 +516,7 @@ GoLand / PyCharm Pro), HTTP Client (те же), Docker / Kubernetes плагин
 ### 6.1 По приоритету (что закрыло бы самые частые запросы)
 
 **P0 — мешает ежедневно, если этим пользуешься:**
-1. Razor / Blazor / `.cshtml` — нет языка вообще (для web-разработчиков на Blazor / MVC это блокер).
+1. Razor / Blazor / `.cshtml` — языка в редакторе нет (для web-разработчиков на Blazor / MVC это блокер). Сервер 5.12 его умеет (снимок трафика 2026-09-29), осталось подключить клиент: тип файла, C#-половина, затем HTML-половина.
 2. Результаты тестов только после завершения `dotnet test` (свой VSTest-логгер или Microsoft.Testing.Platform).
 3. Hot Reload (`dotnet watch` без индикации; при отладке — нет).
 4. ~~Type / Call hierarchy, Go to Base~~ — сделаны 2026-09-29; остались Find Usages с группировкой и Go to Base для членов.
@@ -528,7 +530,7 @@ GoLand / PyCharm Pro), HTTP Client (те же), Docker / Kubernetes плагин
 10. ~~Project Properties, rename проекта, `.slnf`, `Compile Remove` / linked files~~ — сделаны 2026-09-26…28; остались move проекта, unload / reload, drag-and-drop в дереве, Configuration Manager.
 11. Code Style / Inspections для C# из UI (severity в `.editorconfig` с completion `csharp_*` / `dotnet_*`).
 12. Spellchecker, Find Usages текстовый, неактивный `#if`, partial-навигация, Related files.
-13. ~~Postfix templates, Surround with~~ — сделаны 2026-09-29; осталось Generate-меню (Alt+Insert).
+13. ~~Postfix templates, Surround with, Generate (Alt+Insert)~~ — сделаны 2026-09-29; у Generate нет своего диалога выбора членов.
 14. `.NET Executable` / Static Method конфигурации, запуск одиночного `.cs` (.NET 10) и `.csx`.
 15. `.resx` редактор; JSON Schema для `appsettings` / `launchSettings` / `global.json`; `.sln` подсветка.
 16. XAML: только XML (для WPF / Avalonia / MAUI — есть шаблоны и nesting, нет completion / preview).

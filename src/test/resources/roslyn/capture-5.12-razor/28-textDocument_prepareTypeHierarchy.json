@@ -1,0 +1,14 @@
+{
+ "method": "textDocument/prepareTypeHierarchy",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  },
+  "position": {
+   "line": 24,
+   "character": 7
+  }
+ },
+ "ms": 3.2,
+ "result": null
+}

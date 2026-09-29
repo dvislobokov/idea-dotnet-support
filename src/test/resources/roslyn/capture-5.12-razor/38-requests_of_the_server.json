@@ -1,0 +1,174 @@
+{
+ "method": "(requests of the server)",
+ "result": [
+  "client/registerCapability",
+  "razor/updateHtml",
+  "textDocument/completion",
+  "textDocument/documentColor",
+  "textDocument/foldingRange",
+  "textDocument/formatting",
+  "window/workDoneProgress/create",
+  "workspace/configuration",
+  "workspace/inlayHint/refresh",
+  "workspace/semanticTokens/refresh"
+ ],
+ "razor": [
+  {
+   "jsonrpc": "2.0",
+   "id": 29,
+   "method": "razor/updateHtml",
+   "params": {
+    "textDocument": {
+     "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+    },
+    "checksum": "LlsXylWnvtpFQJmoPKw5SQ==",
+    "text": "/*~*/ /*~~~~~~*/\n/*~~~~~~~*/ /*~~~~~~~~~~~~~*/\n\n<PageTitle>Counter</PageTitle>\n\n<h1>Counter</h1>\n\n<p role=\"status\">Current count: /*~~~~~~~~~*/</p>\n\n<button class=\"btn btn-primary\" ~onclick=\"/*~~~~~~~~~~*/\">Click me</button>\n\n/*~*/ ~\n    /*~~~*/ ~~~ /*~~~~~~~~*/ ~ ~~\n\n    /*~~~*/ /**/ /*~~~~~~~~~~~~*/\n    ~\n        /*~~~~~~~~~~~*/\n    ~\n~\n\n<p>Doubled: /*~~~~*/</p>\n<button ~onclick=\"/*~*/\">Reset</button>\n\n/*~*/ ~\n    /*~~~*/ ~~~ /*~~~*/ ~~ /*~~~~~~~~*/ ~ ~~\n\n    /*~~~*/ /**/ /*~~~*/\n    ~\n        /*~~~~~~~~*/ ~ ~~\n        ~~~ /*~~*/ ~ ~~\n        ~~~ /*~~*/ ~ /*~~~~~~~~~~~~~~*/\n        /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/\n    ~\n~\n"
+   },
+   "_bytes": 1106
+  }
+ ],
+ "toClient": [
+  {
+   "jsonrpc": "2.0",
+   "id": 27,
+   "method": "workspace/inlayHint/refresh",
+   "_bytes": 64
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 28,
+   "method": "workspace/semanticTokens/refresh",
+   "_bytes": 69
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 29,
+   "method": "razor/updateHtml",
+   "params": {
+    "textDocument": {
+     "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+    },
+    "checksum": "LlsXylWnvtpFQJmoPKw5SQ==",
+    "text": "/*~*/ /*~~~~~~*/\n/*~~~~~~~*/ /*~~~~~~~~~~~~~*/\n\n<PageTitle>Counter</PageTitle>\n\n<h1>Counter</h1>\n\n<p role=\"status\">Current count: /*~~~~~~~~~*/</p>\n\n<button class=\"btn btn-primary\" ~onclick=\"/*~~~~~~~~~~*/\">Click me</button>\n\n/*~*/ ~\n    /*~~~*/ ~~~ /*~~~~~~~~*/ ~ ~~\n\n    /*~~~*/ /**/ /*~~~~~~~~~~~~*/\n    ~\n        /*~~~~~~~~~~~*/\n    ~\n~\n\n<p>Doubled: /*~~~~*/</p>\n<button ~onclick=\"/*~*/\">Reset</button>\n\n/*~*/ ~\n    /*~~~*/ ~~~ /*~~~*/ ~~ /*~~~~~~~~*/ ~ ~~\n\n    /*~~~*/ /**/ /*~~~*/\n    ~\n        /*~~~~~~~~*/ ~ ~~\n        ~~~ /*~~*/ ~ ~~\n        ~~~ /*~~*/ ~ /*~~~~~~~~~~~~~~*/\n        /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/\n    ~\n~\n"
+   },
+   "_bytes": 1106
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 30,
+   "method": "textDocument/completion",
+   "params": {
+    "textDocument": {
+     "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+    },
+    "checksum": "LlsXylWnvtpFQJmoPKw5SQ==",
+    "request": {
+     "context": {
+      "triggerKind": 2,
+      "triggerCharacter": "<"
+     },
+     "textDocument": {
+      "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+     },
+     "position": {
+      "line": 21,
+      "character": 1
+     }
+    }
+   },
+   "_bytes": 514
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 31,
+   "method": "textDocument/completion",
+   "params": {
+    "textDocument": {
+     "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+    },
+    "checksum": "LlsXylWnvtpFQJmoPKw5SQ==",
+    "request": {
+     "context": {
+      "triggerKind": 2,
+      "triggerCharacter": "@"
+     },
+     "textDocument": {
+      "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+     },
+     "position": {
+      "line": 21,
+      "character": 9
+     }
+    }
+   },
+   "_bytes": 509
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 32,
+   "method": "textDocument/foldingRange",
+   "params": {
+    "textDocument": {
+     "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+    },
+    "checksum": "LlsXylWnvtpFQJmoPKw5SQ==",
+    "request": {
+     "textDocument": {
+      "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+     }
+    }
+   },
+   "_bytes": 423
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 33,
+   "method": "textDocument/formatting",
+   "params": {
+    "textDocument": {
+     "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+    },
+    "checksum": "LlsXylWnvtpFQJmoPKw5SQ==",
+    "request": {
+     "textDocument": {
+      "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+     },
+     "options": {
+      "tabSize": 4,
+      "insertSpaces": true
+     }
+    }
+   },
+   "_bytes": 465
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 34,
+   "method": "textDocument/documentColor",
+   "params": {
+    "textDocument": {
+     "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+    },
+    "checksum": "LlsXylWnvtpFQJmoPKw5SQ==",
+    "request": {
+     "textDocument": {
+      "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+     }
+    }
+   },
+   "_bytes": 424
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 36,
+   "method": "workspace/inlayHint/refresh",
+   "_bytes": 64
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 35,
+   "method": "workspace/semanticTokens/refresh",
+   "_bytes": 69
+  }
+ ]
+}

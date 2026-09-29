@@ -1,0 +1,10 @@
+{
+ "method": "textDocument/foldingRange",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  }
+ },
+ "ms": 9.0,
+ "result": null
+}

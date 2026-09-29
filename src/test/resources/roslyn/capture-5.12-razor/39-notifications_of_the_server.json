@@ -1,0 +1,10 @@
+{
+ "method": "(notifications)",
+ "result": [
+  "$/progress",
+  "window/logMessage",
+  "workspace/projectInitializationComplete"
+ ],
+ "razorNotifications": [],
+ "publishDiagnosticsFor": []
+}

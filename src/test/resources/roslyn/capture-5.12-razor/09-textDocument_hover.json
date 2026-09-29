@@ -1,0 +1,29 @@
+{
+ "method": "textDocument/hover",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  },
+  "position": {
+   "line": 24,
+   "character": 30
+  }
+ },
+ "ms": 47.8,
+ "result": {
+  "contents": {
+   "kind": "markdown",
+   "value": "```csharp\r\n(field) int Counter.currentCount\r\n```\r\n  \r\n"
+  },
+  "range": {
+   "start": {
+    "line": 24,
+    "character": 27
+   },
+   "end": {
+    "line": 24,
+    "character": 39
+   }
+  }
+ }
+}

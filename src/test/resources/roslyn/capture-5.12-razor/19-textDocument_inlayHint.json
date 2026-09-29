@@ -1,0 +1,59 @@
+{
+ "method": "textDocument/inlayHint",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  },
+  "range": {
+   "start": {
+    "line": 0,
+    "character": 0
+   },
+   "end": {
+    "line": 34,
+    "character": 0
+   }
+  }
+ },
+ "ms": 21.7,
+ "result": [
+  {
+   "position": {
+    "line": 0,
+    "character": 6
+   },
+   "label": "template:",
+   "kind": 2,
+   "paddingRight": true,
+   "data": {
+    "TextDocument": {
+     "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+    },
+    "OriginalData": {
+     "ResultId": 5,
+     "ListIndex": 0,
+     "SyntaxVersion": "2026-09-29T03:10:15.4606234Z-10057-0",
+     "Range": {
+      "start": {
+       "line": 82,
+       "character": 0
+      },
+      "end": {
+       "line": 82,
+       "character": 10
+      }
+     },
+     "DisplayAllOverride": false,
+     "TextDocument": {
+      "uri": "roslyn-source-generated://d365b113-2b44-4129-9edf-4ace6c2937ce/Components%2FPages%2FCounter_razor.decl.g.cs?documentId=492836ff-70db-c7b5-415c-47bea489f097&hintName=Components%2FPages%2FCounter_razor.decl.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll"
+     }
+    },
+    "OriginalPosition": {
+     "line": 82,
+     "character": 0
+    },
+    "InDeclDocument": true
+   }
+  }
+ ]
+}

@@ -103,3 +103,39 @@ python tools/roslyn-lsp/bench.py debug-playground/DebugPlayground.sln   # --file
   inlayHint, callHierarchy, typeHierarchy, executeCommand, плюс нестандартное `_vs_onAutoInsertProvider`.
 - В сборках видны нестандартные методы загрузки проектов (`solution/open`, `project/open`, `workspace/projectInitializationComplete`) — нужны,
   когда сервер запущен без `--autoLoadProjects`. `bench.py` проверил: `solution/open` — уведомление с `{"solution": "<uri>"}`, конец загрузки — уведомление `workspace/projectInitializationComplete`.
+
+## Razor (`.razor`, `.cshtml`)
+
+Снято `capture_razor.py` 2026-09-29 на площадке `out/razor-playground` (`dotnet new sln` + `blazor` + `webapp`, restore). Фикстуры —
+`src/test/resources/roslyn/capture-5.12-razor`.
+
+- Razor живёт внутри сервера (cohost): сборки `Microsoft.CodeAnalysis.Razor.*`, `Microsoft.CodeAnalysis.Remote.Razor`,
+  `Microsoft.VisualStudioCode.RazorExtension` лежат рядом с сервером, аргументов запуска для него не нужно.
+- После `initialized` сервер регистрирует обработчики для `{"language": "aspnetcorerazor", "pattern": "**/*.{razor,cshtml}"}`. Документ
+  открывать с `languageId: "aspnetcorerazor"`.
+- **C#-половина работает целиком**, позиции — в координатах `.razor` / `.cshtml`, не сгенерированного файла: `textDocument/diagnostic`
+  (CS0103, CS0219, в `.cshtml` — CS1061 по `@Model.Missing`; `kind: full`, `resultId` — GUID; идёт за несохранённым текстом), completion
+  (члены после `.`, 1007 пунктов после `@` в разметке, `isIncomplete: true`), hover (в т.ч. на теге компонента `<PageTitle>`), signature help,
+  definition (в тот же `.razor`; компонент фреймворка — MetadataAsSource), references, documentHighlight, documentSymbol (члены `@code`),
+  semantic tokens, inlay hints, code lens, code actions (Generate variable, Remove unused variable), prepareRename / rename (правки в `.razor`),
+  call hierarchy, selection range.
+- В `data` пунктов completion / code lens / inlay hints / call hierarchy — uri сгенерированного документа
+  (`roslyn-source-generated://…/Counter_razor.g.cs`) и исходного; клиенту это возвращать как есть.
+- **Semantic tokens: своя легенда.** В `initialize` легенда из 85 типов C#, а в ответах для Razor встречаются индексы 85–104. По тексту под
+  токенами: 85 `"` (markupAttributeQuote), 86 имя атрибута (markupAttribute), 87 значение атрибута (markupAttributeValue), 90 имя тега
+  (markupElement), 91 `=` (markupOperator), 92 `<` `>` `/` (markupTagDelimiter), 98 компонент (razorComponentElement), 99 `onclick` в `@onclick`
+  (razorDirectiveAttribute), 101 `page` / `code` / `rendermode` (razorDirective), 104 `@` и скобки `@code` (razorTransition). Остальные
+  индексы (88, 89, 93–97, 100, 102, 103) в снимке не встретились — имена есть в `Microsoft.CodeAnalysis.Razor.Workspaces.dll`
+  (markupComment, markupCommentPunctuation, markupTextLiteral, razorComment*, razorComponentAttribute, razorDirectiveColon,
+  razorTagHelper*), порядок не подтверждён.
+- **HTML-половина — за клиентом.** Сервер шлёт запрос `razor/updateHtml` `{textDocument, checksum, text}`: текст документа, где C# заменён
+  на `/*~~~*/` той же длины (позиции совпадают с исходным файлом). Затем запросы **сервера к клиенту** с обёрткой
+  `{textDocument, checksum, request: <обычные параметры LSP>}`: `textDocument/completion`, `textDocument/foldingRange`,
+  `textDocument/formatting`, `textDocument/documentColor`. Клиент отвечает тем, что даёт его HTML-сервис на этой проекции. Зонд отвечает
+  `null` — поэтому в снимке completion тегов и directive-атрибутов пусты (0 пунктов), folding / formatting / documentColor — `null`.
+- Запросов клиента `razor/*` сервер не обслуживает («Метод по имени 'razor/provideSemanticTokensRange' не найден»).
+- `textDocument/publishDiagnostics` для Razor не приходит — только pull. `workspaceDiagnostics: false` в регистрации: в
+  `workspace/diagnostic` файлов Razor нет.
+- `prepareTypeHierarchy` на свойстве и `onTypeFormatting` после `;` — `null`.
+- Секции настроек: `razor.format.attribute_indent_style`, `razor.format.code_block_brace_on_next_line`,
+  `razor.completion.commit_elements_with_space`, `razor.advanced.show_all_c_sharp_code_actions`, `html.auto_closing_tags`.

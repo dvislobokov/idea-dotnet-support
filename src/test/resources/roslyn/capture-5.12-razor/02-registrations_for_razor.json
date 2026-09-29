@@ -1,0 +1,188 @@
+{
+ "method": "(registrations)",
+ "result": [
+  {
+   "method": "textDocument/signatureHelp",
+   "selector": [
+    {
+     "language": "aspnetcorerazor",
+     "pattern": "**/*.{razor,cshtml}"
+    }
+   ]
+  },
+  {
+   "method": "textDocument/codeLens",
+   "selector": [
+    {
+     "language": "aspnetcorerazor",
+     "pattern": "**/*.{razor,cshtml}"
+    }
+   ]
+  },
+  {
+   "method": "textDocument/diagnostic",
+   "selector": [
+    {
+     "language": "aspnetcorerazor",
+     "pattern": "**/*.{razor,cshtml}"
+    }
+   ]
+  },
+  {
+   "method": "textDocument/prepareCallHierarchy",
+   "selector": [
+    {
+     "language": "aspnetcorerazor",
+     "pattern": "**/*.{razor,cshtml}"
+    }
+   ]
+  },
+  {
+   "method": "textDocument/documentColor",
+   "selector": [
+    {
+     "language": "aspnetcorerazor",
+     "pattern": "**/*.{razor,cshtml}"
+    }
+   ]
+  },
+  {
+   "method": "textDocument/documentHighlight",
+   "selector": [
+    {
+     "language": "aspnetcorerazor",
+     "pattern": "**/*.{razor,cshtml}"
+    }
+   ]
+  },
+  {
+   "method": "textDocument/documentSymbol",
+   "selector": [
+    {
+     "language": "aspnetcorerazor",
+     "pattern": "**/*.{razor,cshtml}"
+    }
+   ]
+  },
+  {
+   "method": "textDocument/formatting",
+   "selector": [
+    {
+     "language": "aspnetcorerazor",
+     "pattern": "**/*.{razor,cshtml}"
+    }
+   ]
+  },
+  {
+   "method": "textDocument/references",
+   "selector": [
+    {
+     "language": "aspnetcorerazor",
+     "pattern": "**/*.{razor,cshtml}"
+    }
+   ]
+  },
+  {
+   "method": "textDocument/onTypeFormatting",
+   "selector": [
+    {
+     "language": "aspnetcorerazor",
+     "pattern": "**/*.{razor,cshtml}"
+    }
+   ]
+  },
+  {
+   "method": "textDocument/rangeFormatting",
+   "selector": [
+    {
+     "language": "aspnetcorerazor",
+     "pattern": "**/*.{razor,cshtml}"
+    }
+   ]
+  },
+  {
+   "method": "textDocument/rename",
+   "selector": [
+    {
+     "language": "aspnetcorerazor",
+     "pattern": "**/*.{razor,cshtml}"
+    }
+   ]
+  },
+  {
+   "method": "textDocument/selectionRange",
+   "selector": [
+    {
+     "language": "aspnetcorerazor",
+     "pattern": "**/*.{razor,cshtml}"
+    }
+   ]
+  },
+  {
+   "method": "textDocument/foldingRange",
+   "selector": [
+    {
+     "language": "aspnetcorerazor",
+     "pattern": "**/*.{razor,cshtml}"
+    }
+   ]
+  },
+  {
+   "method": "textDocument/inlayHint",
+   "selector": [
+    {
+     "language": "aspnetcorerazor",
+     "pattern": "**/*.{razor,cshtml}"
+    }
+   ]
+  },
+  {
+   "method": "textDocument/prepareTypeHierarchy",
+   "selector": [
+    {
+     "language": "aspnetcorerazor",
+     "pattern": "**/*.{razor,cshtml}"
+    }
+   ]
+  },
+  {
+   "method": "workspace/didChangeWatchedFiles",
+   "selector": null
+  },
+  {
+   "method": "workspace/didChangeWatchedFiles",
+   "selector": null
+  },
+  {
+   "method": "workspace/didChangeWatchedFiles",
+   "selector": null
+  },
+  {
+   "method": "workspace/didChangeWatchedFiles",
+   "selector": null
+  },
+  {
+   "method": "workspace/didChangeWatchedFiles",
+   "selector": null
+  },
+  {
+   "method": "workspace/didChangeWatchedFiles",
+   "selector": null
+  },
+  {
+   "method": "workspace/didChangeWatchedFiles",
+   "selector": null
+  },
+  {
+   "method": "workspace/didChangeWatchedFiles",
+   "selector": null
+  },
+  {
+   "method": "workspace/didChangeWatchedFiles",
+   "selector": null
+  },
+  {
+   "_truncated": 3
+  }
+ ]
+}

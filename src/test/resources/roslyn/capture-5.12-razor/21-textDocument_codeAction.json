@@ -1,0 +1,312 @@
+{
+ "method": "textDocument/codeAction",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  },
+  "range": {
+   "start": {
+    "line": 30,
+    "character": 21
+   },
+   "end": {
+    "line": 30,
+    "character": 32
+   }
+  },
+  "context": {
+   "diagnostics": [],
+   "triggerKind": 1
+  }
+ },
+ "ms": 387.8,
+ "result": [
+  {
+   "name": "GenerateVariable",
+   "_vs_group": "B-Delegated",
+   "title": "Generate variable 'MissingType'",
+   "kind": "quickfix",
+   "command": {
+    "title": "Generate variable 'MissingType'",
+    "command": "roslyn.client.nestedCodeAction",
+    "arguments": [
+     {
+      "UniqueIdentifier": "Generate variable 'MissingType'",
+      "CustomTags": [
+       "GenerateVariable"
+      ],
+      "Range": {
+       "start": {
+        "line": 115,
+        "character": 21
+       },
+       "end": {
+        "line": 115,
+        "character": 32
+       }
+      },
+      "TextDocument": {
+       "uri": "roslyn-source-generated://d365b113-2b44-4129-9edf-4ace6c2937ce/Components%2FPages%2FCounter_razor.decl.g.cs?documentId=492836ff-70db-c7b5-415c-47bea489f097&hintName=Components%2FPages%2FCounter_razor.decl.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll"
+      },
+      "CodeActionPath": [
+       "Generate variable 'MissingType'"
+      ],
+      "NestedCodeActions": [
+       {
+        "name": null,
+        "title": "Generate property 'MissingType'",
+        "kind": "quickfix",
+        "data": {
+         "action": "Default",
+         "language": 1,
+         "delegatedDocumentUri": "roslyn-source-generated://d365b113-2b44-4129-9edf-4ace6c2937ce/Components%2FPages%2FCounter_razor.decl.g.cs?documentId=492836ff-70db-c7b5-415c-47bea489f097&hintName=Components%2FPages%2FCounter_razor.decl.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll",
+         "data": {
+          "UniqueIdentifier": "Generate property 'MissingType'",
+          "CustomTags": [],
+          "Range": {
+           "start": {
+            "line": 115,
+            "character": 21
+           },
+           "end": {
+            "line": 115,
+            "character": 32
+           }
+          },
+          "TextDocument": {
+           "uri": "roslyn-source-generated://d365b113-2b44-4129-9edf-4ace6c2937ce/Components%2FPages%2FCounter_razor.decl.g.cs?documentId=492836ff-70db-c7b5-415c-47bea489f097&hintName=Components%2FPages%2FCounter_razor.decl.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll"
+          },
+          "CodeActionPath": [
+           "Generate variable 'MissingType'",
+           "Generate property 'MissingType'"
+          ]
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+         },
+         "CodeActionPath": [
+          "Generate variable 'MissingType'",
+          "Generate property 'MissingType'"
+         ]
+        }
+       },
+       {
+        "name": null,
+        "title": "Generate field 'MissingType'",
+        "kind": "quickfix",
+        "data": {
+         "action": "Default",
+         "language": 1,
+         "delegatedDocumentUri": "roslyn-source-generated://d365b113-2b44-4129-9edf-4ace6c2937ce/Components%2FPages%2FCounter_razor.decl.g.cs?documentId=492836ff-70db-c7b5-415c-47bea489f097&hintName=Components%2FPages%2FCounter_razor.decl.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll",
+         "data": {
+          "UniqueIdentifier": "Generate field 'MissingType'",
+          "CustomTags": [],
+          "Range": {
+           "start": {
+            "line": 115,
+            "character": 21
+           },
+           "end": {
+            "line": 115,
+            "character": 32
+           }
+          },
+          "TextDocument": {
+           "uri": "roslyn-source-generated://d365b113-2b44-4129-9edf-4ace6c2937ce/Components%2FPages%2FCounter_razor.decl.g.cs?documentId=492836ff-70db-c7b5-415c-47bea489f097&hintName=Components%2FPages%2FCounter_razor.decl.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll"
+          },
+          "CodeActionPath": [
+           "Generate variable 'MissingType'",
+           "Generate field 'MissingType'"
+          ]
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+         },
+         "CodeActionPath": [
+          "Generate variable 'MissingType'",
+          "Generate field 'MissingType'"
+         ]
+        }
+       },
+       {
+        "name": null,
+        "title": "Generate read-only field 'MissingType'",
+        "kind": "quickfix",
+        "data": {
+         "action": "Default",
+         "language": 1,
+         "delegatedDocumentUri": "roslyn-source-generated://d365b113-2b44-4129-9edf-4ace6c2937ce/Components%2FPages%2FCounter_razor.decl.g.cs?documentId=492836ff-70db-c7b5-415c-47bea489f097&hintName=Components%2FPages%2FCounter_razor.decl.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll",
+         "data": {
+          "UniqueIdentifier": "Generate read-only field 'MissingType'",
+          "CustomTags": [],
+          "Range": {
+           "start": {
+            "line": 115,
+            "character": 21
+           },
+           "end": {
+            "line": 115,
+            "character": 32
+           }
+          },
+          "TextDocument": {
+           "uri": "roslyn-source-generated://d365b113-2b44-4129-9edf-4ace6c2937ce/Components%2FPages%2FCounter_razor.decl.g.cs?documentId=492836ff-70db-c7b5-415c-47bea489f097&hintName=Components%2FPages%2FCounter_razor.decl.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll"
+          },
+          "CodeActionPath": [
+           "Generate variable 'MissingType'",
+           "Generate read-only field 'MissingType'"
+          ]
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+         },
+         "CodeActionPath": [
+          "Generate variable 'MissingType'",
+          "Generate read-only field 'MissingType'"
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "data": {
+    "UniqueIdentifier": "Generate variable 'MissingType'",
+    "CustomTags": [
+     "GenerateVariable"
+    ],
+    "Range": {
+     "start": {
+      "line": 115,
+      "character": 21
+     },
+     "end": {
+      "line": 115,
+      "character": 32
+     }
+    },
+    "TextDocument": {
+     "uri": "roslyn-source-generated://d365b113-2b44-4129-9edf-4ace6c2937ce/Components%2FPages%2FCounter_razor.decl.g.cs?documentId=492836ff-70db-c7b5-415c-47bea489f097&hintName=Components%2FPages%2FCounter_razor.decl.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll"
+    },
+    "CodeActionPath": [
+     "Generate variable 'MissingType'"
+    ],
+    "NestedCodeActions": [
+     {
+      "title": "Generate property 'MissingType'",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Generate property 'MissingType'",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 115,
+         "character": 21
+        },
+        "end": {
+         "line": 115,
+         "character": 32
+        }
+       },
+       "TextDocument": {
+        "uri": "roslyn-source-generated://d365b113-2b44-4129-9edf-4ace6c2937ce/Components%2FPages%2FCounter_razor.decl.g.cs?documentId=492836ff-70db-c7b5-415c-47bea489f097&hintName=Components%2FPages%2FCounter_razor.decl.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll"
+       },
+       "CodeActionPath": [
+        "Generate variable 'MissingType'",
+        "Generate property 'MissingType'"
+       ]
+      }
+     },
+     {
+      "title": "Generate field 'MissingType'",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Generate field 'MissingType'",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 115,
+         "character": 21
+        },
+        "end": {
+         "line": 115,
+         "character": 32
+        }
+       },
+       "TextDocument": {
+        "uri": "roslyn-source-generated://d365b113-2b44-4129-9edf-4ace6c2937ce/Components%2FPages%2FCounter_razor.decl.g.cs?documentId=492836ff-70db-c7b5-415c-47bea489f097&hintName=Components%2FPages%2FCounter_razor.decl.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll"
+       },
+       "CodeActionPath": [
+        "Generate variable 'MissingType'",
+        "Generate field 'MissingType'"
+       ]
+      }
+     },
+     {
+      "title": "Generate read-only field 'MissingType'",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Generate read-only field 'MissingType'",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 115,
+         "character": 21
+        },
+        "end": {
+         "line": 115,
+         "character": 32
+        }
+       },
+       "TextDocument": {
+        "uri": "roslyn-source-generated://d365b113-2b44-4129-9edf-4ace6c2937ce/Components%2FPages%2FCounter_razor.decl.g.cs?documentId=492836ff-70db-c7b5-415c-47bea489f097&hintName=Components%2FPages%2FCounter_razor.decl.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll"
+       },
+       "CodeActionPath": [
+        "Generate variable 'MissingType'",
+        "Generate read-only field 'MissingType'"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "GenerateType",
+   "_vs_group": "B-Delegated",
+   "title": "Generate nested class 'MissingType'",
+   "kind": "quickfix",
+   "diagnostics": [],
+   "data": {
+    "action": "Default",
+    "language": 1,
+    "delegatedDocumentUri": "roslyn-source-generated://d365b113-2b44-4129-9edf-4ace6c2937ce/Components%2FPages%2FCounter_razor.decl.g.cs?documentId=492836ff-70db-c7b5-415c-47bea489f097&hintName=Components%2FPages%2FCounter_razor.decl.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll",
+    "data": {
+     "UniqueIdentifier": "Generate nested class 'MissingType'",
+     "CustomTags": [
+      "GenerateType"
+     ],
+     "Range": {
+      "start": {
+       "line": 115,
+       "character": 21
+      },
+      "end": {
+       "line": 115,
+       "character": 32
+      }
+     },
+     "TextDocument": {
+      "uri": "roslyn-source-generated://d365b113-2b44-4129-9edf-4ace6c2937ce/Components%2FPages%2FCounter_razor.decl.g.cs?documentId=492836ff-70db-c7b5-415c-47bea489f097&hintName=Components%2FPages%2FCounter_razor.decl.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll"
+     },
+     "CodeActionPath": [
+      "Generate nested class 'MissingType'"
+     ],
+     "NestedCodeActions": []
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+    }
+   }
+  }
+ ]
+}

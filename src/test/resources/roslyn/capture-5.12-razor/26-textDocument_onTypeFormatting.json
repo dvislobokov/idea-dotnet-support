@@ -1,0 +1,19 @@
+{
+ "method": "textDocument/onTypeFormatting",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  },
+  "position": {
+   "line": 28,
+   "character": 25
+  },
+  "ch": ";",
+  "options": {
+   "tabSize": 4,
+   "insertSpaces": true
+  }
+ },
+ "ms": 170.4,
+ "result": null
+}

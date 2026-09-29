@@ -1,0 +1,71 @@
+{
+ "method": "textDocument/diagnostic",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  }
+ },
+ "ms": 267.4,
+ "result": {
+  "kind": "full",
+  "resultId": "4382c40e-a50d-4fdd-a96e-bc0fa004c05c",
+  "items": [
+   {
+    "_vs_projects": [
+     {
+      "_vs_projectName": "BlazorApp (net10.0)",
+      "_vs_projectIdentifier": "c:/playground/Blazor/obj/Debug/net10.0/"
+     }
+    ],
+    "range": {
+     "start": {
+      "line": 30,
+      "character": 21
+     },
+     "end": {
+      "line": 30,
+      "character": 32
+     }
+    },
+    "severity": 1,
+    "code": "CS0103",
+    "codeDescription": {
+     "href": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS0103)"
+    },
+    "message": "The name 'MissingType' does not exist in the current context",
+    "tags": [
+     2147483642,
+     2147483645
+    ]
+   },
+   {
+    "_vs_projects": [
+     {
+      "_vs_projectName": "BlazorApp (net10.0)",
+      "_vs_projectIdentifier": "c:/playground/Blazor/obj/Debug/net10.0/"
+     }
+    ],
+    "range": {
+     "start": {
+      "line": 29,
+      "character": 12
+     },
+     "end": {
+      "line": 29,
+      "character": 18
+     }
+    },
+    "severity": 2,
+    "code": "CS0219",
+    "codeDescription": {
+     "href": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS0219)"
+    },
+    "message": "The variable 'unused' is assigned but its value is never used",
+    "tags": [
+     2147483642,
+     2147483645
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,54 @@
+{
+ "method": "textDocument/prepareCallHierarchy",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  },
+  "position": {
+   "line": 26,
+   "character": 18
+  }
+ },
+ "ms": 12.7,
+ "result": [
+  {
+   "name": "Counter.Reset()",
+   "kind": 6,
+   "detail": "BlazorApp.Components.Pages.Counter",
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor",
+   "range": {
+    "start": {
+     "line": 26,
+     "character": 4
+    },
+    "end": {
+     "line": 32,
+     "character": 5
+    }
+   },
+   "selectionRange": {
+    "start": {
+     "line": 26,
+     "character": 17
+    },
+    "end": {
+     "line": 26,
+     "character": 22
+    }
+   },
+   "data": {
+    "data": {
+     "SymbolKeyData": "7 \"C#\" (M \"Reset\" (D (N \"Pages\" 0 (N \"Components\" 0 (N \"BlazorApp\" 0 (N \"\" 1 (U (S \"BlazorApp\" 7) 6) 5) 4) 3) 2) \"Counter\" 0 ! ! 0 0 0 (% 0) 1) 0 0 (% 0) ! (% 0) 0)",
+     "ProjectGuid": "d365b113-2b44-4129-9edf-4ace6c2937ce",
+     "TextDocument": {
+      "uri": "roslyn-source-generated://d365b113-2b44-4129-9edf-4ace6c2937ce/Components%2FPages%2FCounter_razor.decl.g.cs?documentId=492836ff-70db-c7b5-415c-47bea489f097&hintName=Components%2FPages%2FCounter_razor.decl.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll"
+     }
+    },
+    "razorCallHierarchy": true,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+    }
+   }
+  }
+ ]
+}

@@ -167,6 +167,8 @@
         <xdebugger.attachDebuggerProvider implementation="io.github.dotnetsupport.debugger.DotNetAttachDebuggerProvider"/>
         <!-- names of the stopped program in Evaluate, watches and breakpoint conditions; first, and it stops the others there -->
         <completion.contributor language="C#" order="first" implementationClass="io.github.dotnetsupport.debugger.DotNetExpressionCompletionContributor"/>
+        <!-- gray text of a declaration that continues one way only: { get; set; }, new(), _name = name; -->
+        <inline.completion.provider implementation="io.github.dotnetsupport.lang.CSharpGhostTextProvider"/>
         <registryKey key="dotnet.debugger.adapter.log" defaultValue="true"
                      description="Write the log of the dotnet-debugger adapter for every debug session (menu .NET | Show Debugger Logs)"/>
         <registryKey key="dotnet.debugger.protocol.trace" defaultValue="false"

@@ -1,0 +1,16 @@
+{
+ "method": "razor/provideSemanticTokensRange",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  },
+  "ranges": [],
+  "requiredHostDocumentVersion": 1,
+  "correlationId": "0"
+ },
+ "ms": 1.2,
+ "error": {
+  "code": -32601,
+  "message": "Метод по имени 'razor/provideSemanticTokensRange' не найден."
+ }
+}

@@ -1,0 +1,10 @@
+{
+ "method": "(configuration)",
+ "result": [
+  "html.auto_closing_tags",
+  "razor.advanced.show_all_c_sharp_code_actions",
+  "razor.completion.commit_elements_with_space",
+  "razor.format.attribute_indent_style",
+  "razor.format.code_block_brace_on_next_line"
+ ]
+}

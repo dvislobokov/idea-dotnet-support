@@ -1,0 +1,10 @@
+{
+ "method": "textDocument/documentColor",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  }
+ },
+ "ms": 6.6,
+ "result": null
+}
