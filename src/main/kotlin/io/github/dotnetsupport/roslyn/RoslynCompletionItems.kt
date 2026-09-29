@@ -12,6 +12,7 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
 import com.intellij.platform.lsp.api.customization.LspCompletionSupport
+import io.github.dotnetsupport.suggest.SuggestionStats
 import org.eclipse.lsp4j.CompletionItem
 import org.eclipse.lsp4j.CompletionItemKind
 
@@ -57,8 +58,14 @@ class RoslynCompletionSupport : LspCompletionSupport() {
                 afterNew -> addParentheses(context, null, false)
             }
         }
-        // what is in scope above what is merely spelled alike: `names` before `nameof`, as Rider orders the list
-        return PrioritizedLookupElement.withPriority(withParentheses, RoslynCompletionPolicy.priority(item.kind, item.preselect == true))
+        // what is in scope above what is merely spelled alike: `names` before `nameof`, as Rider orders the list; and above both
+        // what fits the place: of the type that is wanted, named as the parameter, declared a line above, chosen here before
+        val name = item.label.orEmpty().removeSuffix("<>")
+        val context = runCatching { parameters.originalFile.project.service<RoslynCompletionContext>().at(parameters) }.getOrDefault(RoslynCompletionRanking.Context.NONE)
+        val bonus = RoslynCompletionRanking.bonus(name, item.kind, context, SuggestionStats.getInstance().labelCount(name))
+        val ranked = PrioritizedLookupElement.withPriority(withParentheses, RoslynCompletionPolicy.priority(item.kind, item.preselect == true) + bonus.value)
+        if (bonus.signals.isNotEmpty()) ranked.putUserData(SuggestionStats.SIGNALS, bonus.signals)
+        return ranked
     }
 
     /**

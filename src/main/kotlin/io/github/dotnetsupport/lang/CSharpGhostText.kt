@@ -1,6 +1,10 @@
 package io.github.dotnetsupport.lang
 
+import com.intellij.codeInsight.inline.completion.DefaultInlineCompletionInsertHandler
 import com.intellij.codeInsight.inline.completion.InlineCompletionEvent
+import com.intellij.codeInsight.inline.completion.InlineCompletionInsertEnvironment
+import com.intellij.codeInsight.inline.completion.InlineCompletionInsertHandler
+import com.intellij.codeInsight.inline.completion.elements.InlineCompletionElement
 import com.intellij.codeInsight.inline.completion.InlineCompletionProvider
 import com.intellij.codeInsight.inline.completion.InlineCompletionProviderID
 import com.intellij.codeInsight.inline.completion.InlineCompletionRequest
@@ -14,6 +18,8 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.project.Project
 import io.github.dotnetsupport.msbuild.DotNetProjects
 import io.github.dotnetsupport.solution.SolutionService
+import io.github.dotnetsupport.suggest.SuggestionRules
+import io.github.dotnetsupport.suggest.SuggestionStats
 import io.github.dotnetsupport.templates.CSharpNamespaces
 
 /**
@@ -69,12 +75,24 @@ object CSharpGhostText {
         open val fileScopedNamespace: Boolean get() = true
     }
 
+    /** Gray text and the rule it comes from: the rule is what the statistics of suggestions count by. */
+    class Ghost(val rule: String, val text: String)
+
     /** The gray text at [offset], or null. */
-    fun suggest(text: CharSequence, offset: Int, context: Context = Context()): String? {
+    fun suggest(text: CharSequence, offset: Int, context: Context = Context()): String? = ghost(text, offset, context)?.text
+
+    fun ghost(text: CharSequence, offset: Int, context: Context = Context()): Ghost? {
         if (offset < 0 || offset > text.length) return null
-        return constructorAssignment(text, offset) ?: initializer(text, offset, context.targetTypedNew) ?: autoProperty(text, offset)
-            ?: namespaceName(text, offset, context) ?: typeName(text, offset, context.fileName) ?: loggerType(text, offset)
-            ?: constructorParameters(text, offset) ?: catchClause(text, offset)
+        fun of(rule: String, found: String?) = found?.let { Ghost(rule, it) }
+        return of(SuggestionRules.CONSTRUCTOR_ASSIGNMENT, constructorAssignment(text, offset))
+            ?: of(SuggestionRules.INITIALIZER, initializer(text, offset, context.targetTypedNew))
+            ?: of(SuggestionRules.AUTO_PROPERTY, autoProperty(text, offset))
+            ?: of(SuggestionRules.NAMESPACE, namespaceName(text, offset, context))
+            ?: of(SuggestionRules.TYPE_NAME, typeName(text, offset, context.fileName))
+            ?: of(SuggestionRules.LOGGER, loggerType(text, offset))
+            ?: of(SuggestionRules.CONSTRUCTOR_PARAMETERS, constructorParameters(text, offset))
+            ?: of(SuggestionRules.CATCH, catchClause(text, offset))
+            ?: of(SuggestionRules.VALUE, CSharpValueGhost.suggest(text, offset))
     }
 
     /** `public string Name` -> ` { get; set; }`. */
@@ -340,6 +358,14 @@ object CSharpScopeNames {
     }
 }
 
+/** Where gray text is shown: a file and a line. The same suggestion comes again at every typed letter, and is one suggestion. */
+object GhostPlace {
+    fun of(request: InlineCompletionRequest): String {
+        val offset = request.endOffset.coerceIn(0, request.document.textLength)
+        return request.file.virtualFile?.path.orEmpty() + ":" + request.document.getLineNumber(offset)
+    }
+}
+
 class CSharpGhostTextProvider : InlineCompletionProvider {
     override val id: InlineCompletionProviderID = InlineCompletionProviderID("io.github.dotnetsupport.declarations")
 
@@ -353,13 +379,28 @@ class CSharpGhostTextProvider : InlineCompletionProvider {
     }
 
     override suspend fun getSuggestion(request: InlineCompletionRequest): InlineCompletionSuggestion {
-        val text = readAction { suggestion(request) }
+        val ghost = readAction { suggestion(request) }
+        if (ghost != null) {
+            shownRule = ghost.rule
+            SuggestionStats.getInstance().shown(ghost.rule, GhostPlace.of(request))
+        }
         return InlineCompletionSingleSuggestion.build(UserDataHolderBase()) {
-            if (text != null) emit(InlineCompletionGrayTextElement(text))
+            if (ghost != null) emit(InlineCompletionGrayTextElement(ghost.text))
         }
     }
 
-    private fun suggestion(request: InlineCompletionRequest): String? {
+    /** The rule of the gray text that is on the screen: the one that is taken when Tab is pressed. */
+    @Volatile
+    private var shownRule: String? = null
+
+    override val insertHandler: InlineCompletionInsertHandler = object : InlineCompletionInsertHandler {
+        override fun afterInsertion(environment: InlineCompletionInsertEnvironment, elements: List<InlineCompletionElement>) {
+            DefaultInlineCompletionInsertHandler.INSTANCE.afterInsertion(environment, elements)
+            shownRule?.let { SuggestionStats.getInstance().accepted(it) }
+        }
+    }
+
+    private fun suggestion(request: InlineCompletionRequest): CSharpGhostText.Ghost? {
         val file = request.file
         val virtualFile = file.virtualFile
         val project = file.project
@@ -369,7 +410,7 @@ class CSharpGhostTextProvider : InlineCompletionProvider {
             override val namespace: String? get() = virtualFile?.parent?.let { CSharpNamespaces.forDirectory(project, it) }
             override val fileScopedNamespace: Boolean get() = virtualFile?.parent?.let { CSharpNamespaces.isFileScopedPreferred(project, it) } ?: true
         }
-        return CSharpGhostText.suggest(request.document.immutableCharSequence, request.endOffset, context)
+        return CSharpGhostText.ghost(request.document.immutableCharSequence, request.endOffset, context)
     }
 
     companion object {

@@ -372,6 +372,8 @@
             <separator/>
             <action id="DotNet.Welcome" class="io.github.dotnetsupport.welcome.ShowWelcomePageAction" text="Welcome to C# Project Support"
                     description="What the plugin can do and where to start"/>
+            <action id="DotNet.SuggestionStats" class="io.github.dotnetsupport.suggest.ShowSuggestionStatsAction" text="Suggestion Statistics"
+                    description="How often the gray text and the items of the completion list are shown and taken, counted on this machine"/>
             <action id="DotNet.ShowPluginLogs" class="io.github.dotnetsupport.cli.ShowPluginLogsAction" text="Show Plugin Logs"
                     description="Open ~/idea-dotnet-logs: every dotnet command of the plugin with its output, the logs of the debugger, the language server and the builds"/>
             <action id="DotNet.Debugger.ShowLogs" class="io.github.dotnetsupport.debugger.ShowDebuggerLogsAction" text="Show Debugger Logs"
@@ -392,6 +394,9 @@
     </actions>
 
     <projectListeners>
+        <!-- what is chosen in the completion list of a C# file and where it stood: the statistics of suggestions -->
+        <listener class="io.github.dotnetsupport.suggest.CompletionAcceptListener"
+                  topic="com.intellij.codeInsight.lookup.LookupManagerListener"/>
         <listener class="io.github.dotnetsupport.monitor.DotNetProcessStartListener"
                   topic="com.intellij.execution.ExecutionListener"/>
         <listener class="io.github.dotnetsupport.view.SolutionFilesListener"

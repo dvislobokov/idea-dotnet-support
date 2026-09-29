@@ -246,6 +246,78 @@ class GhostTextTest {
         assertNull("text after the caret", at(inMethod("        try { } catch | (Exception e)")))
     }
 
+    private val service = """
+        public class OrderService
+        {
+            private readonly List<Order> _orders = new();
+            private readonly string _title = "x";
+            public int Count => _orders.Count;
+            public string Name { get; set; }
+
+            public decimal Total(Order order) => 0;
+            private void Save(Order order, CancellationToken cancellationToken) { }
+            private void Save2(Order order) { }
+            private void Save2(Order order, int priority) { }
+
+            public async Task<Order> Handle(Order order, string customerName, CancellationToken cancellationToken)
+            {
+                int count = 0;
+                §
+            }
+        }
+    """.trimIndent()
+
+    /** The gray text of [line] typed in the method of the service, `|` where the caret is. */
+    private fun inService(line: String): String? = at(service.replace("§", line))
+
+    @Test
+    fun `the value that is wanted`() {
+        assertEquals("the local over the property of the same type", "count;", inService("int amount = |"))
+        assertEquals("the rest of the name that is typed", "unt;", inService("int amount = co|"))
+        assertEquals("order;", inService("Order copy = |"))
+        assertEquals("what an async method returns", "order;", inService("return |"))
+        assertEquals("by the name where the type is not written: the one called exactly so", "Name;", inService("var name = |"))
+        assertEquals("a part of the name", "customerName;", inService("var customer = |".replace("customer =", "theCustomerName =")))
+        assertEquals("inside parentheses the statement goes on", "count", inService("for (int i = |"))
+        assertEquals("cancellationToken;", inService("CancellationToken token = |"))
+
+        assertEquals("the one local string over the field and the property", "customerName;", inService("string label = |"))
+        assertNull("two local strings, neither is named so", inService("var text = \"x\"; string label = |"))
+        assertNull("a method is not offered: its arguments are anybody's guess", inService("decimal sum = |"))
+        assertNull("nothing of the type", inService("double ratio = |"))
+        assertNull("no type and no name to go by", inService("var x = |"))
+        assertNull("not what is typed", inService("int amount = zz|"))
+        assertNull("typed in full", inService("int amount = count|"))
+        assertNull("text after the caret", inService("int amount = | + 1;"))
+        assertNull("after a dot", inService("int amount = order.|"))
+        assertNull("a comparison", inService("if (count == |"))
+        assertNull("itself", inService("count = |"))
+    }
+
+    @Test
+    fun `the call of a method of this file`() {
+        fun call(line: String): String? {
+            val text = service.replace("§", line)
+            val offset = text.indexOf('|')
+            return io.github.dotnetsupport.lang.CSharpLocalCalls.at(text.removeRange(offset, offset + 1), offset)?.let { "${it.name} ${it.parameters} ${it.active}" }
+        }
+        assertEquals("Save [Order order, CancellationToken cancellationToken] 0", call("Save(|"))
+        assertEquals("the closing one is there", "Save [Order order, CancellationToken cancellationToken] 0", call("Save(|)"))
+        assertEquals("Save [Order order, CancellationToken cancellationToken] 1", call("Save(order, |)"))
+        assertEquals("a call inside is one argument", "Save [Order order, CancellationToken cancellationToken] 1", call("Save(Make(1, 2), |)"))
+        assertEquals("Save [Order order, CancellationToken cancellationToken] 0", call("this.Save(|"))
+        assertEquals("Total [Order order] 0", call("var sum = Total(|"))
+        assertNull("overloads: the server knows which", call("Save2(|"))
+        assertNull("a method of something else", call("repository.Save(|"))
+        assertNull("not declared here", call("Console.WriteLine(|"))
+        assertNull("no call", call("int x = |"))
+        assertNull("the statement before", call("Save(order, cancellationToken); |"))
+
+        // and what is offered for it
+        val visible = setOf("order", "cancellationToken", "count")
+        assertEquals("order, cancellationToken", ArgumentSuggestions.forParameters(listOf("Order order", "CancellationToken cancellationToken"), 0, visible))
+    }
+
     @Test
     fun `target typed new needs a modern framework`() {
         assertTrue(CSharpGhostTextProvider.hasTargetTypedNew(listOf("net8.0")))

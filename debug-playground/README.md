@@ -1,7 +1,10 @@
 # debug-playground
 
-Solution для живой проверки отладчика плагина (чек-лист разбит по этапам `PLATFORM_DAP_PLAN.md`, теперь это история; действующий план — `DAP_PLAN.md`, пакет `debugger`). К сборке плагина не относится. Открывать как проект:
+Solution для живой проверки плагина: отладчика (чек-лист разбит по этапам `PLATFORM_DAP_PLAN.md`, теперь это история; действующий план — `DAP_PLAN.md`, пакет `debugger`)
+и редактора. К сборке плагина не относится. Открывать как проект:
 `debug-playground/DebugPlayground.sln`. Строки, на которых стоит ставить точку останова, помечены `// BP:<имя>`; в комментарии — на что смотреть.
+Строки, на которых проверяют набор в редакторе, помечены `// TYPE:<имя>` (`Console/Editor/*.cs`): курсор на пустую строку под маркером, набрать то, что
+сказано в комментарии, сверить с `EXPECT`, отменить набранное (Ctrl+Z). Файлы сценариев компилируются как есть.
 
 | Проект | Зачем |
 |---|---|
@@ -88,3 +91,24 @@ Solution для живой проверки отладчика плагина (�
       `Program.<Main>$`; у кадра `Async()` видны `before`, `value`, `after`
 - [ ] `BP:variables`: ПКМ в редакторе на строке `long big = …` → Set Next Statement — текущая строка стала ею, F8 идёт дальше; на строке другого метода —
       сообщение «Cannot set the next statement», позиция не меняется; без отладки пункта в меню нет
+
+## Редактор
+
+Перед проверкой дождаться виджета «Roslyn: DebugPlayground.sln» в статус-баре.
+
+### Порядок списка completion и статистика подсказок — `Console/Editor/CompletionRanking.cs`
+- [ ] `TYPE:expected-type`: `int amount = ` → сразу серый текст `count;`, Tab принимает; по Ctrl+Space — `count` первым, затем `Count`; строки и ключевые слова ниже
+- [ ] `TYPE:method-by-type`: `decimal sum = ` → метод `Total` выше переменных
+- [ ] `TYPE:parameter-name`: `Save(` → серый текст `order, cancellationToken` сразу после скобки (и до загрузки solution: `Save` объявлен в этом файле); после `order, ` — `cancellationToken`
+- [ ] `TYPE:parameter-type`: `Send(` → строки (`customerName`, `text`, `_title`, `Name`) выше `count` и `order`
+- [ ] `TYPE:partial-name`: `Run(` → `cancellationToken` первым (параметр называется `token`)
+- [ ] `TYPE:assignment`: `Name = ` → строки первыми
+- [ ] `TYPE:return`: `return ` → серый текст `order;` (метод `async Task<RankedOrder>`)
+- [ ] `TYPE:value-silent`: `string label = ` и `decimal sum = ` → серого текста **нет** (несколько строк на выбор; метод не предлагается)
+- [ ] `TYPE:after-dot`: `int amount = order.` → `Amount` первым по имени; `Quantity` (тоже `int`) **не** поднят — типы членов чужих типов плагину неизвестны
+- [ ] `TYPE:declared-nearby`: `var copy = ` → `text`, `count` выше полей `_orders`, `_title`
+- [ ] `TYPE:chosen-before`: трижды выбрать `_orders`, затем набрать `_` → `_orders` выше `_title`; Reset в статистике возвращает порядок сервера
+- [ ] список внутри скобок вызова открывается без заметной задержки (там добавился запрос `signatureHelp`, таймаут 400 мс)
+- [ ] `TYPE:stats-ghost`: `public string Title`, Tab по серому тексту → в .NET → Suggestion Statistics строка `auto-property`: shown 1, taken 1, 100%
+- [ ] `TYPE:stats-list`: в отчёте «Completion list: N chosen», большинство в `position first`, внизу причины `expected type` / `name` / `declared nearby`; Copy и Reset работают
+
