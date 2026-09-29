@@ -209,7 +209,7 @@ IDE на платформе по данным `docs/platform-lsp-dap.html`; GoLa
 | Декомпилированные исходники (Ctrl+клик в тип фреймворка) | ✅ (dotPeek внутри, Assembly Explorer, IL Viewer) | ✅ | MetadataAsSource сервера: read-only, вкладка `Console.cs [System.Console]`, баннер с dll; Source Link / embedded sources — опция |
 | Assembly Explorer, IL Viewer, декомпиляция dll из Dependencies | ✅ | ❌ | в ROADMAP — `ilspycmd`, не начато |
 | Source generators: просмотр сгенерированного кода | ✅ | 🟡 | сервер выполняет генераторы (Automatic/Balanced), файлов не показать |
-| Статус сервера, перезапуск, лог | скрыто | ✅ | виджет language services («Roslyn: loading X.sln / X.sln») для любого открытого файла, меню .NET → Restart / Show Log / Timings / Select Solution. 2026-09-29: сервер стартует **при открытии проекта** (папка с solution / проектами), а не с первого `.cs` |
+| Статус сервера, перезапуск, лог | скрыто | ✅ 🔬 | свой виджет в статус-баре («Roslyn: loading X.sln / X.sln»), виден, пока жив процесс сервера, и без открытых файлов; по клику — состояние, CPU и память дерева процессов сервера, Restart / Log / Timings / Settings (2026-09-29, вживую не проверено; строки в платформенном виджете language services больше нет); меню .NET → Restart / Show Log / Timings / Select Solution. 2026-09-29: сервер стартует **при открытии проекта** (папка с solution / проектами), а не с первого `.cs` |
 | Нет runtime .NET 10 / tool не установлен / нужен restore | — | ✅ | нотификации с Install / Download / Restore |
 | Кэши и прогрев | — | ✅ | memo ответов (`codeAction`, `hover`, `inlayHint`, `definition`…, сброс на любое изменение), прогрев после загрузки (первый completion 42 мс вместо 153), тайминги |
 | Хвосты фазы 1 | — | 🔬 | новый `.cs`, созданный после загрузки solution, — сервер следит за файлами сам, не проверено; file-based programs выключены по умолчанию |
@@ -575,7 +575,7 @@ GoLand / PyCharm Pro), HTTP Client (те же), Docker / Kubernetes плагин
 1. Открыть **папку** с `.sln`/`.slnx` (не файл). Панель Project сама переключится на **Solution** (один раз; настройка «Switch the Project tool window…»).
 2. Если `dotnet` не найден или `global.json` требует другой SDK — придёт нотификация (Configure… / Download SDK / Open global.json).
 3. Открыть любой `.cs` — стартует `roslyn-language-server` (если не установлен — нотификация с **Install**; нужен runtime .NET 10). Несколько solution в папке —
-   диалог «Select Solution for Language Server». Статус — виджет language services внизу: «Roslyn: loading X.sln» → «Roslyn: X.sln».
+   диалог «Select Solution for Language Server». Статус — значок C# в статус-баре: «Roslyn: loading X.sln» → «Roslyn: X.sln»; клик показывает CPU и память сервера.
 4. Run configurations для запускаемых проектов появятся сами (по одной на профиль `launchSettings.json`).
 5. Полезно сразу поставить tools: **Settings | Tools | .NET → .NET Tools → Install** у `dotnet-debugger-dap` (Debug), `roslyn-language-server`, `csharpier` (если репозиторий им пользуется),
    `dotnet-ef`, `dotnet-counters` / `dotnet-stack` / `dotnet-gcdump` / `dotnet-dump` (Monitor).

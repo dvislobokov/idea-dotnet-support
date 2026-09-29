@@ -70,7 +70,7 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
     var isLoaded: Boolean = false
         private set
 
-    /** For the widget of language services; [statusChanged] redraws it. */
+    /** For the widget of the status bar ([RoslynStatusWidget]). */
     @Volatile
     var phase: RoslynPhase = RoslynPhase.STARTING
         private set
@@ -80,14 +80,23 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
     var target: String? = null
         private set
 
-    /** Set by [RoslynWidgetUpdater]: the platform redraws the widget on the states of the process, not on what Roslyn is loading. */
-    @Volatile
-    var statusChanged: () -> Unit = {}
-
     private fun phase(phase: RoslynPhase, target: String? = this.target) {
         this.phase = phase
         this.target = target
-        statusChanged()
+        RoslynStatusWidgetFactory.refresh(project)
+    }
+
+    /** The process the platform has started for the server (on Windows the `.cmd` of the tool: the server is its child). */
+    @Volatile
+    var serverProcess: ProcessHandle? = null
+        private set
+
+    /** Alive from the start of the process to its end, the loading of the solution included: what the widget of the status bar shows. */
+    val isServerRunning: Boolean get() = serverProcess?.isAlive == true
+
+    fun serverStarted(process: ProcessHandle?) {
+        serverProcess = process
+        RoslynStatusWidgetFactory.refresh(project)
     }
 
     /** The server of this session has been told what to load (or loads by itself). */
@@ -224,6 +233,7 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
 
     fun serverStopped(shutdownNormally: Boolean) {
         isLoaded = false
+        serverProcess = null
         project.service<RoslynSolutionProblems>().stop()
         opened = false
         if (project.isDisposed) return

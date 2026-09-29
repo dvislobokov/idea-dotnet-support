@@ -30,8 +30,8 @@
         <inline.completion.provider implementation="io.github.dotnetsupport.roslyn.RoslynLambdaGhost"/>
         <!-- Ctrl+P: every overload as a row, as in Rider; the handler of the platform for LSP shows the active signature only -->
         <codeInsight.parameterInfo language="C#" implementationClass="io.github.dotnetsupport.roslyn.RoslynParameterInfoHandler"/>
-        <!-- no items of its own: it is how the widget of language services gets redrawn when Roslyn goes from loading to ready -->
-        <platform.lang.lsWidget.itemsProvider implementation="io.github.dotnetsupport.roslyn.RoslynWidgetUpdater"/>
+        <!-- the server in the status bar for as long as its process lives, with its CPU and memory behind a click -->
+        <statusBarWidgetFactory id="DotNet.Roslyn.Status" implementation="io.github.dotnetsupport.roslyn.RoslynStatusWidgetFactory"/>
         <!-- Type Hierarchy (Ctrl+H), Call Hierarchy (Ctrl+Alt+H), Go to Super (Ctrl+U): the platform draws, the server answers -->
         <typeHierarchyProvider language="C#" implementationClass="io.github.dotnetsupport.roslyn.RoslynTypeHierarchyProvider"/>
         <callHierarchyProvider language="C#" implementationClass="io.github.dotnetsupport.roslyn.RoslynCallHierarchyProvider"/>

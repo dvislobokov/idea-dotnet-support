@@ -2,22 +2,16 @@ package io.github.dotnetsupport.roslyn
 
 import com.intellij.application.options.CodeStyle
 import com.intellij.execution.configurations.GeneralCommandLine
-import com.intellij.icons.AllIcons
-import com.intellij.openapi.Disposable
-import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.colors.TextAttributesKey
-import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.project.guessProjectDir
-import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lang.lsWidget.LanguageServiceWidgetItem
-import com.intellij.platform.lang.lsWidget.LanguageServiceWidgetItemsProvider
 import com.intellij.platform.lsp.api.Lsp4jClient
 import com.intellij.platform.lsp.api.LspClient
 import com.intellij.platform.lsp.api.LspClientManager
@@ -46,7 +40,6 @@ import com.intellij.platform.lsp.api.customization.LspSemanticTokensCustomizer
 import com.intellij.platform.lsp.api.customization.LspSemanticTokensSupport
 import com.intellij.platform.lsp.api.lsWidget.LspClientWidgetItem
 import com.intellij.psi.PsiFile
-import io.github.dotnetsupport.DotNetIcons
 import io.github.dotnetsupport.cli.DotNetTool
 import io.github.dotnetsupport.format.DotNetFormattingSettings
 import io.github.dotnetsupport.lang.CSharpFileType
@@ -78,7 +71,13 @@ class RoslynLspIntegrationProvider : LspIntegrationProvider {
         descriptor(project)?.let(clientStarter::ensureClientStarted)
     }
 
-    override fun createWidgetItem(lspClient: LspClient, currentFile: VirtualFile?): LspClientWidgetItem = RoslynWidgetItem(lspClient, currentFile)
+    /**
+     * No row in the widget of language services: the server has a widget of its own in the status bar ([RoslynStatusWidget]), there
+     * whatever file is open, and two icons of one server next to each other said nothing more than one (asked by the user).
+     */
+    override fun createWidgetItems(project: Project, currentFile: VirtualFile?): List<LanguageServiceWidgetItem> = emptyList()
+
+    override fun createWidgetItem(lspClient: LspClient, currentFile: VirtualFile?): LspClientWidgetItem? = null
 
     companion object {
         /** For a test of [fileOpened] itself, with a starter that starts nothing. */
@@ -105,36 +104,6 @@ class RoslynLspIntegrationProvider : LspIntegrationProvider {
     }
 }
 
-/** The line of the server in the widget of language services: what it loads or waits for, next to Restart and the settings of the platform. */
-class RoslynWidgetItem(client: LspClient, file: VirtualFile?) : LspClientWidgetItem(client, file, DotNetIcons.CSharp, RoslynLanguageServerConfigurable::class.java) {
-    private val workspace get() = lspClient.project.service<RoslynWorkspace>()
-
-    override val versionPostfix: String get() = RoslynPolicy.statusText(workspace.phase, workspace.target)
-
-    override fun createAdditionalInlineActions(): List<AnAction> = buildList {
-        if (workspace.knownSolutions.size > 1) add(DumbAwareAction.create("Select Solution...", AllIcons.Actions.ListFiles) { workspace.chooseSolution() })
-        add(DumbAwareAction.create("Show Log", AllIcons.FileTypes.Text) { workspace.showLog() })
-    }
-}
-
-/**
- * The platform redraws the widget of language services when a server starts or stops; what Roslyn is loading changes in between.
- * A provider of that widget gets the function that redraws it, and that is all this one is for: it has no items of its own.
- */
-class RoslynWidgetUpdater : LanguageServiceWidgetItemsProvider() {
-    /** The platform shows the row of the server for a C# file only; the solution is loaded whatever file is open, so the row stays. */
-    override fun createWidgetItems(project: Project, currentFile: VirtualFile?): List<LanguageServiceWidgetItem> {
-        if (currentFile != null && isCSharpSource(currentFile)) return emptyList()
-        return project.service<RoslynWorkspace>().clients.map { RoslynWidgetItem(it, currentFile) }
-    }
-
-    override fun registerWidgetUpdaters(project: Project, widgetDisposable: Disposable, updateWidget: () -> Unit) {
-        val workspace = project.service<RoslynWorkspace>()
-        workspace.statusChanged = updateWidget
-        Disposer.register(widgetDisposable) { workspace.statusChanged = {} }
-    }
-}
-
 /** One server per opened folder: Roslyn holds one solution, and the plugin shows one. */
 class RoslynClientDescriptor(project: Project, private val root: VirtualFile, private val executable: File) : LspClientDescriptor(project, "Roslyn", root) {
     private val workspace get() = project.service<RoslynWorkspace>()
@@ -154,6 +123,10 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
             .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
             .withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en")
     }
+
+    /** The process itself is kept: the widget of the status bar shows what it costs. */
+    override fun startServerProcess(): com.intellij.execution.process.BaseProcessHandler<*> =
+        super.startServerProcess().also { handler -> workspace.serverStarted(runCatching { handler.process.toHandle() }.getOrNull()) }
 
     /**
      * The platform writes `file:///c%3A/...` as VS Code does, and server 5.12 then takes the document for a loose file outside the

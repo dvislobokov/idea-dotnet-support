@@ -53,7 +53,7 @@ class RoslynServerStatus {
 enum class RoslynPhase { STARTING, CHOOSING_SOLUTION, LOADING, READY }
 
 object RoslynPolicy {
-    /** After the name of the server in the widget of language services: "Roslyn: loading Shop.sln...". [target] is a file name or null. */
+    /** After the name of the server in its widget of the status bar: "Roslyn: loading Shop.sln...". [target] is a file name or null. */
     fun statusText(phase: RoslynPhase, target: String?): String = when (phase) {
         RoslynPhase.STARTING -> ": starting..."
         RoslynPhase.CHOOSING_SOLUTION -> ": select a solution to load"
