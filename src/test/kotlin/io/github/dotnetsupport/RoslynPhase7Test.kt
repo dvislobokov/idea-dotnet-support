@@ -56,6 +56,36 @@ class RoslynPhase7Test : BasePlatformTestCase() {
         assertTrue("+= of another line", policy.addsParentheses(com.intellij.codeInsight.lookup.Lookup.NORMAL_SELECT_CHAR, later, later.indexOf("Foo"), later.length))
     }
 
+    /** Resolving what has changed since is refused by the server; the platform must get the item back, not an exception. */
+    fun testStaleResolveGivesTheItemBack() {
+        val stale = io.github.dotnetsupport.roslyn.RoslynStaleResolve
+        fun refused(message: String, code: Int) = org.eclipse.lsp4j.jsonrpc.ResponseErrorException(org.eclipse.lsp4j.jsonrpc.messages.ResponseError(code, message, null))
+        val versions = refused("Resolve version '2026-09-29T07:34:44.0597199Z-10258-0' does not match current version '2026-09-29T07:34:45.6179139Z-10278-0'", -32000)
+        assertTrue(stale.isStale(versions))
+        assertTrue("wrapped by the future", stale.isStale(java.util.concurrent.CompletionException(versions)))
+        assertTrue("ContentModified", stale.isStale(refused("changed", -32801)))
+        assertFalse(stale.isStale(refused("Internal error", -32603)))
+        assertFalse(stale.isStale(IllegalStateException("boom")))
+        assertFalse(stale.isStale(null))
+
+        val lens = org.eclipse.lsp4j.CodeLens()
+        val failing = java.util.concurrent.CompletableFuture<org.eclipse.lsp4j.CodeLens>().apply { completeExceptionally(versions) }
+        assertSame(lens, (stale.orUnresolved(failing, lens) as java.util.concurrent.CompletableFuture<*>).get())
+
+        val resolved = org.eclipse.lsp4j.CodeLens()
+        val fine = java.util.concurrent.CompletableFuture.completedFuture(resolved)
+        assertSame(resolved, (stale.orUnresolved(fine, lens) as java.util.concurrent.CompletableFuture<*>).get())
+
+        val broken = java.util.concurrent.CompletableFuture<org.eclipse.lsp4j.CodeLens>().apply { completeExceptionally(refused("Internal error", -32603)) }
+        assertTrue("another error stays an error", (stale.orUnresolved(broken, lens) as java.util.concurrent.CompletableFuture<*>).isCompletedExceptionally)
+
+        val pending = java.util.concurrent.CompletableFuture<org.eclipse.lsp4j.CodeLens>()
+        (stale.orUnresolved(pending, lens) as java.util.concurrent.CompletableFuture<*>).cancel(true)
+        assertTrue("cancelling reaches the request", pending.isCancelled)
+        assertTrue("resolveCodeLens" in stale.METHODS && "resolveInlayHint" in stale.METHODS && "resolveCompletionItem" in stale.METHODS)
+        for (name in stale.METHODS) assertTrue(name, org.eclipse.lsp4j.services.TextDocumentService::class.java.methods.any { it.name == name })
+    }
+
     /** A method that returns nothing is a statement: `Console.WriteLine(|);`, as Rider completes it. */
     fun testSemicolonAfterAVoidMethod() {
         val policy = io.github.dotnetsupport.roslyn.RoslynCompletionPolicy
@@ -83,6 +113,10 @@ class RoslynPhase7Test : BasePlatformTestCase() {
         // the resolved item is taken from a class of the platform by name: it must be there, with the method
         val holder = Class.forName(policy.COMPLETION_OBJECT)
         assertEquals(org.eclipse.lsp4j.CompletionItem::class.java, holder.getMethod("getCompletionItem").returnType)
+        // and it is the object of the element the platform puts into the list, around the one the plugin makes
+        val wrapper = Class.forName("com.intellij.platform.lsp.impl.features.completion.LspLookupElementDecorator")
+        assertEquals(policy.COMPLETION_OBJECT, wrapper.getMethod("getObject").returnType.name)
+        assertTrue(com.intellij.codeInsight.lookup.LookupElementDecorator::class.java.isAssignableFrom(wrapper))
         assertNull(policy.resolvedItem("not the object of the platform"))
         assertNull(policy.resolvedItem(null))
     }

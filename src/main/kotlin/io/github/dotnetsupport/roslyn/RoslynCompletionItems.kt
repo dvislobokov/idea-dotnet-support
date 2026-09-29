@@ -7,6 +7,10 @@ import com.intellij.codeInsight.completion.PrioritizedLookupElement
 import com.intellij.codeInsight.lookup.Lookup
 import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementDecorator
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.components.service
 import com.intellij.platform.lsp.api.customization.LspCompletionSupport
 import org.eclipse.lsp4j.CompletionItem
 import org.eclipse.lsp4j.CompletionItemKind
@@ -48,7 +52,7 @@ class RoslynCompletionSupport : LspCompletionSupport() {
             decorator.delegate.handleInsert(context)
             val afterNew = RoslynCompletionPolicy.afterNew(context.document.charsSequence, context.startOffset)
             when {
-                callable -> addParentheses(context, signature(decorator, item), generic && RoslynCompletionPolicy.needsTypeArguments(resolved(decorator, item)))
+                callable -> addParentheses(context, resolved(context, item), generic)
                 genericType -> addTypeArguments(context, constructed = afterNew && type)
                 afterNew -> addParentheses(context, null, false)
             }
@@ -61,9 +65,13 @@ class RoslynCompletionSupport : LspCompletionSupport() {
      * What is known of the method when it is chosen: the platform resolves the rows in sight, and the resolved item (with the signature
      * in its documentation) is kept by the object of the lookup element, not by the item the element was made of.
      */
-    private fun signature(element: LookupElement, item: CompletionItem): RoslynSignatureTail.Tail? = RoslynSignatureTail.of(resolved(element, item))
-
-    private fun resolved(element: LookupElement, item: CompletionItem): CompletionItem = RoslynCompletionPolicy.resolvedItem(element.`object`) ?: item
+    /**
+     * The item with what its resolve has brought, the signature among it. The platform wraps the element made here into one of its
+     * own and keeps the resolved item there, so it is the element of the list that is asked (`context.elements`), not the one this
+     * handler belongs to: that one holds the item as it came (seen live: a void method got no `;`).
+     */
+    private fun resolved(context: InsertionContext, item: CompletionItem): CompletionItem =
+        context.elements.firstNotNullOfOrNull { RoslynCompletionPolicy.resolvedItem(it.`object`) }?.takeIf { it.label == item.label } ?: item
 
     /** `List<|>`, and `new List<|>()` for a class or a struct after `new`. */
     private fun addTypeArguments(context: InsertionContext, constructed: Boolean) {
@@ -76,7 +84,9 @@ class RoslynCompletionSupport : LspCompletionSupport() {
         context.commitDocument()
     }
 
-    private fun addParentheses(context: InsertionContext, signature: RoslynSignatureTail.Tail?, typeArguments: Boolean) {
+    private fun addParentheses(context: InsertionContext, item: CompletionItem?, generic: Boolean) {
+        val signature = item?.let(RoslynSignatureTail::of)
+        val typeArguments = generic && item != null && RoslynCompletionPolicy.needsTypeArguments(item)
         val document = context.document
         val offset = context.tailOffset
         val text = document.charsSequence
@@ -91,6 +101,11 @@ class RoslynCompletionSupport : LspCompletionSupport() {
             val call = RoslynCompletionPolicy.call(signature?.type, signature?.tail, RoslynCompletionPolicy.restOfLine(text, offset), typeArguments)
             document.insertString(offset, call.text)
             context.editor.caretModel.moveToOffset(offset + call.caret)
+            // chosen before the platform has resolved it: the plain `()` now, the rest when the server answers
+            if (item != null && signature == null && RoslynCompletionPolicy.isCallable(item.kind)) {
+                context.commitDocument()
+                completeWhenResolved(context, item, offset, generic)
+            }
             if (call.caret > 1 || typeArguments) {
                 // nothing to type between the parentheses, or the type arguments come first: no parameter info yet
                 context.commitDocument()
@@ -101,6 +116,38 @@ class RoslynCompletionSupport : LspCompletionSupport() {
         AutoPopupController.getInstance(context.project).autoPopupParameterInfo(context.editor, null)
     }
 }
+
+/**
+ * A method chosen faster than the platform resolves it has no signature yet, so it got its plain `()`. The item is resolved here, and
+ * when the answer comes and nothing has been typed meanwhile, the call is completed as it would have been: `();` of a void method,
+ * `<|>()` of a generic one whose type arguments nothing infers.
+ */
+private fun completeWhenResolved(context: InsertionContext, item: CompletionItem, offset: Int, generic: Boolean) {
+    val project = context.project
+    val editor = context.editor
+    val document = context.document
+    val workspace = project.service<RoslynWorkspace>()
+    val client = workspace.clients.firstOrNull() ?: return
+    val stamp = document.modificationStamp
+    ApplicationManager.getApplication().executeOnPooledThread {
+        val resolved = runCatching { client.sendRequestSync(RESOLVE_TIMEOUT_MS) { it.textDocumentService.resolveCompletionItem(item) } }.getOrNull() ?: return@executeOnPooledThread
+        val signature = RoslynSignatureTail.of(resolved) ?: return@executeOnPooledThread
+        ApplicationManager.getApplication().invokeLater({
+            if (project.isDisposed || editor.isDisposed || document.modificationStamp != stamp || editor.caretModel.offset != offset + 1) return@invokeLater
+            val text = document.charsSequence
+            if (offset + 2 > text.length || text.subSequence(offset, offset + 2).toString() != "()") return@invokeLater
+            val call = RoslynCompletionPolicy.call(signature.type, signature.tail, RoslynCompletionPolicy.restOfLine(text, offset + 2),
+                generic && RoslynCompletionPolicy.needsTypeArguments(resolved))
+            if (call.text == "()" && call.caret == 1) return@invokeLater
+            WriteCommandAction.runWriteCommandAction(project, "Complete Call", null, {
+                document.replaceString(offset, offset + 2, call.text)
+                editor.caretModel.moveToOffset(offset + call.caret)
+            })
+        }, ModalityState.nonModal())
+    }
+}
+
+private const val RESOLVE_TIMEOUT_MS = 1_500
 
 /** The element of the platform, matched by [label] only; inserting is its own business. */
 internal class MatchedByLabel(delegate: LookupElement, private val label: String) : LookupElementDecorator<LookupElement>(delegate) {

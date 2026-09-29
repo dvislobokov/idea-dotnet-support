@@ -56,6 +56,8 @@ class RoslynServerWrapper : Lsp4jServerWrapper {
             val argument = arguments.firstOrNull()
             if (method.name in RoslynResponseMemo.CHANGES) memo.invalidate()
             when (method.name) {
+                // asked about what has changed since: the server refuses, the platform does not expect it to (see RoslynStaleResolve)
+                in RoslynStaleResolve.METHODS -> return@proxy RoslynStaleResolve.orUnresolved(timed(stats, method, proceed), argument)
                 "codeAction" -> (argument as? CodeActionParams)?.context?.diagnostics?.forEach(::dropUnknownTags)
                 "rename" -> (argument as? RenameParams)?.let { params ->
                     // the name as it is before the rename: read now, the edit will have replaced it by the time the answer comes
@@ -209,5 +211,42 @@ class RoslynServerWrapper : Lsp4jServerWrapper {
             val segment = method.declaringClass.getAnnotation(JsonSegment::class.java)?.value?.takeIf { useSegment }?.let { "$it/" }.orEmpty()
             return segment + name
         }
+    }
+}
+
+/**
+ * A code lens, an inlay hint or a completion item is resolved a moment after it is shown, and the document may have changed by then.
+ * Roslyn answers such a request with an error — `Resolve version '…-10258-0' does not match current version '…-10278-0'`, the code
+ * ContentModified — which is what the protocol says to do and a client is to ignore. The LSP client of the platform does not: the error
+ * ends its coroutine as an unhandled exception (60 of them in the log of one morning of typing). Here such an answer becomes the item
+ * as it was asked about, unresolved: the platform shows it as it is, and asks anew for the changed document anyway.
+ */
+object RoslynStaleResolve {
+    val METHODS: Set<String> = setOf("resolveCodeLens", "resolveInlayHint", "resolveCompletionItem")
+
+    /** ContentModified and ServerCancelled of the protocol, RequestCancelled of JSON-RPC. */
+    private val CODES = setOf(-32801, -32802, -32800)
+
+    fun isStale(failure: Throwable?): Boolean {
+        var cause = failure
+        while (cause != null && cause !is org.eclipse.lsp4j.jsonrpc.ResponseErrorException && cause.cause != null && cause.cause !== cause) cause = cause.cause
+        val error = (cause as? org.eclipse.lsp4j.jsonrpc.ResponseErrorException)?.responseError ?: return false
+        return error.code in CODES || error.message.orEmpty().contains("does not match current version")
+    }
+
+    /** [answer] as it is, unless it fails as stale: then it completes with [unresolved]. Cancelling the result cancels the request. */
+    fun orUnresolved(answer: Any?, unresolved: Any?): Any? {
+        val request = answer as? CompletableFuture<*> ?: return answer
+        if (unresolved == null) return answer
+        val result = CompletableFuture<Any?>()
+        request.whenComplete { value, failure ->
+            when {
+                failure == null -> result.complete(value)
+                isStale(failure) -> result.complete(unresolved)
+                else -> result.completeExceptionally(failure)
+            }
+        }
+        result.whenComplete { _, _ -> if (result.isCancelled) request.cancel(true) }
+        return result
     }
 }

@@ -58,6 +58,7 @@
                   fieldName="INSTANCE"
                   extensions="xaml;axaml;resx;nuspec;ruleset;runsettings;config"/>
         <fileIconProvider implementation="io.github.dotnetsupport.DotNetFileIconProvider"/>
+        <iconProvider implementation="io.github.dotnetsupport.DotNetDirectoryIconProvider"/>
 
         <lang.parserDefinition language="C#"
                                implementationClass="io.github.dotnetsupport.lang.CSharpParserDefinition"/>

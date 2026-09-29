@@ -99,7 +99,7 @@ class DependenciesNode(project: Project, key: DependenciesKey, settings: ViewSet
     override fun getSortOrder(settings: NodeSortSettings): NodeSortOrder = NodeSortOrder.MODULE_ROOT
 
     override fun update(presentation: PresentationData) {
-        presentation.setIcon(AllIcons.Nodes.PpLibFolder)
+        presentation.setIcon(DotNetIcons.Dependencies)
         presentation.presentableText = "Dependencies"
     }
 

@@ -17,6 +17,12 @@ object DotNetIcons {
     @JvmField val ProjectVisualBasic: Icon = load("projectVb")
     @JvmField val MsBuild: Icon = load("msbuild")
 
+    /** The Dependencies node of a project. */
+    @JvmField val Dependencies: Icon = load("dependencies")
+
+    /** The `Properties` folder of a project (`My Project` in Visual Basic). */
+    @JvmField val PropertiesFolder: Icon = load("propertiesFolder")
+
     @JvmField val Razor: Icon = load("razor")
     @JvmField val Xaml: Icon = load("xaml")
     @JvmField val Resx: Icon = load("resx")
@@ -62,5 +68,6 @@ object DotNetIcons {
 
     fun forProjectFile(fileName: String): Icon = forFile(fileName.substringAfterLast('/')) ?: Project
 
+    /** `name.svg` and, for a dark theme, `name_dark.svg` next to it; both are drawn by tools/icons/generate.py. */
     private fun load(name: String): Icon = IconLoader.getIcon("/icons/$name.svg", DotNetIcons::class.java)
 }
