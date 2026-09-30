@@ -6,11 +6,6 @@ import com.intellij.build.DefaultBuildDescriptor
 import com.intellij.build.FilePosition
 import com.intellij.build.events.MessageEvent
 import com.intellij.build.events.impl.FailureResultImpl
-import com.intellij.build.events.impl.FileMessageEventImpl
-import com.intellij.build.events.impl.FinishBuildEventImpl
-import com.intellij.build.events.impl.MessageEventImpl
-import com.intellij.build.events.impl.OutputBuildEventImpl
-import com.intellij.build.events.impl.StartBuildEventImpl
 import com.intellij.build.events.impl.SuccessResultImpl
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.process.OSProcessHandler
@@ -88,7 +83,7 @@ class DotNetBuildService(private val project: Project) {
             return
         }
 
-        buildView.onEvent(buildId, StartBuildEventImpl(descriptor.withProcessHandler(StopHandle(title, handler), null), "running..."))
+        buildView.onEvent(buildId, BuildViewEvents.started(descriptor.withProcessHandler(StopHandle(title, handler), null), "running..."))
         handler.addProcessListener(object : ProcessListener {
             private val reported = HashSet<MsBuildMessage>()
             private val pending = StringBuilder()
@@ -96,7 +91,7 @@ class DotNetBuildService(private val project: Project) {
 
             override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
                 if (outputType === ProcessOutputTypes.SYSTEM) return
-                buildView.onEvent(buildId, OutputBuildEventImpl(buildId, event.text, outputType !== ProcessOutputTypes.STDERR))
+                buildView.onEvent(buildId, BuildViewEvents.output(buildId, event.text, outputType !== ProcessOutputTypes.STDERR))
 
                 // Text arrives in arbitrary chunks, diagnostics are parsed per complete line.
                 pending.append(event.text)
@@ -117,7 +112,7 @@ class DotNetBuildService(private val project: Project) {
                     errors > 0 -> "failed with $errors error${if (errors == 1) "" else "s"}"
                     else -> "failed with exit code ${event.exitCode}"
                 }
-                buildView.onEvent(buildId, FinishBuildEventImpl(buildId, null, System.currentTimeMillis(), message, result))
+                buildView.onEvent(buildId, BuildViewEvents.finished(buildId, message, result))
                 // what the compiler has said goes to the editor too; a clean or a restore says nothing about the code
                 if (arguments.firstOrNull() in COMPILING_COMMANDS) BuildProblems.getInstance(project).replace(reported)
                 VfsUtil.markDirtyAndRefresh(true, true, true, File(workDirectory))
@@ -132,13 +127,8 @@ class DotNetBuildService(private val project: Project) {
                 val kind = if (message.isError) MessageEvent.Kind.ERROR else MessageEvent.Kind.WARNING
                 val text = listOfNotNull(message.code, message.text).joinToString(": ")
                 val file = message.resolveFile()
-                val event = if (file != null) {
-                    val position = FilePosition(file, (message.line - 1).coerceAtLeast(0), (message.column - 1).coerceAtLeast(0))
-                    FileMessageEventImpl(buildId, kind, GROUP, text, line.trim(), position)
-                } else {
-                    MessageEventImpl(buildId, kind, GROUP, text, line.trim())
-                }
-                buildView.onEvent(buildId, event)
+                val position = file?.let { FilePosition(it, (message.line - 1).coerceAtLeast(0), (message.column - 1).coerceAtLeast(0)) }
+                buildView.onEvent(buildId, BuildViewEvents.message(buildId, kind, GROUP, text, line.trim(), position))
             }
         })
         handler.startNotify()

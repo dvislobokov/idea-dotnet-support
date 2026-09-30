@@ -4,11 +4,6 @@ import com.intellij.build.BuildViewManager
 import com.intellij.build.DefaultBuildDescriptor
 import com.intellij.build.events.MessageEvent
 import com.intellij.build.events.impl.FailureResultImpl
-import com.intellij.build.events.impl.FileMessageEventImpl
-import com.intellij.build.events.impl.FinishBuildEventImpl
-import com.intellij.build.events.impl.MessageEventImpl
-import com.intellij.build.events.impl.OutputBuildEventImpl
-import com.intellij.build.events.impl.StartBuildEventImpl
 import com.intellij.build.events.impl.SuccessResultImpl
 import com.intellij.build.FilePosition
 import com.intellij.execution.configurations.GeneralCommandLine
@@ -36,18 +31,18 @@ class BuildViewCommandOutput(private val project: Project, private val title: St
             isActivateToolWindowWhenAdded = false
             isActivateToolWindowWhenFailed = true
         }
-        view().onEvent(buildId, StartBuildEventImpl(descriptor, "running..."))
+        view().onEvent(buildId, BuildViewEvents.started(descriptor, "running..."))
     }
 
     override fun commandStarted(command: GeneralCommandLine) {
         if (project.isDisposed) return
         start(command.workDirectory?.path.orEmpty())
-        view().onEvent(buildId, OutputBuildEventImpl(buildId, "> ${DotNetCli.displayString(command)}\n", true))
+        view().onEvent(buildId, BuildViewEvents.output(buildId, "> ${DotNetCli.displayString(command)}\n", true))
     }
 
     override fun text(text: String, isError: Boolean) {
         if (project.isDisposed || !started) return
-        view().onEvent(buildId, OutputBuildEventImpl(buildId, text, !isError))
+        view().onEvent(buildId, BuildViewEvents.output(buildId, text, !isError))
         // commands that build (`dotnet ef`, `dotnet new` with restore) report MSBuild diagnostics: make them navigable
         pending.append(text)
         while (true) {
@@ -63,21 +58,18 @@ class BuildViewCommandOutput(private val project: Project, private val title: St
         val kind = if (message.isError) MessageEvent.Kind.ERROR else MessageEvent.Kind.WARNING
         val text = listOfNotNull(message.code, message.text).joinToString(": ")
         val file = message.resolveFile()
-        view().onEvent(
-            buildId,
-            if (file != null) FileMessageEventImpl(buildId, kind, "MSBuild", text, line.trim(), FilePosition(file, (message.line - 1).coerceAtLeast(0), (message.column - 1).coerceAtLeast(0)))
-            else MessageEventImpl(buildId, kind, "MSBuild", text, line.trim()),
-        )
+        val position = file?.let { FilePosition(it, (message.line - 1).coerceAtLeast(0), (message.column - 1).coerceAtLeast(0)) }
+        view().onEvent(buildId, BuildViewEvents.message(buildId, kind, "MSBuild", text, line.trim(), position))
     }
 
     override fun commandFinished(exitCode: Int) {
         if (exitCode != 0) failed = true
-        if (!project.isDisposed && started) view().onEvent(buildId, OutputBuildEventImpl(buildId, "\n", true))
+        if (!project.isDisposed && started) view().onEvent(buildId, BuildViewEvents.output(buildId, "\n", true))
     }
 
     override fun finished(succeeded: Boolean) {
         if (project.isDisposed || !started) return
         val result = if (succeeded && !failed) SuccessResultImpl() else FailureResultImpl()
-        view().onEvent(buildId, FinishBuildEventImpl(buildId, null, System.currentTimeMillis(), if (succeeded && !failed) "finished" else "failed", result))
+        view().onEvent(buildId, BuildViewEvents.finished(buildId, if (succeeded && !failed) "finished" else "failed", result))
     }
 }

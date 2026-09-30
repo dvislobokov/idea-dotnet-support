@@ -10,6 +10,9 @@ class SlnFolder(val name: String, val id: String) {
 
     /** "Solution items": paths of loose files, relative to the solution directory. */
     val files: MutableList<String> = mutableListOf()
+
+    /** The projects of this folder and of the folders below it. */
+    fun allProjects(): List<SlnProject> = projects + folders.flatMap { it.allProjects() }
 }
 
 /**

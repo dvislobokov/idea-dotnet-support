@@ -15,6 +15,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vcs.FileStatus
+import com.intellij.openapi.vcs.FileStatusManager
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDirectory
 import com.intellij.psi.PsiElement
@@ -80,9 +81,17 @@ abstract class SolutionFileNode<T : Any>(project: Project, value: T, settings: V
     override fun isValid(): Boolean = value != null
     override fun update(data: PresentationData) = if (extractPsiFromValue() == null) present(data) else super.update(data)
 
-    // the name of a project is not the place for the VCS color of its .csproj
-    override fun getFileStatus(): FileStatus = FileStatus.NOT_CHANGED
+    /**
+     * The color of the node is that of its directory, as of a folder of the tree: with «Highlight directories that contain modified
+     * files» on, a project or a solution with changes below it is colored, as in Rider; the status of the `.csproj` alone would
+     * color the name of the project for an edit of the project file, which is not what the eye looks for.
+     */
+    override fun getFileStatus(): FileStatus = directoryStatus(nodeProject, file?.parent)
 }
+
+/** The recursive status the platform gives a directory: `NOT_CHANGED` unless the setting to highlight such directories is on. */
+internal fun directoryStatus(project: Project, directory: VirtualFile?): FileStatus =
+    directory?.takeIf { it.isValid }?.let { FileStatusManager.getInstance(project).getRecursiveStatus(it) } ?: FileStatus.NOT_CHANGED
 
 internal fun folderChildren(project: Project, settings: ViewSettings?, solutionFile: VirtualFile, folder: SlnFolder): List<AbstractTreeNode<*>> {
     val result = ArrayList<AbstractTreeNode<*>>()
@@ -154,6 +163,10 @@ class SolutionFolderNode(project: Project, key: SolutionFolderKey, settings: Vie
 
     override fun contains(file: VirtualFile): Boolean = folder?.contains(value.solutionFile, file) == true
     override fun getTypeSortWeight(sortByType: Boolean): Int = FOLDER_WEIGHT
+
+    /** A virtual folder has no directory: it is colored when a project below it is. */
+    override fun getFileStatus(): FileStatus =
+        folder?.allProjects().orEmpty().asSequence().map { directoryStatus(nodeProject, it.resolveFile(value.solutionFile)?.parent) }.firstOrNull { it != FileStatus.NOT_CHANGED } ?: FileStatus.NOT_CHANGED
 
     override fun update(presentation: PresentationData) {
         presentation.setIcon(AllIcons.Nodes.Folder)
