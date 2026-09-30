@@ -19,6 +19,7 @@ import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
+import io.github.dotnetsupport.DotNetBundle
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.lang.CSharpFileType
 import io.github.dotnetsupport.lsp.RoslynPolicy
@@ -33,7 +34,8 @@ enum class FormatterChoice(val title: String) {
     DOTNET_FORMAT("dotnet format (whitespace, by .editorconfig; about a second per file, instant with the language server)"),
     NONE("None");
 
-    override fun toString(): String = title
+    // in the language of the settings page; [title] is the English one
+    override fun toString(): String = DotNetBundle.messageOr("formatter.$name", title)
 }
 
 /** The formatter is a decision of the team, so it is kept with the project (`.idea/dotnet.xml`) and can be committed. */

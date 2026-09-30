@@ -12,55 +12,56 @@ import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.builder.toNullableProperty
+import io.github.dotnetsupport.DotNetBundle
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.settings.DotNetSettingsConfigurable
 
 /** Settings | Tools | .NET | Toolset and Build: the groups and the wording of Rider, only the options the plugin has something behind. */
-class DotNetBuildConfigurable(private val project: Project) : BoundConfigurable("Toolset and Build") {
+class DotNetBuildConfigurable(private val project: Project) : BoundConfigurable(DotNetBundle.message("page.build")) {
     private val options get() = DotNetBuildOptions.getInstance(project).state
 
     /** "Auto" and the numbers up to the cores of the machine: more processes than cores only get in each other's way. */
     private class Parallelism(val processes: Int) {
-        override fun toString(): String = if (processes == 0) "Auto (by MSBuild, from the number of cores)" else processes.toString()
+        override fun toString(): String = if (processes == 0) DotNetBundle.message("build.parallel.auto") else processes.toString()
         override fun equals(other: Any?): Boolean = other is Parallelism && other.processes == processes
         override fun hashCode(): Int = processes
     }
 
     override fun createPanel(): DialogPanel = panel {
-        group("Toolset") {
-            row(".NET CLI executable path:") {
-                label(DotNetCli.findExecutable() ?: "not found")
-                link("Change...") { ShowSettingsUtil.getInstance().showSettingsDialog(project, DotNetSettingsConfigurable::class.java) }
-                    .comment("Set on the parent page, Tools | .NET")
+        group(DotNetBundle.message("build.toolset")) {
+            row(DotNetBundle.message("build.cli")) {
+                label(DotNetCli.findExecutable() ?: DotNetBundle.message("common.notFound"))
+                link(DotNetBundle.message("build.cli.change")) { ShowSettingsUtil.getInstance().showSettingsDialog(project, DotNetSettingsConfigurable::class.java) }
+                    .comment(DotNetBundle.message("build.cli.comment"))
             }
-            row("MSBuild global properties:") {
+            row(DotNetBundle.message("build.properties")) {
                 textField().align(AlignX.FILL).bindText({ options.globalProperties.orEmpty() }, { options.globalProperties = it.trim() })
-                    .comment("<code>Name=Value;Other=Value</code>, passed as <code>-p:</code> to build, rebuild, clean, restore and run of this project")
+                    .comment(DotNetBundle.message("build.properties.comment"))
             }
         }
-        group("Build") {
-            row { checkBox("Run build after solution is loaded").bindSelected(options::buildAfterSolutionIsLoaded) }
+        group(DotNetBundle.message("build.group")) {
+            row { checkBox(DotNetBundle.message("build.afterLoad")).bindSelected(options::buildAfterSolutionIsLoaded) }
             row {
-                checkBox("Restore NuGet packages before build").bindSelected(options::restoreBeforeBuild)
-                    .comment("Off: <code>--no-restore</code>. On, with Smart Restore of the NuGet page: only when something that decides the packages has changed")
+                checkBox(DotNetBundle.message("build.restore")).bindSelected(options::restoreBeforeBuild)
+                    .comment(DotNetBundle.message("build.restore.comment"))
             }
-            row("Use up to") {
+            row(DotNetBundle.message("build.parallel.before")) {
                 comboBox(listOf(Parallelism(0)) + (1..Runtime.getRuntime().availableProcessors()).map(::Parallelism))
                     .bindItem({ Parallelism(options.parallelProcesses) }, { options.parallelProcesses = it?.processes ?: 0 })
-                label("processes in parallel")
+                label(DotNetBundle.message("build.parallel.after"))
             }
         }
-        group("Build Logging") {
-            row("Verbosity of output logger") { comboBox(MsBuildVerbosity.entries).bindItem(options::outputVerbosity.toNullableProperty()) }
-            row { checkBox("Write MSBuild log to file").bindSelected(options::logToFile) }
-            row("Verbosity of file logger") { comboBox(MsBuildVerbosity.entries).bindItem(options::fileVerbosity.toNullableProperty()) }
+        group(DotNetBundle.message("build.logging")) {
+            row(DotNetBundle.message("build.verbosity.output")) { comboBox(MsBuildVerbosity.entries).bindItem(options::outputVerbosity.toNullableProperty()) }
+            row { checkBox(DotNetBundle.message("build.logToFile")).bindSelected(options::logToFile) }
+            row(DotNetBundle.message("build.verbosity.file")) { comboBox(MsBuildVerbosity.entries).bindItem(options::fileVerbosity.toNullableProperty()) }
             row {
-                textFieldWithBrowseButton(FileChooserDescriptorFactory.createSingleFolderDescriptor().withTitle("MSBuild Log Folder"), project)
+                textFieldWithBrowseButton(FileChooserDescriptorFactory.createSingleFolderDescriptor().withTitle(DotNetBundle.message("build.logFolder.chooser")), project)
                     .align(AlignX.FILL).bindText({ options.logFolder.orEmpty() }, { options.logFolder = it.trim() })
                     .applyToComponent { (textField as? com.intellij.ui.components.JBTextField)?.emptyText?.text = DotNetBuildOptions.defaultLogFolder().path }
-                    .comment("A log file per build: <i>Build_2026_09_21_04_03_37.log</i>")
+                    .comment(DotNetBundle.message("build.logFolder.comment"))
             }
-            row { link("Open the log folder") { RevealFileAction.openDirectory(DotNetBuildOptions.getInstance(project).logFolder.also { it.mkdirs() }) } }
+            row { link(DotNetBundle.message("build.logFolder.open")) { RevealFileAction.openDirectory(DotNetBuildOptions.getInstance(project).logFolder.also { it.mkdirs() }) } }
         }
     }
 }

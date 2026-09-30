@@ -7,32 +7,33 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.panel
+import io.github.dotnetsupport.DotNetBundle
 
 /**
  * Settings | Tools | .NET | Debugger: what the debugger of the plugin (`PLATFORM_DAP_PLAN.md`) honors, in the groups and with the
  * wording of Rider. An option appears here when there is something behind it.
  */
-class DotNetDebuggerConfigurable(private val project: Project) : BoundConfigurable("Debugger") {
+class DotNetDebuggerConfigurable(private val project: Project) : BoundConfigurable(DotNetBundle.message("page.debugger")) {
     private val settings get() = DotNetSettings.getInstance()
 
     override fun createPanel(): DialogPanel = panel {
         row {
-            comment("The options that do not depend on the language (the debug window, removing breakpoints) are the ones of the IDE:")
-            link("Build, Execution, Deployment | Debugger") {
+            comment(DotNetBundle.message("debugger.common"))
+            link(DotNetBundle.message("debugger.common.link")) {
                 // by id: this page is called "Debugger" too
                 ShowSettingsUtil.getInstance().showSettingsDialog(project, { (it as? SearchableConfigurable)?.id == "project.propDebugger" }, null)
             }
         }
-        group(".NET Languages") {
+        group(DotNetBundle.message("debugger.languages")) {
             row {
-                checkBox("Enable external source debug").bindSelected(settings::debugExternalSource)
-                    .comment("Off is \"Just My Code\": steps and stops stay in the code of the solution")
+                checkBox(DotNetBundle.message("debugger.external")).bindSelected(settings::debugExternalSource)
+                    .comment(DotNetBundle.message("debugger.external.comment"))
             }
         }
-        group("Value Inspections") {
+        group(DotNetBundle.message("debugger.values")) {
             row {
-                checkBox("Allow property evaluations and other implicit function calls").bindSelected(settings::debugAllowImplicitEvaluation)
-                    .comment("Off: values are described without running the code of the program (<code>ToString()</code>, getters, <code>[DebuggerDisplay]</code>)")
+                checkBox(DotNetBundle.message("debugger.implicit")).bindSelected(settings::debugAllowImplicitEvaluation)
+                    .comment(DotNetBundle.message("debugger.implicit.comment"))
             }
         }
     }

@@ -13,7 +13,7 @@ public readonly record struct Point(int X, int Y);
 public class Person(string name, int age)
 {
     private readonly List<string> _notes = ["created"];
-
+    public int MyProperty { get; set; } = 1;
     public string Name { get; } = name;
     public int Age { get; set; } = age;
     public Person? Friend { get; set; }

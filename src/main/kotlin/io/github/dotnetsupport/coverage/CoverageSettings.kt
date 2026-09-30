@@ -15,6 +15,7 @@ import com.intellij.openapi.util.io.FileUtil
 import com.intellij.ui.dsl.builder.bind
 import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.panel
+import io.github.dotnetsupport.DotNetBundle
 import io.github.dotnetsupport.msbuild.DotNetProjects
 
 /** What happens to the coverage that is already shown when a new run brings its own; the choices of the platform page. */
@@ -48,18 +49,18 @@ class CoverageSettings : SimplePersistentStateComponent<CoverageSettings.Setting
 }
 
 /** Settings | Tools | .NET | Coverage, the same options as Build, Execution, Deployment | Coverage has for the languages of the IDE. */
-class CoverageSettingsConfigurable : BoundConfigurable("Coverage") {
+class CoverageSettingsConfigurable : BoundConfigurable(DotNetBundle.message("page.coverage")) {
     private val settings get() = CoverageSettings.getInstance()
 
     override fun createPanel(): DialogPanel = panel {
-        buttonsGroup("When new coverage is gathered") {
-            row { radioButton("Show options before applying coverage to the editor", NewCoverageAction.ASK) }
-            row { radioButton("Do not apply collected coverage", NewCoverageAction.DO_NOT_APPLY) }
-            row { radioButton("Replace active suites with the new one", NewCoverageAction.REPLACE) }
-            row { radioButton("Add to the active suites", NewCoverageAction.ADD).comment("Hits of the runs are summed: a line is covered when any of them has executed it") }
+        buttonsGroup(DotNetBundle.message("coverage.onNew")) {
+            row { radioButton(DotNetBundle.message("coverage.onNew.ask"), NewCoverageAction.ASK) }
+            row { radioButton(DotNetBundle.message("coverage.onNew.doNotApply"), NewCoverageAction.DO_NOT_APPLY) }
+            row { radioButton(DotNetBundle.message("coverage.onNew.replace"), NewCoverageAction.REPLACE) }
+            row { radioButton(DotNetBundle.message("coverage.onNew.add"), NewCoverageAction.ADD).comment(DotNetBundle.message("coverage.onNew.add.comment")) }
         }.bind({ settings.onNewCoverage }, { settings.onNewCoverage = it })
-        row { checkBox("Activate Coverage View").bindSelected(settings::activateView) }
-        row { checkBox("Show coverage in the project view").bindSelected(settings::showInProjectView).comment("Percent of covered lines next to files and folders, in the Solution view too") }
+        row { checkBox(DotNetBundle.message("coverage.activate")).bindSelected(settings::activateView) }
+        row { checkBox(DotNetBundle.message("coverage.projectView")).bindSelected(settings::showInProjectView).comment(DotNetBundle.message("coverage.projectView.comment")) }
     }
 }
 

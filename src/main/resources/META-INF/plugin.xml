@@ -142,18 +142,18 @@
         <!-- static members of types that are not imported, by the bare name: WriteLi -> Console.WriteLine and the using -->
         <completion.contributor language="C#" implementationClass="io.github.dotnetsupport.index.ImportCompletionContributor"/>
         <notificationGroup id=".NET" displayType="BALLOON"/>
-        <projectConfigurable parentId="tools" id="io.github.dotnetsupport.settings" displayName=".NET"
+        <projectConfigurable parentId="tools" id="io.github.dotnetsupport.settings" key="page.dotnet" bundle="messages.DotNetBundle"
                              instance="io.github.dotnetsupport.settings.DotNetSettingsConfigurable"/>
         <!-- the pages of Rider under Tools | .NET, with the options the plugin has something behind -->
-        <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.build" displayName="Toolset and Build"
+        <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.build" key="page.build" bundle="messages.DotNetBundle"
                              instance="io.github.dotnetsupport.build.DotNetBuildConfigurable"/>
-        <applicationConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.nuget" displayName="NuGet"
+        <applicationConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.nuget" key="page.nuget" bundle="messages.DotNetBundle"
                                  instance="io.github.dotnetsupport.nuget.NuGetSettingsConfigurable"/>
-        <applicationConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.coverage" displayName="Coverage"
+        <applicationConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.coverage" key="page.coverage" bundle="messages.DotNetBundle"
                                  instance="io.github.dotnetsupport.coverage.CoverageSettingsConfigurable"/>
-        <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.debugger" displayName="Debugger"
+        <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.debugger" key="page.debugger" bundle="messages.DotNetBundle"
                              instance="io.github.dotnetsupport.settings.DotNetDebuggerConfigurable"/>
-        <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.languageServer" displayName="Language Server"
+        <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.languageServer" key="page.languageServer" bundle="messages.DotNetBundle"
                              instance="io.github.dotnetsupport.lsp.RoslynLanguageServerConfigurable"/>
         <langCodeStyleSettingsProvider implementation="io.github.dotnetsupport.lang.CSharpCodeStyleSettingsProvider"/>
         <projectViewNodeDecorator implementation="io.github.dotnetsupport.coverage.CoverageProjectViewDecorator"/>
@@ -398,6 +398,8 @@
             <separator/>
             <action id="DotNet.Welcome" class="io.github.dotnetsupport.welcome.ShowWelcomePageAction" text="Welcome to C# Project Support"
                     description="What the plugin can do and where to start"/>
+            <action id="DotNet.Documentation" class="io.github.dotnetsupport.welcome.ShowDocumentationAction" text="Plugin Documentation"
+                    description="How to work with the plugin: the menus, the tool windows, every page of the settings, where things are kept, what to do when something does not work"/>
             <action id="DotNet.SuggestionStats" class="io.github.dotnetsupport.suggest.ShowSuggestionStatsAction" text="Suggestion Statistics"
                     description="How often the gray text and the items of the completion list are shown and taken, counted on this machine"/>
             <action id="DotNet.ShowPluginLogs" class="io.github.dotnetsupport.cli.ShowPluginLogsAction" text="Show Plugin Logs"

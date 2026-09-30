@@ -10,6 +10,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.vfs.VirtualFile
+import io.github.dotnetsupport.DotNetBundle
 import io.github.dotnetsupport.msbuild.DotNetProjects
 import io.github.dotnetsupport.nuget.NuGetSettings
 import io.github.dotnetsupport.solution.SolutionService
@@ -22,7 +23,8 @@ import java.time.format.DateTimeFormatter
 enum class MsBuildVerbosity(val title: String, val argument: String) {
     QUIET("Quiet", "quiet"), MINIMAL("Minimal", "minimal"), NORMAL("Normal", "normal"), DETAILED("Detailed", "detailed"), DIAGNOSTIC("Diagnostic", "diagnostic");
 
-    override fun toString(): String = title
+    // in the language of the settings page; [title] is the English one
+    override fun toString(): String = DotNetBundle.messageOr("verbosity.$name", title)
 }
 
 /**

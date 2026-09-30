@@ -73,6 +73,10 @@ tasks.processResources {
         into("welcome")
         rename { "index.html" }
     }
+    // the documentation, the second page of the same tab
+    from("docs/guide.html") {
+        into("welcome")
+    }
     // The indexer of assemblies goes as its source: the plugin builds it on the machine of the user, with the SDK that is there
     // (IndexerTool). One source, indexer/ of the repository.
     from("indexer") {

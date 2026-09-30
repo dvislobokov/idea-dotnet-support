@@ -8,6 +8,7 @@ import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
 import com.intellij.util.execution.ParametersListUtil
 import com.intellij.util.messages.Topic
+import io.github.dotnetsupport.DotNetBundle
 
 /** `--logLevel` of the server. */
 enum class RoslynLogLevel { None, Critical, Error, Warning, Information, Debug, Trace }
@@ -71,6 +72,10 @@ class RoslynLanguageServerSettings : SimplePersistentStateComponent<RoslynLangua
 class RoslynOption(val group: String, val section: String, val label: String, val default: String, val values: List<String>? = null, val comment: String? = null) {
     val isToggle: Boolean get() = values == null && (default == "true" || default == "false")
     val isText: Boolean get() = values == null && !isToggle
+
+    /** [label] and [comment] in the language of the settings page; the English ones are here, the Russian ones in the bundle. */
+    val text: String get() = DotNetBundle.messageOr("roslyn.option.$section", label)
+    val note: String? get() = comment?.let { DotNetBundle.messageOr("roslyn.option.$section.comment", it) }
 }
 
 /**
@@ -137,6 +142,11 @@ object RoslynOptions {
     )
 
     val GROUPS: List<String> = ALL.map { it.group }.distinct()
+
+    fun key(group: String): String = "roslyn.group." + group.lowercase().replace(' ', '_')
+
+    /** The name of a group in the language of the settings page. */
+    fun title(group: String): String = DotNetBundle.messageOr(key(group), group)
 }
 
 /** The indents the server formats with; they come from the code style of the IDE, not from the page of the server. */

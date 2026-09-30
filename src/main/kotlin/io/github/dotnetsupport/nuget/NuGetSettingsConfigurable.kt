@@ -5,33 +5,34 @@ import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.panel
+import io.github.dotnetsupport.DotNetBundle
 
 /** Settings | Tools | .NET | NuGet: the groups and the wording of Rider, only the options the plugin has something behind. */
-class NuGetSettingsConfigurable : BoundConfigurable("NuGet") {
+class NuGetSettingsConfigurable : BoundConfigurable(DotNetBundle.message("page.nuget")) {
     private val settings get() = NuGetSettings.getInstance()
 
     override fun createPanel(): DialogPanel = panel {
-        group("Search") {
+        group(DotNetBundle.message("nuget.search")) {
             row {
-                checkBox("Include prerelease").bindSelected(settings::includePrerelease)
-                    .comment("The initial state of \"Prerelease\" in the NuGet window, and whether Upgrade Packages in Solution goes to prerelease versions")
+                checkBox(DotNetBundle.message("nuget.prerelease")).bindSelected(settings::includePrerelease)
+                    .comment(DotNetBundle.message("nuget.prerelease.comment"))
             }
         }
-        group("Restore") {
+        group(DotNetBundle.message("nuget.restore")) {
             row {
-                checkBox("Automatically restore missing packages when necessary").bindSelected(settings::automaticRestore)
-                    .comment("A quiet <code>dotnet restore</code> after a project file, Directory.Packages.props or nuget.config has changed; reported to the Log tab of the NuGet window")
+                checkBox(DotNetBundle.message("nuget.automatic")).bindSelected(settings::automaticRestore)
+                    .comment(DotNetBundle.message("nuget.automatic.comment"))
             }
             row {
-                checkBox("Smart Restore on Build").bindSelected(settings::smartRestore)
-                    .comment("Build with <code>--no-restore</code> while project.assets.json is newer than everything that decides the packages")
+                checkBox(DotNetBundle.message("nuget.smart")).bindSelected(settings::smartRestore)
+                    .comment(DotNetBundle.message("nuget.smart.comment"))
             }
-            row { checkBox("Do not use the HTTP cache").bindSelected(settings::noCache).comment("<code>--no-cache</code>: for a feed where a version was re-published") }
-            row { checkBox("Allow interactive authentication").bindSelected(settings::interactive).comment("<code>--interactive</code>: a credential provider may print a device-login link into the log") }
+            row { checkBox(DotNetBundle.message("nuget.noCache")).bindSelected(settings::noCache).comment(DotNetBundle.message("nuget.noCache.comment")) }
+            row { checkBox(DotNetBundle.message("nuget.interactive")).bindSelected(settings::interactive).comment(DotNetBundle.message("nuget.interactive.comment")) }
         }
-        group("Credential Providers") {
-            row { comment("The dotnet CLI uses the credential providers installed in <code>~/.nuget/plugins</code>") }
-            row { link("Install the Azure Artifacts Credential Provider...") { BrowserUtil.browse("https://github.com/microsoft/artifacts-credprovider#setup") } }
+        group(DotNetBundle.message("nuget.credentials")) {
+            row { comment(DotNetBundle.message("nuget.credentials.comment")) }
+            row { link(DotNetBundle.message("nuget.credentials.azure")) { BrowserUtil.browse("https://github.com/microsoft/artifacts-credprovider#setup") } }
         }
     }
 }

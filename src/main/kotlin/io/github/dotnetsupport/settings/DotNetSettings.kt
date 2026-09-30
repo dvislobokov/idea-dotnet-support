@@ -23,6 +23,8 @@ import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.ui.AsyncProcessIcon
 import com.intellij.util.ui.UIUtil
+import io.github.dotnetsupport.DotNetBundle
+import io.github.dotnetsupport.PluginLanguage
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetTool
 import io.github.dotnetsupport.format.CSharpierLocator
@@ -44,6 +46,9 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
         var createRunConfigurations by property(true)
         var openBuildWindowOnEveryBuild by property(true)
         var switchToSolutionView by property(true)
+
+        /** Of the settings pages: the one of the IDE, or chosen here (there is no Russian language pack for the IDE itself). */
+        var language by enum(PluginLanguage.AUTO)
 
         /** Package id of a global tool -> its executable; a tool without an entry is looked up on PATH and in `~/.dotnet/tools`. */
         var toolPaths by map<String, String>()
@@ -70,6 +75,10 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
         get() = state.switchToSolutionView
         set(value) { state.switchToSolutionView = value }
 
+    var language: PluginLanguage
+        get() = state.language
+        set(value) { state.language = value }
+
     var debugExternalSource: Boolean
         get() = state.debugExternalSource
         set(value) { state.debugExternalSource = value }
@@ -93,7 +102,7 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
 }
 
 /** Settings | Tools | .NET */
-class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurable(".NET") {
+class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurable(DotNetBundle.message("page.dotnet")) {
     private val settings get() = DotNetSettings.getInstance()
     private val pathField = TextFieldWithBrowseButton()
     private val cliStatus = JBLabel()
@@ -115,9 +124,9 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
     /** Path field, what was found and the Install / Update button of one global tool. */
     private inner class ToolRow(val tool: DotNetTool) {
         val path = TextFieldWithBrowseButton().apply {
-            addBrowseFolderListener(project, FileChooserDescriptorFactory.createSingleFileNoJarsDescriptor().withTitle("${tool.packageId} Executable"))
+            addBrowseFolderListener(project, FileChooserDescriptorFactory.createSingleFileNoJarsDescriptor().withTitle(DotNetBundle.message("settings.tools.chooser", tool.packageId)))
         }
-        val install = javax.swing.JButton("Install").apply { addActionListener { runInstallation() } }
+        val install = javax.swing.JButton(DotNetBundle.message("settings.tools.install")).apply { addActionListener { runInstallation() } }
         val progress = AsyncProcessIcon("installing ${tool.packageId}").apply { isVisible = false }
         val status = JBLabel().apply { isVisible = false }
 
@@ -129,7 +138,7 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
             install.isEnabled = false
             progress.isVisible = true
             progress.resume()
-            show("Running: dotnet ${tool.installCommand().joinToString(" ")}", isError = false)
+            show(DotNetBundle.message("settings.tools.running", tool.installCommand().joinToString(" ")), isError = false)
             val output = StringBuffer()
             ApplicationManager.getApplication().executeOnPooledThread {
                 val exitCode = tool.installBlocking { text ->
@@ -157,9 +166,9 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
             ApplicationManager.getApplication().executeOnPooledThread {
                 val detected = tool.detect()
                 ApplicationManager.getApplication().invokeLater({
-                    (path.textField as? JBTextField)?.emptyText?.text = detected?.let { "Auto-detected: ${it.path}" } ?: "Not installed"
+                    (path.textField as? JBTextField)?.emptyText?.text = detected?.let { DotNetBundle.message("settings.cli.autoDetected", it.path) } ?: DotNetBundle.message("settings.tools.notInstalled")
                     // `dotnet tool update` installs a missing tool and updates an installed one
-                    install.text = if (detected == null) "Install" else "Update"
+                    install.text = DotNetBundle.message(if (detected == null) "settings.tools.install" else "settings.tools.update")
                     install.isEnabled = true
                 }, ModalityState.any())
             }
@@ -167,56 +176,61 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
     }
 
     override fun createPanel(): DialogPanel {
-        pathField.addBrowseFolderListener(project, FileChooserDescriptorFactory.createSingleFileNoJarsDescriptor().withTitle("dotnet Executable"))
-        (pathField.textField as? JBTextField)?.emptyText?.text = DotNetCli.detectExecutable()?.let { "Auto-detected: $it" } ?: "Not found on PATH"
+        pathField.addBrowseFolderListener(project, FileChooserDescriptorFactory.createSingleFileNoJarsDescriptor().withTitle(DotNetBundle.message("settings.cli.executable.chooser")))
+        (pathField.textField as? JBTextField)?.emptyText?.text = DotNetCli.detectExecutable()?.let { DotNetBundle.message("settings.cli.autoDetected", it) } ?: DotNetBundle.message("settings.cli.notOnPath")
 
         return panel {
-            group(".NET CLI") {
-                row("dotnet executable:") {
+            group(DotNetBundle.message("settings.cli.group")) {
+                row(DotNetBundle.message("settings.cli.executable")) {
                     cell(pathField).align(AlignX.FILL)
-                        .comment("Empty: the one from PATH. Set it for an SDK installed per user or unpacked from an archive.")
-                        .validationOnApply { if (it.text.isNotBlank() && !File(it.text.trim()).isFile) error("The file does not exist") else null }
+                        .comment(DotNetBundle.message("settings.cli.executable.comment"))
+                        .validationOnApply { if (it.text.isNotBlank() && !File(it.text.trim()).isFile) error(DotNetBundle.message("common.fileMissing")) else null }
                 }
                 // an empty label keeps the button in the column of the field
                 row("") {
-                    button("Check") { refreshInformation(pathField.text.trim()) }
+                    button(DotNetBundle.message("settings.cli.check")) { refreshInformation(pathField.text.trim()) }
                     cell(cliStatus)
                 }
-                row("Installed SDKs:") { cell(sdkList) }.topGap(com.intellij.ui.dsl.builder.TopGap.SMALL)
-                row("global.json:") { cell(globalJsonStatus) }
-                row("") { link("Support status of SDKs and runtimes, dotnet --info...") { DotNetEnvironmentDialog(project).show() } }
+                row(DotNetBundle.message("settings.cli.sdks")) { cell(sdkList) }.topGap(com.intellij.ui.dsl.builder.TopGap.SMALL)
+                row(DotNetBundle.message("settings.cli.globalJson")) { cell(globalJsonStatus) }
+                row("") { link(DotNetBundle.message("settings.cli.environment")) { DotNetEnvironmentDialog(project).show() } }
             }
-            group(".NET Tools") {
+            group(DotNetBundle.message("settings.tools.group")) {
                 row {
-                    comment("Global tools the plugin runs. An empty path: the tool is looked up on PATH and in ~/.dotnet/tools. Install and Update run 'dotnet tool update --global'.")
+                    comment(DotNetBundle.message("settings.tools.comment"))
                 }
                 for (toolRow in toolRows.values) {
                     row(toolRow.tool.packageId + ":") {
                         // the field takes the width the button leaves
                         cell(toolRow.path).resizableColumn().align(AlignX.FILL)
-                            .validationOnApply { if (it.text.isNotBlank() && !File(it.text.trim()).isFile) error("The file does not exist") else null }
+                            .validationOnApply { if (it.text.isNotBlank() && !File(it.text.trim()).isFile) error(DotNetBundle.message("common.fileMissing")) else null }
                         cell(toolRow.install)
                         cell(toolRow.progress)
-                    }.rowComment(toolRow.tool.purpose)
+                    }.rowComment(DotNetBundle.messageOr("tool.purpose." + toolRow.tool.packageId, toolRow.tool.purpose))
                     // what the installation is doing and how it ended; empty until Install is pressed
                     row("") { cell(toolRow.status) }
                 }
             }
-            group("Formatting") {
-                row("Formatter:") {
+            group(DotNetBundle.message("settings.formatting.group")) {
+                row(DotNetBundle.message("settings.formatting.formatter")) {
                     comboBox(FormatterChoice.entries).bindItem({ formatting.formatter }, { formatting.formatter = it ?: FormatterChoice.AUTO })
                         .onChanged { refreshFormatter(it.selectedItem as? FormatterChoice ?: FormatterChoice.AUTO) }
-                        .comment("Behind Reformat Code and \"Reformat code\" of Actions on Save for C# files. Kept with the project: a team formats one way. CSharpier formats whole files only.")
+                        .comment(DotNetBundle.message("settings.formatting.comment"))
                 }
                 row("") { cell(formatterStatus) }
             }
-            group("Behavior") {
-                row { checkBox("Create run configurations for the runnable projects of a solution").bindSelected(settings::createRunConfigurations) }
+            group(DotNetBundle.message("settings.behavior.group")) {
+                row { checkBox(DotNetBundle.message("settings.behavior.runConfigurations")).bindSelected(settings::createRunConfigurations) }
                 row {
-                    checkBox("Open the Build tool window on every build").bindSelected(settings::openBuildWindowOnEveryBuild)
-                        .comment("When off, it opens only if the build fails")
+                    checkBox(DotNetBundle.message("settings.behavior.buildWindow")).bindSelected(settings::openBuildWindowOnEveryBuild)
+                        .comment(DotNetBundle.message("settings.behavior.buildWindow.comment"))
                 }
-                row { checkBox("Switch the Project tool window to the Solution view when a solution is opened for the first time").bindSelected(settings::switchToSolutionView) }
+                row { checkBox(DotNetBundle.message("settings.behavior.solutionView")).bindSelected(settings::switchToSolutionView) }
+                row(DotNetBundle.message("settings.language")) {
+                    comboBox(PluginLanguage.entries).bindItem({ settings.language }, { settings.language = it ?: PluginLanguage.AUTO })
+                        .comment(DotNetBundle.message("settings.language.comment"))
+                }
+                row { link(DotNetBundle.message("settings.documentation")) { io.github.dotnetsupport.welcome.WelcomePage.open(project, io.github.dotnetsupport.welcome.WelcomePage.GUIDE, "settings", inBrowser = true) } }
             }
         }.also {
             refreshInformation(settings.dotnetPath)
@@ -229,25 +243,25 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
         /** Blocking: a global CSharpier is asked for its version. */
         fun describeFormatter(choice: FormatterChoice, directory: File?): String {
             val resolved = if (choice != FormatterChoice.AUTO) choice else if (CSharpierLocator.isUsedBy(directory)) FormatterChoice.CSHARPIER else FormatterChoice.DOTNET_FORMAT
-            val prefix = if (choice == FormatterChoice.AUTO) "For this project: " else ""
+            fun forProject(text: String) = if (choice == FormatterChoice.AUTO) DotNetBundle.message("settings.formatting.forProject", text) else text
             return when (resolved) {
                 FormatterChoice.CSHARPIER -> try {
-                    prefix + CSharpierLocator.find(directory).description
+                    forProject(CSharpierLocator.find(directory).description)
                 } catch (e: CSharpierUnavailable) {
-                    prefix + "CSharpier, but " + e.message.orEmpty().replaceFirstChar { it.lowercase() } + " Install it in .NET Tools above."
+                    forProject(DotNetBundle.message("settings.formatting.csharpierMissing", e.message.orEmpty().replaceFirstChar { it.lowercase() }))
                 }
-                FormatterChoice.DOTNET_FORMAT -> prefix + "dotnet format whitespace, from the SDK" +
-                    if (choice == FormatterChoice.AUTO) " (no .csharpierrc, no csharpier in a tool manifest)" else ""
-                else -> "Reformat Code leaves C# files alone."
+                FormatterChoice.DOTNET_FORMAT ->
+                    forProject(DotNetBundle.message(if (choice == FormatterChoice.AUTO) "settings.formatting.dotnetFormat.auto" else "settings.formatting.dotnetFormat"))
+                else -> DotNetBundle.message("settings.formatting.none")
             }
         }
 
         /** The last meaningful line of `dotnet tool update`: "Tool 'x' (version '1.2.3') was successfully installed." or the error. */
         fun installationSummary(exitCode: Int, output: String): String {
             val lines = output.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
-            if (exitCode == 0) return lines.lastOrNull() ?: "Done."
-            val reason = lines.lastOrNull { "error" in it.lowercase() } ?: lines.lastOrNull() ?: "no output"
-            return "Failed (exit code $exitCode): $reason"
+            if (exitCode == 0) return lines.lastOrNull() ?: DotNetBundle.message("settings.tools.done")
+            val reason = lines.lastOrNull { "error" in it.lowercase() } ?: lines.lastOrNull() ?: DotNetBundle.message("settings.tools.noOutput")
+            return DotNetBundle.message("settings.tools.failed", exitCode, reason)
         }
     }
 
@@ -269,28 +283,28 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
 
     /** Version of the CLI at [customPath] (or of the auto-detected one), the SDKs it knows and what `global.json` asks for. */
     private fun refreshInformation(customPath: String) {
-        cliStatus.text = "Checking..."
+        cliStatus.text = DotNetBundle.message("settings.cli.checking")
         ApplicationManager.getApplication().executeOnPooledThread {
             val executable = customPath.ifEmpty { DotNetCli.detectExecutable().orEmpty() }
             val sdks = if (executable.isEmpty()) emptyList() else DotNetSdks.installed(executable)
             val globalJson = GlobalJson.find(project.guessProjectDir())
             ApplicationManager.getApplication().invokeLater({
                 cliStatus.text = when {
-                    executable.isEmpty() -> "The dotnet executable is not found"
-                    sdks.isEmpty() -> "No SDKs reported by $executable"
-                    else -> "$executable, newest SDK ${sdks.first().version}"
+                    executable.isEmpty() -> DotNetBundle.message("settings.cli.notFound")
+                    sdks.isEmpty() -> DotNetBundle.message("settings.cli.noSdks", executable)
+                    else -> DotNetBundle.message("settings.cli.newest", executable, sdks.first().version)
                 }
                 cliStatus.foreground = if (sdks.isEmpty()) UIUtil.getErrorForeground() else UIUtil.getLabelForeground()
-                sdkList.text = if (sdks.isEmpty()) "none" else "<html>" + sdks.joinToString("<br>") { "${it.version} &nbsp;<span style='color:gray'>${it.location}</span>" } + "</html>"
+                sdkList.text = if (sdks.isEmpty()) DotNetBundle.message("settings.cli.none") else "<html>" + sdks.joinToString("<br>") { "${it.version} &nbsp;<span style='color:gray'>${it.location}</span>" } + "</html>"
                 globalJsonStatus.text = describe(globalJson?.second, sdks.map { it.version })
             }, ModalityState.any())
         }
     }
 
     private fun describe(globalJson: GlobalJson?, installed: List<io.github.dotnetsupport.sdk.SdkVersion>): String {
-        if (globalJson == null) return "not used by this project: the newest SDK is taken"
-        val requirement = "requires ${globalJson.version ?: "any version"} (rollForward: ${globalJson.rollForward})"
+        if (globalJson == null) return DotNetBundle.message("settings.globalJson.notUsed")
+        val requirement = DotNetBundle.message("settings.globalJson.requires", globalJson.version ?: DotNetBundle.message("settings.globalJson.anyVersion"), globalJson.rollForward)
         val resolved = globalJson.resolve(installed)
-        return if (resolved != null) "$requirement, resolves to $resolved" else "<html>$requirement. <b>No installed SDK satisfies it.</b></html>"
+        return if (resolved != null) DotNetBundle.message("settings.globalJson.resolves", requirement, resolved) else DotNetBundle.message("settings.globalJson.unsatisfied", requirement)
     }
 }

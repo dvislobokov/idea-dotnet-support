@@ -96,7 +96,15 @@ Roslyn главный: свои эвристики (раскраска иден�
 
 - Kotlin, строки до ~180 символов, плотный стиль; однострочные функции-выражения — норма.
 - Комментарии и KDoc — **по-английски**, короткие, объясняют «почему» (часто с отсылкой «as in Rider»). `ROADMAP.md` и общение с пользователем — по-русски.
-- Тексты UI — английские, в Title Case для действий, формулировки сверять с Rider.
+- Тексты UI — английские, в Title Case для действий, формулировки сверять с Rider. **Страницы настроек — на двух языках** (решение пользователя
+  2026-09-29): тексты лежат в `resources/messages/DotNetBundle.properties` и `DotNetBundle_ru.properties`, берутся через `DotNetBundle.message(key)`;
+  язык — параметр плагина (Settings | Tools | .NET, «Language of the settings pages»: как в IDE / English / Русский), потому что русского языкового
+  пакета у самой IDE нет. Новый текст на странице настроек — ключ в обоих файлах (`DotNetBundleTest` сверяет ключи и параметры `{0}`); у опций сервера
+  языка английский текст в `RoslynOptions`, русский — в файле под ключом `roslyn.option.<section>`. Меню, действия и окна остаются английскими.
+- Страницы о плагине: `docs/demo.html` (возможности, продающая, с анимациями) и `docs/guide.html` (документация). Вторая **генерируется**:
+  `uv run --no-project python tools/guide/generate.py` — названия параметров она берёт из файлов строк, оформление из `demo.html`; править скрипт,
+  а не файл. Новая опция на странице настроек без перегенерации роняет `DotNetBundleTest.testTheDocumentationNamesEveryOption`. В IDE обе страницы
+  открываются файлами из кэша IDE (`WelcomePage`), чтобы ссылки между ними работали.
 - Действия: `AnAction(), DumbAware`, `getActionUpdateThread() = BGT`; в `update` обычно `isEnabledAndVisible`.
   В контекстном меню неподходящее скрывать, в главном — оставлять видимым, но выключенным (`e.isFromContextMenu`).
 - Команды `dotnet`: строить через `DotNetCli.commandLinesOrNotify { DotNetCli.commandLine(dir, ...) }`, запускать `DotNetCli.runInBackground`
