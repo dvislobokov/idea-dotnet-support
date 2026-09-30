@@ -200,4 +200,17 @@ class CompletionRankingTest {
         assertTrue(keyword.signals.isEmpty())
         assertTrue("never more than the cap", RoslynCompletionRanking.bonus("x", CompletionItemKind.Class, context, 1_000_000).value <= RoslynCompletionRanking.USED_MAX)
     }
+
+    @Test
+    fun theVariableBeingDeclaredIsNotOffered() {
+        fun context(line: String): RoslynCompletionRanking.Context { val (changed, at) = typed(line); return RoslynCompletionRanking.contextOf(changed, at) }
+        val variable = CompletionItemKind.Variable
+        assertTrue("`int amount = |`: amount is what is being declared", RoslynCompletionRanking.isBeingDeclared("amount", variable, context("int amount = ")))
+        assertTrue("`var copy = |`", RoslynCompletionRanking.isBeingDeclared("copy", variable, context("var copy = ")))
+        assertFalse("another name is fine", RoslynCompletionRanking.isBeingDeclared("count", variable, context("int amount = ")))
+        assertFalse("`Name = |` is an assignment, the property stays", RoslynCompletionRanking.isBeingDeclared("Name", CompletionItemKind.Property, context("Name = ")))
+        assertFalse("a method of the same name is not the variable", RoslynCompletionRanking.isBeingDeclared("amount", CompletionItemKind.Method, context("int amount = ")))
+        assertFalse("`int amount = order.|`: the member of another thing", RoslynCompletionRanking.isBeingDeclared("amount", variable, context("int amount = order.")))
+        assertFalse(RoslynCompletionRanking.isBeingDeclared("amount", variable, RoslynCompletionRanking.Context.NONE))
+    }
 }

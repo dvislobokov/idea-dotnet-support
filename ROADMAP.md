@@ -360,8 +360,12 @@
   по всей папке рекурсивно, несколько — список выбора (выбор запоминается в проекте, закрытый список оставляет нотификацию), смена — меню .NET →
   Select Solution for Language Server (перезапуск сервера). Проверено в живой IDE: список из двух solution, до выбора ничего не грузится и ошибок нет,
   выбор → загрузка за 1,7 с и ошибки компилятора, смена на вложенный `.slnx` → перезапуск без повторного вопроса
-- [x] Фаза 1, хвосты (проверено роботом 2026-09-30): `.cs`, созданный после загрузки solution, сервер подхватывает сам, секунд через 15–20
-  (`prepareTypeHierarchy` по новому файлу сначала пуст, потом отвечает; платформа LSP file watching не даёт, сервер следит за файлами сам)
+- [x] Фаза 1, хвосты (проверено роботом 2026-09-30): `.cs`, созданный после загрузки solution, попадал в проект секунд через 15–20 окольным
+  путём через `didOpen`. Причина: после `initialized` сервер регистрирует у клиента `workspace/didChangeWatchedFiles` (`.cs` / `.razor` / `.cshtml`
+  под папкой проекта и файл проекта — `capture-5.12/63-server_to_client_requests.json`), а платформенный LSP-клиент регистрацию не выполняет.
+  Сделано 2026-09-30: `RoslynFileWatcher` (`BulkFileListener` модуля `roslyn`) → `RoslynWatchedFiles.changes` (чистая: создание / удаление /
+  правка на диске / переименование и перемещение как удаление + создание; `.cs`, файлы проектов, props / targets, `.editorconfig`, `.sln[x]`,
+  Razor; без `bin` / `obj` / `.git`) → `RoslynWorkspace.filesChanged` → уведомление каждому клиенту. Тест `RoslynFileWatcherTest`. Вживую не проверено
 - [x] Фаза 2, «Roslyn главный» (2026-09-21, решение пользователя): мост `RoslynServerStatus` — пока сервер проекта готов, уступают эвристическая
   раскраска идентификаторов, свой folding (платформа сворачивает любой язык по ответу сервера — вдвоём были бы дубли) и ошибки последней сборки в
   редакторе; semantic tokens сервера идут в палитру плагина (платформа по умолчанию просит их только для TEXT / TextMate — включено явно);
@@ -421,7 +425,8 @@
   `CompletionItemKind` — локальные / параметры / члены → методы → типы → ключевые слова, `preselect` сервера сверху (`RoslynCompletionPolicy.priority`).
   Проверено роботом 2026-09-30 (`tools/ui-robot/scripts/complete_at_line.js`, сценарии `CompletionRanking.cs`): weigher сильнее `sortText` —
   на `n` первым `Name`, ключевые слова `nameof` / `new` / `null` на 71–75 позиции после типов; `int amount = ` → `count`, `Count`; `Send(` → строки первыми.
-  Замечено: объявляемая на этой же строке переменная (`amount`, `copy`) стоит первой — её предлагает сервер, плагин не отсеивает
+  Объявляемая на этой же строке переменная (`int amount = |` → `amount`, её предлагает сервер) стояла первой — с 2026-09-30 отсеивается:
+  `CSharpExpected.declared` из `DECLARATION`, `RoslynCompletionRanking.isBeingDeclared` (только kind Variable, не после точки), тест в `CompletionRankingTest`
 - [x] Parameter Info у extension-методов (2026-09-29, по скриншоту пользователя: строки вида «extension) IServiceCollection … AddSingleton(Type serviceType»):
   label Roslyn начинается с `(extension)`, а список параметров брался от первой скобки; теперь — последняя сбалансированная группа скобок
   (`RoslynSignatures.splitParameterList`)

@@ -251,8 +251,9 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
 
     private fun absolute(relative: String?): String? = relative?.let { path -> project.guessProjectDir()?.let { "${it.path}/$path" } }
 
+    // `Path.toUri` gives `file:///C:/...`, as the descriptor does; `File.toURI` would give `file:/C:/...`, which the server does not match
     private fun uri(descriptor: LspClientDescriptor, path: String): String =
-        LocalFileSystem.getInstance().findFileByPath(path)?.let(descriptor::getFileUri) ?: File(path).toURI().toString()
+        LocalFileSystem.getInstance().findFileByPath(path)?.let(descriptor::getFileUri) ?: RoslynLanguageServer.plainDriveUri(java.nio.file.Path.of(path).toUri().toString())
 
     override fun projectsLoaded() {
         isLoaded = true
@@ -321,6 +322,19 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
             client.sendNotification { it.workspaceService.didChangeWatchedFiles(org.eclipse.lsp4j.DidChangeWatchedFilesParams(listOf(event))) }
         }
         project.service<RoslynResponseMemo>().invalidate()
+    }
+
+    /**
+     * Files created, deleted, renamed or changed on disk under the opened folder ([RoslynFileWatcher]): the notification the server
+     * registered for and the platform never sends. A file that is gone has no VirtualFile any more, its URI is made from the path.
+     */
+    fun filesChanged(changes: List<RoslynWatchedFiles.Change>) {
+        if (changes.isEmpty()) return
+        for (client in clients) {
+            val events = changes.map { org.eclipse.lsp4j.FileEvent(uri(client.descriptor, it.path), it.type) }
+            client.sendNotification { it.workspaceService.didChangeWatchedFiles(org.eclipse.lsp4j.DidChangeWatchedFilesParams(events)) }
+        }
+        if (changes.any { it.type != org.eclipse.lsp4j.FileChangeType.Changed || !it.path.endsWith(".cs", ignoreCase = true) }) project.service<RoslynResponseMemo>().invalidate()
     }
 
     fun showLog() = RevealFileAction.openDirectory(logDirectory().apply { mkdirs() })

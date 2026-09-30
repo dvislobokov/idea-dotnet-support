@@ -63,6 +63,7 @@ class RoslynCompletionSupport : LspCompletionSupport() {
         // what fits the place: of the type that is wanted, named as the parameter, declared a line above, chosen here before
         val name = item.label.orEmpty().removeSuffix("<>")
         val context = runCatching { parameters.originalFile.project.service<RoslynCompletionContext>().at(parameters) }.getOrDefault(RoslynCompletionRanking.Context.NONE)
+        if (RoslynCompletionRanking.isBeingDeclared(name, item.kind, context)) return null
         val bonus = RoslynCompletionRanking.bonus(name, item.kind, context, SuggestionStats.getInstance().labelCount(name))
         val ranked = PrioritizedLookupElement.withPriority(withParentheses, RoslynCompletionPolicy.priority(item.kind, item.preselect == true) + bonus.value)
         if (bonus.signals.isNotEmpty()) ranked.putUserData(SuggestionStats.SIGNALS, bonus.signals)

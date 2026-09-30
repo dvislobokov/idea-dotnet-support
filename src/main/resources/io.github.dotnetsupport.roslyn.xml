@@ -69,5 +69,7 @@
     <projectListeners>
         <!-- Reload Solution / Reload Project: the server reloads with the Solution view -->
         <listener class="io.github.dotnetsupport.roslyn.RoslynReloadListener" topic="io.github.dotnetsupport.actions.SolutionReloadListener"/>
+        <!-- the file watching the server asks the client for (workspace/didChangeWatchedFiles) and the platform does not do -->
+        <listener class="io.github.dotnetsupport.roslyn.RoslynFileWatcher" topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
     </projectListeners>
 </idea-plugin>

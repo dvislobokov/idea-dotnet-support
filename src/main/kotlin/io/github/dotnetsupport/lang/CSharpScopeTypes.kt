@@ -142,8 +142,12 @@ object CSharpScopeTypes {
     }
 }
 
-/** What is wanted where the caret is: `int total = |` wants an `int`, and a thing called `total` is likely the one. */
-class CSharpExpected(val type: String?, val name: String?) {
+/**
+ * What is wanted where the caret is: `int total = |` wants an `int`, and a thing called `total` is likely the one. [declared] when the
+ * name is the one being declared on this very statement: `total` itself cannot be used in its own initializer (CS0841), so it is
+ * not offered, as Rider leaves it out (the server offers it: it is in scope).
+ */
+class CSharpExpected(val type: String?, val name: String?, val declared: Boolean = false) {
     override fun toString(): String = "${type ?: "?"} ${name ?: "?"}"
 }
 
@@ -167,8 +171,8 @@ object CSharpExpectations {
         if (line.trimEnd().endsWith("==") || line.trimEnd().endsWith("!=") || line.trimEnd().endsWith("=>") || line.trimEnd().endsWith("<=") || line.trimEnd().endsWith(">=")) return null
         DECLARATION.find(line)?.let { match ->
             val type = match.groupValues[1]
-            if (type.substringBefore('<') !in NOT_TYPES) return CSharpExpected(type, match.groupValues[2])
-            if (type == "var") return CSharpExpected(null, match.groupValues[2])
+            if (type.substringBefore('<') !in NOT_TYPES) return CSharpExpected(type, match.groupValues[2], declared = true)
+            if (type == "var") return CSharpExpected(null, match.groupValues[2], declared = true)
         }
         if (RETURN.containsMatchIn(line)) return returned(text, start)
         ASSIGNMENT.find(line)?.let { match ->

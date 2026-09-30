@@ -48,6 +48,10 @@ object RoslynCompletionRanking {
         CompletionItemKind.Method, CompletionItemKind.Function,
     )
 
+    /** `int amount = |`: the `amount` that is being declared is no candidate for its own initializer (the server lists it: it is in scope). */
+    fun isBeingDeclared(name: String, kind: CompletionItemKind?, context: Context): Boolean =
+        kind == CompletionItemKind.Variable && context.expected?.declared == true && context.expected.name == name
+
     /** [name] is the label of the item without the `<>` of a generic; [chosenBefore] how many times it was chosen in the list. */
     fun bonus(name: String, kind: CompletionItemKind?, context: Context, chosenBefore: Int): Bonus {
         var value = 0.0
@@ -104,7 +108,8 @@ object RoslynCompletionRanking {
         while (before >= 0 && (text[before] == ' ' || text[before] == '\t')) before--
         val afterDot = before >= 0 && text[before] == '.'
         val all = CSharpScopeTypes.at(text, start)
-        val expected = CSharpExpectations.at(text, start, all)
+        // `int amount = order.|`: the list is of the members of `order`, none of them is the `amount` being declared
+        val expected = CSharpExpectations.at(text, start, all)?.let { if (afterDot && it.declared) CSharpExpected(it.type, it.name) else it }
         return Context(expected, if (afterDot) emptyMap() else all, CSharpScopeTypes.lineOf(text, start))
     }
 }

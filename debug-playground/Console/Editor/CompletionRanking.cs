@@ -43,7 +43,7 @@ public class CompletionRanking
 
 
         // TYPE:expected-type — `int amount = `. EXPECT: gray `count;` at once, Tab takes it. With Ctrl+Space instead: `count` first, then `Count`;
-        // `customerName`, `text`, `_title` and the keywords are below
+        // `customerName`, `text`, `_title` and the keywords are below; `amount` itself is NOT in the list (the server offers it, the plugin drops it)
 
         // TYPE:method-by-type — `decimal sum = `. EXPECT: gray `Total(order);`, Tab takes it. With Ctrl+Space instead: the method `Total` above
         // the variables; chosen from the list it becomes `Total(|);` with the gray `order` inside — the semicolon is there though Total returns a value

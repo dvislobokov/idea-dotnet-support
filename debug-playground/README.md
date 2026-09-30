@@ -98,7 +98,7 @@ Solution для живой проверки плагина: отладчика (
 Перед проверкой дождаться виджета «Roslyn: DebugPlayground.sln» в статус-баре.
 
 ### Порядок списка completion и статистика подсказок — `Console/Editor/CompletionRanking.cs`
-- [ ] `TYPE:expected-type`: `int amount = ` → сразу серый текст `count;`, Tab принимает; по Ctrl+Space — `count` первым, затем `Count`; строки и ключевые слова ниже
+- [ ] `TYPE:expected-type`: `int amount = ` → сразу серый текст `count;`, Tab принимает; по Ctrl+Space — `count` первым, затем `Count`; строки и ключевые слова ниже; самого `amount` в списке **нет**
 - [ ] `TYPE:method-by-type`: `decimal sum = ` → серый текст `Total(order);`; по Ctrl+Space `Total` выше переменных, выбранный из списка даёт `Total(|);` с серым `order` внутри
 - [ ] `TYPE:parameter-name`: `Save(` → серый текст `order, cancellationToken` сразу после скобки (и до загрузки solution: `Save` объявлен в этом файле); после `order, ` — `cancellationToken`
 - [ ] `TYPE:parameter-name`, через список: `Sa` + Tab (или Enter) → `Save(|);` и тот же серый текст `order, cancellationToken`
