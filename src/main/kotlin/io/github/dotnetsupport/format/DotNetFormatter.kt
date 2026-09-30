@@ -34,8 +34,8 @@ enum class FormatterChoice(val title: String) {
     DOTNET_FORMAT("dotnet format (whitespace, by .editorconfig; about a second per file, instant with the language server)"),
     NONE("None");
 
-    // in the language of the settings page; [title] is the English one
-    override fun toString(): String = DotNetBundle.messageOr("formatter.$name", title)
+    // in the language of the settings page; [title] is the English one. Not `toString()`: see [io.github.dotnetsupport.PluginLanguage.label]
+    val label: String get() = DotNetBundle.messageOr("formatter.$name", title)
 }
 
 /** The formatter is a decision of the team, so it is kept with the project (`.idea/dotnet.xml`) and can be committed. */

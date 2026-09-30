@@ -31,7 +31,7 @@
 - [x] Сканер объявлений поверх лексера (`CSharpDeclarations`): namespace (в т.ч. file-scoped), типы, члены (поля, свойства, индексаторы, методы, конструкторы, операторы, события, делегаты, enum-члены) по заголовку до `{` / `;` / `=` / `=>` и балансу скобок; generic-методы, tuple-типы, явные реализации интерфейсов, атрибуты, top-level program; на недописанном коде — меньше объявлений, без исключений. Парсер строит по нему PSI-узел на объявление (`CSharpDeclaration`), внутри членов токены остаются плоскими
 - [x] Structure view и File Structure (иконки вида и видимости, сигнатуры), breadcrumbs, folding: тела объявлений, блок `using`, `#region` (с именем), серии `///` и `//`, блочные комментарии; `using` и doc-комментарии сворачиваются по настройкам платформы
 - [x] Go to Class / Go to Symbol: `FileBasedIndex` по именам типов и членов, элемент с контейнером и файлом
-- [ ] Переход между partial-частями, Related file (`.xaml` ↔ `.xaml.cs`, `.razor` ↔ `.razor.cs`, тест ↔ класс)
+- [ ] Переход между partial-частями, Related file (`.xaml` ↔ `.xaml.cs`, тест ↔ класс)
 - [ ] Reformat Code через `dotnet format` (+ при сохранении)
 - [x] Ошибки и предупреждения последней сборки в редакторе (`BuildProblems` + ExternalAnnotator): подчёркнуто слово по колонке компилятора, сообщение с кодом; диагностика следует за своей строкой при правках выше и исчезает, когда строку исправили; следующая сборка заменяет всё
 - [x] Live templates для C# (33: `ctor` с именем типа, `prop*`, `cw`, циклы, `try`, `using`, `svm`, типы, `fact` / `theory` / `test` / `testm`, `region`…), Enter внутри `///` продолжает комментарий, третий `/` над объявлением даёт `<summary>` с `<param>` и `<returns>`
@@ -142,7 +142,7 @@
 - [x] ★ Автооткрытие браузера по «Now listening on: http://…» с `launchUrl` профиля; включается галочкой, для сгенерированных конфигураций — по `launchBrowser`
 - [x] ★ Раскраска уровней логов в консоли: `Microsoft.Extensions.Logging` (`info:` / `warn:` / `fail:` / `crit:` / `dbug:` / `trce:`), Serilog (`[… INF]`), NLog / log4net (`|WARN|`, `[ERROR]`); цвета — Console Colors → Log console
 - [x] Окно Endpoints: маршруты minimal API (`MapGet`…, `MapGroup` через переменные и цепочки, `MapMethods`, `MapHealthChecks`) и контроллеров (`[Route]` на классе, `[HttpGet("{id}")]`, `[controller]` / `[action]`, абсолютные шаблоны) по токенам; переход к коду, запрос в `<Project>.http` с переменной хоста из `launchSettings.json`, открыть в браузере, копировать URL; значок на полях у каждого маршрута
-- [ ] Endpoints: маршруты из констант и `nameof`, группы, объявленные в другом файле (extension-методы `MapXxxEndpoints`), Razor Pages и `MapHub`, поиск маршрута через Search Everywhere
+- [ ] Endpoints: маршруты из констант и `nameof`, группы, объявленные в другом файле (extension-методы `MapXxxEndpoints`), `MapHub`, поиск маршрута через Search Everywhere
 - [ ] Hot Reload для `dotnet watch`: кнопка Restart, индикатор «изменения применены / нужен перезапуск»
 - [x] Окружение в run configuration: список из `appsettings.<Name>.json` + Development / Staging / Production; задаёт `ASPNETCORE_ENVIRONMENT` и `DOTNET_ENVIRONMENT`, перебивает launch-профиль через `dotnet run -e` (SDK 9.0.200+, с учётом `global.json`; на старых SDK — только переменные)
 - [ ] Compound-конфигурация: запуск нескольких проектов solution разом
@@ -198,6 +198,11 @@
 - [x] Reload Solution / Reload Project (2026-09-29, по замечанию пользователя: созданные мимо IDE папка и файл не появились в дереве): меню .NET, ПКМ на узле solution / проекта, кнопка рядом с «глазом» в заголовке окна Project (только в Solution view). `SolutionReload`: сохранить документы → перечитать папку с диска (`VfsUtil.markDirty` + `RefreshQueue`) → забыть разобранное (`SolutionService.reload`: всё или один проект с его `project.assets.json` и props / targets) → run configurations → перерисовать дерево → топик `SolutionReloadListener`. Модуль `roslyn`: Reload Solution перезапускает сервер, Reload Project шлёт `workspace/didChangeWatchedFiles` по файлу проекта. Причина исходного замечания: IDE смотрит на диск, когда её окно получает фокус, а файлы появились, пока окно было активно. Проверка вживую — раздел «Solution view» в `debug-playground/README.md`. Тест `SolutionReloadTest`. Вживую не проверено
 - [x] Свой индекс сборок для подсказок без импорта (2026-09-29): `WriteLi` → `Console.WriteLine(|);` + `using`. Индексатор `indexer/Program.cs` (C#, `System.Reflection.Metadata`, сборки не загружаются) плагин несёт **исходником** и собирает на машине пользователя под установленный SDK (`index/IndexerTool`: SDK 10 → `net10.0`, SDK 9 → `net9.0`, сеть не нужна; проверено на обоих, 2,2–2,5 с, индексы побайтно одинаковы). Формат `.dnix` — файл на сборку, имя — MVID, читается отображением в память (`index/AssemblyIndex`). Проект видит только свои сборки (`index/ProjectAssemblies` по `project.assets.json`: пакеты с транзитивными, эталонные пакеты фреймворков, собранные проекты solution). Индексация — в фоне при открытии проекта, после restore и по Reload; один запуск на все проекты solution. От повторной индексации защищают блокировка папки индексов между процессами (её держит индексатор), блокировка сборки индексатора и очередь внутри IDE. Кэш solution из 5 проектов — 2,0 МБ (317 сборок, 0,73 с). Completion — `index/ImportCompletion`: от трёх букв, не после точки и не на месте имени; вставка по общим правилам скобок и `;` (`lang/CSharpCalls`), `using` с учётом implicit и global usings (`CSharpUsings`). Parquet отклонён: нужен точечный поиск. Тесты `AssemblyIndexTest`, `ImportCompletionTest`; сценарий — `debug-playground/Console/Editor/ImportCompletion.cs`. Подробности и замеры — `indexer/README.md`. Вживую не проверено
 - [x] Completion в C# не смотрит на регистр (2026-09-29, по проверке, которую просил пользователь): платформа сопоставляет префикс по настройке IDE (Editor | General | Code Completion | Match case, по умолчанию «первая буква»), и `writeli` не находил `WriteLine` — ни среди элементов сервера, ни среди элементов индекса. `lang/CSharpCaseInsensitiveCompletion` — первый в цепочке (остальные идут `after dotnetCaseInsensitive`), запускает остальных с `CamelHumpMatcher(prefix, false)`; совпавшее и по регистру по-прежнему выше. Настройка IDE для C# не действует. Серый текст остаётся чувствительным к регистру намеренно: он дописывает остаток слова и не может заменить уже набранные буквы. Тест в `ImportCompletionTest`. Вживую не проверено
+- [x] Дедлок настроек при старте (2026-09-30, найден роботом: в песочнице не стартовали ни сервер Roslyn, ни проверка SDK — всё, что трогает
+  `DotNetSettings`, висело в `getService`). Причина: `PluginLanguage.toString()` брал текст из `DotNetBundle`, бандл спрашивал язык у
+  `DotNetSettings`, а XML-сериализатор вызывает `toString()` констант enum, пока `DotNetSettings` ещё загружается, — сервис ждал сам себя.
+  Воспроизводилось у всех, кто хоть раз выбрал язык страниц настроек. У `PluginLanguage`, `MsBuildVerbosity`, `FormatterChoice` вместо
+  `toString()` теперь `label`, combo box рисует его через `textListCellRenderer`; `DotNetBundleTest` сторожит `toString() == name`
 
 ### Проект и зависимости
 - [ ] ★ «Почему этот пакет здесь»: цепочка до транзитивной зависимости по `project.assets.json` (аналог `dotnet nuget why`)
@@ -355,8 +360,8 @@
   по всей папке рекурсивно, несколько — список выбора (выбор запоминается в проекте, закрытый список оставляет нотификацию), смена — меню .NET →
   Select Solution for Language Server (перезапуск сервера). Проверено в живой IDE: список из двух solution, до выбора ничего не грузится и ошибок нет,
   выбор → загрузка за 1,7 с и ошибки компилятора, смена на вложенный `.slnx` → перезапуск без повторного вопроса
-- [ ] Фаза 1, хвосты: не проверено, как сервер
-  подхватывает `.cs`, созданный после загрузки solution (платформа не даёт ему LSP file watching, сервер следит за файлами сам)
+- [x] Фаза 1, хвосты (проверено роботом 2026-09-30): `.cs`, созданный после загрузки solution, сервер подхватывает сам, секунд через 15–20
+  (`prepareTypeHierarchy` по новому файлу сначала пуст, потом отвечает; платформа LSP file watching не даёт, сервер следит за файлами сам)
 - [x] Фаза 2, «Roslyn главный» (2026-09-21, решение пользователя): мост `RoslynServerStatus` — пока сервер проекта готов, уступают эвристическая
   раскраска идентификаторов, свой folding (платформа сворачивает любой язык по ответу сервера — вдвоём были бы дубли) и ошибки последней сборки в
   редакторе; semantic tokens сервера идут в палитру плагина (платформа по умолчанию просит их только для TEXT / TextMate — включено явно);
@@ -414,14 +419,18 @@
   `textEditText`, равный набранному (`p`), а платформа делала его строкой поиска — теперь он ищется по названию. Список типов после `(` не открывается
 - [x] Порядок completion как в Rider (2026-09-29, по сообщению пользователя «на `n` сначала `nameof`, потом моя `names`»): `PrioritizedLookupElement` по
   `CompletionItemKind` — локальные / параметры / члены → методы → типы → ключевые слова, `preselect` сервера сверху (`RoslynCompletionPolicy.priority`).
-  **Вживую не проверено** — посмотреть, что weigher приоритета сильнее сортировки по `sortText`
+  Проверено роботом 2026-09-30 (`tools/ui-robot/scripts/complete_at_line.js`, сценарии `CompletionRanking.cs`): weigher сильнее `sortText` —
+  на `n` первым `Name`, ключевые слова `nameof` / `new` / `null` на 71–75 позиции после типов; `int amount = ` → `count`, `Count`; `Send(` → строки первыми.
+  Замечено: объявляемая на этой же строке переменная (`amount`, `copy`) стоит первой — её предлагает сервер, плагин не отсеивает
 - [x] Parameter Info у extension-методов (2026-09-29, по скриншоту пользователя: строки вида «extension) IServiceCollection … AddSingleton(Type serviceType»):
   label Roslyn начинается с `(extension)`, а список параметров брался от первой скобки; теперь — последняя сбалансированная группа скобок
   (`RoslynSignatures.splitParameterList`)
 - [x] Лямбда там, где ждут делегат (2026-09-29, идея пользователя): `LambdaSuggestions` разбирает тип параметра из label `signatureHelp`
   (`Func` / `Action` / `Predicate` / `Expression<Func>` / `EventHandler` / `Comparison` / `Converter`, имена из типов); два слоя —
   пункт списка completion первым (`RoslynLambdaCompletion`, приоритет 200, inline и блочный варианты) и серый inline-текст после `(` / `,`
-  (`RoslynLambdaGhost`, EP `inline.completion.provider`, `InlineCompletionSingleSuggestion.build`). Вживую не проверено
+  (`RoslynLambdaGhost`, EP `inline.completion.provider`, `InlineCompletionSingleSuggestion.build`). Проверено роботом 2026-09-30, сценарий
+  `debug-playground/Console/Editor/LambdaSuggestions.cs` (`TYPE:lambda-*`): серый `lambdaOrder => ` / `serviceProvider => ` / `(i, s) => `,
+  в списке лямбда первой, у `+=` и `Console.WriteLine(` ничего
 - [x] `typeof` / `nameof` / `sizeof` / `checked` / `unchecked` из completion получают `()` с кареткой внутри, как в Rider (2026-09-29, по сообщению пользователя)
 - [x] `new HttpClient` + Tab → `new HttpClient(|)` с Parameter Info (2026-09-29, по сообщению пользователя): тип (Class / Struct), выбранный сразу после `new`, получает скобки
 - [x] Inlay hints включены по умолчанию (решение пользователя 2026-09-22): имена параметров у литералов, индексаторов и `new`, типы у `var` и параметров
@@ -456,7 +465,9 @@
     переименования — откатываются текст и файл двумя шагами, не одним
 - [x] Type / Call Hierarchy и Go to Base (2026-09-29): окно Hierarchy платформы (`typeHierarchyProvider` / `callHierarchyProvider` для C#) на
   `prepareTypeHierarchy` + `supertypes` / `subtypes` и `prepareCallHierarchy` + `incomingCalls` / `outgoingCalls`; элементы — `FakePsiElement`
-  с файлом и позицией; Ctrl+U (`codeInsight.gotoSuper`) на типе — базовые типы. Вживую не проверено
+  с файлом и позицией; Ctrl+U (`codeInsight.gotoSuper`) на типе — базовые типы. Проверено роботом 2026-09-30 (`tools/ui-robot/scripts/hierarchy.js`):
+  окно Hierarchy — база жирным, интерфейс и наследники; Callers of `Total` → `Handle`; Ctrl+U на `ProbeCircle` → `ProbeShape`. Ограничение
+  сервера: `supertypes` отдаёт только типы из исходников — у `ShopException : Exception` пусто (в снимке трафика тоже нет `object`)
 - [x] Сервер стартует с проектом, а не с первым открытым `.cs` (2026-09-29, по сообщению пользователя): `RoslynStartupActivity` →
   `LspClientManager.ensureClientStarted` для папки с solution / проектами; строка сервера в виджете language services показывается и для
   не-C#-файлов (`RoslynWidgetUpdater.createWidgetItems`) — раньше при закрытии всех `.cs` строка пропадала, хотя сервер жил (в логе
@@ -470,13 +481,16 @@
 - [x] Problems по всему solution (2026-09-29): `workspace/diagnostic` → `ProblemsCollector` (вкладка Project Errors). Зонд `scratchpad/wsdiag.py`
   на сервере 5.12: отвечает только при `dotnet_compiler_diagnostics_scope = fullSolution`; повторный запрос висит до изменения в workspace —
   держим один запрос постоянно (таймаут 10 мин, перезапуск). Коллектор Problems — не слушатель топика, а его источник: проблемы отдаются ему
-  напрямую и по тем же объектам снимаются. Ошибки и предупреждения, без hints. Вживую не проверено
+  напрямую и по тем же объектам снимаются. Ошибки и предупреждения, без hints. Проверено вживую 2026-09-30
 - [ ] Фаза 8: надёжность — большие и несколько solution, перезапуски, dumb mode (LSP4IJ не учитываем — решение 2026-09-21)
-- [ ] Razor / Blazor через тот же сервер. Снимок трафика сделан 2026-09-29 (`tools/roslyn-lsp/capture_razor.py`, фикстуры `src/test/resources/roslyn/capture-5.12-razor`, факты — раздел «Razor» в `tools/roslyn-lsp/README.md`): languageId `aspnetcorerazor`, C#-половина работает целиком, позиции — в координатах `.razor`. Дальше: (1) тип файла Razor и фильтр клиента (`isSupportedFile` / `getLanguageId`); (2) диагностика, completion, hover, навигация, rename; (3) semantic tokens — у Razor своя легенда сверх 85 типов C# (индексы 85–104); (4) HTML-половина: `razor/updateHtml` и запросы сервера к клиенту (`textDocument/completion`, `foldingRange`, `formatting`, `documentColor`) — отвечать силами HTML-поддержки платформы
 
 ## Вне рамок (нужна семантика языка)
 Полный парсер выражений, разрешение ссылок, типизация, инспекции, completion по типам, рефакторинги, собственный форматтер,
 inlay-подсказки имён параметров. Парсер уровня объявлений (namespace → типы → члены, тела пропускаются) — в рамках, это заход 2.
+
+**Razor / Blazor — вне плана** (решение пользователя 2026-09-30): ни тип файла `.razor` / `.cshtml`, ни Razor через `roslyn-language-server`
+не делаем; из сделанного остаются только шаблоны New → .NET, иконки и nesting `Foo.razor.cs` под `Foo.razor`. Снятые факты о сервере
+(раздел «Razor» в `tools/roslyn-lsp/README.md`, `capture_razor.py`, фикстуры `capture-5.12-razor`) сохранены на случай возврата к теме.
 
 Варианты, если понадобится разбирать тела методов: ANTLR4 `grammars-v4/csharp` + `antlr4-intellij-adaptor` (устарела до C# 6–7,
 дописывать самим), tree-sitter-c-sharp (лучшая грамматика, но нативная и без PSI), consulo-csharp (Apache 2.0, ручной парсер и PSI —

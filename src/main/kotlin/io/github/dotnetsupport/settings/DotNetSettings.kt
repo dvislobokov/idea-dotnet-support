@@ -21,6 +21,7 @@ import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.bindItem
 import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.panel
+import com.intellij.ui.dsl.listCellRenderer.textListCellRenderer
 import com.intellij.util.ui.AsyncProcessIcon
 import com.intellij.util.ui.UIUtil
 import io.github.dotnetsupport.DotNetBundle
@@ -213,7 +214,7 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
             }
             group(DotNetBundle.message("settings.formatting.group")) {
                 row(DotNetBundle.message("settings.formatting.formatter")) {
-                    comboBox(FormatterChoice.entries).bindItem({ formatting.formatter }, { formatting.formatter = it ?: FormatterChoice.AUTO })
+                    comboBox(FormatterChoice.entries, textListCellRenderer { it?.label }).bindItem({ formatting.formatter }, { formatting.formatter = it ?: FormatterChoice.AUTO })
                         .onChanged { refreshFormatter(it.selectedItem as? FormatterChoice ?: FormatterChoice.AUTO) }
                         .comment(DotNetBundle.message("settings.formatting.comment"))
                 }
@@ -227,7 +228,7 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
                 }
                 row { checkBox(DotNetBundle.message("settings.behavior.solutionView")).bindSelected(settings::switchToSolutionView) }
                 row(DotNetBundle.message("settings.language")) {
-                    comboBox(PluginLanguage.entries).bindItem({ settings.language }, { settings.language = it ?: PluginLanguage.AUTO })
+                    comboBox(PluginLanguage.entries, textListCellRenderer { it?.label }).bindItem({ settings.language }, { settings.language = it ?: PluginLanguage.AUTO })
                         .comment(DotNetBundle.message("settings.language.comment"))
                 }
                 row { link(DotNetBundle.message("settings.documentation")) { io.github.dotnetsupport.welcome.WelcomePage.open(project, io.github.dotnetsupport.welcome.WelcomePage.GUIDE, "settings", inBrowser = true) } }

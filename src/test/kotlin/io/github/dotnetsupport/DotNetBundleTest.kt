@@ -102,16 +102,18 @@ class DotNetBundleTest : BasePlatformTestCase() {
         assertEquals("ru", DotNetBundle.language())
         assertEquals("Проверить", DotNetBundle.message("settings.cli.check"))
         assertEquals("C:\\dotnet.exe, новейший SDK 10.0.100", DotNetBundle.message("settings.cli.newest", "C:\\dotnet.exe", "10.0.100"))
-        assertEquals("Подробный", MsBuildVerbosity.DETAILED.toString())
+        assertEquals("Подробный", MsBuildVerbosity.DETAILED.label)
         assertEquals("detailed", MsBuildVerbosity.DETAILED.argument)
-        assertEquals("Нет", FormatterChoice.NONE.toString())
+        assertEquals("Нет", FormatterChoice.NONE.label)
         assertEquals("Reformat Code не трогает файлы C#.", DotNetSettingsConfigurable.describeFormatter(FormatterChoice.NONE, null))
         assertEquals("Ошибка (код завершения -1): вывода нет", DotNetSettingsConfigurable.installationSummary(-1, ""))
-        assertEquals("the languages are named in themselves", listOf("Как в IDE", "English", "Русский"), PluginLanguage.entries.map { it.toString() })
+        assertEquals("the languages are named in themselves", listOf("Как в IDE", "English", "Русский"), PluginLanguage.entries.map { it.label })
+        // the XML serializer matches stored values against toString() while the settings load: a bundle text there deadlocked the settings service
+        for (constant in PluginLanguage.entries + MsBuildVerbosity.entries + FormatterChoice.entries) assertEquals(constant.name, constant.toString())
 
         DotNetSettings.getInstance().language = PluginLanguage.ENGLISH
-        assertEquals("Detailed", MsBuildVerbosity.DETAILED.toString())
-        assertEquals(listOf("As in the IDE", "English", "Русский"), PluginLanguage.entries.map { it.toString() })
+        assertEquals("Detailed", MsBuildVerbosity.DETAILED.label)
+        assertEquals(listOf("As in the IDE", "English", "Русский"), PluginLanguage.entries.map { it.label })
     }
 
     fun testThePagesInRussian() {

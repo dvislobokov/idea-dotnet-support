@@ -12,8 +12,12 @@ import java.util.concurrent.ConcurrentHashMap
 enum class PluginLanguage {
     AUTO, ENGLISH, RUSSIAN;
 
-    // its own name in its own language, whatever the language of the page
-    override fun toString(): String = DotNetBundle.message("language.$name")
+    /**
+     * Its own name in its own language, whatever the language of the page. Not `toString()`: the XML serializer matches a stored value
+     * against `toString()` of the constants while `DotNetSettings` is being loaded, and the bundle asks `DotNetSettings` for the language —
+     * the service waited for itself and nothing that touched the settings ever started (the language server, the SDK check).
+     */
+    val label: String get() = DotNetBundle.message("language.$name")
 }
 
 /**

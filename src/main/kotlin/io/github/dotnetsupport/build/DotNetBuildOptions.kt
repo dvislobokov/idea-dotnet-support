@@ -23,8 +23,8 @@ import java.time.format.DateTimeFormatter
 enum class MsBuildVerbosity(val title: String, val argument: String) {
     QUIET("Quiet", "quiet"), MINIMAL("Minimal", "minimal"), NORMAL("Normal", "normal"), DETAILED("Detailed", "detailed"), DIAGNOSTIC("Diagnostic", "diagnostic");
 
-    // in the language of the settings page; [title] is the English one
-    override fun toString(): String = DotNetBundle.messageOr("verbosity.$name", title)
+    // in the language of the settings page; [title] is the English one. Not `toString()`: see [io.github.dotnetsupport.PluginLanguage.label]
+    val label: String get() = DotNetBundle.messageOr("verbosity.$name", title)
 }
 
 /**

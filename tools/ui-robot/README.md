@@ -11,9 +11,16 @@
 
 ```sh
 export JAVA_HOME="C:\Program Files\JetBrains\IntelliJ IDEA 2026.1.4\jbr"
-./gradlew.bat runIdeForUiTests          # в фоне: задача живёт, пока открыта IDE; на экране появляется второе окно IDE
-python tools/ui-robot/robot.py wait     # дождаться порта (около 40 с на холодный старт)
+./gradlew.bat runIdeForUiTests --no-daemon   # в фоне: задача живёт, пока открыта IDE; на экране появляется второе окно IDE
+python tools/ui-robot/robot.py wait          # дождаться порта (около 40 с на холодный старт)
 ```
+
+- `--no-daemon`: песочница — дочерний процесс того, кто выполняет задачу. На общем демоне Gradle её убивает любой `--stop` или сборка из
+  соседнего проекта, которая уронила демон (так пропала песочница 2026-09-30).
+- Если в окружении есть `HTTP_PROXY`, робот не ответит (`451` или сброс соединения — это прокси, а не IDE): перед командами
+  `export NO_PROXY=127.0.0.1` (Python читает и `no_proxy`).
+- Песочница при старте открывает последний проект — обычно сам `debug-playground` с общим `.idea`; открыть копию (`open`), а исходный
+  закрыть через `ProjectUtil.closeAndDispose` из `js`. Закрывать исходный первым нельзя: без проектов IDE уходит на Welcome-экран.
 
 Песочница — `.intellijPlatform/sandbox/idea-dotnet-support/IU-*`, свои настройки и свои проекты, рабочий экземпляр IDE не затрагивается. Лицензии в песочнице нет (в тулбаре
 «Start Free Trial») — DAP-модуль и плагин при этом работают. Отладка идёт настоящим `dotnet` и установленным `dotnet-debugger`.
@@ -70,6 +77,14 @@ python robot.py action Exit && python robot.py click "//div[@class='MyDialog']//
 `type_char.js` (набрать символ как с клавиатуры — срабатывают typed handlers и onTypeFormatting),
 `editor_lines.js` (строки редактора с `__TEXT__`); список выбора в popup кликается штатным `clicktext "//div[@class='JBList']" "текст"`. `lsp_state.js` (клиент Roslyn: состояние, загружен ли workspace, что подсвечено в открытом редакторе; `__LIMIT__`) и
 `lsp_editor.js` (каретка после `__AFTER__`, набрать `__TYPE__`, затем `__WHAT__` = `complete` — элементы списка, или `goto` — куда привёл Go to Declaration; `__WAIT__` мс).
+Надёжнее него — `complete_at_line.js` (`__FILE__` с прямыми слэшами, `__LINE__` с 1, `__TYPE__`, `__LIMIT__` элементов, `__WAIT__` мс, `__UNDO__` = `yes`,
+`__FIND__` — имена через запятую, для которых нужна позиция в списке): файл открывает сам (selected editor при сплите — тот, где фокус), окно
+песочницы выводит на передний план (`ProjectUtil.focusProjectWindow`: без фокуса окна список пуст), элементы снимает опросом, пока popup жив;
+пустой ответ — повторить, первый запрос после открытия файла бывает пустым. `ghost_at_line.js` (те же `__FILE__` / `__LINE__` / `__TYPE__` /
+`__WAIT__` / `__UNDO__`) набирает как с клавиатуры и показывает серый inline-текст (`InlineCompletionContext.textToInsert`) и popup.
+`hierarchy.js` (`__FILE__`, `__AT__`, `__ACTION__` = `TypeHierarchy` / `CallHierarchy` / `GotoSuperMethod`, `__WAIT__`) выполняет действие с
+контекстом редактора и печатает, куда встала каретка и что в окне Hierarchy (дерево через `getUserObject` узлов пока печатается пусто —
+смотреть `shot` компонента `RoslynTypeHierarchyBrowser` / `RoslynCallHierarchyBrowser` или `find` по нему: тексты строк в нём есть).
 В `sed`-подстановках — флаг `g`: плейсхолдер бывает в строке дважды. PID процесса — через PowerShell (`Get-Process`), `tasklist | grep` путает кодировка.
 
 Работать на копии проекта (`build/ui-robot/debug-playground`, без `.idea`, `bin`, `obj`): каталог `.idea` у песочницы и у рабочей IDE общий,
@@ -92,3 +107,6 @@ python robot.py action Exit && python robot.py click "//div[@class='MyDialog']//
 - Маршруты сервера: скрипты — `js/execute`, `js/retrieveAny`, для компонента — `{id}/js/execute` (без `/js` это маршрут для сериализованных
   лямбд Java-клиента); тексты компонента — `POST {id}/data`.
 - Порт слушает только `127.0.0.1`, но даёт выполнять произвольный код внутри IDE: песочницу не оставлять запущенной без нужды.
+- Скрипт `js`, который завис (робот перестал отвечать, `timeout` на каждой команде), — повод снять дамп потоков:
+  `"<JBR>/bin/jstack.exe" <pid песочницы>` и искать `dotnetsupport` в стеках. Так 2026-09-30 нашёлся дедлок `DotNetSettings`
+  (сервис ждал сам себя из `toString()` enum-а), из-за которого в песочнице не стартовал сервер Roslyn.

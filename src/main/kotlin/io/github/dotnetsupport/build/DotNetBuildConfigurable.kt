@@ -11,6 +11,7 @@ import com.intellij.ui.dsl.builder.bindItem
 import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
+import com.intellij.ui.dsl.listCellRenderer.textListCellRenderer
 import com.intellij.ui.dsl.builder.toNullableProperty
 import io.github.dotnetsupport.DotNetBundle
 import io.github.dotnetsupport.cli.DotNetCli
@@ -52,9 +53,9 @@ class DotNetBuildConfigurable(private val project: Project) : BoundConfigurable(
             }
         }
         group(DotNetBundle.message("build.logging")) {
-            row(DotNetBundle.message("build.verbosity.output")) { comboBox(MsBuildVerbosity.entries).bindItem(options::outputVerbosity.toNullableProperty()) }
+            row(DotNetBundle.message("build.verbosity.output")) { comboBox(MsBuildVerbosity.entries, textListCellRenderer { it?.label }).bindItem(options::outputVerbosity.toNullableProperty()) }
             row { checkBox(DotNetBundle.message("build.logToFile")).bindSelected(options::logToFile) }
-            row(DotNetBundle.message("build.verbosity.file")) { comboBox(MsBuildVerbosity.entries).bindItem(options::fileVerbosity.toNullableProperty()) }
+            row(DotNetBundle.message("build.verbosity.file")) { comboBox(MsBuildVerbosity.entries, textListCellRenderer { it?.label }).bindItem(options::fileVerbosity.toNullableProperty()) }
             row {
                 textFieldWithBrowseButton(FileChooserDescriptorFactory.createSingleFolderDescriptor().withTitle(DotNetBundle.message("build.logFolder.chooser")), project)
                     .align(AlignX.FILL).bindText({ options.logFolder.orEmpty() }, { options.logFolder = it.trim() })

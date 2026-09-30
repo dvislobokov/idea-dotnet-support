@@ -125,6 +125,15 @@ Solution для живой проверки плагина: отладчика (
 - [ ] изменить `Console.csproj` внешним редактором (например `Nullable` на `disable`), Reload Project → Properties… показывает новое значение
 - [ ] меню .NET → Reload Solution / Reload Project '<имя>' (проект — по файлу в редакторе); без файла проекта пункт Reload Project выключен
 
+### Лямбда там, где ждут делегат — `Console/Editor/LambdaSuggestions.cs`
+Нужен загруженный solution («Roslyn: DebugPlayground.sln»): типы параметров берутся из signature help сервера. Проверено роботом 2026-09-30.
+- [ ] `TYPE:lambda-action`: `Each(` → серый `lambdaOrder => ` сразу после скобки; по Ctrl+Space `lambdaOrder => ` первым, блочный вариант вторым
+- [ ] `TYPE:lambda-func`: `Register(` → серый `serviceProvider => ` (имя из типа `IServiceProvider`)
+- [ ] `TYPE:lambda-two`: `Retry(3, ` → серый `(i, s) => ` (`Func<int, string, bool>`, известные типы — по букве)
+- [ ] `TYPE:lambda-linq`: `_orders.Where(` → серый `lambdaOrder => `; в списке следом `(lambdaOrder, i) => ` второй перегрузки
+- [ ] `TYPE:lambda-event`: `Changed += ` и `Changed += (` → лямбды **нет**
+- [ ] `TYPE:lambda-silent`: `Console.WriteLine(` → лямбды **нет**
+
 ## Редактор: то, что не импортировано — `Console/Editor/ImportCompletion.cs`
 
 Элементы приходят из индекса сборок, а не от сервера: работают до появления «Roslyn: DebugPlayground.sln». Первый запуск IDE собирает
