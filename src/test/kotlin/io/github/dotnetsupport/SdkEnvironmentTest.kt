@@ -11,6 +11,7 @@ import io.github.dotnetsupport.sdk.DotNetEnvironmentDialog
 import io.github.dotnetsupport.sdk.DotNetInfo
 import io.github.dotnetsupport.sdk.GlobalJson
 import io.github.dotnetsupport.sdk.SdkCheck
+import io.github.dotnetsupport.sdk.SdkCheckActivity
 import io.github.dotnetsupport.sdk.SdkVersion
 import io.github.dotnetsupport.sdk.SupportState
 import io.github.dotnetsupport.upgrade.UpgradeAssistant
@@ -54,6 +55,17 @@ class SdkEnvironmentTest : BasePlatformTestCase() {
         // the closing sentence mentions versions too, but it is not a row
         assertEquals(6, components.size)
         assertEquals(emptyList<Any>(), SdkCheck.parse("Unable to load release information: the network is down"))
+    }
+
+    fun testMissingDotNet10() {
+        fun sdks(vararg v: String) = v.mapNotNull(SdkVersion::parse)
+        // only .NET 8 / 9: the server cannot run, so warn
+        assertTrue(SdkCheckActivity.missingDotNet10(sdks("8.0.100", "9.0.301")))
+        // a .NET 10 (or newer) SDK is present: no warning
+        assertFalse(SdkCheckActivity.missingDotNet10(sdks("9.0.301", "10.0.100")))
+        assertFalse(SdkCheckActivity.missingDotNet10(sdks("11.0.100")))
+        // nothing known (CLI not found): the caller does not warn on an empty list
+        assertTrue(SdkCheckActivity.missingDotNet10(emptyList()))
     }
 
     fun testDotNetInfo() {

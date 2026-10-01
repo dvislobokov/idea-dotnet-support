@@ -98,6 +98,71 @@ class CSharpDocCommentTypedHandler : TypedHandlerDelegate() {
     }
 }
 
+/**
+ * Enter inside a `//` line comment or a `/* */` block comment continues it on the next line: `// ` for a line comment, ` * ` aligned under
+ * the stars of the block. The `///` doc comment has its own handler ([CSharpDocCommentEnterHandler]); the token under the caret tells which
+ * kind it is, so `//` inside a string or a trailing comment after code is left alone.
+ */
+class CSharpCommentEnterHandler : EnterHandlerDelegateAdapter() {
+    private enum class Mode { LINE, BLOCK }
+
+    private var mode: Mode? = null
+
+    override fun preprocessEnter(
+        file: PsiFile, editor: Editor, caretOffset: Ref<Int>, caretAdvance: Ref<Int>, dataContext: DataContext, originalHandler: EditorActionHandler?,
+    ): EnterHandlerDelegate.Result {
+        mode = if (file is CSharpFile) commentModeAt(editor.document.immutableCharSequence, caretOffset.get()) else null
+        return EnterHandlerDelegate.Result.Continue
+    }
+
+    override fun postProcessEnter(file: PsiFile, editor: Editor, dataContext: DataContext): EnterHandlerDelegate.Result {
+        val mode = mode ?: return EnterHandlerDelegate.Result.Continue
+        this.mode = null
+        val document = editor.document
+        val offset = editor.caretModel.offset
+        val line = document.getLineNumber(offset)
+        if (line == 0) return EnterHandlerDelegate.Result.Continue
+        val previous = document.immutableCharSequence.subSequence(document.getLineStartOffset(line - 1), document.getLineEndOffset(line - 1)).toString()
+        // only continue when the platform left the new line blank (no auto-indent conflict) and the comment is the whole previous line
+        val lineStart = document.getLineStartOffset(line)
+        if (document.immutableCharSequence.subSequence(lineStart, offset).isNotBlank()) return EnterHandlerDelegate.Result.Continue
+        val prefix = when (mode) {
+            Mode.LINE -> previous.takeIf { it.trimStart().startsWith("//") && !it.trimStart().startsWith("///") }?.let { it.substringBefore("//") + "// " }
+            Mode.BLOCK -> blockPrefix(previous)
+        } ?: return EnterHandlerDelegate.Result.Continue
+        document.replaceString(lineStart, offset, prefix)
+        editor.caretModel.moveToOffset(lineStart + prefix.length)
+        return EnterHandlerDelegate.Result.Continue
+    }
+
+    /** An opening block-comment line gets a star one column in (aligned under its star); any other line gets a star at the line's indent. */
+    private fun blockPrefix(previous: String): String? {
+        val indentEnd = previous.indexOfFirst { !it.isWhitespace() }.takeIf { it >= 0 } ?: return null
+        val indent = previous.substring(0, indentEnd)
+        return if (previous.substring(indentEnd).startsWith("/*")) "$indent * " else "$indent* "
+    }
+
+    private fun commentModeAt(text: CharSequence, offset: Int): Mode? {
+        val lexer = CSharpLexer()
+        lexer.start(text)
+        while (true) {
+            val type = lexer.tokenType ?: break
+            if (offset > lexer.tokenStart && offset <= lexer.tokenEnd) {
+                return when (type) {
+                    CSharpTokenTypes.LINE_COMMENT -> Mode.LINE
+                    CSharpTokenTypes.BLOCK_COMMENT -> {
+                        val closed = lexer.tokenEnd - lexer.tokenStart >= 4 && text.subSequence(lexer.tokenEnd - 2, lexer.tokenEnd) == "*/"
+                        if (closed && offset > lexer.tokenEnd - 2) null else Mode.BLOCK
+                    }
+                    else -> null
+                }
+            }
+            lexer.advance()
+        }
+        return null
+    }
+}
+
 /** Enter inside a `///` comment continues it on the next line. */
 class CSharpDocCommentEnterHandler : EnterHandlerDelegateAdapter() {
     private var inDocComment = false

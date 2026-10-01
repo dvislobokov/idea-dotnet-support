@@ -105,9 +105,15 @@
         <typedHandler implementation="io.github.dotnetsupport.lang.CSharpSemicolonTypedHandler"/>
         <enterHandlerDelegate order="first" implementation="io.github.dotnetsupport.lang.CSharpEnterAfterBraceHandler"/>
         <enterHandlerDelegate implementation="io.github.dotnetsupport.lang.CSharpDocCommentEnterHandler"/>
+        <!-- Enter inside a // line comment or a /* */ block continues it on the next line (/// has its own handler above) -->
+        <enterHandlerDelegate implementation="io.github.dotnetsupport.lang.CSharpCommentEnterHandler"/>
         <!-- postfix templates (expr.if, list.foreach, x.return...) and Surround With, by tokens -->
         <codeInsight.template.postfixTemplateProvider language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpPostfixTemplateProvider"/>
         <lang.surroundDescriptor language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpSurroundDescriptor"/>
+        <!-- Extend / Shrink Selection (Ctrl+W): structural ranges by brackets and string / comment tokens, on top of the platform's word and line -->
+        <extendWordSelectionHandler implementation="io.github.dotnetsupport.lang.CSharpSelectioner"/>
+        <!-- highlight the other occurrences of the identifier under the caret, by token text, until the server covers the file -->
+        <highlightUsagesHandlerFactory implementation="io.github.dotnetsupport.lang.CSharpHighlightUsagesHandlerFactory"/>
         <colorSettingsPage implementation="io.github.dotnetsupport.lang.CSharpColorSettingsPage"/>
         <additionalTextAttributes scheme="Default" file="colorSchemes/CSharpDefault.xml"/>
         <additionalTextAttributes scheme="Darcula" file="colorSchemes/CSharpDarcula.xml"/>

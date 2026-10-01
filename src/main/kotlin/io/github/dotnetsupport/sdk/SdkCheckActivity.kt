@@ -4,18 +4,22 @@ import com.intellij.ide.BrowserUtil
 import com.intellij.notification.NotificationAction
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.startup.ProjectActivity
+import com.intellij.openapi.ui.Messages
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.settings.DotNetSettingsConfigurable
 import io.github.dotnetsupport.solution.SolutionService
 
 /**
  * Tells about a broken .NET environment when a solution is opened, before the first build fails with a cryptic message:
- * no `dotnet` at all, or a `global.json` that asks for an SDK which is not installed.
+ * no `dotnet` at all, a `global.json` that asks for an SDK which is not installed, or no .NET 10 SDK for the C# language server.
  */
 class SdkCheckActivity : ProjectActivity {
     override suspend fun execute(project: Project) {
@@ -33,8 +37,14 @@ class SdkCheckActivity : ProjectActivity {
         // the tools are looked up now, so that the log says where each one is (or was looked for) before anything needs it
         io.github.dotnetsupport.cli.DotNetTool.entries.forEach { it.find() }
 
-        val (file, globalJson) = GlobalJson.find(project.guessProjectDir()) ?: return
         val installed = DotNetSdks.installed().map { it.version }
+        // the C# language server (Roslyn) runs on .NET 10; people who stay on .NET 8 / 9 keep hitting a server that will not start, and a
+        // balloon is not enough — a modal dialog says it plainly (and only when the server is on and no .NET 10 SDK is present)
+        if (installed.isNotEmpty() && missingDotNet10(installed) && RoslynLanguageServerSettings.getInstance().state.enabled) {
+            warnNoDotNet10(project, installed)
+        }
+
+        val (file, globalJson) = GlobalJson.find(project.guessProjectDir()) ?: return
         if (installed.isEmpty() || globalJson.resolve(installed) != null) return
 
         val required = globalJson.version
@@ -48,7 +58,33 @@ class SdkCheckActivity : ProjectActivity {
             .notify(project)
     }
 
-    private companion object {
-        const val DOWNLOAD_URL = "https://dotnet.microsoft.com/download"
+    /** A modal dialog, not a balloon: the warning is ignored otherwise and the server simply never works. */
+    private fun warnNoDotNet10(project: Project, installed: List<SdkVersion>) {
+        ApplicationManager.getApplication().invokeLater({
+            if (project.isDisposed) return@invokeLater
+            val options = arrayOf("Download .NET 10 SDK", "Open .NET Settings", "Continue Anyway")
+            val choice = Messages.showDialog(
+                project,
+                "The C# language server (Roslyn) runs on .NET $SERVER_SDK_MAJOR. The installed SDKs are ${installed.joinToString(", ")}, so the " +
+                    "server will not install or start on this machine — completion, errors, navigation and refactorings stay unavailable until the " +
+                    ".NET $SERVER_SDK_MAJOR SDK is installed.\n\nInstall the .NET $SERVER_SDK_MAJOR SDK, then use .NET | Reload Solution.",
+                "C# Support Requires the .NET $SERVER_SDK_MAJOR SDK",
+                options, 0, Messages.getWarningIcon(),
+            )
+            when (choice) {
+                0 -> BrowserUtil.browse("$DOWNLOAD_URL/dotnet/$SERVER_SDK_MAJOR.0")
+                1 -> ShowSettingsUtil.getInstance().showSettingsDialog(project, DotNetSettingsConfigurable::class.java)
+            }
+        }, ModalityState.nonModal())
+    }
+
+    companion object {
+        private const val DOWNLOAD_URL = "https://dotnet.microsoft.com/download"
+
+        /** `roslyn-language-server` 5.x is built for .NET 10 (kept in step with RoslynWorkspace.SERVER_RUNTIME in the content module). */
+        const val SERVER_SDK_MAJOR = 10
+
+        /** No installed SDK can run the server: none is .NET [SERVER_SDK_MAJOR] or newer. Pure, for the test. */
+        fun missingDotNet10(installed: List<SdkVersion>): Boolean = installed.none { it.major >= SERVER_SDK_MAJOR }
     }
 }

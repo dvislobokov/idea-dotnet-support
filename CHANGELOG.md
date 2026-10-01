@@ -3,6 +3,26 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.13
+
+- When a .NET solution is opened and no .NET 10 SDK is installed, a modal dialog now says the C# language server (Roslyn) needs the .NET 10
+  SDK and will not start on .NET 8 / 9 — with buttons to download it or open the settings. Replaces relying on the easy-to-miss balloon
+
+## 0.1.12
+
+- Editor: the other occurrences of the identifier under the caret are now highlighted while the C# server is still loading (by matching
+  the token text); once the server covers the file, its accurate `documentHighlight` takes over
+
+## 0.1.11
+
+- Editor: pressing Enter inside a `//` line comment or a `/* */` block comment now continues the comment on the next line (`// ` for a line
+  comment, ` * ` aligned for a block). The `///` doc comment already did this
+
+## 0.1.10
+
+- Editor: **Extend / Shrink Selection** (Ctrl+W / Ctrl+Shift+W) now grows structurally in C# — word → contents of the enclosing `()` / `[]`
+  / `{}` → the brackets too → the next pair out, and the string or comment the caret is in
+
 ## 0.1.9
 
 - Editor, `.http` files: **Insert Development JWT** in the context menu runs `dotnet user-jwts create` for the ASP.NET Core project and
