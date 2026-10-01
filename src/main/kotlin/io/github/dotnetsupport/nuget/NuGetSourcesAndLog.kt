@@ -44,7 +44,7 @@ import javax.swing.table.AbstractTableModel
  */
 class NuGetSourcesPanel(private val project: Project, private val onChanged: () -> Unit) : SimpleToolWindowPanel(false, true) {
     private val service = NuGetService.getInstance(project)
-    private val model = SourcesModel()
+    private val model = SourcesModel { toggleSource(it) }
     private val table = JBTable(model).apply {
         setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
         emptyText.text = "Loading sources..."
@@ -63,7 +63,7 @@ class NuGetSourcesPanel(private val project: Project, private val onChanged: () 
             action("New Feed...", AllIcons.General.Add, { true }) { addSource() },
             action("Edit Feed...", AllIcons.Actions.Edit, { selected() != null }) { editSource(selected()) },
             action("Remove Feed", AllIcons.General.Remove, { selected() != null }) { removeSource() },
-            action("Enable / Disable", AllIcons.Actions.Checked, { selected() != null }) { toggleSource() },
+            action("Enable / Disable", AllIcons.Actions.Checked, { selected() != null }) { toggleSource(selected()) },
             action("Refresh", AllIcons.Actions.Refresh, { true }) { reload() },
         )
         toolbar = ActionManager.getInstance().createActionToolbar("NuGetSources", actions, false).also { it.targetComponent = table }.component
@@ -116,8 +116,8 @@ class NuGetSourcesPanel(private val project: Project, private val onChanged: () 
         if (answer == Messages.YES) service.changeSources("Removing NuGet feed ${source.name}", listOf(listOf("remove", "source", source.name)), ::changed)
     }
 
-    private fun toggleSource() {
-        val source = selected() ?: return
+    private fun toggleSource(source: NuGetSource?) {
+        source ?: return
         val command = if (source.isEnabled) "disable" else "enable"
         service.changeSources("${command.replaceFirstChar(Char::uppercase)} NuGet feed ${source.name}", listOf(listOf(command, "source", source.name)), ::changed)
     }
@@ -132,7 +132,7 @@ class NuGetSourcesPanel(private val project: Project, private val onChanged: () 
             override fun actionPerformed(e: AnActionEvent) = perform()
         }
 
-    private class SourcesModel : AbstractTableModel() {
+    private class SourcesModel(private val onToggle: (NuGetSource) -> Unit) : AbstractTableModel() {
         var sources: List<NuGetSource> = emptyList()
 
         override fun getRowCount(): Int = sources.size
@@ -140,6 +140,11 @@ class NuGetSourcesPanel(private val project: Project, private val onChanged: () 
         override fun getColumnName(column: Int): String = listOf("Enabled", "Name", "URL")[column]
         override fun getColumnClass(column: Int): Class<*> = if (column == 0) java.lang.Boolean::class.java else String::class.java
         override fun getValueAt(row: Int, column: Int): Any = sources[row].let { listOf(it.isEnabled, it.name, it.url)[column] }
+        // the checkbox is clickable: a click runs `dotnet nuget enable | disable source`, the reload after it shows the real state
+        override fun isCellEditable(row: Int, column: Int): Boolean = column == 0
+        override fun setValueAt(value: Any?, row: Int, column: Int) {
+            if (column == 0) sources.getOrNull(row)?.let(onToggle)
+        }
     }
 }
 

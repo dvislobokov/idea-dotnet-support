@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.3
+
+- NuGet window, Sources tab: the **Enabled** checkbox is now clickable — a click enables or disables the feed
+  (`dotnet nuget enable | disable source`), instead of only looking like a checkbox
+
 ## 0.1.2
 
 - Code Metrics: Calculate Code Metrics on a project or solution (.NET menu and the Solution view context menu) opens the **Code Metrics**
