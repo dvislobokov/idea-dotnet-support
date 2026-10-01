@@ -67,6 +67,12 @@ class PostfixAndSurroundTest : BasePlatformTestCase() {
             "class A { void M() {\n    foreach (var item in items)\n    {\n        <caret>\n    }\n} }",
             expand(t.getValue(".foreach"), "class A { void M() {\n    items<caret>\n} }"),
         )
+        assertEquals(
+            "class A { void M() {\n    for (var i = 0; i < count; i++)\n    {\n        <caret>\n    }\n} }",
+            expand(t.getValue(".for"), "class A { void M() {\n    count<caret>\n} }"),
+        )
+        // .cast wraps the expression; the caret lands on the type placeholder T (which is also selected for typing over)
+        assertEquals("class A { void M() { var x = ((<caret>T)value); } }", expand(t.getValue(".cast"), "class A { void M() { var x = value<caret>; } }"))
     }
 
     fun testStatementTemplatesApplyOnlyWhereAStatementStarts() {

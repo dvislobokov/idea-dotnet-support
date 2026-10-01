@@ -7,6 +7,7 @@ import io.github.dotnetsupport.build.BuildProblem
 import io.github.dotnetsupport.build.BuildProblems
 import io.github.dotnetsupport.build.BuildProblemsAnnotator
 import io.github.dotnetsupport.build.MsBuildOutputParser
+import io.github.dotnetsupport.lang.CSharpCompleteStatement
 import io.github.dotnetsupport.lang.CSharpDeclarations
 import io.github.dotnetsupport.lang.CSharpDocComments
 
@@ -19,6 +20,31 @@ class CSharpEditorAssistTest : BasePlatformTestCase() {
         } finally {
             super.tearDown()
         }
+    }
+
+    fun testCompleteStatementAddsSemicolonOnlyWhereSafe() {
+        val needs = CSharpCompleteStatement::needsSemicolon
+        // assignments (plain and compound), calls, return / throw / break — a `;` completes them
+        assertTrue(needs("x = 1"))
+        assertTrue(needs("items[i] = value"))
+        assertTrue(needs("count += 1"))
+        assertTrue(needs("var y = Make(a, b)"))
+        assertTrue(needs("obj.Method()"))
+        assertTrue(needs("return result"))
+        assertTrue(needs("throw ex"))
+        assertTrue(needs("break"))
+        // headers, declarations and bare comparisons — never completed with a `;`
+        assertFalse(needs("if (ready)"))
+        assertFalse(needs("for (var i = 0; i < n; i++)"))
+        assertFalse(needs("void M()"))
+        assertFalse(needs("public int X"))
+        assertFalse(needs("x == y"))
+        // already terminated, or a block / label boundary
+        assertFalse(needs("x = 1;"))
+        assertFalse(needs("class A"))
+        assertFalse(needs("case 1:"))
+        // an unfinished multi-line call must not get a premature `;`
+        assertFalse(needs("Make(a,"))
     }
 
     fun testProblemFollowsItsLine() {

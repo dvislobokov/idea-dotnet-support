@@ -107,6 +107,8 @@
         <enterHandlerDelegate implementation="io.github.dotnetsupport.lang.CSharpDocCommentEnterHandler"/>
         <!-- Enter inside a // line comment or a /* */ block continues it on the next line (/// has its own handler above) -->
         <enterHandlerDelegate implementation="io.github.dotnetsupport.lang.CSharpCommentEnterHandler"/>
+        <!-- Complete Statement (Ctrl+Shift+Enter): add the missing ; for a clear statement and open a new line -->
+        <lang.smartEnterProcessor language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpSmartEnterProcessor"/>
         <!-- postfix templates (expr.if, list.foreach, x.return...) and Surround With, by tokens -->
         <codeInsight.template.postfixTemplateProvider language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpPostfixTemplateProvider"/>
         <lang.surroundDescriptor language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpSurroundDescriptor"/>

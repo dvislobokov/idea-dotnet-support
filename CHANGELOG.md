@@ -3,6 +3,17 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.15
+
+- Editor: **Complete Statement** (Ctrl+Shift+Enter) adds the missing `;` at the end of a statement and opens a new line. Conservative
+  without a parser — only clear statements (an assignment, a call, `return` / `throw` / `break` …); a header like `if (x)` or a declaration
+  like `void M()` is never turned into `...;`
+
+## 0.1.14
+
+- Editor: three more postfix templates — `.for` (`for (var i = 0; i < expr; i++)`), `.forr` (reverse) and `.cast` (`((T)expr)`, with the
+  type placeholder selected)
+
 ## 0.1.13
 
 - When a .NET solution is opened and no .NET 10 SDK is installed, a modal dialog now says the C# language server (Roslyn) needs the .NET 10
