@@ -57,6 +57,8 @@ object CSharpCompleteStatement {
         val last = tokens.lastOrNull() ?: return false
         // already a terminator, a block boundary, a label, or a list continuation
         if (code.substring(0, last.end).trimEnd().lastOrNull() in SKIP_AFTER) return false
+        // an operator or a dot at the end means the expression is unfinished (`x = `, `a +`, `obj.`)
+        if (last.type == CSharpTokenTypes.OPERATOR || last.type == CSharpTokenTypes.DOT) return false
         if (!balanced(tokens)) return false
         val first = tokens.first()
         if (first.type == CSharpTokenTypes.KEYWORD && first.text in HEADERS) return false

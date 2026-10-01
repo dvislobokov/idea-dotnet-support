@@ -37,6 +37,8 @@
 - [x] 0.1.13 — при открытии .NET-проекта без установленного SDK 10 — модальное окно: сервер C# (Roslyn) работает на .NET 10 и не стартует на
   .NET 8/9 (кнопки Download / Settings / Continue). Балон игнорировали, поэтому явное окно (`SdkCheckActivity.missingDotNet10`, проверка `--list-sdks`)
 - [x] Live templates для C# (33: `ctor` с именем типа, `prop*`, `cw`, циклы, `try`, `using`, `svm`, типы, `fact` / `theory` / `test` / `testm`, `region`…), Enter внутри `///` продолжает комментарий, третий `/` над объявлением даёт `<summary>` с `<param>` и `<returns>`
+- [x] 0.1.16 — серый текст (Tab): `;` в конце незавершённого оператора (те же безопасные случаи, что у Complete Statement) и
+  ` => throw new NotImplementedException();` после заголовка метода в class/struct/record (`CSharpGhostText.semicolon` / `notImplemented`, тесты). Вживую не проверено
 - [x] 0.1.15 — Complete Statement (Ctrl+Shift+Enter): дописывает `;` только для явных операторов (присваивание, вызов, `return`/`throw`/`break`…),
   заголовки (`if (x)`, `void M()`) и несбалансированные скобки не трогает (`CSharpCompleteStatement.needsSemicolon`, покрыто тестом). Вживую не проверено
 - [x] 0.1.14 — ещё postfix-шаблоны: `.for`, `.forr` (обратный), `.cast` (`((T)expr)` с выделенным плейсхолдером типа)

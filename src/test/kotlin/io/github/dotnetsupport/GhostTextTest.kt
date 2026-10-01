@@ -53,6 +53,25 @@ class GhostTextTest {
     }
 
     @Test
+    fun `a semicolon after a statement that is missing it`() {
+        assertEquals(";", at(inClass("    void M()\n    {\n        total = 1|\n    }")))
+        assertEquals(";", at(inClass("    void M()\n    {\n        Save()|\n    }")))
+        assertNull("a header is not a statement", at(inClass("    void M()\n    {\n        if (ready)|\n    }")))
+        assertNull("already terminated", at(inClass("    void M()\n    {\n        total = 1;|\n    }")))
+        assertNull("text follows on the line", at(inClass("    void M()\n    {\n        total = 1| + 2\n    }")))
+    }
+
+    @Test
+    fun `an unimplemented body after a method header`() {
+        assertEquals(" => throw new NotImplementedException();", at(inClass("    public int Parse(string s)|")))
+        assertEquals(" => throw new NotImplementedException();", at(inClass("    public void Run()|")))
+        assertNull("abstract declares, not implements", at(inClass("    public abstract int Parse(string s)|")))
+        assertNull("a body is already there", at(inClass("    public int Parse(string s)| => 0;")))
+        // a property without parentheses stays with the auto-property rule, not this one
+        assertEquals(" { get; set; }", at(inClass("    public int Count|")))
+    }
+
+    @Test
     fun `new after the equals sign of a declaration`() {
         assertEquals("new();", at(inClass("    private readonly List<int> _items = |")))
         assertEquals(" new();", at(inClass("    private readonly List<int> _items =|")))

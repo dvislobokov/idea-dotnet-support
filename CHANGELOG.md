@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.16
+
+- Editor, gray text (Tab to accept): a `;` after a statement that is missing it (the same safe cases as Complete Statement), and
+  ` => throw new NotImplementedException();` after a method header in a class / struct / record
+
 ## 0.1.15
 
 - Editor: **Complete Statement** (Ctrl+Shift+Enter) adds the missing `;` at the end of a statement and opens a new line. Conservative

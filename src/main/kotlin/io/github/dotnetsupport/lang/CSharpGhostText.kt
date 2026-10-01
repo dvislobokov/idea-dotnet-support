@@ -92,7 +92,41 @@ object CSharpGhostText {
             ?: of(SuggestionRules.LOGGER, loggerType(text, offset))
             ?: of(SuggestionRules.CONSTRUCTOR_PARAMETERS, constructorParameters(text, offset))
             ?: of(SuggestionRules.CATCH, catchClause(text, offset))
+            ?: of(SuggestionRules.NOT_IMPLEMENTED, notImplemented(text, offset))
             ?: of(SuggestionRules.VALUE, CSharpValueGhost.suggest(text, offset))
+            ?: of(SuggestionRules.SEMICOLON, semicolon(text, offset))
+    }
+
+    /**
+     * A gray `;` at the end of a statement that is missing it. Stricter than Complete Statement (an explicit action): only when the
+     * statement clearly ends — a call / indexer close or a literal — never after a bare name still being typed, which would fight the value
+     * suggestion and flicker on every letter.
+     */
+    fun semicolon(text: CharSequence, offset: Int): String? {
+        val line = lineBefore(text, offset)?.takeIf { it.isNotBlank() } ?: return null
+        if (nextCharacter(text, offset) == ';' || !CSharpCompleteStatement.needsSemicolon(line)) return null
+        val last = CSharpExpressions.tokenize(line).lastOrNull() ?: return null
+        val ends = when (last.type) {
+            CSharpTokenTypes.RPAREN, CSharpTokenTypes.RBRACKET, CSharpTokenTypes.NUMBER -> true
+            // a closed string / char only: an unterminated literal still has its token, but the statement is not finished
+            CSharpTokenTypes.STRING -> last.text.length >= 2 && last.text.endsWith("\"")
+            CSharpTokenTypes.CHAR -> last.text.length >= 2 && last.text.endsWith("'")
+            else -> false
+        }
+        return if (ends) ";" else null
+    }
+
+    /** `public int Parse(string s)` -> ` => throw new NotImplementedException();`, for a method header in a class / struct / record. */
+    fun notImplemented(text: CharSequence, offset: Int): String? {
+        val line = lineBefore(text, offset) ?: return null
+        val match = METHOD_HEAD.matchEntire(line) ?: return null
+        val modifiers = match.groupValues[1].trim().split(Regex("""\s+""")).filter { it.isNotEmpty() }
+        if (modifiers.any { it in NOT_IMPLEMENTABLE }) return null
+        if (baseOf(match.groupValues[2]) in (NOT_TYPES - "void") || match.groupValues[3] in NOT_TYPES) return null
+        if (nextCharacter(text, offset).let { it == '{' || it == '=' || it == ';' }) return null
+        val enclosing = enclosingType(text, offset) ?: return null
+        if (enclosing.kind == DeclarationKind.INTERFACE || enclosing.kind == DeclarationKind.ENUM) return null
+        return " => throw new NotImplementedException();"
     }
 
     /** `public string Name` -> ` { get; set; }`. */
@@ -260,6 +294,12 @@ object CSharpGhostText {
 
     private val ACCESS = setOf("public", "internal", "protected", "required")
     private val NOT_FOR_PROPERTY = setOf("readonly", "const", "async", "volatile", "extern", "partial")
+
+    /** A method header `(...)` on its own line, for the NotImplementedException body; nested parens in the parameter list are left out. */
+    private val METHOD_HEAD = Regex("""^\s*((?:(?:$MODIFIERS)\s+)*)($TYPE)\s+([A-Za-z_]\w*)\s*(?:<[^<>]*>)?\s*\([^()]*\)$""")
+
+    /** Modifiers whose method has no body on this line: abstract / extern declare it, partial may be the other half. */
+    private val NOT_IMPLEMENTABLE = setOf("abstract", "extern", "partial")
 
     private fun baseOf(type: String): String = type.removePrefix("global::").substringBefore('<').substringBefore('[').removeSuffix("?").substringAfterLast('.')
 
