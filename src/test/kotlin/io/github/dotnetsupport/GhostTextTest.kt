@@ -62,6 +62,18 @@ class GhostTextTest {
     }
 
     @Test
+    fun `break on the first line of a switch section`() {
+        fun inSwitch(section: String) = inClass("    void M(int x)\n    {\n        switch (x)\n        {\n$section\n        }\n    }")
+        assertEquals("break;", at(inSwitch("            case 1:\n                |")))
+        assertEquals("break;", at(inSwitch("            case 1:\n            case 2:\n                |")))
+        assertEquals("break;", at(inSwitch("            default:\n                |")))
+        assertEquals("a pattern label", "break;", at(inSwitch("            case > 0:\n                |")))
+        // not right after a label: a statement is already there, or it is not a switch label
+        assertNull(at(inSwitch("            case 1:\n                Save();\n                |")))
+        assertNull(at(inClass("    void M()\n    {\n        goto end;\n    end:\n        |\n    }")))
+    }
+
+    @Test
     fun `an unimplemented body after a method header`() {
         assertEquals(" => throw new NotImplementedException();", at(inClass("    public int Parse(string s)|")))
         assertEquals(" => throw new NotImplementedException();", at(inClass("    public void Run()|")))

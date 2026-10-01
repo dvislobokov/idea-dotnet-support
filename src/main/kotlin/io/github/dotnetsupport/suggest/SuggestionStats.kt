@@ -39,6 +39,7 @@ object SuggestionRules {
     const val LAMBDA = "lambda"
     const val SEMICOLON = "semicolon"
     const val NOT_IMPLEMENTED = "not implemented"
+    const val BREAK = "break"
 
     /** What made an item of the completion list go up. */
     const val SIGNAL_TYPE = "expected type"

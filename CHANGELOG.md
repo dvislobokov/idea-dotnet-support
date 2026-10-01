@@ -3,6 +3,10 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.17
+
+- Editor, gray text: `break;` on the first (empty) line of a `case` / `default` section
+
 ## 0.1.16
 
 - Editor, gray text (Tab to accept): a `;` after a statement that is missing it (the same safe cases as Complete Statement), and

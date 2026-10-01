@@ -93,8 +93,17 @@ object CSharpGhostText {
             ?: of(SuggestionRules.CONSTRUCTOR_PARAMETERS, constructorParameters(text, offset))
             ?: of(SuggestionRules.CATCH, catchClause(text, offset))
             ?: of(SuggestionRules.NOT_IMPLEMENTED, notImplemented(text, offset))
+            ?: of(SuggestionRules.BREAK, breakInCase(text, offset))
             ?: of(SuggestionRules.VALUE, CSharpValueGhost.suggest(text, offset))
             ?: of(SuggestionRules.SEMICOLON, semicolon(text, offset))
+    }
+
+    /** `break;` on the first (empty) line of a `case` / `default` section — the line right above is the label. */
+    fun breakInCase(text: CharSequence, offset: Int): String? {
+        if (!isBlankLine(text, offset)) return null
+        val previous = previousNonBlankLine(text, offset)?.trim() ?: return null
+        val isLabel = previous.endsWith(":") && (previous.startsWith("case ") || previous == "default:" || previous == "default :")
+        return if (isLabel) "break;" else null
     }
 
     /**
@@ -330,6 +339,19 @@ object CSharpGhostText {
         CSharpDeclarations.scan(withoutLine(text, offset)).pathTo(offset).lastOrNull()?.takeIf { it.kind.isType }
 
     private fun isBlankLine(text: CharSequence, offset: Int): Boolean = lineBefore(text, offset)?.isBlank() == true
+
+    /** The nearest non-blank line above the one [offset] is on, or null. */
+    private fun previousNonBlankLine(text: CharSequence, offset: Int): String? {
+        var start = if (offset == 0) 0 else text.lastIndexOf('\n', offset - 1) + 1
+        while (start > 0) {
+            val end = start - 1
+            val lineStart = if (end == 0) 0 else text.lastIndexOf('\n', end - 1) + 1
+            val line = text.subSequence(lineStart, end).toString()
+            if (line.isNotBlank()) return line
+            start = lineStart
+        }
+        return null
+    }
 
     private fun nextCharacter(text: CharSequence, offset: Int): Char? = (offset until text.length).firstOrNull { !text[it].isWhitespace() }?.let { text[it] }
 }
