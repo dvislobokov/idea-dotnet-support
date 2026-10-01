@@ -55,6 +55,32 @@ class NuGetTest : BasePlatformTestCase() {
 
         assertEquals(listOf("1.0.0", "1.1.0"), NuGetResponses.parseVersions("""{"versions":["1.0.0","1.1.0"]}"""))
         assertEquals(emptyList<String>(), NuGetResponses.parseVersions("<html>502</html>"))
+
+        // `dotnet list package --vulnerable --format json`: the same package repeats per framework / project; the warnings are kept once
+        val vulnerable = NuGetResponses.parseListReport(
+            """{"version":1,"projects":[{"path":"a.csproj","frameworks":[
+                {"framework":"net8.0","topLevelPackages":[
+                    {"id":"Newtonsoft.Json","resolvedVersion":"11.0.1","vulnerabilities":[
+                        {"severity":"high","advisoryurl":"https://github.com/advisories/x"},
+                        {"severity":"moderate","advisoryurl":"https://github.com/advisories/y"}]}]},
+                {"framework":"net9.0","topLevelPackages":[
+                    {"id":"Newtonsoft.Json","resolvedVersion":"11.0.1","vulnerabilities":[
+                        {"severity":"high","advisoryurl":"https://github.com/advisories/x"}]}]}]}]}"""
+        )
+        val forJson = vulnerable.getValue("newtonsoft.json")
+        assertEquals(2, forJson.size)
+        // the higher severity comes first
+        assertEquals("High", forJson[0].detail)
+        assertEquals("https://github.com/advisories/x", forJson[0].url)
+
+        // `dotnet list package --deprecated --format json`: reasons and the suggested replacement
+        val deprecated = NuGetResponses.parseListReport(
+            """{"projects":[{"frameworks":[{"framework":"net8.0","topLevelPackages":[
+                {"id":"Microsoft.AspNetCore.Mvc","deprecationReasons":["Legacy"],"alternativePackage":{"id":"Microsoft.AspNetCore.App"}}]}]}]}"""
+        )
+        val mvc = deprecated.getValue("microsoft.aspnetcore.mvc").single()
+        assertEquals("Legacy — use Microsoft.AspNetCore.App", mvc.detail)
+        assertTrue(NuGetResponses.parseListReport("<html>run restore</html>").isEmpty())
         assertEquals(
             listOf("https://api.nuget.org/v3/index.json", "C:\\packages"),
             NuGetResponses.parseSources("E https://api.nuget.org/v3/index.json\nD https://disabled.example/index.json\nE C:\\packages\n"),

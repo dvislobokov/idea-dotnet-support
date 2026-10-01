@@ -121,6 +121,29 @@ class UpgradePackagesInSolutionAction : NuGetMenuAction() {
     }
 }
 
+/** Packages the projects of the solution reference at different versions are brought to the highest used, after a confirmation that lists them. */
+class ConsolidatePackageVersionsAction : NuGetMenuAction() {
+    override fun perform(project: Project) {
+        val service = NuGetService.getInstance(project)
+        inBackground(project, "Looking for package version conflicts", { service.consolidations() }) { upgrades ->
+            if (upgrades.isEmpty()) {
+                DotNetCli.notifyInfo(project, "Consolidate Package Versions", "Every package is referenced at a single version across the solution.")
+                return@inBackground
+            }
+            val shown = upgrades.take(MAX_SHOWN).joinToString("\n") { "${it.projectName}: ${it.packageId} ${it.from} → ${it.to}" }
+            val more = if (upgrades.size > MAX_SHOWN) "\n... and ${upgrades.size - MAX_SHOWN} more" else ""
+            val answer = Messages.showYesNoDialog(project, "Consolidate ${upgrades.size} package reference(s) to the highest version used?\n\n$shown$more", "Consolidate Package Versions", "Consolidate", "Cancel", Messages.getQuestionIcon())
+            if (answer != Messages.YES) return@inBackground
+            showNuGetTab(project, NuGetToolWindowFactory.LOG)
+            service.upgrade(upgrades) { service.packagesChangedListeners.toList().forEach { it() } }
+        }
+    }
+
+    private companion object {
+        const val MAX_SHOWN = 20
+    }
+}
+
 /** "Show NuGet Tool Window" and the tabs of it. */
 abstract class ShowNuGetTabAction(private val tab: String?) : NuGetMenuAction() {
     override fun perform(project: Project) = showNuGetTab(project, tab)

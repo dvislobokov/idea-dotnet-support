@@ -70,6 +70,18 @@ class NuGetPackageInfo(
 
 class NuGetSource(val name: String, val url: String, val isEnabled: Boolean)
 
+/** A vulnerability or a deprecation of an installed package, from `dotnet list package --vulnerable | --deprecated --format json`. */
+data class PackageWarning(val kind: Kind, val detail: String, val url: String?) {
+    enum class Kind { VULNERABLE, DEPRECATED }
+
+    /** Vulnerabilities outrank deprecations; a higher severity outranks a lower one. For the icon and the one-line tag of a row. */
+    val weight: Int get() = if (kind == Kind.VULNERABLE) 10 + SEVERITIES.indexOf(detail.substringBefore(' ')).coerceAtLeast(0) else 0
+
+    companion object {
+        val SEVERITIES = listOf("Low", "Moderate", "High", "Critical")
+    }
+}
+
 /** Metadata of one version, from its `.nuspec`. Dependency groups are keyed by target framework (`net8.0`, `.NETStandard2.0`, "" for any). */
 class NuGetPackageDetails(
     val description: String,
@@ -137,6 +149,32 @@ object NuGetResponses {
 
     /** `{"versions": ["1.0.0", ...]}` of the package base address (flat container). */
     fun parseVersions(json: String): List<String> = (parse(json)?.get("versions") as? JsonArray).orEmpty().mapNotNull { it.asStringOrNull() }
+
+    /**
+     * `dotnet list package --vulnerable | --deprecated --format json` → the warnings of every package, by lowercased id. The same package
+     * repeats across projects and target frameworks; identical warnings are kept once. Top-level and transitive packages are both read.
+     */
+    fun parseListReport(json: String): Map<String, List<PackageWarning>> {
+        val result = LinkedHashMap<String, LinkedHashSet<PackageWarning>>()
+        val projects = (parse(json)?.get("projects") as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
+        for (project in projects) for (framework in (project.get("frameworks") as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }) {
+            for (list in listOf("topLevelPackages", "transitivePackages")) for (pkg in (framework.get(list) as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }) {
+                val id = pkg.string("id") ?: continue
+                val warnings = result.getOrPut(id.lowercase()) { LinkedHashSet() }
+                for (v in (pkg.get("vulnerabilities") as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }) {
+                    val severity = v.string("severity")?.replaceFirstChar(Char::uppercase)?.takeIf { it.isNotBlank() } ?: "Unknown"
+                    warnings += PackageWarning(PackageWarning.Kind.VULNERABLE, severity, v.string("advisoryurl"))
+                }
+                val reasons = (pkg.get("deprecationReasons") as? JsonArray).orEmpty().mapNotNull { it.asStringOrNull() }
+                val alternative = (pkg.get("alternativePackage") as? JsonObject)?.string("id")
+                if (reasons.isNotEmpty() || pkg.has("alternativePackage")) {
+                    val detail = reasons.joinToString(", ").ifEmpty { "Deprecated" } + alternative?.let { " — use $it" }.orEmpty()
+                    warnings += PackageWarning(PackageWarning.Kind.DEPRECATED, detail, null)
+                }
+            }
+        }
+        return result.filterValues { it.isNotEmpty() }.mapValues { it.value.sortedByDescending { w -> w.weight } }
+    }
 
     /**
      * `dotnet nuget list source`: a numbered line with the name and the (localized) state, then the URL:

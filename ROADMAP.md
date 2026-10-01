@@ -76,7 +76,9 @@
   фида), падает сразу, а не ждёт 10 минут — гипотеза о зависшей установке пакета, проверить по логу
 - [x] Диалог фида как в Rider (New / Edit): Name, URL, User, Password, Enabled, Allow insecure connections, Disable TLS certificate validation; учётные данные — в `nuget.config` через CLI и в хранилище паролей IDE для поиска по приватным фидам; пароли замаскированы в логах и прогрессе
 - [ ] Окно NuGet: README пакета, правка версий в `Directory.Packages.props` при CPM, выбор файла конфигурации для нового фида (сейчас — куда пишет CLI, т.е. пользовательский)
-- [ ] Устаревшие и уязвимые пакеты (`dotnet list package --outdated --vulnerable --format json`)
+- [x] 0.1.4 — Уязвимые и устаревшие (deprecated) пакеты в окне NuGet (`dotnet list package --vulnerable | --deprecated --format json`, два вызова —
+  флаги взаимоисключающие): пометка в строке списка (severity для уязвимых, «Deprecated») и строка в карточке со ссылкой на advisory. Outdated уже
+  показывался стрелкой «→ latest». Вживую не проверено
 - [x] csproj / `Directory.Packages.props`: сетевой completion пакетов — id в `Include` / `Update` у PackageReference / PackageVersion / GlobalPackageReference / PackageDownload (поиск по фидам solution, порядок фида, версия, загрузки, ✓ verified; от 2 символов, перезапрос при наборе), версии в `Version` / `VersionOverride` (атрибутом и тегом; новые сверху, prerelease — по настройке или когда набирается `-`); выбор пакета дописывает `Version="<последняя>"`, кроме CPM и когда версия уже есть; запрос в пуле с отменой при следующем символе, кеш на 5 минут
 - [ ] csproj: inlay «доступна новая версия», quick-fix обновления
 - [x] Авто-`dotnet restore` при изменении csproj (настройка на странице NuGet, см. «Заход 4»)
@@ -175,7 +177,7 @@
 - [x] `dotnet format whitespace --folder` как интерактивный форматтер: копия файла в зеркале каталогов с цепочкой `.editorconfig`, без загрузки MSBuild (~1,3 с)
 - [x] Format / Verify Formatting для проекта и solution: `csharpier format|check` или `dotnet format [--verify-no-changes]`, вывод в окно Build
 - [ ] Форматирование: четвёртый вариант — сервером Roslyn (после LSP), форматирование `.csproj` / XML через CSharpier 1.x, позиция ошибки ссылкой в уведомлении
-- [ ] Устаревшие (`--deprecated`) пакеты и лицензии пакетов по метаданным NuGet
+- [x] 0.1.4 — Устаревшие (`--deprecated`) пакеты в окне NuGet (см. выше). Лицензии пакетов по метаданным NuGet — ещё нет
 - [ ] Неиспользуемые пакеты и ссылки: эвристика по `using`, предупреждение без автоудаления
 - [x] `.editorconfig` для C# (2026-09-29): completion и документация опций `csharp_*` / `dotnet_*` / naming rules / severity — описания платформенного EditorConfig-плагина, включаются ключами реестра `editor.config.csharp.support` и `editor.config.resharper.support` (`EditorConfigDotNetSupport`). Вживую не проверено
 - [x] Баннеры над файлом C# (2026-09-29, `CSharpEditorBanners`, `RoslynSolutionBanner`): нет сервера, файл вне проекта, исключён из проекта, проект не восстановлен, solution не выбран; «Don't Show Again» на каждый вид. Тест `EditorExtrasTest`. Вживую не проверено
@@ -220,7 +222,8 @@
   `toString()` теперь `label`, combo box рисует его через `textListCellRenderer`; `DotNetBundleTest` сторожит `toString() == name`
 
 ### Проект и зависимости
-- [ ] ★ «Почему этот пакет здесь»: цепочка до транзитивной зависимости по `project.assets.json` (аналог `dotnet nuget why`)
+- [x] 0.1.5 — «Почему этот пакет здесь»: ПКМ по пакету в окне NuGet → «Why Is This Installed?» запускает `dotnet nuget why <scope> <id>` и
+  показывает дерево зависимостей по каждому TFM в диалоге (нужен .NET SDK 8.0.400+). Вживую не проверено
 - [ ] ★ Диаграмма зависимостей проектов по `ProjectReference`, подсветка циклов
 - [ ] Обновление target framework по всему solution одним действием, с диффом
 - [ ] Перевод на Central Package Management: сбор версий в `Directory.Packages.props`, конфликты версий
@@ -249,7 +252,9 @@
 - [ ] Aspire: запуск AppHost, ссылка на dashboard из вывода
 
 ### Мелочи редактора без парсера
-- [ ] ★ Запуск одиночного `.cs` (`dotnet run file.cs`, .NET 10) и `.csx`: run configuration и ▶, scratch-файлы C#
+- [~] 0.1.6 — Запуск одиночного `.cs` (`dotnet run file.cs`, .NET 10): действие «Run C# File with dotnet» в контекстном меню редактора для
+  `.cs`, который не входит ни в один проект (file-based app); вывод в консоли с кнопкой Stop (`RunContentExecutor`). Полноценной run
+  configuration с ▶ на тулбаре и `.csx` пока нет. Вживую не проверено
 - [ ] ★ Paste Special: JSON → record-ы / классы с `JsonPropertyName`; XML → классы
 - [x] Insert New GUID (Generate, меню .NET; мультикурсор)
 - [ ] Вставка `DateTime`-форматов, конвертация строки в verbatim / raw
@@ -277,8 +282,11 @@
 - [x] Кнопка-«глаз» Show All Files в заголовке окна Project (группа `ProjectViewToolbar`), видна только в Solution view
 
 ### Веб-разработка на ASP.NET
-- [ ] ★ HTTPS dev-сертификат: `dotnet dev-certs https --check` при открытии web-проекта, баннер «сертификат не доверен» с кнопкой Trust
-- [ ] ★ `dotnet user-jwts`: диалог создания dev-токена (роли, scope, срок), вставка в `.http` как `Authorization: Bearer …`, список выданных токенов
+- [x] 0.1.7 — HTTPS dev-сертификат: при открытии solution с web-проектом (`isWebSdk`) проверка `dotnet dev-certs https --check --trust`, и если
+  не доверен — уведомление с кнопками Trust (`dotnet dev-certs https --trust`) и «Don't ask again» (флаг на проект). Вживую не проверено
+- [~] 0.1.9 — `dotnet user-jwts`: действие «Insert Development JWT» в контекстном меню `.http` создаёт dev-токен для ASP.NET Core проекта
+  (`user-jwts create --output token`) и вставляет `Authorization: Bearer …` на строке каретки. Диалога с ролями/scope/сроком и списка
+  выданных токенов пока нет. Вживую не проверено
 - [ ] HTTP Client environments: `http-client.env.json` из `applicationUrl` профилей `launchSettings.json`
 - [x] Services / Run Dashboard (2026-09-29): `runDashboardDefaultTypesProvider` ставит «.NET Project» в окно Services, `runDashboardCustomizer` дописывает
   ссылку на «Now listening on» (адрес хранится на process handler — `ListeningAddressRecorder`, и у Run, и у Debug). Вживую не проверено
@@ -287,8 +295,10 @@
 - [ ] User Secrets: проверка, что ключ из `appsettings.json` перекрыт секретом (дополнение к пункту из раздела «Данные и API»)
 
 ### Зависимости (аналог Dependency Analyzer и Package Checker)
-- [ ] ★ Update All: обновить все пакеты проекта / solution одним действием с предпросмотром списка
-- [ ] ★ Консолидация версий: один пакет с разными версиями в проектах solution → «привести к одной» (область Solution уже показывает `multiple`)
+- [x] Update All: «Upgrade Packages in Solution» (меню .NET → NuGet и боковой тулбар окна) обновляет все устаревшие пакеты solution до последней
+  стабильной с предпросмотром списка (было в 0.1.0). Проектной области у действия пока нет
+- [x] 0.1.8 — Консолидация версий: «Consolidate Package Versions» (меню .NET → NuGet и боковой тулбар окна) находит пакеты с разными версиями в
+  проектах solution и приводит их к наибольшей используемой, с предпросмотром списка (`NuGetService.consolidations()`). Вживую не проверено
 - [ ] Конфликты версий: `NU1605` / `NU1608` / `NU1107` и `project.assets.json` → дерево «кто какую версию требует и какая победила»
 - [ ] Кэши NuGet: `dotnet nuget locals all --list`, размеры папок, очистка http-cache / global-packages / temp
 - [ ] Pack & Push: run configuration `dotnet pack` + `dotnet nuget push`, API-ключ в хранилище паролей IDE, выбор фида из вкладки Sources
@@ -311,7 +321,7 @@
 
 ### Порядок
 1. File nesting, переключатель Debug / Release + framework, Analyze Stack Trace.
-2. Dev-certs и `user-jwts`; Update All и консолидация версий в окне NuGet.
+2. Dev-certs (0.1.7) и `user-jwts` (0.1.9); Update All и консолидация версий в окне NuGet сделаны (vulnerable/deprecated и «why» — 0.1.4/0.1.5, консолидация — 0.1.8).
 3. Services / Run Dashboard, тест-эксплорер с continuous testing, конфликты версий.
 4. Остальное — по запросу: декомпиляция и BenchmarkDotNet эффектны, но нужны реже.
 

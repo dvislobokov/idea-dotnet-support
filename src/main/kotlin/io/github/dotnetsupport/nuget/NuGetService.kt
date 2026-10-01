@@ -183,6 +183,47 @@ class NuGetService(private val project: Project) {
         }
     }
 
+    /**
+     * Vulnerable and deprecated packages of the solution, by lowercased id. Blocking: runs `dotnet list package` twice ( `--vulnerable`
+     * and `--deprecated` are mutually exclusive). Needs the solution restored; otherwise the CLI prints an error and the map is empty.
+     */
+    fun packageWarnings(): Map<String, List<PackageWarning>> {
+        val target = SolutionService.getInstance(project).solutionFiles().firstOrNull() ?: return emptyMap()
+        fun report(flag: String): Map<String, List<PackageWarning>> = runCatching {
+            val result = DotNetCli.execute(DotNetCli.commandLine(target.parent.path, "list", target.path, "package", flag, "--include-transitive", "--format", "json"), 180_000)
+            if (result.exitCode == 0) NuGetResponses.parseListReport(result.stdout) else emptyMap()
+        }.getOrDefault(emptyMap())
+        val vulnerable = report("--vulnerable")
+        val deprecated = report("--deprecated")
+        return (vulnerable.keys + deprecated.keys).associateWith { vulnerable[it].orEmpty() + deprecated[it].orEmpty() }
+    }
+
+    /**
+     * `dotnet nuget why <target> <packageId>`: the dependency paths that pulled the package in, as the CLI prints them (a tree per target
+     * framework). Blocking. Needs .NET SDK 8.0.400+; an older SDK prints an error, which is returned as the text to show.
+     */
+    fun whyInstalled(target: VirtualFile, packageId: String): String = runCatching {
+        val result = DotNetCli.execute(DotNetCli.commandLine(target.parent.path, "nuget", "why", target.path, packageId), 120_000)
+        result.stdout.trim().ifBlank { result.stderr.trim() }.ifBlank { "No output from 'dotnet nuget why'." }
+    }.getOrElse { "'dotnet nuget why' could not run (needs .NET SDK 8.0.400 or newer): ${it.message}" }
+
+    /**
+     * Packages referenced at more than one version across the solution's projects: the upgrades that bring every lower reference up to the
+     * highest version already used, so the solution settles on one version per package (as "Consolidate" in Visual Studio / Rider). Blocking.
+     */
+    fun consolidations(): List<PackageUpgrade> {
+        data class Ref(val name: String, val file: VirtualFile, val id: String, val version: NuGetVersion)
+        val refs = projects().flatMap { (name, file) ->
+            installed(file).mapNotNull { pkg -> pkg.version?.let(NuGetVersion::parse)?.let { Ref(name, file, pkg.id, it) } }
+        }
+        return refs.groupBy { it.id.lowercase() }
+            .filterValues { group -> group.map { it.version.text }.distinct().size > 1 }
+            .flatMap { (_, group) ->
+                val target = group.maxOf { it.version }
+                group.filter { it.version < target }.map { PackageUpgrade(it.name, it.file, it.id, it.version.text, target.text) }
+            }
+    }
+
     fun upgrade(upgrades: List<PackageUpgrade>, onSuccess: () -> Unit) {
         if (upgrades.isEmpty()) return
         val title = "Upgrading NuGet packages"

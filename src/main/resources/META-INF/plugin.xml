@@ -159,6 +159,7 @@
         <projectViewNodeDecorator implementation="io.github.dotnetsupport.coverage.CoverageProjectViewDecorator"/>
         <postStartupActivity implementation="io.github.dotnetsupport.build.BuildAfterSolutionIsLoaded"/>
         <postStartupActivity implementation="io.github.dotnetsupport.sdk.SdkCheckActivity"/>
+        <postStartupActivity implementation="io.github.dotnetsupport.run.DevCertCheckActivity"/>
 
         <configurationType implementation="io.github.dotnetsupport.run.DotNetConfigurationType"/>
         <!-- the Services tool window lists the .NET Project configurations, with the address a web application listens on -->
@@ -367,6 +368,9 @@
                 <action id="DotNet.NuGet.UpgradeSolution" class="io.github.dotnetsupport.nuget.UpgradePackagesInSolutionAction"
                         text="Upgrade Packages in Solution" icon="AllIcons.Actions.Upload"
                         description="Move every package of the solution to its latest stable version"/>
+                <action id="DotNet.NuGet.Consolidate" class="io.github.dotnetsupport.nuget.ConsolidatePackageVersionsAction"
+                        text="Consolidate Package Versions" icon="AllIcons.Actions.Collapseall"
+                        description="Bring packages referenced at different versions across the solution's projects to the highest version used"/>
                 <separator/>
                 <action id="DotNet.NuGet.ShowToolWindow" class="io.github.dotnetsupport.nuget.ShowNuGetToolWindowAction" text="Show NuGet Tool Window"/>
                 <action id="DotNet.NuGet.ShowPackages" class="io.github.dotnetsupport.nuget.ShowNuGetPackagesAction" text="Show NuGet Packages"/>
@@ -386,6 +390,14 @@
             <!-- next to the monitor, where what is measured in a running program is looked for; and in the menu of the editor of a C# file -->
             <action id="DotNet.Allocations" class="io.github.dotnetsupport.allocations.ToggleAllocationsAction" text="Show Allocations in Editor"
                     description="Listen to the program started from the IDE and write at the end of every line what it allocates: bytes and objects a second, types, share">
+                <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            </action>
+            <action id="DotNet.RunCSharpFile" class="io.github.dotnetsupport.run.RunCSharpFileAction" text="Run C# File with dotnet"
+                    description="dotnet run on a standalone .cs file (a file-based app, .NET 10+); shown for a .cs file that no project owns">
+                <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            </action>
+            <action id="DotNet.CreateUserJwt" class="io.github.dotnetsupport.run.CreateUserJwtAction" text="Insert Development JWT"
+                    description="dotnet user-jwts create for the ASP.NET Core project; inserts an Authorization: Bearer header with the token at the caret of a .http file">
                 <add-to-group group-id="EditorPopupMenu" anchor="last"/>
             </action>
             <action id="DotNet.Environment" class="io.github.dotnetsupport.sdk.DotNetEnvironmentAction"

@@ -3,6 +3,37 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.9
+
+- Editor, `.http` files: **Insert Development JWT** in the context menu runs `dotnet user-jwts create` for the ASP.NET Core project and
+  inserts an `Authorization: Bearer <token>` header at the caret — to call an `[Authorize]` endpoint without hand-making a token
+
+## 0.1.8
+
+- NuGet: **Consolidate Package Versions** (.NET → NuGet menu and the NuGet window toolbar) finds packages referenced at different versions
+  across the solution's projects and brings them to the highest version used, with a preview of the changes
+
+## 0.1.7
+
+- When a solution with an ASP.NET Core web project is opened, the plugin checks the HTTPS development certificate and, if it is not trusted,
+  offers to trust it (`dotnet dev-certs https`) — so the first `https://` run does not warn in the browser
+
+## 0.1.6
+
+- Editor: **Run C# File with dotnet** in the context menu of a standalone `.cs` file (one that no project owns) runs `dotnet run <file>` —
+  a file-based app, .NET 10+ — in a console with a Stop button
+
+## 0.1.5
+
+- NuGet window: right-click a package → **Why Is This Installed?** runs `dotnet nuget why` and shows the dependency paths that pulled it
+  in, per target framework (needs .NET SDK 8.0.400+)
+
+## 0.1.4
+
+- NuGet window: installed packages that are **vulnerable** or **deprecated** are now flagged — a tag in the list (severity for a
+  vulnerability, "Deprecated" otherwise) and a line in the package card with a link to the advisory. Uses
+  `dotnet list package --vulnerable` and `--deprecated`; outdated packages already showed the "→ latest" arrow
+
 ## 0.1.3
 
 - NuGet window, Sources tab: the **Enabled** checkbox is now clickable — a click enables or disables the feed

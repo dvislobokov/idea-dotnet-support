@@ -16,6 +16,7 @@ import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
+import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindow
@@ -24,6 +25,7 @@ import com.intellij.openapi.wm.ToolWindowManager
 import com.intellij.ui.ClickListener
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.JBSplitter
+import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.SearchTextField
 import com.intellij.ui.SimpleColoredComponent
@@ -132,7 +134,11 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
     private val sourceRequests = AtomicInteger()
     private val listRequests = AtomicInteger()
     private val latestRequests = AtomicInteger()
+    private val warningRequests = AtomicInteger()
+    private val whyRequests = AtomicInteger()
     private val detailsRequests = AtomicInteger()
+    /** Vulnerable and deprecated packages of the solution, by lowercased id; filled in the background, read by the list and the card. */
+    @Volatile private var warningsByPackage: Map<String, List<PackageWarning>> = emptyMap()
     @Volatile private var sources: List<String> = listOf(NuGetService.NUGET_ORG)
     private var shownDetails: NuGetPackageDetails? = null
     // remembered while the window lives, as in Rider: whoever wants the details keeps them open for every package
@@ -167,6 +173,7 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
                 list.cursor = java.awt.Cursor.getPredefinedCursor(if (rowActionAt(e) != null) java.awt.Cursor.HAND_CURSOR else java.awt.Cursor.DEFAULT_CURSOR)
             }
         })
+        installListPopup()
         val detailsPane = ScrollPaneFactory.createScrollPane(details, true)
         add(JBSplitter(false, 0.5f).apply {
             firstComponent = ScrollPaneFactory.createScrollPane(list)
@@ -216,6 +223,7 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
         val help = action("Help", "NuGet in the .NET CLI", AllIcons.Actions.Help) { BrowserUtil.browse("https://learn.microsoft.com/nuget/consume-packages/install-use-packages-dotnet-cli") }
         val group = DefaultActionGroup(restore)
         ActionManager.getInstance().getAction("DotNet.NuGet.UpgradeSolution")?.let(group::add)
+        ActionManager.getInstance().getAction("DotNet.NuGet.Consolidate")?.let(group::add)
         group.addAll(toggleDetails, settings, help)
         return ActionManager.getInstance().createActionToolbar("DotNetNuGetSide", group, false).also { it.targetComponent = this }.component
     }
@@ -304,6 +312,12 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
             (0 until listModel.size()).mapNotNull { listModel[it] as? Row.Package }.filter { it.isInstalled }.forEach { it.latest = latest[it.id] ?: it.latest }
             list.repaint()
         }
+        // vulnerable / deprecated packages, as in Rider and Visual Studio: a tag in the list and a line in the card, read from `warningsByPackage`
+        background(warningRequests, { service.packageWarnings() }) { warnings ->
+            warningsByPackage = warnings
+            list.repaint()
+            selectedPackage()?.let { renderCard(it) }
+        }
     }
 
     // ---- list ----
@@ -331,6 +345,27 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
     private fun primaryInstall(row: Row.Package): () -> Unit {
         val target = (scopeCombo.selectedItem as? Scope)?.file ?: return { list.setSelectedValue(row, true) }
         return { install(row, listOf(target), row.latest ?: row.found?.version) }
+    }
+
+    /** Right-click on the list: "Why Is This Installed?" for an installed package, selecting the row under the cursor first. */
+    private fun installListPopup() {
+        val why = object : AnAction("Why Is This Installed?", "dotnet nuget why: the dependency paths that reference this package", AllIcons.Actions.Show), DumbAware {
+            override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
+            override fun update(e: AnActionEvent) { e.presentation.isEnabledAndVisible = selectedPackage()?.isInstalled == true }
+            override fun actionPerformed(e: AnActionEvent) = selectedPackage()?.let(::whyInstalled) ?: Unit
+        }
+        list.addMouseListener(object : PopupHandler() {
+            override fun invokePopup(component: Component, x: Int, y: Int) {
+                val index = list.locationToIndex(java.awt.Point(x, y))
+                if (index >= 0 && listModel[index] is Row.Package) list.selectedIndex = index
+                ActionManager.getInstance().createActionPopupMenu("DotNetNuGetList", DefaultActionGroup(why)).component.show(component, x, y)
+            }
+        })
+    }
+
+    private fun whyInstalled(row: Row.Package) {
+        val target = (scopeCombo.selectedItem as? Scope)?.file ?: SolutionService.getInstance(project).solutionFiles().firstOrNull() ?: return
+        background(whyRequests, { service.whyInstalled(target, row.id) }) { text -> WhyDialog(project, row.id, text).show() }
     }
 
     private inner class RowRenderer : ListCellRenderer<Row> {
@@ -365,6 +400,11 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
                     text.iconTextGap = JBUI.scale(8)
                     text.append(row.id, SimpleTextAttributes(SimpleTextAttributes.STYLE_BOLD, foreground))
                     row.found?.description?.lineSequence()?.firstOrNull()?.takeIf { it.isNotBlank() }?.let { text.append("   $it", gray) }
+                    warningsByPackage[row.id.lowercase()]?.maxByOrNull { it.weight }?.let { worst ->
+                        val vulnerable = worst.kind == PackageWarning.Kind.VULNERABLE
+                        val tag = if (vulnerable) "  ⚠ Vulnerable (${worst.detail})" else "  ⚠ Deprecated"
+                        text.append(tag, SimpleTextAttributes(SimpleTextAttributes.STYLE_BOLD, if (vulnerable) VULNERABLE_COLOR else DEPRECATED_COLOR))
+                    }
 
                     if (row.isInstalled) {
                         version.append(row.installedVersion.orEmpty(), gray)
@@ -470,6 +510,19 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
                 add(iconButton(AllIcons.Actions.GC, "Remove from all projects", installedIn.isNotEmpty()) { remove(row, installedIn) })
             }, BorderLayout.EAST)
         }, top = 10)
+
+        // vulnerabilities and deprecation of the installed version, each with its advisory link
+        for (warning in warningsByPackage[row.id.lowercase()].orEmpty()) {
+            val vulnerable = warning.kind == PackageWarning.Kind.VULNERABLE
+            stack(JPanel(FlowLayout(FlowLayout.LEFT, 0, 0)).apply {
+                isOpaque = false
+                add(JBLabel(if (vulnerable) "Vulnerable: ${warning.detail}" else "Deprecated: ${warning.detail}", AllIcons.General.Warning, JBLabel.LEFT).apply {
+                    foreground = if (vulnerable) VULNERABLE_COLOR else DEPRECATED_COLOR
+                    iconTextGap = JBUI.scale(6)
+                })
+                warning.url?.let { url -> add(ActionLink("advisory") { BrowserUtil.browse(url) }.apply { border = JBUI.Borders.emptyLeft(10) }) }
+            }, top = 8)
+        }
 
         // collapsible sections; the collapsed header carries a one-line summary
         val description = (nuspec?.description ?: info?.description).orEmpty().trim()
@@ -640,7 +693,28 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
         const val BUTTON_SIZE = 26
         const val SECTION_INDENT = 24
         const val PACKAGE_KEY = "dotnet.nuget.package"
+        val VULNERABLE_COLOR = com.intellij.ui.JBColor(0xD64E4E, 0xC75450)
+        val DEPRECATED_COLOR = com.intellij.ui.JBColor(0xB8860B, 0xCB9B2B)
     }
+}
+
+/** The output of `dotnet nuget why` in a read-only monospaced area: the dependency paths that pulled a package into the scope. */
+private class WhyDialog(project: Project, packageId: String, private val text: String) : DialogWrapper(project) {
+    init {
+        title = "Why Is $packageId Installed?"
+        init()
+    }
+
+    override fun createCenterPanel(): JComponent {
+        val area = com.intellij.ui.components.JBTextArea(text).apply {
+            isEditable = false
+            lineWrap = false
+            font = JBUI.Fonts.create(java.awt.Font.MONOSPACED, JBUI.Fonts.label().size)
+        }
+        return ScrollPaneFactory.createScrollPane(area).apply { preferredSize = JBUI.size(640, 380) }
+    }
+
+    override fun createActions(): Array<javax.swing.Action> = arrayOf(okAction)
 }
 
 /** Content of a scroll pane that is as wide as the viewport (so that text wraps and right-aligned buttons reach the edge) and scrolls only vertically. */

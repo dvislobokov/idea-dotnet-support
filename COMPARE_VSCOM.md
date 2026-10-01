@@ -1,6 +1,7 @@
 # Плагин, Rider и Visual Studio Community: сравнение функционала
 
 Составлено 2026-09-30 по знанию продуктов (Visual Studio 2022 Community 17.x, Rider 2025.x) и по состоянию плагина из `ROADMAP.md`.
+Колонка «Плагин» обновлена 2026-10-01 под версии 0.1.1–0.1.3 (визуализаторы строк, зависимые/временные точки останова, Code Metrics).
 Не сверялось с живыми установками VS — перед решениями по конкретному пункту проверить в актуальной версии. Razor и Blazor не
 рассматриваются (решение 2026-09-30, `ROADMAP.md` → «Вне рамок»). Дизайнеры и всё, что живёт только на .NET Framework под Windows, отмечены
 отдельно: это не «языковые» возможности, но именно они составляют главную часть того, чего у Rider нет.
@@ -39,7 +40,7 @@
 | Semantic-раскраска | ✅ | ✅ | ✅ |
 | Source generators, декомпиляция в навигации | △ MetadataAsSource сервера; ilspycmd в плане | ✅ встроенный декомпилятор, IL Viewer | △ декомпиляция (ILSpy внутри) по опции |
 | C# Interactive / REPL | ❌ (в плане: `csharprepl`) | ❌ | ✅ окно C# Interactive |
-| Code Metrics (maintainability, cyclomatic) | ❌ | ❌ (плагин) | ✅ Calculate Code Metrics |
+| Code Metrics (maintainability, cyclomatic) | ✅ Calculate Code Metrics: дерево namespace/тип/член, переход к коду, CSV (0.1.2) | ❌ (плагин) | ✅ Calculate Code Metrics |
 | Class Designer (UML по коду) | ❌ | ❌ | ✅ (компонент установщика) |
 | Unit-тесты: генерация тестов из кода | △ Create test (intention) | ✅ | ✅ Create Unit Tests (базовый), IntelliTest (Ent) |
 | VB.NET | ❌ | ❌ (только чтение) | ✅ полная поддержка |
@@ -50,7 +51,7 @@
 
 | Возможность | Плагин | Rider | VS Community |
 |---|---|---|---|
-| Точки останова с условием, hit count, лог | ✅ | ✅ | ✅ (плюс Tracepoints, зависимые точки, временные) |
+| Точки останова с условием, hit count, лог | ✅ (плюс зависимые и временные, 0.1.1) | ✅ | ✅ (плюс Tracepoints с действиями) |
 | Исключения (first-chance, фильтры) | ✅ | ✅ | ✅ Exception Settings |
 | Evaluate, Watch, Set Value, потоки, кадры | ✅ | ✅ | ✅ |
 | Hot Reload / Edit & Continue | ❌ (Hot Reload в плане) | ✅ | ✅ (в т.ч. XAML Hot Reload) |
@@ -58,7 +59,7 @@
 | Отладка дампов (`.dmp`) как сессии | △ просмотр Memory Dump (dotnet-dump + SOS) | △ dotMemory для памяти | ✅ управляемый и native дамп, Diagnostic Analysis |
 | Native / mixed-mode отладка | ❌ | ❌ | ✅ |
 | Диагностика во время отладки (CPU / память, события) | △ Monitor, аллокации по строкам | ✅ Dynamic Program Analysis, dotTrace / dotMemory (Windows) | ✅ Diagnostic Tools (CPU, память, снимки кучи, события) |
-| Пользовательские визуализаторы (`DebuggerVisualizer`), JSON/XML/HTML visualizer | ❌ | △ просмотрщики JSON/XML | ✅ |
+| Пользовательские визуализаторы (`DebuggerVisualizer`), JSON/XML/HTML visualizer | △ встроенные просмотрщики строк JSON/XML/HTML/JWT (0.1.1), без пользовательских `DebuggerVisualizer` | △ просмотрщики JSON/XML | ✅ |
 | Parallel Stacks / Parallel Watch / Tasks | ❌ | ✅ Parallel Stacks | ✅ |
 | Удалённая, WSL, Docker-отладка | ❌ | ✅ | ✅ (Remote Debugger, WSL, контейнеры) |
 | Snapshot / Time Travel / IntelliTrace | ❌ | ❌ | (Ent) |
@@ -83,7 +84,7 @@
 | Unload / reload проекта, drag-and-drop | ❌ (в плане) | ✅ | ✅ |
 | Project Properties (страницы) | △ правка `.csproj` со схемой и completion | ✅ | ✅ богатые страницы (сборка, отладка, подпись, ресурсы, ClickOnce) |
 | NuGet: поиск, установка, фиды | ✅ | ✅ | ✅ |
-| NuGet: outdated / vulnerable / deprecated, Update All, консолидация | ❌ (в плане) | ✅ | ✅ (вкладки Updates / Consolidate, значки уязвимостей) |
+| NuGet: outdated / vulnerable / deprecated, Update All, консолидация | ✅ outdated (стрелка «→ latest»), vulnerable/deprecated с пометкой и advisory (0.1.4), Update All (Upgrade Packages in Solution), консолидация версий (0.1.8) | ✅ | ✅ (вкладки Updates / Consolidate, значки уязвимостей) |
 | Central Package Management | △ чтение версий | ✅ | ✅ |
 | Публикация: папка, Docker, Azure | △ `dotnet publish`; мастер в плане | ✅ папка / Docker / Azure (плагин) | ✅ мастер Publish: папка, IIS / Web Deploy, Azure App Service / Functions / Containers, ClickOnce, MSIX |
 | Контейнеры: Dockerfile, `PublishContainer`, docker-compose проект (`.dcproj`) | △ | △ Dockerfile, compose-запуск | ✅ включая `.dcproj` и оркестрацию |
@@ -117,7 +118,7 @@
 
 Язык и редактор:
 1. C# Interactive (REPL Roslyn) и окно Immediate с выполнением операторов.
-2. Code Metrics (Calculate Code Metrics: maintainability index, cyclomatic complexity, coupling, LOC).
+2. Code Metrics (Calculate Code Metrics: maintainability index, cyclomatic complexity, coupling, LOC). _Теперь есть и в плагине (0.1.2)._
 3. Class Designer — UML-диаграммы классов по коду и обратно.
 4. VB.NET — полная поддержка (в Rider только чтение).
 5. C++ native и C++/CLI, смешанные решения C#/C++ с mixed-mode отладкой.
@@ -127,7 +128,7 @@
 7. Native / mixed-mode отладка, отладка native-дампов, Diagnostic Analysis дампов.
 8. Пользовательские Debugger Visualizers (`DebuggerVisualizerAttribute`), встроенные JSON / XML / HTML visualizers (у Rider только просмотрщики).
 9. Diagnostic Tools при отладке: снимки кучи и сравнение, события, CPU — в одном окне сессии.
-10. Dependent breakpoints, Tracepoints с действиями, Temporary breakpoints — у Rider частично.
+10. Dependent breakpoints, Tracepoints с действиями, Temporary breakpoints — у Rider частично. _В плагине dependent и temporary есть (0.1.1); Tracepoints с действиями — нет._
 11. XAML Hot Reload с Live Visual Tree / Live Property Explorer.
 
 Тесты и профилирование:
