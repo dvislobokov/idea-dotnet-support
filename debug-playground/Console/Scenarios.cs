@@ -83,6 +83,12 @@ public static class Scenarios
         var multiline = "line 1\nline 2\r\nline 3";
         var json = """{ "name": "raw string", "value": 1 }""";
         Console.WriteLine($"{longText.Length} {multiline.Length} {json.Length}"); // BP:strings — `longText` is longer than 4096: an error text instead of a value is fine, a broken session is not
+        var order = """{ "id": 42, "customer": { "name": "Ada", "city": "London" }, "lines": [ { "sku": "A-1", "qty": 2 }, { "sku": "B-7", "qty": 1 } ] }""";
+        var feed = "<feed><entry id=\"1\"><title>First</title></entry><entry id=\"2\"><title>Second</title></entry></feed>";
+        var page = "<html><body><h1>Hello</h1><p>A <b>bold</b> paragraph with a <a href=\"https://example.org\">link</a>.</p></body></html>";
+        var token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFkYSIsImlhdCI6MTUxNjIzOTAyMn0.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+        var word = "short";
+        Console.WriteLine($"{order.Length} {feed.Length} {page.Length} {token.Length} {word}"); // BP:view-text — Variables: `order`, `feed`, `page`, `token`, `multiline` have a "View" link; EXPECT: the popup has a JSON tab (formatted, highlighted) for `order`, XML for `feed`, HTML for `page`, JWT for `token`, plain text with line breaks for `multiline`; the hover over `order` in the editor shows the same popup; `word` has no link
     }
 
     private static void Expensive()
@@ -112,6 +118,14 @@ public static class Scenarios
         var greeting = Greet(person); // BP:stepping — F7 enters Greet (not the getter of Name: step filtering), Shift+F8 comes back here
         var length = Measure(greeting);
         Console.WriteLine($"{greeting} {length}"); // Run to Cursor here from the breakpoint above
+        var total = 0;
+        for (var round = 1; round <= 5; round++)
+        {
+            total += round; // BP:dependent-slave — breakpoint here, in its dialog "Disable until hitting the following breakpoint: BP:dependent-master"; EXPECT: no stop in rounds 1–2, the first stop is round == 3 (after the master), not before
+            if (round != 2) continue;
+            Console.WriteLine("master next"); // BP:dependent-master — breakpoint here with "Remove once hit"; EXPECT: one stop at round == 2, after it the breakpoint is gone from the gutter and from View Breakpoints
+        }
+        Console.WriteLine($"rounds total {total}");
     }
 
     private static string Greet(Person person)

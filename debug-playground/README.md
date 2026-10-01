@@ -38,6 +38,8 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `BP:variables`: значения всех видов; Evaluate / Watches: `person.Friend.Name`, `number * 2`, `access.HasFlag(Access.Write)`, ошибка на `nope.x` — текстом адаптера; hover над переменной
 - [ ] `BP:collections`: `huge` (100k) и `hugeArray` (5M) раскрываются порциями, IDE не виснет
 - [ ] `BP:strings`: `longText` — ошибка вместо значения, сессия жива
+- [ ] `BP:view-text` (0.1.1): у длинных строк ссылка «View»; во всплывающем окне вкладки JSON (`order`), XML (`feed`), HTML (`page`), JWT (`token`), у `multiline` — текст с переносами; hover над `order` в редакторе — то же окно; у `word` ссылки нет
+- [ ] `BP:dependent-master` с «Remove once hit», `BP:dependent-slave` с «Disable until hitting the following breakpoint» = master (0.1.1): первая остановка — master при `round == 2`, точка исчезает; следующая — slave при `round == 3`
 - [ ] `BP:expensive`: `slow` описывается ~2 с, остальное дерево работает; выключить «Allow property evaluations and other implicit function calls» → значения без вызова кода
 - [ ] Run to Cursor из `BP:stepping` на строку с `Console.WriteLine`
 - [ ] `Console: Evil`, `BP:evil`: раскрыть `evil`, нажать Stop — завершение за секунды, в `idea.log` нет `Cannot send Ctrl+C`

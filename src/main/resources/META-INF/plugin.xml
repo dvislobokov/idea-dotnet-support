@@ -300,6 +300,9 @@
                     text="Run MSBuild Target..." icon="AllIcons.Nodes.Target"/>
             <action id="DotNet.AnalyzeUpgrade" class="io.github.dotnetsupport.upgrade.AnalyzeUpgradeAction"
                     text="Analyze Upgrade to Newer .NET..." description="Run the .NET Upgrade Assistant analysis: packages, project properties and APIs that block a newer target framework"/>
+            <action id="DotNet.CalculateCodeMetrics" class="io.github.dotnetsupport.metrics.CalculateCodeMetricsAction"
+                    text="Calculate Code Metrics" icon="AllIcons.Toolwindows.ToolWindowAnalyzeDataflow"
+                    description="Maintainability index, cyclomatic complexity, depth of inheritance, class coupling and lines of code of the project or solution, as Analyze | Calculate Code Metrics of Visual Studio"/>
             <action id="DotNet.FormatSelected" class="io.github.dotnetsupport.format.FormatSelectedAction" text="Format"
                     description="Format the project or solution with the formatter of the repository: CSharpier or dotnet format"/>
             <action id="DotNet.VerifyFormatting" class="io.github.dotnetsupport.format.VerifyFormattingAction" text="Verify Formatting"
@@ -390,6 +393,7 @@
             <reference ref="DotNet.FormatSelected"/>
             <reference ref="DotNet.VerifyFormatting"/>
             <reference ref="DotNet.AnalyzeUpgrade"/>
+            <reference ref="DotNet.CalculateCodeMetrics"/>
             <reference ref="DotNet.InsertGuid"/>
             <reference ref="DotNet.AnalyzeStackTrace"/>
             <separator/>

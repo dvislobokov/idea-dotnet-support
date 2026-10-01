@@ -2,6 +2,10 @@
 .idea/
 .intellijPlatform/
 .kotlin/
-build/
+# everything under build is ignored except the plugin distributions, kept in git so every version's zip is available
+/build/*
+!/build/distributions/
+/build/distributions/*
+!/build/distributions/*.zip
 out/
 *.iml

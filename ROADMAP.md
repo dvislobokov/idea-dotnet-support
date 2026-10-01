@@ -315,6 +315,27 @@
 3. Services / Run Dashboard, тест-эксплорер с continuous testing, конфликты версий.
 4. Остальное — по запросу: декомпиляция и BenchmarkDotNet эффектны, но нужны реже.
 
+## Из сравнения с Visual Studio Community (`COMPARE_VSCOM.md`, 2026-10-01)
+Чего нет ни в плагине, ни в плане, но делается на `dotnet` CLI / XDebugger / ответах сервера без своего парсера. Версия у сделанного — та, в которой фича вышла (`CHANGELOG.md`).
+- [x] 0.1.1 — просмотр строковых значений в отладчике как JSON / XML / HTML / JWT: литерал адаптера разбирается обратно в текст
+  (`DotNetValue.unquote`), у длинных / многострочных / структурированных строк ссылка «View» (`XFullValueEvaluator`) и текст для hover
+  (`XValueTextProvider`), вкладки рисуют визуализаторы платформы. Строка, которую адаптер не отдал (ошибка вместо литерала, `dap-probe/FINDINGS.md`
+  #4), ссылки не получает; в 2026-10 строка на 5000 символов уже пришла целиком. Сценарий — `BP:view-text` в `debug-playground/Console/Scenarios.cs`.
+  Проверено UI-роботом 2026-10-01 (`tools/ui-robot/scripts/view_text.js`): «View» у длинных строк, вкладки JSON / HTML+XML / JWT / Raw, у короткой
+  строки ссылки нет; само всплывающее окно по клику роботом не открывалось
+- [x] 0.1.1 — временные и зависимые точки останова (Remove once hit, Disable until hitting the following breakpoint): работают средствами XDebugger
+  без изменений кода — обработчик честно регистрирует / снимает точки, остановка сообщается по `hitBreakpointIds`. Проверено UI-роботом 2026-10-01
+  (`tools/ui-robot/scripts/dependent_bp.js`): ведомая молчит до мастера, мастер останавливает один раз и удаляется. Сценарий — `BP:dependent-master`
+  / `BP:dependent-slave` в `debug-playground/Console/Scenarios.cs`
+- [x] 0.1.2 — Code Metrics: maintainability index, cyclomatic complexity, class coupling, depth of inheritance, строки кода — по проекту / solution
+  деревом с переходом к коду. Calculate Code Metrics (меню .NET и ПКМ в Solution) открывает окно «Code Metrics»: дерево namespace / тип / член с
+  колонками как в Visual Studio, у индекса — цветная полоса; измеряет хелпер на Roslyn (`metrics/Program.cs`, собирается на машине), solution не
+  собирается — ссылки берутся из последней сборки. Вживую не проверено
+- [ ] Code Cleanup на правилах Roslyn: `dotnet format style` / `analyzers` с выбором диагностик и severity, профили в настройках
+- [ ] docker-compose: run configuration `docker compose up` для сервисов, отладка процесса в контейнере (адаптер через `docker exec`); тот же транспорт — для WSL / remote
+- [ ] T4: Transform для `.tt` через `dotnet-t4` (Mono.TextTemplating), вложение результата под `.tt`
+- [ ] Find Usages с группировкой: по проекту / файлу и по типу использования (чтение, запись, вызов, `new`, `typeof`/`nameof`) по соседним токенам
+
 ## Платформа
 - [x] Минимальная версия — 2026.1 (`sinceBuild = 261`), сборка и тесты на IntelliJ IDEA 2026.1.4, Kotlin API 2.3. Папки под узлом проекта в панели Solution получили короткие имена и в IDEA (Java-плагин называл их как пакеты). Убраны устаревшие `ReadAction.compute`, `DaemonCodeAnalyzer.restart()`, `isLenient`, `createSingleFileDescriptor`
 - [x] События окна Build (2026-09-30): в 2026.1 конструкторы `*EventImpl` уже `@Deprecated` + `@Internal` (у `StartBuildEventImpl` — for removal),

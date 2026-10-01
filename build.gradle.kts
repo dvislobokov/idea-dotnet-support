@@ -88,11 +88,42 @@ tasks.processResources {
         include("Program.cs", "AllocWatch.csproj")
         into("allocwatch")
     }
+    // and the calculator of code metrics
+    from("metrics") {
+        include("Program.cs", "CodeMetrics.csproj")
+        into("metrics")
+    }
+}
+
+// CHANGELOG.md → <change-notes> (Plugins → What's New): the section of the current version and the older ones. Every feature is a new
+// version 0.1.x with its own section, so a version without one is a mistake and fails the build.
+fun changeNotesHtml(markdown: String, version: String): String {
+    val sections = markdown.split(Regex("(?m)^## ")).drop(1).map { it.substringBefore('\n').trim() to it.substringAfter('\n') }
+    if (sections.none { it.first == version }) throw GradleException("CHANGELOG.md has no section '## $version' for pluginVersion = $version")
+    fun inline(text: String) = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        // the HTML of Swing drops a plain space in front of <code>
+        .replace(Regex(" `([^`]+)`"), "&nbsp;`$1`").replace(Regex("`([^`]+)`"), "<code>$1</code>").replace(Regex("\\*\\*([^*]+)\\*\\*"), "<b>$1</b>")
+    return sections.dropWhile { it.first != version }.joinToString("") { (title, body) ->
+        val html = StringBuilder("<h3>${inline(title)}</h3>")
+        var inList = false
+        for (line in body.lines()) {
+            when {
+                line.startsWith("- ") -> { if (!inList) html.append("<ul>"); inList = true; html.append("<li>").append(inline(line.removePrefix("- "))) }
+                line.startsWith("  ") && inList -> html.append(' ').append(inline(line.trim()))
+                line.isBlank() -> { if (inList) html.append("</ul>"); inList = false }
+                else -> { if (inList) html.append("</ul>"); inList = false; html.append("<p>").append(inline(line)).append("</p>") }
+            }
+        }
+        if (inList) html.append("</ul>")
+        html.toString()
+    }
 }
 
 intellijPlatform {
     buildSearchableOptions = false
     pluginConfiguration {
+        // computed while configuring: a lambda of the script can't go into the configuration cache, the file read is still its input
+        changeNotes = changeNotesHtml(providers.fileContents(layout.projectDirectory.file("CHANGELOG.md")).asText.get(), providers.gradleProperty("pluginVersion").get())
         ideaVersion {
             // 2026.1: the first platform with the DAP module (intellij.platform.dap) the debugger is going to be built on
             sinceBuild = "261"

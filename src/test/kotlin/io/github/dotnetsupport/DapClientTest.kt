@@ -144,6 +144,22 @@ class DapClientTest : TestCase() {
         busy.connection.close()
     }
 
+    /** Strings come as C# literals (the line of `dap-probe/out-windows/variables.txt`); the viewer needs the text back. */
+    fun testStringValuesAreUnquoted() {
+        assertEquals("hello \"quoted\"\n\tПривет", DotNetValue.unquote("\"hello \\\"quoted\\\"\\n\\tПривет\""))
+        assertEquals("""{"a": 1}""", DotNetValue.unquote("\"{\\\"a\\\": 1}\""))
+        assertEquals("a\\b\u0000\u00e9\uD83D\uDE00", DotNetValue.unquote("\"a\\\\b\\0\\u00e9\\U0001F600\""))
+        assertEquals("c:\\x \"y\"", DotNetValue.unquote("@\"c:\\x \"\"y\"\"\""))
+        assertEquals("", DotNetValue.unquote("\"\""))
+        // not a whole literal: null, an error of the adapter, a cut value, a bad escape
+        listOf("null", "<error: startIndex ('0') must be less than or equal to '-904'.>", "\"abc", "\"a\"b\"", "\"a\\q\"", "\"\\u12\"")
+            .forEach { assertNull(it, DotNetValue.unquote(it)) }
+        assertTrue(DotNetValue.isStringType("string") && DotNetValue.isStringType("System.String") && !DotNetValue.isStringType("char"))
+        // a short word goes on to the visualizers of the platform, which need the application: not in this test
+        assertTrue(DotNetValue.wantsViewer("line\nline"))
+        assertTrue(DotNetValue.wantsViewer("x".repeat(61)))
+    }
+
     /** The breakpoints of `setBreakpoints`: 1-based lines, the condition, the hit count and the log message as the adapter takes them. */
     fun testBreakpointRequests() {
         assertEquals(mapOf("line" to 61), DotNetLineBreakpointHandler.breakpointJson(60, null, null, null))

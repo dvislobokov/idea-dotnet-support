@@ -8,6 +8,7 @@ import com.intellij.util.ThreeState
 import com.intellij.xdebugger.XDebuggerUtil
 import com.intellij.xdebugger.XExpression
 import com.intellij.xdebugger.frame.XCompositeNode
+import com.intellij.xdebugger.frame.XFullValueEvaluator
 import com.intellij.xdebugger.frame.XInlineDebuggerDataCallback
 import com.intellij.xdebugger.frame.XNamedValue
 import com.intellij.xdebugger.frame.XValueChildrenList
@@ -17,6 +18,8 @@ import com.intellij.xdebugger.frame.XValueNode
 import com.intellij.xdebugger.frame.XValuePlace
 import com.intellij.xdebugger.frame.presentation.XRegularValuePresentation
 import com.intellij.xdebugger.impl.breakpoints.XExpressionImpl
+import com.intellij.xdebugger.impl.ui.XValueTextProvider
+import com.intellij.xdebugger.impl.ui.visualizedtext.VisualizedTextPopupUtil
 import io.github.dotnetsupport.lang.CSharpInlineValues
 import org.jetbrains.concurrency.Promise
 import org.jetbrains.concurrency.resolvedPromise
@@ -36,11 +39,26 @@ class DotNetValue(
     private val evaluateName: String?,
     private val frameId: Int,
     hint: JsonObject?,
-) : XNamedValue(name) {
+) : XNamedValue(name), XValueTextProvider {
     private val kind = hint?.string("kind")
 
-    override fun computePresentation(node: XValueNode, place: XValuePlace) =
+    /** The text of a `string` value: the adapter gives it as a C# literal, escaped and quoted. */
+    private val text: String? = if (isStringType(type)) unquote(value) else null
+
+    override fun computePresentation(node: XValueNode, place: XValuePlace) {
         node.setPresentation(icon(), XRegularValuePresentation(value, type?.takeIf { it.isNotBlank() }), reference > 0)
+        // "View" opens the platform's popup, which adds JSON / XML / HTML / JWT tabs when the text is one (as the viewers of Rider)
+        if (text != null && wantsViewer(text)) node.setFullValueEvaluator(TextEvaluator(text))
+    }
+
+    /** The hover over a string shows the text, with the same tabs, instead of a tree. */
+    override fun getValueText(): String? = text
+
+    override fun shouldShowTextValue(): Boolean = text != null && wantsViewer(text)
+
+    private class TextEvaluator(private val text: String) : XFullValueEvaluator() {
+        override fun startEvaluation(callback: XFullValueEvaluationCallback) = callback.evaluated(text)
+    }
 
     private fun icon(): Icon = when {
         kind == "property" -> AllIcons.Nodes.Property
@@ -86,6 +104,47 @@ class DotNetValue(
     }
 
     companion object {
+        fun isStringType(type: String?) = type == "string" || type == "System.String"
+
+        /** Long, multi-line or structured text deserves the viewer; a short word reads fine in the tree. */
+        fun wantsViewer(text: String) = text.length > 60 || '\n' in text || VisualizedTextPopupUtil.isVisualizable(text)
+
+        /**
+         * `"a \"b\"\n\tc"` → the text. The escapes are those of C# (`dap-probe/out-windows/variables.txt`); `null` for anything that is not
+         * a whole literal: `null`, an error of the adapter (strings over 4096 characters, `dap-probe/FINDINGS.md` #4), a cut value.
+         */
+        fun unquote(literal: String): String? {
+            val body = literal.removePrefix("@")
+            if (body.length < 2 || body.first() != '"' || body.last() != '"') return null
+            if (literal.startsWith("@")) return body.substring(1, body.length - 1).replace("\"\"", "\"")
+            val out = StringBuilder(body.length)
+            var i = 1
+            val end = body.length - 1
+            while (i < end) {
+                val c = body[i++]
+                if (c == '"') return null
+                if (c != '\\') { out.append(c); continue }
+                if (i >= end) return null
+                when (val e = body[i++]) {
+                    'n' -> out.append('\n'); 't' -> out.append('\t'); 'r' -> out.append('\r'); '0' -> out.append('\u0000')
+                    'a' -> out.append('\u0007'); 'b' -> out.append('\b'); 'f' -> out.append('\u000C'); 'v' -> out.append('\u000B')
+                    'e' -> out.append('\u001B'); '\\', '"', '\'' -> out.append(e)
+                    'u', 'U', 'x' -> {
+                        val max = when (e) { 'u' -> 4; 'U' -> 8; else -> 4 }
+                        var j = i
+                        while (j < end && j - i < max && body[j].isHexDigit()) j++
+                        if (j == i || (e != 'x' && j - i != max)) return null
+                        out.appendCodePoint(body.substring(i, j).toInt(16))
+                        i = j
+                    }
+                    else -> return null
+                }
+            }
+            return out.toString()
+        }
+
+        private fun Char.isHexDigit() = this in '0'..'9' || this in 'a'..'f' || this in 'A'..'F'
+
         fun setExpressionArguments(expression: String, value: String, frameId: Int?): JsonObject =
             json("expression" to expression, "value" to value.trim(), "frameId" to frameId)
 
