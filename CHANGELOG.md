@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.18
+
+- Settings | Tools | .NET: **Additional search folders** for the dotnet CLI. Each folder and its immediate `dotnet*`
+  subfolders are scanned for a `dotnet` host (so `/usr/share` finds `/usr/share/dotnet-sdk-8.8.403`), ahead of PATH. The
+  same list can be set on every machine through the `DOTNET_SUPPORT_SEARCH_PATHS` environment variable — for corporate
+  installs in non-standard directories
+
 ## 0.1.17
 
 - Editor, gray text: `break;` on the first (empty) line of a `case` / `default` section

@@ -43,9 +43,13 @@ object DotNetCli {
     fun findExecutable(): String? =
         DotNetSettings.getInstance().dotnetPath.takeIf { it.isNotEmpty() && File(it).isFile } ?: detectExecutable()
 
-    /** PATH first, then the default installation directories. */
+    /** Folders the user points at first, then PATH, then the default installation directories. */
     fun detectExecutable(): String? {
-        val name = if (SystemInfo.isWindows) "dotnet.exe" else "dotnet"
+        val name = DotNetSearch.executableName(SystemInfo.isWindows)
+        // a corporate SDK sits in a non-standard directory and must beat whatever dotnet happens to be on PATH: the
+        // folders configured in the settings and the same list raised by policy in an environment variable win
+        val searchPaths = DotNetSettings.getInstance().dotnetSearchPaths + DotNetSearch.envSearchPaths(System.getenv(DotNetSearch.SEARCH_PATHS_ENV))
+        DotNetSearch.findIn(searchPaths.map(::File), name)?.let { return it.path }
         PathEnvironmentVariableUtil.findInPath(name)?.let { return it.path }
         val wellKnown = if (SystemInfo.isWindows) {
             listOfNotNull(System.getenv("ProgramFiles")?.let { "$it\\dotnet\\dotnet.exe" })

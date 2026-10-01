@@ -47,6 +47,8 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
     class Settings : BaseState() {
         /** Empty: the executable is looked up on PATH and in the default installation directories. */
         var dotnetPath by string("")
+        /** Extra directories to scan for a `dotnet` host, ahead of PATH; see [io.github.dotnetsupport.cli.DotNetSearch]. */
+        var dotnetSearchPaths by list<String>()
         var createRunConfigurations by property(true)
         var openBuildWindowOnEveryBuild by property(true)
         var switchToSolutionView by property(true)
@@ -66,6 +68,15 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
     var dotnetPath: String
         get() = state.dotnetPath.orEmpty()
         set(value) { state.dotnetPath = value.trim() }
+
+    var dotnetSearchPaths: List<String>
+        get() = state.dotnetSearchPaths.toList()
+        set(value) {
+            val trimmed = value.map { it.trim() }.filter { it.isNotEmpty() }
+            if (trimmed == state.dotnetSearchPaths) return
+            // a new list: that is how BaseState notices the change (as with toolPaths)
+            state.dotnetSearchPaths = trimmed.toMutableList()
+        }
 
     var createRunConfigurations: Boolean
         get() = state.createRunConfigurations
@@ -109,6 +120,8 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
 class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurable(DotNetBundle.message("page.dotnet")) {
     private val settings get() = DotNetSettings.getInstance()
     private val pathField = TextFieldWithBrowseButton()
+    private val searchPathsModel = com.intellij.ui.CollectionListModel<String>()
+    private val searchPaths = com.intellij.ui.components.JBList(searchPathsModel).apply { visibleRowCount = 3 }
     private val cliStatus = JBLabel()
     private val sdkList = JBLabel()
     private val globalJsonStatus = JBLabel()
@@ -209,6 +222,13 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
                     button(DotNetBundle.message("settings.cli.check")) { refreshInformation(pathField.text.trim()) }
                     cell(cliStatus)
                 }
+                row(DotNetBundle.message("settings.cli.searchPaths")) {
+                    val decorator = com.intellij.ui.ToolbarDecorator.createDecorator(searchPaths).setAddAction {
+                        val descriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor().withTitle(DotNetBundle.message("settings.cli.searchPaths.chooser"))
+                        com.intellij.openapi.fileChooser.FileChooser.chooseFile(descriptor, project, null)?.let { if (searchPathsModel.getElementIndex(it.path) < 0) searchPathsModel.add(it.path) }
+                    }
+                    cell(decorator.createPanel()).align(AlignX.FILL).comment(DotNetBundle.message("settings.cli.searchPaths.comment"), maxLineLength = COMMENT_WIDTH)
+                }.topGap(com.intellij.ui.dsl.builder.TopGap.SMALL)
                 row(DotNetBundle.message("settings.cli.sdks")) { cell(sdkList) }.topGap(com.intellij.ui.dsl.builder.TopGap.SMALL)
                 row(DotNetBundle.message("settings.cli.globalJson")) { cell(globalJsonStatus) }
                 row("") { link(DotNetBundle.message("settings.cli.environment")) { DotNetEnvironmentDialog(project).show() } }
@@ -292,11 +312,13 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
     }
 
     override fun isModified(): Boolean = super.isModified() || pathField.text.trim() != settings.dotnetPath ||
+        searchPathsModel.items != settings.dotnetSearchPaths ||
         toolRows.values.any { it.path.text.trim() != settings.toolPath(it.tool) }
 
     override fun apply() {
         super.apply()
         settings.dotnetPath = pathField.text
+        settings.dotnetSearchPaths = searchPathsModel.items
         toolRows.values.forEach { settings.setToolPath(it.tool, it.path.text) }
         refreshInformation(settings.dotnetPath)
     }
@@ -304,6 +326,7 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
     override fun reset() {
         super.reset()
         pathField.text = settings.dotnetPath
+        searchPathsModel.replaceAll(settings.dotnetSearchPaths)
         toolRows.values.forEach { it.path.text = settings.toolPath(it.tool) }
     }
 

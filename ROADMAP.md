@@ -117,6 +117,9 @@
   - **Editor | Code Style | C#**: Tabs and Indents настоящие (ими отступает редактор, EditorConfig IDE их переопределяет), остальное с первой вкладки Rider и прочие вкладки — под замком (нужен форматтер внутри IDE)
 - [x] Окно NuGet: вертикальный тулбар как в Rider — Restore (solution или проект из «Packages for»), Upgrade Packages in Solution, показать / скрыть карточку пакета, Settings, Help
 - [x] Страница настроек (Settings | Tools | .NET): путь к `dotnet` с проверкой, список установленных SDK, статус `global.json` проекта, переключатели поведения (автосоздание run configurations, окно Build при каждой сборке, автопереключение на Solution view)
+- [x] 0.1.18 — Дополнительные папки для поиска `dotnet` (Settings | Tools | .NET, поверх PATH): сама папка и вложенные `dotnet*` на один
+  уровень (`/usr/share` находит `/usr/share/dotnet-sdk-8.8.403`), новейшая версия по имени папки; тот же список — переменной среды
+  `DOTNET_SUPPORT_SEARCH_PATHS` для раскатки политикой на корп-машины (`DotNetSearch`, поиск чистыми функциями). **Вживую не проверено**
 - [x] Уведомление при открытии solution: `dotnet` не найден, или `global.json` требует неустановленный SDK (политики `rollForward` сверены с настоящим CLI)
 - [x] New Project в IntelliJ IDEA (2026-09-28): `GeneratorNewProjectWizard` «.NET» (EP `newProjectWizard.generator`), шаги имя / папка / Git +
   панель шаблона; `isEnabled()` только в IDEA — в GoLand / PyCharm / WebStorm остаётся `DirectoryProjectGenerator`, иначе две записи. **Вживую не проверен**
