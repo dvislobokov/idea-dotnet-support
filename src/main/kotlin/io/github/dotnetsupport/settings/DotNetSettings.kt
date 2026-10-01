@@ -11,6 +11,9 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
@@ -18,11 +21,11 @@ import com.intellij.openapi.util.text.StringUtil
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.AlignX
+import com.intellij.ui.dsl.builder.AlignY
 import com.intellij.ui.dsl.builder.bindItem
 import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.listCellRenderer.textListCellRenderer
-import com.intellij.util.ui.AsyncProcessIcon
 import com.intellij.util.ui.UIUtil
 import io.github.dotnetsupport.DotNetBundle
 import io.github.dotnetsupport.PluginLanguage
@@ -111,7 +114,8 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
     private val globalJsonStatus = JBLabel()
     private val toolRows = DotNetTool.entries.associateWith { ToolRow(it) }
     private val formatting get() = DotNetFormattingSettings.getInstance(project)
-    private val formatterStatus = JBLabel().apply { foreground = UIUtil.getContextHelpForeground() }
+    // a comment of the DSL, not a label: it wraps at the width of the page, a label makes the page as wide as its text
+    private lateinit var formatterStatus: javax.swing.JEditorPane
 
     /** What the choice means for this project right now: which tool, which version, from where. */
     private fun refreshFormatter(choice: FormatterChoice) {
@@ -122,54 +126,67 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
         }
     }
 
-    /** Path field, what was found and the Install / Update button of one global tool. */
+    /** Path field, the Install / Update button and, under them, where the tool was found, of one global tool. */
     private inner class ToolRow(val tool: DotNetTool) {
         val path = TextFieldWithBrowseButton().apply {
             addBrowseFolderListener(project, FileChooserDescriptorFactory.createSingleFileNoJarsDescriptor().withTitle(DotNetBundle.message("settings.tools.chooser", tool.packageId)))
         }
         val install = javax.swing.JButton(DotNetBundle.message("settings.tools.install")).apply { addActionListener { runInstallation() } }
-        val progress = AsyncProcessIcon("installing ${tool.packageId}").apply { isVisible = false }
-        val status = JBLabel().apply { isVisible = false }
+        lateinit var status: javax.swing.JEditorPane
 
         /**
-         * The page lives in a modal dialog: a background task reporting to the Build tool window would be invisible, and
-         * its completion callback would wait for the dialog to close. So the command runs here, and its last line is shown.
+         * A progress in the status bar of the IDE, as every other long command of the plugin has, and the last line of the output here:
+         * the page is a modal dialog, which hides both the Build tool window and the status bar behind it.
          */
         private fun runInstallation() {
             install.isEnabled = false
-            progress.isVisible = true
-            progress.resume()
             show(DotNetBundle.message("settings.tools.running", tool.installCommand().joinToString(" ")), isError = false)
-            val output = StringBuffer()
-            ApplicationManager.getApplication().executeOnPooledThread {
-                val exitCode = tool.installBlocking { text ->
-                    output.append(text)
-                    val line = text.lineSequence().lastOrNull { it.isNotBlank() }?.trim() ?: return@installBlocking
-                    ApplicationManager.getApplication().invokeLater({ show(line, isError = false) }, ModalityState.any())
+            val title = DotNetBundle.message(if (tool.find() == null) "settings.tools.installing" else "settings.tools.updating", tool.packageId)
+            ProgressManager.getInstance().run(object : Task.Backgroundable(project, title, true) {
+                override fun run(indicator: ProgressIndicator) {
+                    indicator.isIndeterminate = true
+                    indicator.text = "dotnet " + tool.installCommand().joinToString(" ")
+                    val output = StringBuffer()
+                    val exitCode = tool.installBlocking { text ->
+                        output.append(text)
+                        val line = text.lineSequence().lastOrNull { it.isNotBlank() }?.trim() ?: return@installBlocking
+                        indicator.text2 = line
+                        ApplicationManager.getApplication().invokeLater({ show(line, isError = false) }, ModalityState.any())
+                    }
+                    ApplicationManager.getApplication().invokeLater({
+                        install.isEnabled = true
+                        status.toolTipText = "<html><pre>" + StringUtil.escapeXmlEntities(output.toString().trim()) + "</pre></html>"
+                        if (exitCode == 0) refresh() else show(installationSummary(exitCode, output.toString()), isError = true)
+                    }, ModalityState.any())
                 }
-                ApplicationManager.getApplication().invokeLater({
-                    progress.suspend()
-                    progress.isVisible = false
-                    show(installationSummary(exitCode, output.toString()), isError = exitCode != 0)
-                    status.toolTipText = "<html><pre>" + StringUtil.escapeXmlEntities(output.toString().trim()) + "</pre></html>"
-                    refresh()
-                }, ModalityState.any())
-            }
+            })
         }
 
         private fun show(text: String, isError: Boolean) {
             status.text = text
             status.foreground = if (isError) UIUtil.getErrorForeground() else UIUtil.getContextHelpForeground()
-            status.isVisible = true
         }
 
+        /** Off the EDT: the lookup walks PATH. The field holds an override and stays empty while the plugin finds the tool itself. */
         fun refresh() {
             ApplicationManager.getApplication().executeOnPooledThread {
-                val detected = tool.detect()
+                val found = tool.find()
+                val configured = tool.isConfigured()
+                val onPath = found != null && !configured && com.intellij.execution.configurations.PathEnvironmentVariableUtil.findInPath(found.name)?.path == found.path
                 ApplicationManager.getApplication().invokeLater({
-                    (path.textField as? JBTextField)?.emptyText?.text = detected?.let { DotNetBundle.message("settings.cli.autoDetected", it.path) } ?: DotNetBundle.message("settings.tools.notInstalled")
+                    show(
+                        when {
+                            found == null -> DotNetBundle.message("settings.tools.notInstalled", tool.installCommand().joinToString(" "))
+                            configured -> DotNetBundle.message("settings.tools.fromSettings")
+                            onPath -> DotNetBundle.message("settings.tools.onPath")
+                            else -> DotNetBundle.message("settings.tools.inDirectory", found.parent)
+                        },
+                        isError = false,
+                    )
+                    // the path the plugin found is the text of the empty field, as the dotnet executable above shows its own
+                    (path.textField as? JBTextField)?.emptyText?.text = found?.path ?: DotNetBundle.message("settings.tools.missing")
                     // `dotnet tool update` installs a missing tool and updates an installed one
-                    install.text = DotNetBundle.message(if (detected == null) "settings.tools.install" else "settings.tools.update")
+                    install.text = DotNetBundle.message(if (found == null) "settings.tools.install" else "settings.tools.update")
                     install.isEnabled = true
                 }, ModalityState.any())
             }
@@ -184,7 +201,7 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
             group(DotNetBundle.message("settings.cli.group")) {
                 row(DotNetBundle.message("settings.cli.executable")) {
                     cell(pathField).align(AlignX.FILL)
-                        .comment(DotNetBundle.message("settings.cli.executable.comment"))
+                        .comment(DotNetBundle.message("settings.cli.executable.comment"), maxLineLength = COMMENT_WIDTH)
                         .validationOnApply { if (it.text.isNotBlank() && !File(it.text.trim()).isFile) error(DotNetBundle.message("common.fileMissing")) else null }
                 }
                 // an empty label keeps the button in the column of the field
@@ -198,38 +215,40 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
             }
             group(DotNetBundle.message("settings.tools.group")) {
                 row {
-                    comment(DotNetBundle.message("settings.tools.comment"))
+                    comment(DotNetBundle.message("settings.tools.comment"), maxLineLength = COMMENT_WIDTH)
                 }
                 for (toolRow in toolRows.values) {
                     row(toolRow.tool.packageId + ":") {
-                        // the field takes the width the button leaves
+                        // resizableColumn: in a row of several cells the free width goes to the one that asks for it, and without it
+                        // the field keeps its preferred size while the page grows
                         cell(toolRow.path).resizableColumn().align(AlignX.FILL)
                             .validationOnApply { if (it.text.isNotBlank() && !File(it.text.trim()).isFile) error(DotNetBundle.message("common.fileMissing")) else null }
-                        cell(toolRow.install)
-                        cell(toolRow.progress)
-                    }.rowComment(DotNetBundle.messageOr("tool.purpose." + toolRow.tool.packageId, toolRow.tool.purpose))
-                    // what the installation is doing and how it ended; empty until Install is pressed
-                    row("") { cell(toolRow.status) }
+                            .comment(DotNetBundle.messageOr("tool.purpose." + toolRow.tool.packageId, toolRow.tool.purpose), maxLineLength = COMMENT_WIDTH)
+                        cell(toolRow.install).align(AlignY.TOP)
+                    }
+                    // where the tool was found (a path of its own line: it does not fit the placeholder of the field), or how to get it;
+                    // during an installation — what the command is saying
+                    row("") { toolRow.status = comment("", maxLineLength = COMMENT_WIDTH).component }
                 }
             }
             group(DotNetBundle.message("settings.formatting.group")) {
                 row(DotNetBundle.message("settings.formatting.formatter")) {
                     comboBox(FormatterChoice.entries, textListCellRenderer { it?.label }).bindItem({ formatting.formatter }, { formatting.formatter = it ?: FormatterChoice.AUTO })
                         .onChanged { refreshFormatter(it.selectedItem as? FormatterChoice ?: FormatterChoice.AUTO) }
-                        .comment(DotNetBundle.message("settings.formatting.comment"))
+                        .comment(DotNetBundle.message("settings.formatting.comment"), maxLineLength = COMMENT_WIDTH)
                 }
-                row("") { cell(formatterStatus) }
+                row("") { formatterStatus = comment("", maxLineLength = COMMENT_WIDTH).component }
             }
             group(DotNetBundle.message("settings.behavior.group")) {
                 row { checkBox(DotNetBundle.message("settings.behavior.runConfigurations")).bindSelected(settings::createRunConfigurations) }
                 row {
                     checkBox(DotNetBundle.message("settings.behavior.buildWindow")).bindSelected(settings::openBuildWindowOnEveryBuild)
-                        .comment(DotNetBundle.message("settings.behavior.buildWindow.comment"))
+                        .comment(DotNetBundle.message("settings.behavior.buildWindow.comment"), maxLineLength = COMMENT_WIDTH)
                 }
-                row { checkBox(DotNetBundle.message("settings.behavior.solutionView")).bindSelected(settings::switchToSolutionView) }
+                row { checkBox(DotNetBundle.message("settings.behavior.solutionView")).bindSelected(settings::switchToSolutionView).comment(DotNetBundle.message("settings.behavior.solutionView.comment"), maxLineLength = COMMENT_WIDTH) }
                 row(DotNetBundle.message("settings.language")) {
                     comboBox(PluginLanguage.entries, textListCellRenderer { it?.label }).bindItem({ settings.language }, { settings.language = it ?: PluginLanguage.AUTO })
-                        .comment(DotNetBundle.message("settings.language.comment"))
+                        .comment(DotNetBundle.message("settings.language.comment"), maxLineLength = COMMENT_WIDTH)
                 }
                 row { link(DotNetBundle.message("settings.documentation")) { io.github.dotnetsupport.welcome.WelcomePage.open(project, io.github.dotnetsupport.welcome.WelcomePage.GUIDE, "settings", inBrowser = true) } }
             }
@@ -241,6 +260,12 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
     }
 
     companion object {
+        /**
+         * Characters per line of a comment of this page. The 70 of the DSL make a comment 560 px wide, and with the column of labels
+         * the page asks for 840: a Settings dialog of a laptop got a horizontal scroll bar (seen live). The status rows use it too.
+         */
+        private const val COMMENT_WIDTH = 56
+
         /** Blocking: a global CSharpier is asked for its version. */
         fun describeFormatter(choice: FormatterChoice, directory: File?): String {
             val resolved = if (choice != FormatterChoice.AUTO) choice else if (CSharpierLocator.isUsedBy(directory)) FormatterChoice.CSHARPIER else FormatterChoice.DOTNET_FORMAT

@@ -69,11 +69,37 @@ enum class DotNetTool(val packageId: String, val purpose: String, val documentat
     /** The path set in the settings, when the file is there. */
     fun configured(): File? = DotNetSettings.getInstance().toolPath(this).takeIf { it.isNotEmpty() }?.let(::File)?.takeIf { it.isFile }
 
+    /**
+     * PATH (the one the IDE was started with: a desktop launcher does not take it from the shell profile), then the global tools
+     * directory of `dotnet tool install --global`, which `dotnet` adds to PATH only for the shells started after the first install.
+     */
     fun detect(): File? = executableNames.firstNotNullOfOrNull { name ->
-        PathEnvironmentVariableUtil.findInPath(name) ?: File(System.getProperty("user.home"), ".dotnet/tools/$name").takeIf { it.isFile }
+        PathEnvironmentVariableUtil.findInPath(name) ?: searchDirectories().map { File(it, name) }.firstOrNull { it.isFile }
     }
 
-    fun find(): File? = configured() ?: detect()
+    /** Where a tool is looked for besides PATH, in order; also what the log names when nothing is found. */
+    fun searchDirectories(): List<File> {
+        // DOTNET_CLI_HOME moves the whole `.dotnet` of the user
+        val home = System.getenv("DOTNET_CLI_HOME")?.takeIf { it.isNotBlank() } ?: System.getProperty("user.home")
+        return listOf(File(home, ".dotnet/tools"))
+    }
+
+    /** The path from the settings, or the one the plugin finds. One log line when the answer changes: asked often, on every file and command. */
+    fun find(): File? {
+        val found = configured() ?: detect()
+        val now = found?.path ?: NOT_FOUND
+        if (LAST_FOUND.put(this, now) != now) {
+            if (found != null) LOG.info("$command: $found (${if (configured() != null) "the path from the settings" else "found by the plugin"})")
+            else {
+                LOG.info("$command is not found: not on the PATH of the IDE and not in ${searchDirectories().joinToString(", ")}")
+                describeSearchOnce()
+            }
+        }
+        return found
+    }
+
+    /** Whether [find] gives the path from the settings rather than one it found. */
+    fun isConfigured(): Boolean = configured() != null
 
     /** `install` fails for an installed tool and `update` installs a missing one, so `update` serves both. */
     fun installCommand(): List<String> = listOf("tool", "update", "--global", packageId)
@@ -113,6 +139,28 @@ enum class DotNetTool(val packageId: String, val purpose: String, val documentat
                 com.intellij.openapi.options.ShowSettingsUtil.getInstance().showSettingsDialog(project, io.github.dotnetsupport.settings.DotNetSettingsConfigurable::class.java)
             })
             .notify(project)
+    }
+
+    companion object {
+        private val LOG = com.intellij.openapi.diagnostic.logger<DotNetTool>()
+        private const val NOT_FOUND = "-"
+
+        /** What [find] gave last for each tool, so that the log has a line when it changes and not on every call. */
+        private val LAST_FOUND = java.util.concurrent.ConcurrentHashMap<DotNetTool, String>()
+        private val DESCRIBED = java.util.concurrent.atomic.AtomicBoolean()
+
+        /**
+         * Once per session, when a tool is not found: the PATH the plugin searches. The IDE takes it from a login shell
+         * ([com.intellij.util.EnvironmentUtil]), which a desktop launcher does not give it; then the PATH is the one of the process and a
+         * tool the user has in the shell is invisible. "It is installed, why does the plugin not see it" is answered by this line.
+         */
+        fun describeSearchOnce() {
+            if (!DESCRIBED.compareAndSet(false, true)) return
+            val ide = com.intellij.util.EnvironmentUtil.getEnvironmentMap()["PATH"].orEmpty()
+            val process = System.getenv("PATH").orEmpty()
+            LOG.info("PATH of the IDE (${ide.split(File.pathSeparatorChar).size} entries, ${if (ide == process) "the same as the process, the shell environment may not be loaded" else "from the shell"}): $ide")
+            LOG.info("DOTNET_CLI_HOME=${System.getenv("DOTNET_CLI_HOME")}, DOTNET_ROOT=${System.getenv("DOTNET_ROOT")}, HOME=${System.getProperty("user.home")}")
+        }
     }
 }
 

@@ -30,6 +30,9 @@ class SdkCheckActivity : ProjectActivity {
             return
         }
 
+        // the tools are looked up now, so that the log says where each one is (or was looked for) before anything needs it
+        io.github.dotnetsupport.cli.DotNetTool.entries.forEach { it.find() }
+
         val (file, globalJson) = GlobalJson.find(project.guessProjectDir()) ?: return
         val installed = DotNetSdks.installed().map { it.version }
         if (installed.isEmpty() || globalJson.resolve(installed) != null) return

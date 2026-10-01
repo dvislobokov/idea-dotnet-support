@@ -82,6 +82,12 @@ python robot.py action Exit && python robot.py click "//div[@class='MyDialog']//
 песочницы выводит на передний план (`ProjectUtil.focusProjectWindow`: без фокуса окна список пуст), элементы снимает опросом, пока popup жив;
 пустой ответ — повторить, первый запрос после открытия файла бывает пустым. `ghost_at_line.js` (те же `__FILE__` / `__LINE__` / `__TYPE__` /
 `__WAIT__` / `__UNDO__`) набирает как с клавиатуры и показывает серый inline-текст (`InlineCompletionContext.textToInsert`) и popup.
+`settings_widths.js` (`__CONFIGURABLE__` — класс страницы настроек, `__WIDTH__` — ширина диалога, `__LIMIT__` — порог) открывает Settings на
+странице, сжимает диалог и печатает компоненты шире порога с их preferred width — кто распирает страницу (так нашлись combo box и label
+на 697 и 664 px). Диалог модальный: всё, что выполняется в нём, — через `invokeAndWait(..., ModalityState.any())`, иначе робот виснет до
+закрытия диалога; закрыть — `click "//div[@class='MyDialog']//div[@text='Cancel']"`. Перезапуск песочницы при открытом модальном диалоге:
+`action Exit` не сработает — убить процесс (`Stop-Process` по `runIdeForUiTests` в командной строке), иначе новая сборка упадёт в
+`prepareSandbox` и робот ответит из старой.
 `hierarchy.js` (`__FILE__`, `__AT__`, `__ACTION__` = `TypeHierarchy` / `CallHierarchy` / `GotoSuperMethod`, `__WAIT__`) выполняет действие с
 контекстом редактора и печатает, куда встала каретка и что в окне Hierarchy (дерево через `getUserObject` узлов пока печатается пусто —
 смотреть `shot` компонента `RoslynTypeHierarchyBrowser` / `RoslynCallHierarchyBrowser` или `find` по нему: тексты строк в нём есть).

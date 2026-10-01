@@ -318,7 +318,7 @@ footer a { color: var(--text-2); }
 <div class="table"><table>
 <thead><tr><th>Параметр</th><th>По умолчанию</th><th>Что делает</th></tr></thead>
 <tbody>
-<tr><td><b>Форматтер</b><small lang="en">Formatter</small></td><td>Авто</td><td>Работает за Reformat Code и за «Reformat code» в Actions on Save для файлов C#. Хранится вместе с проектом: команда форматирует одинаково. CSharpier форматирует только файлы целиком. Варианты: «Авто: CSharpier, если он используется в репозитории, иначе dotnet format», «CSharpier», «dotnet format (пробелы и отступы по .editorconfig; около секунды на файл, мгновенно с сервером языка)», «Нет».</td></tr>
+<tr><td><b>Форматтер</b><small lang="en">Formatter</small></td><td>Авто</td><td>Работает за Reformat Code и за «Reformat code» в Actions on Save для файлов C#. Хранится вместе с проектом: команда форматирует одинаково. Авто: CSharpier, если он используется в репозитории (.csharpierrc или манифест инструментов), иначе dotnet format. dotnet format: пробелы и отступы по .editorconfig, около секунды на файл, мгновенно с сервером языка. CSharpier форматирует только файлы целиком. Варианты: «Авто», «CSharpier», «dotnet format», «Нет».</td></tr>
 </tbody>
 </table></div>
 <h4>Поведение <small lang="en">Behavior</small></h4>
@@ -327,7 +327,7 @@ footer a { color: var(--text-2); }
 <tbody>
 <tr><td><b>Создавать конфигурации запуска для запускаемых проектов решения</b><small lang="en">Create run configurations for the runnable projects of a solution</small></td><td>включено</td><td>Для каждого запускаемого проекта и каждого профиля из <code>launchSettings.json</code> создаётся конфигурация запуска.</td></tr>
 <tr><td><b>Открывать окно Build при каждой сборке</b><small lang="en">Open the Build tool window on every build</small></td><td>включено</td><td>Если выключено, окно открывается только при ошибке сборки</td></tr>
-<tr><td><b>Переключать окно Project на вид Solution при первом открытии решения</b><small lang="en">Switch the Project tool window to the Solution view when a solution is opened for the first time</small></td><td>включено</td><td>Окно Project показывает решение так, как его видит сборка. Вернуться к обычному виду можно в заголовке окна.</td></tr>
+<tr><td><b>Переключать на вид Solution при открытии решения</b><small lang="en">Switch to the Solution view when a solution is opened</small></td><td>включено</td><td>Окно Project показывает решение так, как его видит сборка. Вернуться к обычному виду можно в заголовке окна.</td></tr>
 <tr><td><b>Язык страниц настроек</b><small lang="en">Language of the settings pages</small></td><td>Как в IDE</td><td>Применяется при следующем открытии окна Settings. Названия страниц в дереве настроек следуют языку IDE. Русского языкового пакета для самой IDE нет, поэтому язык страниц плагина выбирается здесь.</td></tr>
 </tbody>
 </table></div>
