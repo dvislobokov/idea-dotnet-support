@@ -37,7 +37,7 @@ class NuGetClient(private val fetch: (url: String, source: String) -> String = :
         sources.flatMap { source ->
             val url = index(source)?.searchUrl ?: return@flatMap emptyList()
             val search = "$url?q=${URLEncoder.encode(query, Charsets.UTF_8)}&take=$take&prerelease=$includePrerelease&semVerLevel=2.0.0" + packageType?.let { "&packageType=$it" }.orEmpty()
-            get(search) { NuGetResponses.parseSearch(fetch(search, source)) }.orEmpty()
+            get(search) { NuGetResponses.parseSearch(fetch(search, source)) }.orEmpty().onEach { it.source = source }
         }.distinctBy { it.id.lowercase() }
 
     /** All published versions of a package, oldest first; empty when no feed has it. */

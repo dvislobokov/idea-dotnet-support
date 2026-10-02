@@ -66,7 +66,10 @@ class NuGetPackageInfo(
     val iconUrl: String? = null,
     val licenseUrl: String? = null,
     val tags: List<String> = emptyList(),
-)
+) {
+    /** The URL of the feed that returned the package: set by the search, shown by the NuGet window as the name of the feed. */
+    @Volatile var source: String? = null
+}
 
 class NuGetSource(val name: String, val url: String, val isEnabled: Boolean)
 

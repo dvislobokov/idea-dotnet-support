@@ -3,6 +3,17 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.20
+
+- Package completion in project files looks as in Rider: the id and, in gray, the version — nothing else, so the popup
+  is narrow. The next characters narrow the list in place; the feed is asked again only when nothing is left, so the
+  list no longer rebuilds (and flickers) on every keystroke. A `.` or `-` goes on with the id instead of inserting the
+  selected package
+- NuGet window: the rows of the list look as in Rider: the id, the installed version and the name of the feed, the latest
+  version in the color of a link at the right edge, a vulnerable or deprecated package marked by an icon; no description
+  in the row. The list keeps the width of the window, so the versions no longer vanish behind its right edge after a
+  refresh. The rows carry no action icons: install, update and remove are the buttons of the card
+
 ## 0.1.19
 
 - **.NET | Plugin Logs**: the journal of the plugin in a tool window — what it started, what came back, what failed and why,

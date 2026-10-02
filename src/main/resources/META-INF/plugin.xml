@@ -130,6 +130,8 @@
         <xml.tagNameProvider implementation="io.github.dotnetsupport.msbuild.MsBuildTagNameProvider"/>
         <completion.contributor language="XML" order="first" implementationClass="io.github.dotnetsupport.msbuild.MsBuildCompletionContributor"/>
         <completion.contributor language="XML" order="first" implementationClass="io.github.dotnetsupport.msbuild.MsBuildPackageCompletionContributor"/>
+        <!-- a dot in a package id goes on with the id, it does not pick the selected package -->
+        <lookup.charFilter order="first" implementation="io.github.dotnetsupport.msbuild.PackageIdCharFilter"/>
         <annotator language="XML" implementationClass="io.github.dotnetsupport.msbuild.MsBuildAnnotator"/>
         <lang.documentationProvider language="XML" order="first" implementationClass="io.github.dotnetsupport.msbuild.MsBuildDocumentationProvider"/>
 

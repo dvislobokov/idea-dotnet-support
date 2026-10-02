@@ -114,15 +114,17 @@ class MsBuildPackageCompletionContributor : CompletionContributor() {
         if (typed.length < MIN_QUERY) return
         val includePrerelease = NuGetSettings.getInstance().includePrerelease
         val found = await { service.search(typed, includePrerelease) }
-        // the feed has done the matching ("json" finds Newtonsoft.Json), and it is asked again for a longer query
-        val all = result.withPrefixMatcher(AnyMatcher(typed))
-        all.restartCompletionOnAnyPrefixChange()
+        // The feed has done the matching ("json" finds Newtonsoft.Json): everything it returned is shown for the query it answered. The
+        // next characters narrow the list here, without the feed and without rebuilding the popup (it flickered on every keystroke);
+        // the feed is asked again only when nothing of what it gave is left.
+        val all = result.withPrefixMatcher(FeedMatcher(typed, typed))
+        all.restartCompletionWhenNothingMatches()
         val declaresVersion = tag.localName.lowercase() in VERSIONED_ITEMS && tag.getAttribute("Version") == null && tag.findFirstSubTag("Version") == null && !usesCentralVersions(tag)
         found.forEachIndexed { index, info ->
+            // the row of Rider: the id and, in gray, the version; nothing else, so the popup stays narrow
             val builder = LookupElementBuilder.create(info, info.id)
                 .withIcon(DotNetIcons.NuGet)
-                .withTailText("  ${info.version}", true)
-                .withTypeText(downloads(info.totalDownloads) + if (info.isVerified) " ✓" else "", true)
+                .withTailText(" • ${info.version}", true)
                 .withInsertHandler(if (declaresVersion) VersionAfterId else null)
             // the order of the feed is its relevance
             all.addElement(PrioritizedLookupElement.withPriority(builder, (found.size - index).toDouble()))
@@ -161,10 +163,13 @@ class MsBuildPackageCompletionContributor : CompletionContributor() {
 
     private val FEED_FAILURE_REPORTED = java.util.concurrent.atomic.AtomicBoolean()
 
-    /** Everything the feed has returned is shown; [prefix] still decides what is replaced. */
-    private class AnyMatcher(prefix: String) : PrefixMatcher(prefix) {
-        override fun prefixMatches(name: String): Boolean = true
-        override fun cloneWithPrefix(prefix: String): PrefixMatcher = AnyMatcher(prefix)
+    /**
+     * For the query the feed answered ([fetchedFor]) every item it returned matches, however the feed found it; a longer query keeps the
+     * items whose id contains it. [prefix] still decides what is replaced on insertion.
+     */
+    private class FeedMatcher(prefix: String, private val fetchedFor: String) : PrefixMatcher(prefix) {
+        override fun prefixMatches(name: String): Boolean = prefix.equals(fetchedFor, ignoreCase = true) || name.contains(prefix, ignoreCase = true)
+        override fun cloneWithPrefix(prefix: String): PrefixMatcher = FeedMatcher(prefix, fetchedFor)
     }
 
     /** `Include="Serilog|"` -> `Include="Serilog" Version="4.2.0"`. */
@@ -193,5 +198,16 @@ class MsBuildPackageCompletionContributor : CompletionContributor() {
             count >= 1_000 -> "%.1fK".format(java.util.Locale.ROOT, count / 1e3)
             else -> count.toString()
         }
+    }
+}
+
+/**
+ * Typing a `.` or a `-` while the packages are listed goes on with the id (`Microsoft.Extensions.`), as it does in Rider. The filter
+ * of XML would take the dot for the end of the word and insert the selected package instead of what was being typed.
+ */
+class PackageIdCharFilter : com.intellij.codeInsight.lookup.CharFilter() {
+    override fun acceptChar(c: Char, prefixLength: Int, lookup: com.intellij.codeInsight.lookup.Lookup): Result? {
+        if (lookup.currentItem?.`object` !is NuGetPackageInfo) return null
+        return if (c.isLetterOrDigit() || c == '.' || c == '-' || c == '_') Result.ADD_TO_PREFIX else null
     }
 }

@@ -57,6 +57,22 @@ class MsBuildPackageCompletionTest : BasePlatformTestCase() {
         assertTrue(complete("Other.csproj", "<ProjectReference Include=\"seri<caret>\" />").isEmpty())
     }
 
+    /** The row of Rider: the id and the version in gray, nothing more; the next characters filter here, the feed is asked again only when nothing is left. */
+    fun testRowsAreNarrowAndTypingFiltersLocally() {
+        complete("Rows.csproj", "<PackageReference Include=\"seri<caret>\" />")
+        val presentation = com.intellij.codeInsight.lookup.LookupElementPresentation.renderElement(myFixture.lookupElements!!.first { it.lookupString == "Serilog" })
+        assertEquals(" • 4.2.0", presentation.tailText)
+        assertTrue("grayed", presentation.tailFragments.single().isGrayed)
+        assertNull("no downloads at the right edge", presentation.typeText)
+
+        val queries = requests.count { "query?q=" in it }
+        myFixture.type("log.")
+        assertEquals("the list is narrowed here", listOf("Serilog.AspNetCore"), myFixture.lookupElementStrings)
+        assertEquals("the feed is not asked for a longer query while something matches", queries, requests.count { "query?q=" in it })
+        myFixture.type("x")
+        assertTrue("nothing matched: the feed is asked for the new query", requests.any { it.startsWith("https://feed.test/query?q=serilog.x") })
+    }
+
     fun testChosenPackageGetsItsLatestVersion() {
         complete("Insert.csproj", "<PackageReference Include=\"seri<caret>\" />")
         myFixture.finishLookup(Lookup.REPLACE_SELECT_CHAR)

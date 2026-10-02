@@ -49,7 +49,6 @@ import java.awt.Component
 import java.awt.FlowLayout
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
-import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import java.io.ByteArrayInputStream
 import java.text.NumberFormat
@@ -122,7 +121,10 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
     private val searchField = SearchTextField(false)
     private val prerelease = JBCheckBox("Prerelease")
     private val listModel = DefaultListModel<Row>()
-    private val list = JBList(listModel)
+    private val list = object : JBList<Row>(listModel) {
+        // the rows are drawn into the width of the window, whatever the longest of them wants: the versions at the right edge stay in view
+        override fun getScrollableTracksViewportWidth(): Boolean = true
+    }
     private val details = ViewportWidthPanel()
     private val versionCombo = ComboBox<String>()
     /** A `dotnet add | remove | restore package` of the window runs: the buttons of the card wait for it. */
@@ -162,18 +164,6 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
         list.selectionMode = ListSelectionModel.SINGLE_SELECTION
         list.cellRenderer = RowRenderer()
         list.fixedCellHeight = JBUI.scale(ROW_HEIGHT)
-        object : ClickListener() {
-            override fun onClick(event: MouseEvent, clickCount: Int): Boolean {
-                val action = rowActionAt(event) ?: return false
-                if (clickCount == 1) action()
-                return true
-            }
-        }.installOn(list)
-        list.addMouseMotionListener(object : MouseAdapter() {
-            override fun mouseMoved(e: MouseEvent) {
-                list.cursor = java.awt.Cursor.getPredefinedCursor(if (rowActionAt(e) != null) java.awt.Cursor.HAND_CURSOR else java.awt.Cursor.DEFAULT_CURSOR)
-            }
-        })
         installListPopup()
         val detailsPane = ScrollPaneFactory.createScrollPane(details, true)
         add(JBSplitter(false, 0.5f).apply {
@@ -255,7 +245,16 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
         searchField.text = ""
     }
 
-    fun loadSourcesAndReload() = background(sourceRequests, { service.sources() }) { sources = it; reload() }
+    /** URL of a feed -> its name in `nuget.config`, for the rows of the list. */
+    @Volatile private var sourceNames: Map<String, String> = emptyMap()
+
+    fun loadSourcesAndReload() = background(sourceRequests, { service.sources() to service.sourceList() }) { (urls, named) ->
+        sources = urls
+        sourceNames = named.associate { it.url.trimEnd('/') to it.name }
+        reload()
+    }
+
+    private fun sourceName(url: String?): String? = url?.let { sourceNames[it.trimEnd('/')] ?: runCatching { java.net.URI(it).host }.getOrNull() }
 
     /** What every project of the solution references, read in the background by [reload]: the list and the card are drawn from it on EDT. */
     @Volatile private var installedByProject: Map<VirtualFile, List<InstalledPackage>> = emptyMap()
@@ -272,6 +271,17 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
             installedByProject = all
             reloadList()
         }
+    }
+
+    /**
+     * The newest version a feed has of [id]: from the list of versions, or, for a feed without that service (some corporate ones), from a
+     * search by the id. Nothing found is said in the journal: the right edge of the row stays empty, and the journal says why.
+     */
+    private fun latestOf(id: String, includePrerelease: Boolean): String? {
+        NuGetVersion.latest(service.client.versions(id, sources), includePrerelease)?.let { return it }
+        val found = service.client.search(id, includePrerelease, sources, take = 5).firstOrNull { it.id.equals(id, ignoreCase = true) }?.version
+        if (found == null) PluginLog.warn(NuGetClient.LOG_CATEGORY, "no feed of $sources has the versions of $id: the latest version is not shown")
+        return found
     }
 
     private fun reloadList() {
@@ -291,10 +301,11 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
         fun show(available: List<Row.Package>?) {
             listModel.clear()
             if (installedRows.isNotEmpty()) {
-                listModel.addElement(Row.Header("Installed Packages (${installedRows.size})"))
+                val scope = (scopeCombo.selectedItem as? Scope)?.let { if (it.file == null) "Solution" else it.name } ?: "Solution"
+                listModel.addElement(Row.Header("Installed Packages in $scope: ${installedRows.size}"))
                 installedRows.forEach(listModel::addElement)
             }
-            listModel.addElement(Row.Header(if (available == null) "Available Packages: loading..." else "Available Packages (${available.size})"))
+            listModel.addElement(Row.Header(if (available == null) "Available Packages: loading..." else "Available Packages: ${available.size}"))
             available?.forEach(listModel::addElement)
             val index = (0 until listModel.size()).firstOrNull { (listModel[it] as? Row.Package)?.id.equals(selectedId, ignoreCase = true) }
                 ?: (0 until listModel.size()).firstOrNull { listModel[it] is Row.Package }
@@ -309,7 +320,8 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
             installedRows.replaceAll { row -> byId[row.id.lowercase()]?.let { Row.Package(row.id, row.installedIn, it, row.latest) } ?: row }
             show(found.filter { it.id.lowercase() !in installed }.map { Row.Package(it.id, emptyMap(), it, latest = it.version) })
         }
-        background(latestRequests, { installedRows.associate { it.id to NuGetVersion.latest(service.client.versions(it.id, sources), includePrerelease) } }) { latest ->
+        // the latest version of every installed package, at the right edge of its row: one request per package, side by side
+        background(latestRequests, { installedRows.toList().parallelStream().map { it.id to latestOf(it.id, includePrerelease) }.toList().toMap() }) { latest ->
             (0 until listModel.size()).mapNotNull { listModel[it] as? Row.Package }.filter { it.isInstalled }.forEach { it.latest = latest[it.id] ?: it.latest }
             list.repaint()
         }
@@ -325,28 +337,8 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
 
     private fun selectedPackage(): Row.Package? = list.selectedValue as? Row.Package
 
-    /** Actions of a row are icons at its right edge: [update] [install | remove]. Returns what a click at [e] does. */
-    private fun rowActionAt(e: MouseEvent): (() -> Unit)? {
-        val index = list.locationToIndex(e.point).takeIf { it >= 0 } ?: return null
-        val bounds = list.getCellBounds(index, index)?.takeIf { it.contains(e.point) } ?: return null
-        val row = listModel[index] as? Row.Package ?: return null
-        val fromRight = bounds.x + bounds.width - e.x
-        val slot = JBUI.scale(ACTION_SLOT)
-        return when {
-            fromRight in 0 until slot -> if (row.isInstalled) ({ remove(row, row.installedIn.keys.toList()) }) else primaryInstall(row)
-            fromRight in slot until slot * 2 && row.hasUpdate -> ({ install(row, row.installedIn.keys.toList(), row.latest) })
-            else -> null
-        }
-    }
-
-    /**
-     * "+" installs into the project of the scope. For the solution scope the projects are chosen in the card: "+" opens it (it used to do nothing
-     * there, which read as a broken button).
-     */
-    private fun primaryInstall(row: Row.Package): () -> Unit {
-        val target = (scopeCombo.selectedItem as? Scope)?.file ?: return { list.setSelectedValue(row, true) }
-        return { install(row, listOf(target), row.latest ?: row.found?.version) }
-    }
+    // The rows have no action icons: install, update and remove are the buttons of the card, as in Rider. Icons at the edge of a row were
+    // clicked by accident (a package was removed that way), and a column of arrows read as noise (asked by the user, 2026-10-02).
 
     /** Right-click on the list: "Why Is This Installed?" for an installed package, selecting the row under the cursor first. */
     private fun installListPopup() {
@@ -369,23 +361,27 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
         background(whyRequests, { service.whyInstalled(target, row.id) }) { text -> WhyDialog(project, row.id, text).show() }
     }
 
+    /**
+     * The row of Rider: the icon, the id, then in gray the installed version and in the color of a feed its name, nothing more (no
+     * description: it made the rows wider than the window); at the right edge the latest version in the color of a link, and before it
+     * the warning of a vulnerable or deprecated package as an icon.
+     */
     private inner class RowRenderer : ListCellRenderer<Row> {
         private val text = SimpleColoredComponent()
         private val version = SimpleColoredComponent()
-        private val update = JBLabel()
-        private val primary = JBLabel()
+        private val warning = JBLabel()
         private val panel = JPanel(BorderLayout()).apply {
             add(text, BorderLayout.CENTER)
             add(JPanel(FlowLayout(FlowLayout.RIGHT, 0, 0)).apply {
                 isOpaque = false
+                add(warning.apply { horizontalAlignment = JBLabel.CENTER; border = JBUI.Borders.emptyRight(6) })
                 add(version)
-                for (label in listOf(update, primary)) add(label.apply { preferredSize = JBUI.size(ACTION_SLOT, ROW_HEIGHT); horizontalAlignment = JBLabel.CENTER })
             }, BorderLayout.EAST)
         }
 
         override fun getListCellRendererComponent(list: JList<out Row>, row: Row, index: Int, selected: Boolean, focused: Boolean): Component {
             text.clear(); version.clear()
-            update.icon = null; primary.icon = null
+            warning.icon = null; warning.toolTipText = null
             panel.background = if (selected && row is Row.Package) UIUtil.getListSelectionBackground(true) else UIUtil.getListBackground()
             val foreground = if (selected && row is Row.Package) UIUtil.getListSelectionForeground(true) else UIUtil.getListForeground()
             val gray = if (selected) SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, foreground) else SimpleTextAttributes.GRAYED_ATTRIBUTES
@@ -399,24 +395,21 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
                 is Row.Package -> {
                     text.icon = icons.get(row.found?.iconUrl, LIST_ICON)
                     text.iconTextGap = JBUI.scale(8)
-                    text.append(row.id, SimpleTextAttributes(SimpleTextAttributes.STYLE_BOLD, foreground))
-                    row.found?.description?.lineSequence()?.firstOrNull()?.takeIf { it.isNotBlank() }?.let { text.append("   $it", gray) }
+                    text.append(row.id, SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, foreground))
+                    row.installedVersion?.let { text.append(" • $it", gray) }
+                    sourceName(row.found?.source)?.let { text.append(" • $it", if (selected) gray else SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, FEED_COLOR)) }
                     warningsByPackage[row.id.lowercase()]?.maxByOrNull { it.weight }?.let { worst ->
                         val vulnerable = worst.kind == PackageWarning.Kind.VULNERABLE
-                        val tag = if (vulnerable) "  ⚠ Vulnerable (${worst.detail})" else "  ⚠ Deprecated"
-                        text.append(tag, SimpleTextAttributes(SimpleTextAttributes.STYLE_BOLD, if (vulnerable) VULNERABLE_COLOR else DEPRECATED_COLOR))
+                        warning.icon = if (vulnerable) AllIcons.General.Error else AllIcons.General.Warning
+                        warning.toolTipText = if (vulnerable) "Vulnerable (${worst.detail})" else "Deprecated"
                     }
 
+                    val link = SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, if (selected) foreground else JBUI.CurrentTheme.Link.Foreground.ENABLED)
                     if (row.isInstalled) {
-                        version.append(row.installedVersion.orEmpty(), gray)
-                        if (row.hasUpdate) {
-                            version.append("  →  ${row.latest}  ", SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, if (selected) foreground else JBUI.CurrentTheme.Link.Foreground.ENABLED))
-                            update.icon = AllIcons.Actions.Upload
-                        } else version.append("  ", gray)
-                        primary.icon = AllIcons.General.Remove
+                        // the latest version at the right edge, as in Rider; empty while it is being looked up
+                        row.latest?.let { version.append("$it  ", link) }
                     } else {
-                        version.append("${row.found?.version.orEmpty()}  ", gray)
-                        if ((scopeCombo.selectedItem as? Scope)?.file != null) primary.icon = AllIcons.General.Add
+                        row.found?.version?.let { version.append("$it  ", link) }
                     }
                 }
             }
@@ -688,7 +681,6 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
     private companion object {
         const val SEARCH_DELAY_MS = 400
         const val ROW_HEIGHT = 28
-        const val ACTION_SLOT = 26
         const val LIST_ICON = 16
         const val CARD_ICON = 24
         const val BUTTON_SIZE = 26
@@ -696,6 +688,8 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
         const val PACKAGE_KEY = "dotnet.nuget.package"
         val VULNERABLE_COLOR = com.intellij.ui.JBColor(0xD64E4E, 0xC75450)
         val DEPRECATED_COLOR = com.intellij.ui.JBColor(0xB8860B, 0xCB9B2B)
+        /** The name of the feed in a row, the golden of Rider. */
+        val FEED_COLOR = com.intellij.ui.JBColor(0xB8860B, 0xCB9B2B)
     }
 }
 
