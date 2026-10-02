@@ -305,7 +305,13 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
                 listModel.addElement(Row.Header("Installed Packages in $scope: ${installedRows.size}"))
                 installedRows.forEach(listModel::addElement)
             }
-            listModel.addElement(Row.Header(if (available == null) "Available Packages: loading..." else "Available Packages: ${available.size}"))
+            // a feed that did not answer is said in the header, the reason is in the journal (.NET | Plugin Logs) and in the Log tab
+            val silent = sources.count { service.client.lastFailure(it) != null }
+            listModel.addElement(Row.Header(when {
+                available == null -> "Available Packages: loading..."
+                available.isEmpty() && silent > 0 -> "Available Packages: none, $silent of ${sources.size} feeds did not answer (see the Log tab or .NET | Plugin Logs)"
+                else -> "Available Packages: ${available.size}"
+            }))
             available?.forEach(listModel::addElement)
             val index = (0 until listModel.size()).firstOrNull { (listModel[it] as? Row.Package)?.id.equals(selectedId, ignoreCase = true) }
                 ?: (0 until listModel.size()).firstOrNull { listModel[it] is Row.Package }

@@ -3,6 +3,7 @@ package io.github.dotnetsupport
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.nuget.NuGetClient
+import io.github.dotnetsupport.nuget.NuGetNetwork
 import io.github.dotnetsupport.nuget.NuGetResponses
 import io.github.dotnetsupport.nuget.NuGetService
 import io.github.dotnetsupport.nuget.NuGetVersion
@@ -207,6 +208,49 @@ class NuGetTest : BasePlatformTestCase() {
         assertEquals(emptyList<String>(), client.versions("Missing", sources))
         // service indexes are requested once
         assertEquals(1, requested.count { it == "https://a/index.json" })
+    }
+
+    fun testClientJournalsEveryRequestAndFailure() {
+        val events = ArrayList<Pair<String, Boolean>>()
+        val client = NuGetClient(onEvent = { text, isError -> events += text to isError }, route = { _, _ -> "direct, test" }) { url, _ ->
+            when {
+                url == "https://a/index.json" -> """{"resources":[{"@id":"https://a/query","@type":"SearchQueryService"},{"@id":"https://a/flat/","@type":"PackageBaseAddress/3.0.0"}]}"""
+                url.startsWith("https://a/query") -> """{"data":[{"id":"Serilog","version":"4.0.0"}]}"""
+                url == "https://a/flat/serilog/index.json" -> """{"versions":["3.0.0","4.0.0"]}"""
+                else -> throw java.net.UnknownHostException("broken")
+            }
+        }
+        val sources = listOf("https://broken/index.json", "https://a/index.json")
+
+        assertEquals(listOf("Serilog"), client.search("log", false, sources).map { it.id })
+        val lines = events.map { it.first }
+        // the request with its route, the answer with its time, the result of the search by feed
+        assertTrue(lines.toString(), lines.any { it == "GET https://a/index.json (direct, test)" })
+        assertTrue(lines.toString(), lines.any { it.startsWith("service index of https://a/index.json: search https://a/query, package base https://a/flat/") })
+        assertTrue(lines.toString(), lines.any { it.startsWith("search \"log\" in https://a/index.json: 1 packages, first Serilog") })
+        // the failure: class, message and the setting of the IDE to look at, marked as an error for the Log tab
+        val failure = events.first { it.second }
+        assertTrue(failure.first, failure.first.startsWith("service index of https://broken/index.json: GET https://broken/index.json failed after"))
+        assertTrue(failure.first, "UnknownHostException: broken" in failure.first && "HTTP Proxy" in failure.first)
+        assertNotNull(client.lastFailure("https://broken/index.json"))
+        assertNull(client.lastFailure("https://a/index.json"))
+        // the feed that was down says so again on the next request, nothing is said once per session
+        client.versions("Serilog", sources)
+        assertEquals(2, events.count { it.second })
+        assertTrue(lines.toString(), events.map { it.first }.any { it == "versions of Serilog from https://a/index.json: 2, latest 4.0.0" })
+        // the summary of the network of the IDE comes first, once
+        assertEquals(1, events.count { it.first.startsWith("the feeds are read by the HTTP client of the IDE") })
+    }
+
+    fun testNetworkFailureHints() {
+        val unknownHost = NuGetNetwork.describeFailure(java.net.UnknownHostException("sberosc.example"))
+        assertTrue(unknownHost, unknownHost.startsWith("UnknownHostException: sberosc.example -- the IDE cannot resolve the host name"))
+        val tls = NuGetNetwork.describeFailure(javax.net.ssl.SSLHandshakeException("PKIX path building failed"))
+        assertTrue(tls, "Server Certificates" in tls)
+        val status = NuGetNetwork.describeFailure(com.intellij.util.io.HttpRequests.HttpStatusException("Request failed", 401, "https://a/query"))
+        assertTrue(status, "HttpStatusException: Request failed" in status && "credentials" in status)
+        val wrapped = NuGetNetwork.describeFailure(RuntimeException("read failed", java.net.SocketTimeoutException("Read timed out")))
+        assertTrue(wrapped, wrapped.startsWith("RuntimeException: read failed, caused by SocketTimeoutException: Read timed out -- no answer in time"))
     }
 
     fun testInstalledPackages() {

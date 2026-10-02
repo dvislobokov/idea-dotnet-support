@@ -3,6 +3,19 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.21
+
+- The journal of NuGet (.NET | Plugin Logs, category `nuget`, and the Log tab of the NuGet window) now has every request to a feed:
+  the URL, the route the IDE takes to it (direct or through which proxy, with or without stored credentials), the HTTP status, the size
+  and the time of the answer, the services the feed announces, and the result of every search and version lookup by feed. A failure
+  is described by its class and causes (`UnknownHostException: host`, `SSLHandshakeException: PKIX path building failed`, `HTTP 401`)
+  with the setting of the IDE that usually fixes it — the feeds are read by the HTTP client of the IDE, which has its own proxy,
+  certificates and credentials, so the `dotnet` CLI can reach a feed the IDE cannot. Nothing is said "once per session" any more: a
+  feed that is down says so on every request. The first request also writes the proxy settings of the IDE and the proxy variables of
+  its environment
+- The list of the NuGet window says "none, N of M feeds did not answer" instead of an empty "Available Packages: 0" when a feed failed
+- The sources the window searches are in the journal as the CLI lists them, with the local feeds that are skipped
+
 ## 0.1.20
 
 - Package completion in project files looks as in Rider: the id and, in gray, the version — nothing else, so the popup

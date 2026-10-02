@@ -19,33 +19,73 @@ import java.io.File
 import java.net.URLEncoder
 import java.util.concurrent.ConcurrentHashMap
 
-/** NuGet V3 feeds. [fetch] is the HTTP GET, replaceable in tests. Every method blocks: call from a background thread. */
-class NuGetClient(private val fetch: (url: String, source: String) -> String = ::fetchWithCredentials) {
+/**
+ * NuGet V3 feeds. Every request and every answer goes to the journal (category [LOG_CATEGORY]) and to [onEvent] (the Log tab of the
+ * NuGet window): the URL, the route the IDE takes to it (direct or which proxy, with or without stored credentials), the size and the
+ * time of the answer, and every failure by class, cause and the setting of the IDE that usually fixes it ([NuGetNetwork]) — the
+ * feeds are read by the HTTP client of the IDE, not by the CLI, so "the CLI works" says nothing about them. Nothing is said once
+ * per session: a feed that is down says so on every request, that is what a journal is for. [fetch] is the HTTP GET, replaceable in
+ * tests (the last parameter, so that a trailing lambda is the fetch); [route] describes the route of a URL. Every method blocks:
+ * call from a background thread.
+ */
+class NuGetClient(
+    private val onEvent: (text: String, isError: Boolean) -> Unit = { _, _ -> },
+    private val route: (url: String, source: String) -> String = NuGetNetwork::routeOf,
+    private val fetch: (url: String, source: String) -> String = ::fetchWithCredentials,
+) {
     private val indexes = ConcurrentHashMap<String, NuGetResponses.ServiceIndex>()
 
-    private fun index(source: String): NuGetResponses.ServiceIndex? =
-        get(source) { indexes.getOrPut(source) { NuGetResponses.parseServiceIndex(fetch(source, source)) } }
+    /** The last failure of every feed by source URL, cleared by the next answer of it: the window says "feed did not answer" by it. */
+    private val failures = ConcurrentHashMap<String, String>()
 
-    /** A GET and its parsing; a failure is in the journal once per host and session (a feed that is down would say it on every keystroke). */
-    private fun <T> get(url: String, request: () -> T): T? = runCatching(request).onFailure { e ->
-        val host = runCatching { java.net.URI(url).host }.getOrNull() ?: url
-        if (REPORTED_HOSTS.add(host)) PluginLog.warn(LOG_CATEGORY, "GET $url", e)
-    }.getOrNull()
+    /** The network of the IDE is described once, in front of the first request of the client. */
+    private val ideNetworkSaid = java.util.concurrent.atomic.AtomicBoolean()
+
+    fun lastFailure(source: String): String? = failures[source]
+
+    private fun index(source: String): NuGetResponses.ServiceIndex? = indexes[source] ?: get(source, source, "service index of $source") {
+        NuGetResponses.parseServiceIndex(fetch(source, source)).also {
+            indexes[source] = it
+            info("service index of $source: search ${it.searchUrl ?: "none (no SearchQueryService: this feed cannot be searched)"}, package base ${it.packageBaseUrl ?: "none (no PackageBaseAddress: no versions, no nuspec)"}")
+        }
+    }
+
+    /** A GET and its parsing, with the request, the answer and a failure in the journal. */
+    private fun <T> get(url: String, source: String, what: String, request: () -> T): T? {
+        if (ideNetworkSaid.compareAndSet(false, true)) info(NuGetNetwork.ideSummary())
+        info("GET $url (${runCatching { route(url, source) }.getOrElse { "route unknown" }})")
+        val started = System.nanoTime()
+        return runCatching(request).onSuccess {
+            failures.remove(source)
+            info("$what: answered in ${(System.nanoTime() - started) / 1_000_000} ms")
+        }.onFailure { e ->
+            val description = NuGetNetwork.describeFailure(e)
+            failures[source] = description
+            warn("$what: GET $url failed after ${(System.nanoTime() - started) / 1_000_000} ms: $description")
+        }.getOrNull()
+    }
 
     /** Packages from all [sources]; a package found in several feeds is taken from the first one. [packageType]: `Template`, `DotnetTool`. */
-    fun search(query: String, includePrerelease: Boolean, sources: List<String>, take: Int = 40, packageType: String? = null): List<NuGetPackageInfo> =
-        sources.flatMap { source ->
+    fun search(query: String, includePrerelease: Boolean, sources: List<String>, take: Int = 40, packageType: String? = null): List<NuGetPackageInfo> {
+        val what = "search \"$query\"" + (if (includePrerelease) " with prerelease" else "") + packageType?.let { " of type $it" }.orEmpty()
+        if (sources.isEmpty()) warn("$what: no feeds to search")
+        return sources.flatMap { source ->
             val url = index(source)?.searchUrl ?: return@flatMap emptyList()
             val search = "$url?q=${URLEncoder.encode(query, Charsets.UTF_8)}&take=$take&prerelease=$includePrerelease&semVerLevel=2.0.0" + packageType?.let { "&packageType=$it" }.orEmpty()
-            get(search) { NuGetResponses.parseSearch(fetch(search, source)) }.orEmpty().onEach { it.source = source }
+            get(search, source, "$what in $source") { NuGetResponses.parseSearch(fetch(search, source)) }
+                ?.also { info("$what in $source: ${it.size} packages" + if (it.isEmpty()) "" else ", first ${it.take(3).joinToString(", ") { p -> p.id }}") }
+                .orEmpty().onEach { it.source = source }
         }.distinctBy { it.id.lowercase() }
+    }
 
     /** All published versions of a package, oldest first; empty when no feed has it. */
     fun versions(packageId: String, sources: List<String>): List<String> =
         sources.firstNotNullOfOrNull { source ->
             val base = index(source)?.packageBaseUrl ?: return@firstNotNullOfOrNull null
             val url = "$base${packageId.lowercase()}/index.json"
-            get(url) { NuGetResponses.parseVersions(fetch(url, source)) }?.takeIf { it.isNotEmpty() }
+            get(url, source, "versions of $packageId from $source") { NuGetResponses.parseVersions(fetch(url, source)) }
+                ?.also { info("versions of $packageId from $source: ${if (it.isEmpty()) "none" else "${it.size}, latest ${it.last()}"}") }
+                ?.takeIf { it.isNotEmpty() }
         }.orEmpty()
 
     /** Description, license and dependencies of a concrete version; null when no feed has its `.nuspec`. */
@@ -54,18 +94,31 @@ class NuGetClient(private val fetch: (url: String, source: String) -> String = :
         return sources.firstNotNullOfOrNull { source ->
             val base = index(source)?.packageBaseUrl ?: return@firstNotNullOfOrNull null
             val url = "$base$id/${version.lowercase()}/$id.nuspec"
-            get(url) { NuGetResponses.parseNuspec(fetch(url, source)) }
+            get(url, source, "nuspec of $packageId $version from $source") { NuGetResponses.parseNuspec(fetch(url, source)) }
         }
+    }
+
+    private fun info(text: String) {
+        PluginLog.info(LOG_CATEGORY, text)
+        onEvent(text, false)
+    }
+
+    private fun warn(text: String) {
+        PluginLog.warn(LOG_CATEGORY, text)
+        onEvent(text, true)
     }
 
     companion object {
         /** The category of the journal of the plugin for NuGet: the feeds and the `dotnet nuget` commands. */
         const val LOG_CATEGORY = "nuget"
-        private val REPORTED_HOSTS = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
     }
 }
 
-/** HTTP GET of a feed resource; a private feed gets the credentials stored for its source (Basic authentication). */
+/**
+ * HTTP GET of a feed resource by the HTTP client of the IDE (its proxy settings and certificates apply); a private feed gets the
+ * credentials stored for its source (Basic authentication). The status and the size of the answer go to the journal, a status other
+ * than 2xx is an [HttpRequests.HttpStatusException].
+ */
 private fun fetchWithCredentials(url: String, source: String): String {
     val credentials = NuGetCredentialStore.get(source)
     return HttpRequests.request(url).connectTimeout(10_000).readTimeout(20_000)
@@ -76,7 +129,13 @@ private fun fetchWithCredentials(url: String, source: String): String {
                 connection.setRequestProperty("Authorization", "Basic $token")
             }
         }
-        .readString()
+        .connect { request ->
+            val text = request.readString()
+            val connection = request.connection as? java.net.HttpURLConnection
+            PluginLog.info(NuGetClient.LOG_CATEGORY, "GET $url: HTTP ${connection?.responseCode ?: "?"}, ${text.length} chars" +
+                connection?.contentType?.let { ", $it" }.orEmpty() + (connection?.url?.toString()?.takeIf { it != url }?.let { ", redirected to $it" }.orEmpty()))
+            text
+        }
 }
 
 class InstalledPackage(
@@ -128,10 +187,10 @@ class NuGetLog : CommandOutput {
 
 @Service(Service.Level.PROJECT)
 class NuGetService(private val project: Project) {
-    val client = NuGetClient()
-
-    /** Commands run on behalf of the NuGet window and their output: the "Log" tab. */
+    /** Commands run on behalf of the NuGet window and their output, and every request to a feed: the "Log" tab. */
     val log = NuGetLog()
+
+    val client = NuGetClient(onEvent = { text, isError -> log.print("$text\n", isError) })
 
     /** Project to show when the tool window is opened from the Solution view. */
     var requestedProject: VirtualFile? = null
@@ -163,10 +222,18 @@ class NuGetService(private val project: Project) {
     fun sources(): List<String> {
         val directory = SolutionService.getInstance(project).solutionFiles().firstOrNull()?.parent?.path
         val configured = runCatching {
-            NuGetResponses.parseSources(DotNetCli.execute(DotNetCli.commandLine(directory, "nuget", "list", "source", "--format", "short"), 30_000).stdout)
+            val output = DotNetCli.execute(DotNetCli.commandLine(directory, "nuget", "list", "source", "--format", "short"), 30_000).stdout
+            // E = enabled, D = disabled, as the CLI prints them: what the window searches is the enabled HTTP ones
+            PluginLog.info(NuGetClient.LOG_CATEGORY, "sources of `dotnet nuget list source` in ${directory ?: "the home directory"}: " +
+                output.lines().map { it.trim() }.filter { it.isNotEmpty() }.joinToString("; ").ifEmpty { "none" })
+            NuGetResponses.parseSources(output)
         }.onFailure { PluginLog.warn(NuGetClient.LOG_CATEGORY, "`dotnet nuget list source` could not run, nuget.org is assumed", it) }.getOrDefault(emptyList())
         // local folder feeds have no search service
-        return configured.filter { it.startsWith("http://") || it.startsWith("https://") }.ifEmpty { listOf(NUGET_ORG) }
+        val http = configured.filter { it.startsWith("http://") || it.startsWith("https://") }
+        val skipped = configured - http.toSet()
+        if (skipped.isNotEmpty()) PluginLog.info(NuGetClient.LOG_CATEGORY, "local feeds are not searched: ${skipped.joinToString(", ")}")
+        if (http.isEmpty()) PluginLog.info(NuGetClient.LOG_CATEGORY, "no enabled HTTP feed is configured: $NUGET_ORG is assumed")
+        return http.ifEmpty { listOf(NUGET_ORG) }
     }
 
     /** Installs the package into every project of [projectFiles], or changes its version where it is already referenced. */
