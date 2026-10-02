@@ -22,6 +22,7 @@ import com.intellij.openapi.wm.ToolWindowManager
 import io.github.dotnetsupport.actions.SolutionContext
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetHelper
+import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.solution.SolutionService
 import io.github.dotnetsupport.solution.isSolutionOrFilterFile
 import io.github.dotnetsupport.view.resolveFile
@@ -41,7 +42,10 @@ class CodeMetricsService(private val project: Project) {
             override fun run(indicator: ProgressIndicator) {
                 indicator.isIndeterminate = false
                 indicator.text = "Preparing the metrics helper"
-                val dll = HELPER.ensureBuilt() ?: return DotNetCli.notifyError(project, TITLE, "The metrics helper could not be built: " + HELPER.failure.orEmpty().takeLast(600))
+                val dll = HELPER.ensureBuilt() ?: run {
+                    PluginLog.error(LOG_CATEGORY, "the metrics helper could not be built: ${HELPER.failure.orEmpty().lines().firstOrNull().orEmpty()}")
+                    return DotNetCli.notifyError(project, TITLE, "The metrics helper could not be built: " + HELPER.failure.orEmpty().takeLast(600))
+                }
                 val inputs = JsonArray()
                 val failed = mutableListOf<MetricsNode>()
                 projects.forEachIndexed { index, file ->
@@ -86,11 +90,13 @@ class CodeMetricsService(private val project: Project) {
             val result = DotNetCli.execute(DotNetCli.commandLine(input.parent, dll.path, "--input", input.path), HELPER_TIMEOUT_MS)
             val parsed = CodeMetricsReport.parse(result.stdout)
             if (result.exitCode != 0 || parsed.isEmpty()) {
+                PluginLog.warn(LOG_CATEGORY, "the metrics helper failed (exit code ${result.exitCode}): ${DotNetCli.lastLines(result, 3)}")
                 DotNetCli.notifyError(project, TITLE, "The metrics helper failed (exit code ${result.exitCode}): " + result.stderr.ifBlank { result.stdout }.trim().takeLast(600))
                 return null
             }
             return parsed
         } catch (e: Exception) {
+            PluginLog.warn(LOG_CATEGORY, "the metrics helper could not be run", e)
             DotNetCli.notifyError(project, TITLE, "The metrics helper could not be run: ${e.message}")
             return null
         } finally {
@@ -129,6 +135,9 @@ class CodeMetricsService(private val project: Project) {
     }
 
     companion object {
+        /** The category of the journal of the plugin for the code metrics. */
+        const val LOG_CATEGORY = "metrics"
+
         const val TITLE = "Code Metrics"
         const val TOOL_WINDOW_ID = "Code Metrics"
         val HELPER = DotNetHelper("metrics", "CodeMetrics", "HelperFramework")

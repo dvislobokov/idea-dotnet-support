@@ -11,6 +11,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.vfs.VirtualFile
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.msbuild.DotNetProjects
 
 /**
@@ -42,7 +43,13 @@ class RunCSharpFileAction : AnAction(), DumbAware {
             return DotNetCli.notifyError(project, "Run C# File", "The 'dotnet' executable is not found on PATH.")
         }
         // a file-based app runs from the directory of the file; needs .NET SDK 10 or newer (an older SDK prints its own error to the console)
-        val handler = KillableColoredProcessHandler(DotNetCli.commandLine(file.parent.path, "run", file.name))
+        val handler = try {
+            KillableColoredProcessHandler(DotNetCli.commandLine(file.parent.path, "run", file.name))
+        } catch (e: Exception) {
+            PluginLog.error(DotNetDebugBuild.LOG_CATEGORY, "`dotnet run ${file.name}` could not be started", e)
+            return DotNetCli.notifyError(project, "Run C# File", e.message ?: "'dotnet run' could not be started.")
+        }
+        PluginLog.info(DotNetDebugBuild.LOG_CATEGORY, "`dotnet run ${file.name}` started in ${file.parent.path}")
         ProcessTerminatedListener.attach(handler)
         RunContentExecutor(project, handler)
             .withTitle("dotnet run ${file.name}")

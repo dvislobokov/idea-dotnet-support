@@ -1,6 +1,7 @@
 package io.github.dotnetsupport.newproject
 
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.cli.PluginLog
 
 /**
  * A parameter of a `dotnet new` template (`--test-runner`, `--use-program-main`, `--auth`...), as `dotnet new <template> --help` describes it.
@@ -50,7 +51,8 @@ object TemplateOptions {
         val arguments = listOfNotNull("new", shortName, "--help", language?.let { "--language" }, language)
         val output = DotNetCli.execute(DotNetCli.commandLine(null, *arguments.toTypedArray()).withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en"), 60_000)
         parse(output.stdout)
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        PluginLog.warn(DotNetTemplates.LOG_CATEGORY, "`dotnet new $shortName --help` could not run, no options are shown", e)
         emptyList()
     }
 

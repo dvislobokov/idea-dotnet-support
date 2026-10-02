@@ -19,7 +19,6 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.StoragePathMacros
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
@@ -35,6 +34,8 @@ import com.intellij.platform.lsp.api.LspClientDescriptor
 import com.intellij.platform.lsp.api.LspClientManager
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetTool
+import io.github.dotnetsupport.cli.PluginLog
+import io.github.dotnetsupport.cli.PluginLogsToolWindowFactory
 import io.github.dotnetsupport.lsp.RoslynLanguageServer
 import io.github.dotnetsupport.lsp.RoslynLanguageServerConfigurable
 import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
@@ -48,7 +49,6 @@ import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
-private val LOG = logger<RoslynWorkspace>()
 
 /**
  * What the server of this project loads and has loaded, and the talk with it that is specific to Roslyn. A solution is always named
@@ -96,7 +96,39 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
 
     fun serverStarted(process: ProcessHandle?) {
         serverProcess = process
+        synchronized(serverErrors) { serverErrors.setLength(0) }
+        exitCode = null
+        PluginLog.info(LOG_CATEGORY, "server process started" + (process?.let { ", pid ${it.pid()}" } ?: ""))
         RoslynStatusWidgetFactory.refresh(project)
+    }
+
+    /** The error stream of the server of this session: the host of .NET explains there why the server could not start. */
+    private val serverErrors = StringBuilder()
+
+    @Volatile
+    private var exitCode: Int? = null
+
+    fun serverPrinted(text: String) {
+        val line = text.trimEnd()
+        if (line.isEmpty()) return
+        synchronized(serverErrors) { if (serverErrors.length < MAX_SERVER_ERRORS) serverErrors.append(line).append('\n') }
+        PluginLog.warn(LOG_CATEGORY, "server stderr: $line")
+    }
+
+    fun serverExited(code: Int) {
+        exitCode = code
+        if (code == 0) PluginLog.info(LOG_CATEGORY, "server process exited") else PluginLog.warn(LOG_CATEGORY, "server process exited with code $code")
+    }
+
+    /** The platform could not even start the process: a path from the settings that is not there any more, a file without the right to run. */
+    fun serverFailedToStart(e: Exception) {
+        PluginLog.error(LOG_CATEGORY, "cannot start the server process", e)
+        if (project.isDisposed) return
+        NotificationGroupManager.getInstance().getNotificationGroup(DotNetCli.NOTIFICATION_GROUP)
+            .createNotification("C# language server", "The server process could not be started: ${PluginLog.describe(e)}", NotificationType.ERROR)
+            .addAction(NotificationAction.createSimple("Plugin Logs") { PluginLogsToolWindowFactory.show(project) })
+            .addAction(NotificationAction.createSimple("Configure...") { com.intellij.openapi.options.ShowSettingsUtil.getInstance().showSettingsDialog(project, io.github.dotnetsupport.settings.DotNetSettingsConfigurable::class.java) })
+            .notify(project)
     }
 
     /** The server of this session has been told what to load (or loads by itself). */
@@ -140,6 +172,7 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
     fun workspaceTarget(files: Found = scan()): RoslynWorkspaceTarget? = RoslynLanguageServer.workspaceTarget(files.solutions, absolute(state.solution), files.projects)
 
     fun serverInitialized() {
+        PluginLog.info(LOG_CATEGORY, "server initialized (handshake done), loading the workspace")
         isLoaded = false
         phase(RoslynPhase.STARTING, null)
         project.service<RoslynServerStatus>().isReady = false
@@ -155,8 +188,8 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
     }
 
     private fun open(target: RoslynWorkspaceTarget?) {
-        val client = clients.firstOrNull() ?: return LOG.warn("No LSP client for the Roslyn server")
-        LOG.info("Roslyn workspace: $target")
+        val client = clients.firstOrNull() ?: return PluginLog.warn(LOG_CATEGORY, "no LSP client for the server: nothing is loaded")
+        PluginLog.info(LOG_CATEGORY, "workspace: $target")
         when (target) {
             is RoslynWorkspaceTarget.Choice -> phase(RoslynPhase.CHOOSING_SOLUTION, null)
             is RoslynWorkspaceTarget.Solution -> phase(RoslynPhase.LOADING, target.path.substringAfterLast('/'))
@@ -232,6 +265,8 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
     }
 
     fun serverStopped(shutdownNormally: Boolean) {
+        if (shutdownNormally) PluginLog.info(LOG_CATEGORY, "server stopped")
+        else PluginLog.error(LOG_CATEGORY, "server stopped unexpectedly" + (exitCode?.let { " (exit code $it)" } ?: ""))
         isLoaded = false
         serverProcess = null
         project.service<RoslynSolutionProblems>().stop()
@@ -262,7 +297,7 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
         project.service<RoslynServerStatus>().isReady = true
         // the answers given while the projects were loading are of a workspace that is not there any more
         project.service<RoslynResponseMemo>().invalidate()
-        LOG.info("Roslyn workspace is loaded")
+        PluginLog.info(LOG_CATEGORY, "workspace is loaded" + (target?.let { ": $it" } ?: ""))
         // the files opened while it was loading have been shown without the errors of the compiler
         if (!project.isDisposed) DaemonCodeAnalyzer.getInstance(project).restart()
         // the tokens shown so far came from the cache; the platform keeps what it has got until it is told to ask again
@@ -280,7 +315,7 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
      * when a project needs it" switched off: the user has asked not to restore silently, and gets a button.
      */
     override fun projectsNeedRestore(projectFiles: List<String>) {
-        LOG.info("Roslyn: packages are not restored for $projectFiles")
+        PluginLog.warn(LOG_CATEGORY, "packages are not restored for ${projectFiles.joinToString(", ") { File(it).name }}")
         if (projectFiles.isEmpty() || !restoreOffered.compareAndSet(false, true)) return
         val names = projectFiles.joinToString(", ") { File(it).name }
         NotificationGroupManager.getInstance().getNotificationGroup(DotNetCli.NOTIFICATION_GROUP)
@@ -296,19 +331,37 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
     /** The process is gone without a shutdown. The usual reason on a fresh machine is the runtime: the tool installs without .NET 10 and cannot run. */
     private fun explainCrash() {
         if (project.isDisposed || !crashReported.compareAndSet(false, true)) return
-        val runtimes = runCatching { DotNetCli.execute(DotNetCli.commandLine(null, "--list-runtimes")).stdout }.getOrDefault("")
-        val missingRuntime = runtimes.isNotBlank() && !RoslynPolicy.hasRuntime(runtimes, SERVER_RUNTIME)
-        val text = if (missingRuntime) "The server needs the .NET $SERVER_RUNTIME runtime, and <code>dotnet --list-runtimes</code> has no Microsoft.NETCore.App $SERVER_RUNTIME.x."
-        else "The server has stopped unexpectedly. Its log says why."
+        val errors = synchronized(serverErrors) { serverErrors.toString() }
+        val missingFramework = RoslynPolicy.missingFramework(errors)
+        val runtimes = try {
+            DotNetCli.execute(DotNetCli.commandLine(null, "--list-runtimes")).stdout
+        } catch (e: Exception) {
+            PluginLog.warn(LOG_CATEGORY, "cannot list the runtimes", e)
+            ""
+        }
+        val missingRuntime = missingFramework != null || runtimes.isNotBlank() && !RoslynPolicy.hasRuntime(runtimes, SERVER_RUNTIME)
+        val dotnet = DotNetCli.findExecutable()
+        val text = when {
+            missingFramework != null -> missingFramework.describe() + " Install the .NET $SERVER_RUNTIME runtime there, or point the plugin (Settings | Tools | .NET) at a <code>dotnet</code> that has it: the server is started with that installation as <code>DOTNET_ROOT</code>."
+            missingRuntime -> "The server needs the .NET $SERVER_RUNTIME runtime, and <code>dotnet --list-runtimes</code> of <code>$dotnet</code> has no Microsoft.NETCore.App $SERVER_RUNTIME.x."
+            errors.isNotBlank() -> "The server has stopped unexpectedly. It printed: <code>${errors.trim().lines().last()}</code>"
+            else -> "The server has stopped unexpectedly. Its log says why."
+        }
+        PluginLog.error(LOG_CATEGORY, "crash explained: " + text.replace(Regex("</?code>"), "`") +
+            "\n  dotnet: ${dotnet ?: "not found"}\n  runtimes: ${runtimes.trim().lines().filter { it.isNotBlank() }.joinToString("; ").ifEmpty { "unknown" }}")
         val notification = NotificationGroupManager.getInstance().getNotificationGroup(DotNetCli.NOTIFICATION_GROUP)
             .createNotification("C# language server", text, NotificationType.ERROR)
         if (missingRuntime) notification.addAction(NotificationAction.createSimple("Download .NET $SERVER_RUNTIME") { BrowserUtil.browse("https://dotnet.microsoft.com/download/dotnet/$SERVER_RUNTIME.0") })
         notification.addAction(NotificationAction.createSimpleExpiring("Restart") { crashReported.set(false); restart() })
-            .addAction(NotificationAction.createSimple("Show Log") { showLog() })
+            .addAction(NotificationAction.createSimple("Plugin Logs") { PluginLogsToolWindowFactory.show(project) })
+            .addAction(NotificationAction.createSimple("Server Log") { showLog() })
             .notify(project)
     }
 
-    fun restart() = LspClientManager.getInstance(project).stopAndRestartClientsIfNeeded(RoslynLspIntegrationProvider::class.java)
+    fun restart() {
+        PluginLog.info(LOG_CATEGORY, "restart requested")
+        LspClientManager.getInstance(project).stopAndRestartClientsIfNeeded(RoslynLspIntegrationProvider::class.java)
+    }
 
     /**
      * Reload Solution starts the server anew: it is the one way to make it forget everything. Reload Project tells it that the file
@@ -360,6 +413,12 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
     companion object {
         /** `roslyn-language-server` 5.x is built for .NET 10. */
         const val SERVER_RUNTIME = 10
+
+        /** The category of the journal of the plugin ([PluginLog]) for the server. */
+        const val LOG_CATEGORY = "roslyn"
+
+        /** How much of the error stream of a server is kept for the explanation of its end. */
+        private const val MAX_SERVER_ERRORS = 8_000
 
         /** Where the server writes its log: the folder of the settings page, or the one next to the logs of the IDE. */
         fun logDirectory(): File = RoslynLanguageServerSettings.getInstance().state.logDirectory?.takeIf { it.isNotBlank() }?.let(::File) ?: RoslynLanguageServerConfigurable.defaultLogDirectory()

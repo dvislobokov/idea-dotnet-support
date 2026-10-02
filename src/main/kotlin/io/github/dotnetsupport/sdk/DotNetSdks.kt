@@ -8,6 +8,7 @@ import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.cli.PluginLog
 import java.io.StringReader
 
 /** `10.0.401`, `9.0.100-rc.1.24452.12`: major.minor.patch where the hundreds of the patch are the feature band. */
@@ -53,9 +54,35 @@ object DotNetSdks {
         val commandLine = if (executable == null) DotNetCli.commandLine(null, "--list-sdks")
         else GeneralCommandLine(executable, "--list-sdks").withCharset(Charsets.UTF_8).withEnvironment("DOTNET_NOLOGO", "1")
         parse(DotNetCli.execute(commandLine, 30_000).stdout)
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        PluginLog.warn(LOG_CATEGORY, "cannot list the SDKs", e)
         emptyList()
     }
+
+    /** The category of the journal of the plugin for the .NET on the machine: the CLI, the SDKs and the runtimes. */
+    const val LOG_CATEGORY = "sdk"
+}
+
+class InstalledRuntime(val name: String, val version: SdkVersion, val location: String)
+
+object DotNetRuntimes {
+    /** Lines of `dotnet --list-runtimes`: `Microsoft.NETCore.App 8.0.10 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]`. */
+    fun parse(output: String): List<InstalledRuntime> = output.lineSequence().mapNotNull { line ->
+        val name = line.substringBefore(' ').trim().takeIf { it.isNotEmpty() && line.contains('[') } ?: return@mapNotNull null
+        val version = SdkVersion.parse(line.substringAfter(' ').substringBefore('[')) ?: return@mapNotNull null
+        InstalledRuntime(name, version, line.substringAfter('[', "").substringBefore(']').trim())
+    }.toList()
+
+    /** Runtimes known to the configured CLI. Blocking; empty when the CLI is not found or does not answer (said in the journal). */
+    fun installed(): List<InstalledRuntime> = try {
+        parse(DotNetCli.execute(DotNetCli.commandLine(null, "--list-runtimes"), 30_000).stdout)
+    } catch (e: Exception) {
+        PluginLog.warn(DotNetSdks.LOG_CATEGORY, "cannot list the runtimes", e)
+        emptyList()
+    }
+
+    /** Whether a `Microsoft.NETCore.App` of [major] is there: what a program built for .NET [major] needs to start. */
+    fun hasNetCoreApp(runtimes: List<InstalledRuntime>, major: Int): Boolean = runtimes.any { it.name == "Microsoft.NETCore.App" && it.version.major == major }
 }
 
 /** What the SDK that will run a command in a directory can do. */

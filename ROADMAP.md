@@ -85,6 +85,16 @@
   «still running …, nothing printed for …» раз в 30 с; там же `dotnet-debugger`, `roslyn-language-server`, `DotNetBuild`. Пароли в командах
   замаскированы, логи старше двух недель удаляются. У процессов `dotnet` закрыт stdin: команда, решившая спросить что-то (учётные данные
   фида), падает сразу, а не ждёт 10 минут — гипотеза о зависшей установке пакета, проверить по логу
+- [x] 0.1.19 — Журнал плагина (2026-10-02, по просьбе пользователя: расследовать, почему не стартует `roslyn-language-server`, по idea.log было нельзя — плагин ничего не писал).
+  `PluginLog.info/warn/error(категория, текст)`: строка `ЧЧ:ММ:СС.мс УРОВЕНЬ [категория] текст` в `~/idea-dotnet-logs/plugin/plugin-ДАТА.log`,
+  коротко в idea.log, и в окно **.NET → Plugin Logs** (консоль, только события плагина; Clear, «Warnings and Errors Only», Open Logs Folder).
+  Исключения внешних программ — одной строкой (сообщение; для неожиданных — класс и кадр плагина), без стек-трейсов (`PluginLog.describe`).
+  Категории: `dotnet` (каждая команда: что запущено, где, код выхода, хвост ошибки; вывод по-прежнему в `commands/`), `tools`, `sdk`
+  (dotnet, SDK и runtime при открытии решения), `roslyn` (команда запуска, DOTNET_ROOT, stderr сервера, инициализация, загрузка, остановка),
+  `helpers`, `debugger`, `format`, `nuget`, `templates`, `monitor`, `run`, `ef`, `allocations`. Уведомления о том, что не стартовало: сервер
+  Roslyn (разбор stderr хоста .NET — какой runtime нужен, где хост искал и что нашёл; `DOTNET_ROOT` сервера = папка `dotnet` плагина),
+  процесс сервера не создался, адаптер отладчика пропал без `terminated`, индексатор сборок не собрался (раз за сессию); у каждого
+  уведомления об ошибке — кнопка Plugin Logs. Меню .NET → Show Plugin Logs переименовано в Open Logs Folder. Вживую не проверено
 - [x] Диалог фида как в Rider (New / Edit): Name, URL, User, Password, Enabled, Allow insecure connections, Disable TLS certificate validation; учётные данные — в `nuget.config` через CLI и в хранилище паролей IDE для поиска по приватным фидам; пароли замаскированы в логах и прогрессе
 - [ ] Окно NuGet: README пакета, правка версий в `Directory.Packages.props` при CPM, выбор файла конфигурации для нового фида (сейчас — куда пишет CLI, т.е. пользовательский)
 - [x] 0.1.4 — Уязвимые и устаревшие (deprecated) пакеты в окне NuGet (`dotnet list package --vulnerable | --deprecated --format json`, два вызова —

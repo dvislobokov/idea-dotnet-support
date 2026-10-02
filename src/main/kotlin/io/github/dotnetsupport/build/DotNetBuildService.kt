@@ -21,6 +21,7 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.cli.DotNetLogs
 import io.github.dotnetsupport.settings.DotNetSettings
 import java.io.File
 import java.io.OutputStream
@@ -76,8 +77,11 @@ class DotNetBuildService(private val project: Project) {
             }
 
         val handler = try {
-            OSProcessHandler(DotNetCli.commandLine(workDirectory, *arguments))
+            val command = DotNetCli.commandLine(workDirectory, *arguments)
+            DotNetLogs.commandStarted(title, command)
+            OSProcessHandler(command)
         } catch (e: ExecutionException) {
+            DotNetLogs.commandFinished(title, "cannot start: ${e.message}", failed = true)
             DotNetCli.notifyError(project, title, e.message.orEmpty())
             onFinished(false)
             return
@@ -92,6 +96,7 @@ class DotNetBuildService(private val project: Project) {
             override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
                 if (outputType === ProcessOutputTypes.SYSTEM) return
                 buildView.onEvent(buildId, BuildViewEvents.output(buildId, event.text, outputType !== ProcessOutputTypes.STDERR))
+                DotNetLogs.command(if (outputType === ProcessOutputTypes.STDERR) "$title | err" else title, event.text)
 
                 // Text arrives in arbitrary chunks, diagnostics are parsed per complete line.
                 pending.append(event.text)
@@ -113,6 +118,7 @@ class DotNetBuildService(private val project: Project) {
                     else -> "failed with exit code ${event.exitCode}"
                 }
                 buildView.onEvent(buildId, BuildViewEvents.finished(buildId, message, result))
+                DotNetLogs.commandFinished(title, "$message (exit code ${event.exitCode})", failed)
                 // what the compiler has said goes to the editor too; a clean or a restore says nothing about the code
                 if (arguments.firstOrNull() in COMPILING_COMMANDS) BuildProblems.getInstance(project).replace(reported)
                 VfsUtil.markDirtyAndRefresh(true, true, true, File(workDirectory))

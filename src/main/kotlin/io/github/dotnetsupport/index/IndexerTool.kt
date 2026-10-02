@@ -4,9 +4,9 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.logger
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetHelper
+import io.github.dotnetsupport.cli.PluginLog
 import java.io.File
 import java.nio.file.Files
 
@@ -23,6 +23,16 @@ class IndexerTool {
     /** The dll to run with `dotnet`, built when it is not there yet. Takes seconds the first time: not for the UI thread. */
     fun ensureBuilt(): File? = helper.ensureBuilt()
 
+    private val buildFailureReported = java.util.concurrent.atomic.AtomicBoolean()
+
+    /** Once per session: without the indexer the completion has no types of the packages and the framework, and nothing else says so. */
+    private fun reportBuildFailure() {
+        val reason = failure ?: return
+        if (!buildFailureReported.compareAndSet(false, true)) return
+        DotNetCli.notifyError(com.intellij.openapi.project.ProjectManager.getInstance().openProjects.firstOrNull(), "Indexer of assemblies",
+            "The completion of types from packages and the framework is off: the indexer could not be built.\n" + reason.lines().first())
+    }
+
     /**
      * Indexes [assemblies] into [output] (what is there already is left alone) and says which file is the index of which assembly.
      * One process for the whole list, and one at a time: the projects of this IDE take their turns here, the other IDEs at the lock
@@ -31,7 +41,7 @@ class IndexerTool {
     @Synchronized
     fun index(assemblies: List<File>, output: File): Map<File, File> {
         if (assemblies.isEmpty()) return emptyMap()
-        val dll = ensureBuilt() ?: return emptyMap()
+        val dll = ensureBuilt() ?: run { reportBuildFailure(); return emptyMap() }
         output.mkdirs()
         val list = Files.createTempFile("assemblies", ".txt").toFile()
         try {
@@ -39,7 +49,7 @@ class IndexerTool {
             val command = DotNetCli.commandLine(output.path, dll.path, "--out", output.path, "--list", list.path)
             val result = DotNetCli.execute(command, INDEX_TIMEOUT_MS)
             if (result.exitCode != 0) {
-                LOG.warn("The indexer has failed (exit code ${result.exitCode}): " + result.stderr.trim().takeLast(ERROR_TAIL))
+                PluginLog.warn(DotNetHelper.LOG_CATEGORY, "the indexer has failed (exit code ${result.exitCode}): " + result.stderr.trim().takeLast(ERROR_TAIL))
                 return emptyMap()
             }
             return parse(result.stdout)
@@ -55,7 +65,6 @@ class IndexerTool {
     }
 
     companion object {
-        private val LOG = logger<IndexerTool>()
         const val ASSEMBLY = "AssemblyIndexer"
         private const val INDEX_TIMEOUT_MS = 300_000
         private const val ERROR_TAIL = 1_500

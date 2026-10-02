@@ -10,6 +10,7 @@ import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.ToggleAction
 import com.intellij.openapi.options.ShowSettingsUtil
 import io.github.dotnetsupport.solution.SolutionService
+import io.github.dotnetsupport.cli.PluginLog
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.ReadAction
@@ -679,7 +680,7 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
     private fun <T> background(requests: AtomicInteger, task: () -> T, onResult: (T) -> Unit) {
         val request = requests.incrementAndGet()
         ApplicationManager.getApplication().executeOnPooledThread {
-            val result = runCatching(task).getOrNull() ?: return@executeOnPooledThread
+            val result = runCatching(task).onFailure { PluginLog.warn(NuGetClient.LOG_CATEGORY, "a task of the NuGet window has failed", it) }.getOrNull() ?: return@executeOnPooledThread
             ApplicationManager.getApplication().invokeLater({ if (request == requests.get() && !project.isDisposed) onResult(result) }, ModalityState.any())
         }
     }

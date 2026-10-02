@@ -12,7 +12,7 @@ import com.intellij.util.io.HttpRequests
 import io.github.dotnetsupport.build.BuildViewCommandOutput
 import io.github.dotnetsupport.cli.CommandOutput
 import io.github.dotnetsupport.cli.DotNetCli
-import io.github.dotnetsupport.cli.DotNetLogs
+import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.solution.SolutionService
 import io.github.dotnetsupport.view.resolveFile
 import java.io.File
@@ -24,22 +24,28 @@ class NuGetClient(private val fetch: (url: String, source: String) -> String = :
     private val indexes = ConcurrentHashMap<String, NuGetResponses.ServiceIndex>()
 
     private fun index(source: String): NuGetResponses.ServiceIndex? =
-        runCatching { indexes.getOrPut(source) { NuGetResponses.parseServiceIndex(fetch(source, source)) } }.getOrNull()
+        get(source) { indexes.getOrPut(source) { NuGetResponses.parseServiceIndex(fetch(source, source)) } }
+
+    /** A GET and its parsing; a failure is in the journal once per host and session (a feed that is down would say it on every keystroke). */
+    private fun <T> get(url: String, request: () -> T): T? = runCatching(request).onFailure { e ->
+        val host = runCatching { java.net.URI(url).host }.getOrNull() ?: url
+        if (REPORTED_HOSTS.add(host)) PluginLog.warn(LOG_CATEGORY, "GET $url", e)
+    }.getOrNull()
 
     /** Packages from all [sources]; a package found in several feeds is taken from the first one. [packageType]: `Template`, `DotnetTool`. */
     fun search(query: String, includePrerelease: Boolean, sources: List<String>, take: Int = 40, packageType: String? = null): List<NuGetPackageInfo> =
         sources.flatMap { source ->
             val url = index(source)?.searchUrl ?: return@flatMap emptyList()
-            runCatching {
-                NuGetResponses.parseSearch(fetch("$url?q=${URLEncoder.encode(query, Charsets.UTF_8)}&take=$take&prerelease=$includePrerelease&semVerLevel=2.0.0" + packageType?.let { "&packageType=$it" }.orEmpty(), source))
-            }.getOrDefault(emptyList())
+            val search = "$url?q=${URLEncoder.encode(query, Charsets.UTF_8)}&take=$take&prerelease=$includePrerelease&semVerLevel=2.0.0" + packageType?.let { "&packageType=$it" }.orEmpty()
+            get(search) { NuGetResponses.parseSearch(fetch(search, source)) }.orEmpty()
         }.distinctBy { it.id.lowercase() }
 
     /** All published versions of a package, oldest first; empty when no feed has it. */
     fun versions(packageId: String, sources: List<String>): List<String> =
         sources.firstNotNullOfOrNull { source ->
             val base = index(source)?.packageBaseUrl ?: return@firstNotNullOfOrNull null
-            runCatching { NuGetResponses.parseVersions(fetch("$base${packageId.lowercase()}/index.json", source)) }.getOrNull()?.takeIf { it.isNotEmpty() }
+            val url = "$base${packageId.lowercase()}/index.json"
+            get(url) { NuGetResponses.parseVersions(fetch(url, source)) }?.takeIf { it.isNotEmpty() }
         }.orEmpty()
 
     /** Description, license and dependencies of a concrete version; null when no feed has its `.nuspec`. */
@@ -47,8 +53,15 @@ class NuGetClient(private val fetch: (url: String, source: String) -> String = :
         val id = packageId.lowercase()
         return sources.firstNotNullOfOrNull { source ->
             val base = index(source)?.packageBaseUrl ?: return@firstNotNullOfOrNull null
-            runCatching { NuGetResponses.parseNuspec(fetch("$base$id/${version.lowercase()}/$id.nuspec", source)) }.getOrNull()
+            val url = "$base$id/${version.lowercase()}/$id.nuspec"
+            get(url) { NuGetResponses.parseNuspec(fetch(url, source)) }
         }
+    }
+
+    companion object {
+        /** The category of the journal of the plugin for NuGet: the feeds and the `dotnet nuget` commands. */
+        const val LOG_CATEGORY = "nuget"
+        private val REPORTED_HOSTS = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
     }
 }
 
@@ -151,7 +164,7 @@ class NuGetService(private val project: Project) {
         val directory = SolutionService.getInstance(project).solutionFiles().firstOrNull()?.parent?.path
         val configured = runCatching {
             NuGetResponses.parseSources(DotNetCli.execute(DotNetCli.commandLine(directory, "nuget", "list", "source", "--format", "short"), 30_000).stdout)
-        }.getOrDefault(emptyList())
+        }.onFailure { PluginLog.warn(NuGetClient.LOG_CATEGORY, "`dotnet nuget list source` could not run, nuget.org is assumed", it) }.getOrDefault(emptyList())
         // local folder feeds have no search service
         return configured.filter { it.startsWith("http://") || it.startsWith("https://") }.ifEmpty { listOf(NUGET_ORG) }
     }
@@ -191,8 +204,9 @@ class NuGetService(private val project: Project) {
         val target = SolutionService.getInstance(project).solutionFiles().firstOrNull() ?: return emptyMap()
         fun report(flag: String): Map<String, List<PackageWarning>> = runCatching {
             val result = DotNetCli.execute(DotNetCli.commandLine(target.parent.path, "list", target.path, "package", flag, "--include-transitive", "--format", "json"), 180_000)
-            if (result.exitCode == 0) NuGetResponses.parseListReport(result.stdout) else emptyMap()
-        }.getOrDefault(emptyMap())
+            if (result.exitCode == 0) NuGetResponses.parseListReport(result.stdout)
+            else emptyMap<String, List<PackageWarning>>().also { PluginLog.warn(NuGetClient.LOG_CATEGORY, "`dotnet list package $flag` exit code ${result.exitCode}: ${DotNetCli.lastLines(result, 1)}") }
+        }.onFailure { PluginLog.warn(NuGetClient.LOG_CATEGORY, "`dotnet list package $flag` could not run", it) }.getOrDefault(emptyMap())
         val vulnerable = report("--vulnerable")
         val deprecated = report("--deprecated")
         return (vulnerable.keys + deprecated.keys).associateWith { vulnerable[it].orEmpty() + deprecated[it].orEmpty() }
@@ -235,8 +249,7 @@ class NuGetService(private val project: Project) {
 
     /** The folders NuGet keeps packages and caches in: `global-packages`, `http-cache`, `temp`, `plugins-cache`. Blocking. */
     fun localFolders(): List<Pair<String, String>> =
-        runCatching { DotNetCli.execute(DotNetCli.commandLine(workDirectory(), "nuget", "locals", "all", "--list", "--force-english-output"), 30_000).stdout }
-            .getOrDefault("").lines().mapNotNull { line ->
+        output("nuget", "locals", "all", "--list", "--force-english-output").lines().mapNotNull { line ->
                 val name = line.substringBefore(": ", "").trim()
                 val path = line.substringAfter(": ", "").trim()
                 if (name.isEmpty() || path.isEmpty()) null else name to path
@@ -266,7 +279,7 @@ class NuGetService(private val project: Project) {
         } catch (e: RuntimeException) {
             // the window must not keep its buttons disabled for a command that never started
             notifyOperation(NuGetOperation(title, NuGetOperation.State.FAILED))
-            DotNetLogs.command(title, "cannot start: $e")
+            PluginLog.error("nuget", "$title: cannot start", e)
             throw e
         }
     }
@@ -291,16 +304,22 @@ class NuGetService(private val project: Project) {
 
     private fun workDirectory(): String? = SolutionService.getInstance(project).solutionFiles().firstOrNull()?.parent?.path
 
-    /** Sources of all `nuget.config` levels with their names and state. Blocking. */
-    fun sourceList(): List<NuGetSource> {
-        fun output(vararg arguments: String) = runCatching { DotNetCli.execute(DotNetCli.commandLine(workDirectory(), *arguments), 30_000).stdout }.getOrDefault("")
-        return NuGetResponses.parseSourceList(output("nuget", "list", "source"), output("nuget", "list", "source", "--format", "short"))
+    /** What a short `dotnet` command prints in the solution directory; empty when it fails, with the reason in the journal. */
+    private fun output(vararg arguments: String): String = try {
+        val result = DotNetCli.execute(DotNetCli.commandLine(workDirectory(), *arguments), 30_000)
+        if (result.exitCode != 0) PluginLog.warn(NuGetClient.LOG_CATEGORY, "`dotnet ${arguments.joinToString(" ")}` exit code ${result.exitCode}: ${DotNetCli.lastLines(result, 1)}")
+        result.stdout
+    } catch (e: Exception) {
+        PluginLog.warn(NuGetClient.LOG_CATEGORY, "`dotnet ${arguments.joinToString(" ")}` could not run", e)
+        ""
     }
 
+    /** Sources of all `nuget.config` levels with their names and state. Blocking. */
+    fun sourceList(): List<NuGetSource> =
+        NuGetResponses.parseSourceList(output("nuget", "list", "source"), output("nuget", "list", "source", "--format", "short"))
+
     /** The `nuget.config` files that apply to the solution, the most specific first. Blocking. */
-    fun configPaths(): List<String> =
-        runCatching { DotNetCli.execute(DotNetCli.commandLine(workDirectory(), "nuget", "config", "paths"), 30_000).stdout }
-            .getOrDefault("").lines().map { it.trim() }.filter { it.isNotEmpty() && File(it).isFile }
+    fun configPaths(): List<String> = output("nuget", "config", "paths").lines().map { it.trim() }.filter { it.isNotEmpty() && File(it).isFile }
 
     /** `dotnet nuget add | update | remove | enable | disable source ...`, one argument list per command. */
     fun changeSources(title: String, commands: List<List<String>>, onSuccess: () -> Unit) {

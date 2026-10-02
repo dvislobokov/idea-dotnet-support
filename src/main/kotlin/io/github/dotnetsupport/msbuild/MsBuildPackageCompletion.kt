@@ -154,9 +154,12 @@ class MsBuildPackageCompletionContributor : CompletionContributor() {
         ApplicationUtil.runWithCheckCanceled(Callable { load() }, ProgressManager.getInstance().progressIndicator ?: com.intellij.openapi.progress.EmptyProgressIndicator())
     } catch (e: com.intellij.openapi.progress.ProcessCanceledException) {
         throw e
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        if (FEED_FAILURE_REPORTED.compareAndSet(false, true)) io.github.dotnetsupport.cli.PluginLog.warn(io.github.dotnetsupport.nuget.NuGetClient.LOG_CATEGORY, "the feed did not answer the completion of packages (said once)", e)
         emptyList() // a feed that is down is no reason to break completion
     }
+
+    private val FEED_FAILURE_REPORTED = java.util.concurrent.atomic.AtomicBoolean()
 
     /** Everything the feed has returned is shown; [prefix] still decides what is replaced. */
     private class AnyMatcher(prefix: String) : PrefixMatcher(prefix) {

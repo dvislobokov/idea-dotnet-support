@@ -8,7 +8,7 @@ import com.intellij.execution.process.ProcessListener
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.logger
+import io.github.dotnetsupport.cli.PluginLog
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import java.io.File
@@ -37,7 +37,7 @@ class CSharpierServer : Disposable {
         // directory is not there (an in-memory or remote file); the one-shot run copes with that.
         if (file.parentFile?.isDirectory != true) return formatOnce(cli, file, text)
         val viaServer = runCatching { server(cli)?.let { request(it.port, file, text) } }
-            .onFailure { LOG.info("CSharpier server failed, falling back to a one-shot run: ${it.message}"); stop() }
+            .onFailure { PluginLog.warn(LOG_CATEGORY, "the CSharpier server has failed, falling back to a one-shot run", it); stop() }
             .getOrNull()
         // an internal error of the server says nothing useful: the one-shot run either works or explains itself
         if (viaServer is FormatResult.Failed && viaServer.message == SERVER_INTERNAL_ERROR) return formatOnce(cli, file, text)
@@ -49,9 +49,12 @@ class CSharpierServer : Disposable {
         val handler = CapturingProcessHandler(cli.formatStdin(file))
         handler.processInput.use { it.write(text.toByteArray(Charsets.UTF_8)) }
         val output = handler.runProcess(ONE_SHOT_TIMEOUT_MS)
-        if (output.isTimeout) FormatResult.Failed("CSharpier did not answer in ${ONE_SHOT_TIMEOUT_MS / 1000} s.")
+        val result = if (output.isTimeout) FormatResult.Failed("CSharpier did not answer in ${ONE_SHOT_TIMEOUT_MS / 1000} s.")
         else CSharpierOutput.parseProcessOutput(output.exitCode, output.stdout, output.stderr)
+        if (result is FormatResult.Failed) PluginLog.warn(LOG_CATEGORY, "CSharpier could not format ${file.name} (exit code ${output.exitCode}): ${result.message}")
+        result
     } catch (e: Exception) {
+        PluginLog.warn(LOG_CATEGORY, "CSharpier could not be started for ${file.name}", e)
         FormatResult.Failed(e.message ?: "CSharpier could not be started.")
     }
 
@@ -78,7 +81,7 @@ class CSharpierServer : Disposable {
             Running(cli, handler, started.get(START_TIMEOUT_S, TimeUnit.SECONDS)).also { running = it }
         } catch (e: Exception) {
             handler.destroyProcess()
-            LOG.info("CSharpier server did not start: ${e.cause?.message ?: e.message}")
+            PluginLog.warn(LOG_CATEGORY, "the CSharpier server did not start (${cli.server(cli.manifestDirectory).commandLineString}): ${e.cause?.message ?: e.message}")
             null
         }
     }
@@ -107,7 +110,8 @@ class CSharpierServer : Disposable {
     override fun dispose() = stop()
 
     companion object {
-        private val LOG = logger<CSharpierServer>()
+        /** The category of the journal of the plugin for the formatters: CSharpier and `dotnet format`. */
+        const val LOG_CATEGORY = "format"
         private val PORT = Regex("""Started on (\d+)""")
         private const val SERVER_INTERNAL_ERROR = "An exception was thrown"
         private const val START_TIMEOUT_S = 15L

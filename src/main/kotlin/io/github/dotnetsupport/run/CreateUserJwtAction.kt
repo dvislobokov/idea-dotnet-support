@@ -58,7 +58,10 @@ class CreateUserJwtAction : AnAction(), DumbAware {
             }
 
             override fun onSuccess() {
-                val jwt = token ?: return DotNetCli.notifyError(project, TITLE, error ?: "'dotnet user-jwts' did not return a token.")
+                val jwt = token ?: run {
+                    io.github.dotnetsupport.cli.PluginLog.warn(DotNetDebugBuild.LOG_CATEGORY, "$TITLE: ${error ?: "'dotnet user-jwts' did not return a token"}")
+                    return DotNetCli.notifyError(project, TITLE, error ?: "'dotnet user-jwts' did not return a token.")
+                }
                 insertAtCaretLine(project, editor, "Authorization: Bearer $jwt")
             }
         }.queue()

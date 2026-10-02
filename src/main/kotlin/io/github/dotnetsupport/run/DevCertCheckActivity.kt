@@ -32,7 +32,8 @@ class DevCertCheckActivity : ProjectActivity {
 
         // `--check --trust`: exit code 0 means a valid certificate exists and is trusted; anything else means it is missing or not trusted
         val workDirectory = project.guessProjectDir()?.path
-        val check = runCatching { DotNetCli.execute(DotNetCli.commandLine(workDirectory, "dev-certs", "https", "--check", "--trust"), 30_000) }.getOrNull() ?: return
+        val check = runCatching { DotNetCli.execute(DotNetCli.commandLine(workDirectory, "dev-certs", "https", "--check", "--trust"), 30_000) }
+            .onFailure { io.github.dotnetsupport.cli.PluginLog.warn(DotNetDebugBuild.LOG_CATEGORY, "`dotnet dev-certs https --check` could not run", it) }.getOrNull() ?: return
         if (check.exitCode == 0) return
 
         NotificationGroupManager.getInstance().getNotificationGroup(DotNetCli.NOTIFICATION_GROUP)

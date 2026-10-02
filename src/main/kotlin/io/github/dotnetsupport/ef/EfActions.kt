@@ -177,11 +177,15 @@ object EfCommands {
         val commandLine = DotNetCli.commandLinesOrNotify(project, title) { listOf(tool.commandLine(EfCommand.ContextInfo, context)) }?.single() ?: return
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Looking up the database", true) {
             override fun run(indicator: ProgressIndicator) {
-                val result = runCatching { DotNetCli.execute(commandLine) }.getOrElse { return DotNetCli.notifyError(project, title, it.message.orEmpty()) }
+                val result = runCatching { DotNetCli.execute(commandLine) }.getOrElse {
+                    io.github.dotnetsupport.cli.PluginLog.warn(EfRunner.LOG_CATEGORY, "$title: `dotnet ef dbcontext info` could not run", it)
+                    return DotNetCli.notifyError(project, title, it.message.orEmpty())
+                }
                 val output = result.stdout + "\n" + result.stderr
                 val info = EfOutputParser.contextInfo(output)
                 if (result.exitCode != 0 || info == null) {
                     if (!EfRunner.reportProblem(project, title, output, EfCommand.ContextInfo, context, reopen, { dropDatabase(project, context, reopen) })) {
+                        io.github.dotnetsupport.cli.PluginLog.warn(EfRunner.LOG_CATEGORY, "$title: exit code ${result.exitCode}, ${EfOutputParser.errorText(output).lines().lastOrNull { it.isNotBlank() }.orEmpty()}")
                         DotNetCli.notifyError(project, title, EfOutputParser.errorText(output).lines().takeLast(15).joinToString("\n"))
                     }
                     return

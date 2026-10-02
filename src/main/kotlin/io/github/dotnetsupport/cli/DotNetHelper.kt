@@ -1,7 +1,6 @@
 package io.github.dotnetsupport.cli
 
 import com.intellij.openapi.application.PathManager
-import com.intellij.openapi.diagnostic.logger
 import java.io.File
 import java.security.MessageDigest
 
@@ -54,20 +53,21 @@ class DotNetHelper(private val folder: String, val assembly: String, private val
         if (result.exitCode != 0 || !dll.isFile) {
             return fail("$assembly could not be built (exit code ${result.exitCode}): " + (result.stdout + "\n" + result.stderr).trim().takeLast(ERROR_TAIL))
         }
-        LOG.info("$assembly is built for $framework (SDK $sdk): $dll")
+        PluginLog.info(LOG_CATEGORY, "$assembly is built for $framework (SDK $sdk): $dll")
         return dll.also { built = it }
     }
 
     private fun fail(message: String): File? {
         failed = message
-        LOG.warn(message)
+        PluginLog.error(LOG_CATEGORY, "$message\n  (remembered for the session: not tried again until the IDE restarts)")
         return null
     }
 
     /** The SDK `dotnet build` would use in [directory]: the newest one, unless a `global.json` above says otherwise (there is none in the caches). */
     private fun sdkVersion(directory: File): String? = try {
         DotNetCli.execute(DotNetCli.commandLine(directory.path, "--version"), VERSION_TIMEOUT_MS).takeIf { it.exitCode == 0 }?.stdout?.trim()?.lineSequence()?.lastOrNull()?.trim()
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        PluginLog.warn(LOG_CATEGORY, "`dotnet --version` for $assembly", e)
         null
     }
 
@@ -89,7 +89,8 @@ class DotNetHelper(private val folder: String, val assembly: String, private val
     }
 
     companion object {
-        private val LOG = logger<DotNetHelper>()
+        /** The category of the journal of the plugin for the helpers: built, or why not. */
+        const val LOG_CATEGORY = "helpers"
         const val MINIMAL_SDK = 8
         private const val BUILD_TIMEOUT_MS = 240_000
         private const val VERSION_TIMEOUT_MS = 20_000

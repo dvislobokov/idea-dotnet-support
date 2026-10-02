@@ -95,11 +95,10 @@ object DotNetCli {
         val result = try {
             CapturingProcessHandler(commandLine).also(::closeInput).runProcess(timeoutMs)
         } catch (e: ExecutionException) {
-            DotNetLogs.command("run", "cannot start: ${e.message}")
+            DotNetLogs.commandFinished("run", "cannot start: ${e.message}", failed = true)
             throw e
         }
-        DotNetLogs.command("run", resultText(result, System.currentTimeMillis() - started) +
-            if (result.exitCode != 0) "\n" + (result.stderr.ifBlank { result.stdout }).trim().lines().takeLast(20).joinToString("\n") else "")
+        DotNetLogs.commandFinished("run", resultText(result, System.currentTimeMillis() - started), failed = result.exitCode != 0 || result.isTimeout, lastLines = lastLines(result, 20))
         return result
     }
 
@@ -110,6 +109,9 @@ object DotNetCli {
     private fun closeInput(handler: CapturingProcessHandler) {
         runCatching { handler.processInput?.close() }
     }
+
+    /** The tail of what a failed command printed: its error stream, or its output when the error stream is empty. */
+    fun lastLines(result: ProcessOutput, count: Int): String = (result.stderr.ifBlank { result.stdout }).trim().lines().takeLast(count).joinToString("\n")
 
     private fun resultText(result: ProcessOutput, ms: Long): String = when {
         result.isTimeout -> "timed out after ${ms / 1000} s"
@@ -176,19 +178,21 @@ object DotNetCli {
                         // cancelling the progress kills the process
                         handler.runProcessWithProgressIndicator(indicator, TIMEOUT_MS, true)
                     } catch (e: ExecutionException) {
-                        DotNetLogs.command(title, "cannot start: ${e.message}")
+                        DotNetLogs.commandFinished(title, "cannot start: ${e.message}", failed = true)
                         output.text(e.message.orEmpty() + "\n", true)
                         notifyError(project, title, e.message.orEmpty())
                         return false
                     } finally {
                         heartbeat.cancel(false)
                     }
-                    DotNetLogs.command(title, resultText(result, System.currentTimeMillis() - started))
+                    val failed = !result.isCancelled && (result.exitCode != 0 || result.isTimeout)
+                    // the output has gone to the command log line by line already; the journal gets the tail of a failure
+                    DotNetLogs.commandFinished(title, resultText(result, System.currentTimeMillis() - started), failed, lastLines = if (failed) lastLines(result, 5) else "")
                     output.commandFinished(result.exitCode)
                     if (result.isCancelled) return false
                     if (result.exitCode != 0) {
                         if (onFailure(result)) return false
-                        val details = (result.stderr.ifBlank { result.stdout }).trim().lines().takeLast(15).joinToString("\n")
+                        val details = lastLines(result, 15)
                         notifyError(project, "$title: exit code ${result.exitCode}", details)
                         return false
                     }
@@ -202,6 +206,7 @@ object DotNetCli {
     fun commandLinesOrNotify(project: Project, title: String, build: () -> List<GeneralCommandLine>): List<GeneralCommandLine>? = try {
         build()
     } catch (e: ExecutionException) {
+        PluginLog.warn(DotNetLogs.CATEGORY_COMMANDS, "$title: ${e.message}")
         notifyError(project, title, e.message.orEmpty())
         null
     }
@@ -210,9 +215,12 @@ object DotNetCli {
         if (files.isNotEmpty()) VfsUtil.markDirtyAndRefresh(false, true, true, *files.toTypedArray())
     }
 
-    fun notifyError(project: Project, title: String, content: String) {
+    /** An error balloon; [configure] adds its buttons. A "Plugin Logs" button is on every one: the journal says what went on before. */
+    fun notifyError(project: Project?, title: String, content: String, configure: com.intellij.notification.Notification.() -> Unit = {}) {
         NotificationGroupManager.getInstance().getNotificationGroup(NOTIFICATION_GROUP)
             .createNotification(title, content.replace("\n", "<br>"), NotificationType.ERROR)
+            .apply(configure)
+            .apply { if (project != null) addAction(com.intellij.notification.NotificationAction.createSimple("Plugin Logs") { PluginLogsToolWindowFactory.show(project) }) }
             .notify(project)
     }
 

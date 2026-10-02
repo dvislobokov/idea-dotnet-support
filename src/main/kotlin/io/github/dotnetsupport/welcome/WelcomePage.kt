@@ -12,11 +12,11 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.PathManager
-import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.fileEditor.impl.HTMLEditorProvider
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
+import io.github.dotnetsupport.cli.PluginLog
 import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.ui.JBColor
 import com.intellij.ui.jcef.JBCefApp
@@ -33,7 +33,8 @@ import java.nio.file.Path
  * opened by their address. A page given to the browser as a text has no address a link could be relative to.
  */
 object WelcomePage {
-    private val LOG = logger<WelcomePage>()
+    /** The category of the journal of the plugin for the pages about it. */
+    const val LOG_CATEGORY = "welcome"
     const val TITLE = "C# Project Support"
     const val INDEX = "index.html"
     const val GUIDE = "guide.html"
@@ -76,11 +77,11 @@ object WelcomePage {
         val directory = try {
             write(Path.of(PathManager.getSystemPath(), "dotnet-support", "welcome", if (dark) "dark" else "light"), dark)
         } catch (e: IOException) {
-            LOG.warn("The pages of the plugin could not be written", e)
+            PluginLog.warn(LOG_CATEGORY, "the pages of the plugin could not be written", e)
             null
         }
         if (directory == null) {
-            LOG.warn("No /welcome/$page in the plugin")
+            PluginLog.warn(LOG_CATEGORY, "no /welcome/$page in the plugin")
             return
         }
         // no embedded browser in this IDE (a remote session, a runtime without JCEF): the system one
@@ -101,7 +102,7 @@ class WelcomePageActivity : ProjectActivity {
         application.invokeLater({
             if (project.isDisposed) return@invokeLater
             runCatching { WelcomePage.open(project) }.onFailure { failure ->
-                logger<WelcomePageActivity>().warn("The welcome page could not be opened", failure)
+                PluginLog.warn(WelcomePage.LOG_CATEGORY, "the welcome page could not be opened", failure)
                 NotificationGroupManager.getInstance().getNotificationGroup(".NET")
                     .createNotification("C# Project Support is installed", "See what it can do: .NET | Welcome to C# Project Support.", NotificationType.INFORMATION)
                     .addAction(NotificationAction.createSimpleExpiring("Open") { WelcomePage.open(project) })

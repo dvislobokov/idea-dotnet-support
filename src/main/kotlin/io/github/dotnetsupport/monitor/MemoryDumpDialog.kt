@@ -102,6 +102,7 @@ object MemoryDumps {
                 val problem = failure
                 if (problem != null || opened == null) {
                     discard(opened, file)
+                    io.github.dotnetsupport.cli.PluginLog.warn(DotNetCounters.LOG_CATEGORY, "$title: ${problem ?: "no dump"}")
                     return DotNetCli.notifyError(project, title, problem ?: "No dump")
                 }
                 MemoryDumpDialog(project, processTitle, opened, types).show()
@@ -327,7 +328,10 @@ class MemoryDumpDialog(
         val source = analyzer.dump
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Saving the memory dump", false) {
             override fun run(indicator: ProgressIndicator) = FileUtil.copy(source, target)
-            override fun onThrowable(error: Throwable) = DotNetCli.notifyError(project, "Save Memory Dump", error.message.orEmpty())
+            override fun onThrowable(error: Throwable) {
+                io.github.dotnetsupport.cli.PluginLog.warn(DotNetCounters.LOG_CATEGORY, "the dump could not be saved", error)
+                DotNetCli.notifyError(project, "Save Memory Dump", error.message.orEmpty())
+            }
         })
     }
 

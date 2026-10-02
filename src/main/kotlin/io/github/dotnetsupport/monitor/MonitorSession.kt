@@ -15,6 +15,7 @@ import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.util.concurrency.AppExecutorUtil
 import io.github.dotnetsupport.run.DotNetRunConfiguration
+import io.github.dotnetsupport.cli.PluginLog
 import java.io.File
 import java.io.RandomAccessFile
 import java.time.Duration
@@ -64,8 +65,13 @@ class MonitorSession(
         private set
 
     fun start() {
-        task = AppExecutorUtil.getAppScheduledExecutorService().scheduleWithFixedDelay({ runCatching { tick() } }, 0, 1, TimeUnit.SECONDS)
+        task = AppExecutorUtil.getAppScheduledExecutorService().scheduleWithFixedDelay({
+            // a tick that throws must not end the schedule; the first failure is in the journal, the rest would be the same one every second
+            runCatching { tick() }.onFailure { if (tickFailureReported.compareAndSet(false, true)) PluginLog.warn(DotNetCounters.LOG_CATEGORY, "the monitor of $target has failed a tick (said once)", it) }
+        }, 0, 1, TimeUnit.SECONDS)
     }
+
+    private val tickFailureReported = java.util.concurrent.atomic.AtomicBoolean()
 
     private fun tick() {
         if (disposed) return
@@ -102,6 +108,7 @@ class MonitorSession(
         if (current != null && current.isFinished()) {
             // not a .NET process, or the runtime refused the connection
             if (!current.hasData) refusedPids += current.pid
+            PluginLog.warn(DotNetCounters.LOG_CATEGORY, "dotnet-counters for pid ${current.pid} has stopped${if (current.hasData) "" else " without data"}: ${current.failure().ifEmpty { "nothing printed" }}")
             onStatus(current.failure().ifEmpty { "dotnet-counters has stopped" })
             current.close()
             collector = null
@@ -113,7 +120,8 @@ class MonitorSession(
             collector = null
         }
         if (collector == null && candidateTicks >= STABLE_TICKS && application !in refusedPids) {
-            collector = runCatching { Collector(executable, application) }.onFailure { onStatus(it.message.orEmpty()) }.getOrNull()
+            collector = runCatching { Collector(executable, application) }
+                .onFailure { PluginLog.warn(DotNetCounters.LOG_CATEGORY, "dotnet-counters could not be started for pid $application", it); onStatus(it.message.orEmpty()) }.getOrNull()
             if (collector != null) onStatus("")
         }
     }

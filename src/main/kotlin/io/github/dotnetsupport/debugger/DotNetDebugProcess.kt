@@ -17,6 +17,8 @@ import com.intellij.xdebugger.breakpoints.XBreakpointHandler
 import com.intellij.xdebugger.evaluation.XDebuggerEditorsProvider
 import com.intellij.xdebugger.frame.XSuspendContext
 import io.github.dotnetsupport.monitor.RunningDotNetProcesses
+import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.run.ListeningUrlListener
 import io.github.dotnetsupport.run.TestHostDebug
 import org.jetbrains.concurrency.AsyncPromise
@@ -58,6 +60,9 @@ class DotNetDebugProcess(
         private set
 
     @Volatile private var exitCode: Int? = null
+
+    /** The adapter has said the program is over (`exited` or `terminated`): a closed connection after that is in order. */
+    @Volatile private var programEnded = false
     private val initialBreakSkipped = AtomicBoolean()
     private val shutdown = AtomicBoolean()
     private val stopped = AsyncPromise<Any>()
@@ -90,6 +95,7 @@ class DotNetDebugProcess(
             connection.request(if (start.attach) "attach" else "launch", DapConnection.GSON.toJsonTree(start.arguments))
         }.whenComplete { _, error ->
             if (error != null && !shutdown.get()) {
+                PluginLog.error(DebugAdapterProcess.LOG_CATEGORY, "the adapter has refused to ${if (start.attach) "attach" else "launch"}: ${errorText(error)}")
                 print("Cannot start debugging: ${errorText(error)}\n", ProcessOutputTypes.STDERR)
                 session.stop()
             }
@@ -106,8 +112,8 @@ class DotNetDebugProcess(
             "output" -> output(body)
             "process" -> body.int("systemProcessId")?.let { debuggee(it.toLong()) }
             "breakpoint" -> body.getAsJsonObject("breakpoint")?.let(lineBreakpoints::update)
-            "exited" -> exitCode = body.int("exitCode")
-            "terminated" -> AppExecutorUtil.getAppExecutorService().execute { shutdown(detach = false, programGone = true) }
+            "exited" -> { exitCode = body.int("exitCode"); programEnded = true }
+            "terminated" -> { programEnded = true; AppExecutorUtil.getAppExecutorService().execute { shutdown(detach = false, programGone = true) } }
         }
     }
 
@@ -119,6 +125,14 @@ class DotNetDebugProcess(
 
     override fun closed() {
         // the adapter has exited or was killed: whatever state the session is in, it is over
+        if (!shutdown.get() && !programEnded) {
+            // neither the user nor the program ended the session: the adapter is gone on its own, and the session would just vanish
+            PluginLog.error(DebugAdapterProcess.LOG_CATEGORY, "the debug adapter has closed the connection without ending the session: it has crashed or was killed (pid ${adapter.pid})")
+            print("The debug adapter has exited unexpectedly. The session is over.\n", ProcessOutputTypes.STDERR)
+            DotNetCli.notifyError(session.project, "Debugger", "The debug adapter (dotnet-debugger) has exited unexpectedly: the session is over. Its log says why.") {
+                addAction(com.intellij.notification.NotificationAction.createSimple("Debugger Logs") { com.intellij.ide.actions.RevealFileAction.openDirectory(java.nio.file.Files.createDirectories(DotNetDebuggerLogs.directory)) })
+            }
+        }
         AppExecutorUtil.getAppExecutorService().execute { shutdown(detach = false, programGone = true) }
     }
 

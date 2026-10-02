@@ -13,6 +13,7 @@ import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.ui.Messages
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.settings.DotNetSettingsConfigurable
 import io.github.dotnetsupport.solution.SolutionService
@@ -26,7 +27,9 @@ class SdkCheckActivity : ProjectActivity {
         if (SolutionService.getInstance(project).solutionFiles().isEmpty()) return
         val group = NotificationGroupManager.getInstance().getNotificationGroup(DotNetCli.NOTIFICATION_GROUP)
 
-        if (DotNetCli.findExecutable() == null) {
+        val dotnet = DotNetCli.findExecutable()
+        if (dotnet == null) {
+            PluginLog.error(DotNetSdks.LOG_CATEGORY, "dotnet is not found: not in the settings, not on PATH, not in the default folders; the search folders are ${io.github.dotnetsupport.settings.DotNetSettings.getInstance().dotnetSearchPaths}")
             group.createNotification(".NET SDK is not found", "The 'dotnet' executable is neither on PATH nor in the default installation directory.", NotificationType.WARNING)
                 .addAction(NotificationAction.createSimple("Configure...") { ShowSettingsUtil.getInstance().showSettingsDialog(project, DotNetSettingsConfigurable::class.java) })
                 .addAction(NotificationAction.createSimple("Download .NET") { BrowserUtil.browse(DOWNLOAD_URL) })
@@ -38,9 +41,12 @@ class SdkCheckActivity : ProjectActivity {
         io.github.dotnetsupport.cli.DotNetTool.entries.forEach { it.find() }
 
         val installed = DotNetSdks.installed().map { it.version }
+        val runtimes = DotNetRuntimes.installed()
+        PluginLog.info(DotNetSdks.LOG_CATEGORY, "dotnet: $dotnet\n  SDKs: ${installed.joinToString(", ").ifEmpty { "none listed" }}\n  runtimes: ${runtimes.joinToString(", ") { "${it.name} ${it.version}" }.ifEmpty { "none listed" }}")
         // the C# language server (Roslyn) runs on .NET 10; people who stay on .NET 8 / 9 keep hitting a server that will not start, and a
-        // balloon is not enough — a modal dialog says it plainly (and only when the server is on and no .NET 10 SDK is present)
-        if (installed.isNotEmpty() && missingDotNet10(installed) && RoslynLanguageServerSettings.getInstance().state.enabled) {
+        // balloon is not enough — a modal dialog says it plainly (and only when the server is on and no .NET 10 SDK or runtime is present)
+        if (installed.isNotEmpty() && missingDotNet10(installed) && !DotNetRuntimes.hasNetCoreApp(runtimes, SERVER_SDK_MAJOR) && RoslynLanguageServerSettings.getInstance().state.enabled) {
+            PluginLog.warn(DotNetSdks.LOG_CATEGORY, "no .NET $SERVER_SDK_MAJOR SDK or runtime for the C# language server: the dialog is shown")
             warnNoDotNet10(project, installed)
         }
 
@@ -48,6 +54,7 @@ class SdkCheckActivity : ProjectActivity {
         if (installed.isEmpty() || globalJson.resolve(installed) != null) return
 
         val required = globalJson.version
+        PluginLog.warn(DotNetSdks.LOG_CATEGORY, "global.json of ${file.path} requires SDK ${required ?: "?"} (rollForward: ${globalJson.rollForward}), installed: ${installed.joinToString(", ")}")
         group.createNotification(
             "global.json requires .NET SDK ${required ?: ""}".trim(),
             "No installed SDK satisfies it (rollForward: ${globalJson.rollForward}). Installed: ${installed.joinToString(", ")}. Builds and restores will fail.",

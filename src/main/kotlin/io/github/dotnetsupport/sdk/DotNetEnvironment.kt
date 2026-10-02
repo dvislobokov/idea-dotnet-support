@@ -129,7 +129,7 @@ class DotNetEnvironment(
             val directory = project?.guessProjectDir()?.path?.takeIf { java.io.File(it).isDirectory }
             fun run(vararg arguments: String) = runCatching {
                 DotNetCli.execute(DotNetCli.commandLine(directory, *arguments).withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en"), 60_000)
-            }.getOrNull()
+            }.onFailure { io.github.dotnetsupport.cli.PluginLog.warn(DotNetSdks.LOG_CATEGORY, "`dotnet ${arguments.joinToString(" ")}` could not run", it) }.getOrNull()
 
             val info = run("--info")?.stdout?.takeIf { it.isNotBlank() }?.let(DotNetInfo::parse)
             val check = run("sdk", "check")

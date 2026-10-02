@@ -39,6 +39,7 @@ import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetHelper
+import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.lang.CSharpDeclarations
 import io.github.dotnetsupport.lang.DeclarationKind
 import io.github.dotnetsupport.monitor.MonitorTarget
@@ -77,7 +78,7 @@ class AllocationsService(private val project: Project) : Disposable {
         get() = PropertiesComponent.getInstance(project).getBoolean(ENABLED_KEY, false)
         set(value) {
             PropertiesComponent.getInstance(project).setValue(ENABLED_KEY, value, false)
-            LOG.info("Allocations in the editor are switched ${if (value) "on" else "off"}")
+            PluginLog.info(LOG_CATEGORY, "allocations in the editor are switched ${if (value) "on" else "off"}")
             if (!value) return stop()
             // the one who has switched it on is told what has come of it; a program started later is listened to in silence
             val running = RunningDotNetProcesses.getInstance(project).targets().firstOrNull()
@@ -97,22 +98,23 @@ class AllocationsService(private val project: Project) : Disposable {
         if (ApplicationManager.getApplication().isUnitTestMode) return
         stop()
         this.target = target
-        LOG.info("Allocations: the program to listen to is $target")
+        PluginLog.info(LOG_CATEGORY, "the program to listen to is $target")
         ApplicationManager.getApplication().executeOnPooledThread {
             val dll = HELPER.ensureBuilt()
             if (dll == null) {
+                PluginLog.error(LOG_CATEGORY, "the watcher could not be built: ${HELPER.failure.orEmpty().lines().firstOrNull().orEmpty()}")
                 DotNetCli.notifyError(project, TITLE, "The watcher of allocations could not be built. Its first build needs the NuGet feed.<br>" +
                     StringUtil.escapeXmlEntities(HELPER.failure.orEmpty().takeLast(400)))
                 return@executeOnPooledThread
             }
             val candidates = candidates(target)
             if (this.target != target || project.isDisposed) {
-                LOG.info("Allocations: $target is not listened to, another one has been chosen since")
+                PluginLog.info(LOG_CATEGORY, "$target is not listened to, another one has been chosen since")
                 return@executeOnPooledThread
             }
             if (candidates == null) {
                 // a run that has ended before its program was seen is no failure
-                if (ProcessSampler.tree(target.pid).isEmpty()) LOG.info("Allocations: $target has ended before it could be listened to")
+                if (ProcessSampler.tree(target.pid).isEmpty()) PluginLog.info(LOG_CATEGORY, "$target has ended before it could be listened to")
                 else failed("The program of $target was not found among the processes of the run.")
                 return@executeOnPooledThread
             }
@@ -121,11 +123,13 @@ class AllocationsService(private val project: Project) : Disposable {
                 failed("The folder of the project is not known.")
                 return@executeOnPooledThread
             }
-            val command = DotNetCli.commandLine(root, dll.path, "--pid", candidates.joinToString(","), "--root", root, "--window", WINDOW_SECONDS.toString())
-            LOG.info("Allocations: ${command.commandLineString}")
-            val handler = runCatching { OSProcessHandler(command) }.getOrElse {
-                LOG.warn("The watcher of allocations could not be started", it)
-                failed("The watcher could not be started: ${it.message}")
+            // `commandLine` throws when dotnet has gone since the build of the watcher
+            val handler = runCatching {
+                val command = DotNetCli.commandLine(root, dll.path, "--pid", candidates.joinToString(","), "--root", root, "--window", WINDOW_SECONDS.toString())
+                PluginLog.info(LOG_CATEGORY, "starting the watcher: ${command.commandLineString}")
+                OSProcessHandler(command)
+            }.getOrElse {
+                failed("The watcher could not be started: ${PluginLog.describe(it)}")
                 return@executeOnPooledThread
             }
             handler.addProcessListener(Reader(handler, target, announce))
@@ -135,7 +139,7 @@ class AllocationsService(private val project: Project) : Disposable {
     }
 
     private fun failed(reason: String) {
-        LOG.warn("Allocations: $reason")
+        PluginLog.error(LOG_CATEGORY, reason)
         if (!project.isDisposed) DotNetCli.notifyError(project, TITLE, StringUtil.escapeXmlEntities(reason))
     }
 
@@ -148,7 +152,7 @@ class AllocationsService(private val project: Project) : Disposable {
             val tree = ProcessSampler.tree(target.pid)
             if (tree.isEmpty()) return null
             val found = AllocationTargets.order(described(tree, commandLines))
-            if (found.isNotEmpty()) return found.also { LOG.info("Allocations: of ${tree.size} processes of the run, the program is among $it") }
+            if (found.isNotEmpty()) return found.also { PluginLog.info(LOG_CATEGORY, "of ${tree.size} processes of the run, the program is among $it") }
             Thread.sleep(FIND_PERIOD_MS)
         }
         return null
@@ -161,7 +165,7 @@ class AllocationsService(private val project: Project) : Disposable {
     private fun described(tree: List<ProcessHandle>, commandLines: MutableMap<Long, String>): List<AllocationTargets.Candidate> {
         if (tree.any { !it.info().commandLine().isPresent && it.pid() !in commandLines }) {
             val listed = runCatching { OSProcessUtil.getProcessList().associate { it.pid.toLong() to it.commandLine.orEmpty() } }
-                .getOrElse { LOG.warn("Allocations: the list of processes is not available", it); emptyMap() }
+                .getOrElse { PluginLog.warn(LOG_CATEGORY, "the list of processes is not available", it); emptyMap() }
             for (handle in tree) commandLines[handle.pid()] = listed[handle.pid()].orEmpty()
         }
         return tree.map { handle ->
@@ -188,13 +192,13 @@ class AllocationsService(private val project: Project) : Disposable {
                 when (val message = AllocationReports.parse(line)) {
                     is AllocationMessage.Snapshot -> ApplicationManager.getApplication().invokeLater({ if (watcher === handler) apply(message) }, ModalityState.any())
                     is AllocationMessage.Stopped -> {
-                        LOG.info("The watcher of allocations has stopped: ${message.reason}")
+                        PluginLog.info(LOG_CATEGORY, "the watcher has stopped: ${message.reason}")
                         // it has never listened: the reason is why nothing is written in the editor
                         if (!listening && watcher === handler) failed("The watcher could not listen to $target: ${message.reason}")
                     }
                     is AllocationMessage.Started -> {
                         listening = true
-                        LOG.info("The watcher of allocations listens to the process ${message.pid}")
+                        PluginLog.info(LOG_CATEGORY, "the watcher listens to the process ${message.pid}")
                         if (announce && !project.isDisposed) DotNetCli.notifyInfo(project, TITLE, "Listening to $target. The numbers come in a few seconds, at the lines of the files that are open.")
                     }
                     null -> Unit
@@ -203,7 +207,9 @@ class AllocationsService(private val project: Project) : Disposable {
         }
 
         override fun processTerminated(event: ProcessEvent) {
-            if (errors.isNotBlank()) LOG.warn("The watcher of allocations (exit code ${event.exitCode}) has said: ${errors.toString().trim()}")
+            val tail = errors.toString().trim().lines().takeLast(5).joinToString("\n")
+            if (event.exitCode != 0 || tail.isNotBlank()) PluginLog.warn(LOG_CATEGORY, "the watcher has exited with code ${event.exitCode}" + if (tail.isNotBlank()) ", it said:\n$tail" else "")
+            else PluginLog.info(LOG_CATEGORY, "the watcher has exited")
             if (watcher === handler) {
                 watcher = null
                 if (!listening && event.exitCode != 0 && errors.isNotBlank()) failed("The watcher has failed: " + errors.toString().trim().takeLast(400))
@@ -318,7 +324,8 @@ class AllocationsService(private val project: Project) : Disposable {
     }
 
     companion object {
-        private val LOG = logger<AllocationsService>()
+        /** The category of the journal of the plugin for the watcher of allocations. */
+        const val LOG_CATEGORY = "allocations"
         val HELPER = DotNetHelper("allocwatch", "AllocWatch", "HelperFramework")
         val SHOWN: Key<Shown> = Key.create("dotnet.allocations.shown")
         val HOT: JBColor = JBColor(Color(0xE6, 0x6D, 0x17), Color(0xC7, 0x7D, 0x55))

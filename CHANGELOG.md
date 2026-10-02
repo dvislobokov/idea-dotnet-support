@@ -3,6 +3,22 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.19
+
+- **.NET | Plugin Logs**: the journal of the plugin in a tool window — what it started, what came back, what failed and why,
+  one line per event, nothing of the IDE in it. The same journal is in `~/idea-dotnet-logs/plugin/plugin-<day>.log`
+  (.NET | Open Logs Folder, formerly Show Plugin Logs). Failures of external programs are described by their exit code
+  and last lines, not by stack traces
+- The C# language server explains why it did not start: the runtime its host asked for, where the host looked and what
+  it found there (`You must install or update .NET`), with the `dotnet` the plugin uses and its runtimes in the journal.
+  The server is started with `DOTNET_ROOT` set to the installation of that `dotnet`, so a .NET 10 in a folder of its own
+  is found even when the machine registers an older one
+- Notifications for what used to vanish silently: the server process that could not be created, the debug adapter that
+  exited in the middle of a session, the indexer of assemblies that could not be built. Every error notification has a
+  "Plugin Logs" button
+- The check at the opening of a solution lists the SDKs and the runtimes in the journal, and the ".NET 10 is missing"
+  dialog looks at the runtimes too, not only the SDKs
+
 ## 0.1.18
 
 - Settings | Tools | .NET: **Additional search folders** for the dotnet CLI. Each folder and its immediate `dotnet*`

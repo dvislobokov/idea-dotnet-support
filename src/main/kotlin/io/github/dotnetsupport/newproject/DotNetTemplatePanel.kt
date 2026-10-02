@@ -148,7 +148,8 @@ class DotNetTemplatePanel {
             val help = try {
                 val arguments = listOfNotNull("new", template.shortName, "--help", language?.let { "--language" }, language)
                 io.github.dotnetsupport.cli.DotNetCli.execute(io.github.dotnetsupport.cli.DotNetCli.commandLine(null, *arguments.toTypedArray()).withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en"), 60_000).stdout
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                io.github.dotnetsupport.cli.PluginLog.warn(DotNetTemplates.LOG_CATEGORY, "`dotnet new ${template.shortName} --help` could not run, no options are shown", e)
                 ""
             }
             val loaded = TemplateOptions.parse(help)

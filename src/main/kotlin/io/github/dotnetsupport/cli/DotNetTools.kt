@@ -89,9 +89,9 @@ enum class DotNetTool(val packageId: String, val purpose: String, val documentat
         val found = configured() ?: detect()
         val now = found?.path ?: NOT_FOUND
         if (LAST_FOUND.put(this, now) != now) {
-            if (found != null) LOG.info("$command: $found (${if (configured() != null) "the path from the settings" else "found by the plugin"})")
+            if (found != null) PluginLog.info(LOG_CATEGORY, "$command: $found (${if (configured() != null) "the path from the settings" else "found by the plugin"})")
             else {
-                LOG.info("$command is not found: not on the PATH of the IDE and not in ${searchDirectories().joinToString(", ")}")
+                PluginLog.warn(LOG_CATEGORY, "$command is not found: not on the PATH of the IDE and not in ${searchDirectories().joinToString(", ")}")
                 describeSearchOnce()
             }
         }
@@ -110,14 +110,22 @@ enum class DotNetTool(val packageId: String, val purpose: String, val documentat
      * Returns the exit code, or -1 with the reason passed to [onText] when `dotnet` cannot be started.
      */
     fun installBlocking(onText: (String) -> Unit): Int = try {
-        val handler = CapturingProcessHandler(DotNetCli.commandLine(null, *installCommand().toTypedArray()).withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en"))
+        val command = DotNetCli.commandLine(null, *installCommand().toTypedArray()).withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en")
+        val tag = "Installing $packageId"
+        DotNetLogs.commandStarted(tag, command)
+        val handler = CapturingProcessHandler(command)
         handler.addProcessListener(object : ProcessListener {
             override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
-                if (outputType !== ProcessOutputTypes.SYSTEM) onText(event.text)
+                if (outputType === ProcessOutputTypes.SYSTEM) return
+                onText(event.text)
+                DotNetLogs.command(if (outputType === ProcessOutputTypes.STDERR) "$tag | err" else tag, event.text)
             }
         })
-        handler.runProcess(600_000).exitCode
+        val result = handler.runProcess(600_000)
+        DotNetLogs.commandFinished(tag, if (result.isTimeout) "timed out" else "exit code ${result.exitCode}", failed = result.exitCode != 0 || result.isTimeout, lastLines = DotNetCli.lastLines(result, 5))
+        result.exitCode
     } catch (e: Exception) {
+        PluginLog.warn(LOG_CATEGORY, "$packageId could not be installed", e)
         onText(e.message.orEmpty())
         -1
     }
@@ -142,7 +150,8 @@ enum class DotNetTool(val packageId: String, val purpose: String, val documentat
     }
 
     companion object {
-        private val LOG = com.intellij.openapi.diagnostic.logger<DotNetTool>()
+        /** The category of the journal of the plugin for the global tools: where each one was found or looked for. */
+        const val LOG_CATEGORY = "tools"
         private const val NOT_FOUND = "-"
 
         /** What [find] gave last for each tool, so that the log has a line when it changes and not on every call. */
@@ -158,8 +167,8 @@ enum class DotNetTool(val packageId: String, val purpose: String, val documentat
             if (!DESCRIBED.compareAndSet(false, true)) return
             val ide = com.intellij.util.EnvironmentUtil.getEnvironmentMap()["PATH"].orEmpty()
             val process = System.getenv("PATH").orEmpty()
-            LOG.info("PATH of the IDE (${ide.split(File.pathSeparatorChar).size} entries, ${if (ide == process) "the same as the process, the shell environment may not be loaded" else "from the shell"}): $ide")
-            LOG.info("DOTNET_CLI_HOME=${System.getenv("DOTNET_CLI_HOME")}, DOTNET_ROOT=${System.getenv("DOTNET_ROOT")}, HOME=${System.getProperty("user.home")}")
+            PluginLog.info(LOG_CATEGORY, "PATH of the IDE (${ide.split(File.pathSeparatorChar).size} entries, ${if (ide == process) "the same as the process, the shell environment may not be loaded" else "from the shell"}): $ide")
+            PluginLog.info(LOG_CATEGORY, "DOTNET_CLI_HOME=${System.getenv("DOTNET_CLI_HOME")}, DOTNET_ROOT=${System.getenv("DOTNET_ROOT")}, HOME=${System.getProperty("user.home")}")
         }
     }
 }

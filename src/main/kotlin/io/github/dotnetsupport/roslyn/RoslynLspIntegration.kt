@@ -4,7 +4,6 @@ import com.intellij.application.options.CodeStyle
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
-import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
@@ -40,7 +39,9 @@ import com.intellij.platform.lsp.api.customization.LspSemanticTokensCustomizer
 import com.intellij.platform.lsp.api.customization.LspSemanticTokensSupport
 import com.intellij.platform.lsp.api.lsWidget.LspClientWidgetItem
 import com.intellij.psi.PsiFile
+import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetTool
+import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.format.DotNetFormattingSettings
 import io.github.dotnetsupport.lang.CSharpFileType
 import io.github.dotnetsupport.lsp.RoslynCodeStyle
@@ -58,7 +59,6 @@ import java.awt.event.MouseEvent
 import java.io.File
 import java.nio.charset.StandardCharsets
 
-private val LOG = logger<RoslynLspIntegrationProvider>()
 
 fun isCSharpSource(file: VirtualFile): Boolean = !file.isDirectory && file.extension.equals("cs", ignoreCase = true)
 
@@ -91,7 +91,11 @@ class RoslynLspIntegrationProvider : LspIntegrationProvider {
             if (ApplicationManager.getApplication().isUnitTestMode && !startInTests) return null
             val root = project.guessProjectDir() ?: return null
             val workspace = project.service<RoslynWorkspace>()
-            val executable = DotNetTool.ROSLYN_LANGUAGE_SERVER.find() ?: run { workspace.offerInstallation(); return null }
+            val executable = DotNetTool.ROSLYN_LANGUAGE_SERVER.find() ?: run {
+                PluginLog.warn(RoslynWorkspace.LOG_CATEGORY, "${DotNetTool.ROSLYN_LANGUAGE_SERVER.packageId} is not installed: the server is not started, the installation is offered")
+                workspace.offerInstallation()
+                return null
+            }
             workspace.wrapServer()
             return RoslynClientDescriptor(project, root, executable)
         }
@@ -117,16 +121,36 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
         val logDirectory = RoslynLanguageServerConfigurable.defaultLogDirectory().apply { mkdirs() }
         // a solution is opened by the plugin, so the server is not told to look for one: the folder is walked here, once per start
         val solutionFound = workspace.scan().solutions.isNotEmpty()
-        return GeneralCommandLine(executable.path)
+        val command = GeneralCommandLine(executable.path)
             .withParameters(RoslynLanguageServer.arguments(settings, logDirectory.path, ProcessHandle.current().pid(), solutionFound))
             .withWorkDirectory(root.path).withCharset(StandardCharsets.UTF_8)
             .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
             .withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en")
+        // the host of the tool must find the runtime where the `dotnet` of the plugin is, not in whatever installation the machine registers
+        val dotnetRoot = RoslynPolicy.dotnetRoot(command.parentEnvironment["DOTNET_ROOT"], DotNetCli.findExecutable())
+        if (dotnetRoot != null) command.withEnvironment("DOTNET_ROOT", dotnetRoot)
+        PluginLog.info(RoslynWorkspace.LOG_CATEGORY, "starting: ${command.commandLineString}\n  in ${root.path}, DOTNET_ROOT=${dotnetRoot ?: "not set"}, log: ${logDirectory.path}")
+        return command
     }
 
-    /** The process itself is kept: the widget of the status bar shows what it costs. */
-    override fun startServerProcess(): com.intellij.execution.process.BaseProcessHandler<*> =
-        super.startServerProcess().also { handler -> workspace.serverStarted(runCatching { handler.process.toHandle() }.getOrNull()) }
+    /** The process itself is kept: the widget of the status bar shows what it costs, and what it prints to its error stream explains a crash. */
+    override fun startServerProcess(): com.intellij.execution.process.BaseProcessHandler<*> {
+        val handler = try {
+            super.startServerProcess()
+        } catch (e: Exception) {
+            workspace.serverFailedToStart(e)
+            throw e
+        }
+        workspace.serverStarted(runCatching { handler.process.toHandle() }.getOrNull())
+        handler.addProcessListener(object : com.intellij.execution.process.ProcessListener {
+            override fun onTextAvailable(event: com.intellij.execution.process.ProcessEvent, outputType: com.intellij.openapi.util.Key<*>) {
+                if (outputType === com.intellij.execution.process.ProcessOutputTypes.STDERR) workspace.serverPrinted(event.text)
+            }
+
+            override fun processTerminated(event: com.intellij.execution.process.ProcessEvent) = workspace.serverExited(event.exitCode)
+        })
+        return handler
+    }
 
     /**
      * The platform writes `file:///c%3A/...` as VS Code does, and server 5.12 then takes the document for a loose file outside the

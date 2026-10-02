@@ -17,6 +17,8 @@ import com.intellij.ui.components.JBTabbedPane
 import com.intellij.ui.components.JBTextArea
 import com.intellij.util.ui.JBUI
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.cli.DotNetLogs
+import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.nuget.NuGetClient
 import io.github.dotnetsupport.nuget.NuGetPackageInfo
 import io.github.dotnetsupport.nuget.NuGetService
@@ -100,11 +102,13 @@ object TemplatePackages {
 
     /** Blocking. */
     fun installed(): List<InstalledTemplatePackage> =
-        runCatching { parseInstalled(DotNetCli.execute(english("new", "uninstall"), 60_000).stdout) }.getOrDefault(emptyList())
+        runCatching { parseInstalled(DotNetCli.execute(english("new", "uninstall"), 60_000).stdout) }
+            .onFailure { PluginLog.warn(DotNetTemplates.LOG_CATEGORY, "`dotnet new uninstall` (the list of template packages) could not run", it) }.getOrDefault(emptyList())
 
     /** Blocking; asks the feeds. */
     fun updates(): List<TemplatePackageUpdate> =
-        runCatching { parseUpdates(DotNetCli.execute(english("new", "update", "--check-only"), 120_000).stdout) }.getOrDefault(emptyList())
+        runCatching { parseUpdates(DotNetCli.execute(english("new", "update", "--check-only"), 120_000).stdout) }
+            .onFailure { PluginLog.warn(DotNetTemplates.LOG_CATEGORY, "`dotnet new update --check-only` could not run", it) }.getOrDefault(emptyList())
 
     /** What `dotnet new search` looks through: the packages of nuget.org marked as templates. Blocking. */
     fun search(query: String, client: NuGetClient = NuGetClient()): List<NuGetPackageInfo> =
@@ -260,15 +264,23 @@ class TemplatePackagesDialog(parent: Component) : DialogWrapper(parent, false) {
         setBusy(true)
         log.append("> dotnet ${arguments.joinToString(" ")}\n")
         background {
+            val tag = "Template packages"
             val exitCode = try {
-                val handler = CapturingProcessHandler(DotNetCli.commandLine(null, *arguments))
+                val command = DotNetCli.commandLine(null, *arguments)
+                DotNetLogs.commandStarted(tag, command)
+                val handler = CapturingProcessHandler(command)
                 handler.addProcessListener(object : ProcessListener {
                     override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
-                        if (outputType !== ProcessOutputTypes.SYSTEM) onEdt { log.append(event.text); log.caretPosition = log.document.length }
+                        if (outputType === ProcessOutputTypes.SYSTEM) return
+                        DotNetLogs.command(if (outputType === ProcessOutputTypes.STDERR) "$tag | err" else tag, event.text)
+                        onEdt { log.append(event.text); log.caretPosition = log.document.length }
                     }
                 })
-                handler.runProcess(300_000).exitCode
+                val result = handler.runProcess(300_000)
+                DotNetLogs.commandFinished(tag, if (result.isTimeout) "timed out" else "exit code ${result.exitCode}", failed = result.exitCode != 0 || result.isTimeout, lastLines = DotNetCli.lastLines(result, 5))
+                result.exitCode
             } catch (e: Exception) {
+                DotNetLogs.commandFinished(tag, "cannot start: ${e.message}", failed = true)
                 onEdt { log.append(e.message.orEmpty() + "\n") }
                 -1
             }

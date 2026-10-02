@@ -207,7 +207,8 @@ footer a { color: var(--text-2); }
 <tr><td>Welcome to C# Project Support</td><td>Страница о возможностях плагина.</td></tr>
 <tr><td>Plugin Documentation</td><td>Эта страница.</td></tr>
 <tr><td>Suggestion Statistics</td><td>Как часто подсказки редактора показаны и приняты. Считается только на этой машине.</td></tr>
-<tr><td>Show Plugin Logs, Show Debugger Logs</td><td>Открывают папки журналов плагина и отладчика.</td></tr>
+<tr><td>Plugin Logs</td><td>Журнал плагина в окне: что запущено, что вернулось, что не удалось и почему. Только события плагина, без записей IDE.</td></tr>
+<tr><td>Open Logs Folder, Show Debugger Logs</td><td>Открывают папки журналов плагина и отладчика.</td></tr>
 <tr><td>Trace Debugger Protocol</td><td>Записывает обмен с отладчиком в следующих сеансах отладки. Нужно для сообщения об ошибке.</td></tr>
 </tbody></table></div>
 <h3>Контекстное меню панели Solution</h3>
@@ -538,7 +539,7 @@ footer a { color: var(--text-2); }
 <tr><td>Настройки плагина на этой машине</td><td>Файл <code>dotnet-support.xml</code> в папке настроек IDE.</td></tr>
 <tr><td>Форматтер проекта</td><td><code>.idea/dotnet.xml</code>. Файл можно хранить в репозитории, чтобы команда форматировала одинаково.</td></tr>
 <tr><td>Параметры сборки проекта</td><td>Рабочие файлы проекта в <code>.idea</code>; в репозиторий не попадают.</td></tr>
-<tr><td>Журналы</td><td><code>~/idea-dotnet-logs</code>: команды <code>dotnet</code> с выводом, журналы сборки, отладчика и сервера языка.</td></tr>
+<tr><td>Журналы</td><td><code>~/idea-dotnet-logs</code>: журнал плагина (<code>plugin</code>), команды <code>dotnet</code> с выводом (<code>commands</code>), журналы сборки, отладчика и сервера языка. Старше двух недель удаляются.</td></tr>
 <tr><td>Кэши</td><td>Папка <code>dotnet-support</code> в системной папке IDE: индекс библиотек, вспомогательные программы, кэш ответов сервера. Удаление безопасно: всё создаётся заново.</td></tr>
 <tr><td>Рядом с вашими проектами</td><td>Плагин ничего не создаёт, кроме стандартной папки <code>.idea</code>.</td></tr>
 </tbody></table></div>
@@ -555,7 +556,10 @@ footer a { color: var(--text-2); }
 <tr><td>Пакеты не восстанавливаются</td><td>Откройте вкладку Log окна NuGet. Для закрытого источника включите «Разрешить интерактивную аутентификацию» на странице <a href="#settings-nuget">NuGet</a>.</td></tr>
 <tr><td>Нет значений расхода памяти</td><td>Проверьте, что пункт Show Allocations in Editor отмечен, решение собрано, а приложение запущено из IDE. Причина неудачи показывается уведомлением.</td></tr>
 </tbody></table></div>
-<p>Если причина не нашлась, откройте <b>.NET | Show Plugin Logs</b> и приложите папку журналов к сообщению об ошибке.</p>
+<p>Если причина не нашлась, откройте <b>.NET | Plugin Logs</b>: это журнал плагина — что он запускал, что вернулось, что не удалось и почему,
+по строке на событие (время, уровень, категория: <code>dotnet</code>, <code>roslyn</code>, <code>debugger</code>, <code>nuget</code>…), без записей самой IDE.
+Кнопка «Warnings and Errors Only» оставляет только проблемы. Тот же журнал лежит в <code>~/idea-dotnet-logs/plugin</code>; <b>.NET | Open Logs Folder</b>
+открывает папку, которую можно целиком приложить к сообщению об ошибке.</p>
 </section>
 </main>
 </div>

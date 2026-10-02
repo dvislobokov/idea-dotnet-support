@@ -37,6 +37,7 @@ import io.github.dotnetsupport.actions.SolutionContext
 import io.github.dotnetsupport.build.BuildViewCommandOutput
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetTool
+import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.newproject.DotNetTemplates
 import io.github.dotnetsupport.solution.SolutionService
 import java.awt.BorderLayout
@@ -136,6 +137,9 @@ class UpgradeReport(val target: String, val projects: Int, val effort: Int, val 
 object UpgradeAssistant {
     const val PACKAGE = "upgrade-assistant"
 
+    /** The category of the journal of the plugin for the upgrade assistant. */
+    const val LOG_CATEGORY = "upgrade"
+
     fun findExecutable(): File? = DotNetTool.UPGRADE_ASSISTANT.find()
 
     fun commandLine(executable: File, target: File, targetFramework: String, report: File): GeneralCommandLine =
@@ -183,7 +187,10 @@ class AnalyzeUpgradeAction : AnAction(), DumbAware {
         DotNetCli.runInBackground(project, title, listOf(command), output = capture) {
             val parsed = report.takeIf { it.length() > 0 }?.let { UpgradeReport.parse(it.readText(), File(target.path)) }
             when {
-                parsed == null -> DotNetCli.notifyError(project, title, "The tool produced no report.")
+                parsed == null -> {
+                    PluginLog.warn(UpgradeAssistant.LOG_CATEGORY, "$title: the tool exited with 0 but ${report.path} is empty or not a report")
+                    DotNetCli.notifyError(project, title, "The tool produced no report.")
+                }
                 parsed.incidents.isEmpty() -> DotNetCli.notifyInfo(project, title, "Nothing to fix: no incidents found.")
                 else -> UpgradeReportDialog(project, target.name, parsed).show()
             }

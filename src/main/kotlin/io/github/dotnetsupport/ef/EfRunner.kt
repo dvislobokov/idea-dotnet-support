@@ -14,6 +14,7 @@ import io.github.dotnetsupport.cli.CommandOutput
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetTool
 import io.github.dotnetsupport.cli.DotNetToolManifest
+import io.github.dotnetsupport.cli.PluginLog
 import java.io.File
 
 /** How `dotnet ef` is started: the local tool of the repository through `dotnet ef`, otherwise the executable of the global one. */
@@ -40,6 +41,9 @@ class EfTool private constructor(private val executable: File?, /** Known for a 
 
 /** Runs the commands that change something as tasks of the Build tool window and explains the failures it recognizes. */
 object EfRunner {
+    /** The category of the journal of the plugin for EF Core: `dotnet ef` and what it says. */
+    const val LOG_CATEGORY = "ef"
+
     private const val CONTEXT_CREATION_DOCS = "https://learn.microsoft.com/ef/core/cli/dbcontext-creation"
 
     fun title(command: EfCommand, context: EfContext): String {
@@ -86,6 +90,7 @@ object EfRunner {
         val problem = EfOutputParser.diagnose(output) ?: return false
         val startupProject = context.startupProject ?: context.project
         val startupName = File(startupProject).nameWithoutExtension
+        if (problem != EfProblem.BUILD_FAILED) PluginLog.warn(LOG_CATEGORY, "$title: $problem in ${File(context.project).name} (startup: $startupName)")
         when (problem) {
             EfProblem.TOOL_MISSING -> DotNetTool.EF.offerInstallation(project, title, retry)
             EfProblem.TOOL_NOT_RESTORED -> notify(project, title, "The <code>dotnet-ef</code> tool of the repository manifest is not restored.") {

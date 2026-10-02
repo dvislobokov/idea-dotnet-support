@@ -3,13 +3,11 @@ package io.github.dotnetsupport.debugger
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.OSProcessUtil
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.diagnostic.logger
+import io.github.dotnetsupport.cli.PluginLog
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.TimeUnit
-
-private val LOG = logger<DebugAdapterProcess>()
 
 /**
  * The process of `dotnet-debugger` (the `dotnet-debugger-dap` global tool): DAP over its standard streams. Stopped by killing its process
@@ -26,7 +24,8 @@ class DebugAdapterProcess(commandLine: GeneralCommandLine) {
     init {
         // DAP goes through stdout; stderr has to be drained, or the adapter blocks on a full pipe
         ApplicationManager.getApplication().executeOnPooledThread {
-            runCatching { process.errorStream.bufferedReader().forEachLine { LOG.info("dotnet-debugger: $it") } }
+            runCatching { process.errorStream.bufferedReader().forEachLine { PluginLog.warn(LOG_CATEGORY, "dotnet-debugger stderr: $it") } }
+                .onFailure { PluginLog.warn(LOG_CATEGORY, "the error stream of dotnet-debugger is closed", it) }
         }
     }
 
@@ -35,11 +34,14 @@ class DebugAdapterProcess(commandLine: GeneralCommandLine) {
     /** A moment to exit by itself after `disconnect`, then the whole process tree. */
     fun stop(graceMs: Long = 1000) {
         if (process.waitFor(graceMs, TimeUnit.MILLISECONDS)) return
-        LOG.info("dotnet-debugger (pid ${process.pid()}) has not exited by itself, killing the process tree")
+        PluginLog.info(LOG_CATEGORY, "dotnet-debugger (pid ${process.pid()}) has not exited by itself, killing the process tree")
         if (!OSProcessUtil.killProcessTree(process)) process.destroyForcibly()
     }
 
     companion object {
+        /** The category of the journal of the plugin for the debugger: the adapter and the sessions. */
+        const val LOG_CATEGORY = "debugger"
+
         fun commandLine(adapter: File, log: File?): GeneralCommandLine =
             GeneralCommandLine(listOfNotNull(adapter.path, log?.let { "--log=${it.path}" })).withWorkDirectory(adapter.parentFile)
     }

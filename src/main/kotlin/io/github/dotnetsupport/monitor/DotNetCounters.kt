@@ -3,6 +3,7 @@ package io.github.dotnetsupport.monitor
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.CapturingProcessHandler
 import io.github.dotnetsupport.cli.DotNetTool
+import io.github.dotnetsupport.cli.PluginLog
 import java.io.File
 
 /** A process `dotnet-counters ps` can attach to. */
@@ -47,9 +48,13 @@ object DotNetCounters {
     /** Blocking. */
     fun processes(executable: File): List<DotNetProcess> = try {
         parseProcessList(CapturingProcessHandler(GeneralCommandLine(executable.path, "ps").withCharset(Charsets.UTF_8)).runProcess(15_000).stdout)
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        PluginLog.warn(LOG_CATEGORY, "`dotnet-counters ps` could not run", e)
         emptyList()
     }
+
+    /** The category of the journal of the plugin for the monitor: `dotnet-counters`, `dotnet-stack`, `dotnet-gcdump`, `dotnet-dump`. */
+    const val LOG_CATEGORY = "monitor"
 
     /**
      * ` 26672  app            C:\work\app\bin\Debug\net10.0\app.exe      "C:\...\app.exe" --urls ...`:

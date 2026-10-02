@@ -3,14 +3,13 @@ package io.github.dotnetsupport.monitor
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.OSProcessUtil
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.diagnostic.logger
+import io.github.dotnetsupport.cli.PluginLog
 import java.io.File
 import java.io.InputStreamReader
 import java.util.ArrayDeque
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
-private val LOG = logger<DumpAnalyzer>()
 
 /** A type in `dumpheap -stat`: the method table is what the other commands take (`dumpheap -mt`). */
 class SosType(val methodTable: String, val name: String, val count: Long, val totalSize: Long)
@@ -163,8 +162,13 @@ class SosException(message: String) : Exception(message)
  * a marker instead of a prompt ([SosAnswers]). The first answer is the banner, when the dump has been loaded.
  */
 class DumpAnalyzer(tool: File, val dump: File) : Disposable {
-    private val process: Process = GeneralCommandLine(tool.path, "analyze", dump.path).withCharset(Charsets.UTF_8)
-        .withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en").withRedirectErrorStream(true).createProcess()
+    private val process: Process = try {
+        GeneralCommandLine(tool.path, "analyze", dump.path).withCharset(Charsets.UTF_8)
+            .withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en").withRedirectErrorStream(true).createProcess()
+    } catch (e: Exception) {
+        PluginLog.warn(DotNetCounters.LOG_CATEGORY, "`dotnet-dump analyze ${dump.name}` could not be started", e)
+        throw e
+    }
     private val waiting = ArrayDeque<CompletableFuture<String>>()
     private val answers = SosAnswers()
     private val lock = Any()
@@ -210,7 +214,7 @@ class DumpAnalyzer(tool: File, val dump: File) : Disposable {
                 }
             }
         } catch (e: Exception) {
-            if (!closed) LOG.info("dotnet-dump analyze: ${e.message}")
+            if (!closed) PluginLog.warn(DotNetCounters.LOG_CATEGORY, "`dotnet-dump analyze ${dump.name}` has stopped answering", e)
         } finally {
             dispose()
         }
@@ -224,6 +228,9 @@ class DumpAnalyzer(tool: File, val dump: File) : Disposable {
         }
         left.forEach { it.completeExceptionally(SosException("The analysis of the dump has ended")) }
         runCatching { process.outputStream.write("exit\n".toByteArray()); process.outputStream.flush() }
-        if (!runCatching { process.waitFor(2, TimeUnit.SECONDS) }.getOrDefault(false)) OSProcessUtil.killProcessTree(process)
+        if (!runCatching { process.waitFor(2, TimeUnit.SECONDS) }.getOrDefault(false)) {
+            PluginLog.info(DotNetCounters.LOG_CATEGORY, "`dotnet-dump analyze ${dump.name}` has not exited by itself, killing the process tree")
+            OSProcessUtil.killProcessTree(process)
+        }
     }
 }

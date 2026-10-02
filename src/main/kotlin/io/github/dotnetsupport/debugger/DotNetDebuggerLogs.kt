@@ -52,7 +52,8 @@ object DotNetDebuggerLogs {
         Files.createDirectories(directory)
         outdated(directory.toFile().list().orEmpty().toList(), KEEP - 1, prefix).forEach { directory.resolve(it).toFile().delete() }
         directory.resolve("$prefix${STAMP.format(LocalDateTime.now())}.log").toFile()
-    } catch (_: java.io.IOException) {
+    } catch (e: java.io.IOException) {
+        io.github.dotnetsupport.cli.PluginLog.warn(DebugAdapterProcess.LOG_CATEGORY, "cannot create a log file in $directory", e)
         null
     }
 }

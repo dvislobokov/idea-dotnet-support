@@ -13,6 +13,8 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import io.github.dotnetsupport.build.DotNetBuildSettings
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetTool
+import io.github.dotnetsupport.cli.DotNetLogs
+import io.github.dotnetsupport.cli.PluginLog
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
@@ -113,20 +115,29 @@ class EfMigrationsService(private val project: Project) {
 
     private fun load(context: EfContext, indicator: ProgressIndicator): EfDatabaseStatus {
         val tool = EfTool.find(File(context.project).parentFile) ?: run {
+            PluginLog.warn(EfRunner.LOG_CATEGORY, "dotnet-ef is not installed: the migrations of ${File(context.project).name} are not listed")
             DotNetTool.EF.offerInstallation(project, "EF Core")
             return EfDatabaseStatus.Failed("dotnet-ef is not installed")
         }
+        val tag = "EF Core migrations"
         fun execute(command: EfCommand, options: EfContext): Pair<Int, String> {
-            val result = CapturingProcessHandler(tool.commandLine(command, options)).runProcessWithProgressIndicator(indicator, TIMEOUT_MS, true)
+            val commandLine = tool.commandLine(command, options)
+            DotNetLogs.commandStarted(tag, commandLine)
+            val result = CapturingProcessHandler(commandLine).runProcessWithProgressIndicator(indicator, TIMEOUT_MS, true)
+            DotNetLogs.commandFinished(tag, if (result.isTimeout) "timed out" else "exit code ${result.exitCode}", failed = result.exitCode != 0 || result.isTimeout, lastLines = DotNetCli.lastLines(result, 5))
             return result.exitCode to result.stdout + "\n" + result.stderr
         }
         return try {
             val (exitCode, output) = execute(EfCommand.ListMigrations(), context)
             val json = EfOutputParser.json(output)
-            if (exitCode != 0 || json == null) return EfDatabaseStatus.Failed(failure(output))
+            if (exitCode != 0 || json == null) {
+                PluginLog.warn(EfRunner.LOG_CATEGORY, "the migrations of ${File(context.project).name} could not be listed: ${failure(output)}")
+                return EfDatabaseStatus.Failed(failure(output))
+            }
             val modelChanged = EfOutputParser.pendingModelChanges(execute(EfCommand.HasPendingModelChanges, context.copy(noBuild = true)).second)
             EfDatabaseStatus.Loaded(EfOutputParser.migrations(output), modelChanged)
         } catch (e: Exception) {
+            PluginLog.warn(EfRunner.LOG_CATEGORY, "the migrations of ${File(context.project).name} could not be listed", e)
             EfDatabaseStatus.Failed(e.message.orEmpty())
         }
     }

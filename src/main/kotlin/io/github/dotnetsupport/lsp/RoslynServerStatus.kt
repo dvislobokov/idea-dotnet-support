@@ -65,6 +65,33 @@ object RoslynPolicy {
     fun hasRuntime(listRuntimes: String, major: Int): Boolean =
         listRuntimes.lineSequence().any { Regex("""^Microsoft\.NETCore\.App\s+$major\.""").containsMatchIn(it.trim()) }
 
+    /** What the host of .NET printed before exit code 150: the framework the server wants, where the host looked, what it found there. */
+    class MissingFramework(val required: String, val location: String?, val found: List<String>) {
+        fun describe(): String = "The server needs $required; the dotnet host" + (location?.let { " at $it" } ?: "") +
+            (if (found.isEmpty()) " has no Microsoft.NETCore.App at all." else " has only: ${found.joinToString(", ")}.")
+    }
+
+    /**
+     * The standard error of a server process that did not start because its runtime is missing (`You must install or update .NET`),
+     * read for the message of the plugin: which runtime, and where the host looked (`DOTNET_ROOT`, the registered location, the default).
+     */
+    fun missingFramework(stderr: String): MissingFramework? {
+        if (!stderr.contains("You must install or update .NET")) return null
+        val required = Regex("""Framework: '([^']+)', version '([^']+)'""").find(stderr)?.let { "${it.groupValues[1]} ${it.groupValues[2]}" } ?: return null
+        val location = Regex("""\.NET location:\s*(.+)""").find(stderr)?.groupValues?.get(1)?.trim()
+        val found = Regex("""^\s+(\S+ at \[[^\]]+])\s*$""", RegexOption.MULTILINE).findAll(stderr).map { it.groupValues[1] }.toList()
+        return MissingFramework(required, location, found)
+    }
+
+    /**
+     * `DOTNET_ROOT` for the process of the server: the one of the environment when it is set, otherwise the folder of the `dotnet` the
+     * plugin runs its commands with. The host of a global tool looks for the runtime in `DOTNET_ROOT` first, then in the installation
+     * registered on the machine, which on a machine with a corporate SDK in a folder of its own is the wrong one (seen: the tool built for
+     * .NET 10 started with `/usr/share/dotnet-sdk-8.8.403` while `dotnet` 10 was on PATH).
+     */
+    fun dotnetRoot(environment: String?, dotnetExecutable: String?): String? =
+        environment?.takeIf { it.isNotBlank() } ?: dotnetExecutable?.let { java.io.File(it).absoluteFile.parent }
+
     /**
      * `dotnet format whitespace` is the formatter of Roslyn started as a process, about a second per file; the server runs the same
      * formatter in milliseconds. CSharpier is another formatter and a decision of the team, "None" is nobody at all.

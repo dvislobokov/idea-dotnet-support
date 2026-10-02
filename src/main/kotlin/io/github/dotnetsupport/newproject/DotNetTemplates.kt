@@ -1,6 +1,7 @@
 package io.github.dotnetsupport.newproject
 
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.cli.PluginLog
 
 data class DotNetTemplate(val name: String, val shortName: String, val languages: List<String>, val defaultLanguage: String?) {
     override fun toString(): String = name
@@ -28,24 +29,30 @@ object DotNetTemplates {
     /** Installed project templates. Blocking; returns [BUILT_IN] when the CLI is unavailable or prints something unexpected. */
     fun loadProjectTemplates(): List<DotNetTemplate> = try {
         val output = DotNetCli.execute(DotNetCli.commandLine(null, "new", "list", "--type", "project"), 60_000)
-        parseList(output.stdout).ifEmpty { BUILT_IN }
-    } catch (_: Exception) {
+        parseList(output.stdout).ifEmpty { PluginLog.warn(LOG_CATEGORY, "`dotnet new list --type project` printed no templates the plugin reads (exit code ${output.exitCode}), the built-in list is shown"); BUILT_IN }
+    } catch (e: Exception) {
+        PluginLog.warn(LOG_CATEGORY, "`dotnet new list --type project` could not run, the built-in list is shown", e)
         BUILT_IN
     }
 
     /** Installed item templates (`dotnet new list --type item`); empty when the CLI is unavailable. Blocking. */
     fun loadItemTemplates(): List<DotNetTemplate> = try {
         parseList(DotNetCli.execute(DotNetCli.commandLine(null, "new", "list", "--type", "item"), 60_000).stdout)
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        PluginLog.warn(LOG_CATEGORY, "`dotnet new list --type item` could not run", e)
         emptyList()
     }
 
     /** `net8.0`-style monikers of the installed SDKs, newest first. */
     fun loadFrameworks(): List<String> = try {
         parseSdkList(DotNetCli.execute(DotNetCli.commandLine(null, "--list-sdks"), 30_000).stdout)
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        PluginLog.warn(LOG_CATEGORY, "`dotnet --list-sdks` could not run, no frameworks to choose from", e)
         emptyList()
     }
+
+    /** The category of the journal of the plugin for the templates: `dotnet new` and the template packages. */
+    const val LOG_CATEGORY = "templates"
 
     /**
      * The output is a table whose header is underlined with dashes; column boundaries are taken from

@@ -14,7 +14,6 @@ import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.UserDataHolder
 import com.intellij.openapi.vfs.LocalFileSystem
@@ -31,6 +30,7 @@ import com.intellij.xdebugger.attach.XAttachProcessPresentationGroup
 import io.github.dotnetsupport.DotNetIcons
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetTool
+import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.run.DotNetCommand
 import io.github.dotnetsupport.run.DotNetDebugBuild
 import io.github.dotnetsupport.run.DotNetLaunchArguments
@@ -43,7 +43,6 @@ import org.jetbrains.concurrency.Promise
 import java.util.concurrent.ConcurrentHashMap
 import javax.swing.Icon
 
-private val LOG = logger<DotNetDebugRunner>()
 
 /**
  * Debug of a ".NET Project" configuration (`dotnet run`) and of an attach: the adapter starts the program, the plugin's own client talks
@@ -66,8 +65,14 @@ class DotNetDebugRunner : AsyncProgramRunner<RunnerSettings>() {
                     throw ExecutionException("The debug adapter is not installed: the ${DotNetTool.DEBUGGER.packageId} global tool is not found")
                 }
                 val log = DotNetDebuggerLogs.newAdapterLog()
-                LOG.info("Starting $adapterPath, log: ${log ?: "off"}")
-                val adapter = DebugAdapterProcess(DebugAdapterProcess.commandLine(adapterPath, log))
+                PluginLog.info(DebugAdapterProcess.LOG_CATEGORY, "starting $adapterPath (${if (start.attach) "attach" else "launch"}: ${start.name}), adapter log: ${log ?: "off"}")
+                val adapter = try {
+                    DebugAdapterProcess(DebugAdapterProcess.commandLine(adapterPath, log))
+                } catch (e: Exception) {
+                    PluginLog.error(DebugAdapterProcess.LOG_CATEGORY, "cannot start the debug adapter $adapterPath", e)
+                    throw e
+                }
+                PluginLog.info(DebugAdapterProcess.LOG_CATEGORY, "adapter started, pid ${adapter.pid}")
                 ApplicationManager.getApplication().invokeLater({
                     try {
                         val session = XDebuggerManager.getInstance(project).startSession(environment, object : XDebugProcessStarter() {
@@ -75,11 +80,14 @@ class DotNetDebugRunner : AsyncProgramRunner<RunnerSettings>() {
                         })
                         result.setResult(session.runContentDescriptor)
                     } catch (e: Exception) {
+                        PluginLog.error(DebugAdapterProcess.LOG_CATEGORY, "the debug session could not be started", e)
                         adapter.stop(0)
                         result.setError(e)
                     }
                 }, ModalityState.nonModal())
             } catch (e: Exception) {
+                if (e !is ExecutionException) PluginLog.error(DebugAdapterProcess.LOG_CATEGORY, "cannot start debugging", e)
+                else PluginLog.warn(DebugAdapterProcess.LOG_CATEGORY, "cannot start debugging: ${e.message}")
                 result.setError(e)
             }
         }
@@ -142,7 +150,7 @@ class DotNetProcessAttacherImpl : DotNetProcessAttacher {
                 val environment = ExecutionEnvironmentBuilder.create(project, DefaultDebugExecutor.getDebugExecutorInstance(), profile).build()
                 ExecutionManager.getInstance(project).restartRunProfile(environment)
             } catch (e: Exception) {
-                LOG.warn("Cannot attach to $processId", e)
+                PluginLog.error(DebugAdapterProcess.LOG_CATEGORY, "cannot attach to $processId", e)
                 DotNetCli.notifyError(project, "Attach to Process", e.message ?: e.javaClass.simpleName)
             }
         }, project.disposed)

@@ -21,6 +21,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import io.github.dotnetsupport.DotNetBundle
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.lang.CSharpFileType
 import io.github.dotnetsupport.lsp.RoslynPolicy
 import io.github.dotnetsupport.lsp.RoslynServerStatus
@@ -97,13 +98,14 @@ object DotNetFormatRunner {
             copy.writeText(text)
 
             val command = DotNetCli.commandLine(scratch.path, "format", "whitespace", "--folder", scratch.path, "--include", copy.path)
-            val output = CapturingProcessHandler(command).runProcess(60_000)
+            val output = DotNetCli.execute(command, 60_000)
             return when {
                 output.isTimeout -> FormatResult.Failed("dotnet format did not finish in a minute.")
                 output.exitCode != 0 -> FormatResult.Failed((output.stderr.ifBlank { output.stdout }).trim().lines().lastOrNull { it.isNotBlank() } ?: "dotnet format failed.")
                 else -> copy.readText().let { if (it == text) FormatResult.Unchanged else FormatResult.Formatted(it) }
             }
         } catch (e: Exception) {
+            PluginLog.warn(CSharpierServer.LOG_CATEGORY, "dotnet format could not be started for ${file.name}", e)
             return FormatResult.Failed(e.message ?: "dotnet format could not be started.")
         } finally {
             FileUtil.delete(scratch)

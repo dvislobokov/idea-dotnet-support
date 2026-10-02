@@ -16,6 +16,7 @@ import io.github.dotnetsupport.DotNetIcons
 import io.github.dotnetsupport.build.DotNetBuildCommand
 import io.github.dotnetsupport.build.DotNetBuildOptions
 import io.github.dotnetsupport.build.DotNetBuildService
+import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.build.DotNetBuildSettings
 import io.github.dotnetsupport.cli.DotNetCli
 import java.util.concurrent.CompletableFuture
@@ -79,8 +80,13 @@ object DotNetDebugBuild {
         val properties = DotNetBuildOptions.propertyArguments(DotNetBuildOptions.getInstance(project).state.globalProperties)
         val arguments = MsBuildTargetPath.arguments(projectFile.path, settings.configuration, settings.launchFramework(projectFile), properties)
         val output = DotNetCli.execute(DotNetCli.commandLine(projectFile.parent.path, *arguments.toTypedArray()))
-        if (output.exitCode == 0) MsBuildTargetPath.parse(output.stdout) else null
-    } catch (_: ExecutionException) {
+        if (output.exitCode == 0) MsBuildTargetPath.parse(output.stdout)
+        else null.also { PluginLog.warn(LOG_CATEGORY, "`msbuild -getProperty:TargetPath` of ${projectFile.name} exit code ${output.exitCode}: ${DotNetCli.lastLines(output, 1)}") }
+    } catch (e: ExecutionException) {
+        PluginLog.warn(LOG_CATEGORY, "`msbuild -getProperty:TargetPath` of ${projectFile.name} could not run", e)
         null
     }
+
+    /** The category of the journal of the plugin for running and debugging a project: the build before the run and what it finds. */
+    const val LOG_CATEGORY = "run"
 }

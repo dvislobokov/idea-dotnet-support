@@ -17,6 +17,7 @@ import com.intellij.unscramble.AnalyzeStacktraceUtil
 import com.intellij.util.ui.JBUI
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetTool
+import io.github.dotnetsupport.cli.PluginLog
 import java.awt.BorderLayout
 import java.awt.Dimension
 import java.awt.FlowLayout
@@ -81,6 +82,7 @@ object Diagnostics {
 
             override fun onSuccess() {
                 val problem = failure ?: if (show(output)) return else "The tool printed nothing the plugin understands:\n" + output.trim().lines().take(6).joinToString("\n")
+                PluginLog.warn(DotNetCounters.LOG_CATEGORY, "$title (${DotNetCli.displayString(command)}): $problem")
                 DotNetCli.notifyError(project, title, problem)
             }
         })
