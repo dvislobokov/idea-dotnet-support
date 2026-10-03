@@ -13,8 +13,13 @@ import java.security.MessageDigest
  * [folder] is where the sources are in the resources of the plugin and the name of the folder in the caches, [assembly] the name of
  * the project file and of the dll, [property] the MSBuild property the project takes its framework from, [sources] the files that go
  * with the project file (a helper that stays running has the `Protocol.cs` of `helpers/protocol` among them, see [HelperConnection]).
+ * [library]: the framework of a library that is loaded by somebody else (`netstandard2.0` for the test logger): no SDK to ask, no
+ * runtimeconfig, and the folder can be found without running anything ([existing]).
  */
-class DotNetHelper(private val folder: String, val assembly: String, private val property: String, private val sources: List<String> = listOf("Program.cs")) {
+class DotNetHelper(
+    private val folder: String, val assembly: String, private val property: String, private val sources: List<String> = listOf("Program.cs"),
+    private val library: String? = null,
+) {
     /** Null until built; the failure of a build is remembered for the session, so it is not tried again at every use. */
     @Volatile private var built: File? = null
     @Volatile private var failed: String? = null
@@ -35,12 +40,20 @@ class DotNetHelper(private val folder: String, val assembly: String, private val
         return java.io.RandomAccessFile(File(work, ".lock"), "rw").use { access -> access.channel.lock().use { build(sources, work) } }
     }
 
+    /** A [library] already built (by this IDE or an earlier session), without building it: fit for the UI thread. */
+    fun existing(): File? {
+        built?.takeIf { it.isFile }?.let { return it }
+        val framework = library ?: return null
+        val sources = Sources.read(folder, this.sources + "$assembly.csproj") ?: return null
+        return File(root(), "$folder/${sources.hash}-$framework/bin/$assembly.dll").takeIf { it.isFile }
+    }
+
     private fun build(sources: Sources, work: File): File? {
-        val sdk = sdkVersion(work) ?: return fail("No .NET SDK: `dotnet --version` gave nothing")
-        val framework = framework(sdk) ?: return fail("$assembly needs the SDK of .NET $MINIMAL_SDK or newer, `dotnet --version` says $sdk")
+        val sdk = if (library != null) "" else sdkVersion(work) ?: return fail("No .NET SDK: `dotnet --version` gave nothing")
+        val framework = library ?: framework(sdk) ?: return fail("$assembly needs the SDK of .NET $MINIMAL_SDK or newer, `dotnet --version` says $sdk")
         val directory = File(work, "${sources.hash}-$framework")
         val dll = File(directory, "bin/$assembly.dll")
-        if (dll.isFile && File(directory, "bin/$assembly.runtimeconfig.json").isFile) return dll.also { built = it }
+        if (dll.isFile && (library != null || File(directory, "bin/$assembly.runtimeconfig.json").isFile)) return dll.also { built = it }
 
         val source = File(directory, "src").apply { mkdirs() }
         for ((name, text) in sources.files) File(source, name).apply { parentFile.mkdirs() }.writeText(text)
@@ -54,7 +67,8 @@ class DotNetHelper(private val folder: String, val assembly: String, private val
         if (result.exitCode != 0 || !dll.isFile) {
             return fail("$assembly could not be built (exit code ${result.exitCode}): " + (result.stdout + "\n" + result.stderr).trim().takeLast(ERROR_TAIL))
         }
-        PluginLog.info(LOG_CATEGORY, "$assembly is built for $framework (SDK $sdk): $dll")
+        // a library is built without asking `dotnet --version`: no SDK to name
+        PluginLog.info(LOG_CATEGORY, "$assembly is built for $framework" + (if (sdk.isEmpty()) "" else " (SDK $sdk)") + ": $dll")
         return dll.also { built = it }
     }
 

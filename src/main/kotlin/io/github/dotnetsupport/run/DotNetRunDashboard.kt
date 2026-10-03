@@ -9,10 +9,14 @@ import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessListener
 import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.ide.BrowserUtil
+import com.intellij.execution.dashboard.RunDashboardManager
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.Key
 import com.intellij.ui.JBColor
 import com.intellij.ui.SimpleTextAttributes
+import io.github.dotnetsupport.aspire.AspireDashboard
 
 /*
  * The Services tool window (the run dashboard of the platform) lists the ".NET Project" configurations, as Rider and the Spring Boot
@@ -33,8 +37,15 @@ class DotNetRunDashboardTypes : RunDashboardDefaultTypesProvider {
 /** The first "Now listening on" address of a process, kept on its handler for the dashboard. */
 class ListeningAddressRecorder(private val handler: ProcessHandler) : ProcessListener {
     override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) {
+        // the login link of the dashboard of an Aspire AppHost, token and all: kept here only, never logged
+        if (handler.getUserData(AspireDashboard.KEY) == null) AspireDashboard.loginUrl(event.text)?.let { handler.putUserData(AspireDashboard.KEY, it); refresh() }
         if (handler.getUserData(KEY) != null) return
-        ListeningUrl.parse(event.text)?.let { handler.putUserData(KEY, ListeningUrl.browserUrl(it, null)) }
+        ListeningUrl.parse(event.text)?.let { handler.putUserData(KEY, ListeningUrl.browserUrl(it, null)); refresh() }
+    }
+
+    /** The row is drawn again on the events of the process only; the output that brings an address is not one of them. */
+    private fun refresh() = ApplicationManager.getApplication().invokeLater {
+        ProjectManager.getInstance().openProjects.filter { !it.isDisposed }.forEach { RunDashboardManager.getInstance(it).updateDashboard(false) }
     }
 
     companion object {
@@ -53,12 +64,18 @@ class DotNetRunDashboardCustomizer : RunDashboardCustomizer() {
 
     override fun updatePresentation(customizationBuilder: RunDashboardCustomizationBuilder, settings: RunnerAndConfigurationSettings, descriptor: RunContentDescriptor?): Boolean {
         val handler = descriptor?.processHandler?.takeIf { !it.isProcessTerminated } ?: return false
-        val url = handler.getUserData(ListeningAddressRecorder.KEY)
+        val dashboard = handler.getUserData(AspireDashboard.KEY)
+        // the address an AppHost listens on is its dashboard, which asks for the token without the login link
+        val url = handler.getUserData(ListeningAddressRecorder.KEY).takeIf { dashboard == null }
         val status = handler.getUserData(HotReloadTracker.KEY)
-        if (url == null && status == null) return false
+        if (url == null && status == null && dashboard == null) return false
+        if (dashboard != null) {
+            customizationBuilder.addText("  ", SimpleTextAttributes.GRAYED_ATTRIBUTES)
+            customizationBuilder.link("Open Dashboard") { BrowserUtil.browse(dashboard) }
+        }
         if (url != null) {
             customizationBuilder.addText("  ", SimpleTextAttributes.GRAYED_ATTRIBUTES)
-            customizationBuilder.addLink(url) { BrowserUtil.browse(url) }
+            customizationBuilder.link(url) { BrowserUtil.browse(url) }
         }
         if (status != null) {
             customizationBuilder.addText("  Hot Reload: ", SimpleTextAttributes.GRAYED_ATTRIBUTES)
@@ -66,10 +83,19 @@ class DotNetRunDashboardCustomizer : RunDashboardCustomizer() {
             val environment = handler.getUserData(HotReloadTracker.ENVIRONMENT)
             if (environment != null && status.state == HotReloadState.RESTART_NEEDED) {
                 customizationBuilder.addText("  ", SimpleTextAttributes.GRAYED_ATTRIBUTES)
-                customizationBuilder.addLink("Restart") { HotReloadTracker.restart(environment) }
+                customizationBuilder.link("Restart") { HotReloadTracker.restart(environment) }
             }
         }
         return true
+    }
+
+    /**
+     * `addLink` of the split Services view only makes a text fragment of the same value clickable; the fragment itself is added here
+     * (without it the row showed nothing, seen live in 2026.1).
+     */
+    private fun RunDashboardCustomizationBuilder.link(text: String, action: () -> Unit) {
+        addText(text, SimpleTextAttributes.LINK_PLAIN_ATTRIBUTES)
+        addLink(text) { action() }
     }
 
     private fun attributes(state: HotReloadState): SimpleTextAttributes = when (state.level) {

@@ -1,0 +1,16 @@
+{"event":"runStart","sources":["C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll"]}
+{"event":"message","level":"Informational","text":"NUnit Adapter 5.0.0.0: Test execution started"}
+{"event":"message","level":"Informational","text":"Running all tests in C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll"}
+{"event":"message","level":"Informational","text":"   NUnit3TestExecutor discovered 8 of 8 NUnit test cases using Current Discovery mode, Non-Explicit run"}
+{"event":"message","level":"Informational","text":"Skipped: Shows the reason"}
+{"event":"result","id":"91a5f4d4-e06f-25d1-3b04-19a67517bc75","fqn":"NUnitLive.LiveTests.Doubles(1,2)","displayName":"Doubles(1,2)","line":0,"source":"C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll","outcome":"Passed","resultName":"Doubles(1,2)","durationMs":4}
+{"event":"result","id":"d5d71f15-95d9-8a87-6bb7-1e097554d2cc","fqn":"NUnitLive.LiveTests.Doubles(2,4)","displayName":"Doubles(2,4)","line":0,"source":"C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll","outcome":"Passed","resultName":"Doubles(2,4)","durationMs":0}
+{"event":"result","id":"ffe48fd9-5740-96cb-8a8c-d8e80b6fa29d","fqn":"NUnitLive.LiveTests.Fails","displayName":"Fails","line":0,"source":"C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll","outcome":"Failed","resultName":"Fails","durationMs":321,"message":"  Assert.That(1 + 2, Is.EqualTo(2))\r\n  Expected: 2\r\n  But was:  3\r\n","stackTrace":"   at NUnitLive.LiveTests.Fails() in C:\\tmp\\fw\\nunit\\LiveTests.cs:line 7\r\n\n1)    at NUnitLive.LiveTests.Fails() in C:\\tmp\\fw\\nunit\\LiveTests.cs:line 7\r\n\n"}
+{"event":"result","id":"bb93bdb5-af65-5f69-4c62-9751ebf00502","fqn":"NUnitLive.LiveTests.Skipped","displayName":"Skipped","line":0,"source":"C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll","outcome":"Skipped","resultName":"Skipped","durationMs":0,"message":"Shows the reason","stdout":"Shows the reason"}
+{"event":"result","id":"514246dd-77ae-2440-a71c-4848e0fcb878","fqn":"NUnitLive.LiveTests.Slow1","displayName":"Slow1","line":0,"source":"C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll","outcome":"Passed","resultName":"Slow1","durationMs":1003}
+{"event":"message","level":"Informational","text":"first line of the test output\r\nsecond line\r\n"}
+{"event":"message","level":"Informational","text":"NUnit Adapter 5.0.0.0: Test execution complete"}
+{"event":"result","id":"ec0da6d6-1cdd-bcb1-17af-db1f659e95f1","fqn":"NUnitLive.LiveTests.Slow2","displayName":"Slow2","line":0,"source":"C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll","outcome":"Passed","resultName":"Slow2","durationMs":1003}
+{"event":"result","id":"ecc5c276-3f39-3a54-5103-1581718463e4","fqn":"NUnitLive.LiveTests.WritesOutput","displayName":"WritesOutput","line":0,"source":"C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll","outcome":"Passed","resultName":"WritesOutput","durationMs":0,"stdout":"first line of the test output\r\nsecond line\r\n"}
+{"event":"result","id":"34e0239d-e94d-8a65-ca74-7e7f840983c0","fqn":"NUnitLive.LiveTests+Nested.Inner","displayName":"Inner","line":0,"source":"C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll","outcome":"Passed","resultName":"Inner","durationMs":0}
+{"event":"runComplete","canceled":false,"aborted":false,"elapsedMs":2976}

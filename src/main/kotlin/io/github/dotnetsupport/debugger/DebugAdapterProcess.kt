@@ -59,4 +59,6 @@ class DebugStart(
     /** `launchBrowser` of the profile: the URL the program says it listens on is opened. */
     val launchUrl: String? = null,
     val openBrowser: Boolean = false,
+    /** An Aspire AppHost: the services DCP starts get a debugger too, see [io.github.dotnetsupport.aspire.AspireServiceDebugger]. */
+    val aspireHost: Boolean = false,
 )

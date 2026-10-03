@@ -26,6 +26,7 @@ import com.intellij.openapi.util.NotNullLazyValue
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.util.execution.ParametersListUtil
 import io.github.dotnetsupport.DotNetIcons
+import io.github.dotnetsupport.aspire.AspireHosts
 import io.github.dotnetsupport.build.DotNetBuildSettings
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.msbuild.MsBuildProject
@@ -120,7 +121,7 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
                 ListeningAddressRecorder.attach(handler) // the address, for the row of the Services tool window
                 if (watch) HotReloadTracker.attach(handler, environment) // the Hot Reload state, for the same row
                 // `dotnet watch` opens the browser itself when the profile asks for it
-                if (options.openBrowser && options.command == DotNetCommand.RUN) handler.addProcessListener(ListeningUrlListener(launchUrl()))
+                if (options.openBrowser && options.command == DotNetCommand.RUN) handler.addProcessListener(ListeningUrlListener(launchUrl(), AspireHosts.isAppHost(project, options.projectPath)))
                 ProcessTerminatedListener.attach(handler)
                 return handler
             }

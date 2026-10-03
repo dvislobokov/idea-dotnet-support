@@ -12,7 +12,8 @@ Solution для живой проверки плагина: отладчика (
 | `Lib` | код другого проекта solution: шаг в него, точка останова в нём, сопоставление путей |
 | `Web` | ASP.NET Core: профили `http` / `https` / `no browser`, `launchBrowser`, `launchUrl`, переменные профиля, точка останова в обработчике |
 | `MultiTarget` | `net9.0;net10.0`: отладчик запускает фреймворк, выбранный в тулбаре (или первый при «Default») |
-| `Tests` | xUnit: отладка тестов (`BP:test`, `BP:theory`) |
+| `Tests` | xUnit: отладка тестов (`BP:test`, `BP:theory`); результаты по ходу прогона (`LiveResultsTests`, маркеры `LIVE:`) |
+| `AspireHost` | Aspire 13.6 AppHost, запускает только `Web` (без контейнеров и Docker): Debug AppHost подключает отладчик к `Web` сам (`BP:aspire-service`). Пакеты Aspire берутся из nuget.org при restore, workload не нужен |
 | `Broken` | не компилируется, **в solution не входит** (ломал бы Build Solution): конфигурацию «.NET Project» для `Broken.csproj` создать руками |
 
 Профили `Console`: `All` (всё безопасное), `Launch` (аргументы и окружение), `Threads`, `Evil`, `Crash`, `Wait`, `Input` (ввод с консоли),
@@ -153,6 +154,17 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `TYPE:go-to-base-none`: на `Own` → подсказка «No base symbols of Own found»
 - [ ] `TYPE:go-to-base-type`: на имени класса `GoToBase` → как раньше, список базовых типов `MiddleShape`, `IDisposable`
 
+### Find Usages с группировкой — `Console/Editor/FindUsages.cs` (+ `Lib/UsageLog.cs`)
+Нужен загруженный solution: использования отдаёт сервер. Курсор куда сказано, Alt+F7, окно Find. Группы включаются переключателями самого окна
+(View Options / шестерёнка): Group by Usage Type, Module, File Structure, Merge Usages on the Same Line — те же, что у других языков.
+- [ ] `TYPE:find-usages-field`: на `Counter` → 13: «Read access» 3, «Write access» 7 (`=`, `+=`, `++`, `--`, `ref`, `out`), «Usage in nameof» 2, «Declaration» 1; группы «Unclassified» **нет**
+- [ ] `TYPE:find-usages-field` + Group by File Structure: `UsageSample` → `UsageSample()` / `Read()` / `Write()` / `ByRef()` / `Name()`; `nameof` в атрибуте — прямо под `UsageSample`
+- [ ] `TYPE:find-usages-field` + Merge Usages on the Same Line: два чтения в `Read()` — одна строка
+- [ ] `TYPE:find-usages-method`: на `Record` → «Invocation» 5, «Declaration» 1, «Usage in documentation» 1 (`<see cref>`); Group by Module — проекты `Console` (3) и `Lib` (4)
+- [ ] `TYPE:find-usages-type`: на `UsageSample` → «Declaration» 2, «Usage in base type list», «New instance creation», «Usage in typeof», «Type check (is / as)», «Usage in declaration type», «Usage in type argument», «Usage in nameof»
+- [ ] `TYPE:find-usages-attribute`: на `UsageNoteAttribute` → «Usage in attribute» 1 и «Declaration»
+- [ ] выключить Group by Usage Type / Module / File Structure → соответствующий уровень дерева пропадает, остальное как у Java / Kotlin
+
 ## Окно IL Viewer — `Console/Editor/IlViewer.cs`
 
 Меню .NET → **IL Viewer** (окно справа). Сначала собрать solution (Debug, фреймворк тулбара); места помечены `// IL:<имя>`, в комментарии — что
@@ -259,6 +271,21 @@ Solution для живой проверки плагина: отладчика (
 - [ ] Run | Edit Configurations → + → **Compound** с `Web` и `Console`: Debug запускает обе сессии, сборки по очереди. Run через Compound собирает проекты параллельно (`dotnet run` каждый сам) — общие зависимости могут дать предупреждение о повторной попытке копирования
 - [ ] сборка одного из проектов падает (испортить строку в `Console`) → Run 2 Projects ничего не запускает, ошибка в окне Build
 
+## Aspire — `AspireHost` (шаг 1: распознавание, dashboard, автоподключение отладчика)
+AppHost запускает `Web` как ресурс `web`. Профиль `https` (по умолчанию) требует доверенный dev-сертификат; без него — профиль `http`
+(в нём `ASPIRE_ALLOW_UNSECURED_TRANSPORT=true`, без этой переменной AppHost на http падает при старте).
+- [ ] Solution view: у `AspireHost` своя иконка (как у окна Services), ПКМ — Run / Debug, как у других запускаемых проектов
+- [ ] на свежем открытии solution (автогенерация конфигураций ещё не делалась) конфигурация `AspireHost: https` — первая в списке и выбрана
+- [ ] **Run** `AspireHost: https`: в консоли ссылка на dashboard с `/login?t=…` кликабельна и открывает dashboard без ввода токена; браузер открывается
+  сам на этой ссылке (а не на голом адресе со страницей логина); в Services у строки ссылка **Open Dashboard**, голого адреса рядом нет
+- [ ] **Debug** `AspireHost: https`: в консоли AppHost строка `Aspire: attaching the debugger to Web (<pid>)`, появляется вкладка отладки `Web (<pid>)`;
+  открыть в dashboard адрес ресурса `web` + `/aspire` → остановка на `BP:aspire-service` во вкладке `Web`
+- [ ] `BP:aspire-apphost` в `AspireHost/AppHost.cs` останавливает сессию AppHost; пока она стоит, вкладки `Web` нет (DCP ещё не запущен)
+- [ ] в dashboard у ресурса `web` — Restart: старая вкладка `Web` закрывается, через 1–2 с появляется новая с новым pid, `BP:aspire-service` снова срабатывает
+- [ ] Stop сессии AppHost: вкладка `Web` тоже завершается, процессов `dcp.exe` / `Playground.Web.exe` не остаётся
+- [ ] известное ограничение шага 1: точка на `BP:web-start` (`Web/Program.cs`, старт сервиса) под AppHost обычно **проскакивает** — отладчик подключается
+  после старта процесса; это решит шаг 2 (протокол IDE execution)
+
 ## Attach к процессам .NET Framework (за флагом реестра)
 Нужна программа net4x: любой `.exe` .NET Framework (например, собранный под `net48` или `C:\Windows\Microsoft.NET\Framework64\v4.0.30319\AddInProcess.exe`, если его запустить).
 - [ ] Run | Attach to Process: процесса .NET Framework в группе «.NET» **нет**
@@ -299,3 +326,43 @@ Solution для живой проверки плагина: отладчика (
 - [ ] создать `Views\New.cshtml` → появляется (wildcard); создать `New.cs` в корне проекта → не появляется (его нет в проекте)
 - [ ] `global.json` рядом с `Legacy.sln` с несуществующей версией SDK, перезапустить IDE: в журнале `msbuild` ошибка, дерево показывает все файлы (как до
       помощника), IDE не зависает; убрать `global.json`
+
+## Publish
+Диалог Publish (ПКМ на проекте в Solution view → **Publish...**, или меню .NET → **Publish...**), run configuration «.NET Publish», профили `.pubxml`.
+Вывод `bin\Release\...\publish*` после проверки удалить (`bin` в `.gitignore`, но место занимает).
+- [ ] ПКМ на `Lib` и на `Tests` — пункта **Publish...** нет (не приложения); на `Console` и `Web` — есть; в меню .NET пункт после «Measure Build Performance»
+- [ ] **Console, framework-dependent**: ПКМ на `Console` → Publish...; проект выбран и заблокирован; Configuration `Release`, Target framework `net9.0`,
+      Target runtime `Portable` → Deployment mode, Produce single file, ReadyToRun, Trim выключены; внизу команда
+      `dotnet publish …\Console.csproj -c Release -f net9.0 -o …\Console\bin\Release\net9.0\publish -nologo -clp:NoSummary`, у Target location серым тот же путь;
+      Publish → окно Build «Publish Console» с выводом MSBuild, затем уведомление «Published 'Console'» с кнопкой открыть папку (Show in Explorer / Reveal in Finder) — открывает папку `publish`
+- [ ] **Console, self-contained single file `win-x64`**: Target runtime `win-x64`, Deployment mode `Self-Contained`, Produce single file → в команде
+      `-r win-x64 --self-contained true -p:PublishSingleFile=true`, папка `…\net9.0\win-x64\publish`; после публикации там один `Playground.Console.exe` (~70 МБ)
+      и `appsettings.json` / `.pdb`; Trim unused assemblies включается только при Self-Contained
+- [ ] ошибки: Trim при Framework-Dependent недоступен; в Target runtime набрать `win x64` → ошибка «Target runtime cannot contain spaces», кнопка Publish не публикует
+- [ ] **профиль Console**: Publish profile → `WinX64SingleFile` (лежит в `Console/Properties/PublishProfiles`) → поля заполнились из файла (win-x64, Self-Contained,
+      single file, Target location `bin\Release\net9.0\win-x64\publish-profile\`), в команде `-p:PublishProfile=WinX64SingleFile` и `-p:…=false` у выключенных флагов
+- [ ] **Web по профилю**: ПКМ на `Web` → Publish... → профиль `FolderProfile` (как его пишет Visual Studio: `PublishUrl`, `LastUsedBuildConfiguration`) →
+      Target location `bin\Release\net9.0\publish-folder-profile\`, Portable; публикация кладёт сайт именно туда (сам `dotnet publish` `PublishUrl` не читает — поэтому `-o`)
+- [ ] **Save as Profile...** (кнопка слева внизу): имя `Linux` → появился `Console/Properties/PublishProfiles/Linux.pubxml` со свойствами `PublishDir`,
+      `RuntimeIdentifier`, `SelfContained`, …; профиль выбран в списке; закрыть и открыть диалог — `Linux` в списке, выбор заполняет поля. Файл после проверки удалить
+- [ ] **run configuration**: галочка «Save as run configuration» → после Publish в Run widget конфигурация «Publish Console» (тип «.NET Publish», значок deploy);
+      Edit Configurations — те же поля, что в диалоге; Run → публикация в окне Build, не в консоли Run; повторный Save с другими полями обновляет ту же конфигурацию
+- [ ] диалог помнит последние значения отдельно для `Console` и `Web` (открыть снова — то, с чем публиковали); галочка «Save as run configuration» тоже помнится
+- [ ] **Container** (нужен запущенный Docker / Podman): включить «Publish as a container image», Image name `playground-console`, tag `dev` → в команде
+      `-t:PublishContainer -p:ContainerRepository=playground-console -p:ContainerImageTag=dev`; после публикации `docker images` показывает `playground-console:dev`.
+      Без демона сборка падает с ошибкой контейнерных задач в окне Build. Проверка без Docker — дописать в команду `-p:ContainerArchiveOutputPath=bin\image.tar.gz` руками
+
+## Результаты тестов по ходу прогона — `Tests/LiveResultsTests.cs`
+Логгер VSTest плагина (`testlogger/`) собирается при первом прогоне тестов на машине (окно «Preparing live test results», секунды) и дальше берётся
+из кэша IDE. Сценарий — класс `LiveResultsTests` (xUnit), маркеры `LIVE:` в комментариях.
+- [ ] ▶ у класса `LiveResultsTests` (или Run на `Tests.csproj`): в окне Unit Tests узел класса появляется сразу, тесты — по мере запуска, с крутилкой,
+      и зеленеют / краснеют **по одному, с интервалом около секунды** (`LIVE:slow`), а не все разом в конце; у каждого длительность (у `Slow3` — 3 s).
+      Результат может приходить с задержкой до ~1 s: VSTest отдаёт результаты логгерам пачками
+- [ ] `Fails` (`LIVE:fail`) красный: сообщение `Assert.Equal() Failure: Values differ`, стек со ссылкой `LiveResultsTests.cs:line N`, клик открывает строку
+- [ ] `Skipped` (`LIVE:skip`) серый, с причиной «Shows the reason»
+- [ ] `WritesOutput` (`LIVE:output`): две строки вывода видны, когда выбран этот тест, и не попадают к другим тестам
+- [ ] Stop, пока идёт `Slow3` (`LIVE:stop`): `Slow3` помечен как прерванный (не зелёный), завершённые тесты сохраняют результат
+- [ ] Rerun Failed Tests перезапускает только `Fails`
+- [ ] Debug у `TotalAppliesTheDiscount` (`BP:test`) по-прежнему останавливается; Run with Coverage — покрытие `Lib` в редакторе
+- [ ] в журнале плагина (.NET | Plugin Logs, категория `helpers`) — строка `DotNetSupport.TestLogger is built for netstandard2.0`
+- [ ] проект на Microsoft.Testing.Platform (MSTest runner / xunit.v3 / TUnit): как раньше — дерево из TRX в конце прогона

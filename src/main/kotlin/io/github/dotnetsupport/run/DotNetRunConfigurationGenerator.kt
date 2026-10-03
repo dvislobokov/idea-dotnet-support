@@ -38,6 +38,8 @@ class DotNetRunConfigurationGenerator(private val project: Project) {
             .flatMap { solutionFile -> solutions.solution(solutionFile).allProjects.mapNotNull { it.resolveFile(solutionFile)?.let { file -> it.name to file } } }
             .distinctBy { it.second }
             .filter { (_, file) -> solutions.msBuildProject(file).let { it.isRunnable && !it.isTestProject } }
+            // an Aspire AppHost starts the whole solution: its configuration goes first and is the one selected, as in Rider
+            .sortedByDescending { (_, file) -> solutions.msBuildProject(file).isAspireHost }
             .flatMap { (name, file) ->
                 val profiles = LaunchSettings.profiles(file)
                 if (profiles.isEmpty()) listOf(Target(name, file.path, null))

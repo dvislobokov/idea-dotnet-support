@@ -1,0 +1,121 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="ae6f0207-4e73-45bf-86b6-eddf7b89e021" name="dvislobokov@DESKTOP-PUVEQGK 2026-10-03 21:48:37" runUser="DESKTOP-PUVEQGK\dvislobokov" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-03T21:48:37.6273147+03:00" queuing="2026-10-03T21:48:37.6273149+03:00" start="2026-10-03T21:48:35.5131919+03:00" finish="2026-10-03T21:48:42.3526365+03:00" />
+  <TestSettings name="default" id="c9e97d98-c7d5-4765-974a-646c33c10ec4">
+    <Deployment runDeploymentRoot="dvislobokov_DESKTOP-PUVEQGK_2026-10-03_21_48_37" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="288c60da-bf4d-447e-bb33-7e7dc69a2f3a" testId="00ea04c8-3c03-d120-d886-c2c76a1cffe5" testName="Playground.Tests.PricingTests.DiscountBounds(discount: 0, expected: 21)" computerName="DESKTOP-PUVEQGK" duration="00:00:00.0049087" startTime="2026-10-03T21:48:36.2537089+03:00" endTime="2026-10-03T21:48:36.2537186+03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="288c60da-bf4d-447e-bb33-7e7dc69a2f3a" />
+    <UnitTestResult executionId="4cd557e1-7d85-4d7b-a832-345dd89001dd" testId="b697a0d7-61f6-bdd9-cf49-730e462056e4" testName="Playground.Tests.LiveResultsTests.Skipped" computerName="DESKTOP-PUVEQGK" duration="00:00:00.0010000" startTime="2026-10-03T21:48:40.7692555+03:00" endTime="2026-10-03T21:48:40.7692557+03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="NotExecuted" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4cd557e1-7d85-4d7b-a832-345dd89001dd">
+      <Output>
+        <ErrorInfo>
+          <Message>Shows the reason</Message>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="46480873-6c02-4536-b4e8-ec310992070c" testId="dc1dc433-5f4d-94bd-f382-84aa05e98831" testName="Playground.Tests.PricingTests.TotalAppliesTheDiscount" computerName="DESKTOP-PUVEQGK" duration="00:00:00.0000967" startTime="2026-10-03T21:48:36.2648211+03:00" endTime="2026-10-03T21:48:36.2648213+03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="46480873-6c02-4536-b4e8-ec310992070c" />
+    <UnitTestResult executionId="e35c17f9-2995-4116-b663-90c986173405" testId="14652b85-1510-3f8d-0291-415dabe40c91" testName="Playground.Tests.LiveResultsTests.WritesOutput" computerName="DESKTOP-PUVEQGK" duration="00:00:00.5146330" startTime="2026-10-03T21:48:36.7505098+03:00" endTime="2026-10-03T21:48:36.7505103+03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e35c17f9-2995-4116-b663-90c986173405">
+      <Output>
+        <StdOut>first line of the test output&#xD;
+second line of the test output</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="eaf3a833-7b3d-4375-a3ca-b9f8ba666372" testId="6ab4fd05-f6ba-8005-477b-e9401e51c99c" testName="Playground.Tests.LiveResultsTests.Slow2" computerName="DESKTOP-PUVEQGK" duration="00:00:01.0139852" startTime="2026-10-03T21:48:37.7646470+03:00" endTime="2026-10-03T21:48:37.7646473+03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="eaf3a833-7b3d-4375-a3ca-b9f8ba666372" />
+    <UnitTestResult executionId="1762f979-b0f1-4961-8d43-0fd3c9a34af5" testId="a9e6ee87-7b88-1da3-ca0c-cc0d7158ea16" testName="Playground.Tests.LiveResultsTests.Slow3" computerName="DESKTOP-PUVEQGK" duration="00:00:03.0018245" startTime="2026-10-03T21:48:40.7664864+03:00" endTime="2026-10-03T21:48:40.7664868+03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1762f979-b0f1-4961-8d43-0fd3c9a34af5" />
+    <UnitTestResult executionId="8dfe6c13-887e-404f-8bde-7fcc4cb727dd" testId="f1f394f4-aa48-d8fe-6d81-cd59c73646bd" testName="Playground.Tests.LiveResultsTests.Fails" computerName="DESKTOP-PUVEQGK" duration="00:00:00.5083631" startTime="2026-10-03T21:48:41.2896362+03:00" endTime="2026-10-03T21:48:41.2896365+03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8dfe6c13-887e-404f-8bde-7fcc4cb727dd">
+      <Output>
+        <ErrorInfo>
+          <Message>Assert.Equal() Failure: Values differ&#xD;
+Expected: 2&#xD;
+Actual:   3</Message>
+          <StackTrace>   at Playground.Tests.LiveResultsTests.Fails() in C:\tmp\pg\Tests\LiveResultsTests.cs:line 28&#xD;
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)&#xD;
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="b855ed7e-08ae-4518-9f38-2aff8851a86a" testId="66bc3cb2-4394-ce21-33e7-2acde90c6c24" testName="Playground.Tests.PricingTests.DiscountBounds(discount: 100, expected: 0)" computerName="DESKTOP-PUVEQGK" duration="00:00:00.0001786" startTime="2026-10-03T21:48:36.2634069+03:00" endTime="2026-10-03T21:48:36.2634070+03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b855ed7e-08ae-4518-9f38-2aff8851a86a" />
+    <UnitTestResult executionId="07717706-b7fe-43fc-aafb-84a9cb5e9e36" testId="8dfd358f-e4ed-ef72-e60b-38ad5f91c05d" testName="Playground.Tests.LiveResultsTests.Slow1" computerName="DESKTOP-PUVEQGK" duration="00:00:01.0061171" startTime="2026-10-03T21:48:42.2924701+03:00" endTime="2026-10-03T21:48:42.2924706+03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="07717706-b7fe-43fc-aafb-84a9cb5e9e36" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="Playground.Tests.PricingTests.TotalAppliesTheDiscount" storage="c:\tmp\pg\tests\bin\debug\net9.0\tests.dll" id="dc1dc433-5f4d-94bd-f382-84aa05e98831">
+      <Execution id="46480873-6c02-4536-b4e8-ec310992070c" />
+      <TestMethod codeBase="C:\tmp\pg\Tests\bin\Debug\net9.0\Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Playground.Tests.PricingTests" name="TotalAppliesTheDiscount" />
+    </UnitTest>
+    <UnitTest name="Playground.Tests.LiveResultsTests.WritesOutput" storage="c:\tmp\pg\tests\bin\debug\net9.0\tests.dll" id="14652b85-1510-3f8d-0291-415dabe40c91">
+      <Execution id="e35c17f9-2995-4116-b663-90c986173405" />
+      <TestMethod codeBase="C:\tmp\pg\Tests\bin\Debug\net9.0\Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Playground.Tests.LiveResultsTests" name="WritesOutput" />
+    </UnitTest>
+    <UnitTest name="Playground.Tests.LiveResultsTests.Slow1" storage="c:\tmp\pg\tests\bin\debug\net9.0\tests.dll" id="8dfd358f-e4ed-ef72-e60b-38ad5f91c05d">
+      <Execution id="07717706-b7fe-43fc-aafb-84a9cb5e9e36" />
+      <TestMethod codeBase="C:\tmp\pg\Tests\bin\Debug\net9.0\Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Playground.Tests.LiveResultsTests" name="Slow1" />
+    </UnitTest>
+    <UnitTest name="Playground.Tests.LiveResultsTests.Slow2" storage="c:\tmp\pg\tests\bin\debug\net9.0\tests.dll" id="6ab4fd05-f6ba-8005-477b-e9401e51c99c">
+      <Execution id="eaf3a833-7b3d-4375-a3ca-b9f8ba666372" />
+      <TestMethod codeBase="C:\tmp\pg\Tests\bin\Debug\net9.0\Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Playground.Tests.LiveResultsTests" name="Slow2" />
+    </UnitTest>
+    <UnitTest name="Playground.Tests.LiveResultsTests.Fails" storage="c:\tmp\pg\tests\bin\debug\net9.0\tests.dll" id="f1f394f4-aa48-d8fe-6d81-cd59c73646bd">
+      <Execution id="8dfe6c13-887e-404f-8bde-7fcc4cb727dd" />
+      <TestMethod codeBase="C:\tmp\pg\Tests\bin\Debug\net9.0\Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Playground.Tests.LiveResultsTests" name="Fails" />
+    </UnitTest>
+    <UnitTest name="Playground.Tests.LiveResultsTests.Slow3" storage="c:\tmp\pg\tests\bin\debug\net9.0\tests.dll" id="a9e6ee87-7b88-1da3-ca0c-cc0d7158ea16">
+      <Execution id="1762f979-b0f1-4961-8d43-0fd3c9a34af5" />
+      <TestMethod codeBase="C:\tmp\pg\Tests\bin\Debug\net9.0\Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Playground.Tests.LiveResultsTests" name="Slow3" />
+    </UnitTest>
+    <UnitTest name="Playground.Tests.PricingTests.DiscountBounds(discount: 100, expected: 0)" storage="c:\tmp\pg\tests\bin\debug\net9.0\tests.dll" id="66bc3cb2-4394-ce21-33e7-2acde90c6c24">
+      <Execution id="b855ed7e-08ae-4518-9f38-2aff8851a86a" />
+      <TestMethod codeBase="C:\tmp\pg\Tests\bin\Debug\net9.0\Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Playground.Tests.PricingTests" name="DiscountBounds" />
+    </UnitTest>
+    <UnitTest name="Playground.Tests.LiveResultsTests.Skipped" storage="c:\tmp\pg\tests\bin\debug\net9.0\tests.dll" id="b697a0d7-61f6-bdd9-cf49-730e462056e4">
+      <Execution id="4cd557e1-7d85-4d7b-a832-345dd89001dd" />
+      <TestMethod codeBase="C:\tmp\pg\Tests\bin\Debug\net9.0\Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Playground.Tests.LiveResultsTests" name="Skipped" />
+    </UnitTest>
+    <UnitTest name="Playground.Tests.PricingTests.DiscountBounds(discount: 0, expected: 21)" storage="c:\tmp\pg\tests\bin\debug\net9.0\tests.dll" id="00ea04c8-3c03-d120-d886-c2c76a1cffe5">
+      <Execution id="288c60da-bf4d-447e-bb33-7e7dc69a2f3a" />
+      <TestMethod codeBase="C:\tmp\pg\Tests\bin\Debug\net9.0\Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Playground.Tests.PricingTests" name="DiscountBounds" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="00ea04c8-3c03-d120-d886-c2c76a1cffe5" executionId="288c60da-bf4d-447e-bb33-7e7dc69a2f3a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b697a0d7-61f6-bdd9-cf49-730e462056e4" executionId="4cd557e1-7d85-4d7b-a832-345dd89001dd" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="dc1dc433-5f4d-94bd-f382-84aa05e98831" executionId="46480873-6c02-4536-b4e8-ec310992070c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="14652b85-1510-3f8d-0291-415dabe40c91" executionId="e35c17f9-2995-4116-b663-90c986173405" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6ab4fd05-f6ba-8005-477b-e9401e51c99c" executionId="eaf3a833-7b3d-4375-a3ca-b9f8ba666372" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a9e6ee87-7b88-1da3-ca0c-cc0d7158ea16" executionId="1762f979-b0f1-4961-8d43-0fd3c9a34af5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f1f394f4-aa48-d8fe-6d81-cd59c73646bd" executionId="8dfe6c13-887e-404f-8bde-7fcc4cb727dd" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="66bc3cb2-4394-ce21-33e7-2acde90c6c24" executionId="b855ed7e-08ae-4518-9f38-2aff8851a86a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8dfd358f-e4ed-ef72-e60b-38ad5f91c05d" executionId="07717706-b7fe-43fc-aafb-84a9cb5e9e36" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="9" executed="8" passed="7" failed="1" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 9.0.6)&#xD;
+[xUnit.net 00:00:00.05]   Discovering: Tests&#xD;
+[xUnit.net 00:00:00.09]   Discovered:  Tests&#xD;
+[xUnit.net 00:00:00.09]   Starting:    Tests&#xD;
+[xUnit.net 00:00:04.64]       Shows the reason&#xD;
+[xUnit.net 00:00:05.16]       Assert.Equal() Failure: Values differ&#xD;
+[xUnit.net 00:00:05.16]       Expected: 2&#xD;
+[xUnit.net 00:00:05.16]       Actual:   3&#xD;
+[xUnit.net 00:00:05.16]       Stack Trace:&#xD;
+[xUnit.net 00:00:05.16]         C:\tmp\pg\Tests\LiveResultsTests.cs(28,0): at Playground.Tests.LiveResultsTests.Fails()&#xD;
+[xUnit.net 00:00:05.16]            at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)&#xD;
+[xUnit.net 00:00:05.16]            at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)&#xD;
+Test 'Playground.Tests.LiveResultsTests.Skipped' was skipped in the test run.&#xD;
+[xUnit.net 00:00:06.17]   Finished:    Tests&#xD;
+</StdOut>
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="DESKTOP-PUVEQGK" outcome="Warning" timestamp="2026-10-03T21:48:40.7689822+03:00">
+        <Text>[xUnit.net 00:00:04.64]     Playground.Tests.LiveResultsTests.Skipped [SKIP]</Text>
+      </RunInfo>
+      <RunInfo computerName="DESKTOP-PUVEQGK" outcome="Error" timestamp="2026-10-03T21:48:41.2883230+03:00">
+        <Text>[xUnit.net 00:00:05.16]     Playground.Tests.LiveResultsTests.Fails [FAIL]</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>

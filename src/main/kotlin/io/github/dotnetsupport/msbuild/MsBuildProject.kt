@@ -46,6 +46,8 @@ data class MsBuildProject(
     val testingPlatformProperties: Set<String> = emptySet(),
     /** An `<Import Sdk="...">` or an `<Sdk Name="...">`: an SDK project even without the `Sdk` attribute of the root. */
     val importsSdk: Boolean = false,
+    /** An Aspire AppHost: `Aspire.AppHost.Sdk` (the `Sdk` attribute in Aspire 13, `<Sdk Name>` in Aspire 9) or `IsAspireHost` (Aspire 8). */
+    val isAspireHost: Boolean = false,
 ) {
     /**
      * A project of the old format (.NET Framework, `ToolsVersion`, every file listed): no SDK, so no default globs either. What is a
@@ -82,7 +84,7 @@ data class MsBuildProject(
 
     /** Something `dotnet run` can start: an executable or a web / worker SDK project. */
     val isRunnable: Boolean
-        get() = outputType.equals("Exe", ignoreCase = true) || outputType.equals("WinExe", ignoreCase = true) ||
+        get() = outputType.equals("Exe", ignoreCase = true) || outputType.equals("WinExe", ignoreCase = true) || isAspireHost ||
             RUNNABLE_SDKS.any { sdk.orEmpty().startsWith(it, ignoreCase = true) }
 
     /** Whether the SDK treats `wwwroot` as content: web and Razor SDKs. */
@@ -120,6 +122,7 @@ data class MsBuildProject(
             val dependent = LinkedHashMap<String, String>()
             val testingPlatform = LinkedHashSet<String>()
             var importsSdk = false
+            var aspireHost = splitList(root.getAttributeValue("Sdk")).any { isAspireHostSdk(it) }
 
             // Element names are compared without namespace: old-style projects declare the msbuild/2003 one.
             for (element in root.descendants()) {
@@ -143,9 +146,11 @@ data class MsBuildProject(
                     "TargetFrameworkVersion" -> frameworks += splitList(element.textTrim).map { "net" + it.removePrefix("v").replace(".", "") }
                     "OutputType" -> outputType = outputType ?: element.textTrim.takeIf { it.isNotEmpty() }
                     "RootNamespace" -> rootNamespace = rootNamespace ?: element.textTrim.takeIf { it.isNotEmpty() && '$' !in it }
-                    "Sdk" -> importsSdk = true
+                    "Sdk" -> { importsSdk = true; if (isAspireHostSdk(element.getAttributeValue("Name"))) aspireHost = true }
+                    "IsAspireHost" -> if (element.textTrim.equals("true", ignoreCase = true)) aspireHost = true
                     "Import" -> {
                         if (element.getAttributeValue("Sdk") != null) importsSdk = true
+                        if (isAspireHostSdk(element.getAttributeValue("Sdk"))) aspireHost = true
                         element.getAttributeValue("Project")?.takeIf { it.isNotBlank() && '$' !in it }?.let { imports += it.replace('\\', '/') }
                     }
                     "ImplicitUsings" -> implicitUsings = element.textTrim.lowercase() in setOf("enable", "true")
@@ -173,8 +178,12 @@ data class MsBuildProject(
                 dependentUpon = dependent,
                 testingPlatformProperties = testingPlatform,
                 importsSdk = importsSdk,
+                isAspireHost = aspireHost,
             )
         }
+
+        /** `Aspire.AppHost.Sdk/13.6.0`: an SDK reference with or without its version. */
+        private fun isAspireHostSdk(reference: String?): Boolean = reference?.substringBefore('/')?.trim().equals("Aspire.AppHost.Sdk", ignoreCase = true)
 
         /** `..\Shared\X.cs`, `C:\...`, `/...`, `$(SolutionDir)...`: not a path inside the project directory. */
         private fun isOutside(include: String): Boolean {

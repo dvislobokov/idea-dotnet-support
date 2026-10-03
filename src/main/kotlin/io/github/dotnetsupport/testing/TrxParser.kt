@@ -17,6 +17,8 @@ class TrxTestResult(
     val message: String?,
     val stackTrace: String?,
     val stdOut: String?,
+    /** The test assembly (`codeBase` of the definition): a run over several target frameworks has the same test once per assembly. */
+    val source: String? = null,
 ) {
     /** What `dotnet test --filter FullyQualifiedName~...` matches against. */
     val fullyQualifiedName: String get() = "$className.$methodName"
@@ -54,6 +56,7 @@ object TrxParser {
                 message = error?.child("Message")?.text?.normalizeLines()?.trim()?.ifEmpty { null },
                 stackTrace = error?.child("StackTrace")?.text?.normalizeLines()?.trimEnd()?.ifEmpty { null },
                 stdOut = output?.child("StdOut")?.text?.normalizeLines()?.ifEmpty { null },
+                source = method?.getAttributeValue("codeBase"),
             )
         }
     }

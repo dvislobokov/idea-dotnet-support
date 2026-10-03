@@ -1,0 +1,19 @@
+info: Aspire.Hosting.DistributedApplication[0]
+      Aspire AppHost version: 13.6.0+56f3e9c0d216c0c7069dabb49dd0464e4827744f
+info: Aspire.Hosting.DistributedApplication[0]
+      Distributed application starting.
+info: Aspire.Hosting.DistributedApplication[0]
+      Application host directory is: C:\Users\dev\AppData\Local\Temp\aspire-probe\starter\Probe.AppHost
+info: Aspire.Hosting.DistributedApplication[0]
+      Now listening on: https://localhost:17149
+info: Aspire.Hosting.DistributedApplication[0]
+      Login to the dashboard at https://localhost:17149/login?t=00000000000000000000000000000001
+info: Aspire.Hosting.DistributedApplication[0]
+      Aspire Dashboard
+
+      - Dashboard:  https://localhost:17149
+      - Login URL:  https://localhost:17149/login?t=00000000000000000000000000000001
+      - OTLP/gRPC:  https://localhost:21169
+
+info: Aspire.Hosting.DistributedApplication[0]
+      Distributed application started. Press Ctrl+C to shut down.

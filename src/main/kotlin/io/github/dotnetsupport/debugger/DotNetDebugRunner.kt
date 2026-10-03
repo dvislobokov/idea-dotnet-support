@@ -29,6 +29,7 @@ import com.intellij.xdebugger.attach.XAttachHost
 import com.intellij.xdebugger.attach.XAttachPresentationGroup
 import com.intellij.xdebugger.attach.XAttachProcessPresentationGroup
 import io.github.dotnetsupport.DotNetIcons
+import io.github.dotnetsupport.aspire.AspireHosts
 import io.github.dotnetsupport.cli.DiagnosticsHelperService
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetTool
@@ -110,7 +111,10 @@ class DotNetDebugRunner : AsyncProgramRunner<RunnerSettings>() {
                 val built = environment.getUserData(DotNetLaunchArguments.BUILT) == true
                 val targetPath = environment.getUserData(DotNetLaunchArguments.TARGET_PATH) ?: if (built) "" else buildNow(profile)
                 DotNetLaunchArguments.setProgram(arguments, targetPath)
-                DebugStart(attach = false, arguments = arguments, name = profile.name, launchUrl = profile.launchProfile()?.launchUrl, openBrowser = profile.options.openBrowser)
+                DebugStart(
+                    attach = false, arguments = arguments, name = profile.name, launchUrl = profile.launchProfile()?.launchUrl, openBrowser = profile.options.openBrowser,
+                    aspireHost = AspireHosts.isAppHost(environment.project, profile.options.projectPath),
+                )
             }
             else -> throw ExecutionException("${profile.name} cannot be debugged by the .NET debugger")
         }

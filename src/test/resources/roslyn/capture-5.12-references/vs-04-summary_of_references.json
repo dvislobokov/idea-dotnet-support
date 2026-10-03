@@ -1,0 +1,142 @@
+{
+ "method": "(summary)",
+ "result": [
+  {
+   "target": "field",
+   "includeDeclaration": true,
+   "count": 13,
+   "keys": [
+    "range",
+    "uri"
+   ],
+   "files": [
+    "FindUsages.cs"
+   ]
+  },
+  {
+   "target": "field",
+   "includeDeclaration": false,
+   "count": 12,
+   "keys": [
+    "range",
+    "uri"
+   ],
+   "files": [
+    "FindUsages.cs"
+   ]
+  },
+  {
+   "target": "method",
+   "includeDeclaration": true,
+   "count": 7,
+   "keys": [
+    "range",
+    "uri"
+   ],
+   "files": [
+    "FindUsages.cs",
+    "UsageLog.cs"
+   ]
+  },
+  {
+   "target": "method",
+   "includeDeclaration": false,
+   "count": 6,
+   "keys": [
+    "range",
+    "uri"
+   ],
+   "files": [
+    "FindUsages.cs",
+    "UsageLog.cs"
+   ]
+  },
+  {
+   "target": "type",
+   "includeDeclaration": true,
+   "count": 9,
+   "keys": [
+    "range",
+    "uri"
+   ],
+   "files": [
+    "FindUsages.cs"
+   ]
+  },
+  {
+   "target": "type",
+   "includeDeclaration": false,
+   "count": 7,
+   "keys": [
+    "range",
+    "uri"
+   ],
+   "files": [
+    "FindUsages.cs"
+   ]
+  },
+  {
+   "target": "attribute",
+   "includeDeclaration": true,
+   "count": 3,
+   "keys": [
+    "range",
+    "uri"
+   ],
+   "files": [
+    "FindUsages.cs"
+   ]
+  },
+  {
+   "target": "attribute",
+   "includeDeclaration": false,
+   "count": 1,
+   "keys": [
+    "range",
+    "uri"
+   ],
+   "files": [
+    "FindUsages.cs"
+   ]
+  },
+  {
+   "target": "field",
+   "documentHighlight kinds": [
+    1,
+    2,
+    3
+   ],
+   "count": 13
+  },
+  {
+   "target": "field",
+   "client": "visual studio",
+   "count": 13,
+   "keys": [
+    "_vs_containingMember",
+    "_vs_containingType",
+    "_vs_definitionIcon",
+    "_vs_definitionId",
+    "_vs_definitionText",
+    "_vs_displayPath",
+    "_vs_documentName",
+    "_vs_id",
+    "_vs_kind",
+    "_vs_location",
+    "_vs_projectName",
+    "_vs_resolutionStatus",
+    "_vs_text"
+   ],
+   "kinds": [
+    "[3, 4, 5]",
+    "[3, 4]",
+    "[3, 5]",
+    "[3]",
+    "[4, 5]",
+    "[4]",
+    "[6]",
+    "[]"
+   ]
+  }
+ ]
+}

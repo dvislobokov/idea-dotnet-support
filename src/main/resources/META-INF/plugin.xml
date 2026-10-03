@@ -118,6 +118,9 @@
         <extendWordSelectionHandler implementation="io.github.dotnetsupport.lang.CSharpSelectioner"/>
         <!-- highlight the other occurrences of the identifier under the caret, by token text, until the server covers the file -->
         <highlightUsagesHandlerFactory implementation="io.github.dotnetsupport.lang.CSharpHighlightUsagesHandlerFactory"/>
+        <!-- Find Usages as in Rider, behind the toggles of the Usages view: usage kind, .NET project, type and member -->
+        <usageGroupingRuleProvider implementation="io.github.dotnetsupport.lang.CSharpUsageGroupingRuleProvider"/>
+        <fileStructureGroupRuleProvider implementation="io.github.dotnetsupport.lang.CSharpMemberGroupRuleProvider"/>
         <colorSettingsPage implementation="io.github.dotnetsupport.lang.CSharpColorSettingsPage"/>
         <additionalTextAttributes scheme="Default" file="colorSchemes/CSharpDefault.xml"/>
         <additionalTextAttributes scheme="Darcula" file="colorSchemes/CSharpDarcula.xml"/>
@@ -174,6 +177,7 @@
         <postStartupActivity implementation="io.github.dotnetsupport.run.DevCertCheckActivity"/>
 
         <configurationType implementation="io.github.dotnetsupport.run.DotNetConfigurationType"/>
+        <configurationType implementation="io.github.dotnetsupport.publish.DotNetPublishConfigurationType"/>
         <!-- the Services tool window lists the .NET Project configurations, with the address a web application listens on -->
         <runDashboardDefaultTypesProvider implementation="io.github.dotnetsupport.run.DotNetRunDashboardTypes"/>
         <runDashboardCustomizer implementation="io.github.dotnetsupport.run.DotNetRunDashboardCustomizer"/>
@@ -302,6 +306,8 @@
             <action id="DotNet.BuildSelected" class="io.github.dotnetsupport.build.BuildSelected" text="Build"
                     icon="AllIcons.Actions.Compile"/>
             <action id="DotNet.RebuildSelected" class="io.github.dotnetsupport.build.RebuildSelected" text="Rebuild"/>
+            <action id="DotNet.Publish" class="io.github.dotnetsupport.publish.PublishAction" text="Publish..." icon="AllIcons.Nodes.Deploy"
+                    description="dotnet publish of the project to a folder or a container image: configuration, runtime, self-contained, single file, trimming, ReadyToRun, a .pubxml profile"/>
             <action id="DotNet.ManageNuGet" class="io.github.dotnetsupport.nuget.ManageNuGetPackagesAction"
                     text="Manage NuGet Packages..." icon="/icons/nuget.svg"/>
             <group id="DotNet.EfCore" class="io.github.dotnetsupport.ef.EfCoreGroup" text="EF Core" popup="true">
@@ -379,6 +385,7 @@
             <action id="DotNet.CleanSolution" class="io.github.dotnetsupport.build.CleanSolution" text="Clean Solution"/>
             <action id="DotNet.BuildPerformance" class="io.github.dotnetsupport.build.BuildPerformanceAction"
                     text="Measure Build Performance" description="Rebuild with the MSBuild performance summary: the slowest targets and tasks"/>
+            <reference ref="DotNet.Publish"/>
             <separator/>
             <group id="DotNet.NuGet" text="NuGet" popup="true" icon="/icons/nuget.svg">
                 <action id="DotNet.NuGet.QuickList" class="io.github.dotnetsupport.nuget.NuGetQuickListAction" text="NuGet Quick List"

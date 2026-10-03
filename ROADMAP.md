@@ -169,7 +169,7 @@
   (`MsBuildItemEditor.renameProjectReference`), run configurations — одной командой. Add → Assembly Reference… (`HintPath`). Транзитивные
   проекты в Dependencies → Projects (по `.csproj` ссылок, цикл не раскрывается второй раз)
 - [ ] Перемещение проекта, unload / reload, drag-and-drop в дереве
-- [ ] Publish, `dotnet tool restore`, user secrets
+- [x] Publish (0.1.35); [ ] `dotnet tool restore`, user secrets
 - [ ] Редактирование шаблонов генераторов пользователем (сейчас зашиты в плагин)
 
 ## Заход 5 — файлы проекта и конфигурации
@@ -388,7 +388,7 @@
 - [ ] Code Cleanup на правилах Roslyn: `dotnet format style` / `analyzers` с выбором диагностик и severity, профили в настройках
 - [ ] docker-compose: run configuration `docker compose up` для сервисов, отладка процесса в контейнере (адаптер через `docker exec`); тот же транспорт — для WSL / remote
 - [ ] T4: Transform для `.tt` через `dotnet-t4` (Mono.TextTemplating), вложение результата под `.tt`
-- [ ] Find Usages с группировкой: по проекту / файлу и по типу использования (чтение, запись, вызов, `new`, `typeof`/`nameof`) по соседним токенам
+- [x] 0.1.37 — Find Usages с группировкой: по проекту / файлу и по типу использования (чтение, запись, вызов, `new`, `typeof`/`nameof`) по соседним токенам
 
 ## До уровня Rider и .NET Framework (план 2026-10-03)
 Из разбора «чего не хватает до Rider» и аудита поддержки .NET Framework (net4x SDK-стиля и legacy-проекты без SDK). Адаптер отладчика
@@ -401,10 +401,10 @@
 - [x] 0.1.25 — Go to Base для членов (`roslyn/RoslynBaseMembers`): цепочка `typeHierarchy/supertypes`, член того же вида и имени в файле базового типа по сканеру объявлений (перегрузки — по числу параметров); ближайший базовый класс, затем интерфейсы. Тест `RoslynBaseMembersTest`; сценарий — `debug-playground/Console/Editor/GoToBase.cs`. Вживую не проверено
 ### Этап 2 — среднее
 - [ ] Reference assemblies net4x в индексаторе и Dependencies (`Microsoft.NETFramework.ReferenceAssemblies`, `Reference Assemblies\...\.NETFramework\v4.x`), сборки по `HintPath` (2)
-- [ ] Publish: папка (Configuration, RID, self-contained, single-file, trimmed), `.pubxml` через `PublishProfile`, контейнер `/t:PublishContainer`, сохранение как run configuration (2–3)
+- [x] 0.1.35 — Publish (`publish/`): диалог как в Rider (Configuration, TFM, RID, self-contained, single-file, ReadyToRun, trim, папка, превью команды), `.pubxml` читается (и профили VS с `PublishUrl` → `-o`) и пишется (Save as Profile), контейнер `-t:PublishContainer` (SDK ≥ 8), вывод в окне Build, уведомление с папкой, свой тип run configuration «.NET Publish». Тест `PublishTest`, профили и чек-лист — `debug-playground` «Publish». Вживую в IDE не проверено (команды прогнаны руками на площадке)
 - [ ] MSBuild из Visual Studio / Build Tools (`vswhere`): Build / Clean / Restore / `-getProperty` legacy-проектов через `msbuild.exe`, restore `packages.config` (`-t:restore -p:RestorePackagesConfig=true`), выбор MSBuild в Toolset and Build (3)
 - [ ] Roslyn LS и non-SDK проекты: предупреждение, если VS / Build Tools не найдены; проверить загрузку вживую (1)
-- [ ] Find Usages с группировкой (пункт выше из сравнения с VS Community) (3)
+- [x] 0.1.37 — Find Usages с группировкой (`lang/CSharpUsageKinds`, `CSharpUsageGrouping`): платформенный LSP-адаптер всегда отвечает «типа нет» и до `UsageTypeProvider` дело не доходит, поэтому — свои правила группировки на переключателях платформы (Usage Type / Module / File Structure). Вид — эвристикой по токенам, сверено с `_vs_kind` ответа Roslyn для Visual Studio (клиенту IntelliJ он недоступен) и `documentHighlight`. Тест `CSharpFindUsagesTest`, фикстура `roslyn/capture-5.12-references`, сценарий — `debug-playground/Console/Editor/FindUsages.cs`. Вживую окно Usages не проверено
 ### Этап 3 — отладка .NET Framework (под доработанный адаптер)
 Договориться с адаптером: как он узнаёт desktop CLR (аргумент `launch` или по exe), x64 / x86 — два бинарника или один, какие `capabilities` объявляет.
 - [ ] Launch exe напрямую (`program` = `TargetPath` из `msbuild.exe -getProperty`), заодно run configuration «.NET Executable» (1–2)
@@ -412,7 +412,8 @@
 - [ ] Attach к net4x (снять флаг этапа 1), отладка тестов net4x (`VSTEST_HOST_DEBUG` → `testhost.net4x.exe`) (1–2)
 - [ ] Проект `net48` в `debug-playground` со сценариями `// BP:`, проверка UI-роботом (1)
 ### Этап 4 — крупное
-- [ ] Результаты тестов по ходу прогона: разбор живой консоли + уточнение по TRX, MTP отдельно; при необходимости — свой логгер VSTest (4–6)
+- [x] 0.1.36 — результаты тестов по ходу прогона (VSTest: xUnit, NUnit, MSTest): свой логгер + сборщик данных (`testlogger/`, netstandard2.0, ObjectModel 17.12 только для компиляции, собирается у пользователя один раз), события `*.jsonl` в каталоге из `DOTNET_SUPPORT_TEST_EVENTS`, плагин читает каждые 200 мс (`testing/LiveTestEvents.kt`), дерево по id, в конце сверка с TRX. Начало теста — сразу, результат — с задержкой до ~1 с (VSTest отдаёт логгерам пачками). Тест `LiveResultsTest`, сценарий — `debug-playground/Tests/LiveResultsTests.cs` (маркеры `LIVE:`). Вживую в IDE не проверено
+- [ ] Живые результаты для Microsoft Testing Platform (MSTest runner, xunit.v3, TUnit): json-rpc `--server` / `--dotnet-test-pipe`, как у VS; сейчас — TRX в конце
 - [ ] Legacy-модель проекта: явный `<Compile Include>` в дереве, «не в проекте» серым, новые файлы в `.csproj`, тест-проекты на `packages.config` (4–5)
 - [ ] IIS Express: профили `IISExpress` в `launchSettings`, `iisexpress.exe` + `applicationhost.config`, attach отладчика (3–5)
 - [ ] Hot Reload при отладке — после адаптера
@@ -452,7 +453,7 @@
 ### Aspire (план 2026-10-03)
 
 Сейчас есть только категория в New Solution и `Aspire.AppHost.Sdk` в подсказках `.csproj`; AppHost запускается как обычный проект.
-- [ ] Шаг 1. AppHost распознаётся (`Aspire.AppHost.Sdk` / `IsAspireHost`): иконка, run configuration первой; ссылка
+- [x] 0.1.38 — шаг 1 (проверен вживую UI-роботом на Aspire 13.6: автоподключение к `Web`, остановка на точке, Stop чистит `dcp`; AppHost по `Sdk="Aspire.AppHost.Sdk/13.x"`, `<Sdk Name=…>` 9.x, `IsAspireHost` 8; DCP — не дочерний процесс AppHost, а `dcp start-apiserver --monitor <pid>`, сервисы под `dcp run-controllers`; пакет `aspire/`, тест `AspireTest`, площадка `debug-playground/AspireHost`). Было: AppHost распознаётся (`Aspire.AppHost.Sdk` / `IsAspireHost`): иконка, run configuration первой; ссылка
   `Login to the dashboard at …` в консоли кликабельна, «Open Dashboard» в строке Services; Debug AppHost автоматически подключает
   отладчик к .NET-процессам сервисов, которые запустил DCP (через существующий Attach)
 - [ ] Шаг 2. Протокол IDE execution (спецификация в dotnet/aspire, сверить версию для Aspire 13): DCP просит IDE запустить проект, IDE

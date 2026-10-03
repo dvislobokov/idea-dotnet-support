@@ -2,6 +2,7 @@ package io.github.dotnetsupport.index
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import io.github.dotnetsupport.cli.LocalPaths
 import java.io.File
 
 /**
@@ -29,7 +30,8 @@ object ProjectAssemblies {
         val names = targets.keySet().filter { '/' !in it }
         val target = names.firstOrNull { it.equals(request.framework, ignoreCase = true) } ?: names.firstOrNull() ?: return emptyList()
         val libraries = root.obj("libraries")
-        val folders = root.obj("packageFolders")?.keySet().orEmpty().map(::File)
+        // never a network folder a cloned assets file names (LocalPaths)
+        val folders = root.obj("packageFolders")?.keySet().orEmpty().filter(LocalPaths::isReadablePackagesFolder).map(::File)
         val found = LinkedHashSet<File>()
 
         for ((id, value) in targets.obj(target)?.entrySet().orEmpty()) {

@@ -3,6 +3,42 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.38
+
+- Aspire: the AppHost project is recognized (Aspire 8, 9 and 13) — its own icon, its run configuration first. The dashboard login link
+  is clickable in the console and kept for **Open Dashboard** in the Services tool window, and the browser opens straight on it. Debug of
+  the AppHost attaches the debugger to every project service it starts, each in its own tab, again after a restart of the resource; Stop
+  ends them all. A breakpoint at the very start of a service may still be missed: the debugger attaches once the process runs
+- Services: the links of a row (the address of a web project, Restart of `dotnet watch`) now show up — the platform only made existing
+  text clickable
+
+## 0.1.37
+
+- Find Usages for C# is grouped as in Rider, behind the standard Group by Usage Type / Module / File Structure toggles of the Usages
+  view: by usage kind (read, write, invocation, `nameof`, attribute, `new`, base type, `using`, `typeof`, type check, cast, type
+  argument, doc comment), by .NET project and by the type and member the usage is in
+
+## 0.1.36
+
+- Unit Tests: results appear while `dotnet test` runs (VSTest: xUnit, NUnit, MSTest), as in Rider — each test shows as running when it
+  starts, then as passed, failed or skipped with its duration, message, stack trace and output; Stop marks the test that was running;
+  the TRX report at the end fills in anything missed. The plugin's test logger is built once per machine on the first run. Projects on
+  Microsoft Testing Platform still get their results at the end
+
+## 0.1.35
+
+- **Publish...** for applications (the Solution view and the .NET menu), as in Rider: configuration, target framework, target runtime,
+  deployment mode (framework-dependent / self-contained), single file, ReadyToRun, trimming, target location, with the command shown
+  before it runs. `.pubxml` publish profiles are read — those of Visual Studio included — and written by Save as Profile; a container
+  image is published with `dotnet publish -t:PublishContainer`. The output goes to the Build tool window, a notification opens the
+  folder; Save as run configuration makes a ".NET Publish" run configuration
+
+## 0.1.34
+
+- Security: the packages folders named in `obj/project.assets.json` are read only when they are local (or the folder of `NUGET_PACKAGES`):
+  a cloned repository with such a file pointing at `\\host\share` no longer makes the IDE log on to that host, which would give it the
+  NTLM hash of the user. Applies to the package schemas of appsettings and to the assembly index
+
 ## 0.1.33
 
 - `appsettings.json` and `appsettings.<Environment>.json` get completion and checks for the sections your code reads — in any project,

@@ -95,6 +95,11 @@ tasks.processResources {
         include("Program.cs", "CodeMetrics.csproj")
         into("metrics")
     }
+    // and the logger of live test results, loaded by `dotnet test` (testing/LiveTestEvents.kt)
+    from("testlogger") {
+        include("TestLogger.cs", "DotNetSupport.TestLogger.csproj")
+        into("testlogger")
+    }
     // The helpers that stay running (cli/HelperConnection), helpers/<name>/: their sources, and next to them a copy of the protocol
     // they share, which their projects link from helpers/protocol in the repository.
     file("helpers").listFiles { it.isDirectory && it.name != "protocol" }.orEmpty().forEach { helper ->

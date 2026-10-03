@@ -1,0 +1,109 @@
+{
+ "method": "textDocument/references",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Editor/FindUsages.cs"
+  },
+  "position": {
+   "line": 26,
+   "character": 17
+  },
+  "context": {
+   "includeDeclaration": true
+  }
+ },
+ "ms": 867.0,
+ "result": [
+  {
+   "uri": "file:///c:/playground/Lib/UsageLog.cs",
+   "range": {
+    "start": {
+     "line": 10,
+     "character": 23
+    },
+    "end": {
+     "line": 10,
+     "character": 29
+    }
+   }
+  },
+  {
+   "uri": "file:///c:/playground/Console/Editor/FindUsages.cs",
+   "range": {
+    "start": {
+     "line": 26,
+     "character": 17
+    },
+    "end": {
+     "line": 26,
+     "character": 23
+    }
+   }
+  },
+  {
+   "uri": "file:///c:/playground/Lib/UsageLog.cs",
+   "range": {
+    "start": {
+     "line": 14,
+     "character": 8
+    },
+    "end": {
+     "line": 14,
+     "character": 14
+    }
+   }
+  },
+  {
+   "uri": "file:///c:/playground/Lib/UsageLog.cs",
+   "range": {
+    "start": {
+     "line": 3,
+     "character": 100
+    },
+    "end": {
+     "line": 3,
+     "character": 106
+    }
+   }
+  },
+  {
+   "uri": "file:///c:/playground/Lib/UsageLog.cs",
+   "range": {
+    "start": {
+     "line": 15,
+     "character": 8
+    },
+    "end": {
+     "line": 15,
+     "character": 14
+    }
+   }
+  },
+  {
+   "uri": "file:///c:/playground/Console/Editor/FindUsages.cs",
+   "range": {
+    "start": {
+     "line": 45,
+     "character": 17
+    },
+    "end": {
+     "line": 45,
+     "character": 23
+    }
+   }
+  },
+  {
+   "uri": "file:///c:/playground/Console/Editor/FindUsages.cs",
+   "range": {
+    "start": {
+     "line": 75,
+     "character": 34
+    },
+    "end": {
+     "line": 75,
+     "character": 40
+    }
+   }
+  }
+ ]
+}

@@ -33,6 +33,12 @@ app.MapGet("/orders/{count:int}", (int count) =>
     return Results.Json(new { count, total, lines });
 });
 
+app.MapGet("/aspire", () =>
+{
+    var pid = Environment.ProcessId; // BP:aspire-service — Debug `AspireHost`, open the `web` endpoint + /aspire from the dashboard; EXPECT: a debug tab "Web (<pid>)" appears by itself and stops here; NOT a second Web process or a stop in the AppHost tab
+    return Results.Text($"Playground.Web under Aspire, process {pid}");
+});
+
 app.MapGet("/slow", async () =>
 {
     await Task.Delay(5000);

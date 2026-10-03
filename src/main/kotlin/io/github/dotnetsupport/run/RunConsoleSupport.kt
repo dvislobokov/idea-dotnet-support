@@ -8,6 +8,7 @@ import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.LocalFileSystem
+import io.github.dotnetsupport.aspire.AspireDashboard
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -43,13 +44,15 @@ class DotNetStackTraceFilter(private val project: Project) : Filter {
 }
 
 /** Opens the browser when an ASP.NET Core application reports the address it listens on. */
-class ListeningUrlListener(private val launchUrl: String?) : ProcessListener {
+class ListeningUrlListener(private val launchUrl: String?, private val aspireHost: Boolean = false) : ProcessListener {
     private val opened = AtomicBoolean()
 
     override fun onTextAvailable(event: ProcessEvent, outputType: Key<*>) = textAvailable(event.text)
 
     /** For output that does not come from a process handler: a debugger gets it from the debug adapter. */
     fun textAvailable(text: String) {
+        // the dashboard of an AppHost listens first and logs its login link after: that link is the one that needs no token typed in
+        if (aspireHost) return AspireDashboard.loginUrl(text)?.let { if (opened.compareAndSet(false, true)) BrowserUtil.browse(it) } ?: Unit
         val url = ListeningUrl.parse(text) ?: return
         // Kestrel reports every endpoint (http and https): the first one is enough
         if (opened.compareAndSet(false, true)) BrowserUtil.browse(ListeningUrl.browserUrl(url, launchUrl))

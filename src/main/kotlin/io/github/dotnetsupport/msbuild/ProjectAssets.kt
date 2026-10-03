@@ -3,6 +3,7 @@ package io.github.dotnetsupport.msbuild
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import io.github.dotnetsupport.cli.LocalPaths
 
 /** A package as it was resolved for one target framework. */
 class AssetsPackage(
@@ -51,7 +52,8 @@ class ProjectAssets(val targets: List<AssetsTarget>, val packageFolders: List<St
                 // "net9.0/win-x64" repeats "net9.0" for a runtime identifier
                 .filter { (key, _) -> '/' !in key }
                 .mapNotNull { (key, value) -> (value as? JsonObject)?.let { target(key, it, libraries, frameworks) } }
-            return ProjectAssets(targets, root.obj("packageFolders")?.keySet().orEmpty().toList())
+            // never a network folder a cloned assets file names (LocalPaths)
+            return ProjectAssets(targets, root.obj("packageFolders")?.keySet().orEmpty().filter(LocalPaths::isReadablePackagesFolder))
         }
 
         private fun target(key: String, libraries: JsonObject, allLibraries: JsonObject?, frameworks: JsonObject?): AssetsTarget {

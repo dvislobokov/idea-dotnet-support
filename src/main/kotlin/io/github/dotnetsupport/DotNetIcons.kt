@@ -17,6 +17,9 @@ object DotNetIcons {
     @JvmField val ProjectVisualBasic: Icon = load("projectVb")
     @JvmField val MsBuild: Icon = load("msbuild")
 
+    /** An Aspire AppHost project: the icon of the Services tool window, where its resources are. */
+    @JvmField val AspireHost: Icon = com.intellij.icons.AllIcons.Toolwindows.ToolWindowServices
+
     /** The Dependencies node of a project. */
     @JvmField val Dependencies: Icon = load("dependencies")
 

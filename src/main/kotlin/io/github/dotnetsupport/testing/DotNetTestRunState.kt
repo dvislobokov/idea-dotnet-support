@@ -20,16 +20,27 @@ import io.github.dotnetsupport.coverage.DotNetCoverageService
 import io.github.dotnetsupport.run.DotNetProcessAttacher
 import io.github.dotnetsupport.run.DotNetRunConfiguration
 import io.github.dotnetsupport.run.TestHostDebug
+import java.io.File
 
 /** `dotnet test` with the test tree instead of a plain console. */
 class DotNetTestRunState(private val configuration: DotNetRunConfiguration, environment: ExecutionEnvironment, private val debug: Boolean = false) :
     CommandLineState(environment) {
     // TRX report and coverage files of this run
     private val resultsDirectory = FileUtil.createTempDirectory("dotnet-test", null, true)
+    // the files of the live test logger, when it is there (VSTest only)
+    private var eventsDirectory: File? = null
 
     override fun startProcess(): ProcessHandler {
         val commandLine = configuration.buildCommandLine(resultsDirectory)
         val vsTest = configuration.testMode() == TestMode.VSTEST
+        val adapterDirectory = if (vsTest) LiveTestLogger.adapterDirectory(configuration.project) else null
+        if (adapterDirectory != null) {
+            val events = FileUtil.createTempDirectory("dotnet-test-events", null, true).also { eventsDirectory = it }
+            val arguments = LiveTestLogger.insert(commandLine.parametersList.list, LiveTestLogger.options(adapterDirectory))
+            commandLine.parametersList.clearAll()
+            commandLine.addParameters(arguments)
+            commandLine.withEnvironment(LiveTestLogger.DIRECTORY_VARIABLE, events.path)
+        }
         // The test host prints its process id and waits for a debugger. In English: the line is found by its words first.
         if (debug && vsTest) commandLine.withEnvironment(TestHostDebug.VARIABLE, "1").withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en").withEnvironment("VSTEST_UI_LANGUAGE", "en")
         val handler = KillableColoredProcessHandler(commandLine)
@@ -54,7 +65,7 @@ class DotNetTestRunState(private val configuration: DotNetRunConfiguration, envi
 
     override fun execute(executor: Executor, runner: ProgramRunner<*>): ExecutionResult {
         val handler = startProcess()
-        val properties = DotNetTestConsoleProperties(configuration, executor, resultsDirectory)
+        val properties = DotNetTestConsoleProperties(configuration, executor, resultsDirectory, eventsDirectory)
         val console = SMTestRunnerConnectionUtil.createAndAttachConsole(TEST_FRAMEWORK_NAME, handler, properties)
 
         if (configuration.options.collectCoverage) {

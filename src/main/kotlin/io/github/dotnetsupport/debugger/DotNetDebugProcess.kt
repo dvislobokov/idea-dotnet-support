@@ -17,6 +17,7 @@ import com.intellij.xdebugger.breakpoints.XBreakpointHandler
 import com.intellij.xdebugger.evaluation.XDebuggerEditorsProvider
 import com.intellij.xdebugger.frame.XSuspendContext
 import io.github.dotnetsupport.monitor.RunningDotNetProcesses
+import io.github.dotnetsupport.aspire.AspireServiceDebugger
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.run.ListeningUrlListener
@@ -69,7 +70,7 @@ class DotNetDebugProcess(
     @Volatile private var forgetDebuggee: (() -> Unit)? = null
 
     init {
-        if (start.openBrowser) handler.addProcessListener(ListeningUrlListener(start.launchUrl))
+        if (start.openBrowser) handler.addProcessListener(ListeningUrlListener(start.launchUrl, start.aspireHost))
         io.github.dotnetsupport.run.ListeningAddressRecorder.attach(handler)
     }
 
@@ -209,7 +210,8 @@ class DotNetDebugProcess(
     private fun debuggee(processId: Long) {
         DebuggedProcesses.add(processId)
         val forgetMonitor = RunningDotNetProcesses.getInstance(session.project).started(start.name, processId)
-        forgetDebuggee = { forgetMonitor(); DebuggedProcesses.remove(processId) }
+        val services = if (start.aspireHost) AspireServiceDebugger.start(session.project, processId) { print(it, ProcessOutputTypes.SYSTEM) } else null
+        forgetDebuggee = { forgetMonitor(); DebuggedProcesses.remove(processId); services?.stop() }
     }
 
     // --- requests the frames and values make ---

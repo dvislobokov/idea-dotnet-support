@@ -168,7 +168,7 @@ class DotNetBuildService(private val project: Project) {
 
     companion object {
         private const val GROUP = "MSBuild"
-        private val COMPILING_COMMANDS = setOf("build", "msbuild")
+        private val COMPILING_COMMANDS = setOf("build", "msbuild", "publish")
 
         fun getInstance(project: Project): DotNetBuildService = project.service()
     }

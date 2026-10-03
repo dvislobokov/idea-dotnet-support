@@ -20,6 +20,8 @@ Fix All, rename, форматирование трёх видов, call / type h
 `--fixtures src/test/resources/roslyn/capture-5.12` пишет обезличенную копию для `RoslynCapturedTrafficTest`. С этого начинать работу с новой версией сервера
 и любую новую возможность клиента: формы Roslyn не угадываются.
 
+`capture_references.py` — `references` / `documentHighlight` для Find Usages с группировкой (раздел «References» ниже).
+
 `bench.py` — замер скорости: открывает solution (`solution/open`), ждёт `workspace/projectInitializationComplete`, меряет completion (после `.`,
 на голом имени, при наборе по букве), resolve, hover, signature help, semantic tokens, диагностику, символы. Файл на диске не трогает.
 Итоги и выводы про кэш — в `LSP_PLAN.md`.
@@ -156,3 +158,24 @@ python tools/roslyn-lsp/bench.py debug-playground/DebugPlayground.sln   # --file
 - Нужно ли писать аргументы типа, сервер не говорит. Клиент решает по сигнатуре: аргумент, которого нет ни в параметрах, ни в получателе
   extension-метода, вывести не из чего (`AddSingleton<TService>()`, `OfType<TResult>()`, `Array.Empty<T>()`,
   `Convert<TSource, TResult>(TSource value)`); `Select`, `Same<T>(T value)` — выводятся.
+
+## References (Find Usages)
+
+Снято `capture_references.py` 2026-10-03 на `debug-playground` (`Console/Editor/FindUsages.cs`, `Lib/UsageLog.cs`); фикстуры —
+`src/test/resources/roslyn/capture-5.12-references` вместе с копиями обоих исходников (тест `CSharpFindUsagesTest`).
+
+- Обычному клиенту (capabilities LSP-клиента IntelliJ) `textDocument/references` отдаёт **голые `Location`**: только `uri` и `range`, ни вида
+  использования, ни признака объявления, ни содержащего члена. Порядок произвольный, объявление — не первым.
+- `includeDeclaration: true` добавляет объявление и только его (поле: 13 против 12). У типа объявлений два — имя класса и имя конструктора
+  (9 против 7); у класса с primary-конструктором (`class A(string x)`) один и тот же диапазон имени приходит **дважды**.
+- `<see cref="Record"/>` в doc-комментарии — тоже reference. Ссылки идут через проекты (Console и Lib в одном ответе).
+- ~0,5–0,8 с на запрос на маленьком solution.
+- `textDocument/documentHighlight` на том же поле даёт виды по файлу: `1` Text — объявление, `2` Read — чтение, `nameof`, `in`-аргумент,
+  `3` Write — `=`, `+=`, `++`, `--`, `ref`, `out`.
+- Клиенту Visual Studio (`_vs_supportsVisualStudioExtensions: true` в capabilities) сервер отвечает другими элементами — `VSInternalReferenceItem`:
+  `_vs_location`, `_vs_kind` (числа `VSInternalReferenceKind`: `3` Read, `4` Write, `5` Reference — передача по `ref`/`in`/`out`, `6` Name —
+  `nameof`; у объявления `[]`; `+=` / `++` — `[3, 4]`, `ref` — `[3, 4, 5]`, `in` — `[3, 5]`, `out` — `[4, 5]`), `_vs_containingType`,
+  `_vs_containingMember` (конструктор — `.ctor`; у самого объявления члена нет), `_vs_projectName` (`Console (net9.0)`), `_vs_text`
+  (раскрашенная строка), `_vs_definitionIcon`. LSP-клиент IntelliJ так сказать о себе не может, а lsp4j читает такие элементы как `Location` без
+  `uri`. Поэтому плагин определяет вид по токенам (`lang/CSharpUsageKinds`), а ответ для VS — эталон в тесте: по всем 13 использованиям поля
+  виды плагина совпадают с `_vs_kind`, а тип и член — с `_vs_containingType` / `_vs_containingMember`.

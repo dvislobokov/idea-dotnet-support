@@ -246,7 +246,8 @@ class DotNetProjectNode(project: Project, key: ProjectKey, settings: ViewSetting
 
     override fun present(presentation: PresentationData) {
         val projectFile = projectFile
-        presentation.setIcon(DotNetIcons.Project)
+        // an Aspire AppHost stands out as the one to start, as in Rider
+        presentation.setIcon(if (projectFile != null && solutions.msBuildProject(projectFile).isAspireHost) DotNetIcons.AspireHost else DotNetIcons.Project)
         presentation.presentableText = value.project.name
         presentation.locationString =
             if (projectFile == null) "not found: ${value.project.path}"

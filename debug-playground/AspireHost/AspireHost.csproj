@@ -1,0 +1,14 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.6.0">
+  <!-- An Aspire AppHost that starts projects only (no containers, no Docker): Debug of it attaches the debugger to Web by itself. -->
+  <!-- No AspireUseCliBundle: DCP and the dashboard come as NuGet packages, so the AppHost also starts without the Aspire CLI, as under the debugger. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>5c0f7a52-4f7e-4b8e-9d55-3e2a6a1d7c11</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Web\Web.csproj" />
+  </ItemGroup>
+</Project>
