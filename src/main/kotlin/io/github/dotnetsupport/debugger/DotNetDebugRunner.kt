@@ -15,6 +15,7 @@ import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.util.UserDataHolder
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.xdebugger.XDebugProcess
@@ -28,6 +29,7 @@ import com.intellij.xdebugger.attach.XAttachHost
 import com.intellij.xdebugger.attach.XAttachPresentationGroup
 import com.intellij.xdebugger.attach.XAttachProcessPresentationGroup
 import io.github.dotnetsupport.DotNetIcons
+import io.github.dotnetsupport.cli.DiagnosticsHelperService
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetTool
 import io.github.dotnetsupport.cli.PluginLog
@@ -36,6 +38,7 @@ import io.github.dotnetsupport.run.DotNetDebugBuild
 import io.github.dotnetsupport.run.DotNetLaunchArguments
 import io.github.dotnetsupport.run.DotNetProcessAttacher
 import io.github.dotnetsupport.run.DotNetProcesses
+import com.intellij.openapi.util.registry.Registry
 import io.github.dotnetsupport.run.DotNetRunConfiguration
 import io.github.dotnetsupport.settings.DotNetSettings
 import org.jetbrains.concurrency.AsyncPromise
@@ -167,8 +170,17 @@ class DotNetAttachDebuggerProvider : XAttachDebuggerProvider {
         val processId = process.pid.toLong()
         if (processId == ProcessHandle.current().pid() || processId in DebuggedProcesses) return emptyList()
         val executable = process.executableCannonicalPath.orElse(null)
-        return if (DotNetProcesses.isDotNet(executable, process.executableName, process.commandLine)) listOf(Debugger) else emptyList()
+        val dotNet = DotNetProcesses.isDotNet(executable, process.executableName, process.commandLine) ||
+            Registry.`is`(DotNetProcesses.NET_FRAMEWORK_KEY, false) && (DotNetProcesses.isNetFramework(executable) || hasDesktopClr(processId))
+        return if (dotNet) listOf(Debugger) else emptyList()
     }
+
+    /**
+     * A native host that has loaded the desktop CLR itself (`w3wp.exe`, Office, `powershell.exe`): only its modules tell, and the
+     * diagnostics helper reads them, for all processes at once and cached for a few seconds; the list is not held up by it for long.
+     */
+    private fun hasDesktopClr(processId: Long): Boolean =
+        SystemInfo.isWindows && runCatching { DiagnosticsHelperService.getInstance().runtimes.runtime(processId)?.isDesktop == true }.getOrDefault(false)
 
     /** ".NET" in the list of Attach to Process, with the icon of a project instead of the generic one. */
     private object Group : XAttachProcessPresentationGroup {

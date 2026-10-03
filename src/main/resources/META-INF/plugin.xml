@@ -201,6 +201,8 @@
                      description="Write the log of the dotnet-debugger adapter for every debug session (menu .NET | Show Debugger Logs)"/>
         <registryKey key="dotnet.debugger.protocol.trace" defaultValue="false"
                      description="Write every DAP message of the debug sessions next to the debugger logs (menu .NET | Trace Debugger Protocol)"/>
+        <registryKey key="dotnet.debugger.attach.netFramework" defaultValue="false"
+                     description="Offer .NET Framework processes in Run | Attach to Process: managed executables and hosts with the desktop CLR loaded (w3wp, Office), found by the diagnostics helper (needs a debug adapter that debugs the desktop CLR)"/>
         <stepsBeforeRunProvider implementation="io.github.dotnetsupport.run.BuildProjectBeforeRunTaskProvider"/>
         <runConfigurationProducer implementation="io.github.dotnetsupport.testing.DotNetTestConfigurationProducer"/>
         <runLineMarkerContributor language="C#"
@@ -222,6 +224,9 @@
                     factoryClass="io.github.dotnetsupport.ef.EfToolWindowFactory"/>
         <toolWindow id=".NET Coverage" anchor="right" secondary="true" icon="AllIcons.General.RunWithCoverage"
                     factoryClass="io.github.dotnetsupport.coverage.CoverageToolWindowFactory"/>
+        <!-- the IL of the code at the caret, as in Rider; a stripe button only with a .NET solution -->
+        <toolWindow id="IL Viewer" anchor="right" icon="AllIcons.FileTypes.BinaryData"
+                    factoryClass="io.github.dotnetsupport.il.IlViewerToolWindowFactory"/>
         <!-- the journal of the plugin; not on the stripe until .NET | Plugin Logs asks for it -->
         <toolWindow id="Plugin Logs" anchor="bottom" icon="AllIcons.Debugger.Console" doNotActivateOnStart="true"
                     factoryClass="io.github.dotnetsupport.cli.PluginLogsToolWindowFactory"/>
@@ -240,6 +245,17 @@
     <actions>
         <action id="DotNet.NewCSharpFile" class="io.github.dotnetsupport.templates.CreateCSharpFileAction">
             <add-to-group group-id="NewGroup" anchor="first"/>
+        </action>
+
+        <!-- Rider's New Solution window; on top of File | New, where Rider has it -->
+        <action id="DotNet.NewSolution" class="io.github.dotnetsupport.newproject.NewSolutionAction" text="New Solution..."
+                description="Create a .NET solution with a project from a template, or an empty solution" icon="/icons/solution.svg">
+            <add-to-group group-id="NewGroup" anchor="first"/>
+        </action>
+        <!-- the same on the Welcome screen, next to New Project and with its icon: there no project is open -->
+        <action id="DotNet.NewSolution.Welcome" class="io.github.dotnetsupport.newproject.NewSolutionAction" text="New Solution"
+                description="Create a .NET solution with a project from a template, or an empty solution" icon="AllIcons.Welcome.CreateNewProjectTab">
+            <add-to-group group-id="WelcomeScreen.QuickStart" anchor="after" relative-to-action="WelcomeScreen.CreateNewProject"/>
         </action>
 
         <group id="DotNet.NewItems" class="io.github.dotnetsupport.templates.NewDotNetItemGroup"
@@ -396,6 +412,7 @@
             </group>
             <reference ref="DotNet.EfCore"/>
             <separator/>
+            <reference ref="DotNet.NewSolution"/>
             <action id="DotNet.NewProject" class="io.github.dotnetsupport.actions.NewDotNetProjectAction"
                     text="New .NET Project..."/>
             <action id="DotNet.Monitor" class="io.github.dotnetsupport.monitor.ShowMonitorAction"
@@ -405,6 +422,8 @@
                     description="Listen to the program started from the IDE and write at the end of every line what it allocates: bytes and objects a second, types, share">
                 <add-to-group group-id="EditorPopupMenu" anchor="last"/>
             </action>
+            <action id="DotNet.IlViewer" class="io.github.dotnetsupport.il.ShowIlViewerAction" text="IL Viewer" icon="AllIcons.FileTypes.BinaryData"
+                    description="The IL of the code at the caret, from the last build of the project: the C# line and its instructions light up together"/>
             <action id="DotNet.RunCSharpFile" class="io.github.dotnetsupport.run.RunCSharpFileAction" text="Run C# File with dotnet"
                     description="dotnet run on a standalone .cs file (a file-based app, .NET 10+); shown for a .cs file that no project owns">
                 <add-to-group group-id="EditorPopupMenu" anchor="last"/>
@@ -461,6 +480,9 @@
         <listener class="io.github.dotnetsupport.view.SolutionFilesListener"
                   topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
         <listener class="io.github.dotnetsupport.nuget.NuGetAutoRestore$Listener"
+                  topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+        <!-- MsBuildHost evaluates again the projects of the old format whose files or imports have changed -->
+        <listener class="io.github.dotnetsupport.msbuild.MsBuildEvaluation$Listener"
                   topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
     </projectListeners>
 </idea-plugin>

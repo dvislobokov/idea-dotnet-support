@@ -346,6 +346,29 @@ class DebugLaunchTest : BasePlatformTestCase() {
         assertFalse(processes.isDotNet("dotnet-debugger.exe", "", { true }))
     }
 
+    fun testAManagedExecutableIsToldByItsCliHeader() {
+        // MZ, e_lfanew = 0x80, PE\0\0, a COFF header, an optional header of PE32 / PE32+ with 16 data directories
+        fun image(magic: Int, cli: Boolean): ByteArray {
+            val bytes = ByteArray(1024)
+            fun put16(at: Int, value: Int) { bytes[at] = value.toByte(); bytes[at + 1] = (value shr 8).toByte() }
+            fun put32(at: Int, value: Int) { put16(at, value and 0xFFFF); put16(at + 2, value ushr 16) }
+            put16(0, 0x5A4D); put32(0x3C, 0x80); put32(0x80, 0x4550)
+            val optional = 0x80 + 24
+            put16(optional, magic)
+            val (count, directories) = if (magic == 0x10B) optional + 92 to optional + 96 else optional + 108 to optional + 112
+            put32(count, 16)
+            if (cli) { put32(directories + 14 * 8, 0x2008); put32(directories + 14 * 8 + 4, 0x48) }
+            return bytes
+        }
+        val pe = io.github.dotnetsupport.run.PortableExecutable
+        assertTrue(pe.isManaged(image(0x10B, cli = true)))
+        assertTrue(pe.isManaged(image(0x20B, cli = true)))
+        assertFalse(pe.isManaged(image(0x20B, cli = false)))
+        assertFalse(pe.isManaged(ByteArray(64)))
+        assertFalse(pe.isManaged(image(0x10B, cli = true).copyOf(200)))
+        assertFalse(io.github.dotnetsupport.run.DotNetProcesses.isNetFramework(null))
+    }
+
     fun testDebugOfTestsNeedsSomebodyToAttach() {
         val tests = configuration(DotNetCommand.TEST)
         assertNotNull("the debugger of the plugin is always there to attach", io.github.dotnetsupport.run.DotNetProcessAttacher.find())

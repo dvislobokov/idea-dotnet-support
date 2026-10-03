@@ -43,14 +43,23 @@ abstract class BuildSolutionAction(private val command: DotNetBuildCommand) : An
         DotNetBuildService.getInstance(project).run(solutionFile(e) ?: return, command)
     }
 
-    private fun solutionFile(e: AnActionEvent): VirtualFile? =
+    protected fun solutionFile(e: AnActionEvent): VirtualFile? =
         e.project?.let { SolutionService.getInstance(it).solutionFiles().firstOrNull() }
 }
 
 class BuildSolution : BuildSolutionAction(DotNetBuildCommand.BUILD)
 class RebuildSolution : BuildSolutionAction(DotNetBuildCommand.REBUILD)
 class CleanSolution : BuildSolutionAction(DotNetBuildCommand.CLEAN)
-class RestoreSolution : BuildSolutionAction(DotNetBuildCommand.RESTORE)
+/** `dotnet restore` of the solution, and the packages.config projects in it by the .NET helper (output in the Log tab of the NuGet window). */
+class RestoreSolution : BuildSolutionAction(DotNetBuildCommand.RESTORE) {
+    override fun actionPerformed(e: AnActionEvent) {
+        super.actionPerformed(e)
+        val project = e.project ?: return
+        val solution = solutionFile(e) ?: return
+        val service = io.github.dotnetsupport.nuget.NuGetService.getInstance(project)
+        service.restorePackagesConfig(service.packagesConfigProjects(listOf(solution)))
+    }
+}
 
 /** "Rerun" button of the Build tool window. */
 internal class RerunBuildAction(private val target: VirtualFile, private val rerun: () -> Unit) :

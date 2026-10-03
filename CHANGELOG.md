@@ -3,6 +3,73 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.32
+
+- **IL Viewer** (.NET | IL Viewer), as in Rider: the IL of the method at the caret, from the last build, follows the editor. The PDB tells
+  which code is on the line — the method, the state machine of an async method or an iterator, a lambda, a local function; the lines
+  of C# and their IL are highlighted both ways. A banner says when the source has changed since the build, with a Build button
+
+## 0.1.31
+
+- The C# language server in the status bar shows its CPU and memory next to the C# icon, updated every two seconds, instead of the
+  name of the solution (that one is in the tooltip and the popup)
+
+## 0.1.30
+
+- **New Solution** window as in Rider — File | New, the .NET menu and the Welcome screen: project kinds and templates, target framework
+  and the SDK to pin in `global.json`, language, the template description and advanced settings, a Git repository
+
+## 0.1.29
+
+- Memory Dump (.NET Monitor) shows the retained size of every type and a tree of dominators — who keeps how much of the heap alive —
+  computed in the background by a new diagnostics helper on ClrMD
+- With the registry key `dotnet.debugger.attach.netFramework`, Run | Attach to Process also offers native hosts that load the .NET
+  Framework runtime themselves (IIS `w3wp.exe`, Office, Windows PowerShell), 32-bit ones included
+
+## 0.1.28
+
+- Projects are evaluated by MSBuild itself, as a build sees them (conditions, properties, imports), through a helper that stays running:
+  Debug finds the built assembly without a `dotnet msbuild` call per launch, and an old-style (non-SDK) project shows in the Solution
+  view exactly the files it lists; the others appear only with Show All Files
+
+## 0.1.27
+
+- NuGet: a feed the IDE cannot reach (proxy, certificates, credentials) is searched through a .NET helper that goes to the network like
+  the `dotnet` CLI — nuget.config credentials and credential providers included; local folder feeds and V2 feeds are searched too.
+  The journal says which way every request went
+- NuGet Restore (the NuGet window, .NET | NuGet | Restore and the automatic restore) restores `packages.config` projects into the
+  packages folder of their solution (`repositoryPath` of nuget.config respected); a package that is not there is marked "not restored"
+  in Dependencies
+
+## 0.1.26
+
+- `dotnet watch`: the Hot Reload state (watching, changes applied, restart needed after a rude edit, build failed) in the row of the
+  Services tool window and colored in the run console, with **Restart** there and in the toolbar of the console. Under an IDE
+  `dotnet watch` does not read its keys (Ctrl+R, the y/n answer), so Restart runs the configuration again in the same tab
+
+## 0.1.25
+
+- Go to Base (Ctrl+U) on a method, property, event or indexer jumps to the member it overrides or implements in the base classes and
+  interfaces: the nearest base class first, then the interfaces; several — a list. A base type that is not in the sources is gone to
+  as a type. Needs the C# language server
+
+## 0.1.24
+
+- Legacy projects with `packages.config`: their packages are shown under Dependencies → Packages and as installed in the NuGet window,
+  where install, update and remove are disabled with an explanation instead of writing a `PackageReference` into the project
+
+## 0.1.23
+
+- Run | Attach to Process can offer .NET Framework processes (a managed `.exe` without `runtimeconfig.json`), for a debug adapter that
+  debugs the desktop CLR. Off by default: registry key `dotnet.debugger.attach.netFramework`
+
+## 0.1.22
+
+- Several projects selected in the Solution view: **Run N Projects** / **Debug N Projects** in the context menu, as Rider's "Run
+  Multiple Projects". The projects are built one after another first, then launched together, each in its own tab of Services
+- The builds a debug launch waits for go one after another, so a Compound configuration with several .NET projects no longer builds
+  their shared dependencies twice at the same time
+
 ## 0.1.21
 
 - The journal of NuGet (.NET | Plugin Logs, category `nuget`, and the Log tab of the NuGet window) now has every request to a feed:

@@ -75,10 +75,10 @@ class CliFormatsTest {
         )
         assertEquals(
             listOf(
-                DotNetTemplate("Worker Service", "worker", listOf("C#", "F#"), "C#"),
-                DotNetTemplate("Библиотека классов", "classlib", listOf("C#", "F#", "VB"), "C#"),
-                DotNetTemplate("ASP.NET Core Web App", "webapp", listOf("C#"), "C#"),
-                DotNetTemplate("Solution File", "sln", emptyList(), null),
+                DotNetTemplate("Worker Service", "worker", listOf("C#", "F#"), "C#", listOf("Common", "Worker", "Web")),
+                DotNetTemplate("Библиотека классов", "classlib", listOf("C#", "F#", "VB"), "C#", listOf("Common", "Library")),
+                DotNetTemplate("ASP.NET Core Web App", "webapp", listOf("C#"), "C#", listOf("Web", "MVC", "Razor Pages")),
+                DotNetTemplate("Solution File", "sln", emptyList(), null, listOf("Solution")),
             ),
             templates,
         )

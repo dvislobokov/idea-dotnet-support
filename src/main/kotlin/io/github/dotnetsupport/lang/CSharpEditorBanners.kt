@@ -15,8 +15,7 @@ import io.github.dotnetsupport.build.DotNetBuildService
 import io.github.dotnetsupport.cli.DotNetTool
 import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.msbuild.DotNetProjects
-import io.github.dotnetsupport.msbuild.ProjectContent
-import io.github.dotnetsupport.solution.SolutionService
+import io.github.dotnetsupport.msbuild.MsBuildEvaluation
 import java.util.function.Function
 import javax.swing.JComponent
 
@@ -71,10 +70,11 @@ class CSharpEditorBanners : EditorNotificationProvider {
             if (projectFile == null) {
                 return if (shown(Kind.NO_PROJECT)) Banner(Kind.NO_PROJECT, "This file belongs to no project of the folder: it is not built, and the language server does not analyze it.") else null
             }
-            val solutions = SolutionService.getInstance(project)
             val relative = projectFile.parent?.let { VfsUtilCore.getRelativePath(file, it, '/') }
-            if (relative != null && shown(Kind.EXCLUDED) && ProjectContent(solutions.msBuildProject(projectFile)).isExcluded(relative)) {
-                return Banner(Kind.EXCLUDED, "Excluded from ${projectFile.name} by the project file (Compile Remove or DefaultItemExcludes): not compiled.", projectFile)
+            val content = if (relative != null && shown(Kind.EXCLUDED)) MsBuildEvaluation.getInstance(project).content(projectFile) else null
+            if (relative != null && content != null && content.isExcluded(relative)) {
+                return Banner(Kind.EXCLUDED, if (content.isEvaluated) "Not a part of ${projectFile.name}: the project file does not list it, it is not compiled."
+                    else "Excluded from ${projectFile.name} by the project file (Compile Remove or DefaultItemExcludes): not compiled.", projectFile)
             }
             if (shown(Kind.NOT_RESTORED) && projectFile.parent?.findFileByRelativePath("obj/project.assets.json") == null) {
                 return Banner(Kind.NOT_RESTORED, "The packages of ${projectFile.name} are not restored: references are unresolved until they are.", projectFile)

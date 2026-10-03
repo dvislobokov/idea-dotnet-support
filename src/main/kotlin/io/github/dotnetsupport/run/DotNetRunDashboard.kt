@@ -11,6 +11,7 @@ import com.intellij.execution.ui.RunContentDescriptor
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
+import com.intellij.ui.JBColor
 import com.intellij.ui.SimpleTextAttributes
 
 /*
@@ -43,14 +44,38 @@ class ListeningAddressRecorder(private val handler: ProcessHandler) : ProcessLis
     }
 }
 
-/** The row of a .NET service: the address it listens on, as a link that opens the browser. */
+/**
+ * The row of a .NET service: the address it listens on, as a link that opens the browser, and for `dotnet watch` the Hot Reload state
+ * ([HotReloadTracker]), with a Restart link when a change needs one.
+ */
 class DotNetRunDashboardCustomizer : RunDashboardCustomizer() {
     override fun isApplicable(settings: RunnerAndConfigurationSettings, descriptor: RunContentDescriptor?): Boolean = settings.configuration is DotNetRunConfiguration
 
     override fun updatePresentation(customizationBuilder: RunDashboardCustomizationBuilder, settings: RunnerAndConfigurationSettings, descriptor: RunContentDescriptor?): Boolean {
-        val url = descriptor?.processHandler?.takeIf { !it.isProcessTerminated }?.getUserData(ListeningAddressRecorder.KEY) ?: return false
-        customizationBuilder.addText("  ", SimpleTextAttributes.GRAYED_ATTRIBUTES)
-        customizationBuilder.addLink(url) { BrowserUtil.browse(url) }
+        val handler = descriptor?.processHandler?.takeIf { !it.isProcessTerminated } ?: return false
+        val url = handler.getUserData(ListeningAddressRecorder.KEY)
+        val status = handler.getUserData(HotReloadTracker.KEY)
+        if (url == null && status == null) return false
+        if (url != null) {
+            customizationBuilder.addText("  ", SimpleTextAttributes.GRAYED_ATTRIBUTES)
+            customizationBuilder.addLink(url) { BrowserUtil.browse(url) }
+        }
+        if (status != null) {
+            customizationBuilder.addText("  Hot Reload: ", SimpleTextAttributes.GRAYED_ATTRIBUTES)
+            customizationBuilder.addText(status.state.text, attributes(status.state))
+            val environment = handler.getUserData(HotReloadTracker.ENVIRONMENT)
+            if (environment != null && status.state == HotReloadState.RESTART_NEEDED) {
+                customizationBuilder.addText("  ", SimpleTextAttributes.GRAYED_ATTRIBUTES)
+                customizationBuilder.addLink("Restart") { HotReloadTracker.restart(environment) }
+            }
+        }
         return true
+    }
+
+    private fun attributes(state: HotReloadState): SimpleTextAttributes = when (state.level) {
+        LogLevel.ERROR -> SimpleTextAttributes.ERROR_ATTRIBUTES
+        LogLevel.WARNING -> SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, JBColor.namedColor("Label.warningForeground", JBColor(0xA36200, 0xE5A549)))
+        null -> SimpleTextAttributes.GRAYED_ATTRIBUTES
+        else -> SimpleTextAttributes.REGULAR_ATTRIBUTES
     }
 }

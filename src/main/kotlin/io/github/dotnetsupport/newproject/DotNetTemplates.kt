@@ -3,7 +3,14 @@ package io.github.dotnetsupport.newproject
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.PluginLog
 
-data class DotNetTemplate(val name: String, val shortName: String, val languages: List<String>, val defaultLanguage: String?) {
+data class DotNetTemplate(
+    val name: String,
+    val shortName: String,
+    val languages: List<String>,
+    val defaultLanguage: String?,
+    /** The Tags column of `dotnet new list`: `Common/Console`, `Web/WebAPI/API/Service`; the New Solution dialog sorts templates by them. */
+    val tags: List<String> = emptyList(),
+) {
     override fun toString(): String = name
 }
 
@@ -13,22 +20,23 @@ object DotNetTemplates {
 
     /** Shown until (and unless) `dotnet new list` answers. */
     val BUILT_IN: List<DotNetTemplate> = listOf(
-        DotNetTemplate("Console App", "console", ALL_LANGUAGES, "C#"),
-        DotNetTemplate("Class Library", "classlib", ALL_LANGUAGES, "C#"),
-        DotNetTemplate("ASP.NET Core Web API", "webapi", listOf("C#", "F#"), "C#"),
-        DotNetTemplate("ASP.NET Core Web App (Razor Pages)", "webapp", CSHARP_ONLY, "C#"),
-        DotNetTemplate("ASP.NET Core Web App (MVC)", "mvc", listOf("C#", "F#"), "C#"),
-        DotNetTemplate("ASP.NET Core Empty", "web", listOf("C#", "F#"), "C#"),
-        DotNetTemplate("Blazor Web App", "blazor", CSHARP_ONLY, "C#"),
-        DotNetTemplate("Worker Service", "worker", listOf("C#", "F#"), "C#"),
-        DotNetTemplate("xUnit Test Project", "xunit", ALL_LANGUAGES, "C#"),
-        DotNetTemplate("NUnit Test Project", "nunit", ALL_LANGUAGES, "C#"),
-        DotNetTemplate("MSTest Test Project", "mstest", ALL_LANGUAGES, "C#"),
+        DotNetTemplate("Console App", "console", ALL_LANGUAGES, "C#", listOf("Common", "Console")),
+        DotNetTemplate("Class Library", "classlib", ALL_LANGUAGES, "C#", listOf("Common", "Library")),
+        DotNetTemplate("ASP.NET Core Web API", "webapi", listOf("C#", "F#"), "C#", listOf("Web", "WebAPI", "API", "Service")),
+        DotNetTemplate("ASP.NET Core Web App (Razor Pages)", "webapp", CSHARP_ONLY, "C#", listOf("Web", "MVC", "Razor Pages")),
+        DotNetTemplate("ASP.NET Core Web App (MVC)", "mvc", listOf("C#", "F#"), "C#", listOf("Web", "MVC")),
+        DotNetTemplate("ASP.NET Core Empty", "web", listOf("C#", "F#"), "C#", listOf("Web", "Empty")),
+        DotNetTemplate("Blazor Web App", "blazor", CSHARP_ONLY, "C#", listOf("Web", "Blazor", "WebAssembly")),
+        DotNetTemplate("Worker Service", "worker", listOf("C#", "F#"), "C#", listOf("Common", "Worker", "Web")),
+        DotNetTemplate("xUnit Test Project", "xunit", ALL_LANGUAGES, "C#", listOf("Test", "xUnit", "Desktop", "Web")),
+        DotNetTemplate("NUnit Test Project", "nunit", ALL_LANGUAGES, "C#", listOf("Test", "NUnit", "Desktop", "Web")),
+        DotNetTemplate("MSTest Test Project", "mstest", ALL_LANGUAGES, "C#", listOf("Test", "MSTest", "Desktop", "Web")),
     )
 
     /** Installed project templates. Blocking; returns [BUILT_IN] when the CLI is unavailable or prints something unexpected. */
     fun loadProjectTemplates(): List<DotNetTemplate> = try {
-        val output = DotNetCli.execute(DotNetCli.commandLine(null, "new", "list", "--type", "project"), 60_000)
+        // English names, as Rider shows them ("Console App", not the name in the language of the OS); the parsing does not depend on it
+        val output = DotNetCli.execute(DotNetCli.commandLine(null, "new", "list", "--type", "project").withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en"), 60_000)
         parseList(output.stdout).ifEmpty { PluginLog.warn(LOG_CATEGORY, "`dotnet new list --type project` printed no templates the plugin reads (exit code ${output.exitCode}), the built-in list is shown"); BUILT_IN }
     } catch (e: Exception) {
         PluginLog.warn(LOG_CATEGORY, "`dotnet new list --type project` could not run, the built-in list is shown", e)
@@ -48,6 +56,14 @@ object DotNetTemplates {
         parseSdkList(DotNetCli.execute(DotNetCli.commandLine(null, "--list-sdks"), 30_000).stdout)
     } catch (e: Exception) {
         PluginLog.warn(LOG_CATEGORY, "`dotnet --list-sdks` could not run, no frameworks to choose from", e)
+        emptyList()
+    }
+
+    /** Versions of the installed SDKs (`10.0.401`), newest first; empty when the CLI is unavailable. Blocking. */
+    fun loadSdkVersions(): List<String> = try {
+        parseSdkVersions(DotNetCli.execute(DotNetCli.commandLine(null, "--list-sdks"), 30_000).stdout)
+    } catch (e: Exception) {
+        PluginLog.warn(LOG_CATEGORY, "`dotnet --list-sdks` could not run, no SDKs to choose from", e)
         emptyList()
     }
 
@@ -87,6 +103,7 @@ object DotNetTemplates {
                 name, shortName,
                 languages = languages.map { it.removeSurrounding("[", "]") },
                 defaultLanguage = languages.firstOrNull { it.startsWith("[") }?.removeSurrounding("[", "]"),
+                tags = if (columns.size > 3) cell(line, 3).split('/').map { it.trim() }.filter { it.isNotEmpty() } else emptyList(),
             )
         }
     }
@@ -98,4 +115,12 @@ object DotNetTemplates {
             .distinct()
             .sortedDescending()
             .map { "net$it.0" }
+
+    /** Full versions of `dotnet --list-sdks`, newest first: `10.0.401`, `9.0.305`, `9.0.100`. */
+    fun parseSdkVersions(output: String): List<String> =
+        output.lines()
+            .map { it.trim().substringBefore(' ') }
+            .filter { it.firstOrNull()?.isDigit() == true && '.' in it }
+            .distinct()
+            .sortedWith(compareByDescending<String> { SdkVersions.key(it) })
 }

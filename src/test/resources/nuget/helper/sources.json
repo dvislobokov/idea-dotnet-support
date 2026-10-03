@@ -1,0 +1,16 @@
+[
+ {
+  "name": "nuget.org",
+  "url": "https://api.nuget.org/v3/index.json",
+  "protocolVersion": 3,
+  "isLocal": false,
+  "isHttp": true
+ },
+ {
+  "name": "local",
+  "url": "C:\\Users\\dvislobokov\\AppData\\Local\\Temp\\claude\\dnh-test\\feed",
+  "protocolVersion": 2,
+  "isLocal": true,
+  "isHttp": false
+ }
+]

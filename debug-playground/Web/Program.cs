@@ -1,5 +1,6 @@
 // ASP.NET Core under the debugger: launch profiles (http / https / no browser), environment variables, a breakpoint in a request handler.
 using Playground.Lib;
+using Playground.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
@@ -22,6 +23,7 @@ app.MapGet("/", () => Results.Text(
     /orders/3   a handler to stop in
     /slow       a request that takes 5 s (Pause, then look at the threads)
     /fail       an exception inside a handler
+    /hot-reload a text to change under dotnet watch (HotReload.cs)
     """));
 
 app.MapGet("/orders/{count:int}", (int count) =>
@@ -44,5 +46,7 @@ app.MapGet("/fail", () =>
     return "never";
 #pragma warning restore CS0162
 });
+
+app.MapHotReload(); // /hot-reload: the Hot Reload scenarios of `dotnet watch`, see HotReload.cs
 
 app.Run();

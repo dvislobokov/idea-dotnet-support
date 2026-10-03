@@ -63,4 +63,46 @@ object DotNetProcesses {
         val directory = executablePath?.let { File(it).parentFile }
         return isDotNet(executableName, commandLine) { directory != null && File(directory, it).isFile }
     }
+
+    /** Offer .NET Framework processes too: off until the debug adapter can debug the desktop CLR. */
+    const val NET_FRAMEWORK_KEY = "dotnet.debugger.attach.netFramework"
+
+    private val managedExecutables = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, Boolean>>()
+
+    /**
+     * A .NET Framework application: a managed `.exe` (the PE file has a CLI header) without `runtimeconfig.json` next to it. An apphost of
+     * .NET is native, so the header alone tells them apart; hosts that load the CLR themselves (`w3wp.exe`, Office) are not found this way.
+     */
+    fun isNetFramework(executablePath: String?): Boolean {
+        val file = executablePath?.let(::File)?.takeIf { it.name.endsWith(".exe", ignoreCase = true) && it.isFile } ?: return false
+        if (File(file.parentFile, file.name.dropLast(4) + ".runtimeconfig.json").isFile) return false
+        val modified = file.lastModified()
+        managedExecutables[file.path]?.takeIf { it.first == modified }?.let { return it.second }
+        val managed = runCatching { file.inputStream().use { PortableExecutable.isManaged(it.readNBytes(4096)) } }.getOrDefault(false)
+        managedExecutables[file.path] = modified to managed
+        return managed
+    }
+}
+
+/** Just enough of the PE format to tell a managed executable from a native one. */
+object PortableExecutable {
+    private const val CLI_HEADER_DIRECTORY = 14
+
+    /** Whether the start of a PE file ([header], the first few KB) has a CLI header in its data directories. */
+    fun isManaged(header: ByteArray): Boolean {
+        fun u16(at: Int) = if (at + 2 > header.size) -1 else (header[at].toInt() and 0xFF) or ((header[at + 1].toInt() and 0xFF) shl 8)
+        fun u32(at: Int): Long = if (at + 4 > header.size) -1 else (u16(at).toLong() or (u16(at + 2).toLong() shl 16))
+        if (u16(0) != 0x5A4D) return false // MZ
+        val pe = u32(0x3C).toInt()
+        if (pe <= 0 || u32(pe) != 0x4550L) return false // PE\0\0
+        val optional = pe + 24
+        val (count, directories) = when (u16(optional)) {
+            0x10B -> u32(optional + 92) to optional + 96   // PE32
+            0x20B -> u32(optional + 108) to optional + 112 // PE32+
+            else -> return false
+        }
+        if (count <= CLI_HEADER_DIRECTORY) return false
+        val entry = directories + CLI_HEADER_DIRECTORY * 8
+        return u32(entry) > 0 && u32(entry + 4) > 0
+    }
 }

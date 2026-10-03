@@ -8,6 +8,8 @@ import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import io.github.dotnetsupport.msbuild.MsBuildProject
+import io.github.dotnetsupport.msbuild.PackagesConfig
+import io.github.dotnetsupport.msbuild.PackagesConfigEntry
 import io.github.dotnetsupport.msbuild.ProjectAssets
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
@@ -21,6 +23,7 @@ class SolutionService(private val project: Project) {
     private val filters = ConcurrentHashMap<VirtualFile, Cached<SolutionFilter?>>()
     private val msBuildProjects = ConcurrentHashMap<VirtualFile, Cached<MsBuildProject>>()
     private val assetsFiles = ConcurrentHashMap<VirtualFile, Cached<ProjectAssets>>()
+    private val packagesConfigs = ConcurrentHashMap<VirtualFile, Cached<List<PackagesConfigEntry>>>()
 
     /** The solutions of the opened folder, found by the last walk; dropped by [solutionFilesChanged] when files come and go. */
     @Volatile private var found: Pair<VirtualFile, SolutionFinder.Found>? = null
@@ -44,23 +47,26 @@ class SolutionService(private val project: Project) {
      * the list of solutions included.
      */
     fun reload(projectFile: VirtualFile? = null) {
+        project.getServiceIfCreated(io.github.dotnetsupport.msbuild.MsBuildEvaluation::class.java)?.reload(projectFile)
         if (projectFile == null) {
             found = null
             solutions.clear()
             filters.clear()
             msBuildProjects.clear()
             assetsFiles.clear()
+            packagesConfigs.clear()
             return
         }
         msBuildProjects.remove(projectFile)
         val directory = projectFile.parent
         assetsFiles.keys.removeIf { it.parent?.parent == directory }
+        packagesConfigs.keys.removeIf { it.parent == directory }
         // the props and targets around it are read through the same cache
         msBuildProjects.keys.removeIf { !it.isValid || it.extension?.lowercase() in IMPORTED }
     }
 
     /** How many files are parsed and kept: for the tests of the reload. */
-    val cachedFiles: Int get() = solutions.size + filters.size + msBuildProjects.size + assetsFiles.size
+    val cachedFiles: Int get() = solutions.size + filters.size + msBuildProjects.size + assetsFiles.size + packagesConfigs.size
 
     private fun find(): SolutionFinder.Found {
         val baseDir = project.guessProjectDir() ?: return SolutionFinder.Found.EMPTY
@@ -91,6 +97,16 @@ class SolutionService(private val project: Project) {
     fun assets(projectFile: VirtualFile): ProjectAssets {
         val file = projectFile.parent?.findFileByRelativePath("obj/project.assets.json") ?: return ProjectAssets.EMPTY
         return cached(assetsFiles, file, ProjectAssets::parse)
+    }
+
+    /**
+     * Packages of a legacy project that keeps them in `packages.config` ([PackagesConfig]); null for a project that does not. An SDK-style
+     * project ignores the file, so only a project without `Sdk` counts.
+     */
+    fun packagesConfig(projectFile: VirtualFile): List<PackagesConfigEntry>? {
+        if (msBuildProject(projectFile).sdk != null) return null
+        val file = PackagesConfig.find(projectFile) ?: return null
+        return cached(packagesConfigs, file, PackagesConfig::parse)
     }
 
     /** Version from the nearest `Directory.Packages.props` up the directory tree. */

@@ -27,7 +27,7 @@ class RoslynStatusWidgetTest : BasePlatformTestCase() {
             val widget = factory.createWidget(project) as RoslynStatusWidget
             assertTrue(widget.getPresentation() is StatusBarWidget.MultipleTextValuesPresentation)
             assertSame(DotNetIcons.CSharp, widget.getIcon())
-            assertTrue(widget.getSelectedValue().startsWith("Roslyn"))
+            assertTrue(widget.getSelectedValue().contains("CPU"))
             assertTrue(widget.getTooltipText().startsWith("C# Language Server: "))
         } finally {
             workspace.serverStopped(true)
@@ -42,10 +42,11 @@ class RoslynStatusWidgetTest : BasePlatformTestCase() {
     }
 
     fun testWordsOfTheWidget() {
-        assertEquals("Roslyn: starting...", RoslynStatusText.widget(RoslynPhase.STARTING, null))
-        assertEquals("Roslyn: loading Shop.sln...", RoslynStatusText.widget(RoslynPhase.LOADING, "Shop.sln"))
-        assertEquals("Roslyn: Shop.sln", RoslynStatusText.widget(RoslynPhase.READY, "Shop.sln"))
-        assertEquals("Roslyn", RoslynStatusText.widget(RoslynPhase.READY, null))
+        val sample = io.github.dotnetsupport.roslyn.RoslynServerUsage.Sample(1, 3, 640L * 1024 * 1024, 1.24, null)
+        assertEquals("starting... · CPU … · RAM …", RoslynStatusText.widget(RoslynPhase.STARTING, null))
+        assertEquals("loading... · CPU 1.2 % · RAM 640 MB", RoslynStatusText.widget(RoslynPhase.LOADING, sample))
+        assertEquals("CPU 1.2 % · RAM 640 MB", RoslynStatusText.widget(RoslynPhase.READY, sample))
+        assertEquals("CPU … · RAM 640 MB", RoslynStatusText.widget(RoslynPhase.READY, io.github.dotnetsupport.roslyn.RoslynServerUsage.Sample(1, 1, 640L * 1024 * 1024, null, null)))
         assertEquals("Loaded Shop.sln", RoslynStatusText.status(RoslynPhase.READY, "Shop.sln"))
         assertEquals("Loading the projects of the folder", RoslynStatusText.status(RoslynPhase.LOADING, null))
         assertEquals("Waiting for a solution to be selected", RoslynStatusText.status(RoslynPhase.CHOOSING_SOLUTION, null))

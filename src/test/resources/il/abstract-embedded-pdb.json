@@ -1,0 +1,15 @@
+{
+ "assembly": "C:\\work\\variants\\embedded\\Playground.Console.dll",
+ "assemblyModified": 1791044337820,
+ "pdb": "embedded",
+ "bodies": [
+  {
+   "name": "IlShape.Area()",
+   "kind": "method",
+   "text": ".method public hidebysig newslot abstract virtual\n  instance float64 Area () cil managed\n{\n} // end of method IlShape::Area",
+   "atCaret": true,
+   "mapping": []
+  }
+ ],
+ "warning": "The PDB has no code at line 11 (a field, a type header, a member without a body), so the IL is found by name: `Area`."
+}

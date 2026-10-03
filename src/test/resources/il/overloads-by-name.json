@@ -1,0 +1,29 @@
+{
+ "assembly": "C:\\work\\Playground\\Console\\bin\\Debug\\net9.0\\Playground.Console.dll",
+ "assemblyModified": 1791044475443,
+ "pdb": "C:\\work\\Playground\\Console\\bin\\Debug\\net9.0\\Playground.Console.pdb",
+ "bodies": [
+  {
+   "name": "IlShape.Add(int, int)",
+   "kind": "method",
+   "text": ".method public hidebysig\n  instance int32 Add (\n    int32 a,\n    int32 b\n  ) cil managed\n{\n  // Method begins at RVA 0x23e4\n  // Header size: 1\n  // Code size: 4 (0x4)\n  .maxstack 8\n\n  IL_0000: ldarg.1\n  IL_0001: ldarg.2\n  IL_0002: add\n  IL_0003: ret\n} // end of method IlShape::Add",
+   "atCaret": true,
+   "mapping": []
+  },
+  {
+   "name": "IlShape.Add(double, double)",
+   "kind": "method",
+   "text": ".method public hidebysig\n  instance float64 Add (\n    float64 a,\n    float64 b\n  ) cil managed\n{\n  // Method begins at RVA 0x23ec\n  // Header size: 12\n  // Code size: 18 (0x12)\n  .maxstack 2\n  .locals init (\n    [0] float64 sum,\n    [1] float64\n  )\n\n  IL_0000: nop\n  IL_0001: ldarg.1\n  IL_0002: ldarg.2\n  IL_0003: add\n  IL_0004: stloc.0\n  IL_0005: ldloc.0\n  IL_0006: ldarg.0\n  IL_0007: ldfld float64 Playground.IlShape::_scale\n  IL_000c: mul\n  IL_000d: stloc.1\n  IL_000e: br.s IL_0010\n\n  IL_0010: ldloc.1\n  IL_0011: ret\n} // end of method IlShape::Add",
+   "atCaret": false,
+   "mapping": []
+  },
+  {
+   "name": "IlShape.Add(string, string)",
+   "kind": "method",
+   "text": ".method public hidebysig\n  instance string Add (\n    string a,\n    string b\n  ) cil managed\n{\n  // Method begins at RVA 0x240a\n  // Header size: 1\n  // Code size: 25 (0x19)\n  .maxstack 8\n\n  IL_0000: ldarg.1\n  IL_0001: ldarg.2\n  IL_0002: ldarg.0\n  IL_0003: ldfld string Playground.IlShape::_label\n  IL_0008: ldarg.0\n  IL_0009: ldflda int32 Playground.IlShape::_count\n  IL_000e: call instance string [System.Runtime]System.Int32::ToString()\n  IL_0013: call string [System.Runtime]System.String::Concat(string, string, string, string)\n  IL_0018: ret\n} // end of method IlShape::Add",
+   "atCaret": false,
+   "mapping": []
+  }
+ ],
+ "warning": "The PDB of Playground.Console.dll has no Nope.cs (is it compiled into this assembly?), so the IL is found by name: all 3 methods named `Add`."
+}

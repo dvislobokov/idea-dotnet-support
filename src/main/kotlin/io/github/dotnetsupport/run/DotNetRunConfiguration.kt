@@ -16,9 +16,12 @@ import com.intellij.execution.process.KillableColoredProcessHandler
 import com.intellij.execution.process.ProcessHandler
 import com.intellij.execution.process.ProcessTerminatedListener
 import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.execution.ui.ConsoleView
+import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.components.BaseState
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.NotNullLazyValue
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.util.execution.ParametersListUtil
@@ -106,14 +109,25 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
 
     private fun runState(environment: ExecutionEnvironment): RunProfileState =
         object : CommandLineState(environment) {
+            private val watch = options.command == DotNetCommand.WATCH
+
+            init {
+                if (watch) addConsoleFilters(HotReloadConsoleFilter(environment))
+            }
+
             override fun startProcess(): ProcessHandler {
-                val handler = KillableColoredProcessHandler(buildCommandLine())
+                val handler = KillableColoredProcessHandler(buildCommandLine(prebuilt = environment.getUserData(PREBUILT) == true))
                 ListeningAddressRecorder.attach(handler) // the address, for the row of the Services tool window
+                if (watch) HotReloadTracker.attach(handler, environment) // the Hot Reload state, for the same row
                 // `dotnet watch` opens the browser itself when the profile asks for it
                 if (options.openBrowser && options.command == DotNetCommand.RUN) handler.addProcessListener(ListeningUrlListener(launchUrl()))
                 ProcessTerminatedListener.attach(handler)
                 return handler
             }
+
+            override fun createActions(console: ConsoleView?, processHandler: ProcessHandler, executor: Executor?): Array<AnAction> =
+                if (watch) super.createActions(console, processHandler, executor) + RestartDotNetWatchAction(environment, processHandler)
+                else super.createActions(console, processHandler, executor)
         }
 
     /** The selected profile, or the first one, which is what `dotnet run` uses by default. */
@@ -132,8 +146,11 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
         justMyCode = !DotNetSettings.getInstance().debugExternalSource, allowImplicitEvaluation = DotNetSettings.getInstance().debugAllowImplicitEvaluation,
     )
 
-    /** [testResultsDirectory]: where `dotnet test` writes the TRX report (and coverage) the test tree is built from. */
-    fun buildCommandLine(testResultsDirectory: File? = null): GeneralCommandLine {
+    /**
+     * [testResultsDirectory]: where `dotnet test` writes the TRX report (and coverage) the test tree is built from.
+     * [prebuilt]: the project has just been built (several projects launched together), so `dotnet run` does not build it again.
+     */
+    fun buildCommandLine(testResultsDirectory: File? = null, prebuilt: Boolean = false): GeneralCommandLine {
         val options = options
         val projectPath = options.projectPath.orEmpty()
         val programArguments = ParametersListUtil.parse(options.programArguments.orEmpty())
@@ -142,13 +159,15 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
         // Debug / Release and the target framework chosen in the toolbar
         val selected = DotNetBuildSettings.getInstance(project).runArguments(projectPath)
         val arguments = when (options.command) {
-            DotNetCommand.RUN -> listOf("run", "--project", projectPath) + selected + profile + environmentArguments(projectPath) + separated(programArguments)
+            DotNetCommand.RUN -> listOf("run", "--project", projectPath) + listOfNotNull("--no-build".takeIf { prebuilt }) + selected + profile + environmentArguments(projectPath) + separated(programArguments)
             DotNetCommand.WATCH -> listOf("watch", "--project", projectPath, "run") + selected + profile + environmentArguments(projectPath) + separated(programArguments)
             // For tests the arguments are options of `dotnet test` itself (--filter, --logger, ...), or of Microsoft.Testing.Platform.
             DotNetCommand.TEST -> testArguments(projectPath, selected, testResultsDirectory, programArguments)
         }
         val workDirectory = options.workingDirectory?.takeIf { it.isNotBlank() } ?: File(projectPath).parent
         return DotNetCli.commandLine(workDirectory, *arguments.toTypedArray())
+            // the Hot Reload state is read from the messages of `dotnet watch`, which are localized (HotReloadOutput)
+            .withEnvironment(if (options.command == DotNetCommand.WATCH) mapOf("DOTNET_CLI_UI_LANGUAGE" to "en") else emptyMap())
             .withEnvironment(hostingEnvironment().toMap())
             .withEnvironment(options.environment)
             .withParentEnvironmentType(
@@ -195,6 +214,9 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
         if (programArguments.isEmpty()) emptyList() else listOf("--") + programArguments
 
     companion object {
+        /** On the environment of a launch whose project was built just before it, see [buildCommandLine]. */
+        val PREBUILT: Key<Boolean> = Key.create("dotnet.run.prebuilt")
+
         val HOSTING_VARIABLES = listOf("ASPNETCORE_ENVIRONMENT", "DOTNET_ENVIRONMENT")
 
         /** Environments a project is prepared for: `appsettings.Staging.json` -> `Staging`, after the three standard ones. */

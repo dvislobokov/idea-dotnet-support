@@ -60,6 +60,19 @@ object NuGetNetwork {
         return text + hint(chain)?.let { " -- $it" }.orEmpty()
     }
 
+    /**
+     * A failure the route of the IDE is to blame for, not the feed: an unknown host, a refused or timed-out connection, a certificate,
+     * a proxy, or credentials the IDE does not have (401 / 403 / 407). The CLI, with its own proxy, certificates and credential
+     * providers, may well get through: such a feed is tried again by the .NET helper ([NuGetHelper]).
+     */
+    fun isRouteFailure(e: Throwable): Boolean {
+        val chain = generateSequence(e) { it.cause?.takeIf { cause -> cause !== it } }.toList()
+        val status = chain.filterIsInstance<HttpRequests.HttpStatusException>().firstOrNull()?.statusCode
+        return status == 401 || status == 403 || status == 407 ||
+            chain.any { it is UnknownHostException || it is SSLException || it is CertificateException || it is SocketTimeoutException || it is java.net.SocketException } ||
+            chain.any { it.message?.contains("PKIX", ignoreCase = true) == true || it.message?.contains("proxy", ignoreCase = true) == true }
+    }
+
     private fun hint(chain: List<Throwable>): String? {
         val status = chain.filterIsInstance<HttpRequests.HttpStatusException>().firstOrNull()?.statusCode
         return when {

@@ -11,9 +11,10 @@ import java.security.MessageDigest
  * of the network. The result lies in the caches of the IDE; nothing is put next to the projects of the user.
  *
  * [folder] is where the sources are in the resources of the plugin and the name of the folder in the caches, [assembly] the name of
- * the project file and of the dll, [property] the MSBuild property the project takes its framework from.
+ * the project file and of the dll, [property] the MSBuild property the project takes its framework from, [sources] the files that go
+ * with the project file (a helper that stays running has the `Protocol.cs` of `helpers/protocol` among them, see [HelperConnection]).
  */
-class DotNetHelper(private val folder: String, val assembly: String, private val property: String) {
+class DotNetHelper(private val folder: String, val assembly: String, private val property: String, private val sources: List<String> = listOf("Program.cs")) {
     /** Null until built; the failure of a build is remembered for the session, so it is not tried again at every use. */
     @Volatile private var built: File? = null
     @Volatile private var failed: String? = null
@@ -29,7 +30,7 @@ class DotNetHelper(private val folder: String, val assembly: String, private val
     fun ensureBuilt(): File? {
         built?.takeIf { it.isFile }?.let { return it }
         if (failed != null) return null
-        val sources = Sources.read(folder, listOf("Program.cs", "$assembly.csproj")) ?: return fail("The source of $assembly is not in the plugin")
+        val sources = Sources.read(folder, this.sources + "$assembly.csproj") ?: return fail("The source of $assembly is not in the plugin")
         val work = File(root(), folder).apply { mkdirs() }
         return java.io.RandomAccessFile(File(work, ".lock"), "rw").use { access -> access.channel.lock().use { build(sources, work) } }
     }
@@ -42,7 +43,7 @@ class DotNetHelper(private val folder: String, val assembly: String, private val
         if (dll.isFile && File(directory, "bin/$assembly.runtimeconfig.json").isFile) return dll.also { built = it }
 
         val source = File(directory, "src").apply { mkdirs() }
-        for ((name, text) in sources.files) File(source, name).writeText(text)
+        for ((name, text) in sources.files) File(source, name).apply { parentFile.mkdirs() }.writeText(text)
         val command = DotNetCli.commandLine(source.path, "build", "$assembly.csproj", "-c", "Release", "-o", File(directory, "bin").path, "-nologo", "-v", "q",
             "-p:$property=$framework")
         val result = try {

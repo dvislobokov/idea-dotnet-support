@@ -22,7 +22,6 @@ import com.intellij.util.ui.JBUI
 import io.github.dotnetsupport.DotNetIcons
 import io.github.dotnetsupport.lsp.RoslynLanguageServerConfigurable
 import io.github.dotnetsupport.lsp.RoslynPhase
-import io.github.dotnetsupport.lsp.RoslynPolicy
 import io.github.dotnetsupport.monitor.ProcessSampler
 import java.time.Duration
 import java.time.Instant
@@ -58,18 +57,44 @@ class RoslynStatusWidgetFactory : StatusBarWidgetFactory {
     }
 }
 
+/** The C# icon and the CPU and the memory of the server, measured every [PERIOD_MS] off the UI thread; the solution is in the tooltip. */
 class RoslynStatusWidget(private val project: Project) : StatusBarWidget, StatusBarWidget.MultipleTextValuesPresentation {
     private val workspace get() = project.service<RoslynWorkspace>()
+    private val usage = RoslynServerUsage()
+    @Volatile private var sample: RoslynServerUsage.Sample? = null
+    private var statusBar: StatusBar? = null
+    private val timer = Timer(PERIOD_MS) { measure() }
 
     override fun ID(): String = RoslynStatusWidgetFactory.ID
     override fun getPresentation(): StatusBarWidget.WidgetPresentation = this
-    override fun install(statusBar: StatusBar) = Unit
-    override fun dispose() = Unit
+
+    override fun install(statusBar: StatusBar) {
+        this.statusBar = statusBar
+        measure()
+        timer.start()
+    }
+
+    override fun dispose() {
+        timer.stop()
+        statusBar = null
+    }
+
+    private fun measure() {
+        val root = workspace.serverProcess
+        ApplicationManager.getApplication().executeOnPooledThread {
+            sample = usage.sample(root)
+            ApplicationManager.getApplication().invokeLater({ statusBar?.updateWidget(ID()) }, ModalityState.any())
+        }
+    }
 
     override fun getIcon(): Icon = DotNetIcons.CSharp
-    override fun getSelectedValue(): String = RoslynStatusText.widget(workspace.phase, workspace.target)
+    override fun getSelectedValue(): String = RoslynStatusText.widget(workspace.phase, sample)
     override fun getTooltipText(): String = "C# Language Server: " + RoslynStatusText.status(workspace.phase, workspace.target)
     override fun getPopup(): JBPopup = RoslynStatusPopup(project).create()
+
+    companion object {
+        const val PERIOD_MS = 2_000
+    }
 }
 
 /** What a click on the widget shows. The numbers are measured while it is open, once a second, off the UI thread. */
@@ -164,8 +189,17 @@ object RoslynStatusText {
     const val MEASURING = "measuring..."
     const val STOPPED = "not running"
 
-    /** Short, for the status bar: `Roslyn: loading Shop.sln...`, `Roslyn: Shop.sln`. */
-    fun widget(phase: RoslynPhase, target: String?): String = "Roslyn" + RoslynPolicy.statusText(phase, target)
+    /** Short, for the status bar next to the C# icon: `CPU 1.2 % · RAM 640 MB`, with the phase in front until the server is ready. */
+    fun widget(phase: RoslynPhase, sample: RoslynServerUsage.Sample?): String {
+        val numbers = "CPU ${sample?.cpuPercent?.let { cpu(it) } ?: "…"} · RAM ${sample?.let { memory(it.memoryBytes) } ?: "…"}"
+        val prefix = when (phase) {
+            RoslynPhase.STARTING -> "starting..."
+            RoslynPhase.CHOOSING_SOLUTION -> "select a solution"
+            RoslynPhase.LOADING -> "loading..."
+            RoslynPhase.READY -> null
+        }
+        return listOfNotNull(prefix, numbers).joinToString(" · ")
+    }
 
     /** A sentence, for the popup and the tooltip. */
     fun status(phase: RoslynPhase, target: String?): String = when (phase) {

@@ -20,6 +20,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.util.messages.Topic
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetLogs
 import io.github.dotnetsupport.settings.DotNetSettings
@@ -35,6 +36,15 @@ enum class DotNetBuildCommand(val title: String, vararg val arguments: String) {
     // Every diagnostic is printed when it happens; the summary would only repeat them.
     fun argumentsFor(target: String): Array<String> =
         arrayOf(*arguments, target, "-nologo") + if (this == RESTORE) emptyArray() else arrayOf("-clp:NoSummary")
+}
+
+/** Told when a `dotnet` command of [DotNetBuildService] has finished, on the thread of the process: whatever shows the build output refreshes then. */
+fun interface DotNetBuildListener {
+    fun buildFinished(target: VirtualFile, succeeded: Boolean)
+
+    companion object {
+        @JvmField val TOPIC: Topic<DotNetBuildListener> = Topic.create("DotNet build finished", DotNetBuildListener::class.java)
+    }
 }
 
 /** Runs `dotnet build` and friends and reports to the Build tool window. */
@@ -122,6 +132,7 @@ class DotNetBuildService(private val project: Project) {
                 // what the compiler has said goes to the editor too; a clean or a restore says nothing about the code
                 if (arguments.firstOrNull() in COMPILING_COMMANDS) BuildProblems.getInstance(project).replace(reported)
                 VfsUtil.markDirtyAndRefresh(true, true, true, File(workDirectory))
+                if (!project.isDisposed) project.messageBus.syncPublisher(DotNetBuildListener.TOPIC).buildFinished(target, !failed)
                 onFinished(!failed)
             }
 

@@ -196,7 +196,7 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
             override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
             override fun actionPerformed(e: AnActionEvent) = perform()
         }
-        val restore = action("Restore", "dotnet restore for the solution, or for the project chosen in \"Packages for\"", AllIcons.Actions.Download) {
+        val restore = action("Restore", "dotnet restore for the solution, or for the project chosen in \"Packages for\"; packages.config projects by the .NET helper", AllIcons.Actions.Download) {
             val target = (scopeCombo.selectedItem as? Scope)?.file ?: SolutionService.getInstance(project).solutionFiles().firstOrNull()
             if (target != null) service.restore(listOf(target))
         }
@@ -492,7 +492,8 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
 
         // version selector with the actions that apply to every project at once
         val selectedVersion = versionCombo.selectedItem as? String
-        val allProjects = service.projects().map { it.second }
+        // a packages.config project is listed in the table below, but "all projects" are the ones the CLI can change
+        val allProjects = service.projects().map { it.second }.filterNot(service::usesPackagesConfig)
         val installedIn = allProjects.filter { installedPackage(row, it) != null }
         val outdated = installedIn.filter { installedPackage(row, it)?.version != selectedVersion }
         stack(JPanel(BorderLayout(JBUI.scale(8), 0)).apply {
@@ -590,13 +591,17 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
         font = JBUI.Fonts.label()
     }
 
-    /** A bordered icon button like the ones of the Rider NuGet window; a disabled action keeps its place, so the columns stay aligned. */
-    private fun iconButton(icon: Icon, tooltip: String, isEnabled: Boolean, action: () -> Unit): JComponent {
-        val enabled = isEnabled && !operationRunning
+    /**
+     * A bordered icon button like the ones of the Rider NuGet window; a disabled action keeps its place, so the columns stay aligned.
+     * [disabledReason]: the button is disabled and says why in its tooltip.
+     */
+    private fun iconButton(icon: Icon, tooltip: String, isEnabled: Boolean, disabledReason: String? = null, action: () -> Unit): JComponent {
+        val enabled = isEnabled && disabledReason == null && !operationRunning
         return JBLabel(if (enabled) icon else com.intellij.openapi.util.IconLoader.getDisabledIcon(icon)).apply {
             horizontalAlignment = JBLabel.CENTER
             preferredSize = JBUI.size(BUTTON_SIZE, BUTTON_SIZE)
             border = JBUI.Borders.customLine(JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground(), 1)
+            if (disabledReason != null) toolTipText = disabledReason
             if (enabled) {
                 toolTipText = tooltip
                 cursor = java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR)
@@ -632,8 +637,10 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
                 anchor = anchorTo
                 insets = JBUI.insets(3, 0)
             })
-            cell(0, 1.0, JBLabel(name, DotNetIcons.forProjectFile(file.name), JBLabel.LEFT).apply { iconTextGap = JBUI.scale(8) })
-            cell(1, 1.0, JBLabel(installed?.version.orEmpty()))
+            // `dotnet add package` would write a PackageReference into a packages.config project: its buttons only say why they are disabled
+            val locked = if (service.usesPackagesConfig(file)) NuGetService.PACKAGES_CONFIG_NOTE else null
+            cell(0, 1.0, JBLabel(name, DotNetIcons.forProjectFile(file.name), JBLabel.LEFT).apply { iconTextGap = JBUI.scale(8); toolTipText = locked })
+            cell(1, 1.0, JBLabel(installed?.version.orEmpty() + if (locked != null) "  (packages.config)" else "").apply { toolTipText = locked })
 
             val current = installed?.version
             val isDowngrade = current != null && selectedVersion != null &&
@@ -641,14 +648,15 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
             cell(2, 0.0, JPanel(FlowLayout(FlowLayout.RIGHT, JBUI.scale(4), 0)).apply {
                 isOpaque = false
                 if (installed == null) {
-                    add(iconButton(AllIcons.General.Add, "Install $selectedVersion", selectedVersion != null) { install(row, listOf(file), selectedVersion) })
+                    add(iconButton(AllIcons.General.Add, "Install $selectedVersion", selectedVersion != null, locked) { install(row, listOf(file), selectedVersion) })
                 } else {
                     add(iconButton(
                         if (isDowngrade) AllIcons.Actions.Download else AllIcons.Actions.Upload,
                         (if (isDowngrade) "Downgrade to " else "Update to ") + selectedVersion,
                         selectedVersion != null && selectedVersion != current,
+                        locked,
                     ) { install(row, listOf(file), selectedVersion) })
-                    add(iconButton(AllIcons.Actions.GC, "Remove from $name", true) { remove(row, listOf(file)) })
+                    add(iconButton(AllIcons.Actions.GC, "Remove from $name", true, locked) { remove(row, listOf(file)) })
                 }
             }, GridBagConstraints.EAST)
         }

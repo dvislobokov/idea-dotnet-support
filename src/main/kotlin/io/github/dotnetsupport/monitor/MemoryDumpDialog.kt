@@ -31,7 +31,11 @@ import com.intellij.ui.table.JBTable
 import com.intellij.ui.treeStructure.Tree
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
+import io.github.dotnetsupport.cli.DiagnosticsHelperService
+import io.github.dotnetsupport.cli.DominatorObject
+import io.github.dotnetsupport.cli.Dominated
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.cli.HeapRetained
 import io.github.dotnetsupport.cli.DotNetTool
 import java.awt.BorderLayout
 import java.awt.Dimension
@@ -51,6 +55,8 @@ import javax.swing.ListSelectionModel
 import javax.swing.RowFilter
 import javax.swing.SwingConstants
 import javax.swing.event.DocumentEvent
+import javax.swing.event.TreeExpansionEvent
+import javax.swing.event.TreeWillExpandListener
 import javax.swing.table.AbstractTableModel
 import javax.swing.table.DefaultTableCellRenderer
 import javax.swing.table.TableRowSorter
@@ -119,6 +125,7 @@ object MemoryDumps {
     fun discard(analyzer: DumpAnalyzer?, file: File) {
         ApplicationManager.getApplication().executeOnPooledThread {
             analyzer?.dispose()
+            DiagnosticsHelperService.getInstance().close(file) // the helper holds the file open while it has the analysis
             FileUtil.delete(file)
         }
     }
@@ -127,7 +134,8 @@ object MemoryDumps {
 /**
  * The heap of a memory dump as dotMemory shows it, on the SOS commands: the types (`dumpheap -stat`), the objects of one (`dumpheap -mt`),
  * for an object who keeps it alive (`gcroot`), its fields (`dumpobj`) and what it keeps alive itself (`objsize`); any other SOS command
- * in the console tab (`dumpasync`, `syncblk`, `clrstack -all`...).
+ * in the console tab (`dumpasync`, `syncblk`, `clrstack -all`...). The retained sizes of the types and the dominator tree come from the
+ * diagnostics helper (ClrMD), computed in the background once the dialog is open.
  */
 class MemoryDumpDialog(
     private val project: Project, processTitle: String, private val analyzer: DumpAnalyzer, types: List<SosType>,
@@ -150,11 +158,15 @@ class MemoryDumpDialog(
     private val console = JBTextArea().apply { isEditable = false; font = JBUI.Fonts.create("Monospaced", font.size) }
     private val history = ArrayDeque<String>()
     private var current: String? = null
+    private val retainedNote = JBLabel("Retained sizes: computing...")
+    private val dominatorModel = DefaultTreeModel(DefaultMutableTreeNode().apply { add(DefaultMutableTreeNode("Computing the dominator tree...")) })
+    private val dominatorTree = Tree(dominatorModel)
 
     init {
         title = "Memory of $processTitle, ${LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))}"
         init()
         Disposer.register(disposable) { MemoryDumps.discard(analyzer, analyzer.dump) }
+        computeRetained(processTitle)
     }
 
     override fun createActions(): Array<Action> = arrayOf(
@@ -168,10 +180,11 @@ class MemoryDumpDialog(
         val total = typeModel.types.sumOf { it.totalSize }
         val summary = JBLabel("<html>${ChartFormats.bytes(total.toDouble())} in ${String.format("%,d", typeModel.types.sumOf { it.count })} objects of " +
             "${typeModel.types.size} types. Pick a type, then an object: who holds it and what is in it.</html>")
+        retainedNote.foreground = UIUtil.getContextHelpForeground()
 
         typeTable.rowSorter = typeSorter
         typeTable.selectionModel.selectionMode = ListSelectionModel.SINGLE_SELECTION
-        for (column in 1..2) typeTable.columnModel.getColumn(column).cellRenderer = NumberRenderer(bytes = column == 2)
+        for (column in 1..3) typeTable.columnModel.getColumn(column).cellRenderer = NumberRenderer(bytes = column >= 2)
         typeTable.columnModel.getColumn(0).preferredWidth = JBUI.scale(380)
         typeSorter.toggleSortOrder(2)
         typeSorter.toggleSortOrder(2) // the largest first
@@ -200,7 +213,18 @@ class MemoryDumpDialog(
         command.emptyText.text = "SOS command: dumpasync, syncblk, clrstack -all, finalizequeue, dumpheap -strings..."
         command.addActionListener { runCommand() }
 
-        val left = JBSplitter(true, 0.62f).apply {
+        dominatorTree.isRootVisible = false
+        dominatorTree.showsRootHandles = true
+        dominatorTree.cellRenderer = DominatorRenderer()
+        dominatorTree.addTreeWillExpandListener(object : TreeWillExpandListener {
+            override fun treeWillExpand(event: TreeExpansionEvent) = expandDominator(event.path.lastPathComponent as DefaultMutableTreeNode)
+            override fun treeWillCollapse(event: TreeExpansionEvent) {}
+        })
+        dominatorTree.addTreeSelectionListener {
+            (dominatorTree.lastSelectedPathComponent as? DefaultMutableTreeNode)?.userObject.let { it as? DominatorObject }?.let { open(it.address) }
+        }
+
+        val types = JBSplitter(true, 0.62f).apply {
             firstComponent = JPanel(BorderLayout(0, JBUI.scale(4))).apply {
                 add(filter, BorderLayout.NORTH)
                 add(ScrollPaneFactory.createScrollPane(typeTable), BorderLayout.CENTER)
@@ -209,6 +233,15 @@ class MemoryDumpDialog(
                 add(objectsNote, BorderLayout.NORTH)
                 add(ScrollPaneFactory.createScrollPane(objectTable), BorderLayout.CENTER)
             }
+        }
+        val left = JBTabbedPane().apply {
+            addTab("Types", types)
+            addTab("Dominators", JPanel(BorderLayout(0, JBUI.scale(4))).apply {
+                add(JBLabel("What each object alone keeps alive, the largest first: expand to see what it holds").apply {
+                    foreground = UIUtil.getContextHelpForeground()
+                }, BorderLayout.NORTH)
+                add(ScrollPaneFactory.createScrollPane(dominatorTree), BorderLayout.CENTER)
+            })
         }
         val tabs = JBTabbedPane().apply {
             addTab("Who Holds It", ScrollPaneFactory.createScrollPane(roots))
@@ -227,7 +260,10 @@ class MemoryDumpDialog(
             add(tabs, BorderLayout.CENTER)
         }
         return JPanel(BorderLayout(0, JBUI.scale(6))).apply {
-            add(summary, BorderLayout.NORTH)
+            add(JPanel(BorderLayout(0, JBUI.scale(2))).apply {
+                add(summary, BorderLayout.NORTH)
+                add(retainedNote, BorderLayout.SOUTH)
+            }, BorderLayout.NORTH)
             add(JBSplitter(false, 0.45f).apply { firstComponent = left; secondComponent = right }, BorderLayout.CENTER)
             preferredSize = Dimension(JBUI.scale(1200), JBUI.scale(700))
         }
@@ -322,6 +358,81 @@ class MemoryDumpDialog(
         command.selectAll()
     }
 
+    /**
+     * The retained sizes and the dominator tree, by the diagnostics helper: a pass over the whole heap of the dump, seconds for a small
+     * process. Cancelling the progress (or closing the dialog) tells the helper to stop.
+     */
+    private fun computeRetained(processTitle: String) {
+        val dump = analyzer.dump
+        ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Computing retained sizes of $processTitle", true) {
+            private var result: HeapRetained? = null
+            private var failure: String? = null
+
+            override fun run(indicator: ProgressIndicator) {
+                indicator.isIndeterminate = true
+                indicator.text2 = "Building the dominator tree of the heap"
+                val service = DiagnosticsHelperService.getInstance()
+                val answer = ApplicationManager.getApplication().executeOnPooledThread<HeapRetained> { service.retained(dump, TOP_DOMINATORS) }
+                while (true) {
+                    try {
+                        result = answer.get(200, TimeUnit.MILLISECONDS)
+                        return
+                    } catch (_: java.util.concurrent.TimeoutException) {
+                        if (indicator.isCanceled || isDisposed) {
+                            service.close(dump)
+                            failure = CANCELLED
+                            return
+                        }
+                    } catch (e: java.util.concurrent.ExecutionException) {
+                        failure = e.cause?.message ?: e.message
+                        return
+                    }
+                }
+            }
+
+            override fun onFinished() {
+                if (isDisposed) return
+                result?.let(::showRetained) ?: run {
+                    retainedNote.text = "Retained sizes: ${failure ?: "not computed"}"
+                    dominatorModel.setRoot(DefaultMutableTreeNode().apply { add(DefaultMutableTreeNode("Not computed: ${failure ?: "unknown error"}")) })
+                    if (failure != CANCELLED) io.github.dotnetsupport.cli.PluginLog.warn(DotNetCounters.LOG_CATEGORY, "retained sizes of ${dump.name}: $failure")
+                }
+            }
+        })
+    }
+
+    private fun showRetained(computed: HeapRetained) {
+        typeModel.retained = computed
+        if (typeModel.rowCount > 0) typeModel.fireTableRowsUpdated(0, typeModel.rowCount - 1)
+        retainedNote.text = "Retained sizes of ${String.format("%,d", computed.objects)} live objects, computed in ${String.format("%.1f", computed.elapsedMs / 1000.0)} s" +
+            (if (computed.unreachableObjects > 0) "; ${String.format("%,d", computed.unreachableObjects)} objects " +
+                "(${ChartFormats.bytes(computed.unreachableBytes.toDouble())}) are garbage not collected yet" else "")
+        val top = DefaultMutableTreeNode()
+        fill(top, Dominated(null, computed.dominators, computed.omittedDominators, 0))
+        dominatorModel.setRoot(top)
+    }
+
+    private fun fill(node: DefaultMutableTreeNode, dominated: Dominated) {
+        node.removeAllChildren()
+        for (child in dominated.children) node.add(DefaultMutableTreeNode(child).apply { if (child.children > 0) add(DefaultMutableTreeNode(LOADING)) })
+        if (dominated.omitted > 0) node.add(DefaultMutableTreeNode("${String.format("%,d", dominated.omitted)} more" +
+            (if (dominated.omittedRetained > 0) ", ${ChartFormats.bytes(dominated.omittedRetained.toDouble())}" else "")))
+    }
+
+    /** The children of a node of the dominator tree, asked for when it is expanded the first time. */
+    private fun expandDominator(node: DefaultMutableTreeNode) {
+        val item = node.userObject as? DominatorObject ?: return
+        if (node.childCount != 1 || (node.firstChild as DefaultMutableTreeNode).userObject != LOADING) return
+        val dump = analyzer.dump
+        ApplicationManager.getApplication().executeOnPooledThread {
+            val answer = runCatching { DiagnosticsHelperService.getInstance().dominated(dump, item.address) }
+            onEdt {
+                answer.onSuccess { fill(node, it) }.onFailure { node.removeAllChildren(); node.add(DefaultMutableTreeNode(it.message ?: it.javaClass.simpleName)) }
+                dominatorModel.nodeStructureChanged(node)
+            }
+        }
+    }
+
     private fun saveDump() {
         val descriptor = FileSaverDescriptor("Save Memory Dump", "The dump opens in Visual Studio, WinDbg, PerfView and dotnet-dump analyze", "dmp")
         val target = FileChooserFactory.getInstance().createSaveFileDialog(descriptor, project).save(analyzer.dump.name)?.file ?: return
@@ -363,6 +474,23 @@ class MemoryDumpDialog(
         }
     }
 
+    private class DominatorRenderer : ColoredTreeCellRenderer() {
+        override fun customizeCellRenderer(tree: JTree, value: Any?, selected: Boolean, expanded: Boolean, leaf: Boolean, row: Int, hasFocus: Boolean) {
+            when (val item = (value as? DefaultMutableTreeNode)?.userObject) {
+                is DominatorObject -> {
+                    append(ChartFormats.bytes(item.retained.toDouble()), SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES)
+                    append("  ${item.type}")
+                    append("  ${item.address}", SimpleTextAttributes.GRAYED_ATTRIBUTES)
+                    if (item.retained != item.size) append("  itself ${ChartFormats.bytes(item.size.toDouble())}", SimpleTextAttributes.GRAYED_ATTRIBUTES)
+                    item.root?.let { append("  ($it)", SimpleTextAttributes.GRAYED_ITALIC_ATTRIBUTES) }
+                    icon = AllIcons.Debugger.Value
+                }
+                is String -> append(item, SimpleTextAttributes.GRAYED_ATTRIBUTES)
+            }
+        }
+    }
+
+    /** A number; a negative one is not known yet (a retained size still being computed) and shows as a dash. */
     private class NumberRenderer(private val bytes: Boolean) : DefaultTableCellRenderer() {
         init {
             horizontalAlignment = SwingConstants.RIGHT
@@ -370,16 +498,25 @@ class MemoryDumpDialog(
 
         override fun setValue(value: Any?) {
             val number = value as? Long ?: 0
-            text = if (bytes) ChartFormats.bytes(number.toDouble()) else String.format("%,d", number)
+            text = if (number < 0) "-" else if (bytes) ChartFormats.bytes(number.toDouble()) else String.format("%,d", number)
         }
     }
 
+    /** Retained: the bytes the live objects of a type keep alive together (SOS counts the garbage not collected yet in the other columns). */
     private class TypeModel(val types: List<SosType>) : AbstractTableModel() {
+        var retained: HeapRetained? = null
         override fun getRowCount(): Int = types.size
-        override fun getColumnCount(): Int = 3
-        override fun getColumnName(column: Int): String = listOf("Type", "Objects", "Bytes")[column]
+        override fun getColumnCount(): Int = 4
+        override fun getColumnName(column: Int): String = listOf("Type", "Objects", "Bytes", "Retained")[column]
         override fun getColumnClass(column: Int): Class<*> = if (column == 0) String::class.java else java.lang.Long::class.java
-        override fun getValueAt(row: Int, column: Int): Any = types[row].let { if (column == 0) it.name else if (column == 1) it.count else it.totalSize }
+        override fun getValueAt(row: Int, column: Int): Any = types[row].let {
+            when (column) {
+                0 -> it.name
+                1 -> it.count
+                2 -> it.totalSize
+                else -> retained?.let { computed -> computed.type(it.methodTable)?.retained ?: 0L } ?: -1L
+            }
+        }
     }
 
     private class ObjectModel : AbstractTableModel() {
@@ -407,6 +544,9 @@ class MemoryDumpDialog(
 
     private companion object {
         const val MAX_OBJECTS = 1000
+        const val TOP_DOMINATORS = 200
+        const val LOADING = "Loading..."
+        const val CANCELLED = "cancelled"
     }
 }
 

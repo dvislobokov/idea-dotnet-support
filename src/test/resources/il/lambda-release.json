@@ -1,0 +1,96 @@
+{
+ "assembly": "C:\\work\\Playground\\Console\\bin\\Release\\net9.0\\Playground.Console.dll",
+ "assemblyModified": 1791044236576,
+ "pdb": "C:\\work\\Playground\\Console\\bin\\Release\\net9.0\\Playground.Console.pdb",
+ "bodies": [
+  {
+   "name": "Scenarios.Closures()",
+   "kind": "method",
+   "text": ".method private hidebysig static\n  void Closures () cil managed\n{\n  // Method begins at RVA 0x2b48\n  // Header size: 12\n  // Code size: 172 (0xac)\n  .maxstack 3\n  .locals init (\n    [0] class Playground.Scenarios/'<>c__DisplayClass11_0' 'CS$<>8__locals0',\n    [1] class [System.Runtime]System.Func`2<int32, int32> 'add',\n    [2] valuetype [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler,\n    [3] class [System.Runtime]System.Collections.Generic.IEnumerator`1<int32>,\n    [4] int32 item,\n    [5] valuetype [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler\n  )\n\n  IL_0000: newobj instance void Playground.Scenarios/'<>c__DisplayClass11_0'::.ctor()\n  IL_0005: stloc.0\n  IL_0006: ldloc.0\n  IL_0007: ldc.i4.5\n  IL_0008: stfld int32 Playground.Scenarios/'<>c__DisplayClass11_0'::captured\n  IL_000d: ldloc.0\n  IL_000e: ldftn instance int32 Playground.Scenarios/'<>c__DisplayClass11_0'::'<Closures>b__0'(int32)\n  IL_0014: newobj instance void class [System.Runtime]System.Func`2<int32, int32>::.ctor(object, native int)\n  IL_0019: stloc.1\n  IL_001a: ldloca.s 2\n  IL_001c: ldc.i4.1\n  IL_001d: ldc.i4.2\n  IL_001e: call instance void [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::.ctor(int32, int32)\n  IL_0023: ldloca.s 2\n  IL_0025: ldloc.1\n  IL_0026: ldc.i4.1\n  IL_0027: callvirt instance !1 class [System.Runtime]System.Func`2<int32, int32>::Invoke(!0)\n  IL_002c: call instance void [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::AppendFormatted<int32>(!!0)\n  IL_0031: ldloca.s 2\n  IL_0033: ldstr \" \"\n  IL_0038: call instance void [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::AppendLiteral(string)\n  IL_003d: ldloca.s 2\n  IL_003f: ldloc.0\n  IL_0040: ldc.i4.2\n  IL_0041: callvirt instance int32 Playground.Scenarios/'<>c__DisplayClass11_0'::'<Closures>g__Local|1'(int32)\n  IL_0046: call instance void [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::AppendFormatted<int32>(!!0)\n  IL_004b: ldloca.s 2\n  IL_004d: call instance string [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::ToStringAndClear()\n  IL_0052: call void [System.Console]System.Console::WriteLine(string)\n  IL_0057: call class [System.Runtime]System.Collections.Generic.IEnumerable`1<int32> Playground.Scenarios::Numbers()\n  IL_005c: callvirt instance class [System.Runtime]System.Collections.Generic.IEnumerator`1<!0> class [System.Runtime]System.Collections.Generic.IEnumerable`1<int32>::GetEnumerator()\n  IL_0061: stloc.3\n  .try\n  {\n    IL_0062: br.s IL_0097\n    // loop start (head: IL_0097)\n      IL_0064: ldloc.3\n      IL_0065: callvirt instance !0 class [System.Runtime]System.Collections.Generic.IEnumerator`1<int32>::get_Current()\n      IL_006a: stloc.s 4\n      IL_006c: ldc.i4.s 9\n      IL_006e: ldc.i4.1\n      IL_006f: newobj instance void [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::.ctor(int32, int32)\n      IL_0074: stloc.s 5\n      IL_0076: ldloca.s 5\n      IL_0078: ldstr \"iterator \"\n      IL_007d: call instance void [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::AppendLiteral(string)\n      IL_0082: ldloca.s 5\n      IL_0084: ldloc.s 4\n      IL_0086: call instance void [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::AppendFormatted<int32>(!!0)\n      IL_008b: ldloca.s 5\n      IL_008d: call instance string [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::ToStringAndClear()\n      IL_0092: call void [System.Console]System.Console::WriteLine(string)\n\n      IL_0097: ldloc.3\n      IL_0098: callvirt instance bool [System.Runtime]System.Collections.IEnumerator::MoveNext()\n      IL_009d: brtrue.s IL_0064\n    // end loop\n\n    IL_009f: leave.s IL_00ab\n  } // end .try\n  finally\n  {\n    IL_00a1: ldloc.3\n    IL_00a2: brfalse.s IL_00aa\n\n    IL_00a4: ldloc.3\n    IL_00a5: callvirt instance void [System.Runtime]System.IDisposable::Dispose()\n\n    IL_00aa: endfinally\n  } // end handler\n\n  IL_00ab: ret\n} // end of method Scenarios::Closures",
+   "atCaret": false,
+   "mapping": [
+    {
+     "textLine": 18,
+     "offset": 6,
+     "startLine": 148,
+     "startColumn": 9,
+     "endLine": 148,
+     "endColumn": 26
+    },
+    {
+     "textLine": 21,
+     "offset": 13,
+     "startLine": 149,
+     "startColumn": 9,
+     "endLine": 149,
+     "endColumn": 48
+    },
+    {
+     "textLine": 25,
+     "offset": 26,
+     "startLine": 151,
+     "startColumn": 9,
+     "endLine": 151,
+     "endColumn": 51
+    },
+    {
+     "textLine": 45,
+     "offset": 87,
+     "startLine": 152,
+     "startColumn": 30,
+     "endLine": 152,
+     "endColumn": 39
+    },
+    {
+     "textLine": 52,
+     "offset": 100,
+     "startLine": 152,
+     "startColumn": 18,
+     "endLine": 152,
+     "endColumn": 26
+    },
+    {
+     "textLine": 55,
+     "offset": 108,
+     "startLine": 152,
+     "startColumn": 41,
+     "endLine": 152,
+     "endColumn": 79
+    },
+    {
+     "textLine": 69,
+     "offset": 151,
+     "startLine": 152,
+     "startColumn": 27,
+     "endLine": 152,
+     "endColumn": 29
+    },
+    {
+     "textLine": 87,
+     "offset": 171,
+     "startLine": 153,
+     "startColumn": 5,
+     "endLine": 153,
+     "endColumn": 6
+    }
+   ]
+  },
+  {
+   "name": "Scenarios.<>c__DisplayClass11_0.<Closures>b__0(int)",
+   "kind": "lambda",
+   "text": ".method assembly hidebysig\n  instance int32 '<Closures>b__0' (\n    int32 x\n  ) cil managed\n{\n  // Method begins at RVA 0x40a3\n  // Header size: 1\n  // Code size: 9 (0x9)\n  .maxstack 8\n\n  IL_0000: ldarg.1\n  IL_0001: ldarg.0\n  IL_0002: ldfld int32 Playground.Scenarios/'<>c__DisplayClass11_0'::captured\n  IL_0007: add\n  IL_0008: ret\n} // end of method '<>c__DisplayClass11_0'::'<Closures>b__0'",
+   "atCaret": true,
+   "mapping": [
+    {
+     "textLine": 10,
+     "offset": 0,
+     "startLine": 149,
+     "startColumn": 35,
+     "endLine": 149,
+     "endColumn": 47
+    }
+   ]
+  }
+ ],
+ "warning": null
+}

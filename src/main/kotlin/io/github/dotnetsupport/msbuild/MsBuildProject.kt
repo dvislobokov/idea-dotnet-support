@@ -44,7 +44,15 @@ data class MsBuildProject(
     val dependentUpon: Map<String, String> = emptyMap(),
     /** Properties of the test runner: `EnableMSTestRunner`, `UseMicrosoftTestingPlatformRunner`, `TestingPlatformDotnetTestSupport`, when true. */
     val testingPlatformProperties: Set<String> = emptySet(),
+    /** An `<Import Sdk="...">` or an `<Sdk Name="...">`: an SDK project even without the `Sdk` attribute of the root. */
+    val importsSdk: Boolean = false,
 ) {
+    /**
+     * A project of the old format (.NET Framework, `ToolsVersion`, every file listed): no SDK, so no default globs either. What is a
+     * part of it is the evaluated `Compile` / `Content` / `None` / ... items, see [MsBuildEvaluation].
+     */
+    val isLegacy: Boolean get() = sdk == null && !importsSdk
+
     val isTestProject: Boolean
         get() = packages.any { it.name.equals("Microsoft.NET.Test.Sdk", ignoreCase = true) || it.name.equals("xunit.v3", ignoreCase = true) || it.name.equals("TUnit", ignoreCase = true) ||
             it.name.startsWith("Microsoft.Testing.Platform", ignoreCase = true) } || sdk.equals("MSTest.Sdk", ignoreCase = true)
@@ -111,6 +119,7 @@ data class MsBuildProject(
             val linked = ArrayList<LinkedItem>()
             val dependent = LinkedHashMap<String, String>()
             val testingPlatform = LinkedHashSet<String>()
+            var importsSdk = false
 
             // Element names are compared without namespace: old-style projects declare the msbuild/2003 one.
             for (element in root.descendants()) {
@@ -134,7 +143,11 @@ data class MsBuildProject(
                     "TargetFrameworkVersion" -> frameworks += splitList(element.textTrim).map { "net" + it.removePrefix("v").replace(".", "") }
                     "OutputType" -> outputType = outputType ?: element.textTrim.takeIf { it.isNotEmpty() }
                     "RootNamespace" -> rootNamespace = rootNamespace ?: element.textTrim.takeIf { it.isNotEmpty() && '$' !in it }
-                    "Import" -> element.getAttributeValue("Project")?.takeIf { it.isNotBlank() && '$' !in it }?.let { imports += it.replace('\\', '/') }
+                    "Sdk" -> importsSdk = true
+                    "Import" -> {
+                        if (element.getAttributeValue("Sdk") != null) importsSdk = true
+                        element.getAttributeValue("Project")?.takeIf { it.isNotBlank() && '$' !in it }?.let { imports += it.replace('\\', '/') }
+                    }
                     "ImplicitUsings" -> implicitUsings = element.textTrim.lowercase() in setOf("enable", "true")
                     "PackageReference" -> for (name in includes(element)) {
                         packages[name.lowercase()] = PackageReference(name, itemMetadata(element, "Version"))
@@ -159,6 +172,7 @@ data class MsBuildProject(
                 linkedItems = linked,
                 dependentUpon = dependent,
                 testingPlatformProperties = testingPlatform,
+                importsSdk = importsSdk,
             )
         }
 

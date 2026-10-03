@@ -86,6 +86,14 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `CachedOrder`: путь через `Dictionary<Int32, CachedOrder>` и его `Entry[]`; Fields: двойной клик по `<Name>k__BackingField` открывает строку, Back возвращает
 - [ ] SOS Console: `dumpheap -stat -type Playground`, `syncblk`, `clrstack -all`; неизвестная команда — ошибка текстом SOS
 - [ ] Close → в `<tmp IDE>/dotnet-dumps` файла нет, процесса `dotnet-dump` нет; Save Dump As… сохраняет `.dmp`
+- [ ] Retained (помощник DiagnosticsHelper, ClrMD): после открытия диалога — фоновая задача «Computing retained sizes of …», под сводкой строка
+      «Retained sizes of N live objects, computed in X s»; до конца расчёта в колонке Retained прочерки; сортировка по Retained: сверху
+      `System.Object[]` (хранилище статических полей), `Dictionary<Int32, CachedOrder>`, его `Entry[]`, `CachedOrder` — у `CachedOrder`
+      Retained во много раз больше Bytes (держит свои `byte[]`), у `Byte[]` Retained = Bytes
+- [ ] вкладка Dominators слева: сверху `System.Object[]` (StrongHandle) с почти всем размером кучи; раскрыть → `Dictionary<Int32, CachedOrder>`
+      первым, затем `EventHandler<Decimal>`; раскрыть дальше до `CachedOrder` → его `byte[]` и строка; выбор узла открывает объект справа
+      (Who Holds It, Fields); узел «N more, X» в конце длинных списков
+- [ ] Close во время расчёта (большой дамп) → расчёт отменяется, файл дампа удалён; отмена фоновой задачи → «Retained sizes: cancelled»
 
 ### Слой 5 — полировка (2026-09-22 пройден UI-роботом, кроме контекстного меню редактора на глаз)
 - [ ] `Console: Input`: в консоли отладки `Your name: `, набрать `Ада` + Enter → остановка на `BP:input`, `name = "Ада"`, `name.Length = 3`;
@@ -136,6 +144,31 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `TYPE:lambda-event`: `Changed += ` и `Changed += (` → лямбды **нет**
 - [ ] `TYPE:lambda-silent`: `Console.WriteLine(` → лямбды **нет**
 
+### Go to Base (Ctrl+U) на членах — `Console/Editor/GoToBase.cs`
+Нужен загруженный solution («Roslyn: DebugPlayground.sln»): базовые типы берутся из type hierarchy сервера. Ничего не набирать — курсор и Ctrl+U.
+- [ ] `TYPE:go-to-base-member`: на `Area` у `override` → сразу в `Area` класса `MiddleShape` (ближайшая база), без списка
+- [ ] `TYPE:go-to-base-property`: на `Name` → в `Name` класса `BaseShape`
+- [ ] `TYPE:go-to-base-body`: курсор в теле `Rename` → список из `Rename(string name, bool notify)` в `BaseShape` и `INamedShape`, перегрузки с одним параметром **нет**
+- [ ] `TYPE:go-to-base-metadata`: на `Dispose` → без исключения: декомпилированный `IDisposable` или подсказка «No base symbols of Dispose found…»
+- [ ] `TYPE:go-to-base-none`: на `Own` → подсказка «No base symbols of Own found»
+- [ ] `TYPE:go-to-base-type`: на имени класса `GoToBase` → как раньше, список базовых типов `MiddleShape`, `IDisposable`
+
+## Окно IL Viewer — `Console/Editor/IlViewer.cs`
+
+Меню .NET → **IL Viewer** (окно справа). Сначала собрать solution (Debug, фреймворк тулбара); места помечены `// IL:<имя>`, в комментарии — что
+сделать и что ожидать. IL обновляется через ~0,3 с после остановки курсора и только пока окно открыто. Ошибки помощника — .NET → Plugin Logs, категория `il`.
+
+- [ ] `IL:il-simple`: в списке сверху `…IlViewer::Add` (method); строки `ldarg.1 / ldarg.2 / add / stloc.0` подсвечены и видны; клик по `ldarg.2` подсвечивает `var sum = a + b;` в редакторе, курсор там не двигается; клик по `.maxstack` — подсветки нет
+- [ ] `IL:il-overloads`: IL второй перегрузки `Scale` (с `mul`), при переходе на первую — IL с `ldc.i4.2`
+- [ ] `IL:il-async`: первым в списке `MoveNext` машины состояний (state machine), там же `LoadAsync` (method); выбор `LoadAsync` держится, пока курсор в этом методе
+- [ ] `IL:il-iterator`: первым `MoveNext` итератора `<Squares>d__…`, подсвечен `mul`; сам `Squares` тоже в списке
+- [ ] `IL:il-lambda`: первой лямбда `<Filter>b__…` (lambda), подсвечены `ldfld limit / cgt`; курсор на `return` — первым `Filter` с `ldftn`
+- [ ] `IL:il-local-function`: первой локальная функция `<Compute>g__Factorial|…` с рекурсивным `call`
+- [ ] `IL:il-field`: IL поля `_count`, без ошибки и без баннера
+- [ ] `IL:il-type-header`: заголовок класса `.class public auto ansi beforefieldinit …IlViewerHeader extends [System.Runtime]System.Object`, раскраска: директива, ключевые слова, имя типа; то же во второй теме
+- [ ] `IL:il-stale`: правка без сохранения → жёлтый баннер «Source changed after the last build» с Build; после Build баннер пропадает, IL обновляется сам
+- [ ] `IL:il-states`: `README.md` → «Open a C# file to see the IL of the code at the caret»; после Clean Solution → «Build the project to see its IL» и ссылка Build; scratch-файл C# → «The file is not a part of a .NET project»
+
 ## Редактор: то, что не импортировано — `Console/Editor/ImportCompletion.cs`
 
 Элементы приходят из индекса сборок, а не от сервера: работают до появления «Roslyn: DebugPlayground.sln». Первый запуск IDE собирает
@@ -177,6 +210,18 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `Web` (`dotnet run` с запускающим процессом): числа появляются у обработчиков, когда на них идут запросы
 - [ ] профиль `allocations-fast` (аргумент вручную): программа печатает круги в секунду; с включённым переключателем их меньше примерно на четверть — цена при 12 ГБ/с
 
+## Hot Reload в `dotnet watch` — `Web/HotReload.cs`
+
+Конфигурация «.NET Project» для `Web` с Command = `dotnet watch`, запуск через **Run** (под отладчиком Hot Reload нет), открыть `/hot-reload`.
+Состояние видно в строке конфигурации в окне Services («Hot Reload: …») и цветом строк `dotnet watch` в консоли. После каждой правки — Ctrl+Z и снова сохранить.
+
+- [ ] `TYPE:hot-reload-start`: сразу после запуска в Services «Hot Reload: Building», затем «Watching for changes»; адрес-ссылка рядом остаётся
+- [ ] `TYPE:hot-reload-apply`: `"v1"` → `"v2"`, Ctrl+S → строка «C# and Razor changes applied in N ms.» цветом info, в Services «Changes applied», `/hot-reload` отдаёт v2 без перезапуска
+- [ ] `TYPE:hot-reload-error`: вместо `"v1"` — `undefinedThing` → «Unable to apply changes due to compilation errors.» красным, в Services «Build failed» красным
+- [ ] `TYPE:hot-reload-rude`: убрать `sealed` → «Restart is needed to apply the changes.» оранжевым, в Services «Restart needed» и ссылка Restart;
+      строка «❔ Do you want to restart your app?» — ссылка; ссылки и кнопка «Restart dotnet watch» в тулбаре консоли перезапускают конфигурацию в той же вкладке
+- [ ] остановить конфигурацию → в строке Services состояния нет
+
 ## Страницы о плагине и настройки по-русски
 
 Кода-сценария нет: проверяется интерфейс, а не поведение на коде.
@@ -191,3 +236,52 @@ Solution для живой проверки плагина: отладчика (
 - [ ] «Документация плагина...» внизу страницы .NET открывает документацию в системном браузере на разделе «Настройки»
 - [ ] язык = English: всё как было; язык = «Как в IDE» при английской IDE — английский
 
+
+## Запуск нескольких проектов и Compound
+Проекты `Web` и `Console`, оба ссылаются на `Lib`.
+- [ ] в Solution view выделить `Web` и `Console` (Ctrl+клик) → ПКМ: пункты **Run 2 Projects** и **Debug 2 Projects**; при выделенном вместе с ними `Lib` или solution — обычные «Run Project» не для набора
+- [ ] **Run 2 Projects**: в окне Build две сборки **одна за другой** (не одновременно), без `MSB3026` / «being used by another process»; затем оба запущены, в Services — две строки, у `Web` ссылка на адрес; в консолях `dotnet run` не собирает заново
+- [ ] **Debug 2 Projects**: две сессии отладки, сборки перед ними идут по очереди; точка `BP:` в `Lib` останавливает обе программы
+- [ ] Run | Edit Configurations → + → **Compound** с `Web` и `Console`: Debug запускает обе сессии, сборки по очереди. Run через Compound собирает проекты параллельно (`dotnet run` каждый сам) — общие зависимости могут дать предупреждение о повторной попытке копирования
+- [ ] сборка одного из проектов падает (испортить строку в `Console`) → Run 2 Projects ничего не запускает, ошибка в окне Build
+
+## Attach к процессам .NET Framework (за флагом реестра)
+Нужна программа net4x: любой `.exe` .NET Framework (например, собранный под `net48` или `C:\Windows\Microsoft.NET\Framework64\v4.0.30319\AddInProcess.exe`, если его запустить).
+- [ ] Run | Attach to Process: процесса .NET Framework в группе «.NET» **нет**
+- [ ] Help | Find Action → Registry → `dotnet.debugger.attach.netFramework` = true: процесс появился в «.NET»; `notepad.exe` и другие нативные — нет; apphost `.NET` (`Playground.Console.exe`) — по-прежнему есть
+- [ ] attach к процессу net4x с текущим адаптером: ожидаемо ошибка адаптера (desktop CLR он пока не умеет) с кнопкой Plugin Logs, IDE не зависает
+- [ ] хосты, которые сами грузят desktop CLR (по exe не видно): с ключом реестра запустить `powershell.exe` (Windows PowerShell 5.1) и
+      `C:\Windows\SysWOW64\WindowsPowerShell\v1.0\powershell.exe` (32 бита) → Run | Attach to Process (при первом открытии помощник
+      DiagnosticsHelper собирается, процессы могут появиться только со второго открытия списка) → оба `powershell.exe` в «.NET»; `pwsh.exe`
+      (PowerShell 7) — тоже, но как .NET; `explorer.exe`, `notepad.exe` — нет; список открывается без заметной задержки; в .NET | Plugin Logs
+      категория `diagnostics` — «starting DiagnosticsHelper», без ошибок
+- [ ] ключ реестра выключен → `powershell.exe` в «.NET» нет, помощник DiagnosticsHelper не запускается
+
+## MSBuild-вычисление проектов (MsBuildHost)
+Помощник `helpers/msbuildhost` вычисляет проекты MSBuild'ом SDK (условия, `$(…)`, импорты). Журнал — .NET → Plugin Logs, категория `msbuild`:
+`starting MsBuildHost`, затем `MSBuild <версия> of the SDK in …` и `evaluated <проект> [...] in N ms`.
+
+**TargetPath для отладки при нестандартном `OutputPath`** — временная правка `Console/Console.csproj` (после проверки откатить): в `PropertyGroup`
+`<OutputPath Condition="'$(Configuration)' == 'Debug'">bin\Custom\$(Configuration)\</OutputPath>` и `<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>`.
+- [ ] Debug конфигурации `Console` с точкой `BP:main` → сборка, остановка на `BP:main`; в журнале категории `run` —
+      `TargetPath of Console.csproj (MsBuildHost): …\Console\bin\Custom\Debug\Playground.Console.dll`, строки про `msbuild -getProperty:TargetPath` нет
+- [ ] первый Debug после старта IDE: в журнале `msbuild` — `starting MsBuildHost` (в самый первый раз ещё `MsBuildHost is built for net10.0` в категории `helpers`)
+- [ ] `MultiTarget` (два фреймворка): Debug находит сборку фреймворка, выбранного в тулбаре (`net9.0` или `net10.0` в пути)
+- [ ] откатить правку `Console.csproj`: Debug снова находит `bin\Debug\net9.0\Playground.Console.dll`
+
+**Проект старого формата** — в solution площадки его не добавлять. В отдельной папке (например `%TEMP%\legacy`) создать `Legacy\Legacy.csproj`:
+`ToolsVersion="15.0"`, `xmlns="http://schemas.microsoft.com/developer/msbuild/2003"`, `TargetFrameworkVersion` = `v4.7.2`, импорты `Microsoft.Common.props`
+и `$(MSBuildToolsPath)\Microsoft.CSharp.targets`; `<Compile Include="Program.cs" />`, `<Compile Include="Form1.cs" />`,
+`<Compile Include="Form1.Designer.cs"><DependentUpon>Form1.cs</DependentUpon></Compile>`, `<Compile Include="..\Shared\Util.cs"><Link>Shared\Util.cs</Link></Compile>`,
+`<Content Include="Views\**\*.cshtml" />`, `<Folder Include="Empty\" />` и
+`<Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />`. Рядом файлы `Program.cs`, `Form1.cs`,
+`Form1.Designer.cs`, `Stray.cs`, `Old\NotInProject.cs`, `Views\Index.cshtml`, папка `Empty`, `..\Shared\Util.cs` и `Legacy.sln` с этим проектом; открыть папку в IDE.
+- [ ] Solution view: сначала (на секунду) видны все файлы, затем дерево обновляется само: `Program.cs`, `Form1.cs` (под ним `Form1.Designer.cs`),
+      `Views\Index.cshtml`, пустая папка `Empty`, `Shared\Util.cs` со значком ссылки; **нет** `Stray.cs` и папки `Old`
+- [ ] Show All Files: `Stray.cs`, `Old` и `Legacy.csproj` появились серыми; выключить — снова скрыты
+- [ ] открыть `Stray.cs`: баннер «Not a part of Legacy.csproj: the project file does not list it, it is not compiled.»
+- [ ] в журнале `msbuild` — предупреждение `… is evaluated without the imports that are not there: … Microsoft.WebApplication.targets …`, проект всё равно показан
+- [ ] дописать внешним редактором `<Compile Include="Stray.cs" />` → через секунду `Stray.cs` в дереве обычным цветом; убрать строку — снова скрыт
+- [ ] создать `Views\New.cshtml` → появляется (wildcard); создать `New.cs` в корне проекта → не появляется (его нет в проекте)
+- [ ] `global.json` рядом с `Legacy.sln` с несуществующей версией SDK, перезапустить IDE: в журнале `msbuild` ошибка, дерево показывает все файлы (как до
+      помощника), IDE не зависает; убрать `global.json`

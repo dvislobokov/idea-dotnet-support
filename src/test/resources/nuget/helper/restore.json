@@ -1,0 +1,34 @@
+{
+ "packagesDirectory": "C:\\Users\\dvislobokov\\AppData\\Local\\Temp\\claude\\dnh-test\\sln\\packages",
+ "configFile": "C:\\Users\\dvislobokov\\AppData\\Local\\Temp\\claude\\dnh-test\\sln\\Legacy\\packages.config",
+ "packages": [
+  {
+   "id": "Newtonsoft.Json",
+   "version": "13.0.3",
+   "state": "restored",
+   "source": "https://api.nuget.org/v3/index.json",
+   "message": null
+  },
+  {
+   "id": "Serilog",
+   "version": "2.8.0",
+   "state": "restored",
+   "source": "https://api.nuget.org/v3/index.json",
+   "message": null
+  },
+  {
+   "id": "Dapper",
+   "version": "2.1.35",
+   "state": "restored",
+   "source": "https://api.nuget.org/v3/index.json",
+   "message": null
+  },
+  {
+   "id": "No.Such.Package.Xyz",
+   "version": "1.0.0",
+   "state": "failed",
+   "source": null,
+   "message": "not found in nuget.org, local"
+  }
+ ]
+}

@@ -109,6 +109,8 @@ class RiderPanelsTest : BasePlatformTestCase() {
         DotNetBuildSettings.getInstance(project).configuration = "Release"
 
         assertEquals(listOf("run", "--project", "C:/src/App/App.csproj", "-c", "Release"), configuration.buildCommandLine().parametersList.list)
+        // several projects launched together are built before, one after another
+        assertEquals(listOf("run", "--project", "C:/src/App/App.csproj", "--no-build", "-c", "Release"), configuration.buildCommandLine(prebuilt = true).parametersList.list)
         configuration.options.command = DotNetCommand.WATCH
         assertEquals(listOf("watch", "--project", "C:/src/App/App.csproj", "run", "-c", "Release"), configuration.buildCommandLine().parametersList.list)
         configuration.options.command = DotNetCommand.TEST

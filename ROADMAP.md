@@ -19,6 +19,10 @@
 ### Создание проектов и файлов
 - [x] New Project (DirectoryProjectGenerator — GoLand, PyCharm, WebStorm...): шаблоны из `dotnet new list`, язык, framework, solution
 - [x] Add → New Project в существующий solution (в т.ч. в solution folder)
+- [x] 0.1.30 — окно New Solution как в Rider (`newproject/NewSolutionDialog`, логика — `NewSolution.kt`): File | New, меню .NET и стартовый
+  экран; категории шаблонов по тегам, Empty Solution, Custom Templates, framework + выбор SDK (`global.json`), язык, неподдерживаемые
+  шаблоны под разделителем, Template description (Identity / Group ID из `templatecache.json`), Advanced Settings, Git. Тест
+  `NewSolutionTest`. Вживую не проверено создание до конца, стартовый экран, SDK; нет секции Docker (это функция Rider, не `dotnet new`)
 - [x] New → .NET ▸ генераторы по категориям (C#, ASP.NET, Razor/Blazor, Tests, EF Core, Configuration, Resources): подходящие проекту — сразу, остальные в «Other»; partial-часть, тест для класса, копия .resx для культуры, `dotnet ef migrations add` (остальной EF — в меню .NET → EF Core), любой item-шаблон SDK
 - [x] New → C# Class / Interface / Record / Struct / Enum с вычисленным namespace (RootNamespace + путь, file-scoped по `.editorconfig`)
 ### Действия над solution
@@ -385,6 +389,91 @@
 - [ ] docker-compose: run configuration `docker compose up` для сервисов, отладка процесса в контейнере (адаптер через `docker exec`); тот же транспорт — для WSL / remote
 - [ ] T4: Transform для `.tt` через `dotnet-t4` (Mono.TextTemplating), вложение результата под `.tt`
 - [ ] Find Usages с группировкой: по проекту / файлу и по типу использования (чтение, запись, вызов, `new`, `typeof`/`nameof`) по соседним токенам
+
+## До уровня Rider и .NET Framework (план 2026-10-03)
+Из разбора «чего не хватает до Rider» и аудита поддержки .NET Framework (net4x SDK-стиля и legacy-проекты без SDK). Адаптер отладчика
+(`dotnet-debugger`) под desktop CLR дорабатывает пользователь; здесь — сторона плагина. Порядок — от быстрого к сложному; оценки — рабочие дни.
+### Этап 1 — быстрое
+- [x] 0.1.22 — Run / Debug N Projects при выделении нескольких проектов в Solution view: сборки по очереди, затем запуск вместе (`dotnet run --no-build`); сборки перед Debug идут по очереди (`DotNetDebugBuild.build`), так что и платформенный Compound не собирает общие зависимости дважды разом. Compound + Run по-прежнему собирает параллельно (`dotnet run` каждый сам). Тесты `ServicesAndNodeActionsTest`, `RiderPanelsTest`; чек-лист — `debug-playground/README.md` «Запуск нескольких проектов». Вживую не проверено
+- [x] 0.1.24 — `packages.config` (`msbuild/PackagesConfig`): пакеты в Dependencies → Packages и как установленные в окне NuGet; Install / Update / Remove у такого проекта выключены с объяснением, сервис их пропускает (запись в Log). Тесты `DependenciesTreeTest`, `NuGetTest`. Вживую не проверено
+- [x] 0.1.23 — Attach к процессам .NET Framework: управляемый `.exe` (CLI-заголовок PE, `PortableExecutable.isManaged`) без `runtimeconfig.json`; за ключом реестра `dotnet.debugger.attach.netFramework` до готовности адаптера. Хосты, сами грузящие CLR (`w3wp.exe`, Office), так не находятся — нужен список модулей процесса. Тест `DebugLaunchTest`; чек-лист — `debug-playground/README.md`
+- [x] 0.1.26 — Hot Reload в `dotnet watch` (`run/HotReload`): состояние по выводу `dotnet watch` (`DOTNET_CLI_UI_LANGUAGE=en`; тексты SDK 9 и 10 сняты с живого CLI, SDK 8 — по исходникам) в строке Services и цветом в консоли, Restart ссылкой и кнопкой — перезапуск конфигурации (клавиши `dotnet watch` из pipe не читает). Тест `HotReloadTest`; сценарий — `debug-playground/Web/HotReload.cs`. Вживую не проверено
+- [x] 0.1.25 — Go to Base для членов (`roslyn/RoslynBaseMembers`): цепочка `typeHierarchy/supertypes`, член того же вида и имени в файле базового типа по сканеру объявлений (перегрузки — по числу параметров); ближайший базовый класс, затем интерфейсы. Тест `RoslynBaseMembersTest`; сценарий — `debug-playground/Console/Editor/GoToBase.cs`. Вживую не проверено
+### Этап 2 — среднее
+- [ ] Reference assemblies net4x в индексаторе и Dependencies (`Microsoft.NETFramework.ReferenceAssemblies`, `Reference Assemblies\...\.NETFramework\v4.x`), сборки по `HintPath` (2)
+- [ ] Publish: папка (Configuration, RID, self-contained, single-file, trimmed), `.pubxml` через `PublishProfile`, контейнер `/t:PublishContainer`, сохранение как run configuration (2–3)
+- [ ] MSBuild из Visual Studio / Build Tools (`vswhere`): Build / Clean / Restore / `-getProperty` legacy-проектов через `msbuild.exe`, restore `packages.config` (`-t:restore -p:RestorePackagesConfig=true`), выбор MSBuild в Toolset and Build (3)
+- [ ] Roslyn LS и non-SDK проекты: предупреждение, если VS / Build Tools не найдены; проверить загрузку вживую (1)
+- [ ] Find Usages с группировкой (пункт выше из сравнения с VS Community) (3)
+### Этап 3 — отладка .NET Framework (под доработанный адаптер)
+Договориться с адаптером: как он узнаёт desktop CLR (аргумент `launch` или по exe), x64 / x86 — два бинарника или один, какие `capabilities` объявляет.
+- [ ] Launch exe напрямую (`program` = `TargetPath` из `msbuild.exe -getProperty`), заодно run configuration «.NET Executable» (1–2)
+- [ ] Выбор адаптера по разрядности цели (`PlatformTarget`, `Prefer32Bit`, PE-заголовок), понятная ошибка без подходящего адаптера (1)
+- [ ] Attach к net4x (снять флаг этапа 1), отладка тестов net4x (`VSTEST_HOST_DEBUG` → `testhost.net4x.exe`) (1–2)
+- [ ] Проект `net48` в `debug-playground` со сценариями `// BP:`, проверка UI-роботом (1)
+### Этап 4 — крупное
+- [ ] Результаты тестов по ходу прогона: разбор живой консоли + уточнение по TRX, MTP отдельно; при необходимости — свой логгер VSTest (4–6)
+- [ ] Legacy-модель проекта: явный `<Compile Include>` в дереве, «не в проекте» серым, новые файлы в `.csproj`, тест-проекты на `packages.config` (4–5)
+- [ ] IIS Express: профили `IISExpress` в `launchSettings`, `iisexpress.exe` + `applicationhost.config`, attach отладчика (3–5)
+- [ ] Hot Reload при отладке — после адаптера
+- [ ] Razor / Blazor — ждёт решения: исключён 2026-09-30, в последних коммитах «работа в сторону razor»
+
+### Помощники на .NET, работающие постоянно (план 2026-10-03)
+Библиотеки, которых нет в JVM, через помощников, как `indexer`: исходником в плагине, сборка на машине пользователя, процесс держится
+и отвечает на запросы. Соглашение и протокол — `helpers/README.md`. Три помощника, а не один: MSBuild конфликтует с клиентом NuGet,
+для .NET Framework нужен процесс на net472, подключение к чужим процессам изолируется.
+- [x] Основа: протокол `helpers/protocol/Protocol.cs` (JSON построчно, параллельные запросы, отмена, журнал), клиент `cli/HelperConnection`
+  (ленивый старт, перезапуск, таймауты), `DotNetHelper` с несколькими исходниками, упаковка `helpers/*` в сборке. Тест `HelperConnectionTest`
+- [x] 0.1.28 — MsBuildHost (`helpers/msbuildhost`, Microsoft.Build 17.11 из SDK через MSBuildLocator): `evaluate` / `invalidate` / `info`,
+  вычисления переиспользуются до изменения проекта или импортов (12–48 мс против ~0,8 с у `dotnet msbuild -getProperty`). `TargetPath` для
+  Debug — сначала помощник, затем CLI; legacy-проекты в Solution view — по вычисленным items (фоном, дерево обновляется по ответу).
+  MSBuild из SDK вычисляет legacy-проекты, кроме импортов Visual Studio (`$(VSToolsPath)` → WebApplication targets): такой проект
+  вычисляется с `IgnoreMissingImports` и предупреждением. Плагин — `msbuild/MsBuildEvaluation`, тест `MsBuildEvaluationTest`; чек-лист —
+  `debug-playground/README.md` «MSBuild-вычисление проектов». Вживую в IDE не проверено, SDK 8 не проверен
+- [ ] MsBuildHost на net472 с MSBuild из Visual Studio (`DiscoveryType.VisualStudioSetup`): exe только для Windows, запуск exe вместо
+  `dotnet dll` в `DotNetHelper` / `HelperConnection`, `Microsoft.NETFramework.ReferenceAssemblies` + `System.Text.Json` для сборки
+- [x] 0.1.27 — DotNetHelper (`helpers/dotnethelper`, NuGet.Protocol / NuGet.Credentials 6.14): поиск и версии, когда HTTP-клиент IDE не
+  доходит до фида (`NuGetNetwork.isRouteFailure`: прокси, сертификаты, неизвестный хост, 401 / 403 / 407; такой фид 10 минут идёт сразу
+  через помощник), фиды V2 и локальные папки, учётные данные nuget.config и credential providers; restore `packages.config` в папку
+  `packages` solution (`repositoryPath`). Плагин — `nuget/NuGetHelper`, тест `NuGetHelperTest` на ответах настоящего прогона. **За
+  корпоративным прокси не проверено**; у пакетов, найденных только помощником, в карточке нет данных nuspec
+- [ ] DotNetHelper, дальше: тесты через TestPlatform (живые результаты, поиск по метаданным, net4x), декомпилятор (ICSharpCode.Decompiler),
+  CorFlags сборок
+- [x] 0.1.29 — DiagnosticsHelper (`helpers/diagnostics`, ClrMD 3.1): `runtimes` — CLR процесса по модулям (Toolhelp-снимок с
+  `TH32CS_SNAPMODULE32`, видит 32-битные процессы; 435 процессов за 319 мс), attach к хостам с desktop CLR под ключом реестра;
+  `retained` / `dominators` / `close` — дерево доминаторов (Cooper–Harvey–Kennedy без рекурсии, ~100 байт на объект; дамп `leak` — 1 с,
+  9 млн объектов — 29 с, 920 МБ), колонка Retained и вкладка Dominators в Memory Dump. Плагин — `cli/DiagnosticsHelper`, тест
+  `DiagnosticsHelperTest`. Вживую в IDE не проверено
+- [ ] DiagnosticsHelper, дальше: TraceEvent (flame graph из `.nettrace`), перенос `allocwatch`, сравнение двух дампов
+- [ ] Перенос `indexer` / `allocwatch` в постоянные помощники — только если это даст выигрыш (сейчас они разовые и работают)
+
+### IL Viewer (план 2026-10-03)
+
+- [x] 0.1.32 — окно IL Viewer, как в Rider: IL метода под курсором из последней сборки (DotNetHelper `il`, `helpers/dotnethelper/Il.cs`,
+  `ICSharpCode.Decompiler` 11.1); тела выбираются по sequence points PDB (метод, `MoveNext` async/итератора, лямбды, локальные функции;
+  portable и embedded PDB, путь `/_/` — по хвосту), без PDB и для полей / заголовков типов — по имени с warning; первый запрос к сборке
+  0,3–0,7 с, дальше миллисекунды, сборка не блокируется. Подсветка C# ↔ IL в обе стороны, баннер о несвежей сборке, обновление после
+  сборки (`DotNetBuildListener.TOPIC`). Контракт — `il/IlModel.kt`, тесты `IlHelperTest` / `IlViewerTest`, сценарий —
+  `debug-playground/Console/Editor/IlViewer.cs` (маркеры `IL:`). Вживую в IDE не проверено; Windows PDB не читается
+- [ ] Режим «IL + C#» (строки исходника комментариями перед своим IL)
+- [ ] Декомпиляция типов библиотек в C# (тот же пакет)
+
+### Схема конфигурации `appsettings*.json` из кода (план 2026-10-03)
+
+Не только ASP.NET Core: любой проект, который читает конфигурацию через `Microsoft.Extensions.Configuration`, получает автодополнение и
+проверку своих секций.
+- [ ] Шаг 1. Провайдер JSON-схемы для `appsettings*.json` (и `appsettings.<Environment>.json`): база ASP.NET Core (Logging, Kestrel,
+  ConnectionStrings, AllowedHosts; не спорить со схемой SchemaStore, если платформа её уже применяет) + `ConfigurationSchema.json` из
+  NuGet-пакетов проекта (Aspire и др., пакеты — из `project.assets.json`)
+- [ ] Шаг 2. Секции из кода — метод DotNetHelper на синтаксисе Roslyn (без компиляции): `Configure<T>(GetSection("X"))`,
+  `AddOptions<T>().Bind(...)` / `.BindConfiguration("X")`, `GetSection("X").Get<T>()` / `.Bind(obj)`, `GetValue<T>("A:B")`,
+  `config["A:B"]`; имя секции из константы (`GetSection(PositionOptions.Position)`); пометка `// appsettings: Section:Sub` над классом
+  для того, что по коду не найти. Типы: свойства с сеттером → ключи, примитивы, enum → значения, `TimeSpan`, коллекции, словари →
+  `additionalProperties`, вложенные классы, инициализатор → `default`, XML-doc → описание. Пересчёт при правке `.cs`. Неизвестный ключ —
+  слабое предупреждение (конфигурация приходит и из окружения), неверный тип — предупреждение
+- [ ] Шаг 3. Навигация ключ JSON ↔ свойство C# (Ctrl+Click, значок у класса), DataAnnotations (`[Required]`, `[Range]`,
+  `[RegularExpression]`) → ограничения, типы из библиотек — через индекс сборок, те же ключи в `secrets.json` и `Section__Key` в
+  переменных окружения `launchSettings.json`
 
 ## Платформа
 - [x] Минимальная версия — 2026.1 (`sinceBuild = 261`), сборка и тесты на IntelliJ IDEA 2026.1.4, Kotlin API 2.3. Папки под узлом проекта в панели Solution получили короткие имена и в IDEA (Java-плагин называл их как пакеты). Убраны устаревшие `ReadAction.compute`, `DaemonCodeAnalyzer.restart()`, `isLenient`, `createSingleFileDescriptor`

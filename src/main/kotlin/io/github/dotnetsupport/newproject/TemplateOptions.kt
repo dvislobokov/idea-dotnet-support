@@ -102,6 +102,16 @@ object TemplateOptions {
         return line.substringAfter('<').substringBefore('>').split('|').map { it.trim() }.filter { it.isNotEmpty() }
     }
 
+    /** The `Description:` line at the top of the help: what the New Solution dialog writes under the list of templates. */
+    fun description(help: String): String = header(help, "Description")
+
+    /** The `Author:` line at the top of the help. */
+    fun author(help: String): String = header(help, "Author")
+
+    private fun header(help: String, key: String): String =
+        help.lineSequence().takeWhile { !it.trim().startsWith("Usage:") }
+            .firstOrNull { it.startsWith("$key:") }?.substringAfter(':')?.trim().orEmpty()
+
     /** `--test-runner MSTest --sdk` for what differs from the defaults; a bool set to false when its default is true is passed as `--x false`. */
     fun arguments(options: List<TemplateOption>, values: Map<String, String>): List<String> = buildList {
         for (option in options) {
@@ -130,4 +140,46 @@ object TemplateOptions {
             return TemplateOption(name, aliases.filter { it != name }, description, kind, choices, default, multiple, enabledIf)
         }
     }
+}
+
+/** What `dotnet new <template> --help` says about a template: its options, the frameworks it supports, its description. */
+class TemplateHelp(val options: List<TemplateOption>, val frameworks: List<String>, val description: String, val author: String = "") {
+    companion object {
+        val EMPTY = TemplateHelp(emptyList(), emptyList(), "")
+
+        fun parse(help: String) =
+            TemplateHelp(TemplateOptions.parse(help), TemplateOptions.frameworks(help), TemplateOptions.description(help), TemplateOptions.author(help))
+    }
+}
+
+/**
+ * `dotnet new <template> --help` once per template and language for the session of the IDE: the New Project wizard, the Add New Project
+ * dialog and the New Solution dialog ask the same questions, a second each.
+ */
+object TemplateHelpCache {
+    private val cache = java.util.concurrent.ConcurrentHashMap<String, TemplateHelp>()
+
+    private fun key(shortName: String, language: String?) = "$shortName|${language.orEmpty()}"
+
+    /** Null until [load] has run for the pair. */
+    fun cached(shortName: String, language: String?): TemplateHelp? = cache[key(shortName, language)]
+
+    /** Blocking; [TemplateHelp.EMPTY] (not cached) when the CLI fails. */
+    fun load(shortName: String, language: String?): TemplateHelp {
+        cached(shortName, language)?.let { return it }
+        val help = try {
+            val arguments = listOfNotNull("new", shortName, "--help", language?.let { "--language" }, language)
+            val output = DotNetCli.execute(DotNetCli.commandLine(null, *arguments.toTypedArray()).withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en"), 60_000)
+            if (output.exitCode != 0 && output.stdout.isBlank()) return TemplateHelp.EMPTY
+            TemplateHelp.parse(output.stdout)
+        } catch (e: Exception) {
+            PluginLog.warn(DotNetTemplates.LOG_CATEGORY, "`dotnet new $shortName --help` could not run, no options are shown", e)
+            return TemplateHelp.EMPTY
+        }
+        cache[key(shortName, language)] = help
+        return help
+    }
+
+    /** After templates are installed or removed: a template of the same short name may now be another one. */
+    fun clear() = cache.clear()
 }

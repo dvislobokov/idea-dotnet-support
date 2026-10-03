@@ -9,6 +9,7 @@ import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
@@ -19,7 +20,10 @@ import io.github.dotnetsupport.build.DotNetBuildService
 import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.build.DotNetBuildSettings
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.msbuild.MsBuildEvaluation
+import io.github.dotnetsupport.msbuild.MsBuildEvaluationResult
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Semaphore
 import javax.swing.Icon
 
 class BuildProjectBeforeRunTask : BeforeRunTask<BuildProjectBeforeRunTask>(BuildProjectBeforeRunTaskProvider.ID)
@@ -62,19 +66,41 @@ object DotNetDebugBuild {
      * Builds [projectFile] with the Build tool window and asks MSBuild where the assembly is. Null: the build has failed.
      * An empty string is not a failure: the path is unknown, the adapter is given the project then and finds the output itself.
      */
-    fun buildAndLocate(configuration: DotNetRunConfiguration, projectFile: VirtualFile): String? {
-        val project = configuration.project
-        val built = CompletableFuture<Boolean>()
-        // The build saves the documents, which takes the EDT in a write-safe context:
-        // not ModalityState.any(), under which saving is an error of the platform ("Write-unsafe context").
-        ApplicationManager.getApplication().invokeLater({
-            if (project.isDisposed) built.complete(false)
-            else DotNetBuildService.getInstance(project).run(projectFile, DotNetBuildCommand.BUILD) { built.complete(it) }
-        }, ModalityState.nonModal())
-        return if (built.get()) targetPath(configuration, projectFile).orEmpty() else null
+    fun buildAndLocate(configuration: DotNetRunConfiguration, projectFile: VirtualFile): String? =
+        if (build(configuration.project, projectFile)) targetPath(configuration, projectFile).orEmpty() else null
+
+    // A compound configuration (or Debug of several projects) starts its launches together; two builds of the same dependencies at once
+    // fight over the files in obj/ and bin/, so the builds a launch waits for go one after another.
+    private val builds = Semaphore(1, true)
+
+    /** Builds [projectFile] with the Build tool window and waits for it; blocking, for a background thread. */
+    fun build(project: Project, projectFile: VirtualFile): Boolean {
+        builds.acquire()
+        try {
+            val built = CompletableFuture<Boolean>()
+            // The build saves the documents, which takes the EDT in a write-safe context:
+            // not ModalityState.any(), under which saving is an error of the platform ("Write-unsafe context").
+            ApplicationManager.getApplication().invokeLater({
+                if (project.isDisposed) built.complete(false)
+                else DotNetBuildService.getInstance(project).run(projectFile, DotNetBuildCommand.BUILD) { built.complete(it) }
+            }, ModalityState.nonModal())
+            return built.get()
+        } finally {
+            builds.release()
+        }
     }
 
-    private fun targetPath(configuration: DotNetRunConfiguration, projectFile: VirtualFile): String? = try {
+    /** MsBuildHost first (no process per launch, and it evaluates as a build does); `dotnet msbuild -getProperty` when it cannot tell. */
+    private fun targetPath(configuration: DotNetRunConfiguration, projectFile: VirtualFile): String? {
+        val project = configuration.project
+        val settings = DotNetBuildSettings.getInstance(project)
+        val globals = MsBuildEvaluationResult.globalProperties(DotNetBuildOptions.getInstance(project).state.globalProperties)
+        MsBuildEvaluation.getInstance(project).targetPath(projectFile, settings.configuration, settings.launchFramework(projectFile), globals)
+            ?.let { return it.also { PluginLog.info(LOG_CATEGORY, "TargetPath of ${projectFile.name} (MsBuildHost): $it") } }
+        return targetPathOfCli(configuration, projectFile)
+    }
+
+    private fun targetPathOfCli(configuration: DotNetRunConfiguration, projectFile: VirtualFile): String? = try {
         val project = configuration.project
         val settings = DotNetBuildSettings.getInstance(project)
         val properties = DotNetBuildOptions.propertyArguments(DotNetBuildOptions.getInstance(project).state.globalProperties)

@@ -1,0 +1,71 @@
+{
+ "assembly": "C:\\work\\Playground\\Console\\bin\\Debug\\net9.0\\Playground.Console.dll",
+ "assemblyModified": 1791044475443,
+ "pdb": "C:\\work\\Playground\\Console\\bin\\Debug\\net9.0\\Playground.Console.pdb",
+ "bodies": [
+  {
+   "name": "Scenarios.Async()",
+   "kind": "method",
+   "text": ".method private hidebysig static\n  class [System.Runtime]System.Threading.Tasks.Task Async () cil managed\n{\n  .custom instance void [System.Runtime]System.Runtime.CompilerServices.AsyncStateMachineAttribute::.ctor(class [System.Runtime]System.Type) = (\n    01 00 21 50 6c 61 79 67 72 6f 75 6e 64 2e 53 63\n    65 6e 61 72 69 6f 73 2b 3c 41 73 79 6e 63 3e 64\n    5f 5f 31 34 00 00\n  )\n  .custom instance void [System.Runtime]System.Diagnostics.DebuggerStepThroughAttribute::.ctor() = (\n    01 00 00 00\n  )\n  // Method begins at RVA 0x2e20\n  // Header size: 12\n  // Code size: 49 (0x31)\n  .maxstack 2\n  .locals init (\n    [0] class Playground.Scenarios/'<Async>d__14'\n  )\n\n  IL_0000: newobj instance void Playground.Scenarios/'<Async>d__14'::.ctor()\n  IL_0005: stloc.0\n  IL_0006: ldloc.0\n  IL_0007: call valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder::Create()\n  IL_000c: stfld valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder Playground.Scenarios/'<Async>d__14'::'<>t__builder'\n  IL_0011: ldloc.0\n  IL_0012: ldc.i4.m1\n  IL_0013: stfld int32 Playground.Scenarios/'<Async>d__14'::'<>1__state'\n  IL_0018: ldloc.0\n  IL_0019: ldflda valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder Playground.Scenarios/'<Async>d__14'::'<>t__builder'\n  IL_001e: ldloca.s 0\n  IL_0020: call instance void [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder::Start<class Playground.Scenarios/'<Async>d__14'>(!!0&)\n  IL_0025: ldloc.0\n  IL_0026: ldflda valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder Playground.Scenarios/'<Async>d__14'::'<>t__builder'\n  IL_002b: call instance class [System.Runtime]System.Threading.Tasks.Task [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder::get_Task()\n  IL_0030: ret\n} // end of method Scenarios::Async",
+   "atCaret": false,
+   "mapping": []
+  },
+  {
+   "name": "Scenarios.<Async>d__14.MoveNext()",
+   "kind": "stateMachine",
+   "text": ".method private final hidebysig newslot virtual\n  instance void MoveNext () cil managed\n{\n  .override method instance void [System.Runtime]System.Runtime.CompilerServices.IAsyncStateMachine::MoveNext()\n  // Method begins at RVA 0x43a8\n  // Header size: 12\n  // Code size: 303 (0x12f)\n  .maxstack 3\n  .locals init (\n    [0] int32,\n    [1] valuetype [System.Runtime]System.Runtime.CompilerServices.TaskAwaiter`1<int32>,\n    [2] class Playground.Scenarios/'<Async>d__14',\n    [3] valuetype [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler,\n    [4] class [System.Runtime]System.Exception\n  )\n\n  IL_0000: ldarg.0\n  IL_0001: ldfld int32 Playground.Scenarios/'<Async>d__14'::'<>1__state'\n  IL_0006: stloc.0\n  .try\n  {\n    IL_0007: ldloc.0\n    IL_0008: brfalse.s IL_000c\n\n    IL_000a: br.s IL_000e\n\n    IL_000c: br.s IL_0057\n\n    IL_000e: nop\n    IL_000f: ldarg.0\n    IL_0010: call int32 [System.Runtime]System.Environment::get_CurrentManagedThreadId()\n    IL_0015: stfld int32 Playground.Scenarios/'<Async>d__14'::'<before>5__1'\n    IL_001a: ldc.i4.s 20\n    IL_001c: call class [System.Runtime]System.Threading.Tasks.Task`1<int32> Playground.Scenarios::Compute(int32)\n    IL_0021: callvirt instance valuetype [System.Runtime]System.Runtime.CompilerServices.TaskAwaiter`1<!0> class [System.Runtime]System.Threading.Tasks.Task`1<int32>::GetAwaiter()\n    IL_0026: stloc.1\n    IL_0027: ldloca.s 1\n    IL_0029: call instance bool valuetype [System.Runtime]System.Runtime.CompilerServices.TaskAwaiter`1<int32>::get_IsCompleted()\n    IL_002e: brtrue.s IL_0073\n\n    IL_0030: ldarg.0\n    IL_0031: ldc.i4.0\n    IL_0032: dup\n    IL_0033: stloc.0\n    IL_0034: stfld int32 Playground.Scenarios/'<Async>d__14'::'<>1__state'\n    IL_0039: ldarg.0\n    IL_003a: ldloc.1\n    IL_003b: stfld valuetype [System.Runtime]System.Runtime.CompilerServices.TaskAwaiter`1<int32> Playground.Scenarios/'<Async>d__14'::'<>u__1'\n    IL_0040: ldarg.0\n    IL_0041: stloc.2\n    IL_0042: ldarg.0\n    IL_0043: ldflda valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder Playground.Scenarios/'<Async>d__14'::'<>t__builder'\n    IL_0048: ldloca.s 1\n    IL_004a: ldloca.s 2\n    IL_004c: call instance void [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder::AwaitUnsafeOnCompleted<valuetype [System.Runtime]System.Runtime.CompilerServices.TaskAwaiter`1<int32>, class Playground.Scenarios/'<Async>d__14'>(!!0&, !!1&)\n    IL_0051: nop\n    IL_0052: leave IL_012e\n\n    IL_0057: ldarg.0\n    IL_0058: ldfld valuetype [System.Runtime]System.Runtime.CompilerServices.TaskAwaiter`1<int32> Playground.Scenarios/'<Async>d__14'::'<>u__1'\n    IL_005d: stloc.1\n    IL_005e: ldarg.0\n    IL_005f: ldflda valuetype [System.Runtime]System.Runtime.CompilerServices.TaskAwaiter`1<int32> Playground.Scenarios/'<Async>d__14'::'<>u__1'\n    IL_0064: initobj valuetype [System.Runtime]System.Runtime.CompilerServices.TaskAwaiter`1<int32>\n    IL_006a: ldarg.0\n    IL_006b: ldc.i4.m1\n    IL_006c: dup\n    IL_006d: stloc.0\n    IL_006e: stfld int32 Playground.Scenarios/'<Async>d__14'::'<>1__state'\n\n    IL_0073: ldarg.0\n    IL_0074: ldloca.s 1\n    IL_0076: call instance !0 valuetype [System.Runtime]System.Runtime.CompilerServices.TaskAwaiter`1<int32>::GetResult()\n    IL_007b: stfld int32 Playground.Scenarios/'<Async>d__14'::'<>s__4'\n    IL_0080: ldarg.0\n    IL_0081: ldarg.0\n    IL_0082: ldfld int32 Playground.Scenarios/'<Async>d__14'::'<>s__4'\n    IL_0087: stfld int32 Playground.Scenarios/'<Async>d__14'::'<value>5__2'\n    IL_008c: ldarg.0\n    IL_008d: call int32 [System.Runtime]System.Environment::get_CurrentManagedThreadId()\n    IL_0092: stfld int32 Playground.Scenarios/'<Async>d__14'::'<after>5__3'\n    IL_0097: ldc.i4.s 18\n    IL_0099: ldc.i4.3\n    IL_009a: newobj instance void [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::.ctor(int32, int32)\n    IL_009f: stloc.3\n    IL_00a0: ldloca.s 3\n    IL_00a2: ldstr \"value=\"\n    IL_00a7: call instance void [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::AppendLiteral(string)\n    IL_00ac: nop\n    IL_00ad: ldloca.s 3\n    IL_00af: ldarg.0\n    IL_00b0: ldfld int32 Playground.Scenarios/'<Async>d__14'::'<value>5__2'\n    IL_00b5: call instance void [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::AppendFormatted<int32>(!!0)\n    IL_00ba: nop\n    IL_00bb: ldloca.s 3\n    IL_00bd: ldstr \" thread \"\n    IL_00c2: call instance void [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::AppendLiteral(string)\n    IL_00c7: nop\n    IL_00c8: ldloca.s 3\n    IL_00ca: ldarg.0\n    IL_00cb: ldfld int32 Playground.Scenarios/'<Async>d__14'::'<before>5__1'\n    IL_00d0: call instance void [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::AppendFormatted<int32>(!!0)\n    IL_00d5: nop\n    IL_00d6: ldloca.s 3\n    IL_00d8: ldstr \" -> \"\n    IL_00dd: call instance void [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::AppendLiteral(string)\n    IL_00e2: nop\n    IL_00e3: ldloca.s 3\n    IL_00e5: ldarg.0\n    IL_00e6: ldfld int32 Playground.Scenarios/'<Async>d__14'::'<after>5__3'\n    IL_00eb: call instance void [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::AppendFormatted<int32>(!!0)\n    IL_00f0: nop\n    IL_00f1: ldloca.s 3\n    IL_00f3: call instance string [System.Runtime]System.Runtime.CompilerServices.DefaultInterpolatedStringHandler::ToStringAndClear()\n    IL_00f8: call void [System.Console]System.Console::WriteLine(string)\n    IL_00fd: nop\n    IL_00fe: leave.s IL_011a\n  } // end .try\n  catch [System.Runtime]System.Exception\n  {\n    IL_0100: stloc.s 4\n    IL_0102: ldarg.0\n    IL_0103: ldc.i4.s -2\n    IL_0105: stfld int32 Playground.Scenarios/'<Async>d__14'::'<>1__state'\n    IL_010a: ldarg.0\n    IL_010b: ldflda valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder Playground.Scenarios/'<Async>d__14'::'<>t__builder'\n    IL_0110: ldloc.s 4\n    IL_0112: call instance void [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder::SetException(class [System.Runtime]System.Exception)\n    IL_0117: nop\n    IL_0118: leave.s IL_012e\n  } // end handler\n\n  IL_011a: ldarg.0\n  IL_011b: ldc.i4.s -2\n  IL_011d: stfld int32 Playground.Scenarios/'<Async>d__14'::'<>1__state'\n  IL_0122: ldarg.0\n  IL_0123: ldflda valuetype [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder Playground.Scenarios/'<Async>d__14'::'<>t__builder'\n  IL_0128: call instance void [System.Runtime]System.Runtime.CompilerServices.AsyncTaskMethodBuilder::SetResult()\n  IL_012d: nop\n\n  IL_012e: ret\n} // end of method '<Async>d__14'::MoveNext",
+   "atCaret": true,
+   "mapping": [
+    {
+     "textLine": 28,
+     "offset": 14,
+     "startLine": 185,
+     "startColumn": 5,
+     "endLine": 185,
+     "endColumn": 6
+    },
+    {
+     "textLine": 29,
+     "offset": 15,
+     "startLine": 186,
+     "startColumn": 9,
+     "endLine": 186,
+     "endColumn": 57
+    },
+    {
+     "textLine": 32,
+     "offset": 26,
+     "startLine": 187,
+     "startColumn": 9,
+     "endLine": 187,
+     "endColumn": 39
+    },
+    {
+     "textLine": 78,
+     "offset": 140,
+     "startLine": 188,
+     "startColumn": 9,
+     "endLine": 188,
+     "endColumn": 56
+    },
+    {
+     "textLine": 81,
+     "offset": 151,
+     "startLine": 189,
+     "startColumn": 9,
+     "endLine": 189,
+     "endColumn": 72
+    },
+    {
+     "textLine": 132,
+     "offset": 282,
+     "startLine": 190,
+     "startColumn": 5,
+     "endLine": 190,
+     "endColumn": 6
+    }
+   ]
+  }
+ ],
+ "warning": null
+}

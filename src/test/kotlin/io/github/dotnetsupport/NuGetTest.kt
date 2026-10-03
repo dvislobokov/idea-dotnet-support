@@ -280,4 +280,28 @@ class NuGetTest : BasePlatformTestCase() {
 
         assertNotNull(ActionManager.getInstance().getAction("DotNet.ManageNuGet"))
     }
+
+    fun testPackagesConfigProjectIsShownButNotChanged() {
+        val legacy = myFixture.addFileToProject(
+            "LegacyNuGet/LegacyNuGet.csproj",
+            """<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003"><PropertyGroup><TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion></PropertyGroup></Project>""",
+        ).virtualFile
+        myFixture.addFileToProject("LegacyNuGet/packages.config", """<packages><package id="Newtonsoft.Json" version="13.0.3" targetFramework="net472" /></packages>""")
+        val modern = myFixture.addFileToProject("ModernNuGet/ModernNuGet.csproj", """<Project Sdk="Microsoft.NET.Sdk"/>""").virtualFile
+
+        val service = NuGetService.getInstance(project)
+        assertTrue(service.usesPackagesConfig(legacy))
+        assertFalse(service.usesPackagesConfig(modern))
+        val installed = service.installed(legacy).single()
+        assertEquals("Newtonsoft.Json" to "13.0.3", installed.id to installed.version)
+
+        // `dotnet add package` would write a PackageReference into the legacy project: nothing runs, the Log tab says why
+        val log = StringBuilder()
+        service.log.subscribe { text, _ -> log.append(text) }
+        var succeeded = false
+        service.install(listOf(legacy), "Serilog", "4.0.0") { succeeded = true }
+        service.remove(listOf(legacy), "Newtonsoft.Json") { succeeded = true }
+        assertFalse(succeeded)
+        assertTrue(log.toString(), log.contains("Skipped LegacyNuGet.csproj: ${NuGetService.PACKAGES_CONFIG_NOTE}"))
+    }
 }

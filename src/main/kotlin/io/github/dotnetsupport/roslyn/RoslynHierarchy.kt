@@ -105,9 +105,12 @@ object RoslynHierarchies {
         return Target(project, client, file, RoslynNavigation.position(editor.document, offset), RoslynNavigation.wordAt(editor.document.immutableCharSequence, offset))
     }
 
-    fun prepareType(target: Target): List<HierarchyItem> = withProgress(target.project, "Preparing Type Hierarchy of ${target.word}") {
+    fun prepareType(target: Target): List<HierarchyItem> = withProgress(target.project, "Preparing Type Hierarchy of ${target.word}") { prepareTypeNow(target) }
+
+    /** [prepareType] on the current thread, which is not the EDT: for a search that already runs under a progress. */
+    fun prepareTypeNow(target: Target): List<HierarchyItem> {
         val params = org.eclipse.lsp4j.TypeHierarchyPrepareParams(target.client.getDocumentIdentifier(target.file), target.position)
-        target.client.sendRequestSync(TIMEOUT_MS) { it.textDocumentService.prepareTypeHierarchy(params) }.orEmpty().map(HierarchyItem::of)
+        return target.client.sendRequestSync(TIMEOUT_MS) { it.textDocumentService.prepareTypeHierarchy(params) }.orEmpty().map(HierarchyItem::of)
     }
 
     fun supertypes(client: LspClient, item: HierarchyItem): List<HierarchyItem> =
@@ -127,7 +130,7 @@ object RoslynHierarchies {
     fun callees(client: LspClient, item: HierarchyItem): List<HierarchyItem> =
         client.sendRequestSync(TIMEOUT_MS) { it.textDocumentService.callHierarchyOutgoingCalls(org.eclipse.lsp4j.CallHierarchyOutgoingCallsParams(item.toCallItem())) }.orEmpty().map { HierarchyItem.of(it.to) }
 
-    private fun <T> withProgress(project: Project, title: String, compute: () -> T): T =
+    fun <T> withProgress(project: Project, title: String, compute: () -> T): T =
         ProgressManager.getInstance().runProcessWithProgressSynchronously<T, RuntimeException>({ compute() }, title, true, project)
 
     /** The document is unsaved: the server works on the text of the editor, the item ranges are of that text. */

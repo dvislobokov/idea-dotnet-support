@@ -1,0 +1,92 @@
+{
+ "properties": {},
+ "items": {
+  "Compile": [
+   {
+    "include": "C:\\src\\Legacy\\Program.cs",
+    "metadata": {}
+   },
+   {
+    "include": "C:\\src\\Legacy\\Form1.cs",
+    "metadata": {
+     "SubType": "Form"
+    }
+   },
+   {
+    "include": "C:\\src\\Legacy\\Form1.Designer.cs",
+    "metadata": {
+     "DependentUpon": "Form1.cs"
+    }
+   },
+   {
+    "include": "C:\\src\\Legacy\\Properties\\AssemblyInfo.cs",
+    "metadata": {}
+   },
+   {
+    "include": "Missing.cs",
+    "metadata": {}
+   },
+   {
+    "include": "C:\\src\\Shared\\Util.cs",
+    "metadata": {
+     "Link": "Shared\\Util.cs"
+    }
+   }
+  ],
+  "None": [],
+  "Content": [
+   {
+    "include": "C:\\src\\Legacy\\Web.config",
+    "metadata": {}
+   },
+   {
+    "include": "C:\\src\\Legacy\\Views\\Index.cshtml",
+    "metadata": {}
+   }
+  ],
+  "EmbeddedResource": [
+   {
+    "include": "C:\\src\\Legacy\\Form1.resx",
+    "metadata": {
+     "DependentUpon": "Form1.cs"
+    }
+   }
+  ],
+  "Page": [],
+  "Resource": [],
+  "ApplicationDefinition": [],
+  "Folder": []
+ },
+ "imports": [
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Current\\Microsoft.Common.props",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\NuGet.props",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft.CSharp.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft.Managed.Before.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft.CSharp.CurrentVersion.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Roslyn\\Microsoft.CSharp.Core.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Roslyn\\Microsoft.Managed.Core.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Roslyn\\Microsoft.Managed.Core.CurrentVersions.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft.Common.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft.Common.CurrentVersion.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft.NETFramework.props",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft.NETFramework.CurrentVersion.props",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft.NET.props",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft.NETFramework.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft.NETFramework.CurrentVersion.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\NuGet.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Current\\Microsoft.Common.targets\\ImportAfter\\Microsoft.NET.Build.Extensions.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft\\Microsoft.NET.Build.Extensions\\Microsoft.NET.Build.Extensions.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft\\Microsoft.NET.Build.Extensions\\Microsoft.NET.Build.Extensions.NETFramework.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft\\Microsoft.NET.Build.Extensions\\Microsoft.NET.Build.Extensions.ConflictResolution.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft\\Microsoft.NET.Build.Extensions\\Microsoft.NET.DefaultPackageConflictOverrides.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Current\\Microsoft.Common.targets\\ImportAfter\\Microsoft.TestPlatform.ImportAfter.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft.TestPlatform.targets",
+  "C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft.Managed.After.targets"
+ ],
+ "targetFrameworks": [
+  "net472"
+ ],
+ "warning": "The imported project \"C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft\\VisualStudio\\v18.0\\WebApplications\\Microsoft.WebApplication.targets\" was not found. Confirm that the expression in the Import declaration \"$(VSToolsPath)\\WebApplications\\Microsoft.WebApplication.targets\", which evaluated to \"C:\\Program Files\\dotnet\\sdk\\10.0.401\\Microsoft\\VisualStudio\\v18.0\\WebApplications\\Microsoft.WebApplication.targets\", is correct, and that the file exists on disk.  C:\\src\\Legacy\\Legacy.csproj",
+ "milliseconds": 282,
+ "reused": false
+}

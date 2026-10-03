@@ -10,6 +10,10 @@ import com.intellij.ui.ScreenUtil
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.util.ui.JBUI
 import com.intellij.ui.dsl.builder.AlignX
+import com.intellij.ui.dsl.builder.COLUMNS_MEDIUM
+import com.intellij.ui.dsl.builder.Cell
+import com.intellij.ui.dsl.builder.Row
+import com.intellij.ui.dsl.builder.columns
 import com.intellij.ui.dsl.builder.Panel
 import com.intellij.ui.dsl.builder.panel
 import java.awt.BorderLayout
@@ -64,9 +68,7 @@ class DotNetTemplatePanel {
     private val optionsStatus = JBLabel("")
 
     /** The options of the template shown now and the controls holding their values. */
-    private var options: List<TemplateOption> = emptyList()
-    private val controls = HashMap<String, () -> String>()
-    private val optionsCache = HashMap<String, Pair<List<TemplateOption>, List<String>>>()
+    private val optionsForm = TemplateOptionsForm()
     private var installedFrameworks: List<String> = emptyList()
 
     init {
@@ -84,7 +86,7 @@ class DotNetTemplatePanel {
             link("More templates...") {
                 val dialog = TemplatePackagesDialog(templateCombo)
                 dialog.show()
-                if (dialog.isChanged) loadFromCli()
+                if (dialog.isChanged) { TemplateHelpCache.clear(); loadFromCli() }
             }
         }
         row("Language:") { cell(languageCombo) }
@@ -101,7 +103,7 @@ class DotNetTemplatePanel {
                 template,
                 language = (languageCombo.selectedItem as? String)?.takeIf { template.languages.size > 1 },
                 framework = framework.takeIf { it.isNotEmpty() && it != DEFAULT_FRAMEWORK },
-                templateOptions = TemplateOptions.arguments(options, controls.mapValues { it.value() }),
+                templateOptions = optionsForm.arguments,
             )
         }
 
@@ -140,35 +142,24 @@ class DotNetTemplatePanel {
     private fun loadOptions() {
         val template = templateCombo.selectedItem as? DotNetTemplate ?: return
         val language = (languageCombo.selectedItem as? String)?.takeIf { template.languages.size > 1 }
-        val key = "${template.shortName}|${language.orEmpty()}"
-        optionsCache[key]?.let { (loaded, frameworks) -> return showOptions(loaded, frameworks) }
+        TemplateHelpCache.cached(template.shortName, language)?.let { return showOptions(it.options, it.frameworks) }
         optionsStatus.text = "Loading the options of the template..."
         showOptions(emptyList(), emptyList())
         ApplicationManager.getApplication().executeOnPooledThread {
-            val help = try {
-                val arguments = listOfNotNull("new", template.shortName, "--help", language?.let { "--language" }, language)
-                io.github.dotnetsupport.cli.DotNetCli.execute(io.github.dotnetsupport.cli.DotNetCli.commandLine(null, *arguments.toTypedArray()).withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en"), 60_000).stdout
-            } catch (e: Exception) {
-                io.github.dotnetsupport.cli.PluginLog.warn(DotNetTemplates.LOG_CATEGORY, "`dotnet new ${template.shortName} --help` could not run, no options are shown", e)
-                ""
-            }
-            val loaded = TemplateOptions.parse(help)
-            val frameworks = TemplateOptions.frameworks(help)
+            val help = TemplateHelpCache.load(template.shortName, language)
             ApplicationManager.getApplication().invokeLater({
-                optionsCache[key] = loaded to frameworks
-                if ((templateCombo.selectedItem as? DotNetTemplate)?.shortName == template.shortName) showOptions(loaded, frameworks)
+                if ((templateCombo.selectedItem as? DotNetTemplate)?.shortName == template.shortName) showOptions(help.options, help.frameworks)
             }, ModalityState.any())
         }
     }
 
     private fun showOptions(loaded: List<TemplateOption>, frameworks: List<String>) {
-        options = loaded
-        controls.clear()
         optionsStatus.text = if (loaded.isEmpty()) "" else "Options of the template:"
         // the frameworks the template names, else the installed SDKs
         if (frameworks.isNotEmpty()) setFrameworks(frameworks) else if (installedFrameworks.isNotEmpty()) setFrameworks(installedFrameworks)
         optionsPanel.removeAll()
-        if (loaded.isNotEmpty()) optionsPanel.add(TemplateOptionsView.scrolled(optionRows(loaded), screenOf(optionsPanel).height), BorderLayout.CENTER)
+        if (loaded.isNotEmpty()) optionsPanel.add(TemplateOptionsView.scrolled(optionsForm.rows(loaded), screenOf(optionsPanel).height), BorderLayout.CENTER)
+        else optionsForm.rows(emptyList())
         optionsPanel.revalidate()
         optionsPanel.repaint()
         // the dialog was packed before the rows came
@@ -190,20 +181,67 @@ class DotNetTemplatePanel {
         else if (GraphicsEnvironment.isHeadless()) Rectangle(0, 0, 1920, 1080)
         else GraphicsEnvironment.getLocalGraphicsEnvironment().maximumWindowBounds
 
-    private fun optionRows(loaded: List<TemplateOption>): JComponent = panel {
-        for (option in loaded) {
+    private companion object {
+        const val DEFAULT_FRAMEWORK = "(template default)"
+    }
+}
+
+/**
+ * The rows of the options of a template and the values set in them: the template panel and the New Solution dialog show the same.
+ * The panel writes the description under each control; the dialog, as Rider, puts it behind a (?) and may split the options into
+ * several places ([reset] once, then [rowsOf] for each place).
+ */
+class TemplateOptionsForm {
+    var options: List<TemplateOption> = emptyList()
+        private set
+    private val controls = HashMap<String, () -> String>()
+
+    /** The options that differ from their defaults, as arguments of `dotnet new`. */
+    val arguments: List<String> get() = TemplateOptions.arguments(options, controls.mapValues { it.value() })
+
+    /** Rows for [loaded], which become the [options] whose values [arguments] reads. */
+    fun rows(loaded: List<TemplateOption>): JComponent {
+        reset(loaded)
+        return rowsOf(loaded)
+    }
+
+    /** Forgets the controls: the [loaded] options are what [arguments] reads from now on. */
+    fun reset(loaded: List<TemplateOption>) {
+        options = loaded
+        controls.clear()
+    }
+
+    /**
+     * Rows for [subset] of the [options]: [label] names an option, [suggestions] turns a text option into an editable combo box whose
+     * first item stands for "not set" (`Default for chosen framework` of `--langVersion`); [contextHelp] puts the description behind a (?).
+     */
+    fun rowsOf(
+        subset: List<TemplateOption>,
+        label: (TemplateOption) -> String = { it.label },
+        suggestions: (TemplateOption) -> List<String> = { emptyList() },
+        contextHelp: Boolean = false,
+    ): JComponent = panel {
+        // the dialog of Rider keeps the colon the new UI drops from `row("Text:")`
+        fun labeled(option: TemplateOption, init: Row.() -> Unit): Row =
+            if (contextHelp) row(JBLabel("${label(option)}:"), init) else row("${label(option)}:", init)
+        for (option in subset) {
             val hint = listOfNotNull(option.description.takeIf { it.isNotEmpty() }, option.enabledIf?.let { "Applies when: $it" }).joinToString(" ")
+            fun <T : JComponent> Row.described(cell: Cell<T>, extra: String = "") {
+                val text = (hint + extra).trim()
+                if (text.isEmpty()) return
+                if (contextHelp) contextHelp(text) else cell.comment(text)
+            }
             when (option.kind) {
                 TemplateOption.Kind.BOOL -> row {
-                    val box = JBCheckBox(option.label, option.isBoolDefaultTrue)
+                    val box = JBCheckBox(label(option), option.isBoolDefaultTrue)
                     controls[option.name] = { box.isSelected.toString() }
-                    cell(box).comment(hint)
+                    described(cell(box))
                 }
-                TemplateOption.Kind.CHOICE -> row("${option.label}:") {
+                TemplateOption.Kind.CHOICE -> labeled(option) {
                     if (option.multiple) {
                         val field = JBTextField(option.default.orEmpty())
                         controls[option.name] = { field.text }
-                        cell(field).align(AlignX.FILL).comment("$hint Several values separated by ;: ${option.choices.joinToString(", ") { it.value }}")
+                        described(cell(field).align(AlignX.FILL), " Several values separated by ;: ${option.choices.joinToString(", ") { it.value }}")
                     } else {
                         val combo = ComboBox(option.choices.map { it.value }.toTypedArray())
                         combo.selectedItem = option.choices.firstOrNull { it.value.equals(option.default, ignoreCase = true) }?.value ?: option.choices.firstOrNull()?.value
@@ -214,20 +252,23 @@ class DotNetTemplatePanel {
                             label.text = if (index < 0 || choice?.description.isNullOrEmpty()) value.orEmpty() else "$value — ${choice!!.description}"
                         }
                         controls[option.name] = { combo.selectedItem as? String ?: "" }
-                        cell(combo).comment(hint)
+                        described(cell(combo))
                     }
                 }
-                TemplateOption.Kind.TEXT -> row("${option.label}:") {
-                    val field = JBTextField(option.default.orEmpty())
-                    controls[option.name] = { field.text }
-                    cell(field).align(AlignX.FILL).comment(hint)
+                TemplateOption.Kind.TEXT -> labeled(option) {
+                    val items = suggestions(option)
+                    if (items.isNotEmpty()) {
+                        val combo = ComboBox(items.toTypedArray()).apply { isEditable = true }
+                        controls[option.name] = { (combo.editor.item as? String).orEmpty().trim().takeIf { it != items.first() }.orEmpty() }
+                        described(cell(combo).columns(COLUMNS_MEDIUM))
+                    } else {
+                        val field = JBTextField(option.default.orEmpty())
+                        controls[option.name] = { field.text }
+                        described(cell(field).align(AlignX.FILL))
+                    }
                 }
             }
         }
-    }
-
-    private companion object {
-        const val DEFAULT_FRAMEWORK = "(template default)"
     }
 }
 

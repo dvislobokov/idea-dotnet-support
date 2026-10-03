@@ -6,6 +6,8 @@ import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.cli.DotNetInstallation
+import io.github.dotnetsupport.msbuild.PackagesConfig
+import io.github.dotnetsupport.msbuild.PackagesConfigEntry
 import io.github.dotnetsupport.msbuild.ProjectAssets
 import io.github.dotnetsupport.msbuild.TargetFrameworks
 import io.github.dotnetsupport.view.DependenciesKey
@@ -153,6 +155,77 @@ class DependenciesTreeTest : BasePlatformTestCase() {
         val memory = serilog.children.single()
         assertEquals("System.Memory (4.5.5)", memory.describe())
         assertEquals(emptyList<String>(), memory.childNames())
+    }
+
+    fun testPackagesConfigIsParsed() {
+        val text = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <packages>
+              <package id="Newtonsoft.Json" version="13.0.3" targetFramework="net48" />
+              <package id="Microsoft.Net.Compilers" version="4.2.0" targetFramework="net48" developmentDependency="true" />
+              <package version="1.0.0" />
+              <package id="newtonsoft.json" version="12.0.1" />
+              <package id="NoVersion" />
+            </packages>
+        """.trimIndent()
+        assertEquals(
+            listOf(
+                PackagesConfigEntry("Newtonsoft.Json", "13.0.3", "net48"),
+                PackagesConfigEntry("Microsoft.Net.Compilers", "4.2.0", "net48", developmentDependency = true),
+                PackagesConfigEntry("NoVersion", null, null),
+            ),
+            PackagesConfig.parse(text),
+        )
+        assertEquals(emptyList<PackagesConfigEntry>(), PackagesConfig.parse("<packages"))
+        assertEquals(emptyList<PackagesConfigEntry>(), PackagesConfig.parse(""))
+    }
+
+    fun testLegacyProjectShowsPackagesConfig() {
+        val projectFile = myFixture.addFileToProject(
+            "Legacy/Legacy.csproj",
+            """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+              <PropertyGroup><TargetFrameworkVersion>v4.8</TargetFrameworkVersion></PropertyGroup>
+              <ItemGroup>
+                <Reference Include="System" />
+                <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+                  <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+                </Reference>
+              </ItemGroup>
+            </Project>
+            """.trimIndent(),
+        ).virtualFile
+        myFixture.addFileToProject(
+            "Legacy/packages.config",
+            """<packages><package id="Newtonsoft.Json" version="13.0.3" targetFramework="net48" /><package id="Antlr" version="3.5.0.2" targetFramework="net48" /></packages>""",
+        )
+        // restored: the folder of the package is in the packages folder (no solution here: next to the project); Antlr is not there
+        myFixture.addFileToProject("Legacy/packages/Newtonsoft.Json.13.0.3/Newtonsoft.Json.13.0.3.nupkg", "")
+
+        val dependencies = DependenciesNode(project, DependenciesKey(projectFile), ViewSettings.DEFAULT)
+        // no assets file is ever written for such a project: the framework is not "not restored", its missing packages are
+        assertEquals(listOf(".NET Framework 4.8"), dependencies.childNames())
+        val net48 = dependencies.child(".NET Framework 4.8")
+        assertEquals(listOf("Packages", "Assemblies"), net48.childNames())
+        val packages = net48.child("Packages")
+        assertEquals(listOf("Antlr (3.5.0.2, not restored)", "Newtonsoft.Json (13.0.3)"), packages.childNames())
+        assertEquals(emptyList<String>(), packages.child("Newtonsoft.Json (13.0.3)").childNames())
+
+        // after a restore the folder is there, with the version normalized as NuGet writes it (3.5.0.2 stays four parts)
+        myFixture.addFileToProject("Legacy/packages/Antlr.3.5.0.2/Antlr.3.5.0.2.nupkg", "")
+        assertEquals(listOf("Antlr (3.5.0.2)", "Newtonsoft.Json (13.0.3)"), net48.child("Packages").childNames())
+    }
+
+    fun testSdkProjectIgnoresPackagesConfig() {
+        val projectFile = myFixture.addFileToProject(
+            "Modern/Modern.csproj",
+            """<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net9.0</TargetFramework></PropertyGroup></Project>""",
+        ).virtualFile
+        myFixture.addFileToProject("Modern/packages.config", """<packages><package id="Stale" version="1.0.0" /></packages>""")
+
+        val net9 = DependenciesNode(project, DependenciesKey(projectFile), ViewSettings.DEFAULT).child(".NET 9.0 (not restored)")
+        assertEquals(emptyList<String>(), net9.childNames())
     }
 
     fun testDependenciesIsTheFirstChildOfProject() {

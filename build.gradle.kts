@@ -93,6 +93,18 @@ tasks.processResources {
         include("Program.cs", "CodeMetrics.csproj")
         into("metrics")
     }
+    // The helpers that stay running (cli/HelperConnection), helpers/<name>/: their sources, and next to them a copy of the protocol
+    // they share, which their projects link from helpers/protocol in the repository.
+    file("helpers").listFiles { it.isDirectory && it.name != "protocol" }.orEmpty().forEach { helper ->
+        from(helper) {
+            include("*.cs", "*.csproj")
+            into(helper.name)
+        }
+        from("helpers/protocol") {
+            include("Protocol.cs")
+            into(helper.name)
+        }
+    }
 }
 
 // CHANGELOG.md → <change-notes> (Plugins → What's New): the section of the current version and the older ones. Every feature is a new

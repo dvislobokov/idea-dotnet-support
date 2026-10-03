@@ -15,12 +15,13 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 import com.intellij.ui.LayeredIcon
 import io.github.dotnetsupport.msbuild.DotNetProjects
+import io.github.dotnetsupport.msbuild.MsBuildEvaluation
 import io.github.dotnetsupport.msbuild.ProjectContent
-import io.github.dotnetsupport.solution.SolutionService
 
 /*
  * The content of a project as the SDK sees it, on top of the files on disk (see ProjectContent):
  *  - files and folders the project file takes out of the default globs are hidden ("Show All Files" brings them back, painted as ignored);
+ *    a project of the old format has no globs: what it does not list is hidden the same way;
  *  - a file with <DependentUpon> is nested under the file it names, like the designer file of a form;
  *  - files included from outside of the project directory appear where their Link puts them, with a link badge.
  */
@@ -28,7 +29,8 @@ import io.github.dotnetsupport.solution.SolutionService
 /** Applies to the Solution view only: the settings of its nodes are the tree structure of the pane. */
 internal fun ViewSettings?.isSolutionView(): Boolean = this is SolutionTreeStructure
 
-internal fun contentOf(project: Project, projectFile: VirtualFile): ProjectContent = ProjectContent(SolutionService.getInstance(project).msBuildProject(projectFile))
+/** The content of [projectFile]; for a project of the old format, its evaluated items once MsBuildHost has answered (see MsBuildEvaluation). */
+internal fun contentOf(project: Project, projectFile: VirtualFile): ProjectContent = MsBuildEvaluation.getInstance(project).content(projectFile)
 
 class ProjectContentStructureProvider : TreeStructureProvider {
     override fun modify(parent: AbstractTreeNode<*>, children: MutableCollection<AbstractTreeNode<*>>, settings: ViewSettings?): MutableCollection<AbstractTreeNode<*>> {

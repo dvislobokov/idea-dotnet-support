@@ -2,17 +2,25 @@ package io.github.dotnetsupport.nuget
 
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.ide.projectView.ProjectView
 import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.io.HttpRequests
 import io.github.dotnetsupport.build.BuildViewCommandOutput
 import io.github.dotnetsupport.cli.CommandOutput
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.cli.HelperException
 import io.github.dotnetsupport.cli.PluginLog
+import io.github.dotnetsupport.msbuild.PackagesConfigEntry
+import io.github.dotnetsupport.solution.SOLUTION_EXTENSIONS
 import io.github.dotnetsupport.solution.SolutionService
 import io.github.dotnetsupport.view.resolveFile
 import java.io.File
@@ -27,21 +35,65 @@ import java.util.concurrent.ConcurrentHashMap
  * per session: a feed that is down says so on every request, that is what a journal is for. [fetch] is the HTTP GET, replaceable in
  * tests (the last parameter, so that a trailing lambda is the fetch); [route] describes the route of a URL. Every method blocks:
  * call from a background thread.
+ *
+ * [fallback] is the second way to a feed, the .NET helper ([NuGetHelper]): it searches and lists versions of a local folder feed, which
+ * has no HTTP API, and of a feed the IDE has failed to reach by a fault of its route ([NuGetNetwork.isRouteFailure]: proxy, certificate,
+ * unknown host, credentials). Such a feed goes to the helper straight away for [HELPER_FIRST_MS], then the IDE is tried again.
  */
 class NuGetClient(
     private val onEvent: (text: String, isError: Boolean) -> Unit = { _, _ -> },
     private val route: (url: String, source: String) -> String = NuGetNetwork::routeOf,
+    private val fallback: NuGetFallback? = null,
     private val fetch: (url: String, source: String) -> String = ::fetchWithCredentials,
 ) {
+    /** The second way to a feed; it throws with a message for the user when it cannot get there either. */
+    interface NuGetFallback {
+        fun search(source: String, query: String, includePrerelease: Boolean, take: Int, packageType: String?): List<NuGetPackageInfo>
+        fun versions(source: String, packageId: String): List<String>
+    }
+
     private val indexes = ConcurrentHashMap<String, NuGetResponses.ServiceIndex>()
 
     /** The last failure of every feed by source URL, cleared by the next answer of it: the window says "feed did not answer" by it. */
     private val failures = ConcurrentHashMap<String, String>()
 
+    /** Feeds the IDE could not reach by a fault of its route, with the time and the failure: they go to [fallback] for a while. */
+    private val routeFailures = ConcurrentHashMap<String, Pair<Long, String>>()
+
     /** The network of the IDE is described once, in front of the first request of the client. */
     private val ideNetworkSaid = java.util.concurrent.atomic.AtomicBoolean()
 
     fun lastFailure(source: String): String? = failures[source]
+
+    /** Why [source] goes to the helper rather than to the HTTP client of the IDE; null when it does not. */
+    private fun helperFirst(source: String): String? {
+        if (fallback == null) return null
+        if (isLocal(source)) return "a local folder feed"
+        val (time, failure) = routeFailures[source] ?: return null
+        val ago = System.currentTimeMillis() - time
+        return if (ago < HELPER_FIRST_MS) "the IDE failed to reach the feed ${ago / 1000} s ago: $failure" else null
+    }
+
+    /** Why [source] goes to the helper after the IDE has failed on it; null when that failure is not one the helper can help with. */
+    private fun helperAfter(source: String): String? = if (fallback == null) null else routeFailures[source]?.let { "the IDE could not reach the feed: ${it.second}" }
+
+    /** What the helper does instead of the IDE, said in the journal both ways; null when it fails too. */
+    private fun <T> viaHelper(source: String, what: String, why: String, request: (NuGetFallback) -> T): T? {
+        val helper = fallback ?: return null
+        info("$what in $source via the .NET helper: $why")
+        val started = System.nanoTime()
+        return try {
+            request(helper).also {
+                failures.remove(source)
+                info("$what in $source via the .NET helper: answered in ${(System.nanoTime() - started) / 1_000_000} ms")
+            }
+        } catch (e: Exception) {
+            val message = e.message ?: e.javaClass.simpleName
+            failures[source] = (failures[source]?.let { "$it; " }.orEmpty()) + "the .NET helper: $message"
+            warn("$what in $source via the .NET helper failed after ${(System.nanoTime() - started) / 1_000_000} ms: $message")
+            null
+        }
+    }
 
     private fun index(source: String): NuGetResponses.ServiceIndex? = indexes[source] ?: get(source, source, "service index of $source") {
         NuGetResponses.parseServiceIndex(fetch(source, source)).also {
@@ -57,10 +109,12 @@ class NuGetClient(
         val started = System.nanoTime()
         return runCatching(request).onSuccess {
             failures.remove(source)
+            routeFailures.remove(source)
             info("$what: answered in ${(System.nanoTime() - started) / 1_000_000} ms")
         }.onFailure { e ->
             val description = NuGetNetwork.describeFailure(e)
             failures[source] = description
+            if (NuGetNetwork.isRouteFailure(e)) routeFailures[source] = System.currentTimeMillis() to description else routeFailures.remove(source)
             warn("$what: GET $url failed after ${(System.nanoTime() - started) / 1_000_000} ms: $description")
         }.getOrNull()
     }
@@ -70,28 +124,43 @@ class NuGetClient(
         val what = "search \"$query\"" + (if (includePrerelease) " with prerelease" else "") + packageType?.let { " of type $it" }.orEmpty()
         if (sources.isEmpty()) warn("$what: no feeds to search")
         return sources.flatMap { source ->
-            val url = index(source)?.searchUrl ?: return@flatMap emptyList()
-            val search = "$url?q=${URLEncoder.encode(query, Charsets.UTF_8)}&take=$take&prerelease=$includePrerelease&semVerLevel=2.0.0" + packageType?.let { "&packageType=$it" }.orEmpty()
-            get(search, source, "$what in $source") { NuGetResponses.parseSearch(fetch(search, source)) }
-                ?.also { info("$what in $source: ${it.size} packages" + if (it.isEmpty()) "" else ", first ${it.take(3).joinToString(", ") { p -> p.id }}") }
-                .orEmpty().onEach { it.source = source }
+            fun helper(why: String) = viaHelper(source, what, why) { it.search(source, query, includePrerelease, take, packageType) }
+                ?.also { info("$what in $source via the .NET helper: ${it.size} packages" + if (it.isEmpty()) "" else ", first ${it.take(3).joinToString(", ") { p -> p.id }}") }
+            val first = helperFirst(source)
+            val found = if (first != null) helper(first) else if (isLocal(source)) null else {
+                val url = index(source)?.searchUrl
+                val search = url?.let { "$it?q=${URLEncoder.encode(query, Charsets.UTF_8)}&take=$take&prerelease=$includePrerelease&semVerLevel=2.0.0" + packageType?.let { t -> "&packageType=$t" }.orEmpty() }
+                search?.let { get(it, source, "$what in $source") { NuGetResponses.parseSearch(fetch(it, source)) } }
+                    ?.also { info("$what in $source: ${it.size} packages" + if (it.isEmpty()) "" else ", first ${it.take(3).joinToString(", ") { p -> p.id }}") }
+                    ?: helperAfter(source)?.let(::helper)
+            }
+            found.orEmpty().onEach { it.source = source }
         }.distinctBy { it.id.lowercase() }
     }
 
     /** All published versions of a package, oldest first; empty when no feed has it. */
     fun versions(packageId: String, sources: List<String>): List<String> =
         sources.firstNotNullOfOrNull { source ->
-            val base = index(source)?.packageBaseUrl ?: return@firstNotNullOfOrNull null
-            val url = "$base${packageId.lowercase()}/index.json"
-            get(url, source, "versions of $packageId from $source") { NuGetResponses.parseVersions(fetch(url, source)) }
-                ?.also { info("versions of $packageId from $source: ${if (it.isEmpty()) "none" else "${it.size}, latest ${it.last()}"}") }
-                ?.takeIf { it.isNotEmpty() }
+            val what = "versions of $packageId"
+            fun helper(why: String) = viaHelper(source, what, why) { it.versions(source, packageId) }
+                ?.also { info("$what from $source via the .NET helper: ${if (it.isEmpty()) "none" else "${it.size}, latest ${it.last()}"}") }
+            val first = helperFirst(source)
+            val found = if (first != null) helper(first) else if (isLocal(source)) null else {
+                val base = index(source)?.packageBaseUrl
+                val url = base?.let { "$it${packageId.lowercase()}/index.json" }
+                url?.let { get(it, source, "$what from $source") { NuGetResponses.parseVersions(fetch(it, source)) } }
+                    ?.also { info("$what from $source: ${if (it.isEmpty()) "none" else "${it.size}, latest ${it.last()}"}") }
+                    ?: helperAfter(source)?.let(::helper)
+            }
+            found?.takeIf { it.isNotEmpty() }
         }.orEmpty()
 
     /** Description, license and dependencies of a concrete version; null when no feed has its `.nuspec`. */
     fun details(packageId: String, version: String, sources: List<String>): NuGetPackageDetails? {
         val id = packageId.lowercase()
         return sources.firstNotNullOfOrNull { source ->
+            // the helper reads no nuspecs: the card of a package of a feed it answers for has what the search gave
+            if (helperFirst(source) != null || isLocal(source)) return@firstNotNullOfOrNull null
             val base = index(source)?.packageBaseUrl ?: return@firstNotNullOfOrNull null
             val url = "$base$id/${version.lowercase()}/$id.nuspec"
             get(url, source, "nuspec of $packageId $version from $source") { NuGetResponses.parseNuspec(fetch(url, source)) }
@@ -111,6 +180,12 @@ class NuGetClient(
     companion object {
         /** The category of the journal of the plugin for NuGet: the feeds and the `dotnet nuget` commands. */
         const val LOG_CATEGORY = "nuget"
+
+        /** How long a feed the IDE has failed to reach goes to the helper without trying the IDE first. */
+        const val HELPER_FIRST_MS = 10 * 60_000L
+
+        /** A folder feed (`C:\packages`, `/srv/feed`, `file://...`): no HTTP API, only the helper reads it. */
+        fun isLocal(source: String): Boolean = !source.startsWith("http://", ignoreCase = true) && !source.startsWith("https://", ignoreCase = true)
     }
 }
 
@@ -190,7 +265,24 @@ class NuGetService(private val project: Project) {
     /** Commands run on behalf of the NuGet window and their output, and every request to a feed: the "Log" tab. */
     val log = NuGetLog()
 
-    val client = NuGetClient(onEvent = { text, isError -> log.print("$text\n", isError) })
+    /** Tests never start the .NET helper: without it a local feed is not searched and a feed the IDE cannot reach stays silent. */
+    private val helperEnabled = !ApplicationManager.getApplication().isUnitTestMode
+
+    /** The feeds of the solution through DotNetHelper, nuget.config looked up from the solution directory as the CLI does. */
+    private val helperFallback = object : NuGetClient.NuGetFallback {
+        override fun search(source: String, query: String, includePrerelease: Boolean, take: Int, packageType: String?): List<NuGetPackageInfo> =
+            single(NuGetHelper.getInstance().search(workDirectory(), query, includePrerelease, take, listOf(source), packageType))
+
+        override fun versions(source: String, packageId: String): List<String> =
+            single(NuGetHelper.getInstance().versions(workDirectory(), packageId, prerelease = true, sources = listOf(source)))
+
+        private fun <T> single(answers: List<NuGetHelperResponses.SourceAnswer<T>>): T {
+            val answer = answers.firstOrNull() ?: throw HelperException("no answer for the source")
+            return answer.result ?: throw HelperException(answer.error ?: "no answer")
+        }
+    }
+
+    val client = NuGetClient(onEvent = { text, isError -> log.print("$text\n", isError) }, fallback = if (helperEnabled) helperFallback else null)
 
     /** Project to show when the tool window is opened from the Solution view. */
     var requestedProject: VirtualFile? = null
@@ -213,12 +305,27 @@ class NuGetService(private val project: Project) {
     fun installed(projectFile: VirtualFile): List<InstalledPackage> {
         val solutions = SolutionService.getInstance(project)
         val resolved = solutions.assets(projectFile).targets.firstOrNull()
-        return solutions.msBuildProject(projectFile).packages
+        val references = solutions.msBuildProject(projectFile).packages
             .map { InstalledPackage(it.name, it.version ?: solutions.centralPackageVersion(projectFile, it.name), resolved?.findPackage(it.name)?.version) }
-            .sortedBy { it.id.lowercase() }
+        // packages.config pins exact versions: what is written is what is installed
+        val config = solutions.packagesConfig(projectFile).orEmpty().map { InstalledPackage(it.id, it.version, null) }
+        return (references + config).distinctBy { it.id.lowercase() }.sortedBy { it.id.lowercase() }
     }
 
-    /** Enabled HTTP feeds of all `nuget.config` levels, as the CLI sees them from the solution directory. Blocking. */
+    /** A legacy project with `packages.config`: the window shows its packages, but the CLI cannot install, update or remove them. */
+    fun usesPackagesConfig(projectFile: VirtualFile): Boolean = SolutionService.getInstance(project).packagesConfig(projectFile) != null
+
+    /** The projects the CLI can change the packages of; the skipped ones are said in the Log tab. */
+    private fun changeable(projectFiles: List<VirtualFile>): List<VirtualFile> {
+        val (legacy, rest) = projectFiles.partition(::usesPackagesConfig)
+        if (legacy.isNotEmpty()) log.print("Skipped ${legacy.joinToString(", ") { it.name }}: $PACKAGES_CONFIG_NOTE.\n", isError = true)
+        return rest
+    }
+
+    /**
+     * Enabled feeds of all `nuget.config` levels, as the CLI sees them from the solution directory: HTTP ones, and folder ones when the
+     * .NET helper is there to read them ([NuGetClient]). Blocking.
+     */
     fun sources(): List<String> {
         val directory = SolutionService.getInstance(project).solutionFiles().firstOrNull()?.parent?.path
         val configured = runCatching {
@@ -228,32 +335,138 @@ class NuGetService(private val project: Project) {
                 output.lines().map { it.trim() }.filter { it.isNotEmpty() }.joinToString("; ").ifEmpty { "none" })
             NuGetResponses.parseSources(output)
         }.onFailure { PluginLog.warn(NuGetClient.LOG_CATEGORY, "`dotnet nuget list source` could not run, nuget.org is assumed", it) }.getOrDefault(emptyList())
-        // local folder feeds have no search service
-        val http = configured.filter { it.startsWith("http://") || it.startsWith("https://") }
-        val skipped = configured - http.toSet()
-        if (skipped.isNotEmpty()) PluginLog.info(NuGetClient.LOG_CATEGORY, "local feeds are not searched: ${skipped.joinToString(", ")}")
+        // local folder feeds have no search service: only the helper reads them
+        val http = configured.filterNot(NuGetClient::isLocal)
+        val local = configured - http.toSet()
+        if (local.isNotEmpty()) PluginLog.info(NuGetClient.LOG_CATEGORY, "local feeds " + (if (helperEnabled) "are read by the .NET helper" else "are not searched") + ": ${local.joinToString(", ")}")
         if (http.isEmpty()) PluginLog.info(NuGetClient.LOG_CATEGORY, "no enabled HTTP feed is configured: $NUGET_ORG is assumed")
-        return http.ifEmpty { listOf(NUGET_ORG) }
+        return http.ifEmpty { listOf(NUGET_ORG) } + if (helperEnabled) local else emptyList()
     }
 
     /** Installs the package into every project of [projectFiles], or changes its version where it is already referenced. */
     fun install(projectFiles: List<VirtualFile>, packageId: String, version: String, onSuccess: () -> Unit) =
-        run("Installing $packageId $version", projectFiles, onSuccess) { listOf("add", it.path, "package", packageId, "--version", version) }
+        run("Installing $packageId $version", changeable(projectFiles), onSuccess) { listOf("add", it.path, "package", packageId, "--version", version) }
 
-    /** `dotnet restore` of solutions or projects, with the options of Settings | Tools | .NET | NuGet; the package lists are refreshed afterwards. */
-    fun restore(targets: List<VirtualFile>, onSuccess: () -> Unit = {}) =
-        run("Restoring NuGet packages", targets, { packagesChangedListeners.toList().forEach { it() }; onSuccess() }) {
+    /**
+     * `dotnet restore` of solutions or projects, with the options of Settings | Tools | .NET | NuGet; the package lists are refreshed
+     * afterwards. The packages.config projects among them, or in the solutions, are restored by the .NET helper ([restorePackagesConfig]):
+     * `dotnet restore` does not know that format. A packages.config project given by itself is not passed to `dotnet restore`.
+     */
+    fun restore(targets: List<VirtualFile>, onSuccess: () -> Unit = {}) {
+        val legacy = packagesConfigProjects(targets)
+        val rest = targets.filterNot { it in legacy }
+        restorePackagesConfig(legacy, if (rest.isEmpty()) onSuccess else ({}))
+        run("Restoring NuGet packages", rest, { packagesChangedListeners.toList().forEach { it() }; onSuccess() }) {
             listOf("restore", it.path, "-nologo") + NuGetSettings.getInstance().restoreArguments()
         }
+    }
+
+    /** The packages.config projects of [targets]: the targets that are such projects, and such projects of the target solutions. */
+    fun packagesConfigProjects(targets: List<VirtualFile>): List<VirtualFile> {
+        if (!helperEnabled) return emptyList()
+        val solutions = SolutionService.getInstance(project)
+        return targets.flatMap { target ->
+            if (target.extension?.lowercase() in SOLUTION_EXTENSIONS) solutions.solution(target).allProjects.mapNotNull { it.resolveFile(target) } else listOf(target)
+        }.distinct().filter(::usesPackagesConfig)
+    }
+
+    /** The directory a packages.config project restores relative to: its solution's (the packages folder is shared), else its own. */
+    fun solutionDirectoryOf(projectFile: VirtualFile): VirtualFile {
+        val solutions = SolutionService.getInstance(project)
+        val solution = solutions.solutionFiles().firstOrNull { s -> solutions.solution(s).allProjects.any { it.resolveFile(s) == projectFile } }
+        return solution?.parent ?: projectFile.parent
+    }
+
+    /** The packages folder by solution directory, with the time it was found: the Dependencies tree asks for every package node it draws. */
+    private val packagesFolders = ConcurrentHashMap<String, Pair<Long, String>>()
+
+    /** The packages folder of the solution of a packages.config project (system-independent path; `repositoryPath` of nuget.config respected). */
+    fun packagesFolder(projectFile: VirtualFile): String {
+        val solutionDirectory = solutionDirectoryOf(projectFile).path
+        val now = System.currentTimeMillis()
+        packagesFolders[solutionDirectory]?.takeIf { now - it.first < PACKAGES_FOLDER_TTL_MS }?.let { return it.second }
+        return PackagesFolder.of(File(solutionDirectory)).invariantSeparatorsPath.also { packagesFolders[solutionDirectory] = now to it }
+    }
+
+    /** The packages of the packages.config of [projectFile] that have no folder in the packages folder of its solution; empty for other projects. */
+    fun missingPackagesConfig(projectFile: VirtualFile): List<PackagesConfigEntry> {
+        val entries = SolutionService.getInstance(project).packagesConfig(projectFile) ?: return emptyList()
+        val folder = projectFile.fileSystem.findFileByPath(packagesFolder(projectFile))
+        return PackagesFolder.missing(entries, folder?.children.orEmpty().map { it.name.lowercase() }.toSet())
+    }
+
+    /**
+     * The packages of packages.config projects into the packages folder of their solution, by the .NET helper (NuGet.Client, as nuget.exe
+     * does it): what is there already is skipped, a project with nothing missing does not start the helper. The output goes to the Log tab;
+     * the Dependencies tree and the window are refreshed afterwards. [onSuccess] when every package is there.
+     */
+    fun restorePackagesConfig(projectFiles: List<VirtualFile>, onSuccess: () -> Unit = {}) {
+        if (projectFiles.isEmpty()) return
+        val title = "Restoring packages.config packages"
+        notifyOperation(NuGetOperation(title, NuGetOperation.State.RUNNING))
+        object : Task.Backgroundable(project, title, true) {
+            override fun run(indicator: ProgressIndicator) {
+                var failed = 0
+                val refresh = ArrayList<File>()
+                try {
+                    for (file in projectFiles) {
+                        indicator.checkCanceled()
+                        indicator.text = "Restoring the packages of ${file.name}"
+                        val solutionDirectory = ReadAction.compute<VirtualFile, RuntimeException> { solutionDirectoryOf(file) }
+                        val missing = ReadAction.compute<List<PackagesConfigEntry>, RuntimeException> { missingPackagesConfig(file) }
+                        log.print("> restore packages.config of ${file.name} into the packages folder of ${solutionDirectory.path} (by the .NET helper)\n")
+                        if (missing.isEmpty()) {
+                            log.print("Every package is there.\n\n")
+                            continue
+                        }
+                        PluginLog.info(NuGetClient.LOG_CATEGORY, "restoring packages.config of ${file.path}: missing ${missing.joinToString(", ") { "${it.id} ${it.version}" }}")
+                        val started = System.nanoTime()
+                        val result = try {
+                            NuGetHelper.getInstance().restorePackagesConfig(file.path, solutionDirectory.path)
+                        } catch (e: HelperException) {
+                            failed++
+                            log.print("Failed: ${e.message}\n\n", isError = true)
+                            PluginLog.warn(NuGetClient.LOG_CATEGORY, "restore of packages.config of ${file.path} by the .NET helper failed: ${e.message}")
+                            continue
+                        }
+                        refresh += File(result.packagesDirectory)
+                        for (line in result.lines()) log.print("$line\n", isError = line.contains(": failed: "))
+                        failed += result.failed.size
+                        val summary = "${result.packages.count { it.state == NuGetHelperResponses.RestoredPackage.State.RESTORED }} restored, " +
+                            "${result.packages.count { it.state == NuGetHelperResponses.RestoredPackage.State.PRESENT }} already there, ${result.failed.size} failed " +
+                            "into ${result.packagesDirectory} in ${(System.nanoTime() - started) / 1_000_000} ms"
+                        log.print((if (result.failed.isEmpty()) "Done: " else "Failed: ") + summary + ".\n\n", isError = result.failed.isNotEmpty())
+                        PluginLog.info(NuGetClient.LOG_CATEGORY, "packages.config of ${file.path}: $summary" +
+                            result.failed.joinToString("") { "\n  ${it.id} ${it.version}: ${it.message}" })
+                    }
+                } finally {
+                    packagesFolders.clear()
+                    refresh.distinct().forEach { LocalFileSystem.getInstance().refreshAndFindFileByIoFile(it)?.let { dir -> VfsUtil.markDirtyAndRefresh(true, false, false, dir) } }
+                    notifyOperation(NuGetOperation(title, if (failed == 0) NuGetOperation.State.DONE else NuGetOperation.State.FAILED))
+                    ApplicationManager.getApplication().invokeLater({
+                        if (project.isDisposed) return@invokeLater
+                        packagesChangedListeners.toList().forEach { it() }
+                        ProjectView.getInstance(project).refresh()
+                    }, ModalityState.any())
+                }
+                if (failed > 0) {
+                    DotNetCli.notifyError(project, title, "$failed package(s) of packages.config could not be restored: see the Log tab of the NuGet window")
+                } else {
+                    ApplicationManager.getApplication().invokeLater({ if (!project.isDisposed) onSuccess() }, ModalityState.any())
+                }
+            }
+        }.queue()
+    }
 
     fun remove(projectFiles: List<VirtualFile>, packageId: String, onSuccess: () -> Unit) =
-        run("Removing $packageId", projectFiles, onSuccess) { listOf("remove", it.path, "package", packageId) }
+        run("Removing $packageId", changeable(projectFiles), onSuccess) { listOf("remove", it.path, "package", packageId) }
 
     /** Packages of the solution that have a newer stable version in the feeds. Blocking: asks the feeds for every package. */
     fun outdated(): List<PackageUpgrade> {
         val feeds = sources()
         val latest = HashMap<String, NuGetVersion?>()
-        return projects().flatMap { (name, file) ->
+        // a packages.config project cannot be upgraded by the CLI
+        return projects().filterNot { usesPackagesConfig(it.second) }.flatMap { (name, file) ->
             installed(file).mapNotNull { pkg ->
                 // a floating or a missing version is not a version to upgrade from
                 val current = pkg.version?.let(NuGetVersion::parse) ?: return@mapNotNull null
@@ -294,7 +507,7 @@ class NuGetService(private val project: Project) {
      */
     fun consolidations(): List<PackageUpgrade> {
         data class Ref(val name: String, val file: VirtualFile, val id: String, val version: NuGetVersion)
-        val refs = projects().flatMap { (name, file) ->
+        val refs = projects().filterNot { usesPackagesConfig(it.second) }.flatMap { (name, file) ->
             installed(file).mapNotNull { pkg -> pkg.version?.let(NuGetVersion::parse)?.let { Ref(name, file, pkg.id, it) } }
         }
         return refs.groupBy { it.id.lowercase() }
@@ -305,7 +518,9 @@ class NuGetService(private val project: Project) {
             }
     }
 
-    fun upgrade(upgrades: List<PackageUpgrade>, onSuccess: () -> Unit) {
+    fun upgrade(all: List<PackageUpgrade>, onSuccess: () -> Unit) {
+        val projectFiles = changeable(all.map { it.projectFile }.distinct()).toSet()
+        val upgrades = all.filter { it.projectFile in projectFiles }
         if (upgrades.isEmpty()) return
         val title = "Upgrading NuGet packages"
         val commands = DotNetCli.commandLinesOrNotify(project, title) {
@@ -432,6 +647,12 @@ class NuGetService(private val project: Project) {
 
     companion object {
         const val NUGET_ORG = "https://api.nuget.org/v3/index.json"
+
+        /** Why a packages.config project has install, update and remove disabled: `dotnet add package` would write a PackageReference into it. */
+        const val PACKAGES_CONFIG_NOTE = "This project uses packages.config; install packages with Visual Studio or migrate to PackageReference"
+
+        /** The packages folder is looked for again after this long: a nuget.config edited meanwhile is seen. */
+        private const val PACKAGES_FOLDER_TTL_MS = 5_000L
 
         fun getInstance(project: Project): NuGetService = project.service()
     }

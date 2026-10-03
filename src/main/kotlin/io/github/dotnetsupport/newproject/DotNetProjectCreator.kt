@@ -1,6 +1,9 @@
 package io.github.dotnetsupport.newproject
 
 import com.intellij.execution.configurations.GeneralCommandLine
+import com.intellij.execution.configurations.PathEnvironmentVariableUtil
+import com.intellij.ide.impl.OpenProjectTask
+import com.intellij.openapi.project.ex.ProjectManagerEx
 import com.intellij.ide.projectView.ProjectView
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
@@ -50,6 +53,28 @@ object DotNetProjectCreator {
             }
         }
     }
+
+    /**
+     * New Solution dialog: the solution directory is opened as a project first (the IDE asks whether in this window or a new one, as for any
+     * new project), then the commands run in it with their output in its Build window, as the New Project wizard does.
+     */
+    fun createSolution(current: Project?, request: NewSolution.Request) {
+        val directory = request.solutionDirectory.apply { mkdirs() }
+        val opened = ProjectManagerEx.getInstanceEx().openProject(directory.toPath(), OpenProjectTask {
+            isNewProject = true
+            projectToClose = current
+            runConfigurators = true
+        }) ?: return
+        val title = "Creating .NET solution '${request.solutionName}'"
+        run(opened, title, directory, request.projectDirectory ?: directory) {
+            NewSolution.commands(request).map { command ->
+                if (command.tool == "git") GeneralCommandLine(gitExecutable(), *command.arguments.toTypedArray()).withWorkDirectory(directory)
+                else DotNetCli.commandLine(directory.path, *command.arguments.toTypedArray())
+            }
+        }
+    }
+
+    private fun gitExecutable(): String = PathEnvironmentVariableUtil.findExecutableInPathOnAnyOS("git")?.path ?: "git"
 
     private fun run(project: Project, title: String, refresh: File, projectDirectory: File, commands: () -> List<GeneralCommandLine>) {
         val commandLines = DotNetCli.commandLinesOrNotify(project, title, commands) ?: return

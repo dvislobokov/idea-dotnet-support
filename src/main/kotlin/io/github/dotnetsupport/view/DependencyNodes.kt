@@ -15,6 +15,7 @@ import io.github.dotnetsupport.DotNetIcons
 import io.github.dotnetsupport.cli.DotNetInstallation
 import io.github.dotnetsupport.msbuild.AssetsTarget
 import io.github.dotnetsupport.msbuild.TargetFrameworks
+import io.github.dotnetsupport.nuget.NuGetService
 import io.github.dotnetsupport.solution.SolutionService
 
 /*
@@ -28,7 +29,8 @@ import io.github.dotnetsupport.solution.SolutionService
  *    └─ Frameworks   shared frameworks and their reference assemblies
  *
  * Versions, transitive packages, analyzers and frameworks come from obj/project.assets.json, i.e. they need a
- * restored project; without it the tree shows what is written in the project file.
+ * restored project; without it the tree shows what is written in the project file. A legacy project lists its packages in
+ * `packages.config` instead: all of them flat, transitive ones included, with no assets file ever.
  */
 
 enum class DependencyKind(val title: String) {
@@ -65,7 +67,7 @@ private fun SolutionService.items(projectFile: VirtualFile, kind: DependencyKind
     val project = msBuildProject(projectFile)
     val target = target(projectFile, framework)
     return when (kind) {
-        DependencyKind.PACKAGES -> target?.directPackages ?: project.packages.map { it.name }
+        DependencyKind.PACKAGES -> target?.directPackages ?: (project.packages.map { it.name } + packagesConfig(projectFile).orEmpty().map { it.id })
         DependencyKind.PROJECTS -> project.projectReferences
         DependencyKind.ASSEMBLIES -> project.assemblies
         DependencyKind.ANALYZERS -> target?.packages.orEmpty().filter { it.analyzers.isNotEmpty() }.map { it.name }
@@ -175,7 +177,8 @@ class FrameworkNode(project: Project, key: FrameworkKey, settings: ViewSettings?
     override fun update(presentation: PresentationData) {
         presentation.setIcon(AllIcons.Nodes.Module)
         presentation.presentableText = TargetFrameworks.displayName(value.framework)
-        if (solutions.assets(value.projectFile).targets.isEmpty()) presentation.locationString = "not restored"
+        // a packages.config project never has an assets file: its packages folder is restored by nuget.exe / Visual Studio
+        if (solutions.assets(value.projectFile).targets.isEmpty() && solutions.packagesConfig(value.projectFile) == null) presentation.locationString = "not restored"
     }
 }
 
@@ -259,9 +262,15 @@ class DependencyNode(project: Project, key: DependencyKey, settings: ViewSetting
             else -> { // a package, in Packages or in Analyzers
                 val resolved = target?.findPackage(value.name)
                 val declared = solutions.msBuildProject(value.projectFile).packages.find { it.name.equals(value.name, ignoreCase = true) }?.version
+                    ?: solutions.packagesConfig(value.projectFile)?.find { it.id.equals(value.name, ignoreCase = true) }?.version
                 presentation.setIcon(DotNetIcons.NuGet)
                 presentation.presentableText = resolved?.name ?: value.name
                 presentation.locationString = resolved?.version ?: declared ?: solutions.centralPackageVersion(value.projectFile, value.name)
+                // a packages.config package is restored when its folder is in the packages folder of the solution (NuGet | Restore puts it there)
+                if (resolved == null && value.parents.isEmpty() && solutions.packagesConfig(value.projectFile) != null &&
+                    NuGetService.getInstance(myProject).missingPackagesConfig(value.projectFile).any { it.id.equals(value.name, ignoreCase = true) }) {
+                    presentation.locationString = listOfNotNull(presentation.locationString, "not restored").joinToString(", ")
+                }
             }
         }
     }

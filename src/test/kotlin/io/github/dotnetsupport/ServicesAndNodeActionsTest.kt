@@ -10,12 +10,15 @@ import com.intellij.openapi.actionSystem.PlatformCoreDataKeys
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.refactoring.rename.RenameHandler
+import com.intellij.testFramework.TestActionEvent
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.run.DotNetConfigurationType
 import io.github.dotnetsupport.run.DotNetRunConfiguration
 import io.github.dotnetsupport.run.DotNetRunDashboardCustomizer
 import io.github.dotnetsupport.run.DotNetRunDashboardTypes
 import io.github.dotnetsupport.run.ListeningAddressRecorder
+import io.github.dotnetsupport.run.RunProjectTarget
+import io.github.dotnetsupport.run.RunSelectedProjectAction
 import io.github.dotnetsupport.solution.SolutionService
 import io.github.dotnetsupport.view.ProjectKey
 import io.github.dotnetsupport.view.ProjectNodeDeleteProvider
@@ -63,5 +66,27 @@ class ServicesAndNodeActionsTest : BasePlatformTestCase() {
         assertTrue(delete.canDeleteElement(context(ProjectKey(sln, app))))
         assertFalse(delete.canDeleteElement(context(ProjectKey(slnf, app))))
         assertFalse(delete.canDeleteElement(context(SolutionKey(sln))))
+    }
+
+    fun testSeveralSelectedProjectsAreLaunchedTogether() {
+        myFixture.addFileToProject("multi/Api/Api.csproj", "<Project Sdk=\"Microsoft.NET.Sdk.Web\"><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup></Project>")
+        myFixture.addFileToProject("multi/Worker/Worker.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup></Project>")
+        myFixture.addFileToProject("multi/Lib/Lib.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"/>")
+        val sln = myFixture.addFileToProject("multi/Multi.slnx",
+            """<Solution><Project Path="Api/Api.csproj" /><Project Path="Worker/Worker.csproj" /><Project Path="Lib/Lib.csproj" /></Solution>""").virtualFile
+        val (api, worker, lib) = SolutionService.getInstance(project).solution(sln).allProjects.sortedBy { it.name }.let { Triple(it[0], it[2], it[1]) }
+        fun event(vararg selected: Any) = TestActionEvent.createTestEvent(SimpleDataContext.builder()
+            .add(CommonDataKeys.PROJECT, project).add(PlatformCoreDataKeys.SELECTED_ITEMS, arrayOf(*selected)).build())
+
+        val both = RunProjectTarget.allSelected(project, event(ProjectKey(sln, api), ProjectKey(sln, worker), ProjectKey(sln, lib)))
+        assertEquals("a library is not launched", listOf("Api.csproj", "Worker.csproj"), both.map { it.projectFile.name })
+        assertTrue("one project is the usual Run", RunProjectTarget.allSelected(project, event(ProjectKey(sln, api))).isEmpty())
+        assertTrue("a solution in the selection is not a set of projects", RunProjectTarget.allSelected(project, event(ProjectKey(sln, api), SolutionKey(sln))).isEmpty())
+
+        val run = TestActionEvent.createTestEvent(RunSelectedProjectAction(), SimpleDataContext.builder()
+            .add(CommonDataKeys.PROJECT, project).add(PlatformCoreDataKeys.SELECTED_ITEMS, arrayOf(ProjectKey(sln, api), ProjectKey(sln, worker))).build())
+        RunSelectedProjectAction().update(run)
+        assertEquals("Run 2 Projects", run.presentation.text)
+        assertTrue(run.presentation.isEnabledAndVisible)
     }
 }
