@@ -22,6 +22,7 @@ sealed class IlViewState {
     companion object {
         const val NOT_CSHARP = "Open a C# file to see the IL of the code at the caret"
         const val NO_PROJECT = "The file is not a part of a .NET project"
+        const val NOT_TRUSTED = "Trust the project to see its IL: finding its assembly runs its MSBuild logic"
         const val NOTHING_HERE = "No IL at the caret: move it into a type or a member"
         const val NOT_BUILT = "Build the project to see its IL"
         const val STALE = "Source changed after the last build"

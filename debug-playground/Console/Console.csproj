@@ -10,4 +10,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Lib\Lib.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- configuration and options for Editor/AppSettingsSchema.cs (the schema of appsettings.json made from the code) -->
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.6" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

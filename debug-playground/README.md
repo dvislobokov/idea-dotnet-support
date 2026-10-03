@@ -186,6 +186,20 @@ Solution для живой проверки плагина: отладчика (
 - [ ] две IDE с одним solution, открытые одновременно при пустом кэше: индексатор собран один раз, в `idea.log` второй IDE «Index of assemblies» — за десятки миллисекунд (всё уже проиндексировано)
 - [ ] `TYPE:import-stats`: в .NET → Suggestion Statistics причина `not imported`
 
+## Редактор: схема `appsettings.json` из кода — `Console/Editor/AppSettingsSchema.cs`
+
+Набирать в `Console/appsettings.json`, маркеры и `EXPECT` — в файле сценария. Схему строит DotNetHelper в фоне после открытия файла (первый раз
+собирается сам помощник — секунды); журнал — .NET → Plugin Logs, категория `appsettings`.
+- [ ] `TYPE:appsettings-keys`: в `"Shop"` Ctrl+Space → `Name`, `Mode`, `Timeout`, `Tags`, `Prices`, `Retry`, `Owner` с описаниями из `<summary>`; нет `Secret`, `Total`
+- [ ] `TYPE:appsettings-enum`: `"Mode":` → `"Fast"`, `"Cheap"`, `"Balanced"`; `"Slow"` подсвечен
+- [ ] `TYPE:appsettings-wrong-type`: `"Height": "tall"` — предупреждение; `5` и `"5"` — без
+- [ ] `TYPE:appsettings-timespan`: `"Timeout": "soon"` — предупреждение; `"00:00:30"`, `"1.02:00:00"` — без
+- [ ] `TYPE:appsettings-unknown-key`: `"Colour"` в `"Position"` — слабое предупреждение «PositionOptions has no property Colour»; ключ в корне и в `"Limits"` — без
+- [ ] `TYPE:appsettings-dictionary`: внутри `"Prices"` ключи не предлагаются, значение `"x"` подсвечено, `1.5` — нет
+- [ ] `TYPE:appsettings-marker`: `"Cache"` → `"Redis"` → `SizeMb`, `Endpoints` (класс с комментарием `// appsettings: Cache:Redis`)
+- [ ] `TYPE:appsettings-base`: `Logging`, `Kestrel`, `AllowedHosts`, `ConnectionStrings` рядом с секциями кода — и с включёнными Remote JSON Schemas (из SchemaStore), и с выключенными (своя база); уровни логирования для `Default`
+- [ ] `TYPE:appsettings-code-change`: новое свойство в `ShopOptions` появляется в дополнении через секунду, без сохранения `.cs`
+
 ## Редактор: аллокации по строкам — `Console/Allocations.cs`
 
 Профиль `Allocations` (аргумент `allocations`; без пауз — `allocations-fast`). Строки, которые выделяют память, помечены `// ALLOC:<имя>`,

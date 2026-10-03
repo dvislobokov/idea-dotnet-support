@@ -26,6 +26,8 @@ dependencies {
             intellijIdea(providers.gradleProperty("platformVersion"))
         }
         testFramework(TestFrameworkType.Platform)
+        // JSON (a plugin since 2024.3): only the content module io.github.dotnetsupport.jsonschema needs it, see its descriptor
+        bundledPlugin("com.intellij.modules.json")
     }
     testImplementation("junit:junit:4.13.2")
 }

@@ -54,6 +54,7 @@ public static class Program
             Params.String(p, "solutionDirectory"), token),
         "il" => IlViewer.Il(Params.String(p, "assembly") ?? throw new HelperException("`il` needs an assembly"),
             Params.String(p, "file") ?? throw new HelperException("`il` needs a file"), Params.Int(p, "line", 0), Params.String(p, "typeName"), Params.String(p, "memberName"), token),
+        "appsettingsSchema" => AppSettingsSchema.Build(p, token), // AppSettings.cs
         _ => throw new HelperException($"DotNetHelper has no method `{method}`"),
     };
 }

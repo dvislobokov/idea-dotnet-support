@@ -4,6 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.intellij.ide.projectView.ProjectView
 import com.intellij.openapi.Disposable
+import com.intellij.ide.trustedProjects.TrustedProjects
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
@@ -115,7 +116,9 @@ class MsBuildEvaluation(private val project: Project) : Disposable {
         }
 
     private fun schedule(projectFile: VirtualFile, globals: Map<String, String>) {
-        if (disposed || (ApplicationManager.getApplication().isUnitTestMode && connection == null) || !pending.add(projectFile.path)) return
+        // evaluation runs the project's MSBuild logic (imports, property functions): not on its own for a project the user has not trusted
+        if (disposed || (ApplicationManager.getApplication().isUnitTestMode && connection == null) || !TrustedProjects.isProjectTrusted(project)) return
+        if (!pending.add(projectFile.path)) return
         executor.execute {
             try {
                 evaluateFiles(projectFile, globals)

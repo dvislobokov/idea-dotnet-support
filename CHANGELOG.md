@@ -3,6 +3,17 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.33
+
+- `appsettings.json` and `appsettings.<Environment>.json` get completion and checks for the sections your code reads — in any project,
+  not only ASP.NET Core: `Configure<T>(GetSection(...))`, `AddOptions<T>().Bind / BindConfiguration`, `GetSection(...).Get<T>()`,
+  `GetValue<T>`, `config["A:B"]`, or a `// appsettings: Section` comment above a class. Keys come with their XML-doc descriptions and
+  defaults, enums with their values; a value of the wrong type is a warning, a key the options class does not have is a weak warning.
+  Works together with the ASP.NET Core sections of SchemaStore and the `ConfigurationSchema.json` of NuGet packages, and follows a C#
+  file a second after it changes, even before it is saved
+- Security: the Solution view and the IL viewer no longer evaluate the MSBuild logic of a project the IDE has not been told to trust;
+  the IL viewer follows only a local path to a PDB named inside an assembly, never a network one
+
 ## 0.1.32
 
 - **IL Viewer** (.NET | IL Viewer), as in Rider: the IL of the method at the caret, from the last build, follows the editor. The PDB tells

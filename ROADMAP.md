@@ -430,8 +430,10 @@
   MSBuild из SDK вычисляет legacy-проекты, кроме импортов Visual Studio (`$(VSToolsPath)` → WebApplication targets): такой проект
   вычисляется с `IgnoreMissingImports` и предупреждением. Плагин — `msbuild/MsBuildEvaluation`, тест `MsBuildEvaluationTest`; чек-лист —
   `debug-playground/README.md` «MSBuild-вычисление проектов». Вживую в IDE не проверено, SDK 8 не проверен
-- [ ] MsBuildHost на net472 с MSBuild из Visual Studio (`DiscoveryType.VisualStudioSetup`): exe только для Windows, запуск exe вместо
-  `dotnet dll` в `DotNetHelper` / `HelperConnection`, `Microsoft.NETFramework.ReferenceAssemblies` + `System.Text.Json` для сборки
+- [ ] Импорты Visual Studio в legacy-проектах — без отдельного хоста на net472 (решение 2026-10-03: для .NET Framework всё равно нужен
+  SDK ≥ 10 ради Roslyn, все помощники — dll на нём). Вычислению нужны только `.targets` VS, задачи не выполняются: найти VS / Build Tools
+  через `vswhere` и передать `VSToolsPath=<VS>\MSBuild\Microsoft\VisualStudio\v17.0|v18.0` глобальным свойством; без VS — как сейчас,
+  `IgnoreMissingImports` с предупреждением. Проверить цели WPF / WinForms (`Microsoft.WinFX.targets`)
 - [x] 0.1.27 — DotNetHelper (`helpers/dotnethelper`, NuGet.Protocol / NuGet.Credentials 6.14): поиск и версии, когда HTTP-клиент IDE не
   доходит до фида (`NuGetNetwork.isRouteFailure`: прокси, сертификаты, неизвестный хост, 401 / 403 / 407; такой фид 10 минут идёт сразу
   через помощник), фиды V2 и локальные папки, учётные данные nuget.config и credential providers; restore `packages.config` в папку
@@ -446,6 +448,17 @@
   `DiagnosticsHelperTest`. Вживую в IDE не проверено
 - [ ] DiagnosticsHelper, дальше: TraceEvent (flame graph из `.nettrace`), перенос `allocwatch`, сравнение двух дампов
 - [ ] Перенос `indexer` / `allocwatch` в постоянные помощники — только если это даст выигрыш (сейчас они разовые и работают)
+
+### Aspire (план 2026-10-03)
+
+Сейчас есть только категория в New Solution и `Aspire.AppHost.Sdk` в подсказках `.csproj`; AppHost запускается как обычный проект.
+- [ ] Шаг 1. AppHost распознаётся (`Aspire.AppHost.Sdk` / `IsAspireHost`): иконка, run configuration первой; ссылка
+  `Login to the dashboard at …` в консоли кликабельна, «Open Dashboard» в строке Services; Debug AppHost автоматически подключает
+  отладчик к .NET-процессам сервисов, которые запустил DCP (через существующий Attach)
+- [ ] Шаг 2. Протокол IDE execution (спецификация в dotnet/aspire, сверить версию для Aspire 13): DCP просит IDE запустить проект, IDE
+  запускает его сразу под отладчиком — точки останова с первой строки
+- [ ] Шаг 3. Ресурсы AppHost в Services (resource service, gRPC — в C#-помощнике): состояние, адреса, логи ресурса, Start / Stop / Restart
+- [ ] Дальше: метрики и трассировки OpenTelemetry, действия CLI `aspire` (`add`, `publish`, `deploy`)
 
 ### IL Viewer (план 2026-10-03)
 
@@ -462,10 +475,18 @@
 
 Не только ASP.NET Core: любой проект, который читает конфигурацию через `Microsoft.Extensions.Configuration`, получает автодополнение и
 проверку своих секций.
-- [ ] Шаг 1. Провайдер JSON-схемы для `appsettings*.json` (и `appsettings.<Environment>.json`): база ASP.NET Core (Logging, Kestrel,
+- [x] 0.1.33 — шаги 1–2 сделаны: content-модуль `io.github.dotnetsupport.jsonschema` (зависит от JSON-плагина), сервис
+  `appsettings/AppSettingsSchemaService`, помощник `helpers/dotnethelper/AppSettings.cs` (Roslyn 5.9, только синтаксис; холодный ответ
+  ~0,2 с, повторный 2–3 мс). Наш провайдер выключает SchemaStore для этих файлов (платформа применяет каталог только без провайдера),
+  поэтому схема SchemaStore скачивается через HTTP-файловую систему IDE и встраивается в нашу; без сети — своя база
+  `resources/appsettingsSchema/base.json`. Удалённые `$ref` внутри схемы в 2026.1 не разрешаются (ключ реестра
+  `json.schema.object.v2.enable.nested.remote.schema.resolve`), в unit-тестах — разрешаются. Неизвестный ключ — своя инспекция
+  `AppSettingsUnknownKey`. Тест `AppSettingsSchemaTest`, сценарий `debug-playground/Console/Editor/AppSettingsSchema.cs`. Пакеты с
+  `ConfigurationSchema.json` вживую не проверены; типы из библиотек — открытый объект
+- [x] Шаг 1. Провайдер JSON-схемы для `appsettings*.json` (и `appsettings.<Environment>.json`): база ASP.NET Core (Logging, Kestrel,
   ConnectionStrings, AllowedHosts; не спорить со схемой SchemaStore, если платформа её уже применяет) + `ConfigurationSchema.json` из
   NuGet-пакетов проекта (Aspire и др., пакеты — из `project.assets.json`)
-- [ ] Шаг 2. Секции из кода — метод DotNetHelper на синтаксисе Roslyn (без компиляции): `Configure<T>(GetSection("X"))`,
+- [x] Шаг 2. Секции из кода — метод DotNetHelper на синтаксисе Roslyn (без компиляции): `Configure<T>(GetSection("X"))`,
   `AddOptions<T>().Bind(...)` / `.BindConfiguration("X")`, `GetSection("X").Get<T>()` / `.Bind(obj)`, `GetValue<T>("A:B")`,
   `config["A:B"]`; имя секции из константы (`GetSection(PositionOptions.Position)`); пометка `// appsettings: Section:Sub` над классом
   для того, что по коду не найти. Типы: свойства с сеттером → ключи, примитивы, enum → значения, `TimeSpan`, коллекции, словари →

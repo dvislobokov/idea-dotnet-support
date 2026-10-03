@@ -1,6 +1,7 @@
 package io.github.dotnetsupport.il
 
 import com.intellij.execution.ExecutionException
+import com.intellij.ide.trustedProjects.TrustedProjects
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.components.Service
@@ -43,6 +44,8 @@ class IlViewerService(private val project: Project) {
         if (!caret.file.name.endsWith(".cs", ignoreCase = true)) return IlViewState.Empty(IlViewState.NOT_CSHARP)
         val projectFile = ReadAction.computeBlocking<VirtualFile?, RuntimeException> { if (caret.file.isValid) DotNetProjects.findOwningProject(caret.file) else null }
             ?: return IlViewState.Empty(IlViewState.NO_PROJECT)
+        // finding the assembly evaluates the project (MsBuildHost or `dotnet msbuild`): its MSBuild logic runs, so only for a trusted project
+        if (!TrustedProjects.isProjectTrusted(project)) return IlViewState.Empty(IlViewState.NOT_TRUSTED)
         val assembly = locator.assembly(projectFile)?.takeIf { File(it).isFile } ?: return IlViewState.NotBuilt(projectFile.path)
         val (typeName, memberName) = IlViewerLogic.names(caret.text, caret.offset)
         val request = IlRequest(assembly, FileUtil.toSystemDependentName(caret.file.path), caret.line, typeName, memberName)

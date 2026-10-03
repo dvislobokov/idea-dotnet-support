@@ -1,0 +1,405 @@
+{
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "Position": {
+        "type": "object",
+        "description": "The position of the window on the screen.",
+        "properties": {
+          "Title": {
+            "type": "string",
+            "description": "The title of the window.",
+            "default": "Playground"
+          },
+          "Height": {
+            "type": [
+              "integer",
+              "string"
+            ],
+            "pattern": "^\\s*[-+]?\\d+\\s*$",
+            "description": "Height in pixels.",
+            "default": 480
+          },
+          "Maximized": {
+            "type": [
+              "boolean",
+              "string"
+            ],
+            "pattern": "^\\s*([Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee])\\s*$"
+          }
+        },
+        "x-dotnet-type": "Playground.Editor.PositionOptions"
+      },
+      "Shop": {
+        "type": "object",
+        "description": "Settings of the shop.",
+        "properties": {
+          "Name": {
+            "type": "string",
+            "description": "Shown in the title bar.",
+            "default": ""
+          },
+          "Mode": {
+            "type": "string",
+            "enum": [
+              "Fast",
+              "Cheap",
+              "Balanced"
+            ],
+            "description": "How orders are shipped.\nFast: The next day.",
+            "default": "Balanced"
+          },
+          "Timeout": {
+            "type": "string",
+            "pattern": "^\\s*-?(\\d+|(\\d+\\.)?\\d{1,2}:\\d{1,2}(:\\d{1,2}(\\.\\d{1,7})?)?)\\s*$",
+            "description": "How long a checkout may take.\nTimeSpan: [d.]hh:mm[:ss[.fffffff]]",
+            "default": "00:00:30"
+          },
+          "Tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "new",
+              "sale"
+            ]
+          },
+          "Prices": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "number",
+                "string"
+              ],
+              "pattern": "^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)([eE][-+]?\\d+)?\\s*$"
+            },
+            "description": "Price by the name of the product."
+          },
+          "Retry": {
+            "type": "object",
+            "description": "How a failed call is retried.",
+            "properties": {
+              "Count": {
+                "type": [
+                  "integer",
+                  "string"
+                ],
+                "pattern": "^\\s*[-+]?\\d+\\s*$",
+                "description": "Attempts after the first one.",
+                "default": 3
+              },
+              "Delay": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^\\s*-?(\\d+|(\\d+\\.)?\\d{1,2}:\\d{1,2}(:\\d{1,2}(\\.\\d{1,7})?)?)\\s*$",
+                "description": "TimeSpan: [d.]hh:mm[:ss[.fffffff]]"
+              }
+            },
+            "x-dotnet-type": "Playground.Editor.RetryOptions"
+          },
+          "Owner": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "Name": {
+                "type": "string"
+              },
+              "Age": {
+                "type": [
+                  "integer",
+                  "string"
+                ],
+                "pattern": "^\\s*[-+]?\\d+\\s*$",
+                "default": 30
+              }
+            },
+            "x-dotnet-type": "Playground.Editor.ShopOwner"
+          }
+        },
+        "x-dotnet-type": "Playground.Editor.ShopOptions"
+      },
+      "Features": {
+        "type": "object",
+        "properties": {
+          "Beta": {
+            "type": "object",
+            "properties": {
+              "Enabled": {
+                "type": [
+                  "boolean",
+                  "string"
+                ],
+                "pattern": "^\\s*([Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee])\\s*$"
+              },
+              "Id": {
+                "type": "string",
+                "pattern": "^[{(]?[0-9A-Fa-f]{8}-?[0-9A-Fa-f]{4}-?[0-9A-Fa-f]{4}-?[0-9A-Fa-f]{4}-?[0-9A-Fa-f]{12}[)}]?$"
+              }
+            },
+            "x-dotnet-type": "Playground.Editor.FeatureOptions"
+          }
+        }
+      },
+      "Limits": {
+        "type": "object",
+        "properties": {
+          "TimeoutSeconds": {
+            "type": [
+              "integer",
+              "string"
+            ],
+            "pattern": "^\\s*[-+]?\\d+\\s*$",
+            "default": 30
+          },
+          "Greeting": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      },
+      "Cache": {
+        "type": "object",
+        "properties": {
+          "Redis": {
+            "type": "object",
+            "properties": {
+              "SizeMb": {
+                "type": [
+                  "integer",
+                  "string"
+                ],
+                "pattern": "^\\s*[-+]?\\d+\\s*$",
+                "default": 64
+              },
+              "Endpoints": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              }
+            },
+            "x-dotnet-type": "Playground.Editor.CacheOptions"
+          }
+        }
+      }
+    }
+  },
+  "sources": [
+    {
+      "path": "Position:Title",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 64,
+      "kind": "property"
+    },
+    {
+      "path": "Position:Height",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 67,
+      "kind": "property"
+    },
+    {
+      "path": "Position:Maximized",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 69,
+      "kind": "property"
+    },
+    {
+      "path": "Position",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 18,
+      "kind": "section"
+    },
+    {
+      "path": "Shop:Name",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 76,
+      "kind": "property"
+    },
+    {
+      "path": "Shop:Mode",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 79,
+      "kind": "property"
+    },
+    {
+      "path": "Shop:Timeout",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 82,
+      "kind": "property"
+    },
+    {
+      "path": "Shop:Tags",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 84,
+      "kind": "property"
+    },
+    {
+      "path": "Shop:Prices",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 87,
+      "kind": "property"
+    },
+    {
+      "path": "Shop:Retry:Count",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 102,
+      "kind": "property"
+    },
+    {
+      "path": "Shop:Retry:Delay",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 104,
+      "kind": "property"
+    },
+    {
+      "path": "Shop:Retry",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 89,
+      "kind": "property"
+    },
+    {
+      "path": "Shop:Owner:Name",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 115,
+      "kind": "property"
+    },
+    {
+      "path": "Shop:Owner:Age",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 115,
+      "kind": "property"
+    },
+    {
+      "path": "Shop:Owner",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 91,
+      "kind": "property"
+    },
+    {
+      "path": "Shop",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 21,
+      "kind": "section"
+    },
+    {
+      "path": "Shop:Retry",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 22,
+      "kind": "section"
+    },
+    {
+      "path": "Features:Beta:Enabled",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 119,
+      "kind": "property"
+    },
+    {
+      "path": "Features:Beta:Id",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 120,
+      "kind": "property"
+    },
+    {
+      "path": "Features:Beta",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 25,
+      "kind": "section"
+    },
+    {
+      "path": "Limits:TimeoutSeconds",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 26,
+      "kind": "section"
+    },
+    {
+      "path": "Limits:Greeting",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 27,
+      "kind": "section"
+    },
+    {
+      "path": "Cache:Redis:SizeMb",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 126,
+      "kind": "property"
+    },
+    {
+      "path": "Cache:Redis:Endpoints",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 127,
+      "kind": "property"
+    },
+    {
+      "path": "Cache:Redis",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 124,
+      "kind": "section"
+    }
+  ],
+  "sections": [
+    {
+      "path": "Position",
+      "type": "PositionOptions",
+      "how": "Configure",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 18
+    },
+    {
+      "path": "Shop",
+      "type": "ShopOptions",
+      "how": "Get",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 21
+    },
+    {
+      "path": "Shop:Retry",
+      "type": "RetryOptions",
+      "how": "Get",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 22
+    },
+    {
+      "path": "Features:Beta",
+      "type": "FeatureOptions",
+      "how": "BindConfiguration",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 25
+    },
+    {
+      "path": "Limits:TimeoutSeconds",
+      "type": "int",
+      "how": "GetValue",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 26
+    },
+    {
+      "path": "Limits:Greeting",
+      "type": "string",
+      "how": "indexer",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 27
+    },
+    {
+      "path": "Cache:Redis",
+      "type": "Playground.Editor.CacheOptions",
+      "how": "comment",
+      "file": "debug-playground/Console/Editor/AppSettingsSchema.cs",
+      "line": 124
+    }
+  ],
+  "unresolved": [],
+  "files": 10,
+  "parsed": 10,
+  "elapsedMs": 156
+}

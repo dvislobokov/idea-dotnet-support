@@ -376,7 +376,9 @@ internal static partial class IlViewer
             if (!string.IsNullOrEmpty(named))
             {
                 candidates.Add(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path)!, System.IO.Path.GetFileName(named.Replace('\\', '/').Split('/').Last())));
-                if (System.IO.Path.IsPathRooted(named)) candidates.Add(named);
+                // the path comes from the assembly: a UNC or device path there (`\\host`, `//host`, `/\host`, `\\?\UNC`) would make File.Exists
+                // reach a server and give it the NTLM hash, so only a local path is followed: a drive letter on Windows, `/x` elsewhere
+                if (IsLocalRooted(named)) candidates.Add(named);
             }
             foreach (var candidate in candidates.Distinct(StringComparer.OrdinalIgnoreCase))
             {
@@ -394,6 +396,14 @@ internal static partial class IlViewer
                 return (null, candidate, null, $"{System.IO.Path.GetFileName(candidate)} is not a PDB");
             }
             return (null, candidates[0], null, $"no PDB for {name} (<DebugType>none</DebugType>?)");
+        }
+
+        /** `C:\...` on Windows, `/...` elsewhere; never a network or device path, whatever its slashes. */
+        private static bool IsLocalRooted(string path)
+        {
+            if (OperatingSystem.IsWindows())
+                return path.Length >= 3 && char.IsAsciiLetter(path[0]) && path[1] == ':' && (path[2] == '\\' || path[2] == '/');
+            return path.StartsWith('/') && !path.StartsWith("//");
         }
 
         /** The state machines of async methods and iterators by their attributes too: without a PDB, and for the method found by name. */

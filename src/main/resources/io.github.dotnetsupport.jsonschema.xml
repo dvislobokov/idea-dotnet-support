@@ -1,0 +1,24 @@
+<!-- A content module of the plugin: the schema of appsettings*.json for the JSON plugin of the IDE (com.intellij.modules.json, a plugin
+     of its own since 2024.3, not in every IDE). Where it is missing only this part is off. Classes: io.github.dotnetsupport.jsonschema;
+     what the schema is made of lives in the main part (package appsettings), which tells this one about changes by a topic. -->
+<idea-plugin package="io.github.dotnetsupport.jsonschema">
+    <dependencies>
+        <plugin id="com.intellij.modules.json"/>
+    </dependencies>
+
+    <extensions defaultExtensionNs="JavaScript.JsonSchema">
+        <ProviderFactory implementation="io.github.dotnetsupport.jsonschema.AppSettingsSchemaProviderFactory"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- a key the C# class of its section does not have: weak, the configuration also comes from the environment and other files -->
+        <localInspection language="JSON" shortName="AppSettingsUnknownKey" displayName="Key not bound by the options class"
+                         groupName=".NET" enabledByDefault="true" level="WEAK WARNING"
+                         implementationClass="io.github.dotnetsupport.jsonschema.AppSettingsUnknownKeyInspection"/>
+    </extensions>
+
+    <projectListeners>
+        <listener class="io.github.dotnetsupport.jsonschema.AppSettingsSchemaReset" topic="io.github.dotnetsupport.appsettings.AppSettingsSchemaListener"/>
+        <listener class="io.github.dotnetsupport.jsonschema.AppSettingsFileOpened" topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
+    </projectListeners>
+</idea-plugin>

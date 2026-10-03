@@ -18,6 +18,8 @@
     <!-- optional parts: a module is loaded only where its dependencies are (see the descriptor of the module next to META-INF) -->
     <content>
         <module name="io.github.dotnetsupport.roslyn"/>
+        <!-- the schema of appsettings*.json, where the JSON plugin is -->
+        <module name="io.github.dotnetsupport.jsonschema"/>
     </content>
 
     <extensions defaultExtensionNs="io.github.dotnetsupport">
