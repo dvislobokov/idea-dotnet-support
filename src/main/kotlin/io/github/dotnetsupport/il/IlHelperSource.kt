@@ -50,6 +50,7 @@ object IlAnswers {
         "lambda" -> IlBody.Kind.LAMBDA
         "localFunction" -> IlBody.Kind.LOCAL_FUNCTION
         "type" -> IlBody.Kind.TYPE
+        "field" -> IlBody.Kind.FIELD
         else -> IlBody.Kind.METHOD
     }
 

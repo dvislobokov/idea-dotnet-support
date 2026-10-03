@@ -283,9 +283,26 @@ class IlViewerTest : BasePlatformTestCase() {
         panel.render(IlViewState.Shown(request.copy(memberName = "Other"), IlAnswer("/p/App.dll", 0, null, listOf(method, machine)), "/p/App.csproj", stale = false))
         assertEquals("another member: the body at the caret again", addIl, panel.shownText)
 
-        panel.render(IlViewState.Shown(request, IlAnswer("/p/App.dll", 0, null, emptyList(), warning = "Nothing at line 11"), "/p/App.csproj", stale = false))
+        // one message, not the note of the helper above "No IL at the caret" (line 1 of a file of top-level statements)
+        panel.render(IlViewState.Shown(request, IlAnswer("/p/App.dll", 0, null, emptyList(), warning = "No IL at line 11: the PDB has no code at line 11"), "/p/App.csproj", stale = false))
+        assertTrue(panel.statusText, panel.statusText.startsWith("No IL at line 11"))
+        assertFalse(panel.statusText, panel.statusText.contains(IlViewState.NOTHING_HERE))
+        assertNull(panel.warningText)
+        panel.render(IlViewState.Shown(request, IlAnswer("/p/App.dll", 0, null, emptyList()), "/p/App.csproj", stale = false))
         assertEquals(IlViewState.NOTHING_HERE, panel.statusText)
-        assertEquals("Nothing at line 11", panel.warningText)
+        assertNull(panel.warningText)
+    }
+
+    fun testNothingHereIsOneMessage() {
+        assertEquals(listOf(IlViewState.NOTHING_HERE), IlViewerLogic.nothingHere(null))
+        assertEquals(listOf(IlViewState.NOTHING_HERE), IlViewerLogic.nothingHere(" "))
+        val lines = IlViewerLogic.nothingHere("No IL at line 1: the PDB has no code at line 1 (a field, a type header, a member without a body), and the declaration around it is not known.")
+        assertEquals("No IL at line 1", lines.first())
+        assertTrue(lines[1], lines[1].startsWith("The PDB has no code at line 1"))
+        assertTrue(lines.toString(), lines.all { it.length <= 60 })
+        assertEquals("the words are all there", "the PDB has no code at line 1 (a field, a type header, a member without a body), and the declaration around it is not known.",
+            lines.drop(1).joinToString(" ").replaceFirstChar { it.lowercaseChar() })
+        assertEquals(listOf("Nothing"), IlViewerLogic.nothingHere("Nothing"))
     }
 
     fun testRegistration() {

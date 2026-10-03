@@ -10,12 +10,15 @@ import com.intellij.execution.testframework.AbstractTestProxy
 import com.intellij.execution.testframework.TestConsoleProperties
 import com.intellij.execution.testframework.actions.AbstractRerunFailedTestsAction
 import com.intellij.execution.testframework.sm.SMCustomMessagesParsing
+import com.intellij.execution.testframework.sm.ServiceMessageBuilder
 import com.intellij.execution.testframework.sm.runner.OutputToGeneralTestEventsConverter
 import com.intellij.execution.testframework.sm.runner.SMTRunnerConsoleProperties
 import com.intellij.execution.testframework.sm.runner.SMTestLocator
+import com.intellij.execution.testframework.sm.runner.events.TestOutputEvent
 import com.intellij.execution.ui.ConsoleView
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComponentContainer
+import com.intellij.openapi.util.Key
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
@@ -28,6 +31,8 @@ import io.github.dotnetsupport.run.DotNetRunConfiguration
 import java.io.File
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import jetbrains.buildServer.messages.serviceMessages.ServiceMessage
+import jetbrains.buildServer.messages.serviceMessages.TestStdOut
 
 const val TEST_FRAMEWORK_NAME = "DotNetTest"
 private const val LOCATION_PROTOCOL = "dotnet-test"
@@ -66,6 +71,10 @@ class DotNetTestConsoleProperties(
  * Turns the files of the test logger into test events while `dotnet test` runs ([eventsDirectory], read every [POLL_MS]), and the
  * TRX report into the events of the tests the files did not have once it has finished. The messages go in as SYSTEM output, which
  * the platform splits into lines apart from the stdout of the process, so a line the process is still writing does not glue to them.
+ *
+ * The output of a test comes only with its result ([LiveTestTree]). The stdout of `dotnet test` itself (build, the console logger
+ * of VSTest that prints the results of other tests in batches, the summary) belongs to the run: the platform would give it to the test it
+ * thinks is running ([fireOnUncapturedOutput]), so it goes to the root of the tree instead.
  */
 class TrxEventsConverter(
     testFrameworkName: String,
@@ -105,6 +114,11 @@ class TrxEventsConverter(
         super.flushBufferOnProcessTermination(exitCode)
     }
 
+    /** Not to the "active" test of the platform (the first one still running): to the root node, which the id-based tree calls "0". */
+    override fun fireOnUncapturedOutput(text: String, outputType: Key<*>) {
+        processor?.onTestOutput(TestOutputEvent(ROOT_OUTPUT, text, outputType))
+    }
+
     override fun dispose() {
         polling?.cancel(false)
         super.dispose()
@@ -116,6 +130,8 @@ class TrxEventsConverter(
 
     companion object {
         private const val POLL_MS = 200L
+        /** Only names the node; the text and its type (colors of the console) are given apart. */
+        private val ROOT_OUTPUT = ServiceMessage.parse(ServiceMessageBuilder.testStdOut("").addAttribute("nodeId", "0").addAttribute("out", "").toString()) as TestStdOut
 
         /** The tree of a run that has only the TRX report: a suite per test class. */
         fun serviceMessages(results: List<TrxTestResult>, projectDirectory: String): List<String> =

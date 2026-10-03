@@ -4,7 +4,7 @@
 //   il  {assembly, file, line, typeName?, memberName?}
 //       → {assembly, assemblyModified, pdb?, bodies: [{name, kind, text, atCaret, mapping: [{textLine, offset, startLine, startColumn, endLine, endColumn}]}], warning?}
 //
-// `kind`: method | stateMachine | lambda | localFunction | type. `pdb`: the path of the PDB file, `embedded`, or null without one.
+// `kind`: method | stateMachine | lambda | localFunction | type | field. `pdb`: the path of the PDB file, `embedded`, or null without one.
 // The assembly and its PDB are read into memory, so the build that overwrites them is never blocked; what is read is kept by path and time.
 
 using System.Collections.Concurrent;
@@ -157,6 +157,9 @@ internal static partial class IlViewer
                     var overloads = methods.Count > 1 ? $"all {methods.Count} methods named `{memberName}`" : $"`{memberName}`";
                     return Result(bodies, $"{Capitalize(why)}, so the IL is found by name: {overloads}.");
                 }
+                // a field has no code: its declaration is all there is (an initializer is in the constructor, which the PDB finds on its line)
+                if (Field(type.Value, memberName) is { } field)
+                    return Result([FieldBody(type.Value, field)], $"`{memberName}` is a field: it has no IL of its own, only this declaration. An initializer would be in the constructor.");
                 why += $"; {TypeDisplayName(type.Value)} has no method `{memberName}`";
             }
             return Result([TypeBody(type.Value)], $"{Capitalize(why)}, so the IL is found by name: the whole type {TypeDisplayName(type.Value)}.");
@@ -218,6 +221,12 @@ internal static partial class IlViewer
         }
 
         private IlBody TypeBody(TypeDefinitionHandle type) => new(TypeDisplayName(type), "type", Disassemble(d => d.DisassembleType(loaded.Module, type)), true, []);
+
+        private IlBody FieldBody(TypeDefinitionHandle type, FieldDefinitionHandle field) =>
+            new($"{TypeDisplayName(type)}.{metadata.GetString(metadata.GetFieldDefinition(field).Name)}", "field", Disassemble(d => d.DisassembleField(loaded.Module, field)), true, []);
+
+        private FieldDefinitionHandle? Field(TypeDefinitionHandle type, string name) =>
+            metadata.GetTypeDefinition(type).GetFields().Where(h => metadata.GetString(metadata.GetFieldDefinition(h).Name) == name).Select(h => (FieldDefinitionHandle?)h).FirstOrDefault();
 
         private string Disassemble(Action<ReflectionDisassembler> write)
         {

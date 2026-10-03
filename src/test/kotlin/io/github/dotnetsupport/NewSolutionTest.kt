@@ -14,6 +14,7 @@ import io.github.dotnetsupport.newproject.SdkVersions
 import io.github.dotnetsupport.newproject.TemplateCategory
 import io.github.dotnetsupport.newproject.TemplateHelp
 import io.github.dotnetsupport.newproject.TemplateIdentities
+import io.github.dotnetsupport.newproject.WelcomeNewSolutionPlacement
 import java.io.File
 
 /** File | New | New Solution...: the pure part (kinds, paths, checks, commands) and the composition of the window. */
@@ -177,7 +178,7 @@ class NewSolutionTest : BasePlatformTestCase() {
         // the Welcome screen: next to New Project, and available with no project open
         val welcome = (actions.getAction("WelcomeScreen.QuickStart") as DefaultActionGroup).childActionsOrStubs.map { actions.getId(it) }
         assertTrue(welcome.toString(), "DotNet.NewSolution.Welcome" in welcome)
-        val newProject = welcome.indexOf("WelcomeScreen.CreateNewProject")
+        val newProject = welcome.indexOfFirst { it in WelcomeNewSolutionPlacement.NEW_PROJECT }
         if (newProject >= 0) assertEquals(welcome.toString(), newProject + 1, welcome.indexOf("DotNet.NewSolution.Welcome"))
         val action = actions.getAction("DotNet.NewSolution.Welcome")
         assertEquals("New Solution", action.templatePresentation.text)
@@ -186,6 +187,38 @@ class NewSolutionTest : BasePlatformTestCase() {
         )
         action.update(event)
         assertTrue(event.presentation.isEnabledAndVisible)
+    }
+
+    /** The groups `WelcomeScreen.QuickStart` of the IDEs (2026.1 / 2026.2): New Solution goes right after New Project, wherever it is. */
+    fun testWelcomeScreenPlacementInEveryIde() {
+        fun target(vararg groups: Pair<String, List<String>>) = groups.toMap().let { tree -> WelcomeNewSolutionPlacement.target("WelcomeScreen.QuickStart") { tree[it] } }
+        val idea = target("WelcomeScreen.QuickStart" to listOf("WelcomeScreen.QuickStart.Platform", "WelcomeScreen.DefaultNewProjectActionGroup", "WelcomeScreen.OpenProject", "Vcs.VcsClone"),
+            "WelcomeScreen.QuickStart.Platform" to emptyList(), "WelcomeScreen.DefaultNewProjectActionGroup" to listOf("NewProject"))
+        assertEquals("WelcomeScreen.QuickStart" to "WelcomeScreen.DefaultNewProjectActionGroup", idea)
+        val goLand = target("WelcomeScreen.QuickStart" to listOf("WelcomeScreen.QuickStart.Platform", "WelcomeScreen.Platform.NewProject", "Vcs.VcsClone", "CombinedWelcomeRemdevAction"),
+            "WelcomeScreen.QuickStart.Platform" to emptyList(), "WelcomeScreen.Platform.NewProject" to listOf("WelcomeScreen.CreateDirectoryProject", "WelcomeScreen.OpenDirectoryProject"),
+            "WelcomeScreen.CreateDirectoryProject" to emptyList())
+        assertEquals("WelcomeScreen.Platform.NewProject" to "WelcomeScreen.CreateDirectoryProject", goLand)
+        assertEquals("WelcomeScreen.QuickStart" to null, target("WelcomeScreen.QuickStart" to listOf("Vcs.VcsClone")))
+        assertNull(target())
+    }
+
+    /** A long description (Web templates) wraps instead of being cut at the right; `<T>` in it stays text. */
+    fun testTheDescriptionWraps() {
+        val dialog = NewSolutionDialog(null, loadFromCli = false)
+        try {
+            val text = "A project template for creating an ASP.NET Core application with an example Controller for a RESTful HTTP service. " +
+                "This template can also be used for ASP.NET Core MVC Views and Controllers. ".repeat(4) + "Uses List<T>."
+            dialog.describe(text)
+            val pane = dialog.descriptionComponent()
+            assertTrue(pane.text, pane.text.contains("List&lt;T&gt;"))
+            val oneLine = pane.getFontMetrics(pane.font).stringWidth(text)
+            assertTrue("preferred ${pane.preferredSize.width} of a line $oneLine", pane.preferredSize.width < oneLine / 2)
+            pane.setSize(300, Short.MAX_VALUE.toInt())
+            assertTrue("several lines at 300 px: ${pane.preferredSize.height}", pane.preferredSize.height > 3 * pane.getFontMetrics(pane.font).height)
+        } finally {
+            Disposer.dispose(dialog.disposable)
+        }
     }
 
     fun testTheWindowOpensWithoutAProject() {

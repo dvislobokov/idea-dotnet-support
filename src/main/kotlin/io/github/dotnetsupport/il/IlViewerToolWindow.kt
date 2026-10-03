@@ -42,6 +42,7 @@ import com.intellij.ui.EditorNotificationPanel
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanelWithEmptyText
+import com.intellij.ui.components.JBTextArea
 import com.intellij.util.Alarm
 import com.intellij.util.DocumentUtil
 import com.intellij.util.concurrency.AppExecutorUtil
@@ -112,7 +113,14 @@ class IlViewerPanel(private val project: Project, parent: Disposable, private va
         text = IlViewState.STALE
         createActionLabel("Build") { build() }
     }
-    private val warning = JBLabel().apply {
+    // the note wraps: a label cut it to "`_count` is a field: it has no IL of its o…" in a narrow tool window
+    private val warning = JBTextArea().apply {
+        isEditable = false
+        isFocusable = false
+        isOpaque = false
+        lineWrap = true
+        wrapStyleWord = true
+        font = UIUtil.getLabelFont()
         foreground = UIUtil.getContextHelpForeground()
         border = JBUI.Borders.empty(2, 6)
     }
@@ -251,14 +259,18 @@ class IlViewerPanel(private val project: Project, parent: Disposable, private va
                 empty.emptyText.appendLine("Plugin Logs", SimpleTextAttributes.LINK_PLAIN_ATTRIBUTES) { PluginLogsToolWindowFactory.show(project) }
             }
             is IlViewState.Shown -> {
-                next.answer.warning?.let {
-                    warning.text = it
-                    warning.isVisible = true
-                }
                 val ordered = IlViewerLogic.ordered(next.answer.bodies)
                 if (ordered.isEmpty()) {
-                    showEmpty(IlViewState.NOTHING_HERE)
+                    // the note of the helper is the only message: not above "No IL at the caret" as well
+                    val columns = if (center.width <= 0) 40 else ((center.width - JBUI.scale(32)) / empty.getFontMetrics(empty.font).charWidth('n')).coerceIn(20, 80)
+                    val lines = IlViewerLogic.nothingHere(next.answer.warning, columns)
+                    showEmpty(lines.first())
+                    lines.drop(1).forEach { empty.emptyText.appendLine(it, SimpleTextAttributes.GRAYED_ATTRIBUTES, null) }
                 } else {
+                    next.answer.warning?.let {
+                        warning.text = it
+                        warning.isVisible = true
+                    }
                     val sameMember = previous != null && previous.request.file == next.request.file && previous.request.typeName == next.request.typeName &&
                         previous.request.memberName == next.request.memberName
                     val chosen = ordered[IlViewerLogic.choose(ordered, body?.name, sameMember)]

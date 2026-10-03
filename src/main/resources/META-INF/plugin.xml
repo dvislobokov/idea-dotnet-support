@@ -149,6 +149,8 @@
         <postStartupActivity implementation="io.github.dotnetsupport.view.ToolWindowsSetup"/>
         <!-- the page about the plugin, once after the installation and after an update -->
         <postStartupActivity implementation="io.github.dotnetsupport.welcome.WelcomePageActivity"/>
+        <!-- New Solution of the Welcome screen right after New Project, which is a different action in IDEA and in GoLand / PyCharm / WebStorm -->
+        <dynamicActionConfigurationCustomizer implementation="io.github.dotnetsupport.newproject.WelcomeNewSolutionPlacement"/>
         <!-- the index of the assemblies of the projects, made in the background by the indexer the plugin builds on this machine -->
         <postStartupActivity implementation="io.github.dotnetsupport.index.AssemblyIndexStartup"/>
         <!-- what the lines of the sources allocate, measured in the running program and written at the end of the lines -->
@@ -258,11 +260,10 @@
                 description="Create a .NET solution with a project from a template, or an empty solution" icon="/icons/solution.svg">
             <add-to-group group-id="NewGroup" anchor="first"/>
         </action>
-        <!-- the same on the Welcome screen, next to New Project and with its icon: there no project is open -->
+        <!-- the same on the Welcome screen, with the icon of New Project: there no project is open. Put right after New Project by
+             WelcomeNewSolutionPlacement: no anchor of this file is New Project in every IDE -->
         <action id="DotNet.NewSolution.Welcome" class="io.github.dotnetsupport.newproject.NewSolutionAction" text="New Solution"
-                description="Create a .NET solution with a project from a template, or an empty solution" icon="AllIcons.Welcome.CreateNewProjectTab">
-            <add-to-group group-id="WelcomeScreen.QuickStart" anchor="after" relative-to-action="WelcomeScreen.CreateNewProject"/>
-        </action>
+                description="Create a .NET solution with a project from a template, or an empty solution" icon="AllIcons.Welcome.CreateNewProjectTab"/>
 
         <group id="DotNet.NewItems" class="io.github.dotnetsupport.templates.NewDotNetItemGroup"
                text=".NET" description="C#, ASP.NET, Razor, test, EF Core and configuration items" popup="true">

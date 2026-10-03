@@ -56,7 +56,7 @@ object LiveTestLogger {
 
 /** One line of a file of the logger or of the collector, see `testlogger/TestLogger.cs`. */
 class LiveTestEvent(
-    /** `runStart`, `testStart`, `result`, `message`, `runComplete`. */
+    /** `runStart`, `testStart`, `testEnd`, `result`, `message`, `runComplete`. */
     val kind: String,
     /** The id of the test case; one test case may have several results (data rows the adapter does not expand). */
     val id: String?,
@@ -149,6 +149,8 @@ class LiveTestTree(private val projectDirectory: String) {
     private val finished = HashSet<String>()
     private val nodeOfCase = HashMap<String, String>()
     private val casesWithResults = HashSet<String>()
+    /** The outcomes the collector saw at the end of tests whose results had not come yet. */
+    private val ended = LinkedHashMap<String, Pair<TestNode, TestOutcome>>()
 
     fun onEvent(event: LiveTestEvent): List<String> = when (event.kind) {
         "testStart" -> buildList {
@@ -157,17 +159,18 @@ class LiveTestTree(private val projectDirectory: String) {
             started(node)
             event.id?.let { nodeOfCase[it] = node.id }
         }
+        // The logger gets results in batches of the test host (up to a second and a half late), the collector the end of every test at once:
+        // the outcome is kept for a Stop that kills the host with the batch, and the result with its details wins when it comes.
+        "testEnd" -> buildList {
+            val node = TestNode(event.source, event.className, event.methodName, event.nameInClass(event.displayName))
+            if (node.id in running) ended[node.id] = node to outcome(event.outcome)
+        }
         "result" -> buildList {
             val node = TestNode(event.source, event.className, event.methodName, event.nameInClass(event.resultName ?: event.displayName))
             event.id?.let { casesWithResults.add(it) }
             if (node.id in finished) return@buildList
             if (node.id !in running) started(node)
-            val outcome = when (event.outcome) {
-                "Passed" -> TestOutcome.PASSED
-                "Failed" -> TestOutcome.FAILED
-                else -> TestOutcome.SKIPPED // Skipped, None, NotFound
-            }
-            result(node, outcome, event.durationMs, event.message ?: if (event.outcome == "NotFound") "Not found" else null, event.stackTrace, event.stdOut, event.stdErr)
+            result(node, outcome(event.outcome), event.durationMs, event.message ?: if (event.outcome == "NotFound") "Not found" else null, event.stackTrace, event.stdOut, event.stdErr)
         }
         else -> emptyList()
     }
@@ -184,7 +187,8 @@ class LiveTestTree(private val projectDirectory: String) {
 
     /**
      * The end of the run: a test case whose results came under other names (rows of a theory) is finished, then every suite that
-     * has no running test. What still runs was cut off by Stop or by a crash of the test host.
+     * has no running test. A test the collector saw end gets that outcome without details: its result was still in the test host when
+     * Stop killed it. What still runs was cut off by Stop or by a crash of the test host.
      */
     fun finish(): List<String> = buildList {
         for ((case, node) in nodeOfCase) {
@@ -193,6 +197,10 @@ class LiveTestTree(private val projectDirectory: String) {
                 running.remove(node); finished.add(node)
             }
         }
+        for ((node, outcome) in ended.values) {
+            if (node.id in running) result(node, outcome, 0, if (outcome == TestOutcome.FAILED) "The run was stopped before the details of the failure came" else null, null, null, null)
+        }
+        ended.clear()
         val busy = running.values.toSet()
         for (suite in suites.filter { it !in busy }) add(ServiceMessageBuilder.testSuiteFinished(suite).addAttribute("nodeId", suite).toString())
         suites.retainAll(busy)
@@ -220,6 +228,12 @@ class LiveTestTree(private val projectDirectory: String) {
         add(ServiceMessageBuilder.testFinished(node.name).addAttribute("nodeId", node.id).addAttribute("duration", durationMs.toString()).toString())
         running.remove(node.id)
         finished.add(node.id)
+    }
+
+    private fun outcome(outcome: String?): TestOutcome = when (outcome) {
+        "Passed" -> TestOutcome.PASSED
+        "Failed" -> TestOutcome.FAILED
+        else -> TestOutcome.SKIPPED // Skipped, None, NotFound
     }
 
     /** A test of one assembly: the same class of two target frameworks is two suites. */

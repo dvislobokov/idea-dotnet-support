@@ -15,7 +15,7 @@ data class IlAnswer(val assembly: String, val assemblyModified: Long, val pdb: S
 
 /** One disassembled member in the ildasm format; [atCaret] for the innermost body that holds the line. */
 data class IlBody(val name: String, val kind: Kind, val text: String, val atCaret: Boolean, val mapping: List<IlLineMapping>) {
-    enum class Kind { METHOD, STATE_MACHINE, LAMBDA, LOCAL_FUNCTION, TYPE }
+    enum class Kind { METHOD, STATE_MACHINE, LAMBDA, LOCAL_FUNCTION, TYPE, FIELD }
 }
 
 /**

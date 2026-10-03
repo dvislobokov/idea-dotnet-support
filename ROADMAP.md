@@ -497,6 +497,16 @@
   `[RegularExpression]`) → ограничения, типы из библиотек — через индекс сборок, те же ключи в `secrets.json` и `Section__Key` в
   переменных окружения `launchSettings.json`
 
+## Свой PSI C# вместо roslyn-language-server (план 2026-10-04)
+
+Решение пользователя: уйти от сервера к своему PSI, как в `idea-golang-support`. Причины: ограничения LSP, скорость, требование
+.NET 10, память. План по шагам, гейты и вехи — **`CSHARP_PSI_MIGRATION.md`**; статус шагов ведётся там, сюда — итоги по версиям.
+- [ ] Шаги 1–2: модули `csharp-psi-core` / `-semantic` / `-ide`, переключатели фич `ROSLYN | NATIVE`
+- [ ] Шаги 3–6: генератор PSI из `Syntax.xml`, лексер, перенос парсера Roslyn (MIT), корпусная сверка дерева с Roslyn (0 расхождений)
+- [ ] Шаги 7–9: подмена парсера, stub-индексы, синтаксические фичи на PSI
+- [ ] Шаги 10–11: project model, семантика по слоям со сверкой по Roslyn
+- [ ] Шаг 12: сервер опционален (снимается требование .NET 10) → сервер удалён
+
 ## Платформа
 - [x] Минимальная версия — 2026.1 (`sinceBuild = 261`), сборка и тесты на IntelliJ IDEA 2026.1.4, Kotlin API 2.3. Папки под узлом проекта в панели Solution получили короткие имена и в IDEA (Java-плагин называл их как пакеты). Убраны устаревшие `ReadAction.compute`, `DaemonCodeAnalyzer.restart()`, `isLenient`, `createSingleFileDescriptor`
 - [x] События окна Build (2026-09-30): в 2026.1 конструкторы `*EventImpl` уже `@Deprecated` + `@Internal` (у `StartBuildEventImpl` — for removal),

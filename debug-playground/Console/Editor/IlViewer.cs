@@ -7,8 +7,9 @@ namespace Playground.Editor;
 /// </summary>
 public class IlViewer
 {
-    // IL:il-field — caret on `_count` below. EXPECT: the IL of the field (`.field private int32 _count`), one item in the list at the top
-    // (kind `type` or `method`, as the helper names it), no highlighted lines; no error, no banner
+    // IL:il-field — caret on `_count` below. EXPECT: the declaration of the field (`.field private int32 _count`), one item `IlViewer._count`
+    // (field) in the list at the top, under it the gray note "`_count` is a field: it has no IL of its own, only this declaration…"; no
+    // highlighted lines, no error, no yellow banner; NOT "has no method `_count`" and not the whole class
     private int _count;
 
     // IL:il-simple — caret on the line `var sum = a + b;`. EXPECT: the list at the top shows `...IlViewer::Add` (method); in the IL the lines
@@ -79,4 +80,6 @@ public class IlViewerHeader
 
 // IL:il-states — (1) open `README.md` of the playground: «Open a C# file to see the IL of the code at the caret»; (2) Clean Solution and
 // come back here: «Build the project to see its IL» with a Build link, the link builds Console and the IL appears; (3) open a .cs file outside
-// any project (File | New | Scratch File, C#): «The file is not a part of a .NET project»
+// any project (File | New | Scratch File, C#): «The file is not a part of a .NET project»; (4) caret on this comment line (outside any
+// type; the same on line 1 of `Web/Program.cs`): ONE message «No IL at line N» with the reason in gray lines under it — NOT a gray note
+// above the IL area as well as «No IL at the caret…» in it

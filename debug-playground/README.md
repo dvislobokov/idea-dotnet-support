@@ -176,10 +176,10 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `IL:il-iterator`: первым `MoveNext` итератора `<Squares>d__…`, подсвечен `mul`; сам `Squares` тоже в списке
 - [ ] `IL:il-lambda`: первой лямбда `<Filter>b__…` (lambda), подсвечены `ldfld limit / cgt`; курсор на `return` — первым `Filter` с `ldftn`
 - [ ] `IL:il-local-function`: первой локальная функция `<Compute>g__Factorial|…` с рекурсивным `call`
-- [ ] `IL:il-field`: IL поля `_count`, без ошибки и без баннера
+- [ ] `IL:il-field`: объявление поля `.field private int32 _count`, в списке один элемент `IlViewer._count` (field), под ним серая пометка «`_count` is a field: it has no IL of its own…»; без ошибки и без баннера, не «has no method `_count`»
 - [ ] `IL:il-type-header`: заголовок класса `.class public auto ansi beforefieldinit …IlViewerHeader extends [System.Runtime]System.Object`, раскраска: директива, ключевые слова, имя типа; то же во второй теме
 - [ ] `IL:il-stale`: правка без сохранения → жёлтый баннер «Source changed after the last build» с Build; после Build баннер пропадает, IL обновляется сам
-- [ ] `IL:il-states`: `README.md` → «Open a C# file to see the IL of the code at the caret»; после Clean Solution → «Build the project to see its IL» и ссылка Build; scratch-файл C# → «The file is not a part of a .NET project»
+- [ ] `IL:il-states`: `README.md` → «Open a C# file to see the IL of the code at the caret»; после Clean Solution → «Build the project to see its IL» и ссылка Build; scratch-файл C# → «The file is not a part of a .NET project»; курсор на комментарии `IL:il-states` (вне типа) или на строке 1 `Web/Program.cs` → одна надпись «No IL at line N» с причиной серыми строками под ней, без второй надписи сверху
 
 ## Редактор: то, что не импортировано — `Console/Editor/ImportCompletion.cs`
 

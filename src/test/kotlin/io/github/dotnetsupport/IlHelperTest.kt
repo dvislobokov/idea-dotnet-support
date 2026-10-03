@@ -94,6 +94,17 @@ class IlHelperTest : TestCase() {
         assertTrue(answer.warning!!.contains("no code at line 3"))
     }
 
+    /** `IL:il-field` of the playground: a field has no IL, its declaration is shown and the note says why (not "has no method `_count`"). */
+    fun testFieldGivesItsDeclaration() {
+        val answer = saved("field")
+        val field = answer.bodies.single()
+        assertEquals(Kind.FIELD, field.kind)
+        assertEquals("IlViewer._count", field.name)
+        assertEquals(".field private int32 _count", field.text)
+        assertTrue(field.atCaret)
+        assertTrue(answer.warning!!, answer.warning!!.startsWith("`_count` is a field: it has no IL of its own") && !answer.warning!!.contains("has no method"))
+    }
+
     fun testWithoutPdbTheStateMachineIsFoundByItsAttribute() {
         val answer = saved("async-without-pdb")
         assertNull(answer.pdb)

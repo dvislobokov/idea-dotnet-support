@@ -6,6 +6,7 @@
 //
 //   {"event":"runStart","sources":[...]}
 //   {"event":"testStart","id":...,"fqn":...,"displayName":...,"source":...}                    (collector)
+//   {"event":"testEnd","id":...,"fqn":...,"displayName":...,"source":...,"outcome":...}        (collector)
 //   {"event":"result","id":...,"fqn":...,"displayName":...,"type":...,"method":...,"source":...,
 //    "outcome":"Passed|Failed|Skipped|NotFound|None","durationMs":...,"message":...,"stackTrace":...,"stdout":...,"stderr":...}
 //   {"event":"message","level":"Informational|Warning|Error","text":...}
@@ -89,8 +90,9 @@ namespace DotNetSupport.TestLogger
     }
 
     /// <summary>
-    /// `--collect:DotNetSupport.TestEvents`: the start of every test, which a logger is not told about. The directory comes from the
-    /// environment, a collector has no parameters on the command line.
+    /// `--collect:DotNetSupport.TestEvents`: the start of every test, which a logger is not told about, and its end with the outcome, which
+    /// the logger hears of only with the next batch of results of the test host (a Stop that kills the host loses that batch). The
+    /// directory comes from the environment, a collector has no parameters on the command line.
     /// </summary>
     [DataCollectorFriendlyName("DotNetSupport.TestEvents")]
     [DataCollectorTypeUri("datacollector://DotNetSupport/TestEvents/v1")]
@@ -105,6 +107,10 @@ namespace DotNetSupport.TestLogger
             if (string.IsNullOrEmpty(directory)) return;
             writer = new EventWriter(directory!, "collector");
             events.TestCaseStart += (_, e) => { if (e.TestElement != null) writer.Write(LiveTestLogger.Describe(new Json().Add("event", "testStart"), e.TestElement)); };
+            events.TestCaseEnd += (_, e) =>
+            {
+                if (e.TestElement != null) writer.Write(LiveTestLogger.Describe(new Json().Add("event", "testEnd"), e.TestElement).Add("outcome", e.TestOutcome.ToString()));
+            };
         }
 
         protected override void Dispose(bool disposing)

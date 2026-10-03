@@ -1,0 +1,15 @@
+{
+ "assembly": "C:\\work\\Playground\\Console\\bin\\Debug\\net9.0\\Playground.Console.dll",
+ "assemblyModified": 1791063170944,
+ "pdb": "C:\\work\\Playground\\Console\\bin\\Debug\\net9.0\\Playground.Console.pdb",
+ "bodies": [
+  {
+   "name": "IlViewer._count",
+   "kind": "field",
+   "text": ".field private int32 _count",
+   "atCaret": true,
+   "mapping": []
+  }
+ ],
+ "warning": "`_count` is a field: it has no IL of its own, only this declaration. An initializer would be in the constructor."
+}

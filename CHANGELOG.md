@@ -3,6 +3,18 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.39
+
+- Unit Tests: the output of `dotnet test` itself (the summary, the results file) stays at the root of the run instead of being shown as
+  the output of the test that happened to be running; a test sees only its own output
+- Unit Tests: Stop no longer marks as interrupted a test that has already finished — its outcome is kept even when its details had
+  not come yet
+- New Solution is a button on the Welcome screen right after New Project (it used to be hidden behind "⋮"), in IntelliJ IDEA and in
+  the IDEs whose New Project button is a group, like GoLand
+- IL Viewer: a field without an initializer shows its declaration with a note that a field has no IL of its own; a line with no IL
+  says so once; the note wraps instead of being cut
+- New Solution: the description of a template wraps instead of being cut at the right edge
+
 ## 0.1.38
 
 - Aspire: the AppHost project is recognized (Aspire 8, 9 and 13) — its own icon, its run configuration first. The dashboard login link

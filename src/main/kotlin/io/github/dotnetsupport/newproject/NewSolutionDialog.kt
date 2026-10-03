@@ -11,6 +11,7 @@ import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.util.IconLoader
+import com.intellij.openapi.util.text.StringUtil
 import com.intellij.ui.CollectionListModel
 import com.intellij.ui.ColoredListCellRenderer
 import com.intellij.ui.DocumentAdapter
@@ -28,11 +29,13 @@ import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.COLUMNS_LARGE
 import com.intellij.ui.dsl.builder.COLUMNS_MEDIUM
 import com.intellij.ui.dsl.builder.CollapsibleRow
+import com.intellij.ui.dsl.builder.MAX_LINE_LENGTH_WORD_WRAP
 import com.intellij.ui.dsl.builder.Row
 import com.intellij.ui.dsl.builder.SegmentedButton
 import com.intellij.ui.dsl.builder.columns
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.concurrency.AppExecutorUtil
+import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.github.dotnetsupport.DotNetIcons
@@ -41,6 +44,7 @@ import java.awt.Component
 import java.io.File
 import javax.swing.DefaultComboBoxModel
 import javax.swing.JComponent
+import javax.swing.JEditorPane
 import javax.swing.JList
 import javax.swing.JPanel
 import javax.swing.ListCellRenderer
@@ -88,7 +92,8 @@ class NewSolutionDialog(private val project: Project?, private val loadFromCli: 
     private lateinit var languageButton: SegmentedButton<String>
     private val templateModel = CollectionListModel<DotNetTemplate>()
     private val templateList = JBList(templateModel)
-    private val templateDescription = JBLabel().apply { componentStyle = UIUtil.ComponentStyle.SMALL; foreground = JBUI.CurrentTheme.ContextHelp.FOREGROUND }
+    // wraps to the width of the column: a label was cut off at the right ("…does not have any") and never made the dialog wider
+    private lateinit var templateDescription: JEditorPane
     private val typeLabel = JBLabel()
     private val mainOptions = JPanel(BorderLayout())
     private val advancedOptions = JPanel(BorderLayout())
@@ -169,7 +174,10 @@ class NewSolutionDialog(private val project: Project?, private val loadFromCli: 
                 cell(ScrollPaneFactory.createScrollPane(templateList).apply { horizontalScrollBarPolicy = ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER })
                     .align(AlignX.FILL)
             }
-            descriptionRow = row("") { cell(templateDescription) }
+            descriptionRow = row("") {
+                templateDescription = text("", MAX_LINE_LENGTH_WORD_WRAP).align(AlignX.FILL)
+                    .applyToComponent { font = JBFont.small(); foreground = JBUI.CurrentTheme.ContextHelp.FOREGROUND }.component
+            }
             typeRow = row(label("Type:")) { cell(typeLabel) }
             mainOptionsRow = row("") { cell(mainOptions).align(AlignX.FILL) }
             descriptionGroup = collapsibleGroup("Template description") {
@@ -353,7 +361,7 @@ class NewSolutionDialog(private val project: Project?, private val loadFromCli: 
         val help = TemplateHelpCache.cached(template.shortName, lang)
         if (help == null) {
             shownOptionsKey = null
-            templateDescription.text = if (loadFromCli) "Loading the description of the template..." else ""
+            describe(if (loadFromCli) "Loading the description of the template..." else "")
             authorRow.visible(false)
             showOptions(emptyList())
             if (loadFromCli) helpExecutor.execute {
@@ -362,7 +370,7 @@ class NewSolutionDialog(private val project: Project?, private val loadFromCli: 
             }
             return
         }
-        templateDescription.text = help.description
+        describe(help.description)
         authorLabel.text = help.author
         authorRow.visible(help.author.isNotEmpty())
         if (key != shownOptionsKey) {
@@ -551,7 +559,15 @@ class NewSolutionDialog(private val project: Project?, private val loadFromCli: 
         super.dispose()
     }
 
+    /** The description of the template as plain text: the pane is HTML, a `<T>` of the text must stay text. */
+    fun describe(text: String) {
+        if (!::templateDescription.isInitialized) return
+        templateDescription.text = StringUtil.escapeXmlEntities(text).replace("\n", "<br>")
+    }
+
     // ---- for tests
+
+    fun descriptionComponent(): JEditorPane = templateDescription
 
     /** The titles of the left column as shown: headers and kinds. */
     fun leftTitles(): List<String> = leftModel.items.map { titleOf(it) }

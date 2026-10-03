@@ -118,6 +118,23 @@ object IlViewerLogic {
     fun isStale(assemblyModified: Long, sourceModified: Long, projectModified: Long, sourceUnsaved: Boolean): Boolean =
         sourceUnsaved || sourceModified > assemblyModified || projectModified > assemblyModified
 
+    /**
+     * The empty IL Viewer when the helper found no IL: one message, not the note of the helper above [IlViewState.NOTHING_HERE]. The
+     * note ("No IL at line 1: the PDB has no code…, and …") is the message, its title before the colon and the reason after it in lines of
+     * at most [width] characters: the empty text of a panel does not wrap.
+     */
+    fun nothingHere(warning: String?, width: Int = 60): List<String> {
+        val note = warning?.trim().orEmpty().ifEmpty { return listOf(IlViewState.NOTHING_HERE) }
+        val colon = note.indexOf(": ")
+        val title = if (colon > 0) note.substring(0, colon) else note
+        val reason = if (colon > 0) note.substring(colon + 2).replaceFirstChar { it.uppercaseChar() } else ""
+        val lines = mutableListOf(title)
+        for (word in reason.split(' ').filter { it.isNotEmpty() }) {
+            if (lines.size > 1 && lines.last().length + 1 + word.length <= width) lines[lines.size - 1] += " $word" else lines += word
+        }
+        return lines
+    }
+
     /** `METHOD` → `method`, `STATE_MACHINE` → `state machine`, for the list of bodies. */
     fun kindTitle(kind: IlBody.Kind): String = kind.name.lowercase().replace('_', ' ')
 
