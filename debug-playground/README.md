@@ -131,6 +131,9 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `TYPE:chosen-before`: трижды выбрать `_orders`, затем набрать `_` → `_orders` выше `_title`; Reset в статистике возвращает порядок сервера
 - [ ] список внутри скобок вызова открывается без заметной задержки (там добавился запрос `signatureHelp`, таймаут 400 мс)
 - [ ] `TYPE:stats-ghost`: `public string Title`, Tab по серому тексту → в .NET → Suggestion Statistics строка `auto-property`: shown 1, taken 1, 100%
+- [ ] `TYPE:keyword-order`: `pub` → `public` первым, `PublicKey` (тип неимпортированного namespace) ниже; `public s` → `sbyte`, `sealed`, `short`, `static`, `string`, `struct` выше `String` и `SByte`; `public str` → `string` первым
+- [ ] `TYPE:prop-type`: `prop` + Tab, в TYPE набрать `str` → `string` первым
+- [ ] `TYPE:property-name-ghost`: `public RankedOrder Order` → список имён не всплывает, серый ` { get; set; }`, Tab принимает; `private RankedOrder ` → имена (`rankedOrder`) всплывают как раньше
 - [ ] `TYPE:stats-list`: в отчёте «Completion list: N chosen», большинство в `position first`, внизу причины `expected type` / `name` / `declared nearby`; Copy и Reset работают
 
 ## Solution view
@@ -161,6 +164,7 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `TYPE:go-to-base-metadata`: на `Dispose` → без исключения: декомпилированный `IDisposable` или подсказка «No base symbols of Dispose found…»
 - [ ] `TYPE:go-to-base-none`: на `Own` → подсказка «No base symbols of Own found»
 - [ ] `TYPE:go-to-base-type`: на имени класса `GoToBase` → как раньше, список базовых типов `MiddleShape`, `IDisposable`
+- [ ] `TYPE:go-to-symbol`: Ctrl+Alt+Shift+N `area` → строки `Area()` с типом серым (`IBaseShape`, `BaseShape`, `MiddleShape`, `GoToBase`, `GoToBase.Nested`), справа `GoToBase.cs`; одинаково до готовности сервера и после. Ctrl+N `nested` → `Nested` с серым `Playground.Editor.GoToBase`
 
 ### Find Usages с группировкой — `Console/Editor/FindUsages.cs` (+ `Lib/UsageLog.cs`)
 Нужен загруженный solution: использования отдаёт сервер. Курсор куда сказано, Alt+F7, окно Find. Группы включаются переключателями самого окна

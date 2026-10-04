@@ -58,4 +58,12 @@ public class GoToBase : MiddleShape, IDisposable
     public void Own() { }
 
     // TYPE:go-to-base-type — caret on `GoToBase` in the class header, Ctrl+U. EXPECT: as before, a list of the base types MiddleShape and IDisposable
+
+    // TYPE:go-to-symbol — Ctrl+Alt+Shift+N, `area`. EXPECT: rows `Area()` with the type in gray — IBaseShape, BaseShape, MiddleShape,
+    // GoToBase, GoToBase.Nested — and GoToBase.cs on the right; the same rows before the server is ready and after.
+    // Ctrl+N `nested`: `Nested` with `Playground.Editor.GoToBase` in gray.
+    public class Nested
+    {
+        public double Area() => 3;
+    }
 }

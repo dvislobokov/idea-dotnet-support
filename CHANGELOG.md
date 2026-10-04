@@ -3,6 +3,28 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.44
+
+- Identifier colours while the solution loads: a C# file restored from the last session is coloured by the plugin's heuristics as soon
+  as it is shown, also when another tab (README.md of the folder) was opened over it; the heuristics step aside only once the server's
+  colours of that file are on screen, not when the server becomes ready (a file had no colours for 100–300 ms then)
+- The semantic tokens kept from the last session colour an opened file before the server is ready (about 2 s after opening the
+  playground instead of 4.5–5 s): they were stored but never shown
+- Identifier colours no longer drop to none and come back when the server refreshes its tokens (seen 1–4 times while a solution
+  loaded): the old colours stay until the new ones replace them
+- No `AlreadyDisposedException` in idea.log after a project with a running server is closed
+- Go to Symbol / Go to Class show a C# member as Java does: `Area()` with its parameters, the type it is in in grey (`BaseShape`,
+  `Outer.Inner`; for a type its namespace and outer types) and the file on the right — the same rows before the server is ready and
+  after (an interface method and its three overrides were four identical rows "Area  GoToBase.cs"). The Structure view still shows the
+  type after the name
+- Completion: what matches the typed prefix in its case comes first: `pub` gives `public` above `PublicKey`, `public s` gives
+  `sbyte`, `sealed`, `short`, `static`, `string`, `struct` above `String` and `SByte`, `str` (also in TYPE of the `prop` template)
+  gives `string` first. Types of namespaces that are not imported (the server's and the plugin's) rank below keywords
+- Typing the name of a property (`public RankedOrder Order`) no longer pops up the server's name suggestions, which hid the grey
+  ` { get; set; }` and took Tab; Ctrl+Space still lists them, and a lower-case name (a field) still gets them
+- Developer tools: `baseline.py` puts the measured file back in front and chooses the solution of a folder with several;
+  `tools/roslyn-lsp/capture_keywords.py` records what the server answers where keywords and types compete
+
 ## 0.1.43
 
 - Groundwork for the plugin's own C# code model (no change in behaviour yet): for every C# file the plugin now knows what the compiler

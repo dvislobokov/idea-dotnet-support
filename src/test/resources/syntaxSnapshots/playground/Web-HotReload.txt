@@ -65,10 +65,10 @@ Playground.Web
 ## run gutter
 
 ## Go to Class / Symbol
-M:MapHotReload -> 9:24 MapHotReload(this WebApplication app): void (Playground.Web.HotReloadScenario in Web-HotReload.cs)
-M:Message -> 18:19 Message(): string (Playground.Web.HotReloadScenario in Web-HotReload.cs)
-M:Next -> 30:23 Next(): int (Playground.Web.HotReloadCounter in Web-HotReload.cs)
-M:_count -> 28:16 _count: int (Playground.Web.HotReloadCounter in Web-HotReload.cs)
-T:HotReloadCounter -> 26:14 HotReloadCounter (Playground.Web in Web-HotReload.cs)
-T:HotReloadScenario -> 7:14 HotReloadScenario (Playground.Web in Web-HotReload.cs)
+M:MapHotReload -> 9:24 MapHotReload(this WebApplication app) (HotReloadScenario)
+M:Message -> 18:19 Message() (HotReloadScenario)
+M:Next -> 30:23 Next() (HotReloadCounter)
+M:_count -> 28:16 _count (HotReloadCounter)
+T:HotReloadCounter -> 26:14 HotReloadCounter (Playground.Web)
+T:HotReloadScenario -> 7:14 HotReloadScenario (Playground.Web)
 

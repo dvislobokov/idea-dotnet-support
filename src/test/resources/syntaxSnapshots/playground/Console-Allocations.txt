@@ -93,14 +93,14 @@ Playground
 ## run gutter
 
 ## Go to Class / Symbol
-M:Boxed -> 74:27 Boxed(int value): object (Playground.AllocationScenario in Console-Allocations.cs)
-M:Buffer -> 64:27 Buffer(): byte[] (Playground.AllocationScenario in Console-Allocations.cs)
-M:Counter -> 86:30 Counter(int start): Func<int> (Playground.AllocationScenario in Console-Allocations.cs)
-M:Name -> 69:27 Name(int round, int index): string (Playground.AllocationScenario in Console-Allocations.cs)
-M:Numbers -> 79:30 Numbers(): List<int> (Playground.AllocationScenario in Console-Allocations.cs)
-M:Round -> 52:25 Round(int round): void (Playground.AllocationScenario in Console-Allocations.cs)
-M:Run -> 41:24 Run(): void (Playground.AllocationScenario in Console-Allocations.cs)
-M:RunFast -> 24:24 RunFast(): void (Playground.AllocationScenario in Console-Allocations.cs)
-M:Sink -> 18:39 Sink: object?[] (Playground.AllocationScenario in Console-Allocations.cs)
-T:AllocationScenario -> 16:21 AllocationScenario (Playground in Console-Allocations.cs)
+M:Boxed -> 74:27 Boxed(int value) (AllocationScenario)
+M:Buffer -> 64:27 Buffer() (AllocationScenario)
+M:Counter -> 86:30 Counter(int start) (AllocationScenario)
+M:Name -> 69:27 Name(int round, int index) (AllocationScenario)
+M:Numbers -> 79:30 Numbers() (AllocationScenario)
+M:Round -> 52:25 Round(int round) (AllocationScenario)
+M:Run -> 41:24 Run() (AllocationScenario)
+M:RunFast -> 24:24 RunFast() (AllocationScenario)
+M:Sink -> 18:39 Sink (AllocationScenario)
+T:AllocationScenario -> 16:21 AllocationScenario (Playground)
 

@@ -81,6 +81,14 @@ public class CompletionRanking
     // TYPE:stats-list — after the markers above open .NET | Suggestion Statistics.
     // EXPECT: «Completion list: N chosen» with most of them at `position first`, and the reasons `expected type`, `name`,
     // `declared nearby` in the last block. Copy puts the report on the clipboard, Reset clears the numbers.
+
+    // TYPE:keyword-order — on an empty line here type `pub`. EXPECT: `public` first, `PublicKey` (an unimported type) below it.
+    // Then `public s`: EXPECT `sbyte`, `sealed`, `short`, `static`, `string`, `struct` above `String`, `SByte`; `public str`: `string` first.
+
+    // TYPE:prop-type — on an empty line here type `prop`, Tab, then `str` in TYPE. EXPECT: `string` first in the list.
+
+    // TYPE:property-name-ghost — type `public RankedOrder Order` here. EXPECT: no list of name suggestions pops up over the name, the gray
+    // ` { get; set; }` shows and Tab takes it. `private RankedOrder ` still pops up the names (`rankedOrder`), Ctrl+Space lists them anywhere.
 }
 
 public class RankedOrder

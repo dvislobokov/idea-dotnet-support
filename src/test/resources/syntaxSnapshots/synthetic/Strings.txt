@@ -75,14 +75,14 @@ Synthetic.Strings
 ## run gutter
 
 ## Go to Class / Symbol
-M:AfterStrings -> 27:17 AfterStrings(): void (Synthetic.Strings.Templates in Strings.cs)
-M:Close -> 6:26 Close: string (Synthetic.Strings.Templates in Strings.cs)
-M:Interpolated -> 10:19 Interpolated(int x): string (Synthetic.Strings.Templates in Strings.cs)
-M:Nested -> 20:19 Nested(int x): string (Synthetic.Strings.Templates in Strings.cs)
-M:Open -> 5:26 Open: string (Synthetic.Strings.Templates in Strings.cs)
-M:Raw -> 12:19 Raw(): string (Synthetic.Strings.Templates in Strings.cs)
-M:RawInterpolated -> 16:19 RawInterpolated(int x): string (Synthetic.Strings.Templates in Strings.cs)
-M:_brace -> 8:27 _brace: char (Synthetic.Strings.Templates in Strings.cs)
-M:_verbatim -> 7:29 _verbatim: string (Synthetic.Strings.Templates in Strings.cs)
-T:Templates -> 3:14 Templates (Synthetic.Strings in Strings.cs)
+M:AfterStrings -> 27:17 AfterStrings() (Templates)
+M:Close -> 6:26 Close (Templates)
+M:Interpolated -> 10:19 Interpolated(int x) (Templates)
+M:Nested -> 20:19 Nested(int x) (Templates)
+M:Open -> 5:26 Open (Templates)
+M:Raw -> 12:19 Raw() (Templates)
+M:RawInterpolated -> 16:19 RawInterpolated(int x) (Templates)
+M:_brace -> 8:27 _brace (Templates)
+M:_verbatim -> 7:29 _verbatim (Templates)
+T:Templates -> 3:14 Templates (Synthetic.Strings)
 

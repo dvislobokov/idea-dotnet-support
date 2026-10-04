@@ -45,6 +45,6 @@ Playground.Editor
 ## run gutter
 
 ## Go to Class / Symbol
-M:Statements -> 14:17 Statements(): void (Playground.Editor.ImportCompletion in Console-Editor-ImportCompletion.cs)
-T:ImportCompletion -> 12:14 ImportCompletion (Playground.Editor in Console-Editor-ImportCompletion.cs)
+M:Statements -> 14:17 Statements() (ImportCompletion)
+T:ImportCompletion -> 12:14 ImportCompletion (Playground.Editor)
 

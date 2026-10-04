@@ -153,6 +153,22 @@ object CSharpGhostText {
         return (if (match.groupValues[4].isEmpty()) " " else "") + "{ get; set; }"
     }
 
+    /**
+     * The name of a property is being typed: `public RankedOrder ` (no name yet) or `public RankedOrder Ord` — a line that gets the gray
+     * ` { get; set; }` ([autoProperty]) once the name is there. The auto-popup of the server's name suggestions (`rankedOrder`, `order1`,
+     * `Order`) is kept away from it ([CSharpPropertyNameConfidence]): open, the list took Tab and hid the gray text (reported, 0.1.44).
+     * A small first letter is a field or a variable being named, and gets the suggestions.
+     */
+    fun awaitsPropertyName(text: CharSequence, offset: Int): Boolean {
+        val line = lineBefore(text, offset) ?: return false
+        val declaration = when {
+            line.isBlank() -> return false
+            line.last().isWhitespace() -> line.trimEnd() + " Name"
+            else -> line.takeIf { line.takeLastWhile { it.isLetterOrDigit() || it == '_' }.firstOrNull()?.isUpperCase() == true } ?: return false
+        }
+        return autoProperty(declaration, declaration.length) != null
+    }
+
     /** `private readonly List<int> _items = ` -> `new();`, `IList<int> items = ` -> `new List<int>();`. */
     fun initializer(text: CharSequence, offset: Int, targetTypedNew: Boolean = true): String? {
         val line = lineBefore(text, offset) ?: return null

@@ -38,11 +38,27 @@ interface RoslynServer : LanguageServer {
     fun resolveFixAll(params: FixAllParams): CompletableFuture<CodeAction?>
 }
 
-/** What the server says on top of LSP: the end of project loading and the projects that want `dotnet restore`. */
-class RoslynLsp4jClient(handler: LspServerNotificationsHandler, private val events: Events) : Lsp4jClient(handler) {
+/**
+ * What the server says on top of LSP: the end of project loading and the projects that want `dotnet restore`. And one message of LSP
+ * handled here instead of by the platform: `workspace/semanticTokens/refresh` ([Events.semanticTokensRefresh]).
+ */
+class RoslynLsp4jClient(handler: LspServerNotificationsHandler, private val events: Events) : Lsp4jClient(refreshedInPlace(handler, events)) {
     interface Events {
         fun projectsLoaded()
         fun projectsNeedRestore(projectFiles: List<String>)
+
+        /** The server (or the plugin) wants the semantic tokens of the open files anew; the ones shown must stay until then. */
+        fun semanticTokensRefresh()
+    }
+
+    companion object {
+        /** `refreshSemanticTokens` of `Lsp4jClient` is final: the handler it calls is the place to take the message over. */
+        fun refreshedInPlace(handler: LspServerNotificationsHandler, events: Events): LspServerNotificationsHandler = object : LspServerNotificationsHandler by handler {
+            override fun refreshSemanticTokens(): CompletableFuture<Void> {
+                events.semanticTokensRefresh()
+                return CompletableFuture.completedFuture(null)
+            }
+        }
     }
 
     @JsonNotification("workspace/projectInitializationComplete")

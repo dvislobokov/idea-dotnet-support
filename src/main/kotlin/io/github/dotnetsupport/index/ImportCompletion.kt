@@ -137,8 +137,10 @@ class ImportItem(val type: IndexedType, val name: String, val overloads: List<In
 object ImportCompletion {
     const val MIN_PREFIX = 3
     const val MAX_ITEMS = 40
-    const val PRIORITY = 5.0
-    const val PRIORITY_IMPORTED = 3.0
+    /** Of a type that is not imported: under the keywords, as the items of unimported namespaces of the server (`RoslynCompletionPolicy.UNIMPORTED`). */
+    const val PRIORITY = -5.0
+    /** Its namespace is imported after all: 8 as before 0.1.44, above the keywords. */
+    const val PRIORITY_IMPORTED = 13.0
     const val PRIORITY_TYPE = 25.0
 
     private val OFFERED = setOf(IndexedMemberKind.METHOD, IndexedMemberKind.PROPERTY, IndexedMemberKind.FIELD, IndexedMemberKind.CONSTANT)

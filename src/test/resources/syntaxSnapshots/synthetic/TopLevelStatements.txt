@@ -34,6 +34,6 @@ Helper
 ## run gutter
 
 ## Go to Class / Symbol
-M:Square -> 25:23 Square(int x): int (Helper in TopLevelStatements.cs)
-T:Helper -> 23:7 Helper (TopLevelStatements.cs)
+M:Square -> 25:23 Square(int x) (Helper)
+T:Helper -> 23:7 Helper ()
 

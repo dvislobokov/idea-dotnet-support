@@ -66,7 +66,8 @@ class CSharpStructureViewFactory : PsiStructureViewFactory {
     }
 
     class Element(element: PsiElement) : PsiTreeElementBase<PsiElement>(element) {
-        override fun getPresentableText(): String? = element.let { if (it is PsiFile) it.name else (it as? NavigationItem)?.presentation?.presentableText }
+        // `Total(int count): decimal`: the type too, unlike the row of Go to Symbol
+        override fun getPresentableText(): String? = element.let { if (it is PsiFile) it.name else CSharpSyntaxModel.current.declarationOf(it ?: return null)?.presentation ?: (it as? NavigationItem)?.presentation?.presentableText }
 
         override fun getChildrenBase(): Collection<StructureViewTreeElement> = element?.let { CSharpSyntaxModel.current.childDeclarations(it).map(::Element) }.orEmpty()
     }

@@ -151,6 +151,8 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
 
     override fun dispose() = Unit
 
+    override fun semanticTokensRefresh() = refreshSemanticTokens()
+
     /** Before the first server of the project starts: see [RoslynServerWrapper]. */
     @Suppress("UnstableApiUsage")
     fun wrapServer() {
@@ -172,6 +174,7 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
     fun workspaceTarget(files: Found = scan()): RoslynWorkspaceTarget? = RoslynLanguageServer.workspaceTarget(files.solutions, absolute(state.solution), files.projects)
 
     fun serverInitialized() {
+        if (project.isDisposed) return
         PluginLog.info(LOG_CATEGORY, "server initialized (handshake done), loading the workspace")
         isLoaded = false
         phase(RoslynPhase.STARTING, null)
@@ -179,10 +182,10 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
         project.service<RoslynResponseMemo>().invalidate()
         // "the first request of a kind" means the first one of this process
         project.service<RoslynRequestStats>().reset()
-        project.service<RoslynServerStatus>().coloredFromCache.clear()
+        project.service<RoslynServerStatus>().coloredByServer.clear()
         cachedTokens.clear()
-        // the platform decided whether to ask for tokens when the files were opened, before there was a server to key the cache by
-        lsp4jClient?.refreshSemanticTokens()
+        // the platform decided whether to ask for tokens when the files were opened, before there was a server to key the cache by:
+        // asked again when the platform opens each of them with the server, see documentOpened
         opened = false
         ApplicationManager.getApplication().executeOnPooledThread { open(workspaceTarget(found ?: scan())) }
     }
@@ -264,19 +267,62 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
         return cached
     }
 
+    /**
+     * The platform has opened [file] with the server (`didOpen`). A file shown before the server was initialized was asked about
+     * ([hasCachedTokens]) when there was no legend to key the cache by, and the platform asks again only on the next pass of the daemon,
+     * which nothing started before the solution was loaded: the cache of tokens never served a file opened with the project.
+     */
+    fun documentOpened(file: VirtualFile) {
+        if (project.isDisposed || isLoaded || !hasCachedTokens(file)) return
+        // the platform counts the file as open with the server only after this message is on its way, and a pass of the daemon before
+        // that asks nobody: a moment later
+        com.intellij.util.concurrency.AppExecutorUtil.getAppScheduledExecutorService().schedule({ askForTokens(listOf(file)) }, OPENED_DELAY_MS, java.util.concurrent.TimeUnit.MILLISECONDS)
+    }
+
+    /**
+     * `workspace/semanticTokens/refresh`, of the server or of the plugin: the platform's own handling forgets the tokens of every file
+     * at once and shows none until the new ones come (the colors of identifiers were gone for 100–300 ms, four times while aspnetcore
+     * loaded). Here the tokens it has are only made stale — they are cached against the modification count of the PSI — and the daemon
+     * is restarted on the open C# files: the platform shows what it has and asks again, and the answer replaces the old tokens in place.
+     */
+    fun refreshSemanticTokens() {
+        askForTokens(null)
+    }
+
+    /** Has the platform ask for the tokens of [files] (null: of every open C# file) and keep showing the ones it has meanwhile. */
+    private fun askForTokens(files: List<VirtualFile>?) {
+        ApplicationManager.getApplication().invokeLater({
+            if (project.isDisposed) return@invokeLater
+            // the platform keeps the tokens of a file against the modification count of the PSI and asks again once it has changed
+            com.intellij.psi.PsiManager.getInstance(project).dropPsiCaches()
+            restartHighlighting(files ?: com.intellij.openapi.fileEditor.FileEditorManager.getInstance(project).openFiles.filter(::isCSharpSource))
+        }, ModalityState.nonModal(), project.disposed)
+    }
+
+    /** Restarts the daemon on [files] only: the rest of the project keeps what it shows. */
+    fun restartHighlighting(files: Collection<VirtualFile>) {
+        if (files.isEmpty()) return
+        ApplicationManager.getApplication().invokeLater({
+            if (project.isDisposed) return@invokeLater
+            val psiManager = com.intellij.psi.PsiManager.getInstance(project)
+            for (file in files) if (file.isValid) psiManager.findFile(file)?.let { DaemonCodeAnalyzer.getInstance(project).restart(it) }
+        }, project.disposed)
+    }
+
     fun serverStopped(shutdownNormally: Boolean) {
         if (shutdownNormally) PluginLog.info(LOG_CATEGORY, "server stopped")
         else PluginLog.error(LOG_CATEGORY, "server stopped unexpectedly" + (exitCode?.let { " (exit code $it)" } ?: ""))
         isLoaded = false
         serverProcess = null
-        project.service<RoslynSolutionProblems>().stop()
         opened = false
+        // the server of a closed project stops after the project is disposed: no service of it may be looked up then
         if (project.isDisposed) return
+        project.service<RoslynSolutionProblems>().stop()
         phase(RoslynPhase.STARTING, null)
         if (!shutdownNormally) ApplicationManager.getApplication().executeOnPooledThread { explainCrash() }
         // back to the heuristics: colors, folding and the problems of the last build are theirs again
         project.service<RoslynServerStatus>().isReady = false
-        project.service<RoslynServerStatus>().coloredFromCache.clear()
+        project.service<RoslynServerStatus>().coloredByServer.clear()
         project.service<RoslynServerStatus>().loadedRoots = emptyList()
         project.service<RoslynResponseMemo>().invalidate()
         DaemonCodeAnalyzer.getInstance(project).restart()
@@ -291,6 +337,7 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
         LocalFileSystem.getInstance().findFileByPath(path)?.let(descriptor::getFileUri) ?: RoslynLanguageServer.plainDriveUri(java.nio.file.Path.of(path).toUri().toString())
 
     override fun projectsLoaded() {
+        if (project.isDisposed) return
         isLoaded = true
         phase(RoslynPhase.READY)
         // from here on the heuristics of the plugin step aside, see RoslynServerStatus
@@ -300,9 +347,8 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
         PluginLog.info(LOG_CATEGORY, "workspace is loaded" + (target?.let { ": $it" } ?: ""))
         // the files opened while it was loading have been shown without the errors of the compiler
         if (!project.isDisposed) DaemonCodeAnalyzer.getInstance(project).restart()
-        // the tokens shown so far came from the cache; the platform keeps what it has got until it is told to ask again
-        lsp4jClient?.refreshSemanticTokens()
-        project.service<RoslynServerStatus>().coloredFromCache.clear()
+        // the tokens shown so far came from the cache; they stay on screen until the answer of the loaded server replaces them
+        refreshSemanticTokens()
         val client = clients.firstOrNull()
         val file = if (project.isDisposed) null else RoslynWarmUp.fileToWarmUp(project)
         if (client != null && file != null) ApplicationManager.getApplication().executeOnPooledThread { RoslynWarmUp.run(project, client, file) }
@@ -416,6 +462,9 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
 
         /** The category of the journal of the plugin ([PluginLog]) for the server. */
         const val LOG_CATEGORY = "roslyn"
+
+        /** From `didOpen` on its way to the server to the platform counting the file as open with it. */
+        private const val OPENED_DELAY_MS = 300L
 
         /** How much of the error stream of a server is kept for the explanation of its end. */
         private const val MAX_SERVER_ERRORS = 8_000

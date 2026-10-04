@@ -1,7 +1,5 @@
 package io.github.dotnetsupport.roslyn
 
-import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -10,11 +8,11 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.Lsp4jServerWrapper
 import com.intellij.platform.lsp.api.LspClient
 import com.intellij.platform.lsp.api.LspServer
-import com.intellij.psi.PsiManager
 import com.intellij.util.concurrency.AppExecutorUtil
 import io.github.dotnetsupport.lsp.RoslynServerStatus
 import org.eclipse.lsp4j.CodeActionParams
 import org.eclipse.lsp4j.DidCloseTextDocumentParams
+import org.eclipse.lsp4j.DidOpenTextDocumentParams
 import org.eclipse.lsp4j.DocumentDiagnosticReport
 import org.eclipse.lsp4j.DocumentDiagnosticParams
 import org.eclipse.lsp4j.Diagnostic
@@ -33,6 +31,7 @@ import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 
 /**
  * Everything the IDE asks the server passes here, which makes it the one place for what the platform has no public hook for:
@@ -80,6 +79,15 @@ class RoslynServerWrapper : Lsp4jServerWrapper {
                     }
                 }
                 "didClose" -> (argument as? DidCloseTextDocumentParams)?.textDocument?.uri?.let { project.service<RoslynSolutionProblems>().documentClosed(it) }
+                // now the platform may ask for the tokens of a file it has shown since before the server was there (from the cache)
+                "didOpen" -> (argument as? DidOpenTextDocumentParams)?.textDocument?.uri?.let { uri ->
+                    return@proxy timed(stats, method, proceed).also {
+                        AppExecutorUtil.getAppExecutorService().execute {
+                            val file = lspServer.descriptor.findFileByUri(uri) ?: return@execute
+                            ReadAction.run<RuntimeException> { project.service<RoslynWorkspace>().takeUnless { project.isDisposed }?.documentOpened(file) }
+                        }
+                    }
+                }
                 "semanticTokensFull" -> {
                     val request = (argument as? SemanticTokensParams)?.let(tokens::request)
                     request?.let(tokens::cached)?.let { cached ->
@@ -87,7 +95,7 @@ class RoslynServerWrapper : Lsp4jServerWrapper {
                         return@proxy CompletableFuture.completedFuture(cached)
                     }
                     return@proxy timed(stats, method, proceed).also { future ->
-                        if (request != null) (future as? CompletableFuture<*>)?.thenAcceptAsync({ tokens.store(request, it as? SemanticTokens) }, AppExecutorUtil.getAppExecutorService())
+                        if (request != null) (future as? CompletableFuture<*>)?.thenAcceptAsync({ tokens.answered(request, it as? SemanticTokens) }, AppExecutorUtil.getAppExecutorService())
                     }
                 }
             }
@@ -151,7 +159,8 @@ class RoslynServerWrapper : Lsp4jServerWrapper {
 
     /**
      * The tokens of one server: from the cache while the solution loads (only for the text they were made for), into the cache once it
-     * is loaded (the answers of a half-loaded workspace are not worth keeping).
+     * is loaded (the answers of a half-loaded workspace are not worth keeping). Either way the heuristic colors of the plugin step aside
+     * for the file only when these tokens are on screen ([RoslynServerStatus.coloredByServer]).
      */
     private class CachedTokens(private val project: Project, private val server: LspClient) {
         class Request(val file: VirtualFile, val key: String, val stamp: Long)
@@ -168,24 +177,36 @@ class RoslynServerWrapper : Lsp4jServerWrapper {
         fun cached(request: Request): SemanticTokens? {
             if (workspace.isLoaded) return null
             val data = cache.store.get(request.key) ?: return null
-            // the heuristic colors of the plugin step aside for this file, as they do for a loaded server
-            if (project.service<RoslynServerStatus>().coloredFromCache.add(request.file)) restartHighlighting(request.file)
+            shown(request.file)
             return SemanticTokens(data)
         }
 
-        fun store(request: Request, answer: SemanticTokens?) {
-            val data = answer?.data?.takeIf { it.isNotEmpty() } ?: return
+        /** The answer of the server: kept when the solution is loaded, and then it is what colors the file. */
+        fun answered(request: Request, answer: SemanticTokens?) {
+            val data = answer?.data ?: return
             if (!workspace.isLoaded) return
+            shown(request.file)
+            if (data.isEmpty()) return
             val unchanged = ReadAction.compute<Boolean, RuntimeException> { FileDocumentManager.getInstance().getDocument(request.file)?.modificationStamp == request.stamp }
             if (unchanged) cache.put(request.key, data)
         }
 
-        private fun restartHighlighting(file: VirtualFile) = ApplicationManager.getApplication().invokeLater({
-            if (!project.isDisposed) PsiManager.getInstance(project).findFile(file)?.let { DaemonCodeAnalyzer.getInstance(project).restart(it) }
-        }, project.disposed)
+        /**
+         * The heuristic colors of the plugin step aside for [file] a moment after its tokens have been handed to the platform: it decodes
+         * and applies them in a coroutine of its own, and a pass of the daemon before that would show neither.
+         */
+        private fun shown(file: VirtualFile) {
+            if (project.isDisposed || file in project.service<RoslynServerStatus>().coloredByServer) return
+            AppExecutorUtil.getAppScheduledExecutorService().schedule({
+                if (!project.isDisposed && project.service<RoslynServerStatus>().coloredByServer.add(file)) workspace.restartHighlighting(listOf(file))
+            }, STEP_ASIDE_DELAY_MS, TimeUnit.MILLISECONDS)
+        }
     }
 
     companion object {
+        /** From the tokens handed to the platform to the heuristics stepping aside; the platform shows tokens in tens of milliseconds. */
+        const val STEP_ASIDE_DELAY_MS = 300L
+
         fun dropUnknownTags(diagnostic: Diagnostic) {
             val tags = diagnostic.tags ?: return
             if (tags.any { it == null }) diagnostic.tags = tags.filterNotNull().ifEmpty { null }

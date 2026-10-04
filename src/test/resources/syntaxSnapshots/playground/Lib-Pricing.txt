@@ -58,10 +58,10 @@ Playground.Lib
 ## run gutter
 
 ## Go to Class / Symbol
-M:Apply -> 16:28 Apply(decimal sum, decimal discountPercent): decimal (Playground.Lib.Pricing in Lib-Pricing.cs)
-M:Code -> 23:16 Code: int (Playground.Lib.ShopException in Lib-Pricing.cs)
-M:Total -> 6:27 Total(IEnumerable<OrderLine> lines, decimal discountPercent): decimal (Playground.Lib.Pricing in Lib-Pricing.cs)
-T:OrderLine -> 19:15 OrderLine(string Name, decimal Price, int Quantity) (Playground.Lib in Lib-Pricing.cs)
-T:Pricing -> 4:21 Pricing (Playground.Lib in Lib-Pricing.cs)
-T:ShopException -> 21:14 ShopException(string message, int code) (Playground.Lib in Lib-Pricing.cs)
+M:Apply -> 16:28 Apply(decimal sum, decimal discountPercent) (Pricing)
+M:Code -> 23:16 Code (ShopException)
+M:Total -> 6:27 Total(IEnumerable<OrderLine> lines, decimal discountPercent) (Pricing)
+T:OrderLine -> 19:15 OrderLine(string Name, decimal Price, int Quantity) (Playground.Lib)
+T:Pricing -> 4:21 Pricing (Playground.Lib)
+T:ShopException -> 21:14 ShopException(string message, int code) (Playground.Lib)
 

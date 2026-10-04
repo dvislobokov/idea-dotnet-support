@@ -22,8 +22,12 @@ class RoslynServerStatus {
     @Volatile
     var isReady: Boolean = false
 
-    /** Files colored by semantic tokens of the server taken from the cache of the plugin, while the solution is still loading. */
-    val coloredFromCache: MutableSet<VirtualFile> = ConcurrentHashMap.newKeySet()
+    /**
+     * Files whose identifiers the semantic tokens of the server color on screen: tokens from the cache of the plugin while the solution
+     * loads, or an answer of the loaded server. Until a file is here the heuristics color it, also after the server is ready: stepping
+     * aside before the tokens are shown left the file without colors for a moment.
+     */
+    val coloredByServer: MutableSet<VirtualFile> = ConcurrentHashMap.newKeySet()
 
     /** Directories of what the server has loaded (the solution, or the projects): the files it knows about are in them. */
     @Volatile
@@ -43,9 +47,9 @@ class RoslynServerStatus {
             return roots.any { FileUtil.isAncestor(it, file.path, false) }
         }
 
-        /** The server colors the identifiers of [file]: it is ready, or its tokens of this very text are shown from the cache. */
+        /** The semantic tokens of the server color the identifiers of [file] (see [coloredByServer]); readiness alone is not enough. */
         fun colorsIdentifiers(project: Project, file: VirtualFile?): Boolean =
-            isReady(project) || (file != null && !project.isDisposed && file in project.service<RoslynServerStatus>().coloredFromCache)
+            file != null && !project.isDisposed && file in project.service<RoslynServerStatus>().coloredByServer
     }
 }
 

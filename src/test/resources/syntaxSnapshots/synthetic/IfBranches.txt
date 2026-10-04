@@ -37,6 +37,6 @@ Synthetic.Directives
 ## run gutter
 
 ## Go to Class / Symbol
-M:Run -> 6:17 Run(int x): void (Synthetic.Directives.Conditional in IfBranches.cs)
-T:Conditional -> 3:14 Conditional (Synthetic.Directives in IfBranches.cs)
+M:Run -> 6:17 Run(int x) (Conditional)
+T:Conditional -> 3:14 Conditional (Synthetic.Directives)
 

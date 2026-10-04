@@ -121,14 +121,14 @@ Playground.Editor
 ## run gutter
 
 ## Go to Class / Symbol
-M:Add -> 18:16 Add(int a, int b): int (Playground.Editor.IlViewer in Console-Editor-IlViewer.cs)
-M:Compute -> 58:16 Compute(int n): int (Playground.Editor.IlViewer in Console-Editor-IlViewer.cs)
-M:Filter -> 51:18 Filter(int[] values, int limit): int[] (Playground.Editor.IlViewer in Console-Editor-IlViewer.cs)
-M:LoadAsync -> 34:28 LoadAsync(): Task<int> (Playground.Editor.IlViewer in Console-Editor-IlViewer.cs)
-M:Scale -> 27:16 Scale(int value): int (Playground.Editor.IlViewer in Console-Editor-IlViewer.cs); 29:16 Scale(int value, int factor): int (Playground.Editor.IlViewer in Console-Editor-IlViewer.cs)
-M:Squares -> 42:29 Squares(int count): IEnumerable<int> (Playground.Editor.IlViewer in Console-Editor-IlViewer.cs)
-M:ToString -> 78:28 ToString(): string (Playground.Editor.IlViewerHeader in Console-Editor-IlViewer.cs)
-M:_count -> 13:17 _count: int (Playground.Editor.IlViewer in Console-Editor-IlViewer.cs)
-T:IlViewer -> 8:14 IlViewer (Playground.Editor in Console-Editor-IlViewer.cs)
-T:IlViewerHeader -> 76:14 IlViewerHeader (Playground.Editor in Console-Editor-IlViewer.cs)
+M:Add -> 18:16 Add(int a, int b) (IlViewer)
+M:Compute -> 58:16 Compute(int n) (IlViewer)
+M:Filter -> 51:18 Filter(int[] values, int limit) (IlViewer)
+M:LoadAsync -> 34:28 LoadAsync() (IlViewer)
+M:Scale -> 27:16 Scale(int value) (IlViewer); 29:16 Scale(int value, int factor) (IlViewer)
+M:Squares -> 42:29 Squares(int count) (IlViewer)
+M:ToString -> 78:28 ToString() (IlViewerHeader)
+M:_count -> 13:17 _count (IlViewer)
+T:IlViewer -> 8:14 IlViewer (Playground.Editor)
+T:IlViewerHeader -> 76:14 IlViewerHeader (Playground.Editor)
 

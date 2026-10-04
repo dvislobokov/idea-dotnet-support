@@ -20,7 +20,7 @@ import javax.swing.Icon
 class CSharpIdentifierAnnotator : Annotator, DumbAware {
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
         if (element !is CSharpFile) return
-        // the semantic tokens of the language server say the same exactly, in the same colors (also while they come from its cache)
+        // the semantic tokens of the language server say the same exactly, in the same colors (from its cache too), once they are on screen
         if (RoslynServerStatus.colorsIdentifiers(element.project, element.virtualFile)) return
         for ((range, kind) in CSharpIdentifierClassifier.classify(element.viewProvider.contents)) {
             holder.newSilentAnnotation(HighlightSeverity.INFORMATION).range(range).textAttributes(keyFor(kind)).create()

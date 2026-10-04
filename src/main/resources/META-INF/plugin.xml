@@ -97,6 +97,7 @@
         <fileBasedIndex implementation="io.github.dotnetsupport.lang.CSharpDeclarationIndex"/>
         <gotoClassContributor implementation="io.github.dotnetsupport.lang.CSharpGotoClassContributor"/>
         <gotoSymbolContributor implementation="io.github.dotnetsupport.lang.CSharpGotoSymbolContributor"/>
+        <moduleRendererFactory implementation="io.github.dotnetsupport.lang.CSharpLocationRenderer" order="first"/>
         <!-- the compiler diagnostics of the last build, in the editor -->
         <externalAnnotator language="C#" implementationClass="io.github.dotnetsupport.build.BuildProblemsAnnotator"/>
         <defaultLiveTemplates file="/liveTemplates/CSharp.xml"/>
@@ -208,6 +209,7 @@
         <xdebugger.attachDebuggerProvider implementation="io.github.dotnetsupport.debugger.DotNetAttachDebuggerProvider"/>
         <!-- names of the stopped program in Evaluate, watches and breakpoint conditions; first, and it stops the others there -->
         <!-- the case of what is typed does not matter in C#: the first of all, the ones after it get its matcher -->
+        <completion.confidence language="C#" order="first" implementationClass="io.github.dotnetsupport.lang.CSharpPropertyNameConfidence"/>
         <completion.contributor language="C#" id="dotnetCaseInsensitive" order="first" implementationClass="io.github.dotnetsupport.lang.CSharpCaseInsensitiveCompletion"/>
         <completion.contributor language="C#" order="first, after dotnetCaseInsensitive" implementationClass="io.github.dotnetsupport.debugger.DotNetExpressionCompletionContributor"/>
         <!-- gray text of a declaration that continues one way only: { get; set; }, new(), _name = name; -->

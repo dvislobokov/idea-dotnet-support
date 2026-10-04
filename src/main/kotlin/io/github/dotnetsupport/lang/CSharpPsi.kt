@@ -5,6 +5,7 @@ import com.intellij.extapi.psi.ASTWrapperPsiElement
 import com.intellij.lang.ASTNode
 import com.intellij.lang.PsiBuilder
 import com.intellij.navigation.ItemPresentation
+import com.intellij.navigation.LocationPresentation
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
@@ -81,10 +82,23 @@ class CSharpDeclaration(node: ASTNode) : ASTWrapperPsiElement(node), PsiNameIden
     override fun getTextOffset(): Int = info?.nameRange?.startOffset ?: super.getTextOffset()
     override fun setName(name: String): PsiElement = throw IncorrectOperationException("Renaming C# declarations needs a language server")
 
-    override fun getPresentation(): ItemPresentation = object : ItemPresentation {
-        override fun getPresentableText(): String = info?.presentation ?: text.take(MAX_TEXT)
-        override fun getLocationString(): String = listOf(containerName, containingFile.name).filter { it.isNotEmpty() }.joinToString(" in ")
+    /** The types around, without the namespace: `BaseShape`, `Outer.Inner`. */
+    val containingTypes: String
+        get() = generateSequence(parent) { it.parent }.filterIsInstance<CSharpDeclaration>().filter { it.kind != DeclarationKind.NAMESPACE }
+            .mapNotNull { it.name }.toList().asReversed().joinToString(".")
+
+    /**
+     * A row of Go to Class / Symbol as Java has it: `Area()` (the parameters as written, no type), then in gray the type it is in
+     * (`BaseShape`, `Outer.Inner`) — for a type the namespace and the types around it — and the file on the right
+     * ([CSharpLocationRenderer]). The four `Area` of an interface and its implementations were four identical rows before (reported).
+     * The Structure view keeps the type after the name: it takes [CSharpDeclarationInfo.presentation].
+     */
+    override fun getPresentation(): ItemPresentation = object : ItemPresentation, LocationPresentation {
+        override fun getPresentableText(): String = info?.let { it.name + it.parameters.orEmpty() } ?: text.take(MAX_TEXT)
+        override fun getLocationString(): String = if (kind.isType) containerName else containingTypes
         override fun getIcon(unused: Boolean): Icon = this@CSharpDeclaration.getIcon(0)
+        override fun getLocationPrefix(): String = " "
+        override fun getLocationSuffix(): String = ""
     }
 
     override fun getIcon(flags: Int): Icon = CSharpIcons.of(kind, info?.modifiers.orEmpty(), (parent as? CSharpDeclaration)?.kind)

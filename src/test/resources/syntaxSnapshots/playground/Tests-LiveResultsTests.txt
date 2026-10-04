@@ -74,11 +74,11 @@ Playground.Tests
 35:17 LiveResultsTests.WritesOutput  FullyQualifiedName~Playground.Tests.LiveResultsTests.WritesOutput
 
 ## Go to Class / Symbol
-M:Fails -> 25:17 Fails(): void (Playground.Tests.LiveResultsTests in Tests-LiveResultsTests.cs)
-M:Skipped -> 32:17 Skipped(): void (Playground.Tests.LiveResultsTests in Tests-LiveResultsTests.cs)
-M:Slow1 -> 16:17 Slow1(): void (Playground.Tests.LiveResultsTests in Tests-LiveResultsTests.cs)
-M:Slow2 -> 19:17 Slow2(): void (Playground.Tests.LiveResultsTests in Tests-LiveResultsTests.cs)
-M:Slow3 -> 22:17 Slow3(): void (Playground.Tests.LiveResultsTests in Tests-LiveResultsTests.cs)
-M:WritesOutput -> 35:17 WritesOutput(): void (Playground.Tests.LiveResultsTests in Tests-LiveResultsTests.cs)
-T:LiveResultsTests -> 13:14 LiveResultsTests(ITestOutputHelper output) (Playground.Tests in Tests-LiveResultsTests.cs)
+M:Fails -> 25:17 Fails() (LiveResultsTests)
+M:Skipped -> 32:17 Skipped() (LiveResultsTests)
+M:Slow1 -> 16:17 Slow1() (LiveResultsTests)
+M:Slow2 -> 19:17 Slow2() (LiveResultsTests)
+M:Slow3 -> 22:17 Slow3() (LiveResultsTests)
+M:WritesOutput -> 35:17 WritesOutput() (LiveResultsTests)
+T:LiveResultsTests -> 13:14 LiveResultsTests(ITestOutputHelper output) (Playground.Tests)
 

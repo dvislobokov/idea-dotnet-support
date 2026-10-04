@@ -61,8 +61,10 @@ class CSharpStructureTest : BasePlatformTestCase() {
         assertTrue(total.text.startsWith("public decimal Total(int count)") && total.text.endsWith("}"))
         assertEquals("Total", total.nameIdentifier!!.text)
         assertEquals(source.indexOf("Total(int"), total.textOffset)
-        assertEquals("Total(int count): decimal", total.presentation.presentableText)
-        assertEquals("Shop.Orders.OrderService in OrderService.cs", total.presentation.locationString)
+        // a row of Go to Symbol as in Java: the name with the parameters, the type it is in in gray, the file on the right
+        assertEquals("Total(int count)", total.presentation.presentableText)
+        assertEquals("OrderService", total.presentation.locationString)
+        assertEquals("OrderService.cs", com.intellij.ide.util.ModuleRendererFactory.findInstance(total).getModuleTextWithIcon(total)?.text)
 
         // typing inside a body keeps the tree in step with the text
         myFixture.editor.caretModel.moveToOffset(source.indexOf("return count;"))
@@ -130,7 +132,7 @@ class CSharpStructureTest : BasePlatformTestCase() {
         assertFalse("members are for Go to Symbol", "Display" in names(classes))
         val found = items(classes, "GotoCustomer").single() as CSharpDeclaration
         assertEquals(DeclarationKind.RECORD, found.kind)
-        assertEquals("Shop in Customer.cs", found.presentation.locationString)
+        assertEquals("Shop", found.presentation.locationString)
         assertTrue(found.canNavigate())
 
         val symbols = CSharpGotoSymbolContributor()

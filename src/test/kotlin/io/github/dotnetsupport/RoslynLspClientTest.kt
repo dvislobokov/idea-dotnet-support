@@ -125,6 +125,7 @@ class RoslynLspClientTest : BasePlatformTestCase() {
         val events = object : RoslynLsp4jClient.Events {
             override fun projectsLoaded() = loaded.countDown()
             override fun projectsNeedRestore(projectFiles: List<String>) { restore = projectFiles }
+            override fun semanticTokensRefresh() = Unit
         }
         val handler = Proxy.newProxyInstance(javaClass.classLoader, arrayOf(com.intellij.platform.lsp.api.LspServerNotificationsHandler::class.java)) { _, method, _ ->
             error("unexpected ${method.name}")

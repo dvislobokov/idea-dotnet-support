@@ -81,14 +81,14 @@ Playground.Editor
 ## run gutter
 
 ## Go to Class / Symbol
-M:Changed -> 13:32 Changed: EventHandler? (Playground.Editor.LambdaSuggestions in Console-Editor-LambdaSuggestions.cs)
-M:Each -> 15:18 Each(Action<LambdaOrder> action): void (Playground.Editor.LambdaSuggestions in Console-Editor-LambdaSuggestions.cs)
-M:Price -> 49:20 Price: decimal (Playground.Editor.LambdaOrder in Console-Editor-LambdaSuggestions.cs)
-M:Register -> 17:18 Register(Func<IServiceProvider, object> implementationFactory): void (Playground.Editor.LambdaSuggestions in Console-Editor-LambdaSuggestions.cs)
-M:Retry -> 18:18 Retry(int attempts, Func<int, string, bool> shouldRetry): void (Playground.Editor.LambdaSuggestions in Console-Editor-LambdaSuggestions.cs)
-M:Sort -> 16:18 Sort(Comparison<LambdaOrder> comparison): void (Playground.Editor.LambdaSuggestions in Console-Editor-LambdaSuggestions.cs)
-M:Use -> 20:17 Use(): void (Playground.Editor.LambdaSuggestions in Console-Editor-LambdaSuggestions.cs)
-M:_orders -> 11:40 _orders: List<LambdaOrder> (Playground.Editor.LambdaSuggestions in Console-Editor-LambdaSuggestions.cs)
-T:LambdaOrder -> 47:14 LambdaOrder (Playground.Editor in Console-Editor-LambdaSuggestions.cs)
-T:LambdaSuggestions -> 9:14 LambdaSuggestions (Playground.Editor in Console-Editor-LambdaSuggestions.cs)
+M:Changed -> 13:32 Changed (LambdaSuggestions)
+M:Each -> 15:18 Each(Action<LambdaOrder> action) (LambdaSuggestions)
+M:Price -> 49:20 Price (LambdaOrder)
+M:Register -> 17:18 Register(Func<IServiceProvider, object> implementationFactory) (LambdaSuggestions)
+M:Retry -> 18:18 Retry(int attempts, Func<int, string, bool> shouldRetry) (LambdaSuggestions)
+M:Sort -> 16:18 Sort(Comparison<LambdaOrder> comparison) (LambdaSuggestions)
+M:Use -> 20:17 Use() (LambdaSuggestions)
+M:_orders -> 11:40 _orders (LambdaSuggestions)
+T:LambdaOrder -> 47:14 LambdaOrder (Playground.Editor)
+T:LambdaSuggestions -> 9:14 LambdaSuggestions (Playground.Editor)
 

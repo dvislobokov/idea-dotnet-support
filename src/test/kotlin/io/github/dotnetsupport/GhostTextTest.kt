@@ -32,6 +32,28 @@ class GhostTextTest {
         assertEquals(" { get; set; }", at(inClass("    public Settings Settings|")))
     }
 
+    /** Where the auto-popup of name suggestions stays away, so that the list does not hide the gray ` { get; set; }` (0.1.44). */
+    @Test
+    fun `the name of a property is being typed`() {
+        fun awaits(member: String): Boolean {
+            val text = inClass(member)
+            val offset = text.indexOf('|')
+            return CSharpGhostText.awaitsPropertyName(text.removeRange(offset, offset + 1), offset)
+        }
+        assertTrue("after the type", awaits("    public RankedOrder |"))
+        assertTrue("a capital first", awaits("    public RankedOrder Ord|"))
+        assertTrue(awaits("    public List<RankedOrder> Orders|"))
+        assertTrue(awaits("    public string Title|"))
+        assertFalse("a field or a variable is named", awaits("    public RankedOrder ord|"))
+        assertFalse("private: a field", awaits("    private RankedOrder |"))
+        assertFalse("the type is being typed", awaits("    public Ranked|"))
+        assertFalse("modifiers only", awaits("    public static |"))
+        assertFalse("a method", awaits("    public void |"))
+        assertFalse("readonly: a field", awaits("    public readonly RankedOrder |"))
+        assertFalse("a verb: a method", awaits("    public RankedOrder Get|"))
+        assertFalse("something follows", awaits("    public RankedOrder Order| { get; set; }"))
+    }
+
     @Test
     fun `no auto property where a method or a field is as likely`() {
         assertNull("a method", at(inClass("    public void Save|")))

@@ -77,14 +77,14 @@ Synthetic.Records
 ## run gutter
 
 ## Go to Class / Symbol
-M:Length -> 7:19 Length: double (Synthetic.Records.Point in Records.cs)
-M:Note -> 18:28 Note: string (Synthetic.Records.Money in Records.cs)
-M:With -> 12:19 With(T value): Box<T> (Synthetic.Records.Box in Records.cs)
-M:Zero -> 17:25 Zero: Money (Synthetic.Records.Money in Records.cs)
-T:Box -> 10:28 Box (Synthetic.Records in Records.cs)
-T:Circle -> 22:15 Circle(double Radius) (Synthetic.Records in Records.cs)
-T:Money -> 15:31 Money(decimal Amount, string Currency) (Synthetic.Records in Records.cs)
-T:Person -> 3:15 Person(string Name, int Age) (Synthetic.Records in Records.cs)
-T:Point -> 5:22 Point(int X, int Y) (Synthetic.Records in Records.cs)
-T:Shape -> 21:24 Shape (Synthetic.Records in Records.cs)
+M:Length -> 7:19 Length (Point)
+M:Note -> 18:28 Note (Money)
+M:With -> 12:19 With(T value) (Box)
+M:Zero -> 17:25 Zero (Money)
+T:Box -> 10:28 Box (Synthetic.Records)
+T:Circle -> 22:15 Circle(double Radius) (Synthetic.Records)
+T:Money -> 15:31 Money(decimal Amount, string Currency) (Synthetic.Records)
+T:Person -> 3:15 Person(string Name, int Age) (Synthetic.Records)
+T:Point -> 5:22 Point(int X, int Y) (Synthetic.Records)
+T:Shape -> 21:24 Shape (Synthetic.Records)
 

@@ -111,7 +111,11 @@ class RoslynLspIntegrationProvider : LspIntegrationProvider {
 
 /** One server per opened folder: Roslyn holds one solution, and the plugin shows one. */
 class RoslynClientDescriptor(project: Project, private val root: VirtualFile, private val executable: File) : LspClientDescriptor(project, "Roslyn", root) {
-    private val workspace get() = project.service<RoslynWorkspace>()
+    /**
+     * Taken once, while the project is open: the process of the server ends (and prints its last lines) after the project is closed,
+     * and a lookup of the service then threw `AlreadyDisposedException` from the listeners of the process.
+     */
+    private val workspace: RoslynWorkspace = project.service<RoslynWorkspace>()
 
     override fun isSupportedFile(file: VirtualFile): Boolean = isCSharpSource(file)
 
@@ -143,14 +147,17 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
             throw e
         }
         workspace.serverStarted(runCatching { handler.process.toHandle() }.getOrNull())
-        handler.addProcessListener(object : com.intellij.execution.process.ProcessListener {
-            override fun onTextAvailable(event: com.intellij.execution.process.ProcessEvent, outputType: com.intellij.openapi.util.Key<*>) {
-                if (outputType === com.intellij.execution.process.ProcessOutputTypes.STDERR) workspace.serverPrinted(event.text)
-            }
-
-            override fun processTerminated(event: com.intellij.execution.process.ProcessEvent) = workspace.serverExited(event.exitCode)
-        })
+        handler.addProcessListener(processListener())
         return handler
+    }
+
+    /** What the process prints to its error stream and its end, for the workspace; called after the project is closed too. */
+    internal fun processListener(): com.intellij.execution.process.ProcessListener = object : com.intellij.execution.process.ProcessListener {
+        override fun onTextAvailable(event: com.intellij.execution.process.ProcessEvent, outputType: com.intellij.openapi.util.Key<*>) {
+            if (outputType === com.intellij.execution.process.ProcessOutputTypes.STDERR) workspace.serverPrinted(event.text)
+        }
+
+        override fun processTerminated(event: com.intellij.execution.process.ProcessEvent) = workspace.serverExited(event.exitCode)
     }
 
     /**
@@ -180,7 +187,10 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
     }
 
     override val lspServerListener: LspServerListener = object : LspServerListener {
-        override fun serverInitialized(params: InitializeResult) = workspace.serverInitialized()
+        override fun serverInitialized(params: InitializeResult) {
+            if (!project.isDisposed) workspace.serverInitialized()
+        }
+
         override fun serverStopped(shutdownNormally: Boolean) = workspace.serverStopped(shutdownNormally)
     }
 
@@ -219,6 +229,9 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
 
             override fun getTextAttributesKey(tokenType: String, modifiers: List<String>): TextAttributesKey? = RoslynPolicy.textAttributesKey(tokenType)
         }
+
+        // Go to Symbol / Class: a symbol of a C# file of the project is the declaration of the plugin there, see the class
+        override val workspaceSymbolCustomizer: com.intellij.platform.lsp.api.customization.LspWorkspaceSymbolCustomizer = RoslynWorkspaceSymbolSupport()
 
         // the server is the authority on the layout of code: it corrects a statement on `;`, a block on `}`, a line on Enter
         override val onTypeFormattingCustomizer: LspOnTypeFormattingCustomizer = LspOnTypeFormattingSupport()

@@ -165,16 +165,16 @@ Playground.Editor
 ## run gutter
 
 ## Go to Class / Symbol
-M:Area -> 10:12 Area(): double (Playground.Editor.IBaseShape in Console-Editor-GoToBase.cs); 24:28 Area(): double (Playground.Editor.BaseShape in Console-Editor-GoToBase.cs); 34:28 Area(): double (Playground.Editor.MiddleShape in Console-Editor-GoToBase.cs); 41:28 Area(): double (Playground.Editor.GoToBase in Console-Editor-GoToBase.cs)
-M:Changed -> 12:25 Changed: EventHandler? (Playground.Editor.IBaseShape in Console-Editor-GoToBase.cs); 26:32 Changed: EventHandler? (Playground.Editor.BaseShape in Console-Editor-GoToBase.cs)
-M:Dispose -> 55:17 Dispose(): void (Playground.Editor.GoToBase in Console-Editor-GoToBase.cs)
-M:Name -> 11:12 Name: string (Playground.Editor.IBaseShape in Console-Editor-GoToBase.cs); 25:27 Name: string (Playground.Editor.BaseShape in Console-Editor-GoToBase.cs); 44:28 Name: string (Playground.Editor.GoToBase in Console-Editor-GoToBase.cs)
-M:Own -> 58:17 Own(): void (Playground.Editor.GoToBase in Console-Editor-GoToBase.cs)
-M:Rename -> 18:10 Rename(string name): void (Playground.Editor.INamedShape in Console-Editor-GoToBase.cs); 19:10 Rename(string name, bool notify): void (Playground.Editor.INamedShape in Console-Editor-GoToBase.cs); 28:17 Rename(string name): void (Playground.Editor.BaseShape in Console-Editor-GoToBase.cs); 29:17 Rename(string name, bool notify): void (Playground.Editor.BaseShape in Console-Editor-GoToBase.cs); 48:21 Rename(string name, bool notify): void (Playground.Editor.GoToBase in Console-Editor-GoToBase.cs)
-M:this -> 13:12 this[int index]: double (Playground.Editor.IBaseShape in Console-Editor-GoToBase.cs); 27:19 this[int index]: double (Playground.Editor.BaseShape in Console-Editor-GoToBase.cs)
-T:BaseShape -> 22:23 BaseShape (Playground.Editor in Console-Editor-GoToBase.cs)
-T:GoToBase -> 37:14 GoToBase (Playground.Editor in Console-Editor-GoToBase.cs)
-T:IBaseShape -> 8:18 IBaseShape (Playground.Editor in Console-Editor-GoToBase.cs)
-T:INamedShape -> 16:18 INamedShape (Playground.Editor in Console-Editor-GoToBase.cs)
-T:MiddleShape -> 32:14 MiddleShape (Playground.Editor in Console-Editor-GoToBase.cs)
+M:Area -> 10:12 Area() (IBaseShape); 24:28 Area() (BaseShape); 34:28 Area() (MiddleShape); 41:28 Area() (GoToBase)
+M:Changed -> 12:25 Changed (IBaseShape); 26:32 Changed (BaseShape)
+M:Dispose -> 55:17 Dispose() (GoToBase)
+M:Name -> 11:12 Name (IBaseShape); 25:27 Name (BaseShape); 44:28 Name (GoToBase)
+M:Own -> 58:17 Own() (GoToBase)
+M:Rename -> 18:10 Rename(string name) (INamedShape); 19:10 Rename(string name, bool notify) (INamedShape); 28:17 Rename(string name) (BaseShape); 29:17 Rename(string name, bool notify) (BaseShape); 48:21 Rename(string name, bool notify) (GoToBase)
+M:this -> 13:12 this[int index] (IBaseShape); 27:19 this[int index] (BaseShape)
+T:BaseShape -> 22:23 BaseShape (Playground.Editor)
+T:GoToBase -> 37:14 GoToBase (Playground.Editor)
+T:IBaseShape -> 8:18 IBaseShape (Playground.Editor)
+T:INamedShape -> 16:18 INamedShape (Playground.Editor)
+T:MiddleShape -> 32:14 MiddleShape (Playground.Editor)
 

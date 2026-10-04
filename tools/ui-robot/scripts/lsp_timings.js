@@ -12,7 +12,7 @@ for (let i = 0; i < providers.size(); i++) {
     const workspace = project.getService(loader.loadClass("io.github.dotnetsupport.roslyn.RoslynWorkspace"))
     const stats = project.getService(loader.loadClass("io.github.dotnetsupport.roslyn.RoslynRequestStats"))
     const status = project.getService(loader.loadClass("io.github.dotnetsupport.lsp.RoslynServerStatus"))
-    text = "t=" + java.lang.System.currentTimeMillis() + " loaded=" + workspace.isLoaded() + " coloredFromCache=" + status.getColoredFromCache().size() + "\n"
+    text = "t=" + java.lang.System.currentTimeMillis() + " loaded=" + workspace.isLoaded() + " coloredByServer=" + status.getColoredByServer().size() + "\n"
     if ("__TABLE__" == "yes") text += stats.report()
 }
 text

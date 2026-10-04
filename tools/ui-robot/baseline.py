@@ -191,7 +191,7 @@ def measure(target, run, args, directory):
     file = directory + "/" + target["open"]
     anchors = directory + "/" + target["anchors"]
     print("run %d: %s" % (run, directory), flush=True)
-    print("  " + js("baseline_start.js", dir=directory, file=file, cold="yes" if args.cache == "cold" else "no", timeout=args.timeout).strip(), flush=True)
+    print("  " + js("baseline_start.js", dir=directory, file=file, cold="yes" if args.cache == "cold" else "no", timeout=args.timeout, solution=target["solution"]).strip(), flush=True)
     deadline = time.time() + args.timeout + 30
     status = {}
     result_notes = []
@@ -242,6 +242,7 @@ def percentile(values, p):
 def table(runs, args):
     rows = [
         ("project open, ms (from the open command)", [r["stages"].get("projectOpen") for r in runs]),
+        ("measured file put back in front (README.md opened over it), ms", [since_file(r, "reselected") for r in runs]),
         ("lexer highlighting: editor opened, ms", [since_file(r, "fileOpenEnd") for r in runs]),
         ("first daemon pass on the file (heuristics), ms", [r["daemon"][0] if r["daemon"] else None for r in runs]),
         ("identifier colors first on screen (heuristics, or the server if ready first), ms", [next((ms for ms, n in r.get("colors", []) if n > 0), None) for r in runs]),

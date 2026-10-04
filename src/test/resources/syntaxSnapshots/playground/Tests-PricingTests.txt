@@ -49,7 +49,7 @@ Playground.Tests
 20:17 PricingTests.DiscountBounds  FullyQualifiedName~Playground.Tests.PricingTests.DiscountBounds
 
 ## Go to Class / Symbol
-M:DiscountBounds -> 20:17 DiscountBounds(decimal discount, decimal expected): void (Playground.Tests.PricingTests in Tests-PricingTests.cs)
-M:TotalAppliesTheDiscount -> 10:17 TotalAppliesTheDiscount(): void (Playground.Tests.PricingTests in Tests-PricingTests.cs)
-T:PricingTests -> 7:14 PricingTests (Playground.Tests in Tests-PricingTests.cs)
+M:DiscountBounds -> 20:17 DiscountBounds(decimal discount, decimal expected) (PricingTests)
+M:TotalAppliesTheDiscount -> 10:17 TotalAppliesTheDiscount() (PricingTests)
+T:PricingTests -> 7:14 PricingTests (Playground.Tests)
 

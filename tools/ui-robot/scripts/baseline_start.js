@@ -2,6 +2,7 @@
 // __FILE__ (forward slashes), and records inside the IDE when each stage is reached. Returns at once; the recording goes on in a thread of
 // the IDE and is read by baseline_status.js. All times are System.nanoTime() in milliseconds, kept in a map under the system property
 // "dotnet.baseline": polling from outside cannot change them. __COLD__ = "yes" deletes the cache of semantic tokens of the plugin first.
+// __SOLUTION__ (relative to __DIR__) is chosen for the server when the folder has several solutions.
 importClass(com.intellij.openapi.application.ApplicationManager)
 importClass(com.intellij.openapi.application.PathManager)
 importClass(com.intellij.openapi.project.ProjectManager)
@@ -78,6 +79,8 @@ new java.lang.Thread(new java.lang.Runnable({ run: function () {
         let tick = 0, lastColors = -1, lastProblems = -1
         const document = read(function () { return com.intellij.openapi.fileEditor.FileDocumentManager.getInstance().getDocument(file) })
         let doneAt = -1
+        var reselecting = 0
+        var chose = 0
         while (now() - t0 < timeoutMs && rec.get("_stop") == null) {
             var finished = read(function () { return daemonCodeAnalyzer.isErrorAnalyzingFinished(psi) })
             if (finished && !analyzed) daemon.add(now())
@@ -93,9 +96,34 @@ new java.lang.Thread(new java.lang.Runnable({ run: function () {
                 if (colored != lastColors) { colors.add(at + ":" + colored); lastColors = colored }
                 if (problematic != lastProblems) { problems.add(at + ":" + problematic); lastProblems = problematic }
             }
+            // a project opened for the first time selects its README.md a moment after the measured file is opened (the playground has
+            // one): the file goes to a background tab, the daemon never runs on it, and its colors come only from the server (the LSP
+            // client of the platform applies tokens to hidden files too). The measured file is put back in front, as a user would.
+            var selected = FileEditorManager.getInstance(project).getSelectedFiles()
+            if (selected.length > 0 && !selected[0].equals(file) && reselecting == 0) {
+                reselecting = 1
+                mark("reselected")
+                ApplicationManager.getApplication().invokeLater(new java.lang.Runnable({ run: function () {
+                    FileEditorManager.getInstance(project).openTextEditor(new OpenFileDescriptor(project, file, 0, 0), true)
+                    reselecting = 0
+                } }))
+            }
             if (!DumbService.isDumb(project)) mark("smart")
             if (workspace.getServerProcess() != null) mark("serverProcess")
             var phase = String(workspace.getPhase().name())
+            // the playground has two solutions (DebugPlayground.sln, NetFramework/NetFramework.sln): the server waits for a choice, made
+            // here as the user would make it in the list; the list itself is closed once the server is loading
+            if (phase == "CHOOSING_SOLUTION" && chose == 0 && "__SOLUTION__" != "") {
+                chose = 1
+                ApplicationManager.getApplication().invokeLater(new java.lang.Runnable({ run: function () { workspace.solutionChosen("__SOLUTION__") } }))
+            }
+            if (phase == "LOADING" && chose == 1) {
+                chose = 2
+                ApplicationManager.getApplication().invokeLater(new java.lang.Runnable({ run: function () {
+                    var popups = com.intellij.openapi.ui.popup.JBPopupFactory.getInstance().getChildPopups(com.intellij.openapi.wm.WindowManager.getInstance().getFrame(project).getRootPane())
+                    for (var q = 0; q < popups.size(); q++) popups.get(q).cancel()
+                } }))
+            }
             if (phase != "STARTING") mark("phase" + phase)
             if (workspace.isLoaded()) mark("ready")
             var methods = stats.snapshot()

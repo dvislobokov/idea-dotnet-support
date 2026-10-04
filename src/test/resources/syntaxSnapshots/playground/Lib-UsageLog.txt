@@ -47,8 +47,8 @@ Playground.Lib
 ## run gutter
 
 ## Go to Class / Symbol
-M:Count -> 9:23 Count: int (Playground.Lib.UsageLog in Lib-UsageLog.cs)
-M:Record -> 11:24 Record(string what): void (Playground.Lib.UsageLog in Lib-UsageLog.cs)
-M:RecordTwice -> 13:24 RecordTwice(string what): void (Playground.Lib.UsageLog in Lib-UsageLog.cs)
-T:UsageLog -> 7:21 UsageLog (Playground.Lib in Lib-UsageLog.cs)
+M:Count -> 9:23 Count (UsageLog)
+M:Record -> 11:24 Record(string what) (UsageLog)
+M:RecordTwice -> 13:24 RecordTwice(string what) (UsageLog)
+T:UsageLog -> 7:21 UsageLog (Playground.Lib)
 

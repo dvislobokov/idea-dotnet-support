@@ -70,7 +70,7 @@ class RoslynCompletionSupport : LspCompletionSupport() {
         val context = runCatching { parameters.originalFile.project.service<RoslynCompletionContext>().at(parameters) }.getOrDefault(RoslynCompletionRanking.Context.NONE)
         if (RoslynCompletionRanking.isBeingDeclared(name, item.kind, context)) return null
         val bonus = RoslynCompletionRanking.bonus(name, item.kind, context, SuggestionStats.getInstance().labelCount(name))
-        val ranked = PrioritizedLookupElement.withPriority(withParentheses, RoslynCompletionPolicy.priority(item.kind, item.preselect == true) + bonus.value)
+        val ranked = PrioritizedLookupElement.withPriority(withParentheses, RoslynCompletionPolicy.priority(item.kind, item.preselect == true, RoslynCompletionPolicy.isUnimported(item)) + bonus.value)
         if (bonus.signals.isNotEmpty()) ranked.putUserData(SuggestionStats.SIGNALS, bonus.signals)
         return ranked
     }
@@ -179,10 +179,12 @@ object RoslynCompletionPolicy {
     /**
      * The order of the list when several items match the prefix, as Rider has it: the names of the scope (locals, parameters, members)
      * first, then methods, then types, and the keywords last; what the server preselects stays on top. The server sends `sortText` in
-     * alphabetical order, which puts the keyword `nameof` above the variable `names` on a typed `n`.
+     * alphabetical order, which puts the keyword `nameof` above the variable `names` on a typed `n`. A type of a namespace that is not
+     * imported (`PublicKey` on `pub`) goes under the keywords: it stood above `public` (reported). Whether the item matches the prefix in
+     * its case comes before all this ([io.github.dotnetsupport.lang.CaseMatchWeigher]).
      */
-    fun priority(kind: CompletionItemKind?, preselect: Boolean): Double {
-        val base = when (kind) {
+    fun priority(kind: CompletionItemKind?, preselect: Boolean, unimported: Boolean = false): Double {
+        val base = if (unimported) UNIMPORTED else when (kind) {
             CompletionItemKind.Variable, CompletionItemKind.Field, CompletionItemKind.Property, CompletionItemKind.EnumMember, CompletionItemKind.Event, CompletionItemKind.Constant -> 40.0
             CompletionItemKind.Method, CompletionItemKind.Function, CompletionItemKind.Constructor -> 30.0
             CompletionItemKind.Class, CompletionItemKind.Struct, CompletionItemKind.Interface, CompletionItemKind.Enum, CompletionItemKind.TypeParameter, CompletionItemKind.Module -> 20.0
@@ -192,6 +194,16 @@ object RoslynCompletionPolicy {
         }
         return if (preselect) base + 100.0 else base
     }
+
+    /** Below the keywords (0), above the snippets (-10). */
+    const val UNIMPORTED = -5.0
+
+    /**
+     * An item of a namespace that is not imported, which the server adds once its cache of them is built: the namespace in
+     * `labelDetails.description` and a `~` in `sortText` (`0001~PublicKey  System.Security.Cryptography.X509Certificates`), see
+     * `roslyn/capture-5.12-keywords`.
+     */
+    fun isUnimported(item: CompletionItem): Boolean = item.sortText?.contains('~') == true && !item.labelDetails?.description.isNullOrBlank()
 
     private val CALLABLE = setOf(CompletionItemKind.Method, CompletionItemKind.Function)
     private val SUBSCRIPTION = Regex("""[+-]=\s*$""")

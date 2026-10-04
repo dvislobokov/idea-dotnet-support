@@ -22,6 +22,7 @@ class RoslynPolicyTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             status.isReady = false
+            status.coloredByServer.clear()
             formatting.formatter = FormatterChoice.AUTO
         } finally {
             super.tearDown()
@@ -43,6 +44,11 @@ class RoslynPolicyTest : BasePlatformTestCase() {
         assertFalse(typeColors().isEmpty())
         status.isReady = true
         myFixture.type(' ') // a new pass
+        // ready is not enough (0.1.44): the heuristics keep the colors until the server's tokens of the file are on screen
+        assertFalse(typeColors().isEmpty())
+        status.coloredByServer.add(myFixture.file.virtualFile)
+        // the plugin restarts the daemon on the file when the server's tokens are shown
+        com.intellij.codeInsight.daemon.DaemonCodeAnalyzer.getInstance(project).restart(myFixture.file)
         assertEmpty(typeColors())
     }
 
