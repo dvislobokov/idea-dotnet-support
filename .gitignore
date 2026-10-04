@@ -9,3 +9,5 @@
 !/build/distributions/*.zip
 out/
 *.iml
+# build output of the csharp-psi subprojects
+/csharp-psi-*/build/
