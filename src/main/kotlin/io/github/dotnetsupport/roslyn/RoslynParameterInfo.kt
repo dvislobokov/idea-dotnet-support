@@ -8,6 +8,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.psi.PsiFile
+import io.github.dotnetsupport.lang.CSharpFeature
 import io.github.dotnetsupport.lang.CSharpFile
 import org.eclipse.lsp4j.SignatureHelp
 import org.eclipse.lsp4j.SignatureHelpParams
@@ -21,6 +22,7 @@ import org.eclipse.lsp4j.SignatureInformation
  */
 class RoslynParameterInfoHandler : ParameterInfoHandler<PsiFile, SignatureInformation>, DumbAware {
     override fun findElementForParameterInfo(context: CreateParameterInfoContext): PsiFile? {
+        if (!RoslynFeatures.serves(CSharpFeature.DOCUMENTATION, context.project)) return null
         val help = signatureHelp(context.file, context.offset) ?: return null
         context.itemsToShow = help.signatures.toTypedArray()
         return context.file

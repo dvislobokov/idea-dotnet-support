@@ -18,6 +18,7 @@ import com.intellij.openapi.application.readAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.components.service
 import com.intellij.openapi.util.UserDataHolderBase
+import io.github.dotnetsupport.lang.CSharpFeature
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpArguments
 import io.github.dotnetsupport.lang.CSharpGhostText
@@ -44,7 +45,7 @@ class RoslynLambdaGhost : InlineCompletionProvider {
 
     override fun isEnabled(event: InlineCompletionEvent): Boolean {
         val request = event.toRequest() ?: return false
-        if (request.file !is CSharpFile) return false
+        if (request.file !is CSharpFile || !RoslynFeatures.serves(CSharpFeature.EDITING, request.file.project)) return false
         // where an argument begins, and nowhere else: a method of this file is answered from its text, before the solution is loaded
         return LambdaSuggestions.atArgumentStart(request.document.immutableCharSequence, request.endOffset)
     }

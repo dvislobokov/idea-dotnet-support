@@ -17,8 +17,11 @@ import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.builder.rows
 import com.intellij.ui.dsl.builder.selected
 import com.intellij.ui.dsl.builder.toNullableProperty
+import com.intellij.ui.dsl.listCellRenderer.textListCellRenderer
 import io.github.dotnetsupport.DotNetBundle
 import io.github.dotnetsupport.cli.DotNetTool
+import io.github.dotnetsupport.lang.CSharpFeatureSource
+import io.github.dotnetsupport.lang.CSharpFeatures
 import io.github.dotnetsupport.settings.DotNetSettingsConfigurable
 import java.io.File
 
@@ -65,6 +68,16 @@ class RoslynLanguageServerConfigurable(private val project: Project) : BoundConf
             row(DotNetBundle.message("server.arguments")) {
                 textField().align(AlignX.FILL).bindText({ state.additionalArguments.orEmpty() }, { state.additionalArguments = it.trim() })
                     .comment(DotNetBundle.message("server.arguments.comment"))
+            }
+        }
+        // ROSLYN | NATIVE per feature (CSHARP_PSI_MIGRATION.md, step 2): a row appears with the native implementation it switches to,
+        // so until csharp-psi brings the first one there is no group at all
+        val features = CSharpFeatures.offered()
+        if (features.isNotEmpty()) group(DotNetBundle.message("server.features")) {
+            row { comment(DotNetBundle.message("server.features.comment")) }
+            for (feature in features) row(feature.label + ":") {
+                comboBox(CSharpFeatureSource.entries, textListCellRenderer { it?.label })
+                    .bindItem({ settings.source(feature) }, { settings.setSource(feature, it ?: CSharpFeatureSource.ROSLYN) })
             }
         }
         for (group in RoslynOptions.GROUPS) group(RoslynOptions.title(group)) { RoslynOptions.ALL.filter { it.group == group }.forEach { option(it) } }

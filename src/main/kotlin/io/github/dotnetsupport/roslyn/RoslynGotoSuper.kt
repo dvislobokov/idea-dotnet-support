@@ -12,6 +12,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.ui.SimpleListCellRenderer
 import io.github.dotnetsupport.lang.CSharpDeclarationInfo
 import io.github.dotnetsupport.lang.CSharpDeclarations
+import io.github.dotnetsupport.lang.CSharpFeature
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.DeclarationKind
 import org.eclipse.lsp4j.Position
@@ -25,7 +26,7 @@ import org.eclipse.lsp4j.SymbolKind
  */
 class RoslynGotoSuperHandler : LanguageCodeInsightActionHandler {
     override fun startInWriteAction(): Boolean = false
-    override fun isValidFor(editor: Editor?, file: PsiFile?): Boolean = file is CSharpFile
+    override fun isValidFor(editor: Editor?, file: PsiFile?): Boolean = file is CSharpFile && RoslynFeatures.serves(CSharpFeature.NAVIGATION, file.project)
 
     override fun invoke(project: Project, editor: Editor, file: PsiFile) {
         val target = RoslynHierarchies.target(project, editor, file) ?: return HintManager.getInstance().showErrorHint(editor, "The C# language server is not loaded yet")

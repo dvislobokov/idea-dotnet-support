@@ -1,4 +1,4 @@
-<idea-plugin>
+<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
     <id>io.github.dotnetsupport</id>
     <name>C# Project Support</name>
     <vendor>dvislobokov</vendor>
@@ -21,6 +21,12 @@
         <!-- the schema of appsettings*.json, where the JSON plugin is -->
         <module name="io.github.dotnetsupport.jsonschema"/>
     </content>
+
+    <!-- the native C# PSI (csharp-psi-core, csharp-psi-semantic, csharp-psi-ide; CSHARP_PSI_MIGRATION.md): composed into the main jar,
+         empty until step 7 moves the code of ../csharp-psi -->
+    <xi:include href="/META-INF/csharp-psi-core.xml" xpointer="xpointer(/idea-plugin/*)"/>
+    <xi:include href="/META-INF/csharp-psi-semantic.xml" xpointer="xpointer(/idea-plugin/*)"/>
+    <xi:include href="/META-INF/csharp-psi-ide.xml" xpointer="xpointer(/idea-plugin/*)"/>
 
     <extensions defaultExtensionNs="io.github.dotnetsupport">
         <processAttacher implementation="io.github.dotnetsupport.debugger.DotNetProcessAttacherImpl"/>

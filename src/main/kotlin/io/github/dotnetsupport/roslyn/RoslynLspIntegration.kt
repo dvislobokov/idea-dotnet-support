@@ -39,6 +39,7 @@ import com.intellij.platform.lsp.api.customization.LspSemanticTokensCustomizer
 import com.intellij.platform.lsp.api.customization.LspSemanticTokensSupport
 import com.intellij.platform.lsp.api.lsWidget.LspClientWidgetItem
 import com.intellij.psi.PsiFile
+import io.github.dotnetsupport.lang.CSharpFeature
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetTool
 import io.github.dotnetsupport.cli.PluginLog
@@ -186,16 +187,16 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
     override val lspCustomization: LspCustomization = object : LspCustomization() {
         // a half-loaded workspace reports every type of another project as an error
         override val diagnosticsCustomizer: LspDiagnosticsCustomizer = object : LspDiagnosticsSupport() {
-            override fun shouldAskServerForDiagnostics(file: VirtualFile): Boolean = workspace.isLoaded
+            override fun shouldAskServerForDiagnostics(file: VirtualFile): Boolean = serves(CSharpFeature.DIAGNOSTICS) && workspace.isLoaded
         }
 
         // Three defaults of the platform are "only for plain text and TextMate files": semantic tokens (below), rename and the
         // highlighting of the usages under the caret. C# is a language of the plugin, so without these Shift+F6 finds no handler at all.
         override val renameCustomizer: LspRenameCustomizer = object : LspRenameSupport() {
-            override fun shouldRunRename(psiFile: PsiFile): Boolean = true
+            override fun shouldRunRename(psiFile: PsiFile): Boolean = serves(CSharpFeature.RENAME)
         }
         override val documentHighlightsCustomizer: LspDocumentHighlightsCustomizer = object : LspDocumentHighlightsSupport() {
-            override fun shouldAskServerForDocumentHighlights(psiFile: PsiFile): Boolean = workspace.isLoaded
+            override fun shouldAskServerForDocumentHighlights(psiFile: PsiFile): Boolean = serves(CSharpFeature.NAVIGATION) && workspace.isLoaded
         }
 
         // "N references", "Fix All", code actions with variants: commands the server leaves to its client
@@ -213,7 +214,8 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
         // the palette of the plugin (the one of Rider), so a file looks the same before and after the server is ready
         override val semanticTokensCustomizer: LspSemanticTokensCustomizer = object : LspSemanticTokensSupport() {
             // the default asks only for plain text and TextMate files, and C# is a language of the plugin
-            override fun shouldAskServerForSemanticTokens(psiFile: PsiFile): Boolean = workspace.isLoaded || psiFile.virtualFile?.let(workspace::hasCachedTokens) == true
+            override fun shouldAskServerForSemanticTokens(psiFile: PsiFile): Boolean =
+                serves(CSharpFeature.SEMANTIC_COLORS) && (workspace.isLoaded || psiFile.virtualFile?.let(workspace::hasCachedTokens) == true)
 
             override fun getTextAttributesKey(tokenType: String, modifiers: List<String>): TextAttributesKey? = RoslynPolicy.textAttributesKey(tokenType)
         }
@@ -224,13 +226,16 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
         // a chosen method gets its parentheses and the parameter info, see the class
         override val completionCustomizer: LspCompletionCustomizer = RoslynCompletionSupport()
 
+        // the switches of CSharpFeatures, read per request (RoslynFeatures)
+        private fun serves(feature: CSharpFeature): Boolean = RoslynFeatures.serves(feature, project)
+
         // Alt+Enter without the same row twice, see the class
         override val codeActionsCustomizer: LspCodeActionsCustomizer = RoslynCodeActionsSupport()
 
         // Reformat Code: the server does the work of `dotnet format whitespace`; CSharpier and "None" stay what the project has chosen
         override val formattingCustomizer: LspFormattingCustomizer = object : LspFormattingSupport() {
             override fun shouldFormatThisFileExclusivelyByServer(file: VirtualFile, ideCanFormatThisFileItself: Boolean, serverExplicitlyWantsToFormatThisFile: Boolean): Boolean =
-                RoslynPolicy.formatsByServer(DotNetFormattingSettings.getInstance(project).resolve(file), workspace.isLoaded)
+                serves(CSharpFeature.FORMATTING) && RoslynPolicy.formatsByServer(DotNetFormattingSettings.getInstance(project).resolve(file), workspace.isLoaded)
         }
     }
 }

@@ -1,0 +1,17 @@
+# The versions of the csharp-psi modules (csharp-psi-core, csharp-psi-semantic, csharp-psi-ide), the same catalogue as ../csharp-psi so their
+# build files move as they are (CSHARP_PSI_MIGRATION.md, step 7). The root project applies the same Kotlin and IntelliJ Platform plugins.
+[versions]
+kotlin = "2.3.21"
+intellijPlatformGradlePlugin = "2.19.0"
+junit = "4.13.2"
+opentest4j = "1.3.0"
+
+[libraries]
+junit = { module = "junit:junit", version.ref = "junit" }
+# Required by the IntelliJ Platform test framework at runtime with JUnit 4 (assertion failures).
+opentest4j = { module = "org.opentest4j:opentest4j", version.ref = "opentest4j" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+intellij-platform = { id = "org.jetbrains.intellij.platform", version.ref = "intellijPlatformGradlePlugin" }
+intellij-platform-module = { id = "org.jetbrains.intellij.platform.module", version.ref = "intellijPlatformGradlePlugin" }

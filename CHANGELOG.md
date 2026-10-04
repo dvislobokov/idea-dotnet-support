@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.40
+
+- Groundwork for the plugin's own C# code model (no change in behaviour yet): the plugin is built with three new, still empty modules,
+  and every feature of the language server can now be switched between the server and a built-in implementation. The switch shows
+  up on Settings | Tools | .NET | Language Server for a feature once its built-in implementation exists; today there is none, and
+  everything works as before
+
 ## 0.1.39
 
 - Unit Tests: the output of `dotnet test` itself (the summary, the results file) stays at the root of the run instead of being shown as

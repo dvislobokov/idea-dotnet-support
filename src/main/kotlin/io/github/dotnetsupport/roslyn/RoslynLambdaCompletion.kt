@@ -11,6 +11,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
 import io.github.dotnetsupport.lang.CSharpExpressions
+import io.github.dotnetsupport.lang.CSharpFeature
 import io.github.dotnetsupport.lang.CSharpFile
 import org.eclipse.lsp4j.SignatureHelp
 import org.eclipse.lsp4j.SignatureHelpParams
@@ -24,6 +25,7 @@ import org.eclipse.lsp4j.SignatureHelpParams
 class RoslynLambdaCompletion : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
         val file = parameters.originalFile as? CSharpFile ?: return
+        if (!RoslynFeatures.serves(CSharpFeature.COMPLETION, file.project)) return
         val workspace = file.project.service<RoslynWorkspace>()
         val client = workspace.clients.firstOrNull()?.takeIf { workspace.isLoaded } ?: return
         // only where an argument begins: right after `(` or `,`, or a name that is being typed there

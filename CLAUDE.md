@@ -81,6 +81,7 @@ export JAVA_HOME="C:\Program Files\JetBrains\IntelliJ IDEA 2026.1.4\jbr"   # JBR
 Roslyn главный: свои эвристики (раскраска идентификаторов, folding, ошибки последней сборки, `dotnet format whitespace`) проверяют
 `RoslynServerStatus.isReady(project)` и уступают готовому серверу — новую эвристику, которую сервер тоже умеет, ставить под ту же проверку. В unit-test режиме
 провайдер сервер не запускает (иначе любой тест, открывший `.cs`, поднимает настоящий сервер машины); URI серверу — с обычным двоеточием, не `c%3A`. Проверка вживую — меню .NET → Probe Platform LSP / DAP API.
+Свой PSI C# (`CSHARP_PSI_MIGRATION.md`) — Gradle-подпроекты `csharp-psi-core` / `-semantic` / `-ide` (пакеты `io.github.dotnetsupport.csharp.*`, дескрипторы `META-INF/csharp-psi-*.xml` через `xi:include`), до шага 7 пустые; `pluginComposedModule` кладёт их классы в основной jar: модуль `roslyn` их видит, они его — нет. Кто отвечает за фичу — `lang/CSharpFeatures` (`ROSLYN | NATIVE`, выбор в `RoslynLanguageServerSettings`); обработчик модуля `roslyn`, который отвечает за фичу из `CSharpFeature`, сначала спрашивает `RoslynFeatures.serves`.
 
 Действия:
 - `DotNet.MainMenu` — меню **.NET** в главной строке меню (после Tools), в нём подменю `DotNet.NuGet`, `DotNet.EfCore`;

@@ -13,6 +13,7 @@ import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
 import com.intellij.platform.lsp.api.customization.LspCompletionSupport
 import io.github.dotnetsupport.lang.CSharpCalls
+import io.github.dotnetsupport.lang.CSharpFeature
 import io.github.dotnetsupport.suggest.SuggestionStats
 import org.eclipse.lsp4j.CompletionItem
 import org.eclipse.lsp4j.CompletionItemKind
@@ -29,6 +30,10 @@ class RoslynCompletionSupport : LspCompletionSupport() {
      * (seen on a screenshot of the user). After `(` Rider and Visual Studio show the parameters only; the list comes once a name is typed.
      */
     override fun isTriggerCharacterRespected(c: Char): Boolean = RoslynCompletionPolicy.isTrigger(c)
+
+    /** Not when completion is switched to the plugin's own PSI ([RoslynFeatures]). */
+    override fun shouldRunCodeCompletion(parameters: CompletionParameters): Boolean =
+        RoslynFeatures.serves(CSharpFeature.COMPLETION, parameters.originalFile.project) && super.shouldRunCodeCompletion(parameters)
 
     /**
      * The tail and the type of a row as in Rider (`WriteLine`  `(string? value)  +18 overloads`  `void`): Roslyn sends neither, only the

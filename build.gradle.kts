@@ -1,10 +1,13 @@
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
     id("org.jetbrains.kotlin.jvm") version "2.3.21"
     id("org.jetbrains.intellij.platform") version "2.19.0"
+    // Applied by the csharp-psi modules (csharp-psi-core, csharp-psi-semantic, csharp-psi-ide); versions in gradle/libs.versions.toml.
+    alias(libs.plugins.intellij.platform.module) apply false
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -28,6 +31,12 @@ dependencies {
         testFramework(TestFrameworkType.Platform)
         // JSON (a plugin since 2024.3): only the content module io.github.dotnetsupport.jsonschema needs it, see its descriptor
         bundledPlugin("com.intellij.modules.json")
+        // The native C# PSI (../csharp-psi; CSHARP_PSI_MIGRATION.md, step 1), empty until step 7: composed, so the classes go into the main
+        // jar, which the main descriptor loads, and their META-INF/csharp-psi-*.xml are xi:included by plugin.xml. The content module
+        // io.github.dotnetsupport.roslyn sees these classes (its loader has the main one as a parent), never the other way round.
+        pluginComposedModule(implementation(project(":csharp-psi-core")))
+        pluginComposedModule(implementation(project(":csharp-psi-semantic")))
+        pluginComposedModule(implementation(project(":csharp-psi-ide")))
     }
     testImplementation("junit:junit:4.13.2")
 }
@@ -43,6 +52,23 @@ kotlin {
         // The platform bundles its own Kotlin stdlib (2.3.20 in 2026.1), don't use newer API.
         apiVersion = KotlinVersion.KOTLIN_2_3
         languageVersion = KotlinVersion.KOTLIN_2_3
+    }
+}
+
+// The csharp-psi modules compile like the plugin: Java 21 bytecode, Kotlin API 2.3 (the stdlib of the platform).
+subprojects {
+    plugins.withId("org.jetbrains.kotlin.jvm") {
+        extensions.configure<JavaPluginExtension> {
+            sourceCompatibility = JavaVersion.VERSION_21
+            targetCompatibility = JavaVersion.VERSION_21
+        }
+        extensions.configure<KotlinJvmProjectExtension> {
+            compilerOptions {
+                jvmTarget = JvmTarget.JVM_21
+                apiVersion = KotlinVersion.KOTLIN_2_3
+                languageVersion = KotlinVersion.KOTLIN_2_3
+            }
+        }
     }
 }
 
