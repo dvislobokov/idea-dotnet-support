@@ -10,7 +10,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.LspClient
 import com.intellij.platform.lsp.api.customization.LspIntentionAction
-import io.github.dotnetsupport.lang.CSharpDeclarations
+import io.github.dotnetsupport.lang.CSharpSyntaxModel
 import io.github.dotnetsupport.lang.CSharpNamespaceAdjuster
 import io.github.dotnetsupport.lang.DeclarationKind
 import org.eclipse.lsp4j.CodeAction
@@ -41,7 +41,7 @@ class RoslynNamespaceAdjuster : CSharpNamespaceAdjuster {
         repeat(ATTEMPTS) { attempt ->
             val document = FileDocumentManager.getInstance().getDocument(file) ?: return false
             val text = document.immutableCharSequence
-            val declaration = CSharpDeclarations.scan(text).declarations.singleOrNull { it.kind == DeclarationKind.NAMESPACE } ?: return false
+            val declaration = CSharpSyntaxModel.current.declarations(text).declarations.singleOrNull { it.kind == DeclarationKind.NAMESPACE } ?: return false
             val range = Range(RoslynNavigation.position(document, declaration.nameRange.startOffset), RoslynNavigation.position(document, declaration.nameRange.endOffset))
             val params = CodeActionParams(client.getDocumentIdentifier(file), range, CodeActionContext(emptyList()))
             val answer = client.sendRequestSync(TIMEOUT_MS) { it.textDocumentService.codeAction(params) }

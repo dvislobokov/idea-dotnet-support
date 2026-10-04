@@ -34,7 +34,7 @@ enum class CSharpUsageKind(val title: String) {
  * One [Analysis] per text: the file is lexed once for all of its usages.
  */
 object CSharpUsageKinds {
-    fun classify(text: CharSequence, range: TextRange, structure: CSharpFileStructure = CSharpDeclarations.scan(text)): CSharpUsageKind = Analysis(text, structure).kindOf(range)
+    fun classify(text: CharSequence, range: TextRange, structure: CSharpFileStructure = CSharpSyntaxModel.current.declarations(text)): CSharpUsageKind = Analysis(text, structure).kindOf(range)
 
     internal class Token(val type: IElementType, val text: String, val start: Int, val end: Int) {
         val isIdentifier get() = type == CSharpTokenTypes.IDENTIFIER
@@ -48,7 +48,7 @@ object CSharpUsageKinds {
     /** Keywords that name a type: `int x`, `string? y`. */
     private val TYPE_KEYWORDS = setOf("bool", "byte", "char", "decimal", "double", "dynamic", "float", "int", "long", "object", "sbyte", "short", "string", "uint", "ulong", "ushort", "var", "void")
 
-    class Analysis(private val text: CharSequence, private val structure: CSharpFileStructure = CSharpDeclarations.scan(text)) {
+    class Analysis(private val text: CharSequence, private val structure: CSharpFileStructure = CSharpSyntaxModel.current.declarations(text)) {
         /** Every token but white space; comments and strings stay, so a usage inside one is told apart. */
         private val all: List<Token> = lex(text)
         /** The code alone: what the neighbours of a usage are looked for in. */

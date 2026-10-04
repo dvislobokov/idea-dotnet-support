@@ -156,7 +156,7 @@ object CSharpFileLayout {
     class Split(val typeName: String, val newFileText: String, val remainingText: String)
 
     fun topLevelTypes(text: CharSequence): List<CSharpDeclarationInfo> {
-        val structure = CSharpDeclarations.scan(text)
+        val structure = CSharpSyntaxModel.current.declarations(text)
         val namespace = structure.declarations.singleOrNull { it.kind == DeclarationKind.NAMESPACE }
         return (namespace?.children ?: structure.declarations).filter { it.kind.isType }
     }
@@ -172,7 +172,7 @@ object CSharpFileLayout {
         val type = typeAt(text, offset) ?: return null
         val types = topLevelTypes(text)
         if (types.size < 2) return null
-        val namespace = CSharpDeclarations.scan(text).declarations.singleOrNull { it.kind == DeclarationKind.NAMESPACE }
+        val namespace = CSharpSyntaxModel.current.declarations(text).declarations.singleOrNull { it.kind == DeclarationKind.NAMESPACE }
         val firstTypeStart = types.minOf { it.range.startOffset }
         val header = text.subSequence(0, firstTypeStart).toString().trimEnd()
         val blockNamespace = namespace?.body != null

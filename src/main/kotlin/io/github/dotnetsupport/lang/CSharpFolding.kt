@@ -22,7 +22,7 @@ object CSharpFolding {
     private val TAG = Regex("""<[^>]+>""")
 
     fun regions(text: CharSequence): List<CSharpFoldRegion> {
-        val structure = CSharpDeclarations.scan(text)
+        val structure = CSharpSyntaxModel.current.declarations(text)
         val result = ArrayList<CSharpFoldRegion>()
         structure.all().mapNotNull { it.body }.mapTo(result) { CSharpFoldRegion(FoldKind.BODY, it, "{...}") }
         // `using ...`: the keyword of the first directive stays

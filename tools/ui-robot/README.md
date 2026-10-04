@@ -97,6 +97,41 @@ python robot.py action Exit && python robot.py click "//div[@class='MyDialog']//
 вместе с точками останова и конфигурациями. Плагин в песочнице обновляется только перезапуском задачи. Лог песочницы —
 `.intellijPlatform/sandbox/idea-dotnet-support/IU-*/log_runIdeForUiTests/idea.log` (дописывается между запусками), логи адаптера — рядом в `dotnet-debugger/`.
 
+## Замеры редактора (`baseline.py`)
+
+Исходные замеры шага 0 `CSHARP_PSI_MIGRATION.md` (раздел «Исходные замеры»); тем же скриптом потом меряется путь `NATIVE`.
+
+```sh
+export JAVA_HOME="C:\Program Files\JetBrains\IntelliJ IDEA 2026.1.4\jbr"
+./gradlew.bat runIdeForUiTests --no-daemon -ProbotPort=8591      # в фоне; свой порт, если соседний worktree тоже держит песочницу
+export ROBOT_PORT=8591 NO_PROXY=127.0.0.1 PYTHONIOENCODING=utf-8
+python tools/ui-robot/robot.py wait
+python tools/ui-robot/baseline.py --target playground --runs 3 --reps 10 --cache cold
+python tools/ui-robot/make-aspnetcore-sample.py                    # один раз: выборка aspnetcore (Mvc.Core, 536 файлов)
+python tools/ui-robot/baseline.py --target aspnetcore --runs 3 --reps 10 --cache cold
+```
+
+Прогон: свежая копия цели в `build/baseline/runs/<цель>` (без `.idea`, `bin`, `obj`, затем `dotnet restore`) открывается в песочнице,
+измеряемый файл — сразу, как только открыт проект; дальше — память после готовности сервера, completion (`.` после переменной и
+префикс идентификатора, по `--reps` раз, на якорях `// TYPE:measure-*` — `debug-playground/Console/Editor/Measurements.cs`), сессия
+набора (`measure-edit`), память ещё раз; проект закрывается. Времена берутся **внутри IDE** (`scripts/baseline_start.js` пишет отметки
+`System.nanoTime` из своего потока, опрос снаружи на них не влияет): этапы открытия проекта и файла, фаза `RoslynWorkspace`
+(`serverProcess`, `ready` = workspace loaded), первые ответы сервера `semanticTokens/full` и `textDocument/diagnostic` (по
+`RoslynRequestStats`; запросы платформы во время warm-up плагина считаются тоже), окончание прохода демона по файлу, изменения числа
+подсветок с цветом (идентификаторы) и проблем в редакторе. Память: heap IDE после трёх `System.gc()`, RSS (`WorkingSet64`) процесса IDE,
+процесса сервера (`Microsoft.CodeAnalysis.LanguageServer.exe`) и всего его дерева. Completion: от набора символа (`TypedAction`, как с
+клавиатуры, срабатывает автопопап) до первого показанного lookup с элементами и до lookup, в котором есть ожидаемый элемент; медиана и p90.
+Вывод — таблица Markdown (медиана по прогонам и значения каждого), сырые данные — `build/baseline/<цель>-<время>.json`, там же состояние машины.
+
+- `--cache cold` стирает кэш семантических токенов плагина (`system/dotnet-support/lsp-cache`) перед каждым прогоном, `warm` оставляет:
+  путь копии постоянный, так что во втором прогоне файл раскрашивается из кэша до готовности сервера.
+- Первый прогон после старта песочницы — на холодной JVM (загрузка классов), остальные — на прогретой: смотреть столбец значений.
+- Робот выводит окно песочницы на передний план (автопопапу completion нужен фокус): **на время замера машину не трогать** — набранное
+  человеком уходит в песочницу (так однажды открылся Settings, и прогон встал). Модальный диалог останавливает демон: скрипт закрывает
+  quick tour и IDE Internal Errors, о любом другом пишет в вывод — такой прогон повторить.
+- Песочница: `-Didea.is.internal=true`, `-Xmx2048m` — память IDE не равна памяти рабочей IDE пользователя; сравнивать с замерами
+  `NATIVE` в той же песочнице.
+
 ## Что важно знать
 
 - **Картинки — только компонентов IDE.** `/screenshot` сервера снимает весь рабочий стол вместе со всем, что на нём открыто; обёртка им

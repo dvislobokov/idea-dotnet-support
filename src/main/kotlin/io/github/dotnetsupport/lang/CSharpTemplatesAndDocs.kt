@@ -27,7 +27,7 @@ class CSharpTemplateContext : TemplateContextType("C#") {
 class CSharpTypeNameMacro : MacroBase("csharpTypeName", "csharpTypeName()") {
     override fun calculateResult(params: Array<Expression>, context: ExpressionContext, quick: Boolean): Result? {
         val file = context.psiElementAtStartOffset?.containingFile ?: return null
-        val structure = CSharpDeclarations.scan(context.editor?.document?.immutableCharSequence ?: file.viewProvider.contents)
+        val structure = CSharpSyntaxModel.current.declarations(context.editor?.document?.immutableCharSequence ?: file.viewProvider.contents)
         return structure.pathTo(context.startOffset).lastOrNull { it.kind.isType }?.let { TextResult(it.name) }
     }
 }
@@ -72,7 +72,7 @@ object CSharpDocComments {
     /** The declaration that starts right after [offset], with nothing but whitespace in between. */
     fun declarationAfter(text: CharSequence, offset: Int): CSharpDeclarationInfo? {
         val next = (offset until text.length).firstOrNull { !text[it].isWhitespace() } ?: return null
-        return CSharpDeclarations.scan(text).all().firstOrNull { it.range.startOffset == next && it.kind != DeclarationKind.NAMESPACE }
+        return CSharpSyntaxModel.current.declarations(text).all().firstOrNull { it.range.startOffset == next && it.kind != DeclarationKind.NAMESPACE }
     }
 
     private val WORD = Regex("""[A-Za-z_@]\w*""")

@@ -109,6 +109,13 @@ Solution для живой проверки плагина: отладчика (
 
 Перед проверкой дождаться виджета «Roslyn: DebugPlayground.sln» в статус-баре.
 
+### Замеры редактора — `Console/Editor/Measurements.cs`
+Якоря скрипта `tools/ui-robot/baseline.py` (исходные замеры шага 0 `CSHARP_PSI_MIGRATION.md`; потом тем же скриптом — путь `NATIVE`). Маркеры
+и пустые строки под ними не трогать.
+- [ ] `TYPE:measure-member`: `text.` → список открывается сам, в нём `Length`
+- [ ] `TYPE:measure-prefix`: `Consol` → список открывается сам, в нём `Console`
+- [ ] `TYPE:measure-edit`: сюда скрипт набирает операторы (сессия правки перед вторым замером памяти)
+
 ### Порядок списка completion и статистика подсказок — `Console/Editor/CompletionRanking.cs`
 - [ ] `TYPE:expected-type`: `int amount = ` → сразу серый текст `count;`, Tab принимает; по Ctrl+Space — `count` первым, затем `Count`; строки и ключевые слова ниже; самого `amount` в списке **нет**
 - [ ] `TYPE:method-by-type`: `decimal sum = ` → серый текст `Total(order);`; по Ctrl+Space `Total` выше переменных, выбранный из списка даёт `Total(|);` с серым `order` внутри

@@ -40,7 +40,8 @@ import java.util.concurrent.ConcurrentHashMap
  * Asked by
  *  - the debug launch, for `TargetPath` ([targetPath]; blocking, falls back to `dotnet msbuild -getProperty`);
  *  - the Solution view, for the files of a project of the old format ([content]): never blocking, the answer comes in the background
- *    and the tree is refreshed then; until it comes, or when the helper fails, the project is shown as before.
+ *    and the tree is refreshed then; until it comes, or when the helper fails, the project is shown as before;
+ *  - [CompilationModel], for what the compiler of a C# project is given (`DefineConstants`, `LangVersion`, usings, `Compile` items).
  */
 @Service(Service.Level.PROJECT)
 class MsBuildEvaluation(private val project: Project) : Disposable {
@@ -68,11 +69,11 @@ class MsBuildEvaluation(private val project: Project) : Disposable {
 
     /** Evaluates [projectPath]; blocking, not for the EDT. Throws [HelperException] with the message of MSBuild. */
     fun evaluate(projectPath: String, globalProperties: Map<String, String>, properties: List<String> = emptyList(), itemTypes: List<String> = emptyList(),
-                 timeoutMs: Long = TIMEOUT_MS): MsBuildEvaluationResult {
+                 timeoutMs: Long = TIMEOUT_MS, targets: List<String> = emptyList()): MsBuildEvaluationResult {
         val connection = connection()
         started = true
         val globals = withVisualStudio(projectPath, globalProperties)
-        return MsBuildEvaluationResult.parse(connection.request("evaluate", MsBuildEvaluationResult.request(projectPath, globals, properties, itemTypes), timeoutMs))
+        return MsBuildEvaluationResult.parse(connection.request("evaluate", MsBuildEvaluationResult.request(projectPath, globals, properties, itemTypes, targets), timeoutMs))
     }
 
     /**
@@ -85,6 +86,16 @@ class MsBuildEvaluation(private val project: Project) : Disposable {
         if (!SolutionService.getInstance(project).msBuildProject(file).isLegacy) return globalProperties
         val vsToolsPath = VisualStudioToolset.vsToolsPath() ?: return globalProperties
         return LinkedHashMap(globalProperties).apply { put(VS_TOOLS_PATH, vsToolsPath) }
+    }
+
+    /** The helper forgets the evaluations [paths] can change; blocking, not for the EDT. Nothing to do before it has evaluated anything. */
+    fun invalidate(paths: Collection<String>) {
+        if (!started || paths.isEmpty()) return
+        try {
+            connection().request("invalidate", JsonObject().apply { add("paths", JsonArray().apply { paths.forEach(::add) }) })
+        } catch (e: HelperException) {
+            PluginLog.warn(LOG_CATEGORY, "invalidate: ${e.message}")
+        }
     }
 
     /**
@@ -119,13 +130,13 @@ class MsBuildEvaluation(private val project: Project) : Disposable {
     private fun evaluatedFiles(projectFile: VirtualFile): EvaluatedFiles? {
         val key = projectFile.path
         val known = files[key]
-        val globals = treeGlobals()
+        val globals = globals()
         if (known == null || known.stale || known.stamp != projectFile.modificationStamp || known.globals != globals) schedule(projectFile, globals)
         return known?.files
     }
 
     /** The global properties the tree evaluates with: the configuration of the toolbar and the global properties of the build options. */
-    private fun treeGlobals(): Map<String, String> =
+    internal fun globals(): Map<String, String> =
         LinkedHashMap(MsBuildEvaluationResult.globalProperties(DotNetBuildOptions.getInstance(project).state.globalProperties)).apply {
             put("Configuration", DotNetBuildSettings.getInstance(project).configuration)
         }
@@ -173,25 +184,24 @@ class MsBuildEvaluation(private val project: Project) : Disposable {
      * the project, a `Directory.Build.props` above it) are evaluated again, and the helper forgets what it knew of them.
      */
     fun changed(paths: Collection<String>) {
+        // the options of the compiler (CompilationModel) make their evaluations again themselves, telling the helper first
+        project.getServiceIfCreated(CompilationModel::class.java)?.changed(paths)
         if (files.isEmpty() || paths.isEmpty()) return
         val keys = paths.map(::key)
         val affected = files.filter { (projectPath, known) -> keys.any { dependsOn(projectPath, known, it) } }.keys
         if (affected.isEmpty()) return
         affected.forEach { files[it]?.stale = true }
         executor.execute {
-            if (started) {
-                try {
-                    connection().request("invalidate", JsonObject().apply { add("paths", JsonArray().apply { paths.forEach(::add) }) })
-                } catch (e: HelperException) {
-                    PluginLog.warn(LOG_CATEGORY, "invalidate: ${e.message}")
-                }
-            }
-            for (path in affected) LocalFileSystem.getInstance().findFileByPath(path)?.let { schedule(it, treeGlobals()) }
+            invalidate(paths)
+            for (path in affected) LocalFileSystem.getInstance().findFileByPath(path)?.let { schedule(it, globals()) }
         }
     }
 
     /** Reload Project: the evaluation of [projectFile] (all of them for null) is made again from the files on disk. */
-    fun reload(projectFile: VirtualFile?) = changed(if (projectFile == null) files.keys.toList() else listOf(projectFile.path))
+    fun reload(projectFile: VirtualFile?) {
+        project.getServiceIfCreated(CompilationModel::class.java)?.reload(projectFile)
+        changed(if (projectFile == null) files.keys.toList() else listOf(projectFile.path))
+    }
 
     override fun dispose() {
         disposed = true
@@ -202,7 +212,7 @@ class MsBuildEvaluation(private val project: Project) : Disposable {
     @TestOnly
     fun putForTests(projectFile: VirtualFile, result: MsBuildEvaluationResult?) {
         if (result == null) files.remove(projectFile.path)
-        else files[projectFile.path] = Files(projectFile.modificationStamp, treeGlobals(), EvaluatedFiles.of(projectFile.parent.path, result), result.imports.mapTo(HashSet()) { key(it) })
+        else files[projectFile.path] = Files(projectFile.modificationStamp, globals(), EvaluatedFiles.of(projectFile.parent.path, result), result.imports.mapTo(HashSet()) { key(it) })
     }
 
     /** Refreshes the evaluations a change of files on disk can affect. */

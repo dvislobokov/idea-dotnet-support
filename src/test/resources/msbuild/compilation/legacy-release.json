@@ -1,0 +1,37 @@
+{
+ "properties": {
+  "DefineConstants": "TRACE",
+  "LangVersion": "9.0",
+  "Nullable": "",
+  "ImplicitUsings": "",
+  "RootNamespace": "Legacy.App",
+  "TargetFramework": "",
+  "MaxSupportedLangVersion": "7.3",
+  "TargetFrameworkIdentifier": ".NETFramework",
+  "TargetFrameworkVersion": "v4.7.2",
+  "TargetPlatformIdentifier": "Windows",
+  "Configuration": "Release",
+  "Platform": "AnyCPU",
+  "UsingMicrosoftNETSdk": ""
+ },
+ "items": {
+  "Compile": [
+   {
+    "include": "C:\\src\\Legacy\\Program.cs",
+    "metadata": {}
+   },
+   {
+    "include": "C:\\src\\Legacy\\Properties\\AssemblyInfo.cs",
+    "metadata": {}
+   }
+  ],
+  "Using": []
+ },
+ "imports": [],
+ "targetFrameworks": [
+  "net472"
+ ],
+ "warning": null,
+ "milliseconds": 0,
+ "reused": false
+}

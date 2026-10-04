@@ -1,0 +1,90 @@
+## declarations
+namespace Synthetic.Records  name 1:11-1:28  range 1:1-22:45
+  record Person(string Name, int Age) [public]  name 3:15-3:21  range 3:1-3:44
+  record Point(int X, int Y) [public]  name 5:22-5:27  range 5:1-8:2 body 6:1-8:2
+    property Length: double [public]  name 7:19-7:25  range 7:5-7:54
+  record Box [public sealed]  name 10:28-10:31  range 10:1-13:2 body 11:1-13:2
+    method With(T value): Box<T> [public]  name 12:19-12:23  range 12:5-12:64
+  record Money(decimal Amount, string Currency) [public readonly]  name 15:31-15:36  range 15:1-19:2 body 16:1-19:2
+    property Zero: Money [public static]  name 17:25-17:29  range 17:5-17:55 body 17:30-17:38
+    property Note: string [public required]  name 18:28-18:32  range 18:5-18:47 body 18:33-18:47
+  record Shape [public abstract]  name 21:24-21:29  range 21:1-21:30
+  record Circle(double Radius) [public]  name 22:15-22:21  range 22:1-22:45
+
+## structure view
+Synthetic.Records
+  Person(string Name, int Age)
+  Point(int X, int Y)
+    Length: double
+  Box
+    With(T value): Box<T>
+  Money(decimal Amount, string Currency)
+    Zero: Money
+    Note: string
+  Shape
+  Circle(double Radius)
+
+## folding
+6:1-8:2  {...}  | {
+11:1-13:2  {...}  | {
+16:1-19:2  {...}  | {
+
+## breadcrumbs
+1: Synthetic.Records
+3: Synthetic.Records > Person
+5: Synthetic.Records > Point
+7: Synthetic.Records > Point > Length
+8: Synthetic.Records > Point
+10: Synthetic.Records > Box
+12: Synthetic.Records > Box > With()
+13: Synthetic.Records > Box
+15: Synthetic.Records > Money
+17: Synthetic.Records > Money > Zero
+18: Synthetic.Records > Money > Note
+19: Synthetic.Records > Money
+21: Synthetic.Records > Shape
+22: Synthetic.Records > Circle
+
+## IL Viewer: type / member at the line
+1: - / -
+3: Synthetic.Records.Person / -
+5: Synthetic.Records.Point / -
+7: Synthetic.Records.Point / Length
+8: Synthetic.Records.Point / -
+10: Synthetic.Records.Box`1 / -
+12: Synthetic.Records.Box`1 / With
+13: Synthetic.Records.Box`1 / -
+15: Synthetic.Records.Money / -
+17: Synthetic.Records.Money / Zero
+18: Synthetic.Records.Money / Note
+19: Synthetic.Records.Money / -
+21: Synthetic.Records.Shape / -
+22: Synthetic.Records.Circle / -
+
+## Go to Base: member at the line
+1: -
+7: Point.Length
+8: -
+12: Box.With(T value)
+13: -
+17: Money.Zero
+18: Money.Note
+19: -
+
+## breakpoint lines
+7, 12, 17-18
+
+## run gutter
+
+## Go to Class / Symbol
+M:Length -> 7:19 Length: double (Synthetic.Records.Point in Records.cs)
+M:Note -> 18:28 Note: string (Synthetic.Records.Money in Records.cs)
+M:With -> 12:19 With(T value): Box<T> (Synthetic.Records.Box in Records.cs)
+M:Zero -> 17:25 Zero: Money (Synthetic.Records.Money in Records.cs)
+T:Box -> 10:28 Box (Synthetic.Records in Records.cs)
+T:Circle -> 22:15 Circle(double Radius) (Synthetic.Records in Records.cs)
+T:Money -> 15:31 Money(decimal Amount, string Currency) (Synthetic.Records in Records.cs)
+T:Person -> 3:15 Person(string Name, int Age) (Synthetic.Records in Records.cs)
+T:Point -> 5:22 Point(int X, int Y) (Synthetic.Records in Records.cs)
+T:Shape -> 21:24 Shape (Synthetic.Records in Records.cs)
+

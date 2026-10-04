@@ -67,7 +67,7 @@ object CSharpNamespaceSync {
 
     /** The one top-level namespace of the file; null when there is none or several. */
     fun declaredNamespace(text: CharSequence): String? =
-        CSharpDeclarations.scan(text).declarations.filter { it.kind == DeclarationKind.NAMESPACE }.singleOrNull()?.name
+        CSharpSyntaxModel.current.declarations(text).declarations.filter { it.kind == DeclarationKind.NAMESPACE }.singleOrNull()?.name
 
     fun confirm(project: Project, file: VirtualFile, old: String, new: String): Boolean {
         if (!askBeforeAdjusting) return true
@@ -96,7 +96,7 @@ object CSharpNamespaceSync {
 /** The text change alone: the name of the top-level `namespace` declaration, file-scoped or block. */
 object CSharpNamespaceRename {
     fun rename(text: CharSequence, old: String, new: String): String? {
-        val declaration = CSharpDeclarations.scan(text).declarations.singleOrNull { it.kind == DeclarationKind.NAMESPACE && it.name == old } ?: return null
+        val declaration = CSharpSyntaxModel.current.declarations(text).declarations.singleOrNull { it.kind == DeclarationKind.NAMESPACE && it.name == old } ?: return null
         return text.replaceRange(declaration.nameRange.startOffset, declaration.nameRange.endOffset, new).toString()
     }
 }

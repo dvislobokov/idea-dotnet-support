@@ -178,7 +178,7 @@ object CSharpGhostText {
      */
     fun constructorAssignment(text: CharSequence, offset: Int): String? {
         if (!isBlankLine(text, offset)) return null
-        val path = CSharpDeclarations.scan(text).pathTo(offset)
+        val path = CSharpSyntaxModel.current.declarations(text).pathTo(offset)
         val constructor = path.lastOrNull()?.takeIf { it.kind == DeclarationKind.CONSTRUCTOR } ?: return null
         val type = path.getOrNull(path.size - 2)?.takeIf { it.kind.isType } ?: return null
         val body = constructor.body ?: return null
@@ -230,7 +230,7 @@ object CSharpGhostText {
         val interfaceName = name.length > 1 && name[0] == 'I' && name[1].isUpperCase()
         if ((keyword == "interface") != interfaceName) return null
         if (!name.startsWith(typed) || name == typed) return null
-        if (CSharpDeclarations.scan(withoutLine(text, offset)).all().any { it.kind.isType }) return null
+        if (CSharpSyntaxModel.current.declarations(withoutLine(text, offset)).all().any { it.kind.isType }) return null
         return (if (space.isEmpty()) " " else "") + name.substring(typed.length)
     }
 
@@ -336,7 +336,7 @@ object CSharpGhostText {
     }
 
     private fun enclosingType(text: CharSequence, offset: Int): CSharpDeclarationInfo? =
-        CSharpDeclarations.scan(withoutLine(text, offset)).pathTo(offset).lastOrNull()?.takeIf { it.kind.isType }
+        CSharpSyntaxModel.current.declarations(withoutLine(text, offset)).pathTo(offset).lastOrNull()?.takeIf { it.kind.isType }
 
     private fun isBlankLine(text: CharSequence, offset: Int): Boolean = lineBefore(text, offset)?.isBlank() == true
 
@@ -362,7 +362,7 @@ object CSharpScopeNames {
 
     fun visibleAt(text: CharSequence, offset: Int): Set<String> {
         val names = LinkedHashSet<String>()
-        val path = CSharpDeclarations.scan(text).pathTo(offset)
+        val path = CSharpSyntaxModel.current.declarations(text).pathTo(offset)
         val member = path.lastOrNull { !it.kind.isType && it.kind != DeclarationKind.NAMESPACE }
         member?.parameters?.let { names += parameterNames(it) }
         for (type in path.filter { it.kind.isType }) {

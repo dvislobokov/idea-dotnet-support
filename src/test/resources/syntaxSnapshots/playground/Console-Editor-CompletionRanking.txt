@@ -1,0 +1,131 @@
+## declarations
+usings 1:1-1:24
+namespace Playground.Editor  name 3:11-3:28  range 3:1-92:2
+  class CompletionRanking [public]  name 11:14-11:31  range 11:1-84:2 body 12:1-84:2
+    field _orders: List<RankedOrder> [private readonly]  name 13:40-13:47  range 13:5-13:56
+    field _title: string [private readonly]  name 14:29-14:35  range 14:5-14:48
+    property Count: int [public]  name 16:16-16:21  range 16:5-16:39
+    property Name: string [public]  name 17:19-17:23  range 17:5-17:43 body 17:24-17:37
+    method Total(RankedOrder order): decimal [public]  name 19:20-19:25  range 19:5-19:77
+    method Save(RankedOrder order, CancellationToken cancellationToken): void [private]  name 21:18-21:22  range 21:5-21:101
+    method Send(string message): void [private]  name 22:18-22:22  range 22:5-22:69
+    method Run(CancellationToken token): void [private]  name 23:18-23:21  range 23:5-23:87
+    method Handle(RankedOrder order, string customerName, CancellationToken cancellationToken): Task<RankedOrder> [public async]  name 25:36-25:42  range 25:5-76:6 body 26:5-76:6
+  class RankedOrder [public]  name 86:14-86:25  range 86:1-92:2 body 87:1-92:2
+    property Amount: int [public]  name 88:16-88:22  range 88:5-88:36 body 88:23-88:36
+    property Quantity: int [public]  name 89:16-89:24  range 89:5-89:38 body 89:25-89:38
+    property Price: decimal [public]  name 90:20-90:25  range 90:5-90:39 body 90:26-90:39
+    property Customer: string [public]  name 91:19-91:27  range 91:5-91:47 body 91:28-91:41
+
+## structure view
+Playground.Editor
+  CompletionRanking
+    _orders: List<RankedOrder>
+    _title: string
+    Count: int
+    Name: string
+    Total(RankedOrder order): decimal
+    Save(RankedOrder order, CancellationToken cancellationToken): void
+    Send(string message): void
+    Run(CancellationToken token): void
+    Handle(RankedOrder order, string customerName, CancellationToken cancellationToken): Task<RankedOrder>
+  RankedOrder
+    Amount: int
+    Quantity: int
+    Price: decimal
+    Customer: string
+
+## folding
+5:1-10:15  /// Live check of the order of the completion list and of the suggestion statistics ...  | /// <summary>
+12:1-84:2  {...}  | {
+26:5-76:6  {...}  | {
+45:9-46:151  // TYPE:expected-type — `int amount = `. EXPECT: gray `count;` at once, Tab takes i...  | // TYPE:expected-type — `int amount = `. EXPECT: gray `count;` at once, Tab takes it. With Ctrl+Space instead: `count` first, then `Count`;
+48:9-49:153  // TYPE:method-by-type — `decimal sum = `. EXPECT: gray `Total(order);`, Tab takes ...  | // TYPE:method-by-type — `decimal sum = `. EXPECT: gray `Total(order);`, Tab takes it. With Ctrl+Space instead: the method `Total` above
+51:9-53:160  // TYPE:parameter-name — `Save(`. EXPECT: gray `order, cancellationToken` right aft...  | // TYPE:parameter-name — `Save(`. EXPECT: gray `order, cancellationToken` right after the parenthesis, before the solution is loaded as well
+57:9-58:81  // TYPE:partial-name — `Run(`. EXPECT: gray `cancellationToken`: the parameter is c...  | // TYPE:partial-name — `Run(`. EXPECT: gray `cancellationToken`: the parameter is called `token`, and it is the one CancellationToken at hand.
+66:9-67:93  // TYPE:after-dot — `int amount = order.`. EXPECT: `Amount` first (the name); `Quan...  | // TYPE:after-dot — `int amount = order.`. EXPECT: `Amount` first (the name); `Quantity` is an int as well and is NOT moved up:
+71:9-72:118  // TYPE:chosen-before — type `_or`, Enter (`_orders`), Ctrl+Z; three times. Then ty...  | // TYPE:chosen-before — type `_or`, Enter (`_orders`), Ctrl+Z; three times. Then type `_` on the empty line.
+78:5-79:153  // TYPE:stats-ghost — type `public string Title` under this comment, wait for the g...  | // TYPE:stats-ghost — type `public string Title` under this comment, wait for the gray ` { get; set; }`, press Tab.
+81:5-83:109  // TYPE:stats-list — after the markers above open .NET | Suggestion Statistics....  | // TYPE:stats-list — after the markers above open .NET | Suggestion Statistics.
+87:1-92:2  {...}  | {
+
+## breadcrumbs
+1: 
+3: Playground.Editor
+11: Playground.Editor > CompletionRanking
+13: Playground.Editor > CompletionRanking > _orders
+14: Playground.Editor > CompletionRanking > _title
+16: Playground.Editor > CompletionRanking > Count
+17: Playground.Editor > CompletionRanking > Name
+19: Playground.Editor > CompletionRanking > Total()
+21: Playground.Editor > CompletionRanking > Save()
+22: Playground.Editor > CompletionRanking > Send()
+23: Playground.Editor > CompletionRanking > Run()
+25: Playground.Editor > CompletionRanking > Handle()
+78: Playground.Editor > CompletionRanking
+86: Playground.Editor > RankedOrder
+88: Playground.Editor > RankedOrder > Amount
+89: Playground.Editor > RankedOrder > Quantity
+90: Playground.Editor > RankedOrder > Price
+91: Playground.Editor > RankedOrder > Customer
+92: Playground.Editor > RankedOrder
+
+## IL Viewer: type / member at the line
+1: - / -
+11: Playground.Editor.CompletionRanking / -
+13: Playground.Editor.CompletionRanking / _orders
+14: Playground.Editor.CompletionRanking / _title
+16: Playground.Editor.CompletionRanking / Count
+17: Playground.Editor.CompletionRanking / Name
+19: Playground.Editor.CompletionRanking / Total
+21: Playground.Editor.CompletionRanking / Save
+22: Playground.Editor.CompletionRanking / Send
+23: Playground.Editor.CompletionRanking / Run
+25: Playground.Editor.CompletionRanking / Handle
+78: Playground.Editor.CompletionRanking / -
+86: Playground.Editor.RankedOrder / -
+88: Playground.Editor.RankedOrder / Amount
+89: Playground.Editor.RankedOrder / Quantity
+90: Playground.Editor.RankedOrder / Price
+91: Playground.Editor.RankedOrder / Customer
+92: Playground.Editor.RankedOrder / -
+
+## Go to Base: member at the line
+1: -
+16: CompletionRanking.Count
+17: CompletionRanking.Name
+19: CompletionRanking.Total(RankedOrder order)
+21: CompletionRanking.Save(RankedOrder order, CancellationToken cancellationToken)
+22: CompletionRanking.Send(string message)
+23: CompletionRanking.Run(CancellationToken token)
+25: CompletionRanking.Handle(RankedOrder order, string customerName, CancellationToken cancellationToken)
+27: CompletionRanking.Handle(RankedOrder order, string customerName, CancellationToken cancellationToken) (in body)
+78: -
+88: RankedOrder.Amount
+89: RankedOrder.Quantity
+90: RankedOrder.Price
+91: RankedOrder.Customer
+92: -
+
+## breakpoint lines
+13-14, 16-17, 19, 21-23, 26-29, 31-33, 35, 37, 39, 41, 74-76, 88-91
+
+## run gutter
+
+## Go to Class / Symbol
+M:Amount -> 88:16 Amount: int (Playground.Editor.RankedOrder in Console-Editor-CompletionRanking.cs)
+M:Count -> 16:16 Count: int (Playground.Editor.CompletionRanking in Console-Editor-CompletionRanking.cs)
+M:Customer -> 91:19 Customer: string (Playground.Editor.RankedOrder in Console-Editor-CompletionRanking.cs)
+M:Handle -> 25:36 Handle(RankedOrder order, string customerName, CancellationToken cancellationToken): Task<RankedOrder> (Playground.Editor.CompletionRanking in Console-Editor-CompletionRanking.cs)
+M:Name -> 17:19 Name: string (Playground.Editor.CompletionRanking in Console-Editor-CompletionRanking.cs)
+M:Price -> 90:20 Price: decimal (Playground.Editor.RankedOrder in Console-Editor-CompletionRanking.cs)
+M:Quantity -> 89:16 Quantity: int (Playground.Editor.RankedOrder in Console-Editor-CompletionRanking.cs)
+M:Run -> 23:18 Run(CancellationToken token): void (Playground.Editor.CompletionRanking in Console-Editor-CompletionRanking.cs)
+M:Save -> 21:18 Save(RankedOrder order, CancellationToken cancellationToken): void (Playground.Editor.CompletionRanking in Console-Editor-CompletionRanking.cs)
+M:Send -> 22:18 Send(string message): void (Playground.Editor.CompletionRanking in Console-Editor-CompletionRanking.cs)
+M:Total -> 19:20 Total(RankedOrder order): decimal (Playground.Editor.CompletionRanking in Console-Editor-CompletionRanking.cs)
+M:_orders -> 13:40 _orders: List<RankedOrder> (Playground.Editor.CompletionRanking in Console-Editor-CompletionRanking.cs)
+M:_title -> 14:29 _title: string (Playground.Editor.CompletionRanking in Console-Editor-CompletionRanking.cs)
+T:CompletionRanking -> 11:14 CompletionRanking (Playground.Editor in Console-Editor-CompletionRanking.cs)
+T:RankedOrder -> 86:14 RankedOrder (Playground.Editor in Console-Editor-CompletionRanking.cs)
+

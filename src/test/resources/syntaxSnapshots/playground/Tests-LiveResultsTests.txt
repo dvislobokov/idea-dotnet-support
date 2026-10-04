@@ -1,0 +1,84 @@
+## declarations
+usings 1:1-2:26
+namespace Playground.Tests  name 4:11-4:27  range 4:1-41:2
+  class LiveResultsTests(ITestOutputHelper output) [public]  name 13:14-13:30  range 13:1-41:2 body 14:1-41:2
+    method Slow1(): void [public]  name 16:17-16:22  range 15:5-16:47
+    method Slow2(): void [public]  name 19:17-19:22  range 18:5-19:47
+    method Slow3(): void [public]  name 22:17-22:22  range 21:5-22:47
+    method Fails(): void [public]  name 25:17-25:22  range 24:5-29:6 body 26:5-29:6
+    method Skipped(): void [public]  name 32:17-32:24  range 31:5-32:30 body 32:27-32:30
+    method WritesOutput(): void [public]  name 35:17-35:29  range 34:5-40:6 body 36:5-40:6
+
+## structure view
+Playground.Tests
+  LiveResultsTests(ITestOutputHelper output)
+    Slow1(): void
+    Slow2(): void
+    Slow3(): void
+    Fails(): void
+    Skipped(): void
+    WritesOutput(): void
+
+## folding
+1:7-2:26  ... (collapsed)  | Xunit;
+6:1-12:15  /// LIVE: results while the tests run. Run the class (▶ next to it, or Run on Tests....  | /// <summary>
+14:1-41:2  {...}  | {
+26:5-29:6  {...}  | {
+36:5-40:6  {...}  | {
+
+## breadcrumbs
+1: 
+4: Playground.Tests
+13: Playground.Tests > LiveResultsTests
+15: Playground.Tests > LiveResultsTests > Slow1()
+18: Playground.Tests > LiveResultsTests > Slow2()
+21: Playground.Tests > LiveResultsTests > Slow3()
+24: Playground.Tests > LiveResultsTests > Fails()
+31: Playground.Tests > LiveResultsTests > Skipped()
+34: Playground.Tests > LiveResultsTests > WritesOutput()
+41: Playground.Tests > LiveResultsTests
+
+## IL Viewer: type / member at the line
+1: - / -
+13: Playground.Tests.LiveResultsTests / -
+15: Playground.Tests.LiveResultsTests / Slow1
+18: Playground.Tests.LiveResultsTests / Slow2
+21: Playground.Tests.LiveResultsTests / Slow3
+24: Playground.Tests.LiveResultsTests / Fails
+31: Playground.Tests.LiveResultsTests / Skipped
+34: Playground.Tests.LiveResultsTests / WritesOutput
+41: Playground.Tests.LiveResultsTests / -
+
+## Go to Base: member at the line
+1: -
+15: LiveResultsTests.Slow1()
+18: LiveResultsTests.Slow2()
+21: LiveResultsTests.Slow3()
+24: LiveResultsTests.Fails()
+27: LiveResultsTests.Fails() (in body)
+31: LiveResultsTests.Skipped()
+34: LiveResultsTests.WritesOutput()
+37: LiveResultsTests.WritesOutput() (in body)
+41: -
+
+## breakpoint lines
+16, 19, 22, 26-29, 32, 36-40
+
+## run gutter
+13:14 LiveResultsTests  FullyQualifiedName~Playground.Tests.LiveResultsTests.
+16:17 LiveResultsTests.Slow1  FullyQualifiedName~Playground.Tests.LiveResultsTests.Slow1
+19:17 LiveResultsTests.Slow2  FullyQualifiedName~Playground.Tests.LiveResultsTests.Slow2
+22:17 LiveResultsTests.Slow3  FullyQualifiedName~Playground.Tests.LiveResultsTests.Slow3
+25:17 LiveResultsTests.Fails  FullyQualifiedName~Playground.Tests.LiveResultsTests.Fails
+32:17 LiveResultsTests.Skipped  FullyQualifiedName~Playground.Tests.LiveResultsTests.Skipped
+35:17 LiveResultsTests.WritesOutput  FullyQualifiedName~Playground.Tests.LiveResultsTests.WritesOutput
+
+## Go to Class / Symbol
+M:Fails -> 25:17 Fails(): void (Playground.Tests.LiveResultsTests in Tests-LiveResultsTests.cs)
+M:Skipped -> 32:17 Skipped(): void (Playground.Tests.LiveResultsTests in Tests-LiveResultsTests.cs)
+M:Slow1 -> 16:17 Slow1(): void (Playground.Tests.LiveResultsTests in Tests-LiveResultsTests.cs)
+M:Slow2 -> 19:17 Slow2(): void (Playground.Tests.LiveResultsTests in Tests-LiveResultsTests.cs)
+M:Slow3 -> 22:17 Slow3(): void (Playground.Tests.LiveResultsTests in Tests-LiveResultsTests.cs)
+M:WritesOutput -> 35:17 WritesOutput(): void (Playground.Tests.LiveResultsTests in Tests-LiveResultsTests.cs)
+T:LiveResultsTests -> 13:14 LiveResultsTests(ITestOutputHelper output) (Playground.Tests in Tests-LiveResultsTests.cs)
+

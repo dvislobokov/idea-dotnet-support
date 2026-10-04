@@ -64,7 +64,7 @@ class CSharpMemberGroupRuleProvider : FileStructureGroupRuleProvider {
         override fun getParentGroupsFor(usage: Usage, targets: Array<out UsageTarget>): List<UsageGroup> {
             val (file, range) = CSharpUsages.locate(usage) ?: return emptyList()
             val virtualFile = file.virtualFile ?: return emptyList()
-            val path = CSharpUsages.containers(CSharpStructure.of(file), range.startOffset)
+            val path = CSharpUsages.containers(CSharpSyntaxModel.current.declarations(file), range.startOffset)
             return path.mapIndexed { index, declaration -> MemberGroup(file.project, virtualFile, declaration, path.getOrNull(index - 1)?.kind, path.take(index + 1).map { it.name + it.parameters.orEmpty() }) }
         }
 
@@ -83,7 +83,7 @@ internal object CSharpUsages {
 
     /** The lexed file, once per change of it: every usage of the file is classified on the same tokens. */
     fun analysis(file: PsiFile): CSharpUsageKinds.Analysis = CachedValuesManager.getCachedValue(file) {
-        CachedValueProvider.Result.create(CSharpUsageKinds.Analysis(file.viewProvider.contents, CSharpStructure.of(file)), file)
+        CachedValueProvider.Result.create(CSharpUsageKinds.Analysis(file.viewProvider.contents, CSharpSyntaxModel.current.declarations(file)), file)
     }
 
     /** The types and the member around [offset], the outermost first; namespaces are left to Group by Package / Directory. */

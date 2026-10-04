@@ -40,7 +40,7 @@ import com.intellij.util.ui.JBUI
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetHelper
 import io.github.dotnetsupport.cli.PluginLog
-import io.github.dotnetsupport.lang.CSharpDeclarations
+import io.github.dotnetsupport.lang.CSharpSyntaxModel
 import io.github.dotnetsupport.lang.DeclarationKind
 import io.github.dotnetsupport.monitor.MonitorTarget
 import io.github.dotnetsupport.monitor.ProcessSampler
@@ -348,7 +348,7 @@ object AllocationTotals {
         if (lines.size < 2) return emptyMap()
         val totals = LinkedHashMap<Int, Pair<Long, Double>>()
         val starts = lineStarts(text)
-        for (method in CSharpDeclarations.scan(text).all()) {
+        for (method in CSharpSyntaxModel.current.declarations(text).all()) {
             if (method.kind != DeclarationKind.METHOD && method.kind != DeclarationKind.CONSTRUCTOR && method.kind != DeclarationKind.PROPERTY) continue
             val first = lineOf(starts, method.nameRange.startOffset) + 1
             val last = lineOf(starts, method.range.endOffset) + 1

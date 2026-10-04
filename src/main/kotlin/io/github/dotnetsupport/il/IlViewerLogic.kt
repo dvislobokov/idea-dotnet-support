@@ -2,7 +2,7 @@ package io.github.dotnetsupport.il
 
 import com.intellij.openapi.util.TextRange
 import io.github.dotnetsupport.lang.CSharpDeclarationInfo
-import io.github.dotnetsupport.lang.CSharpDeclarations
+import io.github.dotnetsupport.lang.CSharpSyntaxModel
 import io.github.dotnetsupport.lang.DeclarationKind
 
 /** What the IL Viewer shows. */
@@ -33,7 +33,7 @@ sealed class IlViewState {
 object IlViewerLogic {
     /** The metadata name of the type around [offset] (`Shop.Orders+Line`, generics with their arity: ``Cache`1``) and the member, as the helper wants them. */
     fun names(text: CharSequence, offset: Int): Pair<String?, String?> {
-        val path = CSharpDeclarations.scan(text).pathTo(offset)
+        val path = CSharpSyntaxModel.current.declarations(text).pathTo(offset)
         val types = path.filter { it.kind.isType }
         if (types.isEmpty()) return null to null
         val namespace = path.takeWhile { !it.kind.isType }.filter { it.kind == DeclarationKind.NAMESPACE }.joinToString(".") { it.name }

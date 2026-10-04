@@ -1,0 +1,138 @@
+## declarations
+namespace Synthetic.Nested  name 1:11-1:27  range 1:1-45:24
+  class Outer [public partial]  name 3:22-3:27  range 3:1-34:2 body 4:1-34:2
+    class Inner [public]  name 5:18-5:23  range 5:5-13:6 body 6:5-13:6
+      class Deepest [private]  name 7:23-7:30  range 7:9-10:10 body 8:9-10:10
+        method Leaf(): void [public]  name 9:25-9:29  range 9:13-9:35 body 9:32-9:35
+      property Value: int [public]  name 12:20-12:25  range 12:9-12:39 body 12:26-12:39
+    struct Point [protected internal]  name 15:31-15:36  range 15:5-15:54 body 15:37-15:54
+      field X: int [public]  name 15:50-15:51  range 15:39-15:52
+    enum Mode [public]  name 17:17-17:21  range 17:5-17:85 body 17:29-17:85
+      enum member First  name 17:31-17:36  range 17:31-17:40
+      enum member Second  name 17:53-17:59  range 17:53-17:59
+      enum member Third  name 17:61-17:66  range 17:61-17:83
+    constructor Outer() [static]  name 19:12-19:17  range 19:5-19:23 body 19:20-19:23
+    constructor ~Outer()  name 21:6-21:11  range 21:5-21:17 body 21:14-21:17
+    operator operator +(Outer a, Outer b): Outer [public static]  name 23:25-23:33  range 23:5-23:59
+    operator operator int(Outer o) [public static]  name 25:28-25:36  range 25:5-25:55
+    indexer this[int index]: int [public]  name 27:16-27:20  range 27:5-27:57 body 27:32-27:57
+    event Changed: EventHandler [public]  name 29:31-29:38  range 29:5-33:6 body 30:5-33:6
+  class Outer [public partial]  name 36:22-36:27  range 36:1-43:2 body 37:1-43:2
+    method SecondPart(): void [public]  name 38:17-38:27  range 38:5-42:6 body 39:5-42:6
+  class OnlyHere [file]  name 45:12-45:20  range 45:1-45:24 body 45:21-45:24
+
+## structure view
+Synthetic.Nested
+  Outer
+    Inner
+      Deepest
+        Leaf(): void
+      Value: int
+    Point
+      X: int
+    Mode
+      First
+      Second
+      Third
+    Outer()
+    ~Outer()
+    operator +(Outer a, Outer b): Outer
+    operator int(Outer o)
+    this[int index]: int
+    Changed: EventHandler
+  Outer
+    SecondPart(): void
+  OnlyHere
+
+## folding
+4:1-34:2  {...}  | {
+6:5-13:6  {...}  | {
+8:9-10:10  {...}  | {
+30:5-33:6  {...}  | {
+37:1-43:2  {...}  | {
+39:5-42:6  {...}  | {
+
+## breadcrumbs
+1: Synthetic.Nested
+3: Synthetic.Nested > Outer
+5: Synthetic.Nested > Outer > Inner
+7: Synthetic.Nested > Outer > Inner > Deepest
+9: Synthetic.Nested > Outer > Inner > Deepest > Leaf()
+10: Synthetic.Nested > Outer > Inner > Deepest
+12: Synthetic.Nested > Outer > Inner > Value
+13: Synthetic.Nested > Outer > Inner
+15: Synthetic.Nested > Outer > Point
+17: Synthetic.Nested > Outer > Mode
+19: Synthetic.Nested > Outer > Outer()
+21: Synthetic.Nested > Outer > ~Outer()
+23: Synthetic.Nested > Outer > operator +()
+25: Synthetic.Nested > Outer > operator int()
+27: Synthetic.Nested > Outer > this()
+29: Synthetic.Nested > Outer > Changed
+34: Synthetic.Nested > Outer
+38: Synthetic.Nested > Outer > SecondPart()
+43: Synthetic.Nested > Outer
+45: Synthetic.Nested > OnlyHere
+
+## IL Viewer: type / member at the line
+1: - / -
+3: Synthetic.Nested.Outer / -
+5: Synthetic.Nested.Outer+Inner / -
+7: Synthetic.Nested.Outer+Inner+Deepest / -
+9: Synthetic.Nested.Outer+Inner+Deepest / Leaf
+10: Synthetic.Nested.Outer+Inner+Deepest / -
+12: Synthetic.Nested.Outer+Inner / Value
+13: Synthetic.Nested.Outer+Inner / -
+15: Synthetic.Nested.Outer+Point / -
+17: Synthetic.Nested.Outer+Mode / -
+19: Synthetic.Nested.Outer / .cctor
+21: Synthetic.Nested.Outer / Finalize
+23: Synthetic.Nested.Outer / op_Addition
+25: Synthetic.Nested.Outer / op_Implicit
+27: Synthetic.Nested.Outer / Item
+29: Synthetic.Nested.Outer / Changed
+34: Synthetic.Nested.Outer / -
+38: Synthetic.Nested.Outer / SecondPart
+43: Synthetic.Nested.Outer / -
+45: Synthetic.Nested.OnlyHere / -
+
+## Go to Base: member at the line
+1: -
+9: Deepest.Leaf()
+10: -
+12: Inner.Value
+13: -
+27: Outer.this[int index]
+29: Outer.Changed
+31: Outer.Changed (in body)
+34: -
+38: Outer.SecondPart()
+40: Outer.SecondPart() (in body)
+43: -
+
+## breakpoint lines
+9, 12, 19, 21, 23, 25, 27, 30-33, 39-42
+
+## run gutter
+
+## Go to Class / Symbol
+M:Changed -> 29:31 Changed: EventHandler (Synthetic.Nested.Outer in NestedAndPartial.cs)
+M:First -> 17:31 First (Synthetic.Nested.Outer.Mode in NestedAndPartial.cs)
+M:Leaf -> 9:25 Leaf(): void (Synthetic.Nested.Outer.Inner.Deepest in NestedAndPartial.cs)
+M:Outer -> 3:22 Outer (Synthetic.Nested in NestedAndPartial.cs); 19:12 Outer() (Synthetic.Nested.Outer in NestedAndPartial.cs); 36:22 Outer (Synthetic.Nested in NestedAndPartial.cs)
+M:Second -> 17:53 Second (Synthetic.Nested.Outer.Mode in NestedAndPartial.cs)
+M:SecondPart -> 38:17 SecondPart(): void (Synthetic.Nested.Outer in NestedAndPartial.cs)
+M:Third -> 17:61 Third (Synthetic.Nested.Outer.Mode in NestedAndPartial.cs)
+M:Value -> 12:20 Value: int (Synthetic.Nested.Outer.Inner in NestedAndPartial.cs)
+M:X -> 15:50 X: int (Synthetic.Nested.Outer.Point in NestedAndPartial.cs)
+M:operator + -> 23:25 operator +(Outer a, Outer b): Outer (Synthetic.Nested.Outer in NestedAndPartial.cs)
+M:operator int -> 25:28 operator int(Outer o) (Synthetic.Nested.Outer in NestedAndPartial.cs)
+M:this -> 27:16 this[int index]: int (Synthetic.Nested.Outer in NestedAndPartial.cs)
+M:~Outer -> 21:6 ~Outer() (Synthetic.Nested.Outer in NestedAndPartial.cs)
+T:Deepest -> 7:23 Deepest (Synthetic.Nested.Outer.Inner in NestedAndPartial.cs)
+T:Inner -> 5:18 Inner (Synthetic.Nested.Outer in NestedAndPartial.cs)
+T:Mode -> 17:17 Mode (Synthetic.Nested.Outer in NestedAndPartial.cs)
+T:OnlyHere -> 45:12 OnlyHere (Synthetic.Nested in NestedAndPartial.cs)
+T:Outer -> 3:22 Outer (Synthetic.Nested in NestedAndPartial.cs); 36:22 Outer (Synthetic.Nested in NestedAndPartial.cs)
+T:Point -> 15:31 Point (Synthetic.Nested.Outer in NestedAndPartial.cs)
+

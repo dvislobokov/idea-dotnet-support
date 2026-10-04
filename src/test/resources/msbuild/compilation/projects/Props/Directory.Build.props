@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>11.0</LangVersion>
+    <DefineConstants>$(DefineConstants);FROM_PROPS</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DefineConstants>$(DefineConstants);SHIPPING</DefineConstants>
+  </PropertyGroup>
+</Project>

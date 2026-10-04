@@ -17,7 +17,7 @@ object CSharpInlineValues {
         val lineEnd = if (currentLine + 1 < lineStarts.size) lineStarts[currentLine + 1] else text.length
 
         // the member around the line; top-level statements have none, there the whole file above the line counts
-        val member = CSharpDeclarations.scan(text).pathTo(lineStarts[currentLine].coerceAtMost((text.length - 1).coerceAtLeast(0))).lastOrNull { !it.kind.isType && it.kind != DeclarationKind.NAMESPACE }
+        val member = CSharpSyntaxModel.current.declarations(text).pathTo(lineStarts[currentLine].coerceAtMost((text.length - 1).coerceAtLeast(0))).lastOrNull { !it.kind.isType && it.kind != DeclarationKind.NAMESPACE }
         val from = member?.range?.startOffset ?: 0
 
         val result = LinkedHashSet<Int>()

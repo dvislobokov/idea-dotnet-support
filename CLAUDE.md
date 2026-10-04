@@ -4,7 +4,7 @@
 Rider-подобная работа с .NET **без LSP, Roslyn и (пока) отладчика**. Всё держится на `dotnet` CLI, файлах проектов
 (`.sln`/`.slnx`, MSBuild, `project.assets.json`) и лексере C#. Парсера C# нет — «понимание» кода делается эвристиками по токенам:
 `lang/CSharpDeclarations` находит объявления (namespace / типы / члены), по ним парсер строит PSI-узлы `CSharpDeclaration` (Structure view, breadcrumbs,
-folding, Go to Class); внутри членов токены плоские. Меняешь, что сканер считает объявлением, — подними `VERSION` у `CSharpDeclarationIndex`.
+folding, Go to Class); внутри членов токены плоские. Меняешь, что сканер считает объявлением, — подними `VERSION` у `CSharpDeclarationIndex`. Потребители берут объявления только через фасад `lang/CSharpSyntaxModel` (подготовка шага 7 миграции: подмена парсера меняет его реализацию); что он отдаёт, записано снимками `CSharpSyntaxSnapshotTest` (`src/test/resources/syntaxSnapshots`) — поменял поведение сканера, перезапиши и просмотри их.
 
 Планы и статус: `ROADMAP.md` (чек-лист фич, ведётся по-русски), **`DAP_PLAN.md`** (отладчик на своём DAP-клиенте, пакет `debugger`: действующий план, справка по адаптеру
 и что осталось), `PLATFORM_DAP_PLAN.md` (история: отладчик на платформенном DAP-клиенте, этапы 0–6 и журнал находок — перенесён на свой клиент 2026-09-22), `LSP_PLAN.md` (C# через `roslyn-language-server`: платформенный LSP-клиент, кэш ответов, свои индексы плагина; действует до вехи 12.1 миграции), **`CSHARP_PSI_MIGRATION.md`** (свой PSI C# вместо сервера: парсер по образцу Roslyn, семантика со сверкой по Roslyn, переключатели `ROSLYN | NATIVE`, вехи отказа от сервера; решение 2026-10-04), **`NET_FRAMEWORK_PLAN.md`** (.NET Framework и проекты
@@ -61,7 +61,7 @@ export JAVA_HOME="C:\Program Files\JetBrains\IntelliJ IDEA 2026.1.4\jbr"   # JBR
 | Пакет | Что там |
 |---|---|
 | `solution` | модель и парсеры `.sln`/`.slnx`, `SolutionService` (solutions, `msBuildProject(file)`, assets, central package versions) |
-| `msbuild` | типы файлов MSBuild/XML, `DotNetProjects.findOwningProject`, target frameworks |
+| `msbuild` | типы файлов MSBuild/XML, `DotNetProjects.findOwningProject`, target frameworks, `MsBuildEvaluation` (MsBuildHost), `CompilationModel` (символы `#if`, `LangVersion`, usings, `Compile` по файлу — для csharp-psi) |
 | `view` | панель Solution (узлы, ключи `SolutionKey`/`ProjectKey`/…, Dependencies, nesting, Show All Files) |
 | `actions` | действия над solution; `SolutionContext` — что выбрано в дереве (`fromSelection`, `buildTarget`) |
 | `cli` | `DotNetCli` (поиск `dotnet`, `commandLine`, `execute`, `runInBackground`, нотификации), `DotNetTool` — глобальные tools |

@@ -1,0 +1,55 @@
+## declarations
+usings 1:1-2:13
+namespace Playground.Tests  name 4:11-4:27  range 4:1-25:2
+  class PricingTests [public]  name 7:14-7:26  range 7:1-25:2 body 8:1-25:2
+    method TotalAppliesTheDiscount(): void [public]  name 10:17-10:40  range 9:5-15:6 body 11:5-15:6
+    method DiscountBounds(decimal discount, decimal expected): void [public]  name 20:17-20:31  range 17:5-24:6 body 21:5-24:6
+
+## structure view
+Playground.Tests
+  PricingTests
+    TotalAppliesTheDiscount(): void
+    DiscountBounds(decimal discount, decimal expected): void
+
+## folding
+1:7-2:13  ... (collapsed)  | Playground.Lib;
+8:1-25:2  {...}  | {
+11:5-15:6  {...}  | {
+21:5-24:6  {...}  | {
+
+## breadcrumbs
+1: 
+4: Playground.Tests
+7: Playground.Tests > PricingTests
+9: Playground.Tests > PricingTests > TotalAppliesTheDiscount()
+17: Playground.Tests > PricingTests > DiscountBounds()
+25: Playground.Tests > PricingTests
+
+## IL Viewer: type / member at the line
+1: - / -
+7: Playground.Tests.PricingTests / -
+9: Playground.Tests.PricingTests / TotalAppliesTheDiscount
+17: Playground.Tests.PricingTests / DiscountBounds
+25: Playground.Tests.PricingTests / -
+
+## Go to Base: member at the line
+1: -
+9: PricingTests.TotalAppliesTheDiscount()
+12: PricingTests.TotalAppliesTheDiscount() (in body)
+17: PricingTests.DiscountBounds(decimal discount, decimal expected)
+22: PricingTests.DiscountBounds(decimal discount, decimal expected) (in body)
+25: -
+
+## breakpoint lines
+11-15, 21-24
+
+## run gutter
+7:14 PricingTests  FullyQualifiedName~Playground.Tests.PricingTests.
+10:17 PricingTests.TotalAppliesTheDiscount  FullyQualifiedName~Playground.Tests.PricingTests.TotalAppliesTheDiscount
+20:17 PricingTests.DiscountBounds  FullyQualifiedName~Playground.Tests.PricingTests.DiscountBounds
+
+## Go to Class / Symbol
+M:DiscountBounds -> 20:17 DiscountBounds(decimal discount, decimal expected): void (Playground.Tests.PricingTests in Tests-PricingTests.cs)
+M:TotalAppliesTheDiscount -> 10:17 TotalAppliesTheDiscount(): void (Playground.Tests.PricingTests in Tests-PricingTests.cs)
+T:PricingTests -> 7:14 PricingTests (Playground.Tests in Tests-PricingTests.cs)
+

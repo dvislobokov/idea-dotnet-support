@@ -1,0 +1,106 @@
+## declarations
+namespace Playground  name 1:11-1:21  range 1:1-90:2
+  class AllocationScenario [public static]  name 16:21-16:39  range 16:1-90:2 body 17:1-90:2
+    field Sink: object?[] [private static readonly]  name 18:39-18:43  range 18:5-18:62
+    method RunFast(): void [public static]  name 24:24-24:31  range 24:5-39:6 body 25:5-39:6
+    method Run(): void [public static]  name 41:24-41:27  range 41:5-50:6 body 42:5-50:6
+    method Round(int round): void [private static]  name 52:25-52:30  range 52:5-62:6 body 53:5-62:6
+    method Buffer(): byte[] [private static]  name 64:27-64:33  range 64:5-67:6 body 65:5-67:6
+    method Name(int round, int index): string [private static]  name 69:27-69:31  range 69:5-72:6 body 70:5-72:6
+    method Boxed(int value): object [private static]  name 74:27-74:32  range 74:5-77:6 body 75:5-77:6
+    method Numbers(): List<int> [private static]  name 79:30-79:37  range 79:5-84:6 body 80:5-84:6
+    method Counter(int start): Func<int> [private static]  name 86:30-86:37  range 86:5-89:6 body 87:5-89:6
+
+## structure view
+Playground
+  AllocationScenario
+    Sink: object?[]
+    RunFast(): void
+    Run(): void
+    Round(int round): void
+    Buffer(): byte[]
+    Name(int round, int index): string
+    Boxed(int value): object
+    Numbers(): List<int>
+    Counter(int start): Func<int>
+
+## folding
+3:1-15:15  /// `allocations`: memory is allocated at known places and at known rates, to check ...  | /// <summary>
+17:1-90:2  {...}  | {
+20:5-23:19  /// `allocations-fast`: the same rounds with no pause between them, and the number o...  | /// <summary>
+25:5-39:6  {...}  | {
+42:5-50:6  {...}  | {
+53:5-62:6  {...}  | {
+65:5-67:6  {...}  | {
+70:5-72:6  {...}  | {
+75:5-77:6  {...}  | {
+80:5-84:6  {...}  | {
+87:5-89:6  {...}  | {
+
+## breadcrumbs
+1: Playground
+16: Playground > AllocationScenario
+18: Playground > AllocationScenario > Sink
+20: Playground > AllocationScenario
+24: Playground > AllocationScenario > RunFast()
+41: Playground > AllocationScenario > Run()
+52: Playground > AllocationScenario > Round()
+64: Playground > AllocationScenario > Buffer()
+69: Playground > AllocationScenario > Name()
+74: Playground > AllocationScenario > Boxed()
+79: Playground > AllocationScenario > Numbers()
+86: Playground > AllocationScenario > Counter()
+90: Playground > AllocationScenario
+
+## IL Viewer: type / member at the line
+1: - / -
+16: Playground.AllocationScenario / -
+18: Playground.AllocationScenario / Sink
+20: Playground.AllocationScenario / -
+24: Playground.AllocationScenario / RunFast
+41: Playground.AllocationScenario / Run
+52: Playground.AllocationScenario / Round
+64: Playground.AllocationScenario / Buffer
+69: Playground.AllocationScenario / Name
+74: Playground.AllocationScenario / Boxed
+79: Playground.AllocationScenario / Numbers
+86: Playground.AllocationScenario / Counter
+90: Playground.AllocationScenario / -
+
+## Go to Base: member at the line
+1: -
+24: AllocationScenario.RunFast()
+26: AllocationScenario.RunFast() (in body)
+41: AllocationScenario.Run()
+43: AllocationScenario.Run() (in body)
+52: AllocationScenario.Round(int round)
+54: AllocationScenario.Round(int round) (in body)
+64: AllocationScenario.Buffer()
+66: AllocationScenario.Buffer() (in body)
+69: AllocationScenario.Name(int round, int index)
+71: AllocationScenario.Name(int round, int index) (in body)
+74: AllocationScenario.Boxed(int value)
+76: AllocationScenario.Boxed(int value) (in body)
+79: AllocationScenario.Numbers()
+81: AllocationScenario.Numbers() (in body)
+86: AllocationScenario.Counter(int start)
+88: AllocationScenario.Counter(int start) (in body)
+90: -
+
+## breakpoint lines
+18, 25-39, 42-50, 53-62, 65-67, 70-72, 75-77, 80-84, 87-89
+
+## run gutter
+
+## Go to Class / Symbol
+M:Boxed -> 74:27 Boxed(int value): object (Playground.AllocationScenario in Console-Allocations.cs)
+M:Buffer -> 64:27 Buffer(): byte[] (Playground.AllocationScenario in Console-Allocations.cs)
+M:Counter -> 86:30 Counter(int start): Func<int> (Playground.AllocationScenario in Console-Allocations.cs)
+M:Name -> 69:27 Name(int round, int index): string (Playground.AllocationScenario in Console-Allocations.cs)
+M:Numbers -> 79:30 Numbers(): List<int> (Playground.AllocationScenario in Console-Allocations.cs)
+M:Round -> 52:25 Round(int round): void (Playground.AllocationScenario in Console-Allocations.cs)
+M:Run -> 41:24 Run(): void (Playground.AllocationScenario in Console-Allocations.cs)
+M:RunFast -> 24:24 RunFast(): void (Playground.AllocationScenario in Console-Allocations.cs)
+M:Sink -> 18:39 Sink: object?[] (Playground.AllocationScenario in Console-Allocations.cs)
+T:AllocationScenario -> 16:21 AllocationScenario (Playground in Console-Allocations.cs)
+

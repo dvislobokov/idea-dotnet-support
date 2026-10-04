@@ -4,58 +4,13 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.TokenType
 import com.intellij.psi.tree.IElementType
 
-enum class DeclarationKind(val title: String, val isType: Boolean = false) {
-    NAMESPACE("namespace"),
-    CLASS("class", true), STRUCT("struct", true), INTERFACE("interface", true), ENUM("enum", true), RECORD("record", true), DELEGATE("delegate", true),
-    CONSTRUCTOR("constructor"), METHOD("method"), OPERATOR("operator"), PROPERTY("property"), INDEXER("indexer"), FIELD("field"), EVENT("event"), ENUM_MEMBER("enum member"),
-}
-
-/**
- * A declaration found by [CSharpDeclarations]. [range] runs from the first token of the declaration (its attributes
- * included) to its closing brace or semicolon; [body] is the `{ ... }` of it, braces included.
- */
-class CSharpDeclarationInfo(
-    val kind: DeclarationKind,
-    val name: String,
-    val nameRange: TextRange,
-    val range: TextRange,
-    val body: TextRange?,
-    /** `(int a, string b)` of a method, as written. */
-    val parameters: String?,
-    /** The return type of a method, the type of a property or a field. */
-    val type: String?,
-    val modifiers: Set<String>,
-    val children: List<CSharpDeclarationInfo>,
-) {
-    /** `Total(decimal discount): decimal`, `Name: string`, `Order`. */
-    val presentation: String get() = name + parameters.orEmpty() + type?.let { ": $it" }.orEmpty()
-
-    fun flatten(): Sequence<CSharpDeclarationInfo> = sequenceOf(this) + children.asSequence().flatMap { it.flatten() }
-}
-
-class CSharpFileStructure(val declarations: List<CSharpDeclarationInfo>, /** The block of using directives at the top of the file. */ val usings: TextRange?) {
-    fun all(): Sequence<CSharpDeclarationInfo> = declarations.asSequence().flatMap { it.flatten() }
-
-    /** Declarations around [offset], the outermost first. */
-    fun pathTo(offset: Int): List<CSharpDeclarationInfo> {
-        val path = ArrayList<CSharpDeclarationInfo>()
-        var level = declarations
-        while (true) {
-            val next = level.firstOrNull { it.range.containsOffset(offset) } ?: return path
-            path += next
-            level = next.children
-        }
-    }
-
-    /** `Shop.Orders.OrderService.Total` for the path of a declaration. */
-    fun qualifiedName(declaration: CSharpDeclarationInfo): String = pathTo(declaration.nameRange.startOffset).joinToString(".") { it.name }
-}
-
 /**
  * Namespaces, types and members of a C# file, found by tokens and the balance of braces: there is no parser. The header
  * of a member is everything up to its `{`, `;`, `=` or `=>`; what kind of member it is follows from the keywords and the
  * parentheses in it. Bodies are skipped, so locals and local functions are not seen. Tuned for code that compiles; on
  * code that is being typed it degrades to fewer declarations, never to an exception or an endless loop.
+ *
+ * The implementation behind [HeuristicCSharpSyntaxModel]: everything else asks [CSharpSyntaxModel.current].
  */
 object CSharpDeclarations {
     private class Token(val type: IElementType, val text: String, val start: Int, val end: Int) {

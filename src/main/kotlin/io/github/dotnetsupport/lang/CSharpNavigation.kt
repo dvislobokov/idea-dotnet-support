@@ -5,7 +5,7 @@ import com.intellij.navigation.NavigationItem
 import com.intellij.openapi.project.DumbAware
 import com.intellij.psi.PsiManager
 import com.intellij.psi.search.GlobalSearchScope
-import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.psi.PsiElement
 import com.intellij.util.Processor
 import com.intellij.util.indexing.DataIndexer
 import com.intellij.util.indexing.DefaultFileTypeSpecificInputFilter
@@ -31,13 +31,13 @@ class CSharpDeclarationIndex : ScalarIndexExtension<String>() {
     override fun getInputFilter(): FileBasedIndex.InputFilter = DefaultFileTypeSpecificInputFilter(CSharpFileType)
 
     override fun getIndexer(): DataIndexer<String, Void, FileContent> = DataIndexer { content ->
-        CSharpDeclarations.scan(content.contentAsText).all().filter { it.kind != DeclarationKind.NAMESPACE }.associate { key(it.kind.isType, it.name) to null }
+        CSharpSyntaxModel.current.declarations(content.contentAsText).all().filter { it.kind != DeclarationKind.NAMESPACE }.associate { key(it.kind.isType, it.name) to null }
     }
 
     companion object {
         val NAME: ID<String, Void> = ID.create("dotnet.csharp.declarations")
 
-        // bump when CSharpDeclarations starts to see declarations differently
+        // bump when CSharpSyntaxModel.current starts to see declarations differently
         private const val VERSION = 1
         const val TYPE_PREFIX = "T:"
         const val MEMBER_PREFIX = "M:"
@@ -67,11 +67,20 @@ abstract class CSharpGotoContributor(private val types: Boolean, private val mem
         for (file in files) {
             if (RoslynServerStatus.covers(parameters.project, file)) continue
             val psiFile = psiManager.findFile(file) ?: continue
-            for (declaration in PsiTreeUtil.findChildrenOfType(psiFile, CSharpDeclaration::class.java)) {
-                val matches = declaration.name == name && declaration.kind != DeclarationKind.NAMESPACE && (if (declaration.kind.isType) types else members)
-                if (matches && !processor.process(declaration)) return
-            }
+            if (!process(psiFile, name, processor)) return
         }
+    }
+
+    /** The declarations named [name] under [parent], in the order of the text; false when [processor] wants no more. */
+    private fun process(parent: PsiElement, name: String, processor: Processor<in NavigationItem>): Boolean {
+        val model = CSharpSyntaxModel.current
+        for (element in model.childDeclarations(parent)) {
+            val declaration = model.declarationOf(element)
+            val matches = declaration != null && declaration.name == name && declaration.kind != DeclarationKind.NAMESPACE && (if (declaration.kind.isType) types else members)
+            if (matches && !processor.process(element)) return false
+            if (!process(element, name, processor)) return false
+        }
+        return true
     }
 }
 

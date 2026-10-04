@@ -26,7 +26,7 @@ object CSharpScopeTypes {
 
     fun at(text: CharSequence, offset: Int): Map<String, Symbol> {
         val symbols = LinkedHashMap<String, Symbol>()
-        val path = CSharpDeclarations.scan(text).pathTo(offset)
+        val path = CSharpSyntaxModel.current.declarations(text).pathTo(offset)
         for (type in path.filter { it.kind.isType }) {
             for (member in type.children) {
                 if (member.kind != DeclarationKind.FIELD && member.kind != DeclarationKind.PROPERTY && member.kind != DeclarationKind.METHOD) continue
@@ -186,7 +186,7 @@ object CSharpExpectations {
 
     /** `return |`: the type of the member, the `T` of `Task<T>` in an async one. */
     private fun returned(text: CharSequence, offset: Int): CSharpExpected? {
-        val member = CSharpDeclarations.scan(text).pathTo(offset).lastOrNull { it.kind == DeclarationKind.METHOD || it.kind == DeclarationKind.PROPERTY } ?: return null
+        val member = CSharpSyntaxModel.current.declarations(text).pathTo(offset).lastOrNull { it.kind == DeclarationKind.METHOD || it.kind == DeclarationKind.PROPERTY } ?: return null
         val type = member.type?.takeIf { it != "void" } ?: return null
         val awaited = Regex("""^(?:System\.Threading\.Tasks\.)?(?:Task|ValueTask)<(.+)>$""").matchEntire(type)?.groupValues?.get(1)
         if ("async" in member.modifiers) return awaited?.let { CSharpExpected(it, null) }
@@ -291,7 +291,7 @@ object CSharpLocalCalls {
         var before = start
         while (before > 0 && text[before - 1].isWhitespace()) before--
         if (before > 0 && text[before - 1] == '.' && !text.subSequence(0, before - 1).trimEnd().endsWith("this")) return null
-        val type = CSharpDeclarations.scan(text).pathTo(offset).lastOrNull { it.kind.isType } ?: return null
+        val type = CSharpSyntaxModel.current.declarations(text).pathTo(offset).lastOrNull { it.kind.isType } ?: return null
         val method = type.children.filter { it.kind == DeclarationKind.METHOD && it.name == name }.singleOrNull() ?: return null
         val parameters = CSharpScopeTypes.parameters(method.parameters ?: return null).map { (parameter, written) -> listOfNotNull(written, parameter).joinToString(" ") }
         return Call(name, parameters, commas)

@@ -1,0 +1,42 @@
+## declarations
+namespace Synthetic.Directives  name 1:11-1:31  range 1:1-28:2
+  class Conditional [public]  name 3:14-3:25  range 3:1-28:2 body 4:1-28:2
+    method Run(int x): void [public]  name 6:17-6:20  range 6:5-27:28 body 7:5-27:28
+
+## structure view
+Synthetic.Directives
+  Conditional
+    Run(int x): void
+
+## folding
+4:1-28:2  {...}  | {
+7:5-27:28  {...}  | {
+19:1-21:11  Helpers  | #region Helpers
+
+## breadcrumbs
+1: Synthetic.Directives
+3: Synthetic.Directives > Conditional
+6: Synthetic.Directives > Conditional > Run()
+28: Synthetic.Directives > Conditional
+
+## IL Viewer: type / member at the line
+1: - / -
+3: Synthetic.Directives.Conditional / -
+6: Synthetic.Directives.Conditional / Run
+28: Synthetic.Directives.Conditional / -
+
+## Go to Base: member at the line
+1: -
+6: Conditional.Run(int x)
+8: Conditional.Run(int x) (in body)
+28: -
+
+## breakpoint lines
+7, 9-10, 12-13, 16, 20, 24, 27
+
+## run gutter
+
+## Go to Class / Symbol
+M:Run -> 6:17 Run(int x): void (Synthetic.Directives.Conditional in IfBranches.cs)
+T:Conditional -> 3:14 Conditional (Synthetic.Directives in IfBranches.cs)
+

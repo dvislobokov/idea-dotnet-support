@@ -16,9 +16,8 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.LspClient
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
-import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.ui.SimpleListCellRenderer
-import io.github.dotnetsupport.lang.CSharpDeclaration
+import io.github.dotnetsupport.lang.CSharpSyntaxModel
 import io.github.dotnetsupport.lang.CSharpFile
 import org.eclipse.lsp4j.ImplementationParams
 import org.eclipse.lsp4j.Position
@@ -113,10 +112,13 @@ object RoslynNavigation {
             val document = FileDocumentManager.getInstance().getDocument(file) ?: return@mapNotNull null
             if (start.line !in 0 until document.lineCount) return@mapNotNull null
             val offset = (document.getLineStartOffset(start.line) + start.character).coerceAtMost(document.getLineEndOffset(start.line))
-            val declaration = PsiManager.getInstance(project).findFile(file)?.findElementAt(offset)?.let { PsiTreeUtil.getParentOfType(it, CSharpDeclaration::class.java) }
+            val model = CSharpSyntaxModel.current
+            val psiFile = PsiManager.getInstance(project).findFile(file)
+            val declaration = psiFile?.let { model.declarationElementAt(it, offset) }
             val line = document.charsSequence.subSequence(document.getLineStartOffset(start.line), document.getLineEndOffset(start.line)).trim()
             val name = declaration?.presentation?.presentableText ?: line.toString()
-            val container = declaration?.containerName?.takeIf { it.isNotEmpty() }?.let { " in $it" }.orEmpty()
+            val containerName = declaration?.let(model::declarationOf)?.let { info -> model.declarations(declaration.containingFile).containersOf(info).joinToString(".") { it.name } }
+            val container = containerName?.takeIf { it.isNotEmpty() }?.let { " in $it" }.orEmpty()
             Target(file, offset, "$name$container  (${file.name}:${start.line + 1})", declaration?.getIcon(0))
         }
     }

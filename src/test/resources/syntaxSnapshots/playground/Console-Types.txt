@@ -1,0 +1,262 @@
+## declarations
+usings 1:1-1:26
+namespace Playground  name 3:11-3:21  range 3:1-86:2
+  enum Color [public]  name 5:13-5:18  range 5:1-5:39 body 5:19-5:39
+    enum member Red  name 5:21-5:24  range 5:21-5:24
+    enum member Green  name 5:26-5:31  range 5:26-5:31
+    enum member Blue  name 5:33-5:37  range 5:33-5:37
+  enum Access [public]  name 8:13-8:19  range 7:1-8:66 body 8:20-8:66
+    enum member None  name 8:22-8:26  range 8:22-8:30
+    enum member Read  name 8:32-8:36  range 8:32-8:40
+    enum member Write  name 8:42-8:47  range 8:42-8:51
+    enum member Execute  name 8:53-8:60  range 8:53-8:64
+  record Point(int X, int Y) [public readonly]  name 10:31-10:36  range 10:1-10:51
+  class Person(string name, int age) [public]  name 13:14-13:20  range 12:1-24:2 body 14:1-24:2
+    field _notes: List<string> [private readonly]  name 15:35-15:41  range 15:5-15:56
+    property MyProperty: int [public]  name 16:16-16:26  range 16:5-16:45 body 16:27-16:40
+    property Name: string [public]  name 17:19-17:23  range 17:5-17:40 body 17:24-17:32
+    property Age: int [public]  name 18:16-18:19  range 18:5-18:40 body 18:20-18:33
+    property Friend: Person? [public]  name 19:20-19:26  range 19:5-19:40 body 19:27-19:40
+    property IsAdult: bool [public]  name 20:17-20:24  range 20:5-20:38
+    property Notes: IReadOnlyList<string> [public]  name 21:34-21:39  range 21:5-21:50
+    method ToString(): string [public override]  name 23:28-23:36  range 23:5-23:59
+  class SlowToString [public]  name 27:14-27:26  range 27:1-34:2 body 28:1-34:2
+    method ToString(): string [public override]  name 29:28-29:36  range 29:5-33:6 body 30:5-33:6
+  class ThrowingProperty [public]  name 36:14-36:30  range 36:1-39:2 body 37:1-39:2
+    property Value: int [public]  name 38:16-38:21  range 38:5-38:78
+  record CachedOrder(int Id, string Name, byte[] Payload) [public]  name 43:15-43:26  range 43:1-43:64
+  class LeakyCache [public static]  name 46:21-46:31  range 46:1-52:2 body 47:1-52:2
+    field Orders: Dictionary<int, CachedOrder> [private static readonly]  name 48:58-48:64  range 48:5-48:73
+    method Remember(CachedOrder order): void [public static]  name 50:24-50:32  range 50:5-50:80
+    property Count: int [public static]  name 51:23-51:28  range 51:5-51:45
+  class PriceFeed [public static]  name 54:21-54:30  range 54:1-58:2 body 55:1-58:2
+    event Changed: EventHandler<decimal>? [public static]  name 56:48-56:55  range 56:5-56:56
+    property Subscribers: int [public static]  name 57:23-57:34  range 57:5-57:79
+  class PriceWatcher [public]  name 61:14-61:26  range 61:1-75:2 body 62:1-75:2
+    field _name: string [private readonly]  name 63:29-63:34  range 63:5-63:35
+    field _history: List<decimal> [private readonly]  name 64:36-64:44  range 64:5-64:53
+    constructor PriceWatcher(string name) [public]  name 66:12-66:24  range 66:5-70:6 body 67:5-70:6
+    method OnChanged(object? sender, decimal price): void [private]  name 72:18-72:27  range 72:5-72:82
+    method ToString(): string [public override]  name 74:28-74:36  range 74:5-74:48
+  class EndlessGetter [public]  name 77:14-77:27  range 77:1-86:2 body 78:1-86:2
+    property Forever: int [public]  name 79:16-79:23  range 79:5-85:6 body 80:5-85:6
+
+## structure view
+Playground
+  Color
+    Red
+    Green
+    Blue
+  Access
+    None
+    Read
+    Write
+    Execute
+  Point(int X, int Y)
+  Person(string name, int age)
+    _notes: List<string>
+    MyProperty: int
+    Name: string
+    Age: int
+    Friend: Person?
+    IsAdult: bool
+    Notes: IReadOnlyList<string>
+    ToString(): string
+  SlowToString
+    ToString(): string
+  ThrowingProperty
+    Value: int
+  CachedOrder(int Id, string Name, byte[] Payload)
+  LeakyCache
+    Orders: Dictionary<int, CachedOrder>
+    Remember(CachedOrder order): void
+    Count: int
+  PriceFeed
+    Changed: EventHandler<decimal>?
+    Subscribers: int
+  PriceWatcher
+    _name: string
+    _history: List<decimal>
+    PriceWatcher(string name)
+    OnChanged(object? sender, decimal price): void
+    ToString(): string
+  EndlessGetter
+    Forever: int
+
+## folding
+14:1-24:2  {...}  | {
+28:1-34:2  {...}  | {
+30:5-33:6  {...}  | {
+37:1-39:2  {...}  | {
+47:1-52:2  {...}  | {
+55:1-58:2  {...}  | {
+62:1-75:2  {...}  | {
+67:5-70:6  {...}  | {
+78:1-86:2  {...}  | {
+80:5-85:6  {...}  | {
+
+## breadcrumbs
+1: 
+3: Playground
+5: Playground > Color
+7: Playground > Access
+10: Playground > Point
+12: Playground > Person
+15: Playground > Person > _notes
+16: Playground > Person > MyProperty
+17: Playground > Person > Name
+18: Playground > Person > Age
+19: Playground > Person > Friend
+20: Playground > Person > IsAdult
+21: Playground > Person > Notes
+23: Playground > Person > ToString()
+24: Playground > Person
+26: Playground
+27: Playground > SlowToString
+29: Playground > SlowToString > ToString()
+34: Playground > SlowToString
+36: Playground > ThrowingProperty
+38: Playground > ThrowingProperty > Value
+39: Playground > ThrowingProperty
+41: Playground
+43: Playground > CachedOrder
+45: Playground
+46: Playground > LeakyCache
+48: Playground > LeakyCache > Orders
+50: Playground > LeakyCache > Remember()
+51: Playground > LeakyCache > Count
+52: Playground > LeakyCache
+54: Playground > PriceFeed
+56: Playground > PriceFeed > Changed
+57: Playground > PriceFeed > Subscribers
+58: Playground > PriceFeed
+60: Playground
+61: Playground > PriceWatcher
+63: Playground > PriceWatcher > _name
+64: Playground > PriceWatcher > _history
+66: Playground > PriceWatcher > PriceWatcher()
+72: Playground > PriceWatcher > OnChanged()
+74: Playground > PriceWatcher > ToString()
+75: Playground > PriceWatcher
+77: Playground > EndlessGetter
+79: Playground > EndlessGetter > Forever
+86: Playground > EndlessGetter
+
+## IL Viewer: type / member at the line
+1: - / -
+5: Playground.Color / -
+7: Playground.Access / -
+10: Playground.Point / -
+12: Playground.Person / -
+15: Playground.Person / _notes
+16: Playground.Person / MyProperty
+17: Playground.Person / Name
+18: Playground.Person / Age
+19: Playground.Person / Friend
+20: Playground.Person / IsAdult
+21: Playground.Person / Notes
+23: Playground.Person / ToString
+24: Playground.Person / -
+26: - / -
+27: Playground.SlowToString / -
+29: Playground.SlowToString / ToString
+34: Playground.SlowToString / -
+36: Playground.ThrowingProperty / -
+38: Playground.ThrowingProperty / Value
+39: Playground.ThrowingProperty / -
+41: - / -
+43: Playground.CachedOrder / -
+45: - / -
+46: Playground.LeakyCache / -
+48: Playground.LeakyCache / Orders
+50: Playground.LeakyCache / Remember
+51: Playground.LeakyCache / Count
+52: Playground.LeakyCache / -
+54: Playground.PriceFeed / -
+56: Playground.PriceFeed / Changed
+57: Playground.PriceFeed / Subscribers
+58: Playground.PriceFeed / -
+60: - / -
+61: Playground.PriceWatcher / -
+63: Playground.PriceWatcher / _name
+64: Playground.PriceWatcher / _history
+66: Playground.PriceWatcher / .ctor
+72: Playground.PriceWatcher / OnChanged
+74: Playground.PriceWatcher / ToString
+75: Playground.PriceWatcher / -
+77: Playground.EndlessGetter / -
+79: Playground.EndlessGetter / Forever
+86: Playground.EndlessGetter / -
+
+## Go to Base: member at the line
+1: -
+16: Person.MyProperty
+17: Person.Name
+18: Person.Age
+19: Person.Friend
+20: Person.IsAdult
+21: Person.Notes
+23: Person.ToString()
+24: -
+29: SlowToString.ToString()
+31: SlowToString.ToString() (in body)
+34: -
+38: ThrowingProperty.Value
+39: -
+50: LeakyCache.Remember(CachedOrder order)
+51: LeakyCache.Count
+52: -
+56: PriceFeed.Changed
+57: PriceFeed.Subscribers
+58: -
+72: PriceWatcher.OnChanged(object? sender, decimal price)
+74: PriceWatcher.ToString()
+75: -
+79: EndlessGetter.Forever
+81: EndlessGetter.Forever (in body)
+86: -
+
+## breakpoint lines
+15-21, 23, 30-33, 38, 48, 50-51, 57, 64, 67-70, 72, 74, 80-85
+
+## run gutter
+
+## Go to Class / Symbol
+M:Age -> 18:16 Age: int (Playground.Person in Console-Types.cs)
+M:Blue -> 5:33 Blue (Playground.Color in Console-Types.cs)
+M:Changed -> 56:48 Changed: EventHandler<decimal>? (Playground.PriceFeed in Console-Types.cs)
+M:Count -> 51:23 Count: int (Playground.LeakyCache in Console-Types.cs)
+M:Execute -> 8:53 Execute (Playground.Access in Console-Types.cs)
+M:Forever -> 79:16 Forever: int (Playground.EndlessGetter in Console-Types.cs)
+M:Friend -> 19:20 Friend: Person? (Playground.Person in Console-Types.cs)
+M:Green -> 5:26 Green (Playground.Color in Console-Types.cs)
+M:IsAdult -> 20:17 IsAdult: bool (Playground.Person in Console-Types.cs)
+M:MyProperty -> 16:16 MyProperty: int (Playground.Person in Console-Types.cs)
+M:Name -> 17:19 Name: string (Playground.Person in Console-Types.cs)
+M:None -> 8:22 None (Playground.Access in Console-Types.cs)
+M:Notes -> 21:34 Notes: IReadOnlyList<string> (Playground.Person in Console-Types.cs)
+M:OnChanged -> 72:18 OnChanged(object? sender, decimal price): void (Playground.PriceWatcher in Console-Types.cs)
+M:Orders -> 48:58 Orders: Dictionary<int, CachedOrder> (Playground.LeakyCache in Console-Types.cs)
+M:PriceWatcher -> 61:14 PriceWatcher (Playground in Console-Types.cs); 66:12 PriceWatcher(string name) (Playground.PriceWatcher in Console-Types.cs)
+M:Read -> 8:32 Read (Playground.Access in Console-Types.cs)
+M:Red -> 5:21 Red (Playground.Color in Console-Types.cs)
+M:Remember -> 50:24 Remember(CachedOrder order): void (Playground.LeakyCache in Console-Types.cs)
+M:Subscribers -> 57:23 Subscribers: int (Playground.PriceFeed in Console-Types.cs)
+M:ToString -> 23:28 ToString(): string (Playground.Person in Console-Types.cs); 29:28 ToString(): string (Playground.SlowToString in Console-Types.cs); 74:28 ToString(): string (Playground.PriceWatcher in Console-Types.cs)
+M:Value -> 38:16 Value: int (Playground.ThrowingProperty in Console-Types.cs)
+M:Write -> 8:42 Write (Playground.Access in Console-Types.cs)
+M:_history -> 64:36 _history: List<decimal> (Playground.PriceWatcher in Console-Types.cs)
+M:_name -> 63:29 _name: string (Playground.PriceWatcher in Console-Types.cs)
+M:_notes -> 15:35 _notes: List<string> (Playground.Person in Console-Types.cs)
+T:Access -> 8:13 Access (Playground in Console-Types.cs)
+T:CachedOrder -> 43:15 CachedOrder(int Id, string Name, byte[] Payload) (Playground in Console-Types.cs)
+T:Color -> 5:13 Color (Playground in Console-Types.cs)
+T:EndlessGetter -> 77:14 EndlessGetter (Playground in Console-Types.cs)
+T:LeakyCache -> 46:21 LeakyCache (Playground in Console-Types.cs)
+T:Person -> 13:14 Person(string name, int age) (Playground in Console-Types.cs)
+T:Point -> 10:31 Point(int X, int Y) (Playground in Console-Types.cs)
+T:PriceFeed -> 54:21 PriceFeed (Playground in Console-Types.cs)
+T:PriceWatcher -> 61:14 PriceWatcher (Playground in Console-Types.cs)
+T:SlowToString -> 27:14 SlowToString (Playground in Console-Types.cs)
+T:ThrowingProperty -> 36:14 ThrowingProperty (Playground in Console-Types.cs)
+

@@ -208,6 +208,65 @@ Multi-targeting: у файла разные символы под разные T
 PSI; `CSharpDeclaration`-узлы и сканер удаляются этим же шагом или оставляются фасадом до шага 9. Поднять версии стабов /
 индексов. Гейт — шаг 5 Go-плагина: тесты, корпус, робот, живая проверка.
 
+**Подготовка шага 7: фасад `CSharpSyntaxModel` (2026-10-04).** Все потребители эвристических объявлений спрашивают
+один интерфейс `lang/CSharpSyntaxModel.kt`; реализация сегодня — `HeuristicCSharpSyntaxModel` (сканер
+`CSharpDeclarations`, узлы `CSharpDeclaration`, поиск методов с атрибутами по токенам, перенесённый из `TestDiscovery`).
+Подмена парсера меняет только `CSharpSyntaxModel.current` (выбор потом — по `CSharpFeature.SYNTAX_TREE`; он зависит только
+от настроек приложения, поэтому потребителям без проекта тоже годится). Обход фасада ловит
+`CSharpSyntaxSnapshotTest.testConsumersGoThroughTheFacade`.
+
+API: `declarations(text)` / `declarations(file)` → `CSharpFileStructure` (дерево `CSharpDeclarationInfo`: вид, имя и его
+диапазон, диапазон с атрибутами, тело `{…}`, параметры и тип как написаны, модификаторы, дети; блок `using`; `pathTo(offset)`,
+`containersOf`, `qualifiedName`); `declarationOf(element)`, `childDeclarations(parent)`, `declarationElementAt(file, offset)` —
+PSI-элементы объявлений для навигации; `attributedMethods(text, names)` — методы с атрибутами и CLR-имена типов файла.
+На Roslyn ложится так: `BaseNamespaceDeclaration` / `BaseTypeDeclaration` / `DelegateDeclaration` / `MemberDeclaration` →
+`CSharpDeclarationInfo`, `Block` → `body`, `UsingDirective`s `CompilationUnit` → `usings`. Упрощения модели, которые PSI
+должен воспроизвести или поменять осознанно: деструктор — CONSTRUCTOR `~Name`, conversion operator — OPERATOR,
+`record struct` — RECORD, `int a, b;` — одно поле по первому имени, локальные функции и top-level statements не видны.
+
+| Потребитель | Что спрашивает | Источник до фасада |
+|---|---|---|
+| Structure view, File Structure (`CSharpStructureView.kt`) | дочерние объявления элемента, presentation, объявление под кареткой | узлы `CSharpDeclaration` |
+| Breadcrumbs, sticky lines | объявление элемента: имя, есть ли параметры, вид | узлы |
+| Folding (`CSharpFolding`) | тела объявлений, блок `using` (комментарии, `#region` — лексер) | `CSharpDeclarations.scan` |
+| Go to Class / Symbol (`CSharpDeclarationIndex`, `CSharpGotoContributor`) | имена типов и членов текста; элементы с данным именем | скан + узлы |
+| IL Viewer (`IlViewerLogic.names`) | путь у offset: namespace, вложенные типы (арность — по тексту), член, параметры, модификаторы | скан |
+| Серый текст (`CSharpGhostText`) | объемлющий тип и его поля / свойства / конструкторы, член у каретки, типы текста без текущей строки | скан |
+| Go to Base (`RoslynGotoSuper`, `RoslynBaseMembers`) | член у каретки и его тип, тело; типы файла базового типа и их члены | скан |
+| Ctrl+наведение (`RoslynCtrlHover`) | объявление, чьё имя стоит в offset | узлы |
+| Go to Implementation (`RoslynGotoImplementation`) | объявление у offset: presentation, контейнер, иконка | узлы |
+| ▶ тестов, Unit Tests, консоль тестов (`TestDiscovery`) | методы с `[Fact]` / `[Test]` / …, имя типа с `+`, диапазоны имён типов | свой сканер токенов |
+| Точки останова (`CSharpBreakpointLines`), inline values (`CSharpInlineValues`) | блок `using`, путь, тело / имя члена у строки | скан + лексер |
+| Find Usages: вид и группировка (`CSharpUsageKinds`, `CSharpUsageGrouping`) | диапазоны имён объявлений; типы и член вокруг usage | скан |
+| Типы в области (`CSharpScopeTypes`) | члены объемлющего типа, параметры метода | скан |
+| Intentions, Move File, namespace (`CSharpIntentions`, `CSharpMoveFile`, `RoslynNamespaceAdjuster`) | типы верхнего уровня, единственный namespace и его диапазон | скан |
+| Rename файла (`RoslynFileRename`) | типы файла | скан |
+| `$CLASS$`, `///` (`CSharpTemplatesAndDocs`) | объемлющий тип, объявление после комментария: вид, параметры, тип | скан |
+| Аллокации (`AllocationsService`) | методы / конструкторы / свойства и их диапазоны | скан |
+
+Не за фасадом (свои сканеры, к объявлениям не относятся; на PSI — шагом 9 по фиче): `EndpointScanner` (`MapGet`, `[HttpGet]`),
+`EfSources` (регулярки: классы `DbContext` / `Migration`, `[Migration]`), `TypeDeclarationScanner` (первый тип файла для New
+Item и `partial`), токенные эвристики `CSharpCalls`, `CSharpExpressions`, `CSharpIndent`, `CSharpSelection` и др. — они живут
+на лексере. Поиск `Bind` / `GetSection` для `appsettings` — в помощнике (`helpers/dotnethelper/AppSettings.cs`, синтаксис
+Roslyn в процессе), в Kotlin его нет.
+
+**Снимки.** `CSharpSyntaxSnapshotTest`: по файлу — объявления фасада, Structure view, folding, breadcrumbs, имена IL
+Viewer и член Go to Base по строкам, строки точек останова, ▶ тестов, Go to Class / Symbol. Входы — замороженная копия
+`debug-playground` (20 файлов) и синтетика (generics, вложенные и partial, records, file-scoped namespace, top-level
+statements, атрибуты на членах, `#if`, строки с фигурными скобками) в `src/test/resources/syntaxSnapshots`, золотые
+файлы рядом. Тот же тест на коде до фасада дал те же золотые файлы. Реализация на PSI сверяется с ними; расхождение
+разбирается, потом обновляется золотой файл. Ошибки эвристик, видные в снимках (записаны как есть, не исправлены):
+- `#if` / `#else` с двумя заголовками метода (`IfBranches.cs`): ветки сканируются обе, метод съедает остаток класса —
+  `_debugOnly`, `Helper`, `After` пропадают из Structure, breadcrumbs `Run()` до конца класса;
+- top-level `using (…) { … }` (`TopLevelStatements.cs`): сканер ищет `;` после `using` и проглатывает следующий
+  `record Settings(…);` — записи нет ни в Structure, ни в Go to Class;
+- `[assembly: …]` перед `namespace` входит в диапазон namespace (`AttributesOnMembers.cs`, breadcrumbs со строки 5);
+- `int _first, _second;` и `public T Left, Right;` — видно только первое поле (`Generics.cs`);
+- у `record Box<T>(T Value)` нет первичного конструктора в presentation (`Records.cs`), у `Person(…)` есть;
+- строки точек останова: auto-property без инициализатора (`Friend { get; set; }`, `Note { get; init; }`) и `const`-поля
+  помечены как исполняемые;
+- атрибут enum-члена не входит в его диапазон (`[Obsolete] Second`), у остальных объявлений входит.
+
 **8. Stub-индексы.** Типы, члены, extension-методы, атрибуты (`[Fact]`, `[Test]`) — стабами; `CSharpDeclarationIndex`
 удаляется. Тесты с запретом загрузки AST там, где хватает стабов. Замер индексации `dotnet/runtime` — с этого шага.
 
@@ -277,7 +336,42 @@ completion) или остановиться на гибриде «свой си�
 
 ## Исходные замеры
 
-Заполняется шагом 0.
+Скрипт — `tools/ui-robot/baseline.py` (как запускать и что именно меряется — `tools/ui-robot/README.md`, «Замеры редактора»): песочница
+`runIdeForUiTests`, времена снимаются внутри IDE, по 3 прогона на цель, completion — 10 повторов на вид в каждом прогоне. Цели:
+`debug-playground` (открывается `Console/Scenarios.cs`, 284 строки) и выборка `dotnet/aspnetcore` v10.0.12 — `Microsoft.AspNetCore.Mvc.Core`
+(536 файлов `.cs` с общими исходниками, собирается `tools/ui-robot/make-aspnetcore-sample.py` в обычный SDK-проект на
+`Microsoft.AspNetCore.App`, 4 ошибки компиляции; открывается `src/ControllerBase.cs`, 2 842 строки). Путь ROSLYN: `roslyn-language-server`
+5.12.0-1.26426.8 + эвристики плагина 0.1.40. Время — от команды открытия проекта (сервер, готовность) или от открытия файла (остальное).
+В таблице медиана трёх прогонов, в скобках — все три.
+
+**2026-10-04, ROSLYN, кэш токенов холодный** (снято агентом роботом; машина: Ryzen 5 8400F, 12 потоков, 32 ГБ, свободно 9–10 ГБ, загрузка
+CPU 30–50 % от параллельных сборок Gradle в соседних worktree; песочница `-Xmx2048m`, `idea.is.internal`; вживую пользователем не сверено)
+
+| Замер | debug-playground | aspnetcore Mvc.Core |
+|---|---|---|
+| Файл открыт, раскраска лексера, мс | 273 (386, 238, 273) | 349 (293, 349, 406) |
+| Первые цвета идентификаторов на экране, мс | 5 531 (5 531, 5 649, 4 688) — эвристика не красила, первые цвета от сервера | 1 008 (962, 1 008, 1 177) — эвристика |
+| Сервер: процесс запущен, мс от открытия проекта | 958 (629, 958, 1 561) | 615 (771, 565, 615) |
+| Сервер готов (workspace loaded), мс от открытия проекта | 5 125 (4 914, 5 164, 5 125) | 3 510 (3 522, 3 317, 3 510) |
+| Семантические токены сервера: ответ / на экране, мс | 5 421 / 5 531 | 3 935 / 4 036 |
+| Диагностики сервера (`textDocument/diagnostic`): первый ответ, мс | 7 821 (7 821, 7 962, 6 554) | 31 346 (30 557, 31 346, 35 831) |
+| Цвета идентификаторов пропадают целиком на время (замер раз в 100 мс), раз | 1 (0, 1, 1) | 4 (4, 4, 4) |
+| Heap IDE после GC: готов / после правки, МБ | 650 / 658 | 628 / 633 |
+| RSS IDE: готов / после правки, МБ | 2 994 / 2 639 | 2 601 / 2 609 |
+| RSS сервера (`Microsoft.CodeAnalysis.LanguageServer`): готов / после правки, МБ | 484 / 893 | 964 / 1 904 |
+| RSS сервера с дочерними процессами: готов / после правки, МБ | 533 / 944 | 1 014 / 1 955 |
+| Completion после `.` (до списка с ожидаемым элементом), медиана / p90, мс | 60 / 147 | 103 / 162 |
+| Completion по префиксу идентификатора, медиана / p90, мс | 73 / 97 | 161 / 191 |
+
+Правка — 312–324 символа (4 раза по две строки) по одному в 60 мс в методе на якоре `measure-edit`, затем текст возвращён. Проблем
+(warning и выше) в обоих файлах нет ни до, ни после сервера, поэтому «диагностики на экране» не видны по числу подсветок — в таблице только
+время ответа. Для `NATIVE` — те же цели и тот же скрипт; цифры сравнивать в одной песочнице.
+
+Замечено по ходу (причины не разбирались, вживую не сверено): на `debug-playground` эвристика плагина не раскрасила идентификаторы
+`Scenarios.cs` до готовности сервера (0 подсветок с цветом до первых токенов сервера), на `ControllerBase.cs` — раскрасила за ~1 с;
+при `--cache warm` (тот же путь копии, 3 прогона, 2026-10-04) кэш токенов плагина не отдал файл ни разу — времена как у холодного
+(первые цвета 6 480 мс, сервер готов 5 733 мс); число подсветок с цветом несколько раз падает до нуля между обновлениями токенов
+(строка «пропадают целиком»).
 
 ## Чек-лист текущего состояния
 
@@ -286,7 +380,8 @@ completion) или остановиться на гибриде «свой си�
   - [x] 2026-10-04: `tools/roslyndump` (`tokens`, `tree`, обход каталога) и `tools/fetch-roslyn.sh`; `src` Roslyn —
     252 файла, 1,6 млн узлов за ~4 с. Объём переноса: `LanguageParser` 14 765 строк + паттерны, интерполяция,
     директивы, doc-комментарии ≈ 18,7 тыс.; в `Syntax.xml` 252 класса узлов, 1018 видов
-  - [ ] исходные замеры текущего пути (сервер + эвристики)
+  - [ ] исходные замеры текущего пути (сервер + эвристики): 2026-10-04 скрипт `tools/ui-robot/baseline.py` и цифры роботом
+    (раздел «Исходные замеры»); осталось — подтверждение пользователем вживую
   - [x] 2026-10-04: корпус `dotnet/runtime` и `dotnet/aspnetcore` на тегах `v10.0.12` (`tools/fetch-corpus.sh`):
     20 466 + 10 170 файлов, 261 + 62 МБ `.cs`, 30 + 7,6 млн узлов, `roslyndump tree` за ~40 + ~13 с; файлов с
     ошибками Roslyn без `--define` — 17 + 16 (`#error` в активной ветке `#if`, шаблоны, два неверных теста)
@@ -310,3 +405,21 @@ completion) или остановиться на гибриде «свой си�
   hierarchy, Go to Implementation, code lens, on-type formatting, эвристики основной части (SYNTAX_TREE, EDITING) — их
   обработчики спрашивают переключатель вместе с нативной реализацией шага 9. Слот на язык (`codeInsight.gotoSuper`,
   parameter info) тогда — делегированием, как 8c в Go-плагине. Тест — `CSharpFeaturesTest`
+- [ ] Шаг 7 — подмена парсера
+  - [x] 2026-10-04: фасад `CSharpSyntaxModel`, все потребители объявлений через него, снимки `CSharpSyntaxSnapshotTest`
+    (инвентаризация и найденные ошибки эвристик — в описании шага 7)
+- [ ] Шаг 10 — project model
+  - [x] 2026-10-04, 0.1.41: часть для парсера (`msbuild/CompilationModel`, `CompilationOptions`, `CompilationOptionsReader`,
+    `FrameworkDefaults`). Файл → проект → конфигурация и TFM тулбара → `DefineConstants` (с неявными символами TFM: MsBuildHost
+    выполняет таргет `AddImplicitDefineConstants` на копии вычисления, запрос `evaluate` с `targets`), `LangVersion` (умолчание SDK —
+    `_MaxSupportedLangVersion` из `Microsoft.CSharp.Core.targets`: net4x / netstandard2.0 / netcoreapp < 3 → 7.3, netcoreapp3.x /
+    netstandard2.1 → 8.0, net5 → 9.0 … net10 → 14.0, потолок `_MaxAvailableLangVersion` SDK), `Nullable`, `ImplicitUsings` + `Using`,
+    `RootNamespace`, `Compile`. Без ответа помощника — статическое чтение проекта и ближайшего `Directory.Build.props` (условия
+    `==`/`!=`/`and`/`or`, `Choose`, порядок props → SDK → проект → таргеты SDK); legacy-проекты — `DefineConstants` конфигурации,
+    `LangVersion`, явные `<Compile Include>`. Подключение после шага 7 — по вызову на ключ:
+    `file.putUserData(CSharpPreprocessorSymbols.KEY, model.symbolsFor(file))`,
+    `file.putUserData(CSharpLanguageLevel.KEY, CSharpLanguageVersion.parse(model.languageVersionFor(file)))`, по `CompilationModel.CHANGED` —
+    снова и перепарсить открытые файлы проектов. Тест — `CompilationOptionsTest` (ответы настоящего MsBuildHost на фикстурах SDK net10,
+    net10.0;net48, netstandard2.0, `Directory.Build.props`, legacy Debug / Release, `debug-playground/MultiTarget`; статическое чтение
+    сверяется с ними). Вживую в IDE не проверено (потребителя до шага 7 нет)
+  - [ ] ссылки: `project.assets.json` и индекс сборок для семантики, library roots; legacy — `HintPath`, reference assemblies net4x

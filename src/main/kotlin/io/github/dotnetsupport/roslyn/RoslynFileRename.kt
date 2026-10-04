@@ -10,7 +10,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.LspClient
 import com.intellij.util.concurrency.AppExecutorUtil
-import io.github.dotnetsupport.lang.CSharpDeclarations
+import io.github.dotnetsupport.lang.CSharpSyntaxModel
 import org.eclipse.lsp4j.WorkspaceEdit
 import java.util.concurrent.TimeUnit
 
@@ -32,13 +32,13 @@ object RoslynFileRename {
         return edited.entries.firstOrNull { (path, value) ->
             val (text, starts) = value
             path.substringAfterLast('/').substringAfterLast('\\') == "$oldName.cs" &&
-                CSharpDeclarations.scan(text).all().any { it.kind.isType && (it.name == oldName || it.name == newName) && it.nameRange.startOffset in starts }
+                CSharpSyntaxModel.current.declarations(text).all().any { it.kind.isType && (it.name == oldName || it.name == newName) && it.nameRange.startOffset in starts }
         }?.key
     }
 
     /** The edit is in: the type is declared under the new name, and nowhere under the old one. */
     fun isApplied(text: CharSequence, oldName: String, newName: String): Boolean {
-        val types = CSharpDeclarations.scan(text).all().filter { it.kind.isType }.map { it.name }.toSet()
+        val types = CSharpSyntaxModel.current.declarations(text).all().filter { it.kind.isType }.map { it.name }.toSet()
         return newName in types && oldName !in types
     }
 

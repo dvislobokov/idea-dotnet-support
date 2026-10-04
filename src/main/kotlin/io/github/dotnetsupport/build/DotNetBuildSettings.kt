@@ -19,6 +19,7 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import io.github.dotnetsupport.msbuild.CompilationModel
 import io.github.dotnetsupport.msbuild.DotNetProjects
 import io.github.dotnetsupport.msbuild.TargetFrameworks
 import io.github.dotnetsupport.solution.SolutionService
@@ -41,11 +42,24 @@ class DotNetBuildSettings(private val project: Project) : SimplePersistentStateC
 
     var configuration: String
         get() = state.configuration ?: DEFAULT_CONFIGURATION
-        set(value) { state.configuration = value }
+        set(value) {
+            if (value == configuration) return
+            state.configuration = value
+            optionsChanged()
+        }
 
     var framework: String?
         get() = state.framework
-        set(value) { state.framework = value }
+        set(value) {
+            if (value == state.framework) return
+            state.framework = value
+            optionsChanged()
+        }
+
+    /** Another configuration or framework: other `#if` symbols and language version for the C# files ([CompilationModel]). */
+    private fun optionsChanged() {
+        if (!project.isDisposed) project.messageBus.syncPublisher(CompilationModel.CHANGED).optionsChanged(null)
+    }
 
     private fun solutionProjects(): List<VirtualFile> {
         val solutions = SolutionService.getInstance(project)

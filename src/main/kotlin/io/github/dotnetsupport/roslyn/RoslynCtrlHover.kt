@@ -11,9 +11,8 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
-import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.elementType
-import io.github.dotnetsupport.lang.CSharpDeclaration
+import io.github.dotnetsupport.lang.CSharpSyntaxModel
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpTokenTypes
 import org.eclipse.lsp4j.DefinitionParams
@@ -52,7 +51,9 @@ class RoslynCtrlHoverReferenceProvider : ImplicitReferenceProvider {
                 val offset = offset(targetDocument, start) ?: return@mapNotNull null
                 val leaf = PsiManager.getInstance(project).findFile(targetFile)?.findElementAt(offset) ?: return@mapNotNull null
                 // the declaration shows itself in the hint as "class Person in Types.cs"; a local variable is just its token
-                val declaration = PsiTreeUtil.getParentOfType(leaf, CSharpDeclaration::class.java)?.takeIf { it.nameIdentifier == leaf }
+                val model = CSharpSyntaxModel.current
+                val declaration = leaf.containingFile?.let { model.declarationElementAt(it, offset) }
+                    ?.takeIf { element -> model.declarationOf(element)?.nameRange?.startOffset?.let(leaf.textRange::contains) == true }
                 // the name under the mouse is the declaration itself: nowhere to go, no link
                 (declaration ?: leaf).takeIf { leaf != identifier }?.let(PsiSymbolService.getInstance()::asSymbol)
             }

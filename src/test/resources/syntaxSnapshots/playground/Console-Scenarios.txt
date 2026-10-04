@@ -1,0 +1,250 @@
+## declarations
+usings 1:1-2:22
+namespace Playground  name 4:11-4:21  range 4:1-284:2
+  class Scenarios [public static]  name 9:21-9:30  range 9:1-284:2 body 10:1-284:2
+    field Safe: string[] [public static readonly]  name 12:37-12:41  range 12:5-13:168
+    method Run(string name): Task [public static async]  name 15:30-15:33  range 15:5-41:6 body 16:5-41:6
+    method Variables(): void [private static]  name 45:25-45:34  range 45:5-65:6 body 46:5-65:6
+    method Collections(): void [private static]  name 67:25-67:36  range 67:5-78:6 body 68:5-78:6
+    method Strings(): void [private static]  name 80:25-80:32  range 80:5-92:6 body 81:5-92:6
+    method Expensive(): void [private static]  name 94:25-94:34  range 94:5-99:6 body 95:5-99:6
+    method SetValue(): void [private static]  name 101:25-101:33  range 101:5-111:6 body 102:5-111:6
+    method Stepping(): void [private static]  name 115:25-115:33  range 115:5-129:6 body 116:5-129:6
+    method Greet(Person person): string [private static]  name 131:27-131:32  range 131:5-135:6 body 132:5-135:6
+    method Measure(string text): int [private static]  name 137:24-137:31  range 137:5-137:60
+    method Library(): void [private static]  name 139:25-139:32  range 139:5-144:6 body 140:5-144:6
+    method Closures(): void [private static]  name 146:25-146:33  range 146:5-153:6 body 147:5-153:6
+    method Numbers(): IEnumerable<int> [private static]  name 155:37-155:44  range 155:5-159:6 body 156:5-159:6
+    method Exceptions(): void [private static]  name 163:25-163:35  range 163:5-182:6 body 164:5-182:6
+    method Async(): Task [private static async]  name 184:31-184:36  range 184:5-190:6 body 185:5-190:6
+    method Compute(int input): Task<int> [private static async]  name 192:36-192:43  range 192:5-196:6 body 193:5-196:6
+    method Threads(): void [private static]  name 198:25-198:32  range 198:5-213:6 body 199:5-213:6
+    method EnvironmentAndArguments(): void [private static]  name 217:25-217:48  range 217:5-228:6 body 218:5-228:6
+    method Output(): void [private static]  name 230:25-230:31  range 230:5-236:6 body 231:5-236:6
+    method Evil(): void [private static]  name 241:25-241:29  range 241:5-245:6 body 242:5-245:6
+    method Input(): void [private static]  name 248:25-248:30  range 248:5-253:6 body 249:5-253:6
+    method Leak(): void [private static]  name 259:25-259:29  range 259:5-269:6 body 260:5-269:6
+    method Crash(): void [private static]  name 272:25-272:30  range 272:5-272:96
+    method Wait(): void [private static]  name 275:25-275:29  range 275:5-283:6 body 276:5-283:6
+
+## structure view
+Playground
+  Scenarios
+    Safe: string[]
+    Run(string name): Task
+    Variables(): void
+    Collections(): void
+    Strings(): void
+    Expensive(): void
+    SetValue(): void
+    Stepping(): void
+    Greet(Person person): string
+    Measure(string text): int
+    Library(): void
+    Closures(): void
+    Numbers(): IEnumerable<int>
+    Exceptions(): void
+    Async(): Task
+    Compute(int input): Task<int>
+    Threads(): void
+    EnvironmentAndArguments(): void
+    Output(): void
+    Evil(): void
+    Input(): void
+    Leak(): void
+    Crash(): void
+    Wait(): void
+
+## folding
+1:7-2:22  ... (collapsed)  | System.Diagnostics;
+6:1-8:15  /// One method per thing to check in the debugger. Lines worth a breakpoint are mark...  | /// <summary>
+10:1-284:2  {...}  | {
+16:5-41:6  {...}  | {
+46:5-65:6  {...}  | {
+68:5-78:6  {...}  | {
+81:5-92:6  {...}  | {
+95:5-99:6  {...}  | {
+102:5-111:6  {...}  | {
+116:5-129:6  {...}  | {
+132:5-135:6  {...}  | {
+140:5-144:6  {...}  | {
+147:5-153:6  {...}  | {
+156:5-159:6  {...}  | {
+164:5-182:6  {...}  | {
+185:5-190:6  {...}  | {
+193:5-196:6  {...}  | {
+199:5-213:6  {...}  | {
+218:5-228:6  {...}  | {
+231:5-236:6  {...}  | {
+242:5-245:6  {...}  | {
+249:5-253:6  {...}  | {
+255:5-258:19  /// `leak`: memory that only grows, for the .NET Monitor (Heap Snapshot, Memory Dump...  | /// <summary>
+260:5-269:6  {...}  | {
+276:5-283:6  {...}  | {
+
+## breadcrumbs
+1: 
+4: Playground
+9: Playground > Scenarios
+12: Playground > Scenarios > Safe
+15: Playground > Scenarios > Run()
+43: Playground > Scenarios
+45: Playground > Scenarios > Variables()
+67: Playground > Scenarios > Collections()
+80: Playground > Scenarios > Strings()
+94: Playground > Scenarios > Expensive()
+101: Playground > Scenarios > SetValue()
+113: Playground > Scenarios
+115: Playground > Scenarios > Stepping()
+131: Playground > Scenarios > Greet()
+137: Playground > Scenarios > Measure()
+139: Playground > Scenarios > Library()
+146: Playground > Scenarios > Closures()
+155: Playground > Scenarios > Numbers()
+161: Playground > Scenarios
+163: Playground > Scenarios > Exceptions()
+184: Playground > Scenarios > Async()
+192: Playground > Scenarios > Compute()
+198: Playground > Scenarios > Threads()
+215: Playground > Scenarios
+217: Playground > Scenarios > EnvironmentAndArguments()
+230: Playground > Scenarios > Output()
+238: Playground > Scenarios
+241: Playground > Scenarios > Evil()
+247: Playground > Scenarios
+248: Playground > Scenarios > Input()
+255: Playground > Scenarios
+259: Playground > Scenarios > Leak()
+271: Playground > Scenarios
+272: Playground > Scenarios > Crash()
+274: Playground > Scenarios
+275: Playground > Scenarios > Wait()
+284: Playground > Scenarios
+
+## IL Viewer: type / member at the line
+1: - / -
+9: Playground.Scenarios / -
+12: Playground.Scenarios / Safe
+15: Playground.Scenarios / Run
+43: Playground.Scenarios / -
+45: Playground.Scenarios / Variables
+67: Playground.Scenarios / Collections
+80: Playground.Scenarios / Strings
+94: Playground.Scenarios / Expensive
+101: Playground.Scenarios / SetValue
+113: Playground.Scenarios / -
+115: Playground.Scenarios / Stepping
+131: Playground.Scenarios / Greet
+137: Playground.Scenarios / Measure
+139: Playground.Scenarios / Library
+146: Playground.Scenarios / Closures
+155: Playground.Scenarios / Numbers
+161: Playground.Scenarios / -
+163: Playground.Scenarios / Exceptions
+184: Playground.Scenarios / Async
+192: Playground.Scenarios / Compute
+198: Playground.Scenarios / Threads
+215: Playground.Scenarios / -
+217: Playground.Scenarios / EnvironmentAndArguments
+230: Playground.Scenarios / Output
+238: Playground.Scenarios / -
+241: Playground.Scenarios / Evil
+247: Playground.Scenarios / -
+248: Playground.Scenarios / Input
+255: Playground.Scenarios / -
+259: Playground.Scenarios / Leak
+271: Playground.Scenarios / -
+272: Playground.Scenarios / Crash
+274: Playground.Scenarios / -
+275: Playground.Scenarios / Wait
+284: Playground.Scenarios / -
+
+## Go to Base: member at the line
+1: -
+15: Scenarios.Run(string name)
+17: Scenarios.Run(string name) (in body)
+43: -
+45: Scenarios.Variables()
+47: Scenarios.Variables() (in body)
+67: Scenarios.Collections()
+69: Scenarios.Collections() (in body)
+80: Scenarios.Strings()
+82: Scenarios.Strings() (in body)
+94: Scenarios.Expensive()
+96: Scenarios.Expensive() (in body)
+101: Scenarios.SetValue()
+103: Scenarios.SetValue() (in body)
+113: -
+115: Scenarios.Stepping()
+117: Scenarios.Stepping() (in body)
+131: Scenarios.Greet(Person person)
+133: Scenarios.Greet(Person person) (in body)
+137: Scenarios.Measure(string text)
+139: Scenarios.Library()
+141: Scenarios.Library() (in body)
+146: Scenarios.Closures()
+148: Scenarios.Closures() (in body)
+155: Scenarios.Numbers()
+157: Scenarios.Numbers() (in body)
+161: -
+163: Scenarios.Exceptions()
+165: Scenarios.Exceptions() (in body)
+184: Scenarios.Async()
+186: Scenarios.Async() (in body)
+192: Scenarios.Compute(int input)
+194: Scenarios.Compute(int input) (in body)
+198: Scenarios.Threads()
+200: Scenarios.Threads() (in body)
+215: -
+217: Scenarios.EnvironmentAndArguments()
+219: Scenarios.EnvironmentAndArguments() (in body)
+230: Scenarios.Output()
+232: Scenarios.Output() (in body)
+238: -
+241: Scenarios.Evil()
+243: Scenarios.Evil() (in body)
+247: -
+248: Scenarios.Input()
+250: Scenarios.Input() (in body)
+255: -
+259: Scenarios.Leak()
+261: Scenarios.Leak() (in body)
+271: -
+272: Scenarios.Crash()
+274: -
+275: Scenarios.Wait()
+277: Scenarios.Wait() (in body)
+284: -
+
+## breakpoint lines
+12-13, 16-41, 46-65, 68-78, 81-92, 95-99, 102-111, 116-129, 132-135, 137, 140-144, 147-153, 156-159, 164-172, 174-182, 185-190, 193-196, 199-206, 208-213, 218-228, 231-236, 242-245, 249-253, 260-269, 272, 276-283
+
+## run gutter
+
+## Go to Class / Symbol
+M:Async -> 184:31 Async(): Task (Playground.Scenarios in Console-Scenarios.cs)
+M:Closures -> 146:25 Closures(): void (Playground.Scenarios in Console-Scenarios.cs)
+M:Collections -> 67:25 Collections(): void (Playground.Scenarios in Console-Scenarios.cs)
+M:Compute -> 192:36 Compute(int input): Task<int> (Playground.Scenarios in Console-Scenarios.cs)
+M:Crash -> 272:25 Crash(): void (Playground.Scenarios in Console-Scenarios.cs)
+M:EnvironmentAndArguments -> 217:25 EnvironmentAndArguments(): void (Playground.Scenarios in Console-Scenarios.cs)
+M:Evil -> 241:25 Evil(): void (Playground.Scenarios in Console-Scenarios.cs)
+M:Exceptions -> 163:25 Exceptions(): void (Playground.Scenarios in Console-Scenarios.cs)
+M:Expensive -> 94:25 Expensive(): void (Playground.Scenarios in Console-Scenarios.cs)
+M:Greet -> 131:27 Greet(Person person): string (Playground.Scenarios in Console-Scenarios.cs)
+M:Input -> 248:25 Input(): void (Playground.Scenarios in Console-Scenarios.cs)
+M:Leak -> 259:25 Leak(): void (Playground.Scenarios in Console-Scenarios.cs)
+M:Library -> 139:25 Library(): void (Playground.Scenarios in Console-Scenarios.cs)
+M:Measure -> 137:24 Measure(string text): int (Playground.Scenarios in Console-Scenarios.cs)
+M:Numbers -> 155:37 Numbers(): IEnumerable<int> (Playground.Scenarios in Console-Scenarios.cs)
+M:Output -> 230:25 Output(): void (Playground.Scenarios in Console-Scenarios.cs)
+M:Run -> 15:30 Run(string name): Task (Playground.Scenarios in Console-Scenarios.cs)
+M:Safe -> 12:37 Safe: string[] (Playground.Scenarios in Console-Scenarios.cs)
+M:SetValue -> 101:25 SetValue(): void (Playground.Scenarios in Console-Scenarios.cs)
+M:Stepping -> 115:25 Stepping(): void (Playground.Scenarios in Console-Scenarios.cs)
+M:Strings -> 80:25 Strings(): void (Playground.Scenarios in Console-Scenarios.cs)
+M:Threads -> 198:25 Threads(): void (Playground.Scenarios in Console-Scenarios.cs)
+M:Variables -> 45:25 Variables(): void (Playground.Scenarios in Console-Scenarios.cs)
+M:Wait -> 275:25 Wait(): void (Playground.Scenarios in Console-Scenarios.cs)
+T:Scenarios -> 9:21 Scenarios (Playground in Console-Scenarios.cs)
+

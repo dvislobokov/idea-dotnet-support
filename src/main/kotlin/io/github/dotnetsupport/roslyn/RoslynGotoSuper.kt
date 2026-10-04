@@ -11,7 +11,7 @@ import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.psi.PsiFile
 import com.intellij.ui.SimpleListCellRenderer
 import io.github.dotnetsupport.lang.CSharpDeclarationInfo
-import io.github.dotnetsupport.lang.CSharpDeclarations
+import io.github.dotnetsupport.lang.CSharpSyntaxModel
 import io.github.dotnetsupport.lang.CSharpFeature
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.DeclarationKind
@@ -30,7 +30,7 @@ class RoslynGotoSuperHandler : LanguageCodeInsightActionHandler {
 
     override fun invoke(project: Project, editor: Editor, file: PsiFile) {
         val target = RoslynHierarchies.target(project, editor, file) ?: return HintManager.getInstance().showErrorHint(editor, "The C# language server is not loaded yet")
-        val caret = RoslynBaseMembers.memberAt(CSharpDeclarations.scan(editor.document.immutableCharSequence), editor.caretModel.offset)
+        val caret = RoslynBaseMembers.memberAt(CSharpSyntaxModel.current.declarations(editor.document.immutableCharSequence), editor.caretModel.offset)
         if (caret != null && !caret.inBody) return gotoBaseMember(target, editor, caret)
         val type = RoslynHierarchies.prepareType(target).firstOrNull()
             ?: return if (caret != null) gotoBaseMember(target, editor, caret) else HintManager.getInstance().showErrorHint(editor, "Put the caret on a type or on a member")
@@ -105,7 +105,7 @@ private class BaseMemberSearch(private val typeAt: RoslynHierarchies.Target, pri
 
     private fun membersIn(base: HierarchyItem): List<CSharpDeclarationInfo>? {
         val document = documentOf(base) ?: return null
-        val type = RoslynBaseMembers.typeIn(CSharpDeclarations.scan(document.immutableCharSequence), base.name, offsetOf(document, base.selectionRange.start)) ?: return null
+        val type = RoslynBaseMembers.typeIn(CSharpSyntaxModel.current.declarations(document.immutableCharSequence), base.name, offsetOf(document, base.selectionRange.start)) ?: return null
         return RoslynBaseMembers.matches(member, type.children)
     }
 

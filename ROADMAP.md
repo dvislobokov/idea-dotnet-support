@@ -506,7 +506,14 @@
   `ROSLYN | NATIVE` (`lang/CSharpFeatures`, чтение в модуле `roslyn`); на странице Language Server строки появятся с первой нативной фичей
 - [ ] Шаги 3–6: генератор PSI из `Syntax.xml`, лексер, перенос парсера Roslyn (MIT), корпусная сверка дерева с Roslyn (0 расхождений)
 - [ ] Шаги 7–9: подмена парсера, stub-индексы, синтаксические фичи на PSI
-- [ ] Шаги 10–11: project model, семантика по слоям со сверкой по Roslyn
+- [x] 0.1.41 — шаг 10, часть для парсера: `msbuild/CompilationModel` — по файлу проект (свой каталог, если он файл не исключает; иначе
+  вычисленный проект, который его подключает), конфигурация и TFM тулбара (у multi-target без выбора — первый) и что получает компилятор:
+  `DefineConstants` вместе с неявными символами SDK (MsBuildHost прогоняет таргет `AddImplicitDefineConstants` на копии вычисления),
+  `LangVersion` с умолчанием SDK, `Nullable`, `ImplicitUsings` и `Using`, `RootNamespace`, `Compile`. До ответа помощника и без него —
+  статическое чтение проекта и ближайшего `Directory.Build.props` (`CompilationOptionsReader`, в т.ч. legacy-проекты), совпадает с MSBuild на
+  всех фикстурах. API для csharp-psi: `symbolsFor(file)`, `languageVersionFor(file)`, топик `CHANGED`. Тест `CompilationOptionsTest` на
+  ответах настоящего MsBuildHost (SDK 10.0.401, `tools/compilation-fixtures/capture.py`). В IDE не подключено (ключи csharp-psi — шаг 7)
+- [ ] Шаги 10–11: project model (ссылки: `project.assets.json`, индекс сборок, library roots), семантика по слоям со сверкой по Roslyn
 - [ ] Шаг 12: сервер опционален (снимается требование .NET 10) → сервер удалён
 
 ## Платформа

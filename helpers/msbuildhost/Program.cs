@@ -2,11 +2,15 @@
 // resolves in the working directory (the plugin starts the helper in the directory of the solution, so a global.json there counts).
 // A helper that stays running: `MsBuildHost --serve`, the protocol is in Protocol.cs.
 //
-//   evaluate    {projectPath, globalProperties: {name: value}, properties: [names], itemTypes: [names]}
+//   evaluate    {projectPath, globalProperties: {name: value}, properties: [names], itemTypes: [names], targets: [names]}
 //            -> {properties: {name: value}, items: {type: [{include, metadata: {name: value}}]}, imports: [paths], targetFrameworks: [..],
 //                warning, milliseconds, reused}
 //               include is the evaluated one, made a full path when it is a file on disk; metadata without the well-known ones;
-//               warning: the imports that are not there, without which the project was evaluated (null when there are none)
+//               warning: the imports that are not there, without which the project was evaluated (null when there are none), or
+//               why the targets failed;
+//               targets: run on a copy of the evaluation before properties and items are read, the ones the project has (others are
+//               skipped). For what the SDK computes in targets and not in the evaluation: `AddImplicitDefineConstants` adds NET10_0,
+//               NETFRAMEWORK, NET48_OR_GREATER... to DefineConstants. Only targets without side effects are meant.
 //   invalidate  {paths: [..]} -> {dropped: n}   a project, an import, a file under a project or a new Directory.Build.props above it
 //   info        {} -> {msBuildVersion, msBuildPath, sdk}
 //
@@ -20,6 +24,7 @@ using System.Text.Json;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Exceptions;
+using Microsoft.Build.Execution;
 using Microsoft.Build.Locator;
 
 namespace DotNetSupport.Helpers.MsBuildHost;
@@ -131,17 +136,29 @@ internal static class Evaluator
 
         lock (collection)
         {
+            var warning = collection.Entries.TryGetValue(path, out var entry) ? entry.Warning : null;
+            var targets = Texts(parameters, "targets").ToList();
+            ProjectInstance? instance = null;
+            if (targets.Count > 0)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                (instance, var failure) = RunTargets(project, targets);
+                if (failure != null) warning = warning == null ? failure : $"{warning}; {failure}";
+            }
             var properties = new Dictionary<string, string>();
-            foreach (var name in Texts(parameters, "properties")) properties[name] = project.GetPropertyValue(name);
+            foreach (var name in Texts(parameters, "properties")) properties[name] = instance?.GetPropertyValue(name) ?? project.GetPropertyValue(name);
             var items = new Dictionary<string, List<object>>();
             foreach (var type in Texts(parameters, "itemTypes"))
             {
+                var evaluated = instance != null
+                    ? instance.GetItems(type).Select(i => (i.EvaluatedInclude, i.Metadata.Select(m => (m.Name, m.EvaluatedValue))))
+                    : project.GetItems(type).Select(i => (i.EvaluatedInclude, i.Metadata.Select(m => (m.Name, m.EvaluatedValue))));
                 var list = new List<object>();
-                foreach (var item in project.GetItems(type))
+                foreach (var (include, all) in evaluated)
                 {
                     var metadata = new Dictionary<string, string>();
-                    foreach (var m in item.Metadata) if (m.EvaluatedValue.Length > 0) metadata[m.Name] = m.EvaluatedValue;
-                    list.Add(new { include = FullPathOfFile(project.DirectoryPath, item.EvaluatedInclude), metadata });
+                    foreach (var (name, value) in all) if (value.Length > 0) metadata[name] = value;
+                    list.Add(new { include = FullPathOfFile(project.DirectoryPath, include), metadata });
                 }
                 items[type] = list;
             }
@@ -151,11 +168,49 @@ internal static class Evaluator
                 items,
                 imports = project.Imports.Select(i => i.ImportedProject.FullPath).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
                 targetFrameworks = TargetFrameworks(project),
-                warning = collection.Entries.TryGetValue(path, out var entry) ? entry.Warning : null,
+                warning,
                 milliseconds = elapsed,
                 reused,
             };
         }
+    }
+
+    /** One build at a time: `ProjectInstance.Build` goes through the default BuildManager of the process, which runs one build only. */
+    private static readonly object BuildLock = new();
+
+    /**
+     * [targets] that the project has, run on a copy of its evaluation (the evaluation itself stays as it is, to be reused); null with the
+     * reason when none of them is there or the build failed: the caller reads the evaluation then.
+     */
+    private static (ProjectInstance?, string?) RunTargets(Project project, List<string> targets)
+    {
+        var instance = project.CreateProjectInstance();
+        var present = targets.Where(instance.Targets.ContainsKey).ToArray();
+        if (present.Length == 0) return (null, null);
+        var errors = new ErrorLogger();
+        bool built;
+        lock (BuildLock)
+        {
+            try
+            {
+                built = instance.Build(present, [errors]);
+            }
+            catch (Exception e) when (e is InvalidOperationException or InvalidProjectFileException)
+            {
+                return (null, $"targets {string.Join(";", present)}: {e.Message}");
+            }
+        }
+        return built ? (instance, null) : (null, $"targets {string.Join(";", present)} failed: {string.Join("; ", errors.Errors.Take(3))}");
+    }
+
+    /** The errors of a build of targets, for the warning of the answer. */
+    private sealed class ErrorLogger : Microsoft.Build.Framework.ILogger
+    {
+        public readonly List<string> Errors = [];
+        public Microsoft.Build.Framework.LoggerVerbosity Verbosity { get; set; } = Microsoft.Build.Framework.LoggerVerbosity.Quiet;
+        public string? Parameters { get; set; }
+        public void Initialize(Microsoft.Build.Framework.IEventSource eventSource) => eventSource.ErrorRaised += (_, e) => { lock (Errors) Errors.Add(e.Message ?? e.Code ?? "error"); };
+        public void Shutdown() { }
     }
 
     /** The evaluation of [path] in [collection], made again when the project or one of its imports has changed since. Under the lock of the collection. */

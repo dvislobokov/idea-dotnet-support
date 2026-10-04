@@ -14,7 +14,7 @@ import org.jetbrains.annotations.TestOnly
  * [needsIndexes]: the native one is blind while the IDE indexes. [title] is the English name, the Russian one is in the bundle.
  */
 enum class CSharpFeature(val title: String, val needsIndexes: Boolean, val hasNative: Boolean = false) {
-    /** Structure view, folding, breadcrumbs: today the declaration scanner of the plugin (`CSharpDeclarations`). */
+    /** Structure view, folding, breadcrumbs: today the declaration scanner of the plugin (`CSharpDeclarations`), behind `CSharpSyntaxModel`. */
     SYNTAX_TREE("Structure, folding and breadcrumbs", needsIndexes = false),
     FORMATTING("Formatting", needsIndexes = false),
     /** Complete Statement, gray text, Extend Selection. */

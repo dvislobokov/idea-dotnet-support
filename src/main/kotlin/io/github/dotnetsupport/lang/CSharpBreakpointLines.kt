@@ -5,14 +5,14 @@ import com.intellij.psi.tree.IElementType
 
 /**
  * Lines of a C# file a breakpoint makes sense on: the ones with code that runs. There is no parser, so it is an estimate by
- * tokens and [CSharpDeclarations]: inside a body of a member, on an expression body or an initializer, on a top-level statement;
+ * tokens and [CSharpSyntaxModel]: inside a body of a member, on an expression body or an initializer, on a top-level statement;
  * not on comments, directives, `using`s, attributes and the headers of types and members. The debugger has the last word anyway:
  * a breakpoint it cannot bind stays unverified.
  */
 object CSharpBreakpointLines {
     /** Zero-based numbers of the lines of [text] that can have a breakpoint. */
     fun find(text: CharSequence): Set<Int> {
-        val structure = CSharpDeclarations.scan(text)
+        val structure = CSharpSyntaxModel.current.declarations(text)
         val result = HashSet<Int>()
         val lexer = CSharpLexer()
         lexer.start(text)

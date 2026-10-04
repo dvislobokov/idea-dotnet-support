@@ -1,0 +1,88 @@
+## declarations
+namespace Synthetic.Strings  name 1:11-1:28  range 1:1-28:2
+  class Templates [public]  name 3:14-3:23  range 3:1-28:2 body 4:1-28:2
+    field Open: string [private const]  name 5:26-5:30  range 5:5-5:37
+    field Close: string [private const]  name 6:26-6:31  range 6:5-6:38
+    field _verbatim: string [private readonly]  name 7:29-7:38  range 7:5-7:54
+    field _brace: char [private readonly]  name 8:27-8:33  range 8:5-8:40
+    method Interpolated(int x): string [public]  name 10:19-10:31  range 10:5-10:79
+    method Raw(): string [public]  name 12:19-12:22  range 12:5-14:13
+    method RawInterpolated(int x): string [public]  name 16:19-16:34  range 16:5-18:13
+    method Nested(int x): string [public]  name 20:19-20:25  range 20:5-23:6 body 21:5-23:6
+    method AfterStrings(): void [public]  name 27:17-27:29  range 27:5-27:35 body 27:32-27:35
+
+## structure view
+Synthetic.Strings
+  Templates
+    Open: string
+    Close: string
+    _verbatim: string
+    _brace: char
+    Interpolated(int x): string
+    Raw(): string
+    RawInterpolated(int x): string
+    Nested(int x): string
+    AfterStrings(): void
+
+## folding
+4:1-28:2  {...}  | {
+21:5-23:6  {...}  | {
+
+## breadcrumbs
+1: Synthetic.Strings
+3: Synthetic.Strings > Templates
+5: Synthetic.Strings > Templates > Open
+6: Synthetic.Strings > Templates > Close
+7: Synthetic.Strings > Templates > _verbatim
+8: Synthetic.Strings > Templates > _brace
+10: Synthetic.Strings > Templates > Interpolated()
+12: Synthetic.Strings > Templates > Raw()
+16: Synthetic.Strings > Templates > RawInterpolated()
+20: Synthetic.Strings > Templates > Nested()
+25: Synthetic.Strings > Templates
+27: Synthetic.Strings > Templates > AfterStrings()
+28: Synthetic.Strings > Templates
+
+## IL Viewer: type / member at the line
+1: - / -
+3: Synthetic.Strings.Templates / -
+5: Synthetic.Strings.Templates / Open
+6: Synthetic.Strings.Templates / Close
+7: Synthetic.Strings.Templates / _verbatim
+8: Synthetic.Strings.Templates / _brace
+10: Synthetic.Strings.Templates / Interpolated
+12: Synthetic.Strings.Templates / Raw
+16: Synthetic.Strings.Templates / RawInterpolated
+20: Synthetic.Strings.Templates / Nested
+25: Synthetic.Strings.Templates / -
+27: Synthetic.Strings.Templates / AfterStrings
+28: Synthetic.Strings.Templates / -
+
+## Go to Base: member at the line
+1: -
+10: Templates.Interpolated(int x)
+12: Templates.Raw()
+16: Templates.RawInterpolated(int x)
+20: Templates.Nested(int x)
+22: Templates.Nested(int x) (in body)
+25: -
+27: Templates.AfterStrings()
+28: -
+
+## breakpoint lines
+5-8, 10, 12, 14, 16, 18, 21-23, 27
+
+## run gutter
+
+## Go to Class / Symbol
+M:AfterStrings -> 27:17 AfterStrings(): void (Synthetic.Strings.Templates in Strings.cs)
+M:Close -> 6:26 Close: string (Synthetic.Strings.Templates in Strings.cs)
+M:Interpolated -> 10:19 Interpolated(int x): string (Synthetic.Strings.Templates in Strings.cs)
+M:Nested -> 20:19 Nested(int x): string (Synthetic.Strings.Templates in Strings.cs)
+M:Open -> 5:26 Open: string (Synthetic.Strings.Templates in Strings.cs)
+M:Raw -> 12:19 Raw(): string (Synthetic.Strings.Templates in Strings.cs)
+M:RawInterpolated -> 16:19 RawInterpolated(int x): string (Synthetic.Strings.Templates in Strings.cs)
+M:_brace -> 8:27 _brace: char (Synthetic.Strings.Templates in Strings.cs)
+M:_verbatim -> 7:29 _verbatim: string (Synthetic.Strings.Templates in Strings.cs)
+T:Templates -> 3:14 Templates (Synthetic.Strings in Strings.cs)
+

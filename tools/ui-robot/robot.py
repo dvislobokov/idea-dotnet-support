@@ -19,12 +19,14 @@ whole desktop with whatever else is on it, and is deliberately not used.
 """
 import base64
 import json
+import os
 import sys
 import time
 import urllib.error
 import urllib.request
 
-BASE = "http://127.0.0.1:8583"
+# ROBOT_PORT: the port given to runIdeForUiTests with -ProbotPort
+BASE = "http://127.0.0.1:" + os.environ.get("ROBOT_PORT", "8583")
 MAIN_WINDOWS = ["//div[@class='IdeFrameImpl']", "//div[@class='FlatWelcomeFrame']"]
 DIALOGS = "//div[@class='MyDialog']"
 

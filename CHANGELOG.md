@@ -3,6 +3,19 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.43
+
+- Groundwork for the plugin's own C# code model (no change in behaviour yet): for every C# file the plugin now knows what the compiler
+  of its project gets in the configuration and target framework chosen in the toolbar — the conditional compilation symbols (`DEBUG`,
+  `TRACE`, `NET10_0`, `NETFRAMEWORK`, `NET48_OR_GREATER`... as MSBuild computes them), the C# language version (explicit, or the
+  default of the SDK for the target framework), nullable context, global usings, the root namespace and the source files. Projects of
+  the old format (.NET Framework without the SDK) are read too
+- Structure view, breadcrumbs, folding, Go to Class / Symbol, Go to Base / Implementation, the IL Viewer, inline values, test markers and
+  the other features that read the declarations of a C# file now get them through one model (`CSharpSyntaxModel`), so that the plugin's
+  own parser can replace the heuristics later; the behaviour is pinned by snapshot tests. No visible change intended
+- Developer tools: `tools/ui-robot/baseline.py` measures the editor (first highlighting, server ready, memory of the IDE and of the
+  server, completion latency) on `debug-playground` and on a sample of ASP.NET Core; the numbers are in `CSHARP_PSI_MIGRATION.md`
+
 ## 0.1.42
 
 - Run of a .NET Framework project of the old format starts the program its build has made (`bin\Debug\App.exe`), in its output

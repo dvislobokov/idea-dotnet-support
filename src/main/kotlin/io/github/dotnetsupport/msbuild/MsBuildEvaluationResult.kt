@@ -43,11 +43,13 @@ data class MsBuildEvaluationResult(
         }
 
         /** The params of `evaluate`; global properties without a value are left out, MSBuild would take them for set to "". */
-        fun request(projectPath: String, globalProperties: Map<String, String>, properties: List<String>, itemTypes: List<String>): JsonObject = JsonObject().apply {
+        fun request(projectPath: String, globalProperties: Map<String, String>, properties: List<String>, itemTypes: List<String>, targets: List<String> = emptyList()): JsonObject = JsonObject().apply {
             addProperty("projectPath", projectPath)
             add("globalProperties", JsonObject().apply { globalProperties.filter { it.key.isNotBlank() && it.value.isNotEmpty() }.forEach { (name, value) -> addProperty(name, value) } })
             add("properties", JsonArray().apply { properties.forEach(::add) })
             add("itemTypes", JsonArray().apply { itemTypes.forEach(::add) })
+            // only when there are some: the request of the tree stays as it was
+            if (targets.isNotEmpty()) add("targets", JsonArray().apply { targets.forEach(::add) })
         }
 
         /** `Configuration=Release; Platform = x64` (the global properties of the build options) -> a map. */
