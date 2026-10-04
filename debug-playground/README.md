@@ -14,6 +14,7 @@ Solution для живой проверки плагина: отладчика (
 | `MultiTarget` | `net9.0;net10.0`: отладчик запускает фреймворк, выбранный в тулбаре (или первый при «Default») |
 | `Tests` | xUnit: отладка тестов (`BP:test`, `BP:theory`); результаты по ходу прогона (`LiveResultsTests`, маркеры `LIVE:`) |
 | `AspireHost` | Aspire 13.6 AppHost, запускает только `Web` (без контейнеров и Docker): Debug AppHost подключает отладчик к `Web` сам (`BP:aspire-service`). Пакеты Aspire берутся из nuget.org при restore, workload не нужен |
+| `NetFramework/NetFramework.sln` | **отдельное** решение .NET Framework старого формата (без SDK, `v4.8.1`): `LegacyWpf` (WPF: .NET SDK собирает его без XAML и падает с CS5001) и `LegacyConsole` (`packages.config`, Newtonsoft.Json по `HintPath` из `..\packages`). Нужны Visual Studio или Build Tools 2022 и targeting pack 4.8.1; в основное решение не входит, чтобы `DebugPlayground.sln` собирался без них |
 | `Broken` | не компилируется, **в solution не входит** (ломал бы Build Solution): конфигурацию «.NET Project» для `Broken.csproj` создать руками |
 
 Профили `Console`: `All` (всё безопасное), `Launch` (аргументы и окружение), `Threads`, `Evil`, `Crash`, `Wait`, `Input` (ввод с консоли),
@@ -326,6 +327,24 @@ AppHost запускает `Web` как ресурс `web`. Профиль `http
 - [ ] создать `Views\New.cshtml` → появляется (wildcard); создать `New.cs` в корне проекта → не появляется (его нет в проекте)
 - [ ] `global.json` рядом с `Legacy.sln` с несуществующей версией SDK, перезапустить IDE: в журнале `msbuild` ошибка, дерево показывает все файлы (как до
       помощника), IDE не зависает; убрать `global.json`
+
+## Сборка проектов старого формата MSBuild'ом Visual Studio — `NetFramework/NetFramework.sln`
+Нужны Visual Studio или Build Tools 2022 (workload «.NET desktop build tools») и targeting pack .NET Framework 4.8.1. Открыть папку `NetFramework`.
+- [ ] Settings | Tools | .NET | Toolset and Build: строка «MSBuild version» = «Auto», под ней — какая установка найдена и где; в списке ещё «.NET SDK (dotnet build)» и установки VS
+- [ ] удалить `bin`, `obj` обоих проектов и папку `packages` → .NET → Build Solution: окно Build зелёное, в выводе «Восстановление пакета NuGet Newtonsoft.Json…»
+      (restore `packages.config` самим MSBuild), `LegacyConsole -> …exe`, `LegacyWpf -> …exe`; в .NET | Plugin Logs, категория `commands`, — команда `MSBuild …\amd64\MSBuild.exe -t:Build -restore -p:RestorePackagesConfig=true -m -v:m …`
+- [ ] `LegacyWpf\bin\Debug\LegacyWpf.exe` запускается, окно «Legacy WPF», кнопка Click считает нажатия
+- [ ] в `MainWindow.xaml.cs` сломать строку (`Greeting.Text = 1;`) → Build: ошибка CS0029 в окне Build с переходом к строке и в редакторе; вернуть
+- [ ] Rebuild Solution, Clean Solution — тоже через `MSBuild.exe` (`-t:Rebuild`, `-t:Clean`, у Clean нет `-restore`)
+- [ ] «MSBuild version» = «.NET SDK (dotnet build)» → Build: `LegacyWpf` падает с CS5001 (так и задумано: SDK пропускает XAML); вернуть «Auto»
+- [ ] основное решение `DebugPlayground.sln`: Build идёт через `dotnet build`, как раньше (проектов старого формата в нём нет)
+- [ ] Run `LegacyConsole` (конфигурация «.NET Project» с этим проектом, аргументы `first "two words"`): сборка в окне Build через `MSBuild.exe`,
+      затем в консоли путь к `LegacyConsole.exe`, JSON с `"Runtime":"4.0.30319.42000"` и `"Arguments":["first","two words"]`; строка
+      «Кириллица: привет, ёжик» читается на Windows с русской OEM-кодировкой (866), на английской (437) — `?` вместо букв: так их пишет сама программа, как в `cmd`
+- [ ] Build одного `LegacyConsole` (ПКМ → Build) после удаления папки `packages`: restore проходит (в журнале `commands` у команды есть `-p:SolutionDir=…\NetFramework\`)
+- [ ] Run `LegacyWpf`: окно «Legacy WPF», Stop в Services закрывает его сразу (в диспетчере задач `LegacyWpf.exe` нет)
+- [ ] без Visual Studio (на другой машине или «MSBuild version» указывает на удалённый файл и VS нет): Build проекта старого формата — уведомление
+      «Visual Studio Build Tools Not Found» с кнопкой Download Build Tools, один раз за сессию, сборка идёт через `dotnet build`
 
 ## Publish
 Диалог Publish (ПКМ на проекте в Solution view → **Publish...**, или меню .NET → **Publish...**), run configuration «.NET Publish», профили `.pubxml`.

@@ -340,6 +340,7 @@ footer a { color: var(--text-2); }
 <thead><tr><th>Параметр</th><th>По умолчанию</th><th>Что делает</th></tr></thead>
 <tbody>
 <tr><td><b>Путь к исполняемому файлу .NET CLI</b><small lang="en">.NET CLI executable path</small></td><td></td><td>Задаётся на родительской странице, Tools | .NET.</td></tr>
+<tr><td><b>Версия MSBuild</b><small lang="en">MSBuild version</small></td><td>Автоматически</td><td>Проектам старого формата (без Sdk) и решениям с ними нужен MSBuild из Visual Studio: .NET SDK пропускает разметку WPF, цели веб-проектов и C++. «Автоматически» собирает их самой новой Visual Studio или Build Tools, остальное — .NET SDK. Выбранная установка Visual Studio собирает всё, и проекты SDK тоже. Только в Windows.</td></tr>
 <tr><td><b>Глобальные свойства MSBuild</b><small lang="en">MSBuild global properties</small></td><td>пусто</td><td><code>Name=Value;Other=Value</code>, передаются как <code>-p:</code> в сборку, пересборку, очистку, восстановление и запуск этого проекта</td></tr>
 </tbody>
 </table></div>

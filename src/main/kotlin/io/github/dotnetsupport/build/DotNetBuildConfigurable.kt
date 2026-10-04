@@ -5,6 +5,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.bindItem
@@ -28,12 +29,34 @@ class DotNetBuildConfigurable(private val project: Project) : BoundConfigurable(
         override fun hashCode(): Int = processes
     }
 
+    /** An item of "MSBuild version": [value] is what [DotNetBuildOptions.Settings.msBuild] keeps. */
+    private class MsBuildChoice(val value: String, val label: String) {
+        override fun equals(other: Any?): Boolean = other is MsBuildChoice && other.value == value
+        override fun hashCode(): Int = value.hashCode()
+    }
+
+    /** Auto, the .NET SDK, every Visual Studio found and a path set before that is not among them. Only what is known: the EDT does not run `vswhere`. */
+    private fun msBuildChoices(): List<MsBuildChoice> {
+        val found = VisualStudioToolset.knownInstances().mapNotNull { instance -> instance.msBuild()?.let { MsBuildChoice(it.path, instance.title) } }
+        val saved = options.msBuild.orEmpty().takeIf { it != VisualStudioToolset.AUTO && it != VisualStudioToolset.DOTNET && found.none { f -> f.value.equals(it, ignoreCase = true) } }
+        return listOf(MsBuildChoice(VisualStudioToolset.AUTO, DotNetBundle.message("build.msbuild.auto")), MsBuildChoice(VisualStudioToolset.DOTNET, DotNetBundle.message("build.msbuild.dotnet"))) + found +
+            listOfNotNull(saved?.let { MsBuildChoice(it, it) })
+    }
+
     override fun createPanel(): DialogPanel = panel {
         group(DotNetBundle.message("build.toolset")) {
             row(DotNetBundle.message("build.cli")) {
                 label(DotNetCli.findExecutable() ?: DotNetBundle.message("common.notFound"))
                 link(DotNetBundle.message("build.cli.change")) { ShowSettingsUtil.getInstance().showSettingsDialog(project, DotNetSettingsConfigurable::class.java) }
                     .comment(DotNetBundle.message("build.cli.comment"))
+            }
+            // MSBuild of Visual Studio is a thing of Windows: elsewhere the .NET SDK builds everything
+            if (SystemInfo.isWindows) row(DotNetBundle.message("build.msbuild")) {
+                val choices = msBuildChoices()
+                comboBox(choices, textListCellRenderer { it?.label })
+                    .bindItem({ choices.firstOrNull { it.value.equals(options.msBuild.orEmpty(), ignoreCase = true) } ?: choices.first() }, { options.msBuild = it?.value ?: VisualStudioToolset.AUTO })
+                    .comment(DotNetBundle.message("build.msbuild.comment") + " " + (VisualStudioToolset.knownInstances().firstOrNull()?.let { DotNetBundle.message("build.msbuild.found", it.title, it.path) }
+                        ?: DotNetBundle.message("build.msbuild.notFound", VisualStudioToolset.BUILD_TOOLS_URL)))
             }
             row(DotNetBundle.message("build.properties")) {
                 textField().align(AlignX.FILL).bindText({ options.globalProperties.orEmpty() }, { options.globalProperties = it.trim() })

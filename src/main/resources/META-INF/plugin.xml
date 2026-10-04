@@ -159,6 +159,7 @@
         <dynamicActionConfigurationCustomizer implementation="io.github.dotnetsupport.newproject.WelcomeNewSolutionPlacement"/>
         <!-- the index of the assemblies of the projects, made in the background by the indexer the plugin builds on this machine -->
         <postStartupActivity implementation="io.github.dotnetsupport.index.AssemblyIndexStartup"/>
+        <postStartupActivity implementation="io.github.dotnetsupport.build.VisualStudioToolset$Detect"/>
         <!-- what the lines of the sources allocate, measured in the running program and written at the end of the lines -->
         <postStartupActivity implementation="io.github.dotnetsupport.allocations.AllocationsStartup"/>
         <editor.linePainter implementation="io.github.dotnetsupport.allocations.AllocationsLinePainter"/>

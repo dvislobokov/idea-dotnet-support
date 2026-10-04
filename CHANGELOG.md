@@ -3,6 +3,24 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.42
+
+- Run of a .NET Framework project of the old format starts the program its build has made (`bin\Debug\App.exe`), in its output
+  folder, as Visual Studio does; `dotnet run` cannot run such a project. Program arguments, the working directory and the environment
+  of the configuration apply. Stop closes a WPF or Windows Forms program at once. The output of a console program is read in the OEM
+  code page of Windows, the one its console writes in
+- Build of a single old-format project with `packages.config` restores its packages: the build is given the folder of its solution,
+  as Visual Studio does
+
+## 0.1.41
+
+- .NET Framework projects of the old format (without `Sdk`), and the solutions with them, are built by MSBuild of Visual Studio or
+  Build Tools, found by `vswhere`: WPF markup is compiled, `packages.config` is restored by the build, web targets are there. The .NET
+  SDK used to skip the XAML of such a WPF project and fail with "no Main". Settings | Tools | .NET | Toolset and Build has "MSBuild
+  version": Auto (old-format projects by Visual Studio, the rest by the .NET SDK), the .NET SDK always, or a chosen Visual Studio for
+  everything. Without Visual Studio the plugin says so once, with a link to Build Tools
+- The Solution view of an old-format project reads the targets of Visual Studio too (`$(VSToolsPath)`), instead of skipping them
+
 ## 0.1.40
 
 - Groundwork for the plugin's own C# code model (no change in behaviour yet): the plugin is built with three new, still empty modules,

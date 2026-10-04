@@ -31,7 +31,8 @@ class BuildProjectBeforeRunTask : BeforeRunTask<BuildProjectBeforeRunTask>(Build
 /**
  * "Build .NET Project" before a launch, as in Rider: the build goes to the Build tool window and a failed one cancels the launch.
  * It matters for Debug, where a debug adapter starts the built assembly: the path of the assembly is left in the environment
- * ([DotNetLaunchArguments.TARGET_PATH]). `dotnet run`, `watch` and `test` build the project themselves, there the task does nothing.
+ * ([DotNetLaunchArguments.TARGET_PATH]). So it does for Run of a project of the old format, whose program is started directly
+ * ([ExecutableLaunch]). `dotnet run`, `watch` and `test` build the project themselves, there the task does nothing.
  */
 class BuildProjectBeforeRunTaskProvider : BeforeRunTaskProvider<BuildProjectBeforeRunTask>() {
     override fun getId(): Key<BuildProjectBeforeRunTask> = ID
@@ -43,11 +44,15 @@ class BuildProjectBeforeRunTaskProvider : BeforeRunTaskProvider<BuildProjectBefo
         if (runConfiguration is DotNetRunConfiguration) BuildProjectBeforeRunTask().apply { isEnabled = true } else null
 
     override fun executeTask(context: DataContext, configuration: RunConfiguration, environment: ExecutionEnvironment, task: BuildProjectBeforeRunTask): Boolean {
-        if (configuration !is DotNetRunConfiguration || !isNeeded(environment.executor.id, configuration.options.command)) return true
+        if (configuration !is DotNetRunConfiguration) return true
+        val executable = ExecutableLaunch.applies(configuration.project, configuration.options)
+        if (!executable && !isNeeded(environment.executor.id, configuration.options.command)) return true
         // no file: the launch reports it better than a build would
         val projectFile = LocalFileSystem.getInstance().refreshAndFindFileByPath(configuration.options.projectPath.orEmpty()) ?: return true
 
-        val targetPath = DotNetDebugBuild.buildAndLocate(configuration, projectFile) ?: return false
+        // several projects launched together have been built one after another already (RunProjectActions)
+        val prebuilt = executable && environment.getUserData(DotNetRunConfiguration.PREBUILT) == true
+        val targetPath = (if (prebuilt) DotNetDebugBuild.locate(configuration, projectFile).orEmpty() else DotNetDebugBuild.buildAndLocate(configuration, projectFile)) ?: return false
         environment.putUserData(DotNetLaunchArguments.BUILT, true)
         targetPath.ifEmpty { null }?.let { environment.putUserData(DotNetLaunchArguments.TARGET_PATH, it) }
         return true
@@ -68,6 +73,9 @@ object DotNetDebugBuild {
      */
     fun buildAndLocate(configuration: DotNetRunConfiguration, projectFile: VirtualFile): String? =
         if (build(configuration.project, projectFile)) targetPath(configuration, projectFile).orEmpty() else null
+
+    /** Where the assembly of [projectFile] is, without a build; null when MSBuild cannot tell. Blocking. */
+    fun locate(configuration: DotNetRunConfiguration, projectFile: VirtualFile): String? = targetPath(configuration, projectFile)
 
     // A compound configuration (or Debug of several projects) starts its launches together; two builds of the same dependencies at once
     // fight over the files in obj/ and bin/, so the builds a launch waits for go one after another.

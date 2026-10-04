@@ -105,4 +105,20 @@ object PortableExecutable {
         val entry = directories + CLI_HEADER_DIRECTORY * 8
         return u32(entry) > 0 && u32(entry + 4) > 0
     }
+
+    private const val WINDOWS_GUI = 2
+
+    /** `Subsystem` of the optional header: 2 a window program (`WinExe`), 3 a console one; null for what is not a PE file. */
+    fun subsystem(header: ByteArray): Int? {
+        fun u16(at: Int) = if (at + 2 > header.size) -1 else (header[at].toInt() and 0xFF) or ((header[at + 1].toInt() and 0xFF) shl 8)
+        if (u16(0) != 0x5A4D) return null // MZ
+        val pe = u16(0x3C) or (u16(0x3E) shl 16)
+        if (pe <= 0 || u16(pe) != 0x4550 || u16(pe + 2) != 0) return null // PE\0\0
+        // at the same offset in PE32 and PE32+
+        return u16(pe + 24 + 68).takeIf { it >= 0 }
+    }
+
+    /** A window program: it has no console, so Ctrl+C, the soft stop of the IDE, never reaches it. */
+    fun isWindowsGui(file: java.io.File): Boolean =
+        runCatching { file.inputStream().use { it.readNBytes(4096) } }.getOrNull()?.let(::subsystem) == WINDOWS_GUI
 }

@@ -134,6 +134,8 @@ def settings():
     group("build.toolset")
     out.append(table([
         (name("build.cli"), "", note("build.cli.comment") + "."),
+        option("build.msbuild", e(RU["build.msbuild.auto"]),
+               note("build.msbuild.comment") + " Выбранная установка Visual Studio собирает всё, и проекты SDK тоже. Только в Windows."),
         option("build.properties", "пусто"),
     ]))
     group("build.group")

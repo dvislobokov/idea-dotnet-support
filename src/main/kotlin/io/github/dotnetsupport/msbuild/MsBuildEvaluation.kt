@@ -10,6 +10,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
+import com.intellij.openapi.util.SystemInfo
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
@@ -20,6 +21,7 @@ import com.intellij.openapi.vfs.newvfs.events.VFilePropertyChangeEvent
 import com.intellij.util.concurrency.AppExecutorUtil
 import io.github.dotnetsupport.build.DotNetBuildOptions
 import io.github.dotnetsupport.build.DotNetBuildSettings
+import io.github.dotnetsupport.build.VisualStudioToolset
 import io.github.dotnetsupport.cli.DotNetHelper
 import io.github.dotnetsupport.cli.HelperConnection
 import io.github.dotnetsupport.cli.HelperException
@@ -69,7 +71,20 @@ class MsBuildEvaluation(private val project: Project) : Disposable {
                  timeoutMs: Long = TIMEOUT_MS): MsBuildEvaluationResult {
         val connection = connection()
         started = true
-        return MsBuildEvaluationResult.parse(connection.request("evaluate", MsBuildEvaluationResult.request(projectPath, globalProperties, properties, itemTypes), timeoutMs))
+        val globals = withVisualStudio(projectPath, globalProperties)
+        return MsBuildEvaluationResult.parse(connection.request("evaluate", MsBuildEvaluationResult.request(projectPath, globals, properties, itemTypes), timeoutMs))
+    }
+
+    /**
+     * A project of the old format imports the targets of Visual Studio by `$(VSToolsPath)` (web applications, WPF); the MSBuild of the SDK
+     * has none, so the path of the newest Visual Studio goes in as a global property. Only the `.targets` are read, no task of Visual Studio runs.
+     */
+    private fun withVisualStudio(projectPath: String, globalProperties: Map<String, String>): Map<String, String> {
+        if (!SystemInfo.isWindows || globalProperties.keys.any { it.equals(VS_TOOLS_PATH, ignoreCase = true) }) return globalProperties
+        val file = LocalFileSystem.getInstance().findFileByPath(projectPath) ?: return globalProperties
+        if (!SolutionService.getInstance(project).msBuildProject(file).isLegacy) return globalProperties
+        val vsToolsPath = VisualStudioToolset.vsToolsPath() ?: return globalProperties
+        return LinkedHashMap(globalProperties).apply { put(VS_TOOLS_PATH, vsToolsPath) }
     }
 
     /**
@@ -212,6 +227,7 @@ class MsBuildEvaluation(private val project: Project) : Disposable {
         /** The category of the journal of the plugin: the helper starting, the evaluations and what failed. */
         const val LOG_CATEGORY = "msbuild"
         private const val TIMEOUT_MS = 60_000L
+        private const val VS_TOOLS_PATH = "VSToolsPath"
         private val MSBUILD_EXTENSIONS = setOf("csproj", "fsproj", "vbproj", "proj", "props", "targets")
 
         val HELPER = DotNetHelper("msbuildhost", "MsBuildHost", "HelperFramework", listOf("Program.cs", "Protocol.cs"))

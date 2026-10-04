@@ -37,6 +37,9 @@ class DotNetBuildOptions(private val project: Project) : SimplePersistentStateCo
     class Settings : BaseState() {
         /** `Name=Value;Other=Value`, as in the field of Rider. */
         var globalProperties by string("")
+
+        /** [VisualStudioToolset.AUTO], [VisualStudioToolset.DOTNET] or the path of an `MSBuild.exe`: "MSBuild version" of Rider. */
+        var msBuild by string(VisualStudioToolset.AUTO)
         var buildAfterSolutionIsLoaded by property(false)
 
         /** Off: `--no-restore`, the packages are restored by hand or by the automatic restore of the NuGet page. */

@@ -71,10 +71,23 @@ class DotNetBuildService(private val project: Project) {
         }
     }
 
-    /** Any `dotnet` command that builds [target], e.g. a custom MSBuild target, with the same reporting as a build. */
+    /**
+     * Any `dotnet` command that builds [target], e.g. a custom MSBuild target, with the same reporting as a build. A build, a clean or an
+     * `msbuild` of a project of the old format goes to `MSBuild.exe` of Visual Studio instead ([VisualStudioToolset]): choosing it runs
+     * `vswhere` and reads the projects, so from the EDT the rest moves to a pooled thread.
+     */
     fun run(target: VirtualFile, title: String, arguments: Array<String>, saveDocuments: Boolean = true, onFinished: (Boolean) -> Unit = {}, rerun: () -> Unit) {
         if (saveDocuments) com.intellij.openapi.application.WriteIntentReadAction.run { FileDocumentManager.getInstance().saveAllDocuments() }
+        val application = ApplicationManager.getApplication()
+        if (application.isDispatchThread) application.executeOnPooledThread { start(target, title, arguments, onFinished, rerun) }
+        else start(target, title, arguments, onFinished, rerun)
+    }
 
+    private fun start(target: VirtualFile, title: String, arguments: Array<String>, onFinished: (Boolean) -> Unit, rerun: () -> Unit) {
+        if (project.isDisposed) {
+            onFinished(false)
+            return
+        }
         val workDirectory = target.parent.path
         val buildId = Any()
         val buildView = project.service<BuildViewManager>()
@@ -87,7 +100,7 @@ class DotNetBuildService(private val project: Project) {
             }
 
         val handler = try {
-            val command = DotNetCli.commandLine(workDirectory, *arguments)
+            val command = VisualStudioToolset.buildCommandLine(project, target, workDirectory, arguments.toList())
             DotNetLogs.commandStarted(title, command)
             OSProcessHandler(command)
         } catch (e: ExecutionException) {

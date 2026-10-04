@@ -29,6 +29,7 @@ import io.github.dotnetsupport.DotNetIcons
 import io.github.dotnetsupport.aspire.AspireHosts
 import io.github.dotnetsupport.build.DotNetBuildSettings
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.msbuild.MsBuildProject
 import io.github.dotnetsupport.solution.SolutionService
 import io.github.dotnetsupport.testing.TestMode
@@ -117,7 +118,11 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
             }
 
             override fun startProcess(): ProcessHandler {
-                val handler = KillableColoredProcessHandler(buildCommandLine(prebuilt = environment.getUserData(PREBUILT) == true))
+                val commandLine = if (ExecutableLaunch.applies(project, options)) executableCommandLine(environment.getUserData(DotNetLaunchArguments.TARGET_PATH) ?: locateProgram())
+                    else buildCommandLine(prebuilt = environment.getUserData(PREBUILT) == true)
+                val handler = KillableColoredProcessHandler(commandLine)
+                // Stop of a window program (WPF, Windows Forms) is a hard one at once: the soft stop is Ctrl+C, which only a console gets
+                if (PortableExecutable.isWindowsGui(File(commandLine.exePath))) handler.setShouldKillProcessSoftly(false)
                 ListeningAddressRecorder.attach(handler) // the address, for the row of the Services tool window
                 if (watch) HotReloadTracker.attach(handler, environment) // the Hot Reload state, for the same row
                 // `dotnet watch` opens the browser itself when the profile asks for it
@@ -169,13 +174,32 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
         return DotNetCli.commandLine(workDirectory, *arguments.toTypedArray())
             // the Hot Reload state is read from the messages of `dotnet watch`, which are localized (HotReloadOutput)
             .withEnvironment(if (options.command == DotNetCommand.WATCH) mapOf("DOTNET_CLI_UI_LANGUAGE" to "en") else emptyMap())
-            .withEnvironment(hostingEnvironment().toMap())
-            .withEnvironment(options.environment)
-            .withParentEnvironmentType(
-                if (options.passParentEnvironment) GeneralCommandLine.ParentEnvironmentType.CONSOLE
-                else GeneralCommandLine.ParentEnvironmentType.NONE
-            )
+            .withLaunchEnvironment()
     }
+
+    /** A project of the old format: the program its build has made ([targetPath]), started directly, see [ExecutableLaunch]. */
+    fun executableCommandLine(targetPath: String?): GeneralCommandLine =
+        ExecutableLaunch.commandLine(targetPath, options.projectPath.orEmpty(), ParametersListUtil.parse(options.programArguments.orEmpty()), options.workingDirectory)
+            .withLaunchEnvironment()
+
+    /**
+     * The program of a project of the old format when the launch has not been handed its path. Under Run it never is (seen live in
+     * 2026.1: what "Build .NET Project" puts into its environment does not reach this state); MsBuildHost has just evaluated the project
+     * for that build, so the answer takes some 10 ms.
+     */
+    private fun locateProgram(): String? {
+        val projectFile = LocalFileSystem.getInstance().findFileByPath(options.projectPath.orEmpty()) ?: return null
+        val program = DotNetDebugBuild.locate(this, projectFile)?.takeIf { File(it).isFile }
+        PluginLog.info(DotNetDebugBuild.LOG_CATEGORY, "program of ${projectFile.name}: ${program ?: "not found"}")
+        return program
+    }
+
+    private fun GeneralCommandLine.withLaunchEnvironment(): GeneralCommandLine = withEnvironment(hostingEnvironment().toMap())
+        .withEnvironment(options.environment)
+        .withParentEnvironmentType(
+            if (options.passParentEnvironment) GeneralCommandLine.ParentEnvironmentType.CONSOLE
+            else GeneralCommandLine.ParentEnvironmentType.NONE
+        )
 
     /** The variables of the chosen environment; the ones set explicitly in the environment table are left alone. */
     private fun hostingEnvironment(): List<Pair<String, String>> {
