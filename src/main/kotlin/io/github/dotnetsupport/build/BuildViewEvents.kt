@@ -26,5 +26,11 @@ object BuildViewEvents {
         if (position != null) events.fileMessage(text, kind, position).withParentId(buildId).withGroup(group).withDescription(detail).build()
         else events.message(text, kind).withParentId(buildId).withGroup(group).withDescription(detail).build()
 
+    /** A node of the tree under [parentId] for the messages sent with [id] as their parent: a group of them. */
+    fun startNode(id: Any, parentId: Any, title: String): BuildEvent = events.start(id, title).withParentId(parentId).build()
+
+    fun finishNode(id: Any, title: String): BuildEvent =
+        events.finish(id, title, com.intellij.build.events.impl.SuccessResultImpl()).withTime(System.currentTimeMillis()).build()
+
     fun finished(buildId: Any, message: String, result: EventResult): BuildEvent = events.finishBuild(buildId, message, result).withTime(System.currentTimeMillis()).build()
 }

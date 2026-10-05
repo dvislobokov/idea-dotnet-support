@@ -8,8 +8,14 @@ import java.security.MessageDigest
 /** A file a source generator has made, in the caches of the IDE: `<output of the project>/<generator assembly>/<generator type>/<hint name>`. */
 data class GeneratedFile(val path: String, val generatorAssembly: String, val generatorType: String, val hintName: String)
 
-/** `generate` of CodeAnalysisHelper: what the generators of [project] made for [framework], what failed. */
-data class GeneratedRun(val project: String, val framework: String?, val files: List<GeneratedFile>, val errors: List<String>, val milliseconds: Long, val workingSet: Long)
+/**
+ * `generate` of CodeAnalysisHelper: what the generators of [project] made for [framework], what failed; [buildFiles]: the C# the targets of
+ * its design-time build made in `obj/` (XAML, Grpc.Tools, resources — [BuildGeneratedSources]).
+ */
+data class GeneratedRun(
+    val project: String, val framework: String?, val files: List<GeneratedFile>, val errors: List<String>, val milliseconds: Long, val workingSet: Long,
+    val buildFiles: List<String> = emptyList(),
+)
 
 enum class AnalyzerSeverity { ERROR, WARNING, INFO }
 
@@ -67,6 +73,7 @@ object CodeAnalysisAnswers {
                 GeneratedFile(normalize(it.text("path").orEmpty()), it.text("generatorAssembly").orEmpty(), it.text("generatorType").orEmpty(), it.text("hintName").orEmpty())
             },
             json.array("errors").mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }, json.number("milliseconds") ?: 0, json.number("workingSet") ?: 0,
+            json.array("buildFiles").mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString?.let(::normalize) },
         )
     }
 
@@ -114,6 +121,36 @@ object CodeAnalysisAnswers {
     private fun JsonObject.number(name: String): Long? = get(name)?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asLong
     private fun JsonObject.int(name: String): Int = number(name)?.toInt() ?: 0
     private fun JsonObject.array(name: String): List<JsonElement> = get(name)?.takeIf { it.isJsonArray }?.asJsonArray?.toList().orEmpty()
+}
+
+/**
+ * The list of Run Code Analysis in the Build tool window: a node per severity (Errors, Warnings, Suggestions — the Info ones, whatever
+ * «Show suggestions» says: there they are asked for), empty ones left out, each sorted by file and place. Pure.
+ */
+object CodeAnalysisReport {
+    class Group(val severity: AnalyzerSeverity, val diagnostics: List<AnalyzerDiagnostic>) {
+        val kind: com.intellij.build.events.MessageEvent.Kind get() = when (severity) {
+            AnalyzerSeverity.ERROR -> com.intellij.build.events.MessageEvent.Kind.ERROR
+            AnalyzerSeverity.WARNING -> com.intellij.build.events.MessageEvent.Kind.WARNING
+            AnalyzerSeverity.INFO -> com.intellij.build.events.MessageEvent.Kind.INFO
+        }
+        val title: String get() = "${label(severity)} (${diagnostics.size})"
+    }
+
+    fun groups(diagnostics: List<AnalyzerDiagnostic>): List<Group> = AnalyzerSeverity.entries.mapNotNull { severity ->
+        diagnostics.filter { it.severity == severity }.sortedWith(compareBy({ it.path.lowercase() }, { it.startLine }, { it.startColumn }))
+            .takeIf { it.isNotEmpty() }?.let { Group(severity, it) }
+    }
+
+    fun summary(groups: List<Group>): String = AnalyzerSeverity.entries.joinToString(", ") { severity ->
+        "${groups.firstOrNull { it.severity == severity }?.diagnostics?.size ?: 0} ${label(severity).lowercase()}"
+    }
+
+    private fun label(severity: AnalyzerSeverity) = when (severity) {
+        AnalyzerSeverity.ERROR -> "Errors"
+        AnalyzerSeverity.WARNING -> "Warnings"
+        AnalyzerSeverity.INFO -> "Suggestions"
+    }
 }
 
 /** Lines and columns of the helper in a text with `\n` line ends (a document of the IDE): pure, for the annotator and the fixes. */

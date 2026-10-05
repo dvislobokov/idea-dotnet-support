@@ -223,7 +223,12 @@ class CSharpSymbolText(private val resolver: CSharpNameResolver) {
         return when (local.kind) {
             LocalSymbolKind.LOCAL -> {
                 val constant = (local.declaration.parent?.parent?.parent as? CSharpLocalDeclarationStatement)?.modifiers?.any { it.text == "const" } == true
-                (if (constant) "(local constant) " else "(local variable) ") + listOfNotNull(type, local.name).joinToString(" ")
+                // as Roslyn's Quick Info: a variable of a query is a range variable
+                val range = when (local.declaration.parent) {
+                    is CSharpFromClause, is CSharpLetClause, is CSharpJoinClause, is CSharpJoinIntoClause, is CSharpQueryContinuation -> true
+                    else -> false
+                }
+                (if (range) "(range variable) " else if (constant) "(local constant) " else "(local variable) ") + listOfNotNull(type, local.name).joinToString(" ")
             }
             LocalSymbolKind.PARAMETER, LocalSymbolKind.PRIMARY_CONSTRUCTOR_PARAMETER -> "(parameter) " + listOfNotNull(type, local.name).joinToString(" ")
             LocalSymbolKind.LOCAL_FUNCTION -> "(local function) " + listOfNotNull(type, local.name).joinToString(" ") + "(${parameters(symbol, false).orEmpty().joinToString(", ")})"

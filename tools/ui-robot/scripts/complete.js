@@ -1,4 +1,5 @@
 // Types __TEXT__ into the Evaluate field of the Debug tool window, invokes completion and returns the items of the popup.
+importClass(com.intellij.openapi.application.ModalityState)
 importClass(com.intellij.openapi.project.ProjectManager)
 importClass(com.intellij.openapi.application.ApplicationManager)
 importClass(com.intellij.openapi.command.WriteCommandAction)
@@ -26,7 +27,7 @@ ApplicationManager.getApplication().invokeAndWait(new java.lang.Runnable({ run: 
     const file = PsiDocumentManager.getInstance(project).getPsiFile(editor.getDocument())
     holder.set("field: " + (file == null ? "no psi" : file.getLanguage().getID() + " / " + file.getName()) + "\n")
     new CodeCompletionHandlerBase(CompletionType.BASIC, false, false, true).invokeCompletion(project, editor)
-} }))
+} }), ModalityState.nonModal())
 let items = ""
 for (let attempt = 0; attempt < 40 && items == ""; attempt++) {
     java.lang.Thread.sleep(250)

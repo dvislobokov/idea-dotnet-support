@@ -2,9 +2,11 @@
 // server (CSHARP_PSI_MIGRATION.md, D3 / D4). A helper that stays running: `CodeAnalysisHelper --serve`, the protocol is in Protocol.cs.
 //
 //   generate    {projectPath, configuration, targetFramework?, outputRoot}
-//            -> {project, framework, files: [{path, generatorAssembly, generatorType, hintName}], errors: [..], milliseconds}
+//            -> {project, framework, files: [{path, generatorAssembly, generatorType, hintName}], buildFiles: [paths], errors: [..], milliseconds}
 //               runs the generators of the project (Razor's left out) and writes what they make under outputRoot, as
-//               <generator assembly>/<generator type>/<hint name>; files of an earlier run that are not made again are deleted
+//               <generator assembly>/<generator type>/<hint name>; files of an earlier run that are not made again are deleted.
+//               buildFiles: the C# the targets of the build made in obj/ for the compiler (XAML, Grpc.Tools, resources) — the design-time
+//               `Compile` runs those targets (MarkupCompilePass1, Protobuf_Compile) before it gives the command line
 //   analyze     {projectPath, configuration, targetFramework?, outputRoot, paths?: [..], excludedIds?: [..], fixes?: bool}
 //            -> {project, framework, diagnostics: [{id, severity, message, path, startLine, startColumn, endLine, endColumn, category,
 //                helpLink, source, fixes: [titles]}], analyzers, milliseconds}
@@ -136,6 +138,8 @@ internal sealed class LoadedProject(Target target, ProjectId id, CSharpCommandLi
     public readonly Dictionary<string, (DocumentId Id, DateTime Stamp)> Sources = new(StringComparer.OrdinalIgnoreCase);
     public readonly Dictionary<string, DocumentId> Generated = new(StringComparer.OrdinalIgnoreCase);
     public readonly List<string> GeneratorErrors = [];
+    /** Sources of the compiler that targets of the build made in `obj/` (XAML, gRPC, resources): the design-time build ran those targets. */
+    public List<string> BuildFiles = [];
     public List<LoadedProject> References = [];
     public ImmutableArray<ISourceGenerator> Generators = [];
     public ImmutableArray<DiagnosticAnalyzer> Analyzers = [];
@@ -165,6 +169,7 @@ internal sealed class Projects
             project = target.ProjectPath,
             framework = project.Framework,
             files = project.Generated.Keys.Select(path => GeneratedFile(project, path)).ToList(),
+            buildFiles = project.BuildFiles,
             errors = project.GeneratorErrors,
             milliseconds = watch.ElapsedMilliseconds,
             workingSet = Environment.WorkingSet,
@@ -356,6 +361,7 @@ internal sealed class Projects
         }
 
         var documents = new List<DocumentInfo>();
+        project.BuildFiles = BuildFiles(arguments.SourceFiles.Select(f => f.Path), design.IntermediateDirectory ?? Path.Combine(directory, "obj"));
         foreach (var file in arguments.SourceFiles)
         {
             var documentId = DocumentId.CreateNewId(id, file.Path);
@@ -384,6 +390,7 @@ internal sealed class Projects
             var reference = new AnalyzerFileReference(path, AnalyzerLoader.Instance);
             reference.AnalyzerLoadFailed += (_, e) => HelperProtocol.Log("warn", $"{project.Name}: {Path.GetFileName(path)}: {e.Message}");
             generators.AddRange(reference.GetGenerators(LanguageNames.CSharp));
+            if (!design.LiveAnalyzers) continue;
             analyzers.AddRange(reference.GetAnalyzers(LanguageNames.CSharp));
             project.Fixers.AddRange(AnalyzerLoader.Instance.Fixers(path));
         }
@@ -547,6 +554,21 @@ internal sealed class Projects
         return new { path, generatorAssembly = relative.ElementAtOrDefault(0), generatorType = relative.ElementAtOrDefault(1), hintName = relative.ElementAtOrDefault(2) };
     }
 
+    /**
+     * The sources of the command line that the targets of the build made under [intermediate] (`obj/`): `MainWindow.g.cs` of XAML,
+     * `Greet.cs` / `GreetGrpc.cs` of Grpc.Tools, a strongly typed resource class... The files every SDK project has there (global usings,
+     * assembly info and attributes) are left out: the plugin knows what they say from the project.
+     */
+    internal static List<string> BuildFiles(IEnumerable<string> sources, string intermediate)
+    {
+        var root = intermediate.TrimEnd('\\', '/') + Path.DirectorySeparatorChar;
+        return sources.Select(Path.GetFullPath)
+            .Where(p => p.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+            .Where(p => !p.EndsWith(".GlobalUsings.g.cs", StringComparison.OrdinalIgnoreCase) && !p.EndsWith(".AssemblyInfo.cs", StringComparison.OrdinalIgnoreCase)
+                && !p.EndsWith(".AssemblyAttributes.cs", StringComparison.OrdinalIgnoreCase) && !p.EndsWith(".RazorAssemblyInfo.cs", StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
     private static DocumentInfo Document(DocumentId id, string path) =>
         DocumentInfo.Create(id, Path.GetFileName(path), loader: TextLoader.From(TextAndVersion.Create(Read(path), VersionStamp.Create(), path)), filePath: path);
 
@@ -671,7 +693,7 @@ internal sealed class AnalyzerLoader : IAnalyzerAssemblyLoader
 /** The design-time `Compile` of a project: the command line of its compiler, without running it, and the projects behind its references. */
 internal static class DesignTime
 {
-    public sealed record Result(List<string> CommandLine, string? Framework, Dictionary<string, (string Project, string? Framework)> ProjectOutputs, List<string> Inputs);
+    public sealed record Result(List<string> CommandLine, string? Framework, Dictionary<string, (string Project, string? Framework)> ProjectOutputs, List<string> Inputs, bool LiveAnalyzers, string? IntermediateDirectory);
 
     public static async Task<Result> CompileAsync(Target target, CancellationToken cancellation)
     {
@@ -686,7 +708,7 @@ internal static class DesignTime
         }
         List<string> args = ["-t:Compile", "-p:SkipCompilerExecution=true", "-p:ProvideCommandLineArgs=true", "-p:DesignTimeBuild=true", "-p:BuildProjectReferences=false",
             "-p:NonExistentFile=__NonExistentSubDir__/__NonExistentFile__", $"-p:Configuration={target.Configuration}", "-getItem:CscCommandLineArgs",
-            "-getItem:ReferencePathWithRefAssemblies", "-getProperty:ProjectAssetsFile", "-getProperty:TargetFramework"];
+            "-getItem:ReferencePathWithRefAssemblies", "-getProperty:ProjectAssetsFile", "-getProperty:TargetFramework", "-getProperty:RunAnalyzers", "-getProperty:RunAnalyzersDuringLiveAnalysis", "-getProperty:BaseIntermediateOutputPath"];
         if (!string.IsNullOrEmpty(framework)) args.Add($"-p:TargetFramework={framework}");
         using var json = await MsBuildAsync(target.ProjectPath, args, cancellation);
         var root = json.RootElement;
@@ -708,7 +730,12 @@ internal static class DesignTime
         var props = root.GetProperty("Properties");
         if (props.TryGetProperty("ProjectAssetsFile", out var assets) && assets.GetString() is { Length: > 0 } assetsPath) inputs.Add(Path.GetFullPath(assetsPath, directory));
         var actual = props.TryGetProperty("TargetFramework", out var tf) ? tf.GetString() : null;
-        return new Result(commandLine, string.IsNullOrEmpty(actual) ? framework : actual, outputs, inputs);
+        // as Visual Studio: `RunAnalyzers` false, or `RunAnalyzersDuringLiveAnalysis` false without it, turns the analyzers off in the editor
+        var run = props.TryGetProperty("RunAnalyzers", out var ra) ? ra.GetString() : null;
+        var live = props.TryGetProperty("RunAnalyzersDuringLiveAnalysis", out var la) ? la.GetString() : null;
+        var liveAnalyzers = !(string.Equals(run, "false", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(run) && string.Equals(live, "false", StringComparison.OrdinalIgnoreCase));
+        var intermediate = props.TryGetProperty("BaseIntermediateOutputPath", out var bi) && bi.GetString() is { Length: > 0 } obj ? Path.GetFullPath(obj, directory) : null;
+        return new Result(commandLine, string.IsNullOrEmpty(actual) ? framework : actual, outputs, inputs, liveAnalyzers, intermediate);
     }
 
     private static async Task<JsonDocument> MsBuildAsync(string project, IEnumerable<string> args, CancellationToken cancellation)

@@ -68,6 +68,18 @@ object NativeCSharpGenerateRunner {
             // nothing to choose: a constructor without parameters, Dispose of no field
             chosen = emptyList()
             options = emptySet()
+        } else if (generator == CSharpGenerator.DELEGATING_MEMBERS && choices.mapNotNull { it.group }.distinct().size > 1) {
+            // Rider's first page: the field or property to delegate to, then its members
+            val targets = choices.mapNotNull { it.group }.distinct()
+            com.intellij.openapi.ui.popup.JBPopupFactory.getInstance().createPopupChooserBuilder(targets)
+                .setTitle("Delegate To")
+                .setRenderer(com.intellij.ui.SimpleListCellRenderer.create { label, value, _ -> label.text = value.text; label.icon = value.icon })
+                .setItemChosenCallback { target ->
+                    val result = choose(generator, project, site, choices.filter { it.group == target }, optionTitles) ?: return@setItemChosenCallback
+                    apply(generator, project, editor, file, site, result.first, result.second)
+                }
+                .createPopup().showInBestPositionFor(editor)
+            return
         } else {
             val result = choose(generator, project, site, choices, optionTitles) ?: return
             chosen = result.first

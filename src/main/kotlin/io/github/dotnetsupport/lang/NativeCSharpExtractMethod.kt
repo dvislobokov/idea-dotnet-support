@@ -25,6 +25,7 @@ import com.intellij.idea.ActionsBundle
 import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.index.IndexedMemberKind
 import io.github.dotnetsupport.lang.semantic.CSharpNameResolver
+import io.github.dotnetsupport.lang.semantic.CSharpReachability
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSymbol
 import io.github.dotnetsupport.lang.semantic.SemanticType
@@ -34,9 +35,12 @@ import io.github.dotnetsupport.lang.semantic.SemanticType
  * without the language server. The selection is statements of one block or one expression. The data flow of the locals decides the
  * signature: what is declared outside and read inside comes in as a parameter; one variable written inside and used after the selection
  * is returned (declared inside: `var x = M(...)`, else `x = M(...)`), more of them declared outside go by `out` (`ref` when read inside
- * too); `await` inside makes the method `async Task` / `async Task<T>`; it is `static` when nothing of the instance is used. Not
- * extracted (a hint says why): a `return`, `yield`, `goto`, or `break` / `continue` that leaves the selection; a local function of the
- * member; two variables declared inside and used after it.
+ * too); `await` inside makes the method `async Task` / `async Task<T>`; it is `static` when nothing of the instance is used. Inside a
+ * loop "after" includes the rest of the loop and the next iteration (the condition, the code before the selection, the selection's own
+ * reads); a variable written on some paths only comes in as well. One kind of `break` / `continue` / `return;` leaving the selection
+ * becomes `if (M(...)) break;` (or `M(...); break;` when every path jumps), as in Rider. Not extracted (a hint says why): `return` with a
+ * value, `yield`, `goto`, two kinds of jumps, a jump together with a value to return; a local function of the member; two variables
+ * declared inside and used after it.
  */
 object NativeCSharpExtractMethod {
     class Parameter(val name: String, val type: String, val modifier: String)
@@ -48,6 +52,8 @@ object NativeCSharpExtractMethod {
         val file: CSharpFile, val member: CSharpMemberDeclaration, val range: TextRange, val expression: CSharpExpression?, val parameters: List<Parameter>,
         val returned: Output?, val returnType: String, val isStatic: Boolean, val isAsync: Boolean, val typeParameters: String, val constraints: String,
         val typeArguments: String, val name: String, val usings: Set<String>,
+        /** `break` / `continue` / `return` the call makes when the method says so ([jumps] become `return true;`, or `return;` when [endReachable] is false). */
+        val jump: String? = null, val jumps: List<TextRange> = emptyList(), val endReachable: Boolean = false, val endsWithJump: Boolean = false,
     )
 
     sealed class Result {
@@ -76,12 +82,15 @@ object NativeCSharpExtractMethod {
         val semantic = CSharpSemanticSession(file.project).resolver(file)
         val writer = CSharpCodeWriter(semantic, member, CSharpGenerateSite.nullableContext(file, start))
         val nodes: List<PsiElement> = expression?.let(::listOf) ?: statements
-        controlFlowProblem(nodes, range)?.let { return Result.Error(it) }
+        val exits = when (val flow = controlFlow(nodes, range)) {
+            is Flow.Problem -> return Result.Error(flow.message)
+            is Flow.Exits -> flow
+        }
 
         val memberIsStatic = member.modifiers.any { it.text == "static" }
         var instance = false
         val accesses = LinkedHashMap<LocalSymbol, Access>()
-        val firstAccessIsRead = HashMap<LocalSymbol, Boolean>()
+        val uses = HashMap<LocalSymbol, MutableList<Use>>()
         var usesTypeParameters = false
         val syntax = semantic.syntax
         for (node in nodes) for (name in PsiTreeUtil.findChildrenOfType(node, CSharpSimpleName::class.java) + listOfNotNull(node as? CSharpSimpleName)) {
@@ -93,7 +102,7 @@ object NativeCSharpExtractMethod {
                     LocalSymbolKind.LOCAL, LocalSymbolKind.PARAMETER -> {
                         val access = access(name)
                         val known = accesses.getOrPut(symbol) { Access() }
-                        if (symbol !in firstAccessIsRead) firstAccessIsRead[symbol] = access.read
+                        uses.getOrPut(symbol) { ArrayList() } += use(name, access, nodes)
                         known.read = known.read || access.read
                         known.write = known.write || access.write
                     }
@@ -111,32 +120,56 @@ object NativeCSharpExtractMethod {
         // symbols declared inside and used after
         val declaredInside = syntax.let { NativeCSharpScopes.of(file).symbols.filter { range.contains(it.declaration.textRange) && it.kind == LocalSymbolKind.LOCAL } }
         val usedAfterInside = declaredInside.filter { s -> syntax.references(s).any { it.textRange.startOffset >= end } }
-        val writtenOutside = accesses.filter { (s, a) -> a.write && syntax.references(s).any { it.textRange.startOffset >= end } }.keys.toList()
+        // the loops around the selection: what the selection writes is read again by the next iteration
+        val loops = loopsAround(nodes.first(), member)
+        fun carriedBy(symbol: LocalSymbol) = loops.filter { loop -> loopBody(loop)?.textRange?.contains(symbol.declaration.textRange) != true }
+        fun incoming(symbol: LocalSymbol): Boolean {
+            val list = uses[symbol].orEmpty()
+            return list.any { read -> read.read && list.none { it.definite && it.writeAt <= read.readAt } }
+        }
+        fun usedLater(symbol: LocalSymbol): Boolean {
+            val carried = carriedBy(symbol)
+            return syntax.references(symbol).any { ref ->
+                ref.textRange.startOffset >= end || !range.contains(ref.textRange) && carried.any { it.textRange.contains(ref.textRange) }
+            } || carried.isNotEmpty() && incoming(symbol)
+        }
+        val writtenOutside = accesses.filter { (s, a) -> a.write && usedLater(s) }.keys.toList()
         if (expression != null && (usedAfterInside.isNotEmpty() || writtenOutside.isNotEmpty())) return Result.Error("The expression assigns variables used after it")
         if (usedAfterInside.size > 1) return Result.Error("More than one variable declared in the selection is used after it: ${usedAfterInside.joinToString { it.name }}")
+        // an output written on some paths only keeps its old value on the others: it comes in too
+        fun comesIn(symbol: LocalSymbol) = incoming(symbol) || symbol in writtenOutside && uses[symbol].orEmpty().none { it.definite }
 
-        val returnedSymbol = usedAfterInside.firstOrNull() ?: writtenOutside.firstOrNull()
+        val jump = exits.kind
+        if (jump != null) {
+            if (statements.all { it in exits.statements }) return Result.Error("The selection only leaves by '$jump': there is nothing to extract")
+            // the method returns whether to jump: what it assigns goes back by `ref`, which needs no assignment on the jumping paths
+            usedAfterInside.firstOrNull()?.let { return Result.Error("The selection leaves by '${jump}' and declares '${it.name}' used after it: a method cannot return both") }
+            writtenOutside.firstOrNull { !comesIn(it) }?.let { return Result.Error("The selection leaves by '${jump}' and assigns '${it.name}' used after it without reading it: a method cannot return both") }
+        }
+        val returnedSymbol = if (jump != null) null else usedAfterInside.firstOrNull() ?: writtenOutside.firstOrNull()
         val returned = returnedSymbol?.let { s ->
-            Output(s.name, typeOf(s, writer, semantic) ?: return Result.Error("Cannot infer the type of '${s.name}'"), s in usedAfterInside, s !in usedAfterInside && firstAccessIsRead[s] != true)
+            Output(s.name, typeOf(s, writer, semantic) ?: return Result.Error("Cannot infer the type of '${s.name}'"), s in usedAfterInside, s !in usedAfterInside && !comesIn(s))
         }
         val parameters = ArrayList<Parameter>()
-        for ((symbol, access) in accesses) {
-            val firstRead = firstAccessIsRead[symbol] == true
+        for (symbol in accesses.keys) {
+            val reads = comesIn(symbol)
             val isOutput = symbol in writtenOutside && symbol != returnedSymbol
             // the returned variable comes in only when its value is read before it is written
-            if (symbol == returnedSymbol && !firstRead) continue
+            if (symbol == returnedSymbol && !reads) continue
             val type = typeOf(symbol, writer, semantic) ?: return Result.Error("Cannot infer the type of '${symbol.name}'")
-            val modifier = if (isOutput) (if (firstRead) "ref" else "out") else ""
+            val modifier = if (isOutput) (if (reads) "ref" else "out") else ""
             parameters += Parameter(symbol.name, type, modifier)
         }
 
         val isAsync = awaits(nodes, range)
+        val endReachable = jump != null && statements.isNotEmpty() && CSharpReachability(semantic).endOf(statements.last()) != CSharpReachability.Reach.NO
         var returnType = when {
             expression != null -> {
                 val type = semantic.typeOf(expression) ?: return Result.Error("Cannot infer the type of the expression")
                 writer.type(type) ?: return Result.Error("Cannot infer the type of the expression")
             }
             returned != null -> returned.type
+            jump != null && endReachable -> "bool"
             else -> "void"
         }
         if (isAsync) {
@@ -151,7 +184,59 @@ object NativeCSharpExtractMethod {
         for (part in owner.members) CSharpDeclarationNames.nameElement(part)?.text?.let(taken::add)
         val name = CSharpVariableNames.unique("NewMethod", taken)
         return Result.Ok(Extraction(file, member, expression?.textRange ?: TextRange(statements.first().textRange.startOffset, statements.last().textRange.endOffset),
-            expression, parameters, returned, returnType, memberIsStatic || !instance, isAsync, typeParameters, constraints, typeArguments, name, writer.usings))
+            expression, parameters, returned, returnType, memberIsStatic || !instance, isAsync, typeParameters, constraints, typeArguments, name, writer.usings,
+            jump, exits.statements.map { it.textRange }, endReachable, statements.lastOrNull()?.let { it in exits.statements } == true))
+    }
+
+    /** A read and / or a write of a variable of the member in the selection; [definite]: a write every path through the selection makes. */
+    private class Use(val read: Boolean, val readAt: Int, val writeAt: Int, val definite: Boolean)
+
+    private fun use(name: CSharpSimpleName, access: Access, roots: List<PsiElement>): Use {
+        var expression: PsiElement = name
+        while (expression.parent is CSharpParenthesizedExpression) expression = expression.parent
+        val parent = expression.parent
+        // the write takes place when the whole assignment / the call with `out x` is done: `x = x + 1` reads first
+        val writer: PsiElement = when (parent) {
+            is CSharpArgument -> (parent.parent?.parent as? CSharpExpression) ?: parent
+            else -> parent ?: name
+        }
+        val definite = access.write && unconditional(writer, roots)
+        return Use(access.read, name.textRange.startOffset, writer.textRange.endOffset, definite)
+    }
+
+    /** Whether [element] runs every time the selection does: no condition, loop, `try`, `?.` or lambda between them. */
+    private fun unconditional(element: PsiElement, roots: List<PsiElement>): Boolean {
+        var at: PsiElement = element
+        while (at !in roots) {
+            val parent = at.parent ?: return false
+            when (parent) {
+                is CSharpAssignmentExpression, is CSharpParenthesizedExpression, is CSharpExpressionStatement, is CSharpArgument, is CSharpArgumentList, is CSharpBlock,
+                is CSharpInvocationExpression, is CSharpEqualsValueClause, is CSharpVariableDeclarator, is CSharpVariableDeclaration, is CSharpLocalDeclarationStatement -> Unit
+                else -> return false
+            }
+            at = parent
+        }
+        return true
+    }
+
+    /** The loops around [element] in [member] whose body holds it (not the ones whose condition or header does). */
+    private fun loopsAround(element: PsiElement, member: PsiElement): List<CSharpStatement> {
+        val result = ArrayList<CSharpStatement>()
+        var at: PsiElement? = element.parent
+        while (at != null && at != member) {
+            if (at is CSharpAnonymousFunctionExpression || at is CSharpLocalFunctionStatement) break
+            if (at is CSharpStatement && loopBody(at)?.textRange?.contains(element.textRange) == true) result += at
+            at = at.parent
+        }
+        return result
+    }
+
+    private fun loopBody(loop: PsiElement): CSharpStatement? = when (loop) {
+        is CSharpWhileStatement -> loop.statement
+        is CSharpDoStatement -> loop.statement
+        is CSharpForStatement -> loop.statement
+        is CSharpCommonForEachStatement -> loop.statement
+        else -> null
     }
 
     /** The top member of a type the selection is in (a method, a property, a constructor...). */
@@ -202,23 +287,66 @@ object NativeCSharpExtractMethod {
         return emptyList()
     }
 
-    /** `return`, `yield`, `goto`, `break` / `continue` out of the selection: the method could not do the same. */
-    private fun controlFlowProblem(nodes: List<PsiElement>, range: TextRange): String? {
+    private sealed class Flow {
+        class Problem(val message: String) : Flow()
+
+        /** The statements leaving the selection, all of one [kind] (`break`, `continue` or `return` without a value), as Rider's `if (M()) break;`. */
+        class Exits(val kind: String?, val statements: List<CSharpStatement>) : Flow()
+    }
+
+    /**
+     * The jumps out of the selection. One kind of `break` / `continue` to a loop (or a `switch`) around it, or `return;` of a function that
+     * returns nothing, is kept: the method tells the call to jump. A `return` with a value, `yield`, `goto` and two kinds at once are not.
+     */
+    private fun controlFlow(nodes: List<PsiElement>, range: TextRange): Flow {
+        val exits = ArrayList<CSharpStatement>()
         for (node in nodes) {
             val all = PsiTreeUtil.findChildrenOfAnyType(node, false, CSharpReturnStatement::class.java, CSharpYieldStatement::class.java, CSharpGotoStatement::class.java,
                 CSharpBreakStatement::class.java, CSharpContinueStatement::class.java)
             for (statement in all) {
                 if (insideNestedFunction(statement, node)) continue
                 when (statement) {
-                    is CSharpReturnStatement -> return "The selection contains 'return': the method would not return from the member"
-                    is CSharpYieldStatement -> return "The selection contains 'yield'"
-                    is CSharpGotoStatement -> return "The selection contains 'goto'"
-                    else -> if (!targetInside(statement, range)) return "The selection contains '${statement.firstChild.text}' out of a loop it does not hold"
+                    is CSharpReturnStatement -> when {
+                        statement.expression != null -> return Flow.Problem("The selection contains 'return' with a value: the method would not return from the member")
+                        !returnsNothing(nodes.first()) -> return Flow.Problem("The selection contains 'return' of a function whose result is not known")
+                        else -> exits += statement
+                    }
+                    is CSharpYieldStatement -> return Flow.Problem("The selection contains 'yield'")
+                    is CSharpGotoStatement -> return Flow.Problem("The selection contains 'goto'")
+                    else -> if (!targetInside(statement, range)) exits += statement
                 }
             }
         }
-        return null
+        val kinds = exits.map(::jumpKind).distinct()
+        if (kinds.size > 1) return Flow.Problem("The selection leaves by ${kinds.joinToString(" and ") { "'$it'" }}: a method can tell the call only one way out")
+        return Flow.Exits(kinds.firstOrNull(), exits)
     }
+
+    private fun jumpKind(statement: CSharpStatement): String = when (statement) {
+        is CSharpBreakStatement -> "break"
+        is CSharpContinueStatement -> "continue"
+        else -> "return"
+    }
+
+    /** Whether the function around [element] is one `return;` may leave: a `void` method / local function, `async Task`, a constructor, a setter. */
+    private fun returnsNothing(element: PsiElement): Boolean {
+        var at: PsiElement? = element.parent
+        while (at != null && at !is PsiFile) {
+            when (at) {
+                is CSharpAnonymousFunctionExpression -> return false
+                is CSharpLocalFunctionStatement -> return voidResult(at.returnType?.text, at.modifiers)
+                is CSharpAccessorDeclaration -> return at.keyword?.text in setOf("set", "init", "add", "remove")
+                is CSharpMethodDeclaration -> return voidResult(at.returnType?.text, at.modifiers)
+                is CSharpConstructorDeclaration, is CSharpDestructorDeclaration -> return true
+                is CSharpMemberDeclaration -> return false
+            }
+            at = at.parent
+        }
+        return false
+    }
+
+    private fun voidResult(type: String?, modifiers: List<PsiElement>): Boolean =
+        type == "void" || modifiers.any { it.text == "async" } && type?.substringAfterLast('.') in setOf("Task", "ValueTask")
 
     private fun insideNestedFunction(element: PsiElement, root: PsiElement): Boolean {
         var at = element.parent
@@ -262,6 +390,9 @@ object NativeCSharpExtractMethod {
             else -> Access(read = true)
         }
     }
+
+    /** Whether the use writes the variable (`x = `, `x++`, `ref x`, `out x`). */
+    internal fun isWritten(name: CSharpSimpleName): Boolean = access(name).write
 
     /** A name without a local symbol that stands for an instance member of the type (or can not be told: then it counts as one). */
     internal fun usesInstance(name: CSharpSimpleName, semantic: CSharpNameResolver): Boolean {
@@ -327,9 +458,16 @@ object NativeCSharpExtractMethod {
                 returned.declaredInside -> "var ${returned.name} = "
                 else -> "${returned.name} = "
             }
-            replacement = "$prefix$awaited;"
+            val jump = extraction.jump
+            replacement = when {
+                jump == null -> "$prefix$awaited;"
+                extraction.endReachable -> "if ($awaited) $jump;"
+                else -> "$awaited;\n${NativeCSharpUsingEdits.indentOf(text, extraction.range.startOffset).orEmpty()}$jump;"
+            }
             callNameAt = replacement.indexOf(name, prefix.length)
-            body = (returned?.takeIf { it.declare }?.let { "$bodyIndent${it.type} ${it.name};\n" } ?: "") + bodyIndent + relines(selected, text, extraction.range.startOffset, bodyIndent) + (returned?.let { "\n${bodyIndent}return ${it.name};" } ?: "")
+            val statements = jumpsReturned(selected, extraction)
+            body = (returned?.takeIf { it.declare }?.let { "$bodyIndent${it.type} ${it.name};\n" } ?: "") + bodyIndent + relines(statements, text, extraction.range.startOffset, bodyIndent) +
+                (returned?.let { "\n${bodyIndent}return ${it.name};" } ?: "") + (if (jump != null && extraction.endReachable) "\n${bodyIndent}return false;" else "")
         }
         val modifiers = listOfNotNull("private", "static".takeIf { extraction.isStatic }, "async".takeIf { extraction.isAsync }).joinToString(" ")
         val parameters = extraction.parameters.joinToString(", ") { listOf(it.modifier, it.type, it.name).filter(String::isNotEmpty).joinToString(" ") }
@@ -357,6 +495,23 @@ object NativeCSharpExtractMethod {
             methodNameOffset += insertion.text.length
         }
         return Edit(result, methodNameOffset, callNameOffset, TextRange(methodStart, methodEnd))
+    }
+
+    /**
+     * The selected text with each jump out of it replaced by the method's answer: `return true;`, or `return;` when every path jumps (then a
+     * jump closing the selection is dropped: the call jumps after it anyway).
+     */
+    private fun jumpsReturned(selected: String, extraction: Extraction): String {
+        if (extraction.jump == null) return selected
+        val start = extraction.range.startOffset
+        var result = selected
+        for (jump in extraction.jumps.sortedByDescending { it.startOffset }) {
+            val from = jump.startOffset - start
+            val to = jump.endOffset - start
+            result = if (!extraction.endReachable && extraction.endsWithJump && jump.endOffset == extraction.range.endOffset) result.substring(0, from).trimEnd() + result.substring(to)
+            else result.substring(0, from) + (if (extraction.endReachable) "return true;" else "return;") + result.substring(to)
+        }
+        return result
     }
 
     /** The selected text with its later lines moved from their old indent to [indent] (the first line starts at the selection). */

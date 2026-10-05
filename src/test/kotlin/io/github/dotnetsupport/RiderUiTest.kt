@@ -175,8 +175,8 @@ class RiderUiTest : BasePlatformTestCase() {
         val rest = group.childActionsOrStubs.filterIsInstance<io.github.dotnetsupport.lang.HideDisabledGroup>().single().getChildren(null)
             .map { actions.getId((it as? com.intellij.openapi.actionSystem.AnActionWrapper)?.delegate ?: it) }
         assertTrue(rest.toString(), "ImplementMethods" !in rest && "OverrideMethods" !in rest)
-        val native = listOf("Constructor", "Read-only properties", "Properties", "Missing members", "Overriding members", "Partial members", "Deconstructor",
-            "Equality members", "Formatting members", "Dispose pattern", "Unit Test")
+        val native = listOf("Constructor", "Read-only properties", "Properties", "Missing members", "Overriding members", "Delegating members", "Partial members",
+            "Deconstructor", "Equality members", "Equality comparer", "Relational members", "Relational comparer", "Formatting members", "Dispose pattern", "Unit Test")
         assertEquals("Rider's order of the native rows", native, native.shuffled(java.util.Random(7)).sortedBy(CSharpRiderPopups::generateRank))
     }
 

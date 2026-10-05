@@ -20,6 +20,7 @@ import io.github.dotnetsupport.lang.NativeCSharpTypePositions
 internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
     private val inferred = HashMap<Pair<PsiElement, CSharpSymbol>, List<SemanticType?>>()
     private val inferring = HashMap<Pair<PsiElement, CSharpSymbol>, Array<SemanticType?>>()
+    internal val queries = CSharpQueryTranslation(r)
 
     fun compute(e: CSharpExpression): SemanticType? {
         literal(e)?.let { return it }
@@ -67,7 +68,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
             is CSharpRangeExpression -> r.libraryType("System.Range")
             is CSharpWithExpression -> e.expression?.let(r::typeOf)
             is CSharpDeclarationExpression -> declaration(e)
-            is CSharpQueryExpression -> query(e)
+            is CSharpQueryExpression -> queries.typeOf(e) ?: if (queries.translating(e)) null else query(e)
             // `field` of a property accessor: the backing field has the property's type
             is CSharpFieldExpression -> PsiTreeUtil.getParentOfType(e, CSharpBasePropertyDeclaration::class.java)?.type?.let(r::resolveType)
             else -> null
@@ -210,7 +211,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         else -> null
     }
 
-    private fun methodArity(symbol: CSharpSymbol): Int = when (symbol) {
+    internal fun methodArity(symbol: CSharpSymbol): Int = when (symbol) {
         is CSharpSymbol.LibraryMember -> symbol.member.arity
         is CSharpSymbol.SourceMember -> when (val element = symbol.element) {
             is CSharpMethodDeclaration -> element.typeParameterList?.parameters?.size ?: 0
@@ -268,7 +269,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         }
     }
 
-    private fun mentionsUnfixed(type: SemanticType?, fixed: Array<SemanticType?>): Boolean = when (type) {
+    internal fun mentionsUnfixed(type: SemanticType?, fixed: Array<SemanticType?>): Boolean = when (type) {
         null -> false
         is SemanticType.Parameter -> type.ofMethod && type.index in fixed.indices && fixed[type.index] == null
         is SemanticType.Library -> type.arguments.any { mentionsUnfixed(it, fixed) }
@@ -284,7 +285,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
     }
 
     /** Fixes the method type parameters in [parameter] by what [argument] has in their places. */
-    private fun unify(parameter: SemanticType?, argument: SemanticType?, fixed: Array<SemanticType?>, owner: PsiElement?, depth: Int = 0) {
+    internal fun unify(parameter: SemanticType?, argument: SemanticType?, fixed: Array<SemanticType?>, owner: PsiElement?, depth: Int = 0) {
         if (parameter == null || argument == null || depth > 8) return
         when (parameter) {
             is SemanticType.Parameter -> if (parameter.ofMethod && parameter.index in fixed.indices && (parameter.owner == null || parameter.owner == owner) && fixed[parameter.index] == null) {
@@ -515,8 +516,12 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
     private fun awaitedOrNull(type: SemanticType): SemanticType? = (type as? SemanticType.Library)?.takeIf { it.type.fullName in TASKS_OF_T }?.arguments?.firstOrNull()
 
     /** `Expression<Func<T>>` converts a lambda as its delegate does. */
-    internal fun unwrapExpression(type: SemanticType): SemanticType? =
-        if (type is SemanticType.Library && type.type.fullName == "System.Linq.Expressions.Expression`1") type.arguments.firstOrNull() else type
+    internal fun unwrapExpression(type: SemanticType): SemanticType? = when {
+        type is SemanticType.Library && type.type.fullName == EXPRESSION -> type.arguments.firstOrNull()
+        // declared in the sources (a compilation of System.Linq.Expressions itself, the tests)
+        type is SemanticType.Source && type.arguments.size == 1 && type.info.qualifiedName == "System.Linq.Expressions.Expression" -> type.arguments.firstOrNull()
+        else -> type
+    }
 
     /** The parameter types and the return type of a delegate type (its `Invoke`), substituted. */
     fun delegateSignature(type: SemanticType): Pair<List<SemanticType?>, SemanticType?>? = when (type) {
@@ -629,9 +634,19 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         return instanceOf(type, "System.Collections.Generic.IEnumerable`1")?.arguments?.firstOrNull()
     }
 
-    /** The type of a range variable declared by [clause] (`from`, `let`, `join`, `join ... into`, `into`). */
-    fun rangeVariableType(clause: PsiElement): SemanticType? = when (clause) {
-        is CSharpFromClause -> clause.type?.let(r::resolveType) ?: querySource(clause.expression)
+    /**
+     * The type of a range variable declared by [clause] (`from`, `let`, `join`, `join ... into`, `into`): the parameter of the lambda the
+     * translation of the query (§12.20.3, [CSharpQueryTranslation]) gives it; while the query is being translated, what is bound so far.
+     * Where the translation finds no methods, the rules of `IEnumerable<T>` as before.
+     */
+    fun rangeVariableType(clause: PsiElement): SemanticType? {
+        val translated = queries.rangeVariableType(clause)
+        if (translated != null || queries.translating(clause)) return translated
+        return enumerableRangeVariableType(clause)
+    }
+
+    private fun enumerableRangeVariableType(clause: PsiElement): SemanticType? = when (clause) {
+        is CSharpFromClause -> clause.type?.let(r::resolveType) ?: querySource(clause.expression) ?: clause.expression?.let(r::typeOf)?.let(r::elementType)
         is CSharpLetClause -> clause.expression?.let(r::typeOf)
         is CSharpJoinClause -> clause.type?.let(r::resolveType) ?: querySource(clause.inExpression)
         is CSharpJoinIntoClause -> (clause.parent as? CSharpJoinClause)?.let(::rangeVariableType)?.let(::enumerableOf)
@@ -981,6 +996,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
 
     companion object {
         private const val NULLABLE = "System.Nullable`1"
+        private const val EXPRESSION = "System.Linq.Expressions.Expression`1"
         private const val BOOL = "System.Boolean"
         private const val STRING = "System.String"
         private const val INT = "System.Int32"

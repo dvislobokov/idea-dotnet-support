@@ -110,7 +110,9 @@ class CodeAnalysisService(private val project: Project) : Disposable {
     private fun fresh(projectFile: VirtualFile, seen: MutableSet<String>): Boolean {
         if (!seen.add(key(projectFile.path))) return true
         val state = generated[key(projectFile.path)] ?: return false
-        if (state.stale || state.run.errors.isNotEmpty()) return false
+        // a project without source generators: an edit cannot change what they make (a save does not run them again either, so "stale"
+        // would stay for good — and with it the silence on partial types, such as the messages of gRPC)
+        if (state.run.errors.isNotEmpty() || state.stale && state.run.files.isNotEmpty()) return false
         return references(projectFile).all { fresh(it, seen) }
     }
 
@@ -134,6 +136,72 @@ class CodeAnalysisService(private val project: Project) : Disposable {
     fun generatedRoots(): List<VirtualFile> = generated.values.mapNotNull { LocalFileSystem.getInstance().findFileByPath(it.output) }
 
     fun analyzedFile(path: String): AnalyzedFile? = analyzed[key(path)]
+
+    // ---- what the targets of the build generate (XAML, gRPC, resources: BuildGeneratedSources)
+
+    private val buildCache = ConcurrentHashMap<String, Pair<Long, BuildGenerated>>()
+
+    /**
+     * The C# the build makes of the XAML and protobuf files of [projectFile]: what the design-time build of the helper listed, else what
+     * `obj/` has after the last build for the configuration and framework of the toolbar; with what is missing or older than its source.
+     * [BuildGenerated.NONE] for a project without such inputs. Cached until the VFS or the generated files change.
+     */
+    fun buildGenerated(projectFile: VirtualFile): BuildGenerated {
+        val stamp = com.intellij.openapi.vfs.VirtualFileManager.getInstance().modificationCount * 1_000_003 + modificationTracker.modificationCount
+        buildCache[key(projectFile.path)]?.let { (at, known) -> if (at == stamp) return known }
+        val computed = computeBuildGenerated(projectFile)
+        buildCache[key(projectFile.path)] = stamp to computed
+        return computed
+    }
+
+    private fun computeBuildGenerated(projectFile: VirtualFile): BuildGenerated {
+        val directory = projectFile.parent ?: return BuildGenerated.NONE
+        val inputs = ArrayList<String>()
+        com.intellij.openapi.vfs.VfsUtilCore.visitChildrenRecursively(directory, object : com.intellij.openapi.vfs.VirtualFileVisitor<Unit>(com.intellij.openapi.vfs.VirtualFileVisitor.limit(6)) {
+            override fun visitFile(file: VirtualFile): Boolean {
+                if (file.isDirectory) return file == directory || file.name.lowercase() !in SKIPPED_FOLDERS
+                if (file.extension?.lowercase() in BuildGeneratedSources.INPUT_EXTENSIONS) inputs += file.path
+                return false
+            }
+        })
+        if (inputs.none { it.endsWith(".xaml", ignoreCase = true) || it.endsWith(".proto", ignoreCase = true) }) return BuildGenerated.NONE
+        val fromHelper = generated[key(projectFile.path)]?.run?.buildFiles.orEmpty()
+        val files = if (fromHelper.isNotEmpty()) fromHelper.map { BuildGeneratedSources.classify(it, inputs) } else {
+            val options = ReadAction.compute<io.github.dotnetsupport.msbuild.CompilationOptions, RuntimeException> { CompilationModel.getInstance(project).options(projectFile) }
+            val objFiles = ArrayList<String>()
+            directory.findChild("obj")?.let { obj ->
+                com.intellij.openapi.vfs.VfsUtilCore.visitChildrenRecursively(obj, object : com.intellij.openapi.vfs.VirtualFileVisitor<Unit>(com.intellij.openapi.vfs.VirtualFileVisitor.limit(5)) {
+                    override fun visitFile(file: VirtualFile): Boolean {
+                        if (!file.isDirectory && file.extension.equals("cs", ignoreCase = true)) objFiles += file.path
+                        return file.isDirectory
+                    }
+                })
+            }
+            BuildGeneratedSources.scan(directory.path, objFiles, inputs, options.configuration, options.targetFramework)
+        }
+        val fileSystem = directory.fileSystem
+        return BuildGeneratedSources.check(files, inputs,
+            needsOutput = { path -> !path.endsWith(".xaml", ignoreCase = true) || fileSystem.findFileByPath(path)?.let { XAML_CLASS.containsMatchIn(com.intellij.openapi.vfs.VfsUtilCore.loadText(it)) } == true },
+            stamp = { path -> fileSystem.findFileByPath(path)?.timeStamp ?: 0L })
+    }
+
+    /** Every input of the build generators of [projectFile] has fresh output: the names they declare are all in the index. */
+    fun isBuildGeneratedFresh(projectFile: VirtualFile): Boolean = buildGenerated(projectFile).fresh
+
+    /** The project and the description of [file] when the build generated it for one of the projects of the solution; null for any other file. */
+    fun buildGeneratedFile(file: VirtualFile): Pair<VirtualFile, BuildGeneratedFile>? {
+        if (!file.path.contains("/obj/", ignoreCase = true) || file.extension?.lowercase() != "cs") return null
+        val projectFile = ReadAction.compute<VirtualFile?, RuntimeException> { io.github.dotnetsupport.msbuild.DotNetProjects.findOwningProject(file) } ?: return null
+        val generated = buildGenerated(projectFile).files.firstOrNull { it.path.equals(file.path, ignoreCase = true) } ?: return null
+        return projectFile to generated
+    }
+
+    /** A `.xaml`, `.proto` or `.resx` of a project changed: what the build made of it is stale until the helper or a build makes it again. */
+    fun generatorInputsChanged(paths: Collection<String>) {
+        buildCache.clear()
+        modificationTracker.incModificationCount()
+        projectFilesChanged(paths)
+    }
 
     val generatedCount: Int get() = generated.size
 
@@ -258,9 +326,13 @@ class CodeAnalysisService(private val project: Project) : Disposable {
             // the helper wrote the files: the VFS learns of them before the indexes and the tree look
             LocalFileSystem.getInstance().refreshAndFindFileByIoFile(folder)?.let { VfsUtil.markDirtyAndRefresh(false, true, true, it) }
         }
+        // the design-time build ran the targets that write C# into obj/ (XAML, gRPC): the index learns of the new text
+        if (run.buildFiles.isNotEmpty()) LocalFileSystem.getInstance().refreshIoFiles(run.buildFiles.map(::File), true, false, null)
+        buildCache.remove(key(projectFile.path))
+        if (run.buildFiles.isNotEmpty()) PluginLog.info(LOG_CATEGORY, "${projectFile.name}: ${run.buildFiles.size} files generated by the build: ${run.buildFiles.joinToString { it.substringAfterLast('/') }}")
         ApplicationManager.getApplication().invokeLater({
             if (project.isDisposed) return@invokeLater
-            if (roots) com.intellij.openapi.application.WriteAction.run<RuntimeException> {
+            if (roots)com.intellij.openapi.application.WriteAction.run<RuntimeException> {
                 AdditionalLibraryRootsListener.fireAdditionalLibraryChanged(project, GeneratedSourcesRootsProvider.LIBRARY_NAME, emptyList(), generatedRoots(), GeneratedSourcesRootsProvider::class.java.name)
             }
             ProjectView.getInstance(project).getProjectViewPaneById(io.github.dotnetsupport.view.SolutionViewPane.ID)?.updateFromRoot(true)
@@ -303,31 +375,30 @@ class CodeAnalysisService(private val project: Project) : Disposable {
         buildView.onEvent(buildId, BuildViewEvents.started(descriptor, "running analyzers..."))
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, title, true) {
             override fun run(indicator: ProgressIndicator) {
-                var errors = 0
-                var warnings = 0
-                var infos = 0
+                val found = ArrayList<AnalyzerDiagnostic>()
                 for (projectFile in projects) {
                     indicator.checkCanceled()
                     indicator.text = "Analyzing ${projectFile.nameWithoutExtension}..."
-                    val run = try {
-                        analyze(projectFile, emptyList(), fixes = true)
+                    try {
+                        found += analyze(projectFile, emptyList(), fixes = true).diagnostics
                     } catch (e: HelperException) {
                         buildView.onEvent(buildId, BuildViewEvents.message(buildId, MessageEvent.Kind.ERROR, GROUP, "${projectFile.nameWithoutExtension}: ${e.message}", e.message.orEmpty(), null))
-                        continue
-                    }
-                    val shown = run.diagnostics.filter { it.severity != AnalyzerSeverity.INFO || DotNetSettings.getInstance().showAnalyzerSuggestions }
-                    for (diagnostic in shown) {
-                        val kind = when (diagnostic.severity) {
-                            AnalyzerSeverity.ERROR -> MessageEvent.Kind.ERROR.also { errors++ }
-                            AnalyzerSeverity.WARNING -> MessageEvent.Kind.WARNING.also { warnings++ }
-                            AnalyzerSeverity.INFO -> MessageEvent.Kind.INFO.also { infos++ }
-                        }
-                        val text = "${diagnostic.id}: ${diagnostic.message}"
-                        buildView.onEvent(buildId, BuildViewEvents.message(buildId, kind, GROUP, text, text + (diagnostic.helpLink?.let { "\n$it" } ?: ""),
-                            FilePosition(File(diagnostic.path), diagnostic.startLine, diagnostic.startColumn)))
                     }
                 }
-                buildView.onEvent(buildId, BuildViewEvents.finished(buildId, "$errors errors, $warnings warnings, $infos suggestions", SuccessResultImpl()))
+                // grouped by severity as Rider's Inspection Results: a node per severity; the tree opens the nodes with errors and
+                // warnings, the suggestions stay collapsed
+                val groups = CodeAnalysisReport.groups(found)
+                for (group in groups) {
+                    val groupId = Any()
+                    buildView.onEvent(buildId, BuildViewEvents.startNode(groupId, buildId, group.title))
+                    for (diagnostic in group.diagnostics) {
+                        val text = "${diagnostic.id}: ${diagnostic.message}"
+                        buildView.onEvent(buildId, BuildViewEvents.message(groupId, group.kind, GROUP, text, text + (diagnostic.helpLink?.let { "\n$it" } ?: ""),
+                            FilePosition(File(diagnostic.path), diagnostic.startLine, diagnostic.startColumn)))
+                    }
+                    buildView.onEvent(buildId, BuildViewEvents.finishNode(groupId, group.title))
+                }
+                buildView.onEvent(buildId, BuildViewEvents.finished(buildId, CodeAnalysisReport.summary(groups), SuccessResultImpl()))
             }
 
             override fun onThrowable(error: Throwable) {
@@ -466,6 +537,9 @@ class CodeAnalysisService(private val project: Project) : Disposable {
         const val LOG_CATEGORY = "codeanalysis"
         const val GROUP = "Roslyn analyzers"
         val HELPER = DotNetHelper("codeanalysis", "CodeAnalysisHelper", "HelperFramework", listOf("Program.cs", "Protocol.cs"), perSdk = true)
+
+        private val SKIPPED_FOLDERS = setOf("bin", "obj", "node_modules", ".git", ".vs", ".idea")
+        private val XAML_CLASS = Regex("""\b[\w.]+:Class\s*=""")
 
         /** IDE0005 is the plugin's own gray of unused `using` directives (CS8019): not twice. */
         val EXCLUDED_IDS = listOf("IDE0005")

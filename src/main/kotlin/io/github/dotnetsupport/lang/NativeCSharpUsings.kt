@@ -243,6 +243,9 @@ object NativeCSharpServerActions {
         "Use expression body for " to CSharpFeature.CONTEXT_ACTIONS,
         "Use block body for " to CSharpFeature.CONTEXT_ACTIONS,
         "Introduce local for " to CSharpFeature.CONTEXT_ACTIONS,
+        // 0.1.81: Introduce Parameter / Introduce Field of Refactor This ("Introduce parameter for all occurrences of 'x'" too)
+        "Introduce parameter for " to CSharpFeature.CONTEXT_ACTIONS,
+        "Introduce field for " to CSharpFeature.CONTEXT_ACTIONS,
     )
 
     fun shadowed(title: String?, project: Project): Boolean {

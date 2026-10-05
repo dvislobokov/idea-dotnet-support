@@ -54,7 +54,7 @@ public class ContextActions
 
     // TYPE:ctx-conditional-to-if — Alt+Enter on `?` in Parity: "Convert '?:' to 'if' statement". EXPECT: `if (value % 2 == 0) { return
     // "even"; } else { return "odd"; }` with the braces on their own lines. In Check, on `?`: the `else` branch is `throw new
-    // ArgumentException(...)`; as a statement. NOT offered on the `?:` in the argument of Console.WriteLine in Print.
+    // ArgumentException(...)`; as a statement. On the `?:` in the argument of Console.WriteLine in Print see TYPE:ctx-conditional-split.
     public string Parity(int value)
     {
         return value % 2 == 0 ? "even" : "odd";
@@ -65,9 +65,26 @@ public class ContextActions
         return text != null ? text : throw new ArgumentException("no text");
     }
 
+    // TYPE:ctx-conditional-split — Alt+Enter on `?` in Print (0.1.81): "Convert '?:' to 'if' statement". EXPECT: the statement in both
+    // branches: `if (flag) { Console.WriteLine("yes"); } else { Console.WriteLine("no"); }`, the braces on their own lines. In Label on
+    // `?`: `string label;` first, then `label = Format(count, "items");` / `label = Format(count, "item");` in the branches. NOT offered
+    // on the `?:` in Lazy (after `||` it runs only sometimes).
     public void Print(bool flag)
     {
         Console.WriteLine(flag ? "yes" : "no");
+    }
+
+    public void Label(int count)
+    {
+        var label = Format(count, count > 1 ? "items" : "item");
+        Console.WriteLine(label);
+    }
+
+    private static string Format(int count, string noun) => $"{count} {noun}";
+
+    public bool Lazy(bool a, int b)
+    {
+        return a || (b > 0 ? b < 10 : b > -10);
     }
 
     // TYPE:ctx-expression-body — Alt+Enter on the name Twice: "To expression body". EXPECT: `public int Twice(int value) => value * 2;`.
@@ -130,9 +147,11 @@ public class ContextActions
         Console.WriteLine(total + big + list.Count);
     }
 
-    // TYPE:ctx-introduce — Alt+Enter on `Count` in Introduce: "Introduce variable". EXPECT: `var count = items.Count;` above the line and
-    // `count * 2` in place, the name in a box: type another name and both change, Enter. Select `items.Count * 2` and Alt+Enter: `var value
-    // = items.Count * 2;`. NOT offered on `Ready()` after `&&` (it runs only sometimes) nor on `items` alone.
+    // TYPE:ctx-introduce — Alt+Enter on `Count` in the first line of Introduce: "Introduce variable". EXPECT (0.1.81): a chooser "Replace
+    // this occurrence only" / "Replace all 2 occurrences", the occurrences highlighted. This one: `var count = items.Count;` above the line
+    // and `count * 2` in place; all: `count` in the `if` too. The name in a box: type another name and all change, Enter. Select `items.Count
+    // * 2` and Alt+Enter: `var value = items.Count * 2;` (one occurrence: no chooser). NOT offered on `Ready()` after `&&` (it runs only
+    // sometimes) nor on `items` alone.
     public void Introduce(List<int> items)
     {
         Console.WriteLine(items.Count * 2);

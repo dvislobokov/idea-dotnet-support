@@ -491,6 +491,21 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         return betterTarget(t1, t2)
     }
 
+    /** §12.6.4.5 for an argument known by its type alone (the receiver of an extension method): the exact match, then the better target. */
+    fun betterFromType(type: SemanticType, t1: SemanticType, t2: SemanticType): Int? {
+        when (same(t1, t2)) {
+            true -> return 0
+            null -> return null
+            false -> {}
+        }
+        val exact1 = same(type, t1)
+        val exact2 = same(type, t2)
+        if (exact1 == true && exact2 == false) return 1
+        if (exact2 == true && exact1 == false) return -1
+        if (exact1 == null || exact2 == null) return null
+        return betterTarget(t1, t2)
+    }
+
     private fun isHandler(type: SemanticType): Boolean = type is SemanticType.Library && type.type.attributes.any { it.endsWith("InterpolatedStringHandlerAttribute") }
 
     /** §12.6.4.7, the better conversion target. */
@@ -567,6 +582,8 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
     private class Form(
         val symbol: CSharpSymbol, val declared: List<CSharpNameResolver.Parameter>, val targets: List<SemanticType?>, val declaredTargets: List<SemanticType?>,
         val expanded: Boolean, val defaults: Boolean, val generic: Boolean, val paramsType: SemanticType?,
+        /** The `this` parameter of an extension method called on a receiver, substituted: the receiver is its first argument (§12.8.10.3). */
+        val receiverTarget: SemanticType? = null,
     )
 
     /**
@@ -577,6 +594,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         if (candidates.size < 2) return null
         val call = site?.let(r::invocationOf)
         val types = arguments.map { a -> a.expression?.let(::argumentType) }
+        val receiver = if (reduced) site?.let(r.expressions::receiver) else null
         val owners = candidates.mapNotNull { (it as? CSharpSymbol.SourceMember)?.element }
         openOwners += owners
         try {
@@ -595,7 +613,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
             if (pool.size == 1) return pool.single().symbol
             var best: Form? = null
             for (m in pool) {
-                if (pool.all { n -> n === m || betterMember(m, n, arguments, types) == true }) {
+                if (pool.all { n -> n === m || betterMember(m, n, arguments, types, receiver) == true }) {
                     if (best != null) return null
                     best = m
                 }
@@ -647,9 +665,11 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         val methodArguments: List<SemanticType?> = if (generic && call != null && site != null) r.expressions.typeArguments(symbol, call, site, withLambdas = lambdas) else emptyList()
         if (generic && !constraintsHold(symbol, methodArguments)) return null
         fun substituted(type: SemanticType?): SemanticType? = if (methodArguments.isEmpty()) type else substitute(type, symbol, methodArguments)
+        var receiverTarget: SemanticType? = null
         if (reduced) {
             val receiver = site?.let(r.expressions::receiver) ?: return UNKNOWN_FORM
             val self = substituted(all.first().type()) ?: return UNKNOWN_FORM
+            receiverTarget = self
             // the receiver of an extension method: identity, reference or boxing conversions only
             when (classify(receiver, self, userDefined = false)) {
                 Conversion.NONE -> return null
@@ -692,7 +712,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
             if (!fits) continue
             if (unknown) return UNKNOWN_FORM
             val defaults = parameters.indices.any { p -> p !in map && !(expanded && p == parameters.size - 1) }
-            return Form(symbol, parameters, targets, declaredTargets, expanded, defaults, generic, if (expanded) parameters.last().type() else null)
+            return Form(symbol, parameters, targets, declaredTargets, expanded, defaults, generic, if (expanded) parameters.last().type() else null, receiverTarget)
         }
         return if (unknown) UNKNOWN_FORM else null
     }
@@ -833,10 +853,23 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
     }
 
     /** §12.6.4.3: whether [m] is a better function member than [n] for the call; null when not known. */
-    private fun betterMember(m: Form, n: Form, arguments: List<CSharpArgument>, types: List<SemanticType?>): Boolean? {
+    private fun betterMember(m: Form, n: Form, arguments: List<CSharpArgument>, types: List<SemanticType?>, receiver: SemanticType? = null): Boolean? {
         var mBetter = false
         var nBetter = false
         var identical = true
+        // the receiver of two extension methods is their first argument: `Queryable.Where` over `Enumerable.Where` for an `IQueryable<T>`
+        val p = m.receiverTarget
+        val q = n.receiverTarget
+        if (p != null && q != null) {
+            val sameType = same(p, q) ?: return null
+            if (!sameType) {
+                identical = false
+                when (betterFromType(receiver ?: return null, p, q) ?: return null) {
+                    1 -> mBetter = true
+                    -1 -> nBetter = true
+                }
+            }
+        }
         for ((i, argument) in arguments.withIndex()) {
             val p = m.targets[i] ?: return null
             val q = n.targets[i] ?: return null

@@ -251,6 +251,80 @@ class CSharpGenerateTest : BasePlatformTestCase() {
         assertTrue(open, open.contains("GC.SuppressFinalize(this);"))
     }
 
+    // ---- delegating members, comparers, relational members (0.1.81)
+
+    fun testDelegatingMembersOfALibraryType() {
+        val text = generate(CSharpGenerator.DELEGATING_MEMBERS, """
+            using System.Collections.Generic;
+
+            class Bag
+            {
+                private readonly List<int> _items = new();<caret>
+            }
+        """) { it.startsWith("Add(") || it.startsWith("Count:") || it.startsWith("this[") }
+        assertTrue(text, text.contains("public void Add(int item)\n    {\n        _items.Add(item);\n    }"))
+        assertTrue(text, text.contains("public int Count => _items.Count;"))
+        assertTrue(text, text.contains("public int this[int index]\n    {\n        get => _items[index];\n        set => _items[index] = value;\n    }"))
+    }
+
+    fun testDelegatingMembersOfAnInterfaceOfTheSolution() {
+        myFixture.configureByText("Generate${files++}.cs", "interface IShape\n{\n    double Area { get; }\n    void Draw(int scale);\n    event System.EventHandler Changed;\n}\n\nclass Wrapper\n{\n    private readonly IShape _shape;<caret>\n}\n")
+        val site = CSharpGenerateSite.at(myFixture.file as CSharpFile, myFixture.editor.caretModel.offset)!!
+        val rows = NativeCSharpGenerate.choices(CSharpGenerator.DELEGATING_MEMBERS, site)
+        assertEquals(rows.map { it.text }.toString(), setOf("_shape: IShape"), rows.mapNotNull { it.group?.text }.toSet())
+        NativeCSharpGenerateRunner.setChooserForTests { it }
+        NativeCSharpGenerateRunner.run(CSharpGenerator.DELEGATING_MEMBERS, project, myFixture.editor, myFixture.file)
+        val text = myFixture.editor.document.text
+        assertTrue(text, text.contains("public double Area => _shape.Area;"))
+        assertTrue(text, text.contains("public void Draw(int scale)\n    {\n        _shape.Draw(scale);\n    }"))
+        assertTrue(text, text.startsWith("using System;\n"))
+        assertTrue(text, text.contains("public event EventHandler Changed\n    {\n        add => _shape.Changed += value;\n        remove => _shape.Changed -= value;\n    }"))
+    }
+
+    fun testEqualityComparerIsANestedClassWithAStaticProperty() {
+        val text = generate(CSharpGenerator.EQUALITY_COMPARER, """
+            class Person
+            {
+                public string Name { get; } = "";
+                public int Age { get; }
+                <caret>
+            }
+        """)
+        assertTrue(text, text.contains("private sealed class NameAgeEqualityComparer : IEqualityComparer<Person>"))
+        assertTrue(text, text.contains("public bool Equals(Person? x, Person? y)\n        {\n            if (ReferenceEquals(x, y)) return true;\n            if (x is null) return false;\n" +
+            "            if (y is null) return false;\n            if (x.GetType() != y.GetType()) return false;\n            return x.Name == y.Name && x.Age == y.Age;\n        }"))
+        assertTrue(text, text.contains("public int GetHashCode(Person obj)\n        {\n            return HashCode.Combine(obj.Name, obj.Age);\n        }"))
+        assertTrue(text, text.contains("public static IEqualityComparer<Person> NameAgeComparer { get; } = new NameAgeEqualityComparer();"))
+        assertTrue(text, text.contains("using System.Collections.Generic;"))
+    }
+
+    fun testRelationalMembersCompareInOrder() {
+        val text = generate(CSharpGenerator.RELATIONAL_MEMBERS, """
+            class Person
+            {
+                public string Name { get; } = "";
+                public int Age { get; }
+                <caret>
+            }
+        """)
+        assertTrue(text, text.contains("class Person : IComparable<Person>, IComparable"))
+        assertTrue(text, text.contains("public int CompareTo(Person? other)\n    {\n        if (ReferenceEquals(this, other)) return 0;\n        if (other is null) return 1;\n" +
+            "        var nameComparison = string.Compare(Name, other.Name, StringComparison.Ordinal);\n        if (nameComparison != 0) return nameComparison;\n" +
+            "        return Age.CompareTo(other.Age);\n    }"))
+        assertTrue(text, text.contains("public int CompareTo(object? obj)"))
+        assertTrue(text, text.contains("return obj is Person other ? CompareTo(other) : throw new ArgumentException(\$\"Object must be of type {nameof(Person)}\");"))
+        assertTrue(text, text.contains("public static bool operator <(Person? left, Person? right)\n    {\n        return Comparer<Person>.Default.Compare(left, right) < 0;\n    }"))
+        assertTrue(text, text.contains("public static bool operator >=(Person? left, Person? right)"))
+    }
+
+    fun testRelationalComparerOfAStruct() {
+        val text = generate(CSharpGenerator.RELATIONAL_COMPARER, "struct Money\n{\n    public decimal Amount;\n    public string? Currency;<caret>\n}")
+        assertTrue(text, text.contains("private sealed class AmountCurrencyRelationalComparer : IComparer<Money>"))
+        assertTrue(text, text.contains("public int Compare(Money x, Money y)\n        {\n            var amountComparison = x.Amount.CompareTo(y.Amount);\n" +
+            "            if (amountComparison != 0) return amountComparison;\n            return string.Compare(x.Currency, y.Currency, StringComparison.Ordinal);\n        }"))
+        assertTrue(text, text.contains("public static IComparer<Money> AmountCurrencyComparer { get; } = new AmountCurrencyRelationalComparer();"))
+    }
+
     // ---- the popup
 
     fun testGenerateListsEveryGeneratorInAType() {

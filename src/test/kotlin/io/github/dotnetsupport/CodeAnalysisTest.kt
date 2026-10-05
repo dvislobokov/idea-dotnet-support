@@ -109,8 +109,8 @@ class CodeAnalysisTest : BasePlatformTestCase() {
         val moved = AnalyzerAnnotator.locate(file, "x\n// new\n// lines\nint Load();\n", suggestions = true).single()
         assertEquals("Load", "x\n// new\n// lines\nint Load();\n".substring(moved.range.startOffset, moved.range.endOffset))
         assertEmpty(AnalyzerAnnotator.locate(file, "x\nint LoadAsync();\n", suggestions = true))
-        val info = AnalyzedFile(file.projectPath, listOf(diagnostic.copy(severity = AnalyzerSeverity.INFO)), file.lineTexts, file.target)
-        assertEmpty("suggestions off", AnalyzerAnnotator.locate(info, "x\nint Load();\n", suggestions = false))
+        val info = AnalyzedFile(file.projectPath, listOf(diagnostic.copy(severity = AnalyzerSeverity.INFO, fixes = emptyList())), file.lineTexts, file.target)
+        assertEmpty("suggestions off, no fixes to offer",AnalyzerAnnotator.locate(info, "x\nint Load();\n", suggestions = false))
     }
 
     /** The annotations in the editor: the id first, the fixes of the analyzer on Alt+Enter; nothing while the language server is enabled. */

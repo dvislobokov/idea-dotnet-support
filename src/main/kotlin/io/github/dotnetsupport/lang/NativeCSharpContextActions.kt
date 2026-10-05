@@ -6,6 +6,10 @@ import com.intellij.codeInsight.intention.PriorityAction
 import com.intellij.codeInsight.intention.preview.IntentionPreviewUtils
 import com.intellij.codeInsight.template.TemplateManager
 import com.intellij.codeInsight.template.impl.ConstantNode
+import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.psi.PsiWhiteSpace
+import com.intellij.psi.SyntaxTraverser
+import com.intellij.refactoring.introduce.inplace.OccurrencesChooser
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.DumbService
@@ -195,6 +199,88 @@ object NativeCSharpContextEdits {
         val conditionText = (unwrap(condition).takeIf { condition is CSharpParenthesizedExpression } ?: condition).text
         val result = "if ($conditionText)\n$indent{\n$inner$a\n$indent}\n${indent}else\n$indent{\n$inner$b\n$indent}"
         return CSharpTextEdit(statement.textRange, result)
+    }
+
+    /**
+     * A `?:` at [offset] deeper in a statement (an argument, an operand): the statement it belongs to, which `if` can repeat with either
+     * branch, as Rider's "Convert '?:' to 'if' statement" does there. Not where moving the condition first would change whether it runs
+     * (the right of `&&`, a branch of another `?:`, after `?.`, a lambda, a loop's condition).
+     */
+    fun conditionalSplitAt(file: PsiFile, offset: Int): Pair<CSharpStatement, CSharpConditionalExpression>? {
+        for (leaf in leafAt(file, offset)) {
+            var at: PsiElement? = PsiTreeUtil.getParentOfType(leaf, CSharpConditionalExpression::class.java, false)
+            while (at is CSharpConditionalExpression) {
+                val statement = enclosingStatement(at)
+                if (statement != null && splittable(statement) && movable(at, statement)) return statement to at
+                at = PsiTreeUtil.getParentOfType(at, CSharpConditionalExpression::class.java, true, CSharpStatement::class.java, CSharpAnonymousFunctionExpression::class.java)
+            }
+        }
+        return null
+    }
+
+    private fun splittable(statement: CSharpStatement): Boolean = when (statement) {
+        is CSharpExpressionStatement, is CSharpReturnStatement -> true
+        is CSharpLocalDeclarationStatement -> statement.declaration?.variables?.size == 1 && statement.usingKeyword == null && statement.modifiers.isEmpty() &&
+            statement.declaration?.variables?.single()?.initializer?.value != null && statement.declaration?.type !is CSharpRefType
+        else -> false
+    }
+
+    /**
+     * `Foo(c ? a : b);` → `if (c) { Foo(a); } else { Foo(b); }`; `var x = Foo(c ? a : b);` → `T x;` and `x = Foo(a);` / `x = Foo(b);` in the
+     * branches (the type written out); a `throw` branch becomes the `throw` statement.
+     */
+    fun splitConditional(statement: CSharpStatement, conditional: CSharpConditionalExpression, text: CharSequence, unit: String, resolver: CSharpNameResolver?): CSharpTextEdit? {
+        if (statement.parent !is CSharpBlock) return null
+        val condition = conditional.condition ?: return null
+        val whenTrue = conditional.whenTrue ?: return null
+        val whenFalse = conditional.whenFalse ?: return null
+        if (!present(conditional.colonToken)) return null
+        val indent = indentOf(text, statement.textRange.startOffset)
+        val inner = indent + unit
+        var declaration = ""
+        // the part of the statement that repeats in each branch, the `?:` cut out
+        val repeated: TextRange
+        var head = ""
+        if (statement is CSharpLocalDeclarationStatement) {
+            val declarator = statement.declaration!!.variables.single()
+            val value = declarator.initializer!!.value!!
+            if (!value.textRange.contains(conditional.textRange)) return null
+            val written = statement.declaration?.type?.takeUnless { it is CSharpIdentifierName && it.identifier?.text == "var" }?.let { CSharpStubsText.collapse(it.text) }
+                ?: resolver?.let { r -> r.typeOf(value)?.let { CSharpTypeFacts.written(r, it, value) } } ?: return null
+            val name = declarator.identifier?.text ?: return null
+            declaration = "$written $name;\n$indent"
+            head = "$name = "
+            repeated = value.textRange
+        } else repeated = statement.textRange
+        val base = repeated.startOffset
+        val whole = text.subSequence(repeated.startOffset, repeated.endOffset).toString()
+        // `"a" + (c ? 1 : 2)`: the parentheses go with the `?:` when the branch needs none
+        var wrapped: PsiElement = conditional
+        while (wrapped.parent is CSharpParenthesizedExpression) wrapped = wrapped.parent
+        fun branch(e: CSharpExpression): String {
+            // `x = c ? a : throw …` (the `?:` is all the statement computes): the `throw` alone
+            if (e is CSharpThrowExpression && isAll(conditional, statement)) return throwStatement(e)!!
+            val cut = if (isPrimary(e)) wrapped.textRange else conditional.textRange
+            val body = whole.substring(0, cut.startOffset - base) + e.text + whole.substring(cut.endOffset - base)
+            val line = if (statement is CSharpLocalDeclarationStatement) "$head$body;" else body
+            return line.replace("\n$indent", "\n$inner")
+        }
+        if (whenTrue is CSharpThrowExpression && !isAll(conditional, statement) || whenFalse is CSharpThrowExpression && !isAll(conditional, statement)) return null
+        val conditionText = (unwrap(condition).takeIf { condition is CSharpParenthesizedExpression } ?: condition).text
+        val result = "${declaration}if ($conditionText)\n$indent{\n$inner${branch(whenTrue)}\n$indent}\n${indent}else\n$indent{\n$inner${branch(whenFalse)}\n$indent}"
+        return CSharpTextEdit(statement.textRange, result)
+    }
+
+    /** Whether the `?:` is the whole value the statement returns or assigns (then a `throw` branch can stand alone). */
+    private fun isAll(conditional: CSharpConditionalExpression, statement: CSharpStatement): Boolean {
+        var top: PsiElement = conditional
+        while (top.parent is CSharpParenthesizedExpression) top = top.parent
+        return when (val parent = top.parent) {
+            is CSharpReturnStatement -> true
+            is CSharpEqualsValueClause -> parent.parent?.parent?.parent == statement
+            is CSharpAssignmentExpression -> parent.right == top && parent.parent == statement
+            else -> false
+        }
     }
 
     private fun throwStatement(expression: CSharpExpression): String? =
@@ -401,6 +487,16 @@ object NativeCSharpContextEdits {
         return Extraction(expression, statement, whole, nameFor(expression, written, statement))
     }
 
+    /** The selected expression, or the one at the caret as "Introduce variable" takes it (a call with its receiver, an operator...). */
+    fun expressionAt(file: PsiFile, selection: TextRange?, offset: Int): CSharpExpression? =
+        if (selection != null && !selection.isEmpty) selected(file, selection) else atCaret(file, offset)
+
+    /** A name for a new variable or parameter holding [expression]: by the member it calls, else by its type; unique among the locals around [at]. */
+    fun suggestedName(expression: CSharpExpression, resolver: CSharpNameResolver, at: PsiElement): String {
+        val written = resolver.typeOf(expression)?.let { CSharpTypeFacts.written(resolver, it, expression) }
+        return nameFor(expression, written, at)
+    }
+
     private fun selected(file: PsiFile, selection: TextRange): CSharpExpression? {
         val text = file.text
         var start = selection.startOffset
@@ -479,7 +575,7 @@ object NativeCSharpContextEdits {
 
     private val SHORT_CIRCUIT = setOf("&&", "||", "??")
 
-    private fun nameFor(expression: CSharpExpression, written: String?, statement: CSharpStatement): String {
+    private fun nameFor(expression: CSharpExpression, written: String?, statement: PsiElement): String {
         var core = unwrap(expression)
         if (core is CSharpAwaitExpression) core = unwrap(core.expression)
         val member = when (core) {
@@ -504,6 +600,79 @@ object NativeCSharpContextEdits {
             ?: PsiTreeUtil.getParentOfType(at, CSharpCompilationUnit::class.java) ?: return emptySet()
         val range = owner.textRange
         return NativeCSharpScopes.of(file).symbols.filter { range.contains(it.declaration.textRange) }.mapTo(HashSet()) { it.name.removePrefix("@") }
+    }
+
+    /**
+     * The same expression (the same tokens) elsewhere in the block of [extraction]'s statement, with the one of [extraction], in order: what
+     * "Replace all N occurrences" puts the variable in, as Rider's chooser offers. Empty when there is no other one or one variable cannot
+     * serve them all (a local of the expression declared after the first of them, or in a nested block).
+     */
+    fun occurrences(extraction: Extraction): List<CSharpExpression> {
+        val block = extraction.statement.parent as? CSharpBlock ?: return emptyList()
+        val expression = extraction.expression
+        val key = tokens(expression)
+        val found = SyntaxTraverser.psiTraverser(block).filter(CSharpExpression::class.java).filter { candidate ->
+            candidate.javaClass == expression.javaClass && candidate.textLength >= 1 && tokens(candidate) == key
+        }.toList().filter { candidate ->
+            if (candidate == expression) return@filter true
+            val statement = enclosingStatement(candidate) ?: return@filter false
+            PsiTreeUtil.isAncestor(block, statement, true) && movable(candidate, statement) &&
+                // `Foo();` alone elsewhere would become a bare name
+                !(statement is CSharpExpressionStatement && statement.expression == candidate)
+        }
+        val outermost = found.filter { c -> found.none { other -> other != c && PsiTreeUtil.isAncestor(other, c, true) } }.sortedBy { it.textRange.startOffset }
+        if (outermost.size < 2) return emptyList()
+        // the declaration goes before the first one: what the expression reads must be visible there
+        val first = outermost.first()
+        val anchor = block.statements.firstOrNull { it.textRange.contains(first.textRange) } ?: return emptyList()
+        val scopes = NativeCSharpScopes.of(expression.containingFile as? CSharpFile ?: return emptyList())
+        for (leaf in SyntaxTraverser.psiTraverser(expression).filter { it.firstChild == null }) {
+            val symbol = scopes.symbolAt(leaf) ?: continue
+            if (expression.textRange.contains(symbol.declaration.textRange)) continue
+            if (symbol.declaration.textRange.startOffset >= anchor.textRange.startOffset || !symbol.scope.textRange.contains(anchor.textRange)) return emptyList()
+        }
+        // an occurrence that is the whole statement can only be the first (`var x = Foo();` takes its place)
+        if (outermost.drop(1).any { (it.parent as? CSharpExpressionStatement)?.expression == it }) return emptyList()
+        return outermost
+    }
+
+    private fun tokens(element: PsiElement): List<String> =
+        SyntaxTraverser.psiTraverser(element).filter { it.firstChild == null && it !is PsiWhiteSpace && it !is PsiComment && it.textLength > 0 }.map { it.text }.toList()
+
+    /**
+     * The text of introducing a variable for all [occurrences] (from [occurrences]): over the returned range, the parts in order — a string
+     * as it is, null where the name goes.
+     */
+    fun extractAllParts(extraction: Extraction, occurrences: List<CSharpExpression>, text: CharSequence): Pair<TextRange, List<String?>> {
+        val first = occurrences.first()
+        val block = extraction.statement.parent as CSharpBlock
+        val anchor = block.statements.first { it.textRange.contains(first.textRange) }
+        val start = anchor.textRange.startOffset
+        val parts = ArrayList<String?>()
+        parts += "var "
+        parts += null
+        var cursor: Int
+        val rest: List<CSharpExpression>
+        if (anchor is CSharpExpressionStatement && anchor.expression == first) {
+            parts += " = ${first.text}"
+            cursor = first.textRange.endOffset
+            rest = occurrences.drop(1)
+        } else {
+            parts += " = ${first.text};\n${indentOf(text, start)}"
+            cursor = start
+            rest = occurrences
+        }
+        for (occurrence in rest) {
+            parts += text.subSequence(cursor, occurrence.textRange.startOffset).toString()
+            parts += null
+            cursor = occurrence.textRange.endOffset
+        }
+        return TextRange(start, cursor) to parts
+    }
+
+    fun extractAll(extraction: Extraction, occurrences: List<CSharpExpression>, text: CharSequence, name: String = extraction.name): CSharpTextEdit {
+        val (range, parts) = extractAllParts(extraction, occurrences, text)
+        return CSharpTextEdit(range, parts.joinToString("") { it ?: name }, 4)
     }
 
     /**
@@ -653,11 +822,18 @@ class NativeCSharpIfToConditionalIntention : NativeCSharpContextAction("Convert 
         NativeCSharpContextEdits.ifAt(file, editor.caretModel.offset)?.let { NativeCSharpContextEdits.ifToConditional(it, editor.document.charsSequence) }
 }
 
-/** Alt+Enter on a `?:` that is returned or assigned: the `if` / `else` statement it stands for. */
+/** Alt+Enter on a `?:` that is returned or assigned: the `if` / `else` statement it stands for; deeper in a statement, the statement in both branches. */
 class NativeCSharpConditionalToIfIntention : NativeCSharpContextAction("Convert '?:' to 'if' statement", serverHasIt = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
-        val (statement, conditional) = NativeCSharpContextEdits.conditionalAt(file, editor.caretModel.offset) ?: return null
-        return NativeCSharpContextEdits.conditionalToIf(statement, conditional, editor.document.charsSequence, NativeCSharpContextEdits.unit(file))
+        val text = editor.document.charsSequence
+        val unit = NativeCSharpContextEdits.unit(file)
+        NativeCSharpContextEdits.conditionalAt(file, editor.caretModel.offset)?.let { (statement, conditional) ->
+            NativeCSharpContextEdits.conditionalToIf(statement, conditional, text, unit)?.let { return it }
+        }
+        // deeper in a statement (an argument, an operand, a local's value): the statement repeated in both branches
+        val (statement, conditional) = NativeCSharpContextEdits.conditionalSplitAt(file, editor.caretModel.offset) ?: return null
+        val resolver = if (DumbService.isDumb(file.project)) null else resolver(file)
+        return NativeCSharpContextEdits.splitConditional(statement, conditional, text, unit, resolver)
     }
 }
 
@@ -699,31 +875,73 @@ class NativeCSharpIntroduceVariableIntention : NativeCSharpContextAction("Introd
         return NativeCSharpContextEdits.extractionAt(file, selection, editor.caretModel.offset, resolver(file))
     }
 
+    // the chooser of occurrences is a popup: the edit makes its own write command afterwards
+    override fun startInWriteAction(): Boolean = false
+
+    override fun generatePreview(project: Project, editor: Editor, file: PsiFile): com.intellij.codeInsight.intention.preview.IntentionPreviewInfo {
+        val edit = (file as? CSharpFile)?.let { edit(it, editor) } ?: return com.intellij.codeInsight.intention.preview.IntentionPreviewInfo.EMPTY
+        editor.document.replaceString(edit.range.startOffset, edit.range.endOffset, edit.text)
+        return com.intellij.codeInsight.intention.preview.IntentionPreviewInfo.DIFF
+    }
+
     override fun invoke(project: Project, editor: Editor?, file: PsiFile?) {
         if (editor == null || file !is CSharpFile) return
+        PsiDocumentManager.getInstance(project).commitDocument(editor.document)
         val extraction = extraction(file, editor) ?: return
-        val edit = NativeCSharpContextEdits.extract(extraction, editor.document.charsSequence)
-        editor.selectionModel.removeSelection()
         if (IntentionPreviewUtils.isIntentionPreviewActive()) {
+            val edit = NativeCSharpContextEdits.extract(extraction, editor.document.charsSequence)
             editor.document.replaceString(edit.range.startOffset, edit.range.endOffset, edit.text)
             return
         }
-        // the name twice in a template: typing a new one changes the declaration and the use together
-        val name = extraction.name
-        val parts = NativeCSharpContextEdits.extractText(extraction, editor.document.charsSequence)
-        val manager = TemplateManager.getInstance(project)
-        val template = manager.createTemplate("", "")
-        template.isToReformat = false
-        // the text carries its own indent: the template must not add the line's one again
-        (template as? com.intellij.codeInsight.template.impl.TemplateImpl)?.setToIndent(false)
-        template.addTextSegment("var ")
-        template.addVariable("NAME", ConstantNode(name), ConstantNode(name), true)
-        template.addTextSegment(parts.middle)
-        if (parts.use) template.addVariableSegment("NAME")
-        editor.document.deleteString(edit.range.startOffset, edit.range.endOffset)
-        editor.caretModel.moveToOffset(edit.range.startOffset)
-        PsiDocumentManager.getInstance(project).commitDocument(editor.document)
-        manager.startTemplate(editor, template)
+        val occurrences = NativeCSharpContextEdits.occurrences(extraction)
+        if (occurrences.size < 2) return introduce(project, editor, file, extraction, emptyList())
+        if (com.intellij.openapi.application.ApplicationManager.getApplication().isUnitTestMode) {
+            return introduce(project, editor, file, extraction, if (allOccurrencesForTests) occurrences else emptyList())
+        }
+        // Rider's chooser: "Replace this occurrence only" / "Replace all N occurrences", the occurrences highlighted while choosing
+        val choices = linkedMapOf<OccurrencesChooser.ReplaceChoice, List<PsiElement>>(
+            OccurrencesChooser.ReplaceChoice.NO to listOf(extraction.expression), OccurrencesChooser.ReplaceChoice.ALL to occurrences,
+        )
+        OccurrencesChooser.simpleChooser<PsiElement>(editor).showChooser(choices) { choice ->
+            introduce(project, editor, file, extraction, if (choice == OccurrencesChooser.ReplaceChoice.ALL) occurrences else emptyList())
+        }
+    }
+
+    /** `var name = expression;` before the statement (before the first of [all] when given) and the name in a template at every place. */
+    private fun introduce(project: Project, editor: Editor, file: CSharpFile, extraction: NativeCSharpContextEdits.Extraction, all: List<CSharpExpression>) {
+        WriteCommandAction.writeCommandAction(project, file).withName("Introduce Variable").run<RuntimeException> {
+            if (!extraction.expression.isValid || all.any { !it.isValid }) return@run
+            val text = editor.document.charsSequence
+            val (range, parts) = if (all.size >= 2) NativeCSharpContextEdits.extractAllParts(extraction, all, text) else {
+                val single = NativeCSharpContextEdits.extractText(extraction, text)
+                single.range to (listOf("var ", null, single.middle) + if (single.use) listOf(null) else emptyList())
+            }
+            editor.selectionModel.removeSelection()
+            // the name in a template at each place: typing a new one changes the declaration and the uses together
+            val name = extraction.name
+            val manager = TemplateManager.getInstance(project)
+            val template = manager.createTemplate("", "")
+            template.isToReformat = false
+            // the text carries its own indent: the template must not add the line's one again
+            (template as? com.intellij.codeInsight.template.impl.TemplateImpl)?.setToIndent(false)
+            var declared = false
+            for (part in parts) when {
+                part != null -> template.addTextSegment(part)
+                !declared -> { template.addVariable("NAME", ConstantNode(name), ConstantNode(name), true); declared = true }
+                else -> template.addVariableSegment("NAME")
+            }
+            editor.document.deleteString(range.startOffset, range.endOffset)
+            editor.caretModel.moveToOffset(range.startOffset)
+            PsiDocumentManager.getInstance(project).commitDocument(editor.document)
+            manager.startTemplate(editor, template)
+        }
+    }
+
+    companion object {
+        /** In tests: "Replace all N occurrences" instead of this one only. */
+        @Volatile
+        @org.jetbrains.annotations.TestOnly
+        var allOccurrencesForTests: Boolean = false
     }
 }
 

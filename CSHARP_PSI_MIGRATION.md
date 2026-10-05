@@ -299,13 +299,17 @@
   фазы с лямбдами, extension-методы, группы методов, target-typed выражения; лучший член и правила разрыва ничьей), его вызывают `pick`
   и разбор вызовов с лямбдами в `CSharpNameResolver`. Гейт: имена 99,3 % (неверных 16 → 2), типы 99,3 % (неверных 8 → 1), тест —
   `CSharpOverloadResolutionTest`. Не сделано: перевод LINQ-запросов в вызовы `Select` / `Where`… для `IQueryable` и своих источников
+  — сделано в 0.1.80 (`lang/semantic/CSharpQueryTranslation`: §12.20.3, прозрачные идентификаторы, разрешение против типа источника,
+  `Queryable` с `Expression<Func<>>`, свои методы; тест `CSharpQueryTranslationTest`)
 - [x] D2 (2026-10-05, 0.1.78). 11e — диагностики (неразрешённое имя, тип, число аргументов, недостижимый код) и их fixes. Сделано в C4c (0.1.74):
   неразрешённое имя / тип / член, число аргументов, неявные преобразования известных типов, CS0161, серые `using`, «Import type»;
   в 0.1.78 (`CSharpSemanticWarnings`, `CSharpWarningContext`): CS0162, CS0168 / CS0219, CS4014, CS0120, CS1503 и CS1501 / CS7036 для generic,
   `params`, необязательных и именованных аргументов, CS0029 / CS0266 для `?:` и switch-выражений, nullable CS8600 / CS8625 / CS8603 / CS8618
   в простых случаях; `#pragma warning`, `<NoWarn>`, `.editorconfig`; fixes «Remove unused variable», «Add 'await'», действие «Add argument
   name» («Make method async» был). Ложных 0 на гейте, на сценарии площадки — как у Roslyn один в один. Не сделано: CS8601 / CS8602 / CS8604
-  (поток nullable-состояний), CS1998 (компилятор .NET 10 её не выдаёт), остальные коды
+  (поток nullable-состояний), CS1998 (компилятор .NET 10 её не выдаёт), остальные коды. В 0.1.80 — поток nullable-состояний (`lang/semantic/CSharpNullableFlow`): CS8602 / CS8601 / CS8604,
+  CS8600 / CS8603 / CS8625 по потоку, CS8618 на конструкторах и partial-типах; атрибуты nullable из исходника и из индекса (формат 3).
+  Ложных 0 на гейте с 17 библиотеками runtime (887 файлов); не сделано — захваченные лямбдой переменные, параметры лямбд по делегату, CS8619 / CS8620
 - [x] D3. Анализаторы из NuGet и их code fixes — помощник с Roslyn по запросу (команда и фон на сохранении). Сделано в 0.1.77:
   `helpers/codeanalysis` (CodeAnalysisHelper, исходником, собирается SDK машины ≥ 8 против Roslyn из `DotnetTools/dotnet-format` SDK —
   без сети), пакет `codeanalysis`: анализаторы пакетов, CA и IDE из SDK по `.editorconfig`, фон через секунду после сохранения файла

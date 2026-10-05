@@ -28,7 +28,7 @@ namespace DotNetSupport.Indexer;
 // the second process waits for the first and then finds the indexes made.
 public static class Program
 {
-    public const int FormatVersion = 2;
+    public const int FormatVersion = 3;
 
     public static int Main(string[] args)
     {
@@ -246,6 +246,14 @@ public sealed class MemberEntry
     public string? Value;
     /// <summary>What the `this` parameter of an extension method is: a type by its metadata name, `[]` an array, `!` a type parameter.</summary>
     public string? ExtensionKey;
+    /// <summary>
+    /// What the nullable flow analysis of the plugin needs beyond the annotations of the types (format 3): items `target:code` separated by `;`
+    /// — target `r` the return value or the type of the member, `0`, `1`… a parameter, `m` the member; codes: `o` an oblivious reference
+    /// type (no nullable context), `M` / `N` / `A` / `D` `[MaybeNull]` / `[NotNull]` / `[AllowNull]` / `[DisallowNull]`, `W1` / `W0`
+    /// `[NotNullWhen(true / false)]`, `w1` / `w0` `[MaybeNullWhen(…)]`, `X1` / `X0` `[DoesNotReturnIf(…)]`, `I=name` `[NotNullIfNotNull("name")]`;
+    /// of the member: `R` `[DoesNotReturn]`, `MN=a,b` `[MemberNotNull("a", "b")]`, `MW1=a,b` / `MW0=…` `[MemberNotNullWhen(…)]`. Null when none.
+    /// </summary>
+    public string? Nullability;
 }
 
 public sealed class TypeEntry
@@ -380,16 +388,23 @@ public sealed class MetadataScanner(MetadataReader reader)
                 Name = name, Kind = kind, Flags = MethodFlags(attributes, custom, entry.Kind == TypeKind.Interface),
                 Generics = Generics(method.GetGenericParameters(), context), Attributes = AttributeNames(custom),
             };
-            var (returnAttributes, parameters) = Parameters(method.GetParameters(), signature.ParameterTypes, context, extension);
+            var (returnAttributes, parameters, nullability) = Parameters(method.GetParameters(), signature.ParameterTypes, context, extension);
             member.Type = TypeRefs.Encode(signature.ReturnType, Annotations.Of(reader, AttributeType, returnAttributes, context));
             member.Parameters = parameters;
+            NullableCodes(custom, "m", nullability);
+            NullableCodes(returnAttributes, "r", nullability);
+            if (IsOblivious(signature.ReturnType, returnAttributes, context)) nullability.Add("r:o");
+            member.Nullability = Join(nullability);
             if (extension && signature.ParameterTypes.Length > 0) member.ExtensionKey = TypeRefs.ExtensionKey(signature.ParameterTypes[0]);
             entry.Members.Add(member);
         }
     }
 
-    /// <summary>The parameters with their names, flags and defaults, and the attributes of the return value (the parameter number 0).</summary>
-    private (CustomAttributeHandleCollection?, List<ParameterEntry>) Parameters(ParameterHandleCollection handles, ImmutableArray<Sig> types, byte context, bool extension)
+    /// <summary>
+    /// The parameters with their names, flags and defaults, the attributes of the return value (the parameter number 0) and what the nullable
+    /// attributes and oblivious types of the parameters say (<see cref="MemberEntry.Nullability"/>).
+    /// </summary>
+    private (CustomAttributeHandleCollection?, List<ParameterEntry>, List<string>) Parameters(ParameterHandleCollection handles, ImmutableArray<Sig> types, byte context, bool extension)
     {
         var count = types.Length;
         var names = new string?[count];
@@ -417,9 +432,12 @@ public sealed class MetadataScanner(MetadataReader reader)
             }
         }
         var result = new List<ParameterEntry>(count);
+        var nullability = new List<string>();
         for (var i = 0; i < count; i++)
         {
             var type = types[i];
+            NullableCodes(custom[i], i.ToString(CultureInfo.InvariantCulture), nullability);
+            if (IsOblivious(type, custom[i], context)) nullability.Add(i.ToString(CultureInfo.InvariantCulture) + ":o");
             if (TypeRefs.Unwrap(type) is ByRefSig byRef)
             {
                 type = byRef.Element;
@@ -429,7 +447,126 @@ public sealed class MetadataScanner(MetadataReader reader)
             if (extension && i == 0) flags[i] |= ParameterFlags.This;
             result.Add(new ParameterEntry(TypeRefs.Encode(type, Annotations.Of(reader, AttributeType, custom[i], context)), names[i] ?? "arg" + i, flags[i], defaults[i]));
         }
-        return (returnAttributes, result);
+        return (returnAttributes, result, nullability);
+    }
+
+    private CustomAttributeHandleCollection? ReturnAttributes(MethodDefinition method)
+    {
+        foreach (var handle in method.GetParameters())
+        {
+            var parameter = reader.GetParameter(handle);
+            if (parameter.SequenceNumber == 0) return parameter.GetCustomAttributes();
+        }
+        return null;
+    }
+
+    private CustomAttributeHandleCollection? ValueAttributes(MethodDefinition setter)
+    {
+        foreach (var handle in setter.GetParameters())
+        {
+            var parameter = reader.GetParameter(handle);
+            if (parameter.SequenceNumber == 1) return parameter.GetCustomAttributes();
+        }
+        return null;
+    }
+
+    private static string? Join(List<string> items) => items.Count == 0 ? null : string.Join(";", items);
+
+    /// <summary>A reference type at the top of [sig] with no nullable context: what code without nullable annotations says (`string` that may be null).</summary>
+    private bool IsOblivious(Sig sig, CustomAttributeHandleCollection? custom, byte context)
+    {
+        sig = TypeRefs.Unwrap(sig);
+        if (sig is ByRefSig byRef) sig = TypeRefs.Unwrap(byRef.Element);
+        var reference = sig switch
+        {
+            NamedSig named => !named.ValueType,
+            GenericSig generic => !generic.Definition.ValueType,
+            ParameterSig or ArraySig => true,
+            _ => false,
+        };
+        return reference && Annotations.Of(reader, AttributeType, custom, context).Next() == 0;
+    }
+
+    private const string CodeAnalysis = "System.Diagnostics.CodeAnalysis.";
+
+    /// <summary>The nullable attributes of `System.Diagnostics.CodeAnalysis` in [custom] as items of <see cref="MemberEntry.Nullability"/> for [target].</summary>
+    private void NullableCodes(CustomAttributeHandleCollection? custom, string target, List<string> into)
+    {
+        if (custom == null) return;
+        foreach (var handle in custom.Value)
+        {
+            var attribute = reader.GetCustomAttribute(handle);
+            var type = AttributeType(attribute);
+            if (!type.StartsWith(CodeAnalysis, StringComparison.Ordinal)) continue;
+            string? code;
+            try
+            {
+                code = type[CodeAnalysis.Length..] switch
+                {
+                    "AllowNullAttribute" => "A",
+                    "DisallowNullAttribute" => "D",
+                    "MaybeNullAttribute" => "M",
+                    "NotNullAttribute" => "N",
+                    "NotNullWhenAttribute" => "W" + BoolArgument(attribute),
+                    "MaybeNullWhenAttribute" => "w" + BoolArgument(attribute),
+                    "DoesNotReturnIfAttribute" => "X" + BoolArgument(attribute),
+                    "NotNullIfNotNullAttribute" => "I=" + StringArgument(attribute),
+                    "DoesNotReturnAttribute" => "R",
+                    "MemberNotNullAttribute" => "MN=" + string.Join(",", MemberNames(attribute, false)),
+                    "MemberNotNullWhenAttribute" => "MW" + BoolArgument(attribute) + "=" + string.Join(",", MemberNames(attribute, true)),
+                    _ => null,
+                };
+            }
+            catch (BadImageFormatException)
+            {
+                code = null;
+            }
+            if (code == null) continue;
+            // `[DoesNotReturn]`, `[MemberNotNull]`, `[MemberNotNullWhen]` are of the member, wherever they are found (a property and its getter both have them)
+            var member = code == "R" || code.StartsWith("MN=", StringComparison.Ordinal) || code.StartsWith("MW", StringComparison.Ordinal);
+            var item = (member ? "m" : target) + ":" + code;
+            if (!into.Contains(item)) into.Add(item);
+        }
+    }
+
+    /// <summary>`1` / `0`: the first argument, a bool, of an attribute's constructor.</summary>
+    private string BoolArgument(CustomAttribute attribute)
+    {
+        var blob = reader.GetBlobReader(attribute.Value);
+        if (blob.Length < 3 || blob.ReadUInt16() != 1) throw new BadImageFormatException();
+        return blob.ReadBoolean() ? "1" : "0";
+    }
+
+    private string StringArgument(CustomAttribute attribute)
+    {
+        var blob = reader.GetBlobReader(attribute.Value);
+        if (blob.Length < 3 || blob.ReadUInt16() != 1) throw new BadImageFormatException();
+        return blob.ReadSerializedString() ?? "";
+    }
+
+    /// <summary>The member names of `[MemberNotNull]` (`string` or `params string[]`) and of `[MemberNotNullWhen]` after its bool ([afterBool]).</summary>
+    private List<string> MemberNames(CustomAttribute attribute, bool afterBool)
+    {
+        var signature = attribute.Constructor.Kind == HandleKind.MemberReference
+            ? reader.GetMemberReference((MemberReferenceHandle)attribute.Constructor).Signature
+            : reader.GetMethodDefinition((MethodDefinitionHandle)attribute.Constructor).Signature;
+        var sig = reader.GetBlobReader(signature);
+        sig.ReadSignatureHeader();
+        sig.ReadCompressedInteger();
+        sig.ReadSignatureTypeCode();
+        if (afterBool) sig.ReadSignatureTypeCode();
+        var array = sig.ReadSignatureTypeCode() == SignatureTypeCode.SZArray;
+        var blob = reader.GetBlobReader(attribute.Value);
+        if (blob.Length < 3 || blob.ReadUInt16() != 1) throw new BadImageFormatException();
+        if (afterBool) blob.ReadBoolean();
+        var names = new List<string>();
+        if (!array) names.Add(blob.ReadSerializedString() ?? "");
+        else
+        {
+            var count = blob.ReadInt32();
+            for (var i = 0; i < count && count <= blob.RemainingBytes; i++) names.Add(blob.ReadSerializedString() ?? "");
+        }
+        return names;
     }
 
     private void AddProperties(TypeEntry entry, TypeDefinition type, byte typeContext)
@@ -468,6 +605,18 @@ public sealed class MetadataScanner(MetadataReader reader)
                 // the names of the parameters of an indexer are the ones of its getter, or of its setter but its last, the value
                 member.Parameters = Parameters(accessor.GetParameters(), signature.ParameterTypes, context, false).Item2;
             }
+            var nullability = new List<string>();
+            NullableCodes(custom, "r", nullability);
+            if (getter != null)
+            {
+                NullableCodes(getter.Value.GetCustomAttributes(), "m", nullability);
+                // `[MaybeNull]` / `[NotNull]` of a property are emitted on the return value of its getter
+                NullableCodes(ReturnAttributes(getter.Value), "r", nullability);
+            }
+            // and `[AllowNull]` / `[DisallowNull]` on the value parameter of its setter
+            if (setter != null && signature.ParameterTypes.Length == 0) NullableCodes(ValueAttributes(setter.Value), "r", nullability);
+            if (IsOblivious(signature.ReturnType, custom, typeContext)) nullability.Add("r:o");
+            member.Nullability = Join(nullability);
             entry.Members.Add(member);
         }
     }
@@ -515,11 +664,16 @@ public sealed class MetadataScanner(MetadataReader reader)
             if ((attributes & FieldAttributes.InitOnly) != 0) flags |= MemberFlags.ReadOnly;
             if (Has(custom, CompilerServices, "RequiredMemberAttribute")) flags |= MemberFlags.Required;
             var constant = field.GetDefaultValue();
+            var fieldType = field.DecodeSignature(_provider, null);
+            var nullability = new List<string>();
+            NullableCodes(custom, "r", nullability);
+            if (kind == MemberKind.Field && IsOblivious(fieldType, custom, context)) nullability.Add("r:o");
             entry.Members.Add(new MemberEntry
             {
                 Name = name, Kind = kind, Flags = flags, Attributes = AttributeNames(custom),
-                Type = TypeRefs.Encode(field.DecodeSignature(_provider, null), Annotations.Of(reader, AttributeType, custom, context)),
+                Type = TypeRefs.Encode(fieldType, Annotations.Of(reader, AttributeType, custom, context)),
                 Value = (attributes & FieldAttributes.Literal) != 0 && !constant.IsNil ? Literals.Of(reader, constant) : null,
+                Nullability = Join(nullability),
             });
         }
     }
@@ -1122,7 +1276,7 @@ public static class IndexWriter
                 var memberGeneric = Generics(member.Generics);
                 memberRows.Add([
                     strings.Id(member.Name), t, (byte)member.Kind | ((int)member.Flags << 8), strings.Id(member.Type), firstParameter, member.Parameters.Count,
-                    memberGeneric, member.Generics.Count, Refs(member.Attributes), Ref(member.Value),
+                    memberGeneric, member.Generics.Count, Refs(member.Attributes), Ref(member.Value), Ref(member.Nullability),
                 ]);
                 // what import completion offers: a static member other code sees, called by the name of its type
                 if (visibleType && (member.Flags & (MemberFlags.Static | MemberFlags.Protected)) == MemberFlags.Static && member.Kind is not (MemberKind.Constructor or MemberKind.Operator))
@@ -1151,7 +1305,7 @@ public static class IndexWriter
         var stringData = stringTable + (strings.Count + 1) * 4;
         var typeTable = Align(stringData + strings.Bytes);
         var memberTable = typeTable + typeRows.Count * 52;
-        var parameterTable = memberTable + memberRows.Count * 40;
+        var parameterTable = memberTable + memberRows.Count * 44;
         var genericTable = parameterTable + parameterRows.Count * 16;
         var intTable = genericTable + genericRows.Count * 12;
         var nameTable = intTable + ints.Count * 4;

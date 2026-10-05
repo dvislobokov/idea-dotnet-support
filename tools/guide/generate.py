@@ -195,7 +195,7 @@ def settings():
     group("codeAnalysis.analyzers")
     out.append(table([
         option("codeAnalysis.onSave", ON, note("codeAnalysis.onSave.comment") + "."),
-        option("codeAnalysis.suggestions", ON),
+        option("codeAnalysis.suggestions", OFF, note("codeAnalysis.suggestions.comment") + "."),
     ]))
     out.append(table([option("codeAnalysis.idle", "10", note("codeAnalysis.idle.comment") + ".")]))
 

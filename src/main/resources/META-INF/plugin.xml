@@ -612,6 +612,7 @@
         <!-- Extract Method (Ctrl+Alt+M, Refactor This): the native refactoring in a C# file, the platform's elsewhere (NativeCSharpExtractMethod) -->
         <action id="ExtractMethod" class="io.github.dotnetsupport.lang.CSharpExtractMethodAction" overrides="true"/>
         <action id="IntroduceField" class="io.github.dotnetsupport.lang.CSharpIntroduceFieldAction" overrides="true"/>
+        <action id="IntroduceParameter" class="io.github.dotnetsupport.lang.CSharpIntroduceParameterAction" overrides="true"/>
         <action id="Generate" class="io.github.dotnetsupport.lang.CSharpGenerateAction" overrides="true"/>
         <!-- Rider's ReSharperNavigateTo: Ctrl+Shift+G in its default keymap -->
         <action id="DotNet.NavigateTo" class="io.github.dotnetsupport.lang.CSharpNavigateToAction" text="Navigate To..."

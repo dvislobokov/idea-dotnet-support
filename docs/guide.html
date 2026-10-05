@@ -439,7 +439,7 @@ footer a { color: var(--text-2); }
 <thead><tr><th>Параметр</th><th>По умолчанию</th><th>Что делает</th></tr></thead>
 <tbody>
 <tr><td><b>Запускать анализаторы в фоне при сохранении</b><small lang="en">Run analyzers in the background on save</small></td><td>включено</td><td>Анализаторы пакетов, правила CA и IDE из SDK с уровнями из .editorconfig — по сохранённому файлу; для всего проекта: .NET → Code Analysis → Run Code Analysis. Не работает, пока включён сервер языка: он запускает их сам.</td></tr>
-<tr><td><b>Показывать предложения</b><small lang="en">Show suggestions</small></td><td>включено</td><td>Диагностики уровня Info — слабыми предупреждениями, как предложения Rider</td></tr>
+<tr><td><b>Показывать предложения</b><small lang="en">Show suggestions</small></td><td>выключено</td><td>Диагностики уровня Info (IDE0290, CA1859…) — слабыми предупреждениями, как предложения Rider. Выключено: видны только предупреждения и ошибки, исправления Info по-прежнему доступны по Alt+Enter на каретке; Run Code Analysis показывает их в свёрнутой группе.</td></tr>
 </tbody>
 </table></div>
 <div class="table"><table>

@@ -118,8 +118,10 @@ object NativeCSharpIntroduceField {
             }
             is Result.Ok -> result.plan
         }
+        var nameAt = -1
         WriteCommandAction.writeCommandAction(project, file).withName(TITLE).run<RuntimeException> {
             val edit = apply(plan, editor.document.text, NativeCSharpContextEdits.unit(file))
+            nameAt = edit.fieldNameOffset
             val old = editor.document.charsSequence
             var prefix = 0
             val max = minOf(old.length, edit.text.length)
@@ -131,6 +133,11 @@ object NativeCSharpIntroduceField {
             editor.selectionModel.removeSelection()
             editor.caretModel.moveToOffset(edit.fieldNameOffset)
         }
+        if (nameAt < 0) return
+        // the name in a box at the field and its uses, as Introduce Variable and Rider's Introduce Field
+        val owner = PsiTreeUtil.getParentOfType(file.findElementAt(nameAt), CSharpTypeDeclaration::class.java) ?: return
+        val uses = PsiTreeUtil.collectElements(owner) { it.firstChild == null && it.text == plan.name && CSharpLeaves.isIdentifier(it) }.map { it.textRange.startOffset }
+        NativeCSharpInplaceName.start(project, editor, file, nameAt, uses.filter { it != nameAt }, plan.name, TITLE)
     }
 
     const val TITLE = "Introduce Field"

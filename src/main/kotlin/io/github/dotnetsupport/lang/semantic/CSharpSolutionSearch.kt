@@ -12,6 +12,8 @@ import com.intellij.psi.search.PsiSearchHelper
 import com.intellij.psi.search.SearchScope
 import com.intellij.psi.stubs.StubIndex
 import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.psi.util.elementType
+import io.github.dotnetsupport.csharp.lang.SyntaxKind
 import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubIndexKeys
 import io.github.dotnetsupport.index.IndexedMemberKind
@@ -221,8 +223,12 @@ object CSharpSolutionSearch {
         return words
     }
 
-    /** One usage: the identifier and whether it is in a doc comment `cref`. */
-    class Usage(val leaf: PsiElement)
+    /**
+     * One usage: its leaf — the identifier, or for a call the code does not write by name ([implicit]: `base(…)`, a target-typed `new`,
+     * a deconstruction, `foreach`, `using`, `await`, an element of a collection initializer) the first leaf of the place Roslyn reports;
+     * rename leaves the implicit ones alone.
+     */
+    class Usage(val leaf: PsiElement, val implicit: Boolean = !CSharpLeaves.isIdentifier(leaf))
 
     /**
      * Every usage of [target] in [scope]: the declarations themselves are not usages. [consumer] false stops. Runs in a read action; checks
@@ -237,7 +243,149 @@ object CSharpSolutionSearch {
             }
         }
         if (target.isType || target.kind == CSharpSearchTarget.Kind.CONSTRUCTOR) return processConstructorCalls(project, target, scope, session, consumer)
+        if (target.kind == CSharpSearchTarget.Kind.METHOD && target.name in IMPLICIT_CALLS) return processImplicitCalls(project, target, scope, session, consumer)
         return true
+    }
+
+    /** The methods the compiler calls by pattern, without the name in the code: their usages are found by the constructs that call them. */
+    private val IMPLICIT_CALLS = setOf("Deconstruct", "GetEnumerator", "Dispose", "GetAwaiter", "Add")
+
+    /**
+     * The calls of [target] the code does not write, as Roslyn's Find References reports them (checked on the playground with the server):
+     * `Deconstruct` — a deconstructing assignment (its left side) and `foreach (var (a, b) in …)` (the variable), not a positional pattern;
+     * `GetEnumerator` — `foreach` (the keyword); `Dispose` — `using` of a statement or a declaration (the keyword); `GetAwaiter` — `await`;
+     * `Add` — each element of a collection initializer. The method is the one the construct binds to: the member of that name of the type
+     * of the value, with the number of parameters the construct passes.
+     */
+    private fun processImplicitCalls(project: Project, target: CSharpSearchTarget, scope: SearchScope, session: CSharpSemanticSession, consumer: (Usage) -> Boolean): Boolean {
+        fun calls(resolver: CSharpNameResolver, type: SemanticType?, arguments: Int): Boolean {
+            if (type == null) return false
+            val methods = resolver.membersNamed(type, target.name, 0).filter(resolver::isMethod).filter { method ->
+                val parameters = resolver.signature(method, false) ?: return@filter false
+                parameters.size == arguments || parameters.size > arguments && parameters.drop(arguments).all { it.optional || it.isParams }
+            }
+            val method = methods.singleOrNull() ?: return false
+            target.library?.let { return method == it }
+            return method.declarations.any { CSharpSearchTarget.Key.of(it) in target.keys }
+        }
+        fun inScope(element: PsiElement): Boolean = when (scope) {
+            is LocalSearchScope -> scope.containsRange(element.containingFile, element.textRange)
+            is GlobalSearchScope -> element.containingFile?.virtualFile?.let(scope::contains) ?: true
+            else -> true
+        }
+        fun report(leaf: PsiElement?): Boolean = leaf == null || !inScope(leaf) || consumer(Usage(leaf, implicit = true))
+        val files: List<CSharpFile> = when (target.name) {
+            "GetEnumerator" -> filesWithWord(project, "foreach", scope)
+            "Dispose" -> filesWithWord(project, "using", scope)
+            "GetAwaiter" -> filesWithWord(project, "await", scope)
+            // `new T { … }` names the type, `new() { … }` converts to a type written in the file
+            "Add" -> (listOfNotNull(target.primary?.let(::ownerType)?.let { CSharpDeclarationNames.name(it) }) + listOfNotNull((target.library as? CSharpSymbol.LibraryMember)?.member?.type?.simpleName?.substringBefore('`')))
+                .flatMap { filesWithWord(project, it, scope) }.distinct()
+            // a deconstruction writes no word of its own: every C# file whose text has `) =` or `foreach`
+            else -> csharpFiles(project, scope).filter { DECONSTRUCTION.containsMatchIn(it.viewProvider.contents) }
+        }
+        for (file in files) {
+            ProgressManager.checkCanceled()
+            val resolver = session.resolver(file)
+            val traverser = SyntaxTraverser.psiTraverser(file)
+            val ok = when (target.name) {
+                "Deconstruct" -> traverser.filter { it is CSharpAssignmentExpression || it is CSharpForEachVariableStatement }.all { node ->
+                    when (node) {
+                        is CSharpAssignmentExpression -> {
+                            val left = node.left
+                            val count = left?.let(::deconstructedCount)
+                            node.operatorToken?.text != "=" || count == null || !calls(resolver, node.right?.let(resolver::typeOf), count) || report(PsiTreeUtil.getDeepestFirst(left))
+                        }
+                        is CSharpForEachVariableStatement -> {
+                            val variable = node.variable
+                            val count = variable?.let(::deconstructedCount)
+                            count == null || !calls(resolver, node.expression?.let(resolver::typeOf)?.let(resolver::elementType), count) || report(PsiTreeUtil.getDeepestFirst(variable))
+                        }
+                        else -> true
+                    }
+                }
+                "GetEnumerator" -> traverser.filter(CSharpCommonForEachStatement::class.java).all { loop ->
+                    loop.awaitKeyword != null || !calls(resolver, loop.expression?.let(resolver::typeOf), 0) || report(loop.forEachKeyword)
+                }
+                "Dispose" -> traverser.filter { it is CSharpUsingStatement || it is CSharpLocalDeclarationStatement && it.usingKeyword != null }.all { node ->
+                    val (await, keyword, declaration, expression) = when (node) {
+                        is CSharpUsingStatement -> listOf(node.awaitKeyword, node.usingKeyword, node.declaration, node.expression)
+                        is CSharpLocalDeclarationStatement -> listOf(node.awaitKeyword, node.usingKeyword, node.declaration, null)
+                        else -> listOf(null, null, null, null)
+                    }
+                    val types = if (declaration is CSharpVariableDeclaration) declaredTypes(resolver, declaration) else listOfNotNull((expression as? CSharpExpression)?.let(resolver::typeOf))
+                    await != null || types.none { calls(resolver, it, 0) } || report(keyword)
+                }
+                "GetAwaiter" -> traverser.filter(CSharpAwaitExpression::class.java).all { e -> !calls(resolver, e.expression?.let(resolver::typeOf), 0) || report(e.awaitKeyword) }
+                "Add" -> traverser.filter(CSharpInitializerExpression::class.java).all { initializer ->
+                    val creation = initializer.parent as? CSharpBaseObjectCreationExpression
+                    if (creation == null || creation.initializer != initializer || initializer.elementType != SyntaxKind.CollectionInitializerExpression) return@all true
+                    val type = resolver.typeOf(creation)
+                    initializer.expressions.all { element ->
+                        val count = if (element.elementType == SyntaxKind.ComplexElementInitializerExpression) (element as CSharpInitializerExpression).expressions.size else 1
+                        !calls(resolver, type, count) || report(PsiTreeUtil.getDeepestFirst(element))
+                    }
+                }
+                else -> true
+            }
+            if (!ok) return false
+        }
+        return true
+    }
+
+    private val DECONSTRUCTION = Regex("""\)\s*=(?![=>])|\bforeach\b""")
+
+    /** The number of variables a deconstruction's left side (or a `foreach` variable) has: `(a, b)`, `var (a, b)`, `(var a, var b)`; null for anything else. */
+    private fun deconstructedCount(left: CSharpExpression): Int? = when (left) {
+        is CSharpTupleExpression -> left.arguments.size
+        is CSharpDeclarationExpression -> (left.designation as? CSharpParenthesizedVariableDesignation)?.variables?.size
+        else -> null
+    }
+
+    /** The types of the variables of a declaration: written, or of their initializers for `var`. */
+    private fun declaredTypes(resolver: CSharpNameResolver, declaration: CSharpVariableDeclaration): List<SemanticType> {
+        val written = declaration.type?.takeIf { !resolver.isVar(it) }?.let(resolver::resolveType)
+        if (written != null) return listOf(written)
+        return declaration.variables.mapNotNull { it.initializer?.value?.let(resolver::typeOf) }
+    }
+
+    private fun csharpFiles(project: Project, scope: SearchScope): List<CSharpFile> {
+        if (scope is LocalSearchScope) return scope.scope.mapNotNull { it.containingFile as? CSharpFile }.distinct()
+        val global = scope as? GlobalSearchScope ?: GlobalSearchScope.projectScope(project)
+        val manager = com.intellij.psi.PsiManager.getInstance(project)
+        return com.intellij.psi.search.FileTypeIndex.getFiles(io.github.dotnetsupport.lang.CSharpFileType, global)
+            .mapNotNull { manager.findFile(it) as? CSharpFile }.filter { it.compilationUnit != null }
+    }
+
+    /**
+     * The type a target-typed `new(…)` creates where the expression types do not say it: the value of an index initializer
+     * (`["a"] = new(…)` of a dictionary: the type of the indexer) and an element of a collection initializer (the parameter of `Add`).
+     */
+    private fun createdByPlace(resolver: CSharpNameResolver, creation: CSharpImplicitObjectCreationExpression): SemanticType? {
+        resolver.typeOf(creation)?.let { return it }
+        var at: PsiElement = creation
+        while (at.parent is CSharpParenthesizedExpression) at = at.parent
+        val parent = at.parent
+        if (parent is CSharpAssignmentExpression && parent.right == at) {
+            val index = parent.left as? CSharpImplicitElementAccess ?: return null
+            val owner = (parent.parent as? CSharpInitializerExpression)?.parent as? CSharpBaseObjectCreationExpression ?: return null
+            val receiver = resolver.typeOf(owner) ?: return null
+            return resolver.expressions.indexed(receiver, index.argumentList?.arguments.orEmpty())
+        }
+        // `{ new(…) }` and `{ "k", new(…) }` of a collection initializer: the parameter of the `Add` they go to
+        var initializer = parent as? CSharpInitializerExpression ?: return null
+        var position = 0
+        var count = 1
+        if (initializer.elementType == SyntaxKind.ComplexElementInitializerExpression) {
+            position = initializer.expressions.indexOf(at)
+            count = initializer.expressions.size
+            initializer = initializer.parent as? CSharpInitializerExpression ?: return null
+        }
+        if (initializer.elementType != SyntaxKind.CollectionInitializerExpression) return null
+        val owner = initializer.parent as? CSharpBaseObjectCreationExpression ?: return null
+        val collection = resolver.typeOf(owner) ?: return null
+        val add = resolver.membersNamed(collection, "Add", 0).filter(resolver::isMethod).filter { resolver.signature(it, false)?.size == count }.singleOrNull()
+        return add?.let { resolver.signature(it, false)?.getOrNull(position)?.type?.invoke() } ?: if (count == 1) resolver.elementType(collection) else null
     }
 
     /**
@@ -281,7 +429,7 @@ object CSharpSolutionSearch {
                 for (creation in SyntaxTraverser.psiTraverser(file).filter(CSharpImplicitObjectCreationExpression::class.java)) {
                     val keyword = creation.newKeyword ?: continue
                     if (!inScope(keyword)) continue
-                    val created = resolver.typeOf(creation) as? SemanticType.Source ?: continue
+                    val created = createdByPlace(resolver, creation) as? SemanticType.Source ?: continue
                     if (created.info.targets().none { CSharpSearchTarget.Key.of(it) in own }) continue
                     if (calls(creation.argumentList?.arguments?.size ?: 0) && !consumer(Usage(keyword))) return false
                 }

@@ -2,6 +2,7 @@
 // types __TEXT__ (`\n` for a new line) __TIMES__ times, a character every __DELAY__ ms, the way the keyboard does; a lookup that opens
 // is closed before a character that would choose from it. Then waits __SETTLE__ ms for the server and the daemon, and puts the text of
 // the file back as it was (the document is not saved). Returns how many characters were typed and how long it took.
+importClass(com.intellij.openapi.application.ModalityState)
 importClass(com.intellij.openapi.project.ProjectManager)
 importClass(com.intellij.openapi.application.ApplicationManager)
 importClass(com.intellij.openapi.command.WriteCommandAction)
@@ -28,7 +29,7 @@ ApplicationManager.getApplication().invokeAndWait(new java.lang.Runnable({ run: 
     editor.getCaretModel().moveToOffset(document.getLineEndOffset(line))
     com.intellij.ide.impl.ProjectUtil.focusProjectWindow(project, true)
     editor.getContentComponent().requestFocusInWindow()
-} }))
+} }), ModalityState.nonModal())
 let count = 0
 for (var round = 0; round < __TIMES__; round++) {
     for (var c = 0; c < text.length; c++) {
@@ -36,7 +37,7 @@ for (var round = 0; round < __TIMES__; round++) {
         ApplicationManager.getApplication().invokeAndWait(new java.lang.Runnable({ run: function () {
             if (!java.lang.Character.isJavaIdentifierPart(ch)) LookupManager.getInstance(project).hideActiveLookup()
             TypedAction.getInstance().actionPerformed(editor, ch, DataManager.getInstance().getDataContext(editor.getContentComponent()))
-        } }))
+        } }), ModalityState.nonModal())
         count++
         java.lang.Thread.sleep(__DELAY__)
     }
@@ -46,5 +47,5 @@ ApplicationManager.getApplication().invokeAndWait(new java.lang.Runnable({ run: 
     LookupManager.getInstance(project).hideActiveLookup()
     WriteCommandAction.runWriteCommandAction(project, new java.lang.Runnable({ run: function () { editor.getDocument().setText(original) } }))
     PsiDocumentManager.getInstance(project).commitAllDocuments()
-} }))
+} }), ModalityState.nonModal())
 "typed=" + count + " seconds=" + Math.round((java.lang.System.nanoTime() - started) / 1e9)

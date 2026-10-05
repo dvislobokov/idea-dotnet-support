@@ -41,7 +41,12 @@ public class AnalyzerScenarios
     }
 
     // TYPE:an-project — no typing: .NET → Code Analysis → Run Code Analysis with this file open (or on Console in the Solution view).
-    // EXPECT: the Build tool window «Code Analysis Console» says «0 errors, 3 warnings, N suggestions»: the 3 warnings of this file, and
-    // the suggestions (CA1859, IDE0290…) of all files of Console while «Show suggestions» is on (off: warnings only); each opens its place
-    // on double click.
+    // EXPECT (0.1.82): the Build tool window «Code Analysis Console» says «0 errors, 3 warnings, N suggestions» (N about 170); under it
+    // two nodes — «Warnings (3)» open with the 3 warnings of this file, «Suggestions (N)» collapsed (CA1822, IDE0060, IDE0028… of all
+    // files of Console), whatever «Show suggestions» says; each row opens its place on double click.
+
+    // TYPE:an-quiet (0.1.82) — no typing: open Editor/Overloads.cs and Editor/ContextActions.cs, save each once (Ctrl+S), wait a few seconds.
+    // EXPECT: no green or gray waves from analyzers there (before 0.1.82: 18 and 19 weak warnings — IDE0060, CA1822…); only this file
+    // shows its 3 warnings. Caret on the name of a method there that uses no instance data (CA1822, an Info): Alt+Enter still offers
+    // «Make static». Settings | .NET | Analyzers and Generators → «Show suggestions» on → the Info ones come back as weak warnings
 }

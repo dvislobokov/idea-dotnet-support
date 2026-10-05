@@ -21,8 +21,9 @@ import javax.swing.Icon
 
 /*
  * Rider's generators of Generate (Alt+Insert) on csharp-psi's tree and the semantics of the plugin (CSHARP_PSI_MIGRATION.md, task C4d),
- * without the language server: Constructor, Read-only properties, Properties, Missing members, Overriding members, Partial members,
- * Deconstructor, Equality members, Formatting members, Dispose pattern. A generator lists what can be chosen ([CSharpGenerateChoice], the
+ * without the language server: Constructor, Read-only properties, Properties, Missing members, Overriding members, Delegating members,
+ * Partial members, Deconstructor, Equality members, Equality comparer, Relational members, Relational comparer, Formatting members,
+ * Dispose pattern. A generator lists what can be chosen ([CSharpGenerateChoice], the
  * rows of the member chooser) and writes the members as text ([CSharpGeneratedCode]); [NativeCSharpGenerateEdits] puts them into the
  * type, adds the base types and the `using` directives the text needs. The texts are Rider's defaults (block bodies, `HashCode.Combine`,
  * `$"{nameof(X)}: {X}"`), formatted afterwards by the native formatter.
@@ -35,9 +36,13 @@ enum class CSharpGenerator(val title: String, val chooserTitle: String, val icon
     PROPERTIES("Properties", "Generate Properties", AllIcons.Nodes.Property),
     MISSING_MEMBERS("Missing members", "Implement Missing Members", AllIcons.Gutter.ImplementingMethod),
     OVERRIDING_MEMBERS("Overriding members", "Override Members", AllIcons.Gutter.OverridingMethod),
+    DELEGATING_MEMBERS("Delegating members", "Generate Delegating Members", AllIcons.Nodes.Method),
     PARTIAL_MEMBERS("Partial members", "Generate Partial Members", AllIcons.Nodes.Method),
     DECONSTRUCTOR("Deconstructor", "Generate Deconstructor", AllIcons.Nodes.Method),
     EQUALITY_MEMBERS("Equality members", "Generate Equality Members", AllIcons.Nodes.Method),
+    EQUALITY_COMPARER("Equality comparer", "Generate Equality Comparer", AllIcons.Nodes.Class),
+    RELATIONAL_MEMBERS("Relational members", "Generate Relational Members", AllIcons.Nodes.Method),
+    RELATIONAL_COMPARER("Relational comparer", "Generate Relational Comparer", AllIcons.Nodes.Class),
     FORMATTING_MEMBERS("Formatting members", "Generate Formatting Members", AllIcons.Nodes.Method),
     DISPOSE_PATTERN("Dispose pattern", "Generate Dispose Pattern", AllIcons.Nodes.Method),
 }
@@ -243,6 +248,8 @@ object NativeCSharpGenerate {
     /** Options of the chooser of Equality members, Rider's names. */
     const val OPTION_EQUATABLE = "Implement 'IEquatable<T>' interface"
     const val OPTION_OPERATORS = "Overload equality operators"
+    const val OPTION_COMPARABLE = "Implement non-generic 'IComparable' interface"
+    const val OPTION_RELATIONAL_OPERATORS = "Overload relational operators"
 
     /** The rows a generator offers at [site]; empty: the generator is not available there (gray in Generate). */
     fun choices(generator: CSharpGenerator, site: CSharpGenerateSite): List<CSharpGenerateChoice> = when (generator) {
@@ -251,9 +258,12 @@ object NativeCSharpGenerate {
         CSharpGenerator.PROPERTIES -> propertyChoices(site, readOnly = false)
         CSharpGenerator.MISSING_MEMBERS -> NativeCSharpInheritedMembers(site).missing()
         CSharpGenerator.OVERRIDING_MEMBERS -> if (site.isStatic || site.isStruct && site.isRecord) emptyList() else NativeCSharpInheritedMembers(site).overridable()
+        CSharpGenerator.DELEGATING_MEMBERS -> NativeCSharpInheritedMembers(site).delegating()
         CSharpGenerator.PARTIAL_MEMBERS -> partialChoices(site)
         CSharpGenerator.DECONSTRUCTOR -> if (site.isStatic || has(site, "Deconstruct")) emptyList() else instanceChoices(site, all = true)
         CSharpGenerator.EQUALITY_MEMBERS -> if (site.isStatic || site.isRecord || has(site, "GetHashCode")) emptyList() else instanceChoices(site, all = false)
+        CSharpGenerator.EQUALITY_COMPARER, CSharpGenerator.RELATIONAL_COMPARER -> if (site.isStatic) emptyList() else instanceChoices(site, all = false)
+        CSharpGenerator.RELATIONAL_MEMBERS -> if (site.isStatic || has(site, "CompareTo")) emptyList() else instanceChoices(site, all = false)
         CSharpGenerator.FORMATTING_MEMBERS -> if (site.isStatic || has(site, "ToString")) emptyList() else instanceChoices(site, all = false)
         CSharpGenerator.DISPOSE_PATTERN -> if (site.isStatic || has(site, "Dispose")) emptyList() else disposeChoices(site)
     }
@@ -261,8 +271,11 @@ object NativeCSharpGenerate {
     /** Whether the chooser may be confirmed with nothing checked (a constructor without parameters, Dispose that disposes nothing). */
     fun allowsEmpty(generator: CSharpGenerator): Boolean = generator == CSharpGenerator.CONSTRUCTOR || generator == CSharpGenerator.DISPOSE_PATTERN
 
-    fun options(generator: CSharpGenerator, site: CSharpGenerateSite): List<String> =
-        if (generator == CSharpGenerator.EQUALITY_MEMBERS) listOfNotNull(OPTION_EQUATABLE.takeIf { !implements(site, "IEquatable") }, OPTION_OPERATORS) else emptyList()
+    fun options(generator: CSharpGenerator, site: CSharpGenerateSite): List<String> = when (generator) {
+        CSharpGenerator.EQUALITY_MEMBERS -> listOfNotNull(OPTION_EQUATABLE.takeIf { !implements(site, "IEquatable") }, OPTION_OPERATORS)
+        CSharpGenerator.RELATIONAL_MEMBERS -> listOfNotNull(OPTION_COMPARABLE.takeIf { !implementsNonGeneric(site, "IComparable") }, OPTION_RELATIONAL_OPERATORS)
+        else -> emptyList()
+    }
 
     /** The members [generator] writes for the [chosen] rows, with [options] checked; null when nothing can be written. */
     fun generate(generator: CSharpGenerator, site: CSharpGenerateSite, chosen: List<CSharpGenerateChoice>, options: Set<String> = emptySet()): CSharpGeneratedCode? {
@@ -271,7 +284,10 @@ object NativeCSharpGenerate {
             CSharpGenerator.CONSTRUCTOR -> constructor(site, writer, chosen)
             CSharpGenerator.READ_ONLY_PROPERTIES -> properties(chosen, readOnly = true)
             CSharpGenerator.PROPERTIES -> properties(chosen, readOnly = false)
-            CSharpGenerator.MISSING_MEMBERS, CSharpGenerator.OVERRIDING_MEMBERS, CSharpGenerator.PARTIAL_MEMBERS -> rendered(writer, chosen)
+            CSharpGenerator.MISSING_MEMBERS, CSharpGenerator.OVERRIDING_MEMBERS, CSharpGenerator.PARTIAL_MEMBERS, CSharpGenerator.DELEGATING_MEMBERS -> rendered(writer, chosen)
+            CSharpGenerator.EQUALITY_COMPARER -> NativeCSharpComparers.equalityComparer(site, writer, members(chosen))
+            CSharpGenerator.RELATIONAL_MEMBERS -> NativeCSharpComparers.relational(site, writer, members(chosen), options)
+            CSharpGenerator.RELATIONAL_COMPARER -> NativeCSharpComparers.relationalComparer(site, writer, members(chosen))
             CSharpGenerator.DECONSTRUCTOR -> deconstructor(chosen)
             CSharpGenerator.EQUALITY_MEMBERS -> equality(site, writer, chosen, options)
             CSharpGenerator.FORMATTING_MEMBERS -> formatting(chosen)
@@ -341,6 +357,12 @@ object NativeCSharpGenerate {
 
     private fun implements(site: CSharpGenerateSite, simpleName: String): Boolean =
         site.parts.any { part -> part.baseList?.types.orEmpty().any { base -> base.type?.let { TypePart.simpleName(it)?.first } == simpleName } }
+
+    /** `IComparable` itself listed, not `IComparable<T>`. */
+    private fun implementsNonGeneric(site: CSharpGenerateSite, simpleName: String): Boolean =
+        site.parts.any { part -> part.baseList?.types.orEmpty().any { base -> base.type?.let { TypePart.simpleName(it) } == (simpleName to 0) } }
+
+    private fun members(chosen: List<CSharpGenerateChoice>): List<CSharpDataMember> = chosen.mapNotNull { it.payload as? CSharpDataMember }
 
     // ---- constructor
 
@@ -487,15 +509,17 @@ object NativeCSharpGenerate {
     }
 
     /** How a member is compared: `==` for numbers but floating ones, enums, strings and `bool`; `.Equals` for other values; `Equals(a, b)` else. */
-    private fun comparison(writer: CSharpCodeWriter, member: CSharpDataMember): String {
-        val name = member.name
+    private fun comparison(writer: CSharpCodeWriter, member: CSharpDataMember): String = comparison(writer, member, member.name, "other.${member.name}")
+
+    /** [comparison] of the member read as [left] and [right] (`x.Name`, `y.Name` in a comparer). */
+    fun comparison(writer: CSharpCodeWriter, member: CSharpDataMember, left: String, right: String): String {
         val type = member.type
         val full = (type as? SemanticType.Library)?.type?.fullName
         return when {
             // the keyword answers without the assemblies too (packages not restored yet)
-            full in EQUALS_OPERATOR || member.typeText in EQUALS_KEYWORDS || type is SemanticType.Library && type.type.kind == IndexedTypeKind.ENUM || type is SemanticType.Source && type.info.kind == TypeKind.ENUM -> "$name == other.$name"
-            type != null && writer.resolver.isValueType(type) -> "$name.Equals(other.$name)"
-            else -> "Equals($name, other.$name)"
+            full in EQUALS_OPERATOR || member.typeText in EQUALS_KEYWORDS || type is SemanticType.Library && type.type.kind == IndexedTypeKind.ENUM || type is SemanticType.Source && type.info.kind == TypeKind.ENUM -> "$left == $right"
+            type != null && writer.resolver.isValueType(type) -> "$left.Equals($right)"
+            else -> "Equals($left, $right)"
         }
     }
 
@@ -533,21 +557,22 @@ object NativeCSharpGenerate {
     }
 
     /** `HashCode.Combine(a, b)` (a `HashCode` and its `Add` over 8 members); without `System.HashCode` (.NET Framework) Rider's `* 397` form. */
-    private fun hashCode(writer: CSharpCodeWriter, members: List<CSharpDataMember>): String {
+    fun hashCode(writer: CSharpCodeWriter, members: List<CSharpDataMember>, prefix: String = ""): String {
         if (members.isEmpty()) return "    return 0;\n"
         val known = writer.resolver.libraryType("System.Object") != null
         if (!known || writer.resolver.libraryType("System.HashCode") != null) {
             val hashCode = writer.named("System.HashCode")
-            if (members.size <= 8) return "    return $hashCode.Combine(${members.joinToString(", ") { it.name }});\n"
-            return "    var hashCode = new $hashCode();\n" + members.joinToString("") { "    hashCode.Add(${it.name});\n" } + "    return hashCode.ToHashCode();\n"
+            if (members.size <= 8) return "    return $hashCode.Combine(${members.joinToString(", ") { prefix + it.name }});\n"
+            return "    var hashCode = new $hashCode();\n" + members.joinToString("") { "    hashCode.Add($prefix${it.name});\n" } + "    return hashCode.ToHashCode();\n"
         }
         fun hash(member: CSharpDataMember): String {
             val type = member.type
             val full = (type as? SemanticType.Library)?.type?.fullName
+            val name = prefix + member.name
             return when {
-                full == "System.Int32" -> member.name
-                full == "System.Boolean" || type != null && writer.resolver.isValueType(type) -> "${member.name}.GetHashCode()"
-                else -> "(${member.name} != null ? ${member.name}.GetHashCode() : 0)"
+                full == "System.Int32" -> name
+                full == "System.Boolean" || type != null && writer.resolver.isValueType(type) -> "$name.GetHashCode()"
+                else -> "($name != null ? $name.GetHashCode() : 0)"
             }
         }
         if (members.size == 1) return "    return ${hash(members[0])};\n"
@@ -802,16 +827,96 @@ class NativeCSharpInheritedMembers(private val site: CSharpGenerateSite) {
         return result
     }
 
-    private enum class Mode { IMPLEMENT, EXPLICIT, OVERRIDE_ABSTRACT, OVERRIDE }
+    /**
+     * Delegating members: for each field and property of the type (the groups of the chooser, as Rider's first page), the public members
+     * of its type and its bases that the type does not declare yet, each written to call the same member of the field.
+     */
+    fun delegating(): List<CSharpGenerateChoice> {
+        val (own, _, _) = own()
+        val result = ArrayList<CSharpGenerateChoice>()
+        for (target in NativeCSharpGenerate.dataMembers(site)) {
+            if (!target.hasGetter || site.isStatic && !target.isStatic) continue
+            val type = target.type ?: continue
+            val group = CSharpGenerateGroup(target.display, if (target.isField) AllIcons.Nodes.Field else AllIcons.Nodes.Property)
+            val seen = HashSet<String>()
+            for (holder in delegatedTypes(type)) for (member in declared(holder)) {
+                if ("static" in member.modifiers || member.name in OBJECT_MEMBERS || !isPublic(member, holder)) continue
+                if (member.key in own || !seen.add(member.key)) continue
+                result += choice(member, group, Mode.DELEGATE, selected = false, receiver = target.name, static = target.isStatic)
+            }
+        }
+        return result
+    }
 
-    private fun choice(member: Inherited, group: CSharpGenerateGroup, mode: Mode, selected: Boolean, delegateTo: Inherited? = null): CSharpGenerateChoice {
+    private fun isPublic(member: Inherited, holder: SemanticType): Boolean = when {
+        member.library != null -> "public" in member.modifiers
+        NativeCSharpGenerate.isInterface(holder) -> "private" !in member.modifiers && "protected" !in member.modifiers
+        else -> "public" in member.modifiers
+    }
+
+    /** The type a member delegates to and its bases (its base interfaces for an interface): not `object`, not what a class implements explicitly. */
+    private fun delegatedTypes(type: SemanticType): List<SemanticType> {
+        val result = LinkedHashMap<String, SemanticType>()
+        fun visit(t: SemanticType, depth: Int) {
+            if (depth > 16 || (t as? SemanticType.Library)?.type?.fullName == "System.Object") return
+            val key = CSharpTypeDisplay.display(t) ?: t.toString()
+            if (result.putIfAbsent(key, t) != null) return
+            val face = NativeCSharpGenerate.isInterface(t)
+            when (t) {
+                is SemanticType.Source -> resolver.baseTypes(t).filter { face || !NativeCSharpGenerate.isInterface(it) }.forEach { visit(it, depth + 1) }
+                is SemanticType.Library -> {
+                    val supers = resolver.session.baseTypes(resolver.assemblies, t.type) + if (face) resolver.session.interfaces(resolver.assemblies, t.type) else emptyList()
+                    for (s in supers) resolver.fromRef(s.reference, t.arguments)?.let { visit(it, depth + 1) }
+                }
+                else -> {}
+            }
+        }
+        visit(type, 0)
+        return result.values.toList()
+    }
+
+    private enum class Mode { IMPLEMENT, EXPLICIT, OVERRIDE_ABSTRACT, OVERRIDE, DELEGATE }
+
+    private fun choice(
+        member: Inherited, group: CSharpGenerateGroup, mode: Mode, selected: Boolean, delegateTo: Inherited? = null, receiver: String? = null, static: Boolean = false,
+    ): CSharpGenerateChoice {
         val icon = when (member.kind) {
             Kind.METHOD -> AllIcons.Nodes.Method
             Kind.PROPERTY, Kind.INDEXER -> AllIcons.Nodes.Property
             Kind.EVENT -> AllIcons.Nodes.Field
         }
         val text = describe(member)
-        return CSharpGenerateChoice(text, icon, group, selected, member) { writer, _ -> render(writer, member, mode, delegateTo)?.let(::listOf) }
+        return CSharpGenerateChoice(text, icon, group, selected, member) { writer, _ ->
+            (if (mode == Mode.DELEGATE) delegate(writer, member, receiver!!, static) else render(writer, member, mode, delegateTo))?.let(::listOf)
+        }
+    }
+
+    /** A member that passes everything to the same member of [receiver]: `public int Count => _items.Count;`, `public void Add(T item) { _items.Add(item); }`. */
+    private fun delegate(writer: CSharpCodeWriter, member: Inherited, receiver: String, static: Boolean): String? {
+        val signature = signature(writer, member, withConstraints = true) ?: return null
+        val head = if (static) "public static " else "public "
+        val name = member.name
+        return when (member.kind) {
+            Kind.METHOD -> {
+                val arguments = signature.parameters.joinToString(", ") { (modifier, parameter) -> listOfNotNull(modifier.takeIf { it.isNotEmpty() }, parameter).joinToString(" ") }
+                val typeArguments = if (signature.typeParameters.isEmpty()) "" else signature.typeParameters.joinToString(", ", "<", ">")
+                val call = "$receiver.$name$typeArguments($arguments);"
+                "$head${signature.type} $name$typeArguments(${signature.declaredParameters})${signature.constraints}\n{\n    ${if (signature.type == "void") call else "return $call"}\n}"
+            }
+            Kind.PROPERTY -> {
+                // an `init` accessor of the field's property cannot be called from here
+                val setter = "set" in signature.accessors
+                if (!setter) "$head${signature.type} $name => $receiver.$name;"
+                else "$head${signature.type} $name\n{\n" + (if ("get" in signature.accessors) "    get => $receiver.$name;\n" else "") + "    set => $receiver.$name = value;\n}"
+            }
+            Kind.INDEXER -> {
+                val arguments = signature.parameters.joinToString(", ") { it.second }
+                "$head${signature.type} this[${signature.declaredParameters}]\n{\n" + signature.accessors.filter { it != "init" }.joinToString("") { a ->
+                    if (a == "get") "    get => $receiver[$arguments];\n" else "    $a => $receiver[$arguments] = value;\n"
+                } + "}"
+            }
+            Kind.EVENT -> "${head}event ${signature.type} $name\n{\n    add => $receiver.$name += value;\n    remove => $receiver.$name -= value;\n}"
+        }
     }
 
     private fun describe(member: Inherited): String {
@@ -840,7 +945,7 @@ class NativeCSharpInheritedMembers(private val site: CSharpGenerateSite) {
     // ---- writing
 
     private fun access(member: Inherited, mode: Mode): String = when (mode) {
-        Mode.IMPLEMENT -> "public "
+        Mode.IMPLEMENT, Mode.DELEGATE -> "public "
         Mode.EXPLICIT -> ""
         Mode.OVERRIDE, Mode.OVERRIDE_ABSTRACT -> {
             val access = ACCESS.filter { it in member.modifiers }.joinToString(" ").ifEmpty { "public" }
@@ -974,6 +1079,8 @@ class NativeCSharpInheritedMembers(private val site: CSharpGenerateSite) {
         val ACCESS = listOf("public", "protected", "internal", "private")
         val PARAMETER_MODIFIERS = setOf("ref", "out", "in", "params", "scoped", "readonly")
         val RECORD_MEMBERS = setOf("Equals", "GetHashCode", "PrintMembers", "EqualityContract")
+        /** What every object has: not worth delegating, as Rider leaves them out. */
+        val OBJECT_MEMBERS = setOf("Equals", "GetHashCode", "ToString", "GetType", "MemberwiseClone", "Finalize", "ReferenceEquals")
     }
 }
 

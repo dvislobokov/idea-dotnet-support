@@ -64,7 +64,7 @@ object CSharpRiderPopups {
      * The server's rows that a native generator or refactoring stands for: dropped from the popups, the native row answers (gray where it
      * has nothing to offer, as Rider's).
      */
-    private val SERVER_EQUIVALENTS = Regex("""^(Generate constructor|Generate Equals|Generate overrides|Implement interface$|Implement abstract class$|Extract method$)""")
+    private val SERVER_EQUIVALENTS = Regex("""^(Generate constructor|Generate Equals|Generate overrides|Generate comparison operators|Implement interface$|Implement abstract class$|Extract method$|Introduce parameter for )""")
 
     fun hasNativeEquivalent(title: String?): Boolean = title != null && SERVER_EQUIVALENTS.containsMatchIn(title)
     val REFACTOR_MOVE = listOf("Move", "CopyElement")
@@ -113,8 +113,8 @@ object CSharpRiderPopups {
     }
 
     private val RIDER_GENERATE_ORDER = listOf(
-        "constructor", "read-only", "propert", "implement", "missing", "overrid", "delegat", "partial", "deconstruct", "equals", "equality", "comparer",
-        "relational", "compareto", "tostring", "format", "dispose", "test",
+        "constructor", "read-only", "propert", "implement", "missing", "overrid", "delegat", "partial", "deconstruct", "equals", "equality members",
+        "equality comparer", "equality", "relational members", "relational comparer", "relational", "compar", "tostring", "format", "dispose", "test",
     )
 
     /** A registered action under Rider's name, its shortcut kept; null when this IDE has no such action. */

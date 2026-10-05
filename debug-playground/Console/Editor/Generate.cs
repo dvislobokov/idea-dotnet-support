@@ -18,8 +18,9 @@ public class GenOrder
 
     // TYPE:gen-list — Alt+Insert here. EXPECT: the popup "Generate" lists Constructor, Read-only properties, Properties, Missing members
     // (gray, Ctrl+I), Overriding members (gray here: nothing virtual but object's members when the assemblies are not indexed; Ctrl+O),
-    // Partial members (gray), Partial Part, Deconstructor, Equality members, Formatting members, Dispose pattern, Unit Test, then the
-    // rest of the platform's group (Insert New GUID…). NOT expected: a second "Constructor" row of the server, "Override Methods…" or
+    // Delegating members, Partial members (gray), Partial Part, Deconstructor, Equality members, Equality comparer, Relational members,
+    // Relational comparer, Formatting members, Dispose pattern, Unit Test (Rider's order, 0.1.81), then the rest of the platform's group
+    // (Insert New GUID…). NOT expected: a second "Constructor" row of the server, "Override Methods…" or
     // "Implement Methods…" of the platform (the native rows answer them). Members generated here go on this line (as in Rider).
 
     // TYPE:gen-constructor — Alt+Insert → Constructor. EXPECT: the chooser "Generate Constructor" with groups Fields (`_id: int` checked,
@@ -109,6 +110,40 @@ public class GenDerived : GenBase
     // `_size: int`; OK gives `public GenDerived(string name, int size) : base(name)` with `_size = size;`.
 
     public int Size => _size;
+}
+
+public class GenBag
+{
+    private readonly System.Collections.Generic.List<int> _items = new();
+    public string Title { get; set; } = "";
+
+    // TYPE:gen-delegating — Alt+Insert → Delegating members (0.1.81). EXPECT: first a list "Delegate To" with `_items: List<int>` and
+    // `Title: string`; choose `_items`: the chooser of the members of `List<int>` (none checked); check `Add(int item): void` and
+    // `Count: int`, OK gives `public void Add(int item) { _items.Add(item); }` and `public int Count => _items.Count;`. NOT offered:
+    // `Equals`, `GetHashCode`, `ToString`, `GetType`, static members.
+
+}
+
+public class GenPerson
+{
+    public string Name { get; init; } = "";
+    public int Age { get; init; }
+
+    // TYPE:gen-equality-comparer — Alt+Insert → Equality comparer (0.1.81). EXPECT: `Name` and `Age` checked; OK gives a nested `private
+    // sealed class NameAgeEqualityComparer : IEqualityComparer<GenPerson>` (`Equals(GenPerson? x, GenPerson? y)` with the reference, null
+    // and type checks and `x.Name == y.Name && x.Age == y.Age`; `GetHashCode(GenPerson obj)` with `HashCode.Combine(obj.Name, obj.Age)`)
+    // and `public static IEqualityComparer<GenPerson> NameAgeComparer { get; } = new NameAgeEqualityComparer();`, `using
+    // System.Collections.Generic;` added. The file builds.
+
+    // TYPE:gen-relational — Alt+Insert → Relational members (0.1.81), both options checked. EXPECT: `GenPerson : IComparable<GenPerson>,
+    // IComparable` in the header; `CompareTo(GenPerson? other)` with `string.Compare(Name, other.Name, StringComparison.Ordinal)` kept in
+    // `nameComparison` and `return Age.CompareTo(other.Age);`; `CompareTo(object? obj)` that throws `ArgumentException` for another type;
+    // operators `<`, `>`, `<=`, `>=` through `Comparer<GenPerson>.Default.Compare(left, right)`. The file builds.
+
+    // TYPE:gen-relational-comparer — Alt+Insert → Relational comparer (0.1.81). EXPECT: a nested `private sealed class
+    // NameAgeRelationalComparer : IComparer<GenPerson>` with `Compare(GenPerson? x, GenPerson? y)` (`ReferenceEquals` → 0, `y is null` → 1,
+    // `x is null` → -1, then the members) and `public static IComparer<GenPerson> NameAgeComparer { get; } = …`.
+
 }
 
 public partial class GenPartial

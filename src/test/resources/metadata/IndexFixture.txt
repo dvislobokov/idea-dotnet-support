@@ -1,6 +1,6 @@
 // Metadata of Fixture.Shape: signatures from the index of the assembly, no bodies (no decompiler)
 // Assembly: IndexFixture, Version=1.0.0.0
-// MVID: e299d6546e65374f865c2b6f31088016
+// MVID: 3157d480a7786f438faf4cf7d8e9301c
 // Assembly location: C:/fixture/IndexFixture.dll
 
 using System;
@@ -43,7 +43,7 @@ namespace Fixture
 
 // Metadata of Fixture.Circle: signatures from the index of the assembly, no bodies (no decompiler)
 // Assembly: IndexFixture, Version=1.0.0.0
-// MVID: e299d6546e65374f865c2b6f31088016
+// MVID: 3157d480a7786f438faf4cf7d8e9301c
 // Assembly location: C:/fixture/IndexFixture.dll
 
 using System;
@@ -69,7 +69,7 @@ namespace Fixture
 
 // Metadata of Fixture.Box`1: signatures from the index of the assembly, no bodies (no decompiler)
 // Assembly: IndexFixture, Version=1.0.0.0
-// MVID: e299d6546e65374f865c2b6f31088016
+// MVID: 3157d480a7786f438faf4cf7d8e9301c
 // Assembly location: C:/fixture/IndexFixture.dll
 
 using System;
@@ -109,7 +109,7 @@ namespace Fixture
 
 // Metadata of Fixture.IShape`2: signatures from the index of the assembly, no bodies (no decompiler)
 // Assembly: IndexFixture, Version=1.0.0.0
-// MVID: e299d6546e65374f865c2b6f31088016
+// MVID: 3157d480a7786f438faf4cf7d8e9301c
 // Assembly location: C:/fixture/IndexFixture.dll
 
 namespace Fixture
@@ -126,7 +126,7 @@ namespace Fixture
 
 // Metadata of Fixture.Money: signatures from the index of the assembly, no bodies (no decompiler)
 // Assembly: IndexFixture, Version=1.0.0.0
-// MVID: e299d6546e65374f865c2b6f31088016
+// MVID: 3157d480a7786f438faf4cf7d8e9301c
 // Assembly location: C:/fixture/IndexFixture.dll
 
 namespace Fixture
@@ -143,7 +143,7 @@ namespace Fixture
 
 // Metadata of Fixture.Cursor: signatures from the index of the assembly, no bodies (no decompiler)
 // Assembly: IndexFixture, Version=1.0.0.0
-// MVID: e299d6546e65374f865c2b6f31088016
+// MVID: 3157d480a7786f438faf4cf7d8e9301c
 // Assembly location: C:/fixture/IndexFixture.dll
 
 using System;
@@ -162,7 +162,7 @@ namespace Fixture
 
 // Metadata of Fixture.Color: signatures from the index of the assembly, no bodies (no decompiler)
 // Assembly: IndexFixture, Version=1.0.0.0
-// MVID: e299d6546e65374f865c2b6f31088016
+// MVID: 3157d480a7786f438faf4cf7d8e9301c
 // Assembly location: C:/fixture/IndexFixture.dll
 
 namespace Fixture
@@ -178,7 +178,7 @@ namespace Fixture
 
 // Metadata of Fixture.Handler: signatures from the index of the assembly, no bodies (no decompiler)
 // Assembly: IndexFixture, Version=1.0.0.0
-// MVID: e299d6546e65374f865c2b6f31088016
+// MVID: 3157d480a7786f438faf4cf7d8e9301c
 // Assembly location: C:/fixture/IndexFixture.dll
 
 using System;
@@ -192,7 +192,7 @@ namespace Fixture
 
 // Metadata of Fixture.ShapeExtensions: signatures from the index of the assembly, no bodies (no decompiler)
 // Assembly: IndexFixture, Version=1.0.0.0
-// MVID: e299d6546e65374f865c2b6f31088016
+// MVID: 3157d480a7786f438faf4cf7d8e9301c
 // Assembly location: C:/fixture/IndexFixture.dll
 
 using System;
@@ -215,7 +215,7 @@ namespace Fixture
 
 // Metadata of Fixture.Old: signatures from the index of the assembly, no bodies (no decompiler)
 // Assembly: IndexFixture, Version=1.0.0.0
-// MVID: e299d6546e65374f865c2b6f31088016
+// MVID: 3157d480a7786f438faf4cf7d8e9301c
 // Assembly location: C:/fixture/IndexFixture.dll
 
 using System;
@@ -233,7 +233,7 @@ namespace Fixture
 
 // Metadata of Fixture.Outer: signatures from the index of the assembly, no bodies (no decompiler)
 // Assembly: IndexFixture, Version=1.0.0.0
-// MVID: e299d6546e65374f865c2b6f31088016
+// MVID: 3157d480a7786f438faf4cf7d8e9301c
 // Assembly location: C:/fixture/IndexFixture.dll
 
 namespace Fixture
@@ -255,7 +255,7 @@ namespace Fixture
 
 // Metadata of Fixture.Point: signatures from the index of the assembly, no bodies (no decompiler)
 // Assembly: IndexFixture, Version=1.0.0.0
-// MVID: e299d6546e65374f865c2b6f31088016
+// MVID: 3157d480a7786f438faf4cf7d8e9301c
 // Assembly location: C:/fixture/IndexFixture.dll
 
 using System;

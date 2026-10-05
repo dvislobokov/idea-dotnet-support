@@ -225,17 +225,12 @@ internal class CSharpSemanticWarnings(private val resolver: CSharpNameResolver, 
         return null
     }
 
-    // ---- nullable: CS8600, CS8625, CS8603, CS8618
+    // ---- nullable: CS8618 of the implicit constructor (the rest: CSharpNullableFlow)
+
+    /** The source generators of the project are known and fresh: a partial type is complete, its parts all seen. */
+    var generatorsKnown: Boolean = false
 
     private fun warningsOn(at: PsiElement): Boolean = CSharpWarningContext.nullableAt(file, at.textRange.startOffset).warnings
-
-    /** `null`, `default`, `(T)null` — a null constant, not `null!`. */
-    private fun isNullConstant(e: CSharpExpression?): Boolean = when (e) {
-        is CSharpLiteralExpression -> e.elementType == SyntaxKind.NullLiteralExpression || e.elementType == SyntaxKind.DefaultLiteralExpression
-        is CSharpParenthesizedExpression -> isNullConstant(e.expression)
-        is CSharpCastExpression -> isNullConstant(e.expression) && e.type !is CSharpNullableType
-        else -> false
-    }
 
     /**
      * [type] written in [file] is a reference type that is not nullable: annotations are on where it is written, it has no `?`, and it is a
@@ -255,116 +250,23 @@ internal class CSharpSemanticWarnings(private val resolver: CSharpNameResolver, 
         }
     }
 
-    /** `(string)null`: the cast itself converts null to a non-nullable type (CS8600 on the cast). */
-    fun checkNullableCast(cast: CSharpCastExpression) {
-        if (!isNullConstant(cast.expression) || !nonNullableReference(cast.type) || !warningsOn(cast)) return
-        warn("CS8600", "Converting null literal or possible null value to non-nullable type.", cast.textRange)
-    }
-
-    fun checkNullableDeclaration(declaration: CSharpVariableDeclaration) {
-        if (declaration.parent !is CSharpLocalDeclarationStatement) return
-        if (!nonNullableReference(declaration.type)) return
-        for (variable in declaration.variables) {
-            val value = variable.initializer?.value ?: continue
-            if (isNullConstant(value) && warningsOn(value)) warn("CS8600", "Converting null literal or possible null value to non-nullable type.", value.textRange)
-        }
-    }
-
-    fun checkNullableAssignment(assignment: CSharpAssignmentExpression) {
-        if (assignment.operatorToken?.text != "=") return
-        val value = assignment.right ?: return
-        if (!isNullConstant(value) || !warningsOn(value)) return
-        val name = when (val left = assignment.left) {
-            is CSharpIdentifierName -> left
-            is CSharpMemberAccessExpression -> left.nameElement.takeIf { left.expression is CSharpThisExpression }
-            else -> null
-        } ?: return
-        if (NativeCSharpScopes.isObjectInitializer(assignment.parent)) return
-        when (val symbol = name.identifier?.let(resolver::resolve)?.single) {
-            is CSharpSymbol.Local -> {
-                if (symbol.symbol.kind != LocalSymbolKind.LOCAL) return
-                val declaration = symbol.symbol.declaration.parent?.parent as? CSharpVariableDeclaration ?: return
-                if (declaration.parent !is CSharpLocalDeclarationStatement || !nonNullableReference(declaration.type)) return
-                warn("CS8600", "Converting null literal or possible null value to non-nullable type.", value.textRange)
-            }
-            is CSharpSymbol.SourceMember -> {
-                // members of this file only: another file would be parsed for its attributes and its nullable context
-                if (symbol.element.containingFile != file) return
-                val type = memberType(symbol.element) ?: return
-                if (!nonNullableReference(type) || hasAttributes(symbol.element)) return
-                warn("CS8625", "Cannot convert null literal to non-nullable reference type.", value.textRange)
-            }
-            else -> {}
-        }
-    }
-
-    /** The written type of a field (by its declarator) or a property of the solution. */
-    private fun memberType(element: PsiElement): CSharpType? = when (element) {
-        is CSharpVariableDeclarator -> (element.parent as? CSharpVariableDeclaration)?.takeIf { it.parent is CSharpFieldDeclaration }?.type
-        is CSharpFieldDeclaration -> element.declaration?.type?.takeIf { element.modifiers.none { it.text == "const" } }
-        is CSharpPropertyDeclaration -> element.type?.takeIf {
-            val accessors = element.accessorList?.accessors.orEmpty()
-            accessors.any { it.keyword?.text == "set" || it.keyword?.text == "init" } && accessors.all { it.attributeLists.isEmpty() }
-        }
-        else -> null
-    }
-
-    /** `[AllowNull]`, `[MaybeNull]` and the like change what is allowed: a member or parameter with attributes is left alone. */
-    private fun hasAttributes(element: PsiElement): Boolean = when (element) {
-        is CSharpVariableDeclarator -> (element.parent?.parent as? CSharpMemberDeclaration)?.attributeLists?.isNotEmpty() == true
-        is CSharpMemberDeclaration -> element.attributeLists.isNotEmpty()
-        is CSharpParameter -> PsiTreeUtil.getChildrenOfTypeAsList(element, CSharpAttributeList::class.java).isNotEmpty()
-        else -> true
-    }
-
-    /** `Take(null)` of a method of the solution that has one candidate: CS8625 for a parameter of a non-nullable reference type. */
-    fun checkNullableArguments(call: CSharpInvocationExpression) {
-        val arguments = call.argumentList?.arguments ?: return
-        if (arguments.none { isNullConstant(it.expression) }) return
-        val callee = when (val e = call.expression) {
-            is CSharpIdentifierName -> e
-            is CSharpMemberAccessExpression -> e.nameElement
-            else -> null
-        } ?: return
-        val symbol = callee.identifier?.let(resolver::resolve)?.single as? CSharpSymbol.SourceMember ?: return
-        val method = symbol.element as? CSharpMethodDeclaration ?: return
-        if (method.containingFile != file || method.typeParameterList != null) return
-        val parameters = method.parameterList?.parameters ?: return
-        for ((i, argument) in arguments.withIndex()) {
-            val value = argument.expression ?: continue
-            if (argument.nameColon != null || argument.refKindKeyword != null) return
-            if (!isNullConstant(value)) continue
-            val parameter = parameters.getOrNull(i) ?: return
-            if (parameter.modifiers.isNotEmpty() || hasAttributes(parameter)) continue
-            if (nonNullableReference(parameter.type) && warningsOn(value)) warn("CS8625", "Cannot convert null literal to non-nullable reference type.", value.textRange)
-        }
-    }
-
-    fun checkNullableReturn(expression: CSharpExpression, function: PsiElement) {
-        if (!isNullConstant(expression) || !warningsOn(expression)) return
-        val (type, modifiers) = when (function) {
-            is CSharpMethodDeclaration -> function.returnType to function.modifiers
-            is CSharpLocalFunctionStatement -> function.returnType to function.modifiers
-            is CSharpPropertyDeclaration -> function.type to function.modifiers
-            else -> return
-        }
-        val attributes = PsiTreeUtil.getChildrenOfTypeAsList(function, CSharpAttributeList::class.java)
-        // `async`, iterators and `[return: MaybeNull]` change what the return converts to
-        if (modifiers.any { it.text == "async" } || attributes.isNotEmpty() || PsiTreeUtil.findChildOfType(function, CSharpYieldStatement::class.java) != null) return
-        if (!nonNullableReference(type)) return
-        warn("CS8603", "Possible null reference return.", expression.textRange)
-    }
-
     /**
      * A class without constructors: each instance or static field and auto-property of a non-nullable reference type without an initializer
-     * is null when the implicit constructor ends (CS8618 on its name). Not `required`, `abstract`, with attributes, of a partial type (another
-     * part may have a constructor) or of a record with parameters.
+     * is null when the implicit constructor ends (CS8618 on its name). Not `required`, `abstract`, with attributes or of a record with
+     * parameters; of a partial type only when its parts are all known ([generatorsKnown]: another part may have a constructor), each part
+     * reporting its own members.
      */
     fun checkUninitialized(type: CSharpTypeDeclaration) {
         if (type.elementType != SyntaxKind.ClassDeclaration && type.elementType != SyntaxKind.RecordDeclaration) return
-        if (type.parameterList != null || type.modifiers.any { it.text == "partial" }) return
-        if (type.members.any { it is CSharpConstructorDeclaration && it.modifiers.none { m -> m.text == "static" } }) return
-        val hasStaticConstructor = type.members.any { it is CSharpConstructorDeclaration }
+        val parts: List<CSharpTypeDeclaration> = if (type.modifiers.any { it.text == "partial" }) {
+            if (!generatorsKnown) return
+            val info = resolver.syntax.declaredType(type) ?: return
+            info.parts.map { it.element() as? CSharpTypeDeclaration ?: return }
+        } else listOf(type)
+        if (parts.any { it.parameterList != null }) return
+        val constructors = parts.flatMap { part -> part.members.filterIsInstance<CSharpConstructorDeclaration>() }
+        if (constructors.any { it.modifiers.none { m -> m.text == "static" } }) return
+        val hasStaticConstructor = constructors.isNotEmpty()
         for (member in type.members) {
             if (member.attributeLists.isNotEmpty() || member.modifiers.any { it.text == "required" || it.text == "const" || it.text == "abstract" || it.text == "extern" }) continue
             val static = member.modifiers.any { it.text == "static" }

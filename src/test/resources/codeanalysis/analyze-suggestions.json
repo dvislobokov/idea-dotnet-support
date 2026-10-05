@@ -1,0 +1,755 @@
+{
+ "project": "C:\\repo\\debug-playground\\Console\\Console.csproj",
+ "framework": "net9.0",
+ "diagnostics": [
+  {
+   "id": "VSTHRD200",
+   "severity": "warning",
+   "message": "Use \"Async\" suffix in names of methods that return an awaitable type",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Analyzers.cs",
+   "startLine": 19,
+   "startColumn": 30,
+   "endLine": 19,
+   "endColumn": 34,
+   "category": "Style",
+   "helpLink": "https://microsoft.github.io/vs-threading/analyzers/VSTHRD200.html",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Rename to LoadAsync"
+   ]
+  },
+  {
+   "id": "VSTHRD103",
+   "severity": "warning",
+   "message": "ReadAllText synchronously blocks. Await ReadAllTextAsync instead.",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Analyzers.cs",
+   "startLine": 22,
+   "startColumn": 20,
+   "endLine": 22,
+   "endColumn": 31,
+   "category": "Usage",
+   "helpLink": "https://microsoft.github.io/vs-threading/analyzers/VSTHRD103.html",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Await ReadAllTextAsync instead"
+   ]
+  },
+  {
+   "id": "CA1822",
+   "severity": "warning",
+   "message": "Member 'Twice' does not access instance data and can be marked as static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Analyzers.cs",
+   "startLine": 25,
+   "startColumn": 15,
+   "endLine": 25,
+   "endColumn": 20,
+   "category": "Performance",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make static"
+   ]
+  },
+  {
+   "id": "CA1822",
+   "severity": "info",
+   "message": "Member 'Locals' does not access instance data and can be marked as static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Navigation.cs",
+   "startLine": 25,
+   "startColumn": 15,
+   "endLine": 25,
+   "endColumn": 21,
+   "category": "Performance",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make static"
+   ]
+  },
+  {
+   "id": "IDE0039",
+   "severity": "info",
+   "message": "Use local function",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Navigation.cs",
+   "startLine": 42,
+   "startColumn": 23,
+   "endLine": 42,
+   "endColumn": 30,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0039",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Use local function"
+   ]
+  },
+  {
+   "id": "IDE0039",
+   "severity": "info",
+   "message": "Use local function",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Navigation.cs",
+   "startLine": 43,
+   "startColumn": 28,
+   "endLine": 43,
+   "endColumn": 31,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0039",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Use local function"
+   ]
+  },
+  {
+   "id": "IDE0350",
+   "severity": "info",
+   "message": "Lambda expression can be simplified",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Navigation.cs",
+   "startLine": 43,
+   "startColumn": 34,
+   "endLine": 43,
+   "endColumn": 35,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0350",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Use implicitly typed lambda"
+   ]
+  },
+  {
+   "id": "IDE0062",
+   "severity": "info",
+   "message": "Local function can be made static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Navigation.cs",
+   "startLine": 47,
+   "startColumn": 12,
+   "endLine": 47,
+   "endColumn": 17,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0062",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make local function 'static'"
+   ]
+  },
+  {
+   "id": "CA1822",
+   "severity": "info",
+   "message": "Member 'Pick' does not access instance data and can be marked as static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Navigation.cs",
+   "startLine": 52,
+   "startColumn": 19,
+   "endLine": 52,
+   "endColumn": 23,
+   "category": "Performance",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make static"
+   ]
+  },
+  {
+   "id": "IDE0305",
+   "severity": "info",
+   "message": "Collection initialization can be simplified",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Navigation.cs",
+   "startLine": 63,
+   "startColumn": 36,
+   "endLine": 63,
+   "endColumn": 42,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0305",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Use collection expression"
+   ]
+  },
+  {
+   "id": "IDE0028",
+   "severity": "info",
+   "message": "Collection initialization can be simplified",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Navigation.cs",
+   "startLine": 63,
+   "startColumn": 47,
+   "endLine": 63,
+   "endColumn": 50,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0028",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Collection initialization can be simplified"
+   ]
+  },
+  {
+   "id": "IDE0090",
+   "severity": "info",
+   "message": "'new' expression can be simplified",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Navigation.cs",
+   "startLine": 75,
+   "startColumn": 22,
+   "endLine": 75,
+   "endColumn": 25,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0090",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Use 'new(...)'"
+   ]
+  },
+  {
+   "id": "CA1822",
+   "severity": "info",
+   "message": "Member 'Types' does not access instance data and can be marked as static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Navigation.cs",
+   "startLine": 87,
+   "startColumn": 15,
+   "endLine": 87,
+   "endColumn": 20,
+   "category": "Performance",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make static"
+   ]
+  },
+  {
+   "id": "IDE0090",
+   "severity": "info",
+   "message": "'new' expression can be simplified",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Navigation.cs",
+   "startLine": 89,
+   "startColumn": 29,
+   "endLine": 89,
+   "endColumn": 32,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0090",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Use 'new(...)'"
+   ]
+  },
+  {
+   "id": "CA1822",
+   "severity": "info",
+   "message": "Member 'Highlight' does not access instance data and can be marked as static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Navigation.cs",
+   "startLine": 98,
+   "startColumn": 15,
+   "endLine": 98,
+   "endColumn": 24,
+   "category": "Performance",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make static"
+   ]
+  },
+  {
+   "id": "IDE0059",
+   "severity": "info",
+   "message": "Unnecessary assignment of a value to 'total'",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Navigation.cs",
+   "startLine": 102,
+   "startColumn": 8,
+   "endLine": 102,
+   "endColumn": 13,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0059",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Remove redundant assignment"
+   ]
+  },
+  {
+   "id": "CA1822",
+   "severity": "info",
+   "message": "Member 'Touch' does not access instance data and can be marked as static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Navigation.cs",
+   "startLine": 111,
+   "startColumn": 20,
+   "endLine": 111,
+   "endColumn": 25,
+   "category": "Performance",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make static"
+   ]
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'value' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 14,
+   "startColumn": 35,
+   "endLine": 14,
+   "endColumn": 40,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'value' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 15,
+   "startColumn": 37,
+   "endLine": 15,
+   "endColumn": 42,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'value' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 16,
+   "startColumn": 37,
+   "endLine": 16,
+   "endColumn": 42,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'value' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 18,
+   "startColumn": 37,
+   "endLine": 18,
+   "endColumn": 42,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'value' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 19,
+   "startColumn": 37,
+   "endLine": 19,
+   "endColumn": 42,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'first' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 21,
+   "startColumn": 34,
+   "endLine": 21,
+   "endColumn": 39,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'first' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 22,
+   "startColumn": 34,
+   "endLine": 22,
+   "endColumn": 39,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'rest' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 22,
+   "startColumn": 54,
+   "endLine": 22,
+   "endColumn": 58,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'a' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 24,
+   "startColumn": 38,
+   "endLine": 24,
+   "endColumn": 39,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'a' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 25,
+   "startColumn": 38,
+   "endLine": 25,
+   "endColumn": 39,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'b' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 25,
+   "startColumn": 45,
+   "endLine": 25,
+   "endColumn": 46,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'c' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 25,
+   "startColumn": 59,
+   "endLine": 25,
+   "endColumn": 60,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'value' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 27,
+   "startColumn": 37,
+   "endLine": 27,
+   "endColumn": 42,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'value' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 28,
+   "startColumn": 38,
+   "endLine": 28,
+   "endColumn": 43,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'producer' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 30,
+   "startColumn": 39,
+   "endLine": 30,
+   "endColumn": 47,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'action' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 31,
+   "startColumn": 36,
+   "endLine": 31,
+   "endColumn": 42,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'converter' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 34,
+   "startColumn": 54,
+   "endLine": 34,
+   "endColumn": 63,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "IDE0060",
+   "severity": "info",
+   "message": "Remove unused parameter 'producer' if it is not part of a shipped public API",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Overloads.cs",
+   "startLine": 35,
+   "startColumn": 43,
+   "endLine": 35,
+   "endColumn": 51,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0060",
+   "source": "analyzer",
+   "fixable": false,
+   "fixes": []
+  },
+  {
+   "id": "CA1822",
+   "severity": "info",
+   "message": "Member 'Var' does not access instance data and can be marked as static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Usings.cs",
+   "startLine": 26,
+   "startColumn": 16,
+   "endLine": 26,
+   "endColumn": 19,
+   "category": "Performance",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make static"
+   ]
+  },
+  {
+   "id": "CA1822",
+   "severity": "info",
+   "message": "Member 'Name' does not access instance data and can be marked as static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Usings.cs",
+   "startLine": 31,
+   "startColumn": 18,
+   "endLine": 31,
+   "endColumn": 22,
+   "category": "Performance",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make static"
+   ]
+  },
+  {
+   "id": "CA1822",
+   "severity": "info",
+   "message": "Member 'Run' does not access instance data and can be marked as static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Usings.cs",
+   "startLine": 43,
+   "startColumn": 16,
+   "endLine": 43,
+   "endColumn": 19,
+   "category": "Performance",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make static"
+   ]
+  },
+  {
+   "id": "CA1822",
+   "severity": "info",
+   "message": "Member 'Postfix' does not access instance data and can be marked as static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Usings.cs",
+   "startLine": 51,
+   "startColumn": 16,
+   "endLine": 51,
+   "endColumn": 23,
+   "category": "Performance",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make static"
+   ]
+  },
+  {
+   "id": "CA1822",
+   "severity": "info",
+   "message": "Member 'ToDeclaration' does not access instance data and can be marked as static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Usings.cs",
+   "startLine": 58,
+   "startColumn": 16,
+   "endLine": 58,
+   "endColumn": 29,
+   "category": "Performance",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make static"
+   ]
+  },
+  {
+   "id": "IDE0063",
+   "severity": "info",
+   "message": "'using' statement can be simplified",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Usings.cs",
+   "startLine": 61,
+   "startColumn": 8,
+   "endLine": 61,
+   "endColumn": 13,
+   "category": "Style",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0063",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Use simple 'using' statement"
+   ]
+  },
+  {
+   "id": "CA1822",
+   "severity": "info",
+   "message": "Member 'ToStatement' does not access instance data and can be marked as static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Usings.cs",
+   "startLine": 69,
+   "startColumn": 16,
+   "endLine": 69,
+   "endColumn": 27,
+   "category": "Performance",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make static"
+   ]
+  },
+  {
+   "id": "CA1822",
+   "severity": "info",
+   "message": "Member 'Wrap' does not access instance data and can be marked as static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Usings.cs",
+   "startLine": 78,
+   "startColumn": 16,
+   "endLine": 78,
+   "endColumn": 20,
+   "category": "Performance",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make static"
+   ]
+  },
+  {
+   "id": "CA1822",
+   "severity": "info",
+   "message": "Member 'Errors' does not access instance data and can be marked as static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Usings.cs",
+   "startLine": 91,
+   "startColumn": 45,
+   "endLine": 91,
+   "endColumn": 51,
+   "category": "Performance",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make static"
+   ]
+  },
+  {
+   "id": "CA1822",
+   "severity": "info",
+   "message": "Member 'List' does not access instance data and can be marked as static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Usings.cs",
+   "startLine": 101,
+   "startColumn": 16,
+   "endLine": 101,
+   "endColumn": 20,
+   "category": "Performance",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make static"
+   ]
+  },
+  {
+   "id": "CA1822",
+   "severity": "info",
+   "message": "Member 'Encoding' does not access instance data and can be marked as static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Usings.cs",
+   "startLine": 109,
+   "startColumn": 20,
+   "endLine": 109,
+   "endColumn": 28,
+   "category": "Performance",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make static"
+   ]
+  }
+ ],
+ "analyzers": 414,
+ "milliseconds": 5663,
+ "workingSet": 338456576
+}

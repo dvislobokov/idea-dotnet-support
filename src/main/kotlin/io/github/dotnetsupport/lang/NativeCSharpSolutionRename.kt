@@ -91,8 +91,8 @@ object NativeCSharpSolutionRename {
                 }
             }
             CSharpSolutionSearch.processUsages(project, symbol, GlobalSearchScope.projectScope(project), session) { usage ->
-                // `base(…)` / `new()` call a constructor without its name: nothing to rename there
-                if (CSharpLeaves.isIdentifier(usage.leaf)) add(usage.leaf)
+                // `base(…)` / `new()` / `foreach` / a deconstruction call a member without its name: nothing to rename there
+                if (!usage.implicit && CSharpLeaves.isIdentifier(usage.leaf)) add(usage.leaf)
                 true
             }
         }

@@ -33,6 +33,30 @@ class AssemblyIndexTest {
     }
 
     @Test
+    fun `nullable attributes and oblivious types (format 3)`() {
+        val fixture = AssemblyIndex.read(fixture("IndexFixture"))
+        val guards = fixture.allTypes.single { it.name == "Guards" }.members.associateBy { it.name }
+        assertEquals(false, guards.getValue("IsBlank").nullability.parameter(0).notNullWhen)
+        assertEquals(false, guards.getValue("TryFind").nullability.parameter(1).maybeNullWhen)
+        assertTrue(guards.getValue("Check").nullability.parameter(0).notNull)
+        assertEquals(false, guards.getValue("Assert").nullability.parameter(0).doesNotReturnIf)
+        assertTrue(guards.getValue("Fail").nullability.doesNotReturn)
+        assertEquals("value", guards.getValue("Same").nullability.returns.notNullIfNotNull)
+        assertEquals(listOf("Name"), guards.getValue("Init").nullability.memberNotNull)
+        assertEquals(listOf("Name", "Text"), guards.getValue("InitBoth").nullability.memberNotNull)
+        assertEquals(mapOf(true to listOf("Name")), guards.getValue("HasName").nullability.memberNotNullWhen)
+        assertTrue(guards.getValue("Maybe").nullability.returns.maybeNull)
+        assertFalse("annotated code is not oblivious", guards.getValue("Text").nullability.returns.oblivious)
+        val oblivious = fixture.allTypes.single { it.name == "Oblivious" }.members.associateBy { it.name }
+        assertTrue(oblivious.getValue("Field").nullability.returns.oblivious)
+        assertTrue(oblivious.getValue("Make").nullability.returns.oblivious)
+        assertTrue(oblivious.getValue("Make").nullability.parameter(0).oblivious)
+        val runtime = AssemblyIndex.read(fixture("System.Runtime"))
+        val isNullOrEmpty = runtime.allTypes.single { it.fullName == "System.String" }.members.first { it.name == "IsNullOrEmpty" }
+        assertEquals(false, isNullOrEmpty.nullability.parameter(0).notNullWhen)
+    }
+
+    @Test
     fun `a static method by the beginning of its name`() {
         val found = console.members("WriteLi")
         assertTrue(found.isNotEmpty())

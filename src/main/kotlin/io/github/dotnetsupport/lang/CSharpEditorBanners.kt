@@ -73,7 +73,10 @@ class CSharpEditorBanners : EditorNotificationProvider {
             }
             val relative = projectFile.parent?.let { VfsUtilCore.getRelativePath(file, it, '/') }
             val content = if (relative != null && shown(Kind.EXCLUDED)) MsBuildEvaluation.getInstance(project).content(projectFile) else null
-            if (relative != null && content != null && content.isExcluded(relative)) {
+            // what the build wrote into obj/ (XAML, gRPC) is compiled though the project file does not list it: its own banner says so (0.1.82)
+            val builtByTargets = relative != null && relative.startsWith("obj/", ignoreCase = true) &&
+                io.github.dotnetsupport.codeanalysis.CodeAnalysisService.getInstance(project).buildGeneratedFile(file) != null
+            if (relative != null && content != null && !builtByTargets && content.isExcluded(relative)) {
                 return Banner(Kind.EXCLUDED, if (content.isEvaluated) "Not a part of ${projectFile.name}: the project file does not list it, it is not compiled."
                     else "Excluded from ${projectFile.name} by the project file (Compile Remove or DefaultItemExcludes): not compiled.", projectFile)
             }

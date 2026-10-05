@@ -10,6 +10,7 @@ import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFeatures
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpServerActions
+import io.github.dotnetsupport.lang.NativeCSharpIntroduceVariableIntention
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
 import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
@@ -116,8 +117,57 @@ class CSharpContextActionsTest : BasePlatformTestCase() {
             "void M(bool flag)\n{\n    int x;\n    if (flag)\n    {\n        x += 1;\n    }\n    else\n    {\n        x += 2;\n    }\n}",
             apply("void M(bool flag)\n{\n    int x;\n    x += (fl<caret>ag) ? 1 : 2;\n}", "Convert '?:' to 'if' statement"),
         )
-        // an argument is no statement of its own
-        assertFalse(available("void M(bool flag)\n{\n    System.Console.WriteLine(flag <caret>? 1 : 2);\n}", "Convert '?:' to 'if' statement"))
+        // the condition must stay where it runs
+        assertFalse(available("bool Check() => true;\nvoid M(bool flag)\n{\n    Console.WriteLine(flag || (Check() <caret>? true : false));\n}", "Convert '?:' to 'if' statement"))
+        assertFalse(available("void M(bool flag)\n{\n    Func<int> f = () => flag <caret>? 1 : 2;\n}", "Convert '?:' to 'if' statement"))
+    }
+
+    fun testConditionalInAnArgumentSplitsTheStatement() {
+        assertEquals(
+            "void M(bool flag)\n{\n    if (flag)\n    {\n        Console.WriteLine(\"on\" + 1);\n    }\n    else\n    {\n        Console.WriteLine(\"on\" + 2);\n    }\n}",
+            apply("void M(bool flag)\n{\n    Console.WriteLine(\"on\" + (flag <caret>? 1 : 2));\n}", "Convert '?:' to 'if' statement"),
+        )
+        assertEquals(
+            "int Twice(int x) => x * 2;\nint M(bool flag)\n{\n    if (flag)\n    {\n        return Twice(1);\n    }\n    else\n    {\n        return Twice(2);\n    }\n}",
+            apply("int Twice(int x) => x * 2;\nint M(bool flag)\n{\n    return Twice(flag <caret>? 1 : 2);\n}", "Convert '?:' to 'if' statement"),
+        )
+    }
+
+    fun testConditionalInALocalsValueDeclaresTheLocalFirst() {
+        assertEquals(
+            "int Twice(int x) => x * 2;\nvoid M(bool flag)\n{\n    int value;\n    if (flag)\n    {\n        value = Twice(1);\n    }\n    else\n    {\n        value = Twice(2);\n    }\n    Console.WriteLine(value);\n}",
+            apply("int Twice(int x) => x * 2;\nvoid M(bool flag)\n{\n    var value = Twice(flag <caret>? 1 : 2);\n    Console.WriteLine(value);\n}", "Convert '?:' to 'if' statement"),
+        )
+        assertEquals(
+            "void M(bool flag)\n{\n    string s;\n    if (flag)\n    {\n        s = \"a\";\n    }\n    else\n    {\n        s = \"b\";\n    }\n}",
+            apply("void M(bool flag)\n{\n    string s = flag <caret>? \"a\" : \"b\";\n}", "Convert '?:' to 'if' statement"),
+        )
+    }
+
+    fun testIntroduceVariableForAllOccurrences() {
+        NativeCSharpIntroduceVariableIntention.allOccurrencesForTests = true
+        try {
+            assertEquals(
+                "void M(List<int> numbers)\n{\n    var count = numbers.Count;\n    Console.WriteLine(count * 2);\n    if (count > 3)\n    {\n        Console.WriteLine(count);\n    }\n}",
+                apply("void M(List<int> numbers)\n{\n    Console.WriteLine(numbers.Count * 2);\n    if (numbers.Cou<caret>nt > 3)\n    {\n        Console.WriteLine(numbers.Count);\n    }\n}", "Introduce variable"),
+            )
+        } finally {
+            NativeCSharpIntroduceVariableIntention.allOccurrencesForTests = false
+        }
+        // one occurrence only by default (the chooser's first row)
+        assertEquals(
+            "void M(List<int> numbers)\n{\n    Console.WriteLine(numbers.Count * 2);\n    var count = numbers.Count;\n    Console.WriteLine(count);\n}",
+            apply("void M(List<int> numbers)\n{\n    Console.WriteLine(numbers.Count * 2);\n    Console.WriteLine(numbers.Cou<caret>nt);\n}", "Introduce variable"),
+        )
+    }
+
+    fun testOccurrencesOneVariableCannotServe() {
+        myFixture.configureByText("Context${files++}.cs", wrap("void M(List<int> numbers)\n{\n    Console.WriteLine(numbers.Count);\n    {\n        var other = numbers;\n        Console.WriteLine(other.Cou<caret>nt);\n        Console.WriteLine(other.Count);\n    }\n}", USINGS))
+        val file = myFixture.file as io.github.dotnetsupport.lang.CSharpFile
+        val extraction = io.github.dotnetsupport.lang.NativeCSharpContextEdits.extractionAt(file, null, myFixture.editor.caretModel.offset,
+            io.github.dotnetsupport.lang.semantic.CSharpSemanticSession(project).resolver(file))!!
+        // the two in the nested block: `other` is declared there
+        assertEquals(2, io.github.dotnetsupport.lang.NativeCSharpContextEdits.occurrences(extraction).size)
     }
 
     // ---- bodies
@@ -253,7 +303,8 @@ class CSharpContextActionsTest : BasePlatformTestCase() {
         assertTrue(CSharpFeatures.hasNative(CSharpFeature.CONTEXT_ACTIONS))
         assertEquals("built-in by default since the robot (0.1.72)", CSharpFeatureSource.NATIVE, CSharpFeature.CONTEXT_ACTIONS.defaultSource)
         for (title in listOf("Use expression body for method", "Use block body for property", "Convert to conditional expression", "Use explicit type",
-            "Use implicit type", "Introduce local for 'a + b'", "Inline temporary variable", "Replace conditional expression with statements")) {
+            "Use implicit type", "Introduce local for 'a + b'", "Inline temporary variable", "Replace conditional expression with statements",
+            "Introduce local for all occurrences of 'a + b'", "Introduce parameter for '1'", "Introduce parameter for all occurrences of '1'", "Introduce field for 'a'")) {
             assertTrue(title, NativeCSharpServerActions.shadowed(title, project))
         }
         assertFalse("a constant is not the native action's", NativeCSharpServerActions.shadowed("Introduce local constant for '1'", project))

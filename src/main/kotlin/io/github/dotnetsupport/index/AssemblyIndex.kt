@@ -172,6 +172,9 @@ class IndexedMember internal constructor(private val index: AssemblyIndex, val r
     /** The value of a constant or an enum member as C# writes it: `42`, `"text"`, `1.5F`. */
     val constantValue: String? get() = index.memberInt(row, 9).takeIf { it >= 0 }?.let(index::string)
 
+    /** What the nullable attributes (`[NotNullWhen]`, `[MaybeNull]`, `[MemberNotNull]`…) and oblivious types of its signature say (format 3). */
+    val nullability: IndexedNullability get() = index.memberInt(row, 10).takeIf { it >= 0 }?.let { IndexedNullability.parse(index.string(it)) } ?: IndexedNullability.NONE
+
     val thisParameter: IndexedParameter? get() = if (kind == IndexedMemberKind.EXTENSION_METHOD) parameters.firstOrNull() else null
 
     /** A type of a signature of this member as C# writes it, with the names of the type parameters of the type and of the method. */
@@ -412,13 +415,13 @@ class AssemblyIndex private constructor(private val buffer: ByteBuffer, docsFile
     }
 
     companion object {
-        const val FORMAT_VERSION = 2
+        const val FORMAT_VERSION = 3
         const val EXTENSION = "dnix"
         const val DEFAULT_LIMIT = 200
         private const val MAGIC = 0x58494E44 // "DNIX", little-endian
         private const val HEADER_SIZE = 96
         private const val TYPE_SIZE = 52
-        private const val MEMBER_SIZE = 40
+        private const val MEMBER_SIZE = 44
         private const val PARAMETER_SIZE = 16
         private const val GENERIC_SIZE = 12
         private const val NAME_SIZE = 8

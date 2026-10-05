@@ -18,7 +18,8 @@ import io.github.dotnetsupport.settings.DotNetSettings
 /**
  * The diagnostics of the Roslyn analyzers ([CodeAnalysisService.analyze]) in a C# file, with their code fixes on Alt+Enter. They are of
  * the text the helper read at the last save: a diagnostic whose line has been edited since is dropped until the next save, one whose line
- * has moved is followed ([BuildProblems.locate]). Errors and warnings as such, Info (Rider's suggestions) as weak warnings.
+ * has moved is followed ([BuildProblems.locate]). Errors and warnings as such; Info (Rider's suggestions) as weak warnings only with «Show
+ * suggestions», else as VS and Rider show them by default: nothing to see, the code fixes on Alt+Enter at the caret ([presentation]).
  */
 class AnalyzerAnnotator : ExternalAnnotator<AnalyzerAnnotator.Input, List<AnalyzerAnnotator.Located>>() {
     class Input(val file: AnalyzedFile, val document: Document, val suggestions: Boolean)
@@ -38,27 +39,35 @@ class AnalyzerAnnotator : ExternalAnnotator<AnalyzerAnnotator.Input, List<Analyz
 
     override fun apply(file: PsiFile, located: List<Located>, holder: AnnotationHolder) {
         val analyzed = file.project.getServiceIfCreated(CodeAnalysisService::class.java)?.analyzedFile(file.viewProvider.virtualFile.path) ?: return
+        val suggestions = DotNetSettings.getInstance().showAnalyzerSuggestions
         for (item in located) {
             if (item.range.endOffset > file.textLength) continue
             val d = item.diagnostic
-            val severity = when (d.severity) {
-                AnalyzerSeverity.ERROR -> HighlightSeverity.ERROR
-                AnalyzerSeverity.WARNING -> HighlightSeverity.WARNING
-                AnalyzerSeverity.INFO -> HighlightSeverity.WEAK_WARNING
-            }
-            val message = "${d.id}: ${d.message}"
-            var builder = holder.newAnnotation(severity, message).range(item.range).tooltip(tooltip(d))
+            val severity = presentation(d, suggestions) ?: continue
+            var builder = if (severity == HighlightSeverity.INFORMATION) holder.newSilentAnnotation(severity).range(item.range)
+                else holder.newAnnotation(severity, "${d.id}: ${d.message}").range(item.range).tooltip(tooltip(d))
             for (title in d.fixes) builder = builder.withFix(AnalyzerFixIntention(analyzed, d, title))
             builder.create()
         }
     }
 
     companion object {
+        /**
+         * How [d] shows in the editor: errors and warnings as such; an Info as a weak warning with «Show suggestions», else (the default,
+         * as VS and Rider) a silent annotation — not drawn, no tooltip, no mark on the scrollbar — only when it has code fixes to offer on
+         * Alt+Enter at the caret; null: not at all.
+         */
+        fun presentation(d: AnalyzerDiagnostic, suggestions: Boolean): HighlightSeverity? = when (d.severity) {
+            AnalyzerSeverity.ERROR -> HighlightSeverity.ERROR
+            AnalyzerSeverity.WARNING -> HighlightSeverity.WARNING
+            AnalyzerSeverity.INFO -> if (suggestions) HighlightSeverity.WEAK_WARNING else HighlightSeverity.INFORMATION.takeIf { d.fixes.isNotEmpty() }
+        }
+
         /** The diagnostics of [file] in the current [text]: on their lines (followed when moved), the rest of the code fixes kept. */
         fun locate(file: AnalyzedFile, text: CharSequence, suggestions: Boolean): List<Located> {
             val lines = text.lines()
             return file.diagnostics.mapIndexedNotNull { index, d ->
-                if (d.severity == AnalyzerSeverity.INFO && !suggestions) return@mapIndexedNotNull null
+                if (presentation(d, suggestions) == null) return@mapIndexedNotNull null
                 val problem = BuildProblem(d.startLine + 1, d.startColumn + 1, d.id, d.message, d.severity == AnalyzerSeverity.ERROR, file.lineTexts.getOrNull(index))
                 val line = BuildProblems.locate(problem, lines) ?: return@mapIndexedNotNull null
                 val shift = line - d.startLine

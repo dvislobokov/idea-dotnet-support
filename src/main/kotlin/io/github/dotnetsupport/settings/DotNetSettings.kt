@@ -69,8 +69,11 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
         // Settings | .NET | Analyzers and Generators (codeanalysis/CodeAnalysisService)
         var runSourceGenerators by property(true)
         var runAnalyzersOnSave by property(true)
-        /** Diagnostics of severity Info (Rider's suggestions) as weak warnings; off: only warnings and errors of the analyzers. */
-        var showAnalyzerSuggestions by property(true)
+        /**
+         * Diagnostics of severity Info (Rider's suggestions: IDE0290, CA1859…) as weak warnings. Off by default since 0.1.82, as VS and Rider
+         * show only warnings and errors loudly: an Info is then no annotation to see, only its code fixes on Alt+Enter at the caret.
+         */
+        var showAnalyzerSuggestions by property(false)
         var codeAnalysisIdleMinutes by property(DEFAULT_IDLE_MINUTES)
     }
 

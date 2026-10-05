@@ -160,6 +160,234 @@ class CSharpExtractMethodTest : BasePlatformTestCase() {
         assertNull("a loop with its break is fine", error("class S\n{\n    void M()\n    {\n        <selection>while (true)\n        {\n            break;\n        }</selection>\n    }\n}"))
     }
 
+    // ---- loops and jumps (0.1.81)
+
+    fun testAVariableWrittenInsideAndReadByTheNextIterationIsReturned() {
+        assertEquals(
+            """
+            class Sample
+            {
+                void M(int n)
+                {
+                    var last = -1;
+                    for (var i = 0; i < n; i++)
+                    {
+                        if (last >= 0) Console.WriteLine(last);
+                        last = NewMethod(i);
+                    }
+                }
+
+                private static int NewMethod(int i)
+                {
+                    int last;
+                    last = i * 2;
+                    return last;
+                }
+            }
+            """.trimIndent(),
+            extract("""
+                class Sample
+                {
+                    void M(int n)
+                    {
+                        var last = -1;
+                        for (var i = 0; i < n; i++)
+                        {
+                            if (last >= 0) Console.WriteLine(last);
+                            <selection>last = i * 2;</selection>
+                        }
+                    }
+                }
+            """),
+        )
+    }
+
+    fun testAVariableReadThenWrittenInALoopComesInAndGoesBack() {
+        val text = extract("""
+            class Sample
+            {
+                void M(int[] items)
+                {
+                    var sum = 0;
+                    foreach (var x in items)
+                    {
+                        <selection>Console.WriteLine(sum);
+                        sum += x;</selection>
+                    }
+                }
+            }
+        """)
+        assertTrue(text, text.contains("            sum = NewMethod(sum, x);"))
+        assertTrue(text, text.contains("    private static int NewMethod(int sum, int x)\n    {\n        Console.WriteLine(sum);\n        sum += x;\n        return sum;\n    }"))
+    }
+
+    fun testTheVariableOfAForLoopWrittenInTheBody() {
+        val text = extract("""
+            class Sample
+            {
+                void M(int n, int step)
+                {
+                    for (int i = 0; i < n; i++)
+                    {
+                        <selection>i += step;</selection>
+                    }
+                }
+            }
+        """)
+        assertTrue(text, text.contains("            i = NewMethod(i, step);"))
+        assertTrue(text, text.contains("private static int NewMethod(int i, int step)"))
+    }
+
+    fun testAVariableWrittenOnSomePathsKeepsItsValueOnTheOthers() {
+        val text = extract("""
+            class Sample
+            {
+                int M(int[] a, int t)
+                {
+                    var found = -1;
+                    for (var i = 0; i < a.Length; i++)
+                    {
+                        <selection>if (a[i] == t) found = i;</selection>
+                    }
+                    return found;
+                }
+            }
+        """)
+        assertTrue(text, text.contains("            found = NewMethod(a, i, t, found);"))
+        assertTrue(text, text.contains("    private static int NewMethod(int[] a, int i, int t, int found)\n    {\n        if (a[i] == t) found = i;\n        return found;\n    }"))
+    }
+
+    fun testAnAssignmentReadingTheVariableItselfReadsItFirst() {
+        val text = extract("""
+            class Sample
+            {
+                int M(int total)
+                {
+                    <selection>total = total * 2;</selection>
+                    return total;
+                }
+            }
+        """)
+        assertTrue(text, text.contains("        total = NewMethod(total);"))
+        assertTrue(text, text.contains("private static int NewMethod(int total)\n    {\n        total = total * 2;\n        return total;"))
+    }
+
+    fun testABreakOutOfTheSelectionMakesTheMethodTellTheCallToBreak() {
+        assertEquals(
+            """
+            class Sample
+            {
+                void M(int[] items)
+                {
+                    foreach (var x in items)
+                    {
+                        if (NewMethod(x)) break;
+                    }
+                }
+
+                private static bool NewMethod(int x)
+                {
+                    if (x < 0)
+                    {
+                        Console.WriteLine("negative");
+                        return true;
+                    }
+
+                    Console.WriteLine(x);
+                    return false;
+                }
+            }
+            """.trimIndent(),
+            extract("""
+                class Sample
+                {
+                    void M(int[] items)
+                    {
+                        foreach (var x in items)
+                        {
+                            <selection>if (x < 0)
+                            {
+                                Console.WriteLine("negative");
+                                break;
+                            }
+
+                            Console.WriteLine(x);</selection>
+                        }
+                    }
+                }
+            """),
+        )
+    }
+
+    fun testAContinueClosingTheSelectionStaysAtTheCall() {
+        val text = extract("""
+            class Sample
+            {
+                void M(int[] items)
+                {
+                    foreach (var x in items)
+                    {
+                        if (x > 0)
+                        {
+                            <selection>Console.WriteLine(x);
+                            continue;</selection>
+                        }
+                        Console.WriteLine(-x);
+                    }
+                }
+            }
+        """)
+        assertTrue(text, text.contains("                NewMethod(x);\n                continue;\n"))
+        assertTrue(text, text.contains("    private static void NewMethod(int x)\n    {\n        Console.WriteLine(x);\n    }"))
+    }
+
+    fun testAReturnOfAVoidMethod() {
+        val text = extract("""
+            class Sample
+            {
+                void M(string a)
+                {
+                    <selection>if (a == null) return;
+                    Console.WriteLine(a);</selection>
+                    Console.WriteLine("done");
+                }
+            }
+        """)
+        assertTrue(text, text.contains("        if (NewMethod(a)) return;\n        Console.WriteLine(\"done\");"))
+        assertTrue(text, text.contains("    private static bool NewMethod(string a)\n    {\n        if (a == null) return true;\n        Console.WriteLine(a);\n        return false;\n    }"))
+    }
+
+    fun testABreakWithAVariableReadInTheLoopGoesByRef() {
+        val text = extract("""
+            class Sample
+            {
+                int M(int[] items)
+                {
+                    var sum = 0;
+                    foreach (var x in items)
+                    {
+                        <selection>if (x < 0) break;
+                        sum += x;</selection>
+                    }
+                    return sum;
+                }
+            }
+        """)
+        assertTrue(text, text.contains("            if (NewMethod(x, ref sum)) break;"))
+        assertTrue(text, text.contains("private static bool NewMethod(int x, ref int sum)"))
+    }
+
+    fun testWhatLoopsAndJumpsRefuse() {
+        val both = "class S\n{\n    void M(int[] a)\n    {\n        foreach (var x in a)\n        {\n            <selection>if (x < 0) break;\n            if (x == 0) continue;\n            Console.WriteLine(x);</selection>\n        }\n    }\n}"
+        assertTrue(error(both).orEmpty(), error(both).orEmpty().contains("'break' and 'continue'"))
+        val assigned = "class S\n{\n    int M(int[] a)\n    {\n        int last;\n        foreach (var x in a)\n        {\n            <selection>if (x < 0) break;\n            last = x;</selection>\n        }\n        return 0;\n    }\n}"
+        assertNull("last is not used after: nothing to return", error(assigned))
+        val used = "class S\n{\n    int M(int[] a)\n    {\n        int last = 0;\n        foreach (var x in a)\n        {\n            <selection>if (x < 0) break;\n            var y = x * 2;</selection>\n            last = y;\n        }\n        return last;\n    }\n}"
+        assertNotNull(error(used))
+        assertNotNull(error("class S\n{\n    int M(int a)\n    {\n        <selection>if (a > 0) return 1;</selection>\n        return 0;\n    }\n}"))
+        assertNotNull("return of a lambda", error("class S\n{\n    void M()\n    {\n        System.Action f = () =>\n        {\n            <selection>if (true) return;\n            Console.WriteLine();</selection>\n        };\n    }\n}"))
+    }
+
     // ---- introduce field
 
     private fun introduceField(body: String): String {

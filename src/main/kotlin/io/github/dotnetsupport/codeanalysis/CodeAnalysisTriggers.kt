@@ -27,7 +27,7 @@ import io.github.dotnetsupport.view.resolveFile
 
 /** What a change of files on disk asks of [CodeAnalysisService]: pure, so it is tested without the VFS. */
 object CodeAnalysisEvents {
-    enum class Kind { SAVED_SOURCE, PROJECT_INPUT, SOURCE_SET, NONE }
+    enum class Kind { SAVED_SOURCE, PROJECT_INPUT, SOURCE_SET, GENERATOR_INPUT, NONE }
 
     private val PROJECT_INPUTS = setOf("csproj", "props", "targets", "editorconfig", "globalconfig", "json")
 
@@ -45,6 +45,8 @@ object CodeAnalysisEvents {
             // project.assets.json is what a restore changes; another JSON (appsettings) is no input of the compiler
             extension == "json" -> if (name.equals("project.assets.json", ignoreCase = true)) Kind.PROJECT_INPUT else Kind.NONE
             name.equals(".editorconfig", ignoreCase = true) || extension in PROJECT_INPUTS -> Kind.PROJECT_INPUT
+            // what the targets of the build make C# of (XAML, protobuf, resources): their outputs are stale until made again
+            extension in BuildGeneratedSources.INPUT_EXTENSIONS -> Kind.GENERATOR_INPUT
             else -> Kind.NONE
         }
     }
@@ -57,6 +59,7 @@ class CodeAnalysisFileListener(private val project: Project) : BulkFileListener 
         val service = project.getServiceIfCreated(CodeAnalysisService::class.java) ?: return
         val saved = ArrayList<VirtualFile>()
         val inputs = ArrayList<String>()
+        val generatorInputs = ArrayList<String>()
         for (event in events) {
             when (CodeAnalysisEvents.kind(event.path, event is VFileContentChangeEvent, event.isFromSave)) {
                 CodeAnalysisEvents.Kind.SAVED_SOURCE -> event.file?.takeIf { !service.isGenerated(it) }?.let { saved += it }
@@ -66,10 +69,12 @@ class CodeAnalysisFileListener(private val project: Project) : BulkFileListener 
                     if (event is VFileMoveEvent) inputs += event.oldPath
                     if (event is VFilePropertyChangeEvent && event.isRename) inputs += event.oldPath
                 }
+                CodeAnalysisEvents.Kind.GENERATOR_INPUT -> generatorInputs += event.path
                 CodeAnalysisEvents.Kind.NONE -> Unit
             }
         }
         if (inputs.isNotEmpty()) service.projectFilesChanged(inputs)
+        if (generatorInputs.isNotEmpty()) service.generatorInputsChanged(generatorInputs)
         val own = saved.filter { ProjectLocator.getInstance().guessProjectForFile(it) == project }
         if (own.isNotEmpty()) ApplicationManager.getApplication().executeOnPooledThread { own.forEach(service::saved) }
     }

@@ -61,6 +61,11 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
     // how many questions found their own question in progress: an answer that met a cycle is not kept when it is "nothing"
     private var cycles = 0
     internal val cycleCount: Int get() = cycles
+
+    /** An answer asked for while it is being computed elsewhere (a range variable of a query being translated): what depends on it is not kept. */
+    internal fun noteCycle() {
+        cycles++
+    }
     internal val expressions = CSharpExpressionTypes(this)
     internal val overloads = CSharpOverloads(this)
     private val levels = IdentityHashMap<PsiElement, List<Level>>()
@@ -137,8 +142,11 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         when {
             parent is CSharpAliasQualifiedName && name == parent.alias -> return null
             parent is CSharpAliasQualifiedName && name == parent.nameElement -> {
-                if (parent.alias?.identifier?.text != "global") return null
-                return inNamespace("", text, arity)
+                val alias = parent.alias?.identifier?.text ?: return null
+                if (alias == "global") return inNamespace("", text, arity)
+                // `using pb = global::Google.Protobuf;` … `pb::IMessage<T>`, as protoc writes: the alias must stand for a namespace
+                val target = levels(name).firstNotNullOfOrNull { level -> if (level.hasAlias(alias)) level.alias(alias) ?: return null else null }
+                return (target as? CSharpSymbol.Namespace)?.let { inNamespace(it.qualifiedName, text, arity) }
             }
             parent is CSharpQualifiedName && name == parent.right -> return qualifierOf(name)?.let { membersOf(it, text, arity, name) }
             parent is CSharpMemberAccessExpression && name == parent.nameElement -> return qualifierOf(name)?.let { member(it, text, arity, name) }
@@ -1077,8 +1085,8 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                         else -> null
                     }
                     is CSharpCatchDeclaration -> owner.type?.let(resolver::resolveType)
-                    is CSharpFromClause -> owner.type?.let(resolver::resolveType) ?: owner.expression?.let(resolver::typeOf)?.let(resolver::elementType)
-                    is CSharpLetClause, is CSharpJoinClause, is CSharpJoinIntoClause, is CSharpQueryContinuation -> resolver.expressions.rangeVariableType(owner)
+                    // a range variable: the parameter of the lambda its query is translated to (§12.20.3, CSharpQueryTranslation)
+                    is CSharpFromClause, is CSharpLetClause, is CSharpJoinClause, is CSharpJoinIntoClause, is CSharpQueryContinuation -> resolver.expressions.rangeVariableType(owner)
                     else -> null
                 }
                 LocalSymbolKind.PARAMETER -> (owner as? CSharpParameter)?.let { p -> p.type?.let(resolver::resolveType) ?: resolver.expressions.lambdaParameterType(p) }

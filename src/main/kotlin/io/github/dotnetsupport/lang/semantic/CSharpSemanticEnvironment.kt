@@ -93,19 +93,42 @@ object CSharpSemanticEnvironment {
         val project = file.project
         val msbuild = io.github.dotnetsupport.solution.SolutionService.getInstance(project).msBuildProject(projectFile)
         val sdk = msbuild.sdk.orEmpty()
-        if (sdk.contains("Razor", ignoreCase = true) || sdk.contains("Blazor", ignoreCase = true) || sdk.contains("WindowsDesktop", ignoreCase = true) || sdk.contains("Maui", ignoreCase = true)) return true
+        if (sdk.contains("Razor", ignoreCase = true) || sdk.contains("Blazor", ignoreCase = true) || sdk.contains("Maui", ignoreCase = true)) return true
+        // what the targets of the build make of XAML and protobuf (0.1.82): known when it is in obj/ and newer than its sources — from the
+        // design-time build of the helper or the last build — then WPF and gRPC projects get their errors like any other
+        val buildKnown = buildGeneratedKnown(file, projectFile)
+        if (sdk.contains("WindowsDesktop", ignoreCase = true) && !buildKnown) return true
         // the source generators of the packages ran in the helper (D4) and what they made is indexed: only the code generators of MSBuild
         // targets (gRPC) stay unknown
         val generatorsRan = generatedKnown(file)
-        if (msbuild.packages.any { reference -> (if (generatorsRan) MSBUILD_GENERATOR_PACKAGES else GENERATOR_PACKAGES).any { reference.name.contains(it, ignoreCase = true) } }) return true
+        val packages = (if (generatorsRan) MSBUILD_GENERATOR_PACKAGES else GENERATOR_PACKAGES).filter { !buildKnown || it !in BUILD_GENERATOR_PACKAGES }
+        if (msbuild.packages.any { reference -> packages.any { reference.name.contains(it, ignoreCase = true) } }) return true
         val directory = projectFile.parent ?: return false
         if (DumbService.isDumb(project)) return true
         val scope = com.intellij.psi.search.GlobalSearchScopesCore.directoryScope(project, directory, true)
-        return GENERATED_FROM.any { extension -> com.intellij.psi.search.FilenameIndex.getAllFilesByExt(project, extension, scope).isNotEmpty() }
+        return GENERATED_FROM.filter { !buildKnown || it !in BUILD_GENERATED_FROM }.any { extension -> com.intellij.psi.search.FilenameIndex.getAllFilesByExt(project, extension, scope).isNotEmpty() }
+    }
+
+    @Volatile private var testBuildKnown: Boolean? = null
+
+    /** The C# the build makes of the XAML and protobuf files of the project of [file] is in `obj/` and newer than they are (0.1.82). */
+    fun buildGeneratedKnown(file: PsiFile, projectFile: VirtualFile? = projectOf(file)): Boolean {
+        testBuildKnown?.let { return it }
+        projectFile ?: return false
+        return io.github.dotnetsupport.codeanalysis.CodeAnalysisService.getInstance(file.project).isBuildGeneratedFresh(projectFile)
+    }
+
+    @TestOnly
+    fun setBuildGeneratedKnownForTests(known: Boolean?) {
+        testBuildKnown = known
     }
 
     /** Files the build makes C# of: Razor components and pages, XAML, protobuf. */
     private val GENERATED_FROM = listOf("razor", "cshtml", "xaml", "axaml", "proto")
+
+    /** Of [GENERATED_FROM], what targets of the build make in obj/ (WPF's XAML, Grpc.Tools): known when [buildGeneratedKnown]. */
+    private val BUILD_GENERATED_FROM = setOf("xaml", "proto")
+    private val BUILD_GENERATOR_PACKAGES = setOf("Grpc.Tools")
 
     /** Packages known to generate types or members (`Grpc.Tools`, `*.SourceGenerator(s)`, `CommunityToolkit.Mvvm`, `Refit`, `Mapperly`...). */
     private val GENERATOR_PACKAGES = listOf("Generator", "Grpc.Tools", "CommunityToolkit.Mvvm", "Refit", "Mapperly", "StronglyTypedId", "Vogen", "Avalonia", "Uno.")
@@ -122,7 +145,12 @@ object CSharpSemanticEnvironment {
     fun generatedKnown(file: PsiFile): Boolean {
         testGeneratedKnown?.let { return it }
         val projectFile = projectOf(file) ?: return false
-        return file.project.getServiceIfCreated(io.github.dotnetsupport.codeanalysis.CodeAnalysisService::class.java)?.isGeneratedFresh(projectFile) ?: false
+        val service = file.project.getServiceIfCreated(io.github.dotnetsupport.codeanalysis.CodeAnalysisService::class.java)
+        if (service?.isGeneratedFresh(projectFile) == true) return true
+        // a project of the old format (WPF of .NET Framework) has no source generators of packages, only what its build makes of XAML in
+        // obj/ (0.1.82): fresh, that is all a partial type of it gets from elsewhere
+        val legacy = io.github.dotnetsupport.solution.SolutionService.getInstance(file.project).msBuildProject(projectFile).sdk == null
+        return legacy && buildGeneratedKnown(file, projectFile) && io.github.dotnetsupport.codeanalysis.CodeAnalysisService.getInstance(file.project).buildGenerated(projectFile).files.isNotEmpty()
     }
 
     @TestOnly

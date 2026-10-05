@@ -61,26 +61,27 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         if (file.name.endsWith(".csx")) return emptyList()
         if (!CSharpSemanticEnvironment.referencesComplete(file) || resolver.libraryType(OBJECT) == null) return emptyList()
         if (unit.externs.isNotEmpty()) return emptyList()
+        warnings.generatorsKnown = generatorsKnown
         PsiTreeUtil.processElements(unit) { element ->
             ProgressManager.checkCanceled()
             if (element is CSharpElement && !isQuiet(element)) {
                 when (element) {
                     is CSharpSimpleName -> { checkName(element); checkInstanceFromStatic(element) }
-                    is CSharpInvocationExpression -> { checkArguments(element); warnings.checkNullableArguments(element) }
-                    is CSharpVariableDeclaration -> { checkDeclaration(element); warnings.checkNullableDeclaration(element) }
-                    is CSharpAssignmentExpression -> { checkAssignment(element); warnings.checkNullableAssignment(element) }
+                    is CSharpInvocationExpression -> checkArguments(element)
+                    is CSharpVariableDeclaration -> checkDeclaration(element)
+                    is CSharpAssignmentExpression -> checkAssignment(element)
                     is CSharpReturnStatement -> checkReturn(element)
                     is CSharpArrowExpressionClause -> checkArrow(element)
                     is CSharpMethodDeclaration -> checkPaths(element)
                     is CSharpAccessorDeclaration -> checkPaths(element)
                     is CSharpExpressionStatement -> warnings.checkNotAwaited(element)
-                    is CSharpCastExpression -> warnings.checkNullableCast(element)
                     is CSharpTypeDeclaration -> warnings.checkUninitialized(element)
                     is CSharpBlock -> if (isFunctionBody(element)) warnings.checkUnreachable(element)
                 }
             }
             true
         }
+        CSharpNullableFlow(resolver, ::isQuiet, generatorsKnown) { code, message, range -> warnings.warn(code, message, range) }.run(unit)
         if (broken.isEmpty()) warnings.checkUnusedLocals()
         if (broken.isEmpty()) CSharpUnusedUsings(resolver).find(unit).let(found::addAll)
         return found.distinctBy { Triple(it.code, it.range, it.message) }
@@ -259,7 +260,10 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
 
     private fun libraryKnown(type: IndexedType, depth: Int): Boolean = known.getOrPut(type) {
         if (depth > MAX_DEPTH) return@getOrPut false
-        (type.interfaces + listOfNotNull(type.baseType)).all { reference -> resolver.assemblies.resolve(reference)?.let { libraryKnown(it, depth + 1) } == true }
+        // an interface the index does not have, with every reference of the project indexed, is a non-public one of the assembly of the type
+        // (WPF's IAddChildInternal, IHaveResources, DUCE.IResource): nothing of it can be named or reached from outside, so it hides nothing
+        val bases = listOfNotNull(type.baseType) + type.interfaces.filter { resolver.assemblies.resolve(it) != null }
+        bases.all { reference -> resolver.assemblies.resolve(reference)?.let { libraryKnown(it, depth + 1) } == true }
     }
 
     /** Whether [type] has a member or a nested type named [text] of any arity, inherited ones included (`object`'s for an interface). */
@@ -567,22 +571,6 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
     private fun checkReturn(statement: CSharpReturnStatement) {
         val expression = statement.expression ?: return
         returnTarget(statement)?.let { checkConversion(expression, it) }
-        returningFunction(statement)?.let { warnings.checkNullableReturn(expression, it) }
-    }
-
-    /** The method, local function or property (of a getter) a `return` of [statement] leaves; null in a lambda. */
-    private fun returningFunction(statement: PsiElement): PsiElement? {
-        var at: PsiElement? = statement.parent
-        while (at != null && at !is CSharpFile) {
-            when (at) {
-                is CSharpAnonymousFunctionExpression -> return null
-                is CSharpMethodDeclaration, is CSharpLocalFunctionStatement -> return at
-                is CSharpAccessorDeclaration -> return if (at.keyword?.text == "get") at.parent?.parent as? CSharpPropertyDeclaration else null
-                is CSharpMemberDeclaration -> return null
-            }
-            at = at.parent
-        }
-        return null
     }
 
     /** The body of a method, accessor, constructor, operator, local function or lambda: where reachability starts. */
@@ -601,10 +589,6 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
             else -> null
         } ?: return
         checkConversion(expression, target)
-        when (val owner = arrow.parent) {
-            is CSharpMethodDeclaration, is CSharpLocalFunctionStatement, is CSharpPropertyDeclaration -> warnings.checkNullableReturn(expression, owner)
-            is CSharpAccessorDeclaration -> (owner.parent?.parent as? CSharpPropertyDeclaration)?.takeIf { owner.keyword?.text == "get" }?.let { warnings.checkNullableReturn(expression, it) }
-        }
     }
 
     /** The type a `return` of [statement] must convert to: of the method, local function or getter around it; null in a lambda, an iterator, `async` without `Task<T>`. */

@@ -197,3 +197,46 @@ internal class NotSeen
     {
     }
 }
+
+/// <summary>The nullable attributes the flow analysis reads from the index (format 3).</summary>
+public class Guards
+{
+    public string? Name;
+    public string Text = "";
+
+    public static bool IsBlank([System.Diagnostics.CodeAnalysis.NotNullWhen(false)] string? value) => value == null;
+
+    public bool TryFind(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out string found) { found = key; return true; }
+
+    public static void Check([System.Diagnostics.CodeAnalysis.NotNull] object? value) => _ = value ?? throw new ArgumentNullException();
+
+    public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIf(false)] bool condition) { }
+
+    [System.Diagnostics.CodeAnalysis.DoesNotReturn]
+    public static void Fail() => throw new InvalidOperationException();
+
+    [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull(nameof(value))]
+    public static string? Same(string? value) => value;
+
+    [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Name))]
+    public void Init() => Name = "";
+
+    [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(Name), nameof(Text))]
+    public void InitBoth() => Name = "";
+
+    [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, nameof(Name))]
+    public bool HasName => Name != null;
+
+    [System.Diagnostics.CodeAnalysis.MaybeNull]
+    public string Maybe => "";
+}
+
+#nullable disable
+/// <summary>Code without nullable annotations: its reference types are oblivious.</summary>
+public class Oblivious
+{
+    public string Field;
+
+    public static string Make(string value) => value;
+}
+#nullable restore

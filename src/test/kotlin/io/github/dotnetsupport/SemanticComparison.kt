@@ -174,7 +174,7 @@ class SemanticComparison(private val examplesPerCategory: Int = 10) {
 
         /** The codes the native semantic checks report (task C4c): their misses are listed. */
         val NATIVE_CODES = setOf("CS0103", "CS0246", "CS0234", "CS1061", "CS0117", "CS1501", "CS7036", "CS1503", "CS0029", "CS0266", "CS0161", "CS0120", "CS8019", "CS8933",
-            "CS0162", "CS0168", "CS0219", "CS4014", "CS8600", "CS8603", "CS8618", "CS8625")
+            "CS0162", "CS0168", "CS0219", "CS4014", "CS8600", "CS8601", "CS8602", "CS8603", "CS8604", "CS8618", "CS8625")
 
         val NAME_CATEGORIES = listOf(
             "locals", "parameters", "local functions", "labels", "type parameters",
