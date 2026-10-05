@@ -1,0 +1,298 @@
+
+=================== 1 '(' after method name
+after [(]:
+  |         Place(<caret>)
+result:
+  |         // P:c1
+  |         Place(<caret>)
+  |         // P:c2
+  | 
+  |         // P:c3
+
+
+=================== 2 '"' opens a pair
+after ["]:
+  |         var s = "<caret>"
+after [a]:
+  |         var s = "a<caret>"
+after [b]:
+  |         var s = "ab<caret>"
+after ["]:
+  |         var s = "ab"<caret>
+after [;]:
+  |         var s = "ab";<caret>
+result:
+  |         // P:c1
+  |         var s = "ab";<caret>
+  |         // P:c2
+  | 
+  |         // P:c3
+
+
+=================== 3 '[' and '{' pairs
+after [[]:
+  |         int[] a = [<caret>]
+after [1]:
+  |         int[] a = [1<caret>]
+after [,]:
+  |         int[] a = [1,<caret>]
+after [ ]:
+  |         int[] a = [1, <caret>]
+after [2]:
+  |         int[] a = [1, 2<caret>]
+after []]:
+  |         int[] a = [1, 2]<caret>
+after [;]:
+  |         int[] a = [1, 2];<caret>
+result:
+  |         // P:c1
+  |         int[] a = [1, 2];<caret>
+  |         // P:c2
+  | 
+  |         // P:c3
+
+
+=================== 4 interpolation braces
+after [$]:
+  |         var s = $"<caret>"
+after ["]:
+  |         var s = $"<caret>"
+after [x]:
+  |         var s = $"x<caret>"
+after [{]:
+  |         var s = $"x{<caret>}"
+after [n]:
+  |         var s = $"x{n<caret>}"
+after [a]:
+  |         var s = $"x{na<caret>}"
+after [m]:
+  |         var s = $"x{nam<caret>}"
+after [e]:
+  |         var s = $"x{name<caret>}"
+after [}]:
+  |         var s = $"x{name}<caret>"
+after ["]:
+  |         var s = $"x{name}"<caret>
+after [;]:
+  |         var s = $"x{name}";<caret>
+result:
+  |         // P:c1
+  |         var s = $"x{name}";<caret>
+  |         // P:c2
+  | 
+  |         // P:c3
+
+
+=================== 5 generic '<' after type
+after [<]:
+  |         var l = new List<<caret>
+after [i]:
+  |         var l = new List<i<caret>
+after [n]:
+  |         var l = new List<in<caret>
+after [t]:
+  |         var l = new List<int<caret>
+after [>]:
+  |         var l = new List<int><caret>
+after [(]:
+  |         var l = new List<int>(<caret>)
+after [)]:
+  |         var l = new List<int>()<caret>
+after [;]:
+  |         var l = new List<int>();<caret>
+result:
+  |         // P:c1
+  |         var l = new List<int>();<caret>
+  |         // P:c2
+  | 
+  |         // P:c3
+
+
+=================== 6 overtype ')' and ';' at line end
+after [)]:
+  |         Place(1, "a")<caret>
+after [;]:
+  |         Place(1, "a");<caret>
+result:
+  |         // P:c1
+  |         Place(1, "a");<caret>
+  |         // P:c2
+  | 
+  |         // P:c3
+
+
+=================== 7 Enter between braces
+result:
+  |         // P:c1
+  |         if (name == null)
+  |         {
+  |             <caret>
+  |         }
+  |         // P:c2
+  | 
+  |         // P:c3
+
+
+=================== 8 '{' then Enter after method header (member level)
+result:
+  |     // P:m1
+  |     public void NewOne()
+  |     {
+  |         <caret>
+  |     }
+  | }
+  | 
+  | public class Circle : ShapeBase
+
+
+=================== 9 /// doc template above method
+result:
+  |     // P:m1
+  | ///<caret>
+  | }
+  | 
+  | public class Circle : ShapeBase
+  | {
+  |     // P:o1
+  | 
+  | }
+  | 
+  | // P:t1
+  | 
+
+
+=================== 10 Enter inside doc comment
+result:
+  |     /// <summary>Highlighting samples.</summary>
+  |     /// <remarks>first
+  |     /// <caret>public async Task<string> Highlights(string input, int index, Order order)
+  |     {
+  |         var unused = 42;
+  |         var local = input.Trim();
+  |         _mutable += local;
+  |         _created++;
+
+
+=================== 11 Ctrl+Shift+Enter: complete statement (call)
+result:
+  |         // P:c1
+  |         Place(1, "a"
+  |             <caret>
+  |         // P:c2
+  | 
+  |         // P:c3
+
+
+=================== 12 Ctrl+Shift+Enter: complete if
+result:
+  |         // P:c1
+  |         if (name == null
+  |             <caret>
+  |         // P:c2
+  | 
+  |         // P:c3
+  |     }
+  | 
+
+
+=================== 13 ';' inside call moves out?
+result:
+  |         // P:c1
+  |         Place(1, "a");<caret>
+  |         // P:c2
+  | 
+  |         // P:c3
+  |     }
+
+
+=================== 14 Enter in a string literal splits it
+result:
+  |         // P:c1
+  |         var s = "hello
+  |             <caret>
+  |         // P:c2
+  | 
+  |         // P:c3
+
+
+=================== 15 '.' after method group auto-inserts ()?
+result:
+  |         // P:c1
+  |         var c = name.Trim.<caret>
+  |         // P:c2
+  | 
+  |         // P:c3
+  |     }
+
+
+=================== 16 typing '}' reformats block
+result:
+  |         // P:c1
+  |         if (true)
+  |         {
+  |             Place(1, "a");
+  |         }<caret>
+  |         // P:c2
+  | 
+  |         // P:c3
+
+
+=================== 17 Backspace removes pair
+result:
+  |         // P:c1
+  |         var s = <caret>
+  |         // P:c2
+  | 
+  |         // P:c3
+  |     }
+
+
+=================== 18 '=>' lambda
+result:
+  |         // P:c1
+  |         Func<int, int> f = x =><caret>
+  |         // P:c2
+  | 
+  |         // P:c3
+  |     }
+
+
+=================== 19 auto-popup on letter (identifier start)
+result (lookup open, 390 items):
+  |         // P:c1
+  |         na<caret>
+  |         // P:c2
+  | 
+  |         // P:c3
+  |     }
+
+
+=================== 20 switch: Enter after 'case X:'
+result:
+  |         // P:c1
+  |         switch (status) { case OrderStatus.New:
+  |             <caret>
+  |         // P:c2
+  | 
+  |         // P:c3
+  |     }
+  | 
+
+
+=================== 9b /// above a method (Place)
+after [/]:
+  |     /<caret>
+after [/]:
+  |     //<caret>
+after [/]:
+  |     /// <summary>
+result:
+  |     public int Count => _orders.Count;
+  |     /// <summary>
+  |     /// <caret>
+  |     /// </summary>
+  |     /// <param name="quantity"></param>
+  |     /// <param name="customer"></param>
+  |     /// <param name="express"></param>
+  |     /// <param name="status"></param>
+

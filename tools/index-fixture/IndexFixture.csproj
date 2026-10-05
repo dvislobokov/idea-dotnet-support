@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    An assembly for the tests of the index of assemblies (AssemblyIndexTest): what the reference packs do not have in a few small
+    files — records, init and required, nullable annotations, tuples, constraints, inheritance of generics, protected members,
+    defaults, operators, events, indexers, extension methods of every kind. Not a part of the plugin; the command that makes the
+    fixtures `src/test/resources/index/IndexFixture.dnix` / `.dnxd` from it is in indexer/README.md.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS0067;CS0649;CS0169</NoWarn>
+    <Deterministic>true</Deterministic>
+    <DebugType>none</DebugType>
+    <PathMap>$(MSBuildProjectDirectory)=/fixture</PathMap>
+  </PropertyGroup>
+</Project>

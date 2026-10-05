@@ -8,6 +8,7 @@ plugins {
     id("org.jetbrains.intellij.platform") version "2.19.0"
     // Applied by the csharp-psi modules (csharp-psi-core, csharp-psi-semantic, csharp-psi-ide); versions in gradle/libs.versions.toml.
     alias(libs.plugins.intellij.platform.module) apply false
+    alias(libs.plugins.intellij.platform.grammarkit) apply false
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -31,7 +32,7 @@ dependencies {
         testFramework(TestFrameworkType.Platform)
         // JSON (a plugin since 2024.3): only the content module io.github.dotnetsupport.jsonschema needs it, see its descriptor
         bundledPlugin("com.intellij.modules.json")
-        // The native C# PSI (../csharp-psi; CSHARP_PSI_MIGRATION.md, step 1), empty until step 7: composed, so the classes go into the main
+        // The native C# PSI (CSHARP_PSI_MIGRATION.md; the parser in csharp-psi-core, -semantic and -ide still empty): composed, so the classes go into the main
         // jar, which the main descriptor loads, and their META-INF/csharp-psi-*.xml are xi:included by plugin.xml. The content module
         // io.github.dotnetsupport.roslyn sees these classes (its loader has the main one as a parent), never the other way round.
         pluginComposedModule(implementation(project(":csharp-psi-core")))
@@ -93,6 +94,80 @@ val runIdeForUiTests by intellijPlatformTesting.runIde.registering {
         robotServerPlugin()
     }
 
+}
+
+// `./gradlew formatOracle` (tools/csharp-psi/format-oracle.sh): the native formatter of C# (CSharpFeature.FORMATTING) against
+// `dotnet format whitespace` on the playground and a sample of the corpus. It runs `dotnet`, so it is never part of `test`.
+// Options: -PformatOracle.<name>=<value>, read by CSharpFormatOracle.
+val formatOraclePattern = "*FormatOracle"
+tasks.test {
+    filter { excludeTestsMatching(formatOraclePattern) }
+}
+intellijPlatformTesting.testIde.register("formatOracle") {
+    val localIde = providers.gradleProperty("localIdePath").orNull?.let(::file)?.takeIf { it.exists() }
+    if (localIde != null) localPath = localIde
+    else {
+        type = org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdea
+        version = providers.gradleProperty("platformVersion")
+    }
+    task {
+        description = "Compares the native C# formatter with dotnet format whitespace (tools/csharp-psi/format-oracle.sh)."
+        group = "verification"
+        testClassesDirs = sourceSets.test.get().output.classesDirs
+        classpath += tasks.test.get().classpath
+        useJUnit()
+        isScanForTestClasses = false
+        include("**/*FormatOracle.class")
+        filter {
+            includeTestsMatching(formatOraclePattern)
+            isFailOnNoMatchingTests = false
+        }
+        mustRunAfter("prepareTestSandbox")
+        outputs.upToDateWhen { false }
+        maxHeapSize = "3g"
+        systemProperty("formatOracle.repoRoot", layout.projectDirectory.asFile.absolutePath)
+        providers.gradlePropertiesPrefixedBy("formatOracle.").get().forEach { (key, value) -> systemProperty(key, value) }
+        testLogging {
+            showStandardStreams = true
+        }
+    }
+}
+
+// `./gradlew semanticGate` (CSHARP_PSI_MIGRATION.md, step 11, task C0): the resolver of C# names and types against Roslyn
+// (`roslyndump semantics`) on projects of the playground and libraries of the corpus, per layer and category. Runs `dotnet`: never part
+// of `test`. Options: -PsemanticGate.<name>=<value>, read by CSharpSemanticGate.
+val semanticGatePattern = "*SemanticGate"
+tasks.test {
+    filter { excludeTestsMatching(semanticGatePattern) }
+}
+intellijPlatformTesting.testIde.register("semanticGate") {
+    val localIde = providers.gradleProperty("localIdePath").orNull?.let(::file)?.takeIf { it.exists() }
+    if (localIde != null) localPath = localIde
+    else {
+        type = org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdea
+        version = providers.gradleProperty("platformVersion")
+    }
+    task {
+        description = "Compares the resolver of C# names and types with Roslyn (roslyndump semantics), per layer and category."
+        group = "verification"
+        testClassesDirs = sourceSets.test.get().output.classesDirs
+        classpath += tasks.test.get().classpath
+        useJUnit()
+        isScanForTestClasses = false
+        include("**/*SemanticGate.class")
+        filter {
+            includeTestsMatching(semanticGatePattern)
+            isFailOnNoMatchingTests = false
+        }
+        mustRunAfter("prepareTestSandbox")
+        outputs.upToDateWhen { false }
+        maxHeapSize = "3g"
+        systemProperty("semanticGate.repoRoot", layout.projectDirectory.asFile.absolutePath)
+        providers.gradlePropertiesPrefixedBy("semanticGate.").get().forEach { (key, value) -> systemProperty(key, value) }
+        testLogging {
+            showStandardStreams = true
+        }
+    }
 }
 
 // The page about the plugin has one source, docs/demo.html (opened from the repository for demos); the plugin carries it as

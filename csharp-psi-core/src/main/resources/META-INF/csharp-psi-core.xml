@@ -1,4 +1,17 @@
-<!-- Extensions contributed by csharp-psi-core (../csharp-psi, CSHARP_PSI_MIGRATION.md). Included into META-INF/plugin.xml with xi:include.
-     Empty until step 7 brings the code: an extension is added here together with its class. -->
+<!-- Extensions contributed by csharp-psi-core (CSHARP_PSI_MIGRATION.md). Included into META-INF/plugin.xml with xi:include.
+     The file type and the parser definition of C# are the host's (io.github.dotnetsupport.lang.CSharpFileType, CSharpParserDefinition,
+     which switches between the heuristic tree and this module's): the module registers neither. Its own tests register them in
+     src/test/resources/META-INF/plugin.xml.
+     Stubs (step 8): registered by language and by element type. The platform finds them through the file element type of the registered
+     parser definition, so in the plugin a C# file has stubs only while the host's switch gives the native tree. -->
 <idea-plugin>
+  <extensions defaultExtensionNs="com.intellij">
+    <languageStubDefinition language="C#" implementationClass="io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubDefinition"/>
+    <stubElementRegistryExtension implementation="io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubRegistryExtension"/>
+    <stubIndex implementation="io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpTypeNameIndex"/>
+    <stubIndex implementation="io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpMemberNameIndex"/>
+    <stubIndex implementation="io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpExtensionMethodIndex"/>
+    <stubIndex implementation="io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpAttributeIndex"/>
+    <stubIndex implementation="io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpNamespaceIndex"/>
+  </extensions>
 </idea-plugin>

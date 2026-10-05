@@ -1,0 +1,416 @@
+Appearance & Behavior  {configurable.group.appearance}  SortedConfigurableGroup
+  Appearance  {preferences.lookFeel}  AppearanceConfigurable
+  Menus and Toolbars  {preferences.customizations}  CustomizationConfigurable
+  System Settings  {preferences.general}  GeneralSettingsConfigurable
+    Data Sharing  {consents}  ConsentConfigurable
+    Date Formats  {ide.date.format}  DateTimeFormatConfigurable
+    HTTP Proxy  {http.proxy}  HttpProxyConfigurable
+    Language and Region  {preferences.language.and.region}  LanguageAndRegionConfigurable
+    Passwords  {application.passwordSafe}  PasswordSafeConfigurable
+    Server Certificates  {http.certificates}  CertificateConfigurable
+    Trusted Hosts  {gateway.deploy.ssh.trusted.hosts}  GatewayTrustedHostsConfigurable
+    Updates  {preferences.updates}  UpdateSettingsConfigurable
+  File Colors  {reference.settings.ide.settings.file-colors}  FileColorsConfigurable
+  Scopes  {project.scopes}  ScopeChooserConfigurable
+  Notifications  {reference.settings.ide.settings.notifications}  NotificationsConfigurable
+  Data Editor and Viewer  {database.data.views.appearance}  DataGridAppearanceConfigurable
+  Quick Lists  {reference.idesettings.quicklists}  QuickListsPanel
+  Required Plugins  {preferences.externalDependencies}  ExternalDependenciesConfigurable
+  Trusted Locations  {trusted.hosts}  TrustedHostsConfigurable
+  Path Variables  {preferences.pathVariables}  PathMacroConfigurable
+  Presentation Assistant  {com.intellij.platform.ide.impl.presentationAssistant.PresentationAssistantConfigurable}  PresentationAssistantConfigurable
+Keymap  {preferences.keymap}  KeymapPanel
+Editor  {configurable.group.editor}  SortedConfigurableGroup
+  General  {preferences.editor}  EditorOptionsPanel
+    Auto Import  {editor.preferences.import}  RiderAutoImportOptionsConfigurable
+    Appearance  {editor.preferences.appearance}  EditorAppearanceConfigurable
+    Breadcrumbs  {editor.breadcrumbs}  BreadcrumbsConfigurable
+    Code Completion  {editor.preferences.completion}  CompletionConfigurable
+      Popup  {editor.preferences.completion.popup}  CodeCompletionConfigurable
+      Inline  {editor.preferences.completion.inline}  InlineCompletionConfigurable
+    Code Folding  {editor.preferences.folding}  CodeFoldingConfigurable
+    Console  {Console}  ConsoleConfigurable
+    Editor Tabs  {editor.preferences.tabs}  EditorTabsConfigurable
+    Gutter Icons  {editor.preferences.gutterIcons}  GutterIconsConfigurable
+    Postfix Completion  {reference.settingsdialog.IDE.editor.postfix.templates}  PostfixTemplatesConfigurable
+    Sticky Lines  {editor.stickyLines}  StickyLinesConfigurable
+    Typing Assistance  {editor.preferences.smartKeys_rider}  RiderEditorSmartKeysConfigurable
+      HTML/CSS  {editor.preferences.webOptions}  WebSmartKeysConfigurable
+      JavaScript  {editor.preferences.jsOptions}  JSSmartKeysConfigurable
+      JSON  {editor.preferences.jsonOptions}  JsonSmartKeysConfigurable
+      Markdown  {Settings.Markdown.SmartKeys}  MarkdownSmartKeysConfigurable
+      React  {editor.preferences.reactOptions}  ReactSmartKeysConfigurable
+      SQL  {editor.preferences.sqlOptions}  SqlEditorOptionsProvider
+      YAML  {editor.preferences.yamlOptions}  YAMLSmartOptionsProvider
+  Code Editing  {preferences.editor.code.editing}  EditorCodeEditingConfigurable
+  Font  {editor.preferences.fonts.default}  AppEditorFontConfigurable
+  Color Scheme  {reference.settingsdialog.IDE.editor.colors}  ColorAndFontOptions
+    General  {reference.settingsdialog.IDE.editor.colors.com.jetbrains.rider.ideaInterop.settings.colors.RiderGeneralColorSettingsPage}  RiderGeneralColorSettingsPage
+    Language Defaults  {reference.settingsdialog.IDE.editor.colors.com.jetbrains.rider.ideaInterop.settings.colors.RiderDefaultLanguageColorSettingsPage}  RiderDefaultLanguageColorSettingsPage
+    Color Scheme Font  {reference.settingsdialog.IDE.editor.colors.ColorSchemeFont}  ColorAndFontOptions$FontConfigurableFactory
+    Console Font  {reference.settingsdialog.IDE.editor.colors.ConsoleFont}  ColorAndFontOptions$ConsoleFontConfigurableFactory
+    Code Review  {reference.settingsdialog.IDE.editor.colors.com.intellij.collaboration.ui.codereview.ReviewColorsPageFactory}  ReviewColorsPageFactory
+    Console Colors  {reference.settingsdialog.IDE.editor.colors.com.intellij.openapi.options.colors.pages.ANSIColoredConsoleColorsPage}  ANSIColoredConsoleColorsPage
+    Debugger  {reference.settingsdialog.IDE.editor.colors.com.jetbrains.rider.ideaInterop.settings.colors.RiderDebuggerColorsPage}  RiderDebuggerColorsPage
+    Diff & Merge  {reference.settingsdialog.IDE.editor.colors.DiffAndMerge}  DiffColorsPageFactory
+    Stacktrace  {reference.settingsdialog.IDE.editor.colors.Stacktrace}  ProtocolColorSettingsPage
+    User-Defined File Types  {reference.settingsdialog.IDE.editor.colors.com.intellij.openapi.options.colors.pages.CustomColorsPage}  CustomColorsPage
+    VCS  {reference.settingsdialog.IDE.editor.colors.com.intellij.openapi.vcs.actions.VcsColorsPageFactory}  VcsColorsPageFactory
+    CMake  {reference.settingsdialog.IDE.editor.colors.com.jetbrains.cmake.settings.CMakeColorSettingsPage}  CMakeColorSettingsPage
+    C#  {reference.settingsdialog.IDE.editor.colors.C#}  ProtocolRainbowColorSettingsPage
+    F#  {reference.settingsdialog.IDE.editor.colors.F#}  ProtocolColorSettingsPage
+    Xaml  {reference.settingsdialog.IDE.editor.colors.Xaml}  ProtocolColorSettingsPage
+    Angular Template  {reference.settingsdialog.IDE.editor.colors.org.angular2.lang.html.highlighting.Angular2ColorsAndFontsPage}  Angular2ColorsAndFontsPage
+    ASP.NET  {reference.settingsdialog.IDE.editor.colors.ASP.NET}  ProtocolColorSettingsPage
+    Assembly Explorer  {reference.settingsdialog.IDE.editor.colors.Assembly Explorer}  ProtocolColorSettingsPage
+    C/C++  {reference.settingsdialog.IDE.editor.colors.C/C++}  ProtocolRainbowColorSettingsPage
+    CSS  {reference.settingsdialog.IDE.editor.colors.com.intellij.psi.css.impl.util.CssColorsAndFontsPage}  CssColorsAndFontsPage
+    Data Editor and Viewer  {reference.settingsdialog.IDE.editor.colors.com.intellij.database.editor.DataGridColorSettingsPage}  DataGridColorSettingsPage
+    Database  {reference.settingsdialog.IDE.editor.colors.com.intellij.database.editor.DatabaseColorSettingsPage}  DatabaseColorSettingsPage
+    Diagrams  {reference.settingsdialog.IDE.editor.colors.com.intellij.diagram.DiagramColorsSettingsPage}  DiagramColorsSettingsPage
+    Dockerfile  {reference.settingsdialog.IDE.editor.colors.com.intellij.docker.dockerFile.highlighting.highlight.DockerColorSettingsPage}  DockerColorSettingsPage
+    dotCover  {reference.settingsdialog.IDE.editor.colors.com.jetbrains.dotCover.options.RiderDotCoverColorsPage}  RiderDotCoverColorsPage
+    EditorConfig  {reference.settingsdialog.IDE.editor.colors.com.intellij.editorconfig.frontend.settings.EditorConfigColorSettingsPage}  EditorConfigColorSettingsPage
+    GdScene  {reference.settingsdialog.IDE.editor.colors.tscn.highlighter.TscnColorSettingsPage}  TscnColorSettingsPage
+    GdScript  {reference.settingsdialog.IDE.editor.colors.gdscript.highlighter.GdColorSettingsPage}  GdColorSettingsPage
+    GitLab CI Expression  {reference.settingsdialog.IDE.editor.colors.com.intellij.vcs.gitlab.ultimate.features.expressionLang.highlighting.GitLabCiExpressionColorSettingsPage}  GitLabCiExpressionColorSettingsPage
+    Handlebars/Mustache  {reference.settingsdialog.IDE.editor.colors.com.dmarcotte.handlebars.pages.HbColorsPage}  HbColorsPage
+    HTML  {reference.settingsdialog.IDE.editor.colors.com.intellij.openapi.options.colors.pages.HTMLColorsPage}  HTMLColorsPage
+    HTTP Request  {reference.settingsdialog.IDE.editor.colors.com.intellij.httpClient.http.request.highlighting.HttpRequestColorSettingsPage}  HttpRequestColorSettingsPage
+    IL (Intermediate Language)  {reference.settingsdialog.IDE.editor.colors.IL (Intermediate Language)}  ProtocolColorSettingsPage
+    Ini  {reference.settingsdialog.IDE.editor.colors.ini4idea.highlighter.IniColorSettingsPage}  IniColorSettingsPage
+    JavaScript  {reference.settingsdialog.IDE.editor.colors.com.intellij.lang.javascript.highlighting.JavaScriptColorsAndFontsPage}  JavaScriptColorsAndFontsPage
+    JSON  {reference.settingsdialog.IDE.editor.colors.com.intellij.json.highlighting.JsonColorsPage}  JsonColorsPage
+    JSONPath  {reference.settingsdialog.IDE.editor.colors.com.intellij.jsonpath.JsonPathColorSettingsPage}  JsonPathColorSettingsPage
+    Kubernetes  {reference.settingsdialog.IDE.editor.colors.com.intellij.kubernetes.settings.KubernetesColorSettingsPage}  KubernetesColorSettingsPage
+    Less  {reference.settingsdialog.IDE.editor.colors.org.jetbrains.plugins.less.highlighting.LESSColorsPage}  LESSColorsPage
+    Markdown  {reference.settingsdialog.IDE.editor.colors.org.intellij.plugins.markdown.highlighting.MarkdownColorSettingsPage}  MarkdownColorSettingsPage
+    Mermaid  {reference.settingsdialog.IDE.editor.colors.com.intellij.mermaid.lang.highlighting.MermaidColorSettingsPage}  MermaidColorSettingsPage
+    PostCSS  {reference.settingsdialog.IDE.editor.colors.org.intellij.plugins.postcss.highlighting.PostCssColorsPage}  PostCssColorsPage
+    Properties  {reference.settingsdialog.IDE.editor.colors.com.intellij.lang.properties.PropertiesColorsPage}  PropertiesColorsPage
+    Protocol Buffer  {reference.settingsdialog.IDE.editor.colors.com.intellij.protobuf.ide.highlighter.PbColorSettingsPage}  PbColorSettingsPage
+    Protocol Buffer Text  {reference.settingsdialog.IDE.editor.colors.com.intellij.protobuf.ide.highlighter.PbTextColorSettingsPage}  PbTextColorSettingsPage
+    Pug/Jade  {reference.settingsdialog.IDE.editor.colors.com.jetbrains.plugins.jade.highlighter.JadeColorsPage}  JadeColorsPage
+    RegExp  {reference.settingsdialog.IDE.editor.colors.org.intellij.lang.regexp.RegExpColorsPage}  RegExpColorsPage
+    Sass/SCSS  {reference.settingsdialog.IDE.editor.colors.org.jetbrains.plugins.sass.highlighting.SASSColorsPage}  SASSColorsPage
+    ShaderLab  {reference.settingsdialog.IDE.editor.colors.ShaderLab}  ProtocolColorSettingsPage
+    Shell Script  {reference.settingsdialog.IDE.editor.colors.com.intellij.sh.highlighter.ShColorPage}  ShColorPage
+    SQL  {reference.settingsdialog.IDE.editor.colors.com.intellij.database.sql.common.impl.editor.SqlColorSettingsPage}  SqlColorSettingsPage
+    T4  {reference.settingsdialog.IDE.editor.colors.T4}  ProtocolColorSettingsPage
+    Table Diff  {reference.settingsdialog.IDE.editor.colors.com.intellij.database.diff.TableDiffColorSettingsPage}  TableDiffColorSettingsPage
+    TypeScript  {reference.settingsdialog.IDE.editor.colors.TypeScript}  TypeScriptColorSettingsPage
+    Unity  {reference.settingsdialog.IDE.editor.colors.Unity}  ProtocolColorSettingsPage
+    Unreal Log  {reference.settingsdialog.IDE.editor.colors.com.jetbrains.rider.settings.UnrealLogColorSettingsPage}  UnrealLogColorSettingsPage
+    XML  {reference.settingsdialog.IDE.editor.colors.com.intellij.openapi.options.colors.pages.XMLColorsPage}  XMLColorsPage
+    XPath  {reference.settingsdialog.IDE.editor.colors.org.intellij.lang.xpath.XPathColorSettingsPage}  XPathColorSettingsPage
+    XSLT  {reference.settingsdialog.IDE.editor.colors.org.intellij.lang.xpath.xslt.validation.XsltColorPage}  XsltColorPage
+    YAML  {reference.settingsdialog.IDE.editor.colors.org.jetbrains.yaml.YAMLColorsPage}  YAMLColorsPage
+    By Scope  {reference.settingsdialog.IDE.editor.colors.ByScope}  ScopeColorsPageFactory
+    Images  {reference.settingsdialog.IDE.editor.colors.org.intellij.images.options.impl.ImageEditorColorSchemeSettings}  ImageEditorColorSchemeSettings
+    Other  {reference.settingsdialog.IDE.editor.colors.Other}  ProtocolColorSettingsPage
+  Code Style  {preferences.sourceCode}  CodeStyleSchemesConfigurable
+    C#  {preferences.sourceCode.C#}  CSharpCodeStyleSettingsProvider
+    Angular HTML template  {preferences.sourceCode.Angular2Html}  Angular2HtmlCodeStyleSettingsProvider
+    ASP.NET (Razor)  {preferences.sourceCode.Razor}  RazorAndAspCodeStyleSettingsProvider
+    C/C++  {preferences.sourceCode.C++}  RiderCppCodeStyleSettingsProvider
+    CMake  {preferences.sourceCode.CMake}  CMakeCodeStyleSettingsProvider
+    EditorConfig  {preferences.sourceCode.EditorConfig}  EditorConfigLanguageCodeStyleSettingsProvider
+    F#  {preferences.sourceCode.F#}  FSharpCodeStyleSettingsProvider
+    GDScript  {preferences.sourceCode.GdScript}  GdCodeStyleSettingsProvider
+    HTML  {preferences.sourceCode.HTML}  HtmlLanguageCodeStyleSettingsProvider
+    HTTP Request  {preferences.sourceCode.HTTP Request}  HttpRequestCodeStyleSettingsProvider
+    JavaScript  {preferences.sourceCode.JavaScript}  JSLanguageCodeStyleSettingsProvider
+    JSON  {preferences.sourceCode.JSON}  JsonCodeStyleSettingsProvider
+    Markdown  {preferences.sourceCode.Markdown}  MarkdownCodeStyleSettingsProvider
+    Mermaid  {preferences.sourceCode.Mermaid}  MermaidCodeStyleSettingsProvider
+    Properties  {preferences.sourceCode.Properties}  PropertiesLanguageCodeStyleSettingsProvider
+    Protocol Buffer  {preferences.sourceCode.Protocol Buffer}  PbCodeStyleSettingsProvider
+    Protocol Buffer Text  {preferences.sourceCode.Protocol Buffer Text}  PbTextCodeStyleSettingsProvider
+    Pug (ex-Jade)  {preferences.sourceCode.Pug/Jade}  JadeCodeStyleSettingsProvider
+    ShaderLab  {preferences.sourceCode.ShaderLab}  ShaderLabStyleSettingsProvider
+    Shell Script  {preferences.sourceCode.Shell Script}  ShLanguageCodeStyleSettingsProvider
+    SQL  {sql.code.style.group}  CodeStyleGroupProvider$CodeStyleGroupConfigurable
+      General  {preferences.sourceCode.SQL}  SqlGeneralCodeStyleSettingsProvider
+      SQL:2016, Generic  {preferences.sourceCode.SQL92}  SqlDialectCodeStyleSettingsAutoProvider
+      Apache Derby  {preferences.sourceCode.Derby}  SqlDialectCodeStyleSettingsAutoProvider
+      Db2  {preferences.sourceCode.DB2}  SqlDialectCodeStyleSettingsAutoProvider
+      H2  {preferences.sourceCode.H2}  SqlDialectCodeStyleSettingsAutoProvider
+      HSQLDB  {preferences.sourceCode.HSQLDB}  SqlDialectCodeStyleSettingsAutoProvider
+      MS SQL Server, MS Azure  {preferences.sourceCode.TSQL}  SqlDialectCodeStyleSettingsAutoProvider
+      MySQL, MariaDB  {preferences.sourceCode.MySQL}  SqlDialectCodeStyleSettingsAutoProvider
+      Oracle  {preferences.sourceCode.Oracle}  SqlDialectCodeStyleSettingsAutoProvider
+      PostgreSQL, Greenplum, Redshift  {preferences.sourceCode.PostgreSQL}  SqlDialectCodeStyleSettingsAutoProvider
+      SQLite  {preferences.sourceCode.SQLite}  SqlDialectCodeStyleSettingsAutoProvider
+      Sybase ASE  {preferences.sourceCode.Sybase}  SqlDialectCodeStyleSettingsAutoProvider
+    Style Sheets  {stylesheet.code.style.group}  CodeStyleGroupProvider$CodeStyleGroupConfigurable
+      CSS  {preferences.sourceCode.CSS}  CssLanguageCodeStyleSettingsProvider
+      Less  {preferences.sourceCode.LESS}  LESSLanguageCodeStyleSettingsProvider
+      Sass  {preferences.sourceCode.SASS}  SASSLanguageCodeStyleSettingsProvider
+      SCSS  {preferences.sourceCode.SCSS}  SCSSLanguageCodeStyleSettingsProvider
+    TypeScript  {preferences.sourceCode.TypeScript}  TypeScriptLanguageCodeStyleSettingsProvider
+    VB.NET  {preferences.sourceCode.VB}  VbCodeStyleSettingsProvider
+    Vue template  {preferences.sourceCode.Vue}  VueCodeStyleSettingsProvider
+    XAML  {preferences.sourceCode.Xaml}  XamlCodeStyleSettingsProvider
+    XML  {preferences.sourceCode.XML}  XmlLanguageCodeStyleSettingsProvider
+    YAML  {preferences.sourceCode.yaml}  YAMLLanguageCodeStyleSettingsProvider
+    Other File Types  {preferences.sourceCode.Other File Types}  OtherFileTypesCodeStyleOptionsProvider
+  Inspection Settings  {CodeInspectionSettingsId}  RiderInspectionsSettingsConfigurable
+    Generated Code  {RiderCodeInspectionGeneratedSettingsId}  RiderGeneratedCodeConfigurable
+    Inspection Severity  {Errors}  RiderTabbedInspectionSettings
+      ASP.NET  {Inspections-ASP.NET}  AspInspectionsPage
+      C#  {Inspections-C#}  RiderCSharpInspectionsPage
+      C/C++  {Inspections-C/C++}  RiderCppInspectionsPage
+      F#  {Inspections-F#}  FSharpInspectionsPage
+      Razor  {Inspections-Razor}  RazorInspectionsPage
+      Resources  {Inspections-Resources}  RiderResourcesInspectionsPage
+      VB.NET  {Inspections-VB.NET}  RiderVBNetInspectionsPage
+      XAML  {Inspections-XAML}  RiderXAMLInspectionsPage
+      Other Languages  {Inspections-IDEA}  OtherLanguagesProjectInspectionToolsConfigurable
+    Code Annotations  {RiderCodeAnnotations}  RiderCodeAnnotationsConfigurable
+    Entity Framework  {EntityFrameworkAnalysisSettingsId}  RiderEntityFrameworkSettingsConfigurable
+    Roslyn  {RoslynSettingsId}  RoslynSettingsPage
+  Members Generation  {MemberGeneratorId}  MemberGenerationOptionPage
+  File Encodings  {File.Encoding}  FileEncodingConfigurable
+  File Types  {preferences.fileTypes}  FileTypeConfigurable
+  Code Vision  {CodeLensConfigurable}  CodeLensConfigurable
+  Inlay Hints  {inlay.hints}  RiderInlayHintsGeneralOptionsPageProvider$RiderInlayHintsGeneralOptionsPage
+    C#  {inlay.hints.RiderInlayHintsCSharpConfigurableGroup}  RiderInlayHintsCSharpConfigurableGroup
+      Interceptor Hints  {CSharpInterceptorsHintsOptionsPage}  RiderInlayHintsCSharpConfigurableGroup$RiderCSharpInterceptorHintsOptionsPage
+      Other  {CSharpOtherInlayHintsOptions}  RiderInlayHintsCSharpConfigurableGroup$RiderCSharpOtherHintsOptionsPage
+      Parameter Name Hints  {CSharpParameterNameHintsOptions}  RiderInlayHintsCSharpConfigurableGroup$RiderCSharpParameterNameHintsOptionsPage
+      Type Conversion Hints  {CSharpTypeConversionHintsOptions}  RiderInlayHintsCSharpConfigurableGroup$RiderCSharpTypeConversionHintsOptionsPage
+      Type Name Hints  {CSharpTypeNameHintsOptions}  RiderInlayHintsCSharpConfigurableGroup$RiderCSharpTypeNameHintsOptionsPage
+    F#  {inlay.hints.FSharpInlayHintsConfigurableGroup}  FSharpInlayHintsConfigurableGroup
+      Type Hints  {FSharpTypeHintsOptionsPage}  FSharpInlayHintsConfigurableGroup$FSharpTypeHintsOptionsPage
+    VB.NET  {inlay.hints.RiderInlayHintsVBConfigurableGroup}  RiderInlayHintsVBConfigurableGroup
+      Other  {VBOtherInlayHintsOptions}  RiderInlayHintsVBConfigurableGroup$RiderVBOtherHintsOptionsPage
+      Parameter Name Hints  {VBParameterNameHintsOptions}  RiderInlayHintsVBConfigurableGroup$RiderVBParameterNameHintsOptionsPage
+    C/C++  {RiderInlayHintsCppOptions}  CppInlayHintsCppOptionsPage
+      Aggregate Initialization  {CppAggregateHintsOptions}  CppAggregateHintsOptionsPage
+      Other  {CppOtherInlayHintsOptions}  CppOtherHintsOptionsPage
+      Parameter Name Hints  {CppParameterNameHintsOptions}  CppParameterNameHintsOptionsPage
+      Type Conversion Hints  {CppTypeConversionHintsOptions}  CppTypeConversionHintsOptionsPage
+      Type Name Hints  {CppTypeNameHintsOptions}  CppTypeNameHintsOptionsPage
+    XAML  {XamlInlayHintsOptions}  RiderInlayHintsXAMLOptionsPage
+    Other Languages  {frontend.inlay.settings}  InlaySettingsConfigurable
+    Unity  {UnityInlayHintsOptions}  UnityInlayHintsOptionsPage
+  Code Cleanup  {CodeCleanupOptionsPage}  CodeCleanupOptionsPage
+    C#  {CSharpCodeCleanupOptionsPageProvider}  CSharpCodeCleanupOptionsPage
+    VB.NET  {VBCodeCleanupOptionsPageProvider}  VBCodeCleanupOptionsPage
+  Context Actions  {preferences.intentionPowerPack}  RiderContextActionsConfigurable
+  Duplicates  {duplicates.index}  DuplicatesConfigurable
+  Emmet  {reference.idesettings.emmet}  EmmetCompositeConfigurable
+    CSS  {reference.idesettings.emmet.css}  CssEmmetConfigurable
+    HTML  {reference.idesettings.emmet.xml}  XmlEmmetConfigurable
+    JSX  {reference.idesettings.emmet.jsx}  JSXConfigurable
+  File Header Template  {FileHeaderTextPageId}  FileHeaderOptionsPage
+  File Templates  {FileTemplatesSettingsId}  RiderFileTemplatesOptionPage
+    .NET  {RiderNetFileTemplatesSettingsId}  RiderNetFileTemplatesOptionPage
+    C#  {RiderCSharpFileTemplatesSettingsId}  RiderCSharpFileTemplatesOptionPage
+    C/C++  {RiderCppFileTemplatesSettingsId}  RiderCppFileTemplatesOptionPage
+    Database Projects  {RiderDatabaseProjectsFileTemplatesSettingsId}  DatabaseProjectsFileTemplatesOptionPage
+    Mac/iOS  {RiderXamarinAppleFileTemplatesOptionPageId}  RiderXamarinAppleFileTemplatesOptionPage
+    F#  {RiderFSharpFileTemplatesSettings}  RiderFSharpFileTemplatesOptionPage
+    VB.NET  {RiderVBFileTemplatesSettingsId}  RiderVBFileTemplatesOptionPage
+    ASP.NET  {RiderAspFileTemplatesSettingsId}  RiderAspFileTemplatesOptionPage
+    ASP.NET (C#)  {RiderAspCSFileTemplatesSettingsId}  RiderAspCSFileTemplatesOptionPage
+    ASP.NET (VB)  {RiderAspVBFileTemplatesSettingsId}  RiderAspVBFileTemplatesOptionPage
+    Razor  {RiderRazorFileTemplatesSettingsId}  RazorFileTemplatesOptionPage
+    Razor (C#)  {RiderRazorCSFileTemplatesSettingsId}  RazorCSFileTemplatesOptionPage
+    XAML  {RiderXamlFileTemplatesSettingsId}  RiderXamlFileTemplatesOptionPage
+    XAML (C#)  {RiderXamlCSFileTemplatesSettingsId}  RiderXamlCSFileTemplatesOptionPage
+    XAML (VB)  {RiderXamlVBFileTemplatesSettingsId}  RiderXamlVBFileTemplatesOptionPage
+    Godot C#  {RiderGodotFileTemplatesSettings}  GodotFileTemplatesOptionPage
+    Unity  {RiderUnityFileTemplatesSettings}  UnityFileTemplatesOptionPage
+    Unreal Engine  {RiderUnrealFileTemplatesSettings}  UnrealFileTemplatesOptionPage
+    Azure Functions (C#)  {AzureFunctionsCSharpFileTemplatesSettingsId}  AzureFunctionsCSharpFileTemplatesOptionPage
+    Azure Functions (F#)  {AzureFunctionsFSharpFileTemplatesSettingsId}  AzureFunctionsFSharpFileTemplatesOptionPage
+    Other Languages  {fileTemplates}  AllFileTemplatesConfigurable
+  Language Injections  {IntelliLang.Configuration}  InjectionsSettingsUI
+  Live Templates  {LiveTemplatesSettingsId}  RiderTemplatesOptionPage
+    C#  {RiderCSharpLiveTemplatesSettingsId}  RiderCSharpTemplatesOptionPage
+    C/C++  {RiderCppLiveTemplatesSettingsId}  RiderCppTemplatesOptionPage
+    VB.NET  {RiderVBLiveTemplatesSettingsId}  RiderVBTemplatesOptionPage
+    Razor  {RiderRazorLiveTemplatesSettingsId}  RazorTemplatesOptionPage
+    ASP.NET  {RiderAspLiveTemplatesSettingsId}  AspTemplatesOptionPage
+    Godot C#  {RiderGodotLiveTemplatesSettings}  GodotLiveTemplatesOptionPage
+    Unity  {RiderUnityLiveTemplatesSettings}  UnityLiveTemplatesOptionPage
+    Other Languages  {editing.templates}  LiveTemplatesConfigurable
+  Natural Languages  {proofread}  ProofreadConfigurable
+    Grammar and Style  {reference.settingsdialog.project.grazie}  GrazieConfigurable
+    Spelling  {reference.settings.ide.settings.spelling}  SpellCheckerConfigurable
+      .NET Languages  {SpellingScopeSettingsId}  SpellCheckerScopeSettings
+  Reader Mode  {editor.reader.mode}  RiderReaderModeConfigurable
+  Search and Navigation  {UsagesOptionsPageId}  UsagesOptionsPage
+  TextMate Bundles  {reference.settingsdialog.textmate.bundles}  TextMateConfigurableUi
+  TODO  {preferences.toDoOptions}  RiderTodoConfigurable
+Plugins  {preferences.pluginManager}  PluginManagerConfigurable
+Environment  {preferences.environmentSetup}  EnvironmentSetupConfigurable
+Version Control  {project.propVCSSupport.Mappings}  VcsManagerConfigurable
+  Changelists  {project.propVCSSupport.ChangelistConflict}  ChangelistConflictConfigurable
+  Commit  {project.propVCSSupport.CommitDialog}  CommitDialogConfigurable
+  Confirmation  {project.propVCSSupport.Confirmation}  VcsGeneralSettingsConfigurable
+  Directory Mappings  {project.propVCSSupport.DirectoryMappings}  VcsMappingConfigurable
+  File Status Colors  {file.status.colors}  FileStatusColorsConfigurable
+  Issue Navigation  {project.propVCSSupport.Issue.Navigation}  IssueNavigationConfigurable
+  Shelf  {Shelf.Project.Settings}  ShelfProjectConfigurable
+  Azure DevOps  {com.intellij.azureDevops.Configurable}  AzureDevOpsSettingsConfigurable
+  Git  {vcs.Git}  GitVcsPanel
+  GitHub  {org.jetbrains.plugins.github.ui.GithubSettingsConfigurable}  GithubSettingsConfigurable
+  GitLab  {org.jetbrains.plugins.gitlab.GitLabSettingsConfigurable}  GitLabSettingsConfigurable
+  Perforce  {vcs.Perforce}  PerforceConfigurable
+Build, Execution, Deployment  {configurable.group.build}  SortedConfigurableGroup
+  Toolchains  {CPPToolchains}  CPPToolchainsConfigurable
+  CMake  {CMakeSettings}  CMakeConfigurable
+  Custom Build Targets  {CLionExternalConfigurable}  CLionExternalConfigurable
+  .NET Console  {dotNetConsole}  DotNetConsoleConfigurable
+  Apple Platforms  {AppleSettingsPageId}  AppleSettingsPage
+  Coverage  {coverage}  CoverageOptionsConfigurable
+  Database Projects  {configurable.name.database.projects}  SqlProjOptionsPage
+  Debugger  {project.propDebugger}  DebuggerConfigurable
+    Data Views  {debugger.dataViews}  DataViewsConfigurable
+      C/C++  {Debugger.ObjectiveC}  CidrDebuggerDataViewsConfigurable
+      JavaScript  {debugger.dataViews.javascript}  JavaScriptDataViewsConfigurableUi
+    Debug Servers  {com.jetbrains.cidr.cpp.execution.gdbserver.debugtargets.NamedDebugTargetConfigurable}  NamedDebugTargetConfigurable
+    LINQ Explorer  {LinqDebuggerSettings}  SettingsConfigurable
+    Live++  {LivePlusPlusSettings}  SettingsConfigurable
+    Stepping  {debugger.stepping}  MergedCompositeConfigurable
+    Symbol Servers  {Debugger.C.SymbolServers}  CidrDebuggerSettingsSymbolServersConfigurable
+  Deployment  {web.server}  DeploymentConfigurable
+    Options  {reference.settings.deploy.options}  PublishOptionsConfigurable
+  Docker  {Docker}  DockerConnectionsListConfigurable
+    Console  {reference.settingsDialog.application.dockerConsole}  DockerConsoleConfigurable
+    Debug and Fast Mode  {docker.rider}  RiderDockerConfigurable
+    Docker Compose  {docker.compose.service.completion}  ComposeServiceCompletionConfigurable
+    Docker Registry  {DockerRegistry}  DockerRegistryListConfigurable
+  dotCover  {DotCoverGeneralPageId}  RiderDotCoverGeneralOptionsPage
+    Continuous Testing  {DotCoverContinuousTestingPageId}  RiderDotCoverContinuousTestingOptionsPage
+    Editor  {DotCoverHighlightingPageId}  RiderDotCoverEditorOptionsPage
+    Filtering  {DotCoverFilteringPageId}  RiderDotCoverFilteringOptionsPage
+  dotMemory Profiler  {RiderDotMemoryPageId}  RiderDotMemoryOptionsPage
+  dotTrace Profiler  {RiderDotTracePageId}  RiderDotTraceOptionsPage
+    Call Tree Folding  {IdeDotTraceSystemModulesPageId}  RiderDotTraceSystemModulesOptionsPage
+  Hot Reload  {HotReloadSettingsPage}  HotReloadSettingsPage
+  IIS Express  {RiderIisExpressOptionsPageId}  IisExpressOptionsPage
+  Kubernetes  {kubernetes.configurable.id}  KubernetesConfigurable
+    Cluster Interaction  {kubernetes.cluster.configurable.id}  KubernetesClusterConfigurable
+    Logs  {kubernetes.logs.configurable.id}  KubernetesLogsConfigurable
+    Schemas  {kubernetes.schemas.configurable.id}  KubernetesSchemasConfigurable
+  Monitoring  {MonitoringPageId}  OptionsPageProvider$OptionsPage
+    Filtering  {MonitoringFilteringPageId}  FilteringOptionsPageProvider$FilteringOptionsPage
+    Counters and Metrics  {MonitoringCountersPageId}  CountersOptionsPageProvider$CountersOptionsPage
+    Issue Detection  {MonitoringInspectionsPageId}  InspectionsOptionsPageProvider$InspectionsOptionsPage
+  NuGet  {RiderNuGetOptionsPageId}  NuGetOptionsPage
+    Package Manager Console  {RiderPMCOptionsPageId}  PmcOptionsPage
+  Toolset and Build  {SolutionBuilderGeneralOptionsPage}  SolutionBuilderGeneralOptionsPage
+    Presentation  {SolutionBuilderPresentationOptionsPageId}  SolutionBuilderPresentationOptionsPage
+  Unit Testing  {RiderUnitTestingPageId}  RiderUnitTestingPage
+    MSTest  {RiderMsTestUnitTestingPageId}  RiderMsTestUnitTestingPage
+    NUnit  {RiderNUnitUnitTestingPageId}  RiderNUnitUnitTestingPage
+    Test Linker  {RiderTestLinkerUnitTestingPageId}  RiderTestLinkerPage
+    Test Runner  {RiderTestRunnerUnitTestingPageId}  RiderTestRunnerPage
+    Testing Platform  {RiderTestingPlatformUnitTestingPageId}  RiderTestingPlatformUnitTestingPage
+    VSTest  {RiderVsTestUnitTestingPageId}  RiderVsTestUnitTestingPage
+    xUnit.net  {RiderXUnitUnitTestingPageId}  RiderXUnitUnitTestingPage
+Languages & Frameworks  {configurable.group.language}  SortedConfigurableGroup
+  C# Interactive  {preferences.CSharpInteractiveConfiguration}  CSharpInteractiveOptionsPage
+  C/C++  {preferences.CppConfiguration}  CppConfigurable
+    Clang-Tidy  {CppClangTidyOptionsId}  CppClangTidyConfigurable
+    Code Completion  {CppCodeCompletionOptionsId}  CppCodeCompletionConfigurable
+    Code Generation  {CppCodeGenerationId}  CppCodeGenerationConfigurable
+    General  {CppGeneralOptionsId}  CppGeneralConfigurable
+    Order of #includes  {CppIncludesOrderConfigurable}  CppIncludesOrderConfigurable
+    Shaders  {CppShadersOptionsId}  CppShadersConfigurable
+    Unreal Engine  {CppUnrealEngineOptionsId}  CppUnrealEngineConfigurable
+  F#  {FSharp}  FSharpOptionsPage
+  F# Interactive  {Fsi}  FsiOptionsPage
+  Godot  {gdscript.settings.GdSettingsConfigurable}  GdSettingsConfigurable
+  Godot.NET  {preferences.build.godotPlugin}  GodotPluginOptionsPage
+  JavaScript  {Settings.JavaScript}  JSRootConfigurable
+    Code Quality Tools  {Settings.JavaScript.Linters}  JSLintersConfigurable
+      ESLint  {settings.javascript.linters.eslint}  EslintConfigurable
+      JSHint  {Settings.JavaScript.Linters.JSHint}  JSHintConfigurable
+    Libraries  {JavaScript.Libraries}  JSScriptingContextConfigurable
+    Prettier  {settings.javascript.prettier}  PrettierConfigurable
+    Styled Components  {styled-components}  StyledComponentsConfigurable
+    Templates  {Settings.JavaScript.Templates}  JSTemplateLangConfigurable
+    Vite  {settings.vite}  ViteConfigurable
+    Webpack  {settings.webpack}  WebpackConfigurable
+  JavaScript Runtime  {settings.javascript.runtime}  JavaScriptRuntimeConfigurable
+  Markdown  {Settings.Markdown}  MarkdownSettingsConfigurable
+  Mermaid  {Settings.Mermaid}  MermaidSettingsConfigurable
+  NoesisGUI  {preferences.build.noesisPlugin}  NoesisPluginSettingsPage
+  OpenAPI Specifications  {swagger}  SwaggerConfigurable
+  Protocol Buffers  {google.protobuf.language}  PbLanguageSettingsConfigurable
+    Text Format  {google.prototext.language}  PbTextLanguageSettingsConfigurable
+  Schemas and DTDs  {preferences.externalResources}  ExternalResourceConfigurable
+    Default XML Schemas  {xml.defaultSchemas}  DefaultSchemasConfigurable
+    JSON Schema Mappings  {settings.json.schema}  JsonSchemaMappingsConfigurable
+    Remote JSON Schemas  {settings.json.schema.catalog}  JsonSchemaCatalogConfigurable
+    XML Catalog  {xml.catalog}  XMLCatalogConfigurable
+  SQL Dialects  {SQL Dialects}  SqlDialectsConfigurable
+  SQL Resolution Scopes  {SQL Resolution Scopes}  SqlResolveConfigurable
+  Style Sheets  {configurable.stylesheets}  StylesheetsConfigurable
+    Dialects  {settings.css.dialects}  CssDialectsConfigurable
+    Stylelint  {configurable.stylesheets.stylelint}  StylelintConfigurable
+    Tailwind CSS  {configurable.tailwindcss}  TailwindConfigurable
+  TypeScript  {settings.typescriptcompiler}  TypeScriptConfigurable
+    Angular  {settings.angularservice}  AngularConfigurable
+    TSLint  {settings.javascript.linters.tslint}  TsLintConfigurable
+    Vue  {settings.vue}  VueConfigurable
+  Unity Engine  {preferences.build.unityPlugin}  UnityPluginOptionsPage
+    Profiler Integration  {preferences.build.unityPlugin.profiler}  UnityProfilerOptionsPage
+  Unreal Engine  {UnrealLinkOptionsId}  UnrealLinkSettingsConfigurable
+  Verse  {preferences.build.versePlugin}  VersePluginSettingsPage
+  XSLT  {settings.xslt}  XsltConfigImpl$UIImpl
+  XSLT File Associations  {xslt.associations}  FileAssociationsConfigurable
+Tools  {configurable.group.tools}  SortedConfigurableGroup
+  Actions on Save  {actions.on.save}  ActionsOnSaveConfigurable
+  AI Agent Hooks  {com.jetbrains.rider.plugins.appender.mcpServer.bundledHooks}  RiderBundledHooksConfigurable
+  Aspire  {Aspire.Configurable}  AspireConfigurable
+  Azure Functions  {AzureFunctionPage}  AzureFunctionSettingConfigurable
+    Azurite  {AzureFunctionAzuritePage}  AzuriteSettingsConfigurable
+  Code Provenance  {com.intellij.code.provenance.activation}  ProvenanceActivationConfigurable
+    Claude Code Hooks  {com.intellij.code.provenance.core.claude.hooks}  ClaudeHooksConfigurable
+  CSV Formats  {database.data.csv.formats}  CsvSettingsConfigurable
+  Custom Tools  {CustomToolsOptionsPageId}  CustomToolsSettingsPage
+  Database  {configurable.group.database.main}  SortedConfigurableGroup
+    Query Execution  {database.query.execution}  DatabaseSettingsQueryExecution
+      Output and Results  {database.output.results}  DatabaseSettingsOutputResults
+      User Parameters  {database.sql.templating}  DatabaseSettingsUserParameters
+    Data Editor and Viewer  {database.data.views}  DatabaseSettingsDataViews
+    Database Explorer  {database.explorer.settings}  DatabaseExplorerSettingsConfigurable
+    AI Tools  {database.ai.tools}  DatabaseSettingsAiToolsConfigurable
+    Query Files and Consoles  {database.sql.files}  QueryFilesConfigurable
+    Other  {database.other}  DatabaseSettingsOther
+  Diagrams  {reference.settings.ide.settings.uml}  UmlConfigurable
+  Diff & Merge  {diff.base}  DiffSettingsConfigurable
+    External Diff Tools  {diff.external}  ExternalDiffSettingsConfigurable
+  EF Core UI  {com.jetbrains.rider.plugins.efcore.settings.EfCoreUiConfigurable}  EfCoreUiConfigurable
+  External Symbols  {SymbolServersPageId}  SymbolServerConfigurable
+  External Tools  {preferences.externalTools}  ToolConfigurable
+  File Watchers  {watcher.settings}  WatchersConfigurable
+  HTTP Client  {httpClient}  HttpClientConfigurable
+  MCP Server  {com.intellij.mcpserver.settings}  McpServerSettingsConfigurable
+    Exposed Tools  {com.intellij.mcpserver.settings.filter}  McpToolFilterConfigurable
+  Online Help  {OnlineHelpSettingsPage}  OnlineHelpSettingsPage
+  Qodana  {settings.qodana}  QodanaCloudSettingsPanel
+  Remote SSH External Tools  {preferences.remoteExternalTools}  RemoteToolConfigurable
+  Repository for Consoles  {private-feed}  PrivateFeedPluginRepositorySettingsPanel
+  ReSharper  {ReSharper}  ReSharperSettingsConfigurable
+  Rsync  {rsyncConfigurable}  RsyncConfigurable
+  SafeCode  {RiderSafeCodeOptionsPage}  RiderSafeCodeOptionsPage
+  SSH Configurations  {ssh.settings}  SshConfigConfigurable$Main
+  SSH Terminal  {sshConsole}  SshConsoleOptionsConfigurable
+  Startup Tasks  {preferences.startup.tasks}  ProjectStartupConfigurable
+  Terminal  {terminal}  TerminalOptionsConfigurable
+  UnrealLink  {UnrealLogSettings}  UnrealLogSettingsConfigurable
+  Vagrant  {reference.settingsdialog.project.vagrant}  VagrantConfigurable
+  Web Browsers and Preview  {reference.settings.ide.settings.web.browsers}  BrowserSettings
+  Windows Forms Designer  {WinFormsDesignerOptionsPage}  WinFormsDesignerOptionsPage
+  XAML preview  {XamlPreviewOptionsPage}  XamlPreviewOptionsPage
+  XPath Viewer  {xpath.settings}  XPathConfigurable
+Backup and Sync  {settings.sync}  SettingsSyncConfigurable
+Advanced Settings  {advanced.settings}  AdvancedSettingsConfigurable
+configurables: 414
+

@@ -21,6 +21,7 @@ import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
 import com.intellij.ui.awt.RelativePoint
 import io.github.dotnetsupport.lang.CSharpFile
+import io.github.dotnetsupport.lang.CSharpLeaves
 import io.github.dotnetsupport.msbuild.DotNetProjects
 import javax.swing.Icon
 
@@ -35,7 +36,7 @@ class EfLineMarkerProvider : LineMarkerProviderDescriptor() {
     override fun getIcon(): Icon = AllIcons.Nodes.DataTables
 
     override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
-        if (element.firstChild != null) return null // markers belong to leaves
+        if (!CSharpLeaves.isMarkerLeaf(element)) return null
         val file = element.containingFile as? CSharpFile ?: return null
         val offset = element.textRange.startOffset
         val declaration = efDeclarationsOf(file).firstOrNull { it.offset == offset } ?: return null

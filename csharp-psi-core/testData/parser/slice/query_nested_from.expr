@@ -1,0 +1,1 @@
+from a in b from c in a.Items select (a, c)

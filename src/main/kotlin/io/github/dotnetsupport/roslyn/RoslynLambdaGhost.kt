@@ -39,13 +39,17 @@ import org.eclipse.lsp4j.SignatureHelpParams
  * the inline completion of the platform shows the suggestions of Full Line and the AI assistant. The same source as the item of the
  * completion list ([RoslynLambdaCompletion]): the signature help of the server for the argument at the caret. Where the parameter is
  * no delegate, the same place gets the arguments that are at hand ([ArgumentSuggestions]).
+ *
+ * The server is asked only while it serves the parameter info ([CSharpFeature.DOCUMENTATION]): the signature help is that, not typing
+ * assistance, so the switch of `EDITING` (gray text of the plugin's own rules, [CSharpGhostText]) does not take the lambdas away. A method of
+ * this very file is answered from its text in every mode.
  */
 class RoslynLambdaGhost : InlineCompletionProvider {
     override val id: InlineCompletionProviderID = ID
 
     override fun isEnabled(event: InlineCompletionEvent): Boolean {
         val request = event.toRequest() ?: return false
-        if (request.file !is CSharpFile || !RoslynFeatures.serves(CSharpFeature.EDITING, request.file.project)) return false
+        if (request.file !is CSharpFile) return false
         // where an argument begins, and nowhere else: a method of this file is answered from its text, before the solution is loaded
         return LambdaSuggestions.atArgumentStart(request.document.immutableCharSequence, request.endOffset)
     }
@@ -61,7 +65,7 @@ class RoslynLambdaGhost : InlineCompletionProvider {
         // reported: `Save(` offered nothing, `Save(order, ` offered the token)
         val local = CSharpLocalCalls.at(text, offset)?.let { call -> CSharpArguments.list(call.parameters, call.active, visible) }
         val workspace = file.project.service<RoslynWorkspace>()
-        val client = workspace.clients.firstOrNull()?.takeIf { workspace.isLoaded }
+        val client = workspace.clients.firstOrNull()?.takeIf { workspace.isLoaded && RoslynFeatures.serves(CSharpFeature.DOCUMENTATION, file.project) }
         val virtualFile = file.virtualFile
         val ghost = if (local != null) CSharpGhostText.Ghost(SuggestionRules.ARGUMENTS, local)
         else if (client == null || virtualFile == null) null

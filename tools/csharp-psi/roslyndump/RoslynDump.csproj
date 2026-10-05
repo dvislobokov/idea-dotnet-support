@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The oracle of csharp-psi, as tools/astdump is for go-psi: dumps Roslyn's tokens, syntax trees and (later) semantics
+    of C# files in a line format that the corpus tests of csharp-psi diff against (format: README.md next to this file).
+    A development tool only: it is not shipped with the plugin.
+
+    The package version is pinned together with roslynCommit in gradle.properties: 5.9.0 was built from that commit,
+    so the parser csharp-psi ports and the oracle it is checked against are the same code.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+  </ItemGroup>
+</Project>

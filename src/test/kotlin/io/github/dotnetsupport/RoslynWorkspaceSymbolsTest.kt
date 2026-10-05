@@ -5,7 +5,10 @@ import com.intellij.navigation.ItemPresentation
 import com.intellij.navigation.LocationPresentation
 import com.intellij.navigation.NavigationItem
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import com.intellij.psi.PsiElement
 import io.github.dotnetsupport.lang.CSharpDeclaration
+import io.github.dotnetsupport.lang.CSharpSyntaxModel
+import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.roslyn.RoslynCtrlHoverReferenceProvider
 import io.github.dotnetsupport.roslyn.RoslynSymbolItem
 import io.github.dotnetsupport.roslyn.RoslynWorkspaceSymbolSupport
@@ -23,20 +26,39 @@ class RoslynWorkspaceSymbolsTest : BasePlatformTestCase() {
         return presentation.presentableText + location.locationPrefix + presentation.locationString + location.locationSuffix
     }
 
+    override fun tearDown() {
+        try {
+            CSharpSyntaxTrees.forceNativeTreeForTests(null)
+        } catch (e: Throwable) {
+            addSuppressedException(e)
+        } finally {
+            super.tearDown()
+        }
+    }
+
+    /** On both trees: the native one (the default since 0.1.45) and the heuristic one of a stored ROSLYN. */
     fun testSymbolsOfTheServerAreTheDeclarationsOfThePluginWithTheirTypes() {
+        for (native in listOf(false, true)) {
+            CSharpSyntaxTrees.forceNativeTreeForTests(native)
+            symbolsOfTheServer(if (native) "Native" else "Heuristic")
+        }
+    }
+
+    private fun symbolsOfTheServer(tree: String) {
         val source = File("debug-playground/Console/Editor/GoToBase.cs").readText().replace("\r\n", "\n")
-        val file = myFixture.configureByText("GoToBase.cs", source)
+        val file = myFixture.configureByText("GoToBase$tree.cs", source)
         val document = myFixture.editor.document
         val capture = javaClass.getResourceAsStream("/roslyn/capture-5.12-symbols/01-workspace_symbol_area.json")!!.reader().use(JsonParser::parseReader).asJsonObject
         val rows = capture.getAsJsonArray("result").map { symbol ->
             val start = symbol.asJsonObject.getAsJsonObject("location").getAsJsonObject("range").getAsJsonObject("start")
             val offset = RoslynCtrlHoverReferenceProvider.offset(document, Position(start["line"].asInt, start["character"].asInt))!!
             val item = RoslynWorkspaceSymbolSupport.declarationNamedAt(file, offset)
-            assertTrue("a declaration of the plugin at ${symbol}", item is CSharpDeclaration)
+            assertNotNull("$tree: a declaration of the plugin at ${symbol}", item?.let { CSharpSyntaxModel.current.declarationOf(it as PsiElement) })
+            assertEquals(tree, tree == "Heuristic", item is CSharpDeclaration)
             assertEquals(RoslynWorkspaceSymbolSupport.containerOf(symbol.asJsonObject["containerName"].asString), item!!.presentation!!.locationString)
             row(item)
         }
-        assertEquals(listOf("Area() IBaseShape", "Area() BaseShape", "Area() MiddleShape", "Area() GoToBase"), rows)
+        assertEquals(tree, listOf("Area() IBaseShape", "Area() BaseShape", "Area() MiddleShape", "Area() GoToBase"), rows)
     }
 
     fun testTheTypeOfAMemberAndOfANestedTypeIsShownAsInJava() {

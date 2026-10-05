@@ -23,7 +23,14 @@ let editor = null
 function snapshot(lookup) {
     const items = lookup.getItems()
     let text = "items: " + items.size() + "\n"
-    for (let i = 0; i < items.size() && i < __LIMIT__; i++) text += "  " + items.get(i).getLookupString() + "\n"
+    // __PRESENT__ = "yes": the text the list shows too, when it is not the lookup string (items of the server may have an empty one);
+    // `var`, not `let` / `const`: Rhino keeps the first value of a block-scoped variable in a loop
+    for (var i = 0; i < items.size() && i < __LIMIT__; i++) {
+        var shown = ""
+        var itemText = "__PRESENT__" == "yes" ? com.intellij.codeInsight.lookup.LookupElementPresentation.renderElement(items.get(i)).getItemText() : null
+        if (itemText != null && String(itemText) != String(items.get(i).getLookupString())) shown = " [" + itemText + "]"
+        text += "  " + items.get(i).getLookupString() + shown + "\n"
+    }
     // __FIND__: names whose position in the list is wanted, separated by commas
     const wanted = "__FIND__".split(",")
     for (let w = 0; w < wanted.length; w++) {

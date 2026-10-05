@@ -14,6 +14,8 @@ import com.intellij.openapi.components.service
 import com.intellij.platform.lsp.api.customization.LspCompletionSupport
 import io.github.dotnetsupport.lang.CSharpCalls
 import io.github.dotnetsupport.lang.CSharpFeature
+import io.github.dotnetsupport.lang.NativeCSharpCompletion
+import io.github.dotnetsupport.lang.NativeCSharpCompletionContributor
 import io.github.dotnetsupport.suggest.SuggestionStats
 import org.eclipse.lsp4j.CompletionItem
 import org.eclipse.lsp4j.CompletionItemKind
@@ -31,9 +33,12 @@ class RoslynCompletionSupport : LspCompletionSupport() {
      */
     override fun isTriggerCharacterRespected(c: Char): Boolean = RoslynCompletionPolicy.isTrigger(c)
 
-    /** Not when completion is switched to the plugin's own PSI ([RoslynFeatures]). */
-    override fun shouldRunCodeCompletion(parameters: CompletionParameters): Boolean =
-        RoslynFeatures.serves(CSharpFeature.COMPLETION, parameters.originalFile.project) && super.shouldRunCodeCompletion(parameters)
+    /**
+     * Whatever the switch of [CSharpFeature.COMPLETION]: with Built-in the native list ([NativeCSharpCompletionContributor]) stands in front
+     * and drops the items of the server it has itself (marked [NativeCSharpCompletion.SERVER] below), so members after a dot and library
+     * types still come from here.
+     */
+    override fun shouldRunCodeCompletion(parameters: CompletionParameters): Boolean = super.shouldRunCodeCompletion(parameters)
 
     /**
      * The tail and the type of a row as in Rider (`WriteLine`  `(string? value)  +18 overloads`  `void`): Roslyn sends neither, only the
@@ -53,13 +58,25 @@ class RoslynCompletionSupport : LspCompletionSupport() {
         // `List<>`, `AddSingleton<>`: the server says the item is generic, and inserts the bare name
         val generic = RoslynCompletionPolicy.isGeneric(item.label)
         val genericType = generic && RoslynCompletionPolicy.isGenericType(item.kind)
-        val withParentheses = if (!callable && !type && !genericType) element
-        // the insertion of the platform first (the text edit of the item, the `using` of its resolve), then the parentheses
-        else LookupElementDecorator.withInsertHandler(element) { context: InsertionContext, decorator: LookupElementDecorator<LookupElement> ->
+        // `await`, `override` / `partial` members: the command of the item writes the whole thing (RoslynClientCommands.COMPLEX_EDIT) from
+        // the text as the server saw it, so what the list wrote (the lookup string over the prefix) goes back to the item's own edit first
+        // and no parentheses follow (robot 0.1.60: `awaitait`, `partial void M() { … }();`). The command comes with the resolve of the item.
+        val withParentheses = LookupElementDecorator.withInsertHandler(element) { context: InsertionContext, decorator: LookupElementDecorator<LookupElement> ->
+            val chosen = resolved(context, item)
+            if (chosen.command?.command == RoslynClientCommands.COMPLEX_EDIT) {
+                (chosen.textEdit ?: item.textEdit)?.left?.newText?.let { typed ->
+                    context.document.replaceString(context.startOffset, context.tailOffset, typed)
+                    context.commitDocument()
+                }
+                decorator.delegate.handleInsert(context)
+                return@withInsertHandler
+            }
+            // the insertion of the platform first (the text edit of the item, the `using` of its resolve), then the parentheses
             decorator.delegate.handleInsert(context)
+            if (!callable && !type && !genericType) return@withInsertHandler
             val afterNew = RoslynCompletionPolicy.afterNew(context.document.charsSequence, context.startOffset)
             when {
-                callable -> addParentheses(context, resolved(context, item), generic)
+                callable -> addParentheses(context, chosen, generic)
                 genericType -> addTypeArguments(context, constructed = afterNew && type)
                 afterNew -> addParentheses(context, null, false)
             }
@@ -72,6 +89,7 @@ class RoslynCompletionSupport : LspCompletionSupport() {
         val bonus = RoslynCompletionRanking.bonus(name, item.kind, context, SuggestionStats.getInstance().labelCount(name))
         val ranked = PrioritizedLookupElement.withPriority(withParentheses, RoslynCompletionPolicy.priority(item.kind, item.preselect == true, RoslynCompletionPolicy.isUnimported(item)) + bonus.value)
         if (bonus.signals.isNotEmpty()) ranked.putUserData(SuggestionStats.SIGNALS, bonus.signals)
+        ranked.putUserData(NativeCSharpCompletion.SERVER, true)
         return ranked
     }
 

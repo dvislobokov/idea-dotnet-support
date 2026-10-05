@@ -1,0 +1,539 @@
+
+======== section: Tabs, Indents, Alignment
+  # General
+    Indent style = Spaces
+    Indent size = 4
+    Tab width = 4
+    Line continuation indent multiplier = 1
+  # Nested statements
+    Indent nested 'using' statements = false
+    Indent nested 'fixed' statements = false
+    Indent nested 'lock' statements = false
+    Indent nested 'for' statements = false
+    Indent nested 'foreach' statements = false
+    Indent nested 'while' statements = false
+  # Parenthesis
+    Use line continuation indent inside parentheses = true
+    Indent method declarations' parenthesis = Inside parenthesis (BSD/K&R style)
+    Indent primary constructor declarations' parenthesis = Inside parenthesis (BSD/K&R style)
+    Indent method calls' parenthesis = Inside parenthesis (BSD/K&R style)
+    Indent statement (if, while, for, etc) parenthesis = Inside parenthesis (BSD/K&R style)
+    Indent type parameter's angles = Inside parenthesis (BSD/K&R style)
+    Indent type argument's angles = Inside parenthesis (BSD/K&R style)
+    Indent other parenthesis and brackets = Inside parenthesis (BSD/K&R style)
+  # Preprocessor directives
+    Indent #if, #else, #elif, #endif = No indent
+    Indent #region, #endregion = Indent as usual
+    Indent other preprocessor directives = No indent
+  # Other indents
+    Indent 'case' from 'switch' = true
+    Indent 'break' from 'case' = true
+    Outdent statement labels = false
+    Indent type constraints = true
+    Don't indent comments started at first column = true
+    Place comments at first column when commenting out code = false
+    Use previous element's indent on partial format = true
+    Indent braces inside statement conditions = true
+  # Align multiline constructs
+    How to align when tabs are used for indents = Use spaces (looks aligned on any tab size)
+    Align even if the resulting indentation is too large = false
+    Method parameters = false
+    List of base classes and interfaces = false
+    LINQ query = false
+    Binary expressions = true
+    Outdent binary operators = false
+    Chained method calls = false
+    Outdent dots in chained method calls = false
+    Array, object, and collection initializer = false
+    Switch expressions = false
+    Property patterns = false
+    List patterns and collection expressions = false
+    Binary patterns = false
+    Outdent binary patterns = false
+    Anonymous method body = false
+    Call arguments by '(' = false
+    Call arguments = false
+    Tuple components = false
+    Other expressions = false
+    Statement conditions inside parenthesis = true
+    'for' statement header = false
+    Multiple declarations = false
+    Type parameters list = false
+    Type parameter constraints = false
+    Outdent commas = false
+    Align multiline comments with asterisks = true
+    How to indent raw string literals = Align
+  # Align similar code in columns
+    Fix column alignment in adjacent lines = true
+    Fields and constants = false
+    Properties and events = false
+    Simple methods, operators, delegates = false
+    Multiline method signature = false
+    Variables and local constants = false
+    Other assignments and initializers = false
+    Property patterns = false
+    Nested ternary operators = false
+    Invocations of the same method = false
+    Binary expressions = false
+    End comments = false
+    Simple switch sections = false
+    Switch expressions = false
+
+======== section: Naming (таблица из объектов бэкенда — см. img/40b-settings-code-style-naming.png)
+
+======== section: Syntax Style
+  # 'var' usage in declarations
+    For built-in types = Use 'var'
+    For simple types = Use 'var'
+    Elsewhere = Use 'var'
+    Prefer Roslyn (Visual Studio) logic for type evidence = false
+    Prefer separate declarations for deconstructed variables = false
+    Use 'var' keyword for discards = false
+  # Instance members qualification
+    Use 'this.' qualifier for = FlaggedEnumOptionValue: `RiderBackend 0.SettingsViewModel.optionsDialog.$.loadedPages.[PageId(id=CSharpCodeStyle2)].body.$.content.options[1].children[0].value.$`
+    Qualify members declared in = FlaggedEnumOptionValue: `RiderBackend 0.SettingsViewModel.optionsDialog.$.loadedPages.[PageId(id=CSharpCodeStyle2)].body.$.content.options[1].children[1].value.$`
+  # Static members qualification
+    Qualify with the name of = Declared-in type
+    Members to qualify = FlaggedEnumOptionValue: `RiderBackend 0.SettingsViewModel.optionsDialog.$.loadedPages.[PageId(id=CSharpCodeStyle2)].body.$.content.options[2].children[1].value.$`
+  # Built-in types
+    In locals, members, and parameters, prefer = Keyword
+    In member access expressions, prefer = Keyword
+    Also apply to native-sized integer types = false
+  # Reference qualification and 'using' directives
+    Prefer fully qualified references = false
+    Add 'using' directive to deepest scope = false
+    Place 'System.*' and 'Windows.*' namespaces first when sorting 'using' directives = true
+    Prefer fully qualified using name at nested scope = false
+    Use using alias directive to resolve conflicts = true
+    Allow 'global::' prefix use = true
+  # Modifiers
+    Prefer explicit/implicit private modifier for type members = Explicit
+    Prefer explicit/implicit internal modifier for types = Explicit
+    Modifiers order = [public, private, protected, internal, file, new, static, abstract, virtual, closed, sealed, readonly, override, safe, unsafe, extern, volatile, async, required]
+  # Arguments
+    Skip single arguments = false
+    Literal values = Positional argument
+    String literal values = Positional argument
+    Named expressions (variables, properties, methods, etc.) = Positional argument
+    Anonymous methods (delegates and lambdas) = Positional argument
+    Other = Positional argument
+  # Parentheses
+    Remove redundant parentheses = If not clarifies precedence
+    Prefer Roslyn rules for parentheses clarity = false
+  # Add parentheses to avoid non-obvious precedence
+    Around operands of the following operations = FlaggedEnumOptionValue: `RiderBackend 0.SettingsViewModel.optionsDialog.$.loadedPages.[PageId(id=CSharpCodeStyle2)].body.$.content.options[7].children[2].children[0].value.$`
+    When the operations from the following groups are nested = FlaggedEnumOptionValue: `RiderBackend 0.SettingsViewModel.optionsDialog.$.loadedPages.[PageId(id=CSharpCodeStyle2)].body.$.content.options[7].children[2].children[1].value.$`
+    Even when operations of the same type are nested = false
+  # Braces
+    In 'if' statement = Enforce if any part requires braces
+    In 'for' statement = Do not enforce
+    In 'foreach' statement = Do not enforce
+    In 'while' statement = Do not enforce
+    In 'do-while' statement = Enforce always
+    In 'using' statement = Enforce always
+    In 'lock' statement = Enforce always
+    In 'fixed' statement = Enforce always
+    Remove redundant braces = true
+  # Code body
+    Methods and operators = Block body
+    Local functions = Block body
+    Constructors and destructors = Block body
+    Properties, indexers, and events = Expression body
+    Namespaces = File-scoped
+    Apply style heuristics = true
+  # Attributes
+    Join or separate attributes in section = Separate
+  # Empty string
+    Empty string = Empty literal ""
+  # Trailing comma
+    Before a new line in multiline lists = false
+    When the last element is not followed by a new line = false
+  # Object creation
+    When created type is evident from usage = Omit type: 'new()'
+    When created type is not evident from usage = Specify type: 'new T()'
+  # Default value
+    When type is evident from usage = Omit type: 'default'
+    When type is not evident from usage = Omit type: 'default'
+  # Patterns
+    Null checking pattern style = 'not null' pattern
+
+======== section: Braces Layout
+  # Braces layout
+    Type and namespace declaration = At next line (BSD style)
+    Indent inside namespace declaration = true
+    Method declaration = At next line (BSD style)
+    Lambda and delegate (anonymous method declaration) = At next line (BSD style)
+    Property declaration = At next line (BSD style)
+    Accessor declaration = At next line (BSD style)
+    Block under the 'case' label = At next line (BSD style)
+    Expressions (initializers, switch expressions, patterns, collection expressions) = At next line (BSD style)
+    Use line continuation indent inside expression braces = true
+    Other = At next line (BSD style)
+    Allow comment after '{' = false
+    Empty braces formatting = On different lines
+
+======== section: Blank Lines
+  # General
+    Around region = 1
+    Inside region = 1
+    Before single-line comment = 0
+    Remove whitespace on blank lines = true
+  # Blank lines in declarations
+    Keep max blank lines in declarations = 2
+    Remove blank lines after '{' and before '}' in declarations = true
+    After file header comment = 1
+    Between different 'using' groups = 0
+    After 'using' list = 1
+    Around namespace = 1
+    Inside namespace = 0
+    After file-scoped namespace directive = 1
+    Around type = 1
+    Around single-line type = 1
+    Inside type = 0
+    Around field = 1
+    Around single line field = 0
+    Around property/event = 1
+    Around single line property/event = 0
+    Around auto/abstract property/event = 1
+    Around single line auto/abstract property/event = 0
+    Around property/event accessor = 0
+    Around single line property/event accessor = 0
+    Around method = 1
+    Around single line method = 0
+  # Blank lines in code
+    Keep max blank lines in code = 2
+    Remove blank lines after '{' and before '}' in code = true
+    Around local function = 1
+    Around single line local function = 0
+    Before statements with control transfer = 0
+    After statements with control transfer = 0
+    Before statements with child blocks = 0
+    After statements with child blocks = 1
+    Before multiline statements = 0
+    After multiline statements = 0
+    Around 'case' section with a block in switch statement = 0
+    Around multiline 'case' section in switch statement = 0
+    Before 'case' in switch statement = 0
+    After 'case' in switch statement = 0
+
+======== section: Line Breaks and Wrapping
+  # General
+    Keep existing line breaks = true
+    Wrap long lines = true
+    Hard wrap at = 120
+    Prefer to wrap before ',' = false
+    Prefer to wrap before '=' = false
+    Prefer to wrap around '=' = Default preference
+    Special 'else if' treatment = true
+    Line feed at end of file = false
+  # Arrangement of attributes
+    Place attribute section list on separate line if it is longer than = 38
+    Keep existing arrangement of attributes = false
+    Place type attribute on the same line = Never
+    Place method attribute on the same line = Never
+    Place property/indexer/event attribute on the same line = If owner is singleline
+    Place accessor attribute on the same line = If owner is singleline
+    Place field attribute on the same line = Always
+    Place record field attribute on the same line = If owner is singleline
+  # Arrangement of method signatures
+    Wrap formal parameters = Simple wrap
+    Max formal parameters on a single line = 10000
+    Keep existing arrangement of parenthesis in declaration = true
+    Prefer to wrap before '(' in declaration = false
+    Prefer to wrap after '(' in declaration = false
+    Prefer to wrap before ')' in declaration = false
+    Allow constructor initializer on the same line = true
+  # Arrangement of primary constructor signatures
+    Wrap primary constructor parameters = Chop if long or multiline
+    Max primary constructor parameters on a single line = 10000
+    Keep existing arrangement of parenthesis in declaration = true
+    Prefer to wrap before '(' in declaration = false
+    Prefer to wrap after '(' in declaration = true
+    Prefer to wrap before ')' in declaration = false
+    Allow primary constructor initializer on the same line = true
+  # Arrangement of lambda and anonymous function signatures
+    Wrap formal parameters = Simple wrap
+    Max formal parameters on a single line = 10000
+    Keep existing arrangement of parenthesis in declaration = true
+    Prefer to wrap before '(' in declaration = false
+    Prefer to wrap after '(' in declaration = false
+    Prefer to wrap before ')' in declaration = false
+  # Arrangement of expression bodied members
+    Keep existing arrangement of expression bodied members = true
+    Place method expression body on the same line = If owner is singleline
+    Place property expression body on the same line = If owner is singleline
+    Place property accessor expression body on the same line = If owner is singleline
+    Prefer to wrap before '=>' followed by expressions = false
+  # Arrangement of type parameters, constraints, and base types
+    Allow type constraints on the same line = true
+    Prefer to wrap before first constraint = false
+    Wrap multiple type parameter constraints = Chop if long or multiline
+    Prefer to wrap before opening angle bracket in type parameters list = false
+    Prefer to wrap before ':' = false
+    Wrap extends/implements list = Simple wrap
+  # Arrangement of declaration blocks
+    Keep existing arrangement of declaration blocks = false
+    Place abstract/auto property/indexer/event declaration on single line = true
+    Place simple property/indexer/event declaration on single line = false
+    Place it on single line even when it has attributes on accessors = false
+    Place simple accessor on single line = true
+    Place simple method on single line = false
+  # Arrangement of enumerations
+    Keep existing arrangement of enumeration = false
+    Max enumeration members on a single line = 3
+    Place simple enumeration on single line = false
+    Wrap enumeration declaration = Chop always
+  # Arrangement of statements
+    Place 'else' on a new line = true
+    Place 'while' on a new line = false
+    Place 'catch' on a new line = true
+    Place 'finally' on a new line = true
+    Wrap 'for' statement header = Chop if long or multiline
+    Wrap multiple declaration = Chop if long or multiline
+  # Arrangement of embedded statements
+    Keep existing arrangement of embedded statements = true
+    Place simple embedded statement on the same line = If owner is singleline
+    Place simple 'case' statement on the same line = Never
+    Treat 'case' statements with 'break' as simple = true
+  # Arrangement of embedded blocks
+    Keep existing arrangement of embedded blocks = false
+    Place a block with a single simple statement on the same line = false
+    Place simple anonymous method on single line = true
+  # Arrangement of switch expressions
+    Keep existing arrangement of switch expressions = true
+    Place simple switch expression on single line = false
+    Wrap switch expression = Chop always
+  # Arrangement of property patterns
+    Keep existing arrangement of property patterns = true
+    Place simple property pattern on single line = true
+    Wrap property pattern = Chop if long or multiline
+  # Arrangement of list patterns
+    Keep existing arrangement of list patterns and collection expressions = true
+    Place simple list pattern and collection expression on a single line = true
+    Wrap list pattern and collection expression = Simple wrap
+  # Arrangement of initializers
+    Keep existing arrangement of initializers = true
+    Place simple array, object, and collection on single line = true
+    Max object and collection initializer elements on a single line = 4
+    Wrap object and collection initializer = Chop if long or multiline
+    Max array initializer and collection expression elements on a single line = 10000
+    Wrap array initializer = Simple wrap
+  # Arrangement of invocations
+    Wrap invocation arguments = Simple wrap
+    Max invocation arguments on a single line = 10000
+    Keep existing arrangement of parenthesis in invocation = true
+    Prefer to wrap before '(' in invocation = false
+    Prefer to wrap after '(' in invocation = false
+    Prefer to wrap before ')' in invocation = false
+    Place a single lambda expression argument on the same line with '(' in method invocations = true
+  # Arrangement of member access expressions
+    Prefer to wrap after '.' = false
+    Wrap chained method calls = Simple wrap
+    Prefer to wrap before first method call = false
+    Prefer to wrap after properties and fields in chained method calls = false
+  # Arrangement of binary expressions
+    Prefer to wrap before operator in binary expression = false
+    Wrap chained binary expressions = Simple wrap
+    Prefer to wrap before operator in binary pattern = true
+    Wrap complex binary patterns = Simple wrap
+    Force chop compound condition in 'if' statement = false
+    Force chop compound condition in 'while' statement = false
+    Force chop compound condition in 'do' statement = false
+  # Arrangement of ternary expressions
+    Prefer to wrap before '?' and ':' in ternary expressions = true
+    Wrap ternary expression = Chop if long or multiline
+    Nested ternary expression style = Chop in existing style
+  # Arrangement of LINQ expressions
+    Wrap LINQ expressions = Chop if long or multiline
+    Prefer to wrap before multiline LINQ expressions = false
+    Place 'into' on a new line in LINQ expressions = true
+  # Arrangement of interpolated strings
+    Wrap interpolated strings = Do not wrap even if long
+  # Arrangement of comments
+    Wrap non-documentation comments = false
+
+======== section: Spaces
+  # Preserve existing formatting
+    Extra spaces inside = Remove all extra spaces
+  # Before parentheses in statements
+    'if' parentheses = true
+    'while' parentheses = true
+    'catch' parentheses = true
+    'switch' parentheses = true
+    'for' parentheses = true
+    'foreach' parentheses = true
+    'using' parentheses = true
+    'lock' parentheses = true
+    'fixed' parentheses = true
+  # Before other parentheses
+    Method call parentheses = false
+    Method call empty parentheses = false
+    Method declaration parentheses = false
+    Method declaration empty parentheses = false
+    'typeof' parentheses = false
+    'default' parentheses = false
+    'checked' and 'unchecked' parentheses = false
+    'sizeof' parentheses = false
+    'nameof' parentheses = false
+    'new' parentheses = false
+    Between keyword and expression = true
+    Between keyword and type = true
+  # Within parentheses in statements
+    'if' parentheses = false
+    'while' parentheses = false
+    'catch' parentheses = false
+    'switch' parentheses = false
+    'for' parentheses = false
+    'foreach' parentheses = false
+    'using' parentheses = false
+    'lock' parentheses = false
+    'fixed' parentheses = false
+  # Within other parentheses
+    Parentheses = false
+    Type cast parentheses = false
+    Method declaration parentheses = false
+    Method declaration empty parentheses = false
+    Method call parentheses = false
+    Method call empty parentheses = false
+    'typeof' parentheses = false
+    'default' parentheses = false
+    'checked' and 'unchecked' parentheses = false
+    'sizeof' parentheses = false
+    'nameof' parentheses = false
+    'new' parentheses = false
+  # Around array brackets
+    Before array access brackets = false
+    Before array rank brackets = false
+    Within array access brackets = false
+    Within list pattern and collection expression brackets = false
+    Within array rank brackets = false
+    Within array rank empty brackets = false
+  # Around angle brackets
+    Before opening angle bracket of type parameters list = false
+    Before opening angle bracket of type arguments list = false
+    Type parameter angles = false
+    Type argument angles = false
+  # Around braces
+    Before single line accessors block = true
+    Within single line accessor = true
+    Between accessors in single line property/event = true
+    Space between empty braces = true
+    Within single line method = true
+    Within single line anonymous method = true
+    Within single-line expression braces = true
+  # Around binary operators
+    Assignment operators (such as '=' and '+=') = true
+    Logical operators (&&,||) = true
+    Equality operators (==,!=) = true
+    Relational operators (<,>,<=,>=) = true
+    Bitwise operators (&,|,^) = true
+    Additive operators (+,-) = true
+    Multiplicative operators (*,/,%) = true
+    Shift operators (<<,>>,>>>) = true
+    Null coalescing operator (??) = true
+    Unsafe arrow operator (->) = false
+  # After unary operators
+    Logical not operator (!) = false
+    Unary minus operator (-) = false
+    Unary plus operator (+) = false
+    Unsafe addressof operator (&) = false
+    Unsafe asterisk operator (*) = false
+    Before/after ++ and -- = false
+  # In ternary operator
+    Before '?' = true
+    After '?' = true
+    Before ':' = true
+    After ':' = true
+  # Around comma and semicolon
+    Before comma = false
+    After comma = true
+    Before 'for' semicolon = false
+    After 'for' semicolon = true
+    Before semicolon = false
+  # Around colon
+    Before base types list colon = true
+    After base types list colon = true
+    Before type parameter constraint colon = true
+    After type parameter constraint colon = true
+    Before colon in 'case' statement = false
+    After colon in 'case' statement = true
+    Before other colons = false
+    After other colons = true
+  # Attributes
+    Between attribute sections = true
+    Within attribute brackets = false
+    After attributes = true
+  # Other
+    After type cast parentheses = false
+    Around dot = false
+    Around lambda arrow = true
+    Before unsafe pointer declaration = false
+    Before nullable mark = false
+    Around '=' in namespace alias directive = true
+    Before end of line comment = true
+    Space after '//' in comments = false
+    After operator keyword = true
+    After '..' in slice pattern = true
+    After '..' in spread pattern = true
+
+======== section: Null Checking
+    Throw expression (C# 7.0+) = arg ?? throw new ArgumentNullException(nameof(arg))
+    Classic = if (arg == null) throw new ArgumentNullException(nameof(arg));
+    ThrowIfNull() API (.NET 6+) = ArgumentNullException.ThrowIfNull(arg, nameof(arg));
+    Pattern matching (C# 7.0+) = if (arg is null) throw new ArgumentNullException(nameof(arg));
+    Reference equality = if (ReferenceEquals(arg, null)) throw new ArgumentNullException(nameof(arg));
+    Code contract = Contract.Requires(arg != null, "arg != null");
+    Code contract (generic) = Contract.Requires<ArgumentNullException>(arg != null, "arg != null");
+    Debug assertion = Debug.Assert(arg != null, "arg != null");
+    Trace assertion = Trace.Assert(arg != null, "arg != null");
+    Custom (statement) = if (arg == null) throw new System.ArgumentNullException("arg");
+    Custom (expression) = Example.ValidationHelper.NotNull(arg, "arg != null")
+
+======== section: XML documentation
+  # Tabs and indents
+    Indent style = Spaces
+    Indent size = 4
+    Tab width = 4
+    How to align when tabs are used for indents = Use spaces (looks aligned on any tab size)
+    Align even if the resulting indentation is too large = false
+  # Line wrapping
+    Wrap long lines = true
+    Hard wrap at = 120
+    Wrap tags and processing instructions = true
+  # Processing instructions
+    Spaces around '=' in attribute = false
+    Space after last attribute = false
+    Attributes format = Do not touch
+    Attributes indenting = Align by first attribute
+    Blank line after processing instructions = true
+  # Inside of tag header
+    Spaces around '=' in attribute = false
+    Space after last attribute = false
+    Space before '/>' = true
+    Attributes format = Do not touch
+    Attributes indenting = Single indent
+  # Tag content
+    Keep existing line breaks = true
+    Line breaks after start-tag and before end-tag in multiline elements = true
+    Line breaks after start-tag and before end-tag in elements that contain other elements and no text = true
+    Line breaks after start-tag and before end-tag when element is longer than = 2147483647
+    Spaces after start-tag and before end-tag otherwise = false
+    Wrap inside text = true
+    Wrap before and after elements = true
+    Indent inside element that does not contain text = One indent from parent element
+    Indent inside element that contains text = One indent from parent element
+  # Around tags
+    Maximum blank lines between tags = 0
+    Place multiline elements on a new line = true
+    Place single-line elements on a new line = false
+    Always place the following elements on a new line = summary,remarks,example,returns,param,typeparam,value,para
+
+======== section: File Layout
+
+======== section: Other
+  # ReSharper other
+    Revert to old formatting engine = false
+  # Unity
+    Force a line break after any [Header] annotations = false
+    Blank lines after the [Header] annotations = 0
+

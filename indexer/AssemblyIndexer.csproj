@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
     The indexer of assemblies: reads the metadata of .dll files (NuGet packages, the reference packs of the SDK) and writes an index
-    of their public types and static members, one file per assembly, for the plugin to complete what is not imported.
+    of their public and protected types and members with signatures (and of their XML documentation), one file per assembly, for
+    the plugin to complete what is not imported and for its own semantics of C#.
 
     The plugin carries this file and Program.cs as they are and builds them on the machine of the user (IndexerTool), for the
     framework of the SDK that is there: `-p:IndexerFramework=net10.0` with the SDK 10, `net9.0` with the SDK 9. The reference pack of
@@ -20,6 +21,8 @@
     <AssemblyName>AssemblyIndexer</AssemblyName>
     <RootNamespace>DotNetSupport.Indexer</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- a run is short: profiling for a better code that comes when the run is over is time lost (0.78 -> 0.55 s on the reference pack) -->
+    <TieredPGO>false</TieredPGO>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <DebugType>none</DebugType>

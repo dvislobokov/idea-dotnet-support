@@ -1,6 +1,6 @@
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
-// csharp-psi-ide of ../csharp-psi (CSHARP_PSI_MIGRATION.md): composed into the plugin jar by the root project; empty until step 7.
+// csharp-psi-ide (CSHARP_PSI_MIGRATION.md): composed into the plugin jar by the root project; still empty.
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.intellij.platform.module)

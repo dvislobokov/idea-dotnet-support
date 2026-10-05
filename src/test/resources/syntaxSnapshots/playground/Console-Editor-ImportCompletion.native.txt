@@ -1,0 +1,50 @@
+## declarations
+namespace Playground.Editor  name 1:11-1:28  range 1:1-47:2
+  class ImportCompletion [public]  name 12:14-12:30  range 12:1-47:2 body 13:1-47:2
+    method Statements(): void [public]  name 14:17-14:27  range 14:5-40:6 body 15:5-40:6
+
+## structure view
+Playground.Editor
+  ImportCompletion
+    Statements(): void
+
+## folding
+3:1-11:15  /// Live check of the completion of what is not imported (ROADMAP: «Свой индекс сбор...  | /// <summary>
+13:1-47:2  {...}  | {
+15:5-40:6  {...}  | {
+18:9-19:70  // TYPE:import-void — `WriteLi`, choose `Console.WriteLine`. EXPECT: `Console.Write...  | // TYPE:import-void — `WriteLi`, choose `Console.WriteLine`. EXPECT: `Console.WriteLine(|);` with the caret inside, the parameter info
+21:9-22:116  // TYPE:import-using — `Stopw`, choose `Stopwatch.StartNew`. EXPECT: `Stopwatch.Sta...  | // TYPE:import-using — `Stopw`, choose `Stopwatch.StartNew`. EXPECT: `Stopwatch.StartNew();` with the caret after it (the method takes
+24:9-25:58  // TYPE:import-value — `var path = Combi`, choose `Path.Combine`. EXPECT: `var path...  | // TYPE:import-value — `var path = Combi`, choose `Path.Combine`. EXPECT: `var path = Path.Combine(|);` — the semicolon though Combine
+29:9-30:38  // TYPE:import-generic — `var none = Empt`, choose `Array.Empty<>` (or `Enumerable....  | // TYPE:import-generic — `var none = Empt`, choose `Array.Empty<>` (or `Enumerable.Empty<>`). EXPECT: `Array.Empty<|>();` with the caret
+32:9-33:28  // TYPE:import-expected — `int length = Ma`. EXPECT: `Math.Max`, `Math.Min` and the...  | // TYPE:import-expected — `int length = Ma`. EXPECT: `Math.Max`, `Math.Min` and the other members that give an int are above the
+35:9-37:113  // TYPE:import-silent-dot — `name.WriteLi`. EXPECT: NO `Console.WriteLine` in the l...  | // TYPE:import-silent-dot — `name.WriteLi`. EXPECT: NO `Console.WriteLine` in the list: after a dot the members of `name` are listed
+42:5-43:108  // TYPE:import-package — in a file of the project `Tests` (it refers to xunit) type...  | // TYPE:import-package — in a file of the project `Tests` (it refers to xunit) type `Equa` inside a test method.
+45:5-46:59  // TYPE:import-stats — .NET | Suggestion Statistics after the markers above. EXPECT...  | // TYPE:import-stats — .NET | Suggestion Statistics after the markers above. EXPECT: the reason `not imported` in the last block,
+
+## breadcrumbs
+1: Playground.Editor
+12: Playground.Editor > ImportCompletion
+14: Playground.Editor > ImportCompletion > Statements()
+42: Playground.Editor > ImportCompletion
+
+## IL Viewer: type / member at the line
+1: - / -
+12: Playground.Editor.ImportCompletion / -
+14: Playground.Editor.ImportCompletion / Statements
+42: Playground.Editor.ImportCompletion / -
+
+## Go to Base: member at the line
+1: -
+14: ImportCompletion.Statements()
+16: ImportCompletion.Statements() (in body)
+42: -
+
+## breakpoint lines
+15-16, 39-40
+
+## run gutter
+
+## Go to Class / Symbol
+M:Statements -> 14:17 Statements() (ImportCompletion)
+T:ImportCompletion -> 12:14 ImportCompletion (Playground.Editor)
+

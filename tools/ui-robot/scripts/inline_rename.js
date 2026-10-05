@@ -22,7 +22,7 @@ ApplicationManager.getApplication().invokeAndWait(new java.lang.Runnable({ run: 
     if (handler != null) handler.invoke(project, editor, FileDocumentManager.getInstance().getFile(editor.getDocument()) == null ? null :
         com.intellij.psi.PsiDocumentManager.getInstance(project).getPsiFile(editor.getDocument()), context)
 } }))
-// prepareRename goes to the server first
+// the server's handler asks prepareRename first; the built-in one (RENAME = Built-in, NativeCSharpRenameHandler) starts the template at once
 for (let i = 0; i < 30 && report.indexOf("template") < 0; i++) {
     java.lang.Thread.sleep(200)
     ApplicationManager.getApplication().invokeAndWait(new java.lang.Runnable({ run: function () {

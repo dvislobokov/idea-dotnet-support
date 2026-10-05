@@ -3,6 +3,237 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.63
+
+- Decompiled sources, as in Rider: Solution view → Dependencies → a package, an assembly of a framework (Frameworks →
+  Microsoft.NETCore.App → System.Text.Json) or a referenced assembly → Decompile... lists its types; the chosen one opens as read-only C#
+  in a tab `JsonSerializer.cs [System.Text.Json]` with the banner "Decompiled from System.Text.Json 10.0.0.0. Read-only", colors, folding,
+  Structure and the XML documentation of the members. No `ilspycmd` or other global tool: the plugin's .NET helper decompiles with
+  ICSharpCode.Decompiler (the engine of ILSpy). A reference assembly is decompiled from its implementation (the shared framework, `lib/` of
+  the package), so the methods have bodies; a type forwarded elsewhere (`System.String` of `System.Runtime`) comes from where it lives.
+  Decompiled types are kept on disk: a tab reopened with the project and Back in the navigation history find them again; a rebuilt or
+  updated assembly is decompiled anew
+- Built-in Go to Declaration (Ctrl+B) of a type or a member of a library opens its decompiled code once the type has been decompiled;
+  the first time it opens the metadata view at once and decompiles the type in the background for the next time
+
+## 0.1.62
+
+- Go to Class (Ctrl+N) and Go to Symbol (Ctrl+Alt+Shift+N) find the types and members of the referenced assemblies — the framework,
+  NuGet packages, assemblies by path — when "Include non-project items" is on (Search Everywhere: "All Places"), without the language
+  server: `List<T> (System.Collections.Generic, System.Collections 10.0)`, one row for an assembly several projects refer to
+- They open the metadata view of the type, as Rider does without a decompiler: a read-only C# file made of the index of the assembly —
+  where the assembly is and its version, the type with its generic parameters, constraints, bases and attributes, every public and
+  protected member as a signature without a body, the XML documentation as `///`, the nested types — with the caret on the member;
+  the tab says which assembly it is and survives a restart of the IDE
+- Built-in Go to Declaration (Ctrl+B, Ctrl+click; Settings | Tools | .NET | Language Server → "Navigation and usages" = Built-in) of a
+  type or a member of an assembly opens its metadata view while the language server is not ready; with the server ready its decompiled
+  source opens as before
+
+## 0.1.61
+
+- `using` on the plugin's own C# tree. Completion (Built-in): `using var` and `await using var` at the start of a statement (the latter
+  makes the method `async`, as `await` does), locals, `var` and `new` in `using (`, namespaces of the solution and of the referenced
+  assemblies after `using ` (level by level after a dot), types too after `using static ` and `using X = `, `global using` at the top of a
+  file
+- Postfix `.awaitusing` next to `.using`; both name the variable after the type made or the method called
+  (`new StreamReader(path).using` → `using var reader = …`), `.awaitusing` makes the method `async`
+- Alt+Enter: Convert to 'using' declaration / Convert to 'using' statement, Wrap in 'using' statement (a local made by `new`), Sort
+  'using' directives (global first, `System` first), Convert to 'global using' (moves the directive to the project's `GlobalUsings.cs`,
+  made when there is none). "Make method async" works on `await using` and `await foreach` too; with the Built-in source the server's
+  row of the same action is no longer listed twice
+
+## 0.1.60
+
+- Navigation and usages, Completion and Colors of identifiers are built in by default (Settings | Tools | .NET | Language Server |
+  Source of Features): a robot compared them with the language server on the playground — Go to Declaration went to the same places,
+  completion lost nothing of the server's list, and every name the server colors got the same or a finer color
+- Built-in Go to Declaration on `new Order()` goes to the constructor, as the language server does, not to the class
+- Built-in completion offers the keywords it missed (`global`, `ref`, `stackalloc`, `static` in expressions; `dynamic`, `extern`,
+  `scoped`, `void` in statements; `sealed` and `ref` at the start of a member) and no longer shows the language server's `override`
+  members a second time next to its own; a named argument `amount:` stays next to the local `amount`
+- Choosing the language server's `await`, `override` or `partial` item no longer fails (a stack overflow in the IDE log) and no longer
+  leaves `awaitait` or `();` behind: the whole edit of the server is applied
+- Built-in colors: switching «Colors of identifiers» no longer leaves the language server's colors under the built-in ones; calls of
+  overloads with an argument of unknown type (`Console.WriteLine(x)`), `g.Key` of `group … into g` and methods on a LINQ query get
+  their colors
+
+## 0.1.59
+
+- The assemblies the solution is compiled against are libraries of the IDE: Project view → External Libraries lists the framework
+  packs (`Microsoft.NETCore.App.Ref 10.0.12`, `.NETFramework 4.8.1`), the NuGet packages with their versions and the assemblies
+  referenced by path, each with its dlls; they are in the "All Places" scope and not in the project's. Updated after restore, a change of
+  a project file or of the framework in the toolbar; only the dlls are added (binary, nothing reads their content), not the XML docs next
+  to them
+
+## 0.1.58
+
+- Built-in Go to Declaration (Ctrl+B) and colors of identifiers now know the type of any expression, not only of a name: a call with
+  inferred type arguments (`orders.First(o => ...).Total`, `items.Select(x => x).Last()`), `await`, an indexer, `?.` and `??`, `?:`,
+  operators, tuples with element names, deconstruction, `foreach` over a dictionary, LINQ query expressions and the parameters of
+  lambdas — the member after a dot on them goes to its declaration in the solution without the language server
+- `var` takes the type of what it is initialized with, so members of such variables resolve as well
+
+## 0.1.57
+
+- Built-in colors of identifiers (Settings | Tools | .NET | Language Server → «Colors of identifiers» = Built-in) now know the
+  referenced assemblies: `Console`, `List`, `Math.PI`, `WriteLine`, `numbers.Count`, extension methods like `Where` get the colors
+  of their kinds without the language server, and the namespaces of `using static` / alias directives are colored
+- Built-in Go to Declaration (Ctrl+B) goes to a member after a dot when the type of the value before it is known (`order.Total`,
+  `Make().Total`, `this.Items`) and to the parameter of a named argument; members of assemblies are still left to the language server
+- The plugin resolves C# names itself: namespaces, `using` / alias / `global using` (from other files and the project's implicit
+  usings), types of the solution and of the referenced assemblies, inherited members, overloads by arguments, extension methods
+
+## 0.1.56
+
+- Errors and warnings and Rename are built in by default (Settings | Tools | .NET | Language Server | Source of Features): the syntax errors
+  show at once while typing, with the compiler's codes, and the semantic ones still come from the language server; Shift+F6 renames
+  locals, parameters, local functions, labels and type parameters without waiting for the server (members and types still go to it)
+- Switching «Errors and warnings» no longer leaves the language server's syntax errors doubled or missing until the next edit
+- Rename: the check of conflicts and the edit itself run after the inline rename ends, not inside it (an error of the IDE about a
+  write-unsafe context)
+
+## 0.1.55
+
+- Completion of C# files can come from the plugin itself: Settings | Tools | .NET | Language Server | Source of Features |
+  «Completion» = Built-in lists, at once and before the language server has loaded the solution, the keywords the place allows
+  (`break` / `continue` only in a loop, `else` after an `if`, `catch` / `finally` after a `try`, `yield` in an iterator, the
+  modifiers not typed yet at the start of a member), the locals, parameters, members and types in scope — locals first, then
+  parameters, members, types and keywords, what fits the expected type higher — `override` of the base members (the whole
+  member is written: `throw new NotImplementedException();` for an abstract one, a `base` call for a virtual one), `partial`
+  methods and names for a new variable after its type (`StringBuilder ` → `builder`, `stringBuilder`). The server's items
+  join the list once it is ready, without doubles. Language server stays the default until the scenarios are checked
+- In a method that returns `Task<T>` / `Task` / `ValueTask` and is not `async`, `return ` gets the gray text
+  `Task.FromResult();` / `Task.CompletedTask;` (Tab) and the same first item of completion
+- Choosing `await` in a method that is not `async` makes it `async` (`void` becomes `Task`, `int` becomes `Task<int>`;
+  event handlers stay `async void`); Alt+Enter on an `await` offers «Make method async» without the language server
+
+## 0.1.54
+
+- Syntax errors of C# files can come from the plugin itself: Settings | Tools | .NET | Language Server | Source of Features |
+  «Errors and warnings» = Built-in shows the errors of the parser, of literals and of preprocessor directives with the compiler's
+  codes, messages and places (`CS1002: ; expected` after the end of the line, not on the next one), at once while typing and before
+  the language server has loaded the solution. The server still reports the semantic errors, and gives way only on the syntax errors
+  the plugin shows itself, so nothing is shown twice. Language server stays the default until the scenarios are checked
+- Without the language server (turned off) the syntax errors are shown by the plugin
+
+## 0.1.53
+
+- Rename (Shift+F6) on the built-in C# syntax tree (Settings | Tools | .NET | Language Server → «Rename» — Built-in; the default stays
+  Language server for now): locals, parameters of lambdas, anonymous methods and local functions, parameters of methods, constructors,
+  indexers and primary constructors, local functions, labels, query range variables and type parameters are renamed in place, without
+  the server: every use in the file follows while typing, named arguments of the calls and `<param>` / `<typeparam>` tags of the doc
+  comment too, and one Ctrl+Z brings everything back. A reserved keyword gets `@` (`@class`); a name that would change what another name
+  means (a field it would hide, a lambda parameter that would capture a use, a second declaration in the same scope) shows the
+  «Problems Detected» dialog. Members and types, a parameter used as a named argument in another file and the type parameters of a
+  `partial` declaration still go to the language server; before it is ready a hint says why
+- Navigation, the highlighting of usages, colors and rename on the built-in tree now share one resolver of names. Go to Declaration
+  gains what only the colors knew: members of base classes of the solution, `base.X`, `Type.X`, members set by an object initializer,
+  members of `using static` types. Scopes follow C# more closely everywhere: a local is visible in its whole block, variables of
+  `while` / `do` / `lock` conditions and embedded statements stay there, a query continuation (`into g`) hides the variables before it.
+  The positional parameters of a record are properties: their usages are no longer highlighted as if they were local
+
+## 0.1.52
+
+- The index of assemblies (format 2) keeps what a library shows to its users, not only what completion of unimported members needed:
+  every public and protected type with its generic parameters and constraints, base type, interfaces, nested types and attributes,
+  and every public and protected member — instance and static methods, constructors, operators, properties and indexers, events,
+  fields, constants with their values — with signatures (nullable annotations, tuple element names, `ref` / `out` / `in` /
+  `params`, default values). Extension methods are found by what they extend, and the XML documentation of a package or of the SDK
+  is indexed as well (a separate compressed file, read only when asked for). This is the groundwork for the plugin's own C#
+  semantics; nothing changes in the editor yet
+- Indexing runs on half of the cores: the reference pack of .NET 10 with its documentation takes 0.8 s once per machine
+- What a project is compiled against now follows the framework chosen in the toolbar, and includes projects of the old format
+  (`Reference` with `HintPath`, the .NET Framework reference assemblies of `TargetFrameworkVersion`), the reference assemblies of
+  .NET Framework for SDK projects (the `Microsoft.NETFramework.ReferenceAssemblies` package or the ones installed on the machine),
+  and reference packs restore has downloaded for a framework the SDK has no pack of. Completion of unimported members sees them
+- Members marked `[EditorBrowsable(Never)]` are still not offered by completion of unimported members
+
+## 0.1.51
+
+- Colors of identifiers in the palette of Rider: Settings | Editor | Color Scheme | C# now has Rider's groups and names — class,
+  static class, record, struct, record struct, interface, enum, delegate, type parameter, attribute, namespace; method declaration and
+  call, static and extension methods, local function; field, static field, constant (bold, also enum members), property, static
+  property, event; local variable, mutable local variable (underlined: written again after its declaration), parameter, primary
+  constructor parameter, label. Every new color falls back to the three colors of before, so custom schemes keep working
+- The language server's colors use the new palette too (`static`, reassigned locals, locals and parameters, namespaces, labels)
+- Colors of identifiers on the built-in C# syntax tree (Settings | Tools | .NET | Language Server → «Colors of identifiers» —
+  Built-in; the default stays Language server for now): declarations by their kind and modifiers, locals, parameters, local functions,
+  type parameters and labels with their uses, members of the type and its partial parts and base classes in the solution, `this.X`,
+  `Type.X`, `using static`, object initializers, types of the solution by kind — read from the index, without parsing other files and
+  without the server. What only the server can resolve (library types and their members) stays uncolored in this mode; switching the
+  source recolors open editors at once
+
+## 0.1.50
+
+- Go to Declaration (Ctrl+B, Ctrl+click), Ctrl+hover and the highlighting of usages under the caret on the built-in C# syntax tree
+  (Settings | Tools | .NET | Language Server → «Navigation and usages» — Built-in; the default stays Language server for now): locals,
+  `out var` and pattern variables, deconstruction, `foreach` / `for` / `using` / `catch` variables, parameters of methods, constructors,
+  primary constructors, lambdas and local functions, local functions, `goto` labels, query range variables and type parameters, by the
+  scopes of C# (a lambda's parameter hides a local, a local hides a field) — without waiting for the language server
+- Members of the enclosing type and of its other `partial` parts by name (overloads are offered as a list) and the types of the
+  solution by name, among the namespaces the file is in and imports with `using`
+- What the tree cannot tell (a member after a dot, base members, types of packages and the framework) still goes to the language
+  server, and Go to Super (Ctrl+U) works whichever source is chosen: switching to Built-in loses no navigation
+- Highlighting of a local tells reads from writes (a declaration, `=`, `++`, `out` and `ref` are writes) and stays within its method
+
+## 0.1.49
+
+- Reformat Code on the built-in C# syntax tree (Settings | Tools | .NET | Language Server → «Formatting», Built-in by default): what `dotnet format whitespace` does, inside the IDE and without a process — indents, braces on lines of
+  their own, spaces around operators and after keywords, `case` labels, the blank lines kept, the `indent_*` and `csharp_*` options of
+  `.editorconfig`; literals, comments and inactive `#if` branches are never touched
+- Reformat Selection, Code | Auto-Indent Lines and the indent of a paste work with it; with CSharpier chosen or found by «Auto»
+  CSharpier still formats, «None» still turns formatting off
+- Settings | Tools | .NET | Toolset and Build → «Formatter»: a new «Built-in» choice next to «dotnet format (on save)». The built-in
+  formatter works as you go (Reformat Code, a selection, Auto-Indent Lines, a paste); `dotnet format` formats whole files only, so it
+  is meant for Reformat Code and «Reformat code» on save. «Auto» picks between the two by the «Formatting» switch of the Language
+  Server page; a chosen formatter no longer depends on that switch
+- «None» no longer lets Reformat Code or Reformat Selection touch C# files
+
+## 0.1.48
+
+- Typing assistance on the built-in C# syntax tree (Settings | Tools | .NET | Language Server → «Typing assistance» — Built-in, the
+  default, or Language server for the previous token rules):
+  - Extend Selection (Ctrl+W) goes through the syntax: `name` → `name.Trim()` → the argument list → the call → the expression → the
+    statement → the block → the member with its attributes and doc comment → the type; the text of a string without its quotes, the hole
+    of an interpolated string
+  - Complete Statement (Ctrl+Shift+Enter) adds the `)`, `]` and `;` a statement lacks (`Foo(a, b` → `Foo(a, b);`), gives `if`, `foreach`,
+    `while`, a method or a class without a body a block with the caret in it, and no longer splits a call written over two lines
+  - The gray `;` is offered at the end of a statement written over several lines, and not after a line that only looks finished
+- The gray text of lambdas and arguments of the language server follows the parameter info, not the typing assistance switch
+- Completion of members that are not imported no longer offers static methods where only a type may stand: in `Task<…>` and other
+  type arguments, `typeof(…)`, after `as`, in a base list and a `where` constraint (`Task<str` offered `Conversion.Str`)
+
+## 0.1.47
+
+- Go to Class and Go to Symbol on the built-in C# syntax tree use stub indexes: the rows come from the index, files are not parsed to
+  show them
+- C# files are parsed once while the IDE indexes them (the old declaration index serves only the "Language server" tree)
+- Indexing follows each file's `#if` symbols and language version; such files are reindexed and parsed again when the target
+  framework or the project configuration changes, so Go to Class leads to the class of the active `#if` branch
+- New indexes of extension methods and of test attributes (`[Fact]`, `[Test]`) for the coming features
+
+## 0.1.46
+
+- Find Usages groups usages by kind on the plugin's own C# tree: Settings | Tools | .NET | Language Server → Source of Features →
+  "Kinds of usages" — Built-in (the default), or Language server (the previous token heuristics). The tree tells more exactly: a
+  deconstruction `(a, b) = …` writes `a` and `b`; a member given a nested initializer (`Lines = { 1, 2 }`) is read, not written; the
+  type of `out Order o` is a declaration type, not a write; a type in a `switch` pattern is a type check; query variables, lambda
+  parameters and members of anonymous types are declarations; the text of an interpolated string is a string. It works while the
+  IDE indexes
+
+## 0.1.45
+
+- C# files are now parsed by the plugin's own parser, a port of Roslyn's (checked against the compiler: the same trees on the
+  sources of Roslyn, dotnet/runtime and aspnetcore). Structure view, folding, breadcrumbs, Go to Class / Symbol, the IL Viewer, Go to
+  Base, run markers of tests and the other features that read declarations take them from its tree, without waiting for the language
+  server. Fixed on the way: a method with two headers under `#if` / `#else` no longer swallows the rest of its class, a `record` after
+  a top-level `using (…) { … }` is found, `int a, b;` shows both fields, `[assembly: …]` is not part of the namespace below it, the
+  primary constructor of a generic record and the attributes of an enum member are shown
+- `#if` regions follow the project: the symbols and the C# version of a file come from its project and the configuration and target
+  framework chosen in the toolbar; switching the target framework updates the Structure view
+- Settings | Tools | .NET | Language Server → Source of Features: "Structure, folding and breadcrumbs" — Built-in (the default) or
+  Language server (the previous heuristics)
+
 ## 0.1.44
 
 - Identifier colours while the solution loads: a C# file restored from the last session is coloured by the plugin's heuristics as soon

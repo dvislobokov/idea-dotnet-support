@@ -11,17 +11,23 @@ import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.WriteAction
+import com.intellij.openapi.roots.AdditionalLibraryRootsListener
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.vfs.VirtualFile
+import io.github.dotnetsupport.build.DotNetBuildSettings
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.msbuild.CompilationModel
+import com.intellij.openapi.Disposable
 import io.github.dotnetsupport.lang.CSharpCalls
 import io.github.dotnetsupport.lang.CSharpExpectations
 import io.github.dotnetsupport.lang.CSharpFile
-import io.github.dotnetsupport.lang.CSharpTokenTypes
+import io.github.dotnetsupport.lang.CSharpLeaves
 import io.github.dotnetsupport.lang.CSharpTypeNames
 import io.github.dotnetsupport.lang.CSharpUsings
 import io.github.dotnetsupport.msbuild.DotNetProjects
@@ -41,20 +47,71 @@ import javax.swing.Icon
  * mapped file.
  */
 @Service(Service.Level.PROJECT)
-class AssemblyIndexService(private val project: Project) {
+class AssemblyIndexService(private val project: Project) : Disposable {
     private val byProject = ConcurrentHashMap<String, List<AssemblyIndex>>()
+    private val references = ConcurrentHashMap<String, ProjectAssemblies.References>()
+    private val symbols = ConcurrentHashMap<String, AssemblyIndexSet>()
     private val opened = ConcurrentHashMap<File, AssemblyIndex>()
+    /** The assembly an index was made of, by its MVID: the header of the metadata view says where the dll is. */
+    private val assemblyFiles = ConcurrentHashMap<String, File>()
     private val running = AtomicBoolean()
     private val again = AtomicBoolean()
+
+    /** The referenced assemblies as libraries of the IDE ([AssemblyLibraryRootsProvider]); empty until the first refresh. */
+    @Volatile
+    var libraries: List<AssemblyLibrary> = emptyList()
+        private set
 
     /** What is indexed for the project of [projectFile]; empty until the indexer has run (it is started then). */
     fun indexes(projectFile: VirtualFile): List<AssemblyIndex> = byProject[projectFile.path] ?: emptyList<AssemblyIndex>().also { schedule() }
 
     val isReady: Boolean get() = byProject.isNotEmpty()
 
+    /** The indexes of all the projects, each once (an assembly ten projects refer to is one index): Go to Class over the libraries. */
+    fun allIndexes(): List<AssemblyIndex> {
+        val seen = java.util.Collections.newSetFromMap(java.util.IdentityHashMap<AssemblyIndex, Boolean>())
+        return byProject.values.flatMap { it }.filter(seen::add)
+    }
+
+    /** The dll the index of [mvid] was made of; null until the indexer has run, or for an index of the tests. */
+    fun assemblyFile(mvid: String): File? = assemblyFiles[mvid]
+
+    /** The indexes of the project whose references have [index], for what is resolved in the metadata view of a type of it. */
+    fun symbolsWith(index: AssemblyIndex): AssemblyIndexSet? =
+        byProject.entries.firstOrNull { (_, indexes) -> indexes.any { it === index } }?.let { (path, _) -> symbols.computeIfAbsent(path) { AssemblyIndexSet(byProject[path].orEmpty()) } }
+
+    /** What the project of [projectFile] is compiled against, as the last refresh found it; null until then. */
+    fun references(projectFile: VirtualFile): ProjectAssemblies.References? = references[projectFile.path]
+
+    /** The indexes of the project together, for a resolver: types by name, members with the inherited ones, extension methods, docs. */
+    fun symbols(projectFile: VirtualFile): AssemblyIndexSet {
+        val indexes = indexes(projectFile)
+        symbols[projectFile.path]?.takeIf { it.indexes === indexes }?.let { return it }
+        return AssemblyIndexSet(indexes).also { symbols[projectFile.path] = it }
+    }
+
+    init {
+        // another framework in the toolbar: another set of assemblies (a null list of projects is that change, not an evaluation)
+        project.messageBus.connect(this).subscribe(CompilationModel.CHANGED, CompilationModel.Listener { projectFiles -> if (projectFiles == null) schedule() })
+    }
+
+    override fun dispose() = Unit
+
     @TestOnly
     fun set(projectFile: VirtualFile, indexes: List<AssemblyIndex>) {
         byProject[projectFile.path] = indexes
+    }
+
+    @TestOnly
+    fun clearIndexes() {
+        byProject.clear()
+        symbols.clear()
+        assemblyFiles.clear()
+    }
+
+    @TestOnly
+    fun setAssemblyFile(index: AssemblyIndex, file: File) {
+        assemblyFiles[index.mvid] = file
     }
 
     /** Restore has run, a project has come or gone, Reload was asked for: the lists are made again. */
@@ -80,23 +137,56 @@ class AssemblyIndexService(private val project: Project) {
     private fun refresh() {
         val solutions = SolutionService.getInstance(project)
         val projectFiles = solutions.solutionFiles().flatMap { solution -> solutions.solution(solution).allProjects.mapNotNull { it.resolveFile(solution) } }.distinct()
-        if (projectFiles.isEmpty()) return
+        references.keys.retainAll(projectFiles.mapTo(HashSet()) { it.path })
+        if (projectFiles.isEmpty()) return publishLibraries()
         val dotnetRoot = DotNetCli.findExecutable()?.let { runCatching { File(it).canonicalFile.parentFile }.getOrNull() }
+        val framework = DotNetBuildSettings.getInstance(project).framework
         val lists = LinkedHashMap<String, List<File>>()
         for (projectFile in projectFiles) {
             val directory = File(projectFile.path).parentFile ?: continue
-            val assets = File(directory, "obj/project.assets.json").takeIf { it.isFile } ?: continue
-            lists[projectFile.path] = ProjectAssemblies.of(ProjectAssemblies.Request(assets.readText(), directory, dotnetRoot))
+            val msbuild = solutions.msBuildProject(projectFile)
+            // a project of the old format has no assets file: its references are its Reference items
+            val assets = File(directory, "obj/project.assets.json").takeIf { it.isFile }?.readText()
+            if (assets == null && !msbuild.isLegacy && msbuild.hintPaths.isEmpty()) continue
+            val found = ProjectAssemblies.references(ProjectAssemblies.Request(assets, directory, dotnetRoot, framework, msbuild))
+            references[projectFile.path] = found
+            lists[projectFile.path] = found.forIndex
         }
+        publishLibraries()
         val all = lists.values.flatten().distinct()
         if (all.isEmpty()) return
         val started = System.nanoTime()
         val indexed = IndexerTool.getInstance().index(all, IndexerTool.indexDirectory())
         if (indexed.isEmpty()) return
         for ((path, assemblies) in lists) {
-            byProject[path] = assemblies.mapNotNull { assembly -> indexed[assembly]?.let(::open) }
+            byProject[path] = assemblies.mapNotNull { assembly -> indexed[assembly]?.let(::open)?.also { assemblyFiles[it.mvid] = assembly } }
         }
         LOG.info("Index of assemblies: ${lists.size} projects, ${all.size} assemblies, ${indexed.size} indexed, ${(System.nanoTime() - started) / 1_000_000} ms")
+    }
+
+    /**
+     * The libraries made again from [references]; when they differ, the IDE is told (in a write action, as it wants): the new roots are
+     * scanned — the names of the dlls, their content is not read — and the old ones are dropped. Not on the EDT: files are looked up.
+     */
+    fun publishLibraries() {
+        val fresh = AssemblyLibraries.resolve(AssemblyLibraries.merge(references.values))
+        if (fresh == libraries) return
+        ApplicationManager.getApplication().invokeLater({
+            val old = libraries
+            if (fresh == old) return@invokeLater
+            WriteAction.run<RuntimeException> {
+                libraries = fresh
+                AdditionalLibraryRootsListener.fireAdditionalLibraryChanged(
+                    project, "C# References", old.flatMap { it.roots }, fresh.flatMap { it.roots }, "C# References",
+                )
+            }
+        }, ModalityState.nonModal(), project.disposed)
+    }
+
+    @TestOnly
+    fun setReferences(found: Map<VirtualFile, ProjectAssemblies.References>) {
+        references.clear()
+        found.forEach { (file, value) -> references[file.path] = value }
     }
 
     private fun open(file: File): AssemblyIndex? = opened[file] ?: runCatching { AssemblyIndex.open(file.toPath()) }
@@ -124,7 +214,7 @@ class ImportItem(val type: IndexedType, val name: String, val overloads: List<In
     val returnsNothing: Boolean get() = kind.isCallable && overloads.all { it.returnType == "void" }
     val takesArguments: Boolean get() = overloads.any { it.parameters.isNotEmpty() }
 
-    /** The names of the type parameters are not in the index: a generic method that takes nothing has nothing to infer them from. */
+    /** A generic method that takes nothing has nothing to infer its type arguments from. */
     val needsTypeArguments: Boolean get() = kind.isCallable && isGeneric && overloads.all { it.parameters.isEmpty() }
 
     /** `(string value)  +17 overloads` */
@@ -146,8 +236,14 @@ object ImportCompletion {
     private val OFFERED = setOf(IndexedMemberKind.METHOD, IndexedMemberKind.PROPERTY, IndexedMemberKind.FIELD, IndexedMemberKind.CONSTANT)
     private val BEFORE_A_NAME = Regex("""([A-Za-z_]\w*|[>\]?])\s+$""")
 
-    /** After these a name is an expression; after any other word it is the name of what is being declared. */
-    private val BEFORE_AN_EXPRESSION = setOf("return", "await", "throw", "yield", "case", "in", "is", "as", "else", "not", "and", "or", "when", "out", "ref", "do", "checked", "unchecked")
+    /** After these a name is an expression; after any other word it is the name of what is being declared. Not `as`: a type follows it. */
+    private val BEFORE_AN_EXPRESSION = setOf("return", "await", "throw", "yield", "case", "in", "is", "else", "not", "and", "or", "when", "out", "ref", "do", "checked", "unchecked")
+
+    /** `typeof(Str|`: the operators whose parentheses take a type alone. */
+    private val TYPE_OPERATOR = Regex("""\b(typeof|sizeof|default)\s*\(\s*$""")
+
+    /** A declaration with a base list or a constraint before the `:` (`class A : Str|`, `where T : Str|`), not a ternary or a named argument. */
+    private val BASE_LIST = Regex("""(^|\s)(class|struct|interface|record|enum|where)\s""")
 
     /**
      * Whether a static member of another type may stand at [start]: not after a dot (there the members of what is before the dot are
@@ -161,8 +257,34 @@ object ImportCompletion {
         val lineStart = if (start == 0) 0 else text.lastIndexOf('\n', start - 1) + 1
         val line = text.subSequence(lineStart, start)
         if (line.trimStart().startsWith("using ") || line.trimStart().startsWith("namespace ")) return false
+        if (isTypeOnly(line)) return false
         val word = BEFORE_A_NAME.find(line)?.groupValues?.get(1) ?: return true
         return word in BEFORE_AN_EXPRESSION
+    }
+
+    /**
+     * Where only a type may stand, so a static member is no answer (`Task<Str|` offered `Conversion.Str` of Microsoft.VisualBasic): a type
+     * argument (`List<Str|`, `Dictionary<string, Str|` — a `<` right after a name, not a comparison `a < Str|`), the parentheses of
+     * `typeof` / `sizeof` / `default`, and a base list or a constraint after `:`. [line] is the text of the line up to the name.
+     */
+    private fun isTypeOnly(line: CharSequence): Boolean {
+        if (TYPE_OPERATOR.containsMatchIn(line)) return true
+        val trimmed = line.trimEnd()
+        if (trimmed.endsWith(":")) return BASE_LIST.containsMatchIn(trimmed)
+        if (trimmed.endsWith(",") && BASE_LIST.containsMatchIn(trimmed) && trimmed.lastIndexOf(':') > trimmed.lastIndexOf('(')) return true
+        // back to the `<` that opens the type argument list the name is in, over the names, commas and nested lists before it
+        var depth = 0
+        var i = trimmed.length - 1
+        while (i >= 0) {
+            when (val c = trimmed[i]) {
+                '>' -> depth++
+                '<' -> if (depth == 0) return i > 0 && (trimmed[i - 1].isLetterOrDigit() || trimmed[i - 1] == '_') else depth--
+                ',', '.', '?', '[', ']', ' ', '\t' -> Unit
+                else -> if (!c.isLetterOrDigit() && c != '_') return false
+            }
+            i--
+        }
+        return false
     }
 
     /**
@@ -174,7 +296,9 @@ object ImportCompletion {
         val groups = LinkedHashMap<String, MutableList<IndexedMember>>()
         for (index in indexes) {
             for (member in index.members(prefix)) {
-                if (member.kind !in OFFERED || member.obsolete || member.type.obsolete) continue
+                if (member.kind !in OFFERED || !member.isStatic || member.obsolete || member.type.obsolete) continue
+                // `[EditorBrowsable(Never)]`: right to name, not to offer
+                if (member.isHidden || member.type.isHidden) continue
                 // the members of a generic type want its type arguments first: `Comparer<T>.Default`
                 if (member.type.arity > 0 || member.type.qualifiedName in staticallyImported) continue
                 groups.getOrPut("${member.type.qualifiedName}.${member.name}/${member.arity > 0}") { ArrayList() } += member
@@ -189,10 +313,11 @@ object ImportCompletion {
     }
 
     fun icon(kind: IndexedMemberKind): Icon = when (kind) {
-        IndexedMemberKind.METHOD, IndexedMemberKind.EXTENSION_METHOD -> AllIcons.Nodes.Method
-        IndexedMemberKind.PROPERTY -> AllIcons.Nodes.Property
+        IndexedMemberKind.METHOD, IndexedMemberKind.EXTENSION_METHOD, IndexedMemberKind.CONSTRUCTOR, IndexedMemberKind.OPERATOR -> AllIcons.Nodes.Method
+        IndexedMemberKind.PROPERTY, IndexedMemberKind.INDEXER -> AllIcons.Nodes.Property
         IndexedMemberKind.CONSTANT, IndexedMemberKind.ENUM_MEMBER -> AllIcons.Nodes.Constant
         IndexedMemberKind.FIELD -> AllIcons.Nodes.Field
+        IndexedMemberKind.EVENT -> AllIcons.Nodes.Field
     }
 
     /** The namespaces a file of the project sees without a `using` of its own: the implicit ones of the SDK and the global ones. */
@@ -220,8 +345,7 @@ class ImportCompletionContributor : CompletionContributor() {
         val virtualFile = file.virtualFile ?: return
         val prefix = result.prefixMatcher.prefix
         if (prefix.length < ImportCompletion.MIN_PREFIX) return
-        val type = parameters.position.node?.elementType
-        if (type != null && (CSharpTokenTypes.STRINGS.contains(type) || CSharpTokenTypes.COMMENTS.contains(type))) return
+        if (CSharpLeaves.isInStringOrComment(parameters.position)) return
         val text = parameters.editor.document.immutableCharSequence
         val start = parameters.offset - prefix.length
         if (!ImportCompletion.isBareName(text, start)) return

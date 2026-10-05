@@ -12,6 +12,12 @@ import org.junit.Test
 
 /** The gray text of declarations and arguments: where it is offered, and where it keeps silent. */
 class GhostTextTest {
+    /** The rules read the plugin's settings and parse with the native tree: both need the application, which an earlier test may not have started. */
+    @org.junit.Before
+    fun application() {
+        com.intellij.testFramework.TestApplicationManager.getInstance()
+    }
+
     /** The suggestion at `|` of the text. */
     private fun at(text: String, targetTypedNew: Boolean = true): String? {
         val offset = text.indexOf('|')

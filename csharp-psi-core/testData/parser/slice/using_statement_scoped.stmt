@@ -1,0 +1,1 @@
+using (scoped var s = F()) { }

@@ -1,0 +1,11 @@
+{
+  "files": 20466,
+  "nodes": 29860647,
+  "accessorChecks": 70566393,
+  "docComments": 66589,
+  "accessorMismatches": 0,
+  "nodesWithoutPsiClass": 0,
+  "elementsWithWrongClass": 0,
+  "alignmentMismatches": 0,
+  "failures": 0
+}

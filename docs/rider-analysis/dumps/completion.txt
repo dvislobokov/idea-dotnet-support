@@ -1,0 +1,1249 @@
+
+=================== 1 member access, auto-popup after '.' (string?)
+typed: [        name|.] AUTO
+line:   |         name.<caret>
+items: 124
+  *[]  : 
+  *Count  : int
+  *Length  : int
+  *Clone  : object
+  *CompareTo  : int
+  *Contains  : bool
+  *CopyTo  : void
+  *EndsWith  : bool
+  *EnumerateRunes  : StringRuneEnumerator
+  *Equals  : bool
+  *GetEnumerator  : CharEnumerator
+  *GetHashCode  : int
+  *GetPinnableReference  : ref readonly char
+  *GetTypeCode  : TypeCode
+  *IndexOf  : int
+  *IndexOfAny  : int
+  *Insert  : string
+  *IsNormalized  : bool
+  *LastIndexOf  : int
+  *LastIndexOfAny  : int
+  *Normalize  : string
+  *PadLeft  : string
+  *PadRight  : string
+  *Remove  : string
+  *Replace  : string
+
+
+=================== 2 empty statement, Ctrl+Space
+typed: [        |] BASIC
+line:   |         <caret>
+items: 500
+  items  : List<int>
+  order  : Order
+  name  : string
+  status  : OrderStatus
+  *_created  : int
+  token  : CancellationToken
+  *_mutable  : string
+  *_orders  : List<Order>
+  *Count  : int
+  *Length  : int
+  *MaxCount  : int
+  *Awaiting  : Task
+  *Completion  : void
+  *Highlights  : Task<string>
+  *Place  : void
+  *Returns  : int
+  Equals  : bool
+  GetHashCode  : int
+  GetType  : Type
+  MemberwiseClone  : object
+  ReferenceEquals  : bool
+  ToString  : string?
+  *Changed  : EventHandler?
+  *async  :  {Keyword}
+  *await  :  {Keyword}
+  *base  :  {Keyword}
+  *bool  :  {Keyword}
+  *byte  :  {Keyword}
+  *char  :  {Keyword}
+  *checked  :  {Keyword}
+
+
+=================== 3 empty statement, Ctrl+Alt+Space (smart)
+typed: [        |] SMART
+line:   |         <caret>
+items: 22
+  items  : List<int>
+  name  : string
+  order  : Order
+  *_created  : int
+  status  : OrderStatus
+  token  : CancellationToken
+  *_mutable  : string
+  *_orders  : List<Order>
+  *Count  : int
+  *MaxCount  : int
+  *Awaiting  : Task
+  *Completion  : void
+  *Highlights  : Task<string>
+  *Place  : void
+  *Returns  : int
+
+
+=================== 4 string. statics
+typed: [        var e = string|.] AUTO
+line:   |         var e = string.<caret>
+items: 15
+  Empty  : string
+  Compare  : int
+  CompareOrdinal  : int
+  Equals  : bool
+  Concat  : string
+  Create  : string
+  Format  : string
+  GetHashCode  : int
+  Intern  : string
+  IsInterned  : string?
+  IsNullOrEmpty  : bool
+  IsNullOrWhiteSpace  : bool
+  Join  : string
+  ~Copy  : string
+  typeof  :  {LiveTemplate}
+
+
+=================== 5 named argument prefix
+typed: [        Place(qu|] BASIC
+line:   |         Place(qu<caret>
+items: 104
+  quantity:  : 
+  Queryable  : 
+  Queue<>  : 
+  EnumerableQuery  : 
+  EnumerableQuery<>  : 
+  IOrderedQueryable  : 
+  IOrderedQueryable<>  : 
+  OrderedParallelQuery<>  : 
+  ParallelQuery  : 
+  ParallelQuery<>  : 
+  PriorityQueue<>  : 
+  Equals  : bool
+
+
+=================== 6 next argument after two (named args offered?)
+typed: [        Place(3, "acme", |] BASIC
+line:   |         Place(3, "acme", <caret>
+items: 500
+  Equals  : bool
+  *false  :  {Keyword}
+  ReferenceEquals  : bool
+  name  : string
+  *true  :  {Keyword}
+  items  : List<int>
+  order  : Order
+  status  : OrderStatus
+  token  : CancellationToken
+  *_created  : int
+  *_mutable  : string
+  *_orders  : List<Order>
+  *Count  : int
+  *Length  : int
+  *MaxCount  : int
+
+
+=================== 7 smart argument
+typed: [        Place(3, "acme", true, |] SMART
+line:   |         Place(3, "acme", true, <caret>
+items: 5
+  status  : OrderStatus
+  OrderStatus.Cancelled  : 3
+  OrderStatus.New  : 0
+  OrderStatus.Paid  : 1
+  OrderStatus.Shipped  : 2
+
+
+=================== 8 object initializer
+typed: [        var o = new Order { |] BASIC
+line:   |         var o = new Order { <caret>
+items: 5
+  *Customer  : string
+  *Id  : int
+  *Lines  : List<string>
+  *Status  : OrderStatus
+  *Total  : decimal
+
+
+=================== 8b object initializer, second property
+typed: [        var o = new Order { Id = 1, |] BASIC
+line:   |         var o = new Order { Id = 1, <caret>
+items: 4
+  *Customer  : string
+  *Lines  : List<string>
+  *Status  : OrderStatus
+  *Total  : decimal
+
+
+=================== 9 new with expected type (smart)
+typed: [        Order o = new |] SMART
+line:   |         Order o = new Order();<caret>
+items: 0
+no lookup to pick from
+  |         // P:c1
+  |         Order o = new Order();<caret>
+  |         // P:c2
+  | 
+
+
+=================== 9b new with expected type (basic)
+typed: [        Order o = new |] BASIC
+line:   |         Order o = new <caret>
+items: 500
+  Order()  : 
+  AbandonedMutexException()  : 
+  AccessViolationException()  : 
+  Action()  : 
+  Action<T>()  : 
+  AggregateException()  : 
+  AnalysisSamples()  : 
+  AppDomain()  : 
+  AppDomainSetup()  : 
+  AppDomainUnloadedException()  : 
+
+
+=================== 9c var o = new (basic)
+typed: [        var o = new Ord|] BASIC
+line:   |         var o = new Ord<caret>
+items: 27
+  Order()  : 
+  OrderedDictionary<TKey,TValue>()  : 
+  OrderedParallelQuery<TSource>()  : 
+  CachedOrder()  : 
+  LambdaOrder()  : 
+  RankedOrder()  : 
+  OrderedDictionary() (in System.Collections.Specialized)  : 
+  OrderedDictionary<TKey,TValue>.Enumerator() (in System.Collections.Generic.OrderedDictionary<TKey,TValue>)  : 
+  OrderedDictionary<TKey,TValue>.KeyCollection() (in System.Collections.Generic.OrderedDictionary<TKey,TValue>)  : 
+  OrderedDictionary<TKey,TValue>.KeyCollection.Enumerator() (in System.Collections.Generic.OrderedDictionary<TKey,TValue>.KeyCollection)  : 
+picked: Order
+  |         // P:c1
+  |         var o = new Order()<caret>
+  |         // P:c2
+  | 
+
+
+=================== 10 enum members after type
+typed: [        status = OrderStatus|.] AUTO
+line:   |         status = OrderStatus.<caret>
+items: 9
+  Cancelled  : 3
+  New  : 0
+  Paid  : 1
+  Shipped  : 2
+  GetValuesAsUnderlyingType<>  : Array
+  GetValuesAsUnderlyingType  : Array
+  TryFormat  : bool
+  TryParse  : bool
+  typeof  :  {LiveTemplate}
+
+
+=================== 11 enum comparison, smart
+typed: [        if (status == |] SMART
+line:   |         if (status == <caret>
+items: 4
+  OrderStatus.Cancelled  : 3
+  OrderStatus.New  : 0
+  OrderStatus.Paid  : 1
+  OrderStatus.Shipped  : 2
+picked: OrderStatus.Cancelled
+  |         // P:c1
+  |         if (status == OrderStatus.Cancelled<caret>
+  |         // P:c2
+  | 
+
+
+=================== 11b enum comparison, basic
+typed: [        if (status == |] BASIC
+line:   |         if (status == <caret>
+items: 500
+  OrderStatus.Cancelled  : 3
+  OrderStatus.New  : 0
+  OrderStatus.Paid  : 1
+  OrderStatus.Shipped  : 2
+  status  : OrderStatus
+  items  : List<int>
+  name  : string
+  order  : Order
+  token  : CancellationToken
+  *_created  : int
+
+
+=================== 12 switch case on enum
+typed: [        switch (status) { case |] BASIC
+line:   |         switch (status) { case <caret>
+items: 500
+  OrderStatus.Cancelled  : 3
+  OrderStatus.New  : 0
+  OrderStatus.Paid  : 1
+  OrderStatus.Shipped  : 2
+  *MaxCount  : int
+  *bool  :  {Keyword}
+  *byte  :  {Keyword}
+  *char  :  {Keyword}
+  *checked  :  {Keyword}
+  *decimal  :  {Keyword}
+  *double  :  {Keyword}
+  *false  :  {Keyword}
+
+
+=================== 12b switch expression arm
+typed: [        var label = status switch { |] BASIC
+line:   |         var label = status switch { <caret>
+items: 500
+  OrderStatus.Cancelled  : 3
+  OrderStatus.New  : 0
+  OrderStatus.Paid  : 1
+  OrderStatus.Shipped  : 2
+  *MaxCount  : int
+  *_  :  {Keyword}
+  *bool  :  {Keyword}
+  *byte  :  {Keyword}
+  *char  :  {Keyword}
+  *checked  :  {Keyword}
+  *decimal  :  {Keyword}
+  *double  :  {Keyword}
+
+
+=================== 13 property pattern
+typed: [        if (order is { |] BASIC
+line:   |         if (order is { <caret>
+items: 5
+  *Customer  : string
+  *Id  : int
+  *Lines  : List<string>
+  *Status  : OrderStatus
+  *Total  : decimal
+
+
+=================== 14 type pattern
+typed: [        if (order.Status is |] BASIC
+line:   |         if (order.Status is <caret>
+items: 500
+  OrderStatus.Cancelled  : 3
+  OrderStatus.New  : 0
+  OrderStatus.Paid  : 1
+  OrderStatus.Shipped  : 2
+  *MaxCount  : int
+  *bool  :  {Keyword}
+  *byte  :  {Keyword}
+  *char  :  {Keyword}
+  *checked  :  {Keyword}
+  *decimal  :  {Keyword}
+  *double  :  {Keyword}
+  *false  :  {Keyword}
+
+
+=================== 15 lambda parameter member
+typed: [        var big = items.Where(x => x|.] AUTO
+line:   |         var big = items.Where(x => x.<caret>
+items: 8
+  *Equals  : bool
+  *TryFormat  : bool
+  *CompareTo  : int
+  *ToString  : string
+  *GetHashCode  : int
+  *GetTypeCode  : TypeCode
+  GetType  : Type
+  switch  :  {LiveTemplate}
+
+
+=================== 15b lambda: method expecting delegate (smart)
+typed: [        var big = items.Where(|] SMART
+line:   |         var big = items.Where(<caret>
+items: 6
+  int => {}  : 
+  (int, int) => {}  : 
+  *Create method Predicate(int)  : 
+  *Create method Predicate(int, int)  : 
+  *Create local function Predicate(int, int)  : 
+  *Create local function Predicate(int)  : 
+
+
+=================== 16 LINQ query keywords
+typed: [        var q = from i in items |] BASIC
+line:   |         var q = from i in items <caret>
+items: 500
+  q  : ???
+  name  : string
+  items  : List<int>
+  token  : CancellationToken
+  order  : Order
+  status  : OrderStatus
+  *_created  : int
+  *_mutable  : string
+  *_orders  : List<Order>
+  *Count  : int
+  *Length  : int
+  *MaxCount  : int
+  *Awaiting  : Task
+  *Completion  : void
+  *Highlights  : Task<string>
+
+
+=================== 16b LINQ after where
+typed: [        var q = from i in items where i > 0 |] BASIC
+line:   |         var q = from i in items where i > 0 <caret>
+items: 500
+  q  : IEnumerable<int>
+  name  : string
+  items  : List<int>
+  token  : CancellationToken
+  order  : Order
+  status  : OrderStatus
+  *_created  : int
+  *_mutable  : string
+  *_orders  : List<Order>
+  *Count  : int
+  *Length  : int
+  *MaxCount  : int
+  *Awaiting  : Task
+  *Completion  : void
+  *Highlights  : Task<string>
+
+
+=================== 17 nameof
+typed: [        var n = nameof(|] BASIC
+line:   |         var n = nameof(<caret>
+items: 500
+  items  : List<int>
+  order  : Order
+  name  : string
+  status  : OrderStatus
+  *_created  : int
+  token  : CancellationToken
+  *_mutable  : string
+  *_orders  : List<Order>
+  *Count  : int
+  *Length  : int
+  *MaxCount  : int
+  *Awaiting  : Task
+  *Completion  : void
+  *Highlights  : Task<string>
+  *Place  : void
+
+
+=================== 18 typeof
+typed: [        var t = typeof(|] BASIC
+line:   |         var t = typeof(<caret>
+items: 500
+  *bool  :  {Keyword}
+  *char  :  {Keyword}
+  *byte  :  {Keyword}
+  *double  :  {Keyword}
+  *decimal  :  {Keyword}
+  *delegate  :  {Keyword}
+  *float  :  {Keyword}
+  *int  :  {Keyword}
+  *long  :  {Keyword}
+  *nint  :  {Keyword}
+  *nuint  :  {Keyword}
+  *object  :  {Keyword}
+  *sbyte  :  {Keyword}
+  *short  :  {Keyword}
+  *string  :  {Keyword}
+
+
+=================== 19 generic argument
+typed: [        var l = new List<|] BASIC
+line:   |         var l = new List<<caret>
+items: 500
+  *bool  :  {Keyword}
+  *char  :  {Keyword}
+  *byte  :  {Keyword}
+  *decimal  :  {Keyword}
+  *dynamic  :  {Keyword}
+  *double  :  {Keyword}
+  *float  :  {Keyword}
+  *int  :  {Keyword}
+  *long  :  {Keyword}
+  *nint  :  {Keyword}
+  *nuint  :  {Keyword}
+  *object  :  {Keyword}
+  *sbyte  :  {Keyword}
+  *short  :  {Keyword}
+  *string  :  {Keyword}
+
+
+=================== 19b generic argument second
+typed: [        var d = new Dictionary<string, |] BASIC
+line:   |         var d = new Dictionary<string, <caret>
+items: 500
+  *bool  :  {Keyword}
+  *char  :  {Keyword}
+  *byte  :  {Keyword}
+  *decimal  :  {Keyword}
+  *dynamic  :  {Keyword}
+  *double  :  {Keyword}
+  *float  :  {Keyword}
+  *int  :  {Keyword}
+  *long  :  {Keyword}
+  *nint  :  {Keyword}
+  *nuint  :  {Keyword}
+  *object  :  {Keyword}
+  *sbyte  :  {Keyword}
+  *short  :  {Keyword}
+  *string  :  {Keyword}
+
+
+=================== 20 interpolation format specifier
+typed: [        var s = $"{order.Total:|] BASIC
+line:   |         var s = $"{order.Total:<caret>
+items: 15
+  *0000 - custom  : 0123 {Const}
+  *C - currency  : ¤1,234.45 {Const}
+  *C0 - currency  : ¤1,234 {Const}
+  *E - exponential  : 1.234000E+004 {Const}
+  *e2 - exponential  : 1.23e+004 {Const}
+  *E2 - exponential  : 1.23E+004 {Const}
+  *F - fixed-point  : 123.45 {Const}
+  *F1 - fixed-point  : 123.4 {Const}
+  *G - general  : 1.234E+56 {Const}
+  *g2 - general  : 1.2e+45 {Const}
+  *N - number  : 12,345.68 {Const}
+  *N0 - integer  : 12,345 {Const}
+  *N1 - number  : 12,345.6 {Const}
+  *P - percent  : 123.45 % {Const}
+  *P1 - percent  : 1,230.0 % {Const}
+
+
+=================== 21 DateTime.ToString format
+typed: [        var s = DateTime.Now.ToString("|] BASIC
+line:   |         var s = DateTime.Now.ToString("<caret>
+items: 0
+
+
+=================== 21b string.Format placeholder
+typed: [        var s = string.Format("{0:|] BASIC
+line:   |         var s = string.Format("{0:<caret>
+items: 0
+
+
+=================== 22 regex in Regex ctor
+typed: [        var r = new Regex(@"\|] BASIC
+line:   |         var r = new Regex(@"\<caret>
+items: 45
+  *. - Any character except \n  :  {Const}
+  ** - Match zero or more times  :  {Const}
+  **? - Match zero or more times, as few times as possible  :  {Const}
+  *+ - Match one or more times  :  {Const}
+  *? - Match zero or one time  :  {Const}
+  *+? - Match one or more times, as few times as possible  :  {Const}
+  *?? - Match zero or one time, as few times as possible  :  {Const}
+  *[ base_group - [ excluded_group ] ] - Character class subtraction  :  {Const}
+  *[ first - last ] - Range of characters  :  {Const}
+  *[ character_group ] - Positive character group  :  {Const}
+  *[^ character_group ] - Negative character group  :  {Const}
+  *\B - Non-word boundary  :  {Const}
+  *\b - Word boundary  :  {Const}
+  *\D - Non-digit character  :  {Const}
+  *\d - Decimal digit character  :  {Const}
+  *\k< name > - Named backreference  :  {Const}
+  *\n - New line  :  {Const}
+  *\P{ name } - Negative unicode category or unicode block  :  {Const}
+  *\p{ name } - Unicode category or unicode block  :  {Const}
+  *\S - Non-whitespace character  :  {Const}
+
+
+=================== 22b regex group
+typed: [        var r = new Regex(@"(?|] BASIC
+line:   |         var r = new Regex(@"(?<caret>
+items: 45
+  *. - Any character except \n  :  {Const}
+  ** - Match zero or more times  :  {Const}
+  **? - Match zero or more times, as few times as possible  :  {Const}
+  *+ - Match one or more times  :  {Const}
+  *? - Match zero or one time  :  {Const}
+  *+? - Match one or more times, as few times as possible  :  {Const}
+  *?? - Match zero or one time, as few times as possible  :  {Const}
+  *[ base_group - [ excluded_group ] ] - Character class subtraction  :  {Const}
+  *[ first - last ] - Range of characters  :  {Const}
+  *[ character_group ] - Positive character group  :  {Const}
+  *[^ character_group ] - Negative character group  :  {Const}
+  *\B - Non-word boundary  :  {Const}
+  *\b - Word boundary  :  {Const}
+  *\D - Non-digit character  :  {Const}
+  *\d - Decimal digit character  :  {Const}
+  *\k< name > - Named backreference  :  {Const}
+  *\n - New line  :  {Const}
+  *\P{ name } - Negative unicode category or unicode block  :  {Const}
+  *\p{ name } - Unicode category or unicode block  :  {Const}
+  *\S - Non-whitespace character  :  {Const}
+
+
+=================== 23 this.
+typed: [        this|.] AUTO
+line:   |         this.<caret>
+items: 17
+  *_mutable  : string
+  *_orders  : List<Order>
+  *Count  : int
+  *Completion  : void
+  *Length  : int
+  *Awaiting  : Task
+  *Highlights  : Task<string>
+  *Place  : void
+  *Returns  : int
+  Equals  : bool
+  GetHashCode  : int
+  GetType  : Type
+  MemberwiseClone  : object
+  ToString  : string?
+  *Changed  : EventHandler?
+  for  :  {LiveTemplate}
+  forr  :  {LiveTemplate}
+
+
+=================== 24 event subscription
+typed: [        Changed += |] BASIC
+line:   |         Changed += <caret>
+items: 500
+  (object?, EventArgs) => {}  : 
+  *Create local function OnChanged(object?, EventArgs)  : 
+  *Create method OnChanged(object?, EventArgs)  : 
+  name  : string
+  *null  :  {Keyword}
+  items  : List<int>
+  order  : Order
+  status  : OrderStatus
+  token  : CancellationToken
+  *_created  : int
+  *_mutable  : string
+  *_orders  : List<Order>
+
+
+=================== 25 name suggestion after type
+typed: [        StringBuilder |] BASIC
+line:   |         StringBuilder <caret>
+items: 2
+  builder  : 
+  stringBuilder  : 
+
+
+=================== 25b name suggestion after type Order
+typed: [        Order |] BASIC
+line:   |         Order <caret>
+items: 1
+  order  : 
+
+
+=================== 25c name suggestion foreach
+typed: [        foreach (var |] BASIC
+line:   |         foreach (var <caret>
+items: 0
+
+
+=================== 26 throw new (smart)
+typed: [        throw new |] SMART
+line:   |         throw new <caret>
+items: 181
+  AbandonedMutexException()  : 
+  AccessViolationException()  : 
+  AggregateException()  : 
+  AmbiguousImplementationException()  : 
+  AppDomainUnloadedException()  : 
+  AmbiguousMatchException()  : 
+  ApplicationException()  : 
+  ArgumentException()  : 
+  ArgumentNullException()  : 
+  ArgumentOutOfRangeException()  : 
+  ArithmeticException()  : 
+  ArrayTypeMismatchException()  : 
+
+
+=================== 27 import completion (1st Ctrl+Space)
+typed: [        JsonSeri|] BASIC
+line:   |         JsonSeri<caret>
+items: 9
+  JsonSerializer (in System.Text.Json)  : 
+  JsonSerializableAttribute (in System.Text.Json.Serialization)  : 
+  JsonSerializerContext (in System.Text.Json.Serialization)  : 
+  JsonSerializerDefaults (in System.Text.Json)  : 
+  JsonSerializerOptions (in System.Text.Json)  : 
+  DataContractJsonSerializer (in System.Runtime.Serialization.Json)  : 
+  DataContractJsonSerializerSettings (in System.Runtime.Serialization.Json)  : 
+  IJsonOnSerialized (in System.Text.Json.Serialization)  : 
+  IJsonOnSerializing (in System.Text.Json.Serialization)  : 
+
+
+=================== 27b import completion (2nd Ctrl+Space)
+typed: [        JsonSeri|] BASIC
+line:   |         JsonSeri<caret>
+items: 9
+  JsonSerializer (in System.Text.Json)  : 
+  JsonSerializableAttribute (in System.Text.Json.Serialization)  : 
+  JsonSerializerContext (in System.Text.Json.Serialization)  : 
+  JsonSerializerDefaults (in System.Text.Json)  : 
+  JsonSerializerOptions (in System.Text.Json)  : 
+  DataContractJsonSerializer (in System.Runtime.Serialization.Json)  : 
+  DataContractJsonSerializerSettings (in System.Runtime.Serialization.Json)  : 
+  IJsonOnSerialized (in System.Text.Json.Serialization)  : 
+  IJsonOnSerializing (in System.Text.Json.Serialization)  : 
+picked: JsonSerializer
+  |     {
+  |         // P:c1
+  |         JsonSerializer<caret>
+  |         // P:c2
+
+
+=================== 27c import completion: unimported extension method
+typed: [        items.AsParallel().WithDegree|] BASIC
+line:   |         items.AsParallel().WithDegree<caret>
+items: 1
+  WithDegreeOfParallelism  : ParallelQuery<int>
+
+
+=================== 28 postfix list after expression
+typed: [        items.fo|] BASIC
+line:   |         items.fo<caret>
+items: 6
+  for  :  {LiveTemplate}
+  foreach  :  {LiveTemplate}
+  forr  :  {LiveTemplate}
+  *ForEach  : void
+  *TrueForAll  : bool
+  FirstOrDefault  : int
+
+
+=================== 28b postfix foreach expansion
+typed: [        items.foreach|] BASIC
+line:   |         items.foreach<caret>
+items: 2
+  foreach  :  {LiveTemplate}
+  *ForEach  : void
+picked: forEach
+  |         // P:c1
+  |         foreach (var<caret> item in items)
+  |         {
+  |             
+  |         }
+  |         // P:c2
+
+
+=================== 28c postfix if / notnull on reference
+typed: [        name.notnull|] BASIC
+line:   |         name.notnull<caret>
+items: 1
+  notnull  :  {LiveTemplate}
+picked: notNull
+  |         // P:c1
+  |         if (name != null)
+  |         {
+  |             <caret>
+  |         }
+  |         // P:c2
+
+
+=================== 28d postfix var
+typed: [        order.Total.var|] BASIC
+line:   |         order.Total.var<caret>
+items: 1
+  var  :  {LiveTemplate}
+picked: var
+  |         // P:c1
+  |         var<caret> orderTotal = order.Total;
+  |         // P:c2
+  | 
+  |         // P:c3
+  |     }
+
+
+=================== 28e postfix return
+typed: [        name.return|] BASIC
+line:   |         name.return<caret>
+items: 1
+  return  :  {LiveTemplate}
+picked: return
+  |         // P:c1
+  |         return name;<caret>
+  |         // P:c2
+  | 
+  |         // P:c3
+  |     }
+
+
+=================== 28f postfix await on task
+typed: [        client.GetStringAsync("u").await|] BASIC
+line:   |         client.GetStringAsync("u").await<caret>
+items: 3
+  await  :  {LiveTemplate}
+  *ConfigureAwait  : ConfiguredTaskAwaitable<string>
+  *GetAwaiter  : TaskAwaiter<string>
+
+
+=================== 29 live template for
+typed: [        for|] BASIC
+line:   |         for<caret>
+items: 125
+  *for  : Simple "for" loop {LiveTemplate}
+  *foreach  : foreach block {LiveTemplate}
+  *forr  : Reverse 'for' loop {LiveTemplate}
+  FormatException  : 
+  FormattableString  : 
+  FormUrlEncodedContent  : 
+  BadImageFormatException  : 
+  CompositeFormat  : 
+  ICustomFormatter  : 
+  ISpanFormattable  : 
+picked: for
+  |         // P:c1
+  |         for (int i<caret> = 0; i < UPPER; i++)
+  |         {
+  |             
+  |         }
+  |         // P:c2
+  | 
+  |         // P:c3
+
+
+=================== 29b live template foreach
+typed: [        foreach|] BASIC
+line:   |         foreach<caret>
+items: 1
+  *foreach  : foreach block {LiveTemplate}
+picked: foreach
+  |         // P:c1
+  |         foreach (var VARIABLE in COLLECTION<caret>)
+  |         {
+  |             
+  |         }
+  |         // P:c2
+  | 
+  |         // P:c3
+
+
+=================== 29c live template cw
+typed: [        cw|] BASIC
+line:   |         cw<caret>
+items: 11
+  *cw  : Console.WriteLine {LiveTemplate}
+  CalendarWeekRule (in System.Globalization)  : 
+  ChannelWriter<> (in System.Threading.Channels)  : 
+  ClientWebSocket (in System.Net.WebSockets)  : 
+  ClientWebSocketOptions (in System.Net.WebSockets)  : 
+  ComWrappers (in System.Runtime.InteropServices)  : 
+  ConditionalWeakTable<> (in System.Runtime.CompilerServices)  : 
+  ~CurrencyWrapper (in System.Runtime.InteropServices)  : 
+  StrategyBasedComWrappers (in System.Runtime.InteropServices.Marshalling)  : 
+  TransferCodingWithQualityHeaderValue (in System.Net.Http.Headers)  : 
+picked: cw
+  |         // P:c1
+  |         Console.WriteLine(<caret>);
+  |         // P:c2
+  | 
+  |         // P:c3
+  |     }
+  | 
+  |     public int Returns(string name)
+
+
+=================== 29d live template try
+typed: [        try|] BASIC
+line:   |         try<caret>
+items: 47
+  *try  : try catch {LiveTemplate}
+  *tryf  : try finally {LiveTemplate}
+  EntryPointNotFoundException  : 
+  RetryOptions  : 
+  TryCode (in System.Runtime.CompilerServices.RuntimeHelpers)  : 
+  TryExpression (in System.Linq.Expressions)  : 
+  TryWriteInterpolatedStringHandler (in System.MemoryExtensions)  : 
+  TryWriteInterpolatedStringHandler (in System.Text.Unicode.Utf8)  : 
+  ComInterfaceEntry (in System.Runtime.InteropServices.ComWrappers)  : 
+  DebugDirectoryEntry (in System.Reflection.PortableExecutable)  : 
+no lookup to pick from
+  |         // P:c1
+  |         try<caret>
+  |         // P:c2
+  | 
+  |         // P:c3
+  |     }
+  | 
+  |     public int Returns(string name)
+
+
+=================== 29e live template if
+typed: [        if|] BASIC
+line:   |         if<caret>
+items: 147
+  *if  : if statement {LiveTemplate}
+  IFormatProvider  : 
+  IFormattable  : 
+  BadImageFormatException  : 
+  ICustomFormatter  : 
+  ISpanFormattable  : 
+  IUtf8SpanFormattable  : 
+  ClientCertificateOption  : 
+  ConsoleModifiers  : 
+  GCNotificationStatus  : 
+picked: if
+  |         // P:c1
+  |         if (expr<caret>)
+  |         {
+  |             
+  |         }
+  |         // P:c2
+  | 
+  |         // P:c3
+
+
+=================== 30 live template prop (member)
+typed: [    prop|] BASIC
+line:   |     prop<caret>
+items: 69
+  *prop  : Property {LiveTemplate}
+  *propg  : Property with a 'get' accessor and a private 'set' accessor {LiveTemplate}
+  ThrowingProperty  : 
+  PropagationFlags (in System.Security.AccessControl)  : 
+  PropagatorGetterCallback (in System.Diagnostics.DistributedContextPropagator)  : 
+  PropagatorSetterCallback (in System.Diagnostics.DistributedContextPropagator)  : 
+  PropertyAccessors (in System.Reflection.Metadata)  : 
+  PropertyAttributes (in System.Reflection)  : 
+  PropertyBuilder (in System.Reflection.Emit)  : 
+  PropertyChangedEventArgs (in System.ComponentModel)  : 
+picked: prop
+  |     // P:m1
+  |     public TYPE<caret> Type { get; set; }
+  | }
+  | 
+  | public class Circle : ShapeBase
+  | {
+  |     // P:o1
+  | 
+
+
+=================== 30b live template ctor (member)
+typed: [    ctor|] BASIC
+line:   |     ctor<caret>
+items: 80
+  *ctor  : Constructor {LiveTemplate}
+  CancellationTokenRegistration  : 
+  HeaderEncodingSelector<>  : 
+  Directory  : 
+  DirectoryInfo  : 
+  DirectoryNotFoundException  : 
+  RegexRunnerFactory  : 
+  TaskFactory  : 
+  TaskFactory<>  : 
+  *ctorf  :  {Constructor}
+picked: ctor
+  |     // P:m1
+  |     public AnalysisSamples()
+  |     {
+  |         <caret>
+  |     }
+  | }
+  | 
+  | public class Circle : ShapeBase
+
+
+=================== 31 member level keywords
+typed: [    pu|] BASIC
+line:   |     pu<caret>
+items: 14
+  *public  :  {Keyword}
+  NetPipeStyleUriParser  : 
+  public override Equals(object?) { … }  : bool
+  public override GetHashCode() { … }  : int
+  public override ToString() { … }  : string?
+  PublicKey (in System.Security.Cryptography.X509Certificates)  : 
+  PureAttribute (in System.Diagnostics.Contracts)  : 
+  ContractPublicPropertyNameAttribute (in System.Diagnostics.Contracts)  : 
+  ECDiffieHellmanCngPublicKey (in System.Security.Cryptography)  : 
+  ECDiffieHellmanPublicKey (in System.Security.Cryptography)  : 
+  NullablePublicOnlyAttribute (in System.Runtime.CompilerServices)  : 
+  ProcessCpuUsage (in System.Environment)  : 
+  XmlOutputMethod (in System.Xml)  : 
+  HttpUtility (in System.Web)  : 
+
+
+=================== 32 override completion
+typed: [    override |] BASIC
+line:   |     override <caret>
+items: 500
+  *Area() { … }  : double
+  OnChanged(string) { … }  : void
+  Name { get … }  : string
+  Equals(object?) { … }  : bool
+  ToString() { … }  : string?
+  GetHashCode() { … }  : int
+  *abstract  :  {Keyword}
+  *async  :  {Keyword}
+  *bool  :  {Keyword}
+  *byte  :  {Keyword}
+  *char  :  {Keyword}
+  *class  :  {Keyword}
+  *const  :  {Keyword}
+  *decimal  :  {Keyword}
+  *delegate  :  {Keyword}
+
+
+=================== 32b override pick Area
+typed: [    public override |] BASIC
+line:   |     public override <caret>
+items: 500
+  *Area() { … }  : double
+  Equals(object?) { … }  : bool
+  Name { get … }  : string
+  *abstract  :  {Keyword}
+  GetHashCode() { … }  : int
+  ToString() { … }  : string?
+  *async  :  {Keyword}
+  *bool  :  {Keyword}
+  *byte  :  {Keyword}
+  *char  :  {Keyword}
+  *class  :  {Keyword}
+  *const  :  {Keyword}
+  *decimal  :  {Keyword}
+  *delegate  :  {Keyword}
+  *double  :  {Keyword}
+picked: Area
+  |     // P:o1
+  |     public override double Area()
+  |     {
+  |         throw new NotImplementedException();<caret>
+  |     }
+  | }
+  | 
+  | // P:t1
+  | 
+  | 
+
+
+=================== 33 base.
+typed: [    public override string Name => base|.] AUTO
+line:   |     public override string Name => base.<caret>
+items: 8
+  *Name  : string
+  ToString  : string?
+  Area  : double
+  OnChanged  : void
+  GetHashCode  : int
+  Equals  : bool
+  GetType  : Type
+  MemberwiseClone  : object
+
+
+=================== 34 attribute
+typed: [    [Obs|] BASIC
+line:   |     [Obs<caret>
+items: 2
+  Obsolete  : 
+  ObsoletedOSPlatform (in System.Runtime.Versioning)  : 
+
+
+=================== 35 XML doc tag
+typed: [    /// |<] AUTO
+line:   |     /// <<caret>
+items: 0
+
+
+=================== 35b XML doc see cref
+typed: [    /// <see cref="|] BASIC
+line:   |     /// <see cref="<caret>
+items: 0
+
+
+=================== 36 preprocessor directive
+typed: [|#] AUTO
+line:   | #<caret>
+items: 13
+  *#if  :  {LiveTemplate}
+  *#region  :  {LiveTemplate}
+  *#define  :  {Keyword}
+  *#endif  :  {Keyword}
+  *#elif  :  {Keyword}
+  *#else  :  {Keyword}
+  *#endregion  :  {Keyword}
+  *#error  :  {Keyword}
+  *#line  :  {Keyword}
+  *#nullable  :  {Keyword}
+  *#pragma  :  {Keyword}
+  *#undef  :  {Keyword}
+  *#warning  :  {Keyword}
+
+
+=================== 37 using directive namespace
+typed: [using System.Coll|] BASIC
+line:   | using System.Coll<caret>
+items: 1
+  Collections  : 
+
+
+=================== 38 await in async method (smart string)
+typed: [        string s = |] SMART
+line:   |         string s = <caret>
+items: 11
+  *_mutable  : string
+  String.Empty  : string
+  String.Concat  : string
+  String.Create  : string
+  String.Intern  : string
+  String.Format  : string
+  String.IsInterned  : string?
+  String.Join  : string
+  ~String.Copy  : string
+  await Highlights  : Task<string>
+  ToString  : string?
+
+
+=================== 38b await: Task-returning member in async
+typed: [        var s = client.GetStr|] BASIC
+line:   |         var s = client.GetStr<caret>
+items: 2
+  *GetStreamAsync  : Task<Stream>
+  *GetStringAsync  : Task<string>
+picked: GetStreamAsync
+  |         // P:a1
+  |         var s = client.GetStreamAsync(<caret>)
+  |     }
+  | 
+
+
+=================== 39 return in int method (smart)
+typed: [        return |] SMART
+line:   |         return <caret>
+items: 7
+  *_created  : int
+  *Count  : int
+  *MaxCount  : int
+  Int32.MaxValue  : int
+  Int32.Parse  : int
+  Int32.MinValue  : int
+  GetHashCode  : int
+
+
+=================== 40 CancellationToken argument
+typed: [        Task.Delay(100, |] BASIC
+line:   |         Task.Delay(100, <caret>
+items: 500
+  token  : CancellationToken
+  items  : List<int>
+  new CancellationToken()  : 
+  name  : string
+  status  : OrderStatus
+  order  : Order
+  *_created  : int
+  *_mutable  : string
+  *_orders  : List<Order>
+  *Count  : int
+
+
+=================== 41 type-level (namespace) keywords
+typed: [pub|] BASIC
+line:   | pub<caret>
+items: 1
+  *public  :  {Keyword}
+
+
+=================== 42 Console.WriteLine argument (smart)
+typed: [        Console.WriteLine(|] SMART
+line:   |         Console.WriteLine(<caret>
+items: 97
+  items  : List<int>
+  name  : string
+  order  : Order
+  status  : OrderStatus
+  *_created  : int
+  token  : CancellationToken
+  *_mutable  : string
+  *_orders  : List<Order>
+  *Count  : int
+  *MaxCount  : int
+  *false  : bool
+  *true  : bool
+
+
+=================== 43 interpolation expression
+typed: [        var s = $"{|] BASIC
+line:   |         var s = $"{<caret>
+items: 500
+  items  : List<int>
+  order  : Order
+  name  : string
+  status  : OrderStatus
+  *_created  : int
+  token  : CancellationToken
+  *_mutable  : string
+  *_orders  : List<Order>
+  *Count  : int
+  *MaxCount  : int
+  *Awaiting  : Task
+  *Completion  : void
+  *Highlights  : Task<string>
+  *Place  : void
+  *Returns  : int
+
+
+=================== 44 inherited members on derived
+typed: [        new Circle()|.] AUTO
+line:   |         new Circle().<caret>
+items: 8
+  Name  : string
+  Area  : double
+  Equals  : bool
+  GetHashCode  : int
+  GetType  : Type
+  ToString  : string?
+  switch  :  {LiveTemplate}
+  var  :  {LiveTemplate}
+
+
+=================== 45 extension method on string
+typed: [        name.IsB|] BASIC
+line:   |         name.IsB<caret>
+items: 1
+  IsBlank  : bool
+picked: IsBlank
+  |         // P:c1
+  |         name.IsBlank()<caret>
+  |         // P:c2
+  | 
+
+
+=================== 46 catch exception type
+typed: [        try { } catch (|] BASIC
+line:   |         try { } catch (<caret>
+items: 685
+  AbandonedMutexException  : 
+  AccessViolationException  : 
+  AggregateException  : 
+  AppDomainUnloadedException  : 
+  ApplicationException  : 
+  ArgumentException  : 
+  ArgumentNullException  : 
+  ArgumentOutOfRangeException  : 
+  ArithmeticException  : 
+  ArrayTypeMismatchException  : 
+  BadImageFormatException  : 
+  BarrierPostPhaseException  : 
+
+
+=================== 47 var type keyword vs types
+typed: [        va|] BASIC
+line:   |         va<caret>
+items: 199
+  *var  :  {Keyword}
+  ValueMatch  : 
+  ValueTask  : 
+  ValueTask<>  : 
+  ValueTuple  : 
+  ValueTuple<>  : 
+  ValueType  : 
+  AsyncLocalValueChangedArgs<>  : 
+  EnvironmentVariableTarget  : 
+  KeyValuePair  : 
+
+
+=================== 48 local function / lambda return smart
+typed: [        Func<int, bool> f = |] SMART
+line:   |         Func<int, bool> f = <caret>
+items: 3
+  int => {}  : 
+  *Create method F(int)  : 
+  *Create local function F(int)  : 
+

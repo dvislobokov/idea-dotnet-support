@@ -1,5 +1,10 @@
 package io.github.dotnetsupport.roslyn
 
+import io.github.dotnetsupport.lang.NativeCSharpDiagnostics
+import org.eclipse.lsp4j.Diagnostic
+import com.intellij.openapi.util.TextRange
+import com.intellij.codeInsight.intention.IntentionAction
+import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.application.options.CodeStyle
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.application.ApplicationManager
@@ -40,6 +45,8 @@ import com.intellij.platform.lsp.api.customization.LspSemanticTokensSupport
 import com.intellij.platform.lsp.api.lsWidget.LspClientWidgetItem
 import com.intellij.psi.PsiFile
 import io.github.dotnetsupport.lang.CSharpFeature
+import io.github.dotnetsupport.lang.NativeCSharpRename
+import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetTool
 import io.github.dotnetsupport.cli.PluginLog
@@ -61,7 +68,8 @@ import java.io.File
 import java.nio.charset.StandardCharsets
 
 
-fun isCSharpSource(file: VirtualFile): Boolean = !file.isDirectory && file.extension.equals("cs", ignoreCase = true)
+// not the metadata view of an assembly (B4): a file of no project, the server has nothing to say about it
+fun isCSharpSource(file: VirtualFile): Boolean = !file.isDirectory && file.extension.equals("cs", ignoreCase = true) && !io.github.dotnetsupport.index.AssemblyNavigation.isMetadata(file)
 
 /** Starts `roslyn-language-server` on the platform LSP client when the first C# file of the opened folder shows up in an editor. */
 class RoslynLspIntegrationProvider : LspIntegrationProvider {
@@ -197,16 +205,28 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
     override val lspCustomization: LspCustomization = object : LspCustomization() {
         // a half-loaded workspace reports every type of another project as an error
         override val diagnosticsCustomizer: LspDiagnosticsCustomizer = object : LspDiagnosticsSupport() {
-            override fun shouldAskServerForDiagnostics(file: VirtualFile): Boolean = serves(CSharpFeature.DIAGNOSTICS) && workspace.isLoaded
+            // whatever the switch of DIAGNOSTICS: with NATIVE the tree reports only the syntax errors, the semantic ones are still the server's
+            override fun shouldAskServerForDiagnostics(file: VirtualFile): Boolean = workspace.isLoaded
+
+            // with NATIVE a syntax error the tree shows too is shown once, by NativeCSharpDiagnosticsAnnotator. The platform makes these
+            // annotations when the server answers, not on every pass: a switch of «Errors and warnings» asks it to make them again
+            // (RoslynWorkspace.highlightingSwitched)
+            override fun createAnnotation(holder: AnnotationHolder, diagnostic: Diagnostic, textRange: TextRange, quickFixes: List<IntentionAction>) {
+                if (NativeCSharpDiagnostics.repeatsNative(holder.currentAnnotationSession.file, diagnostic.message, textRange.startOffset)) return
+                super.createAnnotation(holder, diagnostic, textRange, quickFixes)
+            }
         }
 
         // Three defaults of the platform are "only for plain text and TextMate files": semantic tokens (below), rename and the
         // highlighting of the usages under the caret. C# is a language of the plugin, so without these Shift+F6 finds no handler at all.
         override val renameCustomizer: LspRenameCustomizer = object : LspRenameSupport() {
-            override fun shouldRunRename(psiFile: PsiFile): Boolean = serves(CSharpFeature.RENAME)
+            // NATIVE: the plugin's handler (first) takes Shift+F6 and hands over to this one what it does not rename itself
+            override fun shouldRunRename(psiFile: PsiFile): Boolean = serves(CSharpFeature.RENAME) || NativeCSharpRename.serverRenames(psiFile)
         }
         override val documentHighlightsCustomizer: LspDocumentHighlightsCustomizer = object : LspDocumentHighlightsSupport() {
-            override fun shouldAskServerForDocumentHighlights(psiFile: PsiFile): Boolean = serves(CSharpFeature.NAVIGATION) && workspace.isLoaded
+            // whatever the switch of NAVIGATION: with NATIVE the plugin's factory (first) answers for what the tree resolves (locals), and
+            // only what it cannot (members, types) reaches the server's factory (last), so NATIVE loses no highlighting
+            override fun shouldAskServerForDocumentHighlights(psiFile: PsiFile): Boolean = workspace.isLoaded
         }
 
         // "N references", "Fix All", code actions with variants: commands the server leaves to its client
@@ -227,7 +247,10 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
             override fun shouldAskServerForSemanticTokens(psiFile: PsiFile): Boolean =
                 serves(CSharpFeature.SEMANTIC_COLORS) && (workspace.isLoaded || psiFile.virtualFile?.let(workspace::hasCachedTokens) == true)
 
-            override fun getTextAttributesKey(tokenType: String, modifiers: List<String>): TextAttributesKey? = RoslynPolicy.textAttributesKey(tokenType)
+            // asked each time the platform makes highlights of the tokens it keeps, not when they arrive: with «Colors of identifiers» = Built-in
+            // the tokens of the last answer would stay beside the plugin's colors (robot 0.1.60), see RoslynWorkspace.highlightingSwitched
+            override fun getTextAttributesKey(tokenType: String, modifiers: List<String>): TextAttributesKey? =
+                if (serves(CSharpFeature.SEMANTIC_COLORS)) RoslynPolicy.textAttributesKey(tokenType, modifiers) else null
         }
 
         // Go to Symbol / Class: a symbol of a C# file of the project is the declaration of the plugin there, see the class
@@ -245,10 +268,12 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
         // Alt+Enter without the same row twice, see the class
         override val codeActionsCustomizer: LspCodeActionsCustomizer = RoslynCodeActionsSupport()
 
-        // Reformat Code: the server does the work of `dotnet format whitespace`; CSharpier and "None" stay what the project has chosen
+        // Reformat Code: the server does the work of `dotnet format whitespace`; CSharpier and "None" stay what the project has chosen.
+        // "Built-in" (chosen, or "Auto" with FORMATTING NATIVE): the plugin's formatter answers for a file of the native tree, the server
+        // for one of the other tree.
         override val formattingCustomizer: LspFormattingCustomizer = object : LspFormattingSupport() {
             override fun shouldFormatThisFileExclusivelyByServer(file: VirtualFile, ideCanFormatThisFileItself: Boolean, serverExplicitlyWantsToFormatThisFile: Boolean): Boolean =
-                serves(CSharpFeature.FORMATTING) && RoslynPolicy.formatsByServer(DotNetFormattingSettings.getInstance(project).resolve(file), workspace.isLoaded)
+                RoslynPolicy.formatsByServer(DotNetFormattingSettings.getInstance(project).resolve(file), workspace.isLoaded, CSharpSyntaxTrees.nativeTree())
         }
     }
 }

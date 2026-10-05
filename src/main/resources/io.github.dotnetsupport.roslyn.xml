@@ -71,5 +71,7 @@
         <listener class="io.github.dotnetsupport.roslyn.RoslynReloadListener" topic="io.github.dotnetsupport.actions.SolutionReloadListener"/>
         <!-- the file watching the server asks the client for (workspace/didChangeWatchedFiles) and the platform does not do -->
         <listener class="io.github.dotnetsupport.roslyn.RoslynFileWatcher" topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+        <!-- the server's colors and errors are made again when indexing makes the plugin give way to the server or take over again -->
+        <listener class="io.github.dotnetsupport.roslyn.RoslynDumbModeListener" topic="com.intellij.openapi.project.DumbService$DumbModeListener"/>
     </projectListeners>
 </idea-plugin>

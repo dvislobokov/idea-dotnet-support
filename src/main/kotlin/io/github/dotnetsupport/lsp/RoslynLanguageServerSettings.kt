@@ -46,18 +46,18 @@ class RoslynLanguageServerSettings : SimplePersistentStateComponent<RoslynLangua
         /** `section = value` lines for what [RoslynOptions] does not list; they win over [options]. */
         var additionalOptions by string("")
 
-        /** [CSharpFeature] name -> [CSharpFeatureSource] name, for the features switched away from the default (ROSLYN). */
+        /** [CSharpFeature] name -> [CSharpFeatureSource] name, for the features switched away from their default ([CSharpFeature.defaultSource]). */
         var features by map<String, String>()
     }
 
     /** What the user chose for [feature]; [io.github.dotnetsupport.lang.CSharpFeatures.native] decides whether it applies. */
     fun source(feature: CSharpFeature): CSharpFeatureSource =
-        state.features[feature.name]?.let { stored -> CSharpFeatureSource.entries.firstOrNull { it.name == stored } } ?: CSharpFeatureSource.ROSLYN
+        state.features[feature.name]?.let { stored -> CSharpFeatureSource.entries.firstOrNull { it.name == stored } } ?: feature.defaultSource
 
     fun setSource(feature: CSharpFeature, source: CSharpFeatureSource) {
         if (source == source(feature)) return
         // a new map: that is how BaseState notices the change
-        state.features = state.features.toMutableMap().apply { if (source == CSharpFeatureSource.ROSLYN) remove(feature.name) else put(feature.name, source.name) }
+        state.features = state.features.toMutableMap().apply { if (source == feature.defaultSource) remove(feature.name) else put(feature.name, source.name) }
     }
 
     /** The value of [option] as the page shows it and as the server gets it. */

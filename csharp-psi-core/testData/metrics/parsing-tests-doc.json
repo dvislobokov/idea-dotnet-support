@@ -1,0 +1,13 @@
+{
+  "validFiles": 115,
+  "validMismatchedFiles": 0,
+  "validMismatches": 0,
+  "validSpuriousErrorFiles": 0,
+  "validExceptions": 0,
+  "invalidFiles": 0,
+  "invalidExceptions": 0,
+  "invalidMismatchedFiles": 0,
+  "invalidMismatches": 0,
+  "docComments": 115,
+  "docCommentMismatches": 0
+}

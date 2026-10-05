@@ -22,7 +22,10 @@ import com.intellij.psi.PsiFile
 import io.github.dotnetsupport.DotNetBundle
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.PluginLog
+import io.github.dotnetsupport.lang.CSharpFeature
+import io.github.dotnetsupport.lang.CSharpFeatures
 import io.github.dotnetsupport.lang.CSharpFileType
+import io.github.dotnetsupport.lang.NativeCSharpFormatting
 import io.github.dotnetsupport.lsp.RoslynPolicy
 import io.github.dotnetsupport.lsp.RoslynServerStatus
 import io.github.dotnetsupport.msbuild.DotNetProjects
@@ -30,9 +33,12 @@ import io.github.dotnetsupport.settings.DotNetSettingsConfigurable
 import java.io.File
 
 enum class FormatterChoice(val title: String) {
-    AUTO("Auto: CSharpier when the repository uses it, otherwise dotnet format"),
+    AUTO("Auto: CSharpier when the repository uses it, otherwise the built-in formatter or dotnet format (Settings | Language Server)"),
+    // the whitespace rules of `dotnet format` on the plugin's own tree, in the IDE: a selection, Auto-Indent Lines, a paste, no process
+    BUILT_IN("Built-in (the rules of dotnet format, as you type)"),
+    // a whole file at a time, so it is what Reformat Code and Actions on Save run, not something that follows the typing
+    DOTNET_FORMAT("dotnet format (whole files: Reformat Code and on save; about a second per file, instant with the language server)"),
     CSHARPIER("CSharpier"),
-    DOTNET_FORMAT("dotnet format (whitespace, by .editorconfig; about a second per file, instant with the language server)"),
     NONE("None");
 
     // in the language of the settings page; [title] is the English one. Not `toString()`: see [io.github.dotnetsupport.PluginLanguage.label]
@@ -42,7 +48,7 @@ enum class FormatterChoice(val title: String) {
 /** The formatter is a decision of the team, so it is kept with the project (`.idea/dotnet.xml`) and can be committed. */
 @Service(Service.Level.PROJECT)
 @State(name = "DotNetFormatting", storages = [Storage("dotnet.xml")])
-class DotNetFormattingSettings : SimplePersistentStateComponent<DotNetFormattingSettings.Settings>(Settings()) {
+class DotNetFormattingSettings(private val project: Project) : SimplePersistentStateComponent<DotNetFormattingSettings.Settings>(Settings()) {
     class Settings : BaseState() {
         var formatter by enum(FormatterChoice.AUTO)
     }
@@ -51,13 +57,17 @@ class DotNetFormattingSettings : SimplePersistentStateComponent<DotNetFormatting
         get() = state.formatter
         set(value) { state.formatter = value }
 
-    /** What [FormatterChoice.AUTO] means for a file in [directory]. */
     /** [resolve] for a file of the project: its directory and the text of the project that owns it. */
     fun resolve(file: VirtualFile): FormatterChoice =
         resolve(VfsUtilCore.virtualToIoFile(file).parentFile, DotNetProjects.findOwningProject(file)?.let { runCatching { VfsUtilCore.loadText(it) }.getOrNull() })
 
+    /** What [FormatterChoice.AUTO] means for a file in [directory]: past CSharpier, the switch of `CSharpFeature.FORMATTING` decides. */
     fun resolve(directory: File?, projectFileText: String? = null): FormatterChoice = when (val choice = formatter) {
-        FormatterChoice.AUTO -> if (CSharpierLocator.isUsedBy(directory, projectFileText)) FormatterChoice.CSHARPIER else FormatterChoice.DOTNET_FORMAT
+        FormatterChoice.AUTO -> when {
+            CSharpierLocator.isUsedBy(directory, projectFileText) -> FormatterChoice.CSHARPIER
+            CSharpFeatures.native(CSharpFeature.FORMATTING, project) -> FormatterChoice.BUILT_IN
+            else -> FormatterChoice.DOTNET_FORMAT
+        }
         else -> choice
     }
 
@@ -124,6 +134,8 @@ class DotNetFormattingService : AsyncDocumentFormattingService() {
         val virtualFile = file.virtualFile?.takeIf { it.fileType == CSharpFileType } ?: return false
         val settings = DotNetFormattingSettings.getInstance(file.project)
         if (settings.formatter == FormatterChoice.NONE) return false
+        // the built-in formatter of the plugin's own tree does what `dotnet format whitespace` does (CSharpFeature.FORMATTING NATIVE)
+        if (NativeCSharpFormatting.engaged(file)) return false
         // the whitespace formatter of Roslyn is what the language server runs, without a process per file: left to the LSP client
         return !RoslynServerStatus.isReady(file.project) || !RoslynPolicy.formatsByServer(settings.resolve(virtualFile), true)
     }
@@ -148,7 +160,8 @@ class DotNetFormattingService : AsyncDocumentFormattingService() {
                     } catch (e: CSharpierUnavailable) {
                         FormatResult.Failed(e.message.orEmpty())
                     }
-                    FormatterChoice.DOTNET_FORMAT -> DotNetFormatRunner.format(file, text)
+                    // built-in, but the file has the heuristic tree (canFormat): the same rules from the SDK
+                    FormatterChoice.DOTNET_FORMAT, FormatterChoice.BUILT_IN -> DotNetFormatRunner.format(file, text)
                     else -> FormatResult.Unchanged
                 }
                 if (cancelled) return

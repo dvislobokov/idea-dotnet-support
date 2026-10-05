@@ -1,0 +1,9 @@
+{
+  "mutants": 36000,
+  "mismatchedMutants": 1,
+  "exceptions": 0,
+  "stackOverflows": 0,
+  "timeouts": 0,
+  "coverageFailures": 0,
+  "loggedErrors": 0
+}

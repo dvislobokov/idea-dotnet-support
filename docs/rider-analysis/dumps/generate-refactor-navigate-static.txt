@@ -1,0 +1,113 @@
+##### GenerateGroup
+[+] Generate  {GenerateGroup}  
+  [+] <no text>  {SqlGenerateGroup}  
+  <no text>  {GdAddTraitAction}  
+  [+] <no text>  {CMake.GenerateGroup}  
+    Generate Executable Target  {CMake.GenerateExecutableTarget}  
+    Generate Library Target  {CMake.GenerateLibraryTarget}  
+  Helm Dependency  {Kubernetes.HelmGenerateDependency}  
+  Constructor  {Generate.Constructor.JavaScript}  
+  Getter  {Generate.GetAccessor.JavaScript}  
+  Setter  {Generate.SetAccessor.JavaScript}  
+  Getter and Setter  {Generate.GetSetAccessor.JavaScript}  
+  [+] <no text>  {ShGenerateGroup}  
+    For Loop  {ShGenerateForLoop}  
+    While Loop  {ShGenerateWhileLoop}  
+    Until Loop  {ShGenerateUntilLoop}  
+  XML Tag…  {GenerateXmlTag}  
+  [+] <no text>  {JsTestFrameworkCodeGeneratorGroup}  
+    <no text>  {JasmineGenerateNewSuiteAction}  
+    <no text>  {JasmineGenerateNewSpecAction}  
+    <no text>  {JasmineGenerateBeforeEachMethodAction}  
+    <no text>  {JasmineGenerateAfterEachMethodAction}  
+    -----
+    <no text>  {QUnitGenerateNewTestAction}  
+    <no text>  {QUnitGenerateSetupAction}  
+    <no text>  {QUnitGenerateTearDownAction}  
+    -----
+  Implement Members…  {Generate.Missing.Members.TypeScript}  Ctrl+Shift+I
+  Implement Methods…  {Generate.Missing.Members.ES6}  Ctrl+Shift+I
+  Override Methods…  {OverrideMethods}  
+  Implement Methods…  {ImplementMethods}  Ctrl+Shift+I
+  Delegate Methods…  {DelegateMethods}  
+  [+] <no text>  {GenerateFromTestCreatorsGroup}  
+  Add a New Column to the Table Before the Current One  {HtmlAddTableColumnBefore}  
+  Add a New Column to the Table After the Current One  {HtmlAddTableColumnAfter}  
+  [+] <no text>  {Markdown.InsertGroup}  
+    Create Link  {Markdown.Styling.CreateLink}  Ctrl+Shift+U
+    Generate Table Of Contents  {Markdown.GenerateTableOfContents}  
+    Insert Table  {Markdown.InsertEmptyTable}  
+    Insert Image  {org.intellij.plugins.markdown.ui.actions.styling.InsertImageAction}  Ctrl+U
+  Language Properties  {org.editorconfig.configmanagement.generate.EditorConfigGenerateLanguagePropertiesAction}  
+
+##### RefactoringMenu
+[+] Refactor  {RefactoringMenu}  
+  Refactor This…  {Refactorings.QuickListPopupAction}  Ctrl+Shift+R
+  Rename…  {RenameElement}  Ctrl+R, R
+  Change Signature…  {ChangeSignature}  Ctrl+R, V
+  Modify Object…  {DatabaseView.Ddl.AlterObject}  Ctrl+R, V
+  Convert to Function Component  {ReactClassToFunctionComponentAction}  
+  Convert to Class Component  {ReactFunctionToClassComponentAction}  
+  -----
+  [+] Extract/Introduce  {IntroduceActionsGroup}  
+    Introduce Variable…  {IntroduceVariable}  
+    Extract Routine...  {sql.ExtractFunctionAction}  Ctrl+R, M
+    Table alias...  {sql.IntroduceAliasAction}  
+    Introduce Constant…  {IntroduceConstant}  Ctrl+Alt+C
+    Introduce Field…  {IntroduceField}  Ctrl+R, F
+    Introduce Parameter…  {IntroduceParameter}  Ctrl+R, P
+    -----
+    Introduce Parameter Object…  {IntroduceParameterObject}  
+    -----
+    Extract Method…  {ExtractMethod}  Ctrl+R, M
+    -----
+    Extract Delegate…  {ExtractClass}  
+    Include File…  {ExtractInclude}  
+    Extract Interface…  {ExtractInterface}  Ctrl+R, I
+    Extract Superclass…  {ExtractSuperclass}  
+    Extract Module…  {ExtractModule}  
+    Type Alias…  {TypeScriptExtractTypeAlias}  
+    Extract Component…  {ReactExtractComponentAction}  
+    Extract Vue component  {VueExtractComponentAction}  
+    Extract Component...  {Angular2ExtractComponentAction}  
+    Subquery as CTE  {sql.ExtractNamedQueryAction}  
+  Inline…  {Inline}  
+  -----
+  Move…  {Move}  
+  Copy…  {CopyElement}  
+  Safe Delete…  {SafeDelete}  Ctrl+R, D
+  -----
+  Pull Members Up…  {MembersPullUp}  
+  Push Members Down…  {MemberPushDown}  
+  Invert Boolean…  {InvertBoolean}  
+  [+] XML Refactorings  {XMLRefactoringMenu}  
+    Rename Tag…  {RenameTagAction}  
+    Rename Attribute…  {RenameAttributeAction}  
+    Delete Tag…  {DeleteTagAction}  
+    Delete Attribute…  {DeleteAttributeAction}  
+    Add Attribute…  {AddAttributeAction}  
+    Add Subtag…  {AddSubtagAction}  
+    Change Attribute Value..  {ChangeAttributeValueAction}  
+    Unwrap Tag…  {UnwrapTagAction}  
+    Wrap Tag…  {WrapTagAction}  
+    Wrap Tag Contents…  {WrapTagContentsAction}  
+    Convert Tag Contents To Attribute…  {ConvertContentsToAttributeAction}  
+    Replace Tag with Attribute…  {ReplaceTagWithAttributeAction}  
+    Replace Attribute with Tag…  {ReplaceAttributeWithTagAction}  
+    Move Attribute In…  {MoveAttributeInAction}  
+    Move Attribute Out…  {MoveAttributeOutAction}  
+  Encapsulate Field  {RiderBackendAction-EncapsulateField}  Ctrl+R, E
+
+##### Refactorings.QuickListPopupAction
+Refactor This…  {Refactorings.QuickListPopupAction}  Ctrl+Shift+R
+
+##### ReSharperNavigateTo
+Navigate To…  {ReSharperNavigateTo}  Alt+`
+
+##### ShowIntentionsGroup
+[+] <no text>  {ShowIntentionsGroup}  
+  Show Context Actions  {ShowIntentionActions}  Alt+Enter
+  -----
+
+actions dumped: 92
+

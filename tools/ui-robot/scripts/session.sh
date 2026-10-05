@@ -4,6 +4,12 @@ export PYTHONIOENCODING=utf-8
 ROBOT="python tools/ui-robot/robot.py"
 ROBOT_SCRIPTS="tools/ui-robot/scripts"
 ROBOT_TMP="${TEMP:-/tmp}/ui-robot.js"
+# ROBOT_WSL=1: the sandbox of tools/ui-robot/wsl (its robot is reached by the Python of WSL; the script file must be readable there)
+if [ "${ROBOT_WSL:-}" = "1" ]; then
+    ROBOT="wsl -d Ubuntu -- bash tools/ui-robot/wsl/robot.sh"
+    mkdir -p build/ui-robot
+    ROBOT_TMP="build/ui-robot/robot.js"
+fi
 
 # robot_js FILE [sed-expression ...]: run a script with its __PLACEHOLDERS__ filled in, print what it returns
 robot_js() {

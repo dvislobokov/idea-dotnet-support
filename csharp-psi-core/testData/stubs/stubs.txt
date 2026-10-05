@@ -1,0 +1,54 @@
+# CSharpStubs.VERSION = 2
+PsiFileStubImpl
+  CompilationUnit:CSharpStub
+    NamespaceDeclaration:CSharpStub name=Shop.Orders
+      ClassDeclaration:CSharpStub name=Order modifiers=[public, sealed, partial] arity=2 bases=[Base<T>, IOrder] attributes=[Serializable]
+        FieldDeclaration:CSharpStub modifiers=[public, const]
+          VariableDeclaration:CSharpStub
+            VariableDeclarator:CSharpStub name=Max
+            VariableDeclarator:CSharpStub name=Min
+        FieldDeclaration:CSharpStub name=_count modifiers=[private]
+          VariableDeclaration:CSharpStub
+            VariableDeclarator:CSharpStub name=_count
+        EventFieldDeclaration:CSharpStub name=Changed modifiers=[public]
+          VariableDeclaration:CSharpStub
+            VariableDeclarator:CSharpStub name=Changed
+        EventFieldDeclaration:CSharpStub modifiers=[public]
+          VariableDeclaration:CSharpStub
+            VariableDeclarator:CSharpStub name=A
+            VariableDeclarator:CSharpStub name=B
+        ConstructorDeclaration:CSharpStub name=Order modifiers=[public] parameters=(int count)
+        DestructorDeclaration:CSharpStub name=~Order parameters=()
+        OperatorDeclaration:CSharpStub name=operator + modifiers=[public, static] parameters=(Order<T, U> a, Order<T, U> b)
+        ConversionOperatorDeclaration:CSharpStub name=operator int modifiers=[public, static] parameters=(Order<T, U> o)
+        PropertyDeclaration:CSharpStub name=Count modifiers=[public]
+        IndexerDeclaration:CSharpStub name=this modifiers=[public] parameters=[int i]
+        EventDeclaration:CSharpStub name=E modifiers=[public]
+        MethodDeclaration:CSharpStub name=RunAsync modifiers=[public, async] arity=1 parameters=(V value, int other) attributes=[Fact, Trait]
+        ClassDeclaration:CSharpStub name=Nested modifiers=[public]
+          MethodDeclaration:CSharpStub name=Check parameters=() attributes=[TestAttribute]
+        DelegateDeclaration:CSharpStub name=Handler modifiers=[public] parameters=(object sender)
+        ExtensionBlockDeclaration:CSharpStub parameters=(string s)
+          PropertyDeclaration:CSharpStub name=IsEmpty modifiers=[public]
+      ClassDeclaration:CSharpStub name=Extensions modifiers=[public, static]
+        MethodDeclaration:CSharpStub name=Twice modifiers=[public, static] extension parameters=(this int x)
+      EnumDeclaration:CSharpStub name=Color modifiers=[public]
+        EnumMemberDeclaration:CSharpStub name=Red
+        EnumMemberDeclaration:CSharpStub name=Green attributes=[Obsolete]
+      InterfaceDeclaration:CSharpStub name=IOrder modifiers=[public]
+        MethodDeclaration:CSharpStub name=Ship parameters=()
+      NamespaceDeclaration:CSharpStub name=Inner
+        RecordDeclaration:CSharpStub name=Point modifiers=[public] parameters=(int X, int Y) attributes=[TestFixture]
+        RecordStructDeclaration:CSharpStub name=Size modifiers=[public] parameters=(int W)
+        StructDeclaration:CSharpStub name=S
+    ClassDeclaration:CSharpStub
+      MethodDeclaration:CSharpStub name=Lost parameters=()
+
+PsiFileStubImpl
+  CompilationUnit:CSharpStub
+    FileScopedNamespaceDeclaration:CSharpStub name=Shop.Items
+      ClassDeclaration:CSharpStub name=Item modifiers=[public]
+        PropertyDeclaration:CSharpStub name=Name modifiers=[public]
+        FieldDeclaration:CSharpStub name=Field
+          VariableDeclaration:CSharpStub
+            VariableDeclarator:CSharpStub name=Field

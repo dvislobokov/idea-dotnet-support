@@ -25,7 +25,7 @@ import org.eclipse.lsp4j.SignatureHelpParams
 class RoslynLambdaCompletion : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
         val file = parameters.originalFile as? CSharpFile ?: return
-        if (!RoslynFeatures.serves(CSharpFeature.COMPLETION, file.project)) return
+        // whatever the switch of COMPLETION: the native list has no lambdas, and keeps the items of other contributors
         val workspace = file.project.service<RoslynWorkspace>()
         val client = workspace.clients.firstOrNull()?.takeIf { workspace.isLoaded } ?: return
         // only where an argument begins: right after `(` or `,`, or a name that is being typed there

@@ -7,6 +7,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.TokenType
 import com.intellij.psi.tree.IElementType
 import com.intellij.psi.util.PsiTreeUtil
+import io.github.dotnetsupport.csharp.lang.psi.CSharpElement
 
 /**
  * [CSharpSyntaxModel] over the heuristics of today: [CSharpDeclarations] scans the declarations, [CSharpTreeBuilder] groups the
@@ -16,14 +17,23 @@ import com.intellij.psi.util.PsiTreeUtil
 object HeuristicCSharpSyntaxModel : CSharpSyntaxModel {
     override fun declarations(text: CharSequence): CSharpFileStructure = CSharpDeclarations.scan(text)
 
-    override fun declarations(file: PsiFile): CSharpFileStructure = CSharpStructure.of(file)
+    // a file of csharp-psi's tree (parsed before the switch moved back) and its elements: the native model answers for them
 
-    override fun declarationOf(element: PsiElement): CSharpDeclarationInfo? = (element as? CSharpDeclaration)?.info
+    override fun declarations(file: PsiFile): CSharpFileStructure = if (isNative(file)) NativeCSharpSyntaxModel.declarations(file) else CSharpStructure.of(file)
 
-    override fun childDeclarations(parent: PsiElement): List<NavigatablePsiElement> = PsiTreeUtil.getChildrenOfTypeAsList(parent, CSharpDeclaration::class.java)
+    override fun declarationOf(element: PsiElement): CSharpDeclarationInfo? = when (element) {
+        is CSharpDeclaration -> element.info
+        is CSharpElement -> NativeCSharpSyntaxModel.declarationOf(element)
+        else -> null
+    }
+
+    override fun childDeclarations(parent: PsiElement): List<NavigatablePsiElement> =
+        if (parent is CSharpElement || isNative(parent)) NativeCSharpSyntaxModel.childDeclarations(parent) else PsiTreeUtil.getChildrenOfTypeAsList(parent, CSharpDeclaration::class.java)
 
     override fun declarationElementAt(file: PsiFile, offset: Int): NavigatablePsiElement? =
-        file.findElementAt(offset)?.let { PsiTreeUtil.getParentOfType(it, CSharpDeclaration::class.java) }
+        if (isNative(file)) NativeCSharpSyntaxModel.declarationElementAt(file, offset) else file.findElementAt(offset)?.let { PsiTreeUtil.getParentOfType(it, CSharpDeclaration::class.java) }
+
+    private fun isNative(element: PsiElement): Boolean = (element as? CSharpFile)?.compilationUnit != null
 
     override fun attributedMethods(text: CharSequence, attributes: Set<String>): CSharpAttributedMethods = AttributedMethodScanner.scan(text, attributes)
 }

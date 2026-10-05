@@ -48,6 +48,8 @@ data class MsBuildProject(
     val importsSdk: Boolean = false,
     /** An Aspire AppHost: `Aspire.AppHost.Sdk` (the `Sdk` attribute in Aspire 13, `<Sdk Name>` in Aspire 9) or `IsAspireHost` (Aspire 8). */
     val isAspireHost: Boolean = false,
+    /** `<Reference Include="Foo"><HintPath>..\lib\Foo.dll</HintPath>`: the name of the assembly -> the path, with `/` separators. */
+    val hintPaths: Map<String, String> = emptyMap(),
 ) {
     /**
      * A project of the old format (.NET Framework, `ToolsVersion`, every file listed): no SDK, so no default globs either. What is a
@@ -111,6 +113,7 @@ data class MsBuildProject(
             val packages = LinkedHashMap<String, PackageReference>()
             val projects = LinkedHashSet<String>()
             val assemblies = LinkedHashSet<String>()
+            val hintPaths = LinkedHashMap<String, String>()
             val versions = LinkedHashMap<String, String>()
             var outputType: String? = null
             var rootNamespace: String? = null
@@ -162,7 +165,11 @@ data class MsBuildProject(
                     }
                     "ProjectReference" -> projects += includes(element).map { it.replace('\\', '/') }
                     // Include may be a strong name: "Foo, Version=1.0.0.0, Culture=neutral"
-                    "Reference" -> assemblies += includes(element).map { it.substringBefore(',').trim() }
+                    "Reference" -> for (include in includes(element)) {
+                        val name = include.substringBefore(',').trim()
+                        assemblies += name
+                        itemMetadata(element, "HintPath")?.takeIf { it.isNotBlank() }?.let { hintPaths[name] = it.trim().replace('\\', '/') }
+                    }
                 }
             }
             return MsBuildProject(
@@ -179,6 +186,7 @@ data class MsBuildProject(
                 testingPlatformProperties = testingPlatform,
                 importsSdk = importsSdk,
                 isAspireHost = aspireHost,
+                hintPaths = hintPaths,
             )
         }
 

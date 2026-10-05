@@ -10,9 +10,13 @@ import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.SyntaxTraverser
+import com.intellij.psi.search.GlobalSearchScope
+import com.intellij.psi.stubs.StubIndex
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.indexing.FileBasedIndex
 import com.intellij.util.indexing.FindSymbolParameters
+import io.github.dotnetsupport.csharp.lang.psi.CSharpElement
+import io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubIndexKeys
 import io.github.dotnetsupport.il.IlViewerLogic
 import io.github.dotnetsupport.lang.CSharpBreadcrumbsProvider
 import io.github.dotnetsupport.lang.CSharpBreakpointLines
@@ -23,6 +27,8 @@ import io.github.dotnetsupport.lang.CSharpGotoClassContributor
 import io.github.dotnetsupport.lang.CSharpGotoSymbolContributor
 import io.github.dotnetsupport.lang.CSharpStructureViewFactory
 import io.github.dotnetsupport.lang.CSharpSyntaxModel
+import io.github.dotnetsupport.lang.CSharpSyntaxTrees
+import io.github.dotnetsupport.lang.NativeCSharpSyntaxModel
 import io.github.dotnetsupport.roslyn.RoslynBaseMembers
 import io.github.dotnetsupport.testing.DotNetTestRunLineMarkerContributor
 import io.github.dotnetsupport.testing.testTargetAt
@@ -38,17 +44,43 @@ import java.io.File
  * there does not touch these goldens) and `synthetic` (constructs the heuristics find hard). A golden is `<input>.txt` next to the input.
  * A missing golden is recorded and the test fails once; a different one is written to `build/syntaxSnapshots/` for a diff. To re-record,
  * delete the golden and run the test again.
+ *
+ * Every input runs on both trees: the heuristic one against `<input>.txt`, csharp-psi's ([NativeCSharpSyntaxModel], files parsed under
+ * `native/`) against `<input>.native.txt`. The differences of the native goldens, reviewed (2026-10-04):
+ * - known mistakes of the heuristics gone: `#if` / `#else` with two method headers (`IfBranches`: `_debugOnly`, `Helper`, `After` are back,
+ *   `Run` ends at its `}`; breakpoint lines 16 and 24 go with it), `record Settings` after a top-level `using (…) { … }`
+ *   (`TopLevelStatements`), `[assembly: …]` out of the namespace range (`AttributesOnMembers`), `int _first, _second;` and
+ *   `public T Left, Right;` are two fields each (`Generics`), `record Box<T>(T Value)` has its primary constructor (`Records`), the attribute
+ *   of an enum member is in its range (`NestedAndPartial`);
+ * - deliberate: of a field with several declarators the breadcrumb is there on the declarators only, not on its modifiers and type
+ *   (`Generics` lines 9 and 35: each declarator is an element of its own, the field is none);
+ * - not the model's: the run gutter of `Tests-*` and `AttributesOnMembers` is empty because `testTargetAt` checks the leaf for the heuristic
+ *   lexer's identifier type (re-record those goldens with the fix of the producers: the targets themselves agree, see
+ *   `NativeCSharpSyntaxModelTest.testAttributedMethodsAgreeWithTheHeuristicsOnTheSnapshots`); breakpoint lines of auto-properties without an
+ *   initializer and of `const` fields are still marked — `CSharpBreakpointLines` decides that by tokens, not by the model.
  */
 class CSharpSyntaxSnapshotTest : BasePlatformTestCase() {
     private val root = File("src/test/resources/syntaxSnapshots")
 
-    fun testPlayground() = checkGroup("playground")
+    override fun tearDown() {
+        try {
+            CSharpSyntaxTrees.forceNativeTreeForTests(null)
+        } finally {
+            super.tearDown()
+        }
+    }
 
-    fun testSynthetic() = checkGroup("synthetic")
+    fun testPlayground() = checkGroup("playground", native = false)
+
+    fun testSynthetic() = checkGroup("synthetic", native = false)
+
+    fun testPlaygroundNative() = checkGroup("playground", native = true)
+
+    fun testSyntheticNative() = checkGroup("synthetic", native = true)
 
     /** No main code but the heuristic implementation itself reaches past the facade: the parser swap replaces only that implementation. */
     fun testConsumersGoThroughTheFacade() {
-        val implementation = setOf("CSharpDeclarations.kt", "CSharpPsi.kt", "CSharpParserDefinition.kt", "HeuristicCSharpSyntaxModel.kt", "CSharpSyntaxModel.kt")
+        val implementation = setOf("CSharpDeclarations.kt", "CSharpPsi.kt", "CSharpParserDefinition.kt", "HeuristicCSharpParserDefinition.kt", "HeuristicCSharpSyntaxModel.kt", "CSharpSyntaxModel.kt")
         val forbidden = Regex("""\b(CSharpDeclarations|CSharpDeclaration|CSharpStructure|CSharpTreeBuilder|CSharpElementTypes)\b""")
         val offenders = File("src/main/kotlin").walkTopDown().filter { it.isFile && it.extension == "kt" && it.name !in implementation }.flatMap { file ->
             file.readLines().withIndex().filter { (_, line) ->
@@ -59,14 +91,16 @@ class CSharpSyntaxSnapshotTest : BasePlatformTestCase() {
         assertEquals("consumers of the declarations use CSharpSyntaxModel", emptyList<String>(), offenders)
     }
 
-    private fun checkGroup(group: String) {
+    private fun checkGroup(group: String, native: Boolean) {
+        CSharpSyntaxTrees.forceNativeTreeForTests(native)
         val inputs = File(root, group).listFiles { file -> file.extension == "cs" }.orEmpty().sortedBy { it.name }
         assertTrue("inputs of $group", inputs.isNotEmpty())
         val problems = ArrayList<String>()
         for (input in inputs) {
             val text = input.readText().replace("\r\n", "\n").replace('\r', '\n')
-            val actual = snapshot("$group/${input.name}", text)
-            val golden = File(input.parentFile, input.nameWithoutExtension + ".txt")
+            // the native files under paths of their own: a file keeps the tree it was parsed with
+            val actual = snapshot((if (native) "native/" else "") + "$group/${input.name}", text)
+            val golden = File(input.parentFile, input.nameWithoutExtension + (if (native) ".native.txt" else ".txt"))
             if (!golden.exists()) {
                 golden.writeText(actual)
                 problems += "${golden.path}: recorded, review it and run again"
@@ -140,9 +174,12 @@ class CSharpSyntaxSnapshotTest : BasePlatformTestCase() {
     private fun foldRegions(file: PsiFile, document: Document): List<Pair<TextRange, String>> =
         CSharpFoldingBuilder().buildFoldRegions(file, document, false).map { it.range to (it.placeholderText ?: "") + if (it.isCollapsedByDefault == true) " (collapsed)" else "" }
 
-    /** Per key of the index: Go to Class for the names of types (`T:`), Go to Symbol for the names of members (`M:`), the items of this file. */
+    /**
+     * Per key of the index: Go to Class for the names of types (`T:`), Go to Symbol for the names of members (`M:`), the items of this file.
+     * The keys are those of [CSharpDeclarationIndex] on the heuristic tree, of the stub indexes of csharp-psi on the native one (step 8).
+     */
     private fun gotoItems(file: PsiFile, at: (Int) -> String): List<String> {
-        val keys = FileBasedIndex.getInstance().getFileData(CSharpDeclarationIndex.NAME, file.virtualFile, project).keys.sorted()
+        val keys = if (CSharpSyntaxTrees.nativeTree()) stubKeys(file) else FileBasedIndex.getInstance().getFileData(CSharpDeclarationIndex.NAME, file.virtualFile, project).keys.sorted()
         return keys.map { key ->
             val isType = key.startsWith(CSharpDeclarationIndex.TYPE_PREFIX)
             val contributor = if (isType) CSharpGotoClassContributor() else CSharpGotoSymbolContributor()
@@ -152,6 +189,14 @@ class CSharpSyntaxSnapshotTest : BasePlatformTestCase() {
                 .map { item -> "${at((item as PsiElement).textOffset)} ${item.presentation?.presentableText} (${item.presentation?.locationString})" }
             "$key -> ${here.joinToString("; ")}"
         }
+    }
+
+    /** The names [file] has in the type and member stub indexes, as the keys of [CSharpDeclarationIndex]. */
+    private fun stubKeys(file: PsiFile): List<String> {
+        val scope = GlobalSearchScope.fileScope(file)
+        return listOf(CSharpStubIndexKeys.TYPE_NAMES to CSharpDeclarationIndex.TYPE_PREFIX, CSharpStubIndexKeys.MEMBER_NAMES to CSharpDeclarationIndex.MEMBER_PREFIX).flatMap { (key, prefix) ->
+            StubIndex.getInstance().getAllKeys(key, project).filter { StubIndex.getElements(key, it, project, scope, CSharpElement::class.java).isNotEmpty() }.map { prefix + it }
+        }.sorted()
     }
 
     private fun firstLine(text: String): String = text.lineSequence().first().trim()

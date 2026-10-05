@@ -8,6 +8,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
+import io.github.dotnetsupport.lsp.RoslynServerStatus
 
 /**
  * Postfix templates of C# (`person.if`, `list.foreach`, `Load().await`, `x.return`...), the daily ones of Rider, by tokens: the expression
@@ -35,6 +36,8 @@ class Expansion(val text: String, val caret: Int, val select: IntRange? = null)
 class CSharpPostfixTemplate(
     id: String, key: String, example: String, provider: PostfixTemplateProvider,
     private val statement: Boolean,
+    /** `await` in the expansion: the function around it is made `async`, as choosing `await` in completion does ([NativeCSharpCommonCalls.makeAsyncAt]). */
+    private val awaits: Boolean = false,
     private val render: (expression: String, indent: String, unit: String) -> Expansion,
 ) : PostfixTemplate("csharp.$id", key.removePrefix("."), key, example, provider) {
 
@@ -46,15 +49,20 @@ class CSharpPostfixTemplate(
     }
 
     override fun expand(context: PsiElement, editor: Editor) {
+        val project = context.project
         val document = editor.document
         val text = document.charsSequence
         val range = CSharpExpressions.before(text, editor.caretModel.offset) ?: return
         val indent = CSharpExpressions.indentAt(text, range.startOffset)
         val expansion = render(text.substring(range.startOffset, range.endOffset), indent, unitOf(context.containingFile))
         document.replaceString(range.startOffset, range.endOffset, expansion.text)
-        PsiDocumentManager.getInstance(context.project).commitDocument(document)
+        PsiDocumentManager.getInstance(project).commitDocument(document)
         editor.caretModel.moveToOffset(range.startOffset + expansion.caret)
         expansion.select?.let { editor.selectionModel.setSelection(range.startOffset + it.first, range.startOffset + it.last + 1) }
+        if (awaits && (CSharpFeatures.native(CSharpFeature.COMPLETION, project) || !RoslynServerStatus.isReady(project))) {
+            val file = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return
+            NativeCSharpCommonCalls.makeAsyncAt(file, range.startOffset, editor)
+        }
     }
 
     private fun unitOf(file: PsiFile): String {
@@ -72,6 +80,13 @@ object CSharpPostfixTemplates {
 
     private fun line(text: String, caret: Int = text.length, select: IntRange? = null) = Expansion(text, caret, select)
 
+    /** `using var reader = new StreamReader(path);`: the name of the type made or of the method called ([CSharpUsingNames]), selected. */
+    private fun declaration(head: String, expression: String): Expansion {
+        val name = CSharpUsingNames.of(expression)
+        val start = "$head ".length
+        return line("$head $name = $expression;", start, start until start + name.length)
+    }
+
     fun all(provider: PostfixTemplateProvider): Set<PostfixTemplate> = linkedSetOf(
         CSharpPostfixTemplate("if", ".if", "if (expr)", provider, true) { e, i, u -> block("if ($e)", i, u) },
         CSharpPostfixTemplate("else", ".else", "if (!expr)", provider, true) { e, i, u -> block("if (!$e)", i, u) },
@@ -83,7 +98,8 @@ object CSharpPostfixTemplates {
         CSharpPostfixTemplate("foreach", ".foreach", "foreach (var item in expr)", provider, true) { e, i, u -> block("foreach (var item in $e)", i, u) },
         CSharpPostfixTemplate("for", ".for", "for (var i = 0; i < expr; i++)", provider, true) { e, i, u -> block("for (var i = 0; i < $e; i++)", i, u) },
         CSharpPostfixTemplate("forr", ".forr", "for (var i = expr - 1; i >= 0; i--)", provider, true) { e, i, u -> block("for (var i = $e - 1; i >= 0; i--)", i, u) },
-        CSharpPostfixTemplate("using", ".using", "using var value = expr;", provider, true) { e, _, _ -> line("using var value = $e;", "using var ".length, "using var ".length until "using var value".length) },
+        CSharpPostfixTemplate("using", ".using", "using var value = expr;", provider, true) { e, _, _ -> declaration("using var", e) },
+        CSharpPostfixTemplate("awaitusing", ".awaitusing", "await using var value = expr;", provider, true, awaits = true) { e, _, _ -> declaration("await using var", e) },
         CSharpPostfixTemplate("var", ".var", "var value = expr;", provider, true) { e, _, _ -> line("var value = $e;", "var ".length, "var ".length until "var value".length) },
         CSharpPostfixTemplate("return", ".return", "return expr;", provider, true) { e, _, _ -> line("return $e;") },
         CSharpPostfixTemplate("throw", ".throw", "throw expr;", provider, true) { e, _, _ -> line("throw $e;") },

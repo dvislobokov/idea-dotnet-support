@@ -1,0 +1,1 @@
+from x in y group x select x

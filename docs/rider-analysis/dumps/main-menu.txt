@@ -1,0 +1,1324 @@
+##### MainMenu
+[+] Main Menu  {MainMenu}  
+  [+] File  {FileMenu}  
+    [+] <no text>  {RiderFileNewGroup}  
+      New Solution…  {RiderNewSolution}  
+    [+] Open  {RiderFileOpenGroup}  
+      Open…  {RiderOpenSolution}  Ctrl+Shift+O
+      Get from Version Control…  {Vcs.VcsClone}  
+      [+] File Open Actions  {FileOpenGroup}  
+      -----
+      [+] <no text>  {RecentProjectListGroup}  
+      -----
+      Manage Recent Solutions…  {RiderManageRecentProjects}  
+    Close Project  {CloseProject}  
+    -----
+    [+] <no text>  {FileMenu.RemoteDevelopmentActions}  
+      [+] <no text>  {FileMenu.RemoteDevelopmentActions.Daemon}  
+        Remote Development…  {NewRemoteDevelopmentConnection}  
+      [+] <no text>  {FileMenu.RemoteDevelopmentActions.Gateway}  
+        <no text>  {OpenRemoteDevelopment}  
+      Remote Development  {ToolboxWelcomeRemdevAction}  
+      [+] Remote Development  {FileMenu.RemoteDevelopmentActions.Combined}  
+        Open the Toolbox App  {WelcomeOpenToolbox}  
+        Open JetBrains Gateway  {WelcomeOpenGateway}  
+    -----
+    Save All  {SaveAll}  Ctrl+Shift+S
+    Reload All from Disk  {Synchronize}  Ctrl+Alt+Y
+    -----
+    [+] <no text>  {RiderFileMiscGroup}  
+      [+] Print/Export Actions  {PrintExportGroup}  
+        -----
+        [+] Export  {FileExportGroup}  
+          Export Files or Selection to HTML…  {ExportToHTML}  
+        Print…  {Print}  Ctrl+P
+      File Encoding  {ChangeFileEncodingAction}  
+      [+] Line Separators  {ChangeLineSeparators}  
+        <no text>  {ConvertToWindowsLineSeparators}  
+        <no text>  {ConvertToUnixLineSeparators}  
+        <no text>  {ConvertToMacLineSeparators}  
+      Toggle Read-Only Attribute  {ToggleReadOnlyAttribute}  
+    -----
+    [+] Settings Actions  {FileMainSettingsGroup}  
+      <no text>  {ShowSettings}  Ctrl+Alt+S
+      [+] New Projects Setup  {FileOtherSettingsGroup}  
+        <no text>  {TemplateProjectProperties}  
+        <no text>  {RunConfigurationTemplatesForNewProjects}  
+        [+] Settings Actions  {FileSettingsGroup}  
+      [+] Manage IDE Settings  {ExportImportGroup}  
+        Import Settings…  {ImportSettings}  
+        Export Settings…  {ExportSettings}  
+        -----
+    [+] <no text>  {CMake.FileMenu}  
+      -----
+      [+] <no text>  {CMake.GeneralProjectActionsGroup}  
+        <no text>  {CMake.ReloadCMakeProject}  
+      -----
+    -----
+    Power Save Mode  {TogglePowerSave}  
+    -----
+    Invalidate Caches…  {InvalidateCaches}  
+    Exit  {Exit}  
+  [+] Edit  {EditMenu}  
+    Undo  {$Undo}  Ctrl+Z
+    Redo  {$Redo}  Ctrl+Y
+    -----
+    [+] Cut/Copy/Paste Actions  {CutCopyPasteGroup}  
+      Cut  {$Cut}  Ctrl+X
+      Copy  {$Copy}  Ctrl+C
+      Download File to Local Machine  {DownloadBackendFileToClient}  Ctrl+Shift+D
+      Copy Paths  {CopyPaths}  Ctrl+Shift+C
+      Copy as Plain Text  {CopyAsPlainText}  
+      Copy as Rich Text  {CopyAsRichText}  
+      [+] Copy Path/Reference…  {CopyReferencePopupGroup}  
+        [+] <no text>  {CopyFileReference}  
+          Absolute Path  {CopyAbsolutePath}  Ctrl+Shift+C
+          File Name  {CopyFileName}  
+          -----
+          Path with Line Number  {CopyPathWithLineNumber}  
+          Path From Solution Root  {RiderCopyRootPath}  
+          Path From Repository Root  {CopyPathFromRepositoryRootProvider}  
+          [+] <no text>  {Git.Hosting.Copy.Link.Group}  
+            [+] Copy Link to GitLab Repository  {GitLab.Copy.Link}  
+            [+] Copy Link to GitHub Repository  {GitHub.Copy.Link}  
+            [+] Copy Link to Azure DevOps Repository  {IntelliJ.AzureDevOps.Copy.Link}  
+        -----
+        [+] <no text>  {CopyExternalReferenceGroup}  
+          Toolbox URL  {CopyTBXReference}  
+        Copy Reference  {CopyReference}  Ctrl+Alt+Shift+C
+      [+] Paste  {PasteGroup}  
+        Paste  {$Paste}  Ctrl+V
+        Paste from History…  {PasteMultiple}  Ctrl+Shift+V
+        Paste as Plain Text  {EditorPasteSimple}  Ctrl+Alt+Shift+V
+        [+] <no text>  {PasteSpecialSeparatedGroup}  
+          -----
+          [+] <no text>  {RiderPasteSpecialGroup}  
+            Paste Special: JSON as Classes  {RiderPasteJsonAsClasses}  
+            Paste Special: JSON as Records  {RiderPasteJsonAsRecords}  
+      Convert to cURL and Copy  {HTTPClientConvertToCurlAndCopy}  
+      Copy JSON Pointer  {JsonCopyPointer}  
+    [+] Editor Create/Delete Actions  {EditCreateDeleteGroup}  
+      Delete  {$Delete}  Delete
+    -----
+    Search in Selection Only  {ToggleFindInSelection}  
+    [+] Find  {FindMenuGroup}  
+      Find…  {Find}  Ctrl+F
+      Replace…  {Replace}  Ctrl+H
+      Find Next / Move to Next Occurrence  {FindNext}  F3
+      Find Previous / Move to Previous Occurrence  {FindPrevious}  Shift+F3
+      Select All Occurrences  {SelectAllOccurrences}  Alt+Shift+;
+      Add Selection for Next Occurrence  {SelectNextOccurrence}  Alt+Shift+.
+      Unselect Occurrence  {UnselectPreviousOccurrence}  Alt+Shift+Comma
+      Search in Selection Only  {ToggleFindInSelection}  
+      Scroll to Results During Typing  {ToggleScrollToResultsDuringTypingAction}  
+      -----
+      Next Occurrence of the Word at Caret  {FindWordAtCaret}  Ctrl+F3
+      Previous Occurrence of the Word at Caret  {FindPrevWordAtCaret}  Ctrl+Shift+F3
+      -----
+      Find in Files…  {FindInPath}  Ctrl+Shift+F
+      Replace in Files…  {ReplaceInPath}  Ctrl+Shift+H
+      [+] <no text>  {StructuralSearchActions}  
+        -----
+        Search Structurally…  {StructuralSearchPlugin.StructuralSearchAction}  
+        Replace Structurally…  {StructuralSearchPlugin.StructuralReplaceAction}  
+      [+] <no text>  {XPathView.MainMenu.Search}  
+        -----
+        Evaluate XPath…  {XPathView.Actions.Evaluate}  Ctrl+Alt+X, E
+        Find by XPath…  {XPathView.Actions.FindByExpression}  Ctrl+Alt+X, F
+      Evaluate JSONPath Expression…  {JsonPathEvaluateAction}  
+    [+] Find Usages  {FindUsagesMenuGroup}  
+      Find Usages  {FindUsages}  Shift+F12
+      Find Usages Settings…  {ShowSettingsAndFindUsages}  Ctrl+Alt+Shift+F12
+      Show Usages  {ShowUsages}  Alt+Shift+F12
+      -----
+      Find Usages in File  {FindUsagesInFile}  
+      Highlight Usages in File  {HighlightUsagesInFile}  
+      Next Highlighted Usage  {GotoNextElementUnderCaretUsage}  Ctrl+Shift+Down
+      Previous Highlighted Usage  {GotoPrevElementUnderCaretUsage}  Ctrl+Shift+Up
+      [+] Recent Find Usages  {ShowRecentFindUsagesGroup}  
+    [+] <no text>  {Editor.Search.Filter.Results}  
+      Search In Changes  {Vcs.Diff.ToggleSearchInChanges}  
+    -----
+    Column Selection Mode  {EditorToggleColumnMode}  Alt+Shift+Insert
+    [+] Editor Select Actions  {EditSelectGroup}  
+      Select All  {$SelectAll}  Ctrl+A
+      Add Carets to Ends of Selected Lines  {EditorAddCaretPerSelectedLine}  Alt+Shift+G
+      [+] Select Word Actions  {EditSelectWordGroup}  
+        Extend Selection  {EditorSelectWord}  Alt+Shift+=
+        Shrink Selection  {EditorUnSelectWord}  Alt+Shift+Minus
+    -----
+    [+] Edit Code Actions  {EditSmartGroup}  
+      Toggle Case  {EditorToggleCase}  Ctrl+Shift+U
+      Join Lines  {EditorJoinLines}  Ctrl+Shift+J
+      Duplicate Line or Selection  {EditorDuplicate}  Ctrl+D
+      Fill Paragraph  {FillParagraph}  
+      Sort Lines  {EditorSortLines}  
+      Reverse Lines  {EditorReverseLines}  
+      Transpose  {EditorTranspose}  
+      -----
+      Indent Selection  {EditorIndentSelection}  Tab
+      Unindent Line or Selection  {EditorUnindentSelection}  Shift+Tab
+      [+] Convert Indents  {ConvertIndentsGroup}  
+        To Spaces  {ConvertIndentsToSpaces}  
+        To Tabs  {ConvertIndentsToTabs}  
+    -----
+    [+] Macros  {Macros}  
+      [+] Standard Macro Actions  {StandardMacroActions}  
+        Play Back Last Macro  {PlaybackLastMacro}  
+        Start/Stop Macro Recording  {StartStopMacroRecording}  
+        Edit Macros  {EditMacros}  
+        Play Saved Macros…  {PlaySavedMacrosAction}  
+      -----
+      [+] Macro Actions  {MacrosGroup}  
+    [+] Bookmarks  {EditBookmarksGroup}  
+      [+] <no text>  {popup@BookmarkContextMenu}  
+        Add Bookmark to Another List  {AddAnotherBookmark}  
+        Rename Bookmark…  {EditBookmark}  
+        Toggle Bookmark  {ToggleBookmark}  Ctrl+K, K
+        Remove Mnemonic  {DeleteMnemonicFromBookmark}  
+        Toggle Bookmark Mnemonic…  {ToggleBookmarkWithMnemonic}  Ctrl+F11
+        -----
+      -----
+      Previous Line Bookmark  {GotoPreviousBookmark}  Ctrl+K, P
+      Next Line Bookmark  {GotoNextBookmark}  Ctrl+K, N
+      -----
+      Show Bookmarks…  {ShowBookmarks}  
+      Go to Mnemonic…  {ShowTypeBookmarks}  
+      -----
+    -----
+    Emoji & Symbols  {EmojiPicker.Open}  Ctrl+Alt+;
+    Emoji & Symbols  {EmojiAndSymbols}  
+    Encode XML/HTML Special Characters  {EscapeEntities}  
+    Edit as Table  {FileEditor.OpenDataEditor}  
+    View as Table  {FileEditor.OpenDataViewer}  
+  [+] View  {ViewMenu}  
+    [+] Tool Windows  {ToolWindowsGroup}  
+    [+] Appearance  {ViewAppearanceGroup}  
+      [+] <no text>  {ToggleFullScreenGroup}  
+        -----
+        Toggle Presentation Mode  {TogglePresentationMode}  
+        Toggle Distraction Free Mode  {ToggleDistractionFreeMode}  
+        Toggle Full Screen Mode  {ToggleFullScreen}  Alt+Shift+Enter
+        Toggle Zen Mode  {ToggleZenMode}  
+        -----
+        Compact Mode  {ToggleCompactMode}  
+      Zoom IDE  {SwitchIdeScaleAction}  
+      [+] <no text>  {UIToggleActions}  
+        -----
+        Presentation Assistant  {TogglePresentationAssistantAction}  
+        -----
+        Main Menu  {ViewMainMenu}  
+        [+] Main Menu  {ChangeMainMenuModeActionGroup}  
+        Toolbar  {ViewNewToolbarAction}  
+        Toolbar Classic  {ViewObsoleteToolbarAction}  
+        Navigation Bar  {ViewObsoleteNavBarAction}  
+        [+] <no text>  {ViewToolbarActionsGroup}  
+          Toolbar  {ViewToolBar}  
+          Navigation Bar  {ViewNavigationBar}  
+          [+] Navigation Bar  {NavbarLocationGroup}  
+            Top  {NavBarLocationTop}  
+            In Status Bar  {NavBarLocationBottom}  
+            Don't Show  {NavBarLocationHide}  
+            -----
+            Show Members  {ShowMembersInNavigationBar}  
+        Tool Window Bars  {ViewToolButtons}  
+        Status Bar  {ViewStatusBar}  
+        [+] Status Bar Widgets  {ViewStatusBarWidgetsGroup}  
+          Status Text  {StatusTextModeAction}  
+        Members in Navigation Bar  {ViewMembersInNavigationBar}  
+    [+] <no text>  {QuickActions}  
+      -----
+      Quick Definition  {QuickImplementations}  Alt+F12
+      Quick Type Definition  {QuickTypeDefinition}  
+      Quick Documentation  {QuickJavaDoc}  Ctrl+K, I
+    [+] Code Editor View Actions  {CodeEditorBaseGroup}  
+      [+] Code View Actions  {CodeEditorViewGroup}  
+        External Documentation  {ExternalJavaDoc}  Shift+F1
+        Parameter Info  {ParameterInfo}  Ctrl+Shift+Space
+        Type Info  {ExpressionTypeInfo}  
+        Context Info  {EditorContextInfo}  Alt+Q
+        Error Description  {ShowErrorDescription}  
+        Show Unique XPath  {XPathView.Actions.ShowPath}  Ctrl+Alt+X, P
+      -----
+    Jump to Source  {EditSource}  F4
+    Open in Right Split  {OpenInRightSplit}  Shift+Enter
+    Show Source  {ViewSource}  Ctrl+Enter
+    [+] <no text>  {OpenInBrowserGroup}  
+    -----
+    [+] View Recent Actions Group  {ViewRecentActions}  
+      Recent Files  {RecentFilesFallback}  
+      Toggle Changed Only Files  {SwitcherRecentEditedChangedToggleCheckBoxFallback}  Ctrl+E
+      Iterate Recent Files  {SwitcherIterateItemsFallback}  Ctrl+E
+      Recently Changed Files  {RecentChangedFilesFallback}  
+      Recent Locations  {RecentLocations}  Ctrl+Shift+E
+      Toggle Changed Only Files  {SwitcherRecentEditedChangedToggleCheckBox}  Ctrl+E
+      Iterate Recent Files  {SwitcherIterateItems}  Ctrl+E
+      Recent Files  {RecentFiles}  
+      Recently Changed Files  {RecentChangedFiles}  
+      Recent Changes  {RecentChanges}  
+    -----
+    [+] <no text>  {CompareActions}  
+      [+] Actions on Pairs of Files  {PairFileActions}  
+        Compare Files  {CompareTwoFiles}  Ctrl+D
+        Compare File with Editor  {CompareFileWithEditor}  
+      Compare with Clipboard  {CompareClipboardWithSelection}  
+    -----
+    Quick Switch Scheme…  {QuickChangeScheme}  
+    [+] Active Editor  {EditorToggleActions}  
+      Soft-Wrap  {EditorToggleUseSoftWraps}  Ctrl+E, W
+      -----
+      Show Whitespaces  {EditorToggleShowWhitespaces}  Ctrl+R, W
+      Show Line Numbers  {EditorToggleShowLineNumbers}  
+      Show Gutter Icons  {EditorToggleShowGutterIcons}  
+      Show Indent Guides  {EditorToggleShowIndentLines}  
+      Show Import Popups  {ViewImportPopups}  
+      Show Breadcrumbs  {EditorToggleShowBreadcrumbs}  
+      -----
+      Increase Font Size  {EditorIncreaseFontSize}  
+      Decrease Font Size  {EditorDecreaseFontSize}  
+    -----
+    Increase Font Size in All Editors  {EditorIncreaseFontSizeGlobal}  Ctrl+Shift+.
+    Decrease Font Size in All Editors  {EditorDecreaseFontSizeGlobal}  Ctrl+Shift+Comma
+    Reset Font Size in All Editors  {EditorResetFontSizeGlobal}  
+    -----
+    [+] Bidi Text Base Direction  {EditorBidiTextDirection}  
+      Content-Based  {EditorSetContentBasedBidiTextDirection}  
+      Left-to-Right  {EditorSetLtrBidiTextDirection}  
+      Right-to-Left  {EditorSetRtlBidiTextDirection}  
+    -----
+  [+] Navigate  {GoToMenu}  
+    Back  {Back}  Ctrl+Minus
+    Forward  {Forward}  Ctrl+Shift+Minus
+    -----
+    Search Everywhere  {SearchEverywhere}  Ctrl+T
+    -----
+    [+] Goto by Name Actions  {GoToTargetEx}  
+      Go to Class…  {GotoClass}  
+      Go to File…  {GotoFile}  Ctrl+Shift+T
+      Go to Symbol…  {GotoSymbol}  Ctrl+Alt+Shift+T
+      Text…  {TextSearchAction}  Ctrl+Alt+Shift+E
+      Go To Database Object  {GotoDatabaseObject}  
+    Row…  {GotoRow}  Ctrl+G
+    Open File URI  {Console.TableResult.OpenLocalFileAction}  F4
+    Open URL  {Console.TableResult.OpenWebUrlAction}  F4
+    Related Rows  {Console.TableResult.NavigateAction}  F4
+    Go to Line:Column…  {GotoLine}  Ctrl+G
+    Go to Endpoint…  {GotoUrlAction}  Ctrl+Shift+\
+    -----
+    [+] Goto Error/Bookmark Actions  {GoToErrorGroup}  
+      Next Highlighted Error  {GotoNextError}  Alt+Page Down
+      Previous Highlighted Error  {GotoPreviousError}  Alt+Page Up
+    [+] <no text>  {GoToEditPointGroup}  
+      -----
+      Next Emmet Edit Point  {EmmetNextEditPoint}  Alt+Shift+]
+      Previous Emmet Edit Point  {EmmetPreviousEditPoint}  Alt+Shift+[
+    Last Edit Location  {JumpToLastChange}  Ctrl+Shift+Backspace
+    Next Edit Location  {JumpToNextChange}  
+    -----
+    [+] Navigate in File  {NavigateInFileGroup}  
+      Next Method  {MethodDown}  
+      Previous Method  {MethodUp}  
+      Move Caret to Matching Brace  {EditorMatchBrace}  Ctrl+]
+      -----
+      [+] <no text>  {TemplateParametersNavigation}  
+        Next Live Template Parameter  {NextTemplateParameter}  
+        Previous Live Template Parameter  {PrevTemplateParameter}  
+      Custom Folding…  {GotoCustomRegion}  Ctrl+Alt+.
+      [+] Change Navigation Actions  {GoToChangeMarkerGroup}  
+        -----
+        Next Change  {VcsShowNextChangeMarker}  Ctrl+Alt+Shift+N
+        Previous Change  {VcsShowPrevChangeMarker}  Ctrl+Alt+Shift+P
+    [+] Goto by Reference Actions  {GoToCodeGroup}  
+      -----
+      Select In…  {SelectIn}  Alt+F1
+      Jump to Navigation Bar  {ShowNavBar}  Ctrl+F2
+      -----
+      Go to Declaration or Usages  {GotoDeclaration}  F12
+      Go to Implementation(s)  {GotoImplementation}  Alt+End
+      Implementation(s)  {ReSharperGotoImplementation}  Ctrl+F12
+      Go to Type Declaration  {GotoTypeDeclaration}  Ctrl+Shift+F11
+      Go to Super Method  {GotoSuperMethod}  Alt+Home
+      Go to Test  {GotoTest}  
+      Go to Controller or View  {GoToControllerOrView}  Alt+O
+      Related Symbol…  {GotoRelated}  Ctrl+Alt+F7
+      Switch Header/Source  {SwitchHeaderSource}  Alt+O
+      -----
+      File Structure  {FileStructurePopup}  Alt+\
+      File Path  {ShowFilePath}  
+      [+] Hierarchy Actions  {HierarchyGroup}  
+        Includes Hierarchy  {CppIncludesHierarchy}  Alt+Shift+H
+        Type Hierarchy  {TypeHierarchy}  Ctrl+E, H
+        Method Hierarchy  {MethodHierarchy}  
+        Call Hierarchy  {CallHierarchy}  Ctrl+K, T
+      -----
+      Navigate To…  {ReSharperNavigateTo}  Alt+`
+    Previous Occurrence  {PreviousOccurence}  Shift+F8
+    Next Occurrence  {NextOccurence}  F8
+    -----
+  [+] Code  {CodeMenu}  
+    Override Methods…  {OverrideMethods}  
+    Implement Methods…  {ImplementMethods}  Ctrl+Shift+I
+    Generate…  {Generate}  Alt+Insert
+    -----
+    [+] Code Completion  {CodeCompletionGroup}  
+      Basic  {CodeCompletion}  Ctrl+Space
+      Type-Matching  {SmartTypeCompletion}  Ctrl+Alt+Space
+      -----
+      Complete Current Statement  {EditorCompleteStatement}  Ctrl+Shift+Enter
+      -----
+      Cyclic Expand Word  {HippieCompletion}  Alt+/
+      Cyclic Expand Word (Backward)  {HippieBackwardCompletion}  
+      -----
+      Call Inline Completion  {CallInlineCompletionAction}  Alt+Shift+\
+      Insert Inline Proposal  {InsertInlineCompletionAction}  Tab
+      Insert Inline Proposal's Word  {InsertInlineCompletionWordAction}  Ctrl+Right
+      Insert Inline Proposal's Line  {InsertInlineCompletionLineAction}  End
+      Enable Command Completion  {EnableCommandCompletion}  
+    [+] <no text>  {InspectCodeInCodeMenuGroup}  
+      -----
+      [+] Inspect Code Actions  {InspectCodeGroup}  
+        Inspect Code…  {InspectCode}  Alt+F11
+      [+] Analyze Code  {AnalyzeActionsPopup}  
+        [+] <no text>  {AnalyzeActions}  
+          <no text>  {RunInspection}  Ctrl+Alt+Shift+I
+          Configure Current File Analysis…  {PopupHector}  Ctrl+Alt+Shift+H
+          View Offline Inspection Results…  {ViewOfflineInspection}  
+          Locate Duplicates…  {DupLocate}  
+          -----
+          Analyze Data Flow to Here…  {SliceBackward}  
+          Analyze Data Flow from Here…  {SliceForward}  
+      [+] <no text>  {AnalyzePlatformMenu}  
+    -----
+    Insert Live Template…  {InsertLiveTemplate}  Ctrl+K, X
+    Save as Live Template…  {SaveAsTemplate}  
+    -----
+    Surround With…  {SurroundWith}  
+    Unwrap/Remove…  {Unwrap}  Ctrl+Shift+Delete
+    -----
+    [+] Folding  {FoldingGroup}  
+      Expand  {ExpandRegion}  Ctrl+M, E
+      Expand Recursively  {ExpandRegionRecursively}  Ctrl+Alt+NumPad +
+      Expand All  {ExpandAllRegions}  Ctrl+M, X
+      -----
+      Collapse  {CollapseRegion}  Ctrl+M, S
+      Collapse Recursively  {CollapseRegionRecursively}  Ctrl+Alt+NumPad -
+      Collapse to Definitions  {RiderCollapseToDefinitions}  Ctrl+M, O
+      Collapse All  {CollapseAllRegions}  Ctrl+M, A
+      -----
+      [+] Expand to Level  {ExpandToLevel}  
+        1  {ExpandToLevel1}  Ctrl+NumPad *, 1
+        2  {ExpandToLevel2}  Ctrl+NumPad *, 2
+        3  {ExpandToLevel3}  Ctrl+NumPad *, 3
+        4  {ExpandToLevel4}  Ctrl+NumPad *, 4
+        5  {ExpandToLevel5}  Ctrl+NumPad *, 5
+      [+] Expand All to Level  {ExpandAllToLevel}  
+        1  {ExpandAllToLevel1}  Ctrl+Shift+NumPad *, 1
+        2  {ExpandAllToLevel2}  Ctrl+Shift+NumPad *, 2
+        3  {ExpandAllToLevel3}  Ctrl+Shift+NumPad *, 3
+        4  {ExpandAllToLevel4}  Ctrl+Shift+NumPad *, 4
+        5  {ExpandAllToLevel5}  Ctrl+Shift+NumPad *, 5
+      -----
+      [+] <no text>  {LanguageSpecificFoldingGroup}  
+        Expand Doc Comments  {ExpandDocComments}  
+        Collapse Doc Comments  {CollapseDocComments}  
+      -----
+      Toggle Folding  {ExpandCollapseToggleAction}  Ctrl+M, M
+      -----
+      Fold Selection / Remove Region  {CollapseSelection}  Ctrl+M, H
+      Fold Code Block  {CollapseBlock}  
+    -----
+    [+] Comment Actions  {CommentGroup}  
+      Comment with Line Comment  {CommentByLineComment}  Ctrl+Alt+/
+      Comment with Block Comment  {CommentByBlockComment}  Ctrl+Shift+/
+    [+] Code Formatting Actions  {CodeFormatGroup}  
+      Reformat Code  {ReformatCode}  Ctrl+Alt+Enter
+      Reformat and Cleanup…  {CodeCleanup}  Ctrl+E, C
+      Silent Reformat and Cleanup  {SilentCodeCleanup}  Ctrl+E, F
+      Reformat JSON  {JsonJacksonReformatAction}  
+      Auto-Indent Lines  {AutoIndentLines}  
+      Optimize Imports  {OptimizeImports}  Ctrl+R, G
+      Rearrange Code  {RearrangeCode}  
+    Document  {CppDocument}  
+    -----
+    Move Statement Down  {MoveStatementDown}  Ctrl+Alt+Shift+Down
+    Move Statement Up  {MoveStatementUp}  Ctrl+Alt+Shift+Up
+    Move Element Left  {MoveElementLeft}  Ctrl+Alt+Shift+Left
+    Move Element Right  {MoveElementRight}  Ctrl+Alt+Shift+Right
+    Move Line Down  {MoveLineDown}  Alt+Down
+    Move Line Up  {MoveLineUp}  Alt+Up
+    -----
+    -----
+    Inject Shell Script in GitLab CI/CD  {GitLabCiSwitchShellLanguageInjectionAction}  
+  [+] Refactor  {RefactoringMenu}  
+    Refactor This…  {Refactorings.QuickListPopupAction}  Ctrl+Shift+R
+    Rename…  {RenameElement}  Ctrl+R, R
+    Change Signature…  {ChangeSignature}  Ctrl+R, V
+    Modify Object…  {DatabaseView.Ddl.AlterObject}  Ctrl+R, V
+    Convert to Function Component  {ReactClassToFunctionComponentAction}  
+    Convert to Class Component  {ReactFunctionToClassComponentAction}  
+    -----
+    [+] Extract/Introduce  {IntroduceActionsGroup}  
+      Introduce Variable…  {IntroduceVariable}  
+      Extract Routine...  {sql.ExtractFunctionAction}  Ctrl+R, M
+      Table alias...  {sql.IntroduceAliasAction}  
+      Introduce Constant…  {IntroduceConstant}  Ctrl+Alt+C
+      Introduce Field…  {IntroduceField}  Ctrl+R, F
+      Introduce Parameter…  {IntroduceParameter}  Ctrl+R, P
+      -----
+      Introduce Parameter Object…  {IntroduceParameterObject}  
+      -----
+      Extract Method…  {ExtractMethod}  Ctrl+R, M
+      -----
+      Extract Delegate…  {ExtractClass}  
+      Include File…  {ExtractInclude}  
+      Extract Interface…  {ExtractInterface}  Ctrl+R, I
+      Extract Superclass…  {ExtractSuperclass}  
+      Extract Module…  {ExtractModule}  
+      Type Alias…  {TypeScriptExtractTypeAlias}  
+      Extract Component…  {ReactExtractComponentAction}  
+      Extract Vue component  {VueExtractComponentAction}  
+      Extract Component...  {Angular2ExtractComponentAction}  
+      Subquery as CTE  {sql.ExtractNamedQueryAction}  
+    Inline…  {Inline}  
+    -----
+    Move…  {Move}  
+    Copy…  {CopyElement}  
+    Safe Delete…  {SafeDelete}  Ctrl+R, D
+    -----
+    Pull Members Up…  {MembersPullUp}  
+    Push Members Down…  {MemberPushDown}  
+    Invert Boolean…  {InvertBoolean}  
+    [+] XML Refactorings  {XMLRefactoringMenu}  
+      Rename Tag…  {RenameTagAction}  
+      Rename Attribute…  {RenameAttributeAction}  
+      Delete Tag…  {DeleteTagAction}  
+      Delete Attribute…  {DeleteAttributeAction}  
+      Add Attribute…  {AddAttributeAction}  
+      Add Subtag…  {AddSubtagAction}  
+      Change Attribute Value..  {ChangeAttributeValueAction}  
+      Unwrap Tag…  {UnwrapTagAction}  
+      Wrap Tag…  {WrapTagAction}  
+      Wrap Tag Contents…  {WrapTagContentsAction}  
+      Convert Tag Contents To Attribute…  {ConvertContentsToAttributeAction}  
+      Replace Tag with Attribute…  {ReplaceTagWithAttributeAction}  
+      Replace Attribute with Tag…  {ReplaceAttributeWithTagAction}  
+      Move Attribute In…  {MoveAttributeInAction}  
+      Move Attribute Out…  {MoveAttributeOutAction}  
+    Encapsulate Field  {RiderBackendAction-EncapsulateField}  Ctrl+R, E
+  [+] Build  {BuildMenu}  
+  [+] Build  {build}  
+    [+] <no text>  {Rider.CMake.BuildMenu}  
+      Build All  {BuildProfile}  
+      <no text>  {Build}  F7
+      -----
+    Build Solution  {BuildWholeSolutionAction}  
+    <no text>  {RebuildSolutionAction}  
+    <no text>  {CleanSolutionAction}  
+    -----
+    <no text>  {BuildCurrentProject}  Ctrl+B
+    <no text>  {BuildStartupProject}  
+    -----
+    [+] Advanced Build Actions  {AdvancedBuildActionsMainMenu}  
+      <no text>  {BuildSolutionWithDiagnosticsAction}  
+      <no text>  {RebuildSolutionWithDiagnosticsAction}  
+      -----
+      <no text>  {RebuildCurrentProject}  
+      <no text>  {CleanCurrentProject}  
+      <no text>  {BuildOnlyCurrentProject}  
+      <no text>  {RebuildOnlyCurrentProject}  
+      <no text>  {CleanOnlyCurrentProject}  
+      -----
+      <no text>  {RebuildStartupProject}  
+      <no text>  {CleanStartupProject}  
+      <no text>  {BuildOnlyStartupProject}  
+      <no text>  {RebuildOnlyStartupProject}  
+      <no text>  {CleanOnlyStartupProject}  
+      [+] <no text>  {Rider.CMake.AdvancedBuildActionsMainMenu}  
+        Rebuild All  {RebuildProfile}  
+        <no text>  {Rebuild}  
+        Clean  {Clean}  
+    -----
+    Active Configuration  {ActiveConfiguration}  
+    Active Device  {ActiveDevice}  
+    -----
+    Cancel  {CancelBuildAction}  Ctrl+F9
+    Compile File  {CompileFile}  Ctrl+F7
+  [+] Run  {RunMenu}  
+    [+] Run/Debug  {RunnerActions}  
+      Run 'Web: http'  {Run}  Ctrl+F5
+      Debug 'Web: http'  {Debug}  Alt+F5
+      [+] Run with Profiler  {Profiler}  
+      Run 'Web: http' with Profiling  {dotTrace Profiler}   [hidden]
+      Run 'Web: http' with Memory Profiling  {dotMemory}   [hidden]
+    <no text>  {DotNetProfiler.Profile}  
+    -----
+    Run…  {ChooseRunConfiguration}  Ctrl+Alt+Shift+R
+    Debug…  {ChooseDebugConfiguration}  Alt+Shift+F9
+    [+] <no text>  {XDebugger.AttachGroup}  
+      <no text>  {XDebugger.AttachToProcess}  Ctrl+Alt+P
+      Reattach to Process…  {RiderReattach}  Alt+Shift+P
+      <no text>  {com.jetbrains.rider.debugger.actions.RiderAttachToRemoteProcessAction}  
+      Attach to Unity Process…  {AttachToUnityProcessAction}  
+      Attach to an Unstarted Process…  {CIDR.Debugger.AttachToUnstartedProcess}  
+      Debug Core Dump…  {DebugDump}  
+    Open Core Dump…  {CIDR.Debugger.DebugCoreDumpAction}  
+    [+] <no text>  {DotNetProfiler.AttachGroup}  
+      Attach to Process with Profiling…  {DotNetProfiler.AttachToLocalProcess}  
+    Edit Configurations…  {editRunConfigurations}  
+    [+] Switch Profiling Configuration  {SwitchProfilingConfiguration}  
+    <no text>  {ManageTargets}  
+    -----
+    Stop  {Stop}  Shift+F5
+    Detach  {CIDR.Debugger.Detach}  
+    Detach All  {CIDR.Debugger.DetachAll}  
+    Detach  {RiderDetachDebuggerAction}  
+    Stop Background Processes…  {StopBackgroundProcesses}  Ctrl+Shift+F2
+    Show Running List  {ShowLiveRunConfigurations}  
+    [+] Debugger Actions  {DebugMainMenu}  
+      -----
+      [+] Debugging Actions  {DebuggingActionsGroup}  
+        [+] <no text>  {DebugReloadGroup}  
+          Compile and Reload Modified Files  {XDebugger.Hotswap.Modified.Files}  
+          Update Running Application  {UpdateRunningApplication}  Ctrl+F10
+        -----
+        [+] <no text>  {StepOver.Ref}  
+          Step Over  {StepOver}  F10
+        Force Step Over  {ForceStepOver}  Alt+Shift+F8
+        Step Into  {StepInto}  F11
+        Force Step Into  {ForceStepInto}  
+        Smart Step Into  {SmartStepInto}  Alt+Shift+F11
+        Step Out  {StepOut}  Shift+F11
+        Run to Cursor  {RunToCursor}  Ctrl+F10
+        Force Run to Cursor  {ForceRunToCursor}  Ctrl+Alt+F9
+        Skip to Cursor  {JumpToStatement}  Ctrl+Shift+F10
+        <no text>  {CIDR.Debugger.JumpToLine}  
+        Reset Frame  {Debugger.PopFrame}  
+        [+] <no text>  {Pause.Ref}  
+          Pause Program  {Pause}  Ctrl+Alt+Break
+        Pause All Programs  {CIDR.Debugger.PauseAll}  
+        [+] <no text>  {Resume.Ref}  
+          Resume Program  {Resume}  F5
+        [+] <no text>  {Rider.Debugger.FreezeThreadDebuggingActionsGroup}  
+          -----
+          [+] <no text>  {Rider.Debugger.FreezeContextActions}  
+            -----
+            Freeze Other Threads  {RiderFreezeAllExceptSelected}  
+            Resume All Threads  {Debugger.ThawAllThreadsAction}  
+            Suspend Threads  {Debugger.FreezeSelectedThreads}  
+            Resume Threads  {Debugger.ThawSelectedThreads}  
+        Resume All Programs  {CIDR.Debugger.ResumeAll}  
+        Stop All Programs  {CIDR.Debugger.StopAll}  
+        [+] <no text>  {CIDR.Debugger.FreezeThreadDebuggingActionsGroup}  
+          -----
+          [+] <no text>  {CIDR.Debugger.FreezeThreadGroup}  
+            Suspend Other Threads  {Debugger.FreezeInactiveThreadsAction}  
+            Resume All Threads  {Debugger.ThawAllThreadsAction}  
+            Suspend Thread  {Debugger.FreezeActiveThreadAction}  
+            Resume Thread  {Debugger.ThawActiveThreadAction}  
+        -----
+        Evaluate Expression…  {EvaluateExpression}  Ctrl+Alt+Q
+        Show Execution Point  {ShowExecutionPoint}  Alt+NumPad *
+        -----
+      [+] Toggle Breakpoint  {BreakpointActionsGroup}  
+        Restore Breakpoint  {Debugger.RestoreBreakpoint}  
+        Toggle Line Breakpoint  {ToggleLineBreakpoint}  F9
+        Toggle Temporary Line Breakpoint  {ToggleTemporaryLineBreakpoint}  Ctrl+Alt+Shift+F8
+        Toggle Breakpoint Enabled  {ToggleBreakpointEnabled}  Ctrl+F9
+      View Breakpoints…  {ViewBreakpoints}  Ctrl+Alt+B
+      Remove All Line Breakpoints  {RiderRemoveAllLineBreakpoints}  Ctrl+Shift+F9
+      Stop On Exception…  {StopOnException}  
+      -----
+    [+] <no text>  {RunTestGroup}  
+      [+] <no text>  {SmRunTestGroup}  
+        -----
+        [+] <no text>  {ImportTests}  
+        <no text>  {ImportTestsFromFile}  
+      [+] <no text>  {CoveragePlatformMenu}  
+        [+] <no text>  {CoverageMenu}  
+          Manage Coverage Reports…  {SwitchCoverage}  Ctrl+Alt+F6
+          Generate Coverage Report…  {GenerateCoverageReport}  
+          Hide Coverage  {HideCoverage}  
+          -----
+    [+] <no text>  {ProfilerActions}  
+      <no text>  {AttachProfilerToLocalProcess}  
+      [+] <no text>  {ImportProfilerResultsFromHistory}  
+  [+] Tests  {Rider.UnitTesting.MainMenu}  
+    Unit Testing Quick List…  {RiderUnitTestQuickListPopupAction}  Alt+Shift+U
+    -----
+    [+] Main Unit Test Actions  {Rider.UnitTesting.Main}  
+      [+] Context Unit Test Actions  {Rider.UnitTesting.RunContext}  
+        Run Unit Tests  {RiderUnitTestRunContextAction}  Ctrl+U, R
+        Debug Unit Tests  {RiderUnitTestDebugContextAction}  Ctrl+U, D
+        [+] Context Unit Test Actions [Plugins]  {Rider.UnitTesting.RunContext.Plugin}  
+          Run Unit Tests under dotMemory Unit  {RiderUnitTestDotMemoryUnitContextAction}  Ctrl+U, M
+          Cover Unit Tests  {RiderDotCoverUnitTestCoverContextAction}  
+          Profile Unit Tests  {RiderUnitTestProfileContextAction}  
+      -----
+      [+] Session Unit Test Actions  {Rider.UnitTesting.RunSession}  
+        Run Current Session  {RiderUnitTestRunCurrentSessionAction}  Ctrl+U, Y
+        [+] Session Unit Test Actions [Plugins]  {Rider.UnitTesting.RunSession.Plugin}  
+          Run current session under dotMemory Unit  {RiderUnitTestDotMemoryUnitCurrentSessionAction}  
+          Cover Current Session  {RiderDotCoverUnitTestCoverCurrentSessionAction}  
+          Profile Current Session  {RiderUnitTestProfileCurrentSessionAction}  
+      -----
+      [+] Solution Unit Test Actions  {Rider.UnitTesting.RunSolution}  
+        Run All Tests from Solution  {RiderUnitTestRunSolutionAction}  Ctrl+U, L
+        [+] Solution Unit Test Actions [Plugins]  {Rider.UnitTesting.RunSolution.Plugin}  
+          Run All Tests from Solution Under dotMemory Unit  {RiderUnitTestDotMemoryUnitSolutionAction}  Ctrl+U, E
+          Cover All Tests from Solution  {RiderDotCoverUnitTestCoverSolutionAction}  Ctrl+U, K
+          Profile All Tests from Solution  {RiderUnitTestProfileSolutionAction}  
+      -----
+      Repeat Previous Run  {RiderUnitTestRepeatPreviousRunAction}  Ctrl+U, U
+      Rerun Failed Tests  {RiderUnitTestSessionRerunFailedTestsAction}  Ctrl+U, F
+      Run Tests Until Failure  {RiderUnitTestRunContextUntilFailAction}  Ctrl+U, W
+      Debug Tests Until Failure  {RiderUnitTestDebugContextUntilFailAction}  
+      Stop Execution  {RiderUnitTestSessionAbortAction}  Ctrl+U, S
+      -----
+      Append Tests to Session  {RiderUnitTestAppendTestsAction}  Ctrl+U, A
+      Create New Session  {RiderUnitTestNewSessionAction}  Ctrl+U, N
+      Create Unit Test  {RiderGenerateUnitTestAction}  Ctrl+U, C
+      Append Contained Tests  {RiderUnitTestAppendChildrenAction}  
+      Remove Selected Tests  {RiderUnitTestRemoveElementsFromSessionAction}  
+      Clear Test Results  {RiderUnitTestSessionClearResultAction}  
+      -----
+      [+] Navigation  {Rider.UnitTesting.Navigation}  
+        Focus Unit Test Explorer  {RiderUnitTestFocusExplorerAction}  Ctrl+Alt+U
+        Focus Unit Test Session  {RiderUnitTestFocusSessionAction}  Ctrl+Alt+T
+        Navigate to Unit Test Explorer  {RiderUnitTestNavigateToExplorerAction}  
+        Navigate to Unit Test Session  {RiderUnitTestNavigateToSessionAction}  
+      Refresh Unit Test Tree  {RiderUnitTestTreeRefreshAction}  
+      Unit Testing Settings…  {RiderUnitTestShowSettingsAction}  
+    -----
+    [+] Unit Tests Tool Window Actions  {Rider.UnitTesting.MainMenu.ToolWindow}  
+      [+] Context Unit Test Actions (Tool Window)  {Rider.UnitTesting.RunContextTw}  
+        Run Selected Tests  {RiderUnitTestRunContextTwAction}  Shift+Enter
+        Debug Selected Tests  {RiderUnitTestDebugContextTwAction}  Ctrl+D
+        [+] Context Unit Test Actions (Tool Window) [Plugins]  {Rider.UnitTesting.RunContextTw.Plugin}  
+          Run Unit Tests under dotMemory Unit  {RiderUnitTestDotMemoryUnitContextTwAction}  
+          Cover Unit Tests (Tool Window)  {RiderDotCoverUnitTestCoverContextTwAction}  
+          Profile Unit Tests (Tool Window)  {RiderUnitTestProfileContextTwAction}  
+      -----
+      [+] Session Unit Test Actions (Tool Window)  {Rider.UnitTesting.RunSessionTw}  
+        Run Current Session (Tool Window)  {RiderUnitTestRunCurrentSessionTwAction}  Ctrl+Y
+        [+] Session Unit Test Actions (Tool Window) [Plugins]  {Rider.UnitTesting.RunSessionTw.Plugin}  
+          Run current session under dotMemory Unit  {RiderUnitTestDotMemoryUnitCurrentSessionTwAction}  
+          Cover Current Session (Tool Window)  {RiderDotCoverUnitTestCoverCurrentSessionTwAction}  
+          Profile Current Session (Tool Window)  {RiderUnitTestProfileCurrentSessionTwAction}  
+      -----
+      [+] Solution Unit Test Actions (Tool Window)  {Rider.UnitTesting.RunSolutionTw}  
+        Run All Tests from Solution (Tool Window)  {RiderUnitTestRunSolutionTwAction}  Ctrl+L
+        [+] Solution Unit Test Actions (Tool Window) [Plugins]  {Rider.UnitTesting.RunSolutionTw.Plugin}  
+          Run All Tests from Solution under dotMemory Unit  {RiderUnitTestDotMemoryUnitSolutionTwAction}  
+          Cover All Tests from Solution (Tool Window)  {RiderDotCoverUnitTestCoverSolutionTwAction}  
+          Profile All Tests from Solution (Tool Window)  {RiderUnitTestProfileSolutionTwAction}  
+      -----
+      [+] Tree Unit Test Actions (Tool Window)  {Rider.UnitTesting.RunTreeTw}  
+        Run All Tests  {RiderUnitTestRunTreeTwAction}  Ctrl+Shift+Enter
+        [+] Tree Unit Test Actions [Plugins]  {Rider.UnitTesting.RunTreeTw.Plugin}  
+          Run All Tests with dotMemory Unit  {RiderUnitTestDotMemoryRunTreeTwAction}  
+          Cover All Tests  {RiderDotCoverUnitTestCoverTreeTwAction}  
+          Profile All Tests  {RiderUnitTestProfileTreeTwAction}  
+      -----
+      Repeat Previous Run (Tool Window)  {RiderUnitTestRepeatPreviousRunTwAction}  
+      Rerun Failed Tests (Tool Window)  {RiderUnitTestSessionRerunFailedTestsTwAction}  
+      Run Tests Until Failure (Tool Window)  {RiderUnitTestRunContextUntilFailTwAction}  
+      Debug Tests Until Failure (Tool Window)  {RiderUnitTestDebugContextUntilFailTwAction}  
+      Stop Execution (Tool Window)  {RiderUnitTestSessionAbortTwAction}  
+      -----
+      Append Tests to Session (Tool Window)  {RiderUnitTestAppendTestsTwAction}  Ctrl+Alt+Insert
+      Create New Session (Tool Window)  {RiderUnitTestNewSessionTwAction}  Alt+Shift+Insert
+      Append Contained Tests (Tool Window)  {RiderUnitTestAppendChildrenTwAction}  
+      Remove Selected Tests (Tool Window)  {RiderUnitTestRemoveElementsFromSessionTwAction}  Delete
+      Clear Test Results (Tool Window)  {RiderUnitTestSessionClearResultTwAction}  
+      -----
+      [+] "Filters"  {Rider.UnitTesting.MainMenu.ToolWindow.Filters}  
+        [+] Unit Test Filters  {Rider.UnitTesting.Filters}  
+          Filter by Target Framework  {RiderUnitTestTargetFrameworkFilterAction}  
+          -----
+          Filter All Tests  {RiderUnitTestAllTestsFilterAction}  
+          Filter Successful Tests  {RiderUnitTestSuccessTestsFilterAction}  
+          Filter Failed Tests  {RiderUnitTestFailedTestsFilterAction}  
+          Filter Broken Tests  {RiderUnitTestBrokenTestsFilterAction}  
+          Filter Ignored Tests  {RiderUnitTestIgnoredTestsFilterAction}  
+          Filter Aborted Tests  {RiderUnitTestAbortedTestsFilterAction}  
+          Filter Inconclusive Tests  {RiderUnitTestInconclusiveTestsFilterAction}  
+          Filter Unknown Tests  {RiderUnitTestUnknownTestsFilterAction}  
+          Filter Pending Tests  {RiderUnitTestPendingTestsFilterAction}  
+          Filter Running Tests  {RiderUnitTestRunningTestsFilterAction}  
+        Unit Test Tree Text Filter  {RiderUnitTestTreeTextFilterAction}  Ctrl+F
+        Hide Empty Test Filters  {RiderUnitTestToggleHideEmptyTestFiltersAction}  
+        Merge Broken Status Filters  {RiderUnitTestMergeBrokenStatusFiltersAction}  
+      Rename Session  {RiderUnitTestRenameSessionAction}  
+      Open Full Test Output in Editor  {RiderUnitTestOpenTestOutputInEditorAction}  
+    [+] Session Options  {Rider.UnitTesting.SessionOptions}  
+      ----- Interface
+      Show Time  {RiderUnitTestSessionTimeAction}  
+      Hide Empty Test Filters  {RiderUnitTestToggleHideEmptyTestFiltersAction}  
+      Merge Broken Status Filters  {RiderUnitTestMergeBrokenStatusFiltersAction}  
+      [+] Splitter Orientation  {RiderUnitTestSessionSplitterActionGroup}  
+        Automatic  {RiderUnitTestSessionSplitterAutomaticAction}  
+        Horizontal  {RiderUnitTestSessionSplitterHorizontalAction}  
+        Vertical  {RiderUnitTestSessionSplitterVerticalAction}  
+      [+] Progress Bar View  {RiderUnitTestSessionToggleProgressBarActionGroup}  
+        Toggle Progress Bar Text  {RiderUnitTestSessionToggleProgressBarTextAction}  
+        Toggle Progress Bar Position  {RiderUnitTestSessionToggleProgressBarPositionAction}  
+      [+] Filter Position  {RiderUnitTestFilterPositionActionGroup}  
+        Choose the Best Filter Position Automatically  {RiderUnitTestFilterPositionAutomaticAction}  
+        Put Filter on the Top Toolbar  {RiderUnitTestFilterPositionOnToolbarAction}  
+        Put Filter under the Top Toolbar  {RiderUnitTestFilterPositionUnderToolbarAction}  
+        Hide Filter  {RiderUnitTestFilterPositionHideAction}  
+      Focus Unit Test Session after Debug  {RiderUnitTestFocusToolWindowAfterDebugAction}  
+      ----- Behavior
+      Lock Session  {RiderUnitTestSessionLockAction}  
+      Track Running Test  {RiderUnitTestSessionTrackRunningAction}  
+      ----- Launch
+      [+] Unit Test Session Build Policy  {RiderUnitTestSessionBuildPolicyActionGroup}  
+        Set Build Policy for Current Session: Automatic  {RiderUnitTestSessionBuildPolicyAutomaticAction}  
+        Set Build Policy for Current Session: Automatic (Whole Solution)  {RiderUnitTestSessionBuildPolicyWholeSolutionAction}  
+        Set Build Policy for Current Session: Never  {RiderUnitTestSessionBuildPolicyNeverAction}  
+      [+] Unit Test Session Platform  {RiderUnitTestSessionTargetPlatformActionGroup}  
+        Set Platform Type for Current Session: Default  {RiderUnitTestSessionPlatformTypeDefaultAction}  
+        Set Platform Type for Current Session: Automatic  {RiderUnitTestSessionPlatformTypeAutomaticAction}  
+        Set Platform Type for Current Session: x86  {RiderUnitTestSessionPlatformTypeX86Action}  
+        Set Platform Type for Current Session: x64  {RiderUnitTestSessionPlatformTypeX64Action}  
+        Set Platform Type for Current Session: Arm  {RiderUnitTestSessionPlatformTypeArmAction}  
+        Set Platform Type for Current Session: Arm64  {RiderUnitTestSessionPlatformTypeArm64Action}  
+      [+] Unit Test Session Target Framework  {RiderUnitTestSessionTargetFrameworkActionGroup}  
+        Set Target Framework for Current Session: Default  {RiderUnitTestSessionTargetFrameworkDefaultAction}  
+        Set Target Framework for Current Session: Automatic  {RiderUnitTestSessionTargetFrameworkAutomaticAction}  
+        Set Target Framework for Current Session: .NET 2.0  {RiderUnitTestSessionTargetFrameworkClr2Action}  
+        Set Target Framework for Current Session: .NET 4.0  {RiderUnitTestSessionTargetFrameworkClr4Action}  
+        Set Target Framework for Current Session: .NET 4.5  {RiderUnitTestSessionTargetFrameworkClr45Action}  
+        Set Target Framework for Current Session: .NET 4.6  {RiderUnitTestSessionTargetFrameworkClr46Action}  
+        Set Target Framework for Current Session: .NET 4.7  {RiderUnitTestSessionTargetFrameworkClr47Action}  
+      [+] Unit Test Session Preferred Runtime  {RiderUnitTestSessionPlatformMonoPreferenceActionGroup}  
+        Set Preferred Runtime for Current Session: Default  {RiderUnitTestSessionPlatformMonoPreferenceDefaultAction}  
+        Set Preferred Runtime for Current Session: CLR  {RiderUnitTestSessionPlatformMonoPreferenceClrAction}  
+        Set Preferred Runtime for Current Session: Mono  {RiderUnitTestSessionPlatformMonoPreferenceMonoAction}  
+      [+] IDE for Integration Tests  {RiderUnitTestSessionSelectedIdeActionGroup}  
+      [+] Diagnostics  {RiderUnitTestDiagnosticsActionGroup}  
+        Show Last Launch Log  {RiderUnitTestShowLastLaunchLogAction}  
+        Show Last Runner Log  {RiderUnitTestShowLastRunnerLogAction}  
+      ----- Settings
+      Unit Testing Settings…  {RiderUnitTestShowSettingsAction}  
+    [+] Help  {Rider.UnitTesting.MainMenu.Help}  
+      Help: Unit Testing Overview  {RiderUnitTestIndexHelpAction}  
+      Help: Working with Unit Tests in Current Document  {RiderUnitTestCurrentDocumentHelpAction}  
+      Help: Working with Unit Tests in Project or Solution  {RiderUnitTestProjectOrSolutionHelpAction}  
+      Help: Using Unit Test Sessions  {RiderUnitTestSessionStateHelpAction}  
+      Help: Executing Tests and Analyzing Results  {RiderUnitTestExecutingHelpAction}  
+      Help: Monitoring Memory with dotMemory Unit  {RiderUnitTestDotMemoryHelpAction}  
+      Help: Unit Tests Tool Window  {RiderUnitTestToolWindowHelpAction}  
+  [+] Tools  {ToolsMenu}  
+    [+] NuGet  {NuGet}  
+      NuGet Quick List  {RiderNuGetQuickListPopupAction}  Alt+Shift+N
+      -----
+      NuGet Restore  {RiderNuGetPopupRestoreAction}  
+      NuGet Force Restore  {RiderNuGetPopupRestoreForceAction}  
+      Update Packages…  {RiderNuGetUpgradeAllInContextAction}  
+      Manage NuGet Packages for {0}  {RiderNuGetManagePackagesForCurrentProjectAction}  
+      -----
+      <no text>  {RiderNuGetViewPackagesAction}  
+      <no text>  {RiderNuGetViewSourcesAction}  
+      <no text>  {RiderNuGetViewFoldersAction}  
+      <no text>  {RiderNuGetViewLogAction}  
+      -----
+      [+] <no text>  {com.jetbrains.rider.plugins.pmc.OpenPmcTerminalTabActionGroup}  
+        Open Package Manager Console in Terminal  {com.jetbrains.rider.plugins.pmc.OpenPmcTerminalTabAction}  
+        -----
+      NuGet Settings  {RiderNuGetShowSettingsAction}  
+      -----
+    [+] <no text>  {Dev.PsiViewerActions}  
+      -----
+      View PSI Structure…  {PsiViewer}  
+      View PSI Structure of Current File…  {PsiViewerForContext}  
+      -----
+    [+] <no text>  {CodeWithMeMainMenuGroup}  
+      [+] Code With Me Popup  {CWMShowPopupActionGroup}  
+        Code With Me  {CWMHostShowPopupAction}  Ctrl+Shift+Y [hidden] [disabled]
+      -----
+    [+] Tools Basic Group  {ToolsBasicGroup}  
+    Create Command Line Launcher…  {CreateLauncherScript}  
+    Create Desktop Entry…  {CreateDesktopEntry}  
+    -----
+    [+] <no text>  {OtherMenu}  
+    [+] Services  {ToolsMenu.Services}  
+      [+] Kubernetes  {Kubernetes.AddServiceActions}  
+        [+] Add Clusters  {Kubernetes.AddContexts}  
+          From Default Directory…  {Kubernetes.AddContext}  
+          From Custom kubeconfigs…  {Kubernetes.AttachContext}  
+          Paste kubeconfig Content…  {Kubernetes.PasteContextContent}  
+        -----
+        Open Kubernetes Settings…  {Kubernetes.ShowSettings}  
+      New Docker Registry  {Docker.AddDockerRegistry}  
+      [+] Docker  {Docker.Services.Add}  
+        Docker Connection  {Docker.AddDockerConnection}  
+        Connections From Contexts  {Docker.ImportContexts}  
+      Azurite Emulator  {Rider.AzureFunctions.Azurite.ShowService}  
+      [+] Dev Containers  {Tools.Services.DevContainers}  
+        New Dev Container Configuration…  {com.intellij.clouds.docker.gateway.actions.NewDevcontainerAction}  
+        Manage Dev Container Backends  {Dev.Container.ManageBackends}  
+        Show Dev Containers  {Dev.Container.ShowRecent}  
+    [+] Markdown  {Markdown.Tools}  
+      Import Word Document…  {Markdown.ImportFromDocx}  
+      Export Markdown File To…  {Markdown.Export}  
+      Configure Pandoc…  {Markdown.ConfigurePandoc}  
+    [+] XML Actions  {ToolsXmlGroup}  
+      [+] <no text>  {ToolsXmlGroupEx}  
+        Validate  {ValidateXml}  
+        Generate DTD from XML File  {GenerateDTD}  
+        Generate XSD Schema from XML File…  {XSD2Document}  
+        Generate XML Document from XSD Schema…  {Document2XSD}  
+        -----
+      Convert Schema...  {ConvertSchemaAction}  
+    [+] External Tools  {ExternalToolsGroup}  
+    [+] Vagrant  {VagrantGroup}  
+      Up  {com.jetbrains.plugins.vagrant.actions.VagrantUpAction}  
+      Reload  {com.jetbrains.plugins.vagrant.actions.VagrantReloadAction}  
+      Provision  {com.jetbrains.plugins.vagrant.actions.VagrantProvisionAction}  
+      Suspend  {com.jetbrains.plugins.vagrant.actions.VagrantSuspendAction}  
+      Resume  {com.jetbrains.plugins.vagrant.actions.VagrantResumeAction}  
+      Halt  {com.jetbrains.plugins.vagrant.actions.VagrantHaltAction}  
+      Destroy  {com.jetbrains.plugins.vagrant.actions.VagrantDestroyAction}  
+      Share  {com.jetbrains.plugins.vagrant.actions.VagrantShareAction}  
+      Init in Project Root  {com.jetbrains.plugins.vagrant.actions.VagrantInitInProjectAction}  
+    Show MCP Tools  {com.intellij.mcpserver.actions.ShowMcpToolsAction}  
+    Start SSH Session…  {com.jetbrains.plugins.remotesdk.console.RunSshConsoleAction}  
+    [+] <no text>  {RemoteExternalToolsGroup}  
+    [+] HTTP Client  {HTTPClientGroup}  
+      Create Request in HTTP Client  {HTTPClient.NewRequestInToolMenuAction}  
+      Open HTTP Requests Collection  {HTTPClient.OpenCollection}  
+      Show HTTP Requests History  {RESTClient.ShowHistory}  
+      Convert cURL to HTTP Request  {com.intellij.httpClient.actions.ConvertCurlToHttpRequestAction}  
+      [+] Add to HTTP Client…  {HttpClient.Add}  
+        Variable in Public File  {HttpClient.Add.Public.Variable}  
+        Variable in Private File  {HttpClient.Add.Private.Variable}  
+        Auth Configuration  {HttpClient.Add.AuthConfig}  
+      Import from Postman Collection File  {com.intellij.httpClient.postman.converter.action.ConvertPostmanToHttpFileAction}  
+      OpenAPI/Swagger Specification…  {ConvertSwaggerToHttpFileAction}  
+    Run Gulp/Grunt/npm Task  {RunJsbtTask}  Ctrl+Alt+Shift+F11
+    [+] Qodana  {Qodana.ShowReportGroup}  
+    Localization Manager  {RiderShowResxEditorAction}  
+    [+] Architecture  {Architecture}  
+      Show Project Dependency Diagram  {ShowArchitectureDiagramAction}  
+      Compare with Saved…  {OpenProjectDiagramFromFile}  
+    IL Viewer  {RiderShowIlViewerAction}  Ctrl+Alt+D
+    Assembly Explorer  {ShowAssemblyExplorerAction}  
+    Open Roslyn Visualizer  {OpenRoslynVisualizer}  
+    [+] C# Interactive  {CSharpInteractive}  
+      Start New C# Interactive Session…  {com.jetbrains.rider.interactive.csi.StartCSharpInteractive}  
+      Send to C# Interactive  {com.jetbrains.rider.interactive.csi.SendToCSharpInteractive}  
+    <no text>  {GuidGenerator}  
+    [+] iOS  {RiderIOS}  
+      Connect to Mac…  {IOSSessionConnection}  
+    <no text>  {rider.connectToDatabase}  
+    Schema Compare...  {SchemaCompareAction}  
+    [+] F# Interactive  {Rider.Plugins.FSharp.FsiGroup}  
+      Start New F# Interactive Session…  {Rider.Plugins.FSharp.StartFsi}  Ctrl+Alt+F
+      Send to F# Interactive  {Rider.Plugins.FSharp.SendToFsi}  
+    [+] Entity Framework Core  {EfCore.Groups.Dialogs}  
+      Add Migration…  {EfCore.Features.Migrations.AddMigrationAction}  
+      Remove Last Migration…  {EfCore.Features.Migrations.RemoveLastMigrationAction}  
+      Generate SQL Script…  {EfCore.Features.Migrations.GenerateScriptAction}  
+      -----
+      Update Database…  {EfCore.Features.Database.UpdateDatabaseAction}  
+      Drop Database…  {EfCore.Features.Database.DropDatabaseAction}  
+      -----
+      Scaffold DbContext…  {EfCore.Features.DbContext.ScaffoldDbContextAction}  
+    [+] <no text>  {CMake.ToolsMenu.Wrapper}  
+      -----
+      [+] <no text>  {CMake.ToolsMenu}  
+        [+] <no text>  {CMake.GeneralProjectActionsGroup}  
+          <no text>  {CMake.ReloadCMakeProject}  
+        <no text>  {CMake.ChangeCMakeProjectContentRoot}  
+        -----
+        <no text>  {CMake.ClearCacheAndReload}  
+        <no text>  {CMake.CleanBuildDirsAndReload}  
+        -----
+        <no text>  {CMake.UnloadCMakeProject}  
+      -----
+    Analyze Stack Trace or Thread Dump…  {Unscramble}  Ctrl+E, Ctrl+T
+  [+] VCS  {VcsGroups}  
+    [+] <no text>  {Vcs.MainMenu}  
+      Enable Version Control Integration…  {Start.Use.Vcs}  
+      -----
+      [+] VCS Group  {VcsGlobalGroup}  
+        VCS Operations Popup…  {Vcs.QuickListPopupAction}  
+        Commit…  {CheckinProject}  
+        Toggle Commit UI…  {ChangesView.ToggleCommitUi}  
+        Update Project  {Vcs.UpdateProject}  Ctrl+Alt+W
+        Integrate Project  {Vcs.IntegrateProject}  
+        Refresh  {ChangesView.Refresh}  
+        Show Local Changes as UML  {UML.ShowChanges}  Ctrl+Alt+Shift+D
+        -----
+        [+] <no text>  {Vcs.Specific}  
+        [+] Git  {Git.Menu}  
+          [+] <no text>  {Git.FileActions}  
+            Commit File  {CheckinFiles}  
+            Add  {Git.Add}  Ctrl+Alt+A
+            [+] <no text>  {Git.Ignore.File}  
+            -----
+            Annotate  {Annotate}  
+            Compare with Same Repository Version  {Compare.SameVersion}  Ctrl+D
+            Compare with Revision…  {Compare.Selected}  
+            Compare with Branch or Tag…  {Git.CompareWithBranch}  
+            Show History  {Vcs.ShowTabbedFileHistory}  
+            Show History for Selection…  {Vcs.ShowHistoryForBlock}  
+          -----
+          Rollback…  {ChangesView.Revert}  Ctrl+Alt+Z
+          -----
+          [+] <no text>  {GitRepositoryActions}  
+            Push…  {Vcs.Push}  Ctrl+Shift+K
+            Pull…  {Git.Pull}  
+            Fetch  {Git.Fetch}  
+            -----
+            Merge…  {Git.Merge}  
+            [+] Merge  {Git.MainMenu.MergeActions}  
+              Commit merge  {Git.Merge.Commit}  
+              Abort Merge  {Git.Merge.Abort}  
+            Rebase…  {Git.Rebase}  
+            [+] Rebase  {Git.MainMenu.RebaseActions}  
+              Abort Rebase  {Git.Rebase.Abort}  
+              Continue Rebase  {Git.Rebase.Continue}  
+              Skip Commit  {Git.Rebase.Skip}  
+            -----
+            Branches…  {Git.Branches}  Ctrl+Shift+`
+            New Branch…  {Git.CreateNewBranch}  Ctrl+Alt+N
+            New Tag…  {Git.Tag}  
+            Reset HEAD…  {Git.Reset}  
+            -----
+            Stash Changes…  {Git.Stash}  
+            Unstash Changes…  {Git.Unstash}  
+            -----
+            [+] GitHub  {GitHub.MainMenu}  
+              Create Pull Request…  {Github.Create.Pull.Request}  
+              View Pull Requests  {Github.View.Pull.Request}  
+              Sync Fork  {Github.Sync.Fork}  
+              Create Gist…  {Github.Create.Gist}  
+              [+] <no text>  {Github.Open.In.Browser}  
+              -----
+              Share Project on GitHub  {Github.Share}  
+              Clone Repository from GitHub…  {Github.Clone}  
+              -----
+              Manage GitHub Accounts…  {Github.Open.Settings}  
+            Manage Remotes…  {Git.Configure.Remotes}  
+            Clone…  {Git.Clone}  
+            -----
+            Abort Revert  {Git.Revert.Abort}  
+            Abort Cherry-Pick  {Git.CherryPick.Abort}  
+            Continue Cherry-Pick  {Git.CherryPick.Continue}  
+          Create Merge Request…  {GitLab.Merge.Request.Create}  
+          Sync Fork  {Github.Sync.Fork}  
+          Create Pull Request…  {Github.Create.Pull.Request}  
+          View Pull Requests  {Github.View.Pull.Request}  
+          Create Pull Request…  {IntelliJ.AzureDevOps.Pull.Request.Create}  
+        [+] Perforce  {PerforceDirect.Menu}  
+          Commit File  {CheckinFiles}  
+          Update  {UpdateFiles}  
+          Integrate  {IntegrateFiles}  
+          Revert Unchanged Files  {RevertUnchanged}  
+          Annotate  {Annotate}  
+          Show Current Revision  {Show.Current.Revision}  
+          Compare with Same Repository Version  {Compare.SameVersion}  Ctrl+D
+          Compare with Latest Repository Version  {Compare.LastVersion}  
+          Compare with Revision…  {Compare.Selected}  
+          Shelve in Perforce...  {Perforce.Shelve}  
+          Edit  {PerforceDirect.Edit}  Ctrl+Alt+E
+          Add to VCS  {ChangesView.AddUnversioned}  Ctrl+Alt+A
+          Rollback…  {ChangesView.Revert}  Ctrl+Alt+Z
+          Show History  {Vcs.ShowTabbedFileHistory}  
+          Show History for Selection…  {Vcs.ShowHistoryForBlock}  
+          Resolve...  {Resolve}  
+          Resolve All  {ResolveAll}  
+          Browse Changes…  {ChangesView.Browse}  
+          Revision Graph...  {RevisionGraph}  
+          Time-lapse View...  {TimeLapseView}  
+          -----
+          Work Offline  {PerforceEnableIntegration}  
+          Check Login State  {PerforceCheckLoginStateAction}  
+        -----
+        Create Patch from Local Changes…  {ChangesView.CreatePatch}  
+        Apply Patch…  {ChangesView.ApplyPatch}  
+        Apply Patch from Clipboard…  {ChangesView.ApplyPatchFromClipboard}  
+        Shelve Changes…  {ChangesView.Shelve}  
+      -----
+      Get from Version Control…  {Vcs.VcsClone}  
+      [+] Browse VCS Repository  {Vcs.Browse}  
+        Show Git Repository Log…  {Git.Log}  
+      -----
+      [+] Import into Version Control  {Vcs.Import}  
+        Create Git Repository…  {Git.Init}  
+        Share Project on GitLab  {GitLab.Share}  
+        Share Project on GitHub  {Github.Share}  
+    [+] <no text>  {Git.MainMenu}  
+      Commit…  {CheckinProject}  
+      Commit…  {Git.Commit.Stage}  
+      Push…  {Vcs.Push}  Ctrl+Shift+K
+      Update Project  {Vcs.UpdateProject}  Ctrl+Alt+W
+      Pull…  {Git.Pull}  
+      Fetch  {Git.Fetch}  
+      Unshallow repository  {Git.Unshallow}  
+      -----
+      Merge…  {Git.Merge}  
+      [+] Merge  {Git.MainMenu.MergeActions}  
+        Commit merge  {Git.Merge.Commit}  
+        Abort Merge  {Git.Merge.Abort}  
+      Rebase…  {Git.Rebase}  
+      [+] Rebase  {Git.MainMenu.RebaseActions}  
+        Abort Rebase  {Git.Rebase.Abort}  
+        Continue Rebase  {Git.Rebase.Continue}  
+        Skip Commit  {Git.Rebase.Skip}  
+      Resolve Conflicts…  {Git.ResolveConflicts}  
+      Revert Resolved  {Git.RevertResolved}  
+      -----
+      Branches…  {Git.Branches}  Ctrl+Shift+`
+      New Branch…  {Git.CreateNewBranch}  Ctrl+Alt+N
+      New Tag…  {Git.Tag}  
+      Reset HEAD…  {Git.Reset}  
+      -----
+      New Worktree…  {Git.CreateNewWorkingTree}  
+      Worktrees…  {Git.Show.WorkingTrees}  
+      -----
+      Show VCS Log  {Vcs.Show.Log}  
+      [+] Patch  {Patch.MainMenu}  
+        Create Patch from Local Changes…  {ChangesView.CreatePatch}  
+        Apply Patch…  {ChangesView.ApplyPatch}  
+        Apply Patch from Clipboard…  {ChangesView.ApplyPatchFromClipboard}  
+      [+] Uncommitted Changes  {Git.MainMenu.LocalChanges}  
+        Shelve Changes…  {ChangesView.Shelve}  
+        Show Shelf  {Vcs.Show.Shelf}  
+        Show Git Stash  {Git.Show.Stash}  
+        Stash Changes…  {Git.Stash}  
+        Unstash Changes…  {Git.Unstash}  
+        Rollback…  {ChangesView.Revert}  Ctrl+Alt+Z
+        [+] <no text>  {Vcs.UmlDiff}  
+          Show Local Changes as UML  {UML.ShowChanges}  Ctrl+Alt+Shift+D
+      [+] <no text>  {Git.MainMenu.FileActions}  
+        [+] <no text>  {Git.FileActions}  
+          Commit File  {CheckinFiles}  
+          Add  {Git.Add}  Ctrl+Alt+A
+          [+] <no text>  {Git.Ignore.File}  
+          -----
+          Annotate  {Annotate}  
+          Compare with Same Repository Version  {Compare.SameVersion}  Ctrl+D
+          Compare with Revision…  {Compare.Selected}  
+          Compare with Branch or Tag…  {Git.CompareWithBranch}  
+          Show History  {Vcs.ShowTabbedFileHistory}  
+          Show History for Selection…  {Vcs.ShowHistoryForBlock}  
+      -----
+      [+] GitLab  {GitLab.Main.Group}  
+        Create Merge Request…  {GitLab.Merge.Request.Create}  
+        View Merge Requests  {GitLab.Merge.Request.Show.List}  
+        Create Snippet…  {GitLab.Create.Snippet}  
+        -----
+        Share Project on GitLab  {GitLab.Share}  
+        Clone Repository from GitLab…  {GitLab.Clone}  
+        -----
+        Manage GitLab Accounts…  {GitLab.Open.Settings}  
+      [+] GitHub  {GitHub.MainMenu}  
+        Create Pull Request…  {Github.Create.Pull.Request}  
+        View Pull Requests  {Github.View.Pull.Request}  
+        Sync Fork  {Github.Sync.Fork}  
+        Create Gist…  {Github.Create.Gist}  
+        [+] <no text>  {Github.Open.In.Browser}  
+        -----
+        Share Project on GitHub  {Github.Share}  
+        Clone Repository from GitHub…  {Github.Clone}  
+        -----
+        Manage GitHub Accounts…  {Github.Open.Settings}  
+      [+] Azure DevOps  {IntelliJ.AzureDevOps.Main.Group}  
+        Create Pull Request…  {IntelliJ.AzureDevOps.Pull.Request.Create}  
+        -----
+        Clone Repository from Azure DevOps…  {IntelliJ.AzureDevOps.Clone}  
+        -----
+        Manage Azure DevOps Accounts…  {IntelliJ.AzureDevOps.Open.Settings}  
+      Manage Remotes…  {Git.Configure.Remotes}  
+      Clone…  {Git.Clone}  
+      -----
+      VCS Operations Popup…  {Vcs.QuickListPopupAction}  
+      -----
+      Abort Revert  {Git.Revert.Abort}  
+      Continue Cherry-Pick  {Git.CherryPick.Continue}  
+      Abort Cherry-Pick  {Git.CherryPick.Abort}  
+  [+] Window  {WindowMenu}  
+    [+] Layout Settings  {RiderWindowLayoutActions}  
+      Use the Same Layout for All Projects  {RiderToolWindowPerIde}  
+      Use Unique Layout for Every Project  {RiderToolWindowPerProject}  
+      -----
+      Store Current Layout as Default  {RiderStoreDefaultLayout}  
+      Restore Default Layout  {RiderRestoreDefaultLayout}  
+    Minimize  {MinimizeCurrentWindow}  
+    Zoom  {ZoomCurrentWindow}  
+    Move to Built-in Display  {MoveWindowBuiltinDisplayAction}  
+    -----
+    [+] Active Tool Window  {ActiveToolwindowGroup}  
+      Hide Active Tool Window  {HideActiveWindow}  Shift+Escape
+      Hide Side Tool Windows  {HideSideWindows}  
+      Hide Bottom Tool Windows  {HideBottomWindows}  
+      Hide All Tool Windows  {HideAllWindows}  
+      Open as Editor Tab  {MoveToolWindowTabToEditorAction}  
+      Pin Active Tool Window Tab  {PinToolwindowTab}  
+      Jump to Last Tool Window  {JumpToLastWindow}  Ctrl+Alt+Backspace
+      <no text>  {MaximizeToolWindow}  Ctrl+Shift+Quote
+      Dock  {DockToolWindow}  
+      -----
+      Select Next Tab  {NextTab}  Ctrl+Alt+Page Down
+      Select Previous Tab  {PreviousTab}  Ctrl+Alt+Page Up
+      Close Active Tab  {CloseActiveTab}  Ctrl+Shift+F4
+      Close Other Tabs  {TW.CloseOtherTabs}  
+      Close All Tabs  {TW.CloseAllTabs}  
+      -----
+      Split Right  {TW.SplitRight}  
+      Split and Move Right  {TW.SplitAndMoveRight}  
+      Split Down  {TW.SplitDown}  
+      Split and Move Down  {TW.SplitAndMoveDown}  
+      Unsplit  {TW.Unsplit}  
+      Go to Next Splitter  {TW.MoveToNextSplitter}  
+      Go to Previous Splitter  {TW.MoveToPreviousSplitter}  
+      -----
+      [+] View Mode  {TW.ViewModeGroup}  
+      [+] <no text>  {TW.MoveToGroup}  
+      Group Tabs  {ToggleContentUiTypeMode}  
+      Show List of Tabs  {ShowContent}  Alt+Down
+      [+] Resize  {ResizeToolWindowGroup}  
+        Stretch to Left  {ResizeToolWindowLeft}  Ctrl+Alt+Shift+Left
+        Stretch to Right  {ResizeToolWindowRight}  Ctrl+Alt+Shift+Right
+        Stretch to Top  {ResizeToolWindowUp}  Ctrl+Alt+Shift+Up
+        Stretch to Bottom  {ResizeToolWindowDown}  Ctrl+Alt+Shift+Down
+    [+] Editor Tabs  {EditorTabsGroup}  
+      Select Next Tab  {NextTab}  Ctrl+Alt+Page Down
+      Select Previous Tab  {PreviousTab}  Ctrl+Alt+Page Up
+      Pin Active Tab  {PinActiveEditorTab}  
+      Keep Tab Open  {KeepTabOpen}  
+      Show Hidden Tabs  {TabList}  
+      -----
+      [+] Editor Close Actions  {CloseEditorsGroup}  
+        Close Tab  {CloseContent}  Ctrl+F4
+        Close Other Tabs  {CloseAllEditorsButActive}  
+        Close All Tabs  {CloseAllEditors}  
+        Close Unmodified Tabs  {CloseAllUnmodifiedEditors}  
+        Close All but Pinned  {CloseAllUnpinnedEditors}  
+        Close Tabs to the Left  {CloseAllToTheLeft}  
+        Close Tabs to the Right  {CloseAllToTheRight}  
+        Close All Read-Only Tabs  {CloseAllReadonly}  
+        Open as Editor Tab  {MoveToolWindowTabToEditorAction}  
+      -----
+      Reopen Closed Tab  {ReopenClosedTab}  
+      Split Right  {SplitVertically}  
+      Split and Move Right  {MoveTabRight}  
+      Split Down  {SplitHorizontally}  
+      Split and Move Down  {MoveTabDown}  
+      Open in Split with Chooser…  {SplitChooser}  
+      [+] Split with Chooser Navigation  {SplitChooser.Actions}  
+        Next Split  {SplitChooser.NextWindow}  Tab
+        Previous Split  {SplitChooser.PreviousWindow}  Shift+Tab
+        Exit Chooser  {SplitChooser.Exit}  Escape
+        Split  {SplitChooser.Split}  Enter
+        Duplicate  {SplitChooser.Duplicate}  Ctrl+Enter
+        Without Split  {SplitChooser.SplitCenter}  Space
+        Use Top Split or Switch Up  {SplitChooser.SplitTop}  Up
+        Use Left Split or Switch Left  {SplitChooser.SplitLeft}  Left
+        Use down Split or Switch Down  {SplitChooser.SplitDown}  Down
+        Use Right Split or Switch Right  {SplitChooser.SplitRight}  Right
+      Stretch Editor to Top  {StretchSplitToTop}  
+      Stretch Editor to Left  {StretchSplitToLeft}  
+      Stretch Editor to Bottom  {StretchSplitToBottom}  
+      Stretch Editor to Right  {StretchSplitToRight}  
+      Change Splitter Orientation  {ChangeSplitOrientation}  
+      <no text>  {MaximizeEditorInSplit}  
+      Unsplit  {Unsplit}  
+      Unsplit All  {UnsplitAll}  
+      Go to Next Splitter  {NextSplitter}  
+      Go to Previous Splitter  {PrevSplitter}  
+      -----
+      Configure Editor Tabs…  {ConfigureEditorTabs}  
+    [+] Notifications  {Notifications}  
+      Close First  {CloseFirstNotification}  
+      Close All  {CloseAllNotifications}  
+    [+] Processes  {BackgroundTasks}  
+      Show  {ShowProcessWindow}  
+      Auto Show  {AutoShowProcessWindow}  
+    -----
+    [+] Open Project Windows  {OpenProjectWindows}  
+      Next Project Window  {NextProjectWindow}  Ctrl+Alt+]
+      Previous Project Window  {PreviousProjectWindow}  Ctrl+Alt+[
+      Merge All Project Windows  {MergeAllWindowsAction}  
+      -----
+  [+] Help  {HelpMenu}  
+    Find Action…  {GotoAction}  Ctrl+Q
+    -----
+    Help  {HelpTopics}  Ctrl+F1
+    -----
+    [+] <no text>  {LearnGroup}  
+      [+] <no text>  {ProductivityFeatures}  
+    What's New  {WhatsNewAction}  
+    -----
+    Getting Started  {OnlineDocAction}  
+    Product on YouTube  {Help.JetBrainsTV}  
+    Keyboard Shortcuts PDF  {Help.KeymapReference}  
+    -----
+    <no text>  {TechnicalSupport}  
+    Submit Feedback…  {SendFeedback}  
+    -----
+    Show SQL Log  {ShowSQLLog}  
+    Collect Logs and Diagnostic Data  {CollectZippedLogs}  
+    Start CPU Usage Profiling  {CaptureCPUUsageData}  
+    [+] <no text>  {RiderHelp}  
+      Report a Bug…  {ReportBug}  
+      -----
+    Collect Host and Client Logs  {CodeWithMeBackendCollectZippedLogs}  
+    Capture Memory Snapshot  {CaptureMemorySnapShot}  
+    -----
+    [+] Diagnostic Tools  {HelpDiagnosticTools}  
+      Activity Monitor…  {Performance.ActivityMonitor}  
+      Run Memory Tester…  {Performance.MemTester}  
+      -----
+      Show Log in File Manager  {ShowLog}  
+      Choose Trace Scenarios  {LogTraceScenarios}  
+      Special Files and Folders…  {BrowseSpecialPaths}  
+      Restart Microsoft Defender Notification  {ResetWindowsDefenderNotification}  
+      [+] <no text>  {CIDR.Util.Diagnostics}  
+        -----
+        C/C++: Enable Event Tracing  {com.jetbrains.cidr.util.events.impl.ToggleChromeTracingAction}  
+      [+] <no text>  {StartProfileGroup}  
+        [+] <no text>  {AsyncGroup}  
+          -----
+          Start CPU Usage Profiling  {CaptureCPUUsageData}  
+          Start Async Profiler  {performancePlugin.StartAsyncProfilerAction}  
+        Start Node.js Services Profiling  {NodeServicesProfilerAction}  
+      [+] <no text>  {DiagnosticGroup}  
+        -----
+        Capture Memory Snapshot  {CaptureMemorySnapShot}  
+        -----
+        [+] <no text>  {AsyncDiagnosticGroup}  
+          Profile Indexing  {performancePlugin.ProfileIndexingAction}  
+      [+] Backend Profiling  {RiderBackendProfiling}  
+        -----
+        Dump Threads  {Performance.DumpThreads}  
+        Collect Backend Thread Dumps  {CollectBackendThreadDumps}  
+        Collect Internal .NET Process Thread Dumps…  {CollectInternalDotnetProcessThreadDump}  
+        <no text>  {RiderStartSampling}  
+        <no text>  {RiderStartTimeline}  
+        <no text>  {RiderTakeMemorySnapshot}  
+        Configure Backend GC  {RiderConfigureBackendGcAction}  
+        [+] <no text>  {ProfileRiderInternalDotnetProcess}  
+          <no text>  {StartDotnetSelfProfiling}  
+          Profile Debugger Worker  {ProfileDebuggerWorkerAction}  
+          Restart the IDE with Automatic Backend Profiling  {RestartIdeWithAutoBackendProfiling}  
+      Design Time Build Logging  {EnableDesignTimeBuildLogging}  
+      Profile Native Debugger Process…  {CIDR.Debugger.SelfProfiling}  
+      [+] <no text>  {IndexingDiagnosticGroup}  
+        Open Indexing Diagnostics  {performancePlugin.OpenIndexingDiagnosticsAction}  
+    Change Memory Settings  {performancePlugin.ShowMemoryDialogAction}  
+    Edit Custom Properties…  {EditCustomProperties}  
+    Edit Custom VM Options…  {EditCustomVmOptions}  
+    Delete Leftover IDE Directories…  {DeleteOldAppDirs}  
+    -----
+    [+] Registration Actions  {RegistrationActions}  
+      Register…  {Register}  
+    Check for Updates…  {CheckForUpdate}  
+    About  {About}  
+    -----
+
+actions dumped: 1128
+

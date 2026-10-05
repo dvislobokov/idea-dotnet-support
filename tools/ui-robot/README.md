@@ -22,6 +22,43 @@ python tools/ui-robot/robot.py wait          # дождаться порта (о
 - Песочница при старте открывает последний проект — обычно сам `debug-playground` с общим `.idea`; открыть копию (`open`), а исходный
   закрыть через `ProjectUtil.closeAndDispose` из `js`. Закрывать исходный первым нельзя: без проектов IDE уходит на Welcome-экран.
 
+### Песочница в WSL: настоящая мышь и клавиатура (`wsl/`)
+
+Песочница `runIdeForUiTests` открывается на рабочем столе пользователя, поэтому робот работает только через API IDE: настоящее движение
+мыши (подсказки по наведению), набор с клавиатуры и запись видео мешали бы человеку. В WSL та же IDE (IDEA для Linux той же сборки) идёт
+на невидимом экране Xvfb — там можно всё. Проверено 2026-10-05: наведение показывает документацию, набор `Console.Wri` открывает completion,
+Ctrl+Z откатывает, видео пишется.
+
+```sh
+export MSYS_NO_PATHCONV=1 ROBOT_WSL=1          # Git Bash не должен превращать /home/... в C:/Program Files/Git/home/...
+./gradlew.bat buildPlugin -q                   # zip плагина; robot-server берётся из песочницы одного runIdeForUiTests
+wsl -d Ubuntu -- bash tools/ui-robot/wsl/start-ide.sh build/distributions/idea-dotnet-support-<версия>.zip   # порт 8596, экран :99
+wsl -d Ubuntu -- bash tools/ui-robot/wsl/copy-playground.sh      # копия площадки в ~/robot/playground + restore
+. tools/ui-robot/scripts/session.sh            # с ROBOT_WSL=1 $ROBOT и robot_js ходят через wsl/robot.sh
+$ROBOT open /home/dvislobokov/robot/playground
+robot_js choose_solution.js "s|__SOLUTION__|DebugPlayground.sln|g"     # повторять до loaded: true
+robot_js screen_point.js "s|__FILE__|/home/.../Console/Program.cs|g" "s|__AT__|WriteLine|g" "s|__AFTER__|foreach|g"   # → x y строка:столбец
+S="wsl -d Ubuntu -- bash tools/ui-robot/wsl/screen.sh"
+$S move 939 355; $S move 943 356              # наведение (два движения: подсказка ждёт остановки мыши), затем через 2–3 с shot
+$S click 840 443; $S type "Console.Wri"       # настоящий набор, по символу через 30 мс; key ctrl+space / alt+Return / Escape / ctrl+z
+$S shot C:/tmp/screen.png                     # весь виртуальный экран (на нём только песочница)
+$S record C:/tmp/typing.mp4 8                 # видео, в фоне параллельно с набором
+robot_js exit_ide.js; wsl -d Ubuntu -- bash tools/ui-robot/wsl/stop-ide.sh
+```
+
+- Робот с Windows до WSL не достучаться: сервер слушает 127.0.0.1 внутри WSL, проброс localhost в режиме NAT его не видит. Поэтому `robot.py`
+  запускает питон WSL (`wsl/robot.sh`), а временный скрипт `robot_js` кладёт в `build/ui-robot/`, где его видно из обеих систем.
+- IDE обязательно на X11 (`-Dawt.toolkit.name=XToolkit`, без `WAYLAND_DISPLAY`): иначе через WSLg она выбирает Wayland и открывается
+  на рабочем столе пользователя, а экран Xvfb остаётся чёрным.
+- `robot_js` срезает начало ответа до первой буквы — числа в ответе скрипта ставить не первыми (`screen_point.js` печатает `at x y …`).
+- Нужно в Ubuntu: IDEA для Linux в `~/ide` (`ideaIU-<версия localIdePath>.tar.gz` с download.jetbrains.com), .NET SDK в `~/.dotnet`
+  (`dotnet-install.sh`, без sudo), `roslyn-language-server` той же версии, что на Windows (`~/.dotnet/dotnet tool install -g`), пакеты
+  `xvfb x11-utils xdotool ffmpeg libxtst6 libxrender1 libxi6 libfreetype6 fontconfig fonts-dejavu` (sudo — один раз, пользователь).
+  `unzip` не нужен: zip распаковывает `python3 -m zipfile`.
+- Свои настройки и система — `~/robot/sandbox` в WSL. Площадку открывать копией в `~/robot/playground`: на `/mnt/c` `dotnet` и индексация
+  медленные, а незаконченная правка пользователя в `CompletionRanking.cs` берётся из HEAD.
+- Одна песочница на машину: перед запуском WSL-песочницы закрыть песочницу Windows (память общая).
+
 Песочница — `.intellijPlatform/sandbox/idea-dotnet-support/IU-*`, свои настройки и свои проекты, рабочий экземпляр IDE не затрагивается. Лицензии в песочнице нет (в тулбаре
 «Start Free Trial») — DAP-модуль и плагин при этом работают. Отладка идёт настоящим `dotnet` и установленным `dotnet-debugger`.
 
@@ -66,7 +103,8 @@ python robot.py action Exit && python robot.py click "//div[@class='MyDialog']//
 фильтром), `attach.js` (подключиться к PID, как Attach to Process), `sessions.js` (все отладочные сессии), `resume_all.js`, `show_settings.js`, `complete.js` (completion в поле Evaluate: текст → элементы списка).
 Для языкового сервера: `editor_file.js` (файл выбранного редактора: путь, заголовок вкладки, можно ли править, баннеры, строка каретки),
 `rename_via_server.js` (переименование как у LSP-клиента платформы, но без её inline-шаблона: `textDocument/rename` через клиент и применение
-правки одной командой; `__AT__` / `__NAME__` / `__NEW__`), `inline_rename.js` (настоящий Shift+F6 с шаблоном — у робота ненадёжен, шаблону нужен фокус),
+правки одной командой; `__AT__` / `__NAME__` / `__NEW__`), `inline_rename.js` (настоящий Shift+F6 с шаблоном — у робота ненадёжен, шаблону нужен фокус; при «Rename» = Built-in обработчик —
+`NativeCSharpRenameHandler`, шаблон стартует сразу, без `prepareRename` сервера, `__WAIT__` можно ставить 500),
 `lsp_timings.js` (строка состояния: загружен ли solution, сколько файлов раскрашено tokens из кэша; с `__TABLE__` = `yes` —
 таблица времён запросов, как в меню .NET → Language Server Timings; опрашивать в цикле, чтобы увидеть, что происходит во время загрузки;
 вывод `robot_js` срезает начало строк на `t` — `tDocument/…` это `textDocument/…`), `editor_action.js` (действие IDE с контекстом редактора — штатный `action` его не даёт, и Rename / Show Usages молчат),
@@ -88,6 +126,70 @@ python robot.py action Exit && python robot.py click "//div[@class='MyDialog']//
 закрытия диалога; закрыть — `click "//div[@class='MyDialog']//div[@text='Cancel']"`. Перезапуск песочницы при открытом модальном диалоге:
 `action Exit` не сработает — убить процесс (`Stop-Process` по `runIdeForUiTests` в командной строке), иначе новая сборка упадёт в
 `prepareSandbox` и робот ответит из старой.
+`syntax_tree.js` (`__SOURCE__` = `NATIVE` / `ROSLYN` / `keep`, `__FILE__`, `__LINES__` — номера строк через запятую) переключает источник
+«Structure, folding and breadcrumbs» (`CSharpFeature.SYNTAX_TREE`), как страница настроек, открывает файл и печатает: какое у него дерево (PSI
+Roslyn-видов или эвристическое), Structure, breadcrumbs по строкам, регионы folding, ошибки и маркеры гаттера — снять в обоих режимах и сравнить
+`diff`. Подсветке нужно время: после переключения или открытия повторить с `keep`; маркеры есть только у выбранного редактора.
+`build_framework.js` (`__FRAMEWORK__` — `net10.0` или пусто для умолчания) выбирает TFM, как комбобокс тулбара: у C#-файлов другие символы
+`#if` — вместе с `syntax_tree.js` проверяет `TYPE:active-branch` (`debug-playground/MultiTarget/ActiveBranch.cs`).
+`feature_source.js` (`__FEATURE__` — имя из `CSharpFeature`, `__SOURCE__` — `NATIVE` / `ROSLYN` / `keep`) переключает источник фичи, как
+Apply страницы Language Server, и печатает выбор и `CSharpFeatures.native`; с `find_usages.js` — сверка видов использований в обоих режимах.
+Помощь при наборе (`CSharpFeature.EDITING`, 0.1.48) — тоже в обоих режимах через `feature_source.js` (`EDITING`, `NATIVE` / `ROSLYN`):
+`extend_selection.js` (`__FILE__`, `__AT__` — каретка на втором символе первого вхождения, `__TIMES__`) жмёт Ctrl+W (`EditorSelectWord`) N раз
+и печатает дерево файла (`CSharpFile` — встроенное, `HeuristicCSharpFile` — эвристика) и каждое выделение; сценарии и якоря — маркеры
+`TYPE:extend-selection-*` в `debug-playground/Console/Editor/ExtendSelection.cs` (якорь — первое вхождение, а комментарий маркера его часто содержит;
+проверено роботом: `name.Trim()) + 1`; строка — `'s|__AT__|\\"plain text here\\");|g'` (кавычка экранируется для JS); интерполяция —
+`'s|__AT__|\\"total {|g'`; условие — ` > 1)` вместе с `"s|getText()).indexOf|getText()).lastIndexOf|"`; перевод строки и `|` в якоре через
+`robot_js` не передаются). `complete_statement.js` (`__FILE__`, `__AT__` — маркер вида `// TYPE:complete-call `, `__TYPE__` — что набрать)
+набирает текст на первой пустой строке после маркера с его отступом, жмёт Ctrl+Shift+Enter (`EditorCompleteStatement`), печатает строки с
+`<caret>` и откатывает через Undo до исходного текста (3 шага в обоих режимах; пишет `undone` или `NOT undone`); с пустым `__TYPE__`
+каретка встаёт в конец строки `__AT__` (так `TYPE:complete-two-lines`: `__AT__` = ` Make(a,` — с пробелом, мимо комментария). Серый `;`
+(`TYPE:gray-semicolon`) — `ghost_at_line.js` после того, как с копии файла снят `);` у `.Where(x => x > 0);`. Сценарии — `debug-playground/Console/Editor/CompleteStatement.cs`.
+Форматирование (`CSharpFeature.FORMATTING`, 0.1.49) — в обоих режимах через `feature_source.js` (`FORMATTING`, `NATIVE` / `ROSLYN`):
+`reformat.js` (`__FILE__`; `__AT__` и `__END__` — выделение от начала строки первого `__AT__` до конца строки первого `__END__` после него;
+пустой `__END__` — весь файл без выделения) жмёт Ctrl+Alt+L (`ReformatCode`), печатает, кто форматирует (`NativeCSharpFormatting.engaged`),
+строки результата и откатывает Undo (`undone` / `NOT undone`); ответа сервера и `dotnet format` ждёт до 20 с. Сценарии — маркеры
+`TYPE:format-*` в `debug-playground/Console/Editor/Formatting.cs`; якоря — однострочные (перевод строки через `robot_js` не передаётся):
+метод `Sum` — `__AT__` = `public  int  Sum`, `__END__` = `// TYPE:format-file` (в выделение попадает и строка маркера, она не меняется).
+Вживую роботом скрипт ещё не прогонялся.
+`goto_declaration.js` (`__FILE__`; `__AT__` — якорь, начинающийся с имени, каретка на его первом символе) печатает, кто отвечает
+(`NativeCSharpNavigation.serves`: встроенное дерево при `NAVIGATION` = NATIVE, иначе сервер), цели дерева (`файл:строка  текст строки`;
+`tree: none` — имя уходит серверу), затем жмёт Ctrl+B (`GotoDeclaration`) и печатает, где каретка (`to: файл:строка  текст`), или что она
+осталась на месте (список из нескольких целей — закрыть Escape — или переходить некуда); ответа сервера ждёт 1,5 с. Переключатель — `feature_source.js`
+(`NAVIGATION`). Сценарии — маркеры `TYPE:nav-*` в `debug-playground/Console/Editor/Navigation.cs`; якорь — первое вхождение в файле, а
+комментарии маркеров имена упоминают, так что брать текст строки кода: `total + parsed` (→ `var total`), `parsed + first` (→ `out var parsed`),
+`x * 2;` (→ параметр лямбды), `Twice(3) +`, `retry;`, `doubled > 2`, `g.Key`, `Add(1)` (список из двух), `Reset();`, `UsageLog.Record`
+(дерево — `UsageLog`), `Count;` (дерево — none, сервер). Вживую роботом скрипт ещё не прогонялся.
+Цвета идентификаторов (`CSharpFeature.SEMANTIC_COLORS`, 0.1.51) — в обоих режимах через `feature_source.js` (`SEMANTIC_COLORS`, `NATIVE` /
+`ROSLYN`): `highlight_keys.js` (`__FILE__`, `__LINE__` и `__END__` — строки с 1, пустой `__END__` — одна строка) открывает файл и печатает
+каждый раскрашенный ключом палитры `CSHARP_*` диапазон строк: `строка: текст -> КЛЮЧ (daemon | markup)` — `daemon` от аннотаторов
+(встроенные цвета и эвристика), `markup` — подсветки разметки редактора и документа (туда могут попадать semantic tokens сервера); ключи
+лексера не печатаются. После открытия и переключения повторять, пока вывод не устоится; снять в обоих режимах и сравнить `diff`. Сценарии —
+маркеры `TYPE:colors-*` в `debug-playground/Console/Editor/SemanticColors.cs` (строки под маркером до следующего маркера). Вживую роботом
+скрипт ещё не прогонялся.
+Ошибки и предупреждения (`CSharpFeature.DIAGNOSTICS`, синтаксическая часть, 0.1.54) — в обоих режимах через `feature_source.js` (`DIAGNOSTICS`,
+`NATIVE` / `ROSLYN`): `errors_at.js` (`__FILE__`) открывает файл и печатает каждую подсветку уровня WARNING и выше в порядке текста:
+`строка:колонка-строка:колонка [ERROR|WARNING] текст | описание`; текст `<eol>` — ошибка показана за концом строки, `<empty>` — нулевой
+ширины. Описание — `CS1002: ; expected` и от дерева плагина, и от сервера, поэтому кто сообщил, видно только по разнице двух прогонов. Сценарии —
+маркеры `TYPE:diag-*` в `debug-playground/Broken/SyntaxErrors.cs` (файл исключён из компиляции `Broken`). С `NATIVE` синтаксических ошибок
+сервера не должно быть вторым экземпляром на той же строке. Вживую роботом скрипт ещё не прогонялся.
+Completion (`CSharpFeature.COMPLETION`, синтаксическая часть, 0.1.55) — в обоих режимах через `feature_source.js` (`COMPLETION`,
+`NATIVE` / `ROSLYN`): `complete_at_line.js` под маркерами `TYPE:complete-*` в `debug-playground/Console/Editor/NativeCompletion.cs` и
+`CommonCalls.cs`, `__UNDO__` = `yes`; с `NATIVE` пункты есть до загрузки сервера, после — без повторов имён. Эталон — `rider_complete.js` на
+том же месте. Вживую роботом скрипт ещё не прогонялся.
+**Rider как эталон.** `rider/start-rider.ps1` поднимает установленный Rider под робота (порт 8594) в отдельной папке
+`%USERPROFILE%\rider-robot` с копией настроек и лицензии, без хранилища паролей; рабочий Rider не трогается. `rider_complete.js`
+(`__FILE__`, `__LINE__`, `__TYPE__`, `__KIND__` = `BASIC` / `SMART`, `__SYNC__` — пауза, пока правка дойдёт до бэкенда, `__LIMIT__`,
+`__WAIT__`) печатает пункты completion с типом — им же можно снимать наш плагин. Снятое — `docs/RIDER_REFERENCE.md`. Если Rider успел
+сохранить недонабранную строку, файл копии вернуть с диска (`FileDocumentManager.reloadFromDisk`).
+`goto_names.js` (`__KIND__` — `class` / `symbol`, `__NAMES__` — имена через запятую) спрашивает Go to Class / Symbol только у контрибуторов
+плагина (stub-индексы встроенного дерева, шаг 8) и печатает строки, как в попапе, с файлом и строкой; файлы, которые покрыл готовый сервер,
+контрибуторы пропускают, поэтому сначала `server_enabled.js` (`__ENABLED__` = `false`). Вместе с `build_framework.js` — проверка веток `#if`
+после смены TFM (`MultiTarget/ActiveBranch.cs`: `Net10Only` / `Net9Only`).
+У площадки два solution: сервер ждёт выбора (`RoslynWorkspace.solutionChosen("DebugPlayground.sln")`, как в `baseline_start.js`).
+Порт: старая песочница из соседнего worktree может держать 8583 или 8591 и отвечать вместо своей (видно по версии плагина в ошибке
+`ClassNotFoundException`) — проверить `netstat -ano | grep LISTEN` и взять свободный `-ProbotPort`. Если `runIdeForUiTests` падает на
+configuration cache («cannot serialize Gradle script object references») — запускать с `--no-configuration-cache`.
 `hierarchy.js` (`__FILE__`, `__AT__`, `__ACTION__` = `TypeHierarchy` / `CallHierarchy` / `GotoSuperMethod`, `__WAIT__`) выполняет действие с
 контекстом редактора и печатает, куда встала каретка и что в окне Hierarchy (дерево через `getUserObject` узлов пока печатается пусто —
 смотреть `shot` компонента `RoslynTypeHierarchyBrowser` / `RoslynCallHierarchyBrowser` или `find` по нему: тексты строк в нём есть).
@@ -151,3 +253,17 @@ python tools/ui-robot/baseline.py --target aspnetcore --runs 3 --reps 10 --cache
 - Скрипт `js`, который завис (робот перестал отвечать, `timeout` на каждой команде), — повод снять дамп потоков:
   `"<JBR>/bin/jstack.exe" <pid песочницы>` и искать `dotnetsupport` в стеках. Так 2026-09-30 нашёлся дедлок `DotNetSettings`
   (сервис ждал сам себя из `toString()` enum-а), из-за которого в песочнице не стартовал сервер Roslyn.
+
+### Сверка встроенных фич с сервером (0.1.60)
+
+- `choose_solution.js` (`__SOLUTION__`) — выбрать solution, если IDE спрашивает, и сказать, загрузил ли его сервер (`loaded: true`).
+- `goto_batch.js` (`__FILE__`, `__CASES__` = `строка:имя#n;…`, `__WAIT__`) — Go to Declaration по списку мест: кто отвечает (дерево или
+  сервер), цели дерева и куда реально ушла каретка (`файл:строка:колонка`, список попапа или `(stayed)`). Режим — `feature_source.js`.
+- `complete_select.js` (`__FILE__`, `__LINE__`, `__TYPE__`, `__ITEM__`, `__SHOWN__`, `__FROM__`, `__TO__`, `__WAIT__`) — набрать, выбрать
+  пункт completion (по lookup string или по началу видимого текста `__SHOWN__`), показать строки с `<caret>` и вернуть текст файла.
+- `complete_at_line.js`: `__PRESENT__=yes` — видимый текст пункта в `[ ]`, когда он не равен lookup string (именованный аргумент
+  `amount:`, `override`-члены сервера с пустой lookup string).
+- `exit_ide.js` — закрыть песочницу (`ApplicationManager.getApplication().exit(true, true, false)`).
+- Сервер отдаёт около 1000 пунктов, а список платформы обрезан реестром `ide.completion.variant.limit` (1000): для сравнения списков
+  поднять его в песочнице (Registry) до 20000.
+- После `setText` скрипта документ иногда расходится с PSI (completion отдаёт один пункт `aw`): `reload_file.js` по файлу.

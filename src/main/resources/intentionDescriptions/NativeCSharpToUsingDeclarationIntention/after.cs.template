@@ -1,0 +1,2 @@
+using var reader = new StreamReader(path);
+Console.WriteLine(reader.ReadLine());

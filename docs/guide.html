@@ -319,7 +319,7 @@ footer a { color: var(--text-2); }
 <div class="table"><table>
 <thead><tr><th>Параметр</th><th>По умолчанию</th><th>Что делает</th></tr></thead>
 <tbody>
-<tr><td><b>Форматтер</b><small lang="en">Formatter</small></td><td>Авто</td><td>Работает за Reformat Code и за «Reformat code» в Actions on Save для файлов C#. Хранится вместе с проектом: команда форматирует одинаково. Авто: CSharpier, если он используется в репозитории (.csharpierrc или манифест инструментов), иначе dotnet format. dotnet format: пробелы и отступы по .editorconfig, около секунды на файл, мгновенно с сервером языка. CSharpier форматирует только файлы целиком. Варианты: «Авто», «CSharpier», «dotnet format», «Нет».</td></tr>
+<tr><td><b>Форматтер</b><small lang="en">Formatter</small></td><td>Авто</td><td>Работает за Reformat Code и за «Reformat code» в Actions on Save для файлов C#. Хранится вместе с проектом: команда форматирует одинаково. Встроенный: правила пробелов dotnet format по .editorconfig, считаются в самой IDE на лету \u2014 Reformat Code, выделение, Auto-Indent Lines, вставка, без запуска процесса. dotnet format: только файлы целиком, поэтому работает по Reformat Code и при сохранении (включите «Reformat code» в Actions on Save); около секунды на файл, мгновенно с сервером языка. Авто: CSharpier, если он используется в репозитории (.csharpierrc или манифест инструментов), иначе встроенный или dotnet format \u2014 как выбрано «Formatting» на странице Language Server. CSharpier форматирует только файлы целиком. Варианты: «Авто», «CSharpier», «dotnet format (при сохранении)», «Нет».</td></tr>
 </tbody>
 </table></div>
 <h4>Поведение <small lang="en">Behavior</small></h4>

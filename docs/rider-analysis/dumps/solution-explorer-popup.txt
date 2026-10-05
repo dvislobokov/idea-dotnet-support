@@ -1,0 +1,317 @@
+##### SolutionExplorerPopupMenu
+[+] <no text>  {SolutionExplorerPopupMenu}  
+  [+] <no text>  {WinFormsActions}  
+    Open Code  {OpenWinFormsCodeAction}  F7
+    Open Designer  {OpenWinFormsDesignerAction}  Shift+F7
+    -----
+  Open Solution  {OpenSelectedSolution}  
+  [+] <no text>  {SolutionViewAddGroup}  
+  [+] NuGet  {SolutionExplorerPopupMenu.NuGet}  
+    Manage NuGet Packages  {RiderNuGetManagePackagesForProjectAction}  
+    Migrate packages.config to PackageReference  {RiderNuGetMigrateForProjectAction}  
+  [+] Project Management with Repo View  {SolutionExplorerPopupMenu.RepoViewedProjectManagement}  
+    Index Web Project  {IndexRepoViewedProject}  
+    Unindex Web Project  {UnindexRepoViewedProject}  
+  [+] Project Management  {SolutionExplorerPopupMenu.ProjectManagement}  
+    Include  {IncludeAction}  
+    Detach Folder  {DetachFolderAction}  
+    Unload Project  {RiderUnloadProjectAction}  
+    Load Project  {RiderLoadProjectAction}  
+    Load Project with Dependencies  {RiderLoadProjectWithDependenciesAction}  
+    Reload Project  {RiderReloadProjectAction}  
+    [+] Save as…  {SolutionSaveAsActions}  
+      Save as Solution Filter  {SaveAsSolutionFilterAction}  
+      Save as Solution (.sln)  {SaveAsSln}  
+      Save as XML Solution (.slnx)  {SaveAsSlnx}  
+    [+] Solution Filter  {SolutionFilterActions}  
+      Show Project  {RiderAddToSolutionFilterProjectAction}  
+      Show Project with Dependencies  {RiderAddToSolutionFilterProjectWithDependenciesAction}  
+      Hide Project  {RiderRemoveFromSolutionFilterProjectAction}  
+      Show Direct Dependencies  {RiderAddProjectDependenciesToSolutionFilterAction}  
+      Show Entire Dependency Tree  {RiderAddProjectDependencyTreeToSolutionFilterAction}  
+    <no text>  {Rider.CMake.ReloadCMakeProject}  
+  [+] Entity Framework Core  {EfCore.Groups.Dialogs}  
+    Add Migration…  {EfCore.Features.Migrations.AddMigrationAction}  
+    Remove Last Migration…  {EfCore.Features.Migrations.RemoveLastMigrationAction}  
+    Generate SQL Script…  {EfCore.Features.Migrations.GenerateScriptAction}  
+    -----
+    Update Database…  {EfCore.Features.Database.UpdateDatabaseAction}  
+    Drop Database…  {EfCore.Features.Database.DropDatabaseAction}  
+    -----
+    Scaffold DbContext…  {EfCore.Features.DbContext.ScaffoldDbContextAction}  
+  [+] <no text>  {BackendEntityFrameworkActionGroupNew}  
+  Associate with File Type…  {AssociateWithFileType}  
+  View in Assembly Explorer  {ViewInAssemblyExplorer}  
+  Run Custom Tool  {RiderExecuteCustomToolAction}  
+  Create Missing File  {CreateMissingFileAction}  
+  -----
+  [+] <no text>  {DatabaseProjectOperations}  
+    -----
+    Schema Compare...  {SchemaCompareForDatabaseProjectAction}  
+    Publish  {PublishDatabaseProjectAction}  
+    Update from Database  {UpdateFromDatabaseAction}  
+    Make the Project Cross-Platform Compatible  {MakeProjectCrossPlatformAction}  
+    -----
+  <no text>  {BuildSelection}  
+  [+] <no text>  {RunContextGroupInner}  
+    [+] <no text>  {RunContextExecutorsGroup}  
+      [+] Run context configuration  {RunClass}  Ctrl+Alt+F5 [hidden] [disabled]
+      [+] Debug context configuration  {DebugClass}   [hidden] [disabled]
+    Run Multiple Projects…  {multilaunch.RunMultipleProjects}  
+    [+] More Run/Debug  {RunContextGroupMore}  
+      [+] Run with Coverage context configuration  {RunCoverage}   [hidden] [disabled]
+      [+] Run with Profiler  {DefaultProfilerExecutorGroupContextActionId}  
+      [+] Run with Profiling context configuration  {RunProfiling}   [hidden] [disabled]
+      [+] Run with Memory Profiling context configuration  {RunMemoryProfiling}   [hidden] [disabled]
+      [+] Create Run Configuration  {CreateRunConfiguration}  
+      -----
+      [+] Run context configuration  {newConfigurationRunClass}   [hidden] [disabled]
+      [+] Debug context configuration  {newConfigurationDebugClass}   [hidden] [disabled]
+      [+] Run with Coverage context configuration  {newConfigurationRunCoverage}   [hidden] [disabled]
+      [+] Run with Profiler  {newConfigurationDefaultProfilerExecutorGroupContextActionId}  
+      [+] Run with Profiling context configuration  {newConfigurationRunProfiling}   [hidden] [disabled]
+      [+] Run with Memory Profiling context configuration  {newConfigurationRunMemoryProfiling}   [hidden] [disabled]
+      [+] <no text>  {CreateNewRunConfiguration}  
+  Run Unit Tests  {RiderUnitTestRunContextAction}  Ctrl+U, R
+  Compile File  {CompileFile}  Ctrl+F7
+  Publish…  {RiderPublish}  
+  Run Template  {ExecuteT4Template}  
+  Debug Template  {DebugT4Template}  
+  Preprocess Template  {PreprocessT4Template}  
+  Generate Configurations  {GenerateLaunchSettings}  
+  [+] Advanced Build Actions  {AdvancedBuildActions}  
+    <no text>  {RebuildSelectionAction}  
+    <no text>  {CleanSelectionAction}  
+    <no text>  {PackSelectionAction}  
+    <no text>  {PackageSelectionAction}  
+    -----
+    <no text>  {BuildSelectionWithDiagnosticsAction}  
+    <no text>  {RebuildSelectionWithDiagnosticsAction}  
+    -----
+    <no text>  {BuildSelectedProjectWithoutDependencies}  
+    <no text>  {RebuildSelectedProjectWithoutDependencies}  
+    <no text>  {CleanSelectedProjectWithoutDependencies}  
+    -----
+    <no text>  {ConfigureProjectDependenciesAction}  
+  -----
+  [+] <no text>  {SolutionExplorerPopupMenu.Database}  
+    Change SQL Dialect  {sql.ChangeDialect}  
+    [+] Attach Data Source  {Console.Jdbc.ChooseDataSource}  
+  [+] <no text>  {XamarinArchiveGroup}  
+    Archive for Publish  {ArchiveProjectAction}  
+    View Archives  {ViewArchivesAction}  
+  -----
+  Show Local History  {LocalHistory.ShowLocalHistory}  
+  [+] Version Control Group  {VcsFileGroupPopup}  
+  -----
+  Refactor This…  {Refactorings.QuickListPopupAction}  Ctrl+Shift+R
+  Inspect Code…  {InspectOnProjectModelAction}  
+  Reformat and Cleanup…  {CodeCleanup}  Ctrl+E, C
+  -----
+  Open in Xcode  {OpenXCodeAction}  
+  [+] Edit  {SolutionExplorerPopupMenu.Edit}  
+    Cut  {$Cut}  Ctrl+X
+    Copy  {$Copy}  Ctrl+C
+    Paste  {$Paste}  Ctrl+V
+    [+] Paste Special  {RiderPasteSpecialPopupGroup}  
+      [+] <no text>  {RiderPasteSpecialGroup}  
+        Paste Special: JSON as Classes  {RiderPasteJsonAsClasses}  
+        Paste Special: JSON as Records  {RiderPasteJsonAsRecords}  
+    Exclude  {ExcludeAction}  
+    Delete  {$Delete}  Delete
+    Rename…  {RenameElement}  Ctrl+R, R
+    Edit Sources  {RiderEditSource}  F4
+    Edit Sources in Right Split  {RiderEditSourceInRightSplit}  Shift+Enter
+    Edit Solution Filter  {EditSolutionFilterAction}  
+    -----
+    Find in Files…  {FindInPath}  Ctrl+Shift+F
+    Replace in Files…  {ReplaceInPath}  Ctrl+Shift+H
+  [+] Copy Path/Reference…  {CopyReferencePopupGroup}  
+    [+] <no text>  {CopyFileReference}  
+      Absolute Path  {CopyAbsolutePath}  Ctrl+Shift+C
+      File Name  {CopyFileName}  
+      -----
+      Path with Line Number  {CopyPathWithLineNumber}  
+      Path From Solution Root  {RiderCopyRootPath}  
+      Path From Repository Root  {CopyPathFromRepositoryRootProvider}  
+      [+] <no text>  {Git.Hosting.Copy.Link.Group}  
+        [+] Copy Link to GitLab Repository  {GitLab.Copy.Link}  
+        [+] Copy Link to GitHub Repository  {GitHub.Copy.Link}  
+        [+] Copy Link to Azure DevOps Repository  {IntelliJ.AzureDevOps.Copy.Link}  
+    -----
+    [+] <no text>  {CopyExternalReferenceGroup}  
+      Toolbox URL  {CopyTBXReference}  
+    Copy Reference  {CopyReference}  Ctrl+Alt+Shift+C
+  [+] Open In  {RevealGroup}  
+    <no text>  {RevealIn}  
+    Open in Associated Application  {OpenInAssociatedApplication}  
+    [+] <no text>  {OpenInBrowserGroup}  
+    File Path  {ShowFilePath}  
+    Open in Terminal  {Terminal.OpenInTerminal}  
+    Open in Terminal  {Terminal.OpenInReworkedTerminal}  
+    [+] <no text>  {Git.Hosting.Open.In.Browser.Group}  
+      [+] View in browser  {GitLab.Open.In.Browser}  
+      [+] <no text>  {Github.Open.In.Browser}  
+      [+] View in browser  {IntelliJ.AzureDevOps.Open.In.Browser}  
+    Show in Unity  {com.jetbrains.rider.plugins.unity.actions.ShowFileInUnityAction}  
+  <no text>  {RevealBaseDirectoryIn}  
+  [+] Diagrams  {SolutionExplorerPopupMenu.Diagrams}  
+    [+] <no text>  {ShowArchitectureDiagramFromSolutionExplorerActionGroup}  
+  [+] Tools  {SolutionExplorerPopupMenu.Tools}  
+    Compare Files  {CompareTwoFiles}  Ctrl+D
+    Compare File with Editor  {CompareFileWithEditor}  
+    -----
+    Generate Binding Redirects  {RiderNuGetGenerateBindingRedirectsAction}  
+    -----
+    Attach to Solution  {AttachCurrentFolderAction}  
+    Start Index  {RiderStartIndexAction}  
+    Stop Index  {RiderStopIndexAction}  
+    -----
+    [+] Project View Popup Menu  {ProjectViewPopupMenu}  
+      [+] <no text>  {SolutionExplorerPopupMenu.Repl}  
+        Reference in C# Interactive  {ReferenceInCSharpInteractive}  
+        Send Project References to F# Interactive  {SendFsiRefs}  
+      Restore Default Extensions  {RestoreDefaultExtensionScripts}  
+      Apply Patch…  {ChangesView.ApplyPatch}  
+      -----
+      Toggle Bookmark  {ToggleBookmark}  Ctrl+K, K
+      Toggle Bookmark Mnemonic…  {ToggleBookmarkWithMnemonic}  Ctrl+F11
+      -----
+      [+] External Tools  {ExternalToolsGroup}  
+      -----
+      [+] Project View Popup Menu Settings Group  {ProjectViewPopupMenuSettingsGroup}  
+        [+] Mark Directory As  {MarkRootGroup}  
+      [+] <no text>  {RemoveBom.Group}  
+        Remove BOM  {RemoveBom}  
+      [+] Dev Containers  {Dev.Container.Actions}  
+        Create Dev Container and Clone Sources…  {Create.Dev.Container.CloneSources}  
+        [+] Create Dev Container and Mount Sources…  {Create.Dev.Container.MountSources}  
+        -----
+        Manage Dev Container Backends  {Dev.Container.ManageBackends}  
+        Show Dev Containers  {Dev.Container.ShowRecent}  
+        [+] <no text>  {Dev.Container.File.Actions}  
+          -----
+          <no text>  {Dev.Container.ideSettings.AddSettingsAction}  
+      [+] <no text>  {CMake.ProjectViewMenu}  
+        -----
+        [+] <no text>  {CMake.GeneralProjectActionsGroup}  
+          <no text>  {CMake.ReloadCMakeProject}  
+        [+] <no text>  {CMake.GeneralFileActionsGroup}  
+          <no text>  {CMake.LoadCMakeProject}  
+          <no text>  {CMake.AddFileToProjectAction}  
+        -----
+        -----
+      [+] <no text>  {FileEditor.ImportToDatabase.Group}  
+        -----
+        Import to Database…  {FileEditor.ImportToDatabase}  
+    -----
+    <no text>  {Rider.Web.DotNetUserSecrets}  
+    -----
+    <no text>  {Rider.Web.CreateIisVirtualDirectoryAction}  
+    -----
+    Generate Aspire Manifest  {Aspire.Solution.Manifest}  
+  -----
+  [+] Config Transformations  {XdtTransformActions}  
+    [+] Config Transformations  {XdtTransformActionsGroup}  
+      Add Transformation…  {AddXdtTransformationAction}  
+      Preview Transformation…  {PreviewXdtTransformationAction}  
+      Perform Transformation…  {PerformXdtTransformationAction}  
+    -----
+  Manage .NET SDK…  {ManageDotNetSdk}  
+  Properties…  {EditPropertiesAction}  Alt+Enter
+  Show Diff  {AssemblyDiffAction}  Ctrl+D
+
+##### SolutionExplorerPopupMenuForReference
+[+] <no text>  {SolutionExplorerPopupMenuForReference}  
+  Diagnose Reference…  {DiagnoseReferenceAction}  
+  Add Reference…  {AddReferenceAction}  
+  Add Database Reference...  {AddDatabaseReferenceAction}  
+  Add Web Reference…  {AddWebReferenceAction}  
+  Update  {UpdateWebReferenceAction}  
+  Manage NuGet Packages  {RiderNuGetManagePackagesForProjectAction}  
+  Reference in C# Interactive  {ReferenceInCSharpInteractive}  
+  -----
+  Edit…  {EditWebReferenceAction}  
+  Delete  {$Delete}  Delete
+  Refactor This…  {Refactorings.QuickListPopupAction}  Ctrl+Shift+R
+  Find Dependent Code  {FindDependantCodeAction}  
+  Find Dependent Code (All Projects)  {FindDependantCodeInSolutionAction}  
+  View in Solution Explorer  {ViewInSolutionExplorer}  
+  View in Assembly Explorer  {ViewInAssemblyExplorer}  
+  -----
+  [+] Copy Path/Reference…  {CopyReferencePopupGroup}  
+    [+] <no text>  {CopyFileReference}  
+      Absolute Path  {CopyAbsolutePath}  Ctrl+Shift+C
+      File Name  {CopyFileName}  
+      -----
+      Path with Line Number  {CopyPathWithLineNumber}  
+      Path From Solution Root  {RiderCopyRootPath}  
+      Path From Repository Root  {CopyPathFromRepositoryRootProvider}  
+      [+] <no text>  {Git.Hosting.Copy.Link.Group}  
+        [+] Copy Link to GitLab Repository  {GitLab.Copy.Link}  
+        [+] Copy Link to GitHub Repository  {GitHub.Copy.Link}  
+        [+] Copy Link to Azure DevOps Repository  {IntelliJ.AzureDevOps.Copy.Link}  
+    -----
+    [+] <no text>  {CopyExternalReferenceGroup}  
+      Toolbox URL  {CopyTBXReference}  
+    Copy Reference  {CopyReference}  Ctrl+Alt+Shift+C
+  [+] Open In  {RevealGroup}  
+    <no text>  {RevealIn}  
+    Open in Associated Application  {OpenInAssociatedApplication}  
+    [+] <no text>  {OpenInBrowserGroup}  
+    File Path  {ShowFilePath}  
+    Open in Terminal  {Terminal.OpenInTerminal}  
+    Open in Terminal  {Terminal.OpenInReworkedTerminal}  
+    [+] <no text>  {Git.Hosting.Open.In.Browser.Group}  
+      [+] View in browser  {GitLab.Open.In.Browser}  
+      [+] <no text>  {Github.Open.In.Browser}  
+      [+] View in browser  {IntelliJ.AzureDevOps.Open.In.Browser}  
+    Show in Unity  {com.jetbrains.rider.plugins.unity.actions.ShowFileInUnityAction}  
+  -----
+  Properties…  {EditPropertiesAction}  Alt+Enter
+  Show Diff  {AssemblyDiffAction}  Ctrl+D
+
+##### SolutionExplorerPopupMenuForImports
+[+] <no text>  {SolutionExplorerPopupMenuForImports}  
+  Open Importing Element  {OpenImportingElementAction}  
+  Associate with File Type…  {AssociateWithFileType}  
+  Create Missing File  {CreateMissingFileAction}  
+  -----
+  Show Local History  {LocalHistory.ShowLocalHistory}  
+  [+] Version Control Group  {VcsFileGroupPopup}  
+  -----
+  Edit Sources  {RiderEditSource}  F4
+  [+] Copy Path/Reference…  {CopyReferencePopupGroup}  
+    [+] <no text>  {CopyFileReference}  
+      Absolute Path  {CopyAbsolutePath}  Ctrl+Shift+C
+      File Name  {CopyFileName}  
+      -----
+      Path with Line Number  {CopyPathWithLineNumber}  
+      Path From Solution Root  {RiderCopyRootPath}  
+      Path From Repository Root  {CopyPathFromRepositoryRootProvider}  
+      [+] <no text>  {Git.Hosting.Copy.Link.Group}  
+        [+] Copy Link to GitLab Repository  {GitLab.Copy.Link}  
+        [+] Copy Link to GitHub Repository  {GitHub.Copy.Link}  
+        [+] Copy Link to Azure DevOps Repository  {IntelliJ.AzureDevOps.Copy.Link}  
+    -----
+    [+] <no text>  {CopyExternalReferenceGroup}  
+      Toolbox URL  {CopyTBXReference}  
+    Copy Reference  {CopyReference}  Ctrl+Alt+Shift+C
+  [+] Open In  {RevealGroup}  
+    <no text>  {RevealIn}  
+    Open in Associated Application  {OpenInAssociatedApplication}  
+    [+] <no text>  {OpenInBrowserGroup}  
+    File Path  {ShowFilePath}  
+    Open in Terminal  {Terminal.OpenInTerminal}  
+    Open in Terminal  {Terminal.OpenInReworkedTerminal}  
+    [+] <no text>  {Git.Hosting.Open.In.Browser.Group}  
+      [+] View in browser  {GitLab.Open.In.Browser}  
+      [+] <no text>  {Github.Open.In.Browser}  
+      [+] View in browser  {IntelliJ.AzureDevOps.Open.In.Browser}  
+    Show in Unity  {com.jetbrains.rider.plugins.unity.actions.ShowFileInUnityAction}  
+
+##### SolutionExplorerEmptyPopupMenu
+[+] <no text>  {SolutionExplorerEmptyPopupMenu}  
+
+actions dumped: 264
+

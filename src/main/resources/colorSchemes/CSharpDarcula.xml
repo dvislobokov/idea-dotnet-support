@@ -12,6 +12,24 @@
     <option name="CSHARP_MEMBER">
         <value><option name="FOREGROUND" value="66C3CC"/></value>
     </option>
+    <option name="CSHARP_STRUCT_IDENTIFIER">
+        <value><option name="FOREGROUND" value="E1BFFF"/></value>
+    </option>
+    <option name="CSHARP_ENUM_IDENTIFIER">
+        <value><option name="FOREGROUND" value="E1BFFF"/></value>
+    </option>
+    <option name="CSHARP_DELEGATE_IDENTIFIER">
+        <value><option name="FOREGROUND" value="E1BFFF"/></value>
+    </option>
+    <option name="CSHARP_EVENT_IDENTIFIER">
+        <value><option name="FOREGROUND" value="ED94C0"/></value>
+    </option>
+    <option name="CSHARP_CONSTANT_IDENTIFIER">
+        <value><option name="FOREGROUND" value="66C3CC"/><option name="FONT_TYPE" value="1"/></value>
+    </option>
+    <option name="CSHARP_MUTABLE_LOCAL_VARIABLE_IDENTIFIER">
+        <value><option name="EFFECT_COLOR" value="787878"/><option name="EFFECT_TYPE" value="1"/></value>
+    </option>
     <option name="CSHARP_STRING">
         <value><option name="FOREGROUND" value="C9A26D"/></value>
     </option>

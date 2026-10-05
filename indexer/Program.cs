@@ -1,17 +1,22 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Globalization;
+using System.IO.Compression;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Text.Json;
+using System.Xml;
 
 namespace DotNetSupport.Indexer;
 
-// The index of an assembly: its public types and their public static members (extension methods, constants and enum members among
-// them), read from the metadata alone — nothing is loaded, nothing of the assembly runs. One file per assembly, named by the MVID of
-// the module: a package of NuGet and a reference pack of the SDK never change, so neither does their index, and a project is a list
-// of such files. The format is fixed-size records behind one header, little-endian, read by the plugin through a mapped buffer
+// The index of an assembly: what other code may name in it — its public and protected types with their generic parameters, bases,
+// interfaces and attributes, and every public and protected member of them with its signature — read from the metadata alone:
+// nothing is loaded, nothing of the assembly runs. One file per assembly, named by the MVID of the module: a package of NuGet and a
+// reference pack of the SDK never change, so neither does their index, and a project is a list of such files. The XML documentation
+// next to the assembly (`System.Console.xml`) goes into a second file, `<mvid>.dnxd`, read only when a documentation is asked for.
+// The format is fixed-size records behind one header, little-endian, read by the plugin through a mapped buffer
 // (src/main/kotlin/.../index/AssemblyIndex.kt). Change the format: change FormatVersion, the plugin names its cache folder by it.
 //
 //   dotnet AssemblyIndexer.dll --out <dir> [--list <file with a path per line>] [--force] [--wait <seconds>] [<assembly>...]
@@ -23,7 +28,7 @@ namespace DotNetSupport.Indexer;
 // the second process waits for the first and then finds the indexes made.
 public static class Program
 {
-    public const int FormatVersion = 1;
+    public const int FormatVersion = 2;
 
     public static int Main(string[] args)
     {
@@ -61,10 +66,14 @@ public static class Program
         var waited = waiting.Elapsed.TotalMilliseconds;
 
         var total = Stopwatch.StartNew();
-        int indexed = 0, skipped = 0, failed = 0, types = 0, members = 0;
-        long bytes = 0;
-        foreach (var path in paths)
+        int indexed = 0, skipped = 0, failed = 0, types = 0, members = 0, docs = 0;
+        long bytes = 0, docBytes = 0;
+        // the assemblies are independent of each other: on as many cores as there are, but half, the IDE is working too
+        var reports = new Dictionary<string, object?>[paths.Count];
+        var parallel = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2) };
+        Parallel.For(0, paths.Count, parallel, i =>
         {
+            var path = paths[i];
             var watch = Stopwatch.StartNew();
             var report = new Dictionary<string, object?> { ["path"] = path };
             try
@@ -74,39 +83,48 @@ public static class Program
                 report["index"] = result.File;
                 if (result.Written == null)
                 {
-                    skipped++;
+                    Interlocked.Increment(ref skipped);
                     report["skipped"] = true;
                 }
                 else
                 {
-                    indexed++;
-                    types += result.Written.Types.Count;
-                    members += result.Written.Members.Count;
-                    bytes += result.Bytes;
+                    Interlocked.Increment(ref indexed);
+                    var memberCount = result.Written.Types.Sum(type => type.Members.Count);
+                    Interlocked.Add(ref types, result.Written.Types.Count);
+                    Interlocked.Add(ref members, memberCount);
+                    Interlocked.Add(ref bytes, result.Bytes);
+                    Interlocked.Add(ref docs, result.Docs);
+                    Interlocked.Add(ref docBytes, result.DocBytes);
                     report["types"] = result.Written.Types.Count;
-                    report["members"] = result.Written.Members.Count;
+                    report["members"] = memberCount;
                     report["bytes"] = result.Bytes;
+                    if (result.Docs > 0)
+                    {
+                        report["docs"] = result.Docs;
+                        report["docBytes"] = result.DocBytes;
+                    }
                 }
             }
             catch (Exception e) when (e is BadImageFormatException or IOException or UnauthorizedAccessException or InvalidOperationException)
             {
                 // a native dll, a resource-only assembly, a file that is being written: not what is indexed
-                failed++;
+                Interlocked.Increment(ref failed);
                 report["error"] = e.GetType().Name + ": " + e.Message;
             }
             report["ms"] = Math.Round(watch.Elapsed.TotalMilliseconds, 1);
-            Console.WriteLine(JsonSerializer.Serialize(report));
-        }
+            reports[i] = report;
+        });
+        foreach (var report in reports) Console.WriteLine(JsonSerializer.Serialize(report));
         Console.WriteLine(JsonSerializer.Serialize(new Dictionary<string, object?>
         {
             ["summary"] = true, ["format"] = FormatVersion, ["indexed"] = indexed, ["skipped"] = skipped, ["failed"] = failed,
-            ["types"] = types, ["members"] = members, ["bytes"] = bytes, ["ms"] = Math.Round(total.Elapsed.TotalMilliseconds, 1),
-            ["waited"] = Math.Round(waited, 1),
+            ["types"] = types, ["members"] = members, ["bytes"] = bytes, ["docs"] = docs, ["docBytes"] = docBytes,
+            ["ms"] = Math.Round(total.Elapsed.TotalMilliseconds, 1), ["waited"] = Math.Round(waited, 1),
         }));
         return 0;
     }
 
-    private sealed record Indexed(string Mvid, string File, AssemblyData? Written, long Bytes);
+    private sealed record Indexed(string Mvid, string File, AssemblyData? Written, long Bytes, int Docs, long DocBytes);
 
     private static Indexed Index(string path, string output, bool force)
     {
@@ -116,15 +134,33 @@ public static class Program
         var reader = pe.GetMetadataReader();
         var mvid = reader.GetGuid(reader.GetModuleDefinition().Mvid);
         var file = Path.Combine(output, mvid.ToString("N") + ".dnix");
-        if (!force && File.Exists(file)) return new Indexed(mvid.ToString("N"), file, null, 0);
+        if (!force && File.Exists(file)) return new Indexed(mvid.ToString("N"), file, null, 0, 0, 0);
 
         var data = new MetadataScanner(reader).Scan();
-        var temporary = file + "." + Environment.ProcessId + ".tmp";
+        // the documentation first: whoever sees the index may look for it
+        int docs = 0;
+        long docBytes = 0;
+        var xml = Path.ChangeExtension(path, ".xml");
+        if (File.Exists(xml))
+        {
+            var entries = DocWriter.Read(xml);
+            if (entries.Count > 0)
+            {
+                var docFile = Path.Combine(output, mvid.ToString("N") + ".dnxd");
+                var docTemporary = docFile + "." + Guid.NewGuid().ToString("N") + ".tmp";
+                DocWriter.Write(docTemporary, mvid, entries);
+                docs = entries.Count;
+                docBytes = new FileInfo(docTemporary).Length;
+                File.Move(docTemporary, docFile, overwrite: true);
+            }
+        }
+        // the same assembly may come twice in a list (two copies of one package), and both be indexed at once
+        var temporary = file + "." + Guid.NewGuid().ToString("N") + ".tmp";
         IndexWriter.Write(temporary, mvid, data);
         var length = new FileInfo(temporary).Length;
         // another process may have written the same index meanwhile: it is the same one
         File.Move(temporary, file, overwrite: true);
-        return new Indexed(mvid.ToString("N"), file, data, length);
+        return new Indexed(mvid.ToString("N"), file, data, length, docs, docBytes);
     }
 }
 
@@ -165,213 +201,490 @@ public sealed class DirectoryLock : IDisposable
 
 public enum TypeKind : byte { Class = 1, Struct = 2, Interface = 3, Enum = 4, Delegate = 5, StaticClass = 6 }
 
-public enum MemberKind : byte { Method = 1, ExtensionMethod = 2, Property = 3, Field = 4, Constant = 5, EnumMember = 6 }
+public enum MemberKind : byte
+{
+    Method = 1, ExtensionMethod = 2, Property = 3, Field = 4, Constant = 5, EnumMember = 6, Constructor = 7, Indexer = 8, Event = 9, Operator = 10,
+}
+
+/// <summary>Of a type. Protected: a nested type that only the derived types see (protected, protected internal).</summary>
+[Flags]
+public enum TypeFlags
+{
+    None = 0, Obsolete = 1, Hidden = 2, Abstract = 4, Sealed = 8, Static = 16, Record = 32, ReadOnly = 64, RefLike = 128, Protected = 256,
+}
+
+/// <summary>Of a member. Getter and Setter: the accessors other code may call; ReadOnly: a readonly field, a readonly member of a struct.</summary>
+[Flags]
+public enum MemberFlags
+{
+    None = 0, Obsolete = 1, Hidden = 2, Static = 4, Protected = 8, Abstract = 16, Virtual = 32, Override = 64, Sealed = 128, ReadOnly = 256,
+    Getter = 512, Setter = 1024, InitOnly = 2048, Required = 4096,
+}
 
 [Flags]
-public enum EntryFlags : byte { None = 0, Obsolete = 1 }
+public enum ParameterFlags { None = 0, Optional = 1, Out = 2, Ref = 4, Params = 8, This = 16, In = 32, HasDefault = 64 }
 
+/// <summary>Variance and constraints of a generic parameter; the first five are the bits of the metadata.</summary>
 [Flags]
-public enum ParameterFlags { None = 0, Optional = 1, Out = 2, Ref = 4, Params = 8, This = 16, In = 32 }
+public enum GenericFlags { None = 0, Covariant = 1, Contravariant = 2, Class = 4, Struct = 8, New = 16, AllowsRefStruct = 32, Unmanaged = 64 }
 
-public sealed record TypeEntry(string Namespace, string Name, TypeKind Kind, int Arity, EntryFlags Flags);
+public sealed record GenericEntry(string Name, GenericFlags Flags, List<string> Constraints);
 
-public sealed record ParameterEntry(string Type, string Name, ParameterFlags Flags);
+public sealed record ParameterEntry(string Type, string Name, ParameterFlags Flags, string? Default);
 
-public sealed record MemberEntry(string Name, int Type, MemberKind Kind, int Arity, EntryFlags Flags, string ReturnType, List<ParameterEntry> Parameters);
+public sealed class MemberEntry
+{
+    public string Name = "";
+    public MemberKind Kind;
+    public MemberFlags Flags;
+    /// <summary>What a method returns, the type of a property, a field, an event (a reference, see <see cref="TypeRefs"/>).</summary>
+    public string Type = "";
+    public List<ParameterEntry> Parameters = new();
+    public List<GenericEntry> Generics = new();
+    public List<string> Attributes = new();
+    /// <summary>The value of a constant or an enum member, as C# writes it.</summary>
+    public string? Value;
+    /// <summary>What the `this` parameter of an extension method is: a type by its metadata name, `[]` an array, `!` a type parameter.</summary>
+    public string? ExtensionKey;
+}
+
+public sealed class TypeEntry
+{
+    public string Namespace = "";
+    /// <summary>`Dictionary`2+Enumerator`: the name within the namespace as the metadata writes it.</summary>
+    public string Path = "";
+    public TypeKind Kind;
+    public TypeFlags Flags;
+    public TypeEntry? Declaring;
+    public readonly List<TypeEntry> Nested = new();
+    public string? Base;
+    public List<string> Interfaces = new();
+    /// <summary>All of them, the ones of the types around a nested type first, as the metadata has them.</summary>
+    public List<GenericEntry> Generics = new();
+    public List<string> Attributes = new();
+    /// <summary>The underlying type of an enum.</summary>
+    public string? Underlying;
+    public readonly List<MemberEntry> Members = new();
+}
 
 public sealed class AssemblyData
 {
     public string Name = "";
+    public string Version = "";
     public readonly List<TypeEntry> Types = new();
-    public readonly List<MemberEntry> Members = new();
 }
 
-/// <summary>Public types and public static members of an assembly, from its metadata tables.</summary>
+/// <summary>The types other assemblies see and their members, from the metadata tables.</summary>
 public sealed class MetadataScanner(MetadataReader reader)
 {
-    private readonly TypeNames _names = new();
+    private const string CompilerServices = "System.Runtime.CompilerServices";
+
+    /// <summary>What the compiler says through attributes and the index says by its flags and references: not in the lists of attributes.</summary>
+    private static readonly HashSet<string> Decoded =
+    [
+        CompilerServices + ".NullableAttribute", CompilerServices + ".NullableContextAttribute", CompilerServices + ".NullablePublicOnlyAttribute",
+        CompilerServices + ".IsReadOnlyAttribute", CompilerServices + ".IsByRefLikeAttribute", CompilerServices + ".ExtensionAttribute",
+        CompilerServices + ".TupleElementNamesAttribute", CompilerServices + ".RequiredMemberAttribute", CompilerServices + ".IsUnmanagedAttribute",
+        CompilerServices + ".RefSafetyRulesAttribute", CompilerServices + ".CompilerFeatureRequiredAttribute", CompilerServices + ".ScopedRefAttribute",
+        CompilerServices + ".CompilerGeneratedAttribute", "System.ParamArrayAttribute", "System.Reflection.DefaultMemberAttribute",
+    ];
+
+    private readonly SignatureProvider _provider = new();
 
     public AssemblyData Scan()
     {
         var data = new AssemblyData();
-        if (reader.IsAssembly) data.Name = reader.GetString(reader.GetAssemblyDefinition().Name);
+        if (reader.IsAssembly)
+        {
+            var assembly = reader.GetAssemblyDefinition();
+            data.Name = reader.GetString(assembly.Name);
+            data.Version = assembly.Version.ToString();
+        }
+        var entries = new Dictionary<TypeDefinitionHandle, TypeEntry>();
         foreach (var handle in reader.TypeDefinitions)
         {
             var type = reader.GetTypeDefinition(handle);
-            if (!IsPublic(type) || IsHidden(type.GetCustomAttributes())) continue;
-            var name = NestedName(type);
+            var protectedOnly = false;
+            if (!IsVisible(type, ref protectedOnly)) continue;
+            var name = reader.GetString(type.Name);
             if (name.Contains('<')) continue;
-            var (bare, arity) = SplitArity(name);
-            var kind = KindOf(type);
+            var custom = type.GetCustomAttributes();
+            var entry = new TypeEntry { Kind = KindOf(type) };
             var outermost = type;
             while (outermost.IsNested) outermost = reader.GetTypeDefinition(outermost.GetDeclaringType());
-            var index = data.Types.Count;
-            data.Types.Add(new TypeEntry(reader.GetString(outermost.Namespace), bare, kind, arity, Flags(type.GetCustomAttributes())));
-            if (kind == TypeKind.Delegate) continue;
-            var context = new GenericContext(TypeParameters(type.GetGenericParameters()), ImmutableArray<string>.Empty);
-            AddMethods(data, index, type, context);
-            AddProperties(data, index, type, context);
-            AddFields(data, index, type, kind, context);
+            entry.Namespace = reader.GetString(outermost.Namespace);
+            entry.Path = PathOf(type);
+            entry.Flags = TypeFlagsOf(type, custom, protectedOnly);
+            entries[handle] = entry;
+            data.Types.Add(entry);
+
+            var context = Context(custom, type.IsNested ? DefaultContext(reader.GetTypeDefinition(type.GetDeclaringType())) : (byte)0);
+            entry.Generics = Generics(type.GetGenericParameters(), context);
+            entry.Attributes = AttributeNames(custom);
+            if (!type.BaseType.IsNil && entry.Kind is TypeKind.Class or TypeKind.StaticClass)
+                entry.Base = TypeRefs.Encode(Decode(type.BaseType), Annotations.Of(reader, AttributeType, custom, context));
+            foreach (var implementation in type.GetInterfaceImplementations())
+            {
+                var interfaceImplementation = reader.GetInterfaceImplementation(implementation);
+                entry.Interfaces.Add(TypeRefs.Encode(Decode(interfaceImplementation.Interface), Annotations.Of(reader, AttributeType, interfaceImplementation.GetCustomAttributes(), context)));
+            }
+
+            AddMethods(entry, type, context);
+            AddProperties(entry, type, context);
+            AddEvents(entry, type, context);
+            AddFields(entry, type, context);
+        }
+        foreach (var (handle, entry) in entries)
+        {
+            var type = reader.GetTypeDefinition(handle);
+            if (!type.IsNested) continue;
+            if (entries.TryGetValue(type.GetDeclaringType(), out var declaring))
+            {
+                entry.Declaring = declaring;
+                declaring.Nested.Add(entry);
+            }
         }
         return data;
     }
 
-    private void AddMethods(AssemblyData data, int typeIndex, TypeDefinition type, GenericContext typeContext)
+    private void AddMethods(TypeEntry entry, TypeDefinition type, byte typeContext)
     {
         foreach (var handle in type.GetMethods())
         {
             var method = reader.GetMethodDefinition(handle);
             var attributes = method.Attributes;
-            if ((attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public || (attributes & MethodAttributes.Static) == 0) continue;
-            // accessors, operators, constructors
-            if ((attributes & (MethodAttributes.SpecialName | MethodAttributes.RTSpecialName)) != 0) continue;
-            var custom = method.GetCustomAttributes();
-            if (IsHidden(custom)) continue;
+            if (!IsVisible(attributes & MethodAttributes.MemberAccessMask)) continue;
             var name = reader.GetString(method.Name);
             if (name.Contains('<')) continue;
-            var generic = method.GetGenericParameters();
-            var context = typeContext with { MethodParameters = TypeParameters(generic) };
-            var signature = method.DecodeSignature(_names.Provider(reader), context);
-            var extension = Has(custom, "System.Runtime.CompilerServices", "ExtensionAttribute");
-            var parameters = Parameters(method, signature, extension);
-            data.Members.Add(new MemberEntry(name, typeIndex, extension ? MemberKind.ExtensionMethod : MemberKind.Method, generic.Count, Flags(custom), signature.ReturnType, parameters));
+            MemberKind kind;
+            if ((attributes & MethodAttributes.RTSpecialName) != 0)
+            {
+                // the static constructor is called by no one
+                if (name != ".ctor") continue;
+                kind = MemberKind.Constructor;
+            }
+            else if ((attributes & MethodAttributes.SpecialName) != 0)
+            {
+                // the accessors are the properties and events
+                if (!name.StartsWith("op_", StringComparison.Ordinal)) continue;
+                kind = MemberKind.Operator;
+            }
+            else kind = MemberKind.Method;
+            var custom = method.GetCustomAttributes();
+            var extension = kind == MemberKind.Method && Has(custom, CompilerServices, "ExtensionAttribute");
+            if (extension) kind = MemberKind.ExtensionMethod;
+            var context = Context(custom, typeContext);
+            var signature = method.DecodeSignature(_provider, null);
+            var member = new MemberEntry
+            {
+                Name = name, Kind = kind, Flags = MethodFlags(attributes, custom, entry.Kind == TypeKind.Interface),
+                Generics = Generics(method.GetGenericParameters(), context), Attributes = AttributeNames(custom),
+            };
+            var (returnAttributes, parameters) = Parameters(method.GetParameters(), signature.ParameterTypes, context, extension);
+            member.Type = TypeRefs.Encode(signature.ReturnType, Annotations.Of(reader, AttributeType, returnAttributes, context));
+            member.Parameters = parameters;
+            if (extension && signature.ParameterTypes.Length > 0) member.ExtensionKey = TypeRefs.ExtensionKey(signature.ParameterTypes[0]);
+            entry.Members.Add(member);
         }
     }
 
-    private List<ParameterEntry> Parameters(MethodDefinition method, MethodSignature<string> signature, bool extension)
+    /// <summary>The parameters with their names, flags and defaults, and the attributes of the return value (the parameter number 0).</summary>
+    private (CustomAttributeHandleCollection?, List<ParameterEntry>) Parameters(ParameterHandleCollection handles, ImmutableArray<Sig> types, byte context, bool extension)
     {
-        var names = new string[signature.ParameterTypes.Length];
-        var flags = new ParameterFlags[signature.ParameterTypes.Length];
-        foreach (var handle in method.GetParameters())
+        var count = types.Length;
+        var names = new string?[count];
+        var flags = new ParameterFlags[count];
+        var defaults = new string?[count];
+        var custom = new CustomAttributeHandleCollection?[count];
+        CustomAttributeHandleCollection? returnAttributes = null;
+        foreach (var handle in handles)
         {
             var parameter = reader.GetParameter(handle);
-            // 0 is the return value
             var at = parameter.SequenceNumber - 1;
-            if (at < 0 || at >= names.Length) continue;
+            if (at == -1) returnAttributes = parameter.GetCustomAttributes();
+            if (at < 0 || at >= count) continue;
             names[at] = reader.GetString(parameter.Name);
+            custom[at] = parameter.GetCustomAttributes();
             if ((parameter.Attributes & ParameterAttributes.Optional) != 0) flags[at] |= ParameterFlags.Optional;
             if ((parameter.Attributes & ParameterAttributes.Out) != 0) flags[at] |= ParameterFlags.Out;
             if ((parameter.Attributes & ParameterAttributes.In) != 0) flags[at] |= ParameterFlags.In;
             if (Has(parameter.GetCustomAttributes(), "System", "ParamArrayAttribute")) flags[at] |= ParameterFlags.Params;
-        }
-        var result = new List<ParameterEntry>(names.Length);
-        for (var i = 0; i < names.Length; i++)
-        {
-            var type = signature.ParameterTypes[i];
-            if (type.StartsWith("ref ", StringComparison.Ordinal))
+            if ((parameter.Attributes & ParameterAttributes.HasDefault) != 0)
             {
-                type = type[4..];
+                flags[at] |= ParameterFlags.HasDefault;
+                var constant = parameter.GetDefaultValue();
+                defaults[at] = constant.IsNil ? "default" : Literals.Of(reader, constant);
+            }
+        }
+        var result = new List<ParameterEntry>(count);
+        for (var i = 0; i < count; i++)
+        {
+            var type = types[i];
+            if (TypeRefs.Unwrap(type) is ByRefSig byRef)
+            {
+                type = byRef.Element;
                 // `out` and `in` are by reference as well, and say so by their own flags
                 if ((flags[i] & (ParameterFlags.Out | ParameterFlags.In)) == 0) flags[i] |= ParameterFlags.Ref;
             }
             if (extension && i == 0) flags[i] |= ParameterFlags.This;
-            result.Add(new ParameterEntry(type, names[i] ?? "arg" + i, flags[i]));
+            result.Add(new ParameterEntry(TypeRefs.Encode(type, Annotations.Of(reader, AttributeType, custom[i], context)), names[i] ?? "arg" + i, flags[i], defaults[i]));
         }
-        return result;
+        return (returnAttributes, result);
     }
 
-    private void AddProperties(AssemblyData data, int typeIndex, TypeDefinition type, GenericContext context)
+    private void AddProperties(TypeEntry entry, TypeDefinition type, byte typeContext)
     {
         foreach (var handle in type.GetProperties())
         {
             var property = reader.GetPropertyDefinition(handle);
-            var getter = property.GetAccessors().Getter;
-            if (getter.IsNil) continue;
-            var accessor = reader.GetMethodDefinition(getter);
-            if ((accessor.Attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public || (accessor.Attributes & MethodAttributes.Static) == 0) continue;
+            var accessors = property.GetAccessors();
+            var getter = accessors.Getter.IsNil ? (MethodDefinition?)null : reader.GetMethodDefinition(accessors.Getter);
+            var setter = accessors.Setter.IsNil ? (MethodDefinition?)null : reader.GetMethodDefinition(accessors.Setter);
+            var getterVisible = getter != null && IsVisible(getter.Value.Attributes & MethodAttributes.MemberAccessMask);
+            var setterVisible = setter != null && IsVisible(setter.Value.Attributes & MethodAttributes.MemberAccessMask);
+            if (!getterVisible && !setterVisible) continue;
+            var name = reader.GetString(property.Name);
+            if (name.Contains('<')) continue;
+            var accessor = getterVisible ? getter!.Value : setter!.Value;
             var custom = property.GetCustomAttributes();
-            if (IsHidden(custom)) continue;
-            var signature = property.DecodeSignature(_names.Provider(reader), context);
-            // an indexer is not called by a name
-            if (signature.ParameterTypes.Length > 0) continue;
-            data.Members.Add(new MemberEntry(reader.GetString(property.Name), typeIndex, MemberKind.Property, 0, Flags(custom), signature.ReturnType, new List<ParameterEntry>()));
+            var flags = MethodFlags(accessor.Attributes, custom, entry.Kind == TypeKind.Interface);
+            // the wider of the two accessors says who sees the property
+            if (getterVisible && setterVisible && (!IsProtected(getter!.Value.Attributes) || !IsProtected(setter!.Value.Attributes))) flags &= ~MemberFlags.Protected;
+            if (getterVisible) flags |= MemberFlags.Getter;
+            if (setterVisible) flags |= MemberFlags.Setter;
+            if (getter != null && Has(getter.Value.GetCustomAttributes(), CompilerServices, "IsReadOnlyAttribute")) flags |= MemberFlags.ReadOnly;
+            if (Has(custom, CompilerServices, "RequiredMemberAttribute")) flags |= MemberFlags.Required;
+            if (setter != null && setter.Value.DecodeSignature(_provider, null).ReturnType is ModifiedSig { Modifier: CompilerServices + ".IsExternalInit" }) flags |= MemberFlags.InitOnly;
+            var context = Context(accessor.GetCustomAttributes(), typeContext);
+            var signature = property.DecodeSignature(_provider, null);
+            var member = new MemberEntry
+            {
+                Name = name, Kind = signature.ParameterTypes.Length > 0 ? MemberKind.Indexer : MemberKind.Property, Flags = flags,
+                // a property has no nullable context of its own: the one of its type (an accessor may have one, for its parameters)
+                Attributes = AttributeNames(custom), Type = TypeRefs.Encode(signature.ReturnType, Annotations.Of(reader, AttributeType, custom, typeContext)),
+            };
+            if (signature.ParameterTypes.Length > 0)
+            {
+                // the names of the parameters of an indexer are the ones of its getter, or of its setter but its last, the value
+                member.Parameters = Parameters(accessor.GetParameters(), signature.ParameterTypes, context, false).Item2;
+            }
+            entry.Members.Add(member);
         }
     }
 
-    private void AddFields(AssemblyData data, int typeIndex, TypeDefinition type, TypeKind kind, GenericContext context)
+    private void AddEvents(TypeEntry entry, TypeDefinition type, byte typeContext)
+    {
+        foreach (var handle in type.GetEvents())
+        {
+            var @event = reader.GetEventDefinition(handle);
+            var adder = @event.GetAccessors().Adder;
+            if (adder.IsNil) continue;
+            var accessor = reader.GetMethodDefinition(adder);
+            if (!IsVisible(accessor.Attributes & MethodAttributes.MemberAccessMask)) continue;
+            var name = reader.GetString(@event.Name);
+            if (name.Contains('<')) continue;
+            var custom = @event.GetCustomAttributes();
+            entry.Members.Add(new MemberEntry
+            {
+                Name = name, Kind = MemberKind.Event, Flags = MethodFlags(accessor.Attributes, custom, entry.Kind == TypeKind.Interface),
+                Attributes = AttributeNames(custom), Type = TypeRefs.Encode(Decode(@event.Type), Annotations.Of(reader, AttributeType, custom, typeContext)),
+            });
+        }
+    }
+
+    private void AddFields(TypeEntry entry, TypeDefinition type, byte context)
     {
         foreach (var handle in type.GetFields())
         {
             var field = reader.GetFieldDefinition(handle);
             var attributes = field.Attributes;
-            if ((attributes & FieldAttributes.FieldAccessMask) != FieldAttributes.Public || (attributes & FieldAttributes.Static) == 0) continue;
-            var custom = field.GetCustomAttributes();
-            if (IsHidden(custom)) continue;
+            if ((attributes & FieldAttributes.RTSpecialName) != 0)
+            {
+                // `value__` of an enum: its underlying type
+                if (entry.Kind == TypeKind.Enum) entry.Underlying = TypeRefs.Encode(field.DecodeSignature(_provider, null), Annotations.None);
+                continue;
+            }
+            if (!IsVisible((MethodAttributes)(int)(attributes & FieldAttributes.FieldAccessMask))) continue;
             var name = reader.GetString(field.Name);
             if (name.Contains('<')) continue;
-            var memberKind = kind == TypeKind.Enum ? MemberKind.EnumMember : (attributes & FieldAttributes.Literal) != 0 ? MemberKind.Constant : MemberKind.Field;
-            data.Members.Add(new MemberEntry(name, typeIndex, memberKind, 0, Flags(custom), field.DecodeSignature(_names.Provider(reader), context), new List<ParameterEntry>()));
+            var custom = field.GetCustomAttributes();
+            var kind = entry.Kind == TypeKind.Enum ? MemberKind.EnumMember : (attributes & FieldAttributes.Literal) != 0 ? MemberKind.Constant : MemberKind.Field;
+            var flags = CommonFlags(custom);
+            if ((attributes & FieldAttributes.Static) != 0) flags |= MemberFlags.Static;
+            if ((attributes & FieldAttributes.FieldAccessMask) is FieldAttributes.Family or FieldAttributes.FamORAssem) flags |= MemberFlags.Protected;
+            if ((attributes & FieldAttributes.InitOnly) != 0) flags |= MemberFlags.ReadOnly;
+            if (Has(custom, CompilerServices, "RequiredMemberAttribute")) flags |= MemberFlags.Required;
+            var constant = field.GetDefaultValue();
+            entry.Members.Add(new MemberEntry
+            {
+                Name = name, Kind = kind, Flags = flags, Attributes = AttributeNames(custom),
+                Type = TypeRefs.Encode(field.DecodeSignature(_provider, null), Annotations.Of(reader, AttributeType, custom, context)),
+                Value = (attributes & FieldAttributes.Literal) != 0 && !constant.IsNil ? Literals.Of(reader, constant) : null,
+            });
         }
     }
 
-    private bool IsPublic(TypeDefinition type)
+    private List<GenericEntry> Generics(GenericParameterHandleCollection handles, byte context)
+    {
+        var result = new List<GenericEntry>(handles.Count);
+        foreach (var handle in handles)
+        {
+            var parameter = reader.GetGenericParameter(handle);
+            var flags = (GenericFlags)((int)parameter.Attributes & 0x3F);
+            if (Has(parameter.GetCustomAttributes(), CompilerServices, "IsUnmanagedAttribute")) flags |= GenericFlags.Unmanaged;
+            var constraints = new List<string>();
+            foreach (var constraintHandle in parameter.GetConstraints())
+            {
+                var constraint = reader.GetGenericParameterConstraint(constraintHandle);
+                var sig = Decode(constraint.Type);
+                // `struct` is written as a constraint to ValueType as well
+                if ((flags & GenericFlags.Struct) != 0 && sig is NamedSig { Name: "System.ValueType" }) continue;
+                constraints.Add(TypeRefs.Encode(sig, Annotations.Of(reader, AttributeType, constraint.GetCustomAttributes(), context)));
+            }
+            result.Add(new GenericEntry(reader.GetString(parameter.Name), flags, constraints));
+        }
+        return result;
+    }
+
+    private Sig Decode(EntityHandle handle) => handle.Kind switch
+    {
+        HandleKind.TypeDefinition => _provider.GetTypeFromDefinition(reader, (TypeDefinitionHandle)handle, 0),
+        HandleKind.TypeReference => _provider.GetTypeFromReference(reader, (TypeReferenceHandle)handle, 0),
+        HandleKind.TypeSpecification => reader.GetTypeSpecification((TypeSpecificationHandle)handle).DecodeSignature(_provider, null),
+        _ => new NamedSig("System.Object", false),
+    };
+
+    private MemberFlags MethodFlags(MethodAttributes attributes, CustomAttributeHandleCollection custom, bool ofInterface)
+    {
+        var flags = CommonFlags(custom);
+        if ((attributes & MethodAttributes.Static) != 0) flags |= MemberFlags.Static;
+        if (IsProtected(attributes)) flags |= MemberFlags.Protected;
+        if ((attributes & MethodAttributes.Abstract) != 0) flags |= MemberFlags.Abstract;
+        else if ((attributes & MethodAttributes.Virtual) != 0 && (attributes & MethodAttributes.Final) == 0) flags |= MemberFlags.Virtual;
+        if ((attributes & MethodAttributes.Virtual) != 0 && (attributes & MethodAttributes.NewSlot) == 0 && !ofInterface) flags |= MemberFlags.Override;
+        if ((attributes & MethodAttributes.Final) != 0 && (attributes & MethodAttributes.NewSlot) == 0 && !ofInterface) flags |= MemberFlags.Sealed;
+        if (Has(custom, CompilerServices, "IsReadOnlyAttribute")) flags |= MemberFlags.ReadOnly;
+        return flags;
+    }
+
+    private MemberFlags CommonFlags(CustomAttributeHandleCollection custom)
+    {
+        var flags = MemberFlags.None;
+        if (Has(custom, "System", "ObsoleteAttribute")) flags |= MemberFlags.Obsolete;
+        if (IsHidden(custom)) flags |= MemberFlags.Hidden;
+        return flags;
+    }
+
+    private static bool IsProtected(MethodAttributes attributes) => (attributes & MethodAttributes.MemberAccessMask) is MethodAttributes.Family or MethodAttributes.FamORAssem;
+
+    /// <summary>Public, protected and protected internal: what code of another assembly may see; not private protected.</summary>
+    private static bool IsVisible(MethodAttributes access) => access is MethodAttributes.Public or MethodAttributes.Family or MethodAttributes.FamORAssem;
+
+    private TypeFlags TypeFlagsOf(TypeDefinition type, CustomAttributeHandleCollection custom, bool protectedOnly)
+    {
+        var flags = TypeFlags.None;
+        if (Has(custom, "System", "ObsoleteAttribute")) flags |= TypeFlags.Obsolete;
+        if (IsHidden(custom)) flags |= TypeFlags.Hidden;
+        if (protectedOnly) flags |= TypeFlags.Protected;
+        var attributes = type.Attributes;
+        if ((attributes & TypeAttributes.Interface) == 0)
+        {
+            if ((attributes & TypeAttributes.Abstract) != 0) flags |= TypeFlags.Abstract;
+            if ((attributes & TypeAttributes.Sealed) != 0) flags |= TypeFlags.Sealed;
+            if ((attributes & (TypeAttributes.Abstract | TypeAttributes.Sealed)) == (TypeAttributes.Abstract | TypeAttributes.Sealed)) flags |= TypeFlags.Static;
+        }
+        if (Has(custom, CompilerServices, "IsReadOnlyAttribute")) flags |= TypeFlags.ReadOnly;
+        if (Has(custom, CompilerServices, "IsByRefLikeAttribute")) flags |= TypeFlags.RefLike;
+        // a record class has the clone method the compiler names so (a record struct says nothing a reference assembly keeps)
+        foreach (var handle in type.GetMethods())
+        {
+            if (reader.StringComparer.Equals(reader.GetMethodDefinition(handle).Name, "<Clone>$"))
+            {
+                flags |= TypeFlags.Record;
+                break;
+            }
+        }
+        return flags;
+    }
+
+    /// <summary>Whether another assembly sees the type: public all the way out, or nested protected (then [protectedOnly]).</summary>
+    private bool IsVisible(TypeDefinition type, ref bool protectedOnly)
     {
         while (true)
         {
             var visibility = type.Attributes & TypeAttributes.VisibilityMask;
             if (!type.IsNested) return visibility == TypeAttributes.Public;
-            if (visibility != TypeAttributes.NestedPublic) return false;
+            if (visibility is TypeAttributes.NestedFamily or TypeAttributes.NestedFamORAssem) protectedOnly = true;
+            else if (visibility != TypeAttributes.NestedPublic) return false;
             type = reader.GetTypeDefinition(type.GetDeclaringType());
         }
     }
 
-    /// <summary>`Outer.Inner` for a nested type, with the arity marks of the metadata kept: `Dictionary`2.Enumerator`.</summary>
-    private string NestedName(TypeDefinition type)
+    /// <summary>`Dictionary`2+Enumerator`: the name of a type within its namespace, as the metadata writes it.</summary>
+    private string PathOf(TypeDefinition type)
     {
         var name = reader.GetString(type.Name);
-        return type.IsNested ? NestedName(reader.GetTypeDefinition(type.GetDeclaringType())) + "." + name : name;
-    }
-
-    /// <summary>`Dictionary`2.Enumerator` -> (`Dictionary.Enumerator`, 2): the arity is the sum of the type parameters around.</summary>
-    private static (string, int) SplitArity(string name)
-    {
-        var arity = 0;
-        var bare = new StringBuilder();
-        foreach (var part in name.Split('.'))
-        {
-            var mark = part.IndexOf('`');
-            if (mark >= 0 && int.TryParse(part.AsSpan(mark + 1), out var count)) arity += count;
-            if (bare.Length > 0) bare.Append('.');
-            bare.Append(mark >= 0 ? part[..mark] : part);
-        }
-        return (bare.ToString(), arity);
+        return type.IsNested ? PathOf(reader.GetTypeDefinition(type.GetDeclaringType())) + "+" + name : name;
     }
 
     private TypeKind KindOf(TypeDefinition type)
     {
         if ((type.Attributes & TypeAttributes.Interface) != 0) return TypeKind.Interface;
-        var (baseNamespace, baseName) = NameOf(type.BaseType);
-        if (baseNamespace == "System")
-        {
-            if (baseName == "Enum") return TypeKind.Enum;
-            if (baseName == "ValueType") return TypeKind.Struct;
-            if (baseName is "MulticastDelegate" or "Delegate") return TypeKind.Delegate;
-        }
+        var baseName = FullName(type.BaseType);
+        if (baseName == "System.Enum") return TypeKind.Enum;
+        if (baseName == "System.ValueType") return TypeKind.Struct;
+        if (baseName is "System.MulticastDelegate" or "System.Delegate") return TypeKind.Delegate;
         const TypeAttributes both = TypeAttributes.Abstract | TypeAttributes.Sealed;
         return (type.Attributes & both) == both ? TypeKind.StaticClass : TypeKind.Class;
     }
 
-    private (string, string) NameOf(EntityHandle handle)
+    /// <summary>`System.Collections.Generic.Dictionary`2+Enumerator` of a reference or a definition; empty for anything else.</summary>
+    private string FullName(EntityHandle handle)
     {
-        if (handle.IsNil) return ("", "");
+        if (handle.IsNil) return "";
         switch (handle.Kind)
         {
             case HandleKind.TypeReference:
                 var reference = reader.GetTypeReference((TypeReferenceHandle)handle);
-                return (reader.GetString(reference.Namespace), reader.GetString(reference.Name));
+                if (reference.ResolutionScope.Kind == HandleKind.TypeReference) return FullName(reference.ResolutionScope) + "+" + reader.GetString(reference.Name);
+                return Qualified(reader.GetString(reference.Namespace), reader.GetString(reference.Name));
             case HandleKind.TypeDefinition:
                 var definition = reader.GetTypeDefinition((TypeDefinitionHandle)handle);
-                return (reader.GetString(definition.Namespace), reader.GetString(definition.Name));
+                if (definition.IsNested) return FullName(definition.GetDeclaringType()) + "+" + reader.GetString(definition.Name);
+                return Qualified(reader.GetString(definition.Namespace), reader.GetString(definition.Name));
             default:
-                return ("", "");
+                return "";
         }
     }
 
-    private ImmutableArray<string> TypeParameters(GenericParameterHandleCollection handles) =>
-        handles.Select(handle => reader.GetString(reader.GetGenericParameter(handle).Name)).ToImmutableArray();
+    private static string Qualified(string @namespace, string name) => @namespace.Length == 0 ? name : @namespace + "." + name;
 
-    private EntryFlags Flags(CustomAttributeHandleCollection attributes) =>
-        Has(attributes, "System", "ObsoleteAttribute") ? EntryFlags.Obsolete : EntryFlags.None;
+    /// <summary>The nullable context a member falls back to: `[NullableContext]` of it, else of the type, else of the types around.</summary>
+    private byte Context(CustomAttributeHandleCollection custom, byte outer)
+    {
+        foreach (var handle in custom)
+        {
+            var attribute = reader.GetCustomAttribute(handle);
+            if (AttributeType(attribute) != CompilerServices + ".NullableContextAttribute") continue;
+            var blob = reader.GetBlobReader(attribute.Value);
+            if (blob.Length >= 3 && blob.ReadUInt16() == 1) return blob.ReadByte();
+        }
+        return outer;
+    }
+
+    private byte DefaultContext(TypeDefinition type) =>
+        Context(type.GetCustomAttributes(), type.IsNested ? DefaultContext(reader.GetTypeDefinition(type.GetDeclaringType())) : (byte)0);
+
+    private List<string> AttributeNames(CustomAttributeHandleCollection custom)
+    {
+        var names = new List<string>();
+        foreach (var handle in custom)
+        {
+            var name = AttributeType(reader.GetCustomAttribute(handle));
+            if (name.Length > 0 && !Decoded.Contains(name) && !names.Contains(name)) names.Add(name);
+        }
+        return names;
+    }
 
     /// <summary>`[EditorBrowsable(EditorBrowsableState.Never)]`: what its author does not want to be offered.</summary>
     private bool IsHidden(CustomAttributeHandleCollection attributes)
@@ -379,7 +692,7 @@ public sealed class MetadataScanner(MetadataReader reader)
         foreach (var handle in attributes)
         {
             var attribute = reader.GetCustomAttribute(handle);
-            if (AttributeType(attribute) != ("System.ComponentModel", "EditorBrowsableAttribute")) continue;
+            if (AttributeType(attribute) != "System.ComponentModel.EditorBrowsableAttribute") continue;
             var blob = reader.GetBlobReader(attribute.Value);
             // the prolog, then the one argument of the constructor: the state as an int, Never = 1
             if (blob.Length >= 6 && blob.ReadUInt16() == 1 && blob.ReadInt32() == 1) return true;
@@ -389,175 +702,473 @@ public sealed class MetadataScanner(MetadataReader reader)
 
     private bool Has(CustomAttributeHandleCollection attributes, string @namespace, string name)
     {
+        var full = @namespace + "." + name;
         foreach (var handle in attributes)
         {
-            if (AttributeType(reader.GetCustomAttribute(handle)) == (@namespace, name)) return true;
+            if (AttributeType(reader.GetCustomAttribute(handle)) == full) return true;
         }
         return false;
     }
 
-    private (string, string) AttributeType(CustomAttribute attribute)
+    private readonly Dictionary<EntityHandle, string> _attributeTypes = new();
+
+    /// <summary>The full name of the type of an attribute, by its constructor: a few constructors serve all the attributes of an assembly.</summary>
+    private string AttributeType(CustomAttribute attribute)
     {
-        switch (attribute.Constructor.Kind)
+        if (_attributeTypes.TryGetValue(attribute.Constructor, out var known)) return known;
+        var name = attribute.Constructor.Kind switch
         {
-            case HandleKind.MemberReference:
-                return NameOf(reader.GetMemberReference((MemberReferenceHandle)attribute.Constructor).Parent);
-            case HandleKind.MethodDefinition:
-                return NameOf(reader.GetMethodDefinition((MethodDefinitionHandle)attribute.Constructor).GetDeclaringType());
-            default:
-                return ("", "");
-        }
+            HandleKind.MemberReference => FullName(reader.GetMemberReference((MemberReferenceHandle)attribute.Constructor).Parent),
+            HandleKind.MethodDefinition => FullName(reader.GetMethodDefinition((MethodDefinitionHandle)attribute.Constructor).GetDeclaringType()),
+            _ => "",
+        };
+        _attributeTypes[attribute.Constructor] = name;
+        return name;
     }
 }
 
-public sealed record GenericContext(ImmutableArray<string> TypeParameters, ImmutableArray<string> MethodParameters);
+/// <summary>A type as a signature has it, before it is written down (<see cref="TypeRefs"/>).</summary>
+public abstract record Sig;
 
-/// <summary>The types of a signature as C# writes them: `int`, `string?` is not known here, `List&lt;T&gt;`, `T[]`, `ref T`.</summary>
-public sealed class TypeNames
+/// <summary>`System.Collections.Generic.Dictionary`2+Enumerator`, and whether it is a value type (the signature says so).</summary>
+public sealed record NamedSig(string Name, bool ValueType) : Sig;
+
+public sealed record GenericSig(NamedSig Definition, ImmutableArray<Sig> Arguments) : Sig;
+
+public sealed record ParameterSig(int Index, bool OfMethod) : Sig;
+
+/// <summary>Rank 0 is the array of one dimension, `T[]`.</summary>
+public sealed record ArraySig(Sig Element, int Rank) : Sig;
+
+public sealed record PointerSig(Sig Element) : Sig;
+
+public sealed record ByRefSig(Sig Element) : Sig;
+
+public sealed record FunctionPointerSig(Sig Return, ImmutableArray<Sig> Parameters) : Sig;
+
+/// <summary>`modreq` / `modopt`: `IsExternalInit` of an init accessor, `InAttribute` of `in` and `ref readonly`.</summary>
+public sealed record ModifiedSig(string Modifier, Sig Inner) : Sig;
+
+public sealed class SignatureProvider : ISignatureTypeProvider<Sig, object?>
 {
-    private readonly SignatureProvider _provider = new();
-
-    public ISignatureTypeProvider<string, GenericContext> Provider(MetadataReader reader) => _provider;
-
-    private sealed class SignatureProvider : ISignatureTypeProvider<string, GenericContext>
+    public Sig GetPrimitiveType(PrimitiveTypeCode typeCode) => typeCode switch
     {
-        public string GetPrimitiveType(PrimitiveTypeCode typeCode) => typeCode switch
-        {
-            PrimitiveTypeCode.Boolean => "bool",
-            PrimitiveTypeCode.Byte => "byte",
-            PrimitiveTypeCode.SByte => "sbyte",
-            PrimitiveTypeCode.Char => "char",
-            PrimitiveTypeCode.Int16 => "short",
-            PrimitiveTypeCode.UInt16 => "ushort",
-            PrimitiveTypeCode.Int32 => "int",
-            PrimitiveTypeCode.UInt32 => "uint",
-            PrimitiveTypeCode.Int64 => "long",
-            PrimitiveTypeCode.UInt64 => "ulong",
-            PrimitiveTypeCode.Single => "float",
-            PrimitiveTypeCode.Double => "double",
-            PrimitiveTypeCode.String => "string",
-            PrimitiveTypeCode.Object => "object",
-            PrimitiveTypeCode.Void => "void",
-            PrimitiveTypeCode.IntPtr => "nint",
-            PrimitiveTypeCode.UIntPtr => "nuint",
-            PrimitiveTypeCode.TypedReference => "TypedReference",
-            _ => typeCode.ToString(),
-        };
+        PrimitiveTypeCode.String => new NamedSig("System.String", false),
+        PrimitiveTypeCode.Object => new NamedSig("System.Object", false),
+        PrimitiveTypeCode.IntPtr => new NamedSig("System.IntPtr", true),
+        PrimitiveTypeCode.UIntPtr => new NamedSig("System.UIntPtr", true),
+        _ => new NamedSig("System." + typeCode, true),
+    };
 
-        public string GetTypeFromDefinition(MetadataReader metadata, TypeDefinitionHandle handle, byte rawTypeKind)
-        {
-            var type = metadata.GetTypeDefinition(handle);
-            var name = Bare(metadata.GetString(type.Name));
-            return type.IsNested ? GetTypeFromDefinition(metadata, type.GetDeclaringType(), 0) + "." + name : name;
-        }
+    public Sig GetTypeFromDefinition(MetadataReader metadata, TypeDefinitionHandle handle, byte rawTypeKind)
+    {
+        var type = metadata.GetTypeDefinition(handle);
+        var name = metadata.GetString(type.Name);
+        var full = type.IsNested
+            ? ((NamedSig)GetTypeFromDefinition(metadata, type.GetDeclaringType(), 0)).Name + "+" + name
+            : Qualified(metadata.GetString(type.Namespace), name);
+        return new NamedSig(full, rawTypeKind == (byte)SignatureTypeKind.ValueType);
+    }
 
-        public string GetTypeFromReference(MetadataReader metadata, TypeReferenceHandle handle, byte rawTypeKind)
+    public Sig GetTypeFromReference(MetadataReader metadata, TypeReferenceHandle handle, byte rawTypeKind)
+    {
+        var type = metadata.GetTypeReference(handle);
+        var name = metadata.GetString(type.Name);
+        var full = type.ResolutionScope.Kind == HandleKind.TypeReference
+            ? ((NamedSig)GetTypeFromReference(metadata, (TypeReferenceHandle)type.ResolutionScope, 0)).Name + "+" + name
+            : Qualified(metadata.GetString(type.Namespace), name);
+        return new NamedSig(full, rawTypeKind == (byte)SignatureTypeKind.ValueType);
+    }
+
+    public Sig GetTypeFromSpecification(MetadataReader metadata, object? context, TypeSpecificationHandle handle, byte rawTypeKind) =>
+        metadata.GetTypeSpecification(handle).DecodeSignature(this, context);
+
+    public Sig GetSZArrayType(Sig elementType) => new ArraySig(elementType, 0);
+
+    public Sig GetArrayType(Sig elementType, ArrayShape shape) => new ArraySig(elementType, Math.Max(1, shape.Rank));
+
+    public Sig GetByReferenceType(Sig elementType) => new ByRefSig(elementType);
+
+    public Sig GetPointerType(Sig elementType) => new PointerSig(elementType);
+
+    public Sig GetPinnedType(Sig elementType) => elementType;
+
+    public Sig GetModifiedType(Sig modifier, Sig unmodifiedType, bool isRequired) => new ModifiedSig((modifier as NamedSig)?.Name ?? "", unmodifiedType);
+
+    public Sig GetFunctionPointerType(MethodSignature<Sig> signature) => new FunctionPointerSig(signature.ReturnType, signature.ParameterTypes);
+
+    public Sig GetGenericInstantiation(Sig genericType, ImmutableArray<Sig> typeArguments) =>
+        genericType is NamedSig named ? new GenericSig(named, typeArguments) : genericType;
+
+    public Sig GetGenericTypeParameter(object? context, int index) => new ParameterSig(index, false);
+
+    public Sig GetGenericMethodParameter(object? context, int index) => new ParameterSig(index, true);
+
+    private static string Qualified(string @namespace, string name) => @namespace.Length == 0 ? name : @namespace + "." + name;
+}
+
+/// <summary>
+/// The nullable annotations and the names of tuple elements of one type in a signature: `[Nullable]` gives a byte per type in
+/// pre-order (a value type but a generic one takes none: its type arguments do), `[NullableContext]` the byte of the rest;
+/// `[TupleElementNames]` the names of the elements of the tuples, in pre-order as well.
+/// </summary>
+public sealed class Annotations
+{
+    public static readonly Annotations None = new(null, 0, null);
+
+    private readonly byte[]? _bytes;
+    private readonly byte _single;
+    private readonly string?[]? _names;
+    private int _byte;
+    private int _name;
+
+    private Annotations(byte[]? bytes, byte single, string?[]? names)
+    {
+        _bytes = bytes;
+        _single = single;
+        _names = names;
+    }
+
+    public static Annotations Of(MetadataReader reader, Func<CustomAttribute, string> typeOf, CustomAttributeHandleCollection? custom, byte context)
+    {
+        byte[]? bytes = null;
+        var single = context;
+        string?[]? names = null;
+        if (custom != null)
         {
-            var type = metadata.GetTypeReference(handle);
-            var name = Bare(metadata.GetString(type.Name));
-            if (type.ResolutionScope.Kind == HandleKind.TypeReference) return GetTypeFromReference(metadata, (TypeReferenceHandle)type.ResolutionScope, 0) + "." + name;
-            // the types C# has a word for, when they come by reference and not as a primitive of the signature
-            if (metadata.GetString(type.Namespace) == "System")
+            foreach (var handle in custom.Value)
             {
-                switch (name)
+                var attribute = reader.GetCustomAttribute(handle);
+                var type = typeOf(attribute);
+                if (type == "System.Runtime.CompilerServices.NullableAttribute")
                 {
-                    case "Object": return "object";
-                    case "String": return "string";
-                    case "Decimal": return "decimal";
+                    var blob = reader.GetBlobReader(attribute.Value);
+                    if (blob.Length < 3 || blob.ReadUInt16() != 1) continue;
+                    // `[Nullable(1)]`: the prolog, a byte and no named arguments; `[Nullable(new byte[] { 1, 2 })]`: a count before
+                    if (blob.Length == 5) single = blob.ReadByte();
+                    else
+                    {
+                        var count = blob.ReadInt32();
+                        if (count < 0 || count > blob.RemainingBytes) continue;
+                        bytes = blob.ReadBytes(count);
+                    }
+                }
+                else if (type == "System.Runtime.CompilerServices.TupleElementNamesAttribute")
+                {
+                    var blob = reader.GetBlobReader(attribute.Value);
+                    if (blob.Length < 6 || blob.ReadUInt16() != 1) continue;
+                    var count = blob.ReadInt32();
+                    if (count < 0 || count > blob.RemainingBytes) continue;
+                    names = new string?[count];
+                    for (var i = 0; i < count; i++) names[i] = blob.ReadSerializedString();
                 }
             }
-            return name;
         }
+        return bytes == null && single == 0 && names == null ? None : new Annotations(bytes, single, names);
+    }
 
-        public string GetTypeFromSpecification(MetadataReader metadata, GenericContext context, TypeSpecificationHandle handle, byte rawTypeKind) =>
-            metadata.GetTypeSpecification(handle).DecodeSignature(this, context);
+    /// <summary>0 oblivious, 1 not annotated, 2 annotated (`string?`).</summary>
+    public byte Next()
+    {
+        if (this == None) return 0;
+        if (_bytes == null) return _single;
+        return _byte < _bytes.Length ? _bytes[_byte++] : (byte)0;
+    }
 
-        public string GetSZArrayType(string elementType) => elementType + "[]";
-
-        public string GetArrayType(string elementType, ArrayShape shape) => elementType + "[" + new string(',', Math.Max(0, shape.Rank - 1)) + "]";
-
-        public string GetByReferenceType(string elementType) => "ref " + elementType;
-
-        public string GetPointerType(string elementType) => elementType + "*";
-
-        public string GetPinnedType(string elementType) => elementType;
-
-        public string GetModifiedType(string modifier, string unmodifiedType, bool isRequired) => unmodifiedType;
-
-        public string GetFunctionPointerType(MethodSignature<string> signature) =>
-            "delegate*<" + string.Join(", ", signature.ParameterTypes.Append(signature.ReturnType)) + ">";
-
-        public string GetGenericInstantiation(string genericType, ImmutableArray<string> typeArguments) =>
-            genericType == "Nullable" && typeArguments.Length == 1 ? typeArguments[0] + "?" : genericType + "<" + string.Join(", ", typeArguments) + ">";
-
-        public string GetGenericTypeParameter(GenericContext context, int index) =>
-            index < context.TypeParameters.Length ? context.TypeParameters[index] : "T" + index;
-
-        public string GetGenericMethodParameter(GenericContext context, int index) =>
-            index < context.MethodParameters.Length ? context.MethodParameters[index] : "TM" + index;
-
-        private static string Bare(string name)
-        {
-            var mark = name.IndexOf('`');
-            return mark >= 0 ? name[..mark] : name;
-        }
+    public string?[]? Names(int count)
+    {
+        if (_names == null) return null;
+        var taken = new string?[count];
+        for (var i = 0; i < count; i++) taken[i] = _name < _names.Length ? _names[_name++] : null;
+        return taken.Any(name => name != null) ? taken : null;
     }
 }
 
 /// <summary>
-/// The file of an index. Everything is an int of 4 bytes, little-endian, but for the flags that share one:
+/// A reference to a type, written as a string (so that the pool of strings shares the same ones) by a small prefix grammar the
+/// plugin parses when it needs it (`IndexedTypeRef.parse`):
 /// <code>
-/// header   "DNIX", version, mvid (16 bytes), assembly name (string id),
-///          strings, types, members, parameters, names: for each its count and the offset of its table
-/// strings  count + 1 offsets into the data that follows them, UTF-8
-/// types    namespace, name, kind | arity &lt;&lt; 8 | flags &lt;&lt; 16                                     12 bytes
-/// members  name, type, kind | arity &lt;&lt; 8 | flags &lt;&lt; 16, return type, first parameter, parameters   24 bytes
-/// params   type, name, flags                                                                     12 bytes
-/// names    name, target: a type, or a member with the highest bit set                             8 bytes
-///          sorted by the name in lower case, then by the name: the table a prefix is searched in
+/// ref  := '?' ref                                annotated: `string?`, `T?` of a type parameter that is not a struct
+///       | 'N' name ';'                           a reference type: `NSystem.String;`, nested: `NSystem.Environment+SpecialFolder;`
+///       | 'V' name ';'                           a value type
+///       | 'I' count ['{' names '}'] ':' ref ref*  a generic instantiation: the definition (N or V), then its arguments — the ones
+///                                                of the types around a nested type first; the names of the elements of a tuple
+///                                                (all of them for a long one, empty for the unnamed ones), comma-separated
+///       | '!' index ';'                          a type parameter of the type
+///       | 'M' index ';'                          a type parameter of the method
+///       | '[' ref                                `T[]`
+///       | 'A' rank ';' ref                       `T[,]`
+///       | '*' ref                                `T*`
+///       | '&amp;' ref                                `ref T` (a return; parameters say it by their flags)
+///       | 'F' count ':' ref ref*                 `delegate*`: the return, then the parameters
 /// </code>
+/// </summary>
+public static class TypeRefs
+{
+    public static string Encode(Sig sig, Annotations annotations)
+    {
+        var builder = new StringBuilder();
+        Write(sig, annotations, builder);
+        return builder.ToString();
+    }
+
+    public static Sig Unwrap(Sig sig)
+    {
+        while (sig is ModifiedSig modified) sig = modified.Inner;
+        return sig;
+    }
+
+    /// <summary>What an extension method extends, for the table the plugin finds them in by the type of the receiver.</summary>
+    public static string ExtensionKey(Sig sig)
+    {
+        sig = Unwrap(sig);
+        if (sig is ByRefSig byRef) sig = Unwrap(byRef.Element);
+        return sig switch
+        {
+            NamedSig named => named.Name,
+            GenericSig generic => generic.Definition.Name,
+            ArraySig => "[]",
+            ParameterSig => "!",
+            _ => "",
+        };
+    }
+
+    private static void Write(Sig sig, Annotations annotations, StringBuilder builder)
+    {
+        switch (sig)
+        {
+            case ModifiedSig modified:
+                Write(modified.Inner, annotations, builder);
+                break;
+            case ByRefSig byRef:
+                builder.Append('&');
+                Write(byRef.Element, annotations, builder);
+                break;
+            case PointerSig pointer:
+                builder.Append('*');
+                Write(pointer.Element, annotations, builder);
+                break;
+            case FunctionPointerSig function:
+                builder.Append('F').Append(function.Parameters.Length).Append(':');
+                Write(function.Return, annotations, builder);
+                foreach (var parameter in function.Parameters) Write(parameter, annotations, builder);
+                break;
+            case NamedSig named:
+                if (!named.ValueType && annotations.Next() == 2) builder.Append('?');
+                Named(named, builder);
+                break;
+            case GenericSig generic:
+                if (!generic.Definition.ValueType && annotations.Next() == 2) builder.Append('?');
+                builder.Append('I').Append(generic.Arguments.Length);
+                if (IsTuple(generic))
+                {
+                    // the rest of a long tuple is a tuple of its own here and takes its names, nulls, after the ones of the whole
+                    var names = annotations.Names(TupleSize(generic));
+                    if (names != null) builder.Append('{').Append(string.Join(",", names.Select(name => name ?? ""))).Append('}');
+                }
+                builder.Append(':');
+                Named(generic.Definition, builder);
+                foreach (var argument in generic.Arguments) Write(argument, annotations, builder);
+                break;
+            case ParameterSig parameter:
+                if (annotations.Next() == 2) builder.Append('?');
+                builder.Append(parameter.OfMethod ? 'M' : '!').Append(parameter.Index).Append(';');
+                break;
+            case ArraySig array:
+                if (annotations.Next() == 2) builder.Append('?');
+                if (array.Rank == 0) builder.Append('[');
+                else builder.Append('A').Append(array.Rank).Append(';');
+                Write(array.Element, annotations, builder);
+                break;
+        }
+    }
+
+    private static void Named(NamedSig named, StringBuilder builder) => builder.Append(named.ValueType ? 'V' : 'N').Append(named.Name).Append(';');
+
+    private static bool IsTuple(GenericSig generic) => generic.Definition.Name.StartsWith("System.ValueTuple`", StringComparison.Ordinal);
+
+    /// <summary>The elements of a tuple; one of more than seven has the rest in its eighth argument.</summary>
+    private static int TupleSize(GenericSig generic) =>
+        generic.Arguments.Length == 8 && Unwrap(generic.Arguments[7]) is GenericSig rest && IsTuple(rest) ? 7 + TupleSize(rest) : generic.Arguments.Length;
+}
+
+/// <summary>Constants and default values as C# writes them: `42`, `"text"`, `'c'`, `true`, `null`, `1.5F`.</summary>
+public static class Literals
+{
+    public static string? Of(MetadataReader reader, ConstantHandle handle)
+    {
+        var constant = reader.GetConstant(handle);
+        var blob = reader.GetBlobReader(constant.Value);
+        var invariant = CultureInfo.InvariantCulture;
+        return constant.TypeCode switch
+        {
+            ConstantTypeCode.Boolean => blob.ReadBoolean() ? "true" : "false",
+            ConstantTypeCode.Char => Quote(blob.ReadChar().ToString(), '\''),
+            ConstantTypeCode.SByte => blob.ReadSByte().ToString(invariant),
+            ConstantTypeCode.Byte => blob.ReadByte().ToString(invariant),
+            ConstantTypeCode.Int16 => blob.ReadInt16().ToString(invariant),
+            ConstantTypeCode.UInt16 => blob.ReadUInt16().ToString(invariant),
+            ConstantTypeCode.Int32 => blob.ReadInt32().ToString(invariant),
+            ConstantTypeCode.UInt32 => blob.ReadUInt32().ToString(invariant),
+            ConstantTypeCode.Int64 => blob.ReadInt64().ToString(invariant),
+            ConstantTypeCode.UInt64 => blob.ReadUInt64().ToString(invariant),
+            ConstantTypeCode.Single => Floating(blob.ReadSingle(), "float", "F"),
+            ConstantTypeCode.Double => Floating(blob.ReadDouble(), "double", ""),
+            ConstantTypeCode.String => Quote(blob.Length == 0 ? "" : blob.ReadUTF16(blob.Length), '"'),
+            ConstantTypeCode.NullReference => "null",
+            _ => null,
+        };
+    }
+
+    private static string Floating(double value, string keyword, string suffix)
+    {
+        if (double.IsNaN(value)) return keyword + ".NaN";
+        if (double.IsPositiveInfinity(value)) return keyword + ".PositiveInfinity";
+        if (double.IsNegativeInfinity(value)) return keyword + ".NegativeInfinity";
+        var text = suffix == "F" ? ((float)value).ToString("R", CultureInfo.InvariantCulture) : value.ToString("R", CultureInfo.InvariantCulture);
+        return text + suffix;
+    }
+
+    private static string Quote(string value, char quote)
+    {
+        var builder = new StringBuilder().Append(quote);
+        foreach (var c in value)
+        {
+            switch (c)
+            {
+                case '\\': builder.Append("\\\\"); break;
+                case '\n': builder.Append("\\n"); break;
+                case '\r': builder.Append("\\r"); break;
+                case '\t': builder.Append("\\t"); break;
+                case '\0': builder.Append("\\0"); break;
+                default:
+                    if (c == quote) builder.Append('\\').Append(c);
+                    else if (char.IsControl(c) || char.IsSurrogate(c)) builder.Append("\\u").Append(((int)c).ToString("X4", CultureInfo.InvariantCulture));
+                    else builder.Append(c);
+                    break;
+            }
+        }
+        return builder.Append(quote).ToString();
+    }
+}
+
+/// <summary>
+/// The file of an index. Everything is an int of 4 bytes, little-endian; a list is an index into the table of ints, where its count
+/// is followed by its items (0 is the empty list); -1 is no string, no reference, no type.
+/// <code>
+/// header    "DNIX", version, mvid (16 bytes), assembly name, assembly version,
+///           strings, types, members, parameters, generics, ints, names, extensions: for each its count and the offset of its table
+/// strings   count + 1 offsets into the data that follows them, UTF-8
+/// types     namespace, path (`Dictionary`2+Enumerator`), kind | flags &lt;&lt; 8, declaring type, base (reference),
+///           interfaces (list of references), first generic, generic count, first member, member count, nested (list of types),
+///           attributes (list of names), underlying type of an enum                                              52 bytes
+///           sorted by the namespace, then by the path: a type by its name and the types of a namespace by a binary search
+/// members   name, type, kind | flags &lt;&lt; 8, type (reference), first parameter, parameter count, first generic,
+///           generic count, attributes (list of names), value                                                     40 bytes
+///           the ones of a type together, in the order of the types
+/// params    type (reference), name, flags, default value                                                        16 bytes
+/// generics  name, flags, constraints (list of references)                                                       12 bytes
+/// names     name, target: a type, or a member with the highest bit set                                           8 bytes
+///           the types and the static members other code sees (not the protected ones), sorted by the name in lower case,
+///           then by the name: the table a prefix is searched in
+/// extensions  what the `this` parameter is (TypeRefs.ExtensionKey), member; sorted by the first                  8 bytes
+/// </code>
+/// The references are strings of the grammar of <see cref="TypeRefs"/>.
 /// </summary>
 public static class IndexWriter
 {
     public const int MemberBit = unchecked((int)0x80000000);
+    public const int HeaderSize = 4 + 4 + 16 + 4 + 4 + 8 * 8;
 
     public static void Write(string file, Guid mvid, AssemblyData data)
     {
         var strings = new StringPool();
-        var assembly = strings.Id(data.Name);
-        var types = data.Types.Select(type => (strings.Id(type.Namespace), strings.Id(type.Name), type.Kind, type.Arity, type.Flags)).ToList();
-        var parameters = new List<(int, int, int)>();
-        var members = new List<(int, int, int, int, int, int)>();
-        foreach (var member in data.Members)
+        var ints = new IntLists();
+        int Ref(string? value) => value == null ? -1 : strings.Id(value);
+        int Refs(IEnumerable<string> values) => ints.Id(values.Select(strings.Id).ToList());
+
+        var types = data.Types
+            .OrderBy(type => type.Namespace, StringComparer.Ordinal).ThenBy(type => type.Path, StringComparer.Ordinal)
+            .ToList();
+        var typeIndex = new Dictionary<TypeEntry, int>(ReferenceEqualityComparer.Instance);
+        for (var i = 0; i < types.Count; i++) typeIndex[types[i]] = i;
+
+        var typeRows = new List<int[]>(types.Count);
+        var memberRows = new List<int[]>();
+        var parameterRows = new List<int[]>();
+        var genericRows = new List<int[]>();
+        var names = new List<(string Name, int Target)>();
+        var extensions = new List<(string Key, int Member)>();
+
+        int Generics(List<GenericEntry> generics)
         {
-            var first = parameters.Count;
-            foreach (var parameter in member.Parameters) parameters.Add((strings.Id(parameter.Type), strings.Id(parameter.Name), (int)parameter.Flags));
-            members.Add((strings.Id(member.Name), member.Type, Pack((byte)member.Kind, member.Arity, member.Flags), strings.Id(member.ReturnType), first, member.Parameters.Count));
+            var first = genericRows.Count;
+            foreach (var generic in generics) genericRows.Add([strings.Id(generic.Name), (int)generic.Flags, Refs(generic.Constraints)]);
+            return first;
         }
-        var names = new List<(string, int, int)>(data.Types.Count + data.Members.Count);
-        for (var i = 0; i < data.Types.Count; i++) names.Add((SimpleName(data.Types[i].Name), types[i].Item2, i));
-        for (var i = 0; i < data.Members.Count; i++) names.Add((data.Members[i].Name, members[i].Item1, i | MemberBit));
+
+        for (var t = 0; t < types.Count; t++)
+        {
+            var type = types[t];
+            var firstGeneric = Generics(type.Generics);
+            var firstMember = memberRows.Count;
+            var visibleType = (type.Flags & TypeFlags.Protected) == 0;
+            if (visibleType) names.Add((SimpleName(type.Path), t));
+            foreach (var member in type.Members)
+            {
+                var row = memberRows.Count;
+                var firstParameter = parameterRows.Count;
+                foreach (var parameter in member.Parameters) parameterRows.Add([strings.Id(parameter.Type), strings.Id(parameter.Name), (int)parameter.Flags, Ref(parameter.Default)]);
+                var memberGeneric = Generics(member.Generics);
+                memberRows.Add([
+                    strings.Id(member.Name), t, (byte)member.Kind | ((int)member.Flags << 8), strings.Id(member.Type), firstParameter, member.Parameters.Count,
+                    memberGeneric, member.Generics.Count, Refs(member.Attributes), Ref(member.Value),
+                ]);
+                // what import completion offers: a static member other code sees, called by the name of its type
+                if (visibleType && (member.Flags & (MemberFlags.Static | MemberFlags.Protected)) == MemberFlags.Static && member.Kind is not (MemberKind.Constructor or MemberKind.Operator))
+                    names.Add((member.Name, row | MemberBit));
+                if (member.ExtensionKey != null) extensions.Add((member.ExtensionKey, row));
+            }
+            typeRows.Add([
+                strings.Id(type.Namespace), strings.Id(type.Path), (byte)type.Kind | ((int)type.Flags << 8), type.Declaring == null ? -1 : typeIndex[type.Declaring],
+                Ref(type.Base), Refs(type.Interfaces), firstGeneric, type.Generics.Count, firstMember, type.Members.Count,
+                ints.Id(type.Nested.Select(nested => typeIndex[nested]).OrderBy(index => index).ToList()), Refs(type.Attributes), Ref(type.Underlying),
+            ]);
+        }
         // a nested type is found by its own name: `Enumerator` of `Dictionary.Enumerator`
-        var sorted = names
-            .Select(name => (Key: name.Item1.ToLowerInvariant(), Name: name.Item1, Id: strings.Id(name.Item1), Target: name.Item3))
+        var sortedNames = names
+            .Select(name => (Key: name.Name.ToLowerInvariant(), name.Name, Id: strings.Id(name.Name), name.Target))
             .OrderBy(name => name.Key, StringComparer.Ordinal).ThenBy(name => name.Name, StringComparer.Ordinal).ThenBy(name => name.Target & ~MemberBit)
             .ToList();
+        var sortedExtensions = extensions
+            .Select(extension => (extension.Key, Id: strings.Id(extension.Key), extension.Member))
+            .OrderBy(extension => extension.Key, StringComparer.Ordinal).ThenBy(extension => extension.Member)
+            .ToList();
+        var assembly = strings.Id(data.Name);
+        var version = strings.Id(data.Version);
 
-        const int header = 4 + 4 + 16 + 4 + 5 * 8;
-        var stringTable = header;
+        var stringTable = HeaderSize;
         var stringData = stringTable + (strings.Count + 1) * 4;
         var typeTable = Align(stringData + strings.Bytes);
-        var memberTable = typeTable + types.Count * 12;
-        var parameterTable = memberTable + members.Count * 24;
-        var nameTable = parameterTable + parameters.Count * 12;
+        var memberTable = typeTable + typeRows.Count * 52;
+        var parameterTable = memberTable + memberRows.Count * 40;
+        var genericTable = parameterTable + parameterRows.Count * 16;
+        var intTable = genericTable + genericRows.Count * 12;
+        var nameTable = intTable + ints.Count * 4;
+        var extensionTable = nameTable + sortedNames.Count * 8;
 
         using var stream = new FileStream(file, FileMode.Create, FileAccess.Write, FileShare.None);
-        using var writer = new BinaryWriter(stream, Encoding.UTF8);
+        using var writer = new BinaryWriter(new BufferedStream(stream, 1 << 16), Encoding.UTF8);
         writer.Write("DNIX"u8);
         writer.Write(Program.FormatVersion);
         writer.Write(mvid.ToByteArray());
         writer.Write(assembly);
-        foreach (var (count, offset) in new[] { (strings.Count, stringTable), (types.Count, typeTable), (members.Count, memberTable), (parameters.Count, parameterTable), (sorted.Count, nameTable) })
+        writer.Write(version);
+        foreach (var (count, offset) in new[]
+                 {
+                     (strings.Count, stringTable), (typeRows.Count, typeTable), (memberRows.Count, memberTable), (parameterRows.Count, parameterTable),
+                     (genericRows.Count, genericTable), (ints.Count, intTable), (sortedNames.Count, nameTable), (sortedExtensions.Count, extensionTable),
+                 })
         {
             writer.Write(count);
             writer.Write(offset);
@@ -570,43 +1181,35 @@ public static class IndexWriter
         }
         writer.Write(position);
         foreach (var bytes in strings.Encoded) writer.Write(bytes);
-        while (stream.Position < typeTable) writer.Write((byte)0);
-        foreach (var (@namespace, name, kind, arity, flags) in types)
+        for (var at = stringData + strings.Bytes; at < typeTable; at++) writer.Write((byte)0);
+        foreach (var rows in new[] { typeRows, memberRows, parameterRows, genericRows })
         {
-            writer.Write(@namespace);
-            writer.Write(name);
-            writer.Write(Pack((byte)kind, arity, flags));
+            foreach (var row in rows)
+            {
+                foreach (var value in row) writer.Write(value);
+            }
         }
-        foreach (var (name, type, packed, returnType, first, count) in members)
-        {
-            writer.Write(name);
-            writer.Write(type);
-            writer.Write(packed);
-            writer.Write(returnType);
-            writer.Write(first);
-            writer.Write(count);
-        }
-        foreach (var (type, name, flags) in parameters)
-        {
-            writer.Write(type);
-            writer.Write(name);
-            writer.Write(flags);
-        }
-        foreach (var name in sorted)
+        foreach (var value in ints.Values) writer.Write(value);
+        foreach (var name in sortedNames)
         {
             writer.Write(name.Id);
             writer.Write(name.Target);
         }
+        foreach (var extension in sortedExtensions)
+        {
+            writer.Write(extension.Id);
+            writer.Write(extension.Member);
+        }
     }
-
-    private static int Pack(byte kind, int arity, EntryFlags flags) => kind | (Math.Min(arity, 255) << 8) | ((int)flags << 16);
 
     private static int Align(int offset) => (offset + 3) & ~3;
 
-    private static string SimpleName(string name)
+    /// <summary>`Dictionary`2+Enumerator` -> `Enumerator`, `List`1` -> `List`.</summary>
+    private static string SimpleName(string path)
     {
-        var dot = name.LastIndexOf('.');
-        return dot >= 0 ? name[(dot + 1)..] : name;
+        var name = path[(path.LastIndexOf('+') + 1)..];
+        var mark = name.IndexOf('`');
+        return mark >= 0 ? name[..mark] : name;
     }
 
     private sealed class StringPool
@@ -626,5 +1229,146 @@ public static class IndexWriter
             _ids[value] = id;
             return id;
         }
+    }
+
+    /// <summary>Lists of ints, the same list stored once: a count, then the items. The first is the empty one.</summary>
+    private sealed class IntLists
+    {
+        private readonly Dictionary<string, int> _ids = new(StringComparer.Ordinal) { [""] = 0 };
+        public readonly List<int> Values = [0];
+        public int Count => Values.Count;
+
+        public int Id(List<int> items)
+        {
+            var key = string.Join(",", items);
+            if (_ids.TryGetValue(key, out var id)) return id;
+            id = Values.Count;
+            Values.Add(items.Count);
+            Values.AddRange(items);
+            _ids[key] = id;
+            return id;
+        }
+    }
+}
+
+/// <summary>
+/// The XML documentation of an assembly (`System.Console.xml` next to `System.Console.dll`), by the documentation ID:
+/// <code>
+/// header   "DNXD", version, mvid (16 bytes), number of entries, number of blocks, offset of the blocks          36 bytes
+/// blocks   offset of the first ID, its length, offset of the compressed block, its length, its length inflated   20 bytes
+/// data     the first ID of every block (UTF-8), then the blocks (raw deflate)
+/// </code>
+/// A block inflated is entries sorted by the ID (ordinal, as UTF-8 bytes), each an ID, byte 1, the text, byte 0; the blocks follow
+/// the same order, so an ID is found by a binary search over the first IDs and a scan of one block of about <see cref="BlockSize"/>.
+/// A text is the inner XML of the `member` element, its runs of white space made one space: `summary`, `param`, `returns` as they are.
+/// </summary>
+public static class DocWriter
+{
+    /// <summary>The runs of white space one space, the ends trimmed: the indentation of the file is most of its size.</summary>
+    private static string Collapse(string text)
+    {
+        var builder = new StringBuilder(text.Length);
+        var space = false;
+        foreach (var c in text)
+        {
+            if (char.IsWhiteSpace(c))
+            {
+                space = builder.Length > 0;
+                continue;
+            }
+            if (space) builder.Append(' ');
+            space = false;
+            builder.Append(c);
+        }
+        return builder.ToString();
+    }
+
+    public static List<(string Id, string Text)> Read(string file)
+    {
+        var entries = new List<(string, string)>();
+        try
+        {
+            using var reader = XmlReader.Create(file, new XmlReaderSettings { DtdProcessing = DtdProcessing.Ignore, IgnoreComments = true, XmlResolver = null });
+            while (reader.Read())
+            {
+                while (reader.NodeType == XmlNodeType.Element && reader.Name == "member")
+                {
+                    var id = reader.GetAttribute("name");
+                    var text = Collapse(reader.ReadInnerXml());
+                    if (!string.IsNullOrEmpty(id) && text.Length > 0) entries.Add((id, text));
+                }
+            }
+        }
+        catch (XmlException)
+        {
+            // a broken documentation is no documentation; the index is made all the same
+        }
+        return entries;
+    }
+
+    /// <summary>The raw size a block of entries is compressed at: big enough for deflate to find the repeats, small enough to inflate for one entry.</summary>
+    public const int BlockSize = 16 * 1024;
+
+    public static void Write(string file, Guid mvid, List<(string Id, string Text)> entries)
+    {
+        var sorted = entries
+            .Select(entry => (Id: Encoding.UTF8.GetBytes(entry.Id), Text: Encoding.UTF8.GetBytes(entry.Text)))
+            .GroupBy(entry => Convert.ToHexString(entry.Id)).Select(group => group.First())
+            .OrderBy(entry => entry.Id, ByteComparer.Instance)
+            .ToList();
+        var firstIds = new MemoryStream();
+        var compressed = new MemoryStream();
+        var blocks = new List<(int FirstId, int FirstIdLength, int At, int Length, int Raw)>();
+        var raw = new MemoryStream();
+        byte[]? first = null;
+        void Flush()
+        {
+            if (first == null) return;
+            var idAt = (int)firstIds.Position;
+            firstIds.Write(first);
+            var at = (int)compressed.Position;
+            using (var deflate = new DeflateStream(compressed, CompressionLevel.Optimal, leaveOpen: true)) deflate.Write(raw.GetBuffer(), 0, (int)raw.Length);
+            blocks.Add((idAt, first.Length, at, (int)compressed.Position - at, (int)raw.Length));
+            raw.SetLength(0);
+            first = null;
+        }
+        foreach (var (id, text) in sorted)
+        {
+            first ??= id;
+            raw.Write(id);
+            raw.WriteByte(1);
+            raw.Write(text);
+            raw.WriteByte(0);
+            if (raw.Length >= BlockSize) Flush();
+        }
+        Flush();
+
+        const int header = 36;
+        var idsAt = header + blocks.Count * 20;
+        var dataAt = idsAt + (int)firstIds.Length;
+        using var stream = new FileStream(file, FileMode.Create, FileAccess.Write, FileShare.None);
+        using var writer = new BinaryWriter(stream);
+        writer.Write("DNXD"u8);
+        writer.Write(Program.FormatVersion);
+        writer.Write(mvid.ToByteArray());
+        writer.Write(sorted.Count);
+        writer.Write(blocks.Count);
+        writer.Write(header);
+        foreach (var block in blocks)
+        {
+            writer.Write(idsAt + block.FirstId);
+            writer.Write(block.FirstIdLength);
+            writer.Write(dataAt + block.At);
+            writer.Write(block.Length);
+            writer.Write(block.Raw);
+        }
+        writer.Write(firstIds.GetBuffer(), 0, (int)firstIds.Length);
+        writer.Write(compressed.GetBuffer(), 0, (int)compressed.Length);
+    }
+
+    private sealed class ByteComparer : IComparer<byte[]>
+    {
+        public static readonly ByteComparer Instance = new();
+        public int Compare(byte[]? x, byte[]? y) => x.AsSpan().SequenceCompareTo(y.AsSpan());
     }
 }

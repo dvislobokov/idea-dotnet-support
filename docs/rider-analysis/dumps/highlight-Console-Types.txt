@@ -1,0 +1,224 @@
+##### document markup: 328 highlighters
+  1:1-1:1  [] layer 1001  «» GUTTER[FrontendAsyncGutterIconRenderer]
+  1:7-1:13  [ReSharper.CSHARP_NAMESPACE_IDENTIFIER] layer 1000  «System»
+  1:14-1:25  [ReSharper.CSHARP_NAMESPACE_IDENTIFIER] layer 1000  «Diagnostics»
+  3:11-3:21  [ReSharper.CSHARP_NAMESPACE_IDENTIFIER] layer 1000  «Playground»
+  5:13-5:18  [ReSharper.CSHARP_ENUM_IDENTIFIER] layer 1000  «Color»
+  5:21-5:24  [ReSharper.CSHARP_CONSTANT_IDENTIFIER] layer 1000  «Red»
+  5:21-5:24  [NOT_USED_ELEMENT_ATTRIBUTES] layer 4001  «Red»  TIP: Enum member 'Red' is never used
+  5:26-5:31  [ReSharper.CSHARP_CONSTANT_IDENTIFIER] layer 1000  «Green»
+  5:33-5:37  [ReSharper.CSHARP_CONSTANT_IDENTIFIER] layer 1000  «Blue»
+  5:33-5:37  [NOT_USED_ELEMENT_ATTRIBUTES] layer 4001  «Blue»  TIP: Enum member 'Blue' is never used
+  7:2-7:7  [ReSharper.CSHARP_ATTRIBUTE_IDENTIFIER] layer 1000  «Flags»
+  8:13-8:19  [ReSharper.CSHARP_ENUM_IDENTIFIER] layer 1000  «Access»
+  8:22-8:26  [ReSharper.CSHARP_CONSTANT_IDENTIFIER] layer 1000  «None»
+  8:22-8:26  [NOT_USED_ELEMENT_ATTRIBUTES] layer 4001  «None»  TIP: Enum member 'None' is never used
+  8:32-8:36  [ReSharper.CSHARP_CONSTANT_IDENTIFIER] layer 1000  «Read»
+  8:42-8:47  [ReSharper.CSHARP_CONSTANT_IDENTIFIER] layer 1000  «Write»
+  8:53-8:60  [NOT_USED_ELEMENT_ATTRIBUTES] layer 4001  «Execute»  TIP: Enum member 'Execute' is never used
+  8:53-8:60  [ReSharper.CSHARP_CONSTANT_IDENTIFIER] layer 1000  «Execute»
+  10:17-10:23  [ReSharper.CSHARP_KEYWORD] layer 1000  «record»
+  10:31-10:36  [ReSharper.CSHARP_RECORD_STRUCT_IDENTIFIER] layer 1000  «Point»
+  10:41-10:42  [ReSharper.CSHARP_PRIMARY_CONSTRUCTOR_PARAMETER_IDENTIFIER] layer 1000  «X»
+  10:41-10:42  [NOT_USED_ELEMENT_ATTRIBUTES] layer 4001  «X»  TIP: Positional property 'Playground.Point.X' is never accessed (except in implicit Equals/ToString implementations) STRIPE
+  10:48-10:49  [NOT_USED_ELEMENT_ATTRIBUTES] layer 4001  «Y»  TIP: Positional property 'Playground.Point.Y' is never accessed (except in implicit Equals/ToString implementations) STRIPE
+  10:48-10:49  [ReSharper.CSHARP_PRIMARY_CONSTRUCTOR_PARAMETER_IDENTIFIER] layer 1000  «Y»
+  12:2-12:17  [ReSharper.CSHARP_ATTRIBUTE_IDENTIFIER] layer 1000  «DebuggerDisplay»
+  12:20-12:24  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Name»
+  12:28-12:31  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Age»
+  13:14-24:2  [STICKY_LINE_MARKER] layer 0  «Person(string name, int age)⏎{⏎    private readonl»
+  13:14-13:20  [ReSharper.CSHARP_CLASS_IDENTIFIER] layer 1000  «Person»
+  13:28-13:32  [ReSharper.CSHARP_PRIMARY_CONSTRUCTOR_PARAMETER_IDENTIFIER] layer 1000  «name»
+  13:38-13:41  [ReSharper.CSHARP_PRIMARY_CONSTRUCTOR_PARAMETER_IDENTIFIER] layer 1000  «age»
+  15:22-15:26  [ReSharper.CSHARP_CLASS_IDENTIFIER] layer 1000  «List»
+  15:35-15:41  [ReSharper.CSHARP_FIELD_IDENTIFIER] layer 1000  «_notes»
+  16:16-16:26  [NOT_USED_ELEMENT_ATTRIBUTES] layer 4001  «MyProperty»  TIP: Property 'MyProperty' is never used
+  16:16-16:26  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «MyProperty»
+  16:29-16:32  [ReSharper.CSHARP_KEYWORD] layer 1000  «get»
+  16:29-16:32  [ReSharper.CSHARP_ACCESSOR_IDENTIFIER] layer 3000  «get»
+  16:34-16:37  [ReSharper.CSHARP_KEYWORD] layer 1000  «set»
+  16:34-16:37  [ReSharper.CSHARP_ACCESSOR_IDENTIFIER] layer 3000  «set»
+  17:19-17:23  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Name»
+  17:26-17:29  [ReSharper.CSHARP_KEYWORD] layer 1000  «get»
+  17:26-17:29  [ReSharper.CSHARP_ACCESSOR_IDENTIFIER] layer 3000  «get»
+  17:35-17:39  [ReSharper.CSHARP_PRIMARY_CONSTRUCTOR_PARAMETER_IDENTIFIER] layer 1000  «name»
+  18:16-18:19  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Age»
+  18:22-18:25  [ReSharper.CSHARP_KEYWORD] layer 1000  «get»
+  18:22-18:25  [ReSharper.CSHARP_ACCESSOR_IDENTIFIER] layer 3000  «get»
+  18:27-18:30  [ReSharper.CSHARP_KEYWORD] layer 1000  «set»
+  18:27-18:30  [ReSharper.CSHARP_ACCESSOR_IDENTIFIER] layer 3000  «set»
+  18:27-18:31  [NOT_USED_ELEMENT_ATTRIBUTES] layer 4001  «set;»  TIP: Auto-property can be made get-only
+  18:36-18:39  [ReSharper.CSHARP_PRIMARY_CONSTRUCTOR_PARAMETER_IDENTIFIER] layer 1000  «age»
+  19:12-19:18  [ReSharper.CSHARP_CLASS_IDENTIFIER] layer 1000  «Person»
+  19:20-19:26  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Friend»
+  19:29-19:32  [ReSharper.CSHARP_ACCESSOR_IDENTIFIER] layer 3000  «get»
+  19:29-19:33  [NOT_USED_ELEMENT_ATTRIBUTES] layer 4001  «get;»  TIP: Auto-property accessor 'Friend.get' is never used STRIPE
+  19:29-19:32  [ReSharper.CSHARP_KEYWORD] layer 1000  «get»
+  19:34-19:37  [ReSharper.CSHARP_ACCESSOR_IDENTIFIER] layer 3000  «set»
+  19:34-19:37  [ReSharper.CSHARP_KEYWORD] layer 1000  «set»
+  20:17-20:24  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «IsAdult»
+  20:17-20:24  [NOT_USED_ELEMENT_ATTRIBUTES] layer 4001  «IsAdult»  TIP: Property 'IsAdult' is never used
+  20:28-20:31  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Age»
+  21:12-21:25  [ReSharper.CSHARP_INTERFACE_IDENTIFIER] layer 1000  «IReadOnlyList»
+  21:34-21:39  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Notes»
+  21:34-21:39  [NOT_USED_ELEMENT_ATTRIBUTES] layer 4001  «Notes»  TIP: Property 'Notes' is never used
+  21:43-21:49  [ReSharper.CSHARP_FIELD_IDENTIFIER] layer 1000  «_notes»
+  23:28-23:36  [ReSharper.CSHARP_METHOD_DECLARATION_IDENTIFIER] layer 1000  «ToString»
+  23:28-23:36  [] layer 1001  «ToString» GUTTER[FrontendAsyncGutterIconRenderer]
+  23:45-23:49  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Name»
+  23:53-23:56  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Age»
+  26:1-26:100  [ReSharper.CSHARP_DOC_COMMENT] layer 3001  «/// <summary>Describing the value costs two second»
+  26:6-26:13  [ReSharper.CSHARP_DOC_COMMENT_TAG_NAME] layer 3002  «summary»
+  26:92-26:99  [ReSharper.CSHARP_DOC_COMMENT_TAG_NAME] layer 3002  «summary»
+  27:14-34:2  [STICKY_LINE_MARKER] layer 0  «SlowToString⏎{⏎    public override string ToString»
+  27:14-27:26  [ReSharper.CSHARP_CLASS_IDENTIFIER] layer 1000  «SlowToString»
+  29:28-29:36  [ReSharper.CSHARP_METHOD_DECLARATION_IDENTIFIER] layer 1000  «ToString»
+  29:28-29:36  [] layer 1001  «ToString» GUTTER[FrontendAsyncGutterIconRenderer]
+  29:28-33:6  [STICKY_LINE_MARKER] layer 0  «ToString()⏎    {⏎        Thread.Sleep(2000);⏎     »
+  31:9-31:15  [ReSharper.CSHARP_CLASS_IDENTIFIER] layer 1000  «Thread»
+  31:16-31:21  [ReSharper.CSHARP_STATIC_METHOD_CALL_IDENTIFIER] layer 1000  «Sleep»
+  36:14-39:2  [STICKY_LINE_MARKER] layer 0  «ThrowingProperty⏎{⏎    public int Value => throw n»
+  36:14-36:30  [ReSharper.CSHARP_CLASS_IDENTIFIER] layer 1000  «ThrowingProperty»
+  38:16-38:21  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Value»
+  38:16-38:18  [ReSharper.HINT] layer 3998  «Va»  TIP: Пометьте члены как статические
+  38:16-38:21  [NOT_USED_ELEMENT_ATTRIBUTES] layer 4001  «Value»  TIP: Property 'Value' is never used
+  38:35-38:60  [ReSharper.CSHARP_CLASS_IDENTIFIER] layer 1000  «InvalidOperationException»
+  43:8-43:14  [ReSharper.CSHARP_KEYWORD] layer 1000  «record»
+  43:15-43:26  [ReSharper.CSHARP_RECORD_IDENTIFIER] layer 1000  «CachedOrder»
+  43:31-43:33  [ReSharper.CSHARP_PRIMARY_CONSTRUCTOR_PARAMETER_IDENTIFIER] layer 1000  «Id»
+  43:42-43:46  [ReSharper.CSHARP_PRIMARY_CONSTRUCTOR_PARAMETER_IDENTIFIER] layer 1000  «Name»
+  43:42-43:46  [NOT_USED_ELEMENT_ATTRIBUTES] layer 4001  «Name»  TIP: Positional property 'Playground.CachedOrder.Name' is never accessed (except in implicit Equals/ToString implementations) STRIPE
+  43:55-43:62  [ReSharper.CSHARP_PRIMARY_CONSTRUCTOR_PARAMETER_IDENTIFIER] layer 1000  «Payload»
+  43:55-43:62  [NOT_USED_ELEMENT_ATTRIBUTES] layer 4001  «Payload»  TIP: Positional property 'Playground.CachedOrder.Payload' is never accessed (except in implicit Equals/ToString implementations) STRIPE
+  45:1-45:115  [ReSharper.CSHARP_DOC_COMMENT] layer 3001  «/// <summary>A cache without eviction: a static di»
+  45:6-45:13  [ReSharper.CSHARP_DOC_COMMENT_TAG_NAME] layer 3002  «summary»
+  45:107-45:114  [ReSharper.CSHARP_DOC_COMMENT_TAG_NAME] layer 3002  «summary»
+  46:21-52:2  [STICKY_LINE_MARKER] layer 0  «LeakyCache⏎{⏎    private static readonly Dictionar»
+  46:21-46:31  [ReSharper.CSHARP_STATIC_CLASS_IDENTIFIER] layer 1000  «LeakyCache»
+  48:29-48:39  [ReSharper.CSHARP_CLASS_IDENTIFIER] layer 1000  «Dictionary»
+  48:45-48:56  [ReSharper.CSHARP_RECORD_IDENTIFIER] layer 1000  «CachedOrder»
+  48:58-48:64  [ReSharper.CSHARP_STATIC_FIELD_IDENTIFIER] layer 1000  «Orders»
+  50:24-50:32  [ReSharper.CSHARP_STATIC_METHOD_DECLARATION_IDENTIFIER] layer 1000  «Remember»
+  50:33-50:44  [ReSharper.CSHARP_RECORD_IDENTIFIER] layer 1000  «CachedOrder»
+  50:45-50:50  [ReSharper.CSHARP_PARAMETER_IDENTIFIER] layer 1000  «order»
+  50:55-50:61  [ReSharper.CSHARP_STATIC_FIELD_IDENTIFIER] layer 1000  «Orders»
+  50:62-50:67  [ReSharper.CSHARP_PARAMETER_IDENTIFIER] layer 1000  «order»
+  50:68-50:70  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Id»
+  50:74-50:79  [ReSharper.CSHARP_PARAMETER_IDENTIFIER] layer 1000  «order»
+  51:23-51:28  [ReSharper.CSHARP_STATIC_PROPERTY_IDENTIFIER] layer 1000  «Count»
+  51:32-51:38  [ReSharper.CSHARP_STATIC_FIELD_IDENTIFIER] layer 1000  «Orders»
+  51:39-51:44  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Count»
+  54:21-54:30  [ReSharper.CSHARP_STATIC_CLASS_IDENTIFIER] layer 1000  «PriceFeed»
+  54:21-58:2  [STICKY_LINE_MARKER] layer 0  «PriceFeed⏎{⏎    public static event EventHandler<d»
+  56:25-56:37  [ReSharper.CSHARP_DELEGATE_IDENTIFIER] layer 1000  «EventHandler»
+  56:48-56:55  [ReSharper.CSHARP_EVENT_IDENTIFIER] layer 1000  «Changed»
+  57:23-57:34  [ReSharper.CSHARP_STATIC_PROPERTY_IDENTIFIER] layer 1000  «Subscribers»
+  57:38-57:45  [ReSharper.CSHARP_EVENT_IDENTIFIER] layer 1000  «Changed»
+  57:47-57:64  [ReSharper.CSHARP_METHOD_CALL_IDENTIFIER] layer 1000  «GetInvocationList»
+  57:67-57:73  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Length»
+  60:1-60:121  [ReSharper.CSHARP_DOC_COMMENT] layer 3001  «/// <summary>Subscribes in the constructor and nev»
+  60:6-60:13  [ReSharper.CSHARP_DOC_COMMENT_TAG_NAME] layer 3002  «summary»
+  60:113-60:120  [ReSharper.CSHARP_DOC_COMMENT_TAG_NAME] layer 3002  «summary»
+  61:14-75:2  [STICKY_LINE_MARKER] layer 0  «PriceWatcher⏎{⏎    private readonly string _name;⏎»
+  61:14-61:26  [ReSharper.CSHARP_CLASS_IDENTIFIER] layer 1000  «PriceWatcher»
+  63:29-63:34  [ReSharper.CSHARP_FIELD_IDENTIFIER] layer 1000  «_name»
+  64:22-64:26  [ReSharper.CSHARP_CLASS_IDENTIFIER] layer 1000  «List»
+  64:36-64:44  [WARNING_ATTRIBUTES] layer 4000  «_history»  TIP: Content of collection '_history' is only updated but never used STRIPE
+  64:36-64:44  [ReSharper.CSHARP_FIELD_IDENTIFIER] layer 1000  «_history»
+  64:47-64:49  [ReSharper.HINT] layer 3998  «ne»  TIP: Use collection expression
+  66:12-66:24  [ReSharper.CSHARP_CLASS_IDENTIFIER] layer 1000  «PriceWatcher»
+  66:12-70:6  [STICKY_LINE_MARKER] layer 0  «PriceWatcher(string name)⏎    {⏎        _name = na»
+  66:32-66:36  [ReSharper.CSHARP_PARAMETER_IDENTIFIER] layer 1000  «name»
+  68:9-68:14  [ReSharper.CSHARP_FIELD_IDENTIFIER] layer 1000  «_name»
+  68:17-68:21  [ReSharper.CSHARP_PARAMETER_IDENTIFIER] layer 1000  «name»
+  69:9-69:18  [ReSharper.CSHARP_STATIC_CLASS_IDENTIFIER] layer 1000  «PriceFeed»
+  69:19-69:26  [ReSharper.CSHARP_EVENT_IDENTIFIER] layer 1000  «Changed»
+  69:27-69:29  [ReSharper.CSHARP_ACCESSOR_IDENTIFIER] layer 3000  «+=»
+  69:30-69:39  [ReSharper.CSHARP_METHOD_CALL_IDENTIFIER] layer 1000  «OnChanged»
+  72:18-72:27  [ReSharper.CSHARP_METHOD_DECLARATION_IDENTIFIER] layer 1000  «OnChanged»
+  72:36-72:42  [ReSharper.CSHARP_PARAMETER_IDENTIFIER] layer 1000  «sender»
+  72:52-72:57  [ReSharper.CSHARP_PARAMETER_IDENTIFIER] layer 1000  «price»
+  72:62-72:70  [ReSharper.CSHARP_FIELD_IDENTIFIER] layer 1000  «_history»
+  72:71-72:74  [ReSharper.CSHARP_METHOD_CALL_IDENTIFIER] layer 1000  «Add»
+  72:75-72:80  [ReSharper.CSHARP_PARAMETER_IDENTIFIER] layer 1000  «price»
+  74:28-74:36  [ReSharper.CSHARP_METHOD_DECLARATION_IDENTIFIER] layer 1000  «ToString»
+  74:28-74:36  [] layer 1001  «ToString» GUTTER[FrontendAsyncGutterIconRenderer]
+  74:42-74:47  [ReSharper.CSHARP_FIELD_IDENTIFIER] layer 1000  «_name»
+  77:14-77:27  [ReSharper.CSHARP_CLASS_IDENTIFIER] layer 1000  «EndlessGetter»
+  77:14-86:2  [STICKY_LINE_MARKER] layer 0  «EndlessGetter⏎{⏎    public int Forever⏎    {⏎     »
+  79:16-85:6  [STICKY_LINE_MARKER] layer 0  «Forever⏎    {⏎        get⏎        {⏎            wh»
+  79:16-79:18  [ReSharper.HINT] layer 3998  «Fo»  TIP: Пометьте члены как статические
+  79:16-79:23  [NOT_USED_ELEMENT_ATTRIBUTES] layer 4001  «Forever»  TIP: Property 'Forever' is never used
+  79:16-79:23  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Forever»
+  81:9-84:10  [STICKY_LINE_MARKER] layer 0  «get⏎        {⏎            while (true) Thread.Slee»
+  81:9-81:12  [ReSharper.CSHARP_ACCESSOR_IDENTIFIER] layer 3000  «get»
+  81:9-81:12  [ReSharper.CSHARP_KEYWORD] layer 1000  «get»
+  83:26-83:32  [ReSharper.CSHARP_CLASS_IDENTIFIER] layer 1000  «Thread»
+  83:33-83:38  [ReSharper.CSHARP_STATIC_METHOD_CALL_IDENTIFIER] layer 1000  «Sleep»
+  84:9-84:10  [WARNING_ATTRIBUTES] layer 4000  «}»  TIP: Function never returns STRIPE
+##### editor markup: 1 highlighters
+  1:1-1:1  [] layer 2000  «» GUTTER[FrontendAsyncGutterIconRenderer]
+##### keys: count
+  : 5
+  NOT_USED_ELEMENT_ATTRIBUTES: 15
+  ReSharper.CSHARP_ACCESSOR_IDENTIFIER: 9
+  ReSharper.CSHARP_ATTRIBUTE_IDENTIFIER: 2
+  ReSharper.CSHARP_CLASS_IDENTIFIER: 13
+  ReSharper.CSHARP_CONSTANT_IDENTIFIER: 7
+  ReSharper.CSHARP_DELEGATE_IDENTIFIER: 1
+  ReSharper.CSHARP_DOC_COMMENT: 3
+  ReSharper.CSHARP_DOC_COMMENT_TAG_NAME: 6
+  ReSharper.CSHARP_ENUM_IDENTIFIER: 2
+  ReSharper.CSHARP_EVENT_IDENTIFIER: 3
+  ReSharper.CSHARP_FIELD_IDENTIFIER: 7
+  ReSharper.CSHARP_INTERFACE_IDENTIFIER: 1
+  ReSharper.CSHARP_KEYWORD: 10
+  ReSharper.CSHARP_METHOD_CALL_IDENTIFIER: 3
+  ReSharper.CSHARP_METHOD_DECLARATION_IDENTIFIER: 4
+  ReSharper.CSHARP_NAMESPACE_IDENTIFIER: 3
+  ReSharper.CSHARP_PARAMETER_IDENTIFIER: 8
+  ReSharper.CSHARP_PRIMARY_CONSTRUCTOR_PARAMETER_IDENTIFIER: 9
+  ReSharper.CSHARP_PROPERTY_IDENTIFIER: 16
+  ReSharper.CSHARP_RECORD_IDENTIFIER: 3
+  ReSharper.CSHARP_RECORD_STRUCT_IDENTIFIER: 1
+  ReSharper.CSHARP_STATIC_CLASS_IDENTIFIER: 3
+  ReSharper.CSHARP_STATIC_FIELD_IDENTIFIER: 3
+  ReSharper.CSHARP_STATIC_METHOD_CALL_IDENTIFIER: 2
+  ReSharper.CSHARP_STATIC_METHOD_DECLARATION_IDENTIFIER: 1
+  ReSharper.CSHARP_STATIC_PROPERTY_IDENTIFIER: 2
+  ReSharper.HINT: 3
+  STICKY_LINE_MARKER: 11
+  WARNING_ATTRIBUTES: 2
+##### inline inlays: 2
+  31:22  FrontendInlineHintRenderer «millisecondsTimeout:»
+  83:39  FrontendInlineHintRenderer «millisecondsTimeout:»
+##### after-line-end inlays: 0
+##### block inlays: 27
+  5:13  BlockCodeVisionInlayRenderer
+  8:13  BlockCodeVisionInlayRenderer
+  10:31  BlockCodeVisionInlayRenderer
+  13:14  BlockCodeVisionInlayRenderer
+  16:16  BlockCodeVisionInlayRenderer
+  17:19  BlockCodeVisionInlayRenderer
+  18:16  BlockCodeVisionInlayRenderer
+  19:20  BlockCodeVisionInlayRenderer
+  20:17  BlockCodeVisionInlayRenderer
+  21:34  BlockCodeVisionInlayRenderer
+  23:28  BlockCodeVisionInlayRenderer
+  27:14  BlockCodeVisionInlayRenderer
+  29:28  BlockCodeVisionInlayRenderer
+  36:14  BlockCodeVisionInlayRenderer
+  38:16  BlockCodeVisionInlayRenderer
+  43:15  BlockCodeVisionInlayRenderer
+  46:21  BlockCodeVisionInlayRenderer
+  50:24  BlockCodeVisionInlayRenderer
+  51:23  BlockCodeVisionInlayRenderer
+  54:21  BlockCodeVisionInlayRenderer
+  57:23  BlockCodeVisionInlayRenderer
+  61:14  BlockCodeVisionInlayRenderer
+  66:12  BlockCodeVisionInlayRenderer
+  72:18  BlockCodeVisionInlayRenderer
+  74:28  BlockCodeVisionInlayRenderer
+  77:14  BlockCodeVisionInlayRenderer
+  79:16  BlockCodeVisionInlayRenderer
+

@@ -28,6 +28,11 @@ enum class CSharpUsageKind(val title: String) {
     STRING("Usage in string"),
 }
 
+/** The kinds of the usages of one file: [CSharpUsageKinds.Analysis] by the tokens, [NativeCSharpUsageKinds.Analysis] by csharp-psi's tree. */
+interface CSharpUsageKindAnalysis {
+    fun kindOf(range: TextRange): CSharpUsageKind
+}
+
 /**
  * The kind of a usage by its neighbours, without a parser: `x = ` and `x += ` write, `x++` and `ref x` / `out x` write, `x(` calls,
  * `new X`, `typeof(X)`, `nameof(x)`, `is X`, `(X)y`, `: X` in a type header, `[X(...)]`, `List<X>`, `X name`. Whatever else is a read.
@@ -48,14 +53,14 @@ object CSharpUsageKinds {
     /** Keywords that name a type: `int x`, `string? y`. */
     private val TYPE_KEYWORDS = setOf("bool", "byte", "char", "decimal", "double", "dynamic", "float", "int", "long", "object", "sbyte", "short", "string", "uint", "ulong", "ushort", "var", "void")
 
-    class Analysis(private val text: CharSequence, private val structure: CSharpFileStructure = CSharpSyntaxModel.current.declarations(text)) {
+    class Analysis(private val text: CharSequence, private val structure: CSharpFileStructure = CSharpSyntaxModel.current.declarations(text)) : CSharpUsageKindAnalysis {
         /** Every token but white space; comments and strings stay, so a usage inside one is told apart. */
         private val all: List<Token> = lex(text)
         /** The code alone: what the neighbours of a usage are looked for in. */
         private val code: List<Token> = all.filter { it.type !in CSharpTokenTypes.COMMENTS && it.type != CSharpTokenTypes.PREPROCESSOR }
         private val declarationNames: Set<TextRange> = structure.all().filter { it.kind != DeclarationKind.NAMESPACE }.mapTo(HashSet()) { it.nameRange }
 
-        fun kindOf(range: TextRange): CSharpUsageKind {
+        override fun kindOf(range: TextRange): CSharpUsageKind {
             val token = tokenAt(all, range.startOffset) ?: return CSharpUsageKind.READ
             if (token.type in CSharpTokenTypes.COMMENTS) return CSharpUsageKind.COMMENT
             if (token.type in CSharpTokenTypes.STRINGS) return if (token.text.trimStart('@').startsWith("$")) inInterpolation(range) else CSharpUsageKind.STRING

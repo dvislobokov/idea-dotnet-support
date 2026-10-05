@@ -58,7 +58,8 @@ abstract class FormatTargetAction(private val verify: Boolean) : AnAction(), Dum
             val directory = target.parentFile
             return when (DotNetFormattingSettings.getInstance(project).resolve(directory, runCatching { target.readText() }.getOrNull())) {
                 FormatterChoice.CSHARPIER -> CSharpierLocator.find(directory).let { if (verify) it.check(directory) else it.format(directory) }
-                FormatterChoice.DOTNET_FORMAT ->
+                // a whole solution is the job of a process either way: the built-in formatter keeps the rules of `dotnet format`
+                FormatterChoice.DOTNET_FORMAT, FormatterChoice.BUILT_IN ->
                     DotNetCli.commandLine(directory.path, *listOfNotNull("format", target.path, "--verify-no-changes".takeIf { verify }).toTypedArray())
                 else -> null
             }

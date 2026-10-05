@@ -12,10 +12,11 @@ import com.intellij.psi.PsiFile
  * [current] and nothing else; the snapshot goldens of `CSharpSyntaxSnapshotTest` are what the two implementations are
  * compared on.
  *
- * Today the implementation is [HeuristicCSharpSyntaxModel] (the scanner [CSharpDeclarations] and the declaration nodes it
- * groups the tokens into). The one of the own PSI fills the same values from Roslyn's nodes: a `BaseNamespaceDeclaration`,
- * `BaseTypeDeclaration`/`DelegateDeclaration` or `MemberDeclaration` per [CSharpDeclarationInfo], `Block` bodies as [CSharpDeclarationInfo.body],
- * `UsingDirective`s of the `CompilationUnit` as [CSharpFileStructure.usings].
+ * Two implementations, chosen with the tree ([CSharpSyntaxTrees.nativeTree]): [HeuristicCSharpSyntaxModel] (the scanner [CSharpDeclarations] and
+ * the declaration nodes it groups the tokens into) and [NativeCSharpSyntaxModel] (csharp-psi's tree: a `BaseNamespaceDeclaration`,
+ * `BaseTypeDeclaration`/`DelegateDeclaration` or `MemberDeclaration` per [CSharpDeclarationInfo], one per `VariableDeclarator` of a field,
+ * `Block` bodies as [CSharpDeclarationInfo.body], `UsingDirective`s of the `CompilationUnit` as [CSharpFileStructure.usings]). Each answers
+ * for the elements and files of the other tree too, by delegation: a file keeps its tree for a while after the switch.
  */
 interface CSharpSyntaxModel {
     /** The declarations of [text]: for text that is not (or not yet) a PSI file, such as the content being indexed or a modified copy. */
@@ -41,7 +42,7 @@ interface CSharpSyntaxModel {
          * The implementation in charge. Not chosen per project: the switch that is to choose it (`CSharpFeature.SYNTAX_TREE`) depends on the
          * application settings only, so callers that have nothing but text get the same answer as those that have a file.
          */
-        val current: CSharpSyntaxModel get() = HeuristicCSharpSyntaxModel
+        val current: CSharpSyntaxModel get() = if (CSharpSyntaxTrees.nativeTree()) NativeCSharpSyntaxModel else HeuristicCSharpSyntaxModel
     }
 }
 
@@ -54,7 +55,8 @@ enum class DeclarationKind(val title: String, val isType: Boolean = false) {
 /**
  * A declaration of a [CSharpSyntaxModel]. [range] runs from the first token of the declaration (its attributes included) to its
  * closing brace or semicolon; [body] is the `{ ... }` of it, braces included. A destructor is a [DeclarationKind.CONSTRUCTOR]
- * named `~Name`, a conversion operator an [DeclarationKind.OPERATOR]; `int a, b;` is one field named after its first variable.
+ * named `~Name`, a conversion operator an [DeclarationKind.OPERATOR]; `int a, b;` is one field named after its first variable in the
+ * heuristic model, two fields in the native one.
  */
 class CSharpDeclarationInfo(
     val kind: DeclarationKind,

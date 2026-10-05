@@ -9,12 +9,15 @@ import com.intellij.psi.PsiElement
  * Extend / Shrink Selection (Ctrl+W) for C#: on top of the word and line the platform already offers, it adds the contents of every
  * enclosing `()`, `[]`, `{}` and the string / comment the caret is in, and the same with the brackets, so the selection grows structurally
  * without a parser. The platform merges these with the ranges of other handlers and picks the next larger one on each keystroke.
+ * With `EDITING` native and a file of the native tree the ranges come from the tree instead ([NativeCSharpSelection]).
  */
 class CSharpSelectioner : ExtendWordSelectionHandler {
     override fun canSelect(e: PsiElement): Boolean = e.containingFile is CSharpFile
 
-    override fun select(e: PsiElement, editorText: CharSequence, cursorOffset: Int, editor: Editor): MutableList<TextRange> =
-        CSharpSelection.ranges(editorText, cursorOffset)
+    override fun select(e: PsiElement, editorText: CharSequence, cursorOffset: Int, editor: Editor): MutableList<TextRange> {
+        val file = e.containingFile
+        return if (NativeCSharpEditing.usable(file)) NativeCSharpSelection.ranges(file as CSharpFile, cursorOffset) else CSharpSelection.ranges(editorText, cursorOffset)
+    }
 }
 
 object CSharpSelection {

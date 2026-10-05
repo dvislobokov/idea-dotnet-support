@@ -8,6 +8,9 @@
 //   versions              {root, id, prerelease, sources?}                      → [{source, versions?, error?, elapsedMs}]
 //   restorePackagesConfig {projectPath, solutionDirectory}                      → {packagesDirectory, configFile, packages: [{id, version, state, source?, message?}]}
 //   il                    {assembly, file, line, typeName?, memberName?}        → the IL of the code at the line (Il.cs: ICSharpCode.Decompiler)
+//   decompile             {assembly, typeName, memberId?, xmlDoc?, referenceDirs?, languageVersion?}
+//                                                                               → the C# of a type and the offsets of its members (Decompile.cs)
+//   assemblyTypes         {assembly}                                            → [{name, kind, isPublic}]
 //
 // `root` is the directory nuget.config files are looked for from (the solution directory), as the CLI run there; `sources` are URLs
 // or names of sources, by default every enabled one. A source that fails is an error of its own, the others still answer.
@@ -54,6 +57,10 @@ public static class Program
             Params.String(p, "solutionDirectory"), token),
         "il" => IlViewer.Il(Params.String(p, "assembly") ?? throw new HelperException("`il` needs an assembly"),
             Params.String(p, "file") ?? throw new HelperException("`il` needs a file"), Params.Int(p, "line", 0), Params.String(p, "typeName"), Params.String(p, "memberName"), token),
+        "decompile" => TypeDecompiler.Decompile(Params.String(p, "assembly") ?? throw new HelperException("`decompile` needs an assembly"),
+            Params.String(p, "typeName") ?? throw new HelperException("`decompile` needs a typeName"), Params.String(p, "memberId"), Params.String(p, "xmlDoc"),
+            Params.Strings(p, "referenceDirs"), Params.String(p, "languageVersion"), token),
+        "assemblyTypes" => TypeDecompiler.Types(Params.String(p, "assembly") ?? throw new HelperException("`assemblyTypes` needs an assembly")),
         "appsettingsSchema" => AppSettingsSchema.Build(p, token), // AppSettings.cs
         _ => throw new HelperException($"DotNetHelper has no method `{method}`"),
     };

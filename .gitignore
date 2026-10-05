@@ -11,3 +11,10 @@ out/
 *.iml
 # build output of the csharp-psi subprojects
 /csharp-psi-*/build/
+# csharp-psi: corpora fetched by tools/csharp-psi/fetch-*.sh, build output of the oracle
+/.corpus/
+/tools/csharp-psi/roslyndump/bin/
+/tools/csharp-psi/roslyndump/obj/
+# the assembly of the tests of the index (indexer/README.md)
+/tools/index-fixture/bin/
+/tools/index-fixture/obj/

@@ -13,6 +13,8 @@ public class CompletionRanking
     private readonly List<RankedOrder> _orders = new();
     private readonly string _title = "ranking";
 
+    public string Title { get; set; }
+
     public int Count => _orders.Count;
     public string Name { get; set; } = "";
 
@@ -21,6 +23,10 @@ public class CompletionRanking
     private void Save(RankedOrder order, CancellationToken cancellationToken) => _orders.Add(order);
     private void Send(string message) => Console.WriteLine(message);
     private void Run(CancellationToken token) => token.ThrowIfCancellationRequested();
+
+    public async Task<string> GetStringAsync(CancellationToken cancellationToken){
+        return Task.Fr
+    }
 
     public async Task<RankedOrder> Handle(RankedOrder order, string customerName, CancellationToken cancellationToken)
     {

@@ -1,0 +1,1 @@
+f(out int x, out var y, out _)

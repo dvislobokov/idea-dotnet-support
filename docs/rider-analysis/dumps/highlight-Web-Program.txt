@@ -1,0 +1,147 @@
+##### document markup: 196 highlighters
+  2:1-2:1  [] layer 1001  «» GUTTER[FrontendAsyncGutterIconRenderer]
+  2:7-2:17  [ReSharper.CSHARP_NAMESPACE_IDENTIFIER] layer 1000  «Playground»
+  2:18-2:21  [ReSharper.CSHARP_NAMESPACE_IDENTIFIER] layer 1000  «Lib»
+  3:7-3:17  [ReSharper.CSHARP_NAMESPACE_IDENTIFIER] layer 1000  «Playground»
+  3:18-3:21  [ReSharper.CSHARP_NAMESPACE_IDENTIFIER] layer 1000  «Web»
+  5:1-5:4  [ReSharper.CSHARP_KEYWORD] layer 1000  «var»
+  5:1-5:1  [] layer 1001  «» GUTTER[FrontendAsyncGutterIconRenderer]
+  5:5-5:12  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «builder»
+  5:15-5:29  [ReSharper.CSHARP_CLASS_IDENTIFIER] layer 1000  «WebApplication»
+  5:30-5:43  [ReSharper.CSHARP_STATIC_METHOD_CALL_IDENTIFIER] layer 1000  «CreateBuilder»
+  5:44-5:48  [ReSharper.CSHARP_PARAMETER_IDENTIFIER] layer 1000  «args»
+  6:1-6:4  [ReSharper.CSHARP_KEYWORD] layer 1000  «var»
+  6:5-6:8  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «app»
+  6:11-6:18  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «builder»
+  6:19-6:24  [ReSharper.CSHARP_METHOD_CALL_IDENTIFIER] layer 1000  «Build»
+  8:1-8:4  [ReSharper.CSHARP_KEYWORD] layer 1000  «var»
+  8:5-8:16  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «startedWith»
+  8:19-13:2  [STICKY_LINE_MARKER] layer 0  «new⏎{⏎    Environment = app.Environment.Environmen»
+  10:5-10:16  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Environment»
+  10:19-10:22  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «app»
+  10:23-10:34  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Environment»
+  10:35-10:50  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «EnvironmentName»
+  11:5-11:9  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Urls»
+  11:12-11:23  [ReSharper.CSHARP_STATIC_CLASS_IDENTIFIER] layer 1000  «Environment»
+  11:24-11:46  [ReSharper.CSHARP_STATIC_METHOD_CALL_IDENTIFIER] layer 1000  «GetEnvironmentVariable»
+  12:5-12:16  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «FromProfile»
+  12:19-12:30  [ReSharper.CSHARP_STATIC_CLASS_IDENTIFIER] layer 1000  «Environment»
+  12:31-12:53  [ReSharper.CSHARP_STATIC_METHOD_CALL_IDENTIFIER] layer 1000  «GetEnvironmentVariable»
+  12:80-12:81  [NOT_USED_ELEMENT_ATTRIBUTES] layer 4001  «,»  TIP: Remove trailing comma to conform to code style
+  14:1-14:4  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «app»
+  14:5-14:11  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Logger»
+  14:12-14:26  [ReSharper.CSHARP_EXTENSION_METHOD_CALL_IDENTIFIER] layer 1000  «LogInformation»
+  14:41-14:51  [ReSharper.FORMAT_STRING_ITEM] layer 3000  «{Settings}»
+  14:54-14:65  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «startedWith»
+  16:1-16:4  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «app»
+  16:5-16:11  [ReSharper.CSHARP_EXTENSION_METHOD_CALL_IDENTIFIER] layer 1000  «MapGet»
+  16:13-16:14  [DEFAULT_HIGHLIGHTED_REFERENCE] layer 3000  «/»
+  16:23-16:30  [ReSharper.CSHARP_STATIC_CLASS_IDENTIFIER] layer 1000  «Results»
+  16:31-16:35  [ReSharper.CSHARP_STATIC_METHOD_CALL_IDENTIFIER] layer 1000  «Text»
+  19:19-19:30  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «startedWith»
+  19:31-19:42  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Environment»
+  20:19-20:30  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «startedWith»
+  20:31-20:35  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «Urls»
+  21:19-21:30  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «startedWith»
+  21:31-21:42  [ReSharper.CSHARP_PROPERTY_IDENTIFIER] layer 1000  «FromProfile»
+  29:1-29:4  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «app»
+  29:5-29:11  [ReSharper.CSHARP_EXTENSION_METHOD_CALL_IDENTIFIER] layer 1000  «MapGet»
+  29:13-29:32  [DEFAULT_HIGHLIGHTED_REFERENCE] layer 3000  «/orders/{count:int}»
+  29:21-29:32  [ReSharper.ASP_NET_ROUTE_TEMPLATE_PARAMETER] layer 1001  «{count:int}»
+  29:35-34:2  [STICKY_LINE_MARKER] layer 0  «(int count) =>⏎{⏎    var lines = Enumerable.Range(»
+  29:40-29:45  [ReSharper.CSHARP_PARAMETER_IDENTIFIER] layer 1000  «count»
+  31:5-31:8  [ReSharper.CSHARP_KEYWORD] layer 1000  «var»
+  31:9-31:14  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «lines»
+  31:17-31:27  [ReSharper.CSHARP_STATIC_CLASS_IDENTIFIER] layer 1000  «Enumerable»
+  31:28-31:33  [ReSharper.CSHARP_STATIC_METHOD_CALL_IDENTIFIER] layer 1000  «Range»
+  31:37-31:42  [ReSharper.CSHARP_PARAMETER_IDENTIFIER] layer 1000  «count»
+  31:44-31:50  [ReSharper.CSHARP_EXTENSION_METHOD_CALL_IDENTIFIER] layer 1000  «Select»
+  31:51-31:52  [ReSharper.CSHARP_PARAMETER_IDENTIFIER] layer 1000  «i»
+  31:60-31:69  [ReSharper.CSHARP_RECORD_IDENTIFIER] layer 1000  «OrderLine»
+  31:78-31:79  [ReSharper.CSHARP_PARAMETER_IDENTIFIER] layer 1000  «i»
+  31:83-31:84  [ReSharper.CSHARP_PARAMETER_IDENTIFIER] layer 1000  «i»
+  31:93-31:94  [ReSharper.CSHARP_PARAMETER_IDENTIFIER] layer 1000  «i»
+  31:97-31:103  [ReSharper.CSHARP_EXTENSION_METHOD_CALL_IDENTIFIER] layer 1000  «ToList»
+  32:5-32:8  [ReSharper.CSHARP_KEYWORD] layer 1000  «var»
+  32:9-32:14  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «total»
+  32:17-32:24  [ReSharper.CSHARP_STATIC_CLASS_IDENTIFIER] layer 1000  «Pricing»
+  32:25-32:30  [ReSharper.CSHARP_STATIC_METHOD_CALL_IDENTIFIER] layer 1000  «Total»
+  32:31-32:36  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «lines»
+  33:12-33:19  [ReSharper.CSHARP_STATIC_CLASS_IDENTIFIER] layer 1000  «Results»
+  33:20-33:24  [ReSharper.CSHARP_STATIC_METHOD_CALL_IDENTIFIER] layer 1000  «Json»
+  33:31-33:36  [ReSharper.CSHARP_PARAMETER_IDENTIFIER] layer 1000  «count»
+  33:38-33:43  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «total»
+  33:45-33:50  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «lines»
+  36:1-36:4  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «app»
+  36:5-36:11  [ReSharper.CSHARP_EXTENSION_METHOD_CALL_IDENTIFIER] layer 1000  «MapGet»
+  36:13-36:20  [DEFAULT_HIGHLIGHTED_REFERENCE] layer 3000  «/aspire»
+  36:23-40:2  [STICKY_LINE_MARKER] layer 0  «() =>⏎{⏎    var pid = Environment.ProcessId; // BP»
+  38:5-38:8  [ReSharper.CSHARP_KEYWORD] layer 1000  «var»
+  38:9-38:12  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «pid»
+  38:15-38:26  [ReSharper.CSHARP_STATIC_CLASS_IDENTIFIER] layer 1000  «Environment»
+  38:27-38:36  [ReSharper.CSHARP_STATIC_PROPERTY_IDENTIFIER] layer 1000  «ProcessId»
+  39:12-39:19  [ReSharper.CSHARP_STATIC_CLASS_IDENTIFIER] layer 1000  «Results»
+  39:20-39:24  [ReSharper.CSHARP_STATIC_METHOD_CALL_IDENTIFIER] layer 1000  «Text»
+  39:65-39:68  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «pid»
+  42:1-42:4  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «app»
+  42:5-42:11  [ReSharper.CSHARP_EXTENSION_METHOD_CALL_IDENTIFIER] layer 1000  «MapGet»
+  42:13-42:18  [DEFAULT_HIGHLIGHTED_REFERENCE] layer 3000  «/slow»
+  42:21-46:2  [STICKY_LINE_MARKER] layer 0  «async () =>⏎{⏎    await Task.Delay(5000);⏎    retu»
+  42:21-42:26  [ReSharper.CSHARP_KEYWORD] layer 1000  «async»
+  44:5-44:10  [ReSharper.CSHARP_KEYWORD] layer 1000  «await»
+  44:11-44:15  [ReSharper.CSHARP_CLASS_IDENTIFIER] layer 1000  «Task»
+  44:16-44:21  [ReSharper.CSHARP_STATIC_METHOD_CALL_IDENTIFIER] layer 1000  «Delay»
+  48:1-48:4  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «app»
+  48:5-48:11  [ReSharper.CSHARP_EXTENSION_METHOD_CALL_IDENTIFIER] layer 1000  «MapGet»
+  48:13-48:18  [DEFAULT_HIGHLIGHTED_REFERENCE] layer 3000  «/fail»
+  48:21-54:2  [STICKY_LINE_MARKER] layer 0  «() =>⏎{⏎    throw new ShopException("Failed on pur»
+  50:15-50:28  [ReSharper.CSHARP_CLASS_IDENTIFIER] layer 1000  «ShopException»
+  56:1-56:4  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «app»
+  56:5-56:17  [ReSharper.CSHARP_EXTENSION_METHOD_CALL_IDENTIFIER] layer 1000  «MapHotReload»
+  58:1-58:4  [ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER] layer 1000  «app»
+  58:5-58:8  [ReSharper.CSHARP_METHOD_CALL_IDENTIFIER] layer 1000  «Run»
+##### editor markup: 1 highlighters
+  1:1-1:1  [] layer 2000  «» GUTTER[FrontendAsyncGutterIconRenderer]
+##### keys: count
+  : 3
+  DEFAULT_HIGHLIGHTED_REFERENCE: 5
+  NOT_USED_ELEMENT_ATTRIBUTES: 1
+  ReSharper.ASP_NET_ROUTE_TEMPLATE_PARAMETER: 1
+  ReSharper.CSHARP_CLASS_IDENTIFIER: 3
+  ReSharper.CSHARP_EXTENSION_METHOD_CALL_IDENTIFIER: 9
+  ReSharper.CSHARP_KEYWORD: 8
+  ReSharper.CSHARP_LOCAL_VARIABLE_IDENTIFIER: 24
+  ReSharper.CSHARP_METHOD_CALL_IDENTIFIER: 2
+  ReSharper.CSHARP_NAMESPACE_IDENTIFIER: 4
+  ReSharper.CSHARP_PARAMETER_IDENTIFIER: 8
+  ReSharper.CSHARP_PROPERTY_IDENTIFIER: 9
+  ReSharper.CSHARP_RECORD_IDENTIFIER: 1
+  ReSharper.CSHARP_STATIC_CLASS_IDENTIFIER: 8
+  ReSharper.CSHARP_STATIC_METHOD_CALL_IDENTIFIER: 9
+  ReSharper.CSHARP_STATIC_PROPERTY_IDENTIFIER: 1
+  ReSharper.FORMAT_STRING_ITEM: 1
+  STICKY_LINE_MARKER: 5
+##### inline inlays: 18
+  6:8  FrontendInlineHintRenderer «:WebApplication»
+  8:16  FrontendInlineHintRenderer «:{Environment,Urls,…}»
+  16:12  FrontendInlineHintRenderer «pattern:»
+  17:5  FrontendInlineHintRenderer «content:»
+  29:12  FrontendInlineHintRenderer «pattern:»
+  31:14  FrontendInlineHintRenderer «:List<OrderLine>»
+  31:52  FrontendInlineHintRenderer «:int»
+  31:70  FrontendInlineHintRenderer «Name:»
+  31:83  FrontendInlineHintRenderer «Price:»
+  32:14  FrontendInlineHintRenderer «:decimal»
+  32:38  FrontendInlineHintRenderer «discountPercent:»
+  33:25  FrontendInlineHintRenderer «data:»
+  36:12  FrontendInlineHintRenderer «pattern:»
+  38:12  FrontendInlineHintRenderer «:int»
+  39:25  FrontendInlineHintRenderer «content:»
+  42:12  FrontendInlineHintRenderer «pattern:»
+  48:12  FrontendInlineHintRenderer «pattern:»
+  50:50  FrontendInlineHintRenderer «code:»
+##### after-line-end inlays: 2
+  51:31  FrontendInlineHintRenderer « // Unreachable code detected»
+  53:31  FrontendInlineHintRenderer « // Unreachable code detected»
+##### block inlays: 0
+

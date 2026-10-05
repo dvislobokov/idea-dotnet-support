@@ -1,0 +1,1 @@
+switch (x) { case 1: int y = 0; break; case 2: { } goto case 1; }

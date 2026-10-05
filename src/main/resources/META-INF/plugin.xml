@@ -22,8 +22,8 @@
         <module name="io.github.dotnetsupport.jsonschema"/>
     </content>
 
-    <!-- the native C# PSI (csharp-psi-core, csharp-psi-semantic, csharp-psi-ide; CSHARP_PSI_MIGRATION.md): composed into the main jar,
-         empty until step 7 moves the code of ../csharp-psi -->
+    <!-- the native C# PSI (csharp-psi-core, csharp-psi-semantic, csharp-psi-ide; CSHARP_PSI_MIGRATION.md): composed into the main jar;
+         the file type and the parser definition of C# below are the plugin's, csharp-psi-core registers neither -->
     <xi:include href="/META-INF/csharp-psi-core.xml" xpointer="xpointer(/idea-plugin/*)"/>
     <xi:include href="/META-INF/csharp-psi-semantic.xml" xpointer="xpointer(/idea-plugin/*)"/>
     <xi:include href="/META-INF/csharp-psi-ide.xml" xpointer="xpointer(/idea-plugin/*)"/>
@@ -70,9 +70,15 @@
 
         <lang.parserDefinition language="C#"
                                implementationClass="io.github.dotnetsupport.lang.CSharpParserDefinition"/>
+        <!-- the error elements of the native tree stay hidden: the server or NativeCSharpDiagnosticsAnnotator reports at Roslyn's spans -->
+        <highlightErrorFilter implementation="io.github.dotnetsupport.lang.CSharpHighlightErrorFilter"/>
         <lang.syntaxHighlighterFactory language="C#"
                                        implementationClass="io.github.dotnetsupport.lang.CSharpSyntaxHighlighterFactory"/>
         <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpIdentifierAnnotator"/>
+        <!-- SEMANTIC_COLORS NATIVE: the palette of CSharpColors from the tree and the stubs; the one above steps aside then -->
+        <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.NativeCSharpSemanticColorsAnnotator"/>
+        <!-- DIAGNOSTICS NATIVE: Roslyn's syntax errors from the tree; the server keeps the semantic ones -->
+        <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.NativeCSharpDiagnosticsAnnotator"/>
         <!-- on the declarations CSharpDeclarations finds by tokens -->
         <lang.psiStructureViewFactory language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpStructureViewFactory"/>
         <breadcrumbsInfoProvider implementation="io.github.dotnetsupport.lang.CSharpBreadcrumbsProvider"/>
@@ -82,22 +88,45 @@
         <moveFileHandler implementation="io.github.dotnetsupport.lang.CSharpMoveFileHandler"/>
         <!-- banners above a C# file: no language server, no project, excluded, not restored -->
         <editorNotificationProvider implementation="io.github.dotnetsupport.lang.CSharpEditorBanners"/>
+        <!-- decompiled types (decompiler/): their own file system, so the URL of a tab leads back to it; read-only, a banner and the assembly in the title -->
+        <virtualFileSystem key="dotnet-decompiled" implementationClass="io.github.dotnetsupport.decompiler.DecompiledFileSystem"/>
+        <editorNotificationProvider implementation="io.github.dotnetsupport.decompiler.DecompiledBanner"/>
+        <editorTabTitleProvider implementation="io.github.dotnetsupport.decompiler.DecompiledTabTitle"/>
+        <writingAccessProvider implementation="io.github.dotnetsupport.decompiler.DecompiledWritingAccess"/>
         <!-- the .NET options of .editorconfig (csharp_*, dotnet_*) that the EditorConfig plugin ships but shows only in Rider -->
         <postStartupActivity implementation="io.github.dotnetsupport.lang.EditorConfigDotNetSupport"/>
+        <!-- #if symbols and LangVersion of each C# file for the native parser (CSHARP_PSI_MIGRATION.md, steps 7 and 10) -->
+        <postStartupActivity implementation="io.github.dotnetsupport.lang.CSharpParseOptions$Startup"/>
         <!-- Alt+Enter on the file: the namespace of the folder, a type into its own file, the file named after its type, a partial part, a test -->
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.AdjustNamespaceIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.MoveTypeToFileIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.RenameFileToTypeIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.AddPartialPartIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.CreateTestIntention</className><category>C#</category></intentionAction>
+        <!-- Alt+Enter on `await` in a method that is not async: async into the header, the return type a task -->
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpMakeAsyncIntention</className><category>C#</category></intentionAction>
+        <!-- using directives and statements on the native tree (CSHARP_PSI_MIGRATION.md, task A8) -->
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToUsingDeclarationIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToUsingStatementIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpWrapInUsingIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpSortUsingsIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToGlobalUsingIntention</className><category>C#</category></intentionAction>
         <lang.foldingBuilder language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpFoldingBuilder"/>
         <!-- TODO / FIXME in the comments of C#: the TODO tool window and the highlighting -->
         <todoIndexer filetype="C#" implementationClass="io.github.dotnetsupport.lang.CSharpTodoIndexer"/>
         <indexPatternBuilder implementation="io.github.dotnetsupport.lang.CSharpIndexPatternBuilder"/>
         <fileBasedIndex implementation="io.github.dotnetsupport.lang.CSharpDeclarationIndex"/>
+        <fileBasedIndex implementation="io.github.dotnetsupport.lang.semantic.CSharpGlobalUsingIndex"/>
         <gotoClassContributor implementation="io.github.dotnetsupport.lang.CSharpGotoClassContributor"/>
         <gotoSymbolContributor implementation="io.github.dotnetsupport.lang.CSharpGotoSymbolContributor"/>
         <moduleRendererFactory implementation="io.github.dotnetsupport.lang.CSharpLocationRenderer" order="first"/>
+        <!-- texts and icons of the declarations of csharp-psi's tree: the core has none of its own -->
+        <itemPresentationProvider forClass="io.github.dotnetsupport.csharp.lang.psi.impl.CSharpElementImpl"
+                                  implementationClass="io.github.dotnetsupport.lang.NativeCSharpPresentationProvider"/>
+        <!-- the stub-based declarations (step 8): from their stubs while the AST is not loaded -->
+        <itemPresentationProvider forClass="io.github.dotnetsupport.csharp.lang.psi.impl.CSharpStubElementImpl"
+                                  implementationClass="io.github.dotnetsupport.lang.NativeCSharpPresentationProvider"/>
+        <iconProvider implementation="io.github.dotnetsupport.lang.NativeCSharpIconProvider"/>
         <!-- the compiler diagnostics of the last build, in the editor -->
         <externalAnnotator language="C#" implementationClass="io.github.dotnetsupport.build.BuildProblemsAnnotator"/>
         <defaultLiveTemplates file="/liveTemplates/CSharp.xml"/>
@@ -123,8 +152,13 @@
         <lang.surroundDescriptor language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpSurroundDescriptor"/>
         <!-- Extend / Shrink Selection (Ctrl+W): structural ranges by brackets and string / comment tokens, on top of the platform's word and line -->
         <extendWordSelectionHandler implementation="io.github.dotnetsupport.lang.CSharpSelectioner"/>
-        <!-- highlight the other occurrences of the identifier under the caret, by token text, until the server covers the file -->
-        <highlightUsagesHandlerFactory implementation="io.github.dotnetsupport.lang.CSharpHighlightUsagesHandlerFactory"/>
+        <!-- highlight the other occurrences of the identifier under the caret: locals by the native tree (NAVIGATION NATIVE), else by token
+             text until the server covers the file; first, before the factory of the platform's LSP client (order="last") -->
+        <highlightUsagesHandlerFactory order="first" implementation="io.github.dotnetsupport.lang.CSharpHighlightUsagesHandlerFactory"/>
+        <!-- CSharpFeature.RENAME NATIVE: Shift+F6 on the native tree; what it does not rename goes on to the server's handler from it (NativeCSharpRename) -->
+        <renameHandler order="first" implementation="io.github.dotnetsupport.lang.NativeCSharpRenameHandler"/>
+        <!-- Go to Declaration / Ctrl + hover on the native tree (NAVIGATION NATIVE); what it cannot resolve goes on to the server's references -->
+        <gotoDeclarationHandler order="first" implementation="io.github.dotnetsupport.lang.CSharpGotoDeclarationHandler"/>
         <!-- Find Usages as in Rider, behind the toggles of the Usages view: usage kind, .NET project, type and member -->
         <usageGroupingRuleProvider implementation="io.github.dotnetsupport.lang.CSharpUsageGroupingRuleProvider"/>
         <fileStructureGroupRuleProvider implementation="io.github.dotnetsupport.lang.CSharpMemberGroupRuleProvider"/>
@@ -160,6 +194,14 @@
         <dynamicActionConfigurationCustomizer implementation="io.github.dotnetsupport.newproject.WelcomeNewSolutionPlacement"/>
         <!-- the index of the assemblies of the projects, made in the background by the indexer the plugin builds on this machine -->
         <postStartupActivity implementation="io.github.dotnetsupport.index.AssemblyIndexStartup"/>
+        <!-- the referenced assemblies as External Libraries (CSHARP_PSI_MIGRATION.md, B3) -->
+        <additionalLibraryRootsProvider implementation="io.github.dotnetsupport.index.AssemblyLibraryRootsProvider"/>
+        <!-- Go to Class / Symbol over the referenced assemblies and their metadata view (CSHARP_PSI_MIGRATION.md, B4) -->
+        <gotoClassContributor implementation="io.github.dotnetsupport.index.AssemblyGotoClassContributor"/>
+        <gotoSymbolContributor implementation="io.github.dotnetsupport.index.AssemblyGotoSymbolContributor"/>
+        <virtualFileSystem key="dotnet-metadata" implementationClass="io.github.dotnetsupport.index.AssemblyMetadataFileSystem"/>
+        <editorTabTitleProvider implementation="io.github.dotnetsupport.index.AssemblyMetadataTabTitle"/>
+        <editorNotificationProvider implementation="io.github.dotnetsupport.index.AssemblyMetadataBanner"/>
         <postStartupActivity implementation="io.github.dotnetsupport.build.VisualStudioToolset$Detect"/>
         <!-- what the lines of the sources allocate, measured in the running program and written at the end of the lines -->
         <postStartupActivity implementation="io.github.dotnetsupport.allocations.AllocationsStartup"/>
@@ -196,6 +238,8 @@
         <consoleFilterProvider implementation="io.github.dotnetsupport.run.DotNetConsoleFilterProvider"/>
         <console.folding implementation="io.github.dotnetsupport.run.DotNetStackTraceFolding"/>
         <formattingService implementation="io.github.dotnetsupport.format.DotNetFormattingService"/>
+        <!-- CSharpFeature.FORMATTING NATIVE: the platform formatter on csharp-psi's tree, engaged only when the switch says so (NativeCSharpFormatting) -->
+        <lang.formatter language="C#" implementationClass="io.github.dotnetsupport.lang.NativeCSharpFormattingModelBuilder"/>
         <postStartupActivity implementation="io.github.dotnetsupport.run.DotNetRunConfigurationStartupActivity"/>
         <runConfigurationProducer implementation="io.github.dotnetsupport.run.DotNetRunConfigurationProducer"/>
         <runLineMarkerContributor language="C#"
@@ -212,6 +256,8 @@
         <completion.confidence language="C#" order="first" implementationClass="io.github.dotnetsupport.lang.CSharpPropertyNameConfidence"/>
         <completion.contributor language="C#" id="dotnetCaseInsensitive" order="first" implementationClass="io.github.dotnetsupport.lang.CSharpCaseInsensitiveCompletion"/>
         <completion.contributor language="C#" order="first, after dotnetCaseInsensitive" implementationClass="io.github.dotnetsupport.debugger.DotNetExpressionCompletionContributor"/>
+        <!-- COMPLETION = Built-in: the list of the plugin's tree, in front of the server's, whose duplicates it drops (NativeCSharpCompletion) -->
+        <completion.contributor language="C#" id="dotnetNativeCompletion" order="first, after dotnetCaseInsensitive" implementationClass="io.github.dotnetsupport.lang.NativeCSharpCompletionContributor"/>
         <!-- gray text of a declaration that continues one way only: { get; set; }, new(), _name = name; -->
         <inline.completion.provider implementation="io.github.dotnetsupport.lang.CSharpGhostTextProvider"/>
         <registryKey key="dotnet.debugger.adapter.log" defaultValue="true"
@@ -320,6 +366,8 @@
                     description="dotnet publish of the project to a folder or a container image: configuration, runtime, self-contained, single file, trimming, ReadyToRun, a .pubxml profile"/>
             <action id="DotNet.ManageNuGet" class="io.github.dotnetsupport.nuget.ManageNuGetPackagesAction"
                     text="Manage NuGet Packages..." icon="/icons/nuget.svg"/>
+            <action id="DotNet.DecompileDependency" class="io.github.dotnetsupport.decompiler.DecompileDependencyAction" text="Decompile..."
+                    description="Choose a type of the package or the assembly and open its decompiled C# (read-only)"/>
             <group id="DotNet.EfCore" class="io.github.dotnetsupport.ef.EfCoreGroup" text="EF Core" popup="true">
                 <action id="DotNet.EfAddMigration" class="io.github.dotnetsupport.ef.EfAction$AddMigration" text="Add Migration..."
                         description="dotnet ef migrations add"/>
@@ -503,5 +551,19 @@
         <!-- MsBuildHost evaluates again the projects of the old format whose files or imports have changed -->
         <listener class="io.github.dotnetsupport.msbuild.MsBuildEvaluation$Listener"
                   topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+        <listener class="io.github.dotnetsupport.lang.CSharpParseOptions$Listener"
+                  topic="io.github.dotnetsupport.msbuild.CompilationModel$Listener"/>
+        <listener class="io.github.dotnetsupport.lang.CSharpParseOptions$Listener"
+                  topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
     </projectListeners>
+
+    <applicationListeners>
+        <!-- the tree of C# files follows Structure, folding and breadcrumbs: Language server | Built-in -->
+        <listener class="io.github.dotnetsupport.lang.CSharpSyntaxTreeSwitch"
+                  topic="io.github.dotnetsupport.lsp.RoslynLanguageServerSettings$Listener"/>
+        <listener class="io.github.dotnetsupport.lang.NativeCSharpSemanticColorsSwitch"
+                  topic="io.github.dotnetsupport.lsp.RoslynLanguageServerSettings$Listener"/>
+        <listener class="io.github.dotnetsupport.lang.NativeCSharpDiagnosticsSwitch"
+                  topic="io.github.dotnetsupport.lsp.RoslynLanguageServerSettings$Listener"/>
+    </applicationListeners>
 </idea-plugin>

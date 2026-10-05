@@ -16,6 +16,7 @@ import com.intellij.openapi.application.readAction
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.project.Project
+import com.intellij.psi.PsiDocumentManager
 import io.github.dotnetsupport.msbuild.DotNetProjects
 import io.github.dotnetsupport.solution.SolutionService
 import io.github.dotnetsupport.suggest.SuggestionRules
@@ -73,6 +74,12 @@ object CSharpGhostText {
         /** The namespace of the folder: `RootNamespace` + the path. */
         open val namespace: String? get() = null
         open val fileScopedNamespace: Boolean get() = true
+
+        /**
+         * The native tree of [text] when `EDITING` is native ([NativeCSharpGhostText]), null for the tokens. Asked only by a rule that has
+         * passed its cheap checks: it may parse the text.
+         */
+        open fun tree(text: CharSequence): CSharpFile? = null
     }
 
     /** Gray text and the rule it comes from: the rule is what the statistics of suggestions count by. */
@@ -92,10 +99,11 @@ object CSharpGhostText {
             ?: of(SuggestionRules.LOGGER, loggerType(text, offset))
             ?: of(SuggestionRules.CONSTRUCTOR_PARAMETERS, constructorParameters(text, offset))
             ?: of(SuggestionRules.CATCH, catchClause(text, offset))
+            ?: of(SuggestionRules.TASK_RETURN, taskReturn(text, offset, context))
             ?: of(SuggestionRules.NOT_IMPLEMENTED, notImplemented(text, offset))
             ?: of(SuggestionRules.BREAK, breakInCase(text, offset))
             ?: of(SuggestionRules.VALUE, CSharpValueGhost.suggest(text, offset))
-            ?: of(SuggestionRules.SEMICOLON, semicolon(text, offset))
+            ?: of(SuggestionRules.SEMICOLON, semicolon(text, offset, context))
     }
 
     /** `break;` on the first (empty) line of a `case` / `default` section — the line right above is the label. */
@@ -109,11 +117,11 @@ object CSharpGhostText {
     /**
      * A gray `;` at the end of a statement that is missing it. Stricter than Complete Statement (an explicit action): only when the
      * statement clearly ends — a call / indexer close or a literal — never after a bare name still being typed, which would fight the value
-     * suggestion and flicker on every letter.
+     * suggestion and flicker on every letter. The tokens judge the line alone; the tree ([Context.tree]) the whole statement, over lines too.
      */
-    fun semicolon(text: CharSequence, offset: Int): String? {
+    fun semicolon(text: CharSequence, offset: Int, context: Context = Context()): String? {
         val line = lineBefore(text, offset)?.takeIf { it.isNotBlank() } ?: return null
-        if (nextCharacter(text, offset) == ';' || !CSharpCompleteStatement.needsSemicolon(line)) return null
+        if (nextCharacter(text, offset) == ';') return null
         val last = CSharpExpressions.tokenize(line).lastOrNull() ?: return null
         val ends = when (last.type) {
             CSharpTokenTypes.RPAREN, CSharpTokenTypes.RBRACKET, CSharpTokenTypes.NUMBER -> true
@@ -122,7 +130,25 @@ object CSharpGhostText {
             CSharpTokenTypes.CHAR -> last.text.length >= 2 && last.text.endsWith("'")
             else -> false
         }
-        return if (ends) ";" else null
+        if (!ends) return null
+        val tree = context.tree(text)
+        val needed = if (tree != null) NativeCSharpGhostText.needsSemicolon(tree, offset) else CSharpCompleteStatement.needsSemicolon(line)
+        return if (needed) ";" else null
+    }
+
+    /**
+     * `return ` on a line of its own in a method or local function that returns `Task<T>` / `Task` and is not `async`:
+     * `Task.FromResult();` / `Task.CompletedTask;` ([NativeCSharpCommonCalls.ghost]); Tab puts the caret between the parentheses
+     * ([CSharpGhostTextProvider]). By the tree of the file (or of the text, when the switch of EDITING is not Built-in).
+     */
+    fun taskReturn(text: CharSequence, offset: Int, context: Context = Context()): String? {
+        val line = lineBefore(text, offset) ?: return null
+        if (line.trim() != "return" || !line.endsWith(" ")) return null
+        // the provider may ask off a read action (and tests do): the tree is read inside one
+        return com.intellij.openapi.application.runReadAction {
+            val tree = context.tree(text) ?: NativeCSharpSyntaxModel.parse(text)
+            NativeCSharpCommonCalls.ghost(tree, offset)
+        }
     }
 
     /** `public int Parse(string s)` -> ` => throw new NotImplementedException();`, for a method header in a class / struct / record. */
@@ -475,6 +501,12 @@ class CSharpGhostTextProvider : InlineCompletionProvider {
         override fun afterInsertion(environment: InlineCompletionInsertEnvironment, elements: List<InlineCompletionElement>) {
             DefaultInlineCompletionInsertHandler.INSTANCE.afterInsertion(environment, elements)
             shownRule?.let { SuggestionStats.getInstance().accepted(it) }
+            // `Task.FromResult();`: the value goes between the parentheses
+            val inserted = environment.insertedRange
+            val editor = environment.editor
+            if (shownRule == SuggestionRules.TASK_RETURN && editor.document.charsSequence.subSequence(inserted.startOffset, inserted.endOffset).endsWith("();")) {
+                editor.caretModel.moveToOffset(inserted.endOffset - 2)
+            }
         }
     }
 
@@ -487,6 +519,13 @@ class CSharpGhostTextProvider : InlineCompletionProvider {
             override val targetTypedNew: Boolean get() = hasTargetTypedNew(project, virtualFile)
             override val namespace: String? get() = virtualFile?.parent?.let { CSharpNamespaces.forDirectory(project, it) }
             override val fileScopedNamespace: Boolean get() = virtualFile?.parent?.let { CSharpNamespaces.isFileScopedPreferred(project, it) } ?: true
+
+            // the file's own tree when it is up to date, else the text parsed: the provider runs as the letter is typed, before the commit
+            override fun tree(text: CharSequence): CSharpFile? {
+                if (!NativeCSharpEditing.usable(file)) return null
+                val committed = PsiDocumentManager.getInstance(project).isCommitted(request.document)
+                return if (committed) file as CSharpFile else NativeCSharpSyntaxModel.parse(text)
+            }
         }
         return CSharpGhostText.ghost(request.document.immutableCharSequence, request.endOffset, context)
     }

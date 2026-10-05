@@ -35,6 +35,8 @@ import io.github.dotnetsupport.format.CSharpierLocator
 import io.github.dotnetsupport.format.CSharpierUnavailable
 import io.github.dotnetsupport.format.DotNetFormattingSettings
 import io.github.dotnetsupport.format.FormatterChoice
+import io.github.dotnetsupport.lang.CSharpFeature
+import io.github.dotnetsupport.lang.CSharpFeatures
 import io.github.dotnetsupport.sdk.DotNetEnvironmentDialog
 import io.github.dotnetsupport.sdk.DotNetSdks
 import io.github.dotnetsupport.sdk.GlobalJson
@@ -134,7 +136,7 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
     private fun refreshFormatter(choice: FormatterChoice) {
         ApplicationManager.getApplication().executeOnPooledThread {
             val directory = project.guessProjectDir()?.let { File(it.path) }
-            val text = describeFormatter(choice, directory)
+            val text = describeFormatter(choice, directory, CSharpFeatures.native(CSharpFeature.FORMATTING, project))
             ApplicationManager.getApplication().invokeLater({ formatterStatus.text = text }, ModalityState.any())
         }
     }
@@ -286,9 +288,14 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
          */
         private const val COMMENT_WIDTH = 56
 
-        /** Blocking: a global CSharpier is asked for its version. */
-        fun describeFormatter(choice: FormatterChoice, directory: File?): String {
-            val resolved = if (choice != FormatterChoice.AUTO) choice else if (CSharpierLocator.isUsedBy(directory)) FormatterChoice.CSHARPIER else FormatterChoice.DOTNET_FORMAT
+        /** Blocking: a global CSharpier is asked for its version. [builtIn]: what "Auto" comes to past CSharpier (`CSharpFeature.FORMATTING`). */
+        fun describeFormatter(choice: FormatterChoice, directory: File?, builtIn: Boolean = false): String {
+            val resolved = when {
+                choice != FormatterChoice.AUTO -> choice
+                CSharpierLocator.isUsedBy(directory) -> FormatterChoice.CSHARPIER
+                builtIn -> FormatterChoice.BUILT_IN
+                else -> FormatterChoice.DOTNET_FORMAT
+            }
             fun forProject(text: String) = if (choice == FormatterChoice.AUTO) DotNetBundle.message("settings.formatting.forProject", text) else text
             return when (resolved) {
                 FormatterChoice.CSHARPIER -> try {
@@ -298,6 +305,7 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
                 }
                 FormatterChoice.DOTNET_FORMAT ->
                     forProject(DotNetBundle.message(if (choice == FormatterChoice.AUTO) "settings.formatting.dotnetFormat.auto" else "settings.formatting.dotnetFormat"))
+                FormatterChoice.BUILT_IN -> forProject(DotNetBundle.message("settings.formatting.builtIn"))
                 else -> DotNetBundle.message("settings.formatting.none")
             }
         }

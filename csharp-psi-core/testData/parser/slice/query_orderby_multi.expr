@@ -1,0 +1,1 @@
+from x in xs orderby x.A, x.B descending select x

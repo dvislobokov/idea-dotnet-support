@@ -1,0 +1,1 @@
+foreach (ref readonly var x in span) { }

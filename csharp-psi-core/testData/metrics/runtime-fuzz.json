@@ -1,0 +1,9 @@
+{
+  "files": 300,
+  "mutants": 6000,
+  "hardFailures": 0,
+  "localityChecked": 1789,
+  "localityViolations": 73,
+  "bodyReparses": 2064,
+  "fullReparses": 3908
+}

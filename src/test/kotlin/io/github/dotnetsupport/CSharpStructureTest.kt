@@ -13,6 +13,8 @@ import io.github.dotnetsupport.lang.CSharpFolding
 import io.github.dotnetsupport.lang.CSharpGotoClassContributor
 import io.github.dotnetsupport.lang.CSharpGotoSymbolContributor
 import io.github.dotnetsupport.lang.CSharpStructureViewFactory
+import io.github.dotnetsupport.lang.CSharpSyntaxModel
+import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.DeclarationKind
 import io.github.dotnetsupport.lang.FoldKind
 
@@ -47,31 +49,53 @@ class CSharpStructureTest : BasePlatformTestCase() {
         internal interface IOrderService { decimal Total(int count); }
     """.trimIndent()
 
-    fun testTheTreeHasANodePerDeclaration() {
-        val file = myFixture.configureByText("OrderService.cs", source)
-        assertEquals("the tree covers the text", source, file.text)
-        fun outline(element: PsiElement, indent: String): List<String> = PsiTreeUtil.getChildrenOfTypeAsList(element, CSharpDeclaration::class.java)
-            .flatMap { listOf("$indent${it.kind.title} ${it.name}") + outline(it, "$indent  ") }
-        assertEquals(
-            listOf("namespace Shop.Orders", "  class OrderService", "    field _limit", "    property Name", "    method Total", "    enum State", "      enum member New",
-                "      enum member Closed", "  interface IOrderService", "    method Total"),
-            outline(file, ""),
-        )
-        val total = PsiTreeUtil.findChildrenOfType(file, CSharpDeclaration::class.java).first { it.name == "Total" }
-        assertTrue(total.text.startsWith("public decimal Total(int count)") && total.text.endsWith("}"))
-        assertEquals("Total", total.nameIdentifier!!.text)
-        assertEquals(source.indexOf("Total(int"), total.textOffset)
-        // a row of Go to Symbol as in Java: the name with the parameters, the type it is in in gray, the file on the right
-        assertEquals("Total(int count)", total.presentation.presentableText)
-        assertEquals("OrderService", total.presentation.locationString)
-        assertEquals("OrderService.cs", com.intellij.ide.util.ModuleRendererFactory.findInstance(total).getModuleTextWithIcon(total)?.text)
+    override fun tearDown() {
+        try {
+            CSharpSyntaxTrees.forceNativeTreeForTests(null)
+        } catch (e: Throwable) {
+            addSuppressedException(e)
+        } finally {
+            super.tearDown()
+        }
+    }
 
-        // typing inside a body keeps the tree in step with the text
-        myFixture.editor.caretModel.moveToOffset(source.indexOf("return count;"))
-        myFixture.type("var doubled = count * 2;\n")
-        com.intellij.psi.PsiDocumentManager.getInstance(project).commitAllDocuments()
-        assertEquals(10, PsiTreeUtil.findChildrenOfType(myFixture.file, CSharpDeclaration::class.java).size)
-        assertEquals(myFixture.editor.document.text, myFixture.file.text)
+    /** Through the facade, so either tree answers: the heuristic one ([CSharpDeclaration] nodes) and the native one (the default since 0.1.45). */
+    fun testTheTreeHasANodePerDeclaration() {
+        for (native in listOf(false, true)) {
+            CSharpSyntaxTrees.forceNativeTreeForTests(native)
+            val tree = if (native) "native" else "heuristic"
+            val file = myFixture.configureByText("OrderService${tree.replaceFirstChar(Char::uppercase)}.cs", source)
+            assertEquals(tree, native, (file as io.github.dotnetsupport.lang.CSharpFile).compilationUnit != null)
+            assertEquals("the tree covers the text", source, file.text)
+            val model = CSharpSyntaxModel.current
+            fun outline(element: PsiElement, indent: String): List<String> = model.childDeclarations(element)
+                .flatMap { val info = model.declarationOf(it)!!; listOf("$indent${info.kind.title} ${info.name}") + outline(it, "$indent  ") }
+            assertEquals(
+                tree,
+                listOf("namespace Shop.Orders", "  class OrderService", "    field _limit", "    property Name", "    method Total", "    enum State", "      enum member New",
+                    "      enum member Closed", "  interface IOrderService", "    method Total"),
+                outline(file, ""),
+            )
+            val total = model.declarationElementAt(file, source.indexOf("return count;"))!!
+            assertEquals(tree, "Total", model.declarationOf(total)?.name)
+            assertTrue(tree, total.text.startsWith("public decimal Total(int count)") && total.text.endsWith("}"))
+            // the name through the facade: the native PSI is not a PsiNameIdentifierOwner (yet)
+            assertEquals(tree, "Total", model.declarationOf(total)!!.nameRange.substring(file.text))
+            if (!native) assertEquals(tree, "Total", (total as CSharpDeclaration).nameIdentifier!!.text)
+            assertEquals(tree, source.indexOf("Total(int"), total.textOffset)
+            // a row of Go to Symbol as in Java: the name with the parameters, the type it is in in gray, the file on the right
+            assertEquals(tree, "Total(int count)", total.presentation!!.presentableText)
+            assertEquals(tree, "OrderService", total.presentation!!.locationString)
+            assertEquals(tree, file.name, com.intellij.ide.util.ModuleRendererFactory.findInstance(total).getModuleTextWithIcon(total)?.text)
+
+            // typing inside a body keeps the tree in step with the text
+            myFixture.editor.caretModel.moveToOffset(source.indexOf("return count;"))
+            myFixture.type("var doubled = count * 2;\n")
+            com.intellij.psi.PsiDocumentManager.getInstance(project).commitAllDocuments()
+            assertEquals(tree, 10, model.declarations(myFixture.file).all().count())
+            assertEquals(tree, 10, outline(myFixture.file, "").size)
+            assertEquals(tree, myFixture.editor.document.text, myFixture.file.text)
+        }
     }
 
     fun testStructureViewAndBreadcrumbs() {
@@ -118,27 +142,33 @@ class CSharpStructureTest : BasePlatformTestCase() {
         assertTrue(placeholders.toString(), placeholders.containsAll(listOf("...", "{...}", "State")))
     }
 
+    /** On both trees: the items are the elements of the tree of the file, read through the facade. */
     fun testGotoClassAndSymbol() {
-        myFixture.addFileToProject("GotoShop/OrderService.cs", source)
-        myFixture.addFileToProject("GotoShop/Customer.cs", "namespace Shop;\npublic record GotoCustomer(string Name) { public string Display() => Name; }\n")
-        val scope = GlobalSearchScope.projectScope(project)
+        for (native in listOf(false, true)) {
+            CSharpSyntaxTrees.forceNativeTreeForTests(native)
+            val tree = if (native) "Native" else "Heuristic"
+            val service = myFixture.addFileToProject("Goto$tree/OrderService.cs", source)
+            myFixture.addFileToProject("Goto$tree/Customer.cs", "namespace Shop;\npublic record Goto${tree}Customer(string Name) { public string Display() => Name; }\n")
+            val scope = GlobalSearchScope.projectScope(project)
 
-        fun names(contributor: com.intellij.navigation.ChooseByNameContributorEx): Set<String> = HashSet<String>().also { contributor.processNames({ name -> it.add(name); true }, scope, null) }
-        fun items(contributor: com.intellij.navigation.ChooseByNameContributorEx, name: String): List<NavigationItem> =
-            ArrayList<NavigationItem>().also { contributor.processElementsWithName(name, { item -> it.add(item); true }, FindSymbolParameters.simple(project, false)) }
+            fun names(contributor: com.intellij.navigation.ChooseByNameContributorEx): Set<String> = HashSet<String>().also { contributor.processNames({ name -> it.add(name); true }, scope, null) }
+            fun items(contributor: com.intellij.navigation.ChooseByNameContributorEx, name: String): List<NavigationItem> =
+                ArrayList<NavigationItem>().also { contributor.processElementsWithName(name, { item -> it.add(item); true }, FindSymbolParameters.simple(project, false)) }
 
-        val classes = CSharpGotoClassContributor()
-        assertTrue(names(classes).containsAll(listOf("OrderService", "IOrderService", "State", "GotoCustomer")))
-        assertFalse("members are for Go to Symbol", "Display" in names(classes))
-        val found = items(classes, "GotoCustomer").single() as CSharpDeclaration
-        assertEquals(DeclarationKind.RECORD, found.kind)
-        assertEquals("Shop", found.presentation.locationString)
-        assertTrue(found.canNavigate())
+            val classes = CSharpGotoClassContributor()
+            assertTrue(tree, names(classes).containsAll(listOf("OrderService", "IOrderService", "State", "Goto${tree}Customer")))
+            assertFalse("members are for Go to Symbol", "Display" in names(classes))
+            val found = items(classes, "Goto${tree}Customer").single()
+            assertEquals(tree, DeclarationKind.RECORD, CSharpSyntaxModel.current.declarationOf(found as PsiElement)?.kind)
+            assertEquals(tree, native, found !is CSharpDeclaration)
+            assertEquals(tree, "Shop", found.presentation!!.locationString)
+            assertTrue(tree, found.canNavigate())
 
-        val symbols = CSharpGotoSymbolContributor()
-        assertTrue(names(symbols).containsAll(listOf("GotoCustomer", "Display", "Total", "_limit")))
-        // the method of the class and the one of the interface
-        assertEquals(2, items(symbols, "Total").count { (it as CSharpDeclaration).containingFile.name == "OrderService.cs" })
+            val symbols = CSharpGotoSymbolContributor()
+            assertTrue(tree, names(symbols).containsAll(listOf("Goto${tree}Customer", "Display", "Total", "_limit")))
+            // the method of the class and the one of the interface
+            assertEquals(tree, 2, items(symbols, "Total").count { (it as PsiElement).containingFile == service })
+        }
     }
 
     /** A ready server answers the same question through `workspace/symbol`: the files it has loaded are left to it, the rest is not. */

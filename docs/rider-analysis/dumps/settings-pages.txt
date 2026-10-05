@@ -1,0 +1,1034 @@
+
+################ Editor | Code Style | C# (preferences.sourceCode.C#)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                   Tabs, Indents, Alignment
+                    To only view code style rules that affect selected code block, press Alt+Enter, then choose Reformat and cleanup… | Configure code style… or Detect code style settings…
+                       <table rows 78>
+    General | null
+    Indent style | Spaces
+    Indent size | 4
+    Tab width | 4
+    Line continuation indent multiplier | 1
+    Nested statements | null
+    Indent nested 'using' statements | false
+    Indent nested 'fixed' statements | false
+    Indent nested 'lock' statements | false
+    Indent nested 'for' statements | false
+    Indent nested 'foreach' statements | false
+    Indent nested 'while' statements | false
+    Parenthesis | null
+    Use line continuation indent inside parentheses | true
+    Indent method declarations' parenthesis | Inside parenthesis (BSD/K&R style)
+    Indent primary constructor declarations' parenthesis | Inside parenthesis (BSD/K&R style)
+    Indent method calls' parenthesis | Inside parenthesis (BSD/K&R style)
+    Indent statement (if, while, for, etc) parenthesis | Inside parenthesis (BSD/K&R style)
+    Indent type parameter's angles | Inside parenthesis (BSD/K&R style)
+    Indent type argument's angles | Inside parenthesis (BSD/K&R style)
+    Indent other parenthesis and brackets | Inside parenthesis (BSD/K&R style)
+    Preprocessor directives | null
+    Indent #if, #else, #elif, #endif | No indent
+    Indent #region, #endregion | Indent as usual
+    Indent other preprocessor directives | No indent
+    Other indents | null
+    Indent 'case' from 'switch' | true
+    Indent 'break' from 'case' | true
+    Outdent statement labels | false
+    Indent type constraints | true
+    Don't indent comments started at first column | true
+    Place comments at first column when commenting out code | false
+    Use previous element's indent on partial format | true
+    Indent braces inside statement conditions | true
+    Align multiline constructs | null
+    How to align when tabs are used for indents | Use spaces (looks aligned on any tab size)
+    Align even if the resulting indentation is too large | false
+    Method parameters | false
+    List of base classes and interfaces | false
+    LINQ query | false
+    Binary expressions | true
+    Outdent binary operators | false
+    Chained method calls | false
+    Outdent dots in chained method calls | false
+    Array, object, and collection initializer | false
+    Switch expressions | false
+    Property patterns | false
+    List patterns and collection expressions | false
+    Binary patterns | false
+    Outdent binary patterns | false
+    Anonymous method body | false
+    Call arguments by '(' | false
+    Call arguments | false
+    Tuple components | false
+    Other expressions | false
+    Statement conditions inside parenthesis | true
+    'for' statement header | false
+    Multiple declarations | false
+    Type parameters list | false
+    Type parameter constraints | false
+    Outdent commas | false
+    Align multiline comments with asterisks | true
+    How to indent raw string literals | Align
+    Align similar code in columns | null
+    Fix column alignment in adjacent lines | true
+    Fields and constants | false
+    Properties and events | false
+    Simple methods, operators, delegates | false
+    Multiline method signature | false
+    Variables and local constants | false
+    Other assignments and initializers | false
+    Property patterns | false
+    Nested ternary operators | false
+    Invocations of the same method | false
+    Binary expressions | false
+    End comments | false
+    Simple switch sections | false
+    Switch expressions | false
+                      Click an option to see preview
+                   Naming
+                   Syntax Style
+                   Braces Layout
+                   Blank Lines
+                   Line Breaks and Wrapping
+                   Spaces
+                   Null Checking
+                   XML documentation
+                   File Layout
+                   Other
+               <button: Auto-Detect Code Style Rules…>
+               Based on the existing code of the entire solution
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | Inlay Hints (general) (inlay.hints)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                  [x] Enable Inlay Hints in .NET languages
+                  [x] Reserve double-press-and-hold of the Ctrl key for Push-To-Hint
+                   If you choose Push-to-Hint visibility mode, you can press the Ctrl key twice and hold it to view Inlay Hints
+                   Default visibility:
+                  <combo: (значение из модели бэкенда)>
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | Inlay Hints | C# (inlay.hints.RiderInlayHintsCSharpConfigurableGroup)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+             <button: Interceptor Hints>
+             <button: Other>
+             <button: Parameter Name Hints>
+             <button: Type Conversion Hints>
+             <button: Type Name Hints>
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | Inlay Hints | C# | Parameter Name Hints (CSharpParameterNameHintsOptions)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                   You can set the default visibility of Inlay Hints on the Editor | Inlay Hints settings page.
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                  [x] Hide for non-literals
+                  [x] Show for method invocations
+                  [x] Show for lambda expressions and anonymous methods
+                  [x] Show for unclear object creation expressions
+                  [x] Show for constants and enumeration members
+                  [x] Show for non-literals in case of multiple parameters with the same type
+                  [x] Hide for builder-like methods
+                  [x] Hide if method parameters only differ by numbered suffix
+                  [x] Hide if intention of first parameter is clear from method name
+                  [x] Hide if intention of argument is clear from usage
+                  [ ] Hide parameter name hints for parameter arrays
+                  [x] Hide parameter name hints for methods annotated as 'StringFormatMethod'
+                   xUnit attributes
+                  [x] Show for the InlineData attribute arguments
+                  [x] Show for the InlineAutoData attribute arguments
+                   NUnit attributes
+                  [x] Show for the TestCase attribute arguments
+                  [x] Show for the InlineAutoData attribute arguments
+                   No parameter name hints will be shown for methods or parameters matching any of these patterns:
+                      <tree rows 34>
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | Inlay Hints | C# | Type Name Hints (CSharpTypeNameHintsOptions)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                   You can set the default visibility of Inlay Hints on the Editor | Inlay Hints settings page.
+                   General
+                  [x] Use compact type name presentation
+                  [x] Hide if type name is evident from variable name
+                   Method return type
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                  [x] Include property, field, and variable accessors in invocation chain
+                  [x] Hide for single invocations and one-line method chains
+                  [x] Hide for the last invocation when hint is irrelevant
+                  [x] Join hints for sequences of method invocations with the same return type
+                   Mode:
+                  <combo: (значение из модели бэкенда)>
+                   Implicitly typed variables
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                  [x] Hide if type of variable is evident
+                   Pattern matching expressions
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                   Lambda expression parameters
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                  [x] Hide if types of parameters are evident
+                   LINQ range variables
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                   Target typed new expressions
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                  [x] Hide if target type is evident
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | Inlay Hints | C# | Other (CSharpOtherInlayHintsOptions)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                   You can set the default visibility of Inlay Hints on the Editor | Inlay Hints settings page.
+                   Code Annotation Hints
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                   Missing Construct Hints
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                   [MustDisposeResource] Hints
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                   Resource Dispose Points Hints
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                   Tuple Component Name Hints
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                  [x] Show types for unnamed components
+                   Deconstruction Pattern Component Name Hints
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                   Discard Type and Name Hints
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                  [x] Show inferred names for discarded values
+                   Pragma Description Hints
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                   Implicit Control Flow Jump Hints
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                  [x] Show a comment before large local functions at the end of a non-terminating nested scope
+                   Minimum total number of lines in local functions to show a comment before them
+                    <field: 20>
+                   Show block header at its closing brace
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                   Minimum number of lines in a block to show its header
+                    <field: 5>
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | Inlay Hints | C# | Type Conversion Hints (CSharpTypeConversionHintsOptions)
+��t
+@@@dialog: Settings
+  Settings
+  (settings tree omitted)
+                   You can set the default visibility of Inlay Hints on the Editor | Inlay Hints settings page.
+                   General
+                  [x] Show type conversion hints as icons
+                  [x] Hide for system type conversions
+                   Visibility:
+                  <combo: (значение из модели бэкенда)>
+                   No type conversion hints will be shown for operators matching any of the following patterns:
+                      <tree rows 0>
+
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | Code Vision (CodeLensConfigurable)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+            [x] Enable Code Vision
+            [x] Show unavailable metrics when Solution-Wide Analysis is disabled or not ready
+            Default position for metrics:
+            <combo: Above declaration> of {Above declaration / Next to declaration}
+            VCS Action:
+            <combo: Annotate> of {Annotate / History}
+            Visible metrics above declaration:
+              <field: 5>
+            Visible metrics next to declaration:
+              <field: 5>
+             <table rows 26>
+    true | Loading state | [Above declaration, Next to declaration, Default]
+    true | Component usages | [Above declaration, Next to declaration, Default]
+    true | Code author | [Above declaration, Next to declaration, Default]
+    true | LSP Code Lens | [Above declaration, Next to declaration, Default]
+    true | Rename refactoring | [Above declaration, Next to declaration, Default]
+    true | Change signature | [Above declaration, Next to declaration, Default]
+    true | Aspire resource state | [Above declaration, Next to declaration, Default]
+    true | Inactive Shader Variant branch | [Above declaration, Next to declaration, Default]
+    true | F# Inferred types | [Above declaration, Next to declaration, Default]
+    true | Usages | [Above declaration, Next to declaration, Default]
+    true | Derived symbols | [Above declaration, Next to declaration, Default]
+    true | VCS Info | [Above declaration, Next to declaration, Default]
+    true | Covering tests | [Above declaration, Next to declaration, Default]
+    true | Extension methods | [Above declaration, Next to declaration, Default]
+    true | Exposing API | [Above declaration, Next to declaration, Default]
+    true | Unity profiler snapshot | [Above declaration, Next to declaration, Default]
+    true | Unity implicit usage | [Above declaration, Next to declaration, Default]
+    true | Unity serialized field | [Above declaration, Next to declaration, Default]
+    true | Burst compiled code | [Above declaration, Next to declaration, Default]
+    true | IL code | [Above declaration, Next to declaration, Default]
+    true | Derived blueprint classes | [Above declaration, Next to declaration, Default]
+    true | UFunctions usages | [Above declaration, Next to declaration, Default]
+    true | UFunctions implementations | [Above declaration, Next to declaration, Default]
+    true | Gameplay Tags usages | [Above declaration, Next to declaration, Default]
+    true | UProperties write access | [Above declaration, Next to declaration, Default]
+    true | Blueprint struct usages | [Above declaration, Next to declaration, Default]
+         <button: Revert changes>
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | General | Code Completion (editor.preferences.completion)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+             Provides code suggestions while typing, displayed either in a popup or inline in the editor
+             <button: Popup>
+             <button: Inline>
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | General | Code Completion | Popup (editor.preferences.completion.popup)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+             Displays suggestions in a popup while typing, based on static analysis of the code
+             [ ] Match case:
+             (o) First letter only
+             ( ) All letters
+             Automatically insert single suggestions for:
+             [x] Type-Matching Completion
+             Ctrl+Alt+Space
+             [ ] Sort suggestions alphabetically
+             [x] Show suggestions as you type
+             [x] Preselect the best match to insert it by pressing dot, parentheses, and other keys
+             [x] Show the documentation popup in
+             <field: 500>
+             ms
+                Automatically insert parentheses after completion:
+                <combo: Both opening and closing> of {Both opening and closing / Opening only / None}
+               [x] Enter inserts suggestion even if completion popup is not focused (gray selection)
+               [ ] Space inserts selected suggestion when completion popup is focused (blue selection)
+               [x] Show import items in basic completion
+                [ ] Filter members by [EditorBrowsable] attribute:
+                  (o) Show Normal members only
+                  a, a:link {color:#71a1fe;} a:visited {color:#71a1fe;} a:hover {color:#71a1fe;} a:active {color:#71a1fe;} EditorBrowsableState.Always
+                   EditorBrowsableState.Always
+                  ( ) Show Normal and Advanced members
+                  a, a:link {color:#71a1fe;} a:visited {color:#71a1fe;} a:hover {color:#71a1fe;} a:active {color:#71a1fe;} EditorBrowsableState.Always and EditorBrowsableState.Advanced
+                   EditorBrowsableState.Always and EditorBrowsableState.Advanced
+               Sort Suggestions with ML
+              [x] Sort completion suggestions based on machine learning
+              [x] C#
+              [x] JavaScript
+              [x] SQL
+              [x] Shell Script
+              [x] TypeScript
+              [ ] Mark position changes in the completion popup
+              [ ] Mark the most relevant item in the completion popup
+              HTML
+             [x] Enable auto-popup of tag name code completion when typing in HTML text
+              JavaScript
+             [ ] Only type-based completion
+             Show fewer completion suggestions based on type information. May significantly improve performance.
+             [x] Suggest items with optional chaining for nullable types
+             [x] Expand method bodies in completion for overrides
+             Completion of names
+             [ ] Suggest variable and parameter names
+             [ ] Suggest names for class fields
+             [ ] Add type annotations for suggested parameter names (disabled)
+              Parameter Info
+             [ ] Show parameter name hints on completion
+             [x] Show the parameter info popup in
+             <field: 1000>
+             ms
+             [ ] Show full method signatures
+              SQL
+             Suggest objects from:
+             ( ) The current search path only
+             (o) The current scope
+             ( ) All available schemas
+             Qualify object with:
+             Database:
+             <combo: ALWAYS> of {ALWAYS / SMART / NOT_QUALIFY}
+             Schema:
+             <combo: ALWAYS> of {ALWAYS / SMART / NOT_QUALIFY}
+             Table/View:
+             <combo: ALWAYS> of {ALWAYS / SMART / NOT_QUALIFY}
+             Table/view alias:
+             <combo: ALWAYS> of {ALWAYS / SMART / NOT_QUALIFY}
+             Qualify object in:
+             Basic completion
+             <combo: SMART> of {ALWAYS / SMART / NOT_QUALIFY}
+             JOIN completion
+             <combo: ALWAYS> of {ALWAYS / SMART / NOT_QUALIFY}
+             Refactoring
+             <combo: SMART> of {ALWAYS / SMART / NOT_QUALIFY}
+             Live templates
+             <combo: SMART> of {ALWAYS / SMART / NOT_QUALIFY}
+             Drag-n-Drop
+             <combo: SMART> of {ALWAYS / SMART / NOT_QUALIFY}
+             JOIN clauses:
+             [x] Use aliases in completion for JOIN
+             [ ] Invert order of operands in auto-generated ON clause
+             [x] Suggest non-strict foreign keys based on the name matching
+             Table aliases:
+             [ ] Automatically add aliases when completing table names
+             [x] Suggest alias names in completion after table names
+                <table rows 0>
+
+             Additional characters to accept completion:
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | General | Code Completion | Inline (editor.preferences.completion.inline)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+              Displays AI suggestions as inline gray text while typing
+              [x] Enable inline completion using language models:
+              (o) Local
+              ( ) Cloud
+              Install AI Assistant
+               Display Suggestions For
+              [x] C#
+              [x] C/C++
+              [x] CSS-like
+              [x] JavaScript / TypeScript
+              [ ] HTML (disabled)
+              <button: Download (100 MB)>
+               Behavior
+              [x] Enable multi-line suggestions
+              If disabled, only single-line suggestions will be shown
+              [ ] Synchronize inline and popup completion
+              When enabled, inline completions will be shown in the completion popup to avoid shortcut conflicts
+              Download models:
+              <combo: ASK_BEFORE_DOWNLOAD> of {ASK_BEFORE_DOWNLOAD / AUTOMATICALLY / MANUALLY}
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | General | Auto Import (editor.preferences.import)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                      Import features
+                     [x] Show 'Import missing references' popup in editor ()
+                     [x] Show import items in basic code completion
+                      Filtering
+                      Exclude the following types/members from import features:
+                          <tree rows 0>
+
+                      Enforce full type name qualification when importing the following types:
+                          <tree rows 0>
+
+                     Prefix and suffix '*' wildcards are supported. Example of inputs:
+                     System.Diagnostics.Debug UnityEditor.*
+                 XML
+                [x] Show auto-import tooltip
+                 TypeScript / JavaScript
+                [x] Add JavaScript imports automatically
+                Find more configuration options in Code Style
+                [x] On code completion
+                [x] With auto-import tooltip
+                [x] Add TypeScript imports automatically
+                Find more configuration options in Code Style
+                [x] On code completion
+                [x] With auto-import tooltip
+                [ ] Unambiguous imports on the fly
+      <button: Manage Layers>
+        Some settings ignore layers when saving
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | General | Typing Assistance (editor.preferences.smartKeys_rider)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                   Typing assist
+                  [ ] Use CamelHumps
+                    Affects the way Extend Selection, Next/Previous Word, and Delete to Word Start/End actions work
+                  [x] Auto-format on semicolon
+                  [x] Auto-format on closing brace
+                   Auto-format on Paste:
+                    <combo: Indent> of {None / Indent / Reformat}
+                  [x] Correct common language-specific typos
+                  [x] Enable structural remove
+                  [x] Smart indent on enter
+                  [ ] Insert virtual indent on enter
+                    Enabling this option will also enable Virtual Space in Editor>General Settings
+                  [x] Insert * on Enter after /*
+                  [x] Jump outside of closing brackets with Tab
+                  [ ] Jump outside of closing quotes/braces in string literals with Tab when typing
+                  [ ] Jump outside of closing brackets when Tab is at indenting
+                   Unindent on Backspace:
+                    <combo: To proper indent position> of {Disabled / To nearest indent position / To proper indent position}
+                  [x] Enable smart paste
+                   Delimiter characters
+                  [x] Surround selection on typing a quote, brace, bracket, or parenthesis
+                  [x] Auto-insert pair brackets, parentheses, and quotes
+                  [x] Join concatenated strings when removing the plus sign between them
+                   Auto-insert closing brace:
+                    <combo: On typing an opening brace> of {None / On typing an opening brace / On Enter after an opening brace / On Enter or after typing an opening brace}
+                   Structural navigation (C#, XAML)
+                  [x] Use Tab/Shift+Tab keys for structural navigation
+                    Fall back to the standard Tab/Shift+Tab keys behavior when:
+                  [x] The caret is at indenting (before the first non-whitespace character)
+                  [x] The caret is at the end of a line
+                  [x] Except for Shift+Tab after the last symbol on the line
+                  [x] A block of code is selected
+                  [x] The caret is in a comment or string literal
+                   C#
+                  [x] Annotate nullability on '!'/'?' after type name
+                  [x] Annotate nullability on '!'/'?' at other positions
+                  [x] Insert parameter null-check on '!' when parameter is annotated as 'NotNull'
+                  [x] Insert documentation comment stub on '/'
+                   Visual Basic
+                  [x] Insert end constructs (End Sub, End If, Next, etc) on Enter
+                       ASP.NET
+                      [ ] Auto-format on Enter
+                      [ ] Auto-format on closing tag
+                      [x] Synchronous changing of matching tag ()
+                      [x] Insert closing tag on tag name completion ()
+                       Razor
+                      [x] Auto-format on Enter
+                      [x] Auto-format on closing tag
+                      [x] Synchronous changing of matching tag ()
+                      [x] Insert closing tag on tag name completion ()
+                      [x] Allow CPU-intensive typing assists ()
+                   C/C++
+                    Note that the Auto-format on semicolon and Auto-format on closing brace options do not apply
+                  [x] Reindent on closing brace
+                  [x] Generate documentation comments
+                  [ ] Insert '*/' after '/*'
+                  [x] Enable typing assist for Slate
+                 Miscellaneous
+                [x] Home moves caret to first non-whitespace character
+                [x] End on blank line moves caret to indent position
+                [x] Add multiple carets on double Ctrl with arrow keys
+                [x] Insert documentation comment stub
+                [x] Honor "CamelHumps" words settings when selecting on double click
+         <button: Revert changes>
+      <button: Manage Layers>
+        Some settings ignore layers when saving
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | General | Postfix Completion (reference.settingsdialog.IDE.editor.postfix.templates)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+               [x] Enable postfix completion
+               Expand templates with
+               <combo: > of { /  / }
+                   <tree rows 37>
+      cast
+      !
+      arg
+      await
+      const
+      destruct
+      destructAll
+      dforof
+      else
+      fori
+      forin
+      forof
+      forr
+      if
+      instanceof
+      itin
+      let
+      log
+      not
+      notnull
+      null
+      par
+      return
+      switch
+      throw
+      typeof
+      typeofif
+      undef
+      var
+      afrom
+      cast
+      cfrom
+      from
+      join
+                  You have selected a postfix completion language group.By clicking the checkbox, you can enable or disable all postfix templates for this language.To show the details of a particular postfix template select it inside the group.
+                   Before:
+                         Sample code for the selected template will be shown here. A flashing rectangle shows where the template can be used.
+                   After:
+                         The result of the Postfix completion will be shown here.
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | General | Gutter Icons (editor.preferences.gutterIcons)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+           [x] Show gutter icons
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | Live Templates | C# (RiderCSharpLiveTemplatesSettingsId)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                    <tree rows 83>
+                        <field: #if $expression$ $SELECTION$$END$ #endif>
+                      Shortcut:
+                     <field: #if>
+                      Description:
+                       Options:
+                       [x] Reformat
+                       [x] Shorten qualified references
+                      <button: Availability:>
+                       C# 2.0+ except stringsAt line start
+                       Use in:
+                       ( ) Generation
+                       ( ) Surround
+                       (o) Both
+                      Mnemonic:
+                      [x] Show in context action
+                     <button: Edit variables>
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | Inspection Settings (CodeInspectionSettingsId)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                      [x] Enable code analysis ()
+                       Analysis
+                      [x] Read settings from editorconfig, project settings and rule sets
+                      [x] Enable solution-wide analysis
+                      [ ] Enable computationally expensive inspections
+                      [ ] Monitor warnings
+                      [x] Include source generated files
+                       Resources utilization:
+                      <combo: (значение из модели бэкенда)>
+                      [x] Show unused non-private type members when solution-wide analysis is off ( )
+                      [x] Show unused global using directives when solution-wide analysis is off
+                        Value analysis mode (when to assume entity value can be 'null' reference):
+                        (o) 
+                          Optimistic: when explicitly marked with [CanBeNull] attribute, or checked for 'null'
+                        ( ) 
+                          Pessimistic: when entity doesn't have explicit [NotNull] attribute
+                        Nullable reference types' warnings mode (when to warn about non-nullable values being checked for nulls in projects with 'nullable reference types' enabled):
+                        (o) 
+                          Trust API contracts: when a value is annotated as non-nullable
+                        ( ) 
+                          Trust only runtime checks: only when a value is explicitly checked for null in your code
+                        Dispose analysis mode (when to warn about acquired resources which are marked with [MustDisposeResource]):
+                        (o) 
+                          Optimistic: if there is neither a 'using' block or declaration, nor a dispose call, nor a consumer accepting a disposable object or annotated with [HandlesResourceDisposal]
+                        ( ) 
+                          Pessimistic: if there is neither a 'using' block or declaration, nor a dispose call, nor a consumer annotated with [HandlesResourceDisposal]
+                      [x] Analyze integer arithmetic
+                      [x] Optimize incremental analysis
+                      [x] Treat inspections matching Roslyn analyzers as compiler inspections
+                      [x] Enable folder namespace provider
+                       Highlighting
+                      [x] Color identifiers ()
+                       You can edit identifier colors in settings (Editor -> Color Scheme).
+                      [x] Highlight color usages
+                      [x] Highlight special characters in string literals
+                      [x] Highlight captured primary parameters
+                       Caret-dependent highlighting
+                      [x] Highlight usages of the element under cursor
+                      [x] Highlight context exits
+                      [x] Highlight related async/await keywords
+                      [x] Highlight condition elements
+                       Quick fixes and context actions
+                      [x] Use parallel code analysis when applying fixes/actions in scope
+                      [x] Use solution-wide analysis results when applying quick fixes in scope
+                Elements to skip
+                 Here you can specify files, file masks, and folders that should be excluded from code analysis. Note that if some symbols are only used in the excluded files, the solution-wide analysis will highlight these symbols as never used. Files and folders are specified relative to the solution root; file masks will be matched against absolute file paths.
+                 Files and folders:
+                 File masks (?, *, ** wildcards are supported):
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | Inspection Settings | Inspection Severity | C# (Inspections-C#)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                <table rows 19>
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | Members Generation (MemberGeneratorId)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                    Generated member default body style:
+                    (o) 
+                      Throw NotImplementedException
+                    ( ) 
+                      Return default value
+                    ( ) 
+                      Uncompilable code
+                    Generated property body style:
+                    (o) 
+                      Automatic property
+                    ( ) 
+                      Property with backing field
+                    ( ) 
+                      Accessors with default body
+                    Generated documentation:
+                    (o) 
+                      None
+                    ( ) 
+                      Add for overridden members
+                    ( ) 
+                      Copy XML documentation from overridden members
+                   Other options:
+                  [ ] Place backing field above property ()
+                  [ ] Wrap generated members in regions ()
+                  [ ] Annotate property accessors with [DebuggerStepThrough]
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | Context Actions (preferences.intentionPowerPack)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                   You have selected the ASP.NET intention group.By clicking the checkbox, you can enable or disable all intentions in this group.To show the details of a particular intention, select it inside the group.
+                   Before:
+                         Sample code for the selected intention will be shown here. A flashing rectangle shows where the intention can be used.
+                   After:
+                         The result of the intention will be shown here.
+                  <tree rows 45>
+    ASP.NET Route Templates
+    C# (Unity)
+    Common
+    Cpp
+    Dev Containers
+    Flow JS
+    GitLab CI
+    LSP
+    Language injection
+    LightEdit mode
+    Microservices
+    Natural languages
+    OpenAPI specifications
+    Qodana configuration
+    Shell script
+    VueJS
+    Web.config
+      <button: Manage Layers>
+        Some settings ignore layers when saving
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | Code Cleanup | C# (CSharpCodeCleanupOptionsPageProvider)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                   Imports optimization
+                  [x] Remove only unused aliases ()
+                  [ ] Keep if alias name differs from the symbol name (e.g. 'using SCG = System.Collections.Generic') ()
+                     Namespaces that should not be removed:
+                         <tree rows 0>
+
+                     Namespaces that should always be imported:
+                         <tree rows 0>
+
+                    Namespaces that should never be removed from fully qualified type names:
+                        <tree rows 0>
+
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | Search and Navigation (UsagesOptionsPageId)
+��t
+�@@@dialog: Settings
+  Settings
+  (settings tree omitted)
+                [x] Go to Usage: if there is only one result, navigate without displaying the list (Ȁ)
+                [x] Go to Base/Inheritor: if there is only one result, navigate without displaying the list
+                 Smart Go to Declaration behavior:
+                <combo: (значение из модели бэкенда)>
+                 Find generic type usages behaviour:
+                <combo: (значение из модели бэкенда)>
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Editor | Color Scheme | C# (reference.settingsdialog.IDE.editor.colors.C#)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                Scheme:
+                 <combo: com.intellij.application.options.schemes.SchemesCombo$MySchemeListItem@2c5d941c> of {com.intellij.application.options.schemes.SchemesCombo$MySchemeListItem@3c78f3b3 / com.intellij.application.options.schemes.SchemesCombo$MySchemeListItem@7310edb9 / com.intellij.application.options.schemes.SchemesCombo$MySchemeListItem@33ad6ab3 / com.intellij.application.options.schemes.SchemesCombo$MySchemeListItem@7dd93edc / com.intellij.application.options.schemes.SchemesCombo$MySchemeListItem@6bfce75 / com.intellij.application.options.schemes.SchemesCombo$MySchemeListItem@7236963e / com.intellij.application.options.schemes.SchemesCombo$MySchemeListItem@2a968239 / com.intellij.application.options.schemes.SchemesCombo$MySchemeListItem@1e8d6669 / com.intellij.application.options.schemes.SchemesCombo$MySchemeListItem@66b9dfab / com.intellij.application.options.schemes.SchemesCombo$MySchemeListItem@20783224 / com.intellij.application.options.schemes.SchemesCombo$MySchemeListItem@2c5d941c / com.intellij.application.options.schemes.SchemesCombo$MySchemeListItem@3ee1fb58 …}
+                 <button: Change IDE Theme…>
+                 <tree rows 10>
+    Braces and Operators
+    Comments
+    Keywords
+    Methods
+    Number
+    Preprocessor
+    Properties and variables
+    Semantic highlighting
+    Strings
+    Types
+                 using System; // ReSharper disable All #pragma warning disable 67 #pragma warning disable 169 class All(string key) { /** * let's C# how it used to be */ public delegate void EventHandler(object sender, EventArgs s); public event EventHandler Event; private int myField; [Obsolete] public All(int fie
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Build | Toolset and Build (SolutionBuilderGeneralOptionsPage)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                      Changes on this page will be saved for the current solution.
+                   Toolset
+                   Mono executable path:
+                  <combo: null>
+                  <button: Custom…>
+                   .NET CLI executable path:
+                  <combo: (значение из модели бэкенда)>
+                  <button: Custom…>
+                   MSBuild version:
+                  <combo: (значение из модели бэкенда)>
+                  <button: Custom…>
+                   MSBuild global properties:
+                  <button: Edit…>
+                  [x] Automatically download .NET SDK if necessary
+                   Build
+                   [x] Use ReSharper Build
+                  [ ] Track changes in all attributes from public API surface
+                  [ ] Run build after solution is loaded
+                  [ ] Restore NuGet packages before build
+                   Use up to
+                  <combo: (значение из модели бэкенда)>
+                   processes in parallel
+                  [ ] Invoke pre- and post- build event targets for skipped projects
+                  [ ] Invoke BeforeBuild and AfterBuild targets for skipped projects
+                  [ ]  (disabled)
+                    Pass Visual Studio parameters to the build
+                   Design time build (solution loading)
+                   Use up to
+                  <combo: (значение из модели бэкенда)>
+                   processes in parallel
+                    MSBuild solution loading targets:
+                  <button: Edit…>
+                  [ ] Order project loading according to dependencies (may slow down design-time build, but prevents projects to be build several times)
+                   Build logging
+                  [x] Write MSBuild log to output
+                   Verbosity of output logger
+                  <combo: (значение из модели бэкенда)>
+                  [x] Write MSBuild log to file
+                   Verbosity of file logger
+                  <combo: (значение из модели бэкенда)>
+                  <field: C:\Users\dvislobokov\rider-robot-2026\log\SolutionBuilder>
+                   MSBuild log file will be written in the specified folder for each build.Example file name: JetBrainsLog.ReSharperBuild_2026_10_04_20_01_19_9287.log
+                   Platform-specific toolsets
+                   .NET CLI executable x86 path:
+                  <combo: null>
+                  <button: Custom…>
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Build | NuGet (RiderNuGetOptionsPageId)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                   Search
+                  [ ] Include prerelease
+                  [ ] Include unlisted
+                  [ ] Search in dotnetfeed*.blob feeds
+                   Search page size
+                    <field: 300>
+                   Install and update
+                   Dependency behavior
+                  <combo: (значение из модели бэкенда)>
+                   File conflict action
+                  <combo: (значение из модели бэкенда)>
+                   Uninstall
+                  [ ] Remove dependencies
+                  [ ] Force uninstall, even if there are dependencies on it
+                   Restore
+                   Allow Rider to restore missing packages
+                  <combo: (значение из модели бэкенда)>
+                   Automatically restore missing packages when necessary
+                  <combo: (значение из модели бэкенда)>
+                   PackageReference Restore Engine
+                  <combo: (значение из модели бэкенда)>
+                  [x] Smart Restore on Build
+                   Package management
+                   Default package management format
+                  <combo: (значение из модели бэкенда)>
+                  <button: Read more>
+                   Credential providers
+                  [x] Use bundled Azure credential provider (Experimental)
+                   Use credential providers (requires restart)
+                  <combo: (значение из модели бэкенда)>
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Build | Unit Testing (RiderUnitTestingPageId)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+               Default platform architecture:
+                <combo: Automatic> of {Automatic / x86 / x64 / ARM / ARM64}
+               Default .NET Framework version:
+                <combo: Automatic> of {Automatic / .NET2.0 / .NET4.0 / .NET4.5 / .NET4.6 / .NET4.7}
+                Maximum number of test runners to run in parallel:
+                   <field: 1>
+                 Skip tests from categories:
+               Run tests from:
+                (o) Project output folder
+                ( ) Specified folder
+               Unit test sessions
+              [x] Save and restore Unit Test Sessions
+              [x] Show notification when session is finished
+               Unit test output
+              [x] Wrap long lines in Unit Test Session output
+                Maximum number of lines in autoloaded output:
+                   <field: 200>
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Environment (preferences.environmentSetup)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                 .NET
+                 Version: 10.0.401
+                 .NET SDK and Runtime for building .NET applications
+                  There are no updates
+                 Xamarin Android
+                 Version: Not installed
+                 Xamarin SDK for developing Android applications
+                   <button: Install>
+                  Version: 11.3.0.4 [631 Mb]
+                 Xamarin iOS & Mac
+                 Version: Not installed
+                 Xamarin SDK for developing iOS and macOS applications
+                   <button: Install>
+                  Version: 16.0.0.72 [83 Mb]
+           Install or update external components of the development environment on this computer. Download and install processes will continue in the background after closing the dialog
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+
+
+################ Languages & Frameworks | C# Interactive (preferences.CSharpInteractiveConfiguration)
+dialog: Settings
+  Settings
+  (settings tree omitted)
+                   Tool settings
+                  C# interactive tool:
+                  <combo: C:\Program Files\JetBrains\JetBrains Rider 2026.2.3.1\tools\MSBuild\Current\Bin\Roslyn\csi.exe> of {C:\Program Files\JetBrains\JetBrains Rider 2026.2.3.1\tools\MSBuild\Current\Bin\Roslyn\csi.exe / C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\Roslyn\csi.exe}
+                   Rider requires a C# interactive tool, such as csi.exe, csi, or csharp that ships with MSBuild/Mono.
+                  Arguments:
+                   Tool window behavior
+                  [x] Opening C# interactive tool focuses tool window
+                  [ ] Send Line focuses tool window
+                  [x] Send Line moves caret down
+                   Other
+                  [ ] 'Reference in C# Interactive' builds project
+      <button: Manage Layers>
+      <button: Save>
+       <button: Save>
+      <button: Cancel>
+

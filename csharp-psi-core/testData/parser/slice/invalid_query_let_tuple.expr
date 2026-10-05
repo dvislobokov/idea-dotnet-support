@@ -1,0 +1,1 @@
+from x in xs let (a, b) = x select a

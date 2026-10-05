@@ -1,0 +1,285 @@
+// Metadata of Fixture.Shape: signatures from the index of the assembly, no bodies (no decompiler)
+// Assembly: IndexFixture, Version=1.0.0.0
+// MVID: e299d6546e65374f865c2b6f31088016
+// Assembly location: C:/fixture/IndexFixture.dll
+
+using System;
+
+namespace Fixture
+{
+    /// <summary>A shape of the plane.</summary>
+    /// <remarks>Abstract: <see cref="T:Fixture.Circle" /> is one.</remarks>
+    public abstract class Shape
+    {
+        public const string Kind = "shape\n";
+        public const double Ratio = 1.5;
+        public const long Big = -9000000000;
+
+        protected int Counter;
+        public readonly int Created;
+        public static int Count;
+
+        protected Shape();
+
+        /// <summary>The area of the shape.</summary>
+        /// <value>Square units.</value>
+        public abstract double Area { get; }
+        public string? Label { get; set; }
+
+        public event EventHandler? Changed;
+
+        /// <summary>Says what the shape is.</summary>
+        /// <param name="prefix">What goes first.</param>
+        /// <param name="digits">How many digits of the area.</param>
+        /// <returns>The text.</returns>
+        public virtual string Describe(string? prefix = null, int digits = 2);
+
+        public static Shape operator +(Shape a, Shape b);
+        public static implicit operator double(Shape shape);
+    }
+}
+
+// ----------------------------------------
+
+// Metadata of Fixture.Circle: signatures from the index of the assembly, no bodies (no decompiler)
+// Assembly: IndexFixture, Version=1.0.0.0
+// MVID: e299d6546e65374f865c2b6f31088016
+// Assembly location: C:/fixture/IndexFixture.dll
+
+using System;
+
+namespace Fixture
+{
+    public sealed class Circle : Shape
+    {
+        public Circle(double radius);
+
+        public double Radius { get; init; }
+        public required string Name { get; set; }
+        public override double Area { get; }
+
+        /// <summary>A part of the circle.</summary>
+        public int this[int index, string? key = null] { get; }
+
+        public override string Describe(string? prefix = null, int digits = 2);
+    }
+}
+
+// ----------------------------------------
+
+// Metadata of Fixture.Box`1: signatures from the index of the assembly, no bodies (no decompiler)
+// Assembly: IndexFixture, Version=1.0.0.0
+// MVID: e299d6546e65374f865c2b6f31088016
+// Assembly location: C:/fixture/IndexFixture.dll
+
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+namespace Fixture
+{
+    /// <summary>A box of a <typeparamref name="T" />.</summary>
+    /// <typeparam name="T">What is in the box.</typeparam>
+    public class Box<T> : IComparable<Box<T>>, IEnumerable<T>, IEnumerable, IHolder<T>, INamed where T : class, new()
+    {
+        public List<T?> Items;
+
+        public Box();
+
+        public T Held { get; }
+        public string Title { get; }
+        public T Value { get; set; }
+
+        public int CompareTo(Box<T>? other);
+        public TResult Map<TResult>(Func<T, TResult> map);
+        public virtual Dictionary<string, List<T>> Group(params T[] values);
+        public IEnumerator<T> GetEnumerator();
+
+        public class Inner<U> where U : struct
+        {
+            public (T First, U? second, int) Pair;
+            public (int A, int B, int C, int D, int E, int F, int G, int H, (string Nested, int) I) Long;
+
+            public Inner();
+        }
+    }
+}
+
+// ----------------------------------------
+
+// Metadata of Fixture.IShape`2: signatures from the index of the assembly, no bodies (no decompiler)
+// Assembly: IndexFixture, Version=1.0.0.0
+// MVID: e299d6546e65374f865c2b6f31088016
+// Assembly location: C:/fixture/IndexFixture.dll
+
+namespace Fixture
+{
+    public interface IShape<in TIn, out TOut> where TIn : allows ref struct
+    {
+        static abstract int Total { get; }
+
+        TOut Get(TIn input);
+    }
+}
+
+// ----------------------------------------
+
+// Metadata of Fixture.Money: signatures from the index of the assembly, no bodies (no decompiler)
+// Assembly: IndexFixture, Version=1.0.0.0
+// MVID: e299d6546e65374f865c2b6f31088016
+// Assembly location: C:/fixture/IndexFixture.dll
+
+namespace Fixture
+{
+    public readonly struct Money
+    {
+        public decimal Amount { get; }
+
+        public override string ToString();
+    }
+}
+
+// ----------------------------------------
+
+// Metadata of Fixture.Cursor: signatures from the index of the assembly, no bodies (no decompiler)
+// Assembly: IndexFixture, Version=1.0.0.0
+// MVID: e299d6546e65374f865c2b6f31088016
+// Assembly location: C:/fixture/IndexFixture.dll
+
+using System;
+
+namespace Fixture
+{
+    public ref struct Cursor
+    {
+        public ref int Position;
+
+        public readonly ref int Peek();
+    }
+}
+
+// ----------------------------------------
+
+// Metadata of Fixture.Color: signatures from the index of the assembly, no bodies (no decompiler)
+// Assembly: IndexFixture, Version=1.0.0.0
+// MVID: e299d6546e65374f865c2b6f31088016
+// Assembly location: C:/fixture/IndexFixture.dll
+
+namespace Fixture
+{
+    public enum Color : byte
+    {
+        Red = 1,
+        Green = 2,
+    }
+}
+
+// ----------------------------------------
+
+// Metadata of Fixture.Handler: signatures from the index of the assembly, no bodies (no decompiler)
+// Assembly: IndexFixture, Version=1.0.0.0
+// MVID: e299d6546e65374f865c2b6f31088016
+// Assembly location: C:/fixture/IndexFixture.dll
+
+using System;
+
+namespace Fixture
+{
+    public delegate int Handler(ref int x, out string y, in long z, params object[] rest);
+}
+
+// ----------------------------------------
+
+// Metadata of Fixture.ShapeExtensions: signatures from the index of the assembly, no bodies (no decompiler)
+// Assembly: IndexFixture, Version=1.0.0.0
+// MVID: e299d6546e65374f865c2b6f31088016
+// Assembly location: C:/fixture/IndexFixture.dll
+
+using System;
+using System.Collections.Generic;
+
+namespace Fixture
+{
+    public static class ShapeExtensions
+    {
+        public static T Twice<T>(this T shape) where T : Shape;
+        public static int Total(this int[] values);
+        public static string Name(this Shape? shape, string fallback = "none", char separator = '\'', Color color = Color.Green, double? scale = null);
+        public static int Sum(this IEnumerable<int> values);
+        public static unsafe void Pointer(int* pointer, delegate*<int, void> callback, int[,] matrix);
+        public static void Unmanaged<T>(T value) where T : unmanaged;
+    }
+}
+
+// ----------------------------------------
+
+// Metadata of Fixture.Old: signatures from the index of the assembly, no bodies (no decompiler)
+// Assembly: IndexFixture, Version=1.0.0.0
+// MVID: e299d6546e65374f865c2b6f31088016
+// Assembly location: C:/fixture/IndexFixture.dll
+
+using System;
+
+namespace Fixture
+{
+    [Obsolete]
+    public class Old
+    {
+        public Old();
+    }
+}
+
+// ----------------------------------------
+
+// Metadata of Fixture.Outer: signatures from the index of the assembly, no bodies (no decompiler)
+// Assembly: IndexFixture, Version=1.0.0.0
+// MVID: e299d6546e65374f865c2b6f31088016
+// Assembly location: C:/fixture/IndexFixture.dll
+
+namespace Fixture
+{
+    public class Outer
+    {
+        public Outer();
+
+        protected class Secret
+        {
+            public Secret();
+
+            public static void Tell();
+        }
+    }
+}
+
+// ----------------------------------------
+
+// Metadata of Fixture.Point: signatures from the index of the assembly, no bodies (no decompiler)
+// Assembly: IndexFixture, Version=1.0.0.0
+// MVID: e299d6546e65374f865c2b6f31088016
+// Assembly location: C:/fixture/IndexFixture.dll
+
+using System;
+using System.Text;
+
+namespace Fixture
+{
+    public record Point : IEquatable<Point>
+    {
+        public Point(int X, int Y);
+        protected Point(Point original);
+
+        protected virtual Type EqualityContract { get; }
+        public int X { get; init; }
+        public int Y { get; init; }
+
+        public override string ToString();
+        protected virtual bool PrintMembers(StringBuilder builder);
+        public override int GetHashCode();
+        public override bool Equals(object? obj);
+        public virtual bool Equals(Point? other);
+        public void Deconstruct(out int X, out int Y);
+
+        public static bool operator !=(Point? left, Point? right);
+        public static bool operator ==(Point? left, Point? right);
+    }
+}

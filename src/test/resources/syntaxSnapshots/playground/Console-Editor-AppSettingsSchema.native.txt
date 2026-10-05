@@ -1,0 +1,269 @@
+## declarations
+usings 1:1-2:48
+namespace Playground.Editor  name 4:11-4:28  range 4:1-138:26
+  class AppSettingsSchemaScenario [public static]  name 13:21-13:46  range 13:1-63:2 body 14:1-63:2
+    method Bind(IServiceCollection services, IConfiguration configuration): void [public static]  name 15:24-15:28  range 15:5-62:6 body 16:5-62:6
+  class PositionOptions [public]  name 66:14-66:29  range 66:1-77:2 body 67:1-77:2
+    field Position: string [public const]  name 68:25-68:33  range 68:5-68:47
+    property Title: string [public]  name 71:19-71:24  range 71:5-71:54 body 71:25-71:38
+    property Height: int [public]  name 74:16-74:22  range 74:5-74:43 body 74:23-74:36
+    property Maximized: bool [public]  name 76:17-76:26  range 76:5-76:41 body 76:27-76:41
+  class ShopOptions [public]  name 80:14-80:25  range 80:1-103:2 body 81:1-103:2
+    property Name: string [public]  name 83:19-83:23  range 83:5-83:43 body 83:24-83:37
+    property Mode: ShippingMode [public]  name 86:25-86:29  range 86:5-86:68 body 86:30-86:43
+    property Timeout: TimeSpan [public]  name 89:21-89:28  range 89:5-89:70 body 89:29-89:42
+    property Tags: List<string> [public]  name 91:25-91:29  range 91:5-91:62 body 91:30-91:43
+    property Prices: Dictionary<string, decimal> [public]  name 94:40-94:46  range 94:5-94:69 body 94:47-94:60
+    property Retry: RetryOptions [public]  name 96:25-96:30  range 96:5-96:53 body 96:31-96:44
+    property Owner: ShopOwner? [public]  name 98:23-98:28  range 98:5-98:42 body 98:29-98:42
+    property Secret: string [public]  name 100:19-100:25  range 100:5-100:53 body 100:26-100:47
+    property Total: int [public]  name 102:16-102:21  range 102:5-102:38
+  class RetryOptions [public]  name 106:14-106:26  range 106:1-112:2 body 107:1-112:2
+    property Count: int [public]  name 109:16-109:21  range 109:5-109:40 body 109:22-109:35
+    property Delay: TimeSpan? [public]  name 111:22-111:27  range 111:5-111:41 body 111:28-111:41
+  enum ShippingMode [public]  name 114:13-114:25  range 114:1-120:2 body 115:1-120:2
+    enum member Fast  name 117:5-117:9  range 117:5-117:9
+    enum member Cheap  name 118:5-118:10  range 118:5-118:10
+    enum member Balanced  name 119:5-119:13  range 119:5-119:13
+  record ShopOwner(string Name, int Age = 30) [public]  name 122:15-122:24  range 122:1-122:52
+  class FeatureOptions [public]  name 124:14-124:28  range 124:1-128:2 body 125:1-128:2
+    property Enabled: bool [public]  name 126:17-126:24  range 126:5-126:38 body 126:25-126:38
+    property Id: Guid [public]  name 127:17-127:19  range 127:5-127:33 body 127:20-127:33
+  class CacheOptions [public]  name 131:14-131:26  range 131:1-135:2 body 132:1-135:2
+    property SizeMb: int [public]  name 133:16-133:22  range 133:5-133:42 body 133:23-133:36
+    property Endpoints: string[] [public]  name 134:21-134:30  range 134:5-134:50 body 134:31-134:44
+  class Shop [public static]  name 138:21-138:25  range 138:1-138:26
+
+## structure view
+Playground.Editor
+  AppSettingsSchemaScenario
+    Bind(IServiceCollection services, IConfiguration configuration): void
+  PositionOptions
+    Position: string
+    Title: string
+    Height: int
+    Maximized: bool
+  ShopOptions
+    Name: string
+    Mode: ShippingMode
+    Timeout: TimeSpan
+    Tags: List<string>
+    Prices: Dictionary<string, decimal>
+    Retry: RetryOptions
+    Owner: ShopOwner?
+    Secret: string
+    Total: int
+  RetryOptions
+    Count: int
+    Delay: TimeSpan?
+  ShippingMode
+    Fast
+    Cheap
+    Balanced
+  ShopOwner(string Name, int Age = 30)
+  FeatureOptions
+    Enabled: bool
+    Id: Guid
+  CacheOptions
+    SizeMb: int
+    Endpoints: string[]
+  Shop
+
+## folding
+1:7-2:48  ... (collapsed)  | Microsoft.Extensions.Configuration;
+6:1-12:15  /// Live check of the schema of appsettings.json made from the code (ROADMAP: «Схема...  | /// <summary>
+14:1-63:2  {...}  | {
+16:5-62:6  {...}  | {
+30:9-32:66  // TYPE:appsettings-keys — in Console/appsettings.json, caret inside the object of ...  | // TYPE:appsettings-keys — in Console/appsettings.json, caret inside the object of "Shop", Ctrl+Space.
+34:9-35:110  // TYPE:appsettings-enum — in "Shop", type "Mode": and Ctrl+Space after the colon....  | // TYPE:appsettings-enum — in "Shop", type "Mode": and Ctrl+Space after the colon.
+37:9-38:144  // TYPE:appsettings-wrong-type — in "Position", type "Height": "tall"....  | // TYPE:appsettings-wrong-type — in "Position", type "Height": "tall".
+40:9-41:121  // TYPE:appsettings-timespan — in "Shop", type "Timeout": "soon"....  | // TYPE:appsettings-timespan — in "Shop", type "Timeout": "soon".
+43:9-46:58  // TYPE:appsettings-unknown-key — in "Position", type "Colour": "red"....  | // TYPE:appsettings-unknown-key — in "Position", type "Colour": "red".
+48:9-49:132  // TYPE:appsettings-dictionary — in "Shop": "Prices": { "apple": "x" }....  | // TYPE:appsettings-dictionary — in "Shop": "Prices": { "apple": "x" }.
+51:9-52:149  // TYPE:appsettings-marker — at the root, type "Cache" and Ctrl+Space inside its ob...  | // TYPE:appsettings-marker — at the root, type "Cache" and Ctrl+Space inside its object.
+54:9-58:41  // TYPE:appsettings-base — at the root, "" and Ctrl+Space between the quotes; then ...  | // TYPE:appsettings-base — at the root, "" and Ctrl+Space between the quotes; then "Default": in "Logging" → "LogLevel", Ctrl+Space.
+60:9-61:106  // TYPE:appsettings-code-change — add a property `public int Weight { get; set; }` ...  | // TYPE:appsettings-code-change — add a property `public int Weight { get; set; }` to ShopOptions, wait a second, Ctrl+Space in "Shop".
+67:1-77:2  {...}  | {
+81:1-103:2  {...}  | {
+107:1-112:2  {...}  | {
+115:1-120:2  {...}  | {
+125:1-128:2  {...}  | {
+132:1-135:2  {...}  | {
+
+## breadcrumbs
+1: 
+4: Playground.Editor
+13: Playground.Editor > AppSettingsSchemaScenario
+15: Playground.Editor > AppSettingsSchemaScenario > Bind()
+63: Playground.Editor > AppSettingsSchemaScenario
+65: Playground.Editor
+66: Playground.Editor > PositionOptions
+68: Playground.Editor > PositionOptions > Position
+70: Playground.Editor > PositionOptions
+71: Playground.Editor > PositionOptions > Title
+73: Playground.Editor > PositionOptions
+74: Playground.Editor > PositionOptions > Height
+76: Playground.Editor > PositionOptions > Maximized
+77: Playground.Editor > PositionOptions
+79: Playground.Editor
+80: Playground.Editor > ShopOptions
+83: Playground.Editor > ShopOptions > Name
+85: Playground.Editor > ShopOptions
+86: Playground.Editor > ShopOptions > Mode
+88: Playground.Editor > ShopOptions
+89: Playground.Editor > ShopOptions > Timeout
+91: Playground.Editor > ShopOptions > Tags
+93: Playground.Editor > ShopOptions
+94: Playground.Editor > ShopOptions > Prices
+96: Playground.Editor > ShopOptions > Retry
+98: Playground.Editor > ShopOptions > Owner
+100: Playground.Editor > ShopOptions > Secret
+102: Playground.Editor > ShopOptions > Total
+103: Playground.Editor > ShopOptions
+105: Playground.Editor
+106: Playground.Editor > RetryOptions
+109: Playground.Editor > RetryOptions > Count
+111: Playground.Editor > RetryOptions > Delay
+112: Playground.Editor > RetryOptions
+114: Playground.Editor > ShippingMode
+117: Playground.Editor > ShippingMode > Fast
+118: Playground.Editor > ShippingMode > Cheap
+119: Playground.Editor > ShippingMode > Balanced
+120: Playground.Editor > ShippingMode
+122: Playground.Editor > ShopOwner
+124: Playground.Editor > FeatureOptions
+126: Playground.Editor > FeatureOptions > Enabled
+127: Playground.Editor > FeatureOptions > Id
+128: Playground.Editor > FeatureOptions
+130: Playground.Editor
+131: Playground.Editor > CacheOptions
+133: Playground.Editor > CacheOptions > SizeMb
+134: Playground.Editor > CacheOptions > Endpoints
+135: Playground.Editor > CacheOptions
+137: Playground.Editor
+138: Playground.Editor > Shop
+
+## IL Viewer: type / member at the line
+1: - / -
+13: Playground.Editor.AppSettingsSchemaScenario / -
+15: Playground.Editor.AppSettingsSchemaScenario / Bind
+63: Playground.Editor.AppSettingsSchemaScenario / -
+65: - / -
+66: Playground.Editor.PositionOptions / -
+68: Playground.Editor.PositionOptions / Position
+70: Playground.Editor.PositionOptions / -
+71: Playground.Editor.PositionOptions / Title
+73: Playground.Editor.PositionOptions / -
+74: Playground.Editor.PositionOptions / Height
+76: Playground.Editor.PositionOptions / Maximized
+77: Playground.Editor.PositionOptions / -
+79: - / -
+80: Playground.Editor.ShopOptions / -
+83: Playground.Editor.ShopOptions / Name
+85: Playground.Editor.ShopOptions / -
+86: Playground.Editor.ShopOptions / Mode
+88: Playground.Editor.ShopOptions / -
+89: Playground.Editor.ShopOptions / Timeout
+91: Playground.Editor.ShopOptions / Tags
+93: Playground.Editor.ShopOptions / -
+94: Playground.Editor.ShopOptions / Prices
+96: Playground.Editor.ShopOptions / Retry
+98: Playground.Editor.ShopOptions / Owner
+100: Playground.Editor.ShopOptions / Secret
+102: Playground.Editor.ShopOptions / Total
+103: Playground.Editor.ShopOptions / -
+105: - / -
+106: Playground.Editor.RetryOptions / -
+109: Playground.Editor.RetryOptions / Count
+111: Playground.Editor.RetryOptions / Delay
+112: Playground.Editor.RetryOptions / -
+114: Playground.Editor.ShippingMode / -
+117: Playground.Editor.ShippingMode / Fast
+118: Playground.Editor.ShippingMode / Cheap
+119: Playground.Editor.ShippingMode / Balanced
+120: Playground.Editor.ShippingMode / -
+122: Playground.Editor.ShopOwner / -
+124: Playground.Editor.FeatureOptions / -
+126: Playground.Editor.FeatureOptions / Enabled
+127: Playground.Editor.FeatureOptions / Id
+128: Playground.Editor.FeatureOptions / -
+130: - / -
+131: Playground.Editor.CacheOptions / -
+133: Playground.Editor.CacheOptions / SizeMb
+134: Playground.Editor.CacheOptions / Endpoints
+135: Playground.Editor.CacheOptions / -
+137: - / -
+138: Playground.Editor.Shop / -
+
+## Go to Base: member at the line
+1: -
+15: AppSettingsSchemaScenario.Bind(IServiceCollection services, IConfiguration configuration)
+17: AppSettingsSchemaScenario.Bind(IServiceCollection services, IConfiguration configuration) (in body)
+63: -
+71: PositionOptions.Title
+73: -
+74: PositionOptions.Height
+76: PositionOptions.Maximized
+77: -
+83: ShopOptions.Name
+85: -
+86: ShopOptions.Mode
+88: -
+89: ShopOptions.Timeout
+91: ShopOptions.Tags
+93: -
+94: ShopOptions.Prices
+96: ShopOptions.Retry
+98: ShopOptions.Owner
+100: ShopOptions.Secret
+102: ShopOptions.Total
+103: -
+109: RetryOptions.Count
+111: RetryOptions.Delay
+112: -
+126: FeatureOptions.Enabled
+127: FeatureOptions.Id
+128: -
+133: CacheOptions.SizeMb
+134: CacheOptions.Endpoints
+135: -
+
+## breakpoint lines
+16, 18, 21-22, 25-28, 62, 68, 71, 74, 76, 83, 86, 89, 91, 94, 96, 98, 100, 102, 109, 111, 126-127, 133-134
+
+## run gutter
+
+## Go to Class / Symbol
+M:Balanced -> 119:5 Balanced (ShippingMode)
+M:Bind -> 15:24 Bind(IServiceCollection services, IConfiguration configuration) (AppSettingsSchemaScenario)
+M:Cheap -> 118:5 Cheap (ShippingMode)
+M:Count -> 109:16 Count (RetryOptions)
+M:Delay -> 111:22 Delay (RetryOptions)
+M:Enabled -> 126:17 Enabled (FeatureOptions)
+M:Endpoints -> 134:21 Endpoints (CacheOptions)
+M:Fast -> 117:5 Fast (ShippingMode)
+M:Height -> 74:16 Height (PositionOptions)
+M:Id -> 127:17 Id (FeatureOptions)
+M:Maximized -> 76:17 Maximized (PositionOptions)
+M:Mode -> 86:25 Mode (ShopOptions)
+M:Name -> 83:19 Name (ShopOptions)
+M:Owner -> 98:23 Owner (ShopOptions)
+M:Position -> 68:25 Position (PositionOptions)
+M:Prices -> 94:40 Prices (ShopOptions)
+M:Retry -> 96:25 Retry (ShopOptions)
+M:Secret -> 100:19 Secret (ShopOptions)
+M:SizeMb -> 133:16 SizeMb (CacheOptions)
+M:Tags -> 91:25 Tags (ShopOptions)
+M:Timeout -> 89:21 Timeout (ShopOptions)
+M:Title -> 71:19 Title (PositionOptions)
+M:Total -> 102:16 Total (ShopOptions)
+T:AppSettingsSchemaScenario -> 13:21 AppSettingsSchemaScenario (Playground.Editor)
+T:CacheOptions -> 131:14 CacheOptions (Playground.Editor)
+T:FeatureOptions -> 124:14 FeatureOptions (Playground.Editor)
+T:PositionOptions -> 66:14 PositionOptions (Playground.Editor)
+T:RetryOptions -> 106:14 RetryOptions (Playground.Editor)
+T:ShippingMode -> 114:13 ShippingMode (Playground.Editor)
+T:Shop -> 138:21 Shop (Playground.Editor)
+T:ShopOptions -> 80:14 ShopOptions (Playground.Editor)
+T:ShopOwner -> 122:15 ShopOwner(string Name, int Age = 30) (Playground.Editor)
+

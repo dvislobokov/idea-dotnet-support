@@ -1,4 +1,4 @@
-<!-- Extensions contributed by csharp-psi-semantic (../csharp-psi, CSHARP_PSI_MIGRATION.md). Included into META-INF/plugin.xml with xi:include.
-     Empty until step 7 brings the code: an extension is added here together with its class. -->
+<!-- Extensions contributed by csharp-psi-semantic (CSHARP_PSI_MIGRATION.md). Included into META-INF/plugin.xml with xi:include.
+     Empty while the module has no code: an extension is added here together with its class. -->
 <idea-plugin>
 </idea-plugin>

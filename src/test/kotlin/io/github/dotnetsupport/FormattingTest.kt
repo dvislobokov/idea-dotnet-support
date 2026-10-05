@@ -106,7 +106,7 @@ class FormattingTest : BasePlatformTestCase() {
         val plain = FileUtil.createTempDirectory("plain", null, true)
         val withCSharpier = FileUtil.createTempDirectory("csh", null, true).also { File(it, ".csharpierrc.json").writeText("{}") }
         assertEquals(FormatterChoice.AUTO, settings.formatter)
-        assertEquals(FormatterChoice.DOTNET_FORMAT, settings.resolve(plain))
+        assertEquals("FORMATTING is NATIVE by default: the built-in formatter", FormatterChoice.BUILT_IN, settings.resolve(plain))
         assertEquals(FormatterChoice.CSHARPIER, settings.resolve(withCSharpier))
         // an explicit choice is not second-guessed
         settings.formatter = FormatterChoice.DOTNET_FORMAT
@@ -120,10 +120,13 @@ class FormattingTest : BasePlatformTestCase() {
         val other = myFixture.addFileToProject("Shop/a.json", "{}")
         assertFalse(service.canFormat(code))
         settings.formatter = FormatterChoice.AUTO
+        assertFalse("Auto comes to the built-in formatter: the platform's formatting model answers", service.canFormat(code))
+        settings.formatter = FormatterChoice.DOTNET_FORMAT
         assertTrue(service.canFormat(code))
         assertFalse(service.canFormat(other))
 
         assertTrue(DotNetSettingsConfigurable.describeFormatter(FormatterChoice.AUTO, plain).startsWith("For this project: dotnet format whitespace"))
+        assertTrue(DotNetSettingsConfigurable.describeFormatter(FormatterChoice.AUTO, plain, builtIn = true).startsWith("For this project: the built-in formatter"))
         assertEquals("Reformat Code leaves C# files alone.", DotNetSettingsConfigurable.describeFormatter(FormatterChoice.NONE, plain))
     }
 

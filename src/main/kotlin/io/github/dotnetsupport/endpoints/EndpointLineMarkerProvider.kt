@@ -9,6 +9,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
 import io.github.dotnetsupport.lang.CSharpFile
+import io.github.dotnetsupport.lang.CSharpLeaves
 import io.github.dotnetsupport.msbuild.DotNetProjects
 import javax.swing.Icon
 
@@ -23,7 +24,7 @@ class EndpointLineMarkerProvider : LineMarkerProviderDescriptor() {
     override fun getIcon(): Icon = AllIcons.General.Web
 
     override fun getLineMarkerInfo(element: PsiElement): LineMarkerInfo<*>? {
-        if (element.firstChild != null) return null // markers belong to leaves
+        if (!CSharpLeaves.isMarkerLeaf(element)) return null
         val file = element.containingFile as? CSharpFile ?: return null
         val offset = element.textRange.startOffset
         val endpoints = endpointsOf(file).filter { it.offset == offset }

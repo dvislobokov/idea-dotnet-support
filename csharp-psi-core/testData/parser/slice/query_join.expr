@@ -1,0 +1,1 @@
+from a in b join int c in d on a.X equals c select c

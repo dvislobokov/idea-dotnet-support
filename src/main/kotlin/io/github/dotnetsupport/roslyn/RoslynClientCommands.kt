@@ -9,11 +9,15 @@ import com.intellij.openapi.actionSystem.ex.ActionUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.command.CommandProcessor
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.diagnostic.logger
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.ui.popup.JBPopupFactory
+import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.platform.lsp.api.LspClient
 import com.intellij.platform.lsp.api.LspServer
 import com.intellij.platform.lsp.api.customization.LspCommandsSupport
@@ -21,6 +25,8 @@ import com.intellij.platform.lsp.api.customization.LspIntentionAction
 import org.eclipse.lsp4j.CodeAction
 import org.eclipse.lsp4j.Command
 import org.eclipse.lsp4j.Position
+import org.eclipse.lsp4j.Range
+import org.eclipse.lsp4j.TextEdit
 import org.eclipse.lsp4j.jsonrpc.json.MessageJsonHandler
 
 private val LOG = logger<RoslynClientCommands>()
@@ -33,6 +39,20 @@ private val LOG = logger<RoslynClientCommands>()
  */
 class RoslynClientCommands : LspCommandsSupport() {
     override fun executeCommand(lspClient: LspClient, contextFile: VirtualFile, command: Command) {
+        if (!handle(lspClient, contextFile, command)) super.executeCommand(lspClient, contextFile, command)
+    }
+
+    // The platform still has both generations of its API: completion runs commands through the deprecated overload, code actions
+    // through the new one. The default of the new one calls the deprecated one, whose default sends the command to the server: each
+    // override passes what it does not handle to its own default — to the other override it went round in circles (StackOverflowError on
+    // every completion item with a command, robot 0.1.60).
+    @Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
+    override fun executeCommand(server: LspServer, contextFile: VirtualFile, command: Command) {
+        if (!handle(server as LspClient, contextFile, command)) super.executeCommand(server, contextFile, command)
+    }
+
+    /** False: not a command of the client, the server is to run it. */
+    private fun handle(lspClient: LspClient, contextFile: VirtualFile, command: Command): Boolean {
         val arguments = command.arguments.orEmpty().map { it as? JsonElement ?: GSON.toJsonTree(it) }
         when (command.command) {
             PEEK_REFERENCES -> peekReferences(arguments)?.let { (uri, position) -> showReferences(lspClient, uri, position) }
@@ -40,14 +60,31 @@ class RoslynClientCommands : LspCommandsSupport() {
             FIX_ALL -> fixAll(arguments)?.let { fix ->
                 choose(lspClient, command.title, fix.scopes.associateBy(::scopeTitle)) { scope -> fixAll(lspClient, contextFile, command.title, fix.data, scope) }
             }
-            else -> super.executeCommand(lspClient, contextFile, command)
+            COMPLEX_EDIT -> complexEdit(arguments)?.let { applyComplexEdit(lspClient, it) }
+            else -> return false
         } ?: LOG.warn("Roslyn command ${command.command}: unexpected arguments $arguments")
+        return true
     }
 
-    // The platform still has both generations of its API: completion runs commands through the deprecated overload, code actions
-    // through the new one, and the default of each sends the command to the server.
-    @Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
-    override fun executeCommand(server: LspServer, contextFile: VirtualFile, command: Command) = executeCommand(server as LspClient, contextFile, command)
+    /**
+     * The rest of a completion item that writes more than at the caret (an `override` / `partial` member, `await` that makes the method
+     * `async`): the item itself inserts nothing, this edit writes the member and puts the caret where the server says. In the command of
+     * the completion when it runs on the EDT, so one Undo.
+     */
+    private fun applyComplexEdit(client: LspClient, edit: ComplexEdit) {
+        val run = run@{
+            val file = client.descriptor.findFileByUri(edit.uri) ?: return@run
+            val document = FileDocumentManager.getInstance().getDocument(file) ?: return@run
+            val (range, text, caret) = edit.on(document.text) ?: return@run LOG.warn("Roslyn complex edit: the range is outside ${file.name}")
+            WriteCommandAction.runWriteCommandAction(client.project, "Complete", null, {
+                document.replaceString(range.startOffset, range.endOffset, text)
+                PsiDocumentManager.getInstance(client.project).commitDocument(document)
+            })
+            val editor = FileEditorManager.getInstance(client.project).selectedTextEditor?.takeIf { it.document == document }
+            if (caret != null && editor != null) editor.caretModel.moveToOffset(caret.coerceAtMost(document.textLength))
+        }
+        if (ApplicationManager.getApplication().isDispatchThread) run() else onEdt(client, run)
+    }
 
     /** The references of what stands at [position]: the usual Show Usages of the IDE, which asks the server. */
     private fun showReferences(client: LspClient, uri: String, position: Position) = onEdt(client) {
@@ -98,10 +135,50 @@ class RoslynClientCommands : LspCommandsSupport() {
 
     class FixAll(val data: JsonElement, val scopes: List<String>)
 
+    /** `roslyn.client.completionComplexEdit`: replace [range] (LSP positions) of [uri] by [newText]; then the caret to [newOffset] (-1: leave it). */
+    class ComplexEdit(val uri: String, val range: Range, val newText: String, val newOffset: Int) {
+        /**
+         * In a document of the IDE ([text], `\n` only): the range as offsets, the text to put there and where the caret goes. The server writes
+         * `\r\n` and counts its offset in a text with them (as VS Code does on Windows), so both are brought to `\n`. Null: outside [text].
+         */
+        fun on(text: CharSequence): Triple<TextRange, String, Int?>? {
+            val start = offset(text, range.start) ?: return null
+            val end = offset(text, range.end) ?: return null
+            if (end < start) return null
+            val caret = if (newOffset < 0) null else {
+                val composed = text.substring(0, start) + newText + text.substring(end)
+                newOffset - composed.take(newOffset.coerceAtMost(composed.length)).count { it == '\r' }
+            }
+            return Triple(TextRange(start, end), newText.replace("\r\n", "\n").replace('\r', '\n'), caret)
+        }
+
+        private fun offset(text: CharSequence, position: Position): Int? {
+            var line = 0
+            var lineStart = 0
+            while (line < position.line) {
+                val newline = text.indexOf('\n', lineStart)
+                if (newline < 0) return null
+                lineStart = newline + 1
+                line++
+            }
+            val lineEnd = text.indexOf('\n', lineStart).let { if (it < 0) text.length else it }
+            return (lineStart + position.character).takeIf { it <= lineEnd }
+        }
+    }
+
     companion object {
         const val PEEK_REFERENCES = "roslyn.client.peekReferences"
         const val NESTED_CODE_ACTION = "roslyn.client.nestedCodeAction"
         const val FIX_ALL = "roslyn.client.fixAllCodeAction"
+        const val COMPLEX_EDIT = "roslyn.client.completionComplexEdit"
+
+        /** `[{uri}, {range, newText}, isSnippetString, newOffset]`, as server 5.12 sends them with `override` / `partial` items. */
+        fun complexEdit(arguments: List<JsonElement>): ComplexEdit? {
+            val uri = (arguments.getOrNull(0) as? JsonObject)?.get("uri")?.takeIf { it.isJsonPrimitive }?.asString ?: return null
+            val edit = (arguments.getOrNull(1) as? JsonObject)?.let { GSON.fromJson(it, TextEdit::class.java) } ?: return null
+            val offset = arguments.getOrNull(3)?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }?.asInt ?: -1
+            return ComplexEdit(uri, edit.range ?: return null, edit.newText.orEmpty(), offset)
+        }
         private const val RESOLVE_TIMEOUT_MS = 10_000
         private const val FIX_ALL_TIMEOUT_MS = 120_000 // a whole solution
 

@@ -7,7 +7,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VirtualFile
 import io.github.dotnetsupport.format.FormatterChoice
-import io.github.dotnetsupport.lang.CSharpIdentifierAnnotator
+import io.github.dotnetsupport.lang.CSharpColors
 import io.github.dotnetsupport.lang.CSharpSyntaxHighlighter
 import java.util.concurrent.ConcurrentHashMap
 
@@ -98,24 +98,43 @@ object RoslynPolicy {
 
     /**
      * `dotnet format whitespace` is the formatter of Roslyn started as a process, about a second per file; the server runs the same
-     * formatter in milliseconds. CSharpier is another formatter and a decision of the team, "None" is nobody at all.
+     * formatter in milliseconds. "Built-in" is the plugin's own formatter, the server stands in only for a file without the native tree.
+     * CSharpier is another formatter and a decision of the team, "None" is nobody at all.
      */
-    fun formatsByServer(resolved: FormatterChoice, serverReady: Boolean): Boolean = serverReady && resolved == FormatterChoice.DOTNET_FORMAT
-
-    private val TYPES = setOf("class", "struct", "interface", "enum", "delegate", "recordClass", "recordStruct", "typeParameter", "type", "module")
-    private val METHODS = setOf("method", "extensionMethod", "function")
-    private val MEMBERS = setOf("property", "field", "event", "enumMember", "constant")
+    fun formatsByServer(resolved: FormatterChoice, serverReady: Boolean, nativeTree: Boolean = true): Boolean = serverReady &&
+        (resolved == FormatterChoice.DOTNET_FORMAT || resolved == FormatterChoice.BUILT_IN && !nativeTree)
 
     /**
-     * A semantic token of the server in the palette of the plugin (the one of Rider), so a file looks the same before and after the
-     * server is ready. Null: what the lexer has colored already (comments, strings, punctuation) or what has no color (locals, parameters).
+     * A semantic token of the server in the palette of the plugin ([CSharpColors], the one of Rider), so a file looks the same before and
+     * after the server is ready and with the native colors. The server tells `static` and a reassigned local (`ReassignedVariable`) by
+     * modifiers, not a declaration from a use: a method is colored as a call. Null: what the lexer has colored already (comments, strings,
+     * punctuation).
      */
-    fun textAttributesKey(tokenType: String): TextAttributesKey? = when (tokenType) {
-        in TYPES -> CSharpIdentifierAnnotator.TYPE
-        in METHODS -> CSharpIdentifierAnnotator.METHOD
-        in MEMBERS -> CSharpIdentifierAnnotator.MEMBER
-        // contextual keywords (`var`, `record`, `await`...) are words for the lexer
-        "keyword", "controlKeyword" -> CSharpSyntaxHighlighter.KEYWORD
-        else -> null
+    fun textAttributesKey(tokenType: String, modifiers: List<String> = emptyList()): TextAttributesKey? {
+        val static = "static" in modifiers
+        return when (tokenType) {
+            "class" -> if (static) CSharpColors.STATIC_CLASS else CSharpColors.CLASS
+            "recordClass" -> CSharpColors.RECORD
+            "struct" -> CSharpColors.STRUCT
+            "recordStruct" -> CSharpColors.RECORD_STRUCT
+            "interface" -> CSharpColors.INTERFACE
+            "enum" -> CSharpColors.ENUM
+            "delegate" -> CSharpColors.DELEGATE
+            "typeParameter" -> CSharpColors.TYPE_PARAMETER
+            "type", "module" -> CSharpColors.TYPE
+            "namespace" -> CSharpColors.NAMESPACE
+            "method", "function" -> if (static) CSharpColors.STATIC_METHOD_CALL else CSharpColors.METHOD_CALL
+            "extensionMethod" -> CSharpColors.EXTENSION_METHOD_CALL
+            "property" -> if (static) CSharpColors.STATIC_PROPERTY else CSharpColors.PROPERTY
+            "field" -> if (static) CSharpColors.STATIC_FIELD else CSharpColors.FIELD
+            "constant", "enumMember" -> CSharpColors.CONSTANT
+            "event" -> CSharpColors.EVENT
+            "variable", "local" -> if ("ReassignedVariable" in modifiers) CSharpColors.MUTABLE_LOCAL_VARIABLE else CSharpColors.LOCAL_VARIABLE
+            "parameter" -> CSharpColors.PARAMETER
+            "label" -> CSharpColors.LABEL
+            // contextual keywords (`var`, `record`, `await`...) are words for the lexer
+            "keyword", "controlKeyword" -> CSharpSyntaxHighlighter.KEYWORD
+            else -> null
+        }
     }
 }

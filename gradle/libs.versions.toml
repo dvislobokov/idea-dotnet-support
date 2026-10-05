@@ -1,5 +1,5 @@
-# The versions of the csharp-psi modules (csharp-psi-core, csharp-psi-semantic, csharp-psi-ide), the same catalogue as ../csharp-psi so their
-# build files move as they are (CSHARP_PSI_MIGRATION.md, step 7). The root project applies the same Kotlin and IntelliJ Platform plugins.
+# The versions of the csharp-psi modules (csharp-psi-core, csharp-psi-semantic, csharp-psi-ide; CSHARP_PSI_MIGRATION.md). The root project
+# applies the same Kotlin and IntelliJ Platform plugins.
 [versions]
 kotlin = "2.3.21"
 intellijPlatformGradlePlugin = "2.19.0"
@@ -15,3 +15,5 @@ opentest4j = { module = "org.opentest4j:opentest4j", version.ref = "opentest4j" 
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 intellij-platform = { id = "org.jetbrains.intellij.platform", version.ref = "intellijPlatformGradlePlugin" }
 intellij-platform-module = { id = "org.jetbrains.intellij.platform.module", version.ref = "intellijPlatformGradlePlugin" }
+# JFlex for the lexer of csharp-psi-core (src/main/grammar/CSharp.flex, task generateLexer).
+intellij-platform-grammarkit = { id = "org.jetbrains.intellij.platform.grammarkit", version.ref = "intellijPlatformGradlePlugin" }

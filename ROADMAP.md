@@ -243,6 +243,7 @@
 - [x] Доработка по живой проверке (2026-09-29, три замечания пользователя). (1) `decimal sum = ` не предлагал `Total`: метод предлагается целым вызовом `Total(order);`, если найдены все обязательные аргументы (перегруженные методы не предлагаются). (2) `Run(` не предлагал ничего: аргумент подбирался только по точному имени; теперь `CSharpArguments.pick` — имя, затем единственная переменная типа параметра, среди нескольких — та, чьё имя оканчивается так же (`token` — `cancellationToken`). (3) `;` после метода из списка ставилась только для `void`: теперь и когда вызов завершает оператор — значение объявления, присваивания, `return`, expression body (`RoslynCompletionPolicy.endsStatement`); в фигурных скобках инициализатора объекта не ставится. При наборе `(` руками `;` не добавляется. Тесты `GhostTextTest`, `RoslynPhase7Test`. Вживую не проверено
 - [x] Reload Solution / Reload Project (2026-09-29, по замечанию пользователя: созданные мимо IDE папка и файл не появились в дереве): меню .NET, ПКМ на узле solution / проекта, кнопка рядом с «глазом» в заголовке окна Project (только в Solution view). `SolutionReload`: сохранить документы → перечитать папку с диска (`VfsUtil.markDirty` + `RefreshQueue`) → забыть разобранное (`SolutionService.reload`: всё или один проект с его `project.assets.json` и props / targets) → run configurations → перерисовать дерево → топик `SolutionReloadListener`. Модуль `roslyn`: Reload Solution перезапускает сервер, Reload Project шлёт `workspace/didChangeWatchedFiles` по файлу проекта. Причина исходного замечания: IDE смотрит на диск, когда её окно получает фокус, а файлы появились, пока окно было активно. Проверка вживую — раздел «Solution view» в `debug-playground/README.md`. Тест `SolutionReloadTest`. Вживую не проверено
 - [x] Свой индекс сборок для подсказок без импорта (2026-09-29): `WriteLi` → `Console.WriteLine(|);` + `using`. Индексатор `indexer/Program.cs` (C#, `System.Reflection.Metadata`, сборки не загружаются) плагин несёт **исходником** и собирает на машине пользователя под установленный SDK (`index/IndexerTool`: SDK 10 → `net10.0`, SDK 9 → `net9.0`, сеть не нужна; проверено на обоих, 2,2–2,5 с, индексы побайтно одинаковы). Формат `.dnix` — файл на сборку, имя — MVID, читается отображением в память (`index/AssemblyIndex`). Проект видит только свои сборки (`index/ProjectAssemblies` по `project.assets.json`: пакеты с транзитивными, эталонные пакеты фреймворков, собранные проекты solution). Индексация — в фоне при открытии проекта, после restore и по Reload; один запуск на все проекты solution. От повторной индексации защищают блокировка папки индексов между процессами (её держит индексатор), блокировка сборки индексатора и очередь внутри IDE. Кэш solution из 5 проектов — 2,0 МБ (317 сборок, 0,73 с). Completion — `index/ImportCompletion`: от трёх букв, не после точки и не на месте имени; вставка по общим правилам скобок и `;` (`lang/CSharpCalls`), `using` с учётом implicit и global usings (`CSharpUsings`). Parquet отклонён: нужен точечный поиск. Тесты `AssemblyIndexTest`, `ImportCompletionTest`; сценарий — `debug-playground/Console/Editor/ImportCompletion.cs`. Подробности и замеры — `indexer/README.md`. Вживую не проверено
+- [x] 0.1.52 — индекс сборок для семантики (формат 2, шаг 10 миграции, B1–B2): все публичные и protected типы и члены с сигнатурами (generic-параметры с ограничениями, база, интерфейсы, атрибуты, nullable, кортежи, значения по умолчанию и констант), extension-методы по расширяемому типу, XML-документация отдельным файлом `.dnxd` (блоки deflate: 3,5 МБ на эталонный пакет .NET 10 вместо 31 МБ XML); читатель `index/AssemblyIndex`, `IndexedTypeRef`, `AssemblyDocs`, резолвер по сборкам проекта `AssemblyIndexSet` (тип по имени, базы и интерфейсы с подстановкой, унаследованные члены, extension-методы, доки). Индексатор параллельно: эталонный пакет — 0,83 с с документацией. Ссылки проекта (`ProjectAssemblies.references`): платформа из тулбара, пакеты, reference packs (и скачанные restore), .NET Framework (пакет `Microsoft.NETFramework.ReferenceAssemblies` или папка машины), `HintPath`, проекты старого формата, `ProjectReference` — проектами. Тесты `AssemblyIndexSemanticsTest` (фикстура `tools/index-fixture`), `ProjectReferencesTest`. В редакторе пока ничего не меняется — потребитель будет у семантики (шаг 11)
 - [x] Completion в C# не смотрит на регистр (2026-09-29, по проверке, которую просил пользователь): платформа сопоставляет префикс по настройке IDE (Editor | General | Code Completion | Match case, по умолчанию «первая буква»), и `writeli` не находил `WriteLine` — ни среди элементов сервера, ни среди элементов индекса. `lang/CSharpCaseInsensitiveCompletion` — первый в цепочке (остальные идут `after dotnetCaseInsensitive`), запускает остальных с `CamelHumpMatcher(prefix, false)`; совпавшее и по регистру по-прежнему выше. Настройка IDE для C# не действует. Серый текст остаётся чувствительным к регистру намеренно: он дописывает остаток слова и не может заменить уже набранные буквы. Тест в `ImportCompletionTest`. Вживую не проверено
 - [x] Инструменты на странице настроек — как в Go-плагине (2026-10-01, по просьбе пользователя): под каждым инструментом своя строка с
   найденным путём («путь из настроек» / найден плагином / «Не установлен: dotnet tool update --global …»), в поле — только короткий
@@ -316,7 +317,17 @@
 - [x] Unit Tests explorer: окно со всеми тестами solution без запуска (токенное обнаружение уже есть), запуск выделенного, группировка проект / namespace / класс
 - [x] Окно Unit Tests внизу, как в Rider: вкладка Explorer плюс сессии — результаты `dotnet test` идут в это окно, а не в Run (свой program runner, повторный запуск переиспользует вкладку); окна Build и .NET Coverage не исчезают с панели
 - [ ] Continuous testing: `dotnet watch test` с тем же деревом результатов, рабочая кнопка «Toggle auto-test»
-- [ ] Декомпиляция сборок из Dependencies через `ilspycmd` → C# read-only в редакторе
+- [x] 0.1.63 — Декомпиляция сборок из Dependencies → C# read-only в редакторе. Не `ilspycmd`: DotNetHelper, метод `decompile`
+  (`helpers/dotnethelper/Decompile.cs`, ICSharpCode.Decompiler 11.1, тот же, что у IL Viewer) — C# типа целиком, XML-доки, смещения членов по
+  XML doc id; reference assembly подменяется реализацией (`decompiler/ImplementationAssemblies`: `packs/*.Ref` → `shared/`, `ref/` → `lib/`
+  пакета, .NET Framework → `%WINDIR%/Microsoft.NET/Framework64`), forwarded-тип берётся из сборки, где он определён. Плагин —
+  пакет `decompiler`: свой VFS `dotnet-decompiled://` (а не голый LightVirtualFile — URL ведёт обратно к файлу: история навигации, Back,
+  вкладки после перезапуска), файл C# только для чтения, баннер «Decompiled from … Read-only» со ссылкой на dll, заголовок вкладки
+  `Console.cs [System.Console]`, кэш в памяти и на диске по (dll, время, тип). Вход — ПКМ по пакету / сборке в Dependencies → Decompile...
+  (список типов из индекса сборок, иначе у помощника); точка входа для навигации из кода — `AssemblyDecompiler.open(...)`. Замеры
+  (SDK 10, первый запрос к сборке / следующий тип той же): `System.Console` 0,3 с / 0,03 с, `System.String` через `System.Runtime`
+  (CoreLib) 2,2 с, `JsonSerializer` 0,5 с, Newtonsoft `JsonConvert` 0,2 с. Тест `DecompilerTest` (ответы записаны `tools/decompiler/record.py`).
+  Сценарий — `debug-playground/README.md`, «Декомпиляция». Вживую не проверено
 - [x] Сводка по скорости сборки: меню .NET → Measure Build Performance — `-clp:PerformanceSummary` → таблицы «что тормозит» по таргетам, задачам и проектам
 - [ ] Сохранение binlog (`-bl`) для MSBuild Structured Log Viewer
 - [x] Run MSBuild Target…: список таргетов проекта с поиском (`dotnet msbuild -targets`), свои из проекта и `Directory.Build.*` наверху, запуск с выводом в Build tool window
@@ -400,7 +411,7 @@
 - [x] 0.1.26 — Hot Reload в `dotnet watch` (`run/HotReload`): состояние по выводу `dotnet watch` (`DOTNET_CLI_UI_LANGUAGE=en`; тексты SDK 9 и 10 сняты с живого CLI, SDK 8 — по исходникам) в строке Services и цветом в консоли, Restart ссылкой и кнопкой — перезапуск конфигурации (клавиши `dotnet watch` из pipe не читает). Тест `HotReloadTest`; сценарий — `debug-playground/Web/HotReload.cs`. Вживую не проверено
 - [x] 0.1.25 — Go to Base для членов (`roslyn/RoslynBaseMembers`): цепочка `typeHierarchy/supertypes`, член того же вида и имени в файле базового типа по сканеру объявлений (перегрузки — по числу параметров); ближайший базовый класс, затем интерфейсы. Тест `RoslynBaseMembersTest`; сценарий — `debug-playground/Console/Editor/GoToBase.cs`. Вживую не проверено
 ### Этап 2 — среднее
-- [ ] Reference assemblies net4x в индексаторе и Dependencies (`Microsoft.NETFramework.ReferenceAssemblies`, `Reference Assemblies\...\.NETFramework\v4.x`), сборки по `HintPath` (2)
+- [ ] Reference assemblies net4x в индексаторе и Dependencies (`Microsoft.NETFramework.ReferenceAssemblies`, `Reference Assemblies\...\.NETFramework\v4.x`), сборки по `HintPath` (2) — в индексаторе сделано в 0.1.52 (`ProjectAssemblies.references`), в дереве Dependencies — нет
 - [x] 0.1.35 — Publish (`publish/`): диалог как в Rider (Configuration, TFM, RID, self-contained, single-file, ReadyToRun, trim, папка, превью команды), `.pubxml` читается (и профили VS с `PublishUrl` → `-o`) и пишется (Save as Profile), контейнер `-t:PublishContainer` (SDK ≥ 8), вывод в окне Build, уведомление с папкой, свой тип run configuration «.NET Publish». Тест `PublishTest`, профили и чек-лист — `debug-playground` «Publish». Вживую в IDE не проверено (команды прогнаны руками на площадке)
 - [x] 0.1.41 — MSBuild из Visual Studio / Build Tools (`build/VisualStudioToolset`, `vswhere`): Build / Rebuild / Clean и свои цели проектов старого формата и решений с ними — через `MSBuild.exe` (amd64) с `-restore -p:RestorePackagesConfig=true -m -v:m` (у одиночного проекта — `SolutionDir` его решения, как у VS: без него restore `packages.config` падает) (.NET SDK пропускает XAML WPF — сборка падает с CS5001 — и цели VS); «MSBuild version» в Toolset and Build (Auto / .NET SDK / установка VS; выбранная установка собирает всё); без VS — уведомление со ссылкой на Build Tools. `$(VSToolsPath)` найденной VS передаётся MsBuildHost при вычислении проектов старого формата. Restore и Publish остаются на SDK. Тест `VisualStudioToolsetTest`; площадка — `debug-playground/NetFramework` (сборка решения проверена UI-роботом). `-getProperty` legacy — через MsBuildHost, как и было
 - [ ] Roslyn LS и non-SDK проекты: предупреждение, если VS / Build Tools не найдены; проверить загрузку вживую (1)
@@ -441,7 +452,7 @@
   через помощник), фиды V2 и локальные папки, учётные данные nuget.config и credential providers; restore `packages.config` в папку
   `packages` solution (`repositoryPath`). Плагин — `nuget/NuGetHelper`, тест `NuGetHelperTest` на ответах настоящего прогона. **За
   корпоративным прокси не проверено**; у пакетов, найденных только помощником, в карточке нет данных nuspec
-- [ ] DotNetHelper, дальше: тесты через TestPlatform (живые результаты, поиск по метаданным, net4x), декомпилятор (ICSharpCode.Decompiler),
+- [ ] DotNetHelper, дальше: тесты через TestPlatform (живые результаты, поиск по метаданным, net4x), ~~декомпилятор (ICSharpCode.Decompiler)~~ (сделан в 0.1.63),
   CorFlags сборок
 - [x] 0.1.29 — DiagnosticsHelper (`helpers/diagnostics`, ClrMD 3.1): `runtimes` — CLR процесса по модулям (Toolhelp-снимок с
   `TH32CS_SNAPMODULE32`, видит 32-битные процессы; 435 процессов за 319 мс), attach к хостам с desktop CLR под ключом реестра;
@@ -504,8 +515,109 @@
 .NET 10, память. План по шагам, гейты и вехи — **`CSHARP_PSI_MIGRATION.md`**; статус шагов ведётся там, сюда — итоги по версиям.
 - [x] 0.1.40 — шаги 1–2: модули `csharp-psi-core` / `-semantic` / `-ide` (пустые, `pluginComposedModule`), переключатели фич
   `ROSLYN | NATIVE` (`lang/CSharpFeatures`, чтение в модуле `roslyn`); на странице Language Server строки появятся с первой нативной фичей
-- [ ] Шаги 3–6: генератор PSI из `Syntax.xml`, лексер, перенос парсера Roslyn (MIT), корпусная сверка дерева с Roslyn (0 расхождений)
-- [ ] Шаги 7–9: подмена парсера, stub-индексы, синтаксические фичи на PSI
+- [x] Шаги 3–6 (в `../csharp-psi`, 2026-10-04): генератор PSI из `Syntax.xml`, лексер, перенос парсера Roslyn (MIT), корпусная сверка
+  дерева с Roslyn (0 расхождений)
+- [x] 0.1.45 — шаг 7: код csharp-psi перенесён в плагин целиком (`csharp-psi-core`, `tools/csharp-psi`, `docs/csharp-psi`); `.cs` разбирает
+  парсер Roslyn-порта, Structure / folding / breadcrumbs / Go to Class / IL Viewer / ▶ тестов и остальные потребители `CSharpSyntaxModel` — на
+  его PSI; символы `#if` и `LangVersion` файла — из `CompilationModel` (смена TFM в тулбаре перепарсивает). Переключатель «Structure, folding
+  and breadcrumbs» на странице Language Server, **по умолчанию Built-in**; эвристики — по выбору Language server. Сценарий —
+  `debug-playground/MultiTarget/ActiveBranch.cs` (`TYPE:active-branch`), проверка роботом — `tools/ui-robot/scripts/syntax_tree.js`
+- [ ] Шаги 8–9: stub-индексы, синтаксические фичи на PSI
+- [x] 0.1.47 — шаг 8: stub-индексы встроенного дерева (`csharp-psi-core` `psi/stubs`): Go to Class / Symbol без разбора файлов, индексы
+  extension-методов и атрибутов тестов (`[Fact]`, `[Test]`) на будущее; `CSharpDeclarationIndex` — только для эвристического дерева.
+  Замер: весь `dotnet/runtime` ≈ 35 с в один поток. Вживую не проверено (`docs/LIVE_CHECKS.md`)
+- [x] 0.1.50 — шаг 9, `NAVIGATION` («Navigation and usages», встроенная по умолчанию с 0.1.60), синтаксическая часть: Go to
+  Declaration, Ctrl+наведение и подсветка использований под кареткой по дереву (`lang/NativeCSharpNavigation`) — локальные, параметры
+  (в т. ч. лямбд, локальных функций, первичных конструкторов), метки, переменные запросов, параметры типов; члены своего типа и его
+  partial-частей (перегрузки — списком), типы solution по имени с учётом `using`. Чего дерево не знает (`a.B`, базовые члены, сборки) —
+  по-прежнему сервер; Go to Super работает при любом переключателе. Сценарий — `debug-playground/Console/Editor/Navigation.cs`
+  (`TYPE:nav-*`); робот — `goto_declaration.js`. Роботом и вживую не проверено
+- [x] 0.1.49 — шаг 9, `FORMATTING` («Formatting», по умолчанию Built-in — робот 2026-10-04: метод, `switch`, инициализаторы и весь файл площадки совпали с сервером): встроенный форматтер — правила пробелов
+  `dotnet format whitespace` (отступы, Allman, пробелы, `case`, пустые строки, `indent_*` / `csharp_*` из `.editorconfig`) на модели
+  форматтера платформы (`lang/NativeCSharpFormatter`): Reformat Code / Selection, Auto-Indent Lines. Отвечает вместо сервера и `dotnet format`;
+  CSharpier и None — как были. Оракул — `./gradlew formatOracle` (`tools/csharp-psi/format-oracle.sh`). Сценарий —
+  `debug-playground/Console/Editor/Formatting.cs` (`TYPE:format-*`); робот — `reformat.js`. Роботом и вживую не проверено.
+  Выбор в Toolset and Build → «Formatter» (по просьбе пользователя 2026-10-04): «Built-in» — на лету, «dotnet format (on save)» —
+  только файлы целиком, по Reformat Code и при сохранении; «Auto» — по переключателю «Formatting» (`TYPE:format-choice`)
+- [x] 0.1.62 — шаг 10, Go to Class / Symbol по сборкам и metadata view (задача B4): `index/AssemblyGotoContributors` — типы (и члены
+  для Go to Symbol) всех проиндексированных сборок solution, только при «Include non-project items» (`scope.isSearchInLibraries`), одна
+  строка на сборку и версию, `List<T> (System.Collections.Generic, System.Collections 10.0)`; имена — отсортированные таблицы на индекс
+  (замер: 582 сборки площадки, 41 тыс. имён — 110 мс первый раз, 7 мс потом). `index/AssemblyMetadataText` — C# из индекса без тел
+  (заголовок сборки, `using`, generic-параметры, `where`, базы, атрибуты, `///`, вложенные типы; все типы 582 сборок разбираются без
+  синтаксических ошибок), `index/AssemblyNavigation` — файлы своей ФС `dotnet-metadata://` (вкладки и история переживают перезапуск),
+  только чтение, заголовок вкладки и баннер; Built-in Go to Declaration к члену сборки без готового сервера — туда же
+  (`AssemblyNavigation.declarationTargets` из `CSharpGotoDeclarationHandler`). Площадка — `debug-playground/README.md`, «Go to Class /
+  Symbol по сборкам», и `LibraryNames.cs`, `TYPE:library-navigation`; `docs/LIVE_CHECKS.md` E-73–E-75. Роботом и вживую не проверено
+  Замер на `debug-playground`: 111 библиотек, 592 dll, поиск в VFS ≈ 1,1 с (фон), индексация ≈ 0,5 с. Go to Class по типам сборок — в
+  0.1.62 (B4). Площадка — `debug-playground/README.md`, «External Libraries». Вживую не проверено
+- [x] 0.1.61 — `using` по встроенному дереву (задача A8, синтаксическая часть; `lang/NativeCSharpUsings`): completion `using var` /
+  `await using var` (второй делает метод `async`), `using (` — локальные / `var` / `new`, директивы — namespace solution и сборок, после
+  `using static` / alias — и типы, `global using` вверху файла; postfix `.awaitusing` (и `.using`) с именем по типу; Alt+Enter «Convert to
+  'using' declaration» / «… statement», «Wrap in 'using' statement», «Sort 'using' directives», «Convert to 'global using'» (в
+  `GlobalUsings.cs` проекта); «Make method async» и на `await using` / `await foreach`. Неиспользуемые директивы и всё, что требует
+  `IDisposable`, — после C2/C3 (список в `CSHARP_PSI_MIGRATION.md`, A8). Сценарий — `debug-playground/Console/Editor/Usings.cs`
+  (`TYPE:using-*`). Роботом и вживую не проверено
+- [x] 0.1.60 — «Navigation and usages», «Completion» и «Colors of identifiers» встроенные по умолчанию (робот: те же цели Go to
+  Declaration, из списка сервера ничего не теряется, все имена сервера окрашены тем же цветом или точнее); `new T()` — к конструктору;
+  недостающие ключевые слова, без двойных `override`; выбор `await` / `override` / `partial` сервера больше не падает; цвета сервера
+  не остаются под встроенными. Проверка — `docs/LIVE_CHECKS.md` E-44…E-47, E-52…E-56
+- [x] 0.1.59 — шаг 10, library roots (задача B3): сборки, против которых компилируется solution, — внешние библиотеки платформы
+  (`index/AssemblyLibraries`, `AdditionalLibraryRootsProvider`): Project view → External Libraries — reference packs, `.NETFramework`,
+  пакеты NuGet (и `packages.config` по папке) с версиями, сборки по `HintPath`; корни — сами dll (XML-доки и прочее содержимое папок
+  пакетов не индексируются), в `allScope`, не в project scope. Пересчёт вместе с индексом сборок (restore, файл проекта, TFM в тулбаре).
+  Замер на `debug-playground`: 111 библиотек, 592 dll, поиск в VFS ≈ 1,1 с (фон), индексация ≈ 0,5 с. Go to Class по типам сборок — не
+  сделан (нет `ChooseByNameContributor` по индексу сборок). Площадка — `debug-playground/README.md`, «External Libraries». Вживую не проверено
+- [x] 0.1.58 — шаг 11b, типы выражений (задача C2, `lang/semantic/CSharpExpressionTypes`): тип любого выражения — вызов с выводом
+  аргументов-типов (по аргументам и телам лямбд), `await`, индексатор, `?.`, `??`, `?:`, операторы, кортежи, деконструкция, `foreach`,
+  `out var`, шаблоны, запросы LINQ, параметры лямбд; `var` — тип инициализатора. Цвета и Go to Declaration Built-in — член после точки
+  у любого выражения. Гейт типов — 99,0 % (было 4,9 %), неверных 8; имён — 98,8 %. Подсказки типа `var` нет: своего quick documentation
+  C# ещё нет (C3). Сценарий — `debug-playground/Console/Editor/ExpressionTypes.cs` (`TYPE:types-*`). Роботом и вживую не проверено
+- [x] 0.1.57 — шаг 11a, разрешение имён (задача C1, `lang/semantic`): namespace, `using` / alias / `global using` (из других файлов и
+  `ImplicitUsings` / `Using` проекта) / `using static`, `global::`, типы solution и сборок (порядок поиска C#, арность, суффикс
+  `Attribute`), члены после точки у namespace, типа и значения известного типа (локальная, параметр, поле, свойство, `this` / `base`,
+  `new T()`, вызов), унаследованные из solution и сборок с подстановкой, перегрузки по числу и известным типам аргументов, extension-методы.
+  Цвета Built-in раскрашивают типы и члены сборок (`Console`, `WriteLine`), Go to Declaration Built-in ведёт к членам solution после точки
+  у значения (член сборки — никуда, декомпилятора нет). Гейт семантики — 98,4 % (было 68,1 %), неверных 20 (было 282). Сценарий —
+  `debug-playground/Console/Editor/LibraryNames.cs` (`TYPE:library-*`). Роботом и вживую не проверено
+- [x] 0.1.56 — «Errors and warnings» и «Rename» встроенные по умолчанию (после робота: те же ошибки в тех же местах, что у сервера; rename
+  сценариев площадки как у сервера). Переключение ошибок без задвоений и пропусков до первой правки; rename не пишет файл из слушателя
+  шаблона. Скрипт робота — `tools/ui-robot/scripts/rename_check.js`
+- [x] 0.1.55 — шаг 9, `COMPLETION`, синтаксическая часть (задача A6, «Completion», встроенный по умолчанию с 0.1.60): ключевые слова
+  по месту, локальные / параметры / члены / типы в области с порядком Rider (локальные > параметры > члены > типы > ключевые слова,
+  выше — что подходит по ожидаемому типу), `override` (абстрактный — `throw new NotImplementedException();`, виртуальный — вызов `base`),
+  `partial`-методы, имена переменной после типа (`lang/NativeCSharpCompletion`, место — `NativeCSharpCompletionPlace`). Пункты сервера
+  добавляются к своим без повторов (сервер теперь работает при любом переключателе). Сценарии — `debug-playground/Console/Editor/NativeCompletion.cs`
+  (`TYPE:complete-*`) и `CommonCalls.cs`; робот — `complete_at_line.js` / `rider_complete.js`. Роботом и вживую не проверено
+- [x] 0.1.54 — шаг 9, `DIAGNOSTICS`, синтаксическая часть («Errors and warnings», по умолчанию пока Language server): синтаксические ошибки
+  Roslyn по своему дереву — парсер, литералы, директивы — с кодами, текстами и местами компилятора (`CS1002: ; expected` за концом строки);
+  сервер при Built-in оставляет семантические ошибки и уступает только синтаксические, что показаны встроенными (`lang/NativeCSharpDiagnostics`,
+  ядро — `csharp-psi-core` `lang/diagnostics`). Сценарий — `debug-playground/Broken/SyntaxErrors.cs` (`TYPE:diag-*`); робот — `errors_at.js`.
+  Роботом и вживую не проверено
+- [x] 0.1.53 — шаг 9, `RENAME` (задача A5, «Rename», по умолчанию пока Language server): inplace rename по дереву без сервера
+  (`lang/NativeCSharpRename`, обработчик `NativeCSharpRenameHandler` первым): локальные, параметры (лямбд, анонимных методов, локальных
+  функций, методов / конструкторов / индексаторов / первичных конструкторов, если именованного аргумента в других файлах нет), локальные
+  функции, метки, переменные запросов, параметры типов (не `partial`); именованные аргументы своих вызовов и теги `<param>` / `<typeparam>`;
+  `@` перед ключевым словом; конфликты (захват поля, параметр лямбды, второе объявление в области, член скрывает параметр первичного
+  конструктора) — диалог «Problems Detected»; одно Ctrl+Z. Члены и типы — серверу (готов) или подсказка. Заодно один резолвер имён на
+  навигацию, цвета и rename (`lang/NativeCSharpScopes` + `lang/NativeCSharpResolver`, дубликат в `NativeCSharpNavigation` удалён). Сценарий —
+  `debug-playground/Console/Editor/Rename.cs` (`TYPE:rename-*`); робот — `inline_rename.js`. Роботом и вживую не проверено
+- [x] 0.1.51 — шаг 9, `SEMANTIC_COLORS` («Colors of identifiers», встроенные по умолчанию с 0.1.60): палитра Rider (`lang/CSharpColors`,
+  ~30 ключей `CSHARP_*_IDENTIFIER` с откатом на прежние `CSHARP_TYPE` / `METHOD` / `MEMBER`, страница Color Scheme | C# с группами Rider),
+  токены сервера — в ту же палитру (`static`, `ReassignedVariable`, локальные, параметры, namespace, метки); встроенные цвета
+  (`lang/NativeCSharpSemanticColors`): объявления по виду и модификаторам, локальные / параметры / метки по синтаксическим областям
+  (`lang/NativeCSharpScopes`, на переиспользование в A2 / A5), члены своего типа, его partial-частей и базовых классов solution, типы
+  solution по виду — из stub-индексов, без AST чужих файлов. Сценарий — `debug-playground/Console/Editor/SemanticColors.cs`
+  (`TYPE:colors-*`); робот — `highlight_keys.js`. Роботом и вживую не проверено
+- [x] 0.1.48 — шаг 9, `EDITING` («Typing assistance», по умолчанию Built-in после робота): Extend Selection по узлам дерева
+  (`name.Trim()`, выражение, оператор, тело, член с doc-комментарием, текст строки без кавычек), Complete Statement по оператору под кареткой
+  (недостающие `)` `]` `;`, блок для `if` / `foreach` / `while` / метода / класса в стиле скобок файла, многострочный вызов не разрывается),
+  серая `;` для многострочных операторов (`lang/NativeCSharpEditing`). Сценарии — `debug-playground/Console/Editor/ExtendSelection.cs`,
+  `CompleteStatement.cs` (`TYPE:extend-selection-*`, `TYPE:complete-*`, `TYPE:gray-semicolon`); робот — `extend_selection.js`,
+  `complete_statement.js`. Роботом и вживую не проверено
+- [x] 0.1.46 — шаг 9, первая фича: виды использований Find Usages по PSI файла (`lang/NativeCSharpUsageKinds`, переключатель «Kinds of
+  usages», по умолчанию Built-in после проверки роботом); точнее эвристики на деконструкции, вложенных инициализаторах, `out Order o`, паттернах
+  `switch`, переменных запроса и параметрах лямбд. Сценарий — `debug-playground/Console/Editor/FindUsages.cs` (`TYPE:find-usages-native-*`).
+  Робот: все маркеры совпали с ожидаемым; вживую пользователем не проверено
 - [x] 0.1.41 — шаг 10, часть для парсера: `msbuild/CompilationModel` — по файлу проект (свой каталог, если он файл не исключает; иначе
   вычисленный проект, который его подключает), конфигурация и TFM тулбара (у multi-target без выбора — первый) и что получает компилятор:
   `DefineConstants` вместе с неявными символами SDK (MsBuildHost прогоняет таргет `AddImplicitDefineConstants` на копии вычисления),
@@ -513,8 +625,32 @@
   статическое чтение проекта и ближайшего `Directory.Build.props` (`CompilationOptionsReader`, в т.ч. legacy-проекты), совпадает с MSBuild на
   всех фикстурах. API для csharp-psi: `symbolsFor(file)`, `languageVersionFor(file)`, топик `CHANGED`. Тест `CompilationOptionsTest` на
   ответах настоящего MsBuildHost (SDK 10.0.401, `tools/compilation-fixtures/capture.py`). В IDE не подключено (ключи csharp-psi — шаг 7)
-- [ ] Шаги 10–11: project model (ссылки: `project.assets.json`, индекс сборок, library roots), семантика по слоям со сверкой по Roslyn
+- [ ] Шаги 10–11: project model (ссылки: `project.assets.json`, индекс сборок, library roots), семантика по слоям со сверкой по Roslyn — 0.1.52: формат индекса для семантики и ссылки проекта (B1–B2); library roots (B3) и семантика — дальше
 - [ ] Шаг 12: сервер опционален (снимается требование .NET 10) → сервер удалён
+
+### Подсказки для частых вызовов (по просьбе пользователя 2026-10-04)
+
+Как в Rider: готовое продолжение там, где пишут одно и то же. Серым текстом (`CSharpGhostText`, Tab) и первым пунктом completion.
+Сначала то, что видно из синтаксиса (заголовок метода, его параметры, `async`), потом — с типами (шаг 11c). Сценарий —
+`debug-playground/Console/Editor/CommonCalls.cs` (создать вместе с первой подсказкой). Что в этих местах даёт Rider — `docs/RIDER_REFERENCE.md`.
+- [x] `return` в методе, который возвращает `Task<T>` / `ValueTask<T>` и не `async`: `return Task.FromResult(|);`
+  (`ValueTask.FromResult`); у `Task` / `ValueTask` без `T` — `return Task.CompletedTask;` (`default`). В `async` — ничего такого
+  (там `return value;`). Синтаксис: тип возврата и модификаторы из заголовка — можно до семантики. Сделано в 0.1.55: серый текст
+  (`CSharpGhostText`, правило «Task return») при любом источнике, пункт completion — при «Completion» = Built-in
+  (`NativeCSharpCommonCalls`; `TYPE:complete-task-from-result`, `TYPE:complete-task-completed`)
+- [ ] `CancellationToken` в вызов: в методе с параметром `CancellationToken ct` при наборе аргументов вызова, у которого последний
+  параметр — `CancellationToken` (сигнатура из индекса сборок / signature help сервера, позже из семантики), — серый `ct`
+  (или `cancellationToken:`, если до него пропущены необязательные); в completion аргумента — переменная токена выше всех. Без
+  параметра в методе — `CancellationToken.None` ниже. Как Rider «Pass cancellation token»
+- [ ] Параметр `CancellationToken cancellationToken = default` в конец списка у `async`-метода, который зовёт методы с токеном
+  (intention / серый текст после последнего параметра)
+- [ ] `await` перед вызовом, который возвращает `Task`, в `async`-методе (completion вставляет `await `); `.ConfigureAwait(false)`
+  — только по настройке (для библиотек)
+- [x] `async` в заголовок, когда в теле набран `await` (quick-fix, как в Rider); `Task` вместо `void` у такого метода — 0.1.55: выбор
+  `await` в completion (Built-in) и intention «Make method async» (`NativeCSharpMakeAsyncIntention`); обработчик события остаётся
+  `async void` (`TYPE:complete-await-async`, `TYPE:complete-make-async`). `.ConfigureAwait(false)` не делался
+- [ ] Частые продолжения из статистики (`suggest/`): что после `ArgumentNullException.` (`ThrowIfNull(|);`), `string.` (`IsNullOrEmpty(|)`),
+  `Task.` (`WhenAll(|)`, `Run(|)`) — порядок completion по тому, что выбирают чаще (`RoslynCompletionRanking` + статистика)
 
 ## Платформа
 - [x] Минимальная версия — 2026.1 (`sinceBuild = 261`), сборка и тесты на IntelliJ IDEA 2026.1.4, Kotlin API 2.3. Папки под узлом проекта в панели Solution получили короткие имена и в IDEA (Java-плагин называл их как пакеты). Убраны устаревшие `ReadAction.compute`, `DaemonCodeAnalyzer.restart()`, `isLenient`, `createSingleFileDescriptor`

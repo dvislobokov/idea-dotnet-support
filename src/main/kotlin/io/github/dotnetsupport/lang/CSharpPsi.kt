@@ -57,10 +57,11 @@ object CSharpStructure {
 /**
  * A declaration is a named PSI element, so the rename of the platform takes it for its own and ends in [CSharpDeclaration.setName]
  * ("needs a language server") even when a language server is there: the rename of the LSP client is registered last. Vetoed,
- * the rename of the platform steps aside and the one of the server is what Shift+F6 does.
+ * the rename of the platform steps aside and the one of the server is what Shift+F6 does. A declaration of the native tree is vetoed
+ * the same way: whatever [CSharpSyntaxModel] takes for a declaration.
  */
 class CSharpRenameVeto : Condition<PsiElement> {
-    override fun value(element: PsiElement): Boolean = element is CSharpDeclaration
+    override fun value(element: PsiElement): Boolean = element is CSharpDeclaration || CSharpSyntaxModel.current.declarationOf(element) != null
 }
 
 /** A namespace, a type or a member. Everything about it beyond its kind comes from [CSharpStructure]. */

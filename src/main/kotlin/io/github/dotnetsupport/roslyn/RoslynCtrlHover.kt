@@ -11,10 +11,9 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiManager
-import com.intellij.psi.util.elementType
 import io.github.dotnetsupport.lang.CSharpSyntaxModel
 import io.github.dotnetsupport.lang.CSharpFile
-import io.github.dotnetsupport.lang.CSharpTokenTypes
+import io.github.dotnetsupport.lang.CSharpLeaves
 import org.eclipse.lsp4j.DefinitionParams
 import org.eclipse.lsp4j.Position
 
@@ -26,7 +25,7 @@ import org.eclipse.lsp4j.Position
  */
 class RoslynCtrlHoverReferenceProvider : ImplicitReferenceProvider {
     override fun getImplicitReference(element: PsiElement, offsetInElement: Int): PsiSymbolReference? {
-        if (element.elementType != CSharpTokenTypes.IDENTIFIER || element.containingFile !is CSharpFile) return null
+        if (!CSharpLeaves.isIdentifier(element) || element.containingFile !is CSharpFile) return null
         if (!element.project.service<RoslynWorkspace>().isLoaded) return null
         return Reference(element)
     }

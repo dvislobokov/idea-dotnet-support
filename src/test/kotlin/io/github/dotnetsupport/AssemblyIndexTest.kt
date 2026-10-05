@@ -27,7 +27,9 @@ class AssemblyIndexTest {
         assertEquals("System.Linq", linq.assemblyName)
         assertEquals("the name of the file is the MVID", 32, console.mvid.length)
         assertTrue(console.typeCount > 0 && console.memberCount > 0)
-        assertEquals("every type and every member is found by its name", console.typeCount + console.memberCount, console.nameCount)
+        assertTrue("the assembly version", console.assemblyVersion.startsWith("10.0."))
+        val statics = console.allTypes.flatMap { it.members }.count { it.isStatic && !it.isProtected && it.kind != IndexedMemberKind.CONSTRUCTOR && it.kind != IndexedMemberKind.OPERATOR }
+        assertEquals("every type and every static member is found by its name", console.typeCount + statics, console.nameCount)
     }
 
     @Test

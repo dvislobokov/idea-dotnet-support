@@ -1,0 +1,1 @@
+switch (x) { case System.Int32.MaxValue: break; case nameof(x): break; }

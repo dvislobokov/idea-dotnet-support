@@ -1,0 +1,5 @@
+int Count()
+{
+    <spot>await</spot> Task.Delay(10);
+    return 1;
+}

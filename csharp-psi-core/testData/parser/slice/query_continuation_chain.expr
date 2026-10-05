@@ -1,0 +1,1 @@
+from a in b select a into c where c select c into d select d

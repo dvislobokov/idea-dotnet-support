@@ -1,5 +1,8 @@
 package io.github.dotnetsupport.roslyn
 
+import io.github.dotnetsupport.lang.CSharpFeatures
+import io.github.dotnetsupport.lang.CSharpFeature
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.ide.BrowserUtil
 import com.intellij.ide.actions.RevealFileAction
@@ -19,8 +22,10 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.StoragePathMacros
 import com.intellij.openapi.components.service
+import com.intellij.openapi.components.serviceIfCreated
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.DumbAware
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.ui.popup.JBPopupFactory
@@ -447,6 +452,33 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
             // the server answers with `workspace/configuration` requests for every section it knows
             else -> clients.forEach { client -> client.sendNotification { it.workspaceService.didChangeConfiguration(DidChangeConfigurationParams(emptyMap<String, Any>())) } }
         }
+        highlightingSwitched()
+    }
+
+    /** The switches of «Errors and warnings» and «Colors of identifiers» the highlights of the server were made with: from the start of the workspace. */
+    private var nativeHighlighting = HIGHLIGHTING_FEATURES.map { CSharpFeatures.native(it, project) }
+
+    /**
+     * «Errors and warnings» or «Colors of identifiers» switched: the platform makes the highlights of the server's diagnostics and semantic
+     * tokens when they arrive and keeps them (a restart of the daemon does not redo them, `workspace/diagnostic/refresh` of the client does
+     * nothing), and which of them are shown depends on the switch (`createAnnotation` of [RoslynClientDescriptor], `getTextAttributesKey` of
+     * its tokens): make them again from the answers it has, for the open C# files.
+     */
+    fun highlightingSwitched() {
+        val before = nativeHighlighting
+        val native = HIGHLIGHTING_FEATURES.map { CSharpFeatures.native(it, project) }
+        nativeHighlighting = native
+        if (before == native) return
+        ApplicationManager.getApplication().invokeLater({
+            // internal in Kotlin, public in the bytecode: by reflection, as LspCompletionObject (RoslynCompletionItems)
+            runCatching {
+                val type = Class.forName(HIGHLIGHTING_APPLIER, true, LspClientManager::class.java.classLoader)
+                val companion = type.getField("Companion").get(null)
+                val applier = companion.javaClass.getMethod("getInstance", Project::class.java).invoke(companion, project)
+                val refresh = type.getMethod("scheduleHighlightingRefresh", VirtualFile::class.java)
+                for (file in FileEditorManager.getInstance(project).openFiles) if (file.extension.equals("cs", ignoreCase = true)) refresh.invoke(applier, file)
+            }.onFailure { PluginLog.warn(LOG_CATEGORY, "the server's errors and colors were not shown again after their source switched", it) }
+        }, ModalityState.nonModal(), project.disposed)
     }
 
     fun offerInstallation() {
@@ -457,6 +489,11 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
     }
 
     companion object {
+        /** Makes the highlights of an LSP server for a file again, from the diagnostics and tokens the platform has (see [highlightingSwitched]). */
+        private const val HIGHLIGHTING_APPLIER = "com.intellij.platform.lsp.impl.features.highlighting.LspHighlightingApplier"
+
+        private val HIGHLIGHTING_FEATURES = listOf(CSharpFeature.DIAGNOSTICS, CSharpFeature.SEMANTIC_COLORS)
+
         /** `roslyn-language-server` 5.x is built for .NET 10. */
         const val SERVER_RUNTIME = 10
 
@@ -513,5 +550,15 @@ class ShowRoslynServerLogAction : AnAction(), DumbAware {
 /** Reload Solution / Reload Project of the main part: the server reloads with them. */
 class RoslynReloadListener(private val project: Project) : io.github.dotnetsupport.actions.SolutionReloadListener {
     override fun reloaded(projectFile: VirtualFile?) = project.service<RoslynWorkspace>().reloaded(projectFile)
+}
+
+/**
+ * Indexing starts or ends: the features of the plugin that need the indexes give way to the server while it runs (`CSharpFeatures.native`),
+ * so the highlights of the server's answers are made again, as on a switch of their source.
+ */
+class RoslynDumbModeListener(private val project: Project) : DumbService.DumbModeListener {
+    override fun enteredDumbMode() { project.serviceIfCreated<RoslynWorkspace>()?.highlightingSwitched() }
+
+    override fun exitDumbMode() { project.serviceIfCreated<RoslynWorkspace>()?.highlightingSwitched() }
 }
 

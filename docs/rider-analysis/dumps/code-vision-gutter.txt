@@ -1,0 +1,82 @@
+file RiderAnalysis.cs
+##### code vision
+  7: public enum OrderStatus { New, Paid, Shipped, Cancelled }  ==> 5 own usages [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]  |  5 own exposing APIs [Exposing API]
+  9: public interface IShape  ==> 1 own usage [Usages]  |  2 inheritors [Derived symbols]
+  11: double Area();  ==> 1 implementation [Derived symbols]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  12: string Name { get; }  ==> 1 implementation [Derived symbols]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  15: public abstract class ShapeBase : IShape  ==> 1 own usage [Usages]  |  1 inheritor [Derived symbols]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  17: public abstract double Area();  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  18: public virtual string Name => GetType().Name;  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  19: protected virtual void OnChanged(string reason) { }  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  22: public class Order  ==> 3 own usages [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  24: public int Id { get; set; }  ==> 2 own usages [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  25: public string Customer { get; set; } = "";  ==> 3 own usages [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  26: public decimal Total { get; init; }  ==> 2 own usages [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  27: public OrderStatus Status { get; set; }  ==> 1 own usage [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  28: public List<string> Lines { get; } = new();  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  31: public static class StringExtensions  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  33: public static bool IsBlank(this string? value) => string.IsNullOrWhite  ==> 1 own usage [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  36: public class AnalysisSamples  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  44: public AnalysisSamples(string title, int count)  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  48: public int Count => _orders.Count;  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  50: public void Place(int quantity, string customer, bool express = false,  ==> 1 own usage [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  53: public async Task<string> Highlights(string input, int index, Order or  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  75: public void Completion(string name, List<int> items, Order order, Orde  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  84: public int Returns(string name)  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  91: public async Task Awaiting(HttpClient client)  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  101: public class Circle : ShapeBase  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+##### gutter icons
+  1: using System.Text;  ==> tooltip=Global 'using' directives acc=icon: Namespace icon=Namespace.svg, original=null)) click=null
+  9: public interface IShape  ==> tooltip=Interface 'IShape' is implemented (click to navigate) acc=icon: HasImplementations icon=HasImplementations.svg, original=null)) click=null
+  11: double Area();  ==> tooltip=Method 'Area' is implemented (click to navigate) acc=icon: HasImplementations icon=HasImplementations.svg, original=null)) click=null
+  12: string Name { get; }  ==> tooltip=Property 'Name' is implemented (click to navigate) acc=icon: HasImplementations icon=HasImplementations.svg, original=null)) click=null
+  15: public abstract class ShapeBase : IShape  ==> tooltip=Class 'ShapeBase' implements interface (click to navigate) acc=icon: Implements icon=Implements.svg, original=null)) click=null
+  15: public abstract class ShapeBase : IShape  ==> tooltip=Class 'ShapeBase' is inherited (click to navigate) acc=icon: HasOverrides icon=HasOverrides.svg, original=null)) click=null
+  17: public abstract double Area();  ==> tooltip=Implements method from 'Playground.Editor.IShape' interface (click to navigate) acc=icon: Implements icon=Implements.svg, original=null)) click=null
+  18: public virtual string Name => GetType().Name;  ==> tooltip=Implements property from 'Playground.Editor.IShape' interface (click to navigate) acc=icon: Implements icon=Implements.svg, original=null)) click=null
+  101: public class Circle : ShapeBase  ==> tooltip=Class 'Circle' has base types (click to navigate) acc=icon: OverridesAndImplements icon=OverridesAndImplements.svg, original=null)) click=null
+  1: using System.Text;  ==> tooltip=- acc=icon: YellowBulb icon=YellowBulb.svg, original=null)) click=null
+
+file Types.cs
+##### code vision
+  5: public enum Color { Red, Green, Blue }  ==> 1 own usage [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]  |  3 own exposing APIs [Exposing API]
+  8: public enum Access { None = 0, Read = 1, Write = 2, Execute = 4 }  ==> 2 own usages [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]  |  4 own exposing APIs [Exposing API]
+  10: public readonly record struct Point(int X, int Y);  ==> 1 own usage [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  13: public class Person(string name, int age)  ==> 7 own usages [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]  |  1 own exposing API [Exposing API]
+  16: public int MyProperty { get; set; } = 1;  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  17: public string Name { get; } = name;  ==> 3 own usages [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  18: public int Age { get; set; } = age;  ==> 4 own usages [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  19: public Person? Friend { get; set; }  ==> 1 own usage [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  20: public bool IsAdult => Age >= 18; // BP:property — stepping skips it (  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  21: public IReadOnlyList<string> Notes => _notes;  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  23: public override string ToString() => $"{Name}, {Age}";  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  27: public class SlowToString  ==> 1 own usage [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  29: public override string ToString()  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  36: public class ThrowingProperty  ==> 1 own usage [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  38: public int Value => throw new InvalidOperationException("getter failed  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  43: public record CachedOrder(int Id, string Name, byte[] Payload);  ==> 3 own usages [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  46: public static class LeakyCache  ==> 2 own usages [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  50: public static void Remember(CachedOrder order) => Orders[order.Id] = o  ==> 1 own usage [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  51: public static int Count => Orders.Count;  ==> 1 own usage [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  54: public static class PriceFeed  ==> 2 own usages [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  57: public static int Subscribers => Changed?.GetInvocationList().Length ?  ==> 1 own usage [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  61: public class PriceWatcher  ==> 1 own usage [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  66: public PriceWatcher(string name)  ==> 1 own usage [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  72: private void OnChanged(object? sender, decimal price) => _history.Add(  ==> 1 own usage [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  74: public override string ToString() => _name;  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  77: public class EndlessGetter  ==> 1 own usage [Usages]  |  Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+  79: public int Forever  ==> Show a Code Vision inlay when no results are available [CodeVisionBackendLoadingProvider]
+##### gutter icons
+  1: using System.Diagnostics;  ==> tooltip=Global 'using' directives acc=icon: Namespace icon=Namespace.svg, original=null)) click=null
+  23: public override string ToString() => $"{Name}, {Age}";  ==> tooltip=Overrides method from 'System.Object' class (click to navigate) acc=icon: Overrides icon=Overrides.svg, original=null)) click=null
+  29: public override string ToString()  ==> tooltip=Overrides method from 'System.Object' class (click to navigate) acc=icon: Overrides icon=Overrides.svg, original=null)) click=null
+  74: public override string ToString() => _name;  ==> tooltip=Overrides method from 'System.Object' class (click to navigate) acc=icon: Overrides icon=Overrides.svg, original=null)) click=null
+  1: using System.Diagnostics;  ==> tooltip=- acc=icon: ContextAction icon=ContextAction.svg, original=null)) click=null
+
+file Program.cs
+##### code vision
+##### gutter icons
+  2: using Playground.Lib;  ==> tooltip=Global 'using' directives acc=icon: Namespace icon=Namespace.svg, original=null)) click=null
+  5: var builder = WebApplication.CreateBuilder(args);  ==> tooltip=Run 'Program.cs' acc=icon: RunActions icon=RunActions.svg, original=null)) click=null
+  1: // ASP.NET Core under the debugger: launch profiles (http / https / no  ==> tooltip=- acc=icon: ContextAction icon=ContextAction.svg, original=null)) click=null
+

@@ -1,5 +1,8 @@
 package io.github.dotnetsupport
 
+import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
+import io.github.dotnetsupport.lang.CSharpFeatureSource
+import io.github.dotnetsupport.lang.CSharpFeature
 import com.intellij.execution.process.NopProcessHandler
 import com.intellij.execution.process.ProcessEvent
 import com.intellij.execution.process.ProcessOutputTypes
@@ -25,10 +28,17 @@ import java.lang.reflect.Proxy
  * project is closed (0.1.44, found by `tools/ui-robot/baseline.py`). The server is not started.
  */
 class RoslynEditorColorsTest : BasePlatformTestCase() {
+    override fun setUp() {
+        super.setUp()
+        // the server's path (and the heuristics beside it): built-in is the default since 0.1.60
+        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.ROSLYN)
+    }
+
     private val status get() = project.service<RoslynServerStatus>()
 
     override fun tearDown() {
         try {
+            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
             status.isReady = false
             status.coloredByServer.clear()
         } finally {

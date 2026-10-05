@@ -35,6 +35,8 @@ public class ImportCompletion
         // TYPE:import-silent-dot — `name.WriteLi`. EXPECT: NO `Console.WriteLine` in the list: after a dot the members of `name` are listed
         // TYPE:import-silent-name — `string WriteLi`. EXPECT: NO `Console.WriteLine`: this is the name of a variable
         // TYPE:import-silent-short — `Wr`. EXPECT: nothing from the index yet: it answers from three letters on
+        // TYPE:import-silent-type — `List<Str`, then `var t = typeof(Str`. EXPECT: NO static member from the index (`Conversion.Str` of
+        // Microsoft.VisualBasic was offered in `Task<str>` before 0.1.48): only a type stands in `<…>`, `typeof(…)`, after `as` and `:` of a base list
 
         Console.WriteLine(name);
     }

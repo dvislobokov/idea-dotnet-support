@@ -14,7 +14,8 @@ import com.intellij.psi.codeStyle.LanguageCodeStyleSettingsProvider
 /**
  * Settings | Editor | Code Style | C#. The indents are real: the editor indents with them, and the EditorConfig support of
  * the IDE overrides them from `indent_style` / `indent_size` of the repository. Nothing else: the rest of what Rider has here
- * needs a C# formatter inside the IDE, and here the code is formatted by CSharpier or `dotnet format` from `.editorconfig`.
+ * would be options of a formatter of its own, and here the code is formatted the way `dotnet format` does it (by the server, the
+ * CLI or the built-in [NativeCSharpFormattingModelBuilder], which use these indents) or by CSharpier, from `.editorconfig`.
  */
 class CSharpCodeStyleSettingsProvider : LanguageCodeStyleSettingsProvider() {
     override fun getLanguage(): Language = CSharpLanguage

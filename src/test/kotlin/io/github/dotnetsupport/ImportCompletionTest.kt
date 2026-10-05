@@ -68,6 +68,23 @@ class ImportCompletionTest : BasePlatformTestCase() {
         assertFalse(bare("    public void WriteLi"))
         assertFalse(bare("using Syst"))
         assertFalse(bare("namespace Shop"))
+        // only a type may stand here: no static member of the index (`Task<str` offered `Conversion.Str`)
+        assertFalse("a type argument", bare("    public async Task<str"))
+        assertFalse(bare("        var map = new Dictionary<string, Str"))
+        assertFalse(bare("        Func<int, List<Str"))
+        assertFalse(bare("        var t = typeof(Str"))
+        assertFalse(bare("        var d = default(Str"))
+        assertFalse(bare("        var s = item as Str"))
+        assertFalse("a base list", bare("public class Shop : Str"))
+        assertFalse(bare("public class Shop : IDisposable, Str"))
+        assertFalse("a constraint", bare("    where T : Str"))
+        // and where an expression goes on as before
+        assertTrue("a comparison", bare("        if (count < Rang"))
+        assertTrue(bare("        var x = count < Rang"))
+        assertTrue("a ternary", bare("        var x = ready ? 1 : Rang"))
+        assertTrue("a named argument", bare("        Foo(count: Rang"))
+        assertTrue("an argument after a generic call", bare("        Make<int>(Rang"))
+        assertTrue(bare("        Foo(a, Rang"))
     }
 
     fun testUsingDirectives() {
@@ -217,9 +234,10 @@ class ImportCompletionTest : BasePlatformTestCase() {
             assertEquals(listOf(
                 "/packages/newtonsoft.json/13.0.3/lib/net6.0/Newtonsoft.Json.dll",
                 "/packages/xunit.assert/2.9.0/lib/net6.0/xunit.assert.dll",
-                "/App/../Lib/obj/Debug/net9.0/ref/Lib.dll",
                 "/dotnet/packs/Microsoft.NETCore.App.Ref/9.0.11/ref/net9.0/System.Console.dll",
                 "/dotnet/packs/Microsoft.NETCore.App.Ref/9.0.11/ref/net9.0/System.Runtime.dll",
+                // the projects it refers to last: their built assemblies stand for their sources
+                "/Lib/obj/Debug/net9.0/ref/Lib.dll",
             ), names)
             assertTrue("a framework the project does not have: its first one", ProjectAssemblies.of(ProjectAssemblies.Request(assets, File(root, "App"), File(root, "dotnet"), "net7.0")).isNotEmpty())
             assertTrue("no dotnet: the packages still", ProjectAssemblies.of(ProjectAssemblies.Request(assets, File(root, "App"), null)).size == 3)

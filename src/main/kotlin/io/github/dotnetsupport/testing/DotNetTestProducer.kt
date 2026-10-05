@@ -19,10 +19,9 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.CachedValueProvider
 import com.intellij.psi.util.CachedValuesManager
-import com.intellij.psi.util.elementType
 import io.github.dotnetsupport.actions.SolutionContext
 import io.github.dotnetsupport.lang.CSharpFile
-import io.github.dotnetsupport.lang.CSharpTokenTypes
+import io.github.dotnetsupport.lang.CSharpLeaves
 import io.github.dotnetsupport.msbuild.DotNetProjects
 import io.github.dotnetsupport.run.DotNetCommand
 import io.github.dotnetsupport.run.DotNetConfigurationType
@@ -37,7 +36,7 @@ internal fun testTargets(file: PsiFile): List<TestTarget> = CachedValuesManager.
 
 internal fun testTargetAt(element: PsiElement): TestTarget? {
     val file = element.containingFile as? CSharpFile ?: return null
-    if (element.elementType != CSharpTokenTypes.IDENTIFIER) return null
+    if (!CSharpLeaves.isIdentifier(element)) return null
     return testTargets(file).find { it.nameRange.startOffset == element.textRange.startOffset }
 }
 

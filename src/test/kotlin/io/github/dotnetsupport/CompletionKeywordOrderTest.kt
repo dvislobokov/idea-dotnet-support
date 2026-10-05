@@ -1,5 +1,8 @@
 package io.github.dotnetsupport
 
+import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
+import io.github.dotnetsupport.lang.CSharpFeatureSource
+import io.github.dotnetsupport.lang.CSharpFeature
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.intellij.codeInsight.completion.CompletionContributor
@@ -31,6 +34,8 @@ class CompletionKeywordOrderTest : BasePlatformTestCase() {
 
     override fun setUp() {
         super.setUp()
+        // the server's path (and the heuristics beside it): built-in is the default since 0.1.60
+        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.ROSLYN)
         val plugin = PluginManagerCore.getPlugin(PluginId.getId("io.github.dotnetsupport"))!!
         ApplicationManager.getApplication().extensionArea.getExtensionPoint(CompletionContributor.EP)
             .registerExtension(CompletionContributorEP("C#", CapturedServer::class.java.name, plugin), testRootDisposable)
@@ -38,6 +43,7 @@ class CompletionKeywordOrderTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         try {
+            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
             CapturedServer.items = emptyList()
         } finally {
             super.tearDown()

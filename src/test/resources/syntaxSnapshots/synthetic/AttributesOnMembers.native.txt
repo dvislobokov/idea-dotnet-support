@@ -1,0 +1,150 @@
+## declarations
+usings 1:1-3:23
+namespace Synthetic.Tests  name 7:11-7:26  range 7:1-57:2 body 8:1-57:2
+  class OrderTests [public]  name 10:18-10:28  range 9:5-44:6 body 11:5-44:6
+    method PlainFact(): void [public]  name 13:21-13:30  range 12:9-13:36 body 13:33-13:36
+    method TheoryWithData(int value): Task [public async]  name 16:27-16:41  range 15:9-16:81 body 16:53-16:81
+    method QualifiedFact(): void [public]  name 19:21-19:34  range 18:9-19:40 body 19:37-19:40
+    method ManyCases(int x): void [public]  name 23:21-23:30  range 21:9-23:41 body 23:38-23:41
+    method Generic(): void [public]  name 26:21-26:28  range 25:9-26:37 body 26:34-26:37
+    method SkippedFact(): void [public]  name 30:21-30:32  range 28:9-30:38 body 30:35-30:38
+    method OneLine(): void [public]  name 32:28-32:35  range 32:9-32:41 body 32:38-32:41
+    method NotATest([FromBody] string body): void [public]  name 34:21-34:29  range 34:9-34:57 body 34:54-34:57
+    event Changed: EventHandler [public]  name 37:35-37:42  range 36:9-37:43
+    class Nested [public]  name 39:22-39:28  range 39:9-43:10 body 40:9-43:10
+      method InNested(): void [public]  name 42:25-42:33  range 41:13-42:39 body 42:36-42:39
+  struct StructTests [public]  name 46:19-46:30  range 46:5-50:6 body 47:5-50:6
+    method InStruct(): void [public]  name 49:21-49:29  range 48:9-49:35 body 49:32-49:35
+  interface ITests [public]  name 52:22-52:28  range 52:5-56:6 body 53:5-56:6
+    method InInterface(): void  name 55:14-55:25  range 54:9-55:28
+
+## structure view
+Synthetic.Tests
+  OrderTests
+    PlainFact(): void
+    TheoryWithData(int value): Task
+    QualifiedFact(): void
+    ManyCases(int x): void
+    Generic(): void
+    SkippedFact(): void
+    OneLine(): void
+    NotATest([FromBody] string body): void
+    Changed: EventHandler
+    Nested
+      InNested(): void
+  StructTests
+    InStruct(): void
+  ITests
+    InInterface(): void
+
+## folding
+1:7-3:23  ... (collapsed)  | System;
+8:1-57:2  {...}  | {
+11:5-44:6  {...}  | {
+40:9-43:10  {...}  | {
+47:5-50:6  {...}  | {
+53:5-56:6  {...}  | {
+
+## breadcrumbs
+1: 
+7: Synthetic.Tests
+9: Synthetic.Tests > OrderTests
+12: Synthetic.Tests > OrderTests > PlainFact()
+15: Synthetic.Tests > OrderTests > TheoryWithData()
+18: Synthetic.Tests > OrderTests > QualifiedFact()
+21: Synthetic.Tests > OrderTests > ManyCases()
+25: Synthetic.Tests > OrderTests > Generic()
+28: Synthetic.Tests > OrderTests > SkippedFact()
+32: Synthetic.Tests > OrderTests > OneLine()
+34: Synthetic.Tests > OrderTests > NotATest()
+36: Synthetic.Tests > OrderTests > Changed
+39: Synthetic.Tests > OrderTests > Nested
+41: Synthetic.Tests > OrderTests > Nested > InNested()
+43: Synthetic.Tests > OrderTests > Nested
+44: Synthetic.Tests > OrderTests
+46: Synthetic.Tests > StructTests
+48: Synthetic.Tests > StructTests > InStruct()
+50: Synthetic.Tests > StructTests
+52: Synthetic.Tests > ITests
+54: Synthetic.Tests > ITests > InInterface()
+56: Synthetic.Tests > ITests
+57: Synthetic.Tests
+
+## IL Viewer: type / member at the line
+1: - / -
+9: Synthetic.Tests.OrderTests / -
+12: Synthetic.Tests.OrderTests / PlainFact
+15: Synthetic.Tests.OrderTests / TheoryWithData
+18: Synthetic.Tests.OrderTests / QualifiedFact
+21: Synthetic.Tests.OrderTests / ManyCases
+25: Synthetic.Tests.OrderTests / Generic
+28: Synthetic.Tests.OrderTests / SkippedFact
+32: Synthetic.Tests.OrderTests / OneLine
+34: Synthetic.Tests.OrderTests / NotATest
+36: Synthetic.Tests.OrderTests / Changed
+39: Synthetic.Tests.OrderTests+Nested / -
+41: Synthetic.Tests.OrderTests+Nested / InNested
+43: Synthetic.Tests.OrderTests+Nested / -
+44: Synthetic.Tests.OrderTests / -
+46: Synthetic.Tests.StructTests / -
+48: Synthetic.Tests.StructTests / InStruct
+50: Synthetic.Tests.StructTests / -
+52: Synthetic.Tests.ITests / -
+54: Synthetic.Tests.ITests / InInterface
+56: Synthetic.Tests.ITests / -
+57: - / -
+
+## Go to Base: member at the line
+1: -
+12: OrderTests.PlainFact()
+15: OrderTests.TheoryWithData(int value)
+18: OrderTests.QualifiedFact()
+21: OrderTests.ManyCases(int x)
+25: OrderTests.Generic()
+28: OrderTests.SkippedFact()
+32: OrderTests.OneLine()
+34: OrderTests.NotATest([FromBody] string body)
+36: OrderTests.Changed
+39: -
+41: Nested.InNested()
+43: -
+48: StructTests.InStruct()
+50: -
+54: ITests.InInterface()
+56: -
+
+## breakpoint lines
+13, 16, 19, 23, 26, 30, 32, 34, 42, 49
+
+## run gutter
+10:18 OrderTests  FullyQualifiedName~Synthetic.Tests.OrderTests.
+13:21 OrderTests.PlainFact  FullyQualifiedName~Synthetic.Tests.OrderTests.PlainFact
+16:27 OrderTests.TheoryWithData  FullyQualifiedName~Synthetic.Tests.OrderTests.TheoryWithData
+19:21 OrderTests.QualifiedFact  FullyQualifiedName~Synthetic.Tests.OrderTests.QualifiedFact
+23:21 OrderTests.ManyCases  FullyQualifiedName~Synthetic.Tests.OrderTests.ManyCases
+26:21 OrderTests.Generic  FullyQualifiedName~Synthetic.Tests.OrderTests.Generic
+30:21 OrderTests.SkippedFact  FullyQualifiedName~Synthetic.Tests.OrderTests.SkippedFact
+32:28 OrderTests.OneLine  FullyQualifiedName~Synthetic.Tests.OrderTests.OneLine
+39:22 OrderTests.Nested  FullyQualifiedName~Synthetic.Tests.OrderTests+Nested.
+42:25 OrderTests.Nested.InNested  FullyQualifiedName~Synthetic.Tests.OrderTests+Nested.InNested
+46:19 StructTests  FullyQualifiedName~Synthetic.Tests.StructTests.
+49:21 StructTests.InStruct  FullyQualifiedName~Synthetic.Tests.StructTests.InStruct
+
+## Go to Class / Symbol
+M:Changed -> 37:35 Changed (OrderTests)
+M:Generic -> 26:21 Generic() (OrderTests)
+M:InInterface -> 55:14 InInterface() (ITests)
+M:InNested -> 42:25 InNested() (OrderTests.Nested)
+M:InStruct -> 49:21 InStruct() (StructTests)
+M:ManyCases -> 23:21 ManyCases(int x) (OrderTests)
+M:NotATest -> 34:21 NotATest([FromBody] string body) (OrderTests)
+M:OneLine -> 32:28 OneLine() (OrderTests)
+M:PlainFact -> 13:21 PlainFact() (OrderTests)
+M:QualifiedFact -> 19:21 QualifiedFact() (OrderTests)
+M:SkippedFact -> 30:21 SkippedFact() (OrderTests)
+M:TheoryWithData -> 16:27 TheoryWithData(int value) (OrderTests)
+T:ITests -> 52:22 ITests (Synthetic.Tests)
+T:Nested -> 39:22 Nested (Synthetic.Tests.OrderTests)
+T:OrderTests -> 10:18 OrderTests (Synthetic.Tests)
+T:StructTests -> 46:19 StructTests (Synthetic.Tests)
+

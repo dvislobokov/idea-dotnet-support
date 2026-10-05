@@ -1,5 +1,8 @@
 package io.github.dotnetsupport
 
+import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
+import io.github.dotnetsupport.lang.CSharpFeatureSource
+import io.github.dotnetsupport.lang.CSharpFeature
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpIdentifierAnnotator
@@ -9,6 +12,20 @@ import io.github.dotnetsupport.lang.IdentifierKind.METHOD
 import io.github.dotnetsupport.lang.IdentifierKind.TYPE
 
 class IdentifierColorsTest : BasePlatformTestCase() {
+    override fun setUp() {
+        super.setUp()
+        // the server's path (and the heuristics beside it): built-in is the default since 0.1.60
+        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.ROSLYN)
+    }
+
+    override fun tearDown() {
+        try {
+            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
+        } finally {
+            super.tearDown()
+        }
+    }
+
     private fun classify(text: String): List<String> =
         CSharpIdentifierClassifier.classify(text).map { (range, kind) -> "${range.substring(text)}:$kind" }
 

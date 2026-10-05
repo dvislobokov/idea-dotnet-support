@@ -84,3 +84,46 @@ public sealed class UsageNoteAttribute(string member) : Attribute
 
 // TYPE:find-usages-attribute — caret on `UsageNoteAttribute` above, Alt+F7. EXPECT: «Usage in attribute» 1 (the `[UsageNote(...)]` of
 // UsageSample) and «Declaration» (the server gives the name twice: the class and its primary constructor)
+
+// Kinds of usages on the plugin's own tree (0.1.46): Settings | Tools | .NET | Language Server → Source of Features → «Kinds of usages» =
+// Built-in (the default), then the markers below. With «Language server» the same usages are grouped by the tokens: the differences are
+// named in EXPECT ("tokens: …"); everything else is the same with either choice.
+public class UsageTally
+{
+    // TYPE:find-usages-native-field — caret on `Total` below, Alt+F7. EXPECT, 5 usages, with Group by Usage Type on: «Declaration» 1 (this
+    // line), «Write access» 2 (`(Total, var count) = other` in Tuples — tokens: Read access —, and `Total = 3` inside `Inner = { … }`),
+    // «Read access» 2 (Deconstruct, the property pattern `{ Total: > 0 }`); no «Unclassified». `t.Total` in the query of Totals is not in
+    // the answer of roslyn-language-server 5.12 (robot, 2026-10-04), with either choice
+    public int Total;
+
+    public List<int> Lines { get; } = [];
+
+    public UsageTally? Inner { get; set; }
+
+    public void Deconstruct(out int total, out int count) => (total, count) = (Total, Lines.Count);
+
+    public void Tuples(UsageTally other)
+    {
+        (Total, var count) = other;
+        Console.WriteLine(count);
+    }
+
+    // TYPE:find-usages-native-members — caret on `Lines` above, Alt+F7. EXPECT: «Read access» 2 (Deconstruct and `Lines = { 1, 2 }` below:
+    // a nested initializer reads the list and adds to it — tokens: Write access), «Declaration» 1. Then caret on `Inner` above: «Read access»
+    // 1 (`Inner = { Total = 3 }` — tokens: Write access), «Declaration» 1
+    public UsageTally Fill() => new() { Lines = { 1, 2 }, Inner = { Total = 3 } };
+
+    // TYPE:find-usages-native-type — caret on `UsageTally` in the header of the class, Alt+F7. EXPECT, with Group by Usage Type on:
+    // «Declaration» 1, «Usage in declaration type» 4 (`UsageTally? Inner`, the parameter of Tuples, the return type of Fill, the `out`
+    // parameter of Load — tokens: Write access for the last), «Usage in type argument» 1 (`IEnumerable<UsageTally>`), «Type check (is / as)» 1
+    // (`UsageTally { Total: > 0 }` in the switch — tokens: Read access)
+    public static int Kind(object item) => item switch { UsageTally { Total: > 0 } => 1, _ => 0 };
+
+    public static bool Load(out UsageTally made)
+    {
+        made = new();
+        return true;
+    }
+
+    public static IEnumerable<int> Totals(IEnumerable<UsageTally> tallies) => from t in tallies let total = t.Total select total;
+}

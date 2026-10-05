@@ -1,0 +1,315 @@
+# roslyndump semantics 1
+S	input	.
+S	assembly	Sample
+S	langversion	preview
+S	define	
+S	nullable	Enable
+S	reference	Microsoft.CSharp.dll
+S	reference	Microsoft.VisualBasic.Core.dll
+S	reference	Microsoft.VisualBasic.dll
+S	reference	Microsoft.Win32.Primitives.dll
+S	reference	Microsoft.Win32.Registry.dll
+S	reference	System.AppContext.dll
+S	reference	System.Buffers.dll
+S	reference	System.Collections.Concurrent.dll
+S	reference	System.Collections.Immutable.dll
+S	reference	System.Collections.NonGeneric.dll
+S	reference	System.Collections.Specialized.dll
+S	reference	System.Collections.dll
+S	reference	System.ComponentModel.Annotations.dll
+S	reference	System.ComponentModel.DataAnnotations.dll
+S	reference	System.ComponentModel.EventBasedAsync.dll
+S	reference	System.ComponentModel.Primitives.dll
+S	reference	System.ComponentModel.TypeConverter.dll
+S	reference	System.ComponentModel.dll
+S	reference	System.Configuration.dll
+S	reference	System.Console.dll
+S	reference	System.Core.dll
+S	reference	System.Data.Common.dll
+S	reference	System.Data.DataSetExtensions.dll
+S	reference	System.Data.dll
+S	reference	System.Diagnostics.Contracts.dll
+S	reference	System.Diagnostics.Debug.dll
+S	reference	System.Diagnostics.DiagnosticSource.dll
+S	reference	System.Diagnostics.FileVersionInfo.dll
+S	reference	System.Diagnostics.Process.dll
+S	reference	System.Diagnostics.StackTrace.dll
+S	reference	System.Diagnostics.TextWriterTraceListener.dll
+S	reference	System.Diagnostics.Tools.dll
+S	reference	System.Diagnostics.TraceSource.dll
+S	reference	System.Diagnostics.Tracing.dll
+S	reference	System.Drawing.Primitives.dll
+S	reference	System.Drawing.dll
+S	reference	System.Dynamic.Runtime.dll
+S	reference	System.Formats.Asn1.dll
+S	reference	System.Formats.Tar.dll
+S	reference	System.Globalization.Calendars.dll
+S	reference	System.Globalization.Extensions.dll
+S	reference	System.Globalization.dll
+S	reference	System.IO.Compression.Brotli.dll
+S	reference	System.IO.Compression.FileSystem.dll
+S	reference	System.IO.Compression.ZipFile.dll
+S	reference	System.IO.Compression.dll
+S	reference	System.IO.FileSystem.AccessControl.dll
+S	reference	System.IO.FileSystem.DriveInfo.dll
+S	reference	System.IO.FileSystem.Primitives.dll
+S	reference	System.IO.FileSystem.Watcher.dll
+S	reference	System.IO.FileSystem.dll
+S	reference	System.IO.IsolatedStorage.dll
+S	reference	System.IO.MemoryMappedFiles.dll
+S	reference	System.IO.Pipelines.dll
+S	reference	System.IO.Pipes.AccessControl.dll
+S	reference	System.IO.Pipes.dll
+S	reference	System.IO.UnmanagedMemoryStream.dll
+S	reference	System.IO.dll
+S	reference	System.Linq.AsyncEnumerable.dll
+S	reference	System.Linq.Expressions.dll
+S	reference	System.Linq.Parallel.dll
+S	reference	System.Linq.Queryable.dll
+S	reference	System.Linq.dll
+S	reference	System.Memory.dll
+S	reference	System.Net.Http.Json.dll
+S	reference	System.Net.Http.dll
+S	reference	System.Net.HttpListener.dll
+S	reference	System.Net.Mail.dll
+S	reference	System.Net.NameResolution.dll
+S	reference	System.Net.NetworkInformation.dll
+S	reference	System.Net.Ping.dll
+S	reference	System.Net.Primitives.dll
+S	reference	System.Net.Quic.dll
+S	reference	System.Net.Requests.dll
+S	reference	System.Net.Security.dll
+S	reference	System.Net.ServerSentEvents.dll
+S	reference	System.Net.ServicePoint.dll
+S	reference	System.Net.Sockets.dll
+S	reference	System.Net.WebClient.dll
+S	reference	System.Net.WebHeaderCollection.dll
+S	reference	System.Net.WebProxy.dll
+S	reference	System.Net.WebSockets.Client.dll
+S	reference	System.Net.WebSockets.dll
+S	reference	System.Net.dll
+S	reference	System.Numerics.Vectors.dll
+S	reference	System.Numerics.dll
+S	reference	System.ObjectModel.dll
+S	reference	System.Reflection.DispatchProxy.dll
+S	reference	System.Reflection.Emit.ILGeneration.dll
+S	reference	System.Reflection.Emit.Lightweight.dll
+S	reference	System.Reflection.Emit.dll
+S	reference	System.Reflection.Extensions.dll
+S	reference	System.Reflection.Metadata.dll
+S	reference	System.Reflection.Primitives.dll
+S	reference	System.Reflection.TypeExtensions.dll
+S	reference	System.Reflection.dll
+S	reference	System.Resources.Reader.dll
+S	reference	System.Resources.ResourceManager.dll
+S	reference	System.Resources.Writer.dll
+S	reference	System.Runtime.CompilerServices.Unsafe.dll
+S	reference	System.Runtime.CompilerServices.VisualC.dll
+S	reference	System.Runtime.Extensions.dll
+S	reference	System.Runtime.Handles.dll
+S	reference	System.Runtime.InteropServices.JavaScript.dll
+S	reference	System.Runtime.InteropServices.RuntimeInformation.dll
+S	reference	System.Runtime.InteropServices.dll
+S	reference	System.Runtime.Intrinsics.dll
+S	reference	System.Runtime.Loader.dll
+S	reference	System.Runtime.Numerics.dll
+S	reference	System.Runtime.Serialization.Formatters.dll
+S	reference	System.Runtime.Serialization.Json.dll
+S	reference	System.Runtime.Serialization.Primitives.dll
+S	reference	System.Runtime.Serialization.Xml.dll
+S	reference	System.Runtime.Serialization.dll
+S	reference	System.Runtime.dll
+S	reference	System.Security.AccessControl.dll
+S	reference	System.Security.Claims.dll
+S	reference	System.Security.Cryptography.Algorithms.dll
+S	reference	System.Security.Cryptography.Cng.dll
+S	reference	System.Security.Cryptography.Csp.dll
+S	reference	System.Security.Cryptography.Encoding.dll
+S	reference	System.Security.Cryptography.OpenSsl.dll
+S	reference	System.Security.Cryptography.Primitives.dll
+S	reference	System.Security.Cryptography.X509Certificates.dll
+S	reference	System.Security.Cryptography.dll
+S	reference	System.Security.Principal.Windows.dll
+S	reference	System.Security.Principal.dll
+S	reference	System.Security.SecureString.dll
+S	reference	System.Security.dll
+S	reference	System.ServiceModel.Web.dll
+S	reference	System.ServiceProcess.dll
+S	reference	System.Text.Encoding.CodePages.dll
+S	reference	System.Text.Encoding.Extensions.dll
+S	reference	System.Text.Encoding.dll
+S	reference	System.Text.Encodings.Web.dll
+S	reference	System.Text.Json.dll
+S	reference	System.Text.RegularExpressions.dll
+S	reference	System.Threading.AccessControl.dll
+S	reference	System.Threading.Channels.dll
+S	reference	System.Threading.Overlapped.dll
+S	reference	System.Threading.Tasks.Dataflow.dll
+S	reference	System.Threading.Tasks.Extensions.dll
+S	reference	System.Threading.Tasks.Parallel.dll
+S	reference	System.Threading.Tasks.dll
+S	reference	System.Threading.Thread.dll
+S	reference	System.Threading.ThreadPool.dll
+S	reference	System.Threading.Timer.dll
+S	reference	System.Threading.dll
+S	reference	System.Transactions.Local.dll
+S	reference	System.Transactions.dll
+S	reference	System.ValueTuple.dll
+S	reference	System.Web.HttpUtility.dll
+S	reference	System.Web.dll
+S	reference	System.Windows.dll
+S	reference	System.Xml.Linq.dll
+S	reference	System.Xml.ReaderWriter.dll
+S	reference	System.Xml.Serialization.dll
+S	reference	System.Xml.XDocument.dll
+S	reference	System.Xml.XPath.XDocument.dll
+S	reference	System.Xml.XPath.dll
+S	reference	System.Xml.XmlDocument.dll
+S	reference	System.Xml.XmlSerializer.dll
+S	reference	System.Xml.dll
+S	reference	System.dll
+S	reference	WindowsBase.dll
+S	reference	mscorlib.dll
+S	reference	netstandard.dll
+S	options	0	preview	
+S	src	App/Model.cs	0
+S	src	App/Orders.cs	0
+F	App/Model.cs
+N	10	App	ref	Namespace	N:App	ns	-
+N	14	Model	ref	Namespace	N:App.Model	ns	acc
+N	39	Order	decl	NamedType.Class	T:App.Model.Order	App/Model.cs:39	-
+N	74	Price	decl	Property	P:App.Model.Order.Price	App/Model.cs:74	-
+N	113	App	ref	Namespace	N:App	ns	-
+N	136	Base	decl	NamedType.Class	T:App.Base	App/Model.cs:136	-
+N	172	Name	decl	Field	F:App.Base.Name	App/Model.cs:172	-
+N	213	Log	decl	Method.Ordinary	M:App.Base.Log(System.String)	App/Model.cs:213	-
+N	224	text	decl	Parameter	Parameter:text	App/Model.cs:224	-
+N	233	System	ref	Namespace	N:System	ns	-
+N	240	Console	ref	NamedType.Class	T:System.Console	asm:System.Console	acc
+N	248	WriteLine	ref	Method.Ordinary	M:System.Console.WriteLine(System.String)	asm:System.Console	acc
+N	258	text	ref	Parameter	Parameter:text	App/Model.cs:224	-
+X	10	19	QualifiedName	-	=
+X	10	13	IdentifierName	-	=
+X	14	19	IdentifierName	-	=
+X	66	73	PredefinedType	decimal	=
+X	113	116	IdentifierName	-	=
+X	165	171	PredefinedType	string	=
+X	179	187	StringLiteralExpression	string	=
+X	208	212	PredefinedType	void	=
+X	217	223	PredefinedType	string	=
+X	233	263	InvocationExpression	void	=
+X	233	257	SimpleMemberAccessExpression	-	=
+X	233	247	SimpleMemberAccessExpression	System.Console	=
+X	233	239	IdentifierName	-	=
+X	240	247	IdentifierName	System.Console	=
+X	248	257	IdentifierName	-	=
+X	258	262	IdentifierName	string	=
+F	App/Orders.cs
+N	6	System	ref	Namespace	N:System	ns	-
+N	20	System	ref	Namespace	N:System	ns	-
+N	27	Collections	ref	Namespace	N:System.Collections	ns	acc
+N	39	Generic	ref	Namespace	N:System.Collections.Generic	ns	acc
+N	54	App	ref	Namespace	N:App	ns	-
+N	58	Model	ref	Namespace	N:App.Model	ns	acc
+N	76	App	ref	Namespace	N:App	ns	-
+N	210	Orders	decl	NamedType.Class	T:App.Orders	App/Orders.cs:210	-
+N	219	Base	ref	NamedType.Class	T:App.Base	App/Model.cs:136	-
+N	255	List	ref	NamedType.Class	T:System.Collections.Generic.List`1	asm:System.Collections	-
+N	260	Order	ref	NamedType.Class	T:App.Model.Order	App/Model.cs:39	-
+N	267	items	decl	Field	F:App.Orders.items	App/Orders.cs:267	-
+N	302	Count	decl	Property	P:App.Orders.Count	App/Orders.cs:302	-
+N	311	items	ref	Field	F:App.Orders.items	App/Orders.cs:267	own
+N	317	Count	ref	Property	P:System.Collections.Generic.List`1.Count	asm:System.Collections	acc
+N	348	Total	decl	Method.Ordinary	M:App.Orders.Total(System.Decimal)~System.Decimal	App/Orders.cs:348	-
+N	362	discount	decl	Parameter	Parameter:discount	App/Orders.cs:362	-
+N	394	var	ref	NamedType.Struct	T:System.Decimal	asm:System.Runtime	kw
+N	398	sum	decl	Local	Local:sum	App/Orders.cs:398	-
+N	429	var	ref	NamedType.Class	T:App.Model.Order	App/Model.cs:39	kw
+N	433	order	decl	Local	Local:order	App/Orders.cs:433	-
+N	442	items	ref	Field	F:App.Orders.items	App/Orders.cs:267	own
+N	465	sum	ref	Local	Local:sum	App/Orders.cs:398	-
+N	472	order	ref	Local	Local:order	App/Orders.cs:433	-
+N	478	Price	ref	Property	P:App.Model.Order.Price	App/Model.cs:74	acc
+N	497	Func	ref	NamedType.Delegate	T:System.Func`2	asm:System.Runtime	-
+N	512	twice	decl	Local	Local:twice	App/Orders.cs:512	-
+N	520	x	decl	Parameter	Parameter:x	App/Orders.cs:520	-
+N	525	x	ref	Parameter	Parameter:x	App/Orders.cs:520	-
+N	544	Log	ref	Method.Ordinary	M:App.Base.Log(System.String)	App/Model.cs:213	inh
+N	559	twice	ref	Local	Local:twice	App/Orders.cs:512	-
+N	586	sum	ref	Local	Local:sum	App/Orders.cs:398	-
+N	600	done	ref	Label	Label:done	App/Orders.cs:643	-
+N	618	sum	ref	Local	Local:sum	App/Orders.cs:398	-
+N	625	discount	ref	Parameter	Parameter:discount	App/Orders.cs:362	-
+N	643	done	decl	Label	Label:done	App/Orders.cs:643	-
+N	668	sum	ref	Local	Local:sum	App/Orders.cs:398	-
+N	674	Missing	ref	-	-	-	-
+N	709	Describe	decl	Method.Ordinary	M:App.Orders.Describe~System.String	App/Orders.cs:709	-
+N	723	Name	ref	Field	F:App.Base.Name	App/Model.cs:172	inh
+N	728	ToUpperInvariant	ref	Method.Ordinary	M:System.String.ToUpperInvariant~System.String	asm:System.Runtime	acc
+X	6	12	IdentifierName	-	=
+X	20	46	QualifiedName	-	=
+X	20	38	QualifiedName	-	=
+X	20	26	IdentifierName	-	=
+X	27	38	IdentifierName	-	=
+X	39	46	IdentifierName	-	=
+X	54	63	QualifiedName	-	=
+X	54	57	IdentifierName	-	=
+X	58	63	IdentifierName	-	=
+X	76	79	IdentifierName	-	=
+X	219	223	IdentifierName	App.Base	=
+X	255	266	GenericName	System.Collections.Generic.List<App.Model.Order>	=
+X	260	265	IdentifierName	App.Model.Order	=
+X	275	280	ImplicitObjectCreationExpression	System.Collections.Generic.List<App.Model.Order>	=
+X	298	301	PredefinedType	int	=
+X	311	322	SimpleMemberAccessExpression	int	=
+X	311	316	IdentifierName	System.Collections.Generic.List<App.Model.Order>	=
+X	317	322	IdentifierName	int	=
+X	340	347	PredefinedType	decimal	=
+X	354	361	PredefinedType	decimal	=
+X	394	397	IdentifierName	decimal	=
+X	404	406	NumericLiteralExpression	decimal	=
+X	429	432	IdentifierName	App.Model.Order	=
+X	442	447	IdentifierName	System.Collections.Generic.List<App.Model.Order>	=
+X	465	483	AddAssignmentExpression	decimal	=
+X	465	468	IdentifierName	decimal	=
+X	472	483	SimpleMemberAccessExpression	decimal	=
+X	472	477	IdentifierName	App.Model.Order	=
+X	478	483	IdentifierName	decimal	=
+X	497	511	GenericName	System.Func<int, int>	=
+X	502	505	PredefinedType	int	=
+X	507	510	PredefinedType	int	=
+X	520	530	SimpleLambdaExpression	-	System.Func<int, int>
+X	525	530	MultiplyExpression	int	=
+X	525	526	IdentifierName	int	=
+X	529	530	NumericLiteralExpression	int	=
+X	544	568	InvocationExpression	void	=
+X	544	547	IdentifierName	-	=
+X	548	567	AddExpression	string	=
+X	548	556	StringLiteralExpression	string	=
+X	559	567	InvocationExpression	int	object
+X	559	564	IdentifierName	System.Func<int, int>	=
+X	565	566	NumericLiteralExpression	int	=
+X	586	593	LessThanExpression	bool	=
+X	586	589	IdentifierName	decimal	=
+X	592	593	NumericLiteralExpression	int	decimal
+X	600	604	IdentifierName	-	=
+X	618	633	SubtractAssignmentExpression	decimal	=
+X	618	621	IdentifierName	decimal	=
+X	625	633	IdentifierName	decimal	=
+X	668	681	AddExpression	?	decimal
+X	668	671	IdentifierName	decimal	=
+X	674	681	IdentifierName	?	=
+X	702	708	PredefinedType	string	=
+X	723	771	AddExpression	string	=
+X	723	764	AddExpression	string	=
+X	723	758	AddExpression	string	=
+X	723	752	AddExpression	string	=
+X	723	746	InvocationExpression	string	=
+X	723	744	SimpleMemberAccessExpression	-	=
+X	723	727	IdentifierName	string	=
+X	728	744	IdentifierName	-	=
+X	749	752	NumericLiteralExpression	double	object
+X	755	758	NumericLiteralExpression	long	object
+X	761	764	CharacterLiteralExpression	char	object
+X	767	771	TrueLiteralExpression	bool	object
+D	674	681	CS0103	error

@@ -1,0 +1,1 @@
+from x in y let int = 1 select x

@@ -12,7 +12,6 @@ import com.intellij.psi.PsiFile
 import com.intellij.ui.SimpleListCellRenderer
 import io.github.dotnetsupport.lang.CSharpDeclarationInfo
 import io.github.dotnetsupport.lang.CSharpSyntaxModel
-import io.github.dotnetsupport.lang.CSharpFeature
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.DeclarationKind
 import org.eclipse.lsp4j.Position
@@ -23,10 +22,12 @@ import org.eclipse.lsp4j.SymbolKind
  * Go to Super (Ctrl+U) in C#. On a type: its base class and interfaces from the server's type hierarchy. On a member (method, property,
  * event, indexer — its declaration, or its body where the caret is not on a type): the members of the same name in the supertypes, all the
  * way up (see [RoslynBaseMembers]). One — a jump, several — a list. Derived symbols are Go to Implementation.
+ * Whatever the switch of NAVIGATION: the native part of it is syntactic (`NativeCSharpNavigation`) and has no supertypes until step 11c,
+ * so NATIVE must not cost Ctrl+U.
  */
 class RoslynGotoSuperHandler : LanguageCodeInsightActionHandler {
     override fun startInWriteAction(): Boolean = false
-    override fun isValidFor(editor: Editor?, file: PsiFile?): Boolean = file is CSharpFile && RoslynFeatures.serves(CSharpFeature.NAVIGATION, file.project)
+    override fun isValidFor(editor: Editor?, file: PsiFile?): Boolean = file is CSharpFile
 
     override fun invoke(project: Project, editor: Editor, file: PsiFile) {
         val target = RoslynHierarchies.target(project, editor, file) ?: return HintManager.getInstance().showErrorHint(editor, "The C# language server is not loaded yet")

@@ -13,11 +13,25 @@ import com.intellij.psi.PsiFile
  * Complete Statement (Ctrl+Shift+Enter): adds the missing `;` at the end of the statement on the caret's line and starts a new line.
  * Without a parser the safe cases only — an assignment, a call, `return` / `throw` / `break` and the like — so a header such as
  * `if (x)` or a declaration such as `void M()` is never turned into `if (x);`. On anything else it just opens a new line, as the action does.
+ * With `EDITING` native and a file of the native tree the statement at the caret decides ([NativeCSharpCompleteStatement]); where the
+ * tree gives up, this answers.
  */
 class CSharpSmartEnterProcessor : SmartEnterProcessor() {
     override fun process(project: Project, editor: Editor, psiFile: PsiFile): Boolean {
         if (psiFile !is CSharpFile) return false
         val document = editor.document
+        if (NativeCSharpEditing.usable(psiFile)) {
+            PsiDocumentManager.getInstance(project).commitDocument(document)
+            val plan = NativeCSharpCompleteStatement.plan(psiFile, editor.caretModel.offset, NativeCSharpCompleteStatement.indentUnit(psiFile))
+            if (plan != null) {
+                val inserts = plan.inserts.withIndex().sortedWith(compareByDescending<IndexedValue<NativeCSharpCompleteStatement.Insert>> { it.value.offset }.thenByDescending { it.index })
+                for (insert in inserts) document.insertString(insert.value.offset, insert.value.text)
+                PsiDocumentManager.getInstance(project).commitDocument(document)
+                editor.caretModel.moveToOffset(plan.caretAfter())
+                if (plan.newLine) startNewLine(editor)
+                return true
+            }
+        }
         val line = document.getLineNumber(editor.caretModel.offset)
         val lineStart = document.getLineStartOffset(line)
         val lineEnd = document.getLineEndOffset(line)
@@ -30,11 +44,15 @@ class CSharpSmartEnterProcessor : SmartEnterProcessor() {
         } else {
             editor.caretModel.moveToOffset(lineEnd)
         }
-        // open an indented line below, like the action does (our enter handlers / indent provider run through it)
+        startNewLine(editor)
+        return true
+    }
+
+    /** An indented line below, like the action does (our enter handlers / indent provider run through it). */
+    private fun startNewLine(editor: Editor) {
         val dataContext = DataManager.getInstance().getDataContext(editor.contentComponent)
         EditorActionManager.getInstance().getActionHandler(IdeActions.ACTION_EDITOR_START_NEW_LINE)
             .execute(editor, editor.caretModel.currentCaret, dataContext)
-        return true
     }
 }
 

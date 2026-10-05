@@ -4,4 +4,8 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- broken on purpose for the editor (TYPE:diag-*), not for the build: the Debug scenario of Broken shows only Program.cs -->
+    <Compile Remove="SyntaxErrors.cs" />
+  </ItemGroup>
 </Project>

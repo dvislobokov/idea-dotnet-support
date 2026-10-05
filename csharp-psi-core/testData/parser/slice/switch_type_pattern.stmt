@@ -1,0 +1,1 @@
+switch (o) { case int: break; case List<int>: break; case int[]: break; }

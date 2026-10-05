@@ -1,0 +1,3 @@
+IdentifierToken ('x')
+WhitespaceTrivia (' ')
+MultiLineCommentTrivia ('/* never closed\n')

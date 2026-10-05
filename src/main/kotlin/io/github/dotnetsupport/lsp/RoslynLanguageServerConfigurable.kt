@@ -77,7 +77,7 @@ class RoslynLanguageServerConfigurable(private val project: Project) : BoundConf
             row { comment(DotNetBundle.message("server.features.comment")) }
             for (feature in features) row(feature.label + ":") {
                 comboBox(CSharpFeatureSource.entries, textListCellRenderer { it?.label })
-                    .bindItem({ settings.source(feature) }, { settings.setSource(feature, it ?: CSharpFeatureSource.ROSLYN) })
+                    .bindItem({ settings.source(feature) }, { settings.setSource(feature, it ?: feature.defaultSource) })
             }
         }
         for (group in RoslynOptions.GROUPS) group(RoslynOptions.title(group)) { RoslynOptions.ALL.filter { it.group == group }.forEach { option(it) } }

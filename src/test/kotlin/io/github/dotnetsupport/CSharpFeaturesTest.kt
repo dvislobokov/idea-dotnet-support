@@ -7,6 +7,7 @@ import com.intellij.util.xmlb.XmlSerializer
 import io.github.dotnetsupport.lang.CSharpFeature
 import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFeatures
+import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lsp.RoslynLanguageServerConfigurable
 import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.roslyn.RoslynClientDescriptor
@@ -30,19 +31,66 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
         }
     }
 
-    fun testEverythingIsTodaysPathByDefault() {
-        assertEquals("no native implementation yet: nothing to switch to", emptyList<CSharpFeature>(), CSharpFeatures.offered())
+    /** Every feature starts at its default: the tree of step 7 is native (0.1.45), the rest is today's path (the kinds of usages too, until the robot). */
+    fun testEveryFeatureStartsAtItsDefault() {
+        assertEquals(
+            "the tree of step 7, the formatting (0.1.49), the typing assistance (0.1.48), the kinds of usages (0.1.46), navigation (0.1.50), completion (0.1.55), " +
+                "the syntax errors (0.1.54), the colors (0.1.51) and rename (0.1.53) of step 9",
+            listOf(
+                CSharpFeature.SYNTAX_TREE, CSharpFeature.FORMATTING, CSharpFeature.EDITING, CSharpFeature.USAGE_KINDS, CSharpFeature.NAVIGATION,
+                CSharpFeature.COMPLETION, CSharpFeature.DIAGNOSTICS, CSharpFeature.SEMANTIC_COLORS, CSharpFeature.RENAME,
+            ),
+            CSharpFeatures.offered(),
+        )
+        assertEquals("navigation is native after the robot (0.1.60)", CSharpFeatureSource.NATIVE, CSharpFeature.NAVIGATION.defaultSource)
+        assertEquals("the colors are native after the robot (0.1.60)", CSharpFeatureSource.NATIVE, CSharpFeature.SEMANTIC_COLORS.defaultSource)
+        assertEquals("the syntax errors are native after the robot (0.1.56)", CSharpFeatureSource.NATIVE, CSharpFeature.DIAGNOSTICS.defaultSource)
+        assertEquals("rename is native after the robot (0.1.56)", CSharpFeatureSource.NATIVE, CSharpFeature.RENAME.defaultSource)
+        assertEquals("completion is native after the robot (0.1.60)", CSharpFeatureSource.NATIVE, CSharpFeature.COMPLETION.defaultSource)
+        assertTrue("completion reads the types of the solution from the stubs", CSharpFeature.COMPLETION.needsIndexes)
+        assertFalse("the syntax errors read the file alone", CSharpFeature.DIAGNOSTICS.needsIndexes)
+        assertTrue("the colors read the stubs of the solution", CSharpFeature.SEMANTIC_COLORS.needsIndexes)
+        assertTrue("types of the solution come from the stub index", CSharpFeature.NAVIGATION.needsIndexes)
+        assertEquals(CSharpFeatureSource.NATIVE, CSharpFeature.SYNTAX_TREE.defaultSource)
+        assertEquals(CSharpFeatureSource.NATIVE, CSharpFeature.USAGE_KINDS.defaultSource)
+        assertFalse("the kinds read the file's own tree, no index", CSharpFeature.USAGE_KINDS.needsIndexes)
+        assertFalse("so does the typing assistance", CSharpFeature.EDITING.needsIndexes)
+        assertEquals("the typing assistance is native after the robot (0.1.48)", CSharpFeatureSource.NATIVE, CSharpFeature.EDITING.defaultSource)
+        assertEquals("the formatter matched the server on the playground (robot, 0.1.49)", CSharpFeatureSource.NATIVE, CSharpFeature.FORMATTING.defaultSource)
+        assertFalse("the formatter reads the file's own tree", CSharpFeature.FORMATTING.needsIndexes)
         for (feature in CSharpFeature.entries) {
-            assertEquals(feature.name, CSharpFeatureSource.ROSLYN, settings.source(feature))
-            assertFalse(feature.name, CSharpFeatures.native(feature, project))
-            assertTrue(feature.name, RoslynFeatures.serves(feature, project))
+            // every offered feature since 0.1.60 (navigation, completion and the colors after the robot); documentation has no native code
+            val native = feature != CSharpFeature.DOCUMENTATION
+            assertEquals(feature.name, if (native) CSharpFeatureSource.NATIVE else CSharpFeatureSource.ROSLYN, settings.source(feature))
+            assertEquals(feature.name, native, CSharpFeatures.native(feature, project))
+            assertEquals(feature.name, !native, RoslynFeatures.serves(feature, project))
         }
+        assertEquals("defaults are not stored", emptyMap<String, String>(), settings.state.features.toMap())
         // a NATIVE written by another version of the plugin, for a feature that has no native code here, changes nothing
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
-        assertFalse(CSharpFeatures.native(CSharpFeature.COMPLETION, project))
+        settings.setSource(CSharpFeature.DOCUMENTATION, CSharpFeatureSource.NATIVE)
+        assertFalse(CSharpFeatures.native(CSharpFeature.DOCUMENTATION, project))
         // and without the server the heuristics stay what they are: nothing is native that does not exist
         settings.state.enabled = false
-        assertFalse(CSharpFeatures.native(CSharpFeature.COMPLETION, project))
+        assertFalse(CSharpFeatures.native(CSharpFeature.DOCUMENTATION, project))
+    }
+
+    /** The tree of C# files: application settings only, the rule of [CSharpFeatures.native] with the server off included. */
+    fun testTheSyntaxTreeSwitch() {
+        assertTrue("the native tree by default", CSharpSyntaxTrees.nativeTree())
+        assertEquals(true, CSharpSyntaxTrees.lastAnswer)
+        assertEquals("the project-level answer is the same", true, CSharpFeatures.native(CSharpFeature.SYNTAX_TREE, project))
+        settings.setSource(CSharpFeature.SYNTAX_TREE, CSharpFeatureSource.ROSLYN)
+        assertEquals("a choice away from the default is stored", mapOf("SYNTAX_TREE" to "ROSLYN"), settings.state.features.toMap())
+        assertFalse("a stored ROSLYN: the heuristic tree", CSharpSyntaxTrees.nativeTree())
+        assertEquals(false, CSharpSyntaxTrees.lastAnswer)
+        assertFalse(CSharpFeatures.native(CSharpFeature.SYNTAX_TREE, project))
+        settings.state.enabled = false
+        assertTrue("no server: the native tree, by design of the rule", CSharpSyntaxTrees.nativeTree())
+        settings.state.enabled = true
+        assertFalse(CSharpSyntaxTrees.nativeTree())
+        settings.setSource(CSharpFeature.SYNTAX_TREE, CSharpFeatureSource.NATIVE)
+        assertEquals("back to the default: nothing stored", emptyMap<String, String>(), settings.state.features.toMap())
+        assertTrue(CSharpSyntaxTrees.nativeTree())
     }
 
     fun testTheRule() {
@@ -58,19 +106,21 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
     }
 
     fun testTheChoiceIsStoredForNonDefaultsOnly() {
-        settings.setSource(CSharpFeature.RENAME, CSharpFeatureSource.NATIVE)
-        assertEquals(mapOf("RENAME" to "NATIVE"), settings.state.features.toMap())
+        settings.setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.ROSLYN)
+        assertEquals(mapOf("SEMANTIC_COLORS" to "ROSLYN"), settings.state.features.toMap())
 
         val stored = XmlSerializer.serialize(settings.state)
         val loaded = RoslynLanguageServerSettings()
         loaded.loadState(XmlSerializer.deserialize(stored, RoslynLanguageServerSettings.Settings::class.java))
-        assertEquals(CSharpFeatureSource.NATIVE, loaded.source(CSharpFeature.RENAME))
-        assertEquals(CSharpFeatureSource.ROSLYN, loaded.source(CSharpFeature.COMPLETION))
+        assertEquals(CSharpFeatureSource.ROSLYN, loaded.source(CSharpFeature.SEMANTIC_COLORS))
+        assertEquals(CSharpFeatureSource.NATIVE, loaded.source(CSharpFeature.COMPLETION))
+        assertEquals(CSharpFeatureSource.ROSLYN, loaded.source(CSharpFeature.DOCUMENTATION))
 
-        settings.setSource(CSharpFeature.RENAME, CSharpFeatureSource.ROSLYN)
+        settings.setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.NATIVE)
         assertEquals("the default is not written", emptyMap<String, String>(), settings.state.features.toMap())
-        settings.state.features = mutableMapOf("RENAME" to "SOMETHING_ELSE", "NO_SUCH_FEATURE" to "NATIVE")
-        assertEquals("an unknown value is the default", CSharpFeatureSource.ROSLYN, settings.source(CSharpFeature.RENAME))
+        settings.state.features = mutableMapOf("SEMANTIC_COLORS" to "SOMETHING_ELSE", "NO_SUCH_FEATURE" to "NATIVE")
+        assertEquals("an unknown value is the default", CSharpFeatureSource.NATIVE, settings.source(CSharpFeature.SEMANTIC_COLORS))
+        settings.state.features = mutableMapOf()
     }
 
     /** The module of the server reads the switch per request: rename of the server stands down once the feature is native. */
@@ -79,11 +129,18 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
         val file = myFixture.addFileToProject("CSharpFeatures/Program.cs", "class Program { }")
         val rename = RoslynClientDescriptor(project, file.virtualFile.parent, java.io.File("/tools/roslyn-language-server")).lspCustomization.renameCustomizer as LspRenameSupport
 
-        assertTrue("ROSLYN by default", rename.shouldRunRename(file))
+        settings.setSource(CSharpFeature.RENAME, CSharpFeatureSource.ROSLYN)
+        assertTrue("ROSLYN chosen", rename.shouldRunRename(file))
         assertTrue(RoslynFeatures.serves(CSharpFeature.RENAME, project))
         settings.setSource(CSharpFeature.RENAME, CSharpFeatureSource.NATIVE)
-        assertFalse(rename.shouldRunRename(file))
+        // a file of the heuristic tree keeps the server's rename; one of the native tree is the plugin's handler's (NativeCSharpRename)
+        CSharpSyntaxTrees.forceNativeTreeForTests(false)
+        assertTrue(rename.shouldRunRename(myFixture.addFileToProject("CSharpFeatures/Heuristic.cs", "class Heuristic { }")))
+        CSharpSyntaxTrees.forceNativeTreeForTests(true)
+        assertFalse(rename.shouldRunRename(myFixture.addFileToProject("CSharpFeatures/Native.cs", "class Native { }")))
+        CSharpSyntaxTrees.forceNativeTreeForTests(null)
         assertFalse(RoslynFeatures.serves(CSharpFeature.RENAME, project))
+        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.ROSLYN)
         assertTrue("another feature is not affected", RoslynFeatures.serves(CSharpFeature.COMPLETION, project))
         settings.setSource(CSharpFeature.RENAME, CSharpFeatureSource.ROSLYN)
         assertTrue("no restart needed", rename.shouldRunRename(file))
@@ -91,26 +148,38 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
         assertFalse("no server: the native one", RoslynFeatures.serves(CSharpFeature.RENAME, project))
     }
 
-    /** Settings | Tools | .NET | Language Server: a switch per feature that has a native implementation, none today. */
+    /** Settings | Tools | .NET | Language Server: a switch per feature that has a native implementation: the tree, the formatting, the typing assistance, the kinds of usages. */
     fun testThePageOffersTheImplementedFeaturesOnly() {
         fun labels(page: RoslynLanguageServerConfigurable) = UIUtil.findComponentsOfType(page.createComponent()!!.also { page.reset() }, JLabel::class.java).map { it.text }
         fun sources(page: RoslynLanguageServerConfigurable) = UIUtil.findComponentsOfType(page.createComponent()!!, JComboBox::class.java)
             .filter { box -> (0 until box.itemCount).map { box.getItemAt(it) } == CSharpFeatureSource.entries }
 
         val today = RoslynLanguageServerConfigurable(project)
-        assertFalse(labels(today).any { it.startsWith("Source of Features") || it == "Rename:" })
-        assertEquals(emptyList<Any>(), sources(today))
+        assertTrue(labels(today).contains("Structure, folding and breadcrumbs:"))
+        assertTrue(labels(today).contains("Kinds of usages:"))
+        assertTrue(labels(today).contains("Typing assistance:"))
+        assertTrue(labels(today).contains("Formatting:"))
+        assertTrue(labels(today).contains("Navigation and usages:"))
+        assertTrue(labels(today).contains("Rename:"))
+        assertTrue(labels(today).contains("Errors and warnings:"))
+        assertTrue(labels(today).contains("Completion:"))
+        assertFalse(labels(today).contains("Documentation and parameter info:"))
+        assertEquals(
+            "every offered feature at its default: all native since the robot of 0.1.60",
+            CSharpFeatures.offered().map { CSharpFeatureSource.NATIVE },
+            sources(today).map { it.selectedItem },
+        )
         today.disposeUIResources()
 
-        CSharpFeatures.implementForTests(setOf(CSharpFeature.RENAME), testRootDisposable)
+        CSharpFeatures.implementForTests(setOf(CSharpFeature.DOCUMENTATION), testRootDisposable)
         val page = RoslynLanguageServerConfigurable(project)
-        assertTrue(labels(page).contains("Rename:"))
+        assertTrue(labels(page).contains("Documentation and parameter info:"))
         val box = sources(page).single()
         assertEquals(CSharpFeatureSource.ROSLYN, box.selectedItem)
         box.selectedItem = CSharpFeatureSource.NATIVE
         assertTrue(page.isModified)
         page.apply()
-        assertEquals(CSharpFeatureSource.NATIVE, settings.source(CSharpFeature.RENAME))
+        assertEquals(CSharpFeatureSource.NATIVE, settings.source(CSharpFeature.DOCUMENTATION))
         page.disposeUIResources()
 
         DotNetBundle.forced = PluginLanguage.RUSSIAN
@@ -121,7 +190,7 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
         for (feature in CSharpFeature.entries) assertEquals("the English text is the one of the code", feature.title, feature.label)
     }
 
-    /** Step 1: the three modules are composed into the plugin, their descriptors are included and still empty. */
+    /** Step 1: the three modules are composed into the plugin, their descriptors are included (only the core contributes, step 8). */
     fun testTheCSharpPsiModulesArePartOfThePlugin() {
         val pluginXml = javaClass.getResource("/META-INF/plugin.xml")!!.readText()
         for (module in listOf("csharp-psi-core", "csharp-psi-semantic", "csharp-psi-ide")) {
@@ -129,7 +198,8 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
             assertTrue(module, Regex("""<xi:include href="/META-INF/$module\.xml" xpointer="xpointer\(/idea-plugin/\*\)"\s*/>""").containsMatchIn(pluginXml))
             val descriptor = javaClass.getResource("/META-INF/$module.xml")
             assertNotNull(module, descriptor)
-            assertFalse("$module contributes nothing before step 7", "<extensions" in descriptor!!.readText())
+            // the core registers its stubs and stub indexes since step 8; the others nothing yet
+            if (module != "csharp-psi-core") assertFalse("$module contributes nothing yet", "<extensions" in descriptor!!.readText())
         }
     }
 }

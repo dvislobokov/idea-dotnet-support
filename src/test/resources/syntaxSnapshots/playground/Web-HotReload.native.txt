@@ -1,0 +1,74 @@
+## declarations
+namespace Playground.Web  name 5:11-5:25  range 5:1-31:2
+  class HotReloadScenario [static]  name 7:14-7:31  range 7:1-19:2 body 8:1-19:2
+    method MapHotReload(this WebApplication app): void [public static]  name 9:24-9:36  range 9:5-9:140
+    method Message(): string [static]  name 18:19-18:26  range 18:5-18:37
+  class HotReloadCounter [sealed]  name 26:14-26:30  range 26:1-31:2 body 27:1-31:2
+    field _count: int [static]  name 28:16-28:22  range 28:5-28:23
+    method Next(): int [public static]  name 30:23-30:27  range 30:5-30:67
+
+## structure view
+Playground.Web
+  HotReloadScenario
+    MapHotReload(this WebApplication app): void
+    Message(): string
+  HotReloadCounter
+    _count: int
+    Next(): int
+
+## folding
+1:1-4:35  // Hot Reload status of `dotnet watch`: run Web with a ".NET Project" configuration...  | // Hot Reload status of `dotnet watch`: run Web with a ".NET Project" configuration whose Command is "dotnet watch" (Run, not Debug),
+8:1-19:2  {...}  | {
+11:5-17:95  // TYPE:hot-reload-start — just start the configuration. EXPECT: Services row "Hot ...  | // TYPE:hot-reload-start — just start the configuration. EXPECT: Services row "Hot Reload: Building", then "Hot Reload: Watching for changes";
+21:1-25:138  // TYPE:hot-reload-rude — delete the word "sealed" below and save: changing the mod...  | // TYPE:hot-reload-rude — delete the word "sealed" below and save: changing the modifiers of a class is a rude edit (ENC0004).
+27:1-31:2  {...}  | {
+
+## breadcrumbs
+1: 
+5: Playground.Web
+7: Playground.Web > HotReloadScenario
+9: Playground.Web > HotReloadScenario > MapHotReload()
+11: Playground.Web > HotReloadScenario
+18: Playground.Web > HotReloadScenario > Message()
+19: Playground.Web > HotReloadScenario
+21: Playground.Web
+26: Playground.Web > HotReloadCounter
+28: Playground.Web > HotReloadCounter > _count
+30: Playground.Web > HotReloadCounter > Next()
+31: Playground.Web > HotReloadCounter
+
+## IL Viewer: type / member at the line
+1: - / -
+7: Playground.Web.HotReloadScenario / -
+9: Playground.Web.HotReloadScenario / MapHotReload
+11: Playground.Web.HotReloadScenario / -
+18: Playground.Web.HotReloadScenario / Message
+19: Playground.Web.HotReloadScenario / -
+21: - / -
+26: Playground.Web.HotReloadCounter / -
+28: Playground.Web.HotReloadCounter / _count
+30: Playground.Web.HotReloadCounter / Next
+31: Playground.Web.HotReloadCounter / -
+
+## Go to Base: member at the line
+1: -
+9: HotReloadScenario.MapHotReload(this WebApplication app)
+11: -
+18: HotReloadScenario.Message()
+19: -
+30: HotReloadCounter.Next()
+31: -
+
+## breakpoint lines
+9, 18, 30
+
+## run gutter
+
+## Go to Class / Symbol
+M:MapHotReload -> 9:24 MapHotReload(this WebApplication app) (HotReloadScenario)
+M:Message -> 18:19 Message() (HotReloadScenario)
+M:Next -> 30:23 Next() (HotReloadCounter)
+M:_count -> 28:16 _count (HotReloadCounter)
+T:HotReloadCounter -> 26:14 HotReloadCounter (Playground.Web)
+T:HotReloadScenario -> 7:14 HotReloadScenario (Playground.Web)
+

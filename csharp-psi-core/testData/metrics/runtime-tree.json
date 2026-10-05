@@ -1,0 +1,20 @@
+{
+  "files": 20466,
+  "nodes": 61028471,
+  "mismatchedFiles": 0,
+  "mismatches": 0,
+  "spuriousErrorFiles": 0,
+  "exceptions": 0,
+  "stackOverflows": 0,
+  "timeouts": 0,
+  "coverageFailures": 0,
+  "loggedErrors": 0,
+  "filesWithOracleErrors": 17,
+  "invalidMismatchedFiles": 0,
+  "invalidMismatches": 0,
+  "invalidErrorElements": 8,
+  "invalidOracleDiagnostics": 24,
+  "docComments": 66589,
+  "docCommentMismatches": 0,
+  "invalidDocCommentMismatches": 0
+}

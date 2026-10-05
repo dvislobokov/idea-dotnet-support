@@ -1,0 +1,11 @@
+{
+  "files": 252,
+  "tokens": 1555086,
+  "directiveTokens": 1106,
+  "disabledTexts": 23,
+  "misplacedDirectives": 0,
+  "badCharacters": 0,
+  "tokenMismatches": 0,
+  "filesWithMismatches": 0,
+  "skippedForPreprocessor": 0
+}
