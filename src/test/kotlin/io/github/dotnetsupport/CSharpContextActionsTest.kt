@@ -32,7 +32,7 @@ class CSharpContextActionsTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             settings.state.features = mutableMapOf()
-            settings.state.enabled = true
+            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
@@ -238,18 +238,26 @@ class CSharpContextActionsTest : BasePlatformTestCase() {
         assertFalse("a parameter", available("int M(int <caret>a)\n{\n    return a;\n}", "Inline variable"))
         assertFalse("a lambda", available("int M()\n{\n    Func<int> <caret>f = () => 1;\n    return f();\n}", "Inline variable"))
         assertFalse("target-typed", available("int M()\n{\n    List<int> <caret>list = new();\n    return list.Count;\n}", "Inline variable"))
+        // on `var` and on the type, as the server offers it (robot, E-78)
+        assertEquals(
+            "int M(string a)\n{\n    return a.Length + 2;\n}",
+            apply("int M(string a)\n{\n    v<caret>ar length = a.Length;\n    return length + 2;\n}", "Inline variable"),
+        )
+        assertTrue("on the explicit type", available("int M(int a)\n{\n    in<caret>t sum = a + 1;\n    return sum + 2;\n}", "Inline variable"))
+        assertFalse("two variables", available("int M(int a)\n{\n    in<caret>t x = a, y = 2;\n    return x + y;\n}", "Inline variable"))
     }
 
     // ---- the server
 
     fun testTheServersRowsStandBackForNativeOnes() {
         assertTrue(CSharpFeatures.hasNative(CSharpFeature.CONTEXT_ACTIONS))
-        assertEquals("Language server until the robot has checked them", CSharpFeatureSource.ROSLYN, CSharpFeature.CONTEXT_ACTIONS.defaultSource)
+        assertEquals("built-in by default since the robot (0.1.72)", CSharpFeatureSource.NATIVE, CSharpFeature.CONTEXT_ACTIONS.defaultSource)
         for (title in listOf("Use expression body for method", "Use block body for property", "Convert to conditional expression", "Use explicit type",
-            "Use implicit type", "Introduce local for 'a + b'", "Inline temporary variable")) {
+            "Use implicit type", "Introduce local for 'a + b'", "Inline temporary variable", "Replace conditional expression with statements")) {
             assertTrue(title, NativeCSharpServerActions.shadowed(title, project))
         }
         assertFalse("a constant is not the native action's", NativeCSharpServerActions.shadowed("Introduce local constant for '1'", project))
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         settings.setSource(CSharpFeature.CONTEXT_ACTIONS, CSharpFeatureSource.ROSLYN)
         assertFalse(NativeCSharpServerActions.shadowed("Use expression body for method", project))
         // the server is not ready in tests: the native actions answer under ROSLYN as well

@@ -193,7 +193,8 @@
     индекс не различает), без System.Runtime
   - [ ] ещё по C2: «Add await» для `IAsyncDisposable`, «Wrap in 'using'» на значениях вызовов (сейчас только `new`), проверка, что
     переменная `using` не переприсваивается в области
-  - [ ] **ждёт D2**: «Remove unused directives» как fix с диагностикой (IDE0005 / CS8019) и Fix All по solution
+  - [x] (2026-10-05, 0.1.74, C4c) «Remove unused directives in file» как fix с диагностикой (серые CS8019 / CS8933, `lang/semantic/CSharpUnusedUsings`)
+  - [ ] Fix All по solution для неиспользуемых `using`
 
 **B. Ссылки и библиотеки (шаг 10)**
 - [x] B1 (2026-10-04, 0.1.52). Формат индекса сборок до нужд семантики: типы с generic-параметрами, базовые типы и интерфейсы, все члены (не только
@@ -255,17 +256,65 @@
     Quick Info Roslyn (`lang/semantic/CSharpSymbolText.quickInfo`), XML-доки из `///` (как `docTags` rename) и из `AssemblyDocs`;
     `lang/NativeCSharpParameterInfo` — перегрузки строками, выбранная резолвером отмечена; обработчик модуля `roslyn` молчит при Built-in.
     Тест `CSharpQuickDocTest`. Гейт не упал: имена 98,8 % (25 997 из 26 310, неверных 16), типы 99,0 % (38 791 из 39 181, неверных 8) — с `MemberCompletion.cs` площадки; baseline вырос
-  - [ ] осталось: Find Usages и rename членов и типов по solution (нужен поиск кандидатов по слову + резолв каждого; Go to Declaration к
-    членам solution уже есть с C1), цвета ссылок — уже по резолверу (C1/C2), сверить роботом; `<inheritdoc/>` в доках (база / интерфейс),
+  - [x] Find Usages и rename членов и типов по solution — сделаны в C4b (0.1.73, ниже)
+  - [ ] осталось: цвета ссылок — уже по резолверу (C1/C2), сверить роботом; `<inheritdoc/>` в доках (база / интерфейс),
     `cref` ссылками в окне документации, доки `var` (тип выражения); completion: ожидаемый тип после точки выше, `await Method` и
     `CancellationToken` пунктами, именованные аргументы в Parameter Info; робот по E-80…E-84 и NATIVE по умолчанию для «Documentation»
-- [ ] C4. Веха 12.1: сервер выключен по умолчанию, требование .NET 10 снято, замер памяти без сервера в CHANGELOG
+- [ ] C4. Веха 12.1: сервер выключен по умолчанию, требование .NET 10 снято, замер памяти без сервера в CHANGELOG.
+  Решение пользователя 2026-10-05: «добить до конца, чтобы roslyn был выключен по умолчанию». Что должно работать без сервера до
+  переключения (агенты параллельно, версии 0.1.72–0.1.75):
+  - [x] C4a (0.1.72). Робот по E-76…E-84 в обоих режимах, NATIVE по умолчанию для `DOCUMENTATION` и `CONTEXT_ACTIONS`; доделки C3 по
+    докам (`<inheritdoc/>`, `cref` ссылками, доки `var`). Сделано 2026-10-05 (робот WSL на IC): hover сервера выключен при Built-in
+    (была вторая страница), `string?` из индекса, конструктор по аргументам и именованные аргументы в Parameter Info, лишнее в
+    completion (`Void`, `Finalize`, статики System.Enum) убрано, inline на `var`. Хуже сервера осталось: `?:` в аргументе не
+    превращается в `if`; nullability по потоку (`'x' is not null here`, `List<T>?`) в доке `var` нет; inline переменной, которую снова
+    пишут, сервер предлагает, мы — нет (намеренно)
+  - [x] C4b (0.1.73, 2026-10-05). Ссылки по solution: Find Usages, Show Usages, rename членов и типов (с файлом типа), Go to Implementation /
+    Go to Super, Call Hierarchy и Type Hierarchy — на резолвере C1/C2, без сервера. `lang/semantic/CSharpSolutionSearch` (кандидаты по
+    индексу слов, резолв каждого; ключ объявления — файл + смещение; каскад по иерархии члена; `base(…)` / target-typed `new()`; `cref`,
+    `nameof`, property patterns; подтипы — stub-индекс `csharp.supertype`), `lang/NativeCSharpFindUsages` (платформенные Find Usages /
+    `ReferencesSearch` / `DefinitionsScopedSearch` / `UsageTypeProvider`, поиск от члена сборки через metadata view),
+    `lang/NativeCSharpHierarchies` (Go to Super, Type / Call Hierarchy, gutter), `lang/NativeCSharpSolutionRename`. Переключатели —
+    прежние `NAVIGATION` и `RENAME` (Built-in по умолчанию): при ROSLYN отвечает сервер (LSP `findReferencesCustomizer`, `RoslynHierarchies`,
+    `RoslynGotoImplementation` уступают по `RoslynFeatures.serves`). Робот (Windows, IDEA Community, `usages_compare.js` на 384 объявлениях
+    площадки против сервера): Find Usages 372 из 378, лишних 0; Go to Implementation 396 из 396; rename — `rename_solution.js`. Пробелы:
+    неявный `Deconstruct`, `new()` в инициализаторе словаря; «Declaration» в результатах сервера. Семантический гейт не упал (имена 98,8 %,
+    типы 99,0 %, неверных 16 / 8 — как до C4b)
+  - [x] C4c (2026-10-05, 0.1.74). Семантические ошибки из D2, нужные каждый день: CS0246 / CS0103 / CS1061 / CS0117 / CS1501 / CS7036 / CS0029 и
+    fix «Import type» (`using` по индексу сборок и stub-индексу), «Add package reference» не нужен; без ложных срабатываний — лучше
+    промолчать, чем ошибиться (гейт по оракулу C0). Сделано: `lang/semantic/CSharpSemanticChecks` (+ CS0234, CS0266, CS0161 через
+    `CSharpReachability`), серые `using`, «Import type» (подсказка, список namespace, extension-методы), сервер и сборка не дублируют.
+    Гейт: ложных 0 на playground и трёх библиотеках runtime, на пробе ошибок 69 из 69; на библиотеках найдено 15 из 44 ошибок оракула
+    (остальное — коды, которых нет, и места, где резолвер молчит). Не сделано: перегрузки generic-методов и с `params` / необязательными
+    аргументами в разборе (молчит), «Create method/property», Fix All по solution
+  - [x] C4d (0.1.75, 2026-10-05). Generate (Alt+Insert) своими генераторами Rider: Constructor, Properties, Equality members, Formatting members
+    (`ToString`), Missing members / Overriding members; Refactor This: Extract method и Introduce field / parameter — что успеется.
+    Сделано: все генераторы списка и ещё Read-only properties, Partial members, Deconstructor, Dispose pattern; Extract Method и
+    Introduce Field; Introduce Parameter — нет. Итог и что осталось — `ROADMAP.md`, 0.1.75; проверено UI-роботом (E-115…E-120)
+  - [x] C4e (2026-10-05, 0.1.76; `RoslynLanguageServerSettings.ENABLED_BY_DEFAULT = false`, без сервера нет и вопроса о .NET 10 SDK; замер памяти — не сделан). Переключение: сервер выключен по умолчанию (галочка остаётся), требование .NET 10 убрано из проверок, замер памяти
 
 **D. Полный отказ → веха 12.2**
-- [ ] D1. 11d — перегрузки, вывод generic-аргументов, лямбды, extension-методы, LINQ
-- [ ] D2. 11e — диагностики (неразрешённое имя, тип, число аргументов, недостижимый код) и их fixes
-- [ ] D3. Анализаторы из NuGet и их code fixes — помощник с Roslyn по запросу (команда и фон на сохранении)
-- [ ] D4. 11f — source generators через помощник
+- [x] D1 (2026-10-05, 0.1.78). 11d — перегрузки, вывод generic-аргументов, лямбды, extension-методы, LINQ. Сделано: `lang/semantic/CSharpOverloads`
+  (§12.6.4: применимость с неявными преобразованиями, `params` в двух формах, необязательные и именованные аргументы, вывод generic в две
+  фазы с лямбдами, extension-методы, группы методов, target-typed выражения; лучший член и правила разрыва ничьей), его вызывают `pick`
+  и разбор вызовов с лямбдами в `CSharpNameResolver`. Гейт: имена 99,3 % (неверных 16 → 2), типы 99,3 % (неверных 8 → 1), тест —
+  `CSharpOverloadResolutionTest`. Не сделано: перевод LINQ-запросов в вызовы `Select` / `Where`… для `IQueryable` и своих источников
+- [x] D2 (2026-10-05, 0.1.78). 11e — диагностики (неразрешённое имя, тип, число аргументов, недостижимый код) и их fixes. Сделано в C4c (0.1.74):
+  неразрешённое имя / тип / член, число аргументов, неявные преобразования известных типов, CS0161, серые `using`, «Import type»;
+  в 0.1.78 (`CSharpSemanticWarnings`, `CSharpWarningContext`): CS0162, CS0168 / CS0219, CS4014, CS0120, CS1503 и CS1501 / CS7036 для generic,
+  `params`, необязательных и именованных аргументов, CS0029 / CS0266 для `?:` и switch-выражений, nullable CS8600 / CS8625 / CS8603 / CS8618
+  в простых случаях; `#pragma warning`, `<NoWarn>`, `.editorconfig`; fixes «Remove unused variable», «Add 'await'», действие «Add argument
+  name» («Make method async» был). Ложных 0 на гейте, на сценарии площадки — как у Roslyn один в один. Не сделано: CS8601 / CS8602 / CS8604
+  (поток nullable-состояний), CS1998 (компилятор .NET 10 её не выдаёт), остальные коды
+- [x] D3. Анализаторы из NuGet и их code fixes — помощник с Roslyn по запросу (команда и фон на сохранении). Сделано в 0.1.77:
+  `helpers/codeanalysis` (CodeAnalysisHelper, исходником, собирается SDK машины ≥ 8 против Roslyn из `DotnetTools/dotnet-format` SDK —
+  без сети), пакет `codeanalysis`: анализаторы пакетов, CA и IDE из SDK по `.editorconfig`, фон через секунду после сохранения файла
+  и .NET → Code Analysis → Run Code Analysis (окно Build), подсветка отдельно от своих ошибок, fixes анализаторов через Alt+Enter
+  правками помощника, один помощник на solution, выход после простоя. Работает, пока сервер выключен (сервер гоняет их сам)
+- [x] D4. 11f — source generators через помощник. Сделано в 0.1.77: тот же помощник гоняет генераторы проекта (без Razor) на
+  сохранении, после сборки и по Refresh Generated Files, файлы — в кэше IDE (Dependencies → Analyzers → генератор, только чтение),
+  они в индексе и резолвере (`codeanalysis/CSharpSourceScope`); правило C4c «есть генераторы → молчим» снято, пока вывод свежий.
+  Не сделано: генераторы MSBuild-задач (gRPC, XAML) по-прежнему глушат ошибки; Razor
 - [ ] D5. Удалить модуль `io.github.dotnetsupport.roslyn`, страницу Language Server, `LSP_PLAN.md` — в историю
 
 **Сквозное:** шаг 0 — исходные замеры (время до первой подсказки, память) сейчас и после каждой вехи, `tools/ui-robot/baseline.py`.

@@ -69,7 +69,7 @@ class CSharpEditorBanners : EditorNotificationProvider {
             }
             val projectFile = DotNetProjects.findOwningProject(file)
             if (projectFile == null) {
-                return if (shown(Kind.NO_PROJECT)) Banner(Kind.NO_PROJECT, "This file belongs to no project of the folder: it is not built, and the language server does not analyze it.") else null
+                return if (shown(Kind.NO_PROJECT)) Banner(Kind.NO_PROJECT, "This file belongs to no project of the folder: it is not built, and code analysis sees only the file itself.") else null
             }
             val relative = projectFile.parent?.let { VfsUtilCore.getRelativePath(file, it, '/') }
             val content = if (relative != null && shown(Kind.EXCLUDED)) MsBuildEvaluation.getInstance(project).content(projectFile) else null

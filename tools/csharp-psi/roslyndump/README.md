@@ -185,7 +185,7 @@ tab-separated fields:
 | `F <path>` | Starts a dumped file |
 | `N <offset> <text> <role> <kind> <id> <declarations> <flags>` | Every identifier token (not in trivia: inactive code and doc comments are out) |
 | `X <start> <end> <SyntaxKind> <type> <converted type>` | Every expression node (type syntax included), in tree order: `TypeInfo.Type` and `ConvertedType`; `-` none (a namespace, a method group, a lambda's natural type), `=` converted is the same, `?Name` an error type |
-| `D <start> <end> <id> <error or warning>` | The compiler's diagnostics of the file (`SemanticModel.GetDiagnostics`: syntax, declarations, bodies; errors and warnings that are not suppressed) |
+| `D <start> <end> <id> <error, warning or hidden>` | The compiler's diagnostics of the file (`SemanticModel.GetDiagnostics`: syntax, declarations, bodies; errors and warnings that are not suppressed, and the hidden CS8019 / CS8933 of unnecessary `using` directives) |
 
 `N` fields:
 - `role`: `decl` — the token is the name of a declaration (`GetDeclaredSymbol` of its parent: types, members, locals,

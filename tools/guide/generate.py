@@ -187,6 +187,18 @@ def settings():
     group("debugger.values")
     out.append(table([option("debugger.implicit", ON)]))
 
+    page("settings-analysis", "Settings | .NET | Analyzers and Generators", "page.codeAnalysis",
+         "Генераторы исходного кода и анализаторы Roslyn без сервера языка: их запускает помощник CodeAnalysisHelper, которого плагин "
+         "собирает из исходников установленным SDK (Roslyn берётся из SDK, сеть не нужна). Нужен SDK 8 или новее.")
+    group("codeAnalysis.generators")
+    out.append(table([option("codeAnalysis.runGenerators", ON, note("codeAnalysis.runGenerators.comment") + ".")]))
+    group("codeAnalysis.analyzers")
+    out.append(table([
+        option("codeAnalysis.onSave", ON, note("codeAnalysis.onSave.comment") + "."),
+        option("codeAnalysis.suggestions", ON),
+    ]))
+    out.append(table([option("codeAnalysis.idle", "10", note("codeAnalysis.idle.comment") + ".")]))
+
     page("settings-server", "Settings | .NET | Language Server", "page.languageServer",
          note("server.about") + " Изменение параметров группы «%s» перезапускает сервер, остальные применяются на лету." % e(RU["server.group"]))
     out.append(table([option("server.enabled", ON, "Выключено: сервер не запускается, редактор работает на собственных эвристиках плагина — без ошибок компилятора и рефакторингов.")]))
@@ -420,7 +432,8 @@ TOC = [
     ("run", "Запуск и отладка", []),
     ("memory", "Расход памяти", []),
     ("settings", "Настройки", [("settings-dotnet", ".NET"), ("settings-build", "Инструменты и сборка"), ("settings-nuget", "NuGet"),
-                               ("settings-coverage", "Покрытие"), ("settings-debugger", "Отладчик"), ("settings-server", "Сервер языка"),
+                               ("settings-coverage", "Покрытие"), ("settings-debugger", "Отладчик"), ("settings-analysis", "Анализаторы и генераторы"),
+                               ("settings-server", "Сервер языка"),
                                ("settings-style", "Стиль кода C#")]),
     ("files", "Где что хранится", []),
     ("trouble", "Если что-то не работает", []),

@@ -155,7 +155,7 @@ footer a { color: var(--text-2); }
 <li><a href="#memory">Расход памяти</a>
 </li>
 <li><a href="#settings">Настройки</a>
-<ul><li><a href="#settings-dotnet">.NET</a></li><li><a href="#settings-build">Инструменты и сборка</a></li><li><a href="#settings-nuget">NuGet</a></li><li><a href="#settings-coverage">Покрытие</a></li><li><a href="#settings-debugger">Отладчик</a></li><li><a href="#settings-server">Сервер языка</a></li><li><a href="#settings-style">Стиль кода C#</a></li></ul>
+<ul><li><a href="#settings-dotnet">.NET</a></li><li><a href="#settings-build">Инструменты и сборка</a></li><li><a href="#settings-nuget">NuGet</a></li><li><a href="#settings-coverage">Покрытие</a></li><li><a href="#settings-debugger">Отладчик</a></li><li><a href="#settings-analysis">Анализаторы и генераторы</a></li><li><a href="#settings-server">Сервер языка</a></li><li><a href="#settings-style">Стиль кода C#</a></li></ul>
 </li>
 <li><a href="#files">Где что хранится</a>
 </li>
@@ -424,9 +424,33 @@ footer a { color: var(--text-2); }
 <tr><td><b>Разрешить вычисление свойств и другие неявные вызовы функций</b><small lang="en">Allow property evaluations and other implicit function calls</small></td><td>включено</td><td>Выключено: значения описываются без выполнения кода программы (<code>ToString()</code>, методы чтения свойств, <code>[DebuggerDisplay]</code>)</td></tr>
 </tbody>
 </table></div>
+<h3 id="settings-analysis">Анализаторы и генераторы <small lang="en">Analyzers and Generators</small></h3>
+<p class="path">Settings | .NET | Analyzers and Generators</p>
+<p>Генераторы исходного кода и анализаторы Roslyn без сервера языка: их запускает помощник CodeAnalysisHelper, которого плагин собирает из исходников установленным SDK (Roslyn берётся из SDK, сеть не нужна). Нужен SDK 8 или новее.</p>
+<h4>Генераторы исходного кода <small lang="en">Source Generators</small></h4>
+<div class="table"><table>
+<thead><tr><th>Параметр</th><th>По умолчанию</th><th>Что делает</th></tr></thead>
+<tbody>
+<tr><td><b>Запускать генераторы исходного кода</b><small lang="en">Run source generators</small></td><td>включено</td><td>Генераторы проекта (регулярные выражения, JSON, логирование, пакеты) запускаются при сохранении и после сборки; их файлы — в Dependencies → Analyzers, только для чтения, а объявленное в них разрешается. Razor не запускается.</td></tr>
+</tbody>
+</table></div>
+<h4>Анализаторы Roslyn <small lang="en">Roslyn Analyzers</small></h4>
+<div class="table"><table>
+<thead><tr><th>Параметр</th><th>По умолчанию</th><th>Что делает</th></tr></thead>
+<tbody>
+<tr><td><b>Запускать анализаторы в фоне при сохранении</b><small lang="en">Run analyzers in the background on save</small></td><td>включено</td><td>Анализаторы пакетов, правила CA и IDE из SDK с уровнями из .editorconfig — по сохранённому файлу; для всего проекта: .NET → Code Analysis → Run Code Analysis. Не работает, пока включён сервер языка: он запускает их сам.</td></tr>
+<tr><td><b>Показывать предложения</b><small lang="en">Show suggestions</small></td><td>включено</td><td>Диагностики уровня Info — слабыми предупреждениями, как предложения Rider</td></tr>
+</tbody>
+</table></div>
+<div class="table"><table>
+<thead><tr><th>Параметр</th><th>По умолчанию</th><th>Что делает</th></tr></thead>
+<tbody>
+<tr><td><b>Останавливать помощника после минут без запросов</b><small lang="en">Stop the helper after minutes without requests</small></td><td>10</td><td>Один помощник на решение (CodeAnalysisHelper, собирается SDK этой машины); при следующем запросе запускается снова.</td></tr>
+</tbody>
+</table></div>
 <h3 id="settings-server">Сервер языка <small lang="en">Language Server</small></h3>
 <p class="path">Settings | .NET | Language Server</p>
-<p><code>roslyn-language-server</code> — сервер языка C# на основе Roslyn: ошибки компилятора, автодополнение, навигация, рефакторинги. Запускается, когда открыт файл C#. Изменение параметров группы «Сервер» перезапускает сервер, остальные применяются на лету.</p>
+<p><code>roslyn-language-server</code> — сервер языка C# на основе Roslyn: ошибки компилятора, автодополнение, навигация, рефакторинги. По умолчанию выключен: без него отвечает своя модель кода C# плагина. Включённый, запускается, когда открыт файл C#. Изменение параметров группы «Сервер» перезапускает сервер, остальные применяются на лету.</p>
 <div class="table"><table>
 <thead><tr><th>Параметр</th><th>По умолчанию</th><th>Что делает</th></tr></thead>
 <tbody>

@@ -60,7 +60,9 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
     private val busyTypes = HashSet<PsiElement>()
     // how many questions found their own question in progress: an answer that met a cycle is not kept when it is "nothing"
     private var cycles = 0
-    private val expressions = CSharpExpressionTypes(this)
+    internal val cycleCount: Int get() = cycles
+    internal val expressions = CSharpExpressionTypes(this)
+    internal val overloads = CSharpOverloads(this)
     private val levels = IdentityHashMap<PsiElement, List<Level>>()
     private val projectLevel: Level by lazy { compilationLevel() }
 
@@ -95,6 +97,17 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
             if (refined.size < result.symbols.size) {
                 result = CSharpResolution(refined)
                 names[name] = result
+            }
+            // the lambdas' bodies typed, the better function member may tell the rest apart (task D1)
+            if (result.symbols.size > 1) {
+                val call = invocationOf(name)
+                if (call != null && call.argumentList?.arguments.orEmpty().any { it.expression is CSharpAnonymousFunctionExpression }) {
+                    val reduced = expressions.receiver(name) != null
+                    overloads.resolve(result.symbols, call.argumentList?.arguments.orEmpty(), reduced, name, lambdas = true)?.let {
+                        result = CSharpResolution(listOf(it))
+                        names[name] = result
+                    }
+                }
             }
         }
         return result
@@ -311,9 +324,19 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
 
     private fun membersOf(qualifier: Qualifier, text: String, arity: Int, site: CSharpSimpleName?): List<CSharpSymbol> = when (qualifier) {
         is Qualifier.Namespace -> inNamespace(qualifier.name, text, arity)
-        is Qualifier.Type -> pick(membersNamed(qualifier.type, text, arity), site)
-        is Qualifier.Value -> pick(membersNamed(qualifier.type, text, arity), site)
+        is Qualifier.Type -> pick(byReceiver(membersNamed(qualifier.type, text, arity), static = true), site)
+        is Qualifier.Value -> pick(byReceiver(membersNamed(qualifier.type, text, arity), static = false), site)
         is Qualifier.ValueOrType -> pick(membersNamed(qualifier.value, text, arity), site)
+    }
+
+    /**
+     * C# 7.3, the improved candidates of §12.6.4.1: a method group reached through a value leaves its static methods out, one reached
+     * through a type its instance ones — when some are left and the group is all methods.
+     */
+    private fun byReceiver(found: List<CSharpSymbol>, static: Boolean): List<CSharpSymbol> {
+        if (found.size < 2 || found.any { !isMethod(it) }) return found
+        val kept = found.filter { overloads.isStatic(it) != !static }
+        return kept.ifEmpty { found }
     }
 
     /** The type [info] seen from inside: its type parameters as arguments. */
@@ -343,7 +366,13 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                 val member = (if (arity > 0) map["$text<$arity>"] ?: map["$text`$arity"] else map[text])
                 if (member != null) {
                     val nested = syntax.nestedTypeOf(member)
-                    return if (nested != null) listOf(CSharpSymbol.SourceType(nested)) else member.targets().map { CSharpSymbol.SourceMember(it, member, declaringInstance(type, it)) }
+                    if (nested != null) return listOf(CSharpSymbol.SourceType(nested))
+                    // an explicit implementation (`IEnumerator IEnumerable.GetEnumerator()`) is not found by its name
+                    val found = member.targets().filter { !isExplicitImplementation(it) }.map { CSharpSymbol.SourceMember(it, member, declaringInstance(type, it)) }
+                    if (found.isNotEmpty()) return withObjectMethods(type, found, text, arity, depth)
+                    // only explicit implementations here (the map keeps the nearest declarations): the base class has the member
+                    val bases = baseTypes(type).sortedBy { overloads.isInterface(it) }
+                    for (base in bases) membersNamed(base, text, arity, depth + 1).takeIf { it.isNotEmpty() }?.let { return it }
                 }
                 for (base in libraryBases(type, depth)) membersNamed(base, text, arity, depth + 1).takeIf { it.isNotEmpty() }?.let { return it }
                 emptyList()
@@ -353,7 +382,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                     val m = inherited.member
                     m.name == text && m.kind != IndexedMemberKind.CONSTRUCTOR && (arity == 0 || m.arity == arity)
                 }.map { CSharpSymbol.LibraryMember(it.member, declaringArguments(type, it.from)) }
-                if (found.isNotEmpty()) return found
+                if (found.isNotEmpty()) return withObjectMethods(type, found, text, arity, depth)
                 val nested = nestedTypes(type, text, arity)
                 if (nested.isNotEmpty()) return nested
                 if (type.type.kind == IndexedTypeKind.INTERFACE && type.type.fullName != OBJECT) libraryType(OBJECT)?.let { return membersNamed(it, text, arity, depth + 1) }
@@ -364,9 +393,26 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                 // C# §12.5: the effective base class and the interface constraints together; methods of object overload those of an interface
                 val found = constraintsOf(type).flatMap { membersNamed(it, text, arity, depth + 1) }
                 if (found.isNotEmpty() && found.any { !isMethod(it) }) found
-                else (found + libraryType(OBJECT)?.let { membersNamed(it, text, arity, depth + 1) }.orEmpty()).distinctBy { it.id }
+                else (found + libraryType(OBJECT)?.let { membersNamed(it, text, arity, depth + 1) }.orEmpty()).distinctBy { it.id ?: it }
             }
         }
+    }
+
+    private fun isExplicitImplementation(element: PsiElement): Boolean = when {
+        // the stubs do not keep the interface of the name: a file that is not parsed is not parsed for it (taken as an ordinary member)
+        (element as? com.intellij.extapi.psi.StubBasedPsiElementBase<*>)?.stub != null -> false
+        element is CSharpMethodDeclaration -> element.explicitInterfaceSpecifier != null
+        element is CSharpBasePropertyDeclaration -> element.explicitInterfaceSpecifier != null
+        else -> false
+    }
+
+    /** The methods of an interface overload those of `object` of the same name (C# §12.5: an interface's lookup includes object's members). */
+    private fun withObjectMethods(type: SemanticType, found: List<CSharpSymbol>, text: String, arity: Int, depth: Int): List<CSharpSymbol> {
+        val isInterface = type is SemanticType.Library && type.type.kind == IndexedTypeKind.INTERFACE && type.type.fullName != OBJECT ||
+            type is SemanticType.Source && type.info.kind == io.github.dotnetsupport.lang.TypeKind.INTERFACE
+        if (!isInterface || found.any { !isMethod(it) }) return found
+        val objects = libraryType(OBJECT)?.let { membersNamed(it, text, arity, depth + 1) }.orEmpty().filter(::isMethod)
+        return if (objects.isEmpty()) found else (found + objects).distinctBy { it.id ?: it }
     }
 
     /**
@@ -615,6 +661,16 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         val receiver = if (reduced) expressions.receiver(site) else null
         // `doubles.Average()` of `IEnumerable<double?>`: the receiver takes the overload for its own element type
         val receiving = if (receiver == null) candidates else candidates.filter { expressions.receiverFits(it, receiver) }.ifEmpty { candidates }
+        return pickByArguments(receiving, arguments, reduced, candidates, site)
+    }
+
+    /** The constructor `new T(...)` with [arguments] calls, of [constructors]; null when the arguments do not tell one (parameter info). */
+    internal fun pickConstructor(constructors: List<CSharpSymbol>, arguments: List<CSharpArgument>): CSharpSymbol? =
+        if (constructors.size == 1) constructors.single() else pickByArguments(constructors, arguments, false, constructors, null).singleOrNull()
+
+    private fun pickByArguments(receiving: List<CSharpSymbol>, arguments: List<CSharpArgument>, reduced: Boolean, candidates: List<CSharpSymbol>, site: CSharpSimpleName?): List<CSharpSymbol> {
+        // C# §12.6.4: the applicable candidates and the better function member, when everything it needs is known (task D1)
+        overloads.resolve(receiving, arguments, reduced, site)?.let { return listOf(it) }
         val signatures = receiving.map { it to signature(it, reduced && isExtension(it)) }
         val fitting = signatures.filter { (_, s) -> s != null && fits(s, arguments) }
         if (fitting.size == 1) return listOf(fitting.single().first)
@@ -623,7 +679,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         var best = -1
         val scored = ArrayList<Triple<CSharpSymbol, List<Parameter>, Int>>()
         for ((symbol, signature) in pool) {
-            val score = score(signature!!, arguments, argumentTypes) ?: continue
+            val score = score(signature!!, arguments, argumentTypes, (symbol as? CSharpSymbol.SourceMember)?.element) ?: continue
             scored += Triple(symbol, signature, score)
             if (score > best) best = score
         }
@@ -659,7 +715,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         else -> false
     }
 
-    internal fun isExtension(symbol: CSharpSymbol): Boolean = when (symbol) {
+    fun isExtension(symbol: CSharpSymbol): Boolean = when (symbol) {
         is CSharpSymbol.SourceMember -> (symbol.element as? CSharpMethodDeclaration)?.let(TypePart::isExtension) == true
         is CSharpSymbol.LibraryMember -> symbol.member.kind == IndexedMemberKind.EXTENSION_METHOD
         else -> false
@@ -675,6 +731,9 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                 val list = when (val element = symbol.element) {
                     is CSharpMethodDeclaration -> element.parameterList
                     is CSharpLocalFunctionStatement -> element.parameterList
+                    is CSharpConstructorDeclaration -> element.parameterList
+                    // a primary constructor
+                    is CSharpTypeDeclaration -> element.parameterList
                     else -> return null
                 }
                 list?.parameters.orEmpty().map { p ->
@@ -697,6 +756,9 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         return if (reduced) all.drop(1) else all
     }
 
+    /** The names of the parameters of a method (without the receiver of an extension called on it), each with whether it is `params`. */
+    fun parameterNames(symbol: CSharpSymbol, reduced: Boolean): List<Pair<String, Boolean>>? = signature(symbol, reduced)?.map { it.name to it.isParams }
+
     internal fun fits(parameters: List<Parameter>, arguments: List<CSharpArgument>): Boolean {
         val named = arguments.mapNotNull { it.nameColon?.nameElement?.identifier?.text }
         if (named.any { n -> parameters.none { it.name == n } }) return false
@@ -707,7 +769,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
     }
 
     /** How well the known argument types fit: 2 per identical type, 1 per a conversion that is surely there; null when one surely does not fit. */
-    private fun score(parameters: List<Parameter>, arguments: List<CSharpArgument>, types: List<SemanticType?>): Int? {
+    private fun score(parameters: List<Parameter>, arguments: List<CSharpArgument>, types: List<SemanticType?>, owner: PsiElement?): Int? {
         var score = 0
         for ((i, argument) in arguments.withIndex()) {
             val name = argument.nameColon?.nameElement?.identifier?.text
@@ -729,7 +791,8 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
             var p = parameter.type() ?: continue
             if (parameter.isParams && i >= parameters.size - 1 && p is SemanticType.ArrayOf && !(argumentType is SemanticType.ArrayOf)) p = p.element ?: continue
             // a type parameter of the method is inferred from the argument: identity
-            val conversion = if (p is SemanticType.Parameter && p.ofMethod) Conversion.IDENTITY else conversion(argumentType, p)
+            // (only the candidate's own: a type parameter of the method the call is in is a type like any other)
+            val conversion = if (p is SemanticType.Parameter && p.ofMethod && (p.owner == null || p.owner == owner)) Conversion.IDENTITY else simpleConversion(argumentType, p)
             // `ref` / `out` take a variable of the very type
             if (parameter.byRef && conversion == Conversion.IMPLICIT) return null
             score += when (conversion) {
@@ -744,7 +807,10 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
 
     internal enum class Conversion { IDENTITY, IMPLICIT, UNKNOWN, NONE }
 
-    internal fun conversion(from: SemanticType, to: SemanticType): Conversion {
+    internal fun conversion(from: SemanticType, to: SemanticType): Conversion = overloads.classify(from, to)
+
+    /** The conversion of layer 11a/11b before task D1: what the scoring of [pickByArguments] was tuned on. */
+    private fun simpleConversion(from: SemanticType, to: SemanticType): Conversion {
         if (to is SemanticType.Parameter || from is SemanticType.Parameter) return Conversion.UNKNOWN
         val fromName = definitionName(from)
         val toName = definitionName(to)
@@ -752,7 +818,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         if (toName == OBJECT) return Conversion.IMPLICIT
         if (fromName != null && toName != null) {
             NUMERIC_CONVERSIONS[fromName]?.let { targets -> if (toName in targets) return Conversion.IMPLICIT }
-            if (toName == "System.Nullable`1") return (to as? SemanticType.Library)?.arguments?.firstOrNull()?.let { conversion(from, it) }?.let { if (it == Conversion.IDENTITY) Conversion.IMPLICIT else it } ?: Conversion.UNKNOWN
+            if (toName == "System.Nullable`1") return (to as? SemanticType.Library)?.arguments?.firstOrNull()?.let { simpleConversion(from, it) }?.let { if (it == Conversion.IDENTITY) Conversion.IMPLICIT else it } ?: Conversion.UNKNOWN
             val keys = HashSet<String>()
             collectSupertypes(from, keys, HashSet(), 0)
             if (toName in keys) return Conversion.IMPLICIT
@@ -1199,6 +1265,17 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
 
         fun alias(name: String): CSharpSymbol? = aliases[name]?.invoke()
 
+        fun hasAlias(name: String): Boolean = name in aliases
+
+        /**
+         * Whether all this level brings is known (task C4c): every imported namespace exists, every alias and `using static` type resolves.
+         * When not, an assembly or a generated file is missing from the view, and a name the level does not find may well be there.
+         */
+        val known: Boolean by lazy {
+            imports.all { session.namespaceExists(it, assemblies) } && aliases.values.all { it() != null } &&
+                statics().size == usings.count { it.alias == null && it.staticKeyword != null } + global.count { it.isStatic }
+        }
+
         private var staticTypes: List<SemanticType>? = null
 
         fun statics(): List<SemanticType> = staticTypes ?: run {
@@ -1235,6 +1312,29 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         }
         return current
     }
+
+    // ---- what the diagnostics ask (task C4c)
+
+    /** Whether every level [at] sees is [Level.known]. */
+    internal fun importsKnown(at: PsiElement): Boolean = levels(at).all { it.known }
+
+    /** Whether a `using` alias named [name] is declared on the way out from [at] (resolving or not). */
+    internal fun aliasNamed(at: PsiElement, name: String): Boolean = levels(at).any { it.hasAlias(name) }
+
+    /** The types of the `using static` directives [at] sees. */
+    internal fun staticTypes(at: PsiElement): List<SemanticType> = levels(at).flatMap { it.statics() }
+
+    /** The namespaces [at] sees types and extension methods of: the enclosing ones and the imported ones. */
+    internal fun visibleNamespaces(at: PsiElement): Set<String> = importedNamespaces(at)
+
+    /** The namespaces the `using` directives (and global usings) import on the way out from [at], without the enclosing namespaces. */
+    internal fun importedOnly(at: PsiElement): Set<String> = levels(at).flatMapTo(HashSet()) { it.imports }
+
+    /** Whether the extension method [symbol] may take a receiver of [receiver] (its `this` parameter). */
+    internal fun receiverFits(symbol: CSharpSymbol, receiver: SemanticType): Boolean = expressions.receiverFits(symbol, receiver)
+
+    /** The namespace of the static class an extension method of the solution is declared in; null when nested or broken. */
+    internal fun namespaceOfMethod(method: PsiElement): String? = namespaceOfPsi(method)
 
     /** The levels from [at] outwards: each enclosing namespace (`namespace A.B` is `A.B`, then `A`), then the compilation unit. */
     private fun levels(at: PsiElement): List<Level> {

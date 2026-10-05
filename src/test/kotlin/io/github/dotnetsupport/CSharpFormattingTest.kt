@@ -39,7 +39,7 @@ class CSharpFormattingTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             serverSettings.state.features = mutableMapOf()
-            serverSettings.state.enabled = true
+            serverSettings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             DotNetFormattingSettings.getInstance(project).formatter = FormatterChoice.AUTO
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -184,6 +184,7 @@ class CSharpFormattingTest : BasePlatformTestCase() {
 
     /** "Built-in" chosen, or "Auto" with the switch NATIVE: the native formatter; "dotnet format", CSharpier and "None" are what they say. */
     fun testWhenTheNativeFormatterAnswers() {
+        serverSettings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         val file = myFixture.addFileToProject("FormattingWiring/Program.cs", "class Program{}")
         val formatting = DotNetFormattingSettings.getInstance(project)
         val service = DotNetFormattingService()

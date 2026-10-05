@@ -64,15 +64,80 @@ object CSharpSemanticEnvironment {
             FileBasedIndex.getInstance().processValues(CSharpGlobalUsingIndex.NAME, CSharpGlobalUsingIndex.KEY, null, { other, directives ->
                 if (own == null || model.projectOf(other) == own) directives.mapNotNullTo(found, CSharpGlobalUsingIndex::parse)
                 true
-            }, GlobalSearchScope.projectScope(project))
+            }, io.github.dotnetsupport.codeanalysis.CSharpSourceScope.of(project))
         }
         if (own != null) found += CompilationModel.getInstance(project).options(own).usings
         return found.toList()
     }
 
+    /**
+     * Whether [assemblies] of [file] are all the compilation refers to (task C4c): only then may a name be called missing. A loose file, a
+     * project before its restore or with an assembly the indexer could not read is not.
+     */
+    fun referencesComplete(file: PsiFile): Boolean {
+        testAssemblies?.let { return it(file) != null }
+        if (AssemblyNavigation.assembliesOf(file.project, file.viewProvider.virtualFile) != null) return false
+        val projectFile = projectOf(file) ?: return false
+        return AssemblyIndexService.getInstance(file.project).isComplete(projectFile)
+    }
+
+    @Volatile private var testGenerates: Boolean? = null
+
+    /**
+     * Whether the project of [file] may have types and members no file of it declares: source generators of the build that the IDE does not
+     * run — Razor components, XAML, gRPC, generator packages. There a missing name is no proof of an error: the semantics stays silent.
+     */
+    fun mayGenerateTypes(file: PsiFile): Boolean {
+        testGenerates?.let { return it }
+        val projectFile = projectOf(file) ?: return false
+        val project = file.project
+        val msbuild = io.github.dotnetsupport.solution.SolutionService.getInstance(project).msBuildProject(projectFile)
+        val sdk = msbuild.sdk.orEmpty()
+        if (sdk.contains("Razor", ignoreCase = true) || sdk.contains("Blazor", ignoreCase = true) || sdk.contains("WindowsDesktop", ignoreCase = true) || sdk.contains("Maui", ignoreCase = true)) return true
+        // the source generators of the packages ran in the helper (D4) and what they made is indexed: only the code generators of MSBuild
+        // targets (gRPC) stay unknown
+        val generatorsRan = generatedKnown(file)
+        if (msbuild.packages.any { reference -> (if (generatorsRan) MSBUILD_GENERATOR_PACKAGES else GENERATOR_PACKAGES).any { reference.name.contains(it, ignoreCase = true) } }) return true
+        val directory = projectFile.parent ?: return false
+        if (DumbService.isDumb(project)) return true
+        val scope = com.intellij.psi.search.GlobalSearchScopesCore.directoryScope(project, directory, true)
+        return GENERATED_FROM.any { extension -> com.intellij.psi.search.FilenameIndex.getAllFilesByExt(project, extension, scope).isNotEmpty() }
+    }
+
+    /** Files the build makes C# of: Razor components and pages, XAML, protobuf. */
+    private val GENERATED_FROM = listOf("razor", "cshtml", "xaml", "axaml", "proto")
+
+    /** Packages known to generate types or members (`Grpc.Tools`, `*.SourceGenerator(s)`, `CommunityToolkit.Mvvm`, `Refit`, `Mapperly`...). */
+    private val GENERATOR_PACKAGES = listOf("Generator", "Grpc.Tools", "CommunityToolkit.Mvvm", "Refit", "Mapperly", "StronglyTypedId", "Vogen", "Avalonia", "Uno.")
+
+    /** Packages that generate C# in MSBuild targets, not in source generators: the helper does not run them. */
+    private val MSBUILD_GENERATOR_PACKAGES = listOf("Grpc.Tools", "Avalonia", "Uno.")
+
+    @Volatile private var testGeneratedKnown: Boolean? = null
+
+    /**
+     * Whether the source generators of the project of [file] have run in CodeAnalysisHelper (task D4) and nothing of the project has been
+     * edited since: then what they declare is in the index, and a partial type with a generated part is as complete as any other type.
+     */
+    fun generatedKnown(file: PsiFile): Boolean {
+        testGeneratedKnown?.let { return it }
+        val projectFile = projectOf(file) ?: return false
+        return file.project.getServiceIfCreated(io.github.dotnetsupport.codeanalysis.CodeAnalysisService::class.java)?.isGeneratedFresh(projectFile) ?: false
+    }
+
+    @TestOnly
+    fun setGeneratedKnownForTests(known: Boolean?) {
+        testGeneratedKnown = known
+    }
+
     @TestOnly
     fun setAssembliesForTests(assemblies: ((PsiFile) -> AssemblyIndexSet?)?) {
         testAssemblies = assemblies
+    }
+
+    @TestOnly
+    fun setGeneratesForTests(generates: Boolean?) {
+        testGenerates = generates
     }
 }
 

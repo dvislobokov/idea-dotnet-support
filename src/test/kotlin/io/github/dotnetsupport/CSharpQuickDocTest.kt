@@ -1,5 +1,6 @@
 package io.github.dotnetsupport
 
+import com.intellij.openapi.util.text.StringUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.index.AssemblyDocs
 import io.github.dotnetsupport.index.AssemblyIndex
@@ -32,6 +33,7 @@ class CSharpQuickDocTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             settings.state.features = mutableMapOf()
+            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
@@ -53,7 +55,7 @@ class CSharpQuickDocTest : BasePlatformTestCase() {
 
     fun testLibraryMethodWithItsDocumentation() {
         val doc = doc("using System;\nclass A { void M() { Console.Write|Line(\"x\"); } }")!!
-        assertEquals("void Console.WriteLine(string value) (+ 17 overloads)", doc.definition.replace(Regex("""\(\+ \d+ overloads\)"""), "(+ 17 overloads)"))
+        assertEquals("void Console.WriteLine(string? value) (+ 17 overloads)", doc.definition.replace(Regex("""\(\+ \d+ overloads\)"""), "(+ 17 overloads)"))
         assertTrue(doc.definition, doc.definition.startsWith("void Console.WriteLine(string"))
         assertNotNull("System.Console has its XML documentation", doc.xml)
         assertTrue(doc.html, doc.html.contains("Writes the specified string value"))
@@ -113,7 +115,99 @@ class CSharpQuickDocTest : BasePlatformTestCase() {
         assertEquals("(local variable) List<int> numbers", definition(source.replace("lim|it", "limit").replace("numbers.Count", "num|bers.Count")))
     }
 
+    fun testInheritdocTakesTheDocumentationOfTheBase() {
+        val source = """
+            namespace Shop;
+            /// <summary>Something that ships.</summary>
+            public interface IShippable
+            {
+                /// <summary>Ships it.</summary>
+                /// <param name="express">Faster.</param>
+                /// <returns>The tracking number.</returns>
+                string Ship(bool express);
+            }
+            /// <summary>An animal.</summary>
+            public abstract class Base
+            {
+                /// <summary>The name of it.</summary>
+                public virtual string Name => "";
+            }
+            /// <inheritdoc/>
+            public class Order : Base, IShippable
+            {
+                /// <inheritdoc/>
+                /// <returns>Always the same.</returns>
+                public string Ship(bool express) => "1";
+                /// <inheritdoc />
+                public override string Name => "order";
+                /// <inheritdoc cref="IShippable.Ship"/>
+                public void Other() { }
+            }
+            class Client { void M(Order order) { order.Sh|ip(true); } }
+        """
+        val ship = doc(source)!!
+        assertTrue(ship.html, ship.html.contains("Ships it."))
+        assertTrue("the own part wins: ${ship.html}", ship.html.contains("Always the same.") && !ship.html.contains("The tracking number."))
+        assertTrue("the parameter too: ${ship.html}", ship.html.contains("<code>express</code> – Faster."))
+        assertFalse(ship.html, ship.html.contains("inheritdoc"))
+        val name = doc(source.replace("order.Sh|ip(true)", "order.Ship(true); var n = order.Na|me"))!!
+        assertTrue(name.html, name.html.contains("The name of it."))
+        val type = doc(source.replace("order.Sh|ip(true)", "order.Ship(true)").replace("void M(Order order)", "void M(Or|der order)"))!!
+        assertTrue("a type from its base class: ${type.html}", type.html.contains("An animal."))
+        val other = doc(source.replace("order.Sh|ip(true)", "order.Ot|her()"))!!
+        assertTrue("`cref` of inheritdoc: ${other.html}", other.html.contains("Ships it."))
+        val parameter = doc(source.replace("order.Sh|ip(true)", "order.Ship(true)").replace("public string Ship(bool express) => \"1\";", "public string Ship(bool express) => ex|press ? \"1\" : \"2\";"))!!
+        assertTrue("a parameter of an inheriting method: ${parameter.html}", parameter.html.contains("Faster."))
+    }
+
+    fun testInheritdocMerge() {
+        assertEquals("<summary>Own.</summary>\n<param name=\"b\">B.</param>",
+            NativeCSharpDocumentation.merge("<summary>Own.</summary>", "<summary>Base.</summary><param name=\"b\">B.</param>"))
+    }
+
+    fun testCrefsAreLinks() {
+        val source = """
+            namespace Shop;
+            /// <summary>Made by <see cref="Factory"/>, shipped by <see cref="Factory.Ship"/>; a <see cref="T:System.Console"/>.</summary>
+            public class Order { }
+            /// <summary>Makes orders.</summary>
+            public class Factory { /// <summary>Ships.</summary>
+                public void Ship() { } }
+            class Client { void M(Ord|er order) { } }
+        """
+        val doc = doc(source)!!
+        val links = Regex("""<a href="([^"]+)"><code>([^<]+)</code></a>""").findAll(doc.html).associate { it.groupValues[2] to StringUtil.unescapeXmlEntities(it.groupValues[1]) }
+        assertEquals(doc.html, setOf("Factory", "Factory.Ship", "Console"), links.keys)
+        assertTrue(links.values.all { it.startsWith(NativeCSharpDocumentation.LINK) })
+        assertEquals("class Shop.Factory", NativeCSharpDocumentation.resolveLink(project, links.getValue("Factory"))?.definition)
+        assertEquals("void Factory.Ship()", NativeCSharpDocumentation.resolveLink(project, links.getValue("Factory.Ship"))?.definition)
+        val console = NativeCSharpDocumentation.resolveLink(project, links.getValue("Console"))!!
+        assertEquals("class System.Console", console.definition)
+        assertNotNull("F4 opens the metadata view", NativeCSharpDocumentation.navigatable(project, console.location!!))
+        assertNotNull("the documentation of a declaration goes to it", doc.location)
+        // the documentation of an assembly: its `cref`s link to what the index has
+        val writeLine = doc("using System;\nclass A { void M() { Console.Write|Line(\"x\"); } }")!!
+        assertTrue(writeLine.html, writeLine.html.contains("<a href=\"psi_element://dotnet-doc/") || writeLine.links.isEmpty())
+        assertEquals("System.Console", (NativeCSharpDocumentation.librarySymbol("T:System.Console", ASSEMBLIES) as? io.github.dotnetsupport.lang.semantic.CSharpSymbol.LibraryType)?.type?.fullName)
+        assertNotNull(NativeCSharpDocumentation.librarySymbol("M:System.Console.WriteLine(System.String)", ASSEMBLIES))
+        assertNull(NativeCSharpDocumentation.librarySymbol("N:System", ASSEMBLIES))
+    }
+
+    fun testVarShowsTheType() {
+        val doc = doc("using System.Collections.Generic;\nclass A { void M() { va|r numbers = new List<int>(); } }")!!
+        assertEquals("class System.Collections.Generic.List<T>", doc.definition)
+        assertTrue(doc.html, doc.html.contains("T is int"))
+        assertEquals("class Shop.Order", definition("namespace Shop;\nclass Order { void M() { va|r o = new Order(); } }"))
+        assertEquals("foreach", "class System.String", definition("class A { void M(string[] xs) { foreach (va|r x in xs) { } } }"))
+    }
+
+    fun testLibraryParametersShowTheirNullability() {
+        val definition = definition("using System;\nclass A { void M() { Console.Write|Line(\"x\"); } }")!!
+        assertTrue("as Roslyn: `string? value` where the assembly annotates it: $definition", definition.startsWith("void Console.WriteLine(string"))
+    }
+
     fun testTheSwitch() {
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         val file = myFixture.configureByText("Switch.cs", "using System;\nclass A { void M() { Console.ReadLine(); } }") as CSharpFile
         val offset = file.text.indexOf("ReadLine")
         assertEquals(1, NativeCSharpDocumentationTargetProvider().documentationTargets(file, offset).size)
@@ -163,11 +257,28 @@ class CSharpQuickDocTest : BasePlatformTestCase() {
         assertEquals(listOf("(string item)", "(string item, int count) *"), rows)
         val library = rows("using System;\nclass A { void M() { Console.WriteLine(|); } }")
         assertTrue(library.toString(), library.size > 5)
-        assertTrue(library.toString(), library.any { it.startsWith("(string value)") })
+        assertTrue("as the server, with the annotation of the assembly: $library", library.any { it.startsWith("(string? value)") })
         val linq = rows("using System.Collections.Generic;\nusing System.Linq;\nclass A { void M(List<int> xs) { xs.Take(|); } }")
         assertTrue("the receiver is not a parameter: $linq", linq.none { it.contains("source") })
         val creation = rows("class Point { public Point(int x, int y) { } void M() { var p = new Point(1, |); } }")
         assertEquals(listOf("(int x, int y) *"), creation)
+    }
+
+    fun testTheConstructorTheArgumentsPickIsMarked() {
+        val rows = rows("class Point { public Point(int x) { } public Point(int x, int y) { } void M() { var p = new Point(1|); } }")
+        assertEquals(listOf("(int x) *", "(int x, int y)"), rows)
+        assertEquals(listOf("(int x)", "(int x, int y) *"), rows("class Point { public Point(int x) { } public Point(int x, int y) { } void M() { var p = new Point(1, |2); } }"))
+    }
+
+    fun testNamedArguments() {
+        val file = myFixture.configureByText("Named.cs", "class A { void M(int a, int b = 0, int c = 0) { M(1, c: 3); } }") as CSharpFile
+        val offset = file.text.indexOf("3)")
+        val list = NativeCSharpParameterInfo.listAt(file, offset)!!
+        assertEquals("c", NativeCSharpParameterInfo.argumentName(list, offset))
+        assertNull(NativeCSharpParameterInfo.argumentName(list, file.text.indexOf("1, c")))
+        assertEquals("count", NativeCSharpParameterInfo.nameOf("int count = 1"))
+        assertEquals("items", NativeCSharpParameterInfo.nameOf("params string[] items"))
+        assertEquals("text", NativeCSharpParameterInfo.nameOf("string? text = \"a = b\""))
     }
 
     fun testArgumentIndex() {

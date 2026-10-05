@@ -1,0 +1,17 @@
+# Severities of the analyzers for Editor/Analyzers.cs (0.1.77, the Roslyn analyzers of the plugin): the rules of the package
+# Microsoft.VisualStudio.Threading.Analyzers stay quiet in the other files, so the build of the playground does not fill with them.
+[*.cs]
+dotnet_diagnostic.VSTHRD200.severity = none
+dotnet_diagnostic.VSTHRD103.severity = none
+dotnet_diagnostic.VSTHRD002.severity = none
+dotnet_diagnostic.VSTHRD110.severity = none
+dotnet_diagnostic.VSTHRD100.severity = none
+dotnet_diagnostic.VSTHRD101.severity = none
+dotnet_diagnostic.VSTHRD111.severity = none
+dotnet_diagnostic.VSTHRD003.severity = none
+
+[Editor/Analyzers.cs]
+dotnet_diagnostic.VSTHRD200.severity = warning
+dotnet_diagnostic.VSTHRD103.severity = warning
+dotnet_diagnostic.CA1822.severity = warning
+dotnet_diagnostic.IDE0059.severity = warning

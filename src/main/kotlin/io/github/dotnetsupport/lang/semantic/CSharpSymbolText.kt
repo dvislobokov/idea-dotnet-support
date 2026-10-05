@@ -27,8 +27,16 @@ class CSharpSymbolText(private val resolver: CSharpNameResolver) {
         else -> null
     }
 
-    private fun library(member: IndexedMember, reference: IndexedTypeRef, arguments: List<SemanticType?>): String =
-        resolver.fromRef(reference, arguments)?.minimalDisplay ?: member.display(reference)
+    /**
+     * With the `?` of a nullable reference type the assembly annotates (`string? value`), as Roslyn's Quick Info and signature help write
+     * it (robot, E-83); a `T?` whose `T` is known to be a value type stays without it, as in C#.
+     */
+    private fun library(member: IndexedMember, reference: IndexedTypeRef, arguments: List<SemanticType?>): String {
+        val text = resolver.fromRef(reference, arguments)?.minimalDisplay ?: return member.display(reference, nullable = true)
+        if (!reference.annotated || text.endsWith("?")) return text
+        if (reference is IndexedTypeRef.TypeParameter && text != member.display(reference)) return text
+        return "$text?"
+    }
 
     private fun sourceType(symbol: CSharpSymbol.SourceMember): String? {
         if (symbol.element is CSharpEnumMemberDeclaration) return null

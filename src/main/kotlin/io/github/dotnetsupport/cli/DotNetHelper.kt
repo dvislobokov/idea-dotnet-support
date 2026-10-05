@@ -14,11 +14,13 @@ import java.security.MessageDigest
  * the project file and of the dll, [property] the MSBuild property the project takes its framework from, [sources] the files that go
  * with the project file (a helper that stays running has the `Protocol.cs` of `helpers/protocol` among them, see [HelperConnection]).
  * [library]: the framework of a library that is loaded by somebody else (`netstandard2.0` for the test logger): no SDK to ask, no
- * runtimeconfig, and the folder can be found without running anything ([existing]).
+ * runtimeconfig, and the folder can be found without running anything ([existing]). [perSdk]: built again for every version of the SDK, not
+ * only for every framework — a helper that copies assemblies of the SDK next to itself (the Roslyn of CodeAnalysisHelper) must not keep
+ * those of an SDK that has been updated since.
  */
 class DotNetHelper(
     private val folder: String, val assembly: String, private val property: String, private val sources: List<String> = listOf("Program.cs"),
-    private val library: String? = null,
+    private val library: String? = null, private val perSdk: Boolean = false,
 ) {
     /** Null until built; the failure of a build is remembered for the session, so it is not tried again at every use. */
     @Volatile private var built: File? = null
@@ -51,7 +53,7 @@ class DotNetHelper(
     private fun build(sources: Sources, work: File): File? {
         val sdk = if (library != null) "" else sdkVersion(work) ?: return fail("No .NET SDK: `dotnet --version` gave nothing")
         val framework = library ?: framework(sdk) ?: return fail("$assembly needs the SDK of .NET $MINIMAL_SDK or newer, `dotnet --version` says $sdk")
-        val directory = File(work, "${sources.hash}-$framework")
+        val directory = File(work, "${sources.hash}-$framework" + if (perSdk) "-$sdk" else "")
         val dll = File(directory, "bin/$assembly.dll")
         if (dll.isFile && (library != null || File(directory, "bin/$assembly.runtimeconfig.json").isFile)) return dll.also { built = it }
 

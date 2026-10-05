@@ -4,6 +4,7 @@ import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.Annotator
 import com.intellij.lang.annotation.HighlightSeverity
+import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.editor.Document
@@ -26,9 +27,10 @@ import java.util.concurrent.atomic.AtomicReference
 
 /**
  * `DIAGNOSTICS` on csharp-psi's tree, the syntactic part (CSHARP_PSI_MIGRATION.md, step 9, task A3): Roslyn's syntax errors of the parser,
- * the lexer and the directives with Roslyn's codes, messages and spans ([CSharpSyntaxDiagnostics]), shown as `CS1002: ; expected`. The
- * semantic errors still come from the server: with NATIVE it is asked as before, and only its syntax errors that the tree reports too give
- * way ([repeatsNative], `RoslynLspIntegration`), so nothing is shown twice and nothing the tree only counts is lost.
+ * the lexer and the directives with Roslyn's codes, messages and spans ([CSharpSyntaxDiagnostics]), shown as `CS1002: ; expected`. Since
+ * 0.1.74 also the semantic part ([NativeCSharpSemanticDiagnostics], task C4c): the errors the resolver is sure of and the gray of unused
+ * `using` directives. The server is still asked with NATIVE; its diagnostics the native pass reports too give way ([repeatsNative],
+ * `RoslynLspIntegration`), so nothing is shown twice and nothing the plugin does not know yet is lost.
  */
 object NativeCSharpDiagnostics {
     /** The native diagnostics answer for [file]: the switch, and a file of the native tree. */
@@ -44,11 +46,13 @@ object NativeCSharpDiagnostics {
      * native pass shows: the same message of Roslyn on the same line. The server is the same Roslyn, so the texts and lines agree; the
      * native ones carry the code (`CS1002: ; expected`) and never match themselves.
      */
-    fun repeatsNative(file: PsiFile, description: String?, offset: Int): Boolean {
+    fun repeatsNative(file: PsiFile, description: String?, offset: Int, code: String? = null): Boolean {
         if (description == null || !serves(file)) return false
         val document = PsiDocumentManager.getInstance(file.project).getDocument(file) ?: return false
         if (offset > document.textLength) return false
         val line = document.getLineNumber(offset)
+        // the semantic errors of the native pass (C4c): the same code on the same line, the texts of two Roslyn versions may differ a little
+        if (code != null) NativeCSharpSemanticDiagnostics.codesByLine(file as CSharpFile)[line]?.let { if (NativeCSharpSemanticDiagnostics.sameCode(it, code)) return true }
         if (of(file as CSharpFile).any { it.message == description && it.start <= document.textLength && document.getLineNumber(it.start) == line }) return true
         // the errors of `using` the native pass reports from the types of C2 (CS1674 and its kin)
         return NativeCSharpUsingChecks.of(file).any { it.error.message == description && it.range.startOffset <= document.textLength && document.getLineNumber(it.range.startOffset) == line }
@@ -73,6 +77,8 @@ object NativeCSharpDiagnostics {
 class NativeCSharpDiagnosticsAnnotator : Annotator, DumbAware {
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
         if (element !is CSharpFile || !NativeCSharpDiagnostics.serves(element)) return
+        // the output of a source generator (D4): read-only, compiled as it is, nothing to tell the user
+        if (element.project.getServiceIfCreated(io.github.dotnetsupport.codeanalysis.CodeAnalysisService::class.java)?.isGenerated(element.viewProvider.virtualFile) == true) return
         val document = PsiDocumentManager.getInstance(element.project).getDocument(element) ?: return
         if (document.textLength != element.textLength) return
         for (d in NativeCSharpDiagnostics.of(element)) {
@@ -86,6 +92,35 @@ class NativeCSharpDiagnosticsAnnotator : Annotator, DumbAware {
             if (problem.range.endOffset > document.textLength) continue
             holder.newAnnotation(HighlightSeverity.ERROR, problem.error.text).range(problem.range).tooltip(StringUtil.escapeXmlEntities(problem.error.text)).create()
         }
+        // the semantic errors of C4c and the `using` directives nothing needs
+        val semantic = NativeCSharpSemanticDiagnostics.of(element)
+        for (problem in semantic) {
+            if (problem.range.endOffset > document.textLength || problem.range.isEmpty) continue
+            if (problem.unnecessary) {
+                // one gray per directive: CS8933 (a repeat of a global using) is the reason of the CS8019 around it
+                if (problem.code != "CS8019") continue
+                val reason = semantic.firstOrNull { it.code == "CS8933" && problem.range.contains(it.range) } ?: problem
+                holder.newAnnotation(HighlightSeverity.WEAK_WARNING, reason.message).range(problem.range).highlightType(ProblemHighlightType.LIKE_UNUSED_SYMBOL)
+                    .tooltip(StringUtil.escapeXmlEntities(reason.text)).withFix(CSharpRemoveUnusedUsingsFix()).create()
+                continue
+            }
+            if (problem.warning) {
+                // as Rider: unreachable code and unused locals gray, the other warnings yellow
+                val range = problem.gray?.takeIf { it.endOffset <= document.textLength } ?: problem.range
+                var warning = holder.newAnnotation(HighlightSeverity.WARNING, problem.text).range(range).tooltip(StringUtil.escapeXmlEntities(problem.text))
+                if (problem.code in GRAY_WARNINGS) warning = warning.highlightType(ProblemHighlightType.LIKE_UNUSED_SYMBOL)
+                for (fix in NativeCSharpWarningFixes.fixesFor(element, problem)) warning = warning.withFix(fix)
+                warning.create()
+                continue
+            }
+            var builder = holder.newAnnotation(HighlightSeverity.ERROR, problem.text).range(problem.range).tooltip(StringUtil.escapeXmlEntities(problem.text))
+            if (problem.imports.isNotEmpty() && problem.name != null) builder = builder.withFix(CSharpImportTypeFix(problem.name, problem.imports, problem.extension, problem.range))
+            builder.create()
+        }
+    }
+
+    private companion object {
+        val GRAY_WARNINGS = setOf("CS0162", "CS0168", "CS0219")
     }
 }
 

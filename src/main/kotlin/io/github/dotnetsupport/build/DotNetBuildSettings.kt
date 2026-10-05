@@ -68,7 +68,7 @@ class DotNetBuildSettings(private val project: Project) : SimplePersistentStateC
     }
 
     /** `--framework` makes sense only for a project that targets several frameworks, the selected one among them. */
-    private fun frameworkArguments(projectFile: VirtualFile?): List<String> {
+    fun frameworkArguments(projectFile: VirtualFile?): List<String> {
         val selected = framework ?: return emptyList()
         if (projectFile == null || !DotNetProjects.isProjectFile(projectFile)) return emptyList() // a solution: the CLI rejects --framework
         val frameworks = SolutionService.getInstance(project).msBuildProject(projectFile).targetFrameworks

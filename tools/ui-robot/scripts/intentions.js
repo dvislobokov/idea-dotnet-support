@@ -1,4 +1,4 @@
-// What Alt+Enter offers in the selected editor with the caret inside the first __AT__: quick fixes of errors, of inspections, intentions.
+// What Alt+Enter offers in the selected editor with the caret inside the first __AT__ (after the first __AFTER__, if that is replaced): quick fixes of errors, of inspections, intentions.
 importClass(com.intellij.openapi.project.ProjectManager)
 importClass(com.intellij.openapi.application.ApplicationManager)
 importClass(com.intellij.openapi.fileEditor.FileEditorManager)
@@ -9,7 +9,9 @@ const project = projects[projects.length - 1]
 const editor = FileEditorManager.getInstance(project).getSelectedTextEditor()
 const moved = new java.util.concurrent.atomic.AtomicReference("")
 ApplicationManager.getApplication().invokeAndWait(new java.lang.Runnable({ run: function () {
-    const at = String(editor.getDocument().getText()).indexOf("__AT__")
+    const text = String(editor.getDocument().getText())
+    const after = "__AFTER__".indexOf("__AFT" + "ER__") == 0 ? 0 : Math.max(text.indexOf("__AFTER__"), 0)
+    const at = text.indexOf("__AT__", after)
     if (at < 0) { moved.set("no __AT__ in the editor\n"); return }
     editor.getCaretModel().moveToOffset(at + 1)
 } }))

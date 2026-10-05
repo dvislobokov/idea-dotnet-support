@@ -51,7 +51,7 @@ class DotNetBundleTest : BasePlatformTestCase() {
     /** What is ticked and chosen on the pages that start nothing when they are built. */
     private fun choices(): List<String> {
         val pages = listOf(NuGetSettingsConfigurable(), DotNetBuildConfigurable(project), DotNetDebuggerConfigurable(project), CoverageSettingsConfigurable(),
-            RoslynLanguageServerConfigurable(project))
+            RoslynLanguageServerConfigurable(project), io.github.dotnetsupport.codeanalysis.CodeAnalysisConfigurable(project))
         return pages.map(::build).flatMap { page ->
             UIUtil.findComponentsOfType(page, JCheckBox::class.java).map { it.text } + UIUtil.findComponentsOfType(page, JRadioButton::class.java).map { it.text }
         }

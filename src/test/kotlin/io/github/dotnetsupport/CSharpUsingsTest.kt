@@ -44,7 +44,7 @@ class CSharpUsingsTest : BasePlatformTestCase() {
         try {
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
             settings.state.features = mutableMapOf()
-            settings.state.enabled = true
+            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -351,7 +351,10 @@ class CSharpUsingsTest : BasePlatformTestCase() {
     // ---- the server
 
     fun testTheServersRowsStandBackForNativeOnes() {
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         settings.setSource(CSharpFeature.EDITING, CSharpFeatureSource.NATIVE)
+        // "Use implicit type" belongs to the context actions (Built-in by default since 0.1.72): only EDITING is looked at here
+        settings.setSource(CSharpFeature.CONTEXT_ACTIONS, CSharpFeatureSource.ROSLYN)
         assertTrue(NativeCSharpServerActions.shadowed("Use simple 'using' statement", project))
         assertFalse(NativeCSharpServerActions.shadowed("Use implicit type", project))
         assertTrue(NativeCSharpServerActions.shadowed("Make method async", project))

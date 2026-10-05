@@ -81,16 +81,19 @@ object DotNetLaunchArguments {
  * execution does. Taken once; a launch that never comes leaves an entry behind, so the table is cleared when it grows.
  */
 object BuiltBeforeLaunch {
-    private val programs = java.util.concurrent.ConcurrentHashMap<Long, String>()
+    // The launches of a compound configuration share one execution id: the name of the configuration tells them apart.
+    private val programs = java.util.concurrent.ConcurrentHashMap<String, String>()
 
-    /** [targetPath] "": built, the output unknown. */
-    fun put(executionId: Long, targetPath: String) {
+    /** [targetPath] "": built, the output unknown (or `dotnet run` of a project built before it). */
+    fun put(executionId: Long, targetPath: String, configuration: String = "") {
         if (programs.size > 32) programs.clear()
-        programs[executionId] = targetPath
+        programs[key(executionId, configuration)] = targetPath
     }
 
     /** Null: the task has not run for this execution; "": built, the output unknown. */
-    fun take(executionId: Long): String? = programs.remove(executionId)
+    fun take(executionId: Long, configuration: String = ""): String? = programs.remove(key(executionId, configuration))
+
+    private fun key(executionId: Long, configuration: String) = "$executionId|$configuration"
 }
 
 /** `dotnet msbuild -getProperty:TargetPath`: where the build puts the assembly of a project. */

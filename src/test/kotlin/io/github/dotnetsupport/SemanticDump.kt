@@ -21,6 +21,8 @@ class SemanticDump(val header: Header, val files: List<FileRecord>) {
         val generated: List<String>,
         /** The full paths of the referenced assemblies (dumps since 2026-10-05): what the gate indexes for the resolver. */
         val referencePaths: List<String> = emptyList(),
+        /** `<Nullable>` of the compilation (`Enable`...): the nullable context of the warnings (D2). */
+        val nullable: String? = null,
     )
 
     class Source(val path: String, val languageVersion: String, val defines: List<String>)
@@ -111,7 +113,7 @@ class SemanticDump(val header: Header, val files: List<FileRecord>) {
             flush()
             val header = Header(
                 settings["input"].orEmpty(), settings["assembly"].orEmpty(), settings["langversion"].orEmpty(), defines(settings["define"].orEmpty()),
-                references, sources, generated, referencePaths,
+                references, sources, generated, referencePaths, settings["nullable"],
             )
             return SemanticDump(header, files)
         }

@@ -11,6 +11,8 @@ import com.intellij.execution.configurations.LocatableRunConfigurationOptions
 import com.intellij.execution.configurations.RunConfiguration
 import com.intellij.execution.configurations.RunProfileState
 import com.intellij.execution.configurations.RuntimeConfigurationError
+import com.intellij.execution.configurations.RuntimeConfigurationWarning
+import com.intellij.execution.RunManager
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.process.KillableColoredProcessHandler
 import com.intellij.execution.process.ProcessHandler
@@ -85,6 +87,14 @@ class DotNetRunConfigurationOptions : LocatableRunConfigurationOptions() {
     /** `dotnet test --filter`: set by the gutter icons and by "Rerun Failed Tests". */
     var testFilter by string()
     var collectCoverage by property(false)
+
+    /** "Wait for": the name of the run configuration this launch waits for, see [LaunchWait]. */
+    var waitFor by string()
+    var waitCondition by enum(LaunchWaitCondition.LISTENING)
+
+    /** For [LaunchWaitCondition.HEALTHY]: an absolute URL, or a path on the address of the configuration waited for (`/health`). */
+    var waitHealthUrl by string()
+    var waitTimeoutSeconds by property(LaunchWaits.DEFAULT_TIMEOUT_SECONDS)
 }
 
 class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, name: String) :
@@ -99,6 +109,19 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
         if (path.isNullOrBlank()) throw RuntimeConfigurationError("Project is not specified")
         if (!File(path).isFile) throw RuntimeConfigurationError("Project file not found: $path")
         if (DotNetCli.findExecutable() == null) throw RuntimeConfigurationError("The 'dotnet' executable is not found on PATH")
+        checkWait()
+    }
+
+    private fun checkWait() {
+        val dependency = options.waitFor?.trim()?.ifEmpty { null } ?: return
+        if (dependency == name) throw RuntimeConfigurationError("The configuration waits for itself")
+        val runManager = RunManager.getInstance(project)
+        if (runManager.allSettings.none { it.name == dependency }) throw RuntimeConfigurationWarning("Waits for '$dependency', and there is no run configuration with that name")
+        LaunchWaits.cycle(name) { each -> if (each == name) dependency else (runManager.findConfigurationByName(each)?.configuration as? DotNetRunConfiguration)?.options?.waitFor?.trim()?.ifEmpty { null } }
+            ?.let { throw RuntimeConfigurationError("The configurations wait for each other: ${it.joinToString(" → ")}") }
+        if (runManager.findSettings(this)?.let { settings -> settings.configuration.beforeRunTasks.none { it.providerId == BuildProjectBeforeRunTaskProvider.ID && it.isEnabled } } == true) {
+            throw RuntimeConfigurationWarning("\"Wait for\" runs in the \"Build .NET Project\" step of Before launch, which is off")
+        }
     }
 
     override fun getState(executor: Executor, environment: ExecutionEnvironment): RunProfileState = when {
@@ -118,8 +141,9 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
             }
 
             override fun startProcess(): ProcessHandler {
-                val commandLine = if (ExecutableLaunch.applies(project, options)) executableCommandLine(environment.getUserData(DotNetLaunchArguments.TARGET_PATH) ?: BuiltBeforeLaunch.take(environment.executionId)?.ifEmpty { null } ?: locateProgram())
-                    else buildCommandLine(prebuilt = environment.getUserData(PREBUILT) == true)
+                val commandLine = if (ExecutableLaunch.applies(project, options)) executableCommandLine(environment.getUserData(DotNetLaunchArguments.TARGET_PATH) ?: BuiltBeforeLaunch.take(environment.executionId, name)?.ifEmpty { null } ?: locateProgram())
+                    // built by "Build .NET Project" together with the launches started with it (LaunchBuilds)
+                    else buildCommandLine(prebuilt = BuiltBeforeLaunch.take(environment.executionId, name) != null && options.command == DotNetCommand.RUN)
                 val handler = KillableColoredProcessHandler(commandLine)
                 // Stop of a window program (WPF, Windows Forms) is a hard one at once: the soft stop is Ctrl+C, which only a console gets
                 if (PortableExecutable.isWindowsGui(File(commandLine.exePath))) handler.setShouldKillProcessSoftly(false)
@@ -239,9 +263,6 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
         if (programArguments.isEmpty()) emptyList() else listOf("--") + programArguments
 
     companion object {
-        /** On the environment of a launch whose project was built just before it, see [buildCommandLine]. */
-        val PREBUILT: Key<Boolean> = Key.create("dotnet.run.prebuilt")
-
         val HOSTING_VARIABLES = listOf("ASPNETCORE_ENVIRONMENT", "DOTNET_ENVIRONMENT")
 
         /** Environments a project is prepared for: `appsettings.Staging.json` -> `Staging`, after the three standard ones. */

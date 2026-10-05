@@ -189,7 +189,7 @@ class NativeCSharpResolver(val file: CSharpFile) {
 
     private fun stubTypes(name: String): List<TypePart> = stubsByName.getOrPut(name) {
         val parts = ArrayList<TypePart>()
-        StubIndex.getInstance().processElements(CSharpStubIndexKeys.TYPE_NAMES, name, project, GlobalSearchScope.projectScope(project), CSharpElement::class.java) { element ->
+        StubIndex.getInstance().processElements(CSharpStubIndexKeys.TYPE_NAMES, name, project, io.github.dotnetsupport.codeanalysis.CSharpSourceScope.of(project), CSharpElement::class.java) { element ->
             if (element.containingFile?.viewProvider?.virtualFile != virtualFile && (element is CSharpBaseTypeDeclaration || element is CSharpDelegateDeclaration)) {
                 val stub = (element as? CSharpStubElementImpl)?.greenStub
                 if (stub != null) {

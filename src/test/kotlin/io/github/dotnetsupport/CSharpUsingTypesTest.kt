@@ -189,7 +189,7 @@ class CSharpUsingTypesTest : BasePlatformTestCase() {
         assertFalse(items.toString(), "source" in items)
     }
 
-    private companion object {
+    internal companion object {
         private fun bytes(name: String): ByteArray? = CSharpUsingTypesTest::class.java.getResourceAsStream("/index/$name")?.use { it.readBytes() }
         fun fixture(name: String): AssemblyIndex = AssemblyIndex.read(bytes("$name.dnix")!!, bytes("$name.dnxd")?.let(AssemblyDocs::read))
 

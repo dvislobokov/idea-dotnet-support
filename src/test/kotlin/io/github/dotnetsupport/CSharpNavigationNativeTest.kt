@@ -31,7 +31,7 @@ class CSharpNavigationNativeTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             settings.state.features = mutableMapOf()
-            settings.state.enabled = true
+            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -364,6 +364,7 @@ class CSharpNavigationNativeTest : BasePlatformTestCase() {
     }
 
     fun testRoslynLeavesItToTheServer() {
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         settings.setSource(CSharpFeature.NAVIGATION, CSharpFeatureSource.ROSLYN)
         val files = addFiles(arrayOf("class R { void M() { var /*D:a*/x = 1; System.Console.Write(/*U:a*/x); } }"))
         assertNull(targets(files, "a").second)
@@ -413,10 +414,11 @@ class CSharpNavigationNativeTest : BasePlatformTestCase() {
     }
 
     fun testMembersKeepTheTextOccurrences() {
-        // a member is used through `a.B` too, which the tree does not resolve: the occurrences of the text, as before (the server once ready)
+        // a member used through `a.B` too: resolved by the semantics since 0.1.73 (C4b) — the uses read, the declaration as a write
         val text = "class M { int Total; int Get(M o) => o.Total + Total; }"
         val (read, write) = highlights(text.replace("+ Total", "+ To<caret>tal"))!!
-        assertEquals(Regex("""\bTotal\b""").findAll(text).map { "Total@${it.range.first}" }.toList(), read)
-        assertEquals(emptyList<String>(), write)
+        val at = Regex("""\bTotal\b""").findAll(text).map { "Total@${it.range.first}" }.toList()
+        assertEquals(at.drop(1), read)
+        assertEquals(at.take(1), write)
     }
 }

@@ -13,6 +13,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.psi.PsiFile
+import io.github.dotnetsupport.lang.CSharpFile
+import io.github.dotnetsupport.lang.NativeCSharpDiagnostics
+import io.github.dotnetsupport.lang.NativeCSharpSemanticDiagnostics
 import io.github.dotnetsupport.lsp.RoslynServerStatus
 import java.io.File
 
@@ -70,7 +73,8 @@ class BuildProblems(private val project: Project) {
 
 /** Shows [BuildProblems] in C# files: underlines, the error stripe, the tooltip with the compiler message. */
 class BuildProblemsAnnotator : ExternalAnnotator<BuildProblemsAnnotator.Input, List<BuildProblemsAnnotator.Located>>() {
-    class Input(val problems: List<BuildProblem>, val document: Document)
+    /** [native]: the codes the native pass shows on each line (syntax and semantic errors, CSHARP_PSI_MIGRATION.md C4c): not shown twice. */
+    class Input(val problems: List<BuildProblem>, val document: Document, val native: Map<Int, Set<String>> = emptyMap())
     class Located(val problem: BuildProblem, val range: TextRange)
 
     override fun collectInformation(file: PsiFile, editor: Editor, hasErrors: Boolean): Input? = collectInformation(file)
@@ -79,8 +83,12 @@ class BuildProblemsAnnotator : ExternalAnnotator<BuildProblemsAnnotator.Input, L
         // the language server reports the same problems live; the ones of the last build would double them and go stale
         if (RoslynServerStatus.isReady(file.project)) return null
         val path = file.virtualFile?.path ?: return null
-        val problems = BuildProblems.getInstance(file.project).of(path).takeIf { it.isNotEmpty() } ?: return null
-        return Input(problems, file.viewProvider.document ?: return null)
+        var problems = BuildProblems.getInstance(file.project).of(path).takeIf { it.isNotEmpty() } ?: return null
+        // the analyzers of the helper have looked at this file since (D3): theirs are the live ones, the build's would be doubles
+        val analyzers = file.project.getServiceIfCreated(io.github.dotnetsupport.codeanalysis.CodeAnalysisService::class.java)
+        if (analyzers != null && analyzers.analyzersActive && analyzers.analyzedFile(path) != null) problems = problems.filter { it.code?.startsWith("CS") ?: true }.ifEmpty { return null }
+        val native = (file as? CSharpFile)?.takeIf { NativeCSharpDiagnostics.serves(it) }?.let(NativeCSharpSemanticDiagnostics::codesByLine).orEmpty()
+        return Input(problems, file.viewProvider.document ?: return null, native)
     }
 
     override fun doAnnotate(input: Input): List<Located> {
@@ -89,6 +97,7 @@ class BuildProblemsAnnotator : ExternalAnnotator<BuildProblemsAnnotator.Input, L
         return input.problems.mapNotNull { problem ->
             val line = BuildProblems.locate(problem, lines) ?: return@mapNotNull null
             if (line >= input.document.lineCount) return@mapNotNull null
+            if (problem.code != null && input.native[line]?.contains(problem.code) == true) return@mapNotNull null
             Located(problem, rangeOf(text, input.document.getLineStartOffset(line), input.document.getLineEndOffset(line), problem.column))
         }
     }

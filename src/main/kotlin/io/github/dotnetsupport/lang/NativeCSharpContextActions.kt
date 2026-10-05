@@ -533,8 +533,8 @@ object NativeCSharpContextEdits {
     class Inlining(val statement: CSharpLocalDeclarationStatement, val value: CSharpExpression, val references: List<PsiElement>)
 
     fun inliningAt(file: CSharpFile, offset: Int): Inlining? {
-        val leaf = NativeCSharpRename.identifierAt(file, offset) ?: return null
         val resolver = NativeCSharpResolver(file)
+        val leaf = NativeCSharpRename.identifierAt(file, offset)?.takeIf { resolver.symbolAt(it) != null } ?: declaredByTypeAt(file, offset) ?: return null
         val symbol = resolver.symbolAt(leaf) ?: return null
         if (symbol.kind != LocalSymbolKind.LOCAL || symbol.isWritten) return null
         val declarator = symbol.declaration.parent as? CSharpVariableDeclarator ?: return null
@@ -554,6 +554,15 @@ object NativeCSharpContextEdits {
         if (references.any { NativeCSharpUsageKinds.kindOfLeaf(it) == CSharpUsageKind.NAMEOF || it.parent !is CSharpSimpleName }) return null
         if (losesComment(statement, listOf(value))) return null
         return Inlining(statement, value, references)
+    }
+
+    /** The caret on the type of a local declaration of one variable (`var` of `var x = …`): its name, as the server offers it there too (robot, E-78). */
+    private fun declaredByTypeAt(file: CSharpFile, offset: Int): PsiElement? {
+        val leaf = file.findElementAt(offset) ?: return null
+        val declaration = PsiTreeUtil.getParentOfType(leaf, CSharpVariableDeclaration::class.java, false, CSharpStatement::class.java) ?: return null
+        val type = declaration.type ?: return null
+        if (!type.textRange.containsOffset(offset) || declaration.variables.size != 1) return null
+        return declaration.variables.single().identifier
     }
 
     /** Every use replaced by the value (in parentheses where the place needs them), the declaration removed with its line. */
@@ -645,7 +654,7 @@ class NativeCSharpIfToConditionalIntention : NativeCSharpContextAction("Convert 
 }
 
 /** Alt+Enter on a `?:` that is returned or assigned: the `if` / `else` statement it stands for. */
-class NativeCSharpConditionalToIfIntention : NativeCSharpContextAction("Convert '?:' to 'if' statement", serverHasIt = false) {
+class NativeCSharpConditionalToIfIntention : NativeCSharpContextAction("Convert '?:' to 'if' statement", serverHasIt = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val (statement, conditional) = NativeCSharpContextEdits.conditionalAt(file, editor.caretModel.offset) ?: return null
         return NativeCSharpContextEdits.conditionalToIf(statement, conditional, editor.document.charsSequence, NativeCSharpContextEdits.unit(file))

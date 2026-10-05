@@ -13,5 +13,6 @@
     <stubIndex implementation="io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpExtensionMethodIndex"/>
     <stubIndex implementation="io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpAttributeIndex"/>
     <stubIndex implementation="io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpNamespaceIndex"/>
+    <stubIndex implementation="io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpSupertypeIndex"/>
   </extensions>
 </idea-plugin>

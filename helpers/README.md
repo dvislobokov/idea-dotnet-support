@@ -9,6 +9,7 @@
 | `msbuildhost/` | MsBuildHost | вычисление проектов MSBuild (`Microsoft.Build` + `MSBuildLocator`) |
 | `dotnethelper/` | DotNetHelper | клиент NuGet; IL Viewer (`Il.cs`, `ICSharpCode.Decompiler` + portable PDB); дальше — тесты через TestPlatform, декомпилятор, метаданные сборок |
 | `diagnostics/` | DiagnosticsHelper | ClrMD (какой CLR в процессе, дампы); дальше — TraceEvent, `allocwatch` |
+| `codeanalysis/` | CodeAnalysisHelper | source generators и анализаторы Roslyn с code fixes без сервера (0.1.77, пакет `codeanalysis`): `generate`, `analyze`, `fix`, `invalidate`, `info`. Roslyn — не пакет, а сборки SDK из `DotnetTools/dotnet-format` (HintPath, первая сборка без сети), поэтому собирается под каждый SDK отдельно (`perSdk`); проект — design-time `dotnet msbuild -t:Compile -getItem:CscCommandLineArgs`, отсюда **SDK ≥ 8**. Один на solution, выход после простоя |
 
 Почему три, а не один: `Microsoft.Build` грузится из SDK и тянет свои `NuGet.*` (конфликт с клиентом NuGet в том же процессе), для
 проектов .NET Framework нужен процесс на net472 с MSBuild из Visual Studio, а подключение к чужим процессам падает чаще всего —

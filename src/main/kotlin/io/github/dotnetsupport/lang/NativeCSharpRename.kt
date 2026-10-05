@@ -38,7 +38,12 @@ import com.intellij.util.containers.MultiMap
 import io.github.dotnetsupport.csharp.lang.CSharpSyntaxFacts
 import io.github.dotnetsupport.csharp.lang.lexer.CSharpLiteralScanner
 import io.github.dotnetsupport.csharp.lang.psi.*
+import io.github.dotnetsupport.lang.semantic.CSharpSearchTarget
+import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
+import io.github.dotnetsupport.lang.semantic.CSharpSolutionSearch
 import io.github.dotnetsupport.lsp.RoslynServerStatus
+import com.intellij.openapi.project.DumbService
+import com.intellij.openapi.roots.ProjectFileIndex
 
 /**
  * Rename without the language server (CSHARP_PSI_MIGRATION.md, step 9, task A5, feature `RENAME`, the syntactic part): a symbol whose every
@@ -50,8 +55,9 @@ import io.github.dotnetsupport.lsp.RoslynServerStatus
  * new name captures, a lambda's parameter that would capture a use, a second declaration in the same scope) is a conflict, shown as the
  * platform shows them.
  *
- * Anything else (members, types, a record's positional parameter, which is a property) goes to the language server when it is ready, so
- * NATIVE never loses a rename it gave; without the server a hint says why. ROSLYN: the server's rename, as before.
+ * Types and members of the solution are renamed across it by [NativeCSharpSolutionRename] (task C4b). What is left (a record's positional
+ * parameter, which is a property; a name the resolver does not know) goes to the language server when it is ready; without the server a
+ * hint says why. ROSLYN: the server's rename, as before.
  */
 object NativeCSharpRename {
     /** The switch gives RENAME to the native tree and [file] is of it. */
@@ -70,6 +76,9 @@ object NativeCSharpRename {
     class Native(val target: Target) : Decision
     class Refuse(val reason: String) : Decision
     data object Server : Decision
+
+    /** A type or member of the solution: [NativeCSharpSolutionRename] (task C4b). */
+    class Solution(val target: CSharpSearchTarget) : Decision
 
     /**
      * The local [symbol] of [file] and every range to rename: the [declaration], the uses ([references]) and the named arguments and doc
@@ -93,7 +102,7 @@ object NativeCSharpRename {
         val leaf = identifierAt(file, offset) ?: return Server
         val resolver = NativeCSharpResolver(file)
         val symbol = resolver.symbolAt(leaf)
-        if (symbol == null || symbol.isMember) return elsewhere(file.project, "'${leaf.text}' is not a local symbol: members and types are renamed by the C# language server, which is not ready")
+        if (symbol == null || symbol.isMember) return solution(file, leaf)
         val owner = owner(symbol)
         // every part of a partial type or method declares its type parameters (and a partial method its parameters) again
         if (symbol.kind != LocalSymbolKind.PRIMARY_CONSTRUCTOR_PARAMETER && owner is CSharpMemberDeclaration && owner.modifiers.any { it.textMatches("partial") }) {
@@ -114,6 +123,29 @@ object NativeCSharpRename {
         val all = listOf(symbol.declaration.textRange) + references + extra
         val primary = all.firstOrNull { it.containsOffset(offset) } ?: symbol.declaration.textRange
         return Native(Target(file, symbol, symbol.declaration.textRange, references, extra, primary))
+    }
+
+    /**
+     * A type or member of the solution (C4b): every declaration in the sources of the project. A record's positional parameter (a property
+     * declared by a parameter) and what is declared in an assembly stay out.
+     */
+    private fun solution(file: CSharpFile, leaf: PsiElement): Decision {
+        val project = file.project
+        val notLocal = "'${leaf.text}' is not a local symbol: it is renamed by the C# language server, which is not ready"
+        if (leaf.parent is CSharpParameter || DumbService.isDumb(project)) return elsewhere(project, notLocal)
+        var target = CSharpSolutionSearch.targetAt(leaf, CSharpSemanticSession(project)) ?: return elsewhere(project, notLocal)
+        // a constructor is named by its type: renaming it renames the type, as in Rider
+        if (target.kind == CSharpSearchTarget.Kind.CONSTRUCTOR) {
+            target = target.primary?.let(CSharpSolutionSearch::ownerType)?.let(CSharpSolutionSearch::targetOf) ?: return elsewhere(project, notLocal)
+        }
+        if (target.declarations.isEmpty()) return Refuse("'${target.name}' is declared in a referenced assembly and cannot be renamed")
+        val index = ProjectFileIndex.getInstance(project)
+        val outside = target.declarations.firstOrNull { declaration ->
+            val virtualFile = declaration.containingFile?.viewProvider?.virtualFile
+            virtualFile == null || !virtualFile.isWritable || virtualFile.isInLocalFileSystem && !index.isInContent(virtualFile)
+        }
+        if (outside != null) return Refuse("'${target.name}' is declared outside the solution (${outside.containingFile?.name}) and cannot be renamed")
+        return Solution(target)
     }
 
     private fun elsewhere(project: Project, reason: String): Decision = if (RoslynServerStatus.isReady(project)) Server else Refuse(reason)
@@ -349,6 +381,7 @@ class NativeCSharpRenameHandler : RenameHandler {
                         ?.let { NativeCSharpRename.perform(project, editor, file, offset, it) }
                 }
             }
+            is NativeCSharpRename.Solution -> NativeCSharpSolutionRename.invoke(project, editor, file, decision.target, dataContext?.let(PsiElementRenameHandler.DEFAULT_NAME::getData))
             is NativeCSharpRename.Refuse -> NativeCSharpRename.showError(project, editor, decision.reason)
             NativeCSharpRename.Server -> if (dataContext == null || !NativeCSharpRename.forwardToServer(project, editor, file, dataContext)) {
                 NativeCSharpRename.showError(project, editor, "The C# language server cannot rename this symbol now")
@@ -365,8 +398,15 @@ class NativeCSharpRenameHandler : RenameHandler {
  * name and [NativeCSharpRename.perform] renames them for real — the name checked, conflicts shown, keywords escaped; Escape restores the
  * old name.
  */
-class NativeCSharpInplaceRename(private val project: Project, private val editor: Editor, private val target: NativeCSharpRename.Target) {
-    private val oldName = target.symbol.name
+class NativeCSharpInplaceRename(
+    private val project: Project, private val editor: Editor, private val file: CSharpFile, private val ranges: List<TextRange>, private val primaryRange: TextRange,
+    private val oldName: String, private val apply: (String) -> Unit,
+) {
+    constructor(project: Project, editor: Editor, target: NativeCSharpRename.Target) : this(project, editor, target.file, target.ranges, target.primary, target.symbol.name, { name ->
+        (PsiDocumentManager.getInstance(project).getPsiFile(editor.document) as? CSharpFile)?.let { NativeCSharpRename.perform(project, editor, it, target.primary.startOffset, name) }
+    })
+
+    private var texts: List<String> = emptyList()
     private var markers: List<RangeMarker> = emptyList()
     private var primary: RangeMarker? = null
     private var done = false
@@ -381,15 +421,14 @@ class NativeCSharpInplaceRename(private val project: Project, private val editor
             return
         }
         val document = editor.document
-        val ranges = target.ranges
+        texts = ranges.map { document.getText(it) }
         markers = ranges.map { range -> document.createRangeMarker(range).apply { isGreedyToLeft = true; isGreedyToRight = true } }
-        primary = markers[ranges.indexOf(target.primary).coerceAtLeast(0)]
-        val file = target.file
+        primary = markers[ranges.indexOf(primaryRange).coerceAtLeast(0)]
         val container = PsiTreeUtil.findCommonParent(file.findElementAt(ranges.first().startOffset), file.findElementAt(ranges.last().endOffset - 1)) ?: file
         val base = container.textRange.startOffset
         val builder = TemplateBuilderImpl(container)
-        builder.replaceElement(container, target.primary.shiftLeft(base), PRIMARY, TextExpression(oldName), true)
-        ranges.filter { it != target.primary }.forEachIndexed { i, range -> builder.replaceElement(container, range.shiftLeft(base), "$OTHER$i", PRIMARY, false) }
+        builder.replaceElement(container, primaryRange.shiftLeft(base), PRIMARY, TextExpression(document.getText(primaryRange)), true)
+        ranges.filter { it != primaryRange }.forEachIndexed { i, range -> builder.replaceElement(container, range.shiftLeft(base), "$OTHER$i", PRIMARY, false) }
         val caret = editor.caretModel.offset
         WriteCommandAction.writeCommandAction(project).withName("Rename").run<RuntimeException> {
             val template = builder.buildInlineTemplate()
@@ -420,11 +459,11 @@ class NativeCSharpInplaceRename(private val project: Project, private val editor
         val name = primary?.takeIf { it.isValid }?.let { document.getText(it.textRange) }
         try {
             WriteCommandAction.writeCommandAction(project).withName("Rename").run<RuntimeException> {
-                for (marker in markers.filter { it.isValid }.sortedByDescending { it.startOffset }) document.replaceString(marker.startOffset, marker.endOffset, oldName)
+                // each occurrence back to its own text (`@Name` stays `@Name`, the short name of an attribute stays short)
+                for ((marker, text) in markers.zip(texts).filter { it.first.isValid }.sortedByDescending { it.first.startOffset }) document.replaceString(marker.startOffset, marker.endOffset, text)
                 PsiDocumentManager.getInstance(project).commitDocument(document)
             }
-            val file = PsiDocumentManager.getInstance(project).getPsiFile(document) as? CSharpFile
-            if (apply && name != null && name != oldName && file != null) NativeCSharpRename.perform(project, editor, file, target.primary.startOffset, name)
+            if (apply && name != null && name != oldName) this.apply(name)
         } finally {
             markers.forEach(RangeMarker::dispose)
             FinishMarkAction.finish(project, editor, mark)

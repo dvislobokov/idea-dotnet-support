@@ -5,6 +5,7 @@ import com.intellij.lang.parameterInfo.ParameterInfoHandler
 import com.intellij.lang.parameterInfo.ParameterInfoUIContext
 import com.intellij.lang.parameterInfo.UpdateParameterInfoContext
 import com.intellij.openapi.project.DumbService
+import com.intellij.openapi.util.Key
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import io.github.dotnetsupport.csharp.lang.psi.*
@@ -40,18 +41,21 @@ class NativeCSharpParameterInfoHandler : ParameterInfoHandler<CSharpBaseArgument
         if (context.parameterOwner != null && context.parameterOwner != list) return context.removeHint()
         context.parameterOwner = list
         context.setCurrentParameter(NativeCSharpParameterInfo.argumentIndex(list, context.offset))
+        list.putUserData(NativeCSharpParameterInfo.NAMED, NativeCSharpParameterInfo.argumentName(list, context.offset))
         context.highlightedParameter = context.objectsToView.firstOrNull { (it as? NativeCSharpParameterInfo.Row)?.chosen == true }
     }
 
     override fun updateUI(row: NativeCSharpParameterInfo.Row, context: ParameterInfoUIContext) {
         val parameters = row.parameters
-        val current = context.currentParameterIndex
+        val named = (context.parameterOwner as? CSharpBaseArgumentList)?.getUserData(NativeCSharpParameterInfo.NAMED)
+        // `count: |`: the parameter of that name, wherever it is; an overload without one is greyed (as in Rider)
+        val current = named?.let { name -> parameters.indexOfFirst { NativeCSharpParameterInfo.nameOf(it) == name }.takeIf { it >= 0 } ?: Int.MAX_VALUE } ?: context.currentParameterIndex
         if (parameters.isEmpty()) {
             context.setupUIComponentPresentation(NO_PARAMETERS, -1, -1, current > 0, false, false, context.defaultParameterColor)
             return
         }
-        val range = NativeCSharpParameterInfo.rangeOf(parameters, current)
-        val fits = current < parameters.size || parameters.last().startsWith("params ")
+        val range = NativeCSharpParameterInfo.rangeOf(parameters, current).takeIf { current != Int.MAX_VALUE }
+        val fits = current < parameters.size || current != Int.MAX_VALUE && parameters.last().startsWith("params ")
         context.setupUIComponentPresentation(parameters.joinToString(", "), range?.first ?: -1, range?.last?.plus(1) ?: -1, !fits, false, false, context.defaultParameterColor)
     }
 
@@ -83,6 +87,15 @@ object NativeCSharpParameterInfo {
 
     /** Which argument the caret is in: the commas of the list before it. */
     fun argumentIndex(list: CSharpBaseArgumentList, offset: Int): Int = list.argumentsSeparators.count { it.textRange.startOffset < offset }
+
+    /** The name of the named argument `name: value` the caret is in, null for a positional one. */
+    val NAMED: Key<String> = Key.create("dotnet.parameterInfo.named")
+
+    fun argumentName(list: CSharpBaseArgumentList, offset: Int): String? =
+        list.arguments.getOrNull(argumentIndex(list, offset))?.nameColon?.nameElement?.identifier?.text
+
+    /** `int count = 1` -> `count`, `params string[] items` -> `items`. */
+    fun nameOf(parameter: String): String = parameter.substringBefore(" = ").trim().substringAfterLast(' ')
 
     fun rows(file: CSharpFile, list: CSharpBaseArgumentList): List<Row> {
         if (DumbService.isDumb(file.project)) return emptyList()
@@ -139,7 +152,9 @@ object NativeCSharpParameterInfo {
             }.ifEmpty { listOf(CSharpSymbol.SourceMember(type.info.parts.first().element() ?: return emptyList(), Member.method(emptyList(), false), type)) }
             else -> return emptyList()
         }
-        return constructors.map { Row(text.parameters(it, false).orEmpty(), constructors.size == 1) }
+        // the one the arguments pick, as the server marks it (robot, E-84: `new StringBuilder(16)` marked none)
+        val chosen = resolver.pickConstructor(constructors, creation.argumentList?.arguments.orEmpty())
+        return constructors.map { Row(text.parameters(it, false).orEmpty(), it == chosen) }
     }
 
     /** Where the parameter [index] is in `parameters.joinToString(", ")`; the last one for a `params` array the caret has gone past. */

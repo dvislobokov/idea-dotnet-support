@@ -28,7 +28,7 @@ class CSharpParseOptionsTest : BasePlatformTestCase() {
             CSharpSyntaxTreeSwitch.reactInTests = false
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
             settings.state.features = mutableMapOf()
-            settings.state.enabled = true
+            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             DotNetBuildSettings.getInstance(project).framework = null
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -41,6 +41,7 @@ class CSharpParseOptionsTest : BasePlatformTestCase() {
 
     /** An open file gets the tree of the new answer once the page is applied, and back; the server switched off counts too. */
     fun testSwitchingTheTreeReparsesOpenFiles() {
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         CSharpSyntaxTreeSwitch.reactInTests = true
         // the native tree is the default (0.1.45): start from a stored ROSLYN, the heuristic tree
         settings.setSource(CSharpFeature.SYNTAX_TREE, CSharpFeatureSource.ROSLYN)

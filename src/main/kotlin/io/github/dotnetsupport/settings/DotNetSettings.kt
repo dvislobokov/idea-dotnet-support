@@ -65,7 +65,30 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
         /** Off, unlike in Rider: there is no decompiler behind it, stepping into code without symbols ends in frames with no source. */
         var debugExternalSource by property(false)
         var debugAllowImplicitEvaluation by property(true)
+
+        // Settings | .NET | Analyzers and Generators (codeanalysis/CodeAnalysisService)
+        var runSourceGenerators by property(true)
+        var runAnalyzersOnSave by property(true)
+        /** Diagnostics of severity Info (Rider's suggestions) as weak warnings; off: only warnings and errors of the analyzers. */
+        var showAnalyzerSuggestions by property(true)
+        var codeAnalysisIdleMinutes by property(DEFAULT_IDLE_MINUTES)
     }
+
+    var runSourceGenerators: Boolean
+        get() = state.runSourceGenerators
+        set(value) { state.runSourceGenerators = value }
+
+    var runAnalyzersOnSave: Boolean
+        get() = state.runAnalyzersOnSave
+        set(value) { state.runAnalyzersOnSave = value }
+
+    var showAnalyzerSuggestions: Boolean
+        get() = state.showAnalyzerSuggestions
+        set(value) { state.showAnalyzerSuggestions = value }
+
+    var codeAnalysisIdleMinutes: Int
+        get() = state.codeAnalysisIdleMinutes.coerceIn(1, 240)
+        set(value) { state.codeAnalysisIdleMinutes = value.coerceIn(1, 240) }
 
     var dotnetPath: String
         get() = state.dotnetPath.orEmpty()
@@ -114,6 +137,8 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
     }
 
     companion object {
+        const val DEFAULT_IDLE_MINUTES = 10
+
         fun getInstance(): DotNetSettings = service()
     }
 }

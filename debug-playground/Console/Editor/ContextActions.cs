@@ -5,8 +5,8 @@ using System.Linq;
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of the Alt+Enter context actions on the plugin's own tree (0.1.64, CSHARP_PSI_MIGRATION.md task A7). Set Settings | .NET |
-/// Language Server → Source of Features → «Context actions» = Built-in (with Language server and the server ready, the server's own
+/// Live check of the Alt+Enter context actions on the plugin's own tree (0.1.64, CSHARP_PSI_MIGRATION.md task A7). Settings | .NET |
+/// Language Server → Source of Features → «Context actions» = Built-in, the default since 0.1.72 (with Language server and the server ready, the server's own
 /// actions answer instead; without the server the built-in ones answer either way). Put the caret where a marker says, press Alt+Enter,
 /// check EXPECT, then undo (Ctrl+Z) so the file stays as it is. With Built-in there must be one row per action: the server's rows of the
 /// same actions ("Convert to conditional expression", "Use expression body for method", "Use explicit type", "Use implicit type",
@@ -145,7 +145,7 @@ public class ContextActions
     private bool Ready() => true;
 
     // TYPE:ctx-inline — Alt+Enter on `sum` in Inline: "Inline variable". EXPECT: the declaration gone and `return (a + b) * 2 + Math.Abs(a +
-    // b);` (in parentheses where needed). NOT offered on `changed` (written again).
+    // b);` (in parentheses where needed). The same on `var` of sum (0.1.72). NOT offered on `changed` (written again).
     public int Inline(int a, int b)
     {
         var sum = a + b;

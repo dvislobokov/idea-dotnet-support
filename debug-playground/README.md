@@ -15,7 +15,7 @@ Solution для живой проверки плагина: отладчика (
 | `Tests` | xUnit: отладка тестов (`BP:test`, `BP:theory`); результаты по ходу прогона (`LiveResultsTests`, маркеры `LIVE:`) |
 | `AspireHost` | Aspire 13.6 AppHost, запускает только `Web` (без контейнеров и Docker): Debug AppHost подключает отладчик к `Web` сам (`BP:aspire-service`). Пакеты Aspire берутся из nuget.org при restore, workload не нужен |
 | `NetFramework/NetFramework.sln` | **отдельное** решение .NET Framework старого формата (без SDK, `v4.8.1`): `LegacyWpf` (WPF: .NET SDK собирает его без XAML и падает с CS5001) и `LegacyConsole` (`packages.config`, Newtonsoft.Json по `HintPath` из `..\packages`). Нужны Visual Studio или Build Tools 2022 и targeting pack 4.8.1; в основное решение не входит, чтобы `DebugPlayground.sln` собирался без них |
-| `Broken` | не компилируется, **в solution не входит** (ломал бы Build Solution): конфигурацию «.NET Project» для `Broken.csproj` создать руками. `SyntaxErrors.cs` — синтаксические ошибки для редактора (`TYPE:diag-*`), из компиляции исключён |
+| `Broken` | не компилируется, **в solution не входит** (ломал бы Build Solution): конфигурацию «.NET Project» для `Broken.csproj` создать руками. `SyntaxErrors.cs` — синтаксические ошибки для редактора (`TYPE:diag-*`), `SemanticErrors.cs` — семантические (`TYPE:sem-*`, 0.1.74), `SemanticErrors2.cs` — ошибки и предупреждения D2 (`TYPE:sem2-*`, 0.1.78); все три из компиляции исключены |
 
 Профили `Console`: `All` (всё безопасное), `Launch` (аргументы и окружение), `Threads`, `Evil`, `Crash`, `Wait`, `Input` (ввод с консоли),
 `Leak` (память растёт: статический кэш и подписчики статического события — для .NET Monitor), `Allocations` (память выделяется на известных строках
@@ -318,6 +318,35 @@ Settings | .NET | Language Server → Source of Features → «Colors of identif
 - [ ] `TYPE:strings-typing`: набор `$"{total}\t"` — цвета появляются по ходу набора, закрывающая кавычка перешагивается
 - [ ] Settings | Editor | Color Scheme | C# → String: «String text», «Escape sequence» (Valid / Valid 2 / Invalid), «Format item» (и 2) — в превью видны
 
+### Семантические ошибки без сервера (0.1.74) — `Broken/SemanticErrors.cs`, `Console/Editor/ImportType.cs`
+«Errors and warnings» = Built-in (по умолчанию). Ошибки появляются сразу, без Build и до готовности сервера; коды, тексты и места — как в `EXPECT`.
+LIVE_CHECKS E-109…E-114.
+- [ ] `TYPE:sem-names`, `-namespace`: CS0103, CS0246, CS0234 — тексты Roslyn
+- [ ] `TYPE:sem-members`, `-members-silent`: CS1061 / CS0117; на `ToString` интерфейса, `Deconstruct` записи, `First()` — ничего
+- [ ] `TYPE:sem-arguments`, `-conversions`, `-conversions-silent`, `-paths`: CS1501 / CS7036, CS0029 / CS0266, CS0161
+- [ ] `TYPE:sem-unused`, `TYPE:import-type-unused`: серые `using` (CS8019, CS8933), «Remove unused directives in file»
+- [ ] `TYPE:sem2-unreachable`, `-unused`, `-static`, `-await` (`Broken/SemanticErrors2.cs`, 0.1.78): CS0162 серым до конца блока, CS0168 / CS0219
+  серым и «Remove unused variable», CS0120, CS4014 и «Add 'await'»
+- [ ] `TYPE:sem2-nullable`, `-uninitialized`, `-arguments`, `-target-typed`: CS8600 / CS8625 / CS8603 / CS8618 при `#nullable enable`, CS1503 /
+  CS7036 generic / `params` / именованных, CS0029 / CS0266 `?:` и switch-выражений
+- [ ] `TYPE:overloads-*` (`Console/Editor/Overloads.cs`, 0.1.78): Ctrl+B / Ctrl+Q ведут к перегрузке из EXPECT; `TYPE:overloads-argument-name` —
+  «Add argument name»
+- [ ] `TYPE:import-type-hint`, `-declaration`, `-choice`, `-extension`, `TYPE:sem-typing`: синяя подсказка `System.Diagnostics.Stopwatch? Alt+Enter`, «Import …», список namespace
+- [ ] `TYPE:import-type-member`, `-silent`, `-arguments`, `-conversion`: ошибки при наборе; `dynamic` и кортежи — без красного
+- [ ] Build Solution и готовый сервер: каждая ошибка видна один раз; «Errors and warnings» = Language server — ошибки сервера как раньше
+
+### Source generators без сервера (0.1.77) — `Console/Editor/Generators.cs`
+Сервер выключен (Settings | .NET | Language Server); первый запрос собирает помощник CodeAnalysisHelper (секунды), журнал — категория `codeanalysis`.
+- [ ] `TYPE:sg-tree`: Dependencies → .NET 9.0 → Analyzers → генераторы (молния) → тип → файлы; файл открывается только для чтения с баннером
+- [ ] `TYPE:sg-member`: completion `PlaygroundJsonContext.Default.` — `GeneratedOrder`, `String`; Ctrl+click по `Default` — сгенерированный файл
+- [ ] `TYPE:sg-error`: CS1061 на `Customer` после сохранения; `TYPE:sg-new`: новый `[JsonSerializable]` — член `Int32Array` после сохранения
+
+### Анализаторы Roslyn без сервера (0.1.77) — `Console/Editor/Analyzers.cs`
+Пакет `Microsoft.VisualStudio.Threading.Analyzers` и секция `[Editor/Analyzers.cs]` в `Console/.editorconfig`. Сервер выключен.
+- [ ] `TYPE:an-on-save`: VSTHRD200, VSTHRD103, CA1822 жёлтым, по одному, без дублей с Build Solution
+- [ ] `TYPE:an-fix`: Alt+Enter — «Await ReadAllTextAsync instead», «Rename to LoadAsync», «Make static»; Ctrl+Z одним шагом
+- [ ] `TYPE:an-ide`: IDE0059 и его fix; `TYPE:an-project`: .NET → Code Analysis → Run Code Analysis — окно Build
+
 ### Имена сборок без сервера (0.1.57) — `Console/Editor/LibraryNames.cs`
 Source of Features → «Colors of identifiers» и «Navigation and usages» = Built-in, лучше с выключенным сервером (Settings | .NET →
 Language Server). Дождаться индексации сборок (после restore). Робот: `tools/ui-robot/scripts/highlight_keys.js`.
@@ -354,7 +383,36 @@ Shift+F6, новое имя, Enter — сверить с `EXPECT`, затем о
 - [ ] `TYPE:rename-local-function`: `Scale` → `Times` (вызов до объявления тоже); параметр `factor` → `k` вместе с `k: 3`
 - [ ] `TYPE:rename-label-query-lambda`: метка `again` → `retry`; параметр лямбды `line` → `text`; `o` запроса → `item` (`g` не тронут)
 - [ ] `TYPE:rename-type-parameter-keyword`: `TValue` → `TItem` (с `<typeparam>`); `kind` → `class` даёт `@class`
-- [ ] `TYPE:rename-primary-member`: `owner` → `customer` (с `<param>` класса); `Limit` (свойство) — сервер, без него подсказка «… language server …»
+- [ ] `TYPE:rename-primary-member`: `owner` → `customer` (с `<param>` класса); `Limit` (свойство) → `Cap` — встроенный rename по solution (с 0.1.73)
+
+### Ссылки по solution без сервера (0.1.73) — `Console/Editor/SolutionUsages.cs` + `Lib/SolutionShapes.cs`
+«Navigation and usages» и «Rename» = Built-in (по умолчанию); сервер остановить или открыть файл до его готовности. Робот:
+`tools/ui-robot/scripts/usages_compare.js` (против сервера), `rename_solution.js`, `line_markers.js`, `hierarchy.js`, `find_usages.js`.
+- [ ] `TYPE:solution-find-usages`: Alt+F7 на `Side` — 7 мест в двух проектах, группы Read / Write / Usage in nameof / Usage in documentation; Ctrl+Alt+F7 — те же строки попапом
+- [ ] `TYPE:solution-highlight`: каретка на `Side` / `square` в `Measure` — подсвечены все использования в файле, запись — цветом записи
+- [ ] `TYPE:solution-goto-implementation`: Ctrl+Alt+B на `figure.Area()` — список SolutionSquare.Area и SolutionTile.Area; на `ISolutionFigure` — SolutionSquare и SolutionTile
+- [ ] `TYPE:solution-goto-super`: Ctrl+U на `Area` в SolutionTile — SolutionSquare.Area в `Lib`; иконки gutter Overrides / Implements / Is overridden / Has implementations
+- [ ] `TYPE:solution-hierarchy`: Ctrl+H на `ISolutionFigure` — ISolutionFigure → SolutionSquare → SolutionTile; Ctrl+Alt+H на `Measure` — вызывающий `Run`, вызываемые
+- [ ] `TYPE:solution-rename`: `Side` → `Edge` (оба проекта, `nameof`, `cref`); `Area` в SolutionTile → `Surface` — диалог Rename All / Only This; `SolutionTile` → `SolutionPlate` с конструктором; `Side` → `Label` — конфликт; одно Ctrl+Z (платформа спрашивает про другие файлы)
+
+### Generate (Alt+Insert) без сервера (0.1.75) — `Console/Editor/Generate.cs`
+Работает и с выключенным сервером (Settings | .NET | Language Server), и с готовым: тогда строк сервера с тем же смыслом
+(«Generate constructor …», «Generate Equals …», «Generate overrides…», «Implement interface / abstract class») в списке нет. Каретка на пустую
+строку под маркером, Alt+Insert, строка, в диалоге выбора членов — OK; сверить с `EXPECT`, затем Ctrl+Z.
+- [ ] `TYPE:gen-list`: строки как в Rider, недоступные серые, у Missing / Overriding members — Ctrl+I / Ctrl+O; нет «Override / Implement Methods…» платформы
+- [ ] `TYPE:gen-constructor`, `gen-base-constructor`: группы Fields / Properties (и «Base constructor»), конструктор встаёт на строку каретки
+- [ ] `TYPE:gen-properties`: Read-only properties и Properties (readonly-поле в Properties не предлагается)
+- [ ] `TYPE:gen-equality`: флажки «Implement 'IEquatable<T>' interface» и «Overload equality operators»; `==` для `int` / `string` / `decimal`
+- [ ] `TYPE:gen-formatting`, `gen-deconstructor`, `gen-dispose`, `gen-partial`
+- [ ] `TYPE:gen-override`: группы `GenShape` и `object`, `Area` / `Label` не предлагаются; Ctrl+O открывает тот же диалог
+- [ ] `TYPE:gen-missing-abstract`, `gen-missing-library`: абстрактные члены базы и интерфейсы из сборок (`IComparable<GenMoney>`, `IDisposable`), Ctrl+I
+
+### Extract Method и Introduce Field без сервера (0.1.75) — `Console/Editor/ExtractMethod.cs`
+Выделить, Ctrl+Alt+M (Introduce Field — Ctrl+Alt+F) или Refactor This; имя нового метода в рамке — набрать своё, Enter; затем Ctrl+Z.
+- [ ] `TYPE:extract-statements`, `extract-returned`, `extract-out`: параметры из локальных, возврат переменной, `out` для второй
+- [ ] `TYPE:extract-expression` (метод не `static`: читает поле), `extract-async` (`async Task<int>` и `await` в вызове)
+- [ ] `TYPE:extract-refused`: красная подсказка про `return` / `continue`, текст не меняется
+- [ ] `TYPE:introduce-field`: `private readonly string _concat = …` после последнего поля; для `a * 2` — поле и присваивание перед строкой
 
 ### Встроенное дерево C# и символы `#if` фреймворка — `MultiTarget/ActiveBranch.cs`
 - [ ] `TYPE:active-branch`: Settings | .NET | Language Server → «Structure, folding and breadcrumbs» = Built-in; в Structure (Alt+7)
@@ -461,12 +519,34 @@ Shift+F6, новое имя, Enter — сверить с `EXPECT`, затем о
 
 
 ## Запуск нескольких проектов и Compound
-Проекты `Web` и `Console`, оба ссылаются на `Lib`.
-- [ ] в Solution view выделить `Web` и `Console` (Ctrl+клик) → ПКМ: пункты **Run 2 Projects** и **Debug 2 Projects**; при выделенном вместе с ними `Lib` или solution — обычные «Run Project» не для набора
-- [ ] **Run 2 Projects**: в окне Build две сборки **одна за другой** (не одновременно), без `MSB3026` / «being used by another process»; затем оба запущены, в Services — две строки, у `Web` ссылка на адрес; в консолях `dotnet run` не собирает заново
-- [ ] **Debug 2 Projects**: две сессии отладки, сборки перед ними идут по очереди; точка `BP:` в `Lib` останавливает обе программы
-- [ ] Run | Edit Configurations → + → **Compound** с `Web` и `Console`: Debug запускает обе сессии, сборки по очереди. Run через Compound собирает проекты параллельно (`dotnet run` каждый сам) — общие зависимости могут дать предупреждение о повторной попытке копирования
-- [ ] сборка одного из проектов падает (испортить строку в `Console`) → Run 2 Projects ничего не запускает, ошибка в окне Build
+Проекты `Web` и `Worker` (с 0.1.79), оба ссылаются на `Lib`; `Worker` раз в 3 с ходит в `Web` (`http://localhost:5187/orders/N`) и пишет
+`round N: ... Web answered ...` или `Web is not up yet`. Проверка — в окне Build, тулбаре Run и окне Services, набирать ничего не надо.
+- [ ] в Solution view выделить `Web` и `Worker` (Ctrl+клик) → ПКМ: пункты **Run 2 Projects**, **Debug 2 Projects** и **Save as Compound Configuration**;
+      при выделенном вместе с ними `Lib` или solution их нет (а «Run Project» — обычный)
+- [ ] **Run 2 Projects** (E-150): в окне Build **одна** сборка `Build Web+Worker.slnf` (Lib собран один раз), без `MSB3026` / «being used by another process»;
+      затем оба запущены, в консолях `dotnet run ... --no-build` (своей сборки нет); в Services — две строки, у `Web` ссылка `http://localhost:5187`.
+      EXPECT: уведомление «Started Web, Worker» со ссылкой **Save as Compound Configuration**; НЕ две сборки одновременно
+- [ ] ссылка **Save as Compound Configuration** в уведомлении (E-151): в тулбаре выбрана конфигурация `Web + Worker` (тип Compound), в Run | Edit Configurations —
+      она и обе конфигурации .NET Project в папке `Web + Worker`; уведомление «Compound Configuration 'Web + Worker' Saved». Повторный Run 2 Projects
+      уведомления о сохранении больше не показывает
+- [ ] Run `Web + Worker` из тулбара: то же, что Run 2 Projects — одна сборка `Build Web+Worker.slnf`, оба `dotnet run --no-build`.
+      EXPECT в Services (E-153): строки сгруппированы в узел-папку `Web + Worker` (если группировка по папкам выключена — значок Group By в Services → Folder);
+      Stop на узле группы останавливает оба процесса, Rerun на нём — перезапускает оба (снова одной сборкой)
+- [ ] запустить `Web: http` и сразу (за долю секунды) конфигурацию `Worker` из Services / тулбара: сборка одна на оба или вторая ждёт первую — не одновременно
+- [ ] **Wait for** (E-152): Run | Edit Configurations → `Worker` → «Wait for:» = `Web: http`, условие «listens on its address», Apply; Run `Web + Worker`:
+      в строке состояния внизу «Waiting for 'Web: http' to listen on http://localhost:5187», `Worker` стартует после строки `Now listening on` у `Web`,
+      и в его консоли с первого раунда `Web answered`, НЕ `Web is not up yet`
+- [ ] Wait for с условием «answers on the health URL» и Health URL = `/health`: то же, ждёт ответа 200 от `http://localhost:5187/health`
+- [ ] таймаут: у `Worker` Wait for = `Web: http`, «Wait timeout» = 5, запустить **только** `Worker`: через 5 с уведомление «'Worker' Was Not Started»
+      с текстом «'Web: http' does not listen on http://localhost:5187 (it is not running) after 5 s…»; процесса `Worker` нет
+- [ ] Wait for = сама конфигурация `Worker` → в редакторе конфигурации ошибка «The configuration waits for itself»; `Web: http` ждёт `Worker`, а `Worker` — `Web: http` →
+      «The configurations wait for each other: …»
+- [ ] **Debug 2 Projects** / Debug `Web + Worker` (E-154): одна сборка `Build Web+Worker.slnf`, затем две сессии отладки; `BP:worker-round` в `Worker/Program.cs`
+      и `BP:lib` в `Lib` останавливают обе программы
+- [ ] сборка падает (испортить строку в `Worker/Program.cs`) → Run `Web + Worker`: ни один процесс не запущен, уведомление «Build Failed … none of Web: http, Worker was started»,
+      ошибка в окне Build; вернуть строку (Ctrl+Z)
+- [ ] у `Worker` снять «Build .NET Project» в Before launch → при запуске compound `Worker` собирается сам (`dotnet run` без `--no-build`), `Web` — сборкой `Build Web.csproj`
+- [ ] Run | **Save as Compound Configuration** при двух запущенных по отдельности .NET-конфигурациях (фокус не в Solution view) → compound из запущенных
 
 ## Aspire — `AspireHost` (шаг 1: распознавание, dashboard, автоподключение отладчика)
 AppHost запускает `Web` как ресурс `web`. Профиль `https` (по умолчанию) требует доверенный dev-сертификат; без него — профиль `http`

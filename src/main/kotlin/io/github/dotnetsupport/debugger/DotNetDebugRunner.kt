@@ -118,7 +118,7 @@ class DotNetDebugRunner : AsyncProgramRunner<RunnerSettings>() {
             is DotNetRunConfiguration -> {
                 val arguments: MutableMap<String, Any?> = LinkedHashMap(profile.debugLaunchArguments())
                 // what the build before the launch has found: without it the project is built here (a second build, if it had been built)
-                val handedOver = environment.getUserData(DotNetLaunchArguments.TARGET_PATH) ?: BuiltBeforeLaunch.take(environment.executionId)
+                val handedOver = environment.getUserData(DotNetLaunchArguments.TARGET_PATH) ?: BuiltBeforeLaunch.take(environment.executionId, profile.name)
                     ?: "".takeIf { environment.getUserData(DotNetLaunchArguments.BUILT) == true }
                 PluginLog.info(DotNetDebugBuild.LOG_CATEGORY, "debug of ${profile.name} (${environment.executionId}): ${handedOver?.let { "built before the launch, program ${it.ifEmpty { "unknown" }}" } ?: "not built yet"}")
                 val targetPath = handedOver ?: buildNow(profile)

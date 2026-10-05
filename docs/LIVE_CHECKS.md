@@ -213,15 +213,15 @@
 | E-73 | 0.1.62 | Go to Class (Ctrl+N) по типам сборок только с «Include non-project items», `JsonSerializer (System.Text.Json, System.Text.Json 10.0)` один раз; Enter — metadata view | `debug-playground/README.md`, «Go to Class / Symbol по сборкам» | ⬜ |
 | E-74 | 0.1.62 | Metadata view: заголовок сборки, сигнатуры без тел, `///`-доки, вложенные типы, цвета и folding, только чтение, вкладка `X.cs [Сборка 10.0]`, баннер; вкладка переживает перезапуск | там же | ⬜ |
 | E-75 | 0.1.62 | Go to Symbol по членам сборок (перегрузки `WriteLine`) на строку члена; Ctrl+click Built-in без сервера по `Add` / `WriteLine` — в metadata view | там же; `LibraryNames.cs`, `TYPE:library-navigation` | ⬜ |
-| E-76 | 0.1.64 | Alt+Enter Built-in: «Convert to '?:' expression» / «Convert '?:' to 'if' statement» — формы `return` и присваивания, ветка `throw`; одна строка на действие (без строки сервера) | `ContextActions.cs`, `TYPE:ctx-if-to-conditional` / `-conditional-to-if` | ⬜ |
-| E-77 | 0.1.64 | Alt+Enter Built-in: «To expression body» / «To block body» — метод, `void`, свойство с `get`, аксессор; «Use explicit type» / «Use 'var'» по типам C2 | `ContextActions.cs`, `TYPE:ctx-expression-body` / `-block-body` / `-var` | ⬜ |
-| E-78 | 0.1.64 | Alt+Enter Built-in: «Introduce variable» (имя правится шаблоном в обоих местах, выделение) и «Inline variable» (скобки по месту); где их нет | `ContextActions.cs`, `TYPE:ctx-introduce` / `-inline` | ⬜ |
+| E-76 | 0.1.64 | Alt+Enter Built-in: «Convert to '?:' expression» / «Convert '?:' to 'if' statement» — формы `return` и присваивания, ветка `throw`; одна строка на действие (без строки сервера) | `ContextActions.cs`, `TYPE:ctx-if-to-conditional` / `-conditional-to-if` | 🤖 робот (WSL, IC, 2026-10-05, 0.1.72): Sign / Clamp / Assign / Parity / Check — как EXPECT, Mixed и Print — нет; дубль сервера «Replace conditional expression with statements» скрыт |
+| E-77 | 0.1.64 | Alt+Enter Built-in: «To expression body» / «To block body» — метод, `void`, свойство с `get`, аксессор; «Use explicit type» / «Use 'var'» по типам C2 | `ContextActions.cs`, `TYPE:ctx-expression-body` / `-block-body` / `-var` | 🤖 робот (WSL, IC, 2026-10-05): все места как EXPECT; встроенная предлагает больше сервера (Use explicit type на `var`, To block body) |
+| E-78 | 0.1.64 | Alt+Enter Built-in: «Introduce variable» (имя правится шаблоном в обоих местах, выделение) и «Inline variable» (скобки по месту); где их нет | `ContextActions.cs`, `TYPE:ctx-introduce` / `-inline` | 🤖 робот (WSL, IC, 2026-10-05, 0.1.72): Introduce / Inline как EXPECT, inline и на `var`; шаблон имени не проверен |
 | E-79 | 0.1.65 | CS1674 / CS8417 Built-in на `using` / `await using` без `IDisposable` / `IAsyncDisposable`, один раз; список `using (` без не-disposable | `Usings.cs`, `TYPE:using-cs1674` / `-list` | ⬜ |
-| E-80 | 0.1.66 | Completion Built-in после точки у значения: члены типа из сборок и solution, унаследованные, аргументы-типы подставлены, LINQ без `this`, видимость | `MemberCompletion.cs`, `TYPE:dot-instance` / `-generic` | ⬜ |
-| E-81 | 0.1.66 | Completion Built-in после типа и namespace: static-члены, вложенные типы, члены enum, namespace и типы; `this.` в наследнике библиотечного типа | `MemberCompletion.cs`, `TYPE:dot-static` / `-namespace` / `-this` | ⬜ |
-| E-82 | 0.1.66 | Completion после точки с готовым сервером: один пункт на имя, ничего из списка сервера не потеряно, выбор метода — `()` / `();` | `MemberCompletion.cs`, `TYPE:dot-generic` | ⬜ |
-| E-83 | 0.1.66 | Quick documentation Built-in (Ctrl+Q и наведение): строка как в Rider, XML-доки из `///` и из доков сборок, одно окно без сервера | `MemberCompletion.cs`, `TYPE:quick-doc` | ⬜ |
-| E-84 | 0.1.66 | Parameter Info Built-in (Ctrl+P): перегрузки строками, выбранная отмечена, параметр под кареткой выделен, конструкторы `new T(` | `MemberCompletion.cs`, `TYPE:parameter-info` | ⬜ |
+| E-80 | 0.1.66 | Completion Built-in после точки у значения: члены типа из сборок и solution, унаследованные, аргументы-типы подставлены, LINQ без `this`, видимость | `MemberCompletion.cs`, `TYPE:dot-instance` / `-generic` | 🤖 робот (WSL, IC, 2026-10-05): списки как EXPECT, дублей имён нет |
+| E-81 | 0.1.66 | Completion Built-in после типа и namespace: static-члены, вложенные типы, члены enum, namespace и типы; `this.` в наследнике библиотечного типа | `MemberCompletion.cs`, `TYPE:dot-static` / `-namespace` / `-this` | 🤖 робот (WSL, IC, 2026-10-05, 0.1.72): нет `Void`, `Finalize`, статиков System.Enum после enum |
+| E-82 | 0.1.66 | Completion после точки с готовым сервером: один пункт на имя, ничего из списка сервера не потеряно, выбор метода — `()` / `();` | `MemberCompletion.cs`, `TYPE:dot-generic` | 🤖 робот (WSL): один пункт на имя; выбор метода `()` / `();` не проверен |
+| E-83 | 0.1.66 | Quick documentation Built-in (Ctrl+Q и наведение): строка как в Rider, XML-доки из `///` и из доков сборок, одно окно без сервера | `MemberCompletion.cs`, `TYPE:quick-doc` | 🤖 робот (WSL, IC, 2026-10-05, 0.1.72): одна страница (hover сервера выключен при Built-in), `string? value`, Params / Exceptions / Returns |
+| E-84 | 0.1.66 | Parameter Info Built-in (Ctrl+P): перегрузки строками, выбранная отмечена, параметр под кареткой выделен, конструкторы `new T(` | `MemberCompletion.cs`, `TYPE:parameter-info` | 🤖 робот (WSL, IC, 2026-10-05, 0.1.72): перегрузки Add, `new StringBuilder(16)` — отмечен `int capacity` |
 | E-85 | 0.1.68 | Встроенный форматтер как Rider: многострочные инициализаторы и `[...]` — скобки на своих строках, элементы на отступ глубже, разбиение по строкам прежнее; однострочные `{ 1, 2 }` / `[1, 2]` | `Formatting.cs`, `TYPE:format-initializers` | ⬜ |
 | E-86 | 0.1.68 | Встроенный форматтер как Rider: строки аргументов и параметров на отступ правее строки вызова (не под первым аргументом), одинокая `)` под ней, вложенные списки | `Formatting.cs`, `TYPE:format-arguments` | ⬜ |
 | E-91 | 0.1.70 | Настройки плагина — узел .NET в корне Settings (Toolset and Build, NuGet, Coverage, Debugger, Language Server), под Tools его нет | Settings (Ctrl+Alt+S) | 🤖 робот (WSL) |
@@ -232,6 +232,43 @@
 | E-96 | 0.1.71 | Цвета внутри строк: код в дырках `$"…{…}…"` цветами кода, скобки дырки, `,5` / `:N2` — элемент формата; raw `$$"""` | `StringColors.cs`, `TYPE:strings-holes` / `-format` / `-raw` | 🤖 робот (Windows, 2026-10-05): ключи лексера и аннотатора, набор — как в EXPECT; вид глазами — нет |
 | E-97 | 0.1.71 | Escape-последовательности: два чередующихся цвета, неверная (`\q`), `""` verbatim, `{{` / `}}`, char; набор — цвета по ходу, кавычка перешагивается | `StringColors.cs`, `TYPE:strings-escapes` / `-invalid-escape` / `-brace-escapes` / `-typing` | 🤖 робот (Windows, 2026-10-05): ключи лексера и аннотатора, набор — как в EXPECT; вид глазами — нет |
 | E-98 | 0.1.71 | Элементы формата `string.Format` / `Console.WriteLine` / `AppendFormat`; страница Color Scheme \| C# → String | `StringColors.cs`, `TYPE:strings-format-items` | 🤖 робот (Windows, 2026-10-05): ключи лексера и аннотатора, набор — как в EXPECT; вид глазами — нет |
+| E-99 | 0.1.72 | Quick doc `<inheritdoc/>`: член интерфейса и базы, `cref` у inheritdoc, свои части главнее | `MemberCompletion.cs`, `TYPE:quick-doc-inherit` | 🤖 робот (WSL, IC, 2026-10-05) |
+| E-100 | 0.1.72 | Quick doc: `cref` ссылками, клик — документация символа, F4 — исходник или metadata view | `MemberCompletion.cs`, `TYPE:quick-doc-cref` | 🤖 робот (WSL): ссылки видны; клик и F4 не проверены |
+| E-101 | 0.1.72 | Quick doc на `var`: тип и аргументы-типы (`T is int`) | `MemberCompletion.cs`, `TYPE:quick-doc-var` | 🤖 робот (WSL, IC, 2026-10-05) |
+| E-102 | 0.1.72 | Parameter Info: именованный аргумент подсвечивает свой параметр, перегрузки без него серые | `MemberCompletion.cs`, `TYPE:parameter-info-named` | 🤖 робот (WSL, IC, 2026-10-05) |
+| E-103 | 0.1.73 | Find Usages (Alt+F7) / Show Usages (Ctrl+Alt+F7) Built-in по solution: свойство из двух проектов, группы Read / Write / nameof / documentation; без сервера | `SolutionUsages.cs` + `Lib/SolutionShapes.cs`, `TYPE:solution-find-usages` | 🤖 робот (Windows, IDEA Community, 2026-10-05): окно Usages — 7 мест, группы как у сервера (кроме его «Declaration»); `usages_compare.js` — 372 из 378 мест сервера на 384 объявлениях, лишних 0; Show Usages и вид глазами — нет |
+| E-104 | 0.1.73 | Подсветка использований члена / типа под кареткой в файле (запись — цветом записи), Ctrl+Shift+F7 | `SolutionUsages.cs`, `TYPE:solution-highlight` | ⬜ |
+| E-105 | 0.1.73 | Go to Implementation (Ctrl+Alt+B) и Go to Super (Ctrl+U) Built-in: список реализаций, переход к базовому члену в другом проекте | `SolutionUsages.cs`, `TYPE:solution-goto-implementation`, `TYPE:solution-goto-super` | 🤖 робот: Ctrl+U — переход в `SolutionShapes.cs:20`; `usages_compare.js` implementation — 396 из 396; попап списка глазами — нет |
+| E-106 | 0.1.73 | Type Hierarchy (Ctrl+H: цепочка баз сверху, Supertypes / Subtypes) и Call Hierarchy (Ctrl+Alt+H: вызывающие, вызываемые) Built-in | `SolutionUsages.cs`, `TYPE:solution-hierarchy` | 🤖 робот: Call Hierarchy `Measure` → `Run`; Type Hierarchy снят до переделки вида (базы сверху), после — только тест |
+| E-107 | 0.1.73 | Иконки gutter: Overrides / Implements member, Is overridden, Has implementations, Has subclasses; клик — список | `SolutionUsages.cs` + `Lib/SolutionShapes.cs`, `TYPE:solution-goto-super` | 🤖 робот: маркеры на всех строках из EXPECT; клик и вид иконок — нет |
+| E-108 | 0.1.73 | Rename (Shift+F6) членов и типов по solution: inplace, затем все файлы; вопрос про иерархию (Rename All / Only This); конструктор с типом; файл типа; конфликт; одно Ctrl+Z (платформа спрашивает «Undo … affects other files») | `SolutionUsages.cs`, `TYPE:solution-rename` | 🤖 робот (`rename_solution.js`, имя из контекста, без inplace и диалогов): `Side` → `Edge` (7 мест, 2 проекта), `Area` с иерархией → `Surface` (4 строки), `SolutionTile` → `SolutionPlate`; inplace, диалог иерархии, Undo — нет |
+| E-109 | 0.1.74 | Семантические ошибки «Built-in»: имена и типы — CS0103, CS0246, CS0234 с текстами Roslyn, без сборки и сервера | `Broken/SemanticErrors.cs`, `TYPE:sem-names` / `-namespace` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): коды, тексты и места как в EXPECT, на ImportType.cs совпали с сервером один в один; глазами — нет |
+| E-110 | 0.1.74 | Члены: CS1061, CS0117; молчание на `ToString` интерфейса, `Deconstruct` записи, extension-методах, `dynamic`, кортежах | `SemanticErrors.cs`, `TYPE:sem-members` / `-members-silent`; `ImportType.cs`, `TYPE:import-type-member` / `-silent` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): как в EXPECT, `-silent` без красного |
+| E-111 | 0.1.74 | Аргументы и типы: CS1501, CS7036, CS0029, CS0266, CS0161; молчание на `byte b = 1`, `while (true)` | `SemanticErrors.cs`, `TYPE:sem-arguments` / `-conversions` / `-conversions-silent` / `-paths` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): как в EXPECT |
+| E-112 | 0.1.74 | «Import type»: синяя подсказка `N.Type? Alt+Enter`, Alt+Enter добавляет `using`; список при нескольких namespace | `ImportType.cs`, `TYPE:import-type-hint` / `-declaration` / `-choice` / `-extension`; `SemanticErrors.cs`, `TYPE:sem-typing` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): «Import 'System.Text.StringBuilder'» добавил `using`, список «Import 'Canvas' From» из двух namespace, выбор добавил `using`; синяя подсказка не проверена (песочница без фокуса) |
+| E-113 | 0.1.74 | Серые `using` (CS8019, CS8933) и «Remove unused directives in file» | `SemanticErrors.cs`, `TYPE:sem-unused`; `ImportType.cs`, `TYPE:import-type-unused` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): серые CS8019 / CS8933, «Remove unused directives in file» убрал обе |
+| E-114 | 0.1.74 | Без дублей: ошибка, которую показывает плагин, не повторяют сервер и последняя сборка; «Errors and warnings» = Language server — ошибки сервера как раньше | `SemanticErrors.cs` после Build Solution, с готовым сервером, в обоих режимах | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): с готовым сервером каждая ошибка одна; Language server — те же 12 ошибок сервера; дубли с Build — не проверены |
+| E-115 | 0.1.75 | Generate (Alt+Insert) без сервера: строки генераторов как в Rider, недоступные серые, нет дублей сервера и «Override / Implement Methods…» платформы | `Generate.cs`, `TYPE:gen-list` | 🤖 робот (Windows, 2026-10-05): состав и серые строки по снимку попапа; с готовым сервером — нет |
+| E-116 | 0.1.75 | Constructor (с базовым), Read-only properties / Properties: диалог выбора членов по группам, члены на строке каретки | `Generate.cs`, `TYPE:gen-constructor` / `-base-constructor` / `-properties` | 🤖 робот (Windows, Community 2026.1.4, 2026-10-05): вызов из кода строки, OK диалога через API; клик мышью и вид — нет |
+| E-117 | 0.1.75 | Equality members (флажки `IEquatable<T>` и операторов), Formatting members, Deconstructor, Dispose pattern, Partial members | `Generate.cs`, `TYPE:gen-equality` / `-formatting` / `-deconstructor` / `-dispose` / `-partial` | 🤖 робот (Windows, Community 2026.1.4, 2026-10-05): вызов из кода строки, OK диалога через API; клик мышью и вид — нет |
+| E-118 | 0.1.75 | Missing members (абстрактная база, интерфейсы из сборок) и Overriding members; Ctrl+I / Ctrl+O открывают те же диалоги | `Generate.cs`, `TYPE:gen-missing-abstract` / `-missing-library` / `gen-override` | 🤖 робот (Windows, Community 2026.1.4, 2026-10-05): вызов из кода строки, OK диалога через API; клик мышью и вид — нет; Ctrl+I / Ctrl+O — нет |
+| E-119 | 0.1.75 | Extract Method без сервера: параметры, возврат, `out`, выражение, `async`, `static`; имя в рамке; отказ подсказкой | `ExtractMethod.cs`, `TYPE:extract-*` | 🤖 робот (Windows, 2026-10-05): действие ExtractMethod с выделением, шаблон имени завершён; набор имени — нет |
+| E-120 | 0.1.75 | Introduce Field без сервера: инициализатор поля или присваивание в члене; строки Refactor This | `ExtractMethod.cs`, `TYPE:introduce-field` | 🤖 робот (Windows, 2026-10-05): оба варианта, строки Refactor This по снимку |
+| E-121 | 0.1.76 | Сервер выключен по умолчанию: новая установка (или без сохранённой галочки) — нет процесса `roslyn-language-server`, нет баннера «нет сервера», нет вопроса о .NET 10; completion, Ctrl+B, Alt+F7, Shift+F6, ошибки, Ctrl+Q, Alt+Enter, Alt+Insert работают; галочка Language Server включает сервер | любые сценарии `Console/Editor/*.cs` | ⬜ |
+| E-130 | 0.1.77 | Source generators без сервера: Dependencies → .NET 9.0 → Analyzers → генератор → тип → файлы, открываются только для чтения с баннером | `Generators.cs`, `TYPE:sg-tree` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): дерево по снимку (три генератора, 6 файлов JSON); баннер и замок вкладки — нет |
+| E-131 | 0.1.77 | Completion и Ctrl+click по сгенерированному: члены `PlaygroundJsonContext.Default.` | `Generators.cs`, `TYPE:sg-member` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): `GeneratedOrder` 2-й, `String` 5-й в списке; Ctrl+click — нет |
+| E-132 | 0.1.77 | Ошибки на partial-типе с генератором после сохранения (CS1061), молчание до первого прогона и при несохранённой правке; `[JsonSerializable]` добавил — новый член после сохранения | `Generators.cs`, `TYPE:sg-error` / `sg-new` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): CS1061 на `Customer` после сохранения; `sg-new` — нет |
+| E-133 | 0.1.77 | Анализаторы на сохранении: VSTHRD200, VSTHRD103, CA1822 жёлтым, по одному, id в начале, подсказка «Roslyn analyzer»; без дублей с последней сборкой | `Analyzers.cs`, `TYPE:an-on-save` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): три предупреждения по снимку, после сохранения через ~0,1 с; дубли со сборкой и подсказка по наведению — нет |
+| E-134 | 0.1.77 | Code fixes анализаторов по Alt+Enter: «Await ReadAllTextAsync instead», «Rename to LoadAsync», «Make static»; одна команда Undo | `Analyzers.cs`, `TYPE:an-fix` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): «Await ReadAllTextAsync instead» в списке и применился, Undo с его именем откатил; Rename / Make static — нет |
+| E-135 | 0.1.77 | Правила IDE из SDK по `.editorconfig` (IDE0059) и его fix; Run Code Analysis на проекте — окно Build «Code Analysis Console» | `Analyzers.cs`, `TYPE:an-ide` / `an-project` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): окно Build «0 errors, 3 warnings, 151 suggestions» по снимку; IDE0059 — нет |
+| E-136 | 0.1.77 | Settings \| .NET \| Analyzers and Generators: флажки действуют (без генераторов — снова молчание C4c; без подсказок — нет слабых предупреждений), помощник выходит после простоя | страница настроек, `Generators.cs`, `Analyzers.cs` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): страница по снимку (подписи в песочнице срезаны на букву, как у платформенной Coverage); флажки и простой — нет |
+| E-140 | 0.1.78 | Перегрузки: Ctrl+B / Ctrl+Q на вызове ведёт к перегрузке из EXPECT (числа, ссылки, `params`, необязательные, generic, лямбды, группа методов), без списка кандидатов | `Overloads.cs`, `TYPE:overloads-*` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): Ctrl+B (`goto_declaration.js`) на 17 вызовах — перегрузка из EXPECT, без списка; Ctrl+Q и наведение — нет |
+| E-141 | 0.1.78 | Недостижимый код CS0162: серым до конца блока, подсказка с кодом; `#pragma warning disable` глушит | `Broken/SemanticErrors2.cs`, `TYPE:sem2-unreachable`; `Web/Program.cs` (`/fail`) — ничего | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): CS0162 в местах оракула, серым (снимок редактора); `/fail` Web и подсказка — нет |
+| E-142 | 0.1.78 | Неиспользуемые локальные CS0168 / CS0219 серым, Alt+Enter «Remove unused variable» | `SemanticErrors2.cs`, `TYPE:sem2-unused` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): CS0168 / CS0219 серым, «Remove unused variable» убрал строку; Ctrl+Z — нет |
+| E-143 | 0.1.78 | CS4014 жёлтым, Alt+Enter «Add 'await'»; CS0120 красным | `SemanticErrors2.cs`, `TYPE:sem2-await`, `TYPE:sem2-static` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): CS4014 на обоих вызовах, «Add 'await'» только на своём; CS0120 красным |
+| E-144 | 0.1.78 | Nullable CS8600 / CS8625 / CS8603 / CS8618 жёлтым при `#nullable enable` / `<Nullable>enable`; без контекста — ничего | `SemanticErrors2.cs`, `TYPE:sem2-nullable`, `TYPE:sem2-uninitialized` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): CS8600 / CS8625 / CS8603 / CS8618 в местах оракула; без контекста — только тест |
+| E-145 | 0.1.78 | CS1503 / CS7036 generic / `params` / именованных; CS0029 / CS0266 `?:` и switch-выражений | `SemanticErrors2.cs`, `TYPE:sem2-arguments`, `TYPE:sem2-target-typed` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): коды, тексты и места как у Roslyn (23 метки файла — список оракула) |
+| E-146 | 0.1.78 | «Add argument name»: `Resize(width: 640, height: 480)` | `Overloads.cs`, `TYPE:overloads-argument-name` | 🤖 робот (Windows, IC 2026.1.4, 2026-10-05): `Resize(width: 640, height: 480)` |
 | E-01 | 0.1.44 | Ключевые слова выше неимпортированных типов | `CompletionRanking.cs`, `TYPE:keyword-order` | ⬜ |
 | E-02 | 0.1.44 | `string` первым в TYPE шаблона `prop` | `TYPE:prop-type` | ⬜ |
 | E-03 | 0.1.44 | Имя свойства не открывает список имён | `TYPE:property-name-ghost` | ⬜ |
@@ -670,6 +707,138 @@ Unit Test и Insert New GUID. ПКМ — строки на местах Rider, I
    `{{literal}}` и `Console.WriteLine("{0}")` без аргументов — без цвета формата.
 2. Settings | Editor | Color Scheme | C# → String: «String text», «Escape sequence» → Valid / Valid 2 / Invalid, «Format item», «Format item 2»;
    выбор пункта подсвечивает его в превью; смена цвета «Format item» меняет `{0}` в редакторе.
+
+#### E-99…E-102 `TYPE:quick-doc-inherit`, `-cref`, `-var`, `TYPE:parameter-info-named`
+1. «Documentation and parameter info» = Built-in (по умолчанию с 0.1.72). `MemberCompletion.cs`, метод `Inherited`.
+2. Ctrl+Q на `Ship`: «Ships it.», Params `express` – «Faster.», Returns «Always the same.». На `Name` — «The name of it.».
+3. Ctrl+Q на `ShippedOrder` в заголовке: три ссылки; клик по `MemberShipping` — его документация, F4 в ней — переход к классу; `Console` —
+   metadata view System.Console.
+4. Ctrl+Q на `var`: `class System.Collections.Generic.List<T>` и «T is int».
+5. Каретка на `2` в `count: 2`, Ctrl+P: в строке `string item, int count = 1` выделен `int count = 1`, строка `string item` серая.
+#### E-109 `TYPE:sem-names`, `TYPE:sem-namespace`
+1. «Errors and warnings» = **Built-in** (по умолчанию). Открыть `debug-playground/Broken/SemanticErrors.cs` (в сборку не входит, редактор его видит).
+2. Метод `Names`: красное с кодами и текстами Roslyn, как в EXPECT маркеров, сразу после открытия, без Build и до готовности сервера.
+   `System.Nothing()` подчёркнут целиком, `System.Foo.Bar` — только `Foo`.
+
+#### E-110 `TYPE:sem-members`, `TYPE:sem-members-silent`, `TYPE:import-type-member`, `TYPE:import-type-silent`
+1. `Members`: CS1061 / CS0117 на имени члена с типом без namespace (`'Calc'`, `'List<int>'`); строки под `sem-members-silent` — без красного.
+2. `ImportType.cs`: набрать `Console.WriteLin("x");` — CS0117; `dynamic d = 1; d.Anything();` и кортеж — без красного. Ctrl+Z.
+
+#### E-111 `TYPE:sem-arguments`, `TYPE:sem-conversions`, `TYPE:sem-paths`
+1. `Arguments`: CS7036 у `Add(1)` и `Twice()`, CS1501 у остальных (`Math.Max(1)` тоже).
+2. `Conversions`: CS0029 / CS0266 на выражении справа; в CS0029 у `List<int>` тип полностью (`'System.Collections.Generic.List<int>'`), как у
+   Roslyn; три строки `-silent` — без красного.
+3. CS0161 на `NoReturn` и на `get` у `Prop2`; `Loop` и `Both` — без красного.
+
+#### E-112 `TYPE:import-type-hint`, `-declaration`, `-choice`, `-extension`, `TYPE:sem-typing`
+1. `ImportType.cs`, метод `Statements`: набрать `var sw = Stopwatch.StartNew();` — CS0103 и синяя подсказка `System.Diagnostics.Stopwatch? Alt+Enter`;
+   Alt+Enter добавляет `using System.Diagnostics;` перед `namespace`, красное уходит. Ctrl+Z.
+2. `StringBuilder builder = new StringBuilder();` — Alt+Enter → «Import 'System.Text.StringBuilder'». `Canvas canvas = null!;` — «Import type
+   'Canvas'…» открывает список из двух namespace (`ImportTypeTargets.cs`); Escape ничего не добавляет. `new List<int>().AsReadOnly2();` — CS1061 без импорта.
+
+#### E-113 `TYPE:sem-unused`, `TYPE:import-type-unused`
+1. `SemanticErrors.cs`: две директивы `using` вверху серые, подсказка «CS8019: Unnecessary using directive.»; Alt+Enter → «Remove unused
+   directives in file» убирает обе. Ctrl+Z.
+2. `ImportType.cs`: в начале файла набрать `using System.IO;` — серая, «CS8933: The using directive for 'System.IO' appeared previously as
+   global using». Ctrl+Z.
+
+#### E-114 Нет дублей с сервером и сборкой
+1. Build Solution на `Broken` с временно убранным `<Compile Remove="SemanticErrors.cs" />` (или любая ошибка из E-109 в компилируемом
+   файле): каждая ошибка, которую показывает плагин, видна один раз, не второй раз из Build.
+2. С готовым сервером (Language Server включён): то же — одна отметка на ошибку. Переключить «Errors and warnings» = Language server —
+   ошибки сервера (с его IDE0005 вместо CS8019) как раньше, отметок плагина нет.
+
+#### E-115 `TYPE:gen-list`
+1. Сервер выключен (Settings | .NET | Language Server). `Generate.cs`, каретка на пустой строке под маркером, Alt+Insert.
+2. Строки: Constructor, Read-only properties, Properties, Missing members (серая, Ctrl+I), Overriding members (Ctrl+O), Partial members
+   (серая), Partial Part, Deconstructor, Equality members, Formatting members, Dispose pattern, Unit Test, ниже — Insert New GUID.
+   Нет «Override Methods…» / «Implement Methods…» платформы.
+3. С готовым сервером — те же строки, без «Generate constructor …», «Generate Equals …», «Implement interface» сервера.
+
+#### E-116 `TYPE:gen-constructor`, `TYPE:gen-base-constructor`, `TYPE:gen-properties`
+1. Constructor: диалог «Generate Constructor», группы Fields (`_id: int` отмечен) и Properties; OK — конструктор на строке каретки,
+   отформатирован, пустые строки до и после. Ctrl+Z.
+2. В `GenDerived` — группа «Base constructor»: `public GenDerived(string name, int size) : base(name)`.
+3. Read-only properties: `public int Id => _id;`; Properties — только `_customer`, get / set на трёх строках.
+
+#### E-117 `TYPE:gen-equality`, `TYPE:gen-formatting`, `TYPE:gen-deconstructor`, `TYPE:gen-dispose`, `TYPE:gen-partial`
+1. Equality members: два флажка внизу диалога (подпись первого видна целиком?); результат как в EXPECT, `dotnet build` без ошибок.
+2. Formatting members, Deconstructor — по EXPECT.
+3. Dispose pattern в `GenResource`: `: IDisposable` в заголовке, `Dispose(bool)` с `_buffer` / `_timer?`.
+4. Partial members: диалог с группой `GenPartial`, `partial void OnSaved(int id) { }`.
+
+#### E-118 `TYPE:gen-missing-abstract`, `TYPE:gen-missing-library`, `TYPE:gen-override`
+1. `GenSquare`: Missing members (и Ctrl+I) — `Area(): double`, `Label: string` отмечены; OK — `throw new NotImplementedException();`.
+2. `GenMoney`: дописать `: IComparable<GenMoney>, IDisposable`, Missing members — группы интерфейсов, `CompareTo(GenMoney? other): int`;
+   красные пометки уходят.
+3. `GenCircle`: Overriding members (и Ctrl+O) — группы `GenShape` (`Describe`) и `object`; `Area` / `Label` не предлагаются.
+
+#### E-119 `TYPE:extract-statements`, `-returned`, `-out`, `-expression`, `-async`, `-refused`
+1. Выделить строки под маркером, Ctrl+Alt+M: вызов на месте выделения, метод после текущего, имя `NewMethod` в рамке в обоих местах —
+   набрать `Sum`, Enter: поменялось и там, и там. Ctrl+Z возвращает всё.
+2. `extract-expression`: метод без `static` (читает поле); `extract-async`: `await NewMethod(work)` и `async Task<int>`.
+3. `extract-refused`: красная подсказка «The selection contains 'return' …», текст не меняется.
+4. Refactor This (Ctrl+Alt+Shift+T) с выделением — «Extract Method...», без второй строки сервера.
+
+#### E-120 `TYPE:introduce-field`
+1. Выделить `string.Concat("a", "b")`, Ctrl+Alt+F: `private readonly string _concat = string.Concat("a", "b");` после последнего поля,
+   `_concat` на месте выражения.
+2. Выделить `a * 2`: поле `private int _value;` и `_value = a * 2;` перед строкой.
+
+Для E-130…E-136: сервер выключен (Settings | .NET | Language Server), площадка собрана хотя бы раз (`project.assets.json`). Первый запрос
+собирает помощник CodeAnalysisHelper (~5 с на SDK 10), загрузка Console — ещё ~4 с; журнал — .NET | Plugin Logs, категория `codeanalysis`.
+
+#### E-130 `TYPE:sg-tree`
+1. Solution → Console → Dependencies → .NET 9.0 → Analyzers: узлы-молнии System.Text.RegularExpressions.Generator,
+   System.Text.Json.SourceGeneration, Microsoft.Extensions.Logging.Generators среди пакетов-анализаторов; под ними тип генератора и файлы.
+2. Открыть `PlaygroundJsonContext.g.cs`: баннер «Generated by …», замок на вкладке, набор не меняет файл.
+
+#### E-131 `TYPE:sg-member`
+1. На пустой строке под маркером набрать `var info = PlaygroundJsonContext.Default.`: в списке `GeneratedOrder`, `String`, `Int32`.
+2. Ctrl+click по `Default` в `Serialize` — открывается `PlaygroundJsonContext.g.cs` из кэша IDE.
+
+#### E-132 `TYPE:sg-error`, `TYPE:sg-new`
+1. Набрать `var missing = PlaygroundJsonContext.Default.Customer;`, Ctrl+S: через секунду красное CS1061 на `Customer`. Ctrl+Z, Ctrl+S.
+2. Над `PlaygroundJsonContext` добавить `[JsonSerializable(typeof(int[]))]`, Ctrl+S, набрать `PlaygroundJsonContext.Default.` — есть
+   `Int32Array`, без красного. Откатить и сохранить.
+
+#### E-133 `TYPE:an-on-save`
+1. Открыть `Analyzers.cs`: жёлтые VSTHRD200 на `Load`, VSTHRD103 на `ReadAllText`, CA1822 на `Twice`, по одному; подсказка по наведению
+   кончается «Roslyn analyzer».
+2. Build Solution, снова открыть файл: те же три, не по два.
+
+#### E-134 `TYPE:an-fix`
+1. Alt+Enter на `ReadAllText` → «Await ReadAllTextAsync instead»: `await File.ReadAllTextAsync(path)`; Ctrl+Z одним шагом.
+2. Alt+Enter на `Load` → «Rename to LoadAsync»; на `Twice` → «Make static». После Ctrl+S предупреждение уходит. Откатить и сохранить.
+
+#### E-135 `TYPE:an-ide`, `TYPE:an-project`
+1. В `Unused` набрать `var value = 1; value = 2; Console.WriteLine(value);`, Ctrl+S: IDE0059 на первом `value = 1`, Alt+Enter →
+   «Remove unnecessary value assignment».
+2. .NET → Code Analysis → Run Code Analysis: окно Build «Code Analysis Console», «0 errors, 3 warnings, N suggestions», двойной клик
+   ведёт на место.
+
+#### E-136 Settings | .NET | Analyzers and Generators
+1. Снять «Run source generators», Apply: в `Generators.cs` после правки из E-132 красного нет (молчание C4c). Вернуть.
+2. Снять «Show suggestions»: в `Allocations.cs` пропали слабые CA1859. Вернуть.
+3. Поставить простой 1 минуту, подождать: в журнале «CodeAnalysisHelper stopped after 1 min without requests», процесс `dotnet` ушёл;
+   следующее сохранение поднимает помощник снова.
+
+#### E-140 `TYPE:overloads-*`
+1. «Navigation and usages» = **Built-in**, сервер выключен, сборки проиндексированы.
+2. `Console/Editor/Overloads.cs`, метод `Calls`: Ctrl+B на имени каждого вызова под маркером — переход к перегрузке из EXPECT, без
+   попапа со списком кандидатов; Ctrl+Q — документация той же перегрузки. Наведение на `var sum` — `int`.
+
+#### E-141…E-145 `TYPE:sem2-*`
+1. «Errors and warnings» = **Built-in**; открыть `Broken/SemanticErrors2.cs`.
+2. Сравнить метки с EXPECT каждого маркера: серым — недостижимый код и неиспользуемые локальные, жёлтым — CS4014 и nullable, красным —
+   CS0120, CS1503, CS7036, CS0029, CS0266. Под «Silent» — ничего.
+3. Alt+Enter на `a` (`sem2-unused`): «Remove unused variable» убирает строку; на `Work()` (`sem2-await`): «Add 'await'». Ctrl+Z после.
+4. То же с сервером («Errors and warnings» = Language server): те же коды в тех же местах.
+5. `Web/Program.cs`, `/fail`: строка `return "never";` под `#pragma warning disable CS0162` — без серого.
+
+#### E-146 `TYPE:overloads-argument-name`
+1. Каретка на `640` в `Resize(640, 480)`, Alt+Enter → «Add argument name»: `Resize(width: 640, height: 480)`. Ctrl+Z.
+2. На `480` — только `height: 480`. На аргументе с именем действия нет.
 
 #### E-56 `TYPE:library-navigation`
 Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): с готовым сервером: Ctrl+click `Current.Total` → `LibraryOrder.Total` (48:16), `Lines` → поле (46:22), `Add` → `List.cs` 106:21, `WriteLine` → декомпилированный `Console.cs [System.Console]` 825:24 с баннером «Decompiled from System.Console 9.0.0.0. Read-only» (`e56_writeline.png`). Без сервера не проверено.
@@ -1252,6 +1421,11 @@ Unit Test и Insert New GUID. ПКМ — строки на местах Rider, I
 | B-21 | 0.1.2 | Code Metrics | нет сценария | ⬜ |
 | B-22 | 0.1.7 | HTTPS dev-сертификат | нет сценария | ⬜ |
 | B-23 | 0.1.9 | Insert Development JWT | нет сценария | ⬜ |
+| E-150 | 0.1.79 | Run 2 Projects / Run compound: одна сборка `Web+Worker.slnf`, оба `dotnet run --no-build` | README «Запуск нескольких проектов и Compound», `Web` + `Worker` | 🤖 робот (Windows, 2026-10-05): одна сборка 2,3–2,7 с с чистого, оба `--no-build` — через compound, Run 2 Projects и Run группы в Services |
+| E-151 | 0.1.79 | Save as Compound Configuration: из уведомления, из ПКМ Solution view, из меню Run (запущенные) | там же | 🤖 робот: из уведомления (действие вызвано скриптом, не кликом); ПКМ и меню Run — только тестом |
+| E-152 | 0.1.79 | Wait for: listens / health URL / таймаут, ошибки «ждёт сам себя» и цикла | там же, `Worker` → `Web: http` | 🤖 робот: listens (ждал 1,7 с, первый раунд `Web answered`), таймаут 60 с с уведомлением; health URL и ошибки редактора — только тестом |
+| E-153 | 0.1.79 | Services: группа `Web + Worker`, Stop / Rerun группы, адрес у `Web` | там же | 🤖 робот: группа и адрес на снимке, `RunDashboard.Run` / `Stop` на узле группы запускают (одной сборкой) и останавливают оба |
+| E-154 | 0.1.79 | Debug compound: одна сборка, две сессии, `BP:worker-round`, `BP:lib`; падение сборки не запускает ничего | там же | 🤖 робот: одна сборка, две сессии, остановка на `BP:worker-round`; при ошибке компиляции ни одного процесса, уведомление «Build Failed» |
 
 #### B-01 Результаты по ходу
 1. `Tests/LiveResultsTests.cs`, ▶ у класса `LiveResultsTests` → Run (первый раз — окно «Preparing live test results», секунды).
@@ -1367,6 +1541,34 @@ Unit Test и Insert New GUID. ПКМ — строки на местах Rider, I
 2. ПКМ → **Insert Development JWT** → на строке `Authorization: Bearer …`. Удалить файл; `dotnet user-jwts list` в `Web` — токен там.
 
 ---
+
+#### E-150 Одна сборка на запуск нескольких проектов
+1. Открыть `debug-playground`, в Solution view выделить `Web` и `Worker` → ПКМ → **Run 2 Projects**.
+2. В окне Build — одна сборка `Build Web+Worker.slnf`, `Lib` в её выводе один раз; нет `MSB3026` / «being used by another process».
+3. В консолях `Web: http` и `Worker` командная строка с `--no-build`; `Worker` пишет `round N: … Web answered …`.
+4. То же для Run compound `Web + Worker` из тулбара. В .NET → Plugin Logs, категория `run`: `build before the launch of …: filter of DebugPlayground.sln with 2 projects`.
+
+#### E-151 Save as Compound Configuration
+1. После Run 2 Projects — уведомление «Started Web, Worker» со ссылкой **Save as Compound Configuration** → в тулбаре выбран `Web + Worker`.
+2. Run | Edit Configurations: Compound `Web + Worker` с обеими конфигурациями, они в папке `Web + Worker`. Повторный Run 2 Projects уведомления не даёт.
+3. Удалить compound, выделить `Web` и `Worker` → ПКМ → Save as Compound Configuration → то же.
+4. Запустить `Web: http` и `Worker` по отдельности, фокус в редакторе → Run | Save as Compound Configuration → compound из запущенных.
+
+#### E-152 Wait for
+1. `Worker` → Edit Configuration → Wait for = `Web: http`, «listens on its address» → Run compound: внизу «Waiting for 'Web: http' to listen on http://localhost:5187»,
+   `Worker` стартует после `Now listening on`, с первого раунда `Web answered`, нет `Web is not up yet`.
+2. «answers on the health URL», Health URL `/health` → то же.
+3. Wait timeout 5 и запуск только `Worker` → через 5 с уведомление «'Worker' Was Not Started», процесса нет.
+4. Wait for = `Worker` у самого `Worker` → ошибка в редакторе конфигурации; взаимное ожидание `Web: http` ↔ `Worker` → «wait for each other».
+
+#### E-153 Services
+1. При запущенном compound в Services строки `Web: http` и `Worker` в узле `Web + Worker` (группировка по папкам; если выключена — Group By → Folder).
+2. У `Web: http` ссылка `http://localhost:5187`. Stop на узле группы останавливает оба, Rerun — запускает оба снова одной сборкой.
+
+#### E-154 Debug compound и падение сборки
+1. Точки `BP:worker-round` (`Worker/Program.cs`) и `BP:lib` (`Lib/Pricing.cs`, сработает при запросе `/orders/N`) → Debug `Web + Worker`.
+2. Одна сборка `Build Web+Worker.slnf`, две сессии отладки, обе останавливаются.
+3. Испортить строку в `Worker/Program.cs` → Run compound: ошибка в Build, уведомление «Build Failed … none of … was started», ни одного процесса; Ctrl+Z.
 
 ## NuGet
 

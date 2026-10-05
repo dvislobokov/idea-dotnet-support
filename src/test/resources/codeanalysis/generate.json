@@ -1,0 +1,57 @@
+{
+ "project": "C:\\repo\\debug-playground\\Console\\Console.csproj",
+ "framework": "net9.0",
+ "files": [
+  {
+   "path": "C:\\cache\\generated\\Console-356acd77\\Microsoft.Extensions.Logging.Generators\\Microsoft.Extensions.Logging.Generators.LoggerMessageGenerator\\LoggerMessage.g.cs",
+   "generatorAssembly": "Microsoft.Extensions.Logging.Generators",
+   "generatorType": "Microsoft.Extensions.Logging.Generators.LoggerMessageGenerator",
+   "hintName": "LoggerMessage.g.cs"
+  },
+  {
+   "path": "C:\\cache\\generated\\Console-356acd77\\System.Text.Json.SourceGeneration\\System.Text.Json.SourceGeneration.JsonSourceGenerator\\PlaygroundJsonContext.GeneratedOrder.g.cs",
+   "generatorAssembly": "System.Text.Json.SourceGeneration",
+   "generatorType": "System.Text.Json.SourceGeneration.JsonSourceGenerator",
+   "hintName": "PlaygroundJsonContext.GeneratedOrder.g.cs"
+  },
+  {
+   "path": "C:\\cache\\generated\\Console-356acd77\\System.Text.Json.SourceGeneration\\System.Text.Json.SourceGeneration.JsonSourceGenerator\\PlaygroundJsonContext.Int32.g.cs",
+   "generatorAssembly": "System.Text.Json.SourceGeneration",
+   "generatorType": "System.Text.Json.SourceGeneration.JsonSourceGenerator",
+   "hintName": "PlaygroundJsonContext.Int32.g.cs"
+  },
+  {
+   "path": "C:\\cache\\generated\\Console-356acd77\\System.Text.Json.SourceGeneration\\System.Text.Json.SourceGeneration.JsonSourceGenerator\\PlaygroundJsonContext.String.g.cs",
+   "generatorAssembly": "System.Text.Json.SourceGeneration",
+   "generatorType": "System.Text.Json.SourceGeneration.JsonSourceGenerator",
+   "hintName": "PlaygroundJsonContext.String.g.cs"
+  },
+  {
+   "path": "C:\\cache\\generated\\Console-356acd77\\System.Text.Json.SourceGeneration\\System.Text.Json.SourceGeneration.JsonSourceGenerator\\PlaygroundJsonContext.g.cs",
+   "generatorAssembly": "System.Text.Json.SourceGeneration",
+   "generatorType": "System.Text.Json.SourceGeneration.JsonSourceGenerator",
+   "hintName": "PlaygroundJsonContext.g.cs"
+  },
+  {
+   "path": "C:\\cache\\generated\\Console-356acd77\\System.Text.Json.SourceGeneration\\System.Text.Json.SourceGeneration.JsonSourceGenerator\\PlaygroundJsonContext.GetJsonTypeInfo.g.cs",
+   "generatorAssembly": "System.Text.Json.SourceGeneration",
+   "generatorType": "System.Text.Json.SourceGeneration.JsonSourceGenerator",
+   "hintName": "PlaygroundJsonContext.GetJsonTypeInfo.g.cs"
+  },
+  {
+   "path": "C:\\cache\\generated\\Console-356acd77\\System.Text.Json.SourceGeneration\\System.Text.Json.SourceGeneration.JsonSourceGenerator\\PlaygroundJsonContext.PropertyNames.g.cs",
+   "generatorAssembly": "System.Text.Json.SourceGeneration",
+   "generatorType": "System.Text.Json.SourceGeneration.JsonSourceGenerator",
+   "hintName": "PlaygroundJsonContext.PropertyNames.g.cs"
+  },
+  {
+   "path": "C:\\cache\\generated\\Console-356acd77\\System.Text.RegularExpressions.Generator\\System.Text.RegularExpressions.Generator.RegexGenerator\\RegexGenerator.g.cs",
+   "generatorAssembly": "System.Text.RegularExpressions.Generator",
+   "generatorType": "System.Text.RegularExpressions.Generator.RegexGenerator",
+   "hintName": "RegexGenerator.g.cs"
+  }
+ ],
+ "errors": [],
+ "milliseconds": 4024,
+ "workingSet": 205959168
+}

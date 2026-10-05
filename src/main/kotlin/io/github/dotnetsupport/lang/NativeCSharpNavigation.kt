@@ -7,6 +7,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import io.github.dotnetsupport.csharp.lang.psi.CSharpAliasQualifiedName
 import io.github.dotnetsupport.csharp.lang.psi.CSharpConstructorDeclaration
+import io.github.dotnetsupport.csharp.lang.psi.CSharpMethodDeclaration
 import io.github.dotnetsupport.csharp.lang.psi.CSharpObjectCreationExpression
 import io.github.dotnetsupport.csharp.lang.psi.CSharpQualifiedName
 import io.github.dotnetsupport.csharp.lang.psi.CSharpSimpleName
@@ -35,10 +36,20 @@ object NativeCSharpNavigation {
      */
     fun targets(leaf: PsiElement): List<PsiElement>? {
         val file = leaf.containingFile as? CSharpFile ?: return null
-        NativeCSharpResolver(file).declarations(leaf)?.let { return constructorsOfCreated(leaf, it) }
+        NativeCSharpResolver(file).declarations(leaf)?.let { return constructorsOfCreated(leaf, overloadOf(file, leaf, it)) }
         if (DumbService.isDumb(file.project)) return null
         val symbols = CSharpSemanticSession(file.project).resolver(file).resolve(leaf)?.symbols ?: return null
         return symbols.flatMap { it.declarations }.distinct().ifEmpty { null }?.let { constructorsOfCreated(leaf, it) }
+    }
+
+    /**
+     * The scopes find every method of the name; overload resolution (task D1) picks the called one, as the compiler does. Kept as found when
+     * it cannot tell (several left, or what it picks is not among them).
+     */
+    private fun overloadOf(file: CSharpFile, leaf: PsiElement, found: List<PsiElement>): List<PsiElement> {
+        if (found.size < 2 || found.any { it !is CSharpMethodDeclaration } || DumbService.isDumb(file.project)) return found
+        val picked = CSharpSemanticSession(file.project).resolver(file).resolve(leaf)?.symbols?.flatMap { it.declarations }?.distinct() ?: return found
+        return picked.takeIf { it.isNotEmpty() && it.size < found.size && found.containsAll(it) } ?: found
     }
 
     /**

@@ -108,7 +108,7 @@ class DependenciesNode(project: Project, key: DependenciesKey, settings: ViewSet
     companion object {
         fun groups(project: Project, solutions: SolutionService, projectFile: VirtualFile, framework: String?, settings: ViewSettings?) =
             DependencyKind.entries
-                .filter { solutions.items(projectFile, it, framework).isNotEmpty() }
+                .filter { solutions.items(projectFile, it, framework).isNotEmpty() || it == DependencyKind.ANALYZERS && GeneratorNode.files(project, projectFile, framework).isNotEmpty() }
                 .map { DependencyGroupNode(project, DependencyGroupKey(projectFile, it, framework), settings) }
     }
 }
@@ -185,10 +185,16 @@ class FrameworkNode(project: Project, key: FrameworkKey, settings: ViewSettings?
 class DependencyGroupNode(project: Project, key: DependencyGroupKey, settings: ViewSettings?) :
     SolutionViewNode<DependencyGroupKey>(project, key, settings) {
 
-    override fun getChildren(): Collection<AbstractTreeNode<*>> =
-        solutions.items(value.projectFile, value.kind, value.framework)
+    override fun getChildren(): Collection<AbstractTreeNode<*>> {
+        val items: List<AbstractTreeNode<*>> = solutions.items(value.projectFile, value.kind, value.framework)
             .sortedBy { it.lowercase() }
             .map { DependencyNode(nodeProject, DependencyKey(value.projectFile, value.kind, it, value.framework), settings) }
+        if (value.kind != DependencyKind.ANALYZERS) return items
+        // the source generators that made files, as in Rider: generator assembly → generator → files
+        val generators = GeneratorNode.files(nodeProject, value.projectFile, value.framework).map { it.generatorAssembly }.distinct().sortedBy { it.lowercase() }
+            .map { GeneratorNode(nodeProject, GeneratorKey(value.projectFile, value.framework, it), settings) }
+        return generators + items
+    }
 
     override fun contains(file: VirtualFile): Boolean = false
     override fun getTypeSortWeight(sortByType: Boolean): Int = value.kind.ordinal
@@ -272,6 +278,37 @@ class DependencyNode(project: Project, key: DependencyKey, settings: ViewSetting
                     presentation.locationString = listOfNotNull(presentation.locationString, "not restored").joinToString(", ")
                 }
             }
+        }
+    }
+}
+
+/** A generator assembly ([type] null) or one generator of it, under Analyzers: the files it made for the project (D4), read-only. */
+data class GeneratorKey(val projectFile: VirtualFile, val framework: String?, val assembly: String, val type: String? = null)
+
+class GeneratorNode(project: Project, key: GeneratorKey, settings: ViewSettings?) : SolutionViewNode<GeneratorKey>(project, key, settings) {
+    override fun getChildren(): Collection<AbstractTreeNode<*>> {
+        val files = files(nodeProject, value.projectFile, value.framework).filter { it.generatorAssembly == value.assembly }
+        if (value.type == null) return files.map { it.generatorType }.distinct().sortedBy { it.lowercase() }.map { GeneratorNode(nodeProject, value.copy(type = it), settings) }
+        val manager = com.intellij.psi.PsiManager.getInstance(nodeProject)
+        return files.filter { it.generatorType == value.type }.sortedBy { it.hintName.lowercase() }.mapNotNull { file ->
+            LocalFileSystem.getInstance().findFileByPath(file.path)?.let(manager::findFile)?.let { com.intellij.ide.projectView.impl.nodes.PsiFileNode(nodeProject, it, settings) }
+        }
+    }
+
+    override fun contains(file: VirtualFile): Boolean = files(nodeProject, value.projectFile, value.framework).any { it.path.equals(file.path, ignoreCase = true) }
+
+    override fun update(presentation: PresentationData) {
+        presentation.setIcon(AllIcons.Actions.Lightning)
+        presentation.presentableText = value.type?.substringAfterLast('.') ?: value.assembly
+        value.type?.let { presentation.locationString = it.substringBeforeLast('.', "") }
+    }
+
+    companion object {
+        /** The files the generators of [projectFile] made, when they ran for [framework] (or the project has one framework). */
+        fun files(project: Project, projectFile: VirtualFile, framework: String?): List<io.github.dotnetsupport.codeanalysis.GeneratedFile> {
+            val state = project.getServiceIfCreated(io.github.dotnetsupport.codeanalysis.CodeAnalysisService::class.java)?.generatedState(projectFile) ?: return emptyList()
+            val ran = state.run.framework
+            return if (framework == null || ran == null || ran.equals(framework, ignoreCase = true)) state.run.files else emptyList()
         }
     }
 }

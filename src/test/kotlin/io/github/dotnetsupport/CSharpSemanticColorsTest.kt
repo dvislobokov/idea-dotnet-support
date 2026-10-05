@@ -34,6 +34,7 @@ class CSharpSemanticColorsTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             settings.state.features = mutableMapOf()
+            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -320,6 +321,7 @@ class CSharpSemanticColorsTest : BasePlatformTestCase() {
 
     /** NATIVE: the native annotator colors and the heuristics step aside; ROSLYN: the heuristics color with the coarse keys, as before. */
     fun testTheSwitchChoosesTheAnnotator() {
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         myFixture.configureByText("SemSwitch.cs", "class SemSwitch { static void Main() { int n = 1; n++; } }")
         fun highlighted() = myFixture.doHighlighting().mapNotNull { info -> info.forcedTextAttributesKey?.let { "${info.text}:${short(it)}" } }
         assertEquals(listOf("SemSwitch:CLASS", "Main:STATIC_METHOD_DECLARATION", "n:MUTABLE_LOCAL_VARIABLE", "n:MUTABLE_LOCAL_VARIABLE"), highlighted())

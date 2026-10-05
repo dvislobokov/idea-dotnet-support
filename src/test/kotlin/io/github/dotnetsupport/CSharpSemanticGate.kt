@@ -43,6 +43,7 @@ class CSharpSemanticGate : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
+            io.github.dotnetsupport.lang.semantic.CSharpWarningContext.setNullableForTests(null, set = false)
         } catch (e: Throwable) {
             addSuppressedException(e)
         } finally {
@@ -63,8 +64,10 @@ class CSharpSemanticGate : BasePlatformTestCase() {
         val inputs = ArrayList<Input>()
         val playground = File(repo, "debug-playground")
         for (project in (option("projects") ?: "Console/Console.csproj,Web/Web.csproj").split(',').map { it.trim() }.filter { it.isNotEmpty() && it != "none" }) {
-            val file = File(playground, project)
-            if (file.isFile) inputs += Input("playground-" + file.nameWithoutExtension, listOf(file.path, "--root", playground.path))
+            // an absolute path: a project of its own (the probe of the semantic errors, task C4c), its directory the root
+            val absolute = File(project).isAbsolute
+            val file = if (absolute) File(project) else File(playground, project)
+            if (file.isFile) inputs += Input((if (absolute) "project-" else "playground-") + file.nameWithoutExtension, listOf(file.path, "--root", if (absolute) file.parent else playground.path))
             else println("semantic gate: no project $file")
         }
         val libraries = File(corpus ?: File("-"), "runtime/src/libraries")
@@ -121,6 +124,7 @@ class CSharpSemanticGate : BasePlatformTestCase() {
                 files[source.path] = file
             }
             val manager = PsiManager.getInstance(project)
+            io.github.dotnetsupport.lang.semantic.CSharpWarningContext.setNullableForTests(dump.header.nullable)
             // the files of the input do not change while they are compared: one session of the resolver for all of them
             val model = if (option("model") == "syntactic") SyntacticSemanticModel else ResolvingSemanticModel(project)
             for (record in dump.files) {

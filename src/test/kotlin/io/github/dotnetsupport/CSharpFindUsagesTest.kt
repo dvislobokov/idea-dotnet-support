@@ -38,6 +38,7 @@ class CSharpFindUsagesTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
+            RoslynLanguageServerSettings.getInstance().state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
         } catch (e: Throwable) {
             addSuppressedException(e)
         } finally {
@@ -233,6 +234,7 @@ class CSharpFindUsagesTest : BasePlatformTestCase() {
         val range = file.text.indexOf("a,").let { TextRange(it, it + 1) }
         assertNotNull("the native tree by default", (file as io.github.dotnetsupport.lang.CSharpFile).compilationUnit)
         assertEquals("NATIVE by default (0.1.46): the tree", WRITE, CSharpUsages.analysis(file).kindOf(range))
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         settings.setSource(CSharpFeature.USAGE_KINDS, CSharpFeatureSource.ROSLYN)
         try {
             assertEquals("ROSLYN: the tokens, at once", READ, CSharpUsages.analysis(file).kindOf(range))
@@ -240,7 +242,7 @@ class CSharpFindUsagesTest : BasePlatformTestCase() {
             try {
                 assertEquals("no server: the built-in one", WRITE, CSharpUsages.analysis(file).kindOf(range))
             } finally {
-                settings.state.enabled = true
+                settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             }
         } finally {
             settings.setSource(CSharpFeature.USAGE_KINDS, CSharpFeatureSource.NATIVE)

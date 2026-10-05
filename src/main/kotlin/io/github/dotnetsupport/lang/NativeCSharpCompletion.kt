@@ -558,7 +558,7 @@ object NativeCSharpTypeNames {
         val project = file.project
         val index = StubIndex.getInstance()
         val keys = index.getAllKeys(CSharpStubIndexKeys.TYPE_NAMES, project).filter { matcher == null || matcher.prefixMatches(it) }.take(MAX_NAMES)
-        val scope = GlobalSearchScope.projectScope(project)
+        val scope = io.github.dotnetsupport.codeanalysis.CSharpSourceScope.of(project)
         for (key in keys) {
             index.processElements(CSharpStubIndexKeys.TYPE_NAMES, key, project, scope, CSharpElement::class.java) { element ->
                 val stub = (element as? CSharpStubElementImpl)?.greenStub

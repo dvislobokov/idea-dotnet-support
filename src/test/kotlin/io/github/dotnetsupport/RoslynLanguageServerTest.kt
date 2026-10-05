@@ -103,7 +103,7 @@ class RoslynLanguageServerTest : BasePlatformTestCase() {
             val boxes = UIUtil.findComponentsOfType(component, JCheckBox::class.java)
             // the toggles of the catalog, "Use the language server for C#" and "Find and load the projects"
             assertEquals(RoslynOptions.ALL.count { it.isToggle } + 2, boxes.size)
-            assertTrue(boxes.first { it.text == "Use the language server for C#" }.isSelected)
+            assertEquals(RoslynLanguageServerSettings.ENABLED_BY_DEFAULT, boxes.first { it.text == "Use the language server for C#" }.isSelected)
             assertTrue(boxes.all { it.isEnabled })
             assertTrue(boxes.first { it.text == "References" }.isSelected)
             // on by default (2026-09-22)

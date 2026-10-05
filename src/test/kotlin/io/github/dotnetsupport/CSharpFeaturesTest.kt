@@ -22,7 +22,7 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             settings.state.features = mutableMapOf()
-            settings.state.enabled = true
+            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             DotNetBundle.forced = null
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -48,6 +48,8 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
         assertEquals("the syntax errors are native after the robot (0.1.56)", CSharpFeatureSource.NATIVE, CSharpFeature.DIAGNOSTICS.defaultSource)
         assertEquals("rename is native after the robot (0.1.56)", CSharpFeatureSource.NATIVE, CSharpFeature.RENAME.defaultSource)
         assertEquals("completion is native after the robot (0.1.60)", CSharpFeatureSource.NATIVE, CSharpFeature.COMPLETION.defaultSource)
+        assertEquals("the documentation is native after the robot (0.1.72)", CSharpFeatureSource.NATIVE, CSharpFeature.DOCUMENTATION.defaultSource)
+        assertEquals("the context actions are native after the robot (0.1.72)", CSharpFeatureSource.NATIVE, CSharpFeature.CONTEXT_ACTIONS.defaultSource)
         assertTrue("completion reads the types of the solution from the stubs", CSharpFeature.COMPLETION.needsIndexes)
         assertFalse("the syntax errors read the file alone", CSharpFeature.DIAGNOSTICS.needsIndexes)
         assertTrue("the colors read the stubs of the solution", CSharpFeature.SEMANTIC_COLORS.needsIndexes)
@@ -60,8 +62,8 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
         assertEquals("the formatter matched the server on the playground (robot, 0.1.49)", CSharpFeatureSource.NATIVE, CSharpFeature.FORMATTING.defaultSource)
         assertFalse("the formatter reads the file's own tree", CSharpFeature.FORMATTING.needsIndexes)
         for (feature in CSharpFeature.entries) {
-            // every offered feature since 0.1.60 (navigation, completion and the colors after the robot); documentation (0.1.66) and the context actions (0.1.64) wait for the robot
-            val native = feature != CSharpFeature.DOCUMENTATION && feature != CSharpFeature.CONTEXT_ACTIONS
+            // every offered feature: since 0.1.60 navigation, completion and the colors, since 0.1.72 the documentation and the context actions (robot)
+            val native = true
             assertEquals(feature.name, if (native) CSharpFeatureSource.NATIVE else CSharpFeatureSource.ROSLYN, settings.source(feature))
             assertEquals(feature.name, native, CSharpFeatures.native(feature, project))
             assertEquals(feature.name, !native, RoslynFeatures.serves(feature, project))
@@ -79,6 +81,7 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
 
     /** The tree of C# files: application settings only, the rule of [CSharpFeatures.native] with the server off included. */
     fun testTheSyntaxTreeSwitch() {
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         assertTrue("the native tree by default", CSharpSyntaxTrees.nativeTree())
         assertEquals(true, CSharpSyntaxTrees.lastAnswer)
         assertEquals("the project-level answer is the same", true, CSharpFeatures.native(CSharpFeature.SYNTAX_TREE, project))
@@ -117,7 +120,7 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
         loaded.loadState(XmlSerializer.deserialize(stored, RoslynLanguageServerSettings.Settings::class.java))
         assertEquals(CSharpFeatureSource.ROSLYN, loaded.source(CSharpFeature.SEMANTIC_COLORS))
         assertEquals(CSharpFeatureSource.NATIVE, loaded.source(CSharpFeature.COMPLETION))
-        assertEquals(CSharpFeatureSource.ROSLYN, loaded.source(CSharpFeature.DOCUMENTATION))
+        assertEquals(CSharpFeatureSource.NATIVE, loaded.source(CSharpFeature.DOCUMENTATION))
 
         settings.setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.NATIVE)
         assertEquals("the default is not written", emptyMap<String, String>(), settings.state.features.toMap())
@@ -128,6 +131,7 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
 
     /** The module of the server reads the switch per request: rename of the server stands down once the feature is native. */
     fun testTheServerStandsDownForANativeFeature() {
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         CSharpFeatures.implementForTests(setOf(CSharpFeature.RENAME), testRootDisposable)
         val file = myFixture.addFileToProject("CSharpFeatures/Program.cs", "class Program { }")
         val rename = RoslynClientDescriptor(project, file.virtualFile.parent, java.io.File("/tools/roslyn-language-server")).lspCustomization.renameCustomizer as LspRenameSupport
@@ -151,6 +155,18 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
         assertFalse("no server: the native one", RoslynFeatures.serves(CSharpFeature.RENAME, project))
     }
 
+    /** The platform shows every provider's documentation as pages of one popup: the server's hover is off while Built-in answers (robot, E-83). */
+    fun testTheServersHoverFollowsTheDocumentationSwitch() {
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
+        val file = myFixture.addFileToProject("CSharpFeatures/Hover.cs", "class Hover { }")
+        val customization = RoslynClientDescriptor(project, file.virtualFile.parent, java.io.File("/tools/roslyn-language-server")).lspCustomization
+        assertSame(com.intellij.platform.lsp.api.customization.LspHoverDisabled, customization.hoverCustomizer)
+        settings.setSource(CSharpFeature.DOCUMENTATION, CSharpFeatureSource.ROSLYN)
+        assertTrue(customization.hoverCustomizer is com.intellij.platform.lsp.api.customization.LspHoverSupport)
+        settings.setSource(CSharpFeature.DOCUMENTATION, CSharpFeatureSource.NATIVE)
+        assertSame("read per request", com.intellij.platform.lsp.api.customization.LspHoverDisabled, customization.hoverCustomizer)
+    }
+
     /** Settings | .NET | Language Server: a switch per feature that has a native implementation: the tree, the formatting, the typing assistance, the kinds of usages. */
     fun testThePageOffersTheImplementedFeaturesOnly() {
         fun labels(page: RoslynLanguageServerConfigurable) = UIUtil.findComponentsOfType(page.createComponent()!!.also { page.reset() }, JLabel::class.java).map { it.text }
@@ -168,7 +184,7 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
         assertTrue(labels(today).contains("Completion:"))
         assertTrue(labels(today).contains("Documentation and parameter info:"))
         assertEquals(
-            "every offered feature at its default: native since the robot of 0.1.60, the documentation (0.1.66) and the context actions (0.1.64) on the server until their robot",
+            "every offered feature at its default: native since the robot of 0.1.60, the documentation and the context actions since 0.1.72",
             CSharpFeatures.offered().map { it.defaultSource },
             sources(today).map { it.selectedItem },
         )
@@ -178,11 +194,11 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
         val page = RoslynLanguageServerConfigurable(project)
         assertTrue(labels(page).contains("Documentation and parameter info:"))
         val box = sources(page).single()
-        assertEquals(CSharpFeatureSource.ROSLYN, box.selectedItem)
-        box.selectedItem = CSharpFeatureSource.NATIVE
+        assertEquals(CSharpFeatureSource.NATIVE, box.selectedItem)
+        box.selectedItem = CSharpFeatureSource.ROSLYN
         assertTrue(page.isModified)
         page.apply()
-        assertEquals(CSharpFeatureSource.NATIVE, settings.source(CSharpFeature.DOCUMENTATION))
+        assertEquals(CSharpFeatureSource.ROSLYN, settings.source(CSharpFeature.DOCUMENTATION))
         page.disposeUIResources()
 
         DotNetBundle.forced = PluginLanguage.RUSSIAN

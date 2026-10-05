@@ -206,7 +206,7 @@ class CSharpSemanticSession @JvmOverloads constructor(val project: Project, priv
         if (name in library) return true
         return sourceNamespaces.getOrPut(name) {
             var found = false
-            StubIndex.getInstance().processElements(CSharpStubIndexKeys.NAMESPACES, name, project, GlobalSearchScope.projectScope(project), CSharpElement::class.java) {
+            StubIndex.getInstance().processElements(CSharpStubIndexKeys.NAMESPACES, name, project, io.github.dotnetsupport.codeanalysis.CSharpSourceScope.of(project), CSharpElement::class.java) {
                 found = true
                 false
             }
@@ -219,7 +219,7 @@ class CSharpSemanticSession @JvmOverloads constructor(val project: Project, priv
     /** The extension methods of the solution named [name] (stub index), remembered for the session. */
     fun sourceExtensions(name: String): List<CSharpElement> = sourceExtensions.getOrPut(name) {
         val found = ArrayList<CSharpElement>()
-        StubIndex.getInstance().processElements(CSharpStubIndexKeys.EXTENSION_METHODS, name, project, GlobalSearchScope.projectScope(project), CSharpElement::class.java) {
+        StubIndex.getInstance().processElements(CSharpStubIndexKeys.EXTENSION_METHODS, name, project, io.github.dotnetsupport.codeanalysis.CSharpSourceScope.of(project), CSharpElement::class.java) {
             found += it
             true
         }

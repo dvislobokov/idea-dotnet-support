@@ -1,11 +1,13 @@
 package io.github.dotnetsupport.run
 
+import com.intellij.execution.RunManager
 import com.intellij.execution.configuration.EnvironmentVariablesComponent
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.SettingsEditor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
+import com.intellij.ui.JBIntSpinner
 import com.intellij.ui.RawCommandLineEditor
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBTextField
@@ -28,6 +30,10 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
     private val openBrowser = JBCheckBox("Open browser when the application starts listening")
     private val testFilter = JBTextField()
     private val collectCoverage = JBCheckBox("Collect coverage (coverlet)")
+    private val waitForCombo = ComboBox<String>().apply { isEditable = true }
+    private val waitConditionCombo = ComboBox(LaunchWaitCondition.entries.toTypedArray())
+    private val waitHealthUrl = JBTextField()
+    private val waitTimeout = JBIntSpinner(LaunchWaits.DEFAULT_TIMEOUT_SECONDS, 1, 3600)
 
     override fun createEditor(): JComponent {
         projectCombo.model = DefaultComboBoxModel(solutionProjectPaths().toTypedArray())
@@ -60,6 +66,16 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
             }
             row { cell(collectCoverage).comment("For <code>dotnet test</code>: needs the <code>coverlet.collector</code> package in the test project") }
             row { cell(openBrowser).comment("For <code>dotnet run</code>: the first \"Now listening on\" address plus <code>launchUrl</code> of the profile") }
+            row("Wait for:") {
+                cell(waitForCombo).align(AlignX.FILL).resizableColumn()
+                    .comment("Start after another run configuration, e.g. a worker after the service it calls (as <code>WaitFor</code> of .NET Aspire); empty: at once")
+                cell(waitConditionCombo)
+            }
+            row("Health URL:") {
+                cell(waitHealthUrl).align(AlignX.FILL)
+                    .comment("For \"answers on the health URL\": <code>/health</code> on the address of that configuration, or a full URL; a 2xx answer means ready")
+            }
+            row("Wait timeout:") { cell(waitTimeout).gap(com.intellij.ui.dsl.builder.RightGap.SMALL); label("s, then the launch is cancelled") }
         }
     }
 
@@ -76,6 +92,11 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
         openBrowser.isSelected = options.openBrowser
         testFilter.text = options.testFilter.orEmpty()
         collectCoverage.isSelected = options.collectCoverage
+        waitForCombo.model = DefaultComboBoxModel((listOf("") + otherConfigurations(configuration)).toTypedArray())
+        waitForCombo.editor.item = options.waitFor.orEmpty()
+        waitConditionCombo.selectedItem = options.waitCondition
+        waitHealthUrl.text = options.waitHealthUrl.orEmpty()
+        waitTimeout.number = options.waitTimeoutSeconds.takeIf { it > 0 } ?: LaunchWaits.DEFAULT_TIMEOUT_SECONDS
     }
 
     override fun applyEditorTo(configuration: DotNetRunConfiguration) {
@@ -91,7 +112,16 @@ class DotNetSettingsEditor(private val project: Project) : SettingsEditor<DotNet
         options.openBrowser = openBrowser.isSelected
         options.testFilter = testFilter.text.trim().ifEmpty { null }
         options.collectCoverage = collectCoverage.isSelected
+        options.waitFor = (waitForCombo.editor.item as? String).orEmpty().trim().ifEmpty { null }
+        options.waitCondition = waitConditionCombo.selectedItem as LaunchWaitCondition
+        options.waitHealthUrl = waitHealthUrl.text.trim().ifEmpty { null }
+        options.waitTimeoutSeconds = waitTimeout.number
     }
+
+    /** The run configurations this one can wait for: the others of the project, .NET ones first. */
+    private fun otherConfigurations(configuration: DotNetRunConfiguration): List<String> =
+        RunManager.getInstance(project).allSettings.filter { it.configuration !== configuration && it.name != configuration.name }
+            .sortedBy { if (it.configuration is DotNetRunConfiguration) 0 else 1 }.map { it.name }.distinct()
 
     private fun selectedProjectPath(): String = (projectCombo.editor.item as? String).orEmpty().trim()
     private fun selectedProfile(): String = (profileCombo.editor.item as? String).orEmpty().trim()

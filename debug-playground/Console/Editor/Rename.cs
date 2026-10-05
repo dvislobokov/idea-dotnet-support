@@ -69,8 +69,8 @@ public class RenameScenarios(string owner)
     }
 
     // TYPE:rename-primary-member — Shift+F6 on `owner` in `Describe` → `customer`: the primary constructor parameter at the top of the
-    // class and `<param name="customer">` above it. Then Shift+F6 on `Limit` in `Limit * discount` (a property). EXPECT with the server
-    // ready: the server renames it (all its uses, other files too); without it: a hint «... renamed by the C# language server, which is not
-    // ready», nothing changes
+    // class and `<param name="customer">` above it. Then Shift+F6 on `Limit` in `Limit * discount` (a property) → `Cap`. EXPECT (since
+    // 0.1.73, with or without the server): the built-in rename renames the property, `Cap * discount` and `{Cap}` in Describe; members across
+    // files — SolutionUsages.cs
     public string Describe() => $"{owner}: {Limit}";
 }

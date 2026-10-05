@@ -7,5 +7,7 @@
   <ItemGroup>
     <!-- broken on purpose for the editor (TYPE:diag-*), not for the build: the Debug scenario of Broken shows only Program.cs -->
     <Compile Remove="SyntaxErrors.cs" />
+    <Compile Remove="SemanticErrors.cs" />
+    <Compile Remove="SemanticErrors2.cs" />
   </ItemGroup>
 </Project>

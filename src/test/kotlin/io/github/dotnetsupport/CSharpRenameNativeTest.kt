@@ -20,7 +20,7 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * RENAME on the native tree (CSHARP_PSI_MIGRATION.md, step 9, task A5): Shift+F6 of locals, parameters, local functions, labels, range
- * variables and type parameters by the one resolver, conflicts, `@` before keywords, members left to the server (a hint without it).
+ * variables and type parameters by the one resolver, conflicts, `@` before keywords; members and types across the solution (C4b).
  */
 class CSharpRenameNativeTest : BasePlatformTestCase() {
     private val settings get() = RoslynLanguageServerSettings.getInstance()
@@ -35,7 +35,7 @@ class CSharpRenameNativeTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             settings.state.features = mutableMapOf()
-            settings.state.enabled = true
+            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -294,15 +294,15 @@ class CSharpRenameNativeTest : BasePlatformTestCase() {
 
     // ---- what is not local
 
-    fun testMembersAndTypesGoToTheServerOrGetAHint() {
-        val member = refusal("class R { int <caret>Total; int Get() => Total; }")
-        assertTrue(member, member.contains("language server"))
-        val type = refusal("class <caret>R { }")
-        assertTrue(type, type.contains("language server"))
+    fun testMembersAndTypesAreRenamedAcrossTheSolution() {
+        // the rename of the solution (C4b, CSharpSolutionRenameTest has the rest)
+        check("class R { int <caret>Total; int Get() => Total; }", "Sum", "class R { int Sum; int Get() => Sum; }")
+        check("class <caret>R { R() { } static R Make() => new R(); }", "Q", "class Q { Q() { } static Q Make() => new Q(); }")
         assertFalse("NATIVE: one handler, the native one", NativeCSharpRename.serverRenames(myFixture.file))
     }
 
     fun testRoslynLeavesShiftF6ToTheServer() {
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         settings.setSource(CSharpFeature.RENAME, CSharpFeatureSource.ROSLYN)
         myFixture.configureByText("RenameRoslyn.cs", "class R { void M() { var <caret>x = 1; } }")
         val handler = RenameHandlerRegistry.getInstance().getRenameHandler((myFixture.editor as com.intellij.openapi.editor.ex.EditorEx).dataContext)
@@ -378,12 +378,7 @@ class CSharpRenameNativeTest : BasePlatformTestCase() {
             e.messages.toList()
         }
         assertTrue(conflict.toString(), conflict.isNotEmpty())
-        val hint = try {
-            at("Limit =>", "Cap")
-            ""
-        } catch (e: CommonRefactoringUtil.RefactoringErrorHintException) {
-            e.message!!
-        }
-        assertTrue(hint, hint.contains("language server"))
+        // a member: the rename across the solution (C4b)
+        at("Limit * discount", "Cap", "public decimal Cap => 100m;", "=> Cap * discount;", "{Cap}")
     }
 }

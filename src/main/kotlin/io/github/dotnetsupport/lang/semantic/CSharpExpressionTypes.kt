@@ -226,7 +226,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
      * (`List<Order>` for `IEnumerable<TSource>`); then each lambda, its parameters typed by what is fixed so far, fixes the rest by the type of
      * its body (`Select(o => o.Name)`). While a lambda's body is typed, the arguments fixed so far are what its parameters see.
      */
-    fun typeArguments(symbol: CSharpSymbol, call: CSharpInvocationExpression, callee: CSharpSimpleName): List<SemanticType?> {
+    fun typeArguments(symbol: CSharpSymbol, call: CSharpInvocationExpression, callee: CSharpSimpleName, withLambdas: Boolean = true): List<SemanticType?> {
         val arity = methodArity(symbol)
         if (arity == 0) return emptyList()
         (callee as? CSharpGenericName)?.typeArgumentList?.arguments?.takeIf { it.size == arity }?.let { written -> return written.map(r::resolveType) }
@@ -235,6 +235,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         inferring[key]?.let { return it.toList() }
         val fixed = arrayOfNulls<SemanticType>(arity)
         inferring[key] = fixed
+        val cycles = r.cycleCount
         try {
             val reduced = isReduced(symbol, callee)
             val parameters = r.signature(symbol, false) ?: return fixed.toList()
@@ -253,13 +254,15 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
                 unify(type, argumentType, fixed, owner)
             }
             for ((lambda, parameter) in lambdas) {
+                if (!withLambdas) break
                 val delegate = parameter.type()?.let(::unwrapExpression) ?: continue
                 val returns = delegateSignature(delegate)?.second ?: continue
                 if (!mentionsUnfixed(returns, fixed)) continue
                 val body = lambdaReturnType(lambda) ?: continue
                 unify(returns, body, fixed, owner)
             }
-            return fixed.toList().also { inferred[key] = it }
+            // an answer that met a question in progress (a lambda typed while its call is being resolved) is not kept
+            return fixed.toList().also { if (withLambdas && r.cycleCount == cycles) inferred[key] = it }
         } finally {
             inferring.remove(key)
         }
@@ -302,7 +305,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         }
     }
 
-    private fun sourceInstanceOf(type: SemanticType, key: String, depth: Int): SemanticType.Source? {
+    internal fun sourceInstanceOf(type: SemanticType, key: String, depth: Int): SemanticType.Source? {
         if (type !is SemanticType.Source || depth > 16) return null
         if (type.info.key == key) return type
         return r.baseTypes(type).firstNotNullOfOrNull { sourceInstanceOf(it, key, depth + 1) }
@@ -364,6 +367,12 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         val delegate = unwrapExpression(parameterType)?.let(::delegateSignature) ?: return true
         val count = lambdaParameterCount(lambda)
         if (count != null && delegate.first.size != count) return false
+        // explicitly typed parameters take only a delegate with exactly those types (§10.7.1): `(int id) => …` is no `RequestDelegate`
+        val written = (lambda as? CSharpParenthesizedLambdaExpression)?.parameterList?.parameters ?: (lambda as? CSharpAnonymousMethodExpression)?.parameterList?.parameters
+        if (written != null) for ((p, expected) in written.zip(delegate.first)) {
+            val type = p.type?.let(r::resolveType) ?: continue
+            if (expected != null && r.overloads.same(type, expected) == false && !mentionsMethodParameter(expected)) return false
+        }
         val returns = delegate.second ?: return true
         val void = r.definitionName(returns) == "System.Void"
         val body = lambda.expressionBody
@@ -501,12 +510,12 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         return null
     }
 
-    private fun isAsync(modifiers: List<PsiElement>): Boolean = modifiers.any { it.text == "async" }
+    internal fun isAsync(modifiers: List<PsiElement>): Boolean = modifiers.any { it.text == "async" }
 
     private fun awaitedOrNull(type: SemanticType): SemanticType? = (type as? SemanticType.Library)?.takeIf { it.type.fullName in TASKS_OF_T }?.arguments?.firstOrNull()
 
     /** `Expression<Func<T>>` converts a lambda as its delegate does. */
-    private fun unwrapExpression(type: SemanticType): SemanticType? =
+    internal fun unwrapExpression(type: SemanticType): SemanticType? =
         if (type is SemanticType.Library && type.type.fullName == "System.Linq.Expressions.Expression`1") type.arguments.firstOrNull() else type
 
     /** The parameter types and the return type of a delegate type (its `Invoke`), substituted. */
@@ -729,6 +738,8 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
                 other?.takeIf { !isTargetTyped(it) }?.let(r::typeOf) ?: target(parent)
             } else null
             is CSharpBinaryExpression -> if (parent.operatorToken?.text == "??" && parent.right == at) parent.left?.let(r::typeOf)?.let(r::unwrapNullable) else null
+            // `[new() { … }]`: an element of a collection expression converts to the element type of the collection's target
+            is CSharpExpressionElement -> (parent.parent as? CSharpCollectionExpression)?.let(::target)?.let(r::elementType)
             else -> null
         }
     }

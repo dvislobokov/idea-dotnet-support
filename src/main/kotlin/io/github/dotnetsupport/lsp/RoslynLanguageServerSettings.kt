@@ -27,8 +27,11 @@ enum class SourceGeneratorExecution { Automatic, Balanced }
 @State(name = "DotNetRoslynLanguageServer", storages = [Storage("dotnet-support.xml")])
 class RoslynLanguageServerSettings : SimplePersistentStateComponent<RoslynLanguageServerSettings.Settings>(Settings()) {
     class Settings : BaseState() {
-        /** Off: the server is never started, C# stays on the heuristics of the plugin. */
-        var enabled by property(true)
+        /**
+         * Off: the server is never started, every feature with a native implementation answers by the plugin's own C# (milestone 12.1 of
+         * CSHARP_PSI_MIGRATION.md). Off by default since 0.1.76 (user decision 2026-10-05); the checkbox turns the server back on.
+         */
+        var enabled by property(ENABLED_BY_DEFAULT)
         var logLevel by enum(RoslynLogLevel.Information)
 
         /** Empty: a folder next to the logs of the IDE. */
@@ -75,6 +78,9 @@ class RoslynLanguageServerSettings : SimplePersistentStateComponent<RoslynLangua
     }
 
     companion object {
+        /** Whether the server starts until the user chooses: off since 0.1.76, tests restore it after switching. */
+        const val ENABLED_BY_DEFAULT = false
+
         /** The bridge to the client of the server: it lives in a content module the rest of the plugin must not refer to. */
         @JvmField
         val CHANGED: Topic<Listener> = Topic.create("DotNetRoslynLanguageServerSettings", Listener::class.java)

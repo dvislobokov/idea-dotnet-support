@@ -142,6 +142,7 @@ class SettingsPagesTest : BasePlatformTestCase() {
         val pages = mapOf(
             "nuget" to build(NuGetSettingsConfigurable()), "build" to build(DotNetBuildConfigurable(project)),
             "debugger" to build(DotNetDebuggerConfigurable(project)), "coverage" to build(CoverageSettingsConfigurable()),
+            "codeAnalysis" to build(io.github.dotnetsupport.codeanalysis.CodeAnalysisConfigurable(project)),
         )
         assertEquals(
             listOf("Include prerelease", "Automatically restore missing packages when necessary", "Smart Restore on Build", "Do not use the HTTP cache", "Allow interactive authentication"),
@@ -152,6 +153,7 @@ class SettingsPagesTest : BasePlatformTestCase() {
         // off, unlike in Rider: there is no decompiler, see DotNetSettings
         assertFalse(pages.getValue("debugger").checkBoxes().first { it.text == "Enable external source debug" }.isSelected)
         assertEquals(listOf("Activate Coverage View", "Show coverage in the project view"), pages.getValue("coverage").checkBoxes().map { it.text })
+        assertEquals(listOf("Run source generators", "Run analyzers in the background on save", "Show suggestions"), pages.getValue("codeAnalysis").checkBoxes().map { it.text })
 
         for ((name, page) in pages) {
             val disabled = UIUtil.findComponentsOfType(page, JComponent::class.java)
@@ -160,7 +162,7 @@ class SettingsPagesTest : BasePlatformTestCase() {
         }
 
         val pluginXml = javaClass.getResource("/META-INF/plugin.xml")!!.readText()
-        for (page in listOf("build", "nuget", "coverage", "debugger")) {
+        for (page in listOf("build", "nuget", "coverage", "debugger", "codeAnalysis")) {
             assertTrue(page, "parentId=\"io.github.dotnetsupport.settings\" id=\"io.github.dotnetsupport.settings.$page\"" in pluginXml)
         }
     }

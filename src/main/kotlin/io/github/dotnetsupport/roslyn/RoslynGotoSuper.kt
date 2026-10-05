@@ -22,8 +22,7 @@ import org.eclipse.lsp4j.SymbolKind
  * Go to Super (Ctrl+U) in C#. On a type: its base class and interfaces from the server's type hierarchy. On a member (method, property,
  * event, indexer — its declaration, or its body where the caret is not on a type): the members of the same name in the supertypes, all the
  * way up (see [RoslynBaseMembers]). One — a jump, several — a list. Derived symbols are Go to Implementation.
- * Whatever the switch of NAVIGATION: the native part of it is syntactic (`NativeCSharpNavigation`) and has no supertypes until step 11c,
- * so NATIVE must not cost Ctrl+U.
+ * With NAVIGATION Built-in the native handler (`NativeCSharpGotoSuperHandler`, first) answers and calls this one only for ROSLYN.
  */
 class RoslynGotoSuperHandler : LanguageCodeInsightActionHandler {
     override fun startInWriteAction(): Boolean = false

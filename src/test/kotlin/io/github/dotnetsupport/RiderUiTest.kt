@@ -64,7 +64,7 @@ class RiderUiTest : BasePlatformTestCase() {
         val parent = pages.single { it.id == "io.github.dotnetsupport.settings" }
         assertEquals("root", parent.parentId)
         assertEquals(
-            setOf("settings.build", "settings.nuget", "settings.coverage", "settings.debugger", "settings.languageServer"),
+            setOf("settings.build", "settings.nuget", "settings.coverage", "settings.debugger", "settings.codeAnalysis", "settings.languageServer"),
             pages.filter { it.parentId == "io.github.dotnetsupport.settings" }.map { it.id.removePrefix("io.github.dotnetsupport.") }.toSet(),
         )
         // the tree the Settings dialog builds: .NET among the top-level nodes, not under Tools
@@ -160,6 +160,8 @@ class RiderUiTest : BasePlatformTestCase() {
 
         val group = CSharpRiderPopups.refactorGroup(emptyList()).childActionsOrStubs.filterIsInstance<RiderNamedAction>().map { actions.getId(it.delegate) }
         assertEquals("Rider's first four", listOf("RenameElement", "ChangeSignature", "Inline", "SafeDelete"), group.take(4))
+        val extract = CSharpRiderPopups.refactorGroup(emptyList()).childActionsOrStubs.filterIsInstance<RiderNamedAction>().first { actions.getId(it.delegate) == "ExtractMethod" }
+        assertTrue("the native Extract Method answers the row", extract.delegate is io.github.dotnetsupport.lang.CSharpExtractMethodAction)
     }
 
     fun testGeneratorsInRiderOrder() {
@@ -169,7 +171,13 @@ class RiderUiTest : BasePlatformTestCase() {
             titles.sortedBy(CSharpRiderPopups::generateRank),
         )
         val group = CSharpRiderPopups.generateGroup(emptyList())
-        assertTrue("the rest of the Generate group follows: Insert New GUID", group.childActionsOrStubs.any { actions.getId(it) == "GenerateGroup" })
+        assertTrue("the rest of the Generate group follows: Insert New GUID", group.childActionsOrStubs.any { it is io.github.dotnetsupport.lang.HideDisabledGroup })
+        val rest = group.childActionsOrStubs.filterIsInstance<io.github.dotnetsupport.lang.HideDisabledGroup>().single().getChildren(null)
+            .map { actions.getId((it as? com.intellij.openapi.actionSystem.AnActionWrapper)?.delegate ?: it) }
+        assertTrue(rest.toString(), "ImplementMethods" !in rest && "OverrideMethods" !in rest)
+        val native = listOf("Constructor", "Read-only properties", "Properties", "Missing members", "Overriding members", "Partial members", "Deconstructor",
+            "Equality members", "Formatting members", "Dispose pattern", "Unit Test")
+        assertEquals("Rider's order of the native rows", native, native.shuffled(java.util.Random(7)).sortedBy(CSharpRiderPopups::generateRank))
     }
 
     fun testEditorMenuRowsOfRider() {

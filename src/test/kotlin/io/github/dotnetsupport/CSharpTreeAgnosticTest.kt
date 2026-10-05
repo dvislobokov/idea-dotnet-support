@@ -127,6 +127,7 @@ class CSharpTreeAgnosticTest : BasePlatformTestCase() {
     fun testSyntaxErrorsOfTheNativeTreeAreNotHighlighted() {
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         val settings = io.github.dotnetsupport.lsp.RoslynLanguageServerSettings.getInstance()
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         settings.setSource(io.github.dotnetsupport.lang.CSharpFeature.DIAGNOSTICS, io.github.dotnetsupport.lang.CSharpFeatureSource.ROSLYN)
         try {
             val file = myFixture.configureByText("BrokenNative.cs", "class A\n{\n    void M( { int x = ; }\n    int\n}\n")
@@ -134,6 +135,7 @@ class CSharpTreeAgnosticTest : BasePlatformTestCase() {
             assertEquals(emptyList<String>(), myFixture.doHighlighting(HighlightSeverity.ERROR).map { it.description })
         } finally {
             settings.state.features = mutableMapOf()
+            settings.state.enabled = io.github.dotnetsupport.lsp.RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
         }
     }
 

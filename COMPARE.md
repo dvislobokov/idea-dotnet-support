@@ -283,7 +283,7 @@ IDE на платформе по данным `docs/platform-lsp-dap.html`; GoLa
 | Run configuration «.NET Project» | ✅ (.NET Project, .NET Executable, .NET Static Method, Launch Settings Profile, Compound, Docker, IIS Express, Publish…) | 🟡 | один тип «.NET Project» с командами `dotnet run` / `dotnet watch` / `dotnet test`; поля: Project, Command, Launch profile, Environment (Development/Staging/Production + `appsettings.<Name>.json`), Arguments, Working directory, Env vars (+ parent env), Test filter, Collect coverage, Open browser |
 | `.NET Executable` (запуск готовой dll / exe без проекта) | ✅ | ❌ | |
 | `.NET Static Method` | ✅ | ❌ | |
-| Compound (несколько проектов) | ✅ | ❌ | можно запускать по одному |
+| Compound (несколько проектов) | ✅ | ✅ | 0.1.79: платформенный Compound из конфигураций .NET Project; запуски вместе собираются одной сборкой (`.slnf`) и стартуют `dotnet run --no-build`; Save as Compound Configuration (Run N Projects, Solution view, меню Run); «Wait for» другой конфигурации (started / listens / health URL) — в конфигурации, не в записи Compound; группа в Services по папке. Нет порядка запуска внутри Compound и своего окна «Run Multiple Projects» |
 | Автогенерация конфигураций по `launchSettings.json` | ✅ | ✅ | по одной на профиль `commandName: Project` (`<project>: <profile>`), `launchBrowser` из профиля; удалённая пользователем не восстанавливается; настройка |
 | Профили IIS Express / Executable в `launchSettings` | ✅ (IIS Express на Windows) | ❌ | пропускаются |
 | Создание из контекста: узел проекта, файл, gutter ▶ у `Main` | ✅ | ✅ | `Main` — по токенам (`static … Main(`); top-level statements — через узел проекта |
@@ -531,7 +531,7 @@ GoLand / PyCharm Pro), HTTP Client (те же), Docker / Kubernetes плагин
 4. ~~Type / Call hierarchy, Go to Base~~ — сделаны 2026-09-29; остались Find Usages с группировкой и Go to Base для членов.
 5. ~~Проблемы по всему solution~~ — сделано 2026-09-29 (Problems → Project Errors при scope fullSolution).
 6. Publish (папка / контейнер / `.pubxml`).
-7. Compound run configuration (Services-окно — сделано 2026-09-29).
+7. ~~Compound run configuration~~ — сделано в 0.1.79 (Services-окно — 2026-09-29).
 
 **P1 — заметный разрыв с Rider:**
 8. Уязвимые / устаревшие / deprecated пакеты, консолидация версий, конфликты NU1xxx, «почему пакет здесь».

@@ -6,6 +6,7 @@ import com.intellij.execution.RunManager
 import com.intellij.execution.RunnerAndConfigurationSettings
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.executors.DefaultRunExecutor
+import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.ExecutionEnvironmentBuilder
 import com.intellij.execution.runners.ProgramRunner
 import com.intellij.ide.util.treeView.AbstractTreeNode
@@ -14,10 +15,6 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.PlatformCoreDataKeys
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.progress.ProgressIndicator
-import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
@@ -66,29 +63,19 @@ abstract class RunProjectAction(private val verb: String, private val executor: 
     }
 
     /**
-     * Several projects selected in the Solution view, as Rider's "Run Multiple Projects". Their builds would fight over the shared
-     * dependencies, so the projects are built one after another first, and `dotnet run` does not build again; a debug launch builds
-     * before it starts anyway, and those builds wait for each other (see [DotNetDebugBuild.build]).
+     * Several projects selected in the Solution view, as Rider's "Run Multiple Projects". The launches share an execution id, as the
+     * ones of a compound configuration do, and "Build .NET Project" builds their projects at once before any starts ([LaunchBuilds]);
+     * `dotnet run` does not build again. A notification offers to save them as a compound configuration.
      */
     private fun launchTogether(project: Project, targets: List<RunProjectTarget>) {
         val executor = executor()
         val settings = targets.map { it.settings(project).also { settings -> register(project, settings) } }
-        fun launch(prebuilt: Boolean) = settings.forEach { each ->
-            val environment = ExecutionEnvironmentBuilder.createOrNull(executor, each)?.build() ?: return@forEach
-            if (prebuilt) environment.putUserData(DotNetRunConfiguration.PREBUILT, true)
+        val executionId = ExecutionEnvironment.getNextUnusedExecutionId()
+        settings.forEach { each ->
+            val environment = ExecutionEnvironmentBuilder.createOrNull(executor, each)?.executionId(executionId)?.build() ?: return@forEach
             ProgramRunnerUtil.executeConfiguration(environment, false, true)
         }
-        if (executor.id == DefaultDebugExecutor.EXECUTOR_ID) return launch(prebuilt = false)
-        object : Task.Backgroundable(project, "Building ${targets.size} projects", true) {
-            override fun run(indicator: ProgressIndicator) {
-                for (target in targets) {
-                    indicator.checkCanceled()
-                    indicator.text = "Building ${target.projectFile.name}"
-                    if (!DotNetDebugBuild.build(project, target.projectFile)) return
-                }
-                ApplicationManager.getApplication().invokeLater({ if (!project.isDisposed) launch(prebuilt = true) }, ModalityState.nonModal())
-            }
-        }.queue()
+        CompoundConfigurations.offerToSave(project, settings)
     }
 }
 

@@ -22,6 +22,7 @@ import io.github.dotnetsupport.lsp.RoslynServerStatus
 class RoslynPolicyTest : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
+        RoslynLanguageServerSettings.getInstance().state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         // the server's path (and the heuristics beside it): built-in is the default since 0.1.60
         RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.ROSLYN)
     }
@@ -32,6 +33,7 @@ class RoslynPolicyTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
+            RoslynLanguageServerSettings.getInstance().state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             status.isReady = false
             status.coloredByServer.clear()
             formatting.formatter = FormatterChoice.AUTO

@@ -56,6 +56,13 @@ class AssemblyIndexService(private val project: Project) : Disposable {
     private val assemblyFiles = ConcurrentHashMap<String, File>()
     private val running = AtomicBoolean()
     private val again = AtomicBoolean()
+    // the projects all of whose referenced assemblies are indexed: only there may the semantics say a name does not exist (task C4c)
+    private val complete = ConcurrentHashMap<String, Boolean>()
+    // projects in no solution whose files were asked about (a file of the playground's `Broken` in the editor): indexed too, once asked
+    private val loose: MutableSet<String> = ConcurrentHashMap.newKeySet()
+
+    /** Changes when the indexes of a project change: what was computed from them (semantic errors) is computed again. */
+    val modificationTracker = com.intellij.openapi.util.SimpleModificationTracker()
 
     /** The referenced assemblies as libraries of the IDE ([AssemblyLibraryRootsProvider]); empty until the first refresh. */
     @Volatile
@@ -63,7 +70,10 @@ class AssemblyIndexService(private val project: Project) : Disposable {
         private set
 
     /** What is indexed for the project of [projectFile]; empty until the indexer has run (it is started then). */
-    fun indexes(projectFile: VirtualFile): List<AssemblyIndex> = byProject[projectFile.path] ?: emptyList<AssemblyIndex>().also { schedule() }
+    fun indexes(projectFile: VirtualFile): List<AssemblyIndex> = byProject[projectFile.path] ?: emptyList<AssemblyIndex>().also {
+        loose += projectFile.path
+        schedule()
+    }
 
     val isReady: Boolean get() = byProject.isNotEmpty()
 
@@ -79,6 +89,12 @@ class AssemblyIndexService(private val project: Project) : Disposable {
     /** The indexes of the project whose references have [index], for what is resolved in the metadata view of a type of it. */
     fun symbolsWith(index: AssemblyIndex): AssemblyIndexSet? =
         byProject.entries.firstOrNull { (_, indexes) -> indexes.any { it === index } }?.let { (path, _) -> symbols.computeIfAbsent(path) { AssemblyIndexSet(byProject[path].orEmpty()) } }
+
+    /**
+     * Whether every assembly the project of [projectFile] is compiled against is indexed (the outputs of referenced projects aside: their
+     * sources are in the solution). False until the indexer has run, and when an assembly could not be indexed.
+     */
+    fun isComplete(projectFile: VirtualFile): Boolean = complete[projectFile.path] ?: false.also { if (loose.add(projectFile.path)) schedule() }
 
     /** What the project of [projectFile] is compiled against, as the last refresh found it; null until then. */
     fun references(projectFile: VirtualFile): ProjectAssemblies.References? = references[projectFile.path]
@@ -98,13 +114,17 @@ class AssemblyIndexService(private val project: Project) : Disposable {
     override fun dispose() = Unit
 
     @TestOnly
-    fun set(projectFile: VirtualFile, indexes: List<AssemblyIndex>) {
+    fun set(projectFile: VirtualFile, indexes: List<AssemblyIndex>, isComplete: Boolean = false) {
         byProject[projectFile.path] = indexes
+        complete[projectFile.path] = isComplete
+        modificationTracker.incModificationCount()
     }
 
     @TestOnly
     fun clearIndexes() {
         byProject.clear()
+        complete.clear()
+        loose.clear()
         symbols.clear()
         assemblyFiles.clear()
     }
@@ -136,7 +156,9 @@ class AssemblyIndexService(private val project: Project) : Disposable {
 
     private fun refresh() {
         val solutions = SolutionService.getInstance(project)
-        val projectFiles = solutions.solutionFiles().flatMap { solution -> solutions.solution(solution).allProjects.mapNotNull { it.resolveFile(solution) } }.distinct()
+        val inSolutions = solutions.solutionFiles().flatMap { solution -> solutions.solution(solution).allProjects.mapNotNull { it.resolveFile(solution) } }
+        val outside = loose.mapNotNull { com.intellij.openapi.vfs.LocalFileSystem.getInstance().findFileByPath(it)?.takeIf { file -> file.isValid } }
+        val projectFiles = (inSolutions + outside).distinctBy { it.path }
         references.keys.retainAll(projectFiles.mapTo(HashSet()) { it.path })
         if (projectFiles.isEmpty()) return publishLibraries()
         val dotnetRoot = DotNetCli.findExecutable()?.let { runCatching { File(it).canonicalFile.parentFile }.getOrNull() }
@@ -160,7 +182,11 @@ class AssemblyIndexService(private val project: Project) : Disposable {
         if (indexed.isEmpty()) return
         for ((path, assemblies) in lists) {
             byProject[path] = assemblies.mapNotNull { assembly -> indexed[assembly]?.let(::open)?.also { assemblyFiles[it.mvid] = assembly } }
+            complete[path] = references[path]?.assemblies?.all { assembly -> indexed[assembly]?.let(::open) != null } == true
         }
+        modificationTracker.incModificationCount()
+        // the errors of the open files were computed without the indexes (silent): compute them again
+        ApplicationManager.getApplication().invokeLater({ com.intellij.codeInsight.daemon.DaemonCodeAnalyzer.getInstance(project).restart() }, project.disposed)
         LOG.info("Index of assemblies: ${lists.size} projects, ${all.size} assemblies, ${indexed.size} indexed, ${(System.nanoTime() - started) / 1_000_000} ms")
     }
 

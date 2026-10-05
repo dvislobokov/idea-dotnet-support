@@ -26,7 +26,7 @@ object CSharpTypeFacts {
     fun written(resolver: CSharpNameResolver, type: SemanticType?, at: PsiElement): String? =
         CSharpTypeDisplay.display(type) { named -> simpleNameMeans(resolver, named, at) }
 
-    private fun simpleNameMeans(resolver: CSharpNameResolver, type: SemanticType, at: PsiElement): Boolean = when (type) {
+    internal fun simpleNameMeans(resolver: CSharpNameResolver, type: SemanticType, at: PsiElement): Boolean = when (type) {
         is SemanticType.Source -> {
             // the outermost type is what the simple name is looked up as (`Outer.Inner`)
             var outermost: PsiElement? = type.info.parts.firstOrNull()?.element()

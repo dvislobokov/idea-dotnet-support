@@ -58,6 +58,12 @@ class SemanticComparison(private val examplesPerCategory: Int = 10) {
         private set
     var spuriousDiagnostics = 0
         private set
+    /** Per code (task C4c): Roslyn's diagnostics of it, the resolver's that match, the resolver's that do not (false positives), examples of those. */
+    val oracleByCode = java.util.TreeMap<String, Int>()
+    val matchedByCode = java.util.TreeMap<String, Int>()
+    val spuriousByCode = java.util.TreeMap<String, Int>()
+    val spuriousExamples = ArrayList<String>()
+    val missedExamples = ArrayList<String>()
 
     fun add(file: SemanticDump.FileRecord, answers: SemanticAnswers) {
         files++
@@ -94,7 +100,19 @@ class SemanticComparison(private val examplesPerCategory: Int = 10) {
         val expected = file.diagnostics.associateBy { Triple(it.code, it.start, it.end) }
         oracleErrors += file.diagnostics.count { it.isError }
         oracleWarnings += file.diagnostics.count { !it.isError }
-        for (d in answers.diagnostics().distinctBy { Triple(it.code, it.start, it.end) }) {
+        file.diagnostics.forEach { oracleByCode.merge(it.code, 1, Int::plus) }
+        val produced = answers.diagnostics().distinctBy { Triple(it.code, it.start, it.end) }
+        for (d in produced) {
+            val match = expected[Triple(d.code, d.start, d.end)]
+            if (match == null) {
+                spuriousByCode.merge(d.code, 1, Int::plus)
+                val near = file.diagnostics.filter { it.start <= d.end && d.start <= it.end }.joinToString { "${it.code} ${it.start}-${it.end}" }
+                if (spuriousExamples.size < 200) spuriousExamples += "${file.path}:${d.start}-${d.end} ${d.code}" + if (near.isEmpty()) "" else " (Roslyn there: $near)"
+            } else matchedByCode.merge(d.code, 1, Int::plus)
+        }
+        val answered = produced.mapTo(HashSet()) { Triple(it.code, it.start, it.end) }
+        for (d in file.diagnostics) if (d.code in NATIVE_CODES && Triple(d.code, d.start, d.end) !in answered && missedExamples.size < 300) missedExamples += "${file.path}:${d.start}-${d.end} ${d.code}"
+        for (d in produced) {
             val match = expected[Triple(d.code, d.start, d.end)]
             when {
                 match == null -> spuriousDiagnostics++
@@ -124,6 +142,8 @@ class SemanticComparison(private val examplesPerCategory: Int = 10) {
         appendLine("types (11b): ${types.values.sumOf { it.total }} typed expressions")
         table(types, exclude = emptySet())
         appendLine("diagnostics (11e): errors $matchedErrors of $oracleErrors, warnings $matchedWarnings of $oracleWarnings, spurious $spuriousDiagnostics")
+        val codes = (matchedByCode.keys + spuriousByCode.keys).toSortedSet()
+        for (code in codes) appendLine("  %-8s Roslyn %6d  matched %6d  spurious %6d".format(code, oracleByCode[code] ?: 0, matchedByCode[code] ?: 0, spuriousByCode[code] ?: 0))
     }
 
     private fun StringBuilder.table(tallies: Map<String, Tally>, exclude: Set<String>) {
@@ -134,6 +154,14 @@ class SemanticComparison(private val examplesPerCategory: Int = 10) {
     }
 
     fun examples(): String = buildString {
+        if (spuriousExamples.isNotEmpty()) {
+            appendLine("-- spurious diagnostics")
+            spuriousExamples.forEach { appendLine("  $it") }
+        }
+        if (missedExamples.isNotEmpty()) {
+            appendLine("-- missed diagnostics (of the codes the resolver reports)")
+            missedExamples.forEach { appendLine("  $it") }
+        }
         for ((category, t) in names + types.mapKeys { "type: ${it.key}" }) {
             if (t.examples.isEmpty()) continue
             appendLine("-- $category")
@@ -143,6 +171,10 @@ class SemanticComparison(private val examplesPerCategory: Int = 10) {
 
     companion object {
         const val DECLARATIONS = "declarations"
+
+        /** The codes the native semantic checks report (task C4c): their misses are listed. */
+        val NATIVE_CODES = setOf("CS0103", "CS0246", "CS0234", "CS1061", "CS0117", "CS1501", "CS7036", "CS1503", "CS0029", "CS0266", "CS0161", "CS0120", "CS8019", "CS8933",
+            "CS0162", "CS0168", "CS0219", "CS4014", "CS8600", "CS8603", "CS8618", "CS8625")
 
         val NAME_CATEGORIES = listOf(
             "locals", "parameters", "local functions", "labels", "type parameters",

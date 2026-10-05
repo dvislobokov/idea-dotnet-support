@@ -34,6 +34,9 @@ import com.intellij.platform.lsp.api.customization.LspDiagnosticsCustomizer
 import com.intellij.platform.lsp.api.customization.LspDiagnosticsSupport
 import com.intellij.platform.lsp.api.customization.LspDocumentHighlightsCustomizer
 import com.intellij.platform.lsp.api.customization.LspDocumentHighlightsSupport
+import com.intellij.platform.lsp.api.customization.LspFindReferencesCustomizer
+import com.intellij.platform.lsp.api.customization.LspFindReferencesDisabled
+import com.intellij.platform.lsp.api.customization.LspFindReferencesSupport
 import com.intellij.platform.lsp.api.customization.LspFormattingCustomizer
 import com.intellij.platform.lsp.api.customization.LspFormattingSupport
 import com.intellij.platform.lsp.api.customization.LspOnTypeFormattingCustomizer
@@ -212,7 +215,7 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
             // annotations when the server answers, not on every pass: a switch of «Errors and warnings» asks it to make them again
             // (RoslynWorkspace.highlightingSwitched)
             override fun createAnnotation(holder: AnnotationHolder, diagnostic: Diagnostic, textRange: TextRange, quickFixes: List<IntentionAction>) {
-                if (NativeCSharpDiagnostics.repeatsNative(holder.currentAnnotationSession.file, diagnostic.message, textRange.startOffset)) return
+                if (NativeCSharpDiagnostics.repeatsNative(holder.currentAnnotationSession.file, diagnostic.message, textRange.startOffset, diagnostic.code?.get()?.toString())) return
                 super.createAnnotation(holder, diagnostic, textRange, quickFixes)
             }
 
@@ -234,6 +237,12 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
             // only what it cannot (members, types) reaches the server's factory (last), so NATIVE loses no highlighting
             override fun shouldAskServerForDocumentHighlights(psiFile: PsiFile): Boolean = workspace.isLoaded
         }
+
+        // Find Usages / Show Usages: with NAVIGATION Built-in the plugin's own search answers (NativeCSharpFindUsages) and the server's search
+        // target must not stand beside it; the platform reads this per request (LspSearchTargetsRule), so a switch takes effect at once
+        private val findReferences = LspFindReferencesSupport()
+        override val findReferencesCustomizer: LspFindReferencesCustomizer
+            get() = if (serves(CSharpFeature.NAVIGATION)) findReferences else LspFindReferencesDisabled
 
         // "N references", "Fix All", code actions with variants: commands the server leaves to its client
         private val commands = RoslynClientCommands()
@@ -267,6 +276,12 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
 
         // a chosen method gets its parentheses and the parameter info, see the class
         override val completionCustomizer: LspCompletionCustomizer = RoslynCompletionSupport()
+
+        // The platform shows the targets of every documentation provider as pages of one popup (`1/2`): with «Documentation» = Built-in
+        // the server's hover was the second page beside the plugin's own (robot, E-83, 0.1.72). Read per request, so the switch applies at once.
+        private val hover = com.intellij.platform.lsp.api.customization.LspHoverSupport()
+        override val hoverCustomizer: com.intellij.platform.lsp.api.customization.LspHoverCustomizer
+            get() = if (serves(CSharpFeature.DOCUMENTATION)) hover else com.intellij.platform.lsp.api.customization.LspHoverDisabled
 
         // the switches of CSharpFeatures, read per request (RoslynFeatures)
         private fun serves(feature: CSharpFeature): Boolean = RoslynFeatures.serves(feature, project)

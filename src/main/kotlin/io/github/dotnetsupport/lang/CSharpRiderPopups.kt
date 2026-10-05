@@ -19,6 +19,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.DumbAware
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.openapi.ui.popup.ListPopup
@@ -51,6 +52,21 @@ object CSharpRiderPopups {
     /** Refactor This: the platform's refactorings by their ids, in Rider's order; the ones the plugin does not serve for C# hide themselves. */
     val REFACTOR_FIRST = listOf("RenameElement", "ChangeSignature", "Inline", "SafeDelete")
     val REFACTOR_EXTRACT = listOf("IntroduceVariable", "IntroduceField", "IntroduceConstant", "IntroduceParameter", "ExtractMethod", "ExtractInterface", "ExtractSuperclass", "MembersPullUp", "MemberPushDown")
+
+    /** Rider's names of the rows of [REFACTOR_EXTRACT] (the platform calls them "Method...", "Field..." in its Extract menu). */
+    val REFACTOR_NAMES = mapOf(
+        "IntroduceVariable" to "Introduce Variable...", "IntroduceField" to "Introduce Field...", "IntroduceConstant" to "Introduce Constant...",
+        "IntroduceParameter" to "Introduce Parameter...", "ExtractMethod" to "Extract Method...", "ExtractInterface" to "Extract Interface...",
+        "ExtractSuperclass" to "Extract Superclass...", "MembersPullUp" to "Pull Members Up...", "MemberPushDown" to "Push Members Down...",
+    )
+
+    /**
+     * The server's rows that a native generator or refactoring stands for: dropped from the popups, the native row answers (gray where it
+     * has nothing to offer, as Rider's).
+     */
+    private val SERVER_EQUIVALENTS = Regex("""^(Generate constructor|Generate Equals|Generate overrides|Implement interface$|Implement abstract class$|Extract method$)""")
+
+    fun hasNativeEquivalent(title: String?): Boolean = title != null && SERVER_EQUIVALENTS.containsMatchIn(title)
     val REFACTOR_MOVE = listOf("Move", "CopyElement")
 
     /** Navigate To: action id to Rider's name of the row, in Rider's order and groups; null keeps the platform's name. */
@@ -77,7 +93,7 @@ object CSharpRiderPopups {
         REFACTOR_FIRST.forEach { id -> named(id, null)?.let(::add) }
         if (dynamic.isNotEmpty()) { addSeparator(); addAll(dynamic) }
         addSeparator()
-        REFACTOR_EXTRACT.forEach { id -> named(id, null)?.let(::add) }
+        REFACTOR_EXTRACT.forEach { id -> named(id, REFACTOR_NAMES[id])?.let(::add) }
         addSeparator()
         REFACTOR_MOVE.forEach { id -> named(id, null)?.let(::add) }
     }
@@ -85,17 +101,19 @@ object CSharpRiderPopups {
     /** Generate: the generators first, in Rider's order, then the rest of the platform's Generate group (Insert New GUID...). */
     fun generateGroup(dynamic: List<AnAction>): DefaultActionGroup = DefaultActionGroup().apply {
         addAll(dynamic.sortedBy { generateRank(it.templatePresentation.text.orEmpty()) })
-        (ActionManager.getInstance().getAction("GenerateGroup") as? ActionGroup)?.let { addSeparator(); add(it) }
+        // the rows of the platform's group that do not apply hide (the popup shows the gray rows of the generators, as Rider)
+        (ActionManager.getInstance().getAction("GenerateGroup") as? ActionGroup)?.let { addSeparator(); add(HideDisabledGroup(it)) }
     }
 
     /** The place of a generator in Rider's list: Constructor, properties, missing / overriding / delegating members, ..., Unit Test. */
     fun generateRank(title: String): Int {
         val text = title.lowercase()
-        return RIDER_GENERATE_ORDER.indexOfFirst { text.contains(it) }.let { if (it < 0) RIDER_GENERATE_ORDER.size else it }
+        // "Deconstructor" is no constructor
+        return RIDER_GENERATE_ORDER.indexOfFirst { text.contains(it) && !(it == "constructor" && "deconstructor" in text) }.let { if (it < 0) RIDER_GENERATE_ORDER.size else it }
     }
 
     private val RIDER_GENERATE_ORDER = listOf(
-        "constructor", "propert", "implement", "missing", "override", "delegat", "partial", "deconstruct", "equals", "equality", "comparer",
+        "constructor", "read-only", "propert", "implement", "missing", "overrid", "delegat", "partial", "deconstruct", "equals", "equality", "comparer",
         "relational", "compareto", "tostring", "format", "dispose", "test",
     )
 
@@ -111,9 +129,23 @@ object CSharpRiderPopups {
             )
             CSharpPopupKind.GENERATE -> listOf(CreateTestIntention() to "Unit Test", AddPartialPartIntention() to "Partial Part")
         }
-        return candidates.mapNotNull { (intention, text) ->
+        val rows = candidates.mapNotNull { (intention, text) ->
             val available = ReadAction.compute<Boolean, RuntimeException> { !project.isDisposed && runCatching { intention.isAvailable(project, editor, file) }.getOrDefault(false) }
             if (available) IntentionRowAction(text ?: intention.text, intention, file, editor) else null
+        }
+        return if (kind == CSharpPopupKind.GENERATE) generatorRows(project, editor, file) + rows else rows
+    }
+
+    /**
+     * The native generators ([NativeCSharpGenerate]) inside a type: every row, gray where it has nothing to offer, as Rider lists them;
+     * none outside a type.
+     */
+    fun generatorRows(project: Project, editor: Editor, file: PsiFile): List<AnAction> = ReadAction.compute<List<AnAction>, RuntimeException> {
+        if (project.isDisposed || file !is CSharpFile || DumbService.isDumb(project)) return@compute emptyList()
+        val site = CSharpGenerateSite.at(file, editor.caretModel.offset) ?: return@compute emptyList()
+        CSharpGenerator.entries.map { generator ->
+            val available = runCatching { NativeCSharpGenerate.choices(generator, site).isNotEmpty() }.getOrDefault(false)
+            NativeCSharpGenerateRow(generator, available, file, editor)
         }
     }
 
@@ -123,13 +155,13 @@ object CSharpRiderPopups {
             val own = nativeActions(kind, project, editor, file)
             val contributed = CSharpPopupContributor.EP_NAME.extensionList.flatMap { contributor -> runCatching { contributor.actions(kind, project, editor, file) }.getOrDefault(emptyList()) }
             val ownTitles = own.mapNotNull { it.templatePresentation.text?.lowercase() }.toSet()
-            own + contributed.filter { it.templatePresentation.text?.lowercase() !in ownTitles }
+            own + contributed.filter { it.templatePresentation.text?.lowercase() !in ownTitles && !hasNativeEquivalent(it.templatePresentation.text) }
         }, if (kind == CSharpPopupKind.REFACTOR) "Looking for Refactorings" else "Looking for What Can Be Generated", true, project)
 
     /** Shows [group] as Rider's list under the caret, or a hint when nothing in it is available. */
-    fun show(e: AnActionEvent, title: String, group: ActionGroup, nothing: String) {
+    fun show(e: AnActionEvent, title: String, group: ActionGroup, nothing: String, showDisabled: Boolean = false) {
         val editor = e.getData(CommonDataKeys.EDITOR) ?: return
-        val popup = JBPopupFactory.getInstance().createActionGroupPopup(title, group, e.dataContext, JBPopupFactory.ActionSelectionAid.SPEEDSEARCH, false)
+        val popup = JBPopupFactory.getInstance().createActionGroupPopup(title, group, e.dataContext, JBPopupFactory.ActionSelectionAid.SPEEDSEARCH, showDisabled)
         if ((popup as? ListPopup)?.listStep?.values?.isEmpty() == true) {
             HintManager.getInstance().showInformationHint(editor, nothing)
             return
@@ -143,6 +175,36 @@ class RiderNamedAction(delegate: AnAction, private val text: String?) : AnAction
     override fun update(e: AnActionEvent) {
         super.update(e)
         if (text != null) e.presentation.text = text
+    }
+}
+
+/** A group whose disabled rows hide: the platform's Generate group under Rider's list, where the popup shows disabled rows. */
+class HideDisabledGroup(private val delegate: ActionGroup) : ActionGroup(), DumbAware {
+    init {
+        templatePresentation.copyFrom(delegate.templatePresentation)
+        isPopup = delegate.isPopup
+    }
+
+    override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
+
+    // Implement / Override Methods answer the rows "Missing members" / "Overriding members" of the native generators: not twice
+    override fun getChildren(e: AnActionEvent?): Array<AnAction> = delegate.getChildren(e).filter { ActionManager.getInstance().getId(it) !in ANSWERED_NATIVELY }.map { child ->
+        when (child) {
+            is Separator -> child
+            is ActionGroup -> HideDisabledGroup(child)
+            else -> HideDisabledAction(child)
+        }
+    }.toTypedArray()
+
+    private companion object {
+        val ANSWERED_NATIVELY = setOf("ImplementMethods", "OverrideMethods")
+    }
+}
+
+private class HideDisabledAction(delegate: AnAction) : AnActionWrapper(delegate) {
+    override fun update(e: AnActionEvent) {
+        super.update(e)
+        if (!e.presentation.isEnabled) e.presentation.isVisible = false
     }
 }
 
@@ -216,7 +278,7 @@ class CSharpGenerateAction : AnAction(), DumbAware {
         val file = e.getData(CommonDataKeys.PSI_FILE)
         if (project == null || editor == null || file !is CSharpFile) return platform.actionPerformed(e)
         val dynamic = CSharpRiderPopups.dynamicActions(CSharpPopupKind.GENERATE, project, editor, file)
-        CSharpRiderPopups.show(e, "Generate", CSharpRiderPopups.generateGroup(dynamic), "Nothing to generate here: put the caret on a type or a member")
+        CSharpRiderPopups.show(e, "Generate", CSharpRiderPopups.generateGroup(dynamic), "Nothing to generate here: put the caret on a type or a member", showDisabled = true)
     }
 
     companion object {

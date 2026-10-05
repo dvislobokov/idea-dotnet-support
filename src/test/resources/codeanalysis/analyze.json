@@ -1,0 +1,60 @@
+{
+ "project": "C:\\repo\\debug-playground\\Console\\Console.csproj",
+ "framework": "net9.0",
+ "diagnostics": [
+  {
+   "id": "VSTHRD200",
+   "severity": "warning",
+   "message": "Use \"Async\" suffix in names of methods that return an awaitable type",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Analyzers.cs",
+   "startLine": 19,
+   "startColumn": 30,
+   "endLine": 19,
+   "endColumn": 34,
+   "category": "Style",
+   "helpLink": "https://microsoft.github.io/vs-threading/analyzers/VSTHRD200.html",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Rename to LoadAsync"
+   ]
+  },
+  {
+   "id": "VSTHRD103",
+   "severity": "warning",
+   "message": "ReadAllText synchronously blocks. Await ReadAllTextAsync instead.",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Analyzers.cs",
+   "startLine": 22,
+   "startColumn": 20,
+   "endLine": 22,
+   "endColumn": 31,
+   "category": "Usage",
+   "helpLink": "https://microsoft.github.io/vs-threading/analyzers/VSTHRD103.html",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Await ReadAllTextAsync instead"
+   ]
+  },
+  {
+   "id": "CA1822",
+   "severity": "warning",
+   "message": "Member 'Twice' does not access instance data and can be marked as static",
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Analyzers.cs",
+   "startLine": 25,
+   "startColumn": 15,
+   "endLine": 25,
+   "endColumn": 20,
+   "category": "Performance",
+   "helpLink": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1822",
+   "source": "analyzer",
+   "fixable": true,
+   "fixes": [
+    "Make static"
+   ]
+  }
+ ],
+ "analyzers": 414,
+ "milliseconds": 1170,
+ "workingSet": 258125824
+}

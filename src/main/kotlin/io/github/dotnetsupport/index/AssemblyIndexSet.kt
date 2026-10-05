@@ -111,6 +111,12 @@ class AssemblyIndexSet(val indexes: List<AssemblyIndex>) {
 
     fun doc(docId: String): IndexedDoc? = indexes.firstNotNullOfOrNull { it.doc(docId) }
 
+    /** Every type of the assemblies whose own simple name is [name] (any namespace, any arity, nested ones too): «Import type» (task C4c). */
+    fun typesNamed(name: String): List<IndexedType> = indexes.flatMap { index -> AssemblyIndexNames.of(index).typeRows(name).map(index::type) }
+
+    /** Every member named [name] of every type of the assemblies (no constructors, no operators): what an extension method may be. */
+    fun membersNamed(name: String): List<IndexedMember> = indexes.flatMap { index -> AssemblyIndexNames.of(index).memberRows(name).map(index::member) }
+
     companion object {
         /** The key of the extension methods of a type parameter: `this T value`. */
         const val GENERIC_RECEIVER = "!"

@@ -28,7 +28,7 @@ class CSharpEditingTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             settings.state.features = mutableMapOf()
-            settings.state.enabled = true
+            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
         } catch (e: Throwable) {
             addSuppressedException(e)
         } finally {
@@ -68,6 +68,7 @@ class CSharpEditingTest : BasePlatformTestCase() {
     }
 
     fun testExtendSelectionGoesThroughTheNodes() {
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         assertEquals(
             listOf(
                 "name", "name.Trim", "name.Trim()", "count, name.Trim()", "(count, name.Trim())", "Compute(count, name.Trim())", "Compute(count, name.Trim()) + 1",
@@ -87,6 +88,7 @@ class CSharpEditingTest : BasePlatformTestCase() {
     }
 
     fun testExtendSelectionInStrings() {
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         assertEquals(
             listOf("plain", "plain text here", "\"plain text here\""),
             selections(CSharpFeatureSource.NATIVE, "ain text", 3),
@@ -166,6 +168,7 @@ class CSharpEditingTest : BasePlatformTestCase() {
 
     /** (tokens, tree): where the tree knows what the statement lacks. */
     fun testCompleteStatementWhereTheTreeKnowsBetter() {
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         fun pair(before: String) = complete(CSharpFeatureSource.ROSLYN, before) to complete(CSharpFeatureSource.NATIVE, before)
 
         assertEquals(method("Foo(a, b\n            <caret>") to method("Foo(a, b);\n        <caret>"), pair(method("Foo(a, b<caret>")))
@@ -257,6 +260,7 @@ class CSharpEditingTest : BasePlatformTestCase() {
     }
 
     fun testThePlaygroundScenariosOfCompleteStatement() {
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         val n = CSharpFeatureSource.NATIVE
         val t = CSharpFeatureSource.ROSLYN
         val i = "        "
@@ -312,6 +316,7 @@ class CSharpEditingTest : BasePlatformTestCase() {
     }
 
     fun testTheSwitch() {
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         assertTrue(CSharpFeatures.hasNative(CSharpFeature.EDITING))
         assertFalse("no index needed", CSharpFeature.EDITING.needsIndexes)
         assertEquals("the tree by default since the robot (0.1.48)", CSharpFeatureSource.NATIVE, CSharpFeature.EDITING.defaultSource)

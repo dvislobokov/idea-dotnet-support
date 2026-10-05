@@ -64,6 +64,8 @@ class CompilationModel(private val project: Project) : Disposable {
      */
     fun projectOf(file: VirtualFile): VirtualFile? {
         if (file.isDirectory) return null
+        // a file a source generator made, in the caches of the IDE (D4): compiled in the project whose generator made it
+        project.getServiceIfCreated(io.github.dotnetsupport.codeanalysis.CodeAnalysisService::class.java)?.projectOfGenerated(file)?.let { return it }
         val owning = DotNetProjects.findOwningProject(file)?.takeIf { it.extension.equals("csproj", ignoreCase = true) }
         val path = file.path
         if (owning != null) {

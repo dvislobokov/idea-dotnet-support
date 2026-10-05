@@ -3,6 +3,123 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.79
+
+- Compound runs as in Rider: .NET Project configurations started together (a compound configuration, Run / Debug N Projects, or several
+  started one right after another) are built by one build before any of them starts — the projects of a solution as one solution-filter
+  build in the Build tool window, shared libraries once — and then run with `dotnet run --no-build`, so their builds no longer fight over
+  `obj/`. If the build fails, none of them is started. On the playground the build of two services sharing a library took 1.9 s instead of
+  3.6 s one after another
+- Save as Compound Configuration: offered after Run N Projects, in the Solution view popup for several projects and in the Run menu (the
+  .NET configurations running now). The compound is named after the projects (`Web + Worker`, or "Multiple Projects"), missing .NET Project
+  configurations are saved, and they go into a folder of the same name, so the Services tool window groups them and stops or reruns them together
+- "Wait for" in the .NET Project configuration: start after another configuration has started, listens on its address (from
+  `launchSettings.json` or its output) or answers on a health URL, like `WaitFor` of .NET Aspire; with a timeout, a progress status while
+  waiting, a notification when it runs out, and an error for a configuration that waits for itself or in a circle
+- Debug of a compound configuration of .NET Project ones: it could not be started at all in IntelliJ IDEA Community (no runner of the
+  platform took it); now the projects are built once and a debug session starts for each
+
+## 0.1.78
+
+- Overload resolution of the plugin's own C# support as in the compiler: implicit conversions (numeric, nullable, reference, boxing,
+  user-defined), the better function member, `params` in normal and expanded form, optional parameters and named arguments, generic
+  type inference, extension methods, lambdas and method groups against `Func` / `Action` / own delegates, target-typed `null`,
+  `default`, `new()`, `?:` and collection expressions. Go to Declaration, quick documentation, colors and the types of `var` pick the
+  right overload where they used to give up or pick the first one
+- More compiler errors and warnings without the language server, with Roslyn's codes and places: unreachable code (CS0162, gray as in
+  Rider), unused locals (CS0168 / CS0219, gray, "Remove unused variable"), a task not awaited in an `async` method (CS4014, "Add
+  'await'"), instance member from a static context (CS0120), wrong argument type (CS1503) and missing arguments of generic, `params`
+  and optional overloads and with named arguments (CS1501 / CS7036), conversions of `?:` and switch expressions (CS0029 / CS0266), and
+  the simple nullable warnings where the nullable context is on: `null` to a non-nullable local, field, property, argument or return
+  (CS8600, CS8625, CS8603) and fields and auto-properties left null by a class without constructors (CS8618). `#pragma warning
+  disable`, `<NoWarn>` and `.editorconfig` severities are respected
+- "Add argument name" context action: the parameter name before a positional argument and the ones after it
+
+## 0.1.77
+
+- Source generators without the language server: the generators of a project (`[GeneratedRegex]`, System.Text.Json, `[LoggerMessage]`,
+  options validation, generator packages such as CommunityToolkit.Mvvm; not Razor) run in a helper of the plugin on save, after a build
+  and on .NET | Code Analysis | Refresh Generated Files. Their files are under Dependencies → .NET x → Analyzers → generator, read-only
+  with a banner, and what they declare resolves: completion, Go to Declaration and the built-in errors see it, and the errors no longer
+  stay silent in projects with generators (a member missing from a partial type is reported once its generated part is known)
+- Roslyn analyzers without the language server: the analyzers of the packages of a project, the CA rules and the IDE code style rules of
+  the SDK, with the severities of `.editorconfig`, run in the background a second after a save (on the saved file) and on .NET | Code
+  Analysis | Run Code Analysis (the whole project or solution, listed in the Build tool window). Their warnings are in the editor with
+  the id first, suggestions (Info) as weak warnings, and Alt+Enter offers the code fixes of the analyzers ("Make static", "Rename to
+  LoadAsync"...), applied as one undoable command. A warning of the last build that the analyzers report live is not shown twice
+- Settings | .NET | Analyzers and Generators: run source generators, run analyzers on save, show suggestions, and when the helper stops
+  without requests (10 minutes). The analyzers stand back while the language server is enabled, which runs them itself
+- The helper (CodeAnalysisHelper) is built from source on first use with the newest .NET SDK of the machine, 8 or newer, against the Roslyn
+  that SDK carries (no download); one per solution. On the playground (2 projects, 414 analyzers) it loads in ~4 s, analyzes a file in
+  ~1 s the first time and in ~0.1–0.5 s after, applies a fix in ~0.3 s, and takes ~300 MB
+
+## 0.1.76
+
+- The C# language server (roslyn-language-server) is off by default: completion, navigation, Find Usages, rename, hierarchies, errors,
+  quick documentation, context actions, Generate and Extract Method come from the plugin's own C# support. The server can still be
+  turned on in Settings | .NET | Language Server; without it the plugin no longer asks for the .NET 10 SDK
+
+## 0.1.75
+
+- Generate (Alt+Insert) without the language server, with Rider's generators: Constructor (with base constructors), Read-only properties,
+  Properties, Missing members (abstract members and interfaces, from the solution and from referenced assemblies), Overriding members,
+  Partial members, Deconstructor, Equality members (`IEquatable<T>`, `HashCode.Combine`, equality operators), Formatting members
+  (`ToString`) and the Dispose pattern. Members are chosen in a dialog grouped as in Rider; the code is formatted, gets the `using`
+  directives it needs and goes where the caret is. Rows with nothing to offer are gray; the language server's rows of the same
+  generators are no longer listed twice. Code | Implement Methods (Ctrl+I) and Override Methods (Ctrl+O) open the same dialogs in C#
+- Extract Method (Ctrl+Alt+M, Refactor This) without the language server: statements or an expression; parameters from the locals it
+  reads, the value it returns or `out` parameters for more, `async` when it awaits, `static` when it uses no instance member; the new
+  name is edited in place. Refused with a hint when the selection returns, breaks out of a loop or jumps
+- Introduce Field (Ctrl+Alt+F, Refactor This) without the language server: a `readonly` field initialized where it is declared, or a
+  field assigned in the member when the expression reads locals
+
+## 0.1.74
+
+- C# errors without the language server ("Errors and warnings" = Built-in, the default): the plugin's own resolver reports the errors it is
+  sure of with Roslyn's codes, texts and places, as you type and before any build — CS0103 / CS0246 / CS0234 (unknown name, type or
+  namespace), CS1061 / CS0117 (no such member), CS1501 / CS7036 (wrong number of arguments), CS0029 / CS0266 (no implicit conversion) and
+  CS0161 (not all code paths return a value). It stays silent when anything is unknown (an assembly not indexed yet, a generated file, a
+  syntax error in the member), so a red mark is a real error
+- Unused `using` directives are gray (CS8019, CS8933 for a repeat of a global using), with "Remove unused directives in file"
+- "Import type" on an unknown type or name, and on an extension method that is not imported: the blue `System.Diagnostics.Stopwatch?
+  Alt+Enter` hint as in Rider, a list of namespaces when there are several
+- An error the plugin shows is no longer shown a second time by the language server or by the last build
+- The assemblies of a project outside the solution are indexed once a file of it is open (completion and errors there too)
+
+## 0.1.73
+
+- References across the solution without the C# language server (Settings | .NET | Language Server → Source of Features →
+  "Navigation and usages" and "Rename", Built-in by default): the plugin's own resolver finds them, in every project of the solution
+- Find Usages (Alt+F7) and Show Usages (Ctrl+Alt+F7) of types and members: usages through the hierarchy of a member (a call through the
+  interface counts for the implementation, as with the server), `nameof`, doc comment `cref`, `base(…)` and target-typed `new()` for
+  constructors, members in property patterns; grouped by Read / Write / nameof / documentation as before. Usages of a type or member of a
+  referenced assembly from its use in the code or from its metadata view
+- The usages of a member or type under the caret are highlighted in the file (writes in the write color)
+- Go to Implementation (Ctrl+Alt+B): the classes below a type or interface (every part of a partial one), the overrides and
+  implementations of a member; Go to Super (Ctrl+U): the base types, the member a member overrides or implements (in an assembly — its
+  metadata view)
+- Type Hierarchy (Ctrl+H) with its Supertypes / Subtypes views and Call Hierarchy (Ctrl+Alt+H) with callers and callees
+- Gutter icons as in Rider: "Overrides member", "Implements member", "Is overridden", "Has implementations", "Has subclasses"; a click
+  lists them
+- Rename (Shift+F6) of types and members across the solution: every declaration and usage (`nameof` and `cref` too), constructors and
+  the finalizer with their type, the file named after the type; for a member of a hierarchy a dialog asks whether to rename the members it
+  overrides or implements and the ones that override it ("Rename All" / "Only This"); a member or type of the same name is shown as a conflict
+- With "Language server" chosen for these features and the server ready, the server answers all of the above, as before
+
+## 0.1.72
+
+- Quick documentation and parameter info, and the Alt+Enter context actions are now **Built-in** by default (Settings | .NET |
+  Language Server → Source of Features): checked against the language server on the playground; switch back to "Language server" there
+- Quick documentation: `<inheritdoc/>` shows the documentation of the base member, the interface member or the `cref` it names (of the
+  solution and of the assemblies), with the member's own parts kept; `cref`s are links — a click shows the documentation of that symbol,
+  F4 opens it (its declaration, or the metadata view of an assembly); Ctrl+Q on `var` shows the type it stands for (`T is int`);
+  parameters of library methods show their nullability as Roslyn does (`string? value`); one popup instead of two pages when the server runs
+- Parameter info: the constructor the arguments pick is marked (`new StringBuilder(16)`); on a named argument (`count: 2`) the parameter
+  of that name is highlighted and the overloads without it are greyed
+- Completion after a dot: no `System.Void`, no `Finalize` after `this.`, only the members of an enum after its name (as the server)
+- Context actions: "Inline variable" also on `var` and on the type of the declaration; the server's "Replace conditional expression with
+  statements" no longer stands beside the built-in "Convert '?:' to 'if' statement"
+
 ## 0.1.71
 
 - Colors inside C# strings, as in Rider: the code in the holes of interpolated strings (`$"Total {x + 1:N2}"`) is colored as code

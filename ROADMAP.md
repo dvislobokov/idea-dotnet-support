@@ -192,7 +192,7 @@
 - [ ] Endpoints: маршруты из констант и `nameof`, группы, объявленные в другом файле (extension-методы `MapXxxEndpoints`), `MapHub`, поиск маршрута через Search Everywhere
 - [ ] Hot Reload для `dotnet watch`: кнопка Restart, индикатор «изменения применены / нужен перезапуск»
 - [x] Окружение в run configuration: список из `appsettings.<Name>.json` + Development / Staging / Production; задаёт `ASPNETCORE_ENVIRONMENT` и `DOTNET_ENVIRONMENT`, перебивает launch-профиль через `dotnet run -e` (SDK 9.0.200+, с учётом `global.json`; на старых SDK — только переменные)
-- [ ] Compound-конфигурация: запуск нескольких проектов solution разом
+- [x] 0.1.79 — Compound-конфигурация: запуск нескольких проектов solution разом. Запуски, стартовавшие вместе (Compound, Run / Debug N Projects, несколько подряд за ~0,3 с), собираются **одной** сборкой (`run/LaunchBuilds`): проекты одного solution — временным `.slnf` в окне Build, остальное (проект вне solution, выбранный TFM мультитаргет-проекта) — по очереди; затем `dotnet run --no-build`. Замер на площадке (Web + Worker → Lib): `.slnf` 1,9 / 2,1 / 1,9 с (чисто / без изменений / Lib изменён) против 3,6 / 3,2 / 4,2 по очереди и 3,3 / 1,9 / 3,1 двумя сборками разом. Падение сборки не запускает ни одного из набора (уведомление). «Save as Compound Configuration» (уведомление после Run N Projects, ПКМ Solution view, меню Run — из запущенных): платформенный Compound `Web + Worker` / «Multiple Projects», недостающие конфигурации .NET Project сохраняются и кладутся в папку с именем compound — Services группирует их, Stop / Rerun группы. «Wait for» в конфигурации .NET Project (started / listens / health URL, таймаут; в записи Compound места под опции нет): ожидание в шаге «Build .NET Project» с прогрессом и уведомлением по таймауту, проверка «ждёт сам себя» и цикла. Debug Compound в IDEA Community не запускался вовсе (раннера платформы для него нет) — теперь `DotNetCompoundDebugRunner`. Робот (Windows, 2026-10-05): одна сборка `Web+Worker.slnf` для Run и Debug compound, Run 2 Projects и Run группы из Services, `--no-build`, Wait for (1,7 с до `Now listening`) и таймаут 60 с, падение сборки — ничего не запущено, Save из уведомления, группа в Services, Stop группы. Тест `CompoundRunTest`; сценарий — `debug-playground/README.md` «Запуск нескольких проектов и Compound» (`Web` + новый `Worker`, `BP:worker-round`); строки E-150…E-154 в `docs/LIVE_CHECKS.md`
 
 ### Диагностика без отладчика
 - [x] ★ Окно «.NET Monitor» (справа, графики столбиком, как Monitoring в Rider): CPU и память процесса приложения средствами ОС (без внешних инструментов; `dotnet run` / `watch` — лаунчер, меряется его дочернее приложение) и счётчики рантайма через `dotnet-counters collect` (GC heap, скорость аллокаций, время в GC, сборки/с, активные запросы сервера и HttpClient, p95 длительности запроса, исключения и lock contention, очередь thread pool); процессы из IDE подхватываются сами, остальные .NET-процессы машины — из списка; имена счётчиков .NET 9+ и старых рантаймов; предложение установить tool
@@ -430,7 +430,7 @@
 Из разбора «чего не хватает до Rider» и аудита поддержки .NET Framework (net4x SDK-стиля и legacy-проекты без SDK). Адаптер отладчика
 (`dotnet-debugger`) под desktop CLR дорабатывает пользователь; здесь — сторона плагина. Порядок — от быстрого к сложному; оценки — рабочие дни.
 ### Этап 1 — быстрое
-- [x] 0.1.22 — Run / Debug N Projects при выделении нескольких проектов в Solution view: сборки по очереди, затем запуск вместе (`dotnet run --no-build`); сборки перед Debug идут по очереди (`DotNetDebugBuild.build`), так что и платформенный Compound не собирает общие зависимости дважды разом. Compound + Run по-прежнему собирает параллельно (`dotnet run` каждый сам). Тесты `ServicesAndNodeActionsTest`, `RiderPanelsTest`; чек-лист — `debug-playground/README.md` «Запуск нескольких проектов». Вживую не проверено
+- [x] 0.1.22 — Run / Debug N Projects при выделении нескольких проектов в Solution view: сборки по очереди, затем запуск вместе (`dotnet run --no-build`); сборки перед Debug идут по очереди (`DotNetDebugBuild.build`), так что и платформенный Compound не собирает общие зависимости дважды разом. Compound + Run собирал параллельно (`dotnet run` каждый сам) — с 0.1.79 одна сборка на весь набор (`LaunchBuilds`). Тесты `ServicesAndNodeActionsTest`, `RiderPanelsTest`; чек-лист — `debug-playground/README.md` «Запуск нескольких проектов». Вживую не проверено
 - [x] 0.1.24 — `packages.config` (`msbuild/PackagesConfig`): пакеты в Dependencies → Packages и как установленные в окне NuGet; Install / Update / Remove у такого проекта выключены с объяснением, сервис их пропускает (запись в Log). Тесты `DependenciesTreeTest`, `NuGetTest`. Вживую не проверено
 - [x] 0.1.23 — Attach к процессам .NET Framework: управляемый `.exe` (CLI-заголовок PE, `PortableExecutable.isManaged`) без `runtimeconfig.json`; за ключом реестра `dotnet.debugger.attach.netFramework` до готовности адаптера (ключ снят в 0.1.69). Хосты, сами грузящие CLR (`w3wp.exe`, Office), так не находятся — нужен список модулей процесса. Тест `DebugLaunchTest`; чек-лист — `debug-playground/README.md`
 - [x] 0.1.26 — Hot Reload в `dotnet watch` (`run/HotReload`): состояние по выводу `dotnet watch` (`DOTNET_CLI_UI_LANGUAGE=en`; тексты SDK 9 и 10 сняты с живого CLI, SDK 8 — по исходникам) в строке Services и цветом в консоли, Restart ссылкой и кнопкой — перезапуск конфигурации (клавиши `dotnet watch` из pipe не читает). Тест `HotReloadTest`; сценарий — `debug-playground/Web/HotReload.cs`. Вживую не проверено
@@ -575,6 +575,12 @@
   Оракул (`format-oracle.sh`) сравнивает два стиля: `dotnet` (без списков Rider — ровно `dotnet format`) и `rider` (отличия списков
   Rider объявлены). Сценарий — `debug-playground/Console/Editor/Formatting.cs` (`TYPE:format-initializers`, `TYPE:format-arguments`),
   `docs/LIVE_CHECKS.md` E-85, E-86. Вживую не проверено
+- [x] 0.1.72 — задача C4a миграции: «Documentation and parameter info» и «Context actions» по умолчанию Built-in (робот WSL на IC по
+  E-76…E-84 в обоих режимах). Quick doc: `<inheritdoc/>` (база, интерфейс, `cref`, члены сборок), `cref` ссылками (`DocumentationLinkHandler`,
+  F4 — исходник или metadata view), тип на `var`, `string?` из индекса; hover сервера при Built-in выключен. Parameter Info: конструктор по
+  аргументам, именованные аргументы. Completion без `Void` / `Finalize` / статиков System.Enum. Inline variable на `var`. Сценарии —
+  `debug-playground/Console/Editor/MemberCompletion.cs` (`TYPE:quick-doc-inherit`, `-cref`, `-var`, `TYPE:parameter-info-named`),
+  `ContextActions.cs`; `docs/LIVE_CHECKS.md` E-99…E-102
 - [x] 0.1.71 — подсветка внутри строк как в Rider (`docs/rider-analysis/README.md`, §6 п. 2): у редактора свой лексер
   (`lang/CSharpHighlightingLexer`, только для `CSharpSyntaxHighlighter`; `CSharpLexer` по-прежнему отдаёт литерал одним токеном) режет
   строки на текст, escape-последовательности (верные — двумя чередующимися цветами `CSHARP_ESCAPE_CHARACTER_1` / `_2`, неверные —
@@ -586,6 +592,82 @@
   `debug-playground/Console/Editor/StringColors.cs` (`TYPE:strings-*`), `docs/LIVE_CHECKS.md` E-96…E-98. Проверено UI-роботом (ключи совпали с дампом Rider);
   человеком вживую не проверено. Не сделано: подсветка пары «элемент формата ↔ аргумент» под кареткой (`MATCHED_FORMAT_STRING_ITEM`),
   ошибки формата (`{x}` в `string.Format`), шаблоны логгеров `{Name}`, regex-инъекция
+- [x] 0.1.74 — семантические ошибки без сервера (задача C4c `CSHARP_PSI_MIGRATION.md`; «Errors and warnings» = Built-in): свой резолвер
+  (`lang/semantic/CSharpSemanticChecks`, `CSharpReachability`, `CSharpUnusedUsings`, в редакторе — `lang/NativeCSharpSemanticDiagnostics`)
+  выдаёт CS0103 / CS0246 / CS0234, CS1061 / CS0117, CS1501 / CS7036, CS0029 / CS0266, CS0161 с кодами, текстами и местами Roslyn, серые
+  `using` (CS8019, CS8933) и fixes «Import type» (синяя подсказка как в Rider, выбор namespace; extension-методы) и «Remove unused
+  directives in file». Молчит, когда чего-то не знает: сборки проиндексированы не все, проект с генераторами (Razor, WPF, gRPC…),
+  синтаксическая ошибка в члене, partial-тип, generic-метод. Ошибки, которые показывает плагин, сервер и последняя сборка не повторяют.
+  Гейт по оракулу (`semanticGate`, roslyndump теперь пишет и скрытые CS8019 / CS8933): ложных — 0 на playground, System.Linq,
+  System.Threading.Channels, Microsoft.Extensions.Primitives; на пробе ошибок — 69 из 69. Сценарии — `debug-playground/Broken/SemanticErrors.cs`
+  (`TYPE:sem-*`), `debug-playground/Console/Editor/ImportType.cs` (`TYPE:import-type-*`); `docs/LIVE_CHECKS.md` E-109…E-114. Сборки
+  проектов вне solution (как `Broken`) индексируются, когда открыт их файл. Проверено UI-роботом (Windows, IC 2026.1.4): ошибки как у
+  сервера, fixes работают; синяя подсказка и дубли со сборкой не проверены, человеком вживую не проверено
+- [x] 0.1.78 — задачи D1 и остаток D2 `CSHARP_PSI_MIGRATION.md`. D1: разбор перегрузок по §12.6.4 (`lang/semantic/CSharpOverloads`):
+  применимость (неявные преобразования — тождество, числовые, nullable, ссылочные, boxing, пользовательские `op_Implicit`; `params` в
+  обычной и развёрнутой форме, в том числе `params ReadOnlySpan<T>` библиотек; необязательные и именованные аргументы; вывод generic-аргументов
+  в две фазы с лямбдами; extension-методы в сокращённой форме; группы методов и лямбды против `Func` / `Action` / своих делегатов;
+  target-typed `null` / `default` / `new()` / `?:` / collection expressions, интерполированные строки и их handler'ы), лучший член
+  (better conversion target, точное совпадение, не-generic, обычная форма, меньше подставленных значений по умолчанию, более
+  конкретный), `OverloadResolutionPriority`; статические и экземплярные кандидаты по получателю, явные реализации интерфейсов не находятся
+  по имени. Гейт (те же входы): имена 26 303 → 26 440 верных из 26 616, неверных 16 → 2; типы 39 344 → 39 445 из 39 732, неверных 8 → 1. D2: CS0162 (серым до конца блока),
+  CS0168 / CS0219 (серым, «Remove unused variable»), CS4014 («Add 'await'»), CS0120, CS1503 и CS1501 / CS7036 для generic / `params` /
+  необязательных и с именованными аргументами, CS0029 / CS0266 для `?:` (по естественному типу) и switch-выражений (по веткам), nullable
+  CS8600 / CS8625 / CS8603 / CS8618 в простых случаях (`null`-константа; класс без конструкторов), `#pragma warning disable`, `<NoWarn>`,
+  `.editorconfig` (`lang/semantic/CSharpSemanticWarnings`, `CSharpWarningContext`); контекстное действие «Add argument name». Ложных — 0 на
+  гейте (playground, три библиотеки runtime). Не сделано: CS8601 / CS8602 / CS8604 (нужен поток nullable-состояний), CS1998 (компилятор .NET 10
+  его больше не выдаёт), «Make method non-async», перевод LINQ-запросов в вызовы методов для `IQueryable` и своих источников (типы запроса — по
+  `IEnumerable<T>` как раньше). Сценарии — `debug-playground/Broken/SemanticErrors2.cs` (`TYPE:sem2-*`), `debug-playground/Console/Editor/Overloads.cs`
+  (`TYPE:overloads-*`); `docs/LIVE_CHECKS.md` E-140…E-146. Ctrl+B Built-in ведёт к выбранной перегрузке (раньше — список всех с этим именем).
+  Проверено UI-роботом (Windows, IC 2026.1.4): метки файла сценария как у Roslyn, оба fix и «Add argument name» правят своё место, Ctrl+B на
+  17 вызовах; человеком вживую не проверено
+- [x] 0.1.77 — задачи D3 и D4 (`CSHARP_PSI_MIGRATION.md`): source generators и анализаторы Roslyn без сервера через помощник
+  CodeAnalysisHelper (`helpers/codeanalysis`, несётся исходником, `cli/DotNetHelper` собирает его SDK машины ≥ 8 против Roslyn из
+  `DotnetTools/dotnet-format` SDK — без сети; пакет `codeanalysis`). Генераторы проекта (кроме Razor) — на сохранении, после сборки и по
+  .NET → Code Analysis → Refresh Generated Files; файлы — в кэше IDE, в дереве Dependencies → Analyzers → генератор → тип (только чтение,
+  баннер), в индексе и резолвере (`CSharpSourceScope`); правило C4c «есть генераторы → молчим» снято, пока вывод свежий. Анализаторы
+  пакетов, CA и IDE из SDK по `.editorconfig` — в фоне через секунду после сохранения файла и по Run Code Analysis (проект / solution →
+  окно Build); подсветка — своим ExternalAnnotator (id в начале, Info — слабые предупреждения), fixes — Alt+Enter правками помощника
+  одной командой; предупреждение последней сборки, которое анализатор показывает вживую, не дублируется. Settings | .NET | Analyzers and
+  Generators. Один помощник на solution, выход после простоя (10 мин). Работает, пока сервер выключен. Сценарии —
+  `debug-playground/Console/Editor/Generators.cs` (`TYPE:sg-*`) и `Analyzers.cs` (`TYPE:an-*`), `docs/LIVE_CHECKS.md` E-130…E-136.
+  Проверено UI-роботом (Windows, IC 2026.1.4); человеком вживую не проверено. Не сделано: генераторы MSBuild-задач (gRPC, XAML) и Razor;
+  fix с переименованием не правит проекты, которые ссылаются на проект; при выключенных генераторах файл, открытый до загрузки
+  решения, анализируется только после следующего сохранения
+- [x] 0.1.76 — веха 12.1 миграции (задача C4e): `roslyn-language-server` выключен по умолчанию (`RoslynLanguageServerSettings.ENABLED_BY_DEFAULT`),
+  все фичи со своей реализацией отвечают сами; галочка на Settings | .NET | Language Server включает сервер обратно; без сервера нет
+  вопроса о .NET 10 SDK. Проверка вживую — `docs/LIVE_CHECKS.md` E-121. Не сделано: замер памяти без сервера
+- [x] 0.1.75 — задача C4d: Generate (Alt+Insert) своими генераторами Rider без сервера (`lang/NativeCSharpGenerate`, запуск и диалог —
+  `lang/NativeCSharpGenerateActions`): Constructor (с базовыми конструкторами), Read-only properties, Properties, Missing members
+  (абстрактные члены и интерфейсы, в том числе из сборок по индексу), Overriding members, Partial members, Deconstructor, Equality members
+  (`IEquatable<T>`, `HashCode.Combine`, операторы), Formatting members (`ToString`), Dispose pattern. Диалог — `MemberChooser` платформы с
+  группами как в Rider, код — встроенным форматтером, `using` — по месту, члены — на строку каретки; недоступные строки серые, строки
+  сервера с тем же смыслом и «Override / Implement Methods…» платформы из списка убраны; Ctrl+I / Ctrl+O в C# — те же генераторы
+  (`codeInsight.implementMethod` / `overrideMethod`). Refactor This: Extract Method (`lang/NativeCSharpExtractMethod`, действие
+  `ExtractMethod` переопределено: вне C# — платформенное) — выражение или операторы одного блока, параметры по потоку данных, возврат /
+  `out` / `ref`, `async`, `static`, имя в рамке; Introduce Field (`lang/NativeCSharpIntroduceField`). Сценарии —
+  `debug-playground/Console/Editor/Generate.cs` (`TYPE:gen-*`) и `ExtractMethod.cs` (`TYPE:extract-*`, `TYPE:introduce-field`),
+  `docs/LIVE_CHECKS.md` E-115…E-120. Проверено UI-роботом (Windows, Community 2026.1.4); человеком вживую не проверено. Не сделано:
+  Delegating members, Equality comparer, Relational members / comparer, Introduce Parameter, рамка имени у Introduce Field; поток данных
+  Extract Method не учитывает циклы (переменная, записанная в выделении и читаемая в следующей итерации до него), реализованный член
+  интерфейса сверяется по имени, виду и числу параметров
+- [x] 0.1.73 — ссылки по solution без сервера (задача C4b; «Navigation and usages» и «Rename» = Built-in, по умолчанию):
+  `lang/semantic/CSharpSolutionSearch` — кандидаты по слову (индекс слов платформы), каждый резолвится резолвером C1/C2; ключ объявления —
+  файл + смещение (одно и то же для PSI из стаба и из AST); каскад по иерархии члена, как у Find References сервера; `base(…)` / `this(…)` /
+  target-typed `new()` для конструкторов и типа; `cref` (в т. ч. `T.M`), `nameof`, имена в property patterns; подтипы — новый stub-индекс
+  `csharp.supertype` (простые имена базовых типов). Find Usages / Show Usages на платформенной машинерии (`lang/NativeCSharpFindUsages`:
+  `TargetElementEvaluator`, `ReferencesSearch`, `DefinitionsScopedSearch`, `UsageTypeProvider`), поиск от члена сборки (metadata view);
+  подсветка использований члена под кареткой; Go to Implementation (платформенный обработчик на `DefinitionsScopedSearch`), Go to Super,
+  Type / Call Hierarchy и иконки gutter (`lang/NativeCSharpHierarchies`, первыми; при ROSLYN уступают модулю `roslyn`, у LSP-клиента
+  `findReferencesCustomizer` выключается при Built-in); rename типов и членов по solution (`lang/NativeCSharpSolutionRename`: inplace в
+  текущем редакторе, остальное — по Enter одной командой; вопрос про иерархию; конструкторы и деструктор с типом; файл, названный по типу;
+  конфликты). Тесты `CSharpSolutionUsagesTest`, `CSharpSolutionRenameTest`, `CSharpNativeHierarchiesTest`. Сценарий —
+  `debug-playground/Console/Editor/SolutionUsages.cs` + `Lib/SolutionShapes.cs` (`TYPE:solution-*`), `docs/LIVE_CHECKS.md` E-103…E-108.
+  Робот (Windows, IDEA Community, `usages_compare.js` — 384 объявления площадки против `textDocument/references` / `implementation`):
+  Find Usages 372 из 378 мест сервера, лишних 0; Go to Implementation 396 из 396. Не хватало: неявный `Deconstruct` (`var (a, b) = x`),
+  target-typed `new()` в элементах `[…]` (после прогона добавлен тип цели элемента коллекции — `CSharpExpressionTypes.target`, тест; роботом
+  повторно не сверено) и в инициализаторе словаря `["a"] = new(…)` — остался; объявление сервер кладёт в результаты отдельной группой
+  «Declaration», платформа — нет (как Rider). Человеком вживую не проверено
 - [x] 0.1.66 — шаг 11c, первая часть (задача C3): completion после точки на своей семантике (`lang/NativeCSharpMemberCompletion`,
   `lang/semantic/CSharpMemberLookup`; «Completion» = Built-in) — члены типа значения из solution и сборок с унаследованными и
   подставленными аргументами-типами (`Add(int item)` у `List<int>`), extension-методы в области (без `this`-параметра), static-члены и

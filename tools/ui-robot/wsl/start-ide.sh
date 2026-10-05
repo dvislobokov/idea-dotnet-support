@@ -21,14 +21,15 @@ case "$zip" in
     *) zip="$repo/$zip" ;;
 esac
 
-ide="$(ls -d "$HOME"/ide/idea-IU-* | sort | tail -1)"
+# IntelliJ IDEA Community (IC) by default, as the build of the plugin (user decision 2026-10-05); IDE_EDITION=IU for the paid one
+ide="$(ls -d "$HOME"/ide/idea-"${IDE_EDITION:-IC}"-* | sort | tail -1)"
 root="$HOME/robot/sandbox"
 mkdir -p "$root"/{config,system,plugins,log}
 
 # the plugin as built, and the robot server as Gradle downloaded it for runIdeForUiTests on Windows
 rm -rf "$root/plugins/idea-dotnet-support"
 python3 -m zipfile -e "$zip" "$root/plugins"   # no unzip in a bare Ubuntu
-robot_plugin="$repo/.intellijPlatform/sandbox/idea-dotnet-support/IU-2026.1.4/plugins_runIdeForUiTests/robot-server-plugin"
+robot_plugin="$(ls -d "$repo"/.intellijPlatform/sandbox/idea-dotnet-support/{IC,IU}-*/plugins_runIdeForUiTests/robot-server-plugin 2>/dev/null | head -1)"
 [ -d "$robot_plugin" ] || { echo "no $robot_plugin: run ./gradlew.bat runIdeForUiTests once on Windows" >&2; exit 1; }
 rm -rf "$root/plugins/robot-server-plugin"
 cp -r "$robot_plugin" "$root/plugins/"

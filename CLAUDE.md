@@ -20,13 +20,15 @@ Rider-подобная работа с .NET **без LSP, Roslyn и (пока) �
 Системных JDK и Gradle нет. Wrapper запускать с JBR целевой IDE (Git Bash):
 
 ```sh
-export JAVA_HOME="C:\Program Files\JetBrains\IntelliJ IDEA 2026.1.4\jbr"   # JBR 25; JBR 21 старого GoLand тоже годится
+export JAVA_HOME="C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2026.1.4\jbr"   # JBR 25; JBR 21 старого GoLand тоже годится
 ./gradlew.bat test buildPlugin -q      # основная проверка перед тем, как сказать «готово»
 ./gradlew.bat compileKotlin -q         # быстрая проверка компиляции
 ./gradlew.bat test --tests "io.github.dotnetsupport.NuGetTest" -q
 ```
 
-- Целевая платформа — локальная IntelliJ IDEA 2026.1.4 (`localIdePath` в `gradle.properties`), ничего не скачивается. `sinceBuild = 261`:
+- Целевая платформа — локальная **IntelliJ IDEA Community Edition 2026.1.4** (`localIdePath` в `gradle.properties`; решение пользователя 2026-10-05:
+  все прогоны — на публичном дистрибутиве, без платных плагинов и библиотек; полная IDEA 2026.1.4 тоже стоит, но для сборки не используется — то,
+  чего нет в Community, плагину недоступно), ничего не скачивается. `sinceBuild = 261`:
   с 2026.1 в платформе есть модуль DAP (`intellij.platform.dap`, `@Experimental`), на нём планируется отладчик. Проверить другую IDE, не трогая файлы:
   `./gradlew.bat test "-PlocalIdePath=C:/Program Files/JetBrains/<IDE>"`.
 - IDEA тянет Java-плагин, и он меняет поведение платформы (папка без родителя-папки в дереве называется как пакет, `src.App.Models`): то, что работало

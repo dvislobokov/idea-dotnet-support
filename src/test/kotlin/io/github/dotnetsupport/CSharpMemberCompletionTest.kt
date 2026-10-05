@@ -134,6 +134,13 @@ class CSharpMemberCompletionTest : BasePlatformTestCase() {
             }
         """)
         assertTrue(list.toString(), list.containsAll(listOf("_extra", "Add", "Count")))
+        assertFalse("the destructor of object is not called (robot, E-81): $list", "Finalize" in list)    }
+
+    /** As the server (robot, E-81): `System.Void` is no type for C#, an enum shows its members, not the static methods of System.Enum. */
+    fun testWhatRoslynDoesNotOffer() {
+        assertFalse("Void" in native(body("System.<caret>")))
+        val state = native("enum State { New, Shipped }\nclass A { void M() { State.<caret> } }")
+        assertEquals(setOf("New", "Shipped"), state.toSet())
     }
 
     // ---- the solution

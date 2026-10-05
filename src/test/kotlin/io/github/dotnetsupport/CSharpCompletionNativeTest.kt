@@ -51,7 +51,7 @@ class CSharpCompletionNativeTest : BasePlatformTestCase() {
             FakeServer.items = emptyList()
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
             settings.state.features = mutableMapOf()
-            settings.state.enabled = true
+            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -430,6 +430,7 @@ class CSharpCompletionNativeTest : BasePlatformTestCase() {
     }
 
     fun testRoslynSwitchAddsNothing() {
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.ROSLYN)
         FakeServer.items = listOf(FakeServer.Item("total", 40.0), FakeServer.Item("break", 0.0))
         val all = lookup("class A { void M() { var total = 1; <caret> } }")

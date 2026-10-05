@@ -95,6 +95,13 @@ object CSharpStubs {
     /** The key of an attribute in [CSharpStubIndexKeys.ATTRIBUTES]: its simple name without the `Attribute` suffix (`Fact` for `FactAttribute`). */
     fun attributeKey(name: String): String = name.removeSuffix("Attribute").ifEmpty { name }
 
+    /** The key of a base type in [CSharpStubIndexKeys.SUPERTYPES]: its simple name as written (`B` of `Ns.B<int>`, `global::B`); null when there is none. */
+    fun baseTypeKey(text: String): String? {
+        val open = text.indexOf('<')
+        val head = (if (open < 0) text else text.substring(0, open)).substringAfterLast('.').substringAfterLast(':').trim().removePrefix("@")
+        return head.takeIf { it.isNotEmpty() && it.all { c -> Character.isLetterOrDigit(c) || c == '_' } }
+    }
+
     /** The stub of [psi] under [parent]: everything from the PSI (the AST is there while stubs are built). */
     fun create(psi: PsiElement, parent: StubElement<*>?, type: IElementType): CSharpStub {
         var flags = 0
@@ -185,6 +192,7 @@ object CSharpStubRules {
         sink.occurrence(if (type in TYPES) CSharpStubIndexKeys.TYPE_NAMES else CSharpStubIndexKeys.MEMBER_NAMES, name)
         if (stub.isExtensionMethod) sink.occurrence(CSharpStubIndexKeys.EXTENSION_METHODS, name)
         if (type in TYPES || type === K.MethodDeclaration) stub.attributes.mapTo(HashSet(), CSharpStubs::attributeKey).forEach { sink.occurrence(CSharpStubIndexKeys.ATTRIBUTES, it) }
+        if (type in TYPES) stub.baseTypes.mapNotNullTo(HashSet(), CSharpStubs::baseTypeKey).forEach { sink.occurrence(CSharpStubIndexKeys.SUPERTYPES, it) }
     }
 
     /** `A.B.C` of a namespace declaration stub: the names of the declarations around it and its own; null when one is missing. */

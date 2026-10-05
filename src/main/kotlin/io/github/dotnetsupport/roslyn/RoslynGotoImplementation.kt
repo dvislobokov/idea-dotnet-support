@@ -50,7 +50,10 @@ class RoslynGotoImplementationHandler(private val platform: CodeInsightActionHan
         val workspace = project.service<RoslynWorkspace>()
         val client = workspace.clients.firstOrNull()
         val virtualFile = file.virtualFile
-        if (file !is CSharpFile || virtualFile == null || client == null || !workspace.isLoaded) return platform.invoke(project, editor, file)
+        // NAVIGATION Built-in: the platform's handler on the plugin's DefinitionsScopedSearch (CSharpDefinitionsSearcher)
+        if (file !is CSharpFile || virtualFile == null || client == null || !workspace.isLoaded || !RoslynFeatures.serves(io.github.dotnetsupport.lang.CSharpFeature.NAVIGATION, project)) {
+            return platform.invoke(project, editor, file)
+        }
 
         val offset = editor.caretModel.offset
         val word = RoslynNavigation.wordAt(editor.document.immutableCharSequence, offset)

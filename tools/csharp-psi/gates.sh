@@ -33,7 +33,7 @@ done
 case "$(uname -s)" in
     MINGW*|MSYS*|CYGWIN*)
         gradlew=./gradlew.bat
-        : "${JAVA_HOME:=C:\Program Files\JetBrains\IntelliJ IDEA 2026.1.4\jbr}"
+        : "${JAVA_HOME:=C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2026.1.4\jbr}"
         export JAVA_HOME ;;
     *) gradlew=./gradlew ;;
 esac

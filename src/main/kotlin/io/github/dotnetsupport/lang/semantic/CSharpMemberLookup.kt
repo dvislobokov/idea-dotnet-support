@@ -73,6 +73,8 @@ class CSharpMemberLookup(private val resolver: CSharpNameResolver) {
         }
         for (type in resolver.assemblies.typesIn(name)) {
             if (type.declaringType != null || type.isHidden || type.isProtected || type.simpleName.startsWith("<")) continue
+            // C# has no use for it (`void`), and Roslyn does not offer it (robot, E-81)
+            if (type.fullName == "System.Void") continue
             sink.add(type.simpleName, CSharpSymbol.LibraryType(type), overloads = false)
         }
     }
@@ -91,6 +93,8 @@ class CSharpMemberLookup(private val resolver: CSharpNameResolver) {
                     for (current in level) {
                         if (!visited.add(current.info.key)) continue
                         sourceMembers(current, static, typesOnly, site, sink)
+                        // `Color.|`: the members of the enum, not the static methods of System.Enum (as Roslyn, robot E-81)
+                        if (static && current.info.kind == TypeKind.ENUM) continue
                         for (base in resolver.baseTypes(current)) when (base) {
                             is SemanticType.Source -> next += base
                             is SemanticType.Library -> members(base, static, typesOnly, site, sink, depth + 1)
@@ -162,6 +166,8 @@ class CSharpMemberLookup(private val resolver: CSharpNameResolver) {
     }
 
     private fun libraryMembers(type: SemanticType.Library, static: Boolean, typesOnly: Boolean, site: PsiElement, sink: Sink) {
+        // `ConsoleColor.|`: the members of the enum only, as for an enum of the solution
+        val enumMembersOnly = static && type.type.kind == io.github.dotnetsupport.index.IndexedTypeKind.ENUM
         if (!typesOnly) {
             for ((name, inherited) in resolver.session.libraryMembers(resolver.assemblies, type.type)) {
                 if (!sink.takes(name) || '.' in name || name.startsWith("op_") || name.startsWith("<")) continue
@@ -169,9 +175,12 @@ class CSharpMemberLookup(private val resolver: CSharpNameResolver) {
                     val member = found.member
                     if (member.kind == IndexedMemberKind.CONSTRUCTOR || member.kind == IndexedMemberKind.OPERATOR || member.kind == IndexedMemberKind.INDEXER) continue
                     if (member.isHidden) continue
+                    // the destructor of `object`: C# cannot call it, Roslyn does not offer it after `this.` (robot, E-81)
+                    if (name == "Finalize" && found.member.type.fullName == OBJECT) continue
                     if (member.isProtected && !(throughThis && derivesFromLibrary(found.from?.type ?: type.type, site))) continue
                     val isStatic = member.isStatic || member.kind == IndexedMemberKind.CONSTANT || member.kind == IndexedMemberKind.ENUM_MEMBER
                     if (isStatic != static) continue
+                    if (enumMembersOnly && member.kind != IndexedMemberKind.ENUM_MEMBER) continue
                     sink.add(name, CSharpSymbol.LibraryMember(member, resolver.declaringArguments(type, found.from)), overloads = member.kind.isCallable)
                 }
             }

@@ -313,11 +313,12 @@ static class Semantics
             foreach (var node in unit.DescendantNodes(descendIntoTrivia: false))
                 if (node is ExpressionSyntax expression) Expression(model, expression);
             foreach (var d in model.GetDiagnostics()
-                         .Where(d => d.Severity >= DiagnosticSeverity.Warning && !d.IsSuppressed && d.Location.SourceTree == tree)
+                         // the hidden ones of unnecessary usings too (CS8019, CS8933): the gray the IDE shows
+                         .Where(d => (d.Severity >= DiagnosticSeverity.Warning || d.Id is "CS8019" or "CS8933") && !d.IsSuppressed && d.Location.SourceTree == tree)
                          .OrderBy(d => d.Location.SourceSpan.Start).ThenBy(d => d.Location.SourceSpan.End).ThenBy(d => d.Id, StringComparer.Ordinal))
             {
                 Diagnostics++;
-                output.WriteLine($"D\t{d.Location.SourceSpan.Start}\t{d.Location.SourceSpan.End}\t{d.Id}\t{(d.Severity == DiagnosticSeverity.Error ? "error" : "warning")}");
+                output.WriteLine($"D\t{d.Location.SourceSpan.Start}\t{d.Location.SourceSpan.End}\t{d.Id}\t{(d.Severity == DiagnosticSeverity.Error ? "error" : d.Severity == DiagnosticSeverity.Hidden ? "hidden" : "warning")}");
             }
         }
 

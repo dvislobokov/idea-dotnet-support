@@ -114,6 +114,10 @@ class ResolvingSemanticModel(private val project: com.intellij.openapi.project.P
     }
 
     override fun typeOf(file: PsiFile, range: TextRange): CSharpTypeRef? = model.typeOf(file, range) ?: SyntacticSemanticModel.typeOf(file, range)
+
+    // a session of its own: the checks resolve in another order, and the answers for names and types stay those of their own session
+    override fun diagnostics(file: PsiFile): List<io.github.dotnetsupport.csharp.semantic.CSharpDiagnosticRef> =
+        NativeCSharpSemanticModel(CSharpSemanticSession(project)).diagnostics(file)
 }
 
 /**

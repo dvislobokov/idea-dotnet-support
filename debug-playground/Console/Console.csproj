@@ -13,6 +13,8 @@
   <ItemGroup>
     <!-- configuration and options for Editor/AppSettingsSchema.cs (the schema of appsettings.json made from the code) -->
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.6" />
+    <!-- an analyzer package with code fixes for Editor/Analyzers.cs (0.1.77); its rules are off outside that file (.editorconfig) -->
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.7.23" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />

@@ -10,7 +10,7 @@
 ## Запуск
 
 ```sh
-export JAVA_HOME="C:\Program Files\JetBrains\IntelliJ IDEA 2026.1.4\jbr"
+export JAVA_HOME="C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2026.1.4\jbr"
 ./gradlew.bat runIdeForUiTests --no-daemon   # в фоне: задача живёт, пока открыта IDE; на экране появляется второе окно IDE
 python tools/ui-robot/robot.py wait          # дождаться порта (около 40 с на холодный старт)
 ```
@@ -51,7 +51,7 @@ robot_js exit_ide.js; wsl -d Ubuntu -- bash tools/ui-robot/wsl/stop-ide.sh
 - IDE обязательно на X11 (`-Dawt.toolkit.name=XToolkit`, без `WAYLAND_DISPLAY`): иначе через WSLg она выбирает Wayland и открывается
   на рабочем столе пользователя, а экран Xvfb остаётся чёрным.
 - `robot_js` срезает начало ответа до первой буквы — числа в ответе скрипта ставить не первыми (`screen_point.js` печатает `at x y …`).
-- Нужно в Ubuntu: IDEA для Linux в `~/ide` (`ideaIU-<версия localIdePath>.tar.gz` с download.jetbrains.com), .NET SDK в `~/.dotnet`
+- Нужно в Ubuntu: IDEA Community для Linux в `~/ide` (`idea-<версия localIdePath>.tar.gz` из GitHub-релиза `idea/<версия>` у `JetBrains/intellij-community`, распаковывается в `idea-IC-<сборка>`; полная — `IDE_EDITION=IU`), .NET SDK в `~/.dotnet`
   (`dotnet-install.sh`, без sudo), `roslyn-language-server` той же версии, что на Windows (`~/.dotnet/dotnet tool install -g`), пакеты
   `xvfb x11-utils xdotool ffmpeg libxtst6 libxrender1 libxi6 libfreetype6 fontconfig fonts-dejavu` (sudo — один раз, пользователь).
   `unzip` не нужен: zip распаковывает `python3 -m zipfile`.
@@ -110,7 +110,7 @@ Attach to Process предлагает отладчик .NET — провайд�
 таблица времён запросов, как в меню .NET → Language Server Timings; опрашивать в цикле, чтобы увидеть, что происходит во время загрузки;
 вывод `robot_js` срезает начало строк на `t` — `tDocument/…` это `textDocument/…`), `editor_action.js` (действие IDE с контекстом редактора — штатный `action` его не даёт, и Rename / Show Usages молчат),
 `invoke_intention.js` (выполнить пункт Alt+Enter по тексту), `rename_handlers.js` (кому достанется Shift+F6), `ctrl_hover.js` (что видит Ctrl+наведение),
-`lsp_command.js` (клиентская команда Roslyn, как клик по code lens), `lsp_capabilities.js` (capabilities платформы для `capture.py`), `lsp_policy.js` (кто красит и сворачивает: подсветки по ключам цвета, регионы folding и совпадающие диапазоны), `intentions.js`
+`lsp_command.js` (клиентская команда Roslyn, как клик по code lens), `lsp_capabilities.js` (capabilities платформы для `capture.py`), `lsp_policy.js` (кто красит и сворачивает: подсветки по ключам цвета, регионы folding и совпадающие диапазоны), `popup_at.js` (Ctrl+Q / Ctrl+P или другое действие на месте `__AT__` после `__AFTER__`, текст popup и его страницы `1/2`), `intentions.js` (необязательный якорь `__AFTER__`)
 (что предлагает Alt+Enter с кареткой в `__AT__`), `type_text.js` (набрать текст посимвольно и после каждого символа показать, есть ли popup completion, сколько в нём элементов и фазу completion
 платформы — для жалоб вида «подсказка была только на первом слове»; автопопапу нужен фокус окна песочницы, первый прогон после старта бывает пустым),
 `type_char.js` (набрать символ как с клавиатуры — срабатывают typed handlers и onTypeFormatting),
@@ -194,6 +194,12 @@ configuration cache («cannot serialize Gradle script object references») — �
 `hierarchy.js` (`__FILE__`, `__AT__`, `__ACTION__` = `TypeHierarchy` / `CallHierarchy` / `GotoSuperMethod`, `__WAIT__`) выполняет действие с
 контекстом редактора и печатает, куда встала каретка и что в окне Hierarchy (дерево через `getUserObject` узлов пока печатается пусто —
 смотреть `shot` компонента `RoslynTypeHierarchyBrowser` / `RoslynCallHierarchyBrowser` или `find` по нему: тексты строк в нём есть).
+Ссылки по solution (0.1.73, C4b): `usages_compare.js` (`__ROOT__`, `__CASES__` — `путь:строка:имя;…` или `@файл` со списком,
+`__MODE__` = `references` / `implementation`, `__WAIT__`) сверяет встроенный поиск (`ReferencesSearch` / `DefinitionsScopedSearch`) с
+`textDocument/references` / `implementation` сервера и печатает места, которые есть только у одного; `rename_solution.js` (`__ROOT__`,
+`__FILE__`, `__AT__`, `__NEW__`, `__HIERARCHY__` = ответ на вопрос про иерархию) переименовывает именем из контекста (без inplace и
+диалогов), печатает изменившиеся строки всех `.cs` и перечитывает документы с диска — Undo тут не годится: отмена правки нескольких файлов
+спрашивает пользователя модальным диалогом, и робот висит; `line_markers.js` (`__FILE__`, `__WAIT__`) печатает иконки gutter.
 В `sed`-подстановках — флаг `g`: плейсхолдер бывает в строке дважды. PID процесса — через PowerShell (`Get-Process`), `tasklist | grep` путает кодировка.
 
 Работать на копии проекта (`build/ui-robot/debug-playground`, без `.idea`, `bin`, `obj`): каталог `.idea` у песочницы и у рабочей IDE общий,
@@ -205,7 +211,7 @@ configuration cache («cannot serialize Gradle script object references») — �
 Исходные замеры шага 0 `CSHARP_PSI_MIGRATION.md` (раздел «Исходные замеры»); тем же скриптом потом меряется путь `NATIVE`.
 
 ```sh
-export JAVA_HOME="C:\Program Files\JetBrains\IntelliJ IDEA 2026.1.4\jbr"
+export JAVA_HOME="C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2026.1.4\jbr"
 ./gradlew.bat runIdeForUiTests --no-daemon -ProbotPort=8591      # в фоне; свой порт, если соседний worktree тоже держит песочницу
 export ROBOT_PORT=8591 NO_PROXY=127.0.0.1 PYTHONIOENCODING=utf-8
 python tools/ui-robot/robot.py wait

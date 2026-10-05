@@ -27,6 +27,7 @@ class CSharpSyntaxDiagnosticsTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             settings.state.features = mutableMapOf()
+            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -138,6 +139,7 @@ class CSharpSyntaxDiagnosticsTest : BasePlatformTestCase() {
 
     /** ROSLYN (the default): the server reports, the tree shows nothing; the switch takes effect on the next pass. */
     fun testAnnotatorWithRoslyn() {
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.ROSLYN)
         myFixture.configureByText("DiagRoslyn.cs", "class DiagRoslyn { void M() { int x = 1 x++; } }\n")
         assertEquals(emptyList<String>(), myFixture.doHighlighting(HighlightSeverity.ERROR).map { it.description })
@@ -148,6 +150,7 @@ class CSharpSyntaxDiagnosticsTest : BasePlatformTestCase() {
 
     /** With NATIVE the server's syntax errors that the tree reports give way; its semantic ones, and syntax ones the tree misses, do not. */
     fun testServerGivesWayOnlyToWhatTheTreeShows() {
+        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         val file = myFixture.configureByText("DiagServer.cs", "class DiagServer\n{\n    void M()\n    {\n        int x = 1\n        x++;\n    }\n}\n")
         settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.ROSLYN)
         val line4 = file.text.indexOf("int x = 1")

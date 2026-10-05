@@ -41,6 +41,8 @@ class CSharpUsageGroupingRuleProvider : UsageGroupingRuleProvider {
     private object UsageKindRule : SingleParentUsageGroupingRule() {
         override fun getParentGroupFor(usage: Usage, targets: Array<out UsageTarget>): UsageGroup? {
             val (file, range) = CSharpUsages.locate(usage) ?: return null
+            // a usage of the native search is an element of the tree: the platform's rule groups it by CSharpUsageTypeProvider
+            if ((usage as? UsageInfo2UsageAdapter)?.element !is PsiFile) return null
             return UsageKindGroup(CSharpUsages.analysis(file).kindOf(range))
         }
 

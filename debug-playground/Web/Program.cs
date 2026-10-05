@@ -26,6 +26,8 @@ app.MapGet("/", () => Results.Text(
     /hot-reload a text to change under dotnet watch (HotReload.cs)
     """));
 
+app.MapGet("/health", () => Results.Text("healthy")); // the health URL of the "Wait for" of Worker (README, "Compound")
+
 app.MapGet("/orders/{count:int}", (int count) =>
 {
     var lines = Enumerable.Range(1, count).Select(i => new OrderLine($"Item {i}", i * 1.5m, i)).ToList(); // BP:web-handler — open /orders/3 in the browser

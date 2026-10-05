@@ -44,7 +44,9 @@ enum class CSharpFeature(
      * parameters, labels, range variables, type parameters, members of the enclosing types, types of the solution by name (stub index, so it
      * needs the indexes). What the tree cannot resolve (`a.B`, base members, assemblies) still goes to the server, as do Go to Super and the
      * other server actions. NATIVE by default since 0.1.60: Go to Declaration on Navigation.cs and LibraryNames.cs (90 places) went where
-     * the server goes (robot); `new T()` goes to the constructor, as the server's.
+     * the server goes (robot); `new T()` goes to the constructor, as the server's. Since 0.1.73 (task C4b) also Find Usages / Show Usages
+     * across the solution, the usages of members under the caret, Go to Implementation, Go to Super, Type / Call Hierarchy and the gutter
+     * of overrides ([NativeCSharpFindUsages], [NativeCSharpHierarchies]); with ROSLYN all of them go to the server, as before.
      */
     NAVIGATION("Navigation and usages", needsIndexes = true, hasNative = true, defaultSource = CSharpFeatureSource.NATIVE),
     /**
@@ -58,14 +60,19 @@ enum class CSharpFeature(
     /**
      * Quick documentation and parameter info. Native since 0.1.66 ([NativeCSharpDocumentationTargetProvider], [NativeCSharpParameterInfoHandler]):
      * the symbol the semantics of the plugin resolves (task C3), its Quick Info line and the XML documentation of the source or of the
-     * assembly; needs the indexes (stubs, the index of assemblies). ROSLYN by default until the robot has compared it with the server.
+     * assembly; needs the indexes (stubs, the index of assemblies). NATIVE by default since 0.1.72: on the playground the robot saw the
+     * server's lines and more (Params, Exceptions of the documentation files, `<inheritdoc/>`, `cref` links, `var`); the server's hover is
+     * off while Built-in answers, so one popup page, not two.
      */
-    DOCUMENTATION("Documentation and parameter info", needsIndexes = true, hasNative = true),
+    DOCUMENTATION("Documentation and parameter info", needsIndexes = true, hasNative = true, defaultSource = CSharpFeatureSource.NATIVE),
     /**
      * Errors and warnings. Native since 0.1.54, the syntactic part ([NativeCSharpDiagnostics]): Roslyn's syntax errors from the file's tree,
      * its lexer and its directives, so no indexes; the semantic errors still come from the server, which gives way only on the syntax errors
      * the tree reports itself. NATIVE by default since 0.1.56: the robot saw the same errors in the same places as the server's, once each,
-     * across switches both ways.
+     * across switches both ways. Since 0.1.74 the semantic errors the resolver is sure of too (CS0103, CS0246, CS0234, CS1061, CS0117,
+     * CS1501, CS7036, CS0029, CS0266, CS0161), the gray of unused `using` directives (CS8019, CS8933), «Import type» and «Remove unused
+     * directives in file» ([NativeCSharpSemanticDiagnostics]); they need the indexes and stay silent while the IDE indexes; the rest still
+     * comes from the server and the last build, which give way on what the plugin shows.
      */
     DIAGNOSTICS("Errors and warnings", needsIndexes = false, hasNative = true, defaultSource = CSharpFeatureSource.NATIVE),
     /**
@@ -78,18 +85,20 @@ enum class CSharpFeature(
     SEMANTIC_COLORS("Colors of identifiers", needsIndexes = true, hasNative = true, defaultSource = CSharpFeatureSource.NATIVE),
     /**
      * Shift+F6. Native since 0.1.53, the syntactic part ([NativeCSharpRename]): inplace rename of locals, parameters, local functions,
-     * labels, range variables and type parameters by the one resolver of the native tree, with conflicts and `@` before keywords; members
-     * and types still go to the server (needs the indexes: the stub index for named arguments and members). NATIVE by default since 0.1.56: the robot renamed
-     * the scenarios of the playground as the server does (and the `<param name>` of the doc comment too).
+     * labels, range variables and type parameters by the one resolver of the native tree, with conflicts and `@` before keywords (needs
+     * the indexes: the stub index for named arguments and members). NATIVE by default since 0.1.56: the robot renamed the scenarios of the
+     * playground as the server does (and the `<param name>` of the doc comment too). Since 0.1.73 also members and types across the solution
+     * ([NativeCSharpSolutionRename]: the hierarchy on request, constructors, the file of the type, `nameof`, `cref`, conflicts).
      */
     RENAME("Rename", needsIndexes = true, hasNative = true, defaultSource = CSharpFeatureSource.NATIVE),
     /**
      * Alt+Enter context actions of the code. Native since 0.1.64 ([NativeCSharpContextAction]): `if` ↔ `?:`, block ↔ expression body,
      * introduce / inline variable, `var` ↔ explicit type (the types of C2, hence the indexes). With the server ready and this switch
      * ROSLYN the server's own actions answer and the native ones stand back; with NATIVE the server's rows of the same actions are
-     * dropped (`NativeCSharpServerActions`). ROSLYN by default until the robot has checked it.
+     * dropped (`NativeCSharpServerActions`). NATIVE by default since 0.1.72: on ContextActions.cs the robot found each action where the
+     * server has it (and where it has none: `if` → `?:`, `var` → explicit type), one row per action in both modes.
      */
-    CONTEXT_ACTIONS("Context actions", needsIndexes = true, hasNative = true);
+    CONTEXT_ACTIONS("Context actions", needsIndexes = true, hasNative = true, defaultSource = CSharpFeatureSource.NATIVE);
 
     // in the language of the settings page; not `toString()`: see [io.github.dotnetsupport.PluginLanguage.label]
     val label: String get() = DotNetBundle.messageOr("feature.$name", title)

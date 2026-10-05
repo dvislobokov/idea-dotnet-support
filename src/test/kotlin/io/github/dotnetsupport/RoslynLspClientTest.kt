@@ -93,7 +93,7 @@ class RoslynLspClientTest : BasePlatformTestCase() {
         assertEquals("options travel by workspace/configuration", before, RoslynLanguageServer.commandLineKey(state))
         state.logLevel = RoslynLogLevel.Trace
         assertFalse(before == RoslynLanguageServer.commandLineKey(state))
-        assertFalse(RoslynLanguageServer.commandLineKey(RoslynLanguageServerSettings.Settings().apply { enabled = false }) == before)
+        assertFalse(RoslynLanguageServer.commandLineKey(RoslynLanguageServerSettings.Settings().apply { enabled = !RoslynLanguageServerSettings.ENABLED_BY_DEFAULT }) == before)
     }
 
     /** lsp4j finds the methods of Roslyn next to the standard ones; a lost annotation would make the server talk to nobody. */

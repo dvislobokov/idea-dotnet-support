@@ -234,6 +234,8 @@ object NativeCSharpServerActions {
         "Use implicit type" to CSharpFeature.CONTEXT_ACTIONS,
         "Use 'var' instead of explicit type" to CSharpFeature.CONTEXT_ACTIONS,
         "Inline temporary variable" to CSharpFeature.CONTEXT_ACTIONS,
+        // the server's row of "Convert '?:' to 'if' statement" (robot, E-76, 0.1.72: both on `return c ? a : b;`)
+        "Replace conditional expression with statements" to CSharpFeature.CONTEXT_ACTIONS,
     )
 
     // titles with the member kind or the expression in them: "Use expression body for method", "Introduce local for 'a + b'"

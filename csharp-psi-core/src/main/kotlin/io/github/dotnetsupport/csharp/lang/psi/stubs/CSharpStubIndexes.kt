@@ -23,6 +23,12 @@ object CSharpStubIndexKeys {
      * (its inner declaration) `A.B.C` — whether a namespace of the solution exists (the semantics, step 11a).
      */
     @JvmField val NAMESPACES: StubIndexKey<String, CSharpElement> = StubIndexKey.createIndexKey("csharp.namespace")
+
+    /**
+     * Types by the simple names of the types of their base lists ([CSharpStubs.baseTypeKey]): `class A : Ns.B<int>, IC` is under `B` and
+     * `IC` — the candidates for the subtypes of a type (Go to Implementation, Type Hierarchy, the gutter of the host).
+     */
+    @JvmField val SUPERTYPES: StubIndexKey<String, CSharpElement> = StubIndexKey.createIndexKey("csharp.supertype")
 }
 
 abstract class CSharpStubIndex(private val key: StubIndexKey<String, CSharpElement>) : StringStubIndexExtension<CSharpElement>() {
@@ -39,3 +45,5 @@ class CSharpExtensionMethodIndex : CSharpStubIndex(CSharpStubIndexKeys.EXTENSION
 class CSharpAttributeIndex : CSharpStubIndex(CSharpStubIndexKeys.ATTRIBUTES)
 
 class CSharpNamespaceIndex : CSharpStubIndex(CSharpStubIndexKeys.NAMESPACES)
+
+class CSharpSupertypeIndex : CSharpStubIndex(CSharpStubIndexKeys.SUPERTYPES)
