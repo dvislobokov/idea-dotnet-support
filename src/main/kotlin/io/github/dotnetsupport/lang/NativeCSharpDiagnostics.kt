@@ -94,6 +94,7 @@ class NativeCSharpDiagnosticsAnnotator : Annotator, DumbAware {
         }
         // the semantic errors of C4c and the `using` directives nothing needs
         val semantic = NativeCSharpSemanticDiagnostics.of(element)
+        val requiredFixed = HashSet<TextRange>()
         for (problem in semantic) {
             if (problem.range.endOffset > document.textLength || problem.range.isEmpty) continue
             if (problem.unnecessary) {
@@ -115,6 +116,10 @@ class NativeCSharpDiagnosticsAnnotator : Annotator, DumbAware {
             }
             var builder = holder.newAnnotation(HighlightSeverity.ERROR, problem.text).range(problem.range).tooltip(StringUtil.escapeXmlEntities(problem.text))
             if (problem.imports.isNotEmpty() && problem.name != null) builder = builder.withFix(CSharpImportTypeFix(problem.name, problem.imports, problem.extension, problem.range))
+            // one fix for all the CS9035 of a creation: it fills every missing member
+            if (problem.code == "CS9035" && requiredFixed.add(problem.range)) AddRequiredMembersFix.at(element, problem.range.startOffset)?.let { builder = builder.withFix(it) }
+            // «Create class / field / method …» from the usage (0.1.100)
+            for (fix in CSharpCreateFromUsage.fixes(element, problem.code, problem.range, imported = problem.imports.isNotEmpty())) builder = builder.withFix(fix)
             builder.create()
         }
     }

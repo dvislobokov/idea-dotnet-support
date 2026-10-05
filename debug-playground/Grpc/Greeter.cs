@@ -16,6 +16,13 @@ public sealed class GreeterService : Greeter.GreeterBase
     public override Task<HelloReply> SayHello(HelloRequest request, ServerCallContext context) =>
         Task.FromResult(new HelloReply { Message = "Hello, " + request.Name });
 
+    // TYPE:grpc-override (0.1.85) — delete the SayHello override above (both lines), then type `public override ` on its place.
+    // EXPECT: the list opens by itself after the space with SayHello(HelloRequest request, ServerCallContext context) { ... } typed
+    // Task<HelloReply> (Greeter.GreeterBase), Equals, GetHashCode, ToString; Enter writes `public override Task<HelloReply>
+    // SayHello(HelloRequest request, ServerCallContext context)` with `{ return base.SayHello(request, context); }`, no `global::`, no
+    // `grpc::`, no new `using`. Ctrl+Z, then on the empty line press Ctrl+O: «Override Members» with SayHello under GreeterBase.
+    // NOT: an empty list, or nothing at all after the space (before 0.1.85).
+
     // TYPE:grpc-errors — type `var wrong = new HelloRequest().Nmae;`.
     // EXPECT: a red «CS1061: 'HelloRequest' does not contain a definition for 'Nmae'…» on `Nmae` (before 0.1.82 a gRPC project had no
     // semantic errors at all). NOT: an error on `HelloRequest`

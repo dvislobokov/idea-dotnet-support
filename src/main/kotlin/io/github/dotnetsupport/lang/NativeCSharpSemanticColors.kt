@@ -8,6 +8,11 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.project.DumbAware
+import com.intellij.openapi.project.DumbService
+import com.intellij.psi.util.CachedValueProvider
+import com.intellij.psi.util.CachedValuesManager
+import com.intellij.psi.util.PsiModificationTracker
+import io.github.dotnetsupport.index.AssemblyIndexService
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
@@ -34,8 +39,16 @@ object NativeCSharpSemanticColors {
     /** The native colors answer for [file]: the switch, and a file of the native tree. Settings and a child lookup: cheap. */
     fun serves(file: CSharpFile): Boolean = file.compilationUnit != null && CSharpFeatures.native(CSharpFeature.SEMANTIC_COLORS, file.project)
 
-    /** The identifiers of [file] with their keys, in the order of the text. */
-    fun colors(file: CSharpFile): List<Pair<TextRange, TextAttributesKey>> = Colorer(file).run()
+    /**
+     * The identifiers of [file] with their keys, in the order of the text. Cached on the file until a change of PSI, of the indexes of
+     * assemblies, of generated files or of dumb mode: the colors painted as the editor opens ([CSharpOpeningColors]) and the pass of the
+     * daemon right after it, and the passes the daemon repeats without a change, compute them once.
+     */
+    fun colors(file: CSharpFile): List<Pair<TextRange, TextAttributesKey>> = CachedValuesManager.getCachedValue(file) {
+        val project = file.project
+        CachedValueProvider.Result.create(Colorer(file).run(), PsiModificationTracker.MODIFICATION_COUNT, AssemblyIndexService.getInstance(project).modificationTracker,
+            DumbService.getInstance(project).modificationTracker, io.github.dotnetsupport.codeanalysis.CodeAnalysisService.getInstance(project).modificationTracker)
+    }
 }
 
 /**

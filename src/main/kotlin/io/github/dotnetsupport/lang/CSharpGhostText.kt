@@ -105,7 +105,8 @@ object CSharpGhostText {
             ?: of(SuggestionRules.TASK_RETURN, taskReturn(text, offset, context))
             ?: of(SuggestionRules.NOT_IMPLEMENTED, notImplemented(text, offset))
             ?: of(SuggestionRules.BREAK, breakInCase(text, offset))
-            ?: of(SuggestionRules.VALUE, CSharpValueGhost.suggest(text, offset))
+            // `Name = ` of an object initializer is NativeCSharpTypingGhost's: no `;` there (0.1.101)
+            ?: of(SuggestionRules.VALUE, CSharpValueGhost.suggest(text, offset)?.takeUnless { NativeCSharpTypingGhost.claims(text, offset) })
             ?: of(SuggestionRules.SEMICOLON, semicolon(text, offset, context))
     }
 
@@ -131,10 +132,13 @@ object CSharpGhostText {
             // a closed string / char only: an unterminated literal still has its token, but the statement is not finished
             CSharpTokenTypes.STRING -> last.text.length >= 2 && last.text.endsWith("\"")
             CSharpTokenTypes.CHAR -> last.text.length >= 2 && last.text.endsWith("'")
+            // `}` of `new User { … }` over several lines (0.1.101): the tree tells it from the `}` of a block
+            CSharpTokenTypes.RBRACE -> true
             else -> false
         }
         if (!ends) return null
         val tree = context.tree(text)
+        if (last.type == CSharpTokenTypes.RBRACE && tree == null) return null
         val needed = if (tree != null) NativeCSharpGhostText.needsSemicolon(tree, offset) else CSharpCompleteStatement.needsSemicolon(line)
         return if (needed) ";" else null
     }

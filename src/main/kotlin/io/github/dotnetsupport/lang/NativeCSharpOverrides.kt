@@ -7,6 +7,7 @@ import com.intellij.codeInsight.completion.PrioritizedLookupElement
 import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.icons.AllIcons
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
 import io.github.dotnetsupport.csharp.lang.SyntaxKind
 import io.github.dotnetsupport.csharp.lang.psi.*
@@ -14,52 +15,78 @@ import io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStub
 
 /**
  * `override |` and `partial |` at the start of a member, as Rider completes them (docs/rider-analysis, section 4): the members of the base
- * classes of the solution that can be overridden (virtual, abstract or an override, not sealed, static or private) and are not overridden
- * yet, plus `Equals`, `GetHashCode` and `ToString` of `object`; the item inserts the whole member — `public override double Area()` with a
- * body: `throw new NotImplementedException();` for an abstract one, the call of `base` for a virtual one (`return base.Describe(x);`). The
- * accessibility of the base member is put before `override` when none is typed. `partial |`: the partial methods declared without a body
- * in another part of the type, with their signature and an empty body. Bases from referenced assemblies are not seen (stubs of the
- * solution only): their overrides are the server's items, which the merge keeps.
+ * classes that can be overridden (virtual, abstract or an override, not sealed, static or private) and are not overridden yet — of the
+ * solution, of the files the build generates (`Greeter.GreeterBase` of Grpc.Tools) and of the assemblies (`object`, `ControllerBase`,
+ * `BackgroundService`, `DbContext`), found by the semantics of Generate ([NativeCSharpInheritedMembers.overrideItems]). The item inserts
+ * the whole member — `public override double Area()` with a body: `throw new NotImplementedException();` for an abstract one, the call of
+ * `base` for a virtual one (`return base.Describe(x);`, `return await base.X(...)` after a typed `async`), the types written as the file
+ * names them and the `using` directives they need added. The accessibility of the base member is put before `override` when none is
+ * typed. `partial |`: the partial methods declared without a body in another part of the type, with their signature and an empty body.
+ * Without the index of assemblies (no SDK yet) `Equals`, `GetHashCode` and `ToString` of `object` are still offered.
  */
 object NativeCSharpOverrides {
     private val ACCESS = setOf("public", "protected", "internal", "private")
 
-    /** One member to write: its name, the header after the modifiers and the body lines. */
-    class Candidate(val name: String, val access: String, val header: String, val body: List<String>, val tail: String, val type: String?, val property: Boolean)
+    /**
+     * One member to write: [header] — the lines before `{` (the whole member when [body] is null: `int Count { get; set; }`), [body] —
+     * the lines inside the braces in 4-space levels; [usings]: the namespaces its types need; [base]: the type it comes from.
+     */
+    class Candidate(
+        val name: String, val access: String, val header: String, val body: List<String>?, val tail: String, val type: String?, val property: Boolean,
+        val usings: Set<String> = emptySet(), val base: String? = null,
+    )
 
-    fun overrides(type: CSharpTypeDeclaration, resolver: NativeCSharpResolver, place: NativeCSharpCompletionPlace): List<LookupElement> =
-        overrideCandidates(type, resolver).map { element(it, place) }
+    fun overrides(type: CSharpTypeDeclaration, file: CSharpFile, place: NativeCSharpCompletionPlace): List<LookupElement> =
+        overrideCandidates(type, file, place.offset, "async" in place.modifiers).map { element(it, place) }
 
     fun partialMethods(type: CSharpTypeDeclaration, resolver: NativeCSharpResolver, place: NativeCSharpCompletionPlace): List<LookupElement> =
         partialCandidates(type, resolver).map { element(it, place) }
 
-    fun overrideCandidates(type: CSharpTypeDeclaration, resolver: NativeCSharpResolver): List<Candidate> {
-        val own = resolver.declaredType(type) ?: return emptyList()
-        val done = HashSet<String>()
-        for (member in declarations(own)) if ("override" in member.modifiers) done += member.key
+    /** What `override |` offers in [type] at [offset] of [file]; [async]: `async` is typed, so the base is awaited. */
+    fun overrideCandidates(type: CSharpTypeDeclaration, file: CSharpFile, offset: Int, async: Boolean = false): List<Candidate> {
+        if (type is CSharpInterfaceDeclaration) return emptyList()
+        val site = CSharpGenerateSite.at(file, offset)?.takeIf { it.type == type } ?: return emptyList()
+        if (site.isStatic) return emptyList()
         val result = ArrayList<Candidate>()
-        val seen = HashSet<String>()
-        for (base in NativeCSharpMembers.baseTypes(own, resolver)) {
-            for (member in declarations(base)) {
-                if (!seen.add(member.key)) continue
-                val modifiers = member.modifiers
-                if (modifiers.none { it == "virtual" || it == "abstract" || it == "override" }) continue
-                if ("sealed" in modifiers || "static" in modifiers || "private" in modifiers && "protected" !in modifiers) continue
-                if (member.key in done) continue
-                candidate(member)?.let { result += it }
+        for (item in NativeCSharpInheritedMembers(site).overrideItems()) {
+            val lines = item.text.lines()
+            val open = lines.indexOfFirst { it.trim() == "{" }
+            result += if (open <= 0 || lines.last().trim() != "}") {
+                // `{ get; set; }` of an abstract property: one line, no block
+                Candidate(item.name, item.access, item.text, null, item.tail, item.type, item.property, item.usings, item.base)
+            } else {
+                val body = lines.subList(open + 1, lines.size - 1).map { it.removePrefix("    ") }.map { if (async) awaited(it, item.type) else it }
+                Candidate(item.name, item.access, lines.subList(0, open).joinToString("\n"), body, item.tail, item.type, item.property, item.usings, item.base)
             }
         }
-        if (type is CSharpClassDeclaration || type is CSharpStructDeclaration || type is CSharpRecordDeclaration) {
-            val record = type is CSharpRecordDeclaration
+        // no index of assemblies: `object` is not known, its three members still are
+        if (site.resolver.libraryType("System.Object") == null) {
+            val done = HashSet<String>()
+            for (part in site.parts) for (member in part.members) {
+                if (member is CSharpMethodDeclaration && member.modifiers.any { it.text == "override" }) member.identifier?.text?.let { done += it }
+            }
             for (candidate in OBJECT_MEMBERS) {
-                if (record && candidate.name != "ToString") continue
-                // by name: `Equals(object obj)` overrides `Equals(object? obj)`
-                if ((done + seen).any { it.startsWith(candidate.name + "(") }) continue
+                if (site.isRecord && candidate.name != "ToString") continue
+                if (candidate.name in done || result.any { it.name == candidate.name }) continue
                 result += candidate
             }
         }
         return result
     }
+
+    /** `return base.X(a);` of an `async` override: `return await base.X(a);`, `await base.X(a);` for a plain task. */
+    private fun awaited(line: String, type: String?): String {
+        if (type == null || !TASK.matches(type)) return line
+        val plain = TASK_ONLY.matches(type)
+        return when {
+            line.startsWith("return base.") -> if (plain) "await " + line.removePrefix("return ") else "return await " + line.removePrefix("return ")
+            line.startsWith("base.") -> "await $line"
+            else -> line
+        }
+    }
+
+    private val TASK = Regex("""^(?:System\.Threading\.Tasks\.)?(?:Task|ValueTask)(?:<.+>)?$""")
+    private val TASK_ONLY = Regex("""^(?:System\.Threading\.Tasks\.)?(?:Task|ValueTask)$""")
 
     fun partialCandidates(type: CSharpTypeDeclaration, resolver: NativeCSharpResolver): List<Candidate> {
         val own = resolver.declaredType(type) ?: return emptyList()
@@ -88,19 +115,11 @@ object NativeCSharpOverrides {
         for (part in type.parts) when (part) {
             is TypePart.Psi -> (part.declaration as? CSharpTypeDeclaration)?.members?.forEach { member ->
                 val modifiers = member.modifiers.map { it.text }
-                when (member) {
-                    is CSharpMethodDeclaration -> member.identifier?.text?.let { result += Declared(SyntaxKind.MethodDeclaration, it, modifiers, member.parameterList?.text) { member } }
-                    is CSharpPropertyDeclaration -> member.identifier?.text?.let { result += Declared(SyntaxKind.PropertyDeclaration, it, modifiers, null) { member } }
-                    is CSharpIndexerDeclaration -> result += Declared(SyntaxKind.IndexerDeclaration, "this", modifiers, member.parameterList?.text) { member }
-                    else -> {}
-                }
+                if (member is CSharpMethodDeclaration) member.identifier?.text?.let { result += Declared(SyntaxKind.MethodDeclaration, it, modifiers, member.parameterList?.text) { member } }
             }
             is TypePart.Stub -> for (child in part.stub.childrenStubs) {
-                if (child !is CSharpStub) continue
-                val kind = child.elementType
-                if (kind != SyntaxKind.MethodDeclaration && kind != SyntaxKind.PropertyDeclaration && kind != SyntaxKind.IndexerDeclaration) continue
-                val name = if (kind == SyntaxKind.IndexerDeclaration) "this" else child.name ?: continue
-                result += Declared(kind, name, child.modifiers, child.parameters) { child.psi }
+                if (child !is CSharpStub || child.elementType != SyntaxKind.MethodDeclaration) continue
+                result += Declared(SyntaxKind.MethodDeclaration, child.name ?: continue, child.modifiers, child.parameters) { child.psi }
             }
         }
         return result
@@ -116,47 +135,6 @@ object NativeCSharpOverrides {
         }
     }
 
-    private fun candidate(member: Declared): Candidate? {
-        val element = member.element() ?: return null
-        val abstract = "abstract" in member.modifiers
-        val access = access(member.modifiers)
-        return when (element) {
-            is CSharpMethodDeclaration -> {
-                val returnType = element.returnType?.text?.let(CSharpStubsText::collapse) ?: return null
-                val name = element.identifier?.text ?: return null
-                val parameters = CSharpStubsText.collapse(element.parameterList?.text ?: "()")
-                val typeParameters = element.typeParameterList?.text.orEmpty()
-                val arguments = element.parameterList?.parameters.orEmpty().joinToString(", ") { parameter ->
-                    val modifier = parameter.modifiers.firstOrNull { it.text == "ref" || it.text == "out" || it.text == "in" }?.text
-                    listOfNotNull(modifier, parameter.identifier?.text).joinToString(" ")
-                }
-                val call = "base.$name$typeParameters($arguments)"
-                val body = when {
-                    abstract -> "throw new NotImplementedException();"
-                    returnType == "void" || TASK_ONLY.matches(returnType) && "async" in member.modifiers -> "$call;"
-                    else -> "return $call;"
-                }
-                Candidate(name, access, "$returnType $name$typeParameters$parameters", listOf(body), parameters, returnType, property = false)
-            }
-            is CSharpPropertyDeclaration -> {
-                val type = element.type?.text?.let(CSharpStubsText::collapse) ?: return null
-                val name = element.identifier?.text ?: return null
-                val accessors = element.accessorList?.accessors?.mapNotNull { it.keyword?.text }.orEmpty().ifEmpty { listOf("get") }
-                val lines = accessors.map { accessor ->
-                    when {
-                        abstract -> "$accessor => throw new NotImplementedException();"
-                        accessor == "get" -> "get => base.$name;"
-                        else -> "$accessor => base.$name = value;"
-                    }
-                }
-                Candidate(name, access, "$type $name", lines, "", type, property = true)
-            }
-            else -> null
-        }
-    }
-
-    private val TASK_ONLY = Regex("""^(?:System\.Threading\.Tasks\.)?(?:Task|ValueTask)$""")
-
     private fun access(modifiers: List<String>): String = modifiers.filter { it in ACCESS }.joinToString(" ")
 
     private val OBJECT_MEMBERS: List<Candidate> = listOf(
@@ -166,40 +144,58 @@ object NativeCSharpOverrides {
     )
 
     private fun element(candidate: Candidate, place: NativeCSharpCompletionPlace): LookupElement {
+        val tail = candidate.tail + " { ... }"
         var builder = LookupElementBuilder.create(candidate.name).withIcon(if (candidate.property) AllIcons.Nodes.Property else AllIcons.Nodes.Method)
-            .withTailText(if (candidate.property) " { ... }" else candidate.tail + " { ... }", true).bold()
+            .withTailText(tail + (candidate.base?.let { " ($it)" } ?: ""), true).bold()
         if (candidate.type != null) builder = builder.withTypeText(candidate.type)
         builder = builder.withInsertHandler(InsertHandler { context, _ -> insert(context, candidate, place) })
         builder.putUserData(NativeCSharpCompletion.NATIVE, true)
-        return PrioritizedLookupElement.withPriority(builder, NativeCSharpCompletion.DECLARATION).also { it.putUserData(NativeCSharpCompletion.NATIVE, true) }
+        // the members of the real base above those of `object` (SayHello before Equals)
+        val priority = NativeCSharpCompletion.DECLARATION + if (candidate.base != null && candidate.base != "object") 1.0 else 0.0
+        return PrioritizedLookupElement.withPriority(builder, priority).also { it.putUserData(NativeCSharpCompletion.NATIVE, true) }
     }
 
     /**
-     * The member in place of the typed name: the header, `{`, the body indented by one level of the code style, `}` (Allman, as the
-     * defaults of .NET); the caret at the end of the body's first line. The accessibility of the base member before the modifiers when
-     * none was typed.
+     * The member in place of the typed name: the header, `{`, the body indented by the code style, `}` (Allman, as the defaults of .NET);
+     * the caret at the end of the body's first line. The accessibility of the base member before the modifiers when none was typed; the
+     * `using` directives of its types.
      */
-    fun insert(context: InsertionContext, candidate: Candidate, place: NativeCSharpCompletionPlace) {
+    fun insert(context: InsertionContext, candidate: Candidate, place: NativeCSharpCompletionPlace?, from: Int = context.startOffset) {
         val document = context.document
         val text = document.charsSequence
-        val start = context.startOffset
+        val start = from
         val lineStart = text.lastIndexOf('\n', start - 1) + 1
         val indent = text.subSequence(lineStart, start).takeWhile { it == ' ' || it == '\t' }.toString()
         val options = CodeStyle.getIndentOptions(context.file)
         val unit = if (options.USE_TAB_CHARACTER) "\t" else " ".repeat(options.INDENT_SIZE.coerceAtLeast(1))
-        val body = candidate.body.joinToString("\n") { if (it.isEmpty()) "$indent$unit" else "$indent$unit$it" }
-        val member = "${candidate.header}\n$indent{\n$body\n$indent}"
+        val header = NativeCSharpGenerateEdits.reindent(candidate.header, indent, unit).removePrefix(indent)
+        val body = candidate.body
+        val member = if (body == null) header else {
+            val lines = body.joinToString("\n") { if (it.isEmpty()) "$indent$unit" else NativeCSharpGenerateEdits.reindent(it, "$indent$unit", unit) }
+            "$header\n$indent{\n$lines\n$indent}"
+        }
+        // a `;` or `{ }` the list was opened before stays after the member
         document.replaceString(start, context.tailOffset, member)
-        val firstBodyLine = start + candidate.header.length + 1 + indent.length + 2 + indent.length + unit.length + candidate.body.first().length
-        var caret = firstBodyLine
-        val typedAccess = place.modifiers.any { it in ACCESS }
+        var caret = if (body == null) start + member.length else {
+            val first = start + header.length + 1 + indent.length + 2
+            first + (document.charsSequence.indexOf('\n', first).takeIf { it >= 0 }?.minus(first) ?: 0)
+        }
+        val typedAccess = place?.modifiers?.any { it in ACCESS } == true
         if (!typedAccess && candidate.access.isNotEmpty()) {
             // before the first typed modifier: `override` / `partial` and the others stay as typed
-            val firstModifier = firstModifierOffset(text, lineStart, start)
+            val firstModifier = firstModifierOffset(document.charsSequence, lineStart, start)
             if (firstModifier != null) {
                 document.insertString(firstModifier, candidate.access + " ")
                 caret += candidate.access.length + 1
             }
+        }
+        val file = PsiDocumentManager.getInstance(context.project).getPsiFile(document) as? CSharpFile
+        for (namespace in candidate.usings) {
+            val current = document.charsSequence
+            if (CSharpUsings.isVisible(namespace, current) || file != null && NativeCSharpGenerateEdits.globallyImported(file, namespace)) continue
+            val insertion = CSharpUsings.insertion(current, namespace) ?: continue
+            document.insertString(insertion.offset, insertion.text)
+            if (insertion.offset <= caret) caret += insertion.text.length
         }
         context.editor.caretModel.moveToOffset(caret)
         context.commitDocument()

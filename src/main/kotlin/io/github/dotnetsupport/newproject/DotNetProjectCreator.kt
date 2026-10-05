@@ -12,6 +12,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.solution.SOLUTION_EXTENSIONS
 import io.github.dotnetsupport.view.SolutionViewPane
+import io.github.dotnetsupport.view.SolutionViewReveal
 import java.io.File
 
 object DotNetProjectCreator {
@@ -42,13 +43,15 @@ object DotNetProjectCreator {
         settings: DotNetTemplateSettings,
     ) {
         val workDirectory = solutionFile?.parent?.path ?: directory.parent
-        run(project, "Creating .NET project '$name'", File(workDirectory), directory) {
+        val projectFile = File(directory, "$name.${settings.projectExtension}")
+        // the new project selected and expanded in the Solution view, as in Rider
+        val reveal = { if (solutionFile != null) SolutionViewReveal.revealProject(project, solutionFile, projectFile) }
+        run(project, "Creating .NET project '$name'", File(workDirectory), directory, reveal) {
             buildList {
                 add(DotNetCli.commandLine(workDirectory, *settings.newArguments(name, directory.path).toTypedArray()))
                 if (solutionFile != null) {
                     val folder = solutionFolderPath?.let { listOf("--solution-folder", it) }.orEmpty()
-                    val projectFile = File(directory, "$name.${settings.projectExtension}").path
-                    add(DotNetCli.commandLine(workDirectory, "sln", solutionFile.path, "add", *folder.toTypedArray(), projectFile))
+                    add(DotNetCli.commandLine(workDirectory, "sln", solutionFile.path, "add", *folder.toTypedArray(), projectFile.path))
                 }
             }
         }
@@ -76,7 +79,7 @@ object DotNetProjectCreator {
 
     private fun gitExecutable(): String = PathEnvironmentVariableUtil.findExecutableInPathOnAnyOS("git")?.path ?: "git"
 
-    private fun run(project: Project, title: String, refresh: File, projectDirectory: File, commands: () -> List<GeneralCommandLine>) {
+    private fun run(project: Project, title: String, refresh: File, projectDirectory: File, after: () -> Unit = {}, commands: () -> List<GeneralCommandLine>) {
         val commandLines = DotNetCli.commandLinesOrNotify(project, title, commands) ?: return
         DotNetCli.runInBackground(project, title, commandLines, refresh = listOf(refresh)) {
             ProjectView.getInstance(project).apply {
@@ -84,6 +87,7 @@ object DotNetProjectCreator {
             }
             ENTRY_POINTS.firstNotNullOfOrNull { LocalFileSystem.getInstance().findFileByIoFile(File(projectDirectory, it)) }
                 ?.let { FileEditorManager.getInstance(project).openFile(it, true) }
+            after()
         }
     }
 

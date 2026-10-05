@@ -109,6 +109,9 @@ class CSharpFormatOptions(
     val indentLabels = value("csharp_indent_labels") ?: "one_less_than_current"
     val preserveSingleLineStatements = flag("csharp_preserve_single_line_statements", true)
     val preserveSingleLineBlocks = flag("csharp_preserve_single_line_blocks", true)
+
+    /** Rider's default layout of braces written on one line (`class A { void M() { } }` in full), unless `.editorconfig` says how. */
+    val riderBlocks: Boolean get() = riderLists && !isSet("csharp_preserve_single_line_blocks")
     val spaceAfterCast = flag("csharp_space_after_cast", false)
     val spaceAfterControlKeyword = flag("csharp_space_after_keywords_in_control_flow_statements", true)
     val spaceAfterComma = flag("csharp_space_after_comma", true)
@@ -419,7 +422,27 @@ internal class NativeCSharpLayout(private val root: ASTNode, private val text: C
 
     /** Braces whose line breaks Roslyn sets when they span lines; collection initializers and collection expressions are left alone. */
     private fun wraps(braces: Braces): Boolean = braces.construct != Construct.COLLECTION && braces.construct != Construct.COLLECTION_EXPRESSION &&
-        (multiLine(braces.open, braces.close) || braces.construct == Construct.BLOCK && !options.preserveSingleLineBlocks && braces.close >= 0)
+        (multiLine(braces.open, braces.close) || braces.construct == Construct.BLOCK && !options.preserveSingleLineBlocks && braces.close >= 0 || riderWraps(braces))
+
+    /**
+     * Rider's default style (DEV_JOURNEY 4.5, 0.1.100): the braces of a type, a namespace, a `switch` and the body of a method or of a
+     * statement go to lines of their own even when the whole thing is on one line — `class A { void M() { x(); } }` is laid out in full.
+     * What Rider keeps on one line stays: accessors (`{ get; set; }`, `get { return x; }`), lambdas and anonymous methods, enums,
+     * initializers. `csharp_preserve_single_line_blocks` written in `.editorconfig` wins, as does `dotnet format` alone ([CSharpFormatOptions.riderLists]).
+     */
+    private fun riderWraps(braces: Braces): Boolean {
+        if (!options.riderBlocks || braces.close < 0) return false
+        return when (braces.construct) {
+            Construct.TYPE, Construct.SWITCH -> true
+            Construct.BLOCK -> when (kindOf(braces.node.treeParent)) {
+                SyntaxKind.SimpleLambdaExpression, SyntaxKind.ParenthesizedLambdaExpression, SyntaxKind.AnonymousMethodExpression,
+                SyntaxKind.GetAccessorDeclaration, SyntaxKind.SetAccessorDeclaration, SyntaxKind.InitAccessorDeclaration, SyntaxKind.AddAccessorDeclaration,
+                SyntaxKind.RemoveAccessorDeclaration, SyntaxKind.UnknownAccessorDeclaration -> false
+                else -> true
+            }
+            else -> false
+        }
+    }
 
     /** The `{` goes to a line of its own unless the whole construct, from its header (attributes aside) to `}`, is on one line. */
     private fun wrapsBefore(braces: Braces): Boolean {
@@ -965,9 +988,27 @@ internal class NativeCSharpLayout(private val root: ASTNode, private val text: C
         }
         if (!options.preserveSingleLineStatements && type(a) === SyntaxKind.SemicolonToken) {
             val statement = units[a].node!!.treeParent
-            if (statement.psi is io.github.dotnetsupport.csharp.lang.psi.CSharpStatement && kindOf(statement.treeParent) === SyntaxKind.Block) return 1
+            if (statement.psi is io.github.dotnetsupport.csharp.lang.psi.CSharpStatement && kindOf(statement) !== SyntaxKind.ForStatement &&
+                kindOf(statement.treeParent) === SyntaxKind.Block) return 1
+        }
+        // Rider's style: in braces that wrap, the statement or the member after one that ends at [a] starts a line (`{ x(); y(); }`, `class A { int a; int b; }`)
+        if (options.riderBlocks && (type(a) === SyntaxKind.SemicolonToken || type(a) === SyntaxKind.CloseBraceToken)) {
+            val braces = wrappingContainerEndedAt(a)
+            if (braces != null && braces.open in 0 until a && b != braces.close && riderWraps(braces)) return 1
         }
         return 0
+    }
+
+    /** The block or the type a statement or a member that ends with unit [a] stands in, climbing the nodes that end there too. */
+    private fun wrappingContainerEndedAt(a: Int): Braces? {
+        var node = units[a].node?.treeParent
+        while (node != null && lastCode(node) == a) {
+            val parent = node.treeParent ?: return null
+            if (kindOf(parent) === SyntaxKind.Block && node.psi is io.github.dotnetsupport.csharp.lang.psi.CSharpStatement) return bracesOf(parent)
+            if (construct(parent) == Construct.TYPE && node.psi is io.github.dotnetsupport.csharp.lang.psi.CSharpMemberDeclaration) return bracesOf(parent)
+            node = parent
+        }
+        return null
     }
 
     private fun ownerIsStatementLike(braces: Braces): Boolean = when (kindOf(braces.node.treeParent)) {

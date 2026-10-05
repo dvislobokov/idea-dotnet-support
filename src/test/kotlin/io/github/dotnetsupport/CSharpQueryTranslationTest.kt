@@ -215,6 +215,114 @@ class CSharpQueryTranslationTest : BasePlatformTestCase() {
         assertEquals(listOf("CS1061: 'Order' does not contain a definition for 'Totl' and no accessible extension method 'Totl' accepting a first argument of type 'Order' could be found (are you missing a using directive or an assembly reference?)"), problems)
     }
 
+    /** The semantic errors of [text] added as a file of the project, after [others]. */
+    private fun problems(text: String, vararg others: Pair<String, String>): List<String> {
+        for ((path, content) in others) myFixture.addFileToProject(path, content.trimIndent())
+        val f = myFixture.addFileToProject("queries/Problems${counter++}.cs", text.trimIndent()) as CSharpFile
+        return CSharpSemanticChecks(CSharpSemanticSession(project).resolver(f)).run().filter { it.isError }.map { it.text }
+    }
+
+    /** The shape of an EF Core handler of a real project: entities with an abstract base, an own `DbContext`, a DTO named as the base. */
+    private fun stressTestProject(prefix: String, entities: List<String>): Array<Pair<String, String>> = (entities.mapIndexed { i, text ->
+        "$prefix/Db/Entities/Entities$i.cs" to text.replace("NS.", "$prefix.")
+    } + listOf(
+        "$prefix/Common/Date.cs" to """
+            namespace $prefix.Common;
+            public readonly struct Date
+            {
+                public Date(int year, int month, int day) { }
+                public static bool operator ==(Date a, Date b) => true;
+                public static bool operator !=(Date a, Date b) => false;
+                public override bool Equals(object? o) => true;
+                public override int GetHashCode() => 0;
+            }
+        """,
+        "$prefix/Requests/Models.cs" to """
+            namespace $prefix.StressTest.Requests.Templates.Models;
+            public class StressTest { public string Title { get; set; } = ""; }
+            public class TemplateResult { public long Id { get; set; } public string MessageId { get; set; } = ""; }
+        """,
+        "$prefix/Requests/StressTest/GetStageResults.cs" to """
+            using System.Collections.Generic;
+            namespace $prefix.StressTest.Requests.StressTest;
+            public class GetStageResults { public List<long> Ids { get; set; } = new(); }
+        """,
+        "$prefix/Db/DbContext.cs" to """
+            using Shop;
+            using $prefix.StressTest.Db.Entities;
+            namespace $prefix.StressTest.Db;
+            public class DbContext
+            {
+                public DbSet<DirectStressTest> DirectStressTests { get; } = null!;
+                public DbSet<StageInstanceResult> StageInstanceResults { get; } = null!;
+            }
+        """,
+    )).toTypedArray()
+
+    private fun handler(prefix: String) = """
+        using System.Collections.Generic;
+        using System.Linq;
+        using $prefix.Common;
+        using $prefix.StressTest.Requests.StressTest;
+        using $prefix.StressTest.Requests.Templates.Models;
+        namespace $prefix.StressTest.Db.Handlers.StressTestHandlers;
+        internal class GetStageResultsHandler
+        {
+            private readonly DbContext _context = null!;
+            public IList<TemplateResult> Handle(GetStageResults request)
+            {
+                var test = _context
+                    .DirectStressTests
+                    .Where(x => x.BookDate == new Date(2002, 01, 01))
+                    .Select(x => x.CalculationTypeId)
+                    .ToList();
+                var missing = _context.DirectStressTests.Select(x => x.Nope).ToList();
+                return _context.StageInstanceResults.Where(x => request.Ids.Contains(x.Id)).Select(x => new TemplateResult { Id = x.Id, MessageId = x.MessageId }).ToList();
+            }
+        }
+    """
+
+    private fun nope(type: String) =
+        "CS1061: '$type' does not contain a definition for 'Nope' and no accessible extension method 'Nope' accepting a first argument of type '$type' could be found (are you missing a using directive or an assembly reference?)"
+
+    fun testMembersOfAnEntityBaseNamedAsADtoTheHandlerImports() {
+        // the base `StressTest` of the entity is the entity's own, not the DTO of that name the handler's usings bring (E-190)
+        val entities = """
+            using NS.Common;
+            namespace NS.StressTest.Db.Entities;
+            public abstract class Entity<TKey> { public TKey Id { get; set; } = default!; }
+            public abstract class StressTest : Entity<long>
+            {
+                public Date BookDate { get; set; }
+                public int CalculationTypeId { get; set; }
+            }
+            public class DirectStressTest : StressTest { public string? Comment { get; set; } }
+            public class StageInstanceResult : Entity<long> { public string MessageId { get; set; } = ""; }
+        """
+        assertEquals(listOf(nope("DirectStressTest")), problems(handler("Rst1"), *stressTestProject("Rst1", listOf(entities))))
+    }
+
+    fun testMembersOfAnEntityBaseImportedInsideTheNamespace() {
+        // the base is seen through a `using` of the entity's namespace: the handler's own imports bring a DTO of that name
+        val bases = """
+            using NS.Common;
+            namespace NS.StressTest.Db.Entities.Base;
+            public abstract class Entity<TKey> { public TKey Id { get; set; } = default!; }
+            public abstract class StressTest : Entity<long>
+            {
+                public Date BookDate { get; set; }
+                public int CalculationTypeId { get; set; }
+            }
+        """
+        val entities = """
+            namespace NS.StressTest.Db.Entities;
+            using NS.StressTest.Db.Entities.Base;
+            public class DirectStressTest : StressTest { public string? Comment { get; set; } }
+            public class StageInstanceResult : Entity<long> { public string MessageId { get; set; } = ""; }
+        """
+        assertEquals(listOf(nope("DirectStressTest")), problems(handler("Rst2"), *stressTestProject("Rst2", listOf(bases, entities))))
+    }
+
     private companion object {
         const val OPEN = "/*<*/"
         const val CLOSE = "/*>*/"

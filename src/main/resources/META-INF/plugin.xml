@@ -14,6 +14,10 @@
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.xml</depends>
+    <!-- regular expressions in C# strings: the platform's RegExp language injected (CSharpRegexInjection.kt) -->
+    <depends optional="true" config-file="dotnet-regexp.xml">com.intellij.modules.regexp</depends>
+    <!-- JSON in C# strings after `// lang=json` and in [StringSyntax(Json)] arguments (CSharpJsonInjection.kt, 0.1.93) -->
+    <depends optional="true" config-file="dotnet-json.xml">com.intellij.modules.json</depends>
 
     <!-- optional parts: a module is loaded only where its dependencies are (see the descriptor of the module next to META-INF) -->
     <content>
@@ -72,6 +76,10 @@
 
         <lang.parserDefinition language="C#"
                                implementationClass="io.github.dotnetsupport.lang.CSharpParserDefinition"/>
+        <!-- string literals of the native tree are hosts of injected languages (RegExp in dotnet-regexp.xml): CSharpStringLiteralHost.kt -->
+        <lang.ast.factory language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpAstFactory"/>
+        <lang.elementManipulator forClass="io.github.dotnetsupport.lang.CSharpStringLiteralLeaf"
+                                 implementationClass="io.github.dotnetsupport.lang.CSharpStringLiteralManipulator"/>
         <!-- the error elements of the native tree stay hidden: the server or NativeCSharpDiagnosticsAnnotator reports at Roslyn's spans -->
         <highlightErrorFilter implementation="io.github.dotnetsupport.lang.CSharpHighlightErrorFilter"/>
         <lang.syntaxHighlighterFactory language="C#"
@@ -81,8 +89,13 @@
         <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.NativeCSharpSemanticColorsAnnotator"/>
         <!-- {0,5:N2} of string.Format / Console.WriteLine / AppendFormat, by the name of the method -->
         <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpFormatItemsAnnotator"/>
+        <!-- 0.1.93: placeholders of logging message templates (with the count check of CA2017) and parts of route templates -->
+        <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpLoggerTemplateAnnotator"/>
+        <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpRouteTemplateAnnotator"/>
         <!-- DIAGNOSTICS NATIVE: Roslyn's syntax errors from the tree; the server keeps the semantic ones -->
         <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.NativeCSharpDiagnosticsAnnotator"/>
+        <!-- the colors of the annotators above on screen as a C# editor opens, before the daemon's first pass (0.1.84) -->
+        <editorFactoryListener implementation="io.github.dotnetsupport.lang.CSharpOpeningColors$Opener"/>
         <!-- on the declarations CSharpDeclarations finds by tokens -->
         <lang.psiStructureViewFactory language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpStructureViewFactory"/>
         <breadcrumbsInfoProvider implementation="io.github.dotnetsupport.lang.CSharpBreadcrumbsProvider"/>
@@ -115,6 +128,9 @@
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpWrapInUsingIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpSortUsingsIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToGlobalUsingIntention</className><category>C#</category></intentionAction>
+        <!-- Alt+Enter on a type's header or on whitespace of its body: the dialogs of Implement missing members / Override members (0.1.85) -->
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpImplementMissingMembersIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpOverrideMembersIntention</className><category>C#</category></intentionAction>
         <!-- A7: the context actions on the native tree (NativeCSharpContextActions.kt), behind CSharpFeature.CONTEXT_ACTIONS -->
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpIfToConditionalIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpConditionalToIfIntention</className><category>C#</category></intentionAction>
@@ -125,6 +141,9 @@
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpIntroduceVariableIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpInlineVariableIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpAddArgumentNameIntention</className><category>C#</category></intentionAction>
+        <!-- object initializers and required members (0.1.98) -->
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpInitializeRequiredMembersIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpInitializeMembersIntention</className><category>C#</category></intentionAction>
         <lang.foldingBuilder language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpFoldingBuilder"/>
         <!-- TODO / FIXME in the comments of C#: the TODO tool window and the highlighting -->
         <todoIndexer filetype="C#" implementationClass="io.github.dotnetsupport.lang.CSharpTodoIndexer"/>
@@ -151,6 +170,11 @@
         <defaultLiveTemplates file="/liveTemplates/CSharp.xml"/>
         <liveTemplateContext contextId="CSHARP" implementation="io.github.dotnetsupport.lang.CSharpTemplateContext"/>
         <liveTemplateMacro implementation="io.github.dotnetsupport.lang.CSharpTypeNameMacro"/>
+        <liveTemplateMacro implementation="io.github.dotnetsupport.lang.CSharpSuggestVariableNameMacro"/>
+        <liveTemplateMacro implementation="io.github.dotnetsupport.lang.CSharpSuggestElementNameMacro"/>
+        <liveTemplateMacro implementation="io.github.dotnetsupport.lang.CSharpNewGuidMacro"/>
+        <liveTemplateMacro implementation="io.github.dotnetsupport.lang.CSharpConstructorParametersMacro"/>
+        <liveTemplateMacro implementation="io.github.dotnetsupport.lang.CSharpConstructorBodyMacro"/>
         <typedHandler implementation="io.github.dotnetsupport.lang.CSharpDocCommentTypedHandler"/>
         <!-- indentation while typing, by the rules of resources/csharpIndent/rules.json; whole files are formatted by CSharpier / dotnet format -->
         <lineIndentProvider implementation="io.github.dotnetsupport.lang.CSharpLineIndentProvider"/>
@@ -160,6 +184,8 @@
         <backspaceHandlerDelegate implementation="io.github.dotnetsupport.lang.CSharpAngleBracketBackspaceHandler"/>
         <!-- `;` typed before the `;` at the end of the line steps over it (the completion of a void method puts `();`) -->
         <typedHandler implementation="io.github.dotnetsupport.lang.CSharpSemicolonTypedHandler"/>
+        <!-- a space after `override` / `partial` / `new` opens the completion list, as in Rider (the server is off by default) -->
+        <typedHandler implementation="io.github.dotnetsupport.lang.CSharpSpaceAutoPopupHandler"/>
         <enterHandlerDelegate order="first" implementation="io.github.dotnetsupport.lang.CSharpEnterAfterBraceHandler"/>
         <enterHandlerDelegate implementation="io.github.dotnetsupport.lang.CSharpDocCommentEnterHandler"/>
         <!-- Enter inside a // line comment or a /* */ block continues it on the next line (/// has its own handler above) -->
@@ -198,8 +224,9 @@
         <usageGroupingRuleProvider implementation="io.github.dotnetsupport.lang.CSharpUsageGroupingRuleProvider"/>
         <fileStructureGroupRuleProvider implementation="io.github.dotnetsupport.lang.CSharpMemberGroupRuleProvider"/>
         <colorSettingsPage implementation="io.github.dotnetsupport.lang.CSharpColorSettingsPage"/>
-        <additionalTextAttributes scheme="Default" file="colorSchemes/CSharpDefault.xml"/>
-        <additionalTextAttributes scheme="Darcula" file="colorSchemes/CSharpDarcula.xml"/>
+        <!-- no colors of our own in the IDE's schemes: C# keys fall back to their Language Defaults; Rider's palette is a scheme to pick -->
+        <bundledColorScheme path="colorSchemes/RiderDark"/>
+        <bundledColorScheme path="colorSchemes/RiderLight"/>
         <lang.commenter language="C#"
                         implementationClass="io.github.dotnetsupport.lang.CSharpCommenter"/>
         <lang.braceMatcher language="C#"
@@ -209,6 +236,7 @@
 
         <!-- MSBuild files: completion, documentation and checks from the schema of resources/msbuildSchema -->
         <xml.tagNameProvider implementation="io.github.dotnetsupport.msbuild.MsBuildTagNameProvider"/>
+        <completion.contributor language="XML" order="first" implementationClass="io.github.dotnetsupport.msbuild.MsBuildReferenceCompletionContributor"/>
         <completion.contributor language="XML" order="first" implementationClass="io.github.dotnetsupport.msbuild.MsBuildCompletionContributor"/>
         <completion.contributor language="XML" order="first" implementationClass="io.github.dotnetsupport.msbuild.MsBuildPackageCompletionContributor"/>
         <!-- a dot in a package id goes on with the id, it does not pick the selected package -->
@@ -308,8 +336,41 @@
         <lang.documentationProvider language="C#" implementationClass="io.github.dotnetsupport.lang.NativeCSharpQuickNavigateInfo"/>
         <!-- COMPLETION = Built-in: the list of the plugin's tree, in front of the server's, whose duplicates it drops (NativeCSharpCompletion) -->
         <completion.contributor language="C#" id="dotnetNativeCompletion" order="first, after dotnetCaseInsensitive" implementationClass="io.github.dotnetsupport.lang.NativeCSharpCompletionContributor"/>
+        <!-- 0.1.91, how the list behaves (CSharpCompletionBehaviour.kt): suggestion mode at name places, middle matching, keywords of Roslyn's
+             recommenders the native places miss; commit characters; statistics of choices among items of one priority; auto-popup; Quick Doc of an item -->
+        <completion.contributor language="C#" id="dotnetCompletionBehaviour" order="first, after dotnetCaseInsensitive, before dotnetNativeCompletion"
+                                implementationClass="io.github.dotnetsupport.lang.CSharpCompletionBehaviourContributor"/>
+        <!-- 0.1.94, the places the native list has none for (NativeCSharpLanguageCompletion.kt): explicit interface members, `[]`, names of tuple elements, partial types -->
+        <completion.contributor language="C#" order="first, after dotnetCaseInsensitive, before dotnetNativeCompletion"
+                                implementationClass="io.github.dotnetsupport.lang.NativeCSharpLanguageCompletionContributor"/>
+        <lookup.charFilter id="dotnetCSharpCommit" order="before default" implementation="io.github.dotnetsupport.lang.CSharpCommitCharFilter"/>
+        <weigher key="completion" id="dotnetSuggestionStats" order="after prefix, before stats" implementationClass="io.github.dotnetsupport.lang.CSharpSuggestionStatsWeigher"/>
+        <typedHandler implementation="io.github.dotnetsupport.lang.CSharpCompletionAutoPopup"/>
+        <platform.backend.documentation.lookupElementTargetProvider implementation="io.github.dotnetsupport.lang.CSharpLookupDocumentationTargetProvider"/>
+        <!-- inside strings, directives and doc comments, where the list above has nothing: format specifiers, #directives, XML doc tags (0.1.90) -->
+        <completion.contributor language="C#" order="first, after dotnetCaseInsensitive, before dotnetNativeCompletion" implementationClass="io.github.dotnetsupport.lang.CSharpFormatSpecifierCompletion"/>
+        <completion.contributor language="C#" order="first, after dotnetCaseInsensitive, before dotnetNativeCompletion" implementationClass="io.github.dotnetsupport.lang.CSharpPreprocessorCompletion"/>
+        <completion.contributor language="C#" order="first, after dotnetCaseInsensitive, before dotnetNativeCompletion" implementationClass="io.github.dotnetsupport.lang.CSharpRareCompletion"/>
+        <completion.contributor language="C#" order="first, after dotnetCaseInsensitive, before dotnetNativeCompletion" implementationClass="io.github.dotnetsupport.lang.CSharpDocCommentCompletion"/>
+        <!-- 0.1.93, ASP.NET strings: message template placeholders, route parameters and constraints, configuration keys, implementations in AddScoped<I, -->
+        <completion.contributor language="C#" order="first, after dotnetCaseInsensitive, before dotnetNativeCompletion" implementationClass="io.github.dotnetsupport.lang.CSharpLoggerTemplateCompletion"/>
+        <completion.contributor language="C#" order="first, after dotnetCaseInsensitive, before dotnetNativeCompletion" implementationClass="io.github.dotnetsupport.lang.CSharpRouteTemplateCompletion"/>
+        <completion.contributor language="C#" order="first, after dotnetCaseInsensitive, before dotnetNativeCompletion" implementationClass="io.github.dotnetsupport.lang.CSharpConfigurationKeyCompletion"/>
+        <completion.contributor language="C#" order="first, after dotnetCaseInsensitive, before dotnetNativeCompletion" implementationClass="io.github.dotnetsupport.lang.CSharpServiceRegistrationCompletion"/>
+        <typedHandler implementation="io.github.dotnetsupport.lang.CSharpAspNetStringsAutoPopup"/>
+        <typedHandler implementation="io.github.dotnetsupport.lang.CSharpPreprocessorTypedHandler"/>
+        <typedHandler implementation="io.github.dotnetsupport.lang.CSharpDocCommentTypedCompletion"/>
         <!-- gray text of a declaration that continues one way only: { get; set; }, new(), _name = name; -->
         <inline.completion.provider implementation="io.github.dotnetsupport.lang.CSharpGhostTextProvider"/>
+        <!-- 0.1.101, gray text on the semantics: `new User();` by the variable's name, `);`, the members of an empty initializer and their values, names after a type;
+             before the one of the arguments: at `Save(|)` it asks that one when it has no `;` to give -->
+        <inline.completion.provider implementation="io.github.dotnetsupport.lang.NativeCSharpTypingGhostProvider"/>
+        <!-- gray lambda / arguments where an argument begins, on the plugin's semantics (DOCUMENTATION = Built-in; the server's: RoslynLambdaGhost) -->
+        <inline.completion.provider implementation="io.github.dotnetsupport.lang.NativeCSharpLambdaGhost"/>
+        <!-- 0.1.101: the file's name after `class `; one `class` row (the keyword), not the keyword and the live template -->
+        <completion.contributor language="C#" order="first, after dotnetCaseInsensitive, before dotnetNativeCompletion" implementationClass="io.github.dotnetsupport.lang.NativeCSharpTypeNameCompletion"/>
+        <completion.contributor language="C#" order="first, after dotnetCaseInsensitive, before dotnetNativeCompletion" implementationClass="io.github.dotnetsupport.lang.NativeCSharpValueCompletion"/>
+        <completion.contributor language="C#" order="first, before liveTemplates, before dotnetCaseInsensitive" implementationClass="io.github.dotnetsupport.lang.CSharpTemplateKeywordDedupe"/>
         <registryKey key="dotnet.debugger.adapter.log" defaultValue="true"
                      description="Write the log of the dotnet-debugger adapter for every debug session (menu .NET | Show Debugger Logs)"/>
         <registryKey key="dotnet.debugger.protocol.trace" defaultValue="false"
@@ -399,6 +460,8 @@
             </group>
             <action id="DotNet.RenameProject" class="io.github.dotnetsupport.actions.RenameProjectAction" text="Rename Project..."
                     description="Rename the project file and optionally its directory; the solution, project references and run configurations follow"/>
+            <action id="DotNet.MoveToSolutionFolder" class="io.github.dotnetsupport.actions.MoveToSolutionFolderAction" text="Move to Solution Folder..."
+                    description="Move the selected projects into a solution folder or to the root of the solution; dragging them onto a folder does the same"/>
             <action id="DotNet.EditProjectFile" class="io.github.dotnetsupport.actions.EditProjectFileAction" text="Edit Project File"
                     icon="AllIcons.Actions.Edit" description="Open the .csproj of the project or the solution file in the editor"/>
             <action id="DotNet.ProjectProperties" class="io.github.dotnetsupport.actions.ProjectPropertiesAction" text="Properties..."
@@ -557,6 +620,8 @@
             </action>
             <action id="DotNet.Environment" class="io.github.dotnetsupport.sdk.DotNetEnvironmentAction"
                     text=".NET on This Machine..." description="SDKs and runtimes with their support status, dotnet --info, global.json"/>
+            <action id="DotNet.CSharpColorPalette" class="io.github.dotnetsupport.lang.palette.CSharpPaletteAction" text="C# Color Palette..."
+                    description="Color C# like Rider, Visual Studio, VS Code, Nord, Dracula, One Dark, Solarized or GitHub on top of the current color scheme; the background stays"/>
             <reference ref="DotNet.FormatSelected"/>
             <reference ref="DotNet.VerifyFormatting"/>
             <reference ref="DotNet.AnalyzeUpgrade"/>
@@ -668,6 +733,14 @@
                   topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
         <listener class="io.github.dotnetsupport.codeanalysis.CodeAnalysisEditorListener"
                   topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
+        <!-- the colors painted as a C# editor opens give way to the daemon's once it has finished with the editor -->
+        <listener class="io.github.dotnetsupport.lang.CSharpOpeningColors$Daemon"
+                  topic="com.intellij.codeInsight.daemon.DaemonCodeAnalyzer$DaemonListener"/>
+        <listener class="io.github.dotnetsupport.lang.CSharpOpeningColors$Smart"
+                  topic="com.intellij.openapi.project.DumbService$DumbModeListener"/>
+        <!-- the C# palette: written again if the scheme lost it, and once a suggestion of the palettes (lang/palette) -->
+        <listener class="io.github.dotnetsupport.lang.palette.CSharpPalettePrompt"
+                  topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
     </projectListeners>
 
     <applicationListeners>
@@ -678,5 +751,8 @@
                   topic="io.github.dotnetsupport.lsp.RoslynLanguageServerSettings$Listener"/>
         <listener class="io.github.dotnetsupport.lang.NativeCSharpDiagnosticsSwitch"
                   topic="io.github.dotnetsupport.lsp.RoslynLanguageServerSettings$Listener"/>
+        <!-- the C# palette follows a switch of the color scheme or of the theme, in the variant of the new background -->
+        <listener class="io.github.dotnetsupport.lang.palette.CSharpPaletteSchemeListener"
+                  topic="com.intellij.openapi.editor.colors.EditorColorsListener"/>
     </applicationListeners>
 </idea-plugin>

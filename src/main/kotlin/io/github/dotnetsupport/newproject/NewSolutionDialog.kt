@@ -58,8 +58,23 @@ import javax.swing.event.DocumentEvent
  * New Project wizard ([DotNetTemplatePanel]); the solution is created by [DotNetProjectCreator.createSolution].
  *
  * [loadFromCli] is false in tests: the built-in templates are shown and no `dotnet` runs.
+ *
+ * With [addTo] it is the dialog of Add | New Project... of the Solution view, as in Rider, where both are one window: the same kinds,
+ * templates, frameworks and options, without the solution name, Empty Solution and the repository; Create returns [addProjectRequest].
  */
-class NewSolutionDialog(private val project: Project?, private val loadFromCli: Boolean = true) : DialogWrapper(project, true) {
+class NewSolutionDialog(
+    private val project: Project?,
+    private val loadFromCli: Boolean = true,
+    private val addTo: AddProjectTarget? = null,
+) : DialogWrapper(project, true) {
+    /** Where Add | New Project puts the project: [baseDirectory] is the solution directory, [destination] the solution and its folder. */
+    class AddProjectTarget(val baseDirectory: String, val destination: String?)
+
+    /** What Create of Add | New Project gives: the project [directory] (`<base>/<name>`), its [name] and the template with its options. */
+    class AddProjectRequest(val directory: File, val name: String, val template: DotNetTemplateSettings)
+
+    private val isAddMode: Boolean get() = addTo != null
+
     /** An item of the left column. */
     sealed interface Entry {
         data object EmptySolution : Entry
@@ -104,6 +119,8 @@ class NewSolutionDialog(private val project: Project?, private val loadFromCli: 
     private val classificationsLabel = JBLabel()
     private val optionsForm = TemplateOptionsForm()
 
+    private lateinit var solutionRow: Row
+    private lateinit var repositoryRow: Row
     private lateinit var projectRow: Row
     private lateinit var sameDirectoryRow: Row
     private lateinit var createDirectoryRow: Row
@@ -130,10 +147,10 @@ class NewSolutionDialog(private val project: Project?, private val loadFromCli: 
     private val helpExecutor = AppExecutorUtil.createBoundedApplicationPoolExecutor("New Solution: dotnet new --help", 1)
 
     init {
-        title = "New Solution"
+        title = if (isAddMode) "New Project" else "New Solution"
         setOKButtonText("Create")
-        directory.addBrowseFolderListener(project, FileChooserDescriptorFactory.createSingleFolderDescriptor().withTitle("Solution Directory"))
-        directory.text = ProjectUtil.getBaseDir()
+        directory.addBrowseFolderListener(project, FileChooserDescriptorFactory.createSingleFolderDescriptor().withTitle(if (isAddMode) "Project Directory" else "Solution Directory"))
+        directory.text = addTo?.baseDirectory ?: ProjectUtil.getBaseDir()
         leftList.selectionMode = ListSelectionModel.SINGLE_SELECTION
         leftList.cellRenderer = LeftRenderer()
         templateList.selectionMode = ListSelectionModel.SINGLE_SELECTION
@@ -145,8 +162,8 @@ class NewSolutionDialog(private val project: Project?, private val loadFromCli: 
         if (loadFromCli) loadFromCli()
     }
 
-    override fun getDimensionServiceKey(): String = "DotNet.NewSolutionDialog"
-    override fun getPreferredFocusedComponent(): JComponent = solutionName
+    override fun getDimensionServiceKey(): String = if (isAddMode) "DotNet.NewProjectDialog" else "DotNet.NewSolutionDialog"
+    override fun getPreferredFocusedComponent(): JComponent = if (isAddMode) projectName else solutionName
 
     override fun createCenterPanel(): JComponent {
         val left = JPanel(BorderLayout()).apply {
@@ -157,13 +174,15 @@ class NewSolutionDialog(private val project: Project?, private val loadFromCli: 
             add(ActionLink("Install Templates...") { installTemplates() }.apply { border = JBUI.Borders.empty(10, 24) }, BorderLayout.SOUTH)
         }
         val form = panel {
-            row(label("Solution name:", 'S')) { cell(solutionName).columns(COLUMNS_MEDIUM) }
+            solutionRow = row(label("Solution name:", 'S')) { cell(solutionName).columns(COLUMNS_MEDIUM) }.visible(!isAddMode)
             projectRow = row(label("Project name:", 'P')) { cell(projectName).columns(COLUMNS_MEDIUM) }
-            row(label("Solution directory:", 'D', 9)) { cell(directory).columns(COLUMNS_LARGE) }
+            if (isAddMode) row(label("Directory:", 'D')) { cell(directory).columns(COLUMNS_LARGE) }
+            else row(label("Solution directory:", 'D', 9)) { cell(directory).columns(COLUMNS_LARGE) }
             row("") { cell(createdIn) }
             createDirectoryRow = row("") { cell(createDirectory) }
             sameDirectoryRow = row("") { cell(sameDirectory) }
-            row("") { cell(git) }
+            repositoryRow = row("") { cell(git) }.visible(!isAddMode)
+            addTo?.destination?.let { destination -> row(label("Add to:")) { label(destination) } }
             frameworkRow = row(label("Target framework:")) {
                 cell(frameworkCombo)
                 label("from")
@@ -261,7 +280,7 @@ class NewSolutionDialog(private val project: Project?, private val loadFromCli: 
         val query = search.text.orEmpty()
         val found = templates.filter { NewSolution.matches(it, query) }
         val entries = buildList {
-            if (query.isBlank() || "Empty Solution".contains(query.trim(), ignoreCase = true)) add(Entry.EmptySolution)
+            if (!isAddMode && (query.isBlank() || "Empty Solution".contains(query.trim(), ignoreCase = true))) add(Entry.EmptySolution)
             for ((group, categories) in NewSolution.categories(found).groupBy { it.group }) {
                 add(Entry.Header(group.title))
                 for (category in categories) {
@@ -284,8 +303,8 @@ class NewSolutionDialog(private val project: Project?, private val loadFromCli: 
         withoutEvents { leftList.setSelectedValue(entry, true) }
         val empty = entry is Entry.EmptySolution
         projectRow.visible(!empty)
-        sameDirectoryRow.visible(!empty)
-        createDirectoryRow.visible(empty)
+        sameDirectoryRow.visible(!empty && !isAddMode)
+        createDirectoryRow.visible(empty && !isAddMode)
         frameworkRow.visible(!empty)
         languageRow.visible(!empty)
         descriptionGroup.visible(!empty)
@@ -468,6 +487,10 @@ class NewSolutionDialog(private val project: Project?, private val loadFromCli: 
     private val isEmptySolution: Boolean get() = current is Entry.EmptySolution
 
     private fun updateCreatedIn() {
+        if (isAddMode) {
+            createdIn.text = NewSolution.projectCreatedIn(directory.text.trim(), projectName.text)
+            return
+        }
         createdIn.text = NewSolution.createdIn(
             directory.text.trim(), solutionName.text, projectName.text.takeUnless { isEmptySolution }, sameDirectory.isSelected, createDirectory.isSelected,
         )
@@ -509,7 +532,9 @@ class NewSolutionDialog(private val project: Project?, private val loadFromCli: 
 
     override fun doValidate(): ValidationInfo? {
         val template = selectedTemplate
-        val problem = NewSolution.validate(
+        val problem = if (isAddMode) NewSolution.validateProject(
+            projectName.text, directory.text.trim(), template != null, isNonEmptyDirectory = { it.isDirectory && !it.list().isNullOrEmpty() },
+        ) else NewSolution.validate(
             solutionName.text, projectName.text.takeUnless { isEmptySolution }, directory.text.trim(), sameDirectory.isSelected, template != null,
             isNonEmptyDirectory = { it.isDirectory && !it.list().isNullOrEmpty() }, createDirectory = !isEmptySolution || createDirectory.isSelected,
         )
@@ -526,15 +551,25 @@ class NewSolutionDialog(private val project: Project?, private val loadFromCli: 
         return null
     }
 
+    private fun templateSettings(template: DotNetTemplate): DotNetTemplateSettings {
+        val lang = languageOf(template, language)
+        val help = TemplateHelpCache.cached(template.shortName, lang)
+        return DotNetTemplateSettings(template, lang, framework?.takeIf { f -> help != null && f in help.frameworks }, optionsForm.arguments)
+    }
+
+    /** What Create of Add | New Project does; null before a template is chosen or out of that mode. */
+    fun addProjectRequest(): AddProjectRequest? {
+        if (!isAddMode) return null
+        val template = selectedTemplate ?: return null
+        val name = projectName.text.trim()
+        return AddProjectRequest(File(directory.text.trim(), name), name, templateSettings(template))
+    }
+
     /** What Create does; null before a template is chosen. */
     fun request(): NewSolution.Request? {
         val template = selectedTemplate
         if (!isEmptySolution && template == null) return null
-        val settings = template?.let {
-            val lang = languageOf(it, language)
-            val help = TemplateHelpCache.cached(it.shortName, lang)
-            DotNetTemplateSettings(it, lang, framework?.takeIf { f -> help != null && f in help.frameworks }, optionsForm.arguments)
-        }
+        val settings = template?.let(::templateSettings)
         return NewSolution.Request(
             parent = directory.text.trim(),
             solutionName = solutionName.text,
@@ -548,6 +583,11 @@ class NewSolutionDialog(private val project: Project?, private val loadFromCli: 
     }
 
     override fun doOKAction() {
+        if (isAddMode) {
+            // the caller adds the project: addProjectRequest()
+            if (addProjectRequest() != null) super.doOKAction()
+            return
+        }
         val request = request() ?: return
         super.doOKAction()
         // after the dialog is gone: opening the solution may close the frame of the current project
@@ -577,6 +617,15 @@ class NewSolutionDialog(private val project: Project?, private val loadFromCli: 
     fun shownTemplates(): List<String> = templateModel.items.map { it.shortName }
 
     fun isProjectNameShown(): Boolean = projectName.isVisible
+
+    fun isSolutionNameShown(): Boolean = solutionName.isVisible
+
+    /** The options of the template the form shows now (those whose condition holds). */
+    fun shownOptionNames(): List<String> = optionsForm.shownOptions.map { it.name }
+
+    fun selectTemplate(shortName: String) { templateModel.items.firstOrNull { it.shortName == shortName }?.let { templateList.setSelectedValue(it, true) } }
+
+    fun validationMessage(): String? = doValidate()?.message
 
     fun setSearch(text: String) { search.text = text }
 

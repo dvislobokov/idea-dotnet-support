@@ -126,6 +126,8 @@ class NativeCSharpCompletionPlace(
                 return NativeCSharpCompletionPlace(NativeCompletionKind.STATEMENT, leaf, name, prev, keywords = if (global) TOP_LEVEL_STARTS else emptyList())
             }
             memberStart(name)?.let { (member, container) ->
+                // `public event |`: only a (delegate) type goes there
+                if (member is CSharpEventDeclaration || member is CSharpEventFieldDeclaration) return typePlace(leaf, name, prev)
                 val modifiers = member.modifiers.map { it.text }
                 return when (container) {
                     is CSharpTypeDeclaration -> NativeCSharpCompletionPlace(NativeCompletionKind.MEMBER_START, leaf, name, prev, modifiers = modifiers, typeDeclaration = container)

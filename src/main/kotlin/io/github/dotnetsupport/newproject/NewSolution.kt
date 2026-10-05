@@ -109,6 +109,24 @@ object NewSolution {
         return (if (projectName == null) "The solution will be created in " else "The project will be created in ") + where
     }
 
+    /** The gray line under the directory of Add | New Project: the directory of the project itself. */
+    fun projectCreatedIn(parent: String, projectName: String): String =
+        "The project will be created in " + (if (projectName.isBlank()) File(parent).path else File(parent, projectName.trim()).path)
+
+    /** The first problem of the form of Add | New Project, or null: the project goes to `<parent>/<name>`, which must be free. */
+    fun validateProject(projectName: String, parent: String, hasTemplate: Boolean, isNonEmptyDirectory: (File) -> Boolean): Problem? {
+        when {
+            projectName.isBlank() -> return Problem(Field.PROJECT_NAME, "Specify the project name")
+            projectName.any { it in INVALID_NAME_CHARS || it < ' ' } -> return Problem(Field.PROJECT_NAME, "The project name contains characters that are not allowed in file names")
+            projectName.trim() != projectName || projectName.endsWith('.') -> return Problem(Field.PROJECT_NAME, "The project name cannot start or end with a space or end with a dot")
+        }
+        if (parent.isBlank()) return Problem(Field.DIRECTORY, "Specify the project directory")
+        val directory = File(parent, projectName)
+        if (isNonEmptyDirectory(directory)) return Problem(Field.DIRECTORY, "The directory ${directory.path} already exists and is not empty")
+        if (!hasTemplate) return Problem(Field.TEMPLATE, "Select a template")
+        return null
+    }
+
     /** The name Rider starts with for a template: `WpfApp` for `wpf`, `ConsoleApp` for `console`, else the one of its kind. */
     fun defaultBaseName(template: DotNetTemplate?): String {
         if (template == null) return "Solution"

@@ -15,8 +15,9 @@ namespace Playground.Editor;
 public class Formatting
 {
     // TYPE:format-method — select the whole method `Sum` below (from `public` to its `}`), Ctrl+Alt+L. EXPECT: `public int Sum(int a, int b)`
-    // at the indent of the class, its braces on lines of their own (Allman), the body indented by 4; `if (a > b) { return a - b; }` stays
-    // on one line (a single-line block is kept), `return b - a;` one level under `else`; the methods around are not touched.
+    // at the indent of the class, its braces on lines of their own (Allman), the body indented by 4; `if (a > b) { return a - b; }` is
+    // laid out in full as Rider does since 0.1.100 (`{`, `return a - b;`, `}` on lines of their own; with `dotnet format` it stays on one
+    // line), `return b - a;` one level under `else`; the methods around are not touched.
     // Server: same text; `dotnet format` without the server formats whole files only (the whole file changes)
     public int Sum(int a, int b)
     {

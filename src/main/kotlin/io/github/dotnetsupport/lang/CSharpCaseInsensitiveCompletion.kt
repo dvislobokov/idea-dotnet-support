@@ -24,7 +24,9 @@ class CSharpCaseInsensitiveCompletion : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
         if (parameters.originalFile !is CSharpFile) return
         // in or right after a number nothing is completed, as in Rider and Visual Studio
-        if (isInNumericLiteral(parameters.editor.document.charsSequence, parameters.offset)) {
+        // ...except in the format of an interpolation or of string.Format, where `{x:0` starts a custom format: CSharpFormatSpecifierCompletion lists those
+        val text = parameters.editor.document.charsSequence
+        if (isInNumericLiteral(text, parameters.offset) && CSharpFormatPlaces.at(parameters.position, parameters.offset, text) == null) {
             result.stopHere()
             return
         }

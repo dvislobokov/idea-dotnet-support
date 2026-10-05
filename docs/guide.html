@@ -199,6 +199,7 @@ footer a { color: var(--text-2); }
 <tr><td>Monitor .NET Process</td><td>Окно .NET Monitor: процессор, память, сборка мусора, запросы и исключения работающего процесса.</td></tr>
 <tr><td>Show Allocations in Editor</td><td>Расход памяти по строкам кода, см. <a href="#memory">раздел ниже</a>.</td></tr>
 <tr><td>.NET on This Machine...</td><td>Установленные SDK и среды выполнения со статусом поддержки, <code>dotnet --info</code>, <code>global.json</code>.</td></tr>
+<tr><td>C# Color Palette...</td><td>Палитра C# в стиле Rider, Visual Studio, VS Code, Nord, Dracula, One Dark, Solarized или GitHub поверх текущей схемы: фон не меняется. Палитра применяется сразу при движении по списку, Esc возвращает прежнюю.</td></tr>
 <tr><td>Format, Verify Formatting</td><td>Форматирование проекта или решения и проверка, что всё отформатировано, как это делает сервер сборки.</td></tr>
 <tr><td>Analyze Upgrade to Newer .NET...</td><td>Анализ перехода на новую версию .NET: пакеты, свойства проекта и API, которые мешают переходу.</td></tr>
 <tr><td>Insert New GUID</td><td>Вставляет новый GUID в каждую позицию курсора.</td></tr>
@@ -332,6 +333,8 @@ footer a { color: var(--text-2); }
 <tr><td><b>Открывать окно Build при каждой сборке</b><small lang="en">Open the Build tool window on every build</small></td><td>включено</td><td>Если выключено, окно открывается только при ошибке сборки</td></tr>
 <tr><td><b>Переключать на вид Solution при открытии решения</b><small lang="en">Switch to the Solution view when a solution is opened</small></td><td>включено</td><td>Окно Project показывает решение так, как его видит сборка. Вернуться к обычному виду можно в заголовке окна.</td></tr>
 <tr><td><b>Язык страниц настроек</b><small lang="en">Language of the settings pages</small></td><td>Как в IDE</td><td>Применяется при следующем открытии окна Settings. Названия страниц в дереве настроек следуют языку IDE. Русского языкового пакета для самой IDE нет, поэтому язык страниц плагина выбирается здесь.</td></tr>
+<tr><td><b>Палитра C#</b><small lang="en">C# color palette</small></td><td>Как в IDE</td><td>Раскрашивает только C# поверх текущей цветовой схемы: фон и другие языки не меняются. Тёмный или светлый вариант выбирается по фону схемы. Посмотреть вживую: .NET | C# Color Palette... Палитры: Rider, Visual Studio, VS Code, Nord, Dracula, One Dark / One Light, Solarized, GitHub; «Как в IDE» — без палитры, C# берёт цвета Language Defaults схемы. Палитра записывается в текущую схему (её редактируемую копию, как при правке в Settings | Editor | Color Scheme) и переписывается при смене схемы или темы. Список с живым просмотром — меню .NET → C# Color Palette…, Esc возвращает прежнюю.</td></tr>
+<tr><td><b>Исключить из автодополнения</b><small lang="en">Exclude from completion</small></td><td>пусто</td><td>Типы и пространства имён, которые автодополнение C# никогда не предлагает, по одному в строке: <code>System.Data.*</code>, <code>System.Data.DataTable</code>, <code>*.Internal.*</code>. Пространство имён без символа подстановки охватывает и вложенные. Работает и для списка импортируемых типов, и для методов расширения из неподключённых пространств имён.</td></tr>
 </tbody>
 </table></div>
 <h3 id="settings-build">Инструменты и сборка <small lang="en">Toolset and Build</small></h3>

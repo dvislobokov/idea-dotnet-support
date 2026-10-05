@@ -20,6 +20,10 @@ object CSharpVariableNames {
     fun forType(type: String, style: NativeCSharpCompletionPlace.NameStyle = NativeCSharpCompletionPlace.NameStyle.LOCAL): List<String> =
         bases(type).map { styled(it, style) }.distinct().take(MAX)
 
+    /** The type's whole name (`UserDto` → `userDto`, `IOrderService` → `orderService`, `List<OrderLine>` → `orderLines`): the gray text after a type. */
+    fun full(type: String, style: NativeCSharpCompletionPlace.NameStyle = NativeCSharpCompletionPlace.NameStyle.LOCAL): String? =
+        bases(type).lastOrNull()?.let { styled(it, style) }
+
     /** `builder` → `builder1` when taken. */
     fun unique(name: String, taken: Set<String>): String {
         if (name !in taken) return name

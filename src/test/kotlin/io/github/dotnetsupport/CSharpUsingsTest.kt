@@ -174,18 +174,28 @@ class CSharpUsingsTest : BasePlatformTestCase() {
         return myFixture.editor.document.text
     }
 
+    /** The text of the stop the live template of a postfix waits at (the variable's name since 0.1.89), the template then finished. */
+    private fun templateStop(): String? {
+        val state = com.intellij.codeInsight.template.impl.TemplateManagerImpl.getTemplateState(myFixture.editor) ?: return myFixture.editor.selectionModel.selectedText
+        val range = state.currentVariableRange ?: return null
+        val text = myFixture.editor.document.text.substring(range.startOffset, range.endOffset)
+        com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(project) { state.gotoEnd(false) }
+        return text
+    }
+
     fun testPostfixUsingAndAwaitUsing() {
+        com.intellij.codeInsight.template.impl.TemplateManagerImpl.setTemplateTesting(testRootDisposable)
         val templates = CSharpPostfixTemplateProvider().templates.associateBy { it.key }
         assertEquals(
             "class A { void M(string path) { using var reader = new StreamReader(path); } }",
             expand(templates.getValue(".using"), "class A { void M(string path) { new StreamReader(path)<caret> } }"),
         )
-        assertEquals("reader", myFixture.editor.selectionModel.selectedText)
+        assertEquals("reader", templateStop())
         assertEquals(
             "using System.Threading.Tasks; class A { async Task M(Db db) { await using var transaction = db.BeginTransactionAsync(); } }",
             expand(templates.getValue(".awaitusing"), "using System.Threading.Tasks; class A { void M(Db db) { db.BeginTransactionAsync()<caret> } }"),
         )
-        assertEquals("transaction", myFixture.editor.selectionModel.selectedText)
+        assertEquals("transaction", templateStop())
         assertEquals("value", CSharpUsingNames.of("stream"))
         assertEquals("connection", CSharpUsingNames.of("new SqlConnection(text)"))
         assertEquals("stream", CSharpUsingNames.of("File.OpenStream(path)"))

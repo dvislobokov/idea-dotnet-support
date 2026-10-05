@@ -27,8 +27,8 @@ object NuGetNetwork {
                 else -> proxies.filter { it.type() != Proxy.Type.DIRECT }.joinToString(", ") { "via ${it.type().name.lowercase()} proxy ${it.address()}" }
             }
         }.getOrElse { "route unknown: ${it.javaClass.simpleName}" }
-        val user = runCatching { NuGetCredentialStore.get(source)?.userName }.getOrNull()
-        return route + if (user != null) ", as user $user" else ", no credentials stored for the source"
+        val user = runCatching { NuGetCredentialStore.cached(source)?.userName }.getOrNull()
+        return route + if (user != null) ", as user $user" else ", no credentials used for the source"
     }
 
     /** The proxy settings of the IDE (Settings | Appearance & Behavior | System Settings | HTTP Proxy) and the JVM properties that matter. */

@@ -104,6 +104,13 @@ class CSharpGenerateSite(
             return CSharpGenerateSite(file, type, resolver, info, resolver.selfType(info), insertAt, before != null, nullableContext(file, offset))
         }
 
+        /** [type] read with [resolver], members going after `{`: what the checks of CS0534 / CS0535 ask about a type. */
+        fun of(type: CSharpTypeDeclaration, resolver: CSharpNameResolver): CSharpGenerateSite? {
+            val open = type.openBraceToken?.takeIf { it.textLength > 0 } ?: return null
+            val info = resolver.syntax.declaredType(type) ?: return null
+            return CSharpGenerateSite(resolver.file, type, resolver, info, resolver.selfType(info), open.textRange.endOffset, false, nullable = true)
+        }
+
         private val NULLABLE_DIRECTIVE = Regex("""#nullable\s+(enable|disable|restore)""")
 
         /** `#nullable` before [offset] decides; else the `Nullable` property of the project; a file of no project is taken as of a new one (enabled). */
@@ -137,12 +144,13 @@ class CSharpGeneratedCode(val members: List<String>, val baseTypes: List<String>
  * `using` of its namespace can be added (collected in [usings]), else the full name. Library signatures keep the `?` of their nullable
  * reference types when [nullable].
  */
-class CSharpCodeWriter(val resolver: CSharpNameResolver, private val site: PsiElement, val nullable: Boolean) {
+class CSharpCodeWriter(val resolver: CSharpNameResolver, private val site: PsiElement, val nullable: Boolean, private val qualified: Boolean = false) {
     val usings = LinkedHashSet<String>()
 
     fun type(type: SemanticType?): String? = CSharpTypeDisplay.display(type) { simple(it) }
 
     private fun simple(named: SemanticType): Boolean {
+        if (qualified) return false
         if (CSharpTypeFacts.simpleNameMeans(resolver, named, site)) return true
         val (namespace, name, arity) = when (named) {
             is SemanticType.Library -> {
@@ -625,6 +633,8 @@ class NativeCSharpInheritedMembers(private val site: CSharpGenerateSite) {
     private val resolver = site.resolver
     /** Writes the labels of the chooser only: its usings are not added anywhere. */
     private val labelWriter by lazy { site.writer() }
+    /** Writes full names, as Roslyn's messages do (`System.IComparable<Shop.Order>`). */
+    private val qualifiedWriter by lazy { CSharpCodeWriter(resolver, site.type, site.nullable, qualified = true) }
 
     private enum class Kind { METHOD, PROPERTY, INDEXER, EVENT }
 
@@ -768,30 +778,46 @@ class NativeCSharpInheritedMembers(private val site: CSharpGenerateSite) {
         return Triple(all, overrides, explicit)
     }
 
-    private fun group(type: SemanticType): CSharpGenerateGroup =
-        CSharpGenerateGroup(CSharpTypeDisplay.display(type, qualified = false) ?: type.name, if (NativeCSharpGenerate.isInterface(type)) AllIcons.Nodes.Interface else AllIcons.Nodes.Class)
+    /** One group per base type: the chooser puts the rows of one group object under one node. */
+    private val groups = HashMap<String, CSharpGenerateGroup>()
 
-    fun missing(): List<CSharpGenerateChoice> {
+    private fun group(type: SemanticType): CSharpGenerateGroup {
+        val text = CSharpTypeDisplay.display(type, qualified = false) ?: type.name
+        return groups.getOrPut((CSharpTypeDisplay.display(type) ?: text) + "/" + text) {
+            CSharpGenerateGroup(text, if (NativeCSharpGenerate.isInterface(type)) AllIcons.Nodes.Interface else AllIcons.Nodes.Class)
+        }
+    }
+
+    fun missing(): List<CSharpGenerateChoice> = gaps(forErrors = false).map { choice(it.member, group(it.owner), it.mode, selected = true, delegateTo = it.delegateTo) }
+
+    /** A member the type must implement and does not: of [owner], to write in [mode]. */
+    private class Gap(val member: Inherited, val owner: SemanticType, val mode: Mode, val delegateTo: Inherited?)
+
+    /**
+     * [forErrors]: what CS0534 / CS0535 are reported for, so only the sure part — not the abstract members of an abstract class, not an
+     * interface a base class implements too (its explicit implementations there are not seen), not two interfaces with one signature.
+     */
+    private fun gaps(forErrors: Boolean): List<Gap> {
         val (own, overrides, explicit) = own()
-        val result = ArrayList<CSharpGenerateChoice>()
+        val result = ArrayList<Gap>()
         val chain = classChain()
         // abstract members of the base classes that no class on the way down overrides
         val covered = HashSet(overrides)
-        for (base in chain) {
+        if (!(forErrors && site.isAbstract)) for (base in chain) {
             val members = declared(base)
-            val group = group(base)
             for (member in members) if (member.abstract && "static" !in member.modifiers && member.key !in covered) {
                 covered += member.key
-                result += choice(member, group, Mode.OVERRIDE_ABSTRACT, selected = true)
+                result += Gap(member, base, Mode.OVERRIDE_ABSTRACT, null)
             }
             members.filter { "override" in it.modifiers }.forEach { covered += it.key }
         }
         // interface members: implemented by the type, its bases, or explicitly
         val inherited = HashSet(own)
         for (base in chain) for (member in declared(base)) if ("private" !in member.modifiers) inherited += member.key
+        val ofBases = if (forErrors) interfacesOfBases(chain) else emptySet()
         val implicitDone = HashMap<String, Inherited>()
         for (face in interfaces()) {
-            val group = group(face)
+            if ((CSharpTypeDisplay.display(face) ?: face.toString()) in ofBases) continue
             val simple = face.name
             for (member in declared(face)) {
                 if (!member.abstract || "static" in member.modifiers) continue
@@ -799,30 +825,136 @@ class NativeCSharpInheritedMembers(private val site: CSharpGenerateSite) {
                 val same = implicitDone[member.key]
                 if (same == null) {
                     implicitDone[member.key] = member
-                    result += choice(member, group, Mode.IMPLEMENT, selected = true)
-                } else if (member.kind != Kind.EVENT) {
+                    result += Gap(member, face, Mode.IMPLEMENT, null)
+                } else if (member.kind != Kind.EVENT && !forErrors) {
                     // the same signature from two interfaces (`IEnumerable<T>` and `IEnumerable`): the second one explicitly, calling the first
-                    result += choice(member, group, Mode.EXPLICIT, selected = true, delegateTo = same)
+                    result += Gap(member, face, Mode.EXPLICIT, same)
                 }
             }
         }
         return result
     }
 
-    fun overridable(): List<CSharpGenerateChoice> {
+    /** The interfaces the base classes implement (with their base interfaces), by their display. */
+    private fun interfacesOfBases(chain: List<SemanticType>): Set<String> {
+        val result = HashSet<String>()
+        fun visit(type: SemanticType, depth: Int) {
+            if (depth > 16 || !result.add(CSharpTypeDisplay.display(type) ?: type.toString())) return
+            when (type) {
+                is SemanticType.Source -> resolver.baseTypes(type).filter(NativeCSharpGenerate::isInterface).forEach { visit(it, depth + 1) }
+                is SemanticType.Library -> resolver.session.interfaces(resolver.assemblies, type.type).forEach { s -> resolver.fromRef(s.reference, type.arguments)?.let { visit(it, depth + 1) } }
+                else -> {}
+            }
+        }
+        for (base in chain) when (base) {
+            is SemanticType.Source -> resolver.baseTypes(base).filter(NativeCSharpGenerate::isInterface).forEach { visit(it, 0) }
+            is SemanticType.Library -> resolver.session.interfaces(resolver.assemblies, base.type).forEach { s -> resolver.fromRef(s.reference, base.arguments)?.let { visit(it, 0) } }
+            else -> {}
+        }
+        return result
+    }
+
+    /** A member CS0534 (an abstract one of a base class) or CS0535 (one of an interface, [face]) is reported for; [display] as Roslyn names it: `Shape.Area()`. */
+    class MissingMember(val display: String, val face: SemanticType?)
+
+    fun missingMembers(): List<MissingMember> = gaps(forErrors = true).map { gap ->
+        val owner = CSharpTypeDisplay.display(gap.owner) ?: gap.owner.name
+        val signature = signature(qualifiedWriter, gap.member, false)
+        val types = signature?.declaredParameters?.let { declared ->
+            CSharpScopeNames.splitTopLevel(declared).filter { it.isNotBlank() }.joinToString(", ") { p -> p.trim().substringBeforeLast(' ').removePrefix("params ") }
+        }
+        val display = when (gap.member.kind) {
+            Kind.METHOD -> "$owner.${gap.member.name}(${types.orEmpty()})"
+            Kind.INDEXER -> "$owner.this[${types.orEmpty()}]"
+            else -> "$owner.${gap.member.name}"
+        }
+        MissingMember(display, gap.owner.takeIf { gap.mode == Mode.IMPLEMENT })
+    }
+
+    fun overridable(): List<CSharpGenerateChoice> = overridableMembers().map { (member, base) ->
+        choice(member, group(base), if (member.abstract) Mode.OVERRIDE_ABSTRACT else Mode.OVERRIDE, selected = false)
+    }
+
+    /** The members of the base classes that can be overridden here and are not yet, nearest base first, each with the base it is declared in. */
+    private fun overridableMembers(): List<Pair<Inherited, SemanticType>> {
         val (_, overrides, _) = own()
         val seen = HashSet<String>()
-        val result = ArrayList<CSharpGenerateChoice>()
+        val result = ArrayList<Pair<Inherited, SemanticType>>()
         for (base in classChain()) {
-            val group = group(base)
             for (member in declared(base)) {
                 if (!member.overridable && !("sealed" in member.modifiers && "override" in member.modifiers)) continue
                 if (!seen.add(member.key) || "sealed" in member.modifiers) continue
                 if (member.key in overrides || "private" in member.modifiers && "protected" !in member.modifiers) continue
                 // a record has its equality made by the compiler
                 if (site.isRecord && member.name in RECORD_MEMBERS) continue
-                result += choice(member, group, if (member.abstract) Mode.OVERRIDE_ABSTRACT else Mode.OVERRIDE, selected = false)
+                result += member to base
             }
+        }
+        return result
+    }
+
+    /**
+     * One item of `override |` (completion): the member as written after its modifiers ([text]: `Task<HelloReply> SayHello(...)` with
+     * its body, 4-space levels), the accessibility of the base member, the namespaces the text needs, and what the list shows.
+     */
+    class OverrideItem(
+        val name: String, val tail: String, val type: String?, val property: Boolean, val abstract: Boolean, val access: String, val text: String,
+        val usings: Set<String>, val base: String,
+    )
+
+    /** What `override |` offers: [overridable] written as Rider writes them, each with its own usings. */
+    fun overrideItems(): List<OverrideItem> = overridableMembers().mapNotNull { (member, base) ->
+        // an event is overridden rarely: the dialog lists it, the completion does not
+        if (member.kind == Kind.EVENT) return@mapNotNull null
+        val writer = site.writer()
+        val mode = if (member.abstract) Mode.OVERRIDE_ABSTRACT else Mode.OVERRIDE
+        val head = access(member, mode)
+        val rendered = render(writer, member, mode, null) ?: return@mapNotNull null
+        val text = rendered.removePrefix(head)
+        val firstLine = text.substringBefore('\n')
+        val nameAt = if (member.kind == Kind.INDEXER) firstLine.indexOf(" this[") else firstLine.indexOf(" ${member.name}")
+        val type = if (nameAt > 0) firstLine.substring(0, nameAt) else null
+        val tail = when (member.kind) {
+            Kind.METHOD -> if (nameAt > 0) firstLine.substring(nameAt + 1 + member.name.length) else ""
+            Kind.INDEXER -> if (nameAt > 0) firstLine.substring(nameAt + " this".length) else ""
+            else -> ""
+        }
+        OverrideItem(member.name, tail, type, member.kind != Kind.METHOD, member.abstract, head.removeSuffix("override ").trim(), text, writer.usings.toSet(),
+            CSharpTypeDisplay.display(base, qualified = false) ?: base.name)
+    }
+
+    /** The interfaces the type lists (and theirs) that have members left to implement explicitly: what `void |` offers before the dot (0.1.94). */
+    fun explicitInterfaces(): List<SemanticType> = interfaces().filter { explicitItems(it).isNotEmpty() }
+
+    /** The interface [face] and the interfaces the type implements, by the way Roslyn displays them. */
+    fun interfaceNamed(display: String?): SemanticType? = interfaces().firstOrNull { CSharpTypeDisplay.display(it) == display }
+
+    /**
+     * One item of `void IFoo.|` (completion): the member of [face] not implemented explicitly yet, written whole as `void IFoo.M(int a)`
+     * with a body that throws; [candidate] is what [NativeCSharpOverrides.insert] writes. Members of the interface itself only (the ones
+     * of its base interfaces are implemented through those), no static or event members.
+     */
+    class ExplicitItem(val name: String, val candidate: NativeCSharpOverrides.Candidate)
+
+    fun explicitItems(face: SemanticType): List<ExplicitItem> {
+        val (_, _, explicit) = own()
+        val result = ArrayList<ExplicitItem>()
+        for (member in declared(face)) {
+            if ("static" in member.modifiers || "private" in member.modifiers || member.kind == Kind.EVENT) continue
+            if ("${face.name}:${member.key}" in explicit) continue
+            val writer = site.writer()
+            val text = render(writer, member, Mode.EXPLICIT, null) ?: continue
+            val prefix = (writer.type(face) ?: continue) + "."
+            val lines = text.lines()
+            val open = lines.indexOfFirst { it.trim() == "{" }
+            val header = if (open <= 0) lines[0] else lines.subList(0, open).joinToString("\n")
+            val body = if (open <= 0) null else lines.subList(open + 1, lines.size - 1).map { it.removePrefix("    ") }
+            val nameAt = header.indexOf(prefix + (if (member.kind == Kind.INDEXER) "this" else member.name))
+            if (nameAt < 0) continue
+            val type = header.substring(0, nameAt).trim().ifEmpty { null }
+            val tail = header.substring(nameAt + prefix.length + (if (member.kind == Kind.INDEXER) "this".length else member.name.length))
+            val shown = CSharpTypeDisplay.display(face, qualified = false) ?: face.name
+            result += ExplicitItem(member.name, NativeCSharpOverrides.Candidate(member.name, "", header, body, tail, type, member.kind != Kind.METHOD, writer.usings.toSet(), shown))
         }
         return result
     }
@@ -893,7 +1025,7 @@ class NativeCSharpInheritedMembers(private val site: CSharpGenerateSite) {
 
     /** A member that passes everything to the same member of [receiver]: `public int Count => _items.Count;`, `public void Add(T item) { _items.Add(item); }`. */
     private fun delegate(writer: CSharpCodeWriter, member: Inherited, receiver: String, static: Boolean): String? {
-        val signature = signature(writer, member, withConstraints = true) ?: return null
+        val signature = signature(writer, member, withConstraints = true, details = Details.FULL) ?: return null
         val head = if (static) "public static " else "public "
         val name = member.name
         return when (member.kind) {
@@ -956,10 +1088,12 @@ class NativeCSharpInheritedMembers(private val site: CSharpGenerateSite) {
     private fun throwing(writer: CSharpCodeWriter): String = "throw new ${writer.named("System.NotImplementedException")}()"
 
     private fun render(writer: CSharpCodeWriter, member: Inherited, mode: Mode, delegateTo: Inherited?): String? {
-        val signature = signature(writer, member, mode == Mode.IMPLEMENT) ?: return null
+        // an explicit implementation gets no default values: they have no effect there (CS1066)
+        val signature = signature(writer, member, mode == Mode.IMPLEMENT, if (mode == Mode.EXPLICIT) Details.ATTRIBUTES else Details.FULL) ?: return null
         val explicitPrefix = if (mode == Mode.EXPLICIT) (writer.type(member.owner) ?: return null) + "." else ""
         val head = access(member, mode)
-        val throwing = throwing(writer)
+        // only a member that throws needs `using System;`
+        val throwing by lazy { throwing(writer) }
         val name = member.name
         return when (member.kind) {
             Kind.METHOD -> {
@@ -1003,7 +1137,10 @@ class NativeCSharpInheritedMembers(private val site: CSharpGenerateSite) {
         val accessors: List<String>,
     )
 
-    private fun signature(writer: CSharpCodeWriter, member: Inherited, withConstraints: Boolean): Signature? {
+    /** What a written parameter keeps besides modifiers, type and name: none for labels, attributes and default values (`= default`) as Rider copies them. */
+    private enum class Details { NONE, ATTRIBUTES, FULL }
+
+    private fun signature(writer: CSharpCodeWriter, member: Inherited, withConstraints: Boolean, details: Details = Details.NONE): Signature? {
         val library = member.library
         if (library != null) {
             val arguments = (member.owner as? SemanticType.Library)?.arguments.orEmpty()
@@ -1015,7 +1152,8 @@ class NativeCSharpInheritedMembers(private val site: CSharpGenerateSite) {
                 val modifier = when { p.isOut -> "out"; p.isRef -> "ref"; p.isIn -> "in"; else -> "" }
                 val pType = writer.ref(p.typeRef, arguments, typeParameters) ?: return null
                 val pName = NativeCSharpGenerate.escape(p.name)
-                declared += listOfNotNull(modifier.takeIf { it.isNotEmpty() }, "params".takeIf { p.isParams }, pType, pName).joinToString(" ")
+                val default = p.defaultValue?.takeIf { details == Details.FULL && (p.hasDefault || p.isOptional) && !p.isParams }?.let { " = $it" }.orEmpty()
+                declared += listOfNotNull(modifier.takeIf { it.isNotEmpty() }, "params".takeIf { p.isParams }, pType, pName).joinToString(" ") + default
                 passed += modifier to pName
             }
             val constraints = if (withConstraints && library.arity > 0) libraryConstraints(writer, library, arguments, typeParameters) ?: return null else ""
@@ -1026,14 +1164,14 @@ class NativeCSharpInheritedMembers(private val site: CSharpGenerateSite) {
         return when (val element = member.element) {
             is CSharpMethodDeclaration -> {
                 val type = writer.source(element.returnType, receiver) ?: return null
-                val (declared, passed) = sourceParameters(writer, element.parameterList, receiver) ?: return null
+                val (declared, passed) = sourceParameters(writer, element.parameterList, receiver, details) ?: return null
                 val typeParameters = element.typeParameterList?.parameters.orEmpty().mapNotNull { it.identifier?.text }
                 val constraints = if (withConstraints) element.constraintClauses.joinToString("") { " " + CSharpStubsText.collapse(it.text) } else ""
                 Signature(type, declared, passed, typeParameters, constraints, emptyList())
             }
             is CSharpPropertyDeclaration -> Signature(writer.source(element.type, receiver) ?: return null, "", emptyList(), emptyList(), "", accessors(element.accessorList, element.expressionBody != null))
             is CSharpIndexerDeclaration -> {
-                val (declared, passed) = sourceParameters(writer, element.parameterList, receiver) ?: return null
+                val (declared, passed) = sourceParameters(writer, element.parameterList, receiver, details) ?: return null
                 Signature(writer.source(element.type, receiver) ?: return null, declared, passed, emptyList(), "", accessors(element.accessorList, element.expressionBody != null))
             }
             is CSharpVariableDeclarator -> {
@@ -1048,14 +1186,17 @@ class NativeCSharpInheritedMembers(private val site: CSharpGenerateSite) {
     private fun accessors(list: CSharpAccessorList?, expressionBodied: Boolean): List<String> =
         if (expressionBodied) listOf("get") else list?.accessors.orEmpty().mapNotNull { it.keyword?.text }.filter { it == "get" || it == "set" || it == "init" }.ifEmpty { listOf("get") }
 
-    private fun sourceParameters(writer: CSharpCodeWriter, list: CSharpBaseParameterList?, receiver: SemanticType.Source?): Pair<String, List<Pair<String, String>>>? {
+    private fun sourceParameters(writer: CSharpCodeWriter, list: CSharpBaseParameterList?, receiver: SemanticType.Source?, details: Details): Pair<String, List<Pair<String, String>>>? {
         val declared = ArrayList<String>()
         val passed = ArrayList<Pair<String, String>>()
         for (p in list?.parameters.orEmpty()) {
             val modifiers = p.modifiers.map { it.text }.filter { it in PARAMETER_MODIFIERS }
             val type = writer.source(p.type, receiver) ?: return null
             val name = p.identifier?.text ?: return null
-            declared += (modifiers + listOf(type, name)).joinToString(" ")
+            // `[CallerMemberName] string name = ""`, `CancellationToken ct = default`: without them calls of the implementation fail with CS7036
+            val attributes = if (details == Details.NONE) "" else p.attributeLists.joinToString("") { CSharpStubsText.collapse(it.text) + " " }
+            val default = p.default?.value?.takeIf { details == Details.FULL }?.let { " = " + CSharpStubsText.collapse(it.text) }.orEmpty()
+            declared += attributes + (modifiers + listOf(type, name)).joinToString(" ") + default
             passed += (modifiers.firstOrNull { it == "ref" || it == "out" || it == "in" } ?: "") to name
         }
         return declared.joinToString(", ") to passed
@@ -1134,7 +1275,7 @@ object NativeCSharpGenerateEdits {
         var membersEnd = membersStart + insertion.length
         for (namespace in code.usings) {
             val insertionOfUsing = CSharpUsings.insertion(result, namespace) ?: continue
-            if (CSharpUsings.isVisible(namespace, result) || globallyImported(site, namespace)) continue
+            if (CSharpUsings.isVisible(namespace, result) || globallyImported(site.file, namespace)) continue
             result = result.substring(0, insertionOfUsing.offset) + insertionOfUsing.text + result.substring(insertionOfUsing.offset)
             steps += insertionOfUsing.offset to insertionOfUsing.text
             if (insertionOfUsing.offset <= membersStart) {
@@ -1145,8 +1286,9 @@ object NativeCSharpGenerateEdits {
         return Result(result, TextRange(membersStart, membersEnd), steps)
     }
 
-    private fun globallyImported(site: CSharpGenerateSite, namespace: String): Boolean =
-        CSharpSemanticEnvironment.globalUsings(site.file).any { it.alias == null && !it.isStatic && it.namespace.removePrefix("global::") == namespace }
+    /** `global using` of [namespace] (implicit usings of the project too): [file] needs no directive of its own. */
+    fun globallyImported(file: CSharpFile, namespace: String): Boolean =
+        CSharpSemanticEnvironment.globalUsings(file).any { it.alias == null && !it.isStatic && it.namespace.removePrefix("global::") == namespace }
 
     /** [member] written with 4-space levels, at [indent] with [unit] per level. */
     fun reindent(member: String, indent: String, unit: String): String = member.lines().joinToString("\n") { line ->

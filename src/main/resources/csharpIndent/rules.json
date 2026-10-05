@@ -202,7 +202,12 @@
         {"code": ["        foreach (var x in xs)", ">Work(x);"], "expect": 12},
         {"code": ["        if (a)", "            Work();", "        else", ">Other();"], "expect": 12},
         {"code": ["    if (a &&", "        b)", ">return;"], "expect": 8},
-        {"code": ["    else if (b)", ">Work();"], "expect": 8}
+        {"code": ["    else if (b)", ">Work();"], "expect": 8},
+        {"code": ["        foreach (var o in orders.OrderByDescending(o => o.Total))", ">"], "expect": 12},
+        {"code": ["        if (order.Total > 100)", ">"], "expect": 12},
+        {"code": ["foreach (var o in orders)", ">"], "expect": 4},
+        {"code": ["        while (queue.TryDequeue(out var item))", ">"], "expect": 12},
+        {"code": ["using Journey.Core;", "", "var orders = await repo.GetAllAsync();", "Log.Information(\"Loaded {Count} orders\", orders.Count);", "foreach (var o in orders.OrderByDescending(o => o.Total))", ">"], "expect": 4}
       ]
     },
     {
@@ -232,7 +237,10 @@
         {"code": ["    Run(() =>", "    {", ">Work();"], "expect": 8},
         {"code": ["    public void M(int a,", "        int b) {", ">Work();"], "expect": 8},
         {"code": ["class A", "{", "    [Obsolete]", ">public void M() { }"], "expect": 4},
-        {"code": ["class A", "{", "    void M() { }", "", ">void N() { }"], "expect": 4}
+        {"code": ["class A", "{", "    void M() { }", "", ">void N() { }"], "expect": 4},
+        {"code": ["class A", "{", "    enum Kind { A, B }", ">"], "expect": 4},
+        {"code": ["class A", "{", "    int[] _items = { 1, 2 };", ">"], "expect": 4},
+        {"code": ["void M()", "{", "    var o = new Order { Id = 1 };", ">"], "expect": 4}
       ]
     },
     {
@@ -243,7 +251,10 @@
       "examples": [
         {"code": ["namespace Shop;", "", ">public class A"], "expect": 0},
         {"code": ["using System;", ">using System.Linq;"], "expect": 0},
-        {"code": ["[assembly: InternalsVisibleTo(\"Tests\")]", ">namespace N;"], "expect": 0}
+        {"code": ["[assembly: InternalsVisibleTo(\"Tests\")]", ">namespace N;"], "expect": 0},
+        {"code": ["namespace Journey.Core;", "", "public enum OrderStatus { New, Paid, Shipped }", ">"], "expect": 0},
+        {"code": ["namespace Journey.Core;", "", "public enum OrderStatus { New, Paid, Shipped }", "", ">public interface IOrderRepository"], "expect": 0},
+        {"code": ["public record Order(int Id, string Customer);", "public enum OrderStatus { New, Paid }", ">"], "expect": 0}
       ]
     },
     {

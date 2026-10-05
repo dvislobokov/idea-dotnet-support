@@ -270,7 +270,7 @@ class CSharpCompletionNativeTest : BasePlatformTestCase() {
         assertFalse("not virtual: $list", list.contains("NotVirtual"))
         assertFalse("no keywords after override: $list", list.contains("static"))
         assertEquals(
-            "namespace Shapes;\npublic class Square : Shape\n{\n    public override string Describe(int digits) => \"\";\n    public override double Area()\n    {\n        throw new NotImplementedException();\n    }\n}\n",
+            "using System;\n\nnamespace Shapes;\npublic class Square : Shape\n{\n    public override string Describe(int digits) => \"\";\n    public override double Area()\n    {\n        throw new NotImplementedException();\n    }\n}\n",
             choose(text, "Area"),
         )
         assertEquals(
@@ -400,14 +400,17 @@ class CSharpCompletionNativeTest : BasePlatformTestCase() {
         assertTrue("what the native list has not is kept: $shown", "Clone()" in shown)
     }
 
-    /** Robot 0.1.60: the server's named argument `amount:` (lookup string `amount`) is not the native local `amount`. */
+    /**
+     * Robot 0.1.60: the server's named argument `amount:` (lookup string `amount`) is not the native local `amount`; since 0.1.86 the native
+     * list has its own `amount:` (NativeCSharpArgumentCompletion), and the server's is the duplicate of that one.
+     */
     fun testANamedArgumentIsNotADuplicate() {
         FakeServer.items = listOf(FakeServer.Item("amount", 40.0, "amount:"))
         val all = lookup("class A { void Resize(int amount) { } void M() { var amount = 1; Resize(<caret>); } }")
-        val shown = all.filter { it.lookupString == "amount" }.map { LookupElementPresentation.renderElement(it).itemText }
+        val shown = all.filter { NativeCSharpCompletion.nameOf(it.lookupString).removeSuffix(":") == "amount" }
+            .map { LookupElementPresentation.renderElement(it).itemText to (it.getUserData(NativeCSharpCompletion.NATIVE) == true) }
         val everything = all.map { "${it.lookupString}/${LookupElementPresentation.renderElement(it).itemText}" }
-        assertEquals("the native local and the server's named argument: $everything", 2, shown.size)
-        assertTrue(shown.contains("amount:"))
+        assertEquals("the native local and the native named argument: $everything", listOf("amount" to true, "amount:" to true), shown.sortedBy { it.first })
     }
 
     /** Robot 0.1.60: keywords the server offers where the tree decides the keywords (its keyword items are dropped there). */

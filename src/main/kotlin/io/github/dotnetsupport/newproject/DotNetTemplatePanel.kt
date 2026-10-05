@@ -195,9 +195,16 @@ class TemplateOptionsForm {
     var options: List<TemplateOption> = emptyList()
         private set
     private val controls = HashMap<String, () -> String>()
+    private val rowsByOption = HashMap<String, Row>()
 
-    /** The options that differ from their defaults, as arguments of `dotnet new`. */
-    val arguments: List<String> get() = TemplateOptions.arguments(options, controls.mapValues { it.value() })
+    /** What the controls hold now: option name -> value. */
+    val values: Map<String, String> get() = controls.mapValues { it.value() }
+
+    /** The options that apply now ([TemplateOptionConditions]): the rows of the others are hidden. */
+    val shownOptions: List<TemplateOption> get() = TemplateOptionConditions.shown(options, values)
+
+    /** The options that differ from their defaults, as arguments of `dotnet new`; an option hidden by its condition is not passed. */
+    val arguments: List<String> get() = TemplateOptions.arguments(shownOptions, values)
 
     /** Rows for [loaded], which become the [options] whose values [arguments] reads. */
     fun rows(loaded: List<TemplateOption>): JComponent {
@@ -209,7 +216,16 @@ class TemplateOptionsForm {
     fun reset(loaded: List<TemplateOption>) {
         options = loaded
         controls.clear()
+        rowsByOption.clear()
     }
+
+    /** Shows the rows of the options that apply to the values set now, hides the rest: after every change of a control. */
+    fun updateVisibility() {
+        val shown = shownOptions.mapTo(HashSet()) { it.name }
+        for ((name, row) in rowsByOption) row.visible(name in shown)
+    }
+
+    private fun changed() = updateVisibility()
 
     /**
      * Rows for [subset] of the [options]: [label] names an option, [suggestions] turns a text option into an editable combo box whose
@@ -231,10 +247,11 @@ class TemplateOptionsForm {
                 if (text.isEmpty()) return
                 if (contextHelp) contextHelp(text) else cell.comment(text)
             }
-            when (option.kind) {
+            rowsByOption[option.name] = when (option.kind) {
                 TemplateOption.Kind.BOOL -> row {
                     val box = JBCheckBox(label(option), option.isBoolDefaultTrue)
                     controls[option.name] = { box.isSelected.toString() }
+                    box.addActionListener { changed() }
                     described(cell(box))
                 }
                 TemplateOption.Kind.CHOICE -> labeled(option) {
@@ -252,6 +269,7 @@ class TemplateOptionsForm {
                             label.text = if (index < 0 || choice?.description.isNullOrEmpty()) value.orEmpty() else "$value — ${choice!!.description}"
                         }
                         controls[option.name] = { combo.selectedItem as? String ?: "" }
+                        combo.addActionListener { changed() }
                         described(cell(combo))
                     }
                 }
@@ -269,6 +287,7 @@ class TemplateOptionsForm {
                 }
             }
         }
+        updateVisibility()
     }
 }
 

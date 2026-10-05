@@ -19,10 +19,13 @@ import io.github.dotnetsupport.lang.TypeKind
  * symbol is used (`Add(int item)` of a `List<int>`); what the resolver does not know is written as declared.
  */
 class CSharpSymbolText(private val resolver: CSharpNameResolver) {
-    /** The type of a value member, the return type of a method; null for what has none. */
-    fun typeOf(symbol: CSharpSymbol): String? = when (symbol) {
-        is CSharpSymbol.LibraryMember -> if (symbol.member.kind == IndexedMemberKind.CONSTRUCTOR) null else library(symbol.member, symbol.member.typeRef, symbol.declaringArguments)
-        is CSharpSymbol.SourceMember -> sourceType(symbol)
+    /**
+     * The type of a value member, the return type of a method; null for what has none. [methodArguments]: what is known of the method's type
+     * parameters where it is used (by the receiver of an extension method, [CSharpExpressionTypes.receiverTypeArguments]), null for the unknown.
+     */
+    fun typeOf(symbol: CSharpSymbol, methodArguments: List<SemanticType?> = emptyList()): String? = when (symbol) {
+        is CSharpSymbol.LibraryMember -> if (symbol.member.kind == IndexedMemberKind.CONSTRUCTOR) null else library(symbol.member, symbol.member.typeRef, symbol.declaringArguments, methodArguments)
+        is CSharpSymbol.SourceMember -> sourceType(symbol, methodArguments)
         is CSharpSymbol.Local -> resolver.localType(symbol)?.minimalDisplay ?: io.github.dotnetsupport.lang.NativeCSharpLocals.typeOf(symbol.symbol)
         else -> null
     }
@@ -31,16 +34,21 @@ class CSharpSymbolText(private val resolver: CSharpNameResolver) {
      * With the `?` of a nullable reference type the assembly annotates (`string? value`), as Roslyn's Quick Info and signature help write
      * it (robot, E-83); a `T?` whose `T` is known to be a value type stays without it, as in C#.
      */
-    private fun library(member: IndexedMember, reference: IndexedTypeRef, arguments: List<SemanticType?>): String {
-        val text = resolver.fromRef(reference, arguments)?.minimalDisplay ?: return member.display(reference, nullable = true)
+    private fun library(member: IndexedMember, reference: IndexedTypeRef, arguments: List<SemanticType?>, methodArguments: List<SemanticType?> = emptyList()): String {
+        // the unknown ones keep their names: `Dictionary<string, TElement>`
+        val method = if (methodArguments.none { it != null }) emptyList()
+            else member.typeParameters.mapIndexed { i, t -> methodArguments.getOrNull(i) ?: SemanticType.Parameter(t.name, null, i, true) }
+        val text = resolver.fromRef(reference, arguments, method)?.minimalDisplay ?: return member.display(reference, nullable = true)
         if (!reference.annotated || text.endsWith("?")) return text
         if (reference is IndexedTypeRef.TypeParameter && text != member.display(reference)) return text
         return "$text?"
     }
 
-    private fun sourceType(symbol: CSharpSymbol.SourceMember): String? {
+    private fun sourceType(symbol: CSharpSymbol.SourceMember, methodArguments: List<SemanticType?> = emptyList()): String? {
         if (symbol.element is CSharpEnumMemberDeclaration) return null
-        runCatching { resolver.valueType(symbol) }.getOrNull()?.minimalDisplay?.let { return it }
+        runCatching { resolver.valueType(symbol) }.getOrNull()
+            ?.let { type -> if (methodArguments.none { it != null }) type else resolver.replace(type) { p -> if (p.ofMethod) methodArguments.getOrNull(p.index) ?: p else p } }
+            ?.minimalDisplay?.let { return it }
         val written = when (val element = symbol.element) {
             is CSharpMethodDeclaration -> element.returnType
             is CSharpBasePropertyDeclaration -> element.type
@@ -53,10 +61,10 @@ class CSharpSymbolText(private val resolver: CSharpNameResolver) {
     }
 
     /** The parameters of a method as written in a list (`int count, string name = ""`); [reduced]: an extension method called on a receiver. */
-    fun parameters(symbol: CSharpSymbol, reduced: Boolean): List<String>? = when (symbol) {
+    fun parameters(symbol: CSharpSymbol, reduced: Boolean, methodArguments: List<SemanticType?> = emptyList()): List<String>? = when (symbol) {
         is CSharpSymbol.LibraryMember -> if (!symbol.member.kind.isCallable && symbol.member.kind != IndexedMemberKind.CONSTRUCTOR) null else {
             val all = resolver.session.parameters(symbol.member)
-            (if (reduced && symbol.member.kind == IndexedMemberKind.EXTENSION_METHOD) all.drop(1) else all).map { parameter(symbol.member, it, symbol.declaringArguments, reduced) }
+            (if (reduced && symbol.member.kind == IndexedMemberKind.EXTENSION_METHOD) all.drop(1) else all).map { parameter(symbol.member, it, symbol.declaringArguments, reduced, methodArguments) }
         }
         is CSharpSymbol.SourceMember -> sourceParameters(symbol.element)?.let { list ->
             val parameters = if (reduced && list.firstOrNull()?.modifiers?.any { it.text == "this" } == true) list.drop(1) else list
@@ -74,8 +82,8 @@ class CSharpSymbolText(private val resolver: CSharpNameResolver) {
         else -> null
     }
 
-    private fun parameter(member: IndexedMember, parameter: IndexedParameter, arguments: List<SemanticType?>, reduced: Boolean): String {
-        val type = library(member, parameter.typeRef, arguments)
+    private fun parameter(member: IndexedMember, parameter: IndexedParameter, arguments: List<SemanticType?>, reduced: Boolean, methodArguments: List<SemanticType?>): String {
+        val type = library(member, parameter.typeRef, arguments, methodArguments)
         val modifiers = listOfNotNull(
             "this".takeIf { parameter.isThis && !reduced }, "params".takeIf { parameter.isParams }, "out".takeIf { parameter.isOut },
             "ref".takeIf { parameter.isRef }, "in".takeIf { parameter.isIn && !parameter.isOut },

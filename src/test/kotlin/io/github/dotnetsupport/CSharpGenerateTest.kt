@@ -171,6 +171,29 @@ class CSharpGenerateTest : BasePlatformTestCase() {
         assertTrue("the chooser names the type argument: $labels", "CompareTo(Circle? other): int" in labels)
     }
 
+    fun testMissingMembersKeepDefaultValuesModifiersAndAttributesOfParameters() {
+        val text = generate(CSharpGenerator.MISSING_MEMBERS, """
+            using System.Runtime.CompilerServices;
+            using System.Threading;
+            using System.Threading.Tasks;
+
+            interface IOrders
+            {
+                Task AddAsync(string order, CancellationToken ct = default);
+                void Log(string text, int level = 0, string? source = null, params object[] args);
+                void Trace(ref int count, in long id, [CallerMemberName] string caller = "");
+            }
+
+            class Orders : IOrders
+            {
+                <caret>
+            }
+        """)
+        assertTrue(text, text.contains("public Task AddAsync(string order, CancellationToken ct = default)"))
+        assertTrue(text, text.contains("public void Log(string text, int level = 0, string? source = null, params object[] args)"))
+        assertTrue(text, text.contains("public void Trace(ref int count, in long id, [CallerMemberName] string caller = \"\")"))
+    }
+
     fun testMissingMembersAreNotOfferedWhenAllAreImplemented() {
         assertFalse(CSharpGenerator.MISSING_MEMBERS in available("using System;\nclass A : IDisposable\n{\n    public void Dispose() { }<caret>\n}"))
         assertFalse(CSharpGenerator.MISSING_MEMBERS in available("class A\n{\n    <caret>\n}"))
@@ -199,8 +222,11 @@ class CSharpGenerateTest : BasePlatformTestCase() {
     fun testOverridingMembersListObjectAndSkipWhatIsOverridden() {
         myFixture.configureByText("Generate${files++}.cs", "class A\n{\n    public override string ToString() => \"\";\n    <caret>\n}\n")
         val site = CSharpGenerateSite.at(myFixture.file as CSharpFile, myFixture.editor.caretModel.offset)!!
-        val rows = NativeCSharpGenerate.choices(CSharpGenerator.OVERRIDING_MEMBERS, site).map { it.text }
+        val choices = NativeCSharpGenerate.choices(CSharpGenerator.OVERRIDING_MEMBERS, site)
+        val rows = choices.map { it.text }
         assertTrue(rows.toString(), rows.any { it.startsWith("Equals(") } && rows.any { it.startsWith("GetHashCode(") })
+        // one node per base in the chooser: the rows of a base share its group (robot, 0.1.85: «object» twice)
+        assertEquals(1, choices.mapNotNull { it.group }.distinct().size)
         assertFalse(rows.toString(), rows.any { it.startsWith("ToString") || it.startsWith("Finalize") })
     }
 

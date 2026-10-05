@@ -304,7 +304,7 @@
 - [ ] ★ Paste Special: JSON → record-ы / классы с `JsonPropertyName`; XML → классы
 - [x] Insert New GUID (Generate, меню .NET; мультикурсор)
 - [ ] Вставка `DateTime`-форматов, конвертация строки в verbatim / raw
-- [ ] Инъекция RegExp в строки `[StringSyntax]` / `Regex(...)` (даёт встроенный Check RegExp)
+- [x] 0.1.90 — Инъекция RegExp в строки `[StringSyntax]` / `Regex(...)` / `[GeneratedRegex]` / `// lang=regex` (даёт встроенный Check RegExp)
 - [ ] `.resx` ↔ CSV / JSON для переводчиков, проверка недостающих ключей между культурами
 
 ## Инструменты, часть 2 — как в Rider и IDEA Ultimate
@@ -603,6 +603,215 @@
   (`TYPE:sem-*`), `debug-playground/Console/Editor/ImportType.cs` (`TYPE:import-type-*`); `docs/LIVE_CHECKS.md` E-109…E-114. Сборки
   проектов вне solution (как `Broken`) индексируются, когда открыт их файл. Проверено UI-роботом (Windows, IC 2026.1.4): ошибки как у
   сервера, fixes работают; синяя подсказка и дубли со сборкой не проверены, человеком вживую не проверено
+- [x] 0.1.103 — серый текст и список при присваивании члену: `member.Ad` + выбранный `Admin` → `min = isAdmin;` (а не имя, как после типа);
+  `member.Email = ` → `dto.Email;`; строки `dto.Name` / `dto.Email` в списке у `Name = ` и `member.Name = `. Сценарий —
+  `debug-playground/ShopApi/Playground/GhostAssignments.cs` (`TYPE:ghost-assign-*`).
+- [x] 0.1.102 — серый текст при открытом списке completion и строка `Member { … }`. Серое идёт за выбранной строкой, как у Full Line
+  completion платформы: на `InlineCompletionEvent.LookupChange` провайдер 0.1.101 (`NativeCSharpTypingGhostProvider`, `restartOn` на
+  событиях списка) показывает остаток строки и то, что дадут правила после неё: `new ` + тип → `Member();` (тип без аргументов
+  конструктора и без `required`, `;` — если на нём кончается оператор), тип там, где дальше имя (`Draft(Mem` → `berDto memberDto`),
+  значение `Name = `, если выбранная строка его начинает (`NativeCSharpTypingGhost.itemPlace` / `afterItem`). Tab — вставка серого
+  (платформенный `InlineCompletionActionsPromoter` ставит её перед Tab списка и закрывает список), Enter — строка списка. Строка
+  `Member { … }` под `Member` после `new` (`NativeCSharpObjectInitializers.initializerRow`, у выбора — инициализатор живым шаблоном:
+  член на строку, `required` первыми, значения по правилу 0.1.101 выделены, Tab по значениям); показывается для типов solution, чьё имя
+  набрано (от двух букв, не больше 8 строк, проверка по объявлениям), для типа, названного переменной, и для ожидаемого типа. Тип с
+  `required` (0.1.98) пишет свой инициализатор тем же шаблоном со значениями. В выгруженном в репозиторий дампе Rider строки `{ … }` нет
+  (только `Order()`), вид строки — наш. Сценарий — `debug-playground/ShopApi/Playground/GhostSuggestions.cs` (`TYPE:ghost-list-new`,
+  `TYPE:ghost-list-name`, `TYPE:new-initializer-row`); `docs/LIVE_CHECKS.md` E-350…E-353. Вживую не проверено
+- [x] 0.1.101 — серый текст при наборе по правилам, без ML (`lang/NativeCSharpTypingGhost.kt`, свой inline-провайдер перед провайдером
+  аргументов; место — по тексту на EDT, семантика — в фоне на закоммиченном дереве): `var user = new ` → `User();` по имени переменной
+  (`users` → `List<User>();`, только тип без аргументов конструктора и без `required`); `new User(|)` → `;` за `)` (skip-элемент
+  платформы); `;` после `}` многострочного инициализатора; пустая строка `new User() { }` — члены по строке (`required` первыми) со
+  значениями под рукой; `Name = ` в инициализаторе — переменная / параметр / член того же имени (без учёта регистра) и подходящего типа или
+  его свойство до двух уровней (`userDto.Name`), правило значения со `;` там молчит; имя после типа (`UserDto ` → `userDto`, коллекция —
+  множественное, интерфейс без `I`, поле — `_`, `foreach`). Completion: имя файла после `class `/`record`/… с телом-шаблоном
+  (`NativeCSharpTypeNameCompletion`), `class` один раз — live template с именем ключевого слова убран из списка рядом с ним
+  (`CSharpTemplateKeywordDedupe`). Сценарий — `debug-playground/ShopApi/Playground/GhostSuggestions.cs` (`TYPE:ghost-*`);
+  `docs/LIVE_CHECKS.md` E-340…E-346. Вживую не проверено
+- [x] 0.1.100 — находки редактора из сквозного прохода (`docs/DEV_JOURNEY.md`, этап 4): quick fixes «Create class / record / struct /
+  interface / enum / field / property / method / local variable / parameter» на неразрешённом имени (`lang/NativeCSharpCreateFromUsage.kt`;
+  тип — новым файлом рядом, в том же namespace; типы членов и параметров — по месту использования); Implement missing members сохраняет
+  `= default` и атрибуты параметров; CS7036 до сборки для метода класса без значения по умолчанию интерфейса и для `new T(…)`, CS1729;
+  Reformat Code раскладывает код, набранный в одну строку, как Rider (`riderBlocks` в `NativeCSharpFormatter`, уступает
+  `csharp_preserve_single_line_blocks`); `;` внутри `()` в конце оператора уходит за скобки, `)` после строки перепечатывает парную
+  (`CSharpParentheses`); отступ после однострочного `enum` (правило движка + примеры `csharpIndent/rules.json`); postfix не после имени
+  типа; каретка в `()` у шаблона record; `,` перед запятой completion в appsettings*.json. Сценарий —
+  `debug-playground/Console/Editor/JourneyFixes.cs` (`TYPE:journey-*`); `docs/LIVE_CHECKS.md` E-330…E-337. Вживую не проверено
+- [x] 0.1.99 — находки сквозной проверки (`docs/DEV_JOURNEY.md` 1.1, 2.1–2.3, 3.1, 3.2, 5.2): New Solution на SDK 10 —
+  каркасы шаблона из блока `Type: choice` у `--framework` (`TemplateOptions.frameworks`, фикстуры help SDK 9 и 10 в
+  `src/test/resources/dotnetNew/sdk9|sdk10`), непрочитанный help = «любой TFM»; NPE окна NuGet из «Manage NuGet Packages…» проекта
+  (порядок полей `NuGetPanel`); хранилище паролей — только для фидов с сохранёнными учётными данными или после 401/403, ответ кэшируется,
+  nuget.org никогда (`NuGetCredentialPolicy`); «was not started» в уведомлении о сборке перед запуском; «Move to Solution Folder…» и
+  перетаскивание проектов на папку / solution (`actions/MoveToSolutionFolder.kt`, `SolutionEditor.moveProject`, свой drop target
+  `SolutionViewPane`); Add → New Project — окно New Solution (`NewSolutionDialog.AddProjectTarget`), опции шаблона по условиям
+  (`TemplateOptionConditions`: `Enabled if` и «use with … auth» у Web API); новый проект выделяется и раскрывается
+  (`view/SolutionViewReveal.kt`). `docs/LIVE_CHECKS.md` E-320…E-326. Вживую не проверено
+- [x] 0.1.98 — object initializers и `required`-члены C# 11, как в Rider (`lang/NativeCSharpObjectInitializers.kt`,
+  `lang/semantic/CSharpRequiredMembers.kt`): `new OrderLine` из completion у типа с `required` пишет инициализатор с ними (по строке на
+  член, каретка у первого значения) вместо `()`, у типа только с конструкторами с параметрами — `new T(|)`; CS9035 без сервера (типы
+  solution и сборок по флагу индекса, `[SetsRequiredMembers]` снимает требование) с fix «Add initializer for required members»; в
+  `new T { | }` — строки «Fill required members» / «Fill all members», член пишется как `Name = `; Alt+Enter «Initialize members» /
+  «Initialize required members». Сценарий — `debug-playground/ShopApi/Playground/RequiredMembers.cs` (`TYPE:required-*`);
+  `docs/LIVE_CHECKS.md` E-310…E-313. Вживую не проверено
+- [x] 0.1.97 — палитры C# (`lang/palette`, данные — `resources/csharpPalettes/<id>.json` с источниками цветов): Rider, Visual Studio,
+  VS Code, Nord, Dracula, One Dark / One Light, Solarized, GitHub — у каждой тёмный и светлый вариант, выбирается по фону схемы. Палитра
+  пишет только ключи `CSHARP_*` (цвет, жирный / курсив, подчёркивание; фона нет) в редактируемую копию текущей схемы (`_@user_…`, как
+  Settings | Color Scheme) и переписывается при смене схемы / темы; «Как в IDE» возвращает то, что было в схеме до палитры. Выбор —
+  Settings | .NET («Палитра C#») и .NET → C# Color Palette… (живой просмотр, Esc — назад); при первом открытии `.cs` в схеме IDE без
+  цветов C# — одно предложение. Схемы «Rider Dark» / «Rider Light» оставлены. Сценарий — `debug-playground/README.md`, «Палитры C#»
+  (`ShopApi/Endpoints/OrderEndpoints.cs`); `docs/LIVE_CHECKS.md` E-300…E-303. Робот: снимки всех палитр на Dark и Light, фон не меняется
+- [x] 0.1.96 — double completion (`docs/COMPLETION_GAPS.md` 3.12; `lang/NativeCSharpDoubleCompletion.kt`, два хука в `NativeCSharpCompletion`,
+  `CSharpMemberLookup.entries(inaccessibleToo)`, `AssemblyIndexService.unreferenced`): второй Ctrl+Space после точки — недоступные члены
+  (private / protected / internal чужих типов, protected библиотечных) серым с «(not accessible)», вставка как есть; в позиции типа — типы
+  сборок пакетов и выходов проектов, на которые ссылаются другие проекты solution, а этот нет, с `using` и предложением добавить пакет /
+  ссылку (уведомление, команда только по кнопке); второй Ctrl+Shift+Space — цепочки `order.Customer` по ожидаемому типу на один доступ;
+  строка-реклама списка на первом нажатии. Сценарии — `debug-playground/ShopApi/Playground/DoubleCompletion.cs` (`TYPE:shop-double-*`),
+  `debug-playground/Console/Editor/DoubleCompletion.cs` (`TYPE:double-package`); `docs/LIVE_CHECKS.md` E-290…E-293. Вживую не проверено
+- [x] 0.1.95 — completion: csproj и редкие места (`docs/COMPLETION_GAPS.md` 3.11, 3.13, 3.14). (1) MSBuild-файлы
+  (`msbuild/MsBuildReferenceCompletion.kt`): `$(` — свойства файла, его явных `Import` и `Directory.Build.props` / `.targets` /
+  `Directory.Packages.props` выше, известные MSBuild и схемы; `@(` — типы элементов; `%(` / `%(Item.` — метаданные; скобка закрывается;
+  пути в `Import Project` (файлы MSBuild) и `ProjectReference Include` (csproj / fsproj / vbproj), `..\` и `$(MSBuildThisFileDirectory)`.
+  (2) `lang/CSharpRareCompletion.kt`: `[assembly: InternalsVisibleTo("` → проекты solution; `extern alias ` → `Aliases` ссылок проекта;
+  `delegate* unmanaged[` → Cdecl / Stdcall / Thiscall / Fastcall / SuppressGCTransition; `#:package ` файлового приложения → id пакетов
+  (тот же `PackageCompletionService`, что у csproj), после `@` — версии; `#:` → package / sdk / property / project. (3) Настройка
+  «Exclude from completion» (Settings | .NET, шаблоны `System.Data.*`, `lang/CSharpCompletionExclusions`): фильтр типов сборок и
+  неимпортированных типов / extension-методов в `NativeCSharpImportCompletion`. (4) Live templates `hal`, `ua`, `rta`, `ctx` (ASP.NET
+  Core без Razor); защита от чисел в `CSharpCaseInsensitiveCompletion` пропускает формат, начинающийся с цифры (`$"{x:0`). Тесты —
+  `MsBuildReferenceCompletionTest`, `CSharpRareCompletionTest`, `CSharpLiveTemplatesTest`; сценарии —
+  `debug-playground/Console/Editor/RareCompletion.cs` (`TYPE:rare-*`) и `Console/Console.csproj` (`TYPE:msbuild-*`); `docs/LIVE_CHECKS.md`
+  E-280…E-286. Вживую не проверено
+- [x] 0.1.94 — языковые места completion (`docs/COMPLETION_GAPS.md` 3.2, 3.3, 3.5, 3.6; `lang/NativeCSharpLanguageCompletion.kt`, явные
+  реализации — `NativeCSharpInheritedMembers.explicitItems`): `void IFoo.|` / `int IFoo.|` / `IFoo.|` в начале члена — члены интерфейса, не
+  реализованные явно, пишутся целиком с телом `throw new NotImplementedException();` (тип возврата заменяется верным); `void |` предлагает
+  имена реализуемых интерфейсов (пишут `IFoo.` и открывают список); `[]` после точки у массива, строки, коллекций и типов с `this[...]`
+  (`x.` → `x[|]`, `x?.` → `x?[|]`); имена элементов кортежа после точки и имена переменных деконструкции (`var (|, b) = pair`,
+  `(var x, var |) = pair`, `foreach (var (a, |) in pairs)`) — из кортежа, `Deconstruct`, позиционного record; `partial class |` — partial-типы
+  того же namespace с частью в другом файле. Не сделано: операторы и преобразования после точки, явная реализация событий. Сценарий —
+  `debug-playground/Console/Editor/LanguageCompletion.cs` (`TYPE:explicit-*`, `indexer-*`, `tuple-names`, `deconstruct-*`, `partial-types`),
+  `docs/LIVE_CHECKS.md` E-270…E-275; вживую не проверено
+- [x] 0.1.93 — строки ASP.NET Core (`docs/COMPLETION_GAPS.md` 3.7–3.9). Шаблоны логгера (`lang/CSharpLoggerTemplates.kt`): `LogX(…)` / `Log(level, …)` /
+  `BeginScope` у `ILogger`, Serilog `Log.Information(…)` (получатель с именем логгера), `[LoggerMessage(Message = …)]` — плейсхолдеры цветом
+  format item, после `{` имена из аргументов (`order.Id` → `OrderId`, `Id`; аргумент этой позиции первым) или параметры метода
+  `[LoggerMessage]`, Ctrl+Space в тексте — `{Name}` для свободного аргумента; предупреждение о несовпадении числа аргументов и плейсхолдеров
+  (CA2017; повторное имя может брать один аргумент) и о плейсхолдере без параметра (SYSLIB1014). Маршруты (`lang/CSharpRouteTemplates.kt`):
+  `[Route]`, `[HttpGet…]`, `MapGet/MapPost/…/MapGroup`, `MapControllerRoute(…, pattern)`, `[StringSyntax("Route")]`, `// lang=route` —
+  цвета скобок, параметров и ограничений; после `{` параметры действия / обработчика (лямбда или метод того же типа; без сервисов,
+  `CancellationToken`, `[FromBody]`…), после `:` ограничения маршрута, после `[` — `controller` / `action` / `area`. JSON (`CSharpJsonInjection.kt`,
+  `META-INF/dotnet-json.xml`, optional depends на JSON-плагин): `// lang=json`, параметры `[StringSyntax(Json)]` решения, `JsonDocument.Parse`,
+  `JsonSerializer.Deserialize`, Newtonsoft `JObject.Parse`…; `CSharpRegexPlaces` обобщён на любой синтаксис `[StringSyntax]`. Ключи конфигурации
+  (`CSharpConfigurationKeys.kt`): индексатор, `GetSection` / `GetRequiredSection` / `GetValue<T>` / `GetConnectionString` — ключи
+  `appsettings*.json` проекта через `:`, относительно секции. DI (`CSharpServiceRegistrations.kt`): `AddScoped/AddTransient/AddSingleton<I, `
+  (и `TryAdd…`, `AddKeyed…`) — реализации из solution первыми (индекс супертипов, транзитивно, без abstract), с `using`. Список открывается сам
+  после `{`, `:`, кавычки ключа и `AddScoped<I, ` (`CSharpAspNetStrings.kt`). Сценарий — `debug-playground/ShopApi/Playground/AspNetCompletion.cs`
+  (`TYPE:shop-log-*`, `shop-route-*`, `shop-map-param`, `shop-json`, `shop-config-*`, `shop-di-impl`); `docs/LIVE_CHECKS.md` E-260…E-265.
+  Вживую не проверено
+- [x] 0.1.92 — доделки completion 0.1.85–0.1.91: метод, выбранный символом `.` / `;` (`Total().`, `Save();`, `Register(|);`) или
+  вставленный сам как единственный пункт, получает скобки как по Enter, тип — `()` / `<>` (`NativeCSharpCalls`); тип и параметры
+  extension-методов сборок — с аргументами типа, которые даёт получатель (`ImmutableArray<Order>`, `Func<Order, bool> predicate`, и в
+  parameter info; `CSharpExpressionTypes.receiverTypeArguments`); место лямбды — по разрешённому типу параметра (делегат с любым именем,
+  `delegate bool Rule(Order o)`), проверка по имени типа осталась запасной; в `catch (` первыми только наследники `Exception` (платформа
+  поднимала короткое имя — enum `Ex` — к `Exception`; свой вес перед `liftShorter`). Сценарий —
+  `debug-playground/Console/Editor/CompletionInsertion.cs` (`TYPE:insertion-*`), `docs/LIVE_CHECKS.md` E-250…E-254. Вживую не проверено
+- [x] 0.1.91 — поведение списка completion (`docs/COMPLETION_GAPS.md` 2.8–2.14, 3.4, 3.10; `lang/CSharpCompletionBehaviour.kt`,
+  `CSharpKeywordRecommendations.kt`, `CSharpCompletionAutoPopup.kt`, `CSharpLookupDocumentation.kt`). Статистика выбора (`SuggestionStats`)
+  теперь и в нативном списке — весом после приоритета вида, так что порядок групп Rider не меняется; символы выбора `.` `,` `;` пробел `=`
+  `[` `)` `(` (`CharFilter`); режим подсказки у новых имён и параметров лямбд (список без выделения); список открывается сам после `#`,
+  `<`, `(`/`,` у параметра-делегата, `== `, `case `, `[`; Quick Doc на пункте списка (имя пункта резолвится в копии файла); ключевые
+  слова по рекомендерам Roslyn (`and`/`or`/`when`, `with`, `get`/`set`/`init`, `field`, `allows`, `extension`, `assembly:`/`module:`,
+  `managed`/`unmanaged`); `nameof(` без ключевых слов, `typeof(` без `dynamic`; совпадение в середине от трёх букв. Сценарий —
+  `debug-playground/Console/Editor/CompletionBehaviour.cs` (`TYPE:behaviour-*`), `docs/LIVE_CHECKS.md` E-241…E-248
+- [x] 0.1.90 — completion внутри строк, директив и doc-комментариев (`docs/COMPLETION_GAPS.md` 2.3–2.7): дырки `$"{…}"` всех видов
+  (обычные, `$@`, raw `$$"""`) — имена и члены после точки (работало, закреплено тестами); форматы после `{x:`, `{0:` у `string.Format` /
+  `Console.WriteLine` / `AppendFormat`, в `ToString("…")` и `ParseExact` — по типу значения (числа, даты, `TimeSpan`, `Guid`, enum) с
+  примерами, как в Rider (`lang/CSharpFormatSpecifierCompletion`); регулярные выражения — инъекция языка RegExp платформы в литералы
+  `new Regex`, статических `Regex.*`, `[GeneratedRegex]`, `[RegularExpression]`, параметров решения с `[StringSyntax(Regex)]`, после
+  `// lang=regex` (`lang/CSharpStringLiteralHost`, `CSharpRegexPlaces`, `CSharpRegexInjection`; строковые токены встроенного дерева — хосты
+  инъекций); `#` → директивы, `#if` → символы `DefineConstants` и всех TFM, `#nullable`, `#pragma warning disable` → коды
+  (`lang/CSharpPreprocessorCompletion`); `///` — теги с закрывающей частью, параметры без документации, `cref` (`lang/CSharpDocCommentCompletion`).
+  Сценарии — `debug-playground/Console/Editor/StringCompletion.cs`, `DocCompletion.cs`; `docs/LIVE_CHECKS.md` E-235…E-240
+- [x] 0.1.89 — postfix по типу выражения и шаблоны Rider (`COMPLETION_GAPS.md` 2.1, 2.2, 3.1). (1) `lang/semantic/CSharpPostfixFacts` спрашивает
+  тип выражения перед ключом: `.await` — у task / awaitable, `.foreach` — у коллекций и строк, `.for` / `.forr` — у коллекций с `Count` /
+  `Length` (`i < orders.Count`) и чисел, `.if` / `.else` / `.while` / `.not` — у `bool`, `.null` / `.notnull` — не у значимых типов без `?`,
+  `.using` — у `IDisposable`, `.lock` — у ссылочных, `.throw` — у исключений; тип неизвестен — предлагается всё, как раньше. Имена — `CSharpExpressionNames`
+  (`order.Total.var` → `orderTotal`, `total` в списке; `GetOrders()` → `orders`; элемент `orders` → `order`; занятое рядом имя — с цифрой) в
+  рамке шаблона. (2) Новые postfix Rider с его описаниями: `.field`, `.prop` (член в типе — `CSharpPostfixMembers`), `.to`, `.arg`, `.sel`,
+  `.parse` / `.tryparse` (список типов), `.inject` между членами (primary constructor или параметр конструктора + поле); statement-шаблоны
+  между членами больше не предлагаются; `CSharpExpressions.before` понимает generic-вызовы (`new List<Order>()`). (3) Live templates — 69
+  (было 33): `ctorf` / `ctorp`, `itli` / `itar` / `ritar`, `sfc`, `outv`, `asrt*`, `psvm`, `sim`, `~`, `indexer`, `iterator`, `iterindex`,
+  `equals`, `Attribute`, `Exception`, `namespace`, `#if`, `#region`, `checked` / `unchecked` / `unsafe`, `pci` / `pcs` / `psr`, `ear`, `nguid`,
+  `from` / `join`, `mbox`, `propdp` / `dependencyProperty` / `attachedProperty`; описания как в Rider; макросы `csharpSuggestVariableName`,
+  `csharpSuggestElementName`, `csharpNewGuid`, `csharpConstructorParameters` / `Body` (`lang/CSharpTemplateMacros`). Не сделано: ASP.NET MVC
+  `hal` / `ua` / `rta` и `ctx`. Сценарии — `debug-playground/Console/Editor/Postfix.cs` (`TYPE:postfix-*`, `TYPE:live-templates`), `docs/LIVE_CHECKS.md`
+  E-230…E-234. Проверено UI-роботом (Windows, IC 2026.1.4, скрипт `tools/ui-robot/scripts/template_expand.js`); человеком вживую не проверено
+- [x] 0.1.88 — completion по ожидаемому типу без сервера (`lang/NativeCSharpExpectedCompletion`, по дампам Rider 3, 7–14, 26, 38, 39, 42,
+  46): инициализаторы объектов / коллекций / `with` — только члены, которые ещё можно присвоить; property pattern (вложенный тоже) — члены
+  проверяемого типа; члены ожидаемого enum строками `OrderStatus.Paid` первыми (`==`, `case`, ветка `switch`, `is`, аргумент,
+  присваивание, `{ Status: `), список сам открывается после `== ` и `case `; строки `await Highlights` (метод становится `async`); `new` с
+  целевым типом — сам тип первым, затем наследники / реализации, `throw new` — только исключения, `catch (` — исключения первыми, базовый
+  список — классы и интерфейсы, `event` — делегаты, ограничение — классы и интерфейсы; smart completion (Ctrl+Shift+Space) — только
+  подходящее по типу. Где тип неизвестен — список прежний. Тип цели — `CSharpExpressionTypes.target` и вход шаблона. Тест
+  `CSharpExpectedTypeCompletionTest`; сценарий — `debug-playground/Console/Editor/ExpectedTypeCompletion.cs` (`TYPE:expected-*`),
+  `docs/LIVE_CHECKS.md` E-220…E-226. Вживую человеком не проверено
+- [x] 0.1.87 — import completion без сервера, как в Rider (`lang/NativeCSharpImportCompletion`, хуки в `NativeCSharpCompletion`): типы сборок
+  в namespace, которые видит место (свои, `using`, неявные и `global using`), — без порога в три буквы, и при пустом префиксе
+  (`Li` / Ctrl+Space → `List<>`); по индексу сборок namespace за namespace, с кэшем на набор ссылок. С первой буквы — то, что не
+  импортировано: типы solution и сборок строками «Name (in Namespace)», выбор добавляет `using` (или пишет namespace перед именем, если
+  файл видит другой тип с тем же именем); после точки — неимпортированные extension-методы сборок и solution (подходит ли получатель — по
+  типам `lang/semantic`, у generic-методов проверяются ограничения); у `[` — атрибуты сборок. До первой буквы неимпортированного нет,
+  completion перезапускается на ней. Замер на 307 реальных индексах (тест с `completeBasic`): пустой Ctrl+Space 26–48 → 40–44 мс (63 → 535
+  пунктов), `Li` 28–40 → 20–22 мс, после точки 17–25 → 19–26 мс; в песочнице роботом 45–110 мс до готового списка. Тесты —
+  `NativeImportCompletionTest`; сценарий — `Console/Editor/ImportCompletion.cs` (`TYPE:import-types-*`, `import-neighbour-*`,
+  `import-library-type`, `import-qualified`, `import-extension*`, `import-attribute`) + `ImportCompletionTargets.cs`; `docs/LIVE_CHECKS.md`
+  E-215…E-219. Проверено UI-роботом (Windows, IC 2026.1.4); человеком вживую не проверено
+- [x] 0.1.86 — completion в списке аргументов без сервера (с 0.1.76 сервер выключен, и эти фичи жили только в модуле `roslyn`):
+  (1) parameter info открывается сама после выбора метода из своего списка (`NativeCSharpCalls.callHandler` → `NativeCSharpCallPopups`),
+  вместе с серым текстом аргументов; (2) лямбда там, где ждут делегат, — по перегрузкам своей семантики (`NativeCSharpLambdas`:
+  `NativeCSharpParameterInfo.candidates` + `CSharpExpressionTypes.parameterTypesAt` с выводом type arguments, `Func` / `Action` / свои
+  делегаты по `Invoke`): в списке первой (`x => `, `(x, i) => ` второй перегрузки `Where`), серым текстом (`NativeCSharpLambdaGhost`,
+  на нём же аргументы под рукой вместо `RoslynLambdaGhost`); у `Changed += ` и `Func<int, bool> f = ` — `(sender, e) => {}` и
+  «Create method OnChanged(object?, EventArgs)» (метод под текущим членом, типы — из сигнатуры сборки); (3) именованные аргументы
+  `quantity:` перегрузок, что подходят по числу позиционных и уже названным (первыми, когда префикс совпал, иначе ниже значений), у
+  атрибута — параметры конструкторов и settable-свойства `DiagnosticId =` (`NativeCSharpArgumentCompletion`). Имена лямбд вынесены
+  в `lang/CSharpLambdaNames` (общие с модулем `roslyn`). Тесты — `CSharpArgumentCompletionTest`; сценарий —
+  `debug-playground/Console/Editor/LambdaSuggestions.cs` (`TYPE:lambda-*`, `named-*`, `parameter-info`); `docs/LIVE_CHECKS.md`
+  E-210…E-214. Проверено UI-роботом (Windows, IC 2026.1.4, сервер выключен); человеком вживую не проверено
+- [x] 0.1.85 — переопределение и недостающие члены как в Rider (жалоба пользователя: в `Grpc/Greeter.cs` после удаления `SayHello`
+  набор `override ` ничего не предлагал). Причины: (1) после пробела список открывал только клиент сервера, а он выключен по умолчанию
+  (`CSharpSpaceAutoPopupHandler`: пробел после `override` / `partial` / `new`); (2) `override |` брал кандидатов из синтаксических
+  заглушек solution и не видел вложенную базу `Greeter.GreeterBase` с `global::` / `grpc::` и базы из сборок. Теперь кандидаты — из
+  семантики Generate (`NativeCSharpInheritedMembers.overrideItems`): базы solution, сборок и сгенерированных сборкой файлов, generic-базы,
+  без переопределённого и `sealed`; вставка с доступом базы, типами как в файле, `base.X(...)` / `throw`, `await` после `async`, `using`.
+  Красные CS0534 / CS0535 без сервера (`CSharpSemanticChecks.checkMissingMembers`; гейт — ложных 0 на playground и трёх библиотеках
+  корпуса), Alt+Enter «Implement missing members» / «Override members...» на заголовке, базе и пустом месте тела
+  (`NativeCSharpInheritedIntentions`), Ctrl+O / Ctrl+I (были), `base.` с членами баз из сборок, Ctrl+P в `: base(…)` / `: this(…)`.
+  Тесты — `CSharpOverrideCompletionTest`, `CSharpOverrideAutoPopupTest`, `CSharpInheritedIntentionsTest`,
+  `CSharpSemanticErrorsTest.testMissing*`; сценарий — `Console/Editor/Overrides.cs` (`TYPE:override-*`), `Grpc/Greeter.cs`
+  (`TYPE:grpc-override`); `docs/LIVE_CHECKS.md` E-200…E-205. Робот (2026-10-05): автопопап и вставка в `Overrides.cs` и `Greeter.cs`, CS0534 и
+  Alt+Enter, Ctrl+O; по его находкам — одна группа на базу в диалоге и члены настоящей базы выше `object`. Человеком вживую не проверено
+- [x] 0.1.84 — цвета C#-файла сразу при открытии, без «довкрашивания» идентификаторов через полсекунды (жалоба пользователя). Замер
+  роботом (Windows, IC 2026.1.4, `tools/ui-robot/scripts/color_timing.js`): демон платформы начинает первый проход через 0,4–0,6 с после
+  создания редактора, свой расчёт цветов — ещё 10–300 мс; ошибки (`NativeCSharpDiagnosticsAnnotator`) цвета не задерживали — аннотаторы
+  идут параллельно, цвета ложатся раньше конца диагностики. Решение — слой `lang/CSharpOpeningColors`: при создании редактора цвета,
+  запомненные при закрытии файла с тем же текстом (до первой отрисовки), иначе посчитанные сразу в фоне теми же функциями, что у
+  аннотаторов; семантические цвета кэшируются на файле (`NativeCSharpSemanticColors.colors`), и проход демона их не считает заново; слой
+  уходит, когда демон закончил, — его подсветки те же, ничего не перерисовывается. После перезапуска IDE цвета восстанавливает кэш
+  разметки платформы (слой тогда не нужен). Было → стало: первое открытие большого файла (2244 строки) 0,80–0,89 → 0,27 с, маленького
+  0,46 → 0,16 с, повторное открытие после выгрузки документа 0,86 с → до первой отрисовки, холодное открытие проекта 11,9 → 0,76 с
+  (простые цвета, полные — по готовности индексов). Тесты — `CSharpOpeningColorsTest`; сценарий — `Console/Editor/OpeningColors.cs`
+  (`TYPE:colors-on-open`); `docs/LIVE_CHECKS.md` E-195. Вживую человеком не проверено
+- [x] 0.1.83 — ложная CS1061 на унаследованных членах (сообщение коллеги пользователя, EF Core: `x.BookDate` в `Where` по
+  `DbSet<DirectStressTest>`, члены объявлены в базовом `StressTest`, а файл обработчика импортирует DTO с тем же простым именем `StressTest`).
+  Причина: синтаксическая карта членов (`NativeCSharpResolver.membersOf`) искала базовые типы по простому имени так, как их видит файл
+  проверки (его `using` предпочитались), и брала DTO вместо базы сущности. Теперь база части другого файла ищется сначала в типах и
+  пространствах имён вокруг самой части (`baseOf`), а проверка CS1061 / CS0117 (`CSharpSemanticChecks.has`) и поиск члена
+  (`CSharpNameResolver.membersNamed`) идут по базам, разрешённым в файле объявления (`baseTypes`). Тесты —
+  `CSharpQueryTranslationTest.testMembersOfAnEntityBase*`; сценарий — `Console/Editor/Queries.cs` (`TYPE:queries-inherited-member`,
+  сущности — `QueryEntities.cs`); `docs/LIVE_CHECKS.md` E-190. Вживую не проверено
+- [x] 0.1.83 — цвета C# отданы схеме IDE (решение пользователя 2026-10-05): плагин больше не кладёт свои цвета в схемы IDE —
+  в Dark / Islands Dark / Light они не применялись (такие схемы берут Language Defaults раньше родителя), а правки Language Defaults не
+  доходили до C#. Виды C# падают на свои ключи Language Defaults (класс, интерфейс, объявление и вызов функции, статические метод и поле,
+  константа, metadata); палитра Rider — схемы «Rider Dark» / «Rider Light» (`colorSchemes/Rider*.xml`, `bundledColorScheme`).
+  Проверка — `CSharpSemanticColorsTest`; вживую — E-191
 - [x] 0.1.82 — шум анализаторов, неявные вызовы в Find Usages, C# из целей сборки. (1) В редакторе по умолчанию только то, что
   показывают Rider / VS: warning и error по severity, которую считает компилятор (`.editorconfig`, ruleset, AnalysisLevel / AnalysisMode;
   `RunAnalyzers` / `RunAnalyzersDuringLiveAnalysis = false` выключают анализаторы помощника). Info (IDE0290, CA1859, CA1822…) — невидимые

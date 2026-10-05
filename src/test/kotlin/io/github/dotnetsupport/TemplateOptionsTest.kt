@@ -77,4 +77,35 @@ class TemplateOptionsTest {
         assertEquals(listOf("new", "mstest", "-n", "Tests", "-o", "Tests", "-f", "net10.0", "--sdk", "--test-runner", "Microsoft.Testing.Platform", "--fixture", "TestInitialize;TestCleanup"), settings.newArguments("Tests", "Tests"))
         assertFalse(settings.newArguments("Tests", "Tests").contains("--no-restore"))
     }
+
+    /** Real `dotnet new <t> --help` of SDK 9.0.301 and 10.0.401 (`dotnetNew/sdk9`, `dotnetNew/sdk10`): every template supports what the SDK targets. */
+    @Test
+    fun `frameworks of SDK 9 and 10 templates`() {
+        val expected10 = mapOf("console" to listOf("net10.0", "net9.0"), "classlib" to listOf("net10.0", "net9.0", "netstandard2.0", "netstandard2.1"),
+            "webapi" to listOf("net10.0", "net9.0"), "xunit" to listOf("net10.0", "net9.0"), "nunit" to listOf("net10.0", "net9.0"))
+        for ((template, frameworks) in expected10) {
+            val help = help("sdk10/$template")
+            assertEquals(template, frameworks, TemplateOptions.frameworks(help))
+            assertTrue(template, io.github.dotnetsupport.newproject.NewSolution.supports(TemplateOptions.frameworks(help), "net10.0"))
+            assertFalse(template, TemplateOptions.parse(help).any { it.name == "--framework" })
+        }
+        for (template in expected10.keys) {
+            val frameworks = TemplateOptions.frameworks(help("sdk9/$template"))
+            assertEquals(template, "net9.0", frameworks.first())
+            assertTrue(template, io.github.dotnetsupport.newproject.NewSolution.supports(frameworks, "net9.0"))
+        }
+    }
+
+    /** SDK 10 as seen on Linux: `-f, --framework <choice>` and the values only in the block below (DEV_JOURNEY 1.1). */
+    @Test
+    fun `frameworks from the choice block`() {
+        val help = help("sdk10/webapi-choice")
+        assertEquals(listOf("net10.0", "net9.0"), TemplateOptions.frameworks(help))
+        assertTrue(io.github.dotnetsupport.newproject.NewSolution.supports(TemplateOptions.frameworks(help), "net10.0"))
+        // only the placeholder and no block: unknown frameworks mean "any", never "none"
+        val bare = "Template options:\n  -f, --framework <choice>  The target framework for the project.\n\n"
+        assertEquals(emptyList<String>(), TemplateOptions.frameworks(bare))
+        assertTrue(io.github.dotnetsupport.newproject.NewSolution.supports(TemplateOptions.frameworks(bare), "net10.0"))
+        assertTrue(TemplateOptions.isMoniker("net9.0-windows") && TemplateOptions.isMoniker("net48") && !TemplateOptions.isMoniker("choice"))
+    }
 }

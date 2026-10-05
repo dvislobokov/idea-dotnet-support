@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<list>
+<!-- Rider's C# palette as a color scheme of its own (Settings | Editor | Color Scheme): the IDE's schemes keep their own colors,
+     C# falls back to their Language Defaults there. Only the C# keys are set; the rest is the parent scheme. -->
+<scheme name="Rider Light" version="142" parent_scheme="Default">
+  <attributes>
     <option name="CSHARP_KEYWORD">
         <value><option name="FOREGROUND" value="0F54D6"/></value>
     </option>
@@ -60,4 +63,23 @@
     <option name="CSHARP_PREPROCESSOR">
         <value><option name="FOREGROUND" value="0F54D6"/></value>
     </option>
-</list>
+    <option name="CSHARP_INTERFACE_IDENTIFIER">
+        <value><option name="FOREGROUND" value="6B2FBA"/></value>
+    </option>
+    <option name="CSHARP_ATTRIBUTE_IDENTIFIER">
+        <value><option name="FOREGROUND" value="6B2FBA"/></value>
+    </option>
+    <option name="CSHARP_METHOD_DECLARATION_IDENTIFIER">
+        <value><option name="FOREGROUND" value="00855F"/></value>
+    </option>
+    <option name="CSHARP_STATIC_METHOD_DECLARATION_IDENTIFIER">
+        <value><option name="FOREGROUND" value="00855F"/></value>
+    </option>
+    <option name="CSHARP_STATIC_FIELD_IDENTIFIER">
+        <value><option name="FOREGROUND" value="0093A1"/></value>
+    </option>
+    <option name="CSHARP_STATIC_PROPERTY_IDENTIFIER">
+        <value><option name="FOREGROUND" value="0093A1"/></value>
+    </option>
+  </attributes>
+</scheme>

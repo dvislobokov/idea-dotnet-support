@@ -34,11 +34,58 @@ public class ImportCompletion
 
         // TYPE:import-silent-dot — `name.WriteLi`. EXPECT: NO `Console.WriteLine` in the list: after a dot the members of `name` are listed
         // TYPE:import-silent-name — `string WriteLi`. EXPECT: NO `Console.WriteLine`: this is the name of a variable
-        // TYPE:import-silent-short — `Wr`. EXPECT: nothing from the index yet: it answers from three letters on
+        // TYPE:import-silent-short — `Wr`. EXPECT: no `Console.WriteLine` yet: static members answer from three letters on (types do from the first)
         // TYPE:import-silent-type — `List<Str`, then `var t = typeof(Str`. EXPECT: NO static member from the index (`Conversion.Str` of
         // Microsoft.VisualBasic was offered in `Task<str>` before 0.1.48): only a type stands in `<…>`, `typeof(…)`, after `as` and `:` of a base list
 
         Console.WriteLine(name);
+    }
+
+    /// <summary>
+    /// 0.1.87: types and extension methods without the language server — the types of the namespaces the file sees with nothing typed,
+    /// and, from the first letter, what is not imported (of the framework, of the packages and of this solution) as rows
+    /// «Name (in Namespace)» that add the using. The neighbour namespaces are in ImportCompletionTargets.cs.
+    /// </summary>
+    public void NotImported()
+    {
+        var name = "x";
+        var numbers = new List<int> { 1, 2, 3 };
+
+        // TYPE:import-types-visible — Ctrl+Space on the empty line, nothing typed. EXPECT: `List<>`, `Dictionary<,>`, `Task`, `File` among
+        // the types (System.Collections.Generic, System.IO, System.Threading.Tasks are implicit here), and NO row «… (in …)»
+
+        // TYPE:import-types-short — `Li`, choose `List<>`. EXPECT: `List<|>` with the caret between the brackets, no new using
+
+        // TYPE:import-neighbour-type — `Recei`. EXPECT: `Receipt (in Playground.ImportCompletionTargets.Billing)`; choosing it writes `Receipt`
+        // and adds `using Playground.ImportCompletionTargets.Billing;` at the top of the file
+
+        // TYPE:import-neighbour-new — `var book = new ReceiptB`, choose `ReceiptBook<> (in …Billing)`. EXPECT: `new ReceiptBook<|>()` and the using
+
+        // TYPE:import-library-type — `StringBu`. EXPECT: `StringBuilder (in System.Text)`; choosing it adds `using System.Text;`
+
+        // TYPE:import-qualified — `Time`, choose `Timer (in System.Timers)`. EXPECT: `System.Timers.Timer` written whole and NO using: the file
+        // sees `System.Threading.Timer` through the implicit usings, a using would make `Timer` ambiguous
+
+        // TYPE:import-extension — `name.Yel`. EXPECT: `Yell() (in Playground.ImportCompletionTargets.Text) : string`; choosing it writes
+        // `name.Yell()` and adds `using Playground.ImportCompletionTargets.Text;`
+
+        // TYPE:import-extension-generic — `numbers.EveryO`. EXPECT: `EveryOther() (in Playground.ImportCompletionTargets.Text)` (a generic
+        // `this IEnumerable<T>`); `numbers.Yel` gives NO `Yell`: it takes a string
+
+        // TYPE:import-extension-library — `numbers.ToImm`. EXPECT: `ToImmutableArray() (in System.Collections.Immutable)`, `ToImmutableList()`…;
+        // choosing one adds `using System.Collections.Immutable;`
+
+        // TYPE:import-extension-silent — `numbers.` and wait. EXPECT: the members of List<int> and the LINQ methods, NO row «(in …)» until a
+        // letter is typed; then they come (the list is made again at the first letter)
+
+        Console.WriteLine(name + numbers.Count);
+    }
+
+    // TYPE:import-attribute — on the empty line under this comment type `[Obs`. EXPECT: `Obsolete` (System is imported) and
+    // `ObsoletedOSPlatform (in System.Runtime.Versioning)`; choosing the second adds `using System.Runtime.Versioning;`
+
+    public void Attributed()
+    {
     }
 
     // TYPE:import-package — in a file of the project `Tests` (it refers to xunit) type `Equa` inside a test method.

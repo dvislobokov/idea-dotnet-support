@@ -187,7 +187,7 @@ class CSharpStringColorsTest : BasePlatformTestCase() {
         assertEquals("String//Escape sequence//Valid", described[CSharpSyntaxHighlighter.ESCAPE])
         assertEquals("String//Format item", described[CSharpSyntaxHighlighter.FORMAT_ITEM])
         for (key in listOf(CSharpSyntaxHighlighter.ESCAPE_2, CSharpSyntaxHighlighter.INVALID_ESCAPE, CSharpSyntaxHighlighter.FORMAT_ITEM_2)) assertTrue(key in described)
-        val dark = checkNotNull(EditorColorsManager.getInstance().getScheme("Darcula"))
+        val dark = riderScheme(dark = true)
         assertEquals(0xD688D4, dark.getAttributes(CSharpSyntaxHighlighter.ESCAPE).foregroundColor.rgb and 0xFFFFFF)
         assertEquals(0x66C3CC, dark.getAttributes(CSharpSyntaxHighlighter.ESCAPE_2).foregroundColor.rgb and 0xFFFFFF)
         assertEquals(0xC191FF, dark.getAttributes(CSharpSyntaxHighlighter.FORMAT_ITEM).foregroundColor.rgb and 0xFFFFFF)

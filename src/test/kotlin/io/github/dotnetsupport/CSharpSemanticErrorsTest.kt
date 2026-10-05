@@ -208,6 +208,35 @@ class CSharpSemanticErrorsTest : BasePlatformTestCase() {
         """))
     }
 
+    /** DEV_JOURNEY 5.5 (0.1.100): an implementation without the default value of its interface, a constructor, an awaited call — before the build. */
+    fun testMissingArgumentsOfImplementationsAndConstructors() {
+        assertEquals(listOf(
+            "AddAsync -> CS7036: There is no argument given that corresponds to the required parameter 'ct' of 'Errors.Repo.AddAsync(Point, CancellationToken)'",
+            "AddAsync -> CS7036: There is no argument given that corresponds to the required parameter 'ct' of 'Errors.Repo.AddAsync(Point, CancellationToken)'",
+            "Repo -> CS7036: There is no argument given that corresponds to the required parameter 'name' of 'Errors.Repo.Repo(string)'",
+            "Calc -> CS1729: 'Calc' does not contain a constructor that takes 2 arguments",
+            "Repo -> CS1729: 'Repo' does not contain a constructor that takes 2 arguments",
+        ), errors(wrap("""
+            var repo = new Repo("a");
+            repo.AddAsync(p);
+            IRepo face = repo;
+            face.AddAsync(p);
+            var q = new Point(1, 2);
+            var r = new Repo();
+            var c = new Calc(1, 2);
+            var c2 = new Calc();
+            var r2 = new Repo("a", 2);
+        """, """
+            public interface IRepo { System.Threading.Tasks.Task AddAsync(Point p, System.Threading.CancellationToken ct = default); }
+            public class Repo : IRepo
+            {
+                public Repo(string name) { }
+                public System.Threading.Tasks.Task AddAsync(Point p, System.Threading.CancellationToken ct) => System.Threading.Tasks.Task.CompletedTask;
+            }
+            private async System.Threading.Tasks.Task Run() { await new Repo("b").AddAsync(new Point(1, 2)); }
+        """)))
+    }
+
     fun testArguments() {
         assertEquals(listOf(
             "Add -> CS7036: There is no argument given that corresponds to the required parameter 'b' of 'Calc.Add(int, int)'",
@@ -349,5 +378,49 @@ class CSharpSemanticErrorsTest : BasePlatformTestCase() {
         val fix = myFixture.findSingleIntention("Import 'System.Collections.Generic.List'")
         myFixture.launchAction(fix)
         assertTrue(myFixture.editor.document.text, myFixture.editor.document.text.startsWith("using System.Collections.Generic;\n\nnamespace App;"))
+    }
+
+    fun testMissingAbstractAndInterfaceMembers() {
+        assertEquals(listOf(
+            "Circle -> CS0534: 'Shop.Circle' does not implement inherited abstract member 'Shop.Shape.Area()'",
+            "IDisposable -> CS0535: 'Shop.Circle' does not implement interface member 'System.IDisposable.Dispose()'",
+            "IComparable<Circle> -> CS0535: 'Shop.Circle' does not implement interface member 'System.IComparable<Shop.Circle>.CompareTo(Shop.Circle?)'",
+        ), errors("""
+            using System;
+            namespace Shop;
+            public abstract class Shape
+            {
+                public abstract double Area();
+                public virtual string Describe() => "";
+            }
+            public class Circle : Shape, IDisposable, IComparable<Circle>
+            {
+            }
+        """))
+        val fine = """
+            using System;
+            using System.Collections.Generic;
+            namespace Shop;
+            public abstract class Shape { public abstract double Area(); }
+            public abstract class Half : Shape, IDisposable { public abstract void Dispose(); }
+            public class Done : Half { public override double Area() => 0; public override void Dispose() { } }
+            public class Explicit : IDisposable { void IDisposable.Dispose() { } }
+            public class Base : IDisposable { void IDisposable.Dispose() { } }
+            public class Again : Base, IDisposable { }
+            public abstract class StillAbstract : Shape { }
+            public partial class Parted : IDisposable { }
+            public record Rec(int X) : IEquatable<Rec>;
+            public class Numbers : List<int>, IEnumerable<int> { }
+        """
+        assertEquals("nothing is missing, or nothing sure: ${errors(fine)}", emptyList<String>(), errors(fine).filter { "CS0534" in it || "CS0535" in it })
+        assertEquals("a syntax error in the type silences it", emptyList<String>(),
+            errors("using System;\nnamespace Shop;\npublic class Typing : IDisposable\n{\n    public void Dis(\n}\n").filter { "CS0535" in it })
+    }
+
+    fun testAltEnterOnTheMissingMemberError() {
+        myFixture.configureByText("SemanticErrors${files++}.cs", "using System;\nnamespace Shop;\npublic class Res : IDisp<caret>osable\n{\n}\n")
+        myFixture.launchAction(myFixture.findSingleIntention("Implement missing members"))
+        assertTrue(myFixture.editor.document.text, myFixture.editor.document.text.contains("public void Dispose()"))
+        assertTrue(highlight(myFixture.editor.document.text).none { it.description?.startsWith("CS0535") == true })
     }
 }

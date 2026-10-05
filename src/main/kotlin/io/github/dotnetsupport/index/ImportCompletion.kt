@@ -86,6 +86,32 @@ class AssemblyIndexService(private val project: Project) : Disposable {
     /** The dll the index of [mvid] was made of; null until the indexer has run, or for an index of the tests. */
     fun assemblyFile(mvid: String): File? = assemblyFiles[mvid]
 
+    /** An index of another project of the solution that one project does not refer to, with where that project gets it from ([unreferenced]). */
+    class Unreferenced(val index: AssemblyIndex, /** The package or the framework pack it is of; null for the output of a project or an unknown dll. */ val library: ProjectAssemblies.Library?, /** The project whose output the dll is. */ val project: File?)
+
+    /**
+     * The indexes of the other projects that [projectFile] is not compiled against (the packages of the solution it does not reference, the
+     * outputs of projects it does not refer to): the second Ctrl+Space offers their types (0.1.96). Each index once, the dll of each by [assemblyFile].
+     */
+    fun unreferenced(projectFile: VirtualFile): List<Unreferenced> {
+        val seen = java.util.Collections.newSetFromMap(java.util.IdentityHashMap<AssemblyIndex, Boolean>())
+        seen += byProject[projectFile.path].orEmpty()
+        val result = ArrayList<Unreferenced>()
+        for ((path, indexes) in byProject) {
+            if (path == projectFile.path) continue
+            val references = references[path]
+            for (index in indexes) {
+                if (!seen.add(index)) continue
+                val file = assemblyFiles[index.mvid]
+                val library = file?.let { dll -> references?.libraries?.firstOrNull { dll in it.assemblies } }
+                val project = file?.takeIf { references?.projectOutputs?.contains(it) == true }
+                    ?.let { dll -> references?.projects?.firstOrNull { it.nameWithoutExtension.equals(dll.nameWithoutExtension, ignoreCase = true) } }
+                result += Unreferenced(index, library, project)
+            }
+        }
+        return result
+    }
+
     /** The indexes of the project whose references have [index], for what is resolved in the metadata view of a type of it. */
     fun symbolsWith(index: AssemblyIndex): AssemblyIndexSet? =
         byProject.entries.firstOrNull { (_, indexes) -> indexes.any { it === index } }?.let { (path, _) -> symbols.computeIfAbsent(path) { AssemblyIndexSet(byProject[path].orEmpty()) } }

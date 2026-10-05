@@ -82,10 +82,42 @@ class CSharpFormattingTest : BasePlatformTestCase() {
         assertEquals("only whitespace changes", code(input), code(once))
     }
 
+    /**
+     * The style of `dotnet format`, with Rider's lists: the inputs keep blocks on one line, which Rider's style lays out in full since 0.1.100
+     * ([testBlocksTypedOnOneLineAreLaidOutAsRiderDoes]), so `csharp_preserve_single_line_blocks` (the default of `dotnet format`) is written.
+     */
     fun testTheDefaultStyleIsTheOneOfDotnetFormat() {
+        myFixture.addFileToProject("FormattingDefault/.editorconfig", "root = true\n[*.cs]\ncsharp_preserve_single_line_blocks = true\n")
+        var count = 0
         for (name in listOf("Basics", "Structure")) {
-            assertFormats(resource("default/$name.cs"), resource("default/$name.after.cs")) { reformat(lightFile(it, "$name.cs")) }
+            assertFormats(resource("default/$name.cs"), resource("default/$name.after.cs")) { text ->
+                // no `#if` symbols, as `dotnet format --folder`, set before the text is parsed
+                val file = myFixture.addFileToProject("FormattingDefault/$name${count++}.cs", "")
+                file.virtualFile.putUserData(CSharpPreprocessorSymbols.KEY, emptySet())
+                val document = PsiDocumentManager.getInstance(project).getDocument(file)!!
+                WriteCommandAction.runWriteCommandAction(project) { document.setText(text) }
+                PsiDocumentManager.getInstance(project).commitDocument(document)
+                reformat(PsiManager.getInstance(project).findFile(file.virtualFile)!!)
+            }
         }
+    }
+
+    /**
+     * Braces written on one line are laid out as Rider's default style does (DEV_JOURNEY 4.5, 0.1.100): types, members, statements in full;
+     * accessors, lambdas, enums and initializers stay on their line; `csharp_preserve_single_line_blocks` of `.editorconfig` wins.
+     */
+    fun testBlocksTypedOnOneLineAreLaidOutAsRiderDoes() {
+        assertFormats("class A { void M() { x(); } }\n", "class A\n{\n    void M()\n    {\n        x();\n    }\n}\n") { reformat(lightFile(it)) }
+        assertFormats(
+            "namespace N;\n\npublic class Repo { private int _count; public int Count { get; set; } public void Add(int x) { if (x > 0) { _count += x; Log(x); } } }\n",
+            "namespace N;\n\npublic class Repo\n{\n    private int _count;\n    public int Count { get; set; }\n" +
+                "    public void Add(int x)\n    {\n        if (x > 0)\n        {\n            _count += x;\n            Log(x);\n        }\n    }\n}\n",
+        ) { reformat(lightFile(it)) }
+        val kept = "enum Status { New, Paid }\n\nclass B\n{\n    int P { get => 1; }\n    void M()\n    {\n        Run(() => { Work(); });\n        var o = new Order { Id = 1 };\n    }\n}\n"
+        assertFormats(kept, kept) { reformat(lightFile(it)) }
+        myFixture.addFileToProject("FormattingPreserve/.editorconfig", "root = true\n[*.cs]\ncsharp_preserve_single_line_blocks = true\n")
+        val file = myFixture.addFileToProject("FormattingPreserve/Kept.cs", "class A { void M() { x(); } }\n")
+        assertEquals("the option of .editorconfig wins", "class A { void M() { x(); } }\n", reformat(file))
     }
 
     /**
@@ -179,7 +211,7 @@ class CSharpFormattingTest : BasePlatformTestCase() {
         val document = PsiDocumentManager.getInstance(project).getDocument(file)!!
         val start = text.indexOf("void N")
         WriteCommandAction.runWriteCommandAction(project) { CodeStyleManager.getInstance(project).reformatText(file, start, text.length - 2) }
-        assertEquals("class A\n{\nvoid M(){int a=1;}\n    void N() { int b = 2; }\n}\n", document.text)
+        assertEquals("class A\n{\nvoid M(){int a=1;}\n    void N()\n    {\n        int b = 2;\n    }\n}\n", document.text)
     }
 
     /** "Built-in" chosen, or "Auto" with the switch NATIVE: the native formatter; "dotnet format", CSharpier and "None" are what they say. */
@@ -190,7 +222,7 @@ class CSharpFormattingTest : BasePlatformTestCase() {
         val service = DotNetFormattingService()
         assertTrue("NATIVE, AUTO without CSharpier: the native formatter", NativeCSharpFormatting.engaged(file))
         assertFalse("and dotnet format stands down", service.canFormat(file))
-        assertEquals("class Program { }", reformat(file))
+        assertEquals("class Program\n{\n}", reformat(file))
 
         formatting.formatter = FormatterChoice.DOTNET_FORMAT
         assertFalse("dotnet format chosen: dotnet format, whatever the switch", NativeCSharpFormatting.engaged(file))

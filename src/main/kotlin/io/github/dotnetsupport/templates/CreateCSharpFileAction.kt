@@ -29,6 +29,23 @@ class CreateCSharpFileAction :
 
     override fun getActionName(directory: PsiDirectory, newName: String, templateName: String): String = "Create C# Type $newName"
 
+    /** A record has no body: the caret goes inside its `()` (DEV_JOURNEY 4.6, it stayed at 1:1), as Rider puts it. */
+    override fun postProcess(createdElement: com.intellij.psi.PsiFile, templateName: String?, customProperties: MutableMap<String, String>?) {
+        super.postProcess(createdElement, templateName, customProperties)
+        if (templateName != "CSharp Record") return
+        val project = createdElement.project
+        val virtualFile = createdElement.virtualFile ?: return
+        val editor = com.intellij.openapi.fileEditor.FileEditorManager.getInstance(project).selectedTextEditor?.takeIf {
+            com.intellij.openapi.fileEditor.FileDocumentManager.getInstance().getFile(it.document) == virtualFile
+        } ?: return
+        caretOfRecord(editor.document.charsSequence)?.let { editor.caretModel.moveToOffset(it) }
+    }
+
+    companion object {
+        /** Inside the `()` of `public record Name();`. */
+        fun caretOfRecord(text: CharSequence): Int? = Regex("""\brecord\s+\w+\(""").find(text)?.range?.last?.plus(1)
+    }
+
     override fun isAvailable(dataContext: DataContext): Boolean =
         super.isAvailable(dataContext) &&
             LangDataKeys.IDE_VIEW.getData(dataContext)?.directories.orEmpty()

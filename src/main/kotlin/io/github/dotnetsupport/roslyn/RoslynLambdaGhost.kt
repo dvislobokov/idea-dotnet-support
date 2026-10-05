@@ -51,6 +51,8 @@ class RoslynLambdaGhost : InlineCompletionProvider {
     override fun isEnabled(event: InlineCompletionEvent): Boolean {
         val request = event.toRequest() ?: return false
         if (request.file !is CSharpFile) return false
+        // the parameter info of the plugin's semantics answers instead (NativeCSharpLambdaGhost)
+        if (io.github.dotnetsupport.lang.CSharpFeatures.native(CSharpFeature.DOCUMENTATION, request.file.project)) return false
         // where an argument begins, and nowhere else: a method of this file is answered from its text, before the solution is loaded
         return LambdaSuggestions.atArgumentStart(request.document.immutableCharSequence, request.endOffset)
     }
@@ -116,6 +118,8 @@ class RoslynLambdaGhost : InlineCompletionProvider {
          * hand offered `order, cancellationToken`, `Sa` + Tab offered nothing).
          */
         fun offer(editor: Editor) {
+            val project = editor.project
+            if (project != null && io.github.dotnetsupport.lang.CSharpFeatures.native(CSharpFeature.DOCUMENTATION, project)) return io.github.dotnetsupport.lang.NativeCSharpLambdaGhost.offer(editor)
             ApplicationManager.getApplication().invokeLater({
                 if (editor.isDisposed) return@invokeLater
                 val handler = InlineCompletion.getHandlerOrNull(editor) ?: return@invokeLater

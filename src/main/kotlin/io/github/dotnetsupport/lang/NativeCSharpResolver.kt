@@ -284,7 +284,24 @@ class NativeCSharpResolver(val file: CSharpFile) {
         val own = LinkedHashMap<String, Member>()
         for (part in type.parts) part.members { name, member -> own[name]?.merge(member) ?: own.put(name, member) }
         for ((name, member) in own) map.putIfAbsent(name, member)
-        for (part in type.parts) for ((base, arity) in part.bases()) resolveType(base, arity)?.let { collectMembers(it, map, visited, depth + 1) }
+        for (part in type.parts) for ((base, arity) in part.bases()) baseOf(part, base, arity)?.let { collectMembers(it, map, visited, depth + 1) }
+    }
+
+    /**
+     * The base [name] of [part] by its simple name: for a part of another file, first a type of that name in the types and namespaces
+     * around the part (as C# looks it up there), not one the usings of this file prefer — a DTO `StressTest` imported here is not the
+     * entity's base `StressTest` (E-190); then leniently, as [resolveType].
+     */
+    private fun baseOf(part: TypePart, name: String, arity: Int): TypeInfo? {
+        if (part !is TypePart.Psi || part.declaration.containingFile?.viewProvider?.virtualFile != virtualFile) {
+            var scope = part.qualifiedName.substringBeforeLast('.', "")
+            while (true) {
+                typeInfo(if (scope.isEmpty()) name else "$scope.$name", arity)?.let { return it }
+                if (scope.isEmpty()) break
+                scope = scope.substringBeforeLast('.', "")
+            }
+        }
+        return resolveType(name, arity)
     }
 
     /**

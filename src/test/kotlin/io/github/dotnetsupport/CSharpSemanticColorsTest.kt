@@ -341,15 +341,30 @@ class CSharpSemanticColorsTest : BasePlatformTestCase() {
             val tag = page.additionalHighlightingTagToDescriptorMap!!.entries.first { it.value == key }.key
             assertTrue("<$tag> in the demo", page.demoText.contains("<$tag>"))
         }
-        val dark = checkNotNull(EditorColorsManager.getInstance().getScheme("Darcula"))
+        val dark = riderScheme(dark = true)
         assertEquals(0xE1BFFF, dark.getAttributes(CSharpColors.STRUCT).foregroundColor.rgb and 0xFFFFFF)
         assertEquals(0xE1BFFF, dark.getAttributes(CSharpColors.RECORD_STRUCT).foregroundColor.rgb and 0xFFFFFF)
         assertEquals(0xC191FF, dark.getAttributes(CSharpColors.STATIC_CLASS).foregroundColor.rgb and 0xFFFFFF)
         assertEquals(0xED94C0, dark.getAttributes(CSharpColors.EVENT).foregroundColor.rgb and 0xFFFFFF)
         assertEquals(java.awt.Font.BOLD, dark.getAttributes(CSharpColors.CONSTANT).fontType)
         assertEquals(EffectType.LINE_UNDERSCORE, dark.getAttributes(CSharpColors.MUTABLE_LOCAL_VARIABLE).effectType)
-        val light = checkNotNull(EditorColorsManager.getInstance().getScheme("Default"))
+        val light = riderScheme(dark = false)
         assertEquals("a method call falls back to the coarse color", 0x00855F, light.getAttributes(CSharpColors.STATIC_METHOD_CALL).foregroundColor.rgb and 0xFFFFFF)
         assertEquals(0x6B2FBA, light.getAttributes(CSharpColors.NAMESPACE).foregroundColor.rgb and 0xFFFFFF)
+        assertEquals("Rider's palette keeps the coarse color of a key that falls back to Language Defaults", 0x00855F,
+            light.getAttributes(CSharpColors.STATIC_METHOD_CALL).foregroundColor.rgb and 0xFFFFFF)
+
+        // the IDE's own schemes get no C# colors: a kind shows as the Language Defaults key of the scheme, so edits of those reach C#
+        val manager = EditorColorsManager.getInstance()
+        for (name in listOf("Default", "Darcula")) {
+            val scheme = checkNotNull(manager.getScheme(name))
+            val default = com.intellij.openapi.editor.DefaultLanguageHighlighterColors::class.java
+            for ((key, fallback) in listOf(CSharpColors.CLASS to "CLASS_NAME", CSharpColors.INTERFACE to "INTERFACE_NAME", CSharpColors.METHOD_CALL to "FUNCTION_CALL",
+                CSharpColors.METHOD_DECLARATION to "FUNCTION_DECLARATION", CSharpColors.STATIC_METHOD_CALL to "STATIC_METHOD", CSharpColors.STATIC_FIELD to "STATIC_FIELD",
+                CSharpColors.CONSTANT to "CONSTANT", CSharpColors.PROPERTY to "INSTANCE_FIELD", CSharpColors.ATTRIBUTE to "METADATA", io.github.dotnetsupport.lang.CSharpSyntaxHighlighter.KEYWORD to "KEYWORD")) {
+                val expected = scheme.getAttributes(default.getField(fallback).get(null) as TextAttributesKey)
+                assertEquals("$name: ${key.externalName}", expected, scheme.getAttributes(key))
+            }
+        }
     }
 }

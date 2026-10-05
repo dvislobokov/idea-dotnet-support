@@ -76,6 +76,20 @@ class SolutionViewPane(project: Project) : AbstractProjectViewPaneWithAsyncSuppo
         return listOfNotNull(PsiManager.getInstance(myProject).findFile(file))
     }
 
+    /**
+     * Projects dragged onto a solution folder or the solution move there, as in Rider; everything else goes to the drop target of the
+     * platform. Its move handler asked for a data context off EDT for a project node ("AsyncPromise: Access is allowed from EDT only")
+     * and could not move a project anyway: the folder is in the solution file, not on disk. The target is a client property of the tree,
+     * so registering ours replaces the platform's, which stays the delegate.
+     */
+    override fun enableDnD() {
+        super.enableDnD()
+        val tree = myTree ?: return
+        if (com.intellij.openapi.application.ApplicationManager.getApplication().isHeadlessEnvironment) return
+        val platform = tree.getClientProperty(DND_TARGET_KEY) as? com.intellij.ide.dnd.DnDTarget
+        com.intellij.ide.dnd.DnDManager.getInstance().registerTarget(SolutionDropTarget(tree, myProject, platform), tree, this)
+    }
+
     /** Delete on the node of a project is Remove from Solution; anything else keeps the delete provider of the platform. */
     override fun uiDataSnapshot(sink: DataSink) {
         super.uiDataSnapshot(sink)
@@ -91,6 +105,9 @@ class SolutionViewPane(project: Project) : AbstractProjectViewPaneWithAsyncSuppo
         private const val DRAG_SOURCE_DEPTH = 40L
 
         const val ID = "DotNetSolutionView"
+
+        /** The client property `DnDManagerImpl.registerTarget` keeps the target of a component in. */
+        private const val DND_TARGET_KEY = "DnD Target"
 
         // Must be unique among all panes; the platform ones use small numbers.
         private const val WEIGHT = 42
@@ -139,4 +156,57 @@ class SolutionFilesListener(private val project: Project) : BulkFileListener {
 
     private fun isSolutionFile(path: String): Boolean =
         path.substringAfterLast('.', "").lowercase().let { it in SOLUTION_EXTENSIONS || it == SOLUTION_FILTER_EXTENSION }
+}
+
+/** See [SolutionViewPane.enableDnD]. */
+private class SolutionDropTarget(private val tree: javax.swing.JTree, private val project: Project, private val platform: com.intellij.ide.dnd.DnDTarget?) :
+    com.intellij.ide.dnd.DnDNativeTarget {
+
+    private fun valueOf(path: javax.swing.tree.TreePath?): Any? = com.intellij.util.ui.tree.TreeUtil.getLastUserObject(path)
+        ?.let { (it as? AbstractTreeNode<*>)?.value ?: it }
+
+    private fun sources(event: com.intellij.ide.dnd.DnDEvent): List<Any?>? =
+        (event.attachedObject as? com.intellij.ide.dnd.TransferableWrapper)?.treePaths?.map(::valueOf)
+
+    private fun targetPath(event: com.intellij.ide.dnd.DnDEvent): javax.swing.tree.TreePath? {
+        val point = event.point ?: return null
+        val path = tree.getClosestPathForLocation(point.x, point.y) ?: return null
+        return path.takeIf { tree.getPathBounds(it)?.contains(point) == true }
+    }
+
+    /** Ours: projects of a solution dragged anywhere in the tree; a drop on anything but a folder or the solution is just not possible. */
+    private fun isOurs(sources: List<Any?>?): Boolean = !sources.isNullOrEmpty() && sources.all { it is ProjectKey }
+
+    override fun update(event: com.intellij.ide.dnd.DnDEvent): Boolean {
+        val sources = sources(event)
+        if (!isOurs(sources)) {
+            // a file dragged onto a solution folder: a folder of the solution file has no directory to take it
+            if (valueOf(targetPath(event)) is SolutionFolderKey) { event.isDropPossible = false; return false }
+            return platform?.update(event) ?: false.also { event.isDropPossible = false }
+        }
+        val path = targetPath(event)
+        val drop = io.github.dotnetsupport.actions.SolutionFolderMove.dropOf(sources!!, valueOf(path))
+        if (drop == null || path == null) { event.isDropPossible = false; return false }
+        tree.getPathBounds(path)?.let { event.setHighlighting(com.intellij.ui.awt.RelativeRectangle(tree, it), com.intellij.ide.dnd.DnDEvent.DropTargetHighlightingType.RECTANGLE) }
+        event.setDropPossible(true, "Move to ${if (drop.second == null) "the solution root" else "the folder"}")
+        return false
+    }
+
+    override fun drop(event: com.intellij.ide.dnd.DnDEvent) {
+        val sources = sources(event)
+        if (!isOurs(sources)) {
+            if (valueOf(targetPath(event)) !is SolutionFolderKey) platform?.drop(event)
+            return
+        }
+        val (projects, folderId) = io.github.dotnetsupport.actions.SolutionFolderMove.dropOf(sources!!, valueOf(targetPath(event))) ?: return
+        io.github.dotnetsupport.actions.SolutionFolderMove.move(project, projects.first().solutionFile, projects.map { it.project }, folderId)
+    }
+
+    override fun cleanUpOnLeave() {
+        platform?.cleanUpOnLeave()
+    }
+
+    override fun updateDraggedImage(image: java.awt.Image?, dropPoint: java.awt.Point?, imageOffset: java.awt.Point?) {
+        platform?.updateDraggedImage(image, dropPoint, imageOffset)
+    }
 }

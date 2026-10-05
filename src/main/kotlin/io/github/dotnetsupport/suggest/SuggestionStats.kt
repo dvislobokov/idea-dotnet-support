@@ -41,6 +41,12 @@ object SuggestionRules {
     const val NOT_IMPLEMENTED = "not implemented"
     const val BREAK = "break"
     const val TASK_RETURN = "Task return"
+    const val NEW_BY_NAME = "new by name"
+    const val CLOSE_CALL = "close call"
+    const val FILL_INITIALIZER = "fill initializer"
+    const val MEMBER_VALUE = "member value"
+    const val DECLARATION_NAME = "declaration name"
+    const val AFTER_LOOKUP_ITEM = "after the selected item"
 
     /** What made an item of the completion list go up. */
     const val SIGNAL_TYPE = "expected type"

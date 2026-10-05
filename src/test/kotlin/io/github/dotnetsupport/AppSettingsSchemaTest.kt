@@ -24,6 +24,19 @@ class AppSettingsSchemaTest : BasePlatformTestCase() {
 
     private val answer by lazy { JsonParser.parseString(resource("playground-console.json")) }
 
+    /** DEV_JOURNEY 4.9 (0.1.100): `},` typed where the completion of the key has put `{},` gives one comma, not `},,`. */
+    fun testACommaBeforeTheCommaOfTheCompletionStepsOver() {
+        myFixture.configureByText("appsettings.json", "{\n  \"Journey\": {<caret>},\n  \"Logging\": {}\n}\n")
+        // the JSON plugin puts the space after `:` itself
+        myFixture.type(" \"Greeting\":\"Hello, world\" },")
+        assertEquals("{\n  \"Journey\": { \"Greeting\": \"Hello, world\" },\n  \"Logging\": {}\n}\n", myFixture.editor.document.text)
+        assertTrue(io.github.dotnetsupport.jsonschema.AppSettingsCommaTypedHandler.stepsOver("\"a\": 1,", 6))
+        assertFalse("inside a string", io.github.dotnetsupport.jsonschema.AppSettingsCommaTypedHandler.stepsOver("\"a,b\"", 2))
+        myFixture.configureByText("other.json", "[1<caret>,2]")
+        myFixture.type(",")
+        assertEquals("another JSON file is left alone", "[1,,2]", myFixture.editor.document.text)
+    }
+
     fun testFileNames() {
         assertTrue(AppSettingsSchemas.isAppSettings("appsettings.json"))
         assertTrue(AppSettingsSchemas.isAppSettings("appsettings.Development.json"))

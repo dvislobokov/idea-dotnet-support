@@ -11,6 +11,9 @@ import io.github.dotnetsupport.index.IndexedMemberKind
 import io.github.dotnetsupport.index.IndexedType
 import io.github.dotnetsupport.index.IndexedTypeKind
 import io.github.dotnetsupport.lang.CSharpFile
+import io.github.dotnetsupport.lang.CSharpGenerateSite
+import io.github.dotnetsupport.lang.NativeCSharpGenerate
+import io.github.dotnetsupport.lang.NativeCSharpInheritedMembers
 import io.github.dotnetsupport.lang.LocalSymbolKind
 import io.github.dotnetsupport.lang.NativeCSharpDiagnostics
 import io.github.dotnetsupport.lang.NativeCSharpResolver
@@ -68,6 +71,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
                 when (element) {
                     is CSharpSimpleName -> { checkName(element); checkInstanceFromStatic(element) }
                     is CSharpInvocationExpression -> checkArguments(element)
+                    is CSharpBaseObjectCreationExpression -> { checkRequiredMembers(element); checkConstructorArguments(element) }
                     is CSharpVariableDeclaration -> checkDeclaration(element)
                     is CSharpAssignmentExpression -> checkAssignment(element)
                     is CSharpReturnStatement -> checkReturn(element)
@@ -75,7 +79,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
                     is CSharpMethodDeclaration -> checkPaths(element)
                     is CSharpAccessorDeclaration -> checkPaths(element)
                     is CSharpExpressionStatement -> warnings.checkNotAwaited(element)
-                    is CSharpTypeDeclaration -> warnings.checkUninitialized(element)
+                    is CSharpTypeDeclaration -> { warnings.checkUninitialized(element); checkMissingMembers(element) }
                     is CSharpBlock -> if (isFunctionBody(element)) warnings.checkUnreachable(element)
                 }
             }
@@ -277,7 +281,9 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
                 if (members.keys.any { it == text || it.startsWith("$text<") || it.startsWith("$text`") }) return true
                 if (type.info.kind == TypeKind.RECORD || type.info.kind == TypeKind.RECORD_STRUCT) if (text in RECORD_MEMBERS) return true
                 if (type.info.kind == TypeKind.DELEGATE) return true
-                if (resolver.libraryBases(type).any { has(it, text, depth + 1) }) return true
+                // the bases as their declarations resolve them: the syntactic map above finds a base by its simple name as this file sees it,
+                // which may be another type of that name (a DTO `StressTest` imported here, not the entity's base, E-190)
+                if (resolver.baseTypes(type).any { (it !is SemanticType.Source || it.info.key != type.info.key) && has(it, text, depth + 1) }) return true
                 type.info.kind == TypeKind.INTERFACE && resolver.libraryType(OBJECT)?.let { has(it, text, depth + 1) } != false
             }
             is SemanticType.Library -> {
@@ -363,6 +369,54 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         } else {
             report("CS1501", "No overload for method '$text' takes $count arguments", leaf.textRange)
         }
+    }
+
+    /**
+     * `new Point(1)` of a type of the solution (DEV_JOURNEY 5.5, 0.1.100): CS7036 when its one constructor needs more arguments, CS1729 when
+     * no constructor takes that many. Positional arguments only; not for partial types (a generator may add a constructor), nor for a
+     * record given one argument (its copy constructor).
+     */
+    private fun checkConstructorArguments(creation: CSharpBaseObjectCreationExpression) {
+        if (creation !is CSharpObjectCreationExpression) return
+        val arguments = creation.argumentList?.arguments ?: return
+        if (arguments.any { it.nameColon != null || it.expression?.text == "__arglist" }) return
+        val type = resolver.typeOf(creation) as? SemanticType.Source ?: return
+        val kind = type.info.kind
+        if (isPartial(type.info) || kind != TypeKind.CLASS && kind != TypeKind.RECORD && kind != TypeKind.STRUCT && kind != TypeKind.RECORD_STRUCT) return
+        val declarations = type.info.parts.map { it.element() as? CSharpTypeDeclaration ?: return }
+        if (declarations.any { d -> d.modifiers.any { it.text == "abstract" || it.text == "static" } }) return
+        val constructors: List<PsiElement> = declarations.flatMap { d ->
+            d.members.filterIsInstance<CSharpConstructorDeclaration>().filter { c -> c.modifiers.none { it.text == "static" } } + listOfNotNull(d.takeIf { it.parameterList != null })
+        }
+        val count = arguments.size
+        val struct = kind == TypeKind.STRUCT || kind == TypeKind.RECORD_STRUCT
+        if (count == 0 && (struct || constructors.isEmpty())) return
+        if ((kind == TypeKind.RECORD || kind == TypeKind.RECORD_STRUCT) && count == 1) return
+        val lists = constructors.map { c -> ((c as? CSharpConstructorDeclaration)?.parameterList ?: (c as CSharpTypeDeclaration).parameterList)?.parameters.orEmpty() }
+        fun required(list: List<CSharpParameter>) = list.count { p -> p.default == null && p.modifiers.none { it.text == "params" } }
+        if (lists.any { list -> count >= required(list) && (count <= list.size || list.lastOrNull()?.modifiers?.any { it.text == "params" } == true) }) return
+        val at = creation.type?.textRange ?: return
+        val single = constructors.singleOrNull()
+        val list = lists.singleOrNull()
+        if (single != null && list != null && count < required(list)) {
+            val missing = list.drop(count).firstOrNull { p -> p.default == null && p.modifiers.none { it.text == "params" } } ?: return
+            val shown = constructorDisplay(single, list) ?: return
+            report("CS7036", "There is no argument given that corresponds to the required parameter '${missing.identifier?.text}' of '$shown'", at)
+        } else {
+            val name = type.info.qualifiedName.substringAfterLast('.')
+            report("CS1729", "'$name' does not contain a constructor that takes $count arguments", at)
+        }
+    }
+
+    /** `Point.Point(int, int)`: a constructor (or a primary one) as Roslyn's messages write it. */
+    private fun constructorDisplay(constructor: PsiElement, parameters: List<CSharpParameter>): String? {
+        val owner = constructor as? CSharpTypeDeclaration ?: PsiTreeUtil.getParentOfType(constructor, CSharpBaseTypeDeclaration::class.java) ?: return null
+        val typeName = declaringName(owner) ?: return null
+        val shown = parameters.map { p ->
+            val type = p.type?.let(resolver::resolveType)?.let { CSharpTypeDisplay.display(it, qualified = false) } ?: return null
+            (p.modifiers.map { it.text } + type).joinToString(" ")
+        }
+        return "$typeName.${owner.identifier?.text}(${shown.joinToString(", ")})"
     }
 
     /** With named arguments, only the one method of its name: CS7036 for a required parameter no argument gives. */
@@ -474,7 +528,14 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
                     }
                     if (!ok) return false
                 }
-                for (base in resolver.baseTypes(type)) if (!collect(base, text, into, depth + 1, arity)) return false
+                // a class does not get the members of its interfaces: `repo.AddAsync(order)` of an implementation without the interface's
+                // `ct = default` is CS7036, whatever the interface says (DEV_JOURNEY 5.5)
+                val self = type.info.kind == TypeKind.INTERFACE
+                for (base in resolver.baseTypes(type)) {
+                    val face = base is SemanticType.Source && base.info.kind == TypeKind.INTERFACE || base is SemanticType.Library && base.type.kind == IndexedTypeKind.INTERFACE
+                    if (face && !self) continue
+                    if (!collect(base, text, into, depth + 1, arity)) return false
+                }
                 return true
             }
             is SemanticType.Library -> {
@@ -879,6 +940,59 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         }
         if (PsiTreeUtil.findChildOfAnyType(body, CSharpGotoStatement::class.java, CSharpLabeledStatement::class.java) != null) return
         if (CSharpReachability(resolver).endOf(body) == CSharpReachability.Reach.YES) report("CS0161", "'$shown': not all code paths return a value", at.textRange)
+    }
+
+    // ---- CS0534, CS0535
+
+    /**
+     * A class or struct that does not implement an abstract member of its base classes (CS0534, on its name) or a member of its
+     * interfaces (CS0535, on the interface in its base list), by [NativeCSharpInheritedMembers.missingMembers]; not a partial type, not
+     * a record (the compiler writes members of its own), not where a base does not resolve. Alt+Enter there: Implement missing members.
+     */
+    private fun checkMissingMembers(type: CSharpTypeDeclaration) {
+        if (type !is CSharpClassDeclaration && type !is CSharpStructDeclaration) return
+        val name = type.identifier?.takeIf { it.textLength > 0 } ?: return
+        val site = CSharpGenerateSite.of(type, resolver) ?: return
+        if (site.isStatic || isPartial(site.info) || !isKnown(site.self)) return
+        val missing = NativeCSharpInheritedMembers(site).missingMembers()
+        if (missing.isEmpty()) return
+        val shown = CSharpTypeDisplay.display(site.self) ?: return
+        // the interfaces of the base list: a member of a base interface of one of them is reported on the first (`IList<int>` brings `IEnumerable<int>`)
+        val faces = type.baseList?.types.orEmpty().mapNotNull { base ->
+            base.type?.let { syntax -> resolver.resolveType(syntax)?.takeIf(NativeCSharpGenerate::isInterface)?.let { CSharpTypeDisplay.display(it) to syntax } }
+        }
+        for (member in missing) {
+            val face = member.face
+            if (face == null) {
+                report("CS0534", "'$shown' does not implement inherited abstract member '${member.display}'", name.textRange)
+            } else {
+                val at = (faces.firstOrNull { it.first == CSharpTypeDisplay.display(face) } ?: faces.firstOrNull())?.second
+                report("CS0535", "'$shown' does not implement interface member '${member.display}'", at?.textRange ?: name.textRange)
+            }
+        }
+    }
+
+    // ---- CS9035
+
+    /**
+     * `new OrderLine()` / `new OrderLine { Price = 1 }` that leaves a `required` member unset (C# 11): CS9035 for each, on the type of the
+     * creation (`new` of a target-typed one), as Roslyn. Not where the constructor is not sure (overloads, some `[SetsRequiredMembers]`),
+     * the type or one of its bases is not known, or a partial type a generator may still add to.
+     */
+    private fun checkRequiredMembers(creation: CSharpBaseObjectCreationExpression) {
+        val type = resolver.typeOf(creation) ?: return
+        if (type !is SemanticType.Source && type !is SemanticType.Library) return
+        if (type is SemanticType.Source && isPartial(type.info)) return
+        val initializer = creation.initializer
+        // an unfinished `{ Sk| }` reads as a collection initializer: nothing said while it has elements
+        if (initializer != null && initializer.node.elementType != SyntaxKind.ObjectInitializerExpression && initializer.expressions.isNotEmpty()) return
+        val required = CSharpRequiredMembers(resolver)
+        if (required.of(type).isEmpty() || !isKnown(type)) return
+        val missing = required.missing(creation, type) ?: return
+        val at = (creation as? CSharpObjectCreationExpression)?.type ?: creation.newKeyword ?: return
+        for (member in missing) {
+            report("CS9035", "Required member '${member.owner}.${member.name}' must be set in the object initializer or attribute constructor.", at.textRange)
+        }
     }
 
     // ----

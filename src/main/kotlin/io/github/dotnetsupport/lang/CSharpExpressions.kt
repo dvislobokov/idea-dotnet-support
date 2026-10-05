@@ -73,6 +73,13 @@ object CSharpExpressions {
                     if (!operand()) break
                 }
                 (token.isIdentifier || token.isKeyword(*EXPRESSION_KEYWORDS)) && next != null && next.start == start && (next.type == CSharpTokenTypes.LPAREN || next.type == CSharpTokenTypes.LBRACKET) -> { start = token.start; i-- }
+                // a generic call or creation: `Make<int>()`, `new List<Order>()`
+                (token.isOperator(">") || token.isOperator(">>")) && next != null && next.start == start && next.type == CSharpTokenTypes.LPAREN -> {
+                    val open = typeArgumentsOpen(tokens, i) ?: break
+                    val name = tokens.getOrNull(open - 1)?.takeIf { it.isIdentifier } ?: break
+                    start = name.start
+                    i = open - 2
+                }
                 else -> break
             }
         }
@@ -80,6 +87,23 @@ object CSharpExpressions {
         val prefix = tokens.getOrNull(i)
         if (prefix != null && (prefix.isKeyword("new", "await") || (prefix.isOperator("!") || prefix.isOperator("-")) && (i == 0 || isBoundary(tokens[i - 1])))) start = prefix.start
         return TextRange(start, end)
+    }
+
+    /** The index of the `<` that opens the type arguments closing at [close]; null when the tokens between are not a type argument list. */
+    private fun typeArgumentsOpen(tokens: List<Token>, close: Int): Int? {
+        var depth = 0
+        for (j in close downTo 0) {
+            val t = tokens[j]
+            when {
+                t.isOperator(">") -> depth++
+                t.isOperator(">>") -> depth += 2
+                t.isOperator("<") -> if (--depth == 0) return j
+                t.isIdentifier || t.type == CSharpTokenTypes.KEYWORD || t.type == CSharpTokenTypes.DOT || t.type == CSharpTokenTypes.COMMA || t.isOperator("?") ||
+                    t.type == CSharpTokenTypes.LBRACKET || t.type == CSharpTokenTypes.RBRACKET -> {}
+                else -> return null
+            }
+        }
+        return null
     }
 
     /** True when the expression at [start] is the beginning of a statement: after `;`, `{`, `}`, `=>` or the start of the file. */

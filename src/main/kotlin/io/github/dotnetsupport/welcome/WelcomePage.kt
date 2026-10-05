@@ -20,6 +20,7 @@ import io.github.dotnetsupport.cli.PluginLog
 import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.ui.JBColor
 import com.intellij.ui.jcef.JBCefApp
+import com.intellij.ui.jcef.JBCefProxySettings
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -86,7 +87,12 @@ object WelcomePage {
         }
         // no embedded browser in this IDE (a remote session, a runtime without JCEF): the system one
         if (inBrowser || !JBCefApp.isSupported()) BrowserUtil.browse(address(directory, page, anchor))
-        else HTMLEditorProvider.openEditor(project, TITLE, HTMLEditorProvider.Request.url(address(directory, page, anchor)))
+        else {
+            // the first browser of the session builds JBCefApp in a class initializer that asks for the proxy services: created here first,
+            // they are not created inside <clinit> (SEVERE "JBCefApp$Holder <clinit> requests ProxyMigrationService" otherwise)
+            runCatching { JBCefProxySettings.getInstance() }
+            HTMLEditorProvider.openEditor(project, TITLE, HTMLEditorProvider.Request.url(address(directory, page, anchor)))
+        }
     }
 }
 

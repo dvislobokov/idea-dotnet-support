@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using Playground.Editor.QueryRequests;
 
 namespace Playground.Editor;
 
@@ -60,7 +61,19 @@ public static class Queries
                      group o by o.CustomerId into g
                      select g.Key;
 
-        Console.WriteLine($"{expensive.Count()} {names.Count()} {ids.Count()} {pairs.Count()} {boxed.Value} {maybe.Value} {groups.Count()}");
+        // TYPE:queries-inherited-member — the shape of an EF Core handler (E-190): `BookDate` and `CalculationTypeId` are declared in the abstract
+        // base `QueryStressTest` of the entity (QueryEntities.cs), and this file imports a DTO named `QueryStressTest` too (`using …QueryRequests`).
+        // EXPECT: no red CS1061 on `BookDate` / `CalculationTypeId`; Ctrl+Q on `stress` → `List<int> stress`; `x.` inside `Where` → `BookDate`,
+        // `CalculationTypeId`, `Comment`, `Id` (not the DTO's `Title`). Typing `x.Nope` in the `Select` gives a red CS1061 (undo it).
+        var context = new Playground.Editor.QueryEntities.QueryStressContext();
+        var stress = context
+            .DirectStressTests
+            .Where(x => x.BookDate == new DateOnly(2002, 01, 01))
+            .Select(x => x.CalculationTypeId)
+            .ToList();
+        var request = new QueryStressTest { Title = "dto" };
+
+        Console.WriteLine($"{expensive.Count()} {names.Count()} {ids.Count()} {pairs.Count()} {boxed.Value} {maybe.Value} {groups.Count()} {stress.Count} {request.Title}");
     }
 }
 

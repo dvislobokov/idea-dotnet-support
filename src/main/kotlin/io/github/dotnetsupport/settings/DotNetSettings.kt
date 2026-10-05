@@ -24,6 +24,8 @@ import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.AlignY
 import com.intellij.ui.dsl.builder.bindItem
 import com.intellij.ui.dsl.builder.bindSelected
+import com.intellij.ui.dsl.builder.bindText
+import com.intellij.ui.dsl.builder.rows
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.listCellRenderer.textListCellRenderer
 import com.intellij.util.ui.UIUtil
@@ -37,6 +39,9 @@ import io.github.dotnetsupport.format.DotNetFormattingSettings
 import io.github.dotnetsupport.format.FormatterChoice
 import io.github.dotnetsupport.lang.CSharpFeature
 import io.github.dotnetsupport.lang.CSharpFeatures
+import io.github.dotnetsupport.lang.palette.CSharpPaletteChoice
+import io.github.dotnetsupport.lang.palette.CSharpPaletteService
+import io.github.dotnetsupport.lang.palette.CSharpPalettes
 import io.github.dotnetsupport.sdk.DotNetEnvironmentDialog
 import io.github.dotnetsupport.sdk.DotNetSdks
 import io.github.dotnetsupport.sdk.GlobalJson
@@ -54,6 +59,9 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
         var createRunConfigurations by property(true)
         var openBuildWindowOnEveryBuild by property(true)
         var switchToSolutionView by property(true)
+
+        /** Types and namespaces (`System.Data.*`) the C# completion never offers, see [io.github.dotnetsupport.lang.CSharpCompletionExclusions]. */
+        var completionExclusions by list<String>()
 
         /** Of the settings pages: the one of the IDE, or chosen here (there is no Russian language pack for the IDE itself). */
         var language by enum(PluginLanguage.AUTO)
@@ -104,6 +112,15 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
             if (trimmed == state.dotnetSearchPaths) return
             // a new list: that is how BaseState notices the change (as with toolPaths)
             state.dotnetSearchPaths = trimmed.toMutableList()
+        }
+
+    var completionExclusions: List<String>
+        get() = state.completionExclusions.toList()
+        set(value) {
+            val trimmed = value.map { it.trim() }.filter { it.isNotEmpty() }
+            if (trimmed == state.completionExclusions) return
+            // a new list: that is how BaseState notices the change
+            state.completionExclusions = trimmed.toMutableList()
         }
 
     var createRunConfigurations: Boolean
@@ -300,6 +317,17 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
                     comboBox(PluginLanguage.entries, textListCellRenderer { it?.label }).bindItem({ settings.language }, { settings.language = it ?: PluginLanguage.AUTO })
                         .comment(DotNetBundle.message("settings.language.comment"), maxLineLength = COMMENT_WIDTH)
                 }
+                row(DotNetBundle.message("settings.palette")) {
+                    val palettes = CSharpPaletteService.getInstance()
+                    comboBox(CSharpPaletteChoice.all(), textListCellRenderer { it?.name })
+                        .bindItem({ CSharpPaletteChoice.of(palettes.paletteId) }, { palettes.choose(it?.id ?: CSharpPalettes.DEFAULT_ID) })
+                        .comment(DotNetBundle.message("settings.palette.comment"), maxLineLength = COMMENT_WIDTH)
+                }
+                row(DotNetBundle.message("settings.completion.exclude")) {
+                    textArea().rows(4).align(AlignX.FILL)
+                        .bindText({ settings.completionExclusions.joinToString("\n") }, { settings.completionExclusions = io.github.dotnetsupport.lang.CSharpCompletionExclusions.parse(it) })
+                        .comment(DotNetBundle.message("settings.completion.exclude.comment"), maxLineLength = COMMENT_WIDTH)
+                }.topGap(com.intellij.ui.dsl.builder.TopGap.SMALL)
                 row { link(DotNetBundle.message("settings.documentation")) { io.github.dotnetsupport.welcome.WelcomePage.open(project, io.github.dotnetsupport.welcome.WelcomePage.GUIDE, "settings", inBrowser = true) } }
             }
         }.also {

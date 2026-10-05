@@ -188,6 +188,8 @@ class IndentAnalysis(private val text: CharSequence, private val lineStart: Int,
                 val statementLevel = parent.kind == "block" || parent.kind == "switch" || parent.kind == "none"
                 when {
                     closed.kind == "block" || closed.kind == "switch" -> endStatement(parent)
+                    // the body of an enum ends its declaration, as a block does: `enum Status { New, Paid }` and the next member (DEV_JOURNEY 4.4)
+                    closed.kind == "list" && statementLevel && parent.statement.any { it.text == "enum" && it.type == CSharpTokenTypes.KEYWORD } -> endStatement(parent)
                     // [Attribute] in front of a declaration is a line of its own
                     closed.kind == "bracket" && statementLevel && parent.statement.firstOrNull() === closed.open -> {
                         endStatement(parent)

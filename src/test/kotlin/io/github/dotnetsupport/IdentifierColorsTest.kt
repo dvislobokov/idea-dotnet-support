@@ -122,7 +122,7 @@ class IdentifierColorsTest : BasePlatformTestCase() {
 
         // the bundled scheme gives the keys their Rider colors
         // nullable since 2026.1
-        val scheme = checkNotNull(EditorColorsManager.getInstance().getScheme("Default"))
+        val scheme = riderScheme(dark = false)
         assertEquals(0x6B2FBA, scheme.getAttributes(CSharpIdentifierAnnotator.TYPE).foregroundColor.rgb and 0xFFFFFF)
         assertEquals(0x00855F, scheme.getAttributes(CSharpIdentifierAnnotator.METHOD).foregroundColor.rgb and 0xFFFFFF)
         assertEquals(0x0093A1, scheme.getAttributes(CSharpIdentifierAnnotator.MEMBER).foregroundColor.rgb and 0xFFFFFF)

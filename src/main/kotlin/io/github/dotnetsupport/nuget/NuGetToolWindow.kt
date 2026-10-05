@@ -147,6 +147,13 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
     // remembered while the window lives, as in Rider: whoever wants the details keeps them open for every package
     private var infoExpanded = false
     private var dependenciesExpanded = false
+    /** URL of a feed -> its name in `nuget.config`, for the rows of the list. */
+    @Volatile private var sourceNames: Map<String, String> = emptyMap()
+    // above `init`: it reloads right away when a project was requested ("Manage NuGet Packages" of a project), and a field declared
+    // below it was still null then (NPE "requests" is null, DEV_JOURNEY 3.1)
+    /** What every project of the solution references, read in the background by [reload]: the list and the card are drawn from it on EDT. */
+    @Volatile private var installedByProject: Map<VirtualFile, List<InstalledPackage>> = emptyMap()
+    private val installedRequests = AtomicInteger()
 
     init {
         add(JPanel(BorderLayout()).apply {
@@ -184,8 +191,14 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
         list.addListSelectionListener { if (!it.valueIsAdjusting) showDetails() }
         versionCombo.addActionListener { if (versionCombo.isPopupVisible || versionCombo.hasFocus()) selectedPackage()?.let { showDetails() } }
 
-        service.requestListeners += ::selectRequestedProject
-        service.packagesChangedListeners += ::reload
+        val onRequest: () -> Unit = { selectRequestedProject() }
+        val onPackagesChanged: () -> Unit = { reload() }
+        service.requestListeners += onRequest
+        service.packagesChangedListeners += onPackagesChanged
+        com.intellij.openapi.util.Disposer.register(toolWindow.disposable) {
+            service.requestListeners.remove(onRequest)
+            service.packagesChangedListeners.remove(onPackagesChanged)
+        }
         reloadScopes()
         loadSourcesAndReload()
     }
@@ -229,10 +242,11 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
     private fun reloadScopes() {
         val scopes = listOf(Scope("Solution", null)) + service.projects().map { Scope(it.first, it.second) }
         scopeCombo.model = DefaultComboBoxModel(scopes.toTypedArray())
-        selectRequestedProject()
+        selectRequestedProject(scopesReloaded = true)
     }
 
-    private fun selectRequestedProject() {
+    /** [scopesReloaded]: the list was just read again, a project still missing from it is not in a solution (no endless reloading). */
+    private fun selectRequestedProject(scopesReloaded: Boolean = false) {
         if (service.solutionRequested) {
             service.solutionRequested = false
             if (scopeCombo.itemCount > 0) scopeCombo.selectedIndex = 0
@@ -240,13 +254,10 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
             return
         }
         val requested = service.requestedProject ?: return
-        if ((0 until scopeCombo.itemCount).none { scopeCombo.getItemAt(it).file == requested }) reloadScopes()
+        if (!scopesReloaded && (0 until scopeCombo.itemCount).none { scopeCombo.getItemAt(it).file == requested }) return reloadScopes()
         (0 until scopeCombo.itemCount).firstOrNull { scopeCombo.getItemAt(it).file == requested }?.let { scopeCombo.selectedIndex = it }
         searchField.text = ""
     }
-
-    /** URL of a feed -> its name in `nuget.config`, for the rows of the list. */
-    @Volatile private var sourceNames: Map<String, String> = emptyMap()
 
     fun loadSourcesAndReload() = background(sourceRequests, { service.sources() to service.sourceList() }) { (urls, named) ->
         sources = urls
@@ -256,9 +267,6 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
 
     private fun sourceName(url: String?): String? = url?.let { sourceNames[it.trimEnd('/')] ?: runCatching { java.net.URI(it).host }.getOrNull() }
 
-    /** What every project of the solution references, read in the background by [reload]: the list and the card are drawn from it on EDT. */
-    @Volatile private var installedByProject: Map<VirtualFile, List<InstalledPackage>> = emptyMap()
-    private val installedRequests = AtomicInteger()
 
     /**
      * The packages the projects reference come from their files and `project.assets.json`: read off EDT (read on EDT, it was a slow operation

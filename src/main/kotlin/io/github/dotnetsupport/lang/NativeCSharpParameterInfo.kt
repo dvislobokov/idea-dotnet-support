@@ -8,6 +8,7 @@ import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.util.Key
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
+import com.intellij.psi.util.PsiTreeUtil
 import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.index.IndexedMemberKind
 import io.github.dotnetsupport.lang.semantic.CSharpNameResolver
@@ -74,7 +75,8 @@ object NativeCSharpParameterInfo {
     fun listAt(file: PsiFile, offset: Int): CSharpBaseArgumentList? {
         var element: PsiElement? = file.findElementAt(offset) ?: file.findElementAt(offset - 1)
         while (element != null && element !is PsiFile) {
-            if (element is CSharpArgumentList && (element.parent is CSharpInvocationExpression || element.parent is CSharpBaseObjectCreationExpression)) {
+            if (element is CSharpArgumentList && (element.parent is CSharpInvocationExpression || element.parent is CSharpBaseObjectCreationExpression ||
+                    element.parent is CSharpConstructorInitializer || element.parent is CSharpPrimaryConstructorBaseType)) {
                 val open = element.openParenToken ?: return null
                 val close = element.closeParenToken?.takeIf { it.textLength > 0 }
                 if (offset > open.textRange.startOffset && (close == null || offset <= close.textRange.startOffset)) return element
@@ -104,23 +106,48 @@ object NativeCSharpParameterInfo {
         return when (val owner = list.parent) {
             is CSharpInvocationExpression -> call(owner, resolver, text)
             is CSharpBaseObjectCreationExpression -> creation(owner, resolver, text)
+            // `: base(|)` / `: this(|)` of a constructor, `class B(int x) : A(|)`: the constructors of the base or of the type itself
+            is CSharpConstructorInitializer -> initializer(list, owner.thisOrBaseKeyword?.text == "this", resolver, text)
+            is CSharpPrimaryConstructorBaseType -> initializer(list, false, resolver, text)
             else -> emptyList()
         }
     }
 
     private fun call(call: CSharpInvocationExpression, resolver: CSharpNameResolver, text: CSharpSymbolText): List<Row> {
-        val callee = when (val expression = call.expression) {
-            is CSharpSimpleName -> expression
-            is CSharpMemberAccessExpression -> expression.nameElement
-            is CSharpMemberBindingExpression -> expression.nameElement
-            else -> null
-        } ?: return emptyList()
-        val resolution = resolver.resolveName(callee) ?: return emptyList()
-        val chosen = resolution.single
-        val first = resolution.symbols.first()
-        val reduced = call.expression !is CSharpSimpleName && resolver.isExtension(first)
-        val overloads = overloadsOf(first, resolver).ifEmpty { resolution.symbols }
-        return overloads.mapNotNull { symbol -> text.parameters(symbol, reduced)?.let { Row(it, symbol == chosen) } }
+        val (overloads, chosen) = overloads(call, resolver) ?: return emptyList()
+        val reduced = call.expression !is CSharpSimpleName && overloads.firstOrNull()?.let(resolver::isExtension) == true
+        val callee = callee(call)
+        return overloads.mapNotNull { symbol -> text.parameters(symbol, reduced, methodArguments(symbol, call, callee, resolver))?.let { Row(it, symbol == chosen) } }
+    }
+
+    /** What the receiver and the arguments written so far fix of a generic method's type parameters: `Func<Order, bool> predicate`, not `Func<TSource, bool>`. */
+    private fun methodArguments(symbol: CSharpSymbol, call: CSharpInvocationExpression, callee: CSharpSimpleName?, resolver: CSharpNameResolver): List<SemanticType?> {
+        if (callee == null || symbol !is CSharpSymbol.LibraryMember || symbol.member.arity == 0) return emptyList()
+        return runCatching { resolver.expressions.typeArguments(symbol, call, callee, withLambdas = false) }.getOrDefault(emptyList())
+    }
+
+    private fun callee(call: CSharpInvocationExpression): CSharpSimpleName? = when (val expression = call.expression) {
+        is CSharpSimpleName -> expression
+        is CSharpMemberAccessExpression -> expression.nameElement
+        is CSharpMemberBindingExpression -> expression.nameElement
+        else -> null
+    }
+
+    /** Every overload of the method [call] calls, and the one the resolver picks (null when it cannot pick one). */
+    internal fun overloads(call: CSharpInvocationExpression, resolver: CSharpNameResolver): Pair<List<CSharpSymbol>, CSharpSymbol?>? {
+        val callee = callee(call) ?: return null
+        val resolution = resolver.resolveName(callee) ?: return null
+        return overloadsOf(resolution.symbols.first(), resolver).ifEmpty { resolution.symbols } to resolution.single
+    }
+
+    /** What an argument list of [owner] (an invocation or a creation) may go to: the overloads, the one the resolver picks first. */
+    internal fun candidates(owner: PsiElement, resolver: CSharpNameResolver): List<CSharpSymbol> = when (owner) {
+        is CSharpInvocationExpression -> overloads(owner, resolver)?.let { (all, chosen) -> listOfNotNull(chosen) + all.filter { it != chosen } }.orEmpty()
+        is CSharpBaseObjectCreationExpression -> constructors(owner, resolver).let { all ->
+            val chosen = resolver.pickConstructor(all, owner.argumentList?.arguments.orEmpty())
+            listOfNotNull(chosen) + all.filter { it != chosen }
+        }
+        else -> emptyList()
     }
 
     /** Every method of the name of [symbol] where it is declared: the type's (with the inherited ones of an assembly), the static class's of an extension. */
@@ -142,19 +169,35 @@ object NativeCSharpParameterInfo {
         else -> listOf(symbol)
     }
 
-    private fun creation(creation: CSharpBaseObjectCreationExpression, resolver: CSharpNameResolver, text: CSharpSymbolText): List<Row> {
-        val type = resolver.typeOf(creation) ?: return emptyList()
-        val constructors: List<CSharpSymbol> = when (type) {
+    private fun creation(creation: CSharpBaseObjectCreationExpression, resolver: CSharpNameResolver, text: CSharpSymbolText): List<Row> =
+        constructorRows(resolver.typeOf(creation) ?: return emptyList(), creation.argumentList?.arguments.orEmpty(), resolver, text)
+
+    private fun initializer(list: CSharpBaseArgumentList, self: Boolean, resolver: CSharpNameResolver, text: CSharpSymbolText): List<Row> {
+        val declaration = PsiTreeUtil.getParentOfType(list, CSharpTypeDeclaration::class.java) ?: return emptyList()
+        val own = resolver.selfType(resolver.syntax.declaredType(declaration) ?: return emptyList())
+        val type = if (self) own else resolver.baseTypes(own).firstOrNull { !NativeCSharpGenerate.isInterface(it) } ?: return emptyList()
+        return constructorRows(type, list.arguments, resolver, text)
+    }
+
+    private fun constructors(creation: CSharpBaseObjectCreationExpression, resolver: CSharpNameResolver): List<CSharpSymbol> =
+        constructorsOf(resolver.typeOf(creation) ?: return emptyList())
+
+    private fun constructorRows(type: SemanticType, arguments: List<CSharpArgument>, resolver: CSharpNameResolver, text: CSharpSymbolText): List<Row> {
+        val constructors = constructorsOf(type)
+        // the one the arguments pick, as the server marks it (robot, E-84: `new StringBuilder(16)` marked none)
+        val chosen = resolver.pickConstructor(constructors, arguments)
+        return constructors.map { Row(text.parameters(it, false).orEmpty(), it == chosen) }
+    }
+
+    private fun constructorsOf(type: SemanticType): List<CSharpSymbol> {
+        return when (type) {
             is SemanticType.Library -> type.type.members.filter { it.kind == IndexedMemberKind.CONSTRUCTOR && !it.isStatic && !it.isHidden }.map { CSharpSymbol.LibraryMember(it, type.arguments) }
             is SemanticType.Source -> type.info.parts.mapNotNull { it.element() as? CSharpTypeDeclaration }.flatMap { declaration ->
                 val explicit = declaration.members.filterIsInstance<CSharpConstructorDeclaration>().filter { c -> c.modifiers.none { it.text == "static" } }
                 (explicit + listOfNotNull(declaration.takeIf { it.parameterList != null })).map { CSharpSymbol.SourceMember(it, Member.method(emptyList(), false).at { it }, type) }
             }.ifEmpty { listOf(CSharpSymbol.SourceMember(type.info.parts.first().element() ?: return emptyList(), Member.method(emptyList(), false), type)) }
-            else -> return emptyList()
+            else -> emptyList()
         }
-        // the one the arguments pick, as the server marks it (robot, E-84: `new StringBuilder(16)` marked none)
-        val chosen = resolver.pickConstructor(constructors, creation.argumentList?.arguments.orEmpty())
-        return constructors.map { Row(text.parameters(it, false).orEmpty(), it == chosen) }
     }
 
     /** Where the parameter [index] is in `parameters.joinToString(", ")`; the last one for a `params` array the caret has gone past. */

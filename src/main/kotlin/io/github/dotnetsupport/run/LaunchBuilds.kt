@@ -75,6 +75,11 @@ object LaunchBuildPlan {
         projects.joinToString("+") { File(it).nameWithoutExtension }.replace(Regex("""[^\w.+-]"""), "_").take(120) + ".slnf"
 
     fun key(path: String): String = File(path).absoluteFile.normalize().path.lowercase()
+
+    /** A failed build stops every launch of the batch (all of them complete as failed): the text says none was started. */
+    fun failureMessage(what: String, launches: List<String>): String =
+        "The build of $what before the launch has failed, so " +
+            (if (launches.size == 1) "'${launches.single()}' was not started" else "none of ${launches.joinToString()} was started") + ". See the Build tool window."
 }
 
 /** Coordinates the builds before launches: see [LaunchBuildPlan]. Builds wait for each other and for [DotNetDebugBuild.build]. */
@@ -113,7 +118,7 @@ class LaunchBuilds(private val project: Project) {
             val failed = steps.firstOrNull { !build(it) }
             if (failed != null) {
                 val what = failed.solutionPath?.let { failed.projects.joinToString { p -> File(p).nameWithoutExtension } } ?: File(failed.projects.single()).nameWithoutExtension
-                DotNetCli.notifyError(project, "Build Failed", "The build of $what before the launch has failed, so ${if (batch.size == 1) "'$names' was" else "none of $names was"} started. See the Build tool window.")
+                DotNetCli.notifyError(project, "Build Failed", LaunchBuildPlan.failureMessage(what, batch.map { it.name }))
             }
             batch.forEach { it.outcome.complete(if (failed == null) Outcome.BUILT else Outcome.FAILED) }
         } catch (e: Throwable) {

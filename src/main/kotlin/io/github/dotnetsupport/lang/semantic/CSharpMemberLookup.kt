@@ -23,8 +23,11 @@ import io.github.dotnetsupport.lang.TypeKind
  * assemblies the public ones (protected inside a type derived from theirs), not the ones hidden from the editor (`EditorBrowsable(Never)`).
  */
 class CSharpMemberLookup(private val resolver: CSharpNameResolver) {
-    /** The members of one name, overloads together (the nearest type's first); [symbols] are of one kind but for a method group. */
-    class Entry(val name: String, val symbols: List<CSharpSymbol>) {
+    /**
+     * The members of one name, overloads together (the nearest type's first); [symbols] are of one kind but for a method group.
+     * [inaccessible]: the place does not see them (private / protected of another type, C# §7.5): asked for by the second Ctrl+Space only.
+     */
+    class Entry(val name: String, val symbols: List<CSharpSymbol>, val inaccessible: Boolean = false) {
         val first: CSharpSymbol get() = symbols.first()
         override fun toString(): String = "$name ${symbols.size}"
     }
@@ -41,10 +44,14 @@ class CSharpMemberLookup(private val resolver: CSharpNameResolver) {
      * The names after the dot of [site] when what is left of it is [qualifier]. [typesOnly]: a place only a type can stand (`A.B.|` of a
      * declaration's type): no members but nested types. [matcher]: the names worth looking at (the prefix typed), all when null.
      * [throughThis]: the value is `this`, whose protected members of library bases are seen (C# §7.5.4 wants the instance to be of the
-     * derived type, so `other.MemberwiseClone()` is not offered).
+     * derived type, so `other.MemberwiseClone()` is not offered). [inaccessibleToo]: the members the place does not see come as entries
+     * of their own ([Entry.inaccessible], under the names it sees) — the second Ctrl+Space (0.1.96).
      */
-    fun entries(qualifier: CSharpNameResolver.Qualifier, site: PsiElement, typesOnly: Boolean = false, matcher: PrefixMatcher? = null, throughThis: Boolean = false): List<Entry> {
-        val sink = Sink(matcher)
+    fun entries(
+        qualifier: CSharpNameResolver.Qualifier, site: PsiElement, typesOnly: Boolean = false, matcher: PrefixMatcher? = null, throughThis: Boolean = false,
+        inaccessibleToo: Boolean = false,
+    ): List<Entry> {
+        val sink = Sink(matcher, inaccessibleToo)
         this.throughThis = throughThis
         when (qualifier) {
             is CSharpNameResolver.Qualifier.Namespace -> namespace(qualifier.name, sink)
@@ -123,14 +130,15 @@ class CSharpMemberLookup(private val resolver: CSharpNameResolver) {
         val own = LinkedHashMap<String, MutableList<CSharpSymbol>>()
         for (part in info.parts) part.members { key, member ->
             if ('<' in key || '`' in key || !sink.takes(key)) return@members
-            if (!accessible(member, info, site)) return@members
+            val seen = accessible(member, info, site)
+            if (!seen && !sink.inaccessibleToo) return@members
             if (member.nestedType != null) {
                 if (!static) return@members
-                resolver.syntax.nestedTypeOf(member)?.let { own.getOrPut(key) { ArrayList() } += CSharpSymbol.SourceType(it) }
+                resolver.syntax.nestedTypeOf(member)?.let { if (seen) own.getOrPut(key) { ArrayList() } += CSharpSymbol.SourceType(it) else sink.addInaccessible(key, CSharpSymbol.SourceType(it)) }
                 return@members
             }
             if (typesOnly || NativeCSharpMembers.isStatic(member) != static) return@members
-            for (target in member.targets()) own.getOrPut(key) { ArrayList() } += CSharpSymbol.SourceMember(target, member, type)
+            for (target in member.targets()) if (seen) own.getOrPut(key) { ArrayList() } += CSharpSymbol.SourceMember(target, member, type) else sink.addInaccessible(key, CSharpSymbol.SourceMember(target, member, type))
         }
         for ((key, symbols) in own) for (symbol in symbols.distinct()) sink.add(key, symbol, overloads = isMethod(symbol))
         sink.closeLevel()
@@ -177,18 +185,21 @@ class CSharpMemberLookup(private val resolver: CSharpNameResolver) {
                     if (member.isHidden) continue
                     // the destructor of `object`: C# cannot call it, Roslyn does not offer it after `this.` (robot, E-81)
                     if (name == "Finalize" && found.member.type.fullName == OBJECT) continue
-                    if (member.isProtected && !(throughThis && derivesFromLibrary(found.from?.type ?: type.type, site))) continue
+                    val seen = !member.isProtected || throughThis && derivesFromLibrary(found.from?.type ?: type.type, site)
+                    if (!seen && !sink.inaccessibleToo) continue
                     val isStatic = member.isStatic || member.kind == IndexedMemberKind.CONSTANT || member.kind == IndexedMemberKind.ENUM_MEMBER
                     if (isStatic != static) continue
                     if (enumMembersOnly && member.kind != IndexedMemberKind.ENUM_MEMBER) continue
-                    sink.add(name, CSharpSymbol.LibraryMember(member, resolver.declaringArguments(type, found.from)), overloads = member.kind.isCallable)
+                    val symbol = CSharpSymbol.LibraryMember(member, resolver.declaringArguments(type, found.from))
+                    if (seen) sink.add(name, symbol, overloads = member.kind.isCallable) else sink.addInaccessible(name, symbol)
                 }
             }
         }
         if (static) {
             val nested = type.type.nestedTypes + resolver.session.baseTypes(resolver.assemblies, type.type).flatMap { it.type.nestedTypes }
-            for (child in nested) if (!child.isHidden && (!child.isProtected || derivesFromLibrary(type.type, site)) && sink.takes(child.simpleName)) {
-                sink.add(child.simpleName, CSharpSymbol.LibraryType(child), overloads = false)
+            for (child in nested) if (!child.isHidden && sink.takes(child.simpleName)) {
+                if (!child.isProtected || derivesFromLibrary(type.type, site)) sink.add(child.simpleName, CSharpSymbol.LibraryType(child), overloads = false)
+                else if (sink.inaccessibleToo) sink.addInaccessible(child.simpleName, CSharpSymbol.LibraryType(child))
             }
         }
         sink.closeLevel()
@@ -212,12 +223,18 @@ class CSharpMemberLookup(private val resolver: CSharpNameResolver) {
      * The entries by name: a name a nearer type has hides the same name of a base (C# §12.5), but methods of the bases join the group of
      * a method of a nearer type (they are overloads unless the same signature — completion shows a group once anyway).
      */
-    private inner class Sink(val matcher: PrefixMatcher?) {
+    private inner class Sink(val matcher: PrefixMatcher?, val inaccessibleToo: Boolean) {
         private val byName = LinkedHashMap<String, MutableList<CSharpSymbol>>()
         private val closed = HashSet<String>()
         private val thisLevel = HashSet<String>()
+        // what the place does not see, apart: a seen name of a base is not hidden by a private one of a nearer type
+        private val inaccessible = LinkedHashMap<String, MutableList<CSharpSymbol>>()
 
         fun takes(name: String): Boolean = matcher == null || matcher.prefixMatches(name)
+
+        fun addInaccessible(name: String, symbol: CSharpSymbol) {
+            if (takes(name)) inaccessible.getOrPut(name) { ArrayList() }.let { if (symbol !in it) it += symbol }
+        }
 
         fun add(name: String, symbol: CSharpSymbol, overloads: Boolean) {
             if (!takes(name)) return
@@ -239,7 +256,8 @@ class CSharpMemberLookup(private val resolver: CSharpNameResolver) {
             thisLevel.clear()
         }
 
-        fun entries(): List<Entry> = byName.map { (name, symbols) -> Entry(name, symbols) }
+        fun entries(): List<Entry> = byName.map { (name, symbols) -> Entry(name, symbols) } +
+            inaccessible.filterKeys { it !in byName }.map { (name, symbols) -> Entry(name, symbols, inaccessible = true) }
     }
 
     private companion object {

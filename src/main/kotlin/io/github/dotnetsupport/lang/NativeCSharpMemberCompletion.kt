@@ -19,6 +19,7 @@ import io.github.dotnetsupport.lang.semantic.CSharpNameResolver
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSymbol
 import io.github.dotnetsupport.lang.semantic.CSharpSymbolText
+import io.github.dotnetsupport.lang.semantic.SemanticType
 import javax.swing.Icon
 
 /**
@@ -32,29 +33,39 @@ object NativeCSharpMemberCompletion {
     /** Extension methods a little under the members of the type, as Rider lists them. */
     const val EXTENSION = 28.0
 
-    fun items(place: NativeCSharpCompletionPlace, file: CSharpFile, matcher: PrefixMatcher): List<LookupElement> {
+    /** [inaccessible]: only the members the place does not see, grayed (the second Ctrl+Space, [NativeCSharpDoubleCompletion]). */
+    fun items(place: NativeCSharpCompletionPlace, file: CSharpFile, matcher: PrefixMatcher, inaccessible: Boolean = false): List<LookupElement> {
         val name = place.name ?: return emptyList()
         val resolver = CSharpSemanticSession(file.project).resolver(file)
         val lookup = CSharpMemberLookup(resolver)
         val qualifier = lookup.qualifierOf(name) ?: return emptyList()
-        val entries = lookup.entries(qualifier, name, typesOnly(name), matcher)
+        val entries = lookup.entries(qualifier, name, typesOnly(name), matcher, inaccessibleToo = inaccessible).filter { it.inaccessible == inaccessible }
         val text = CSharpSymbolText(resolver)
-        val reduced = qualifier is CSharpNameResolver.Qualifier.Value || qualifier is CSharpNameResolver.Qualifier.ValueOrType
+        val receiver = receiverOf(qualifier)
         return entries.mapNotNull { entry ->
             ProgressManager.checkCanceled()
-            element(entry, text, resolver, reduced)
+            element(entry, text, resolver, receiver != null, receiver)
         }
     }
 
     /** The members of the own type that the syntax does not see (of library bases, extension methods): `this.` of a class derived from `Exception`. */
-    fun thisItems(place: NativeCSharpCompletionPlace, file: CSharpFile, matcher: PrefixMatcher): List<LookupElement> {
-        if (place.base) return emptyList()
+    fun thisItems(place: NativeCSharpCompletionPlace, file: CSharpFile, matcher: PrefixMatcher, inaccessible: Boolean = false): List<LookupElement> {
         val name = place.name ?: return emptyList()
         val resolver = CSharpSemanticSession(file.project).resolver(file)
         val lookup = CSharpMemberLookup(resolver)
         val qualifier = lookup.qualifierOf(name) ?: return emptyList()
         val text = CSharpSymbolText(resolver)
-        return lookup.entries(qualifier, name, false, matcher, throughThis = true).mapNotNull { element(it, text, resolver, true) }
+        // `base.` of an override (`base.ExecuteAsync(...)` of a BackgroundService): the members of library bases too; no extension methods there (CS0175)
+        val entries = lookup.entries(qualifier, name, false, matcher, throughThis = true, inaccessibleToo = inaccessible)
+            .filter { entry -> entry.inaccessible == inaccessible && (!place.base || entry.symbols.any { !resolver.isExtension(it) }) }
+        return entries.mapNotNull { element(it, text, resolver, true, receiverOf(qualifier)) }
+    }
+
+    /** The value left of the dot; null when a type or a namespace is there. */
+    fun receiverOf(qualifier: CSharpNameResolver.Qualifier): SemanticType? = when (qualifier) {
+        is CSharpNameResolver.Qualifier.Value -> qualifier.type
+        is CSharpNameResolver.Qualifier.ValueOrType -> qualifier.value
+        else -> null
     }
 
     /** `A.B.|` where only a type stands (a parameter's type, a base list); not the type of a local at a statement start, which may be a call. */
@@ -66,7 +77,12 @@ object NativeCSharpMemberCompletion {
         return !(declaration != null && declaration.type == top && declaration.parent is CSharpLocalDeclarationStatement)
     }
 
-    private fun element(entry: CSharpMemberLookup.Entry, text: CSharpSymbolText, resolver: CSharpNameResolver, reduced: Boolean): LookupElement? {
+    private fun element(entry: CSharpMemberLookup.Entry, text: CSharpSymbolText, resolver: CSharpNameResolver, reduced: Boolean, receiver: SemanticType?): LookupElement? {
+        val element = row(entry, text, resolver, reduced, receiver) ?: return null
+        return if (entry.inaccessible) NativeCSharpDoubleCompletion.inaccessible(element) else element
+    }
+
+    private fun row(entry: CSharpMemberLookup.Entry, text: CSharpSymbolText, resolver: CSharpNameResolver, reduced: Boolean, receiver: SemanticType?): LookupElement? {
         val name = entry.name
         return when (val first = entry.first) {
             is CSharpSymbol.Namespace -> build(name, AllIcons.Nodes.Package, name, null, null, NativeCSharpCompletion.TYPE + 1, null)
@@ -83,11 +99,12 @@ object NativeCSharpMemberCompletion {
             }
             is CSharpSymbol.SourceMember -> {
                 val kind = NativeCSharpMembers.kind(first.member)
-                val type = runCatching { text.typeOf(first) }.getOrNull()
+                val inferred = inferred(first, receiver, resolver)
+                val type = runCatching { text.typeOf(first, inferred) }.getOrNull()
                 when (kind) {
                     NativeCSharpMembers.Kind.METHOD -> {
                         val extension = resolver.isExtension(first)
-                        val tail = tail(text.parameters(first, reduced && extension), entry.symbols.size)
+                        val tail = tail(text.parameters(first, reduced && extension, inferred), entry.symbols.size)
                         val handler = NativeCSharpCalls.callHandler { entry.symbols.all(text::returnsNothing) to entry.symbols.any { text.parameters(it, reduced && resolver.isExtension(it))?.isNotEmpty() != false } }
                         build(name, AllIcons.Nodes.Method, name, tail, type, if (extension) EXTENSION else NativeCSharpCompletion.METHOD, handler)
                     }
@@ -98,10 +115,11 @@ object NativeCSharpMemberCompletion {
             }
             is CSharpSymbol.LibraryMember -> {
                 val member = first.member
-                val type = runCatching { text.typeOf(first) }.getOrNull()
+                val inferred = inferred(first, receiver, resolver)
+                val type = runCatching { text.typeOf(first, inferred) }.getOrNull()
                 if (member.kind.isCallable) {
                     val extension = member.kind == IndexedMemberKind.EXTENSION_METHOD
-                    val tail = tail(text.parameters(first, reduced), entry.symbols.size)
+                    val tail = tail(text.parameters(first, reduced, inferred), entry.symbols.size)
                     val handler = NativeCSharpCalls.callHandler { entry.symbols.all(text::returnsNothing) to entry.symbols.any { text.parameters(it, reduced)?.isNotEmpty() != false } }
                     build(name, AllIcons.Nodes.Method, name, tail, type, if (extension) EXTENSION else NativeCSharpCompletion.METHOD, handler, strikeout = member.obsolete)
                 } else {
@@ -111,6 +129,10 @@ object NativeCSharpMemberCompletion {
             is CSharpSymbol.Local -> null
         }
     }
+
+    /** The type arguments of an extension method that the receiver fixes (`ToImmutableArray()` of a `List<Order>`: `Order`); empty for the rest. */
+    fun inferred(symbol: CSharpSymbol, receiver: SemanticType?, resolver: CSharpNameResolver): List<SemanticType?> =
+        if (receiver == null) emptyList() else runCatching { resolver.expressions.receiverTypeArguments(symbol, receiver) }.getOrDefault(emptyList())
 
     /** `(string value)`, with ` (+ 17 overloads)` after it when the name has more. */
     private fun tail(parameters: List<String>?, overloads: Int): String {

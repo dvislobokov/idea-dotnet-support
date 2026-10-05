@@ -196,7 +196,19 @@ class NuGetClient(
  */
 private fun fetchWithCredentials(url: String, source: String): String {
     val credentials = NuGetCredentialStore.get(source)
-    return HttpRequests.request(url).connectTimeout(10_000).readTimeout(20_000)
+    try {
+        return httpGet(url, credentials)
+    } catch (e: HttpRequests.HttpStatusException) {
+        // the storage is asked only now, as NuGet asks its credential provider only after a 401
+        if (e.statusCode != 401 && e.statusCode != 403) throw e
+        NuGetCredentialStore.unauthorized(source)
+        val retry = NuGetCredentialStore.get(source)?.takeIf { it != credentials } ?: throw e
+        return httpGet(url, retry)
+    }
+}
+
+private fun httpGet(url: String, credentials: com.intellij.credentialStore.Credentials?): String =
+    HttpRequests.request(url).connectTimeout(10_000).readTimeout(20_000)
         .tuner { connection ->
             val password = credentials?.getPasswordAsString()
             if (credentials?.userName != null && password != null) {
@@ -211,7 +223,6 @@ private fun fetchWithCredentials(url: String, source: String): String {
                 connection?.contentType?.let { ", $it" }.orEmpty() + (connection?.url?.toString()?.takeIf { it != url }?.let { ", redirected to $it" }.orEmpty()))
             text
         }
-}
 
 class InstalledPackage(
     val id: String,

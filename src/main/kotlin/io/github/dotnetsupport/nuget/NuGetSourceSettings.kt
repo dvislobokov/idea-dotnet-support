@@ -78,15 +78,93 @@ object NuGetConfigEditor {
 /**
  * Credentials of private feeds for the requests the plugin makes itself (search, versions, icons). The CLI does not
  * use them: it reads `nuget.config`, where `dotnet nuget add source --password` stores its own encrypted copy.
+ *
+ * The password storage is asked only about a source that needs it ([NuGetCredentialPolicy]): asked on every request to nuget.org, it
+ * failed on Linux without a keychain (libsecret / KWallet) with an "IDE error occurred" blaming the plugin (DEV_JOURNEY 3.2).
  */
 object NuGetCredentialStore {
+    private const val KNOWN_KEY = "io.github.dotnetsupport.nuget.sourcesWithCredentials"
+
     private fun attributes(sourceUrl: String) = CredentialAttributes(generateServiceName("DotNet NuGet Source", sourceUrl.trimEnd('/').lowercase()))
 
-    /** Slow: the password storage may ask for a master password. Not for EDT. */
-    fun get(sourceUrl: String): Credentials? = PasswordSafe.instance.get(attributes(sourceUrl))?.takeIf { !it.userName.isNullOrEmpty() }
+    private fun known(): Set<String> =
+        com.intellij.ide.util.PropertiesComponent.getInstance().getList(KNOWN_KEY).orEmpty().toSet()
 
-    fun set(sourceUrl: String, user: String?, password: String?) =
-        PasswordSafe.instance.set(attributes(sourceUrl), if (user.isNullOrEmpty() || password.isNullOrEmpty()) null else Credentials(user, password))
+    private fun setKnown(sourceUrl: String, has: Boolean) {
+        val key = NuGetCredentialPolicy.key(sourceUrl)
+        val updated = if (has) known() + key else known() - key
+        com.intellij.ide.util.PropertiesComponent.getInstance().setList(KNOWN_KEY, updated.sorted())
+    }
+
+    val policy = NuGetCredentialPolicy(lookup = { PasswordSafe.instance.get(attributes(it))?.takeIf { c -> !c.userName.isNullOrEmpty() } }, known = ::known)
+
+    /** Slow when the storage is asked: it may ask for a master password. Not for EDT. Null without asking for a source that needs no credentials. */
+    fun get(sourceUrl: String): Credentials? = policy.get(sourceUrl)
+
+    /** What [get] would return, without ever asking the storage: for the journal. */
+    fun cached(sourceUrl: String): Credentials? = policy.cached(sourceUrl)
+
+    /** The feed answered 401 / 403: from now on the storage is asked about it. */
+    fun unauthorized(sourceUrl: String) = policy.unauthorized(sourceUrl)
+
+    fun set(sourceUrl: String, user: String?, password: String?) {
+        val credentials = if (user.isNullOrEmpty() || password.isNullOrEmpty()) null else Credentials(user, password)
+        // nothing stored and nothing to store: the storage is not touched (a new feed without a password)
+        if (credentials == null && NuGetCredentialPolicy.key(sourceUrl) !in known() && policy.cached(sourceUrl) == null) return policy.forget(sourceUrl)
+        PasswordSafe.instance.set(attributes(sourceUrl), credentials)
+        setKnown(sourceUrl, credentials != null)
+        policy.remember(sourceUrl, credentials)
+    }
+}
+
+/**
+ * When the password storage is asked about a feed, as a credential provider of NuGet is: for a source the plugin stored credentials for
+ * ([known]), or one that has answered 401 / 403 in this session; never for nuget.org, which is anonymous. Answers, empty ones too, are
+ * cached: one question per source and session.
+ */
+class NuGetCredentialPolicy(private val lookup: (String) -> Credentials?, private val known: () -> Set<String>) {
+    private object None
+
+    private val answers = java.util.concurrent.ConcurrentHashMap<String, Any>()
+    private val unauthorized = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
+    fun needsCredentials(sourceUrl: String): Boolean {
+        val key = key(sourceUrl)
+        return !isAnonymous(sourceUrl) && (key in unauthorized || key in known())
+    }
+
+    fun get(sourceUrl: String): Credentials? {
+        if (!needsCredentials(sourceUrl)) return null
+        val key = key(sourceUrl)
+        val answer = answers.getOrPut(key) { runCatching { lookup(sourceUrl) }.getOrNull() ?: None }
+        return answer as? Credentials
+    }
+
+    fun cached(sourceUrl: String): Credentials? = answers[key(sourceUrl)] as? Credentials
+
+    fun unauthorized(sourceUrl: String) {
+        val key = key(sourceUrl)
+        // a 401 after an empty answer: the user may have stored the credentials since; asked once more
+        if (unauthorized.add(key) || answers[key] === None) answers.remove(key)
+    }
+
+    fun remember(sourceUrl: String, credentials: Credentials?) {
+        answers[key(sourceUrl)] = credentials ?: None
+    }
+
+    fun forget(sourceUrl: String) {
+        answers.remove(key(sourceUrl))
+    }
+
+    companion object {
+        private val ANONYMOUS_HOSTS = setOf("api.nuget.org", "www.nuget.org", "nuget.org")
+
+        fun key(sourceUrl: String): String = sourceUrl.trim().trimEnd('/').lowercase()
+
+        /** nuget.org: public, never asks for credentials. */
+        fun isAnonymous(sourceUrl: String): Boolean =
+            runCatching { java.net.URI(sourceUrl.trim()).host?.lowercase() }.getOrNull() in ANONYMOUS_HOSTS
+    }
 }
 
 /** "New feed" / "Edit feed", with the same fields as in Rider. */

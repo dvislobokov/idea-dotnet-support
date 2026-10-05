@@ -127,6 +127,12 @@ def settings():
         option("settings.behavior.solutionView", ON, "Окно Project показывает решение так, как его видит сборка. Вернуться к обычному виду можно в заголовке окна."),
         option("settings.language", e(RU["language.AUTO"]),
                note("settings.language.comment") + " Русского языкового пакета для самой IDE нет, поэтому язык страниц плагина выбирается здесь."),
+        option("settings.palette", e(RU["palette.default"]),
+               note("settings.palette.comment") + " Палитры: Rider, Visual Studio, VS Code, Nord, Dracula, One Dark / One Light, Solarized, GitHub; "
+               "«%s» — без палитры, C# берёт цвета Language Defaults схемы. Палитра записывается в текущую схему (её редактируемую копию, "
+               "как при правке в Settings | Editor | Color Scheme) и переписывается при смене схемы или темы. Список с живым просмотром — "
+               "меню .NET → C# Color Palette…, Esc возвращает прежнюю." % e(RU["palette.default"])),
+        (name("settings.completion.exclude"), "пусто", note("settings.completion.exclude.comment") + ". Работает и для списка импортируемых типов, и для методов расширения из неподключённых пространств имён."),
     ]))
 
     page("settings-build", "Settings | .NET | Toolset and Build", "page.build",
@@ -352,6 +358,8 @@ def content():
             ("Monitor .NET Process", "Окно .NET Monitor: процессор, память, сборка мусора, запросы и исключения работающего процесса."),
             ("Show Allocations in Editor", "Расход памяти по строкам кода, см. <a href=\"#memory\">раздел ниже</a>."),
             (".NET on This Machine...", "Установленные SDK и среды выполнения со статусом поддержки, <code>dotnet --info</code>, <code>global.json</code>."),
+            ("C# Color Palette...", "Палитра C# в стиле Rider, Visual Studio, VS Code, Nord, Dracula, One Dark, Solarized или GitHub поверх текущей схемы: "
+                                    "фон не меняется. Палитра применяется сразу при движении по списку, Esc возвращает прежнюю."),
             ("Format, Verify Formatting", "Форматирование проекта или решения и проверка, что всё отформатировано, как это делает сервер сборки."),
             ("Analyze Upgrade to Newer .NET...", "Анализ перехода на новую версию .NET: пакеты, свойства проекта и API, которые мешают переходу."),
             ("Insert New GUID", "Вставляет новый GUID в каждую позицию курсора."),

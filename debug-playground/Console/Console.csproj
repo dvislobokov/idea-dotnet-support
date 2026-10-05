@@ -19,4 +19,13 @@
   <ItemGroup>
     <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <!-- Live checks of 0.1.95 (Editor/RareCompletion.cs, README of the playground). Type on the empty line inside the group, undo with Ctrl+Z. -->
+  <PropertyGroup>
+    <!-- TYPE:msbuild-property — type `<Out>$(MSBuildProj` + Ctrl+Space (Completion = Built-in). EXPECT: `MSBuildProjectDirectory`, `MSBuildProjectName`, ...;
+         `$(Root` offers `RootNamespace` (declared above); the parenthesis is closed on choosing. `@(Comp` → `Compile`, `%(File` → `Filename`. -->
+
+    <!-- TYPE:msbuild-paths — directly under <Project>, outside of the groups (type `<Import Project="` + Ctrl+Space): `..\` and the folders of Console, files .props / .targets / .csproj; after `..\Lib\`
+         only Lib.csproj; the same in `<ProjectReference Include="..\Lib\`: project files only. NOT: .cs files, bin, obj. -->
+
+  </PropertyGroup>
 </Project>

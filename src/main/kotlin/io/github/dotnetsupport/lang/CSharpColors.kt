@@ -16,7 +16,10 @@ import javax.swing.Icon
  * the `ReSharper.` prefix. [TYPE], [METHOD] and [MEMBER] are the coarse keys of the heuristics (`CSharpIdentifierAnnotator`), which knows no
  * more than that; every finer key falls back to one of them (or to a key of Language Defaults where Rider's does), so a scheme that has
  * only the three coarse ones, or none, still shows a file as before. Filled by the semantic tokens of the server (`RoslynPolicy`) and by
- * the plugin's own tree (`NativeCSharpSemanticColors`). Colors of Rider's Islands Dark and Light — `colorSchemes/CSharp*.xml`.
+ * the plugin's own tree (`NativeCSharpSemanticColors`). The IDE's schemes get no colors from the plugin: where a kind has a Language
+ * Defaults key of its own (interface, static method and field, constant, metadata, function declaration) it falls back to it, so C# looks
+ * like the other languages of the scheme and follows its edits. Rider's palette is the bundled scheme "Rider Dark" / "Rider Light"
+ * (`colorSchemes/Rider*.xml`); since 0.1.97 Rider's and other themes' palettes also go on top of any scheme (`lang/palette`, C# keys only).
  */
 object CSharpColors {
     val TYPE = createTextAttributesKey("CSHARP_TYPE", Default.CLASS_NAME)
@@ -29,30 +32,30 @@ object CSharpColors {
     val RECORD = createTextAttributesKey("CSHARP_RECORD_IDENTIFIER", CLASS)
     val STRUCT = createTextAttributesKey("CSHARP_STRUCT_IDENTIFIER", TYPE)
     val RECORD_STRUCT = createTextAttributesKey("CSHARP_RECORD_STRUCT_IDENTIFIER", STRUCT)
-    val INTERFACE = createTextAttributesKey("CSHARP_INTERFACE_IDENTIFIER", TYPE)
+    val INTERFACE = createTextAttributesKey("CSHARP_INTERFACE_IDENTIFIER", Default.INTERFACE_NAME)
     val ENUM = createTextAttributesKey("CSHARP_ENUM_IDENTIFIER", TYPE)
     val DELEGATE = createTextAttributesKey("CSHARP_DELEGATE_IDENTIFIER", TYPE)
     val TYPE_PARAMETER = createTextAttributesKey("CSHARP_TYPE_PARAMETER_IDENTIFIER", TYPE)
-    val ATTRIBUTE = createTextAttributesKey("CSHARP_ATTRIBUTE_IDENTIFIER", CLASS)
+    val ATTRIBUTE = createTextAttributesKey("CSHARP_ATTRIBUTE_IDENTIFIER", Default.METADATA)
     // as in Rider: the color of types (its fallback is the plain identifier, its value the color of classes)
     val NAMESPACE = createTextAttributesKey("CSHARP_NAMESPACE_IDENTIFIER", TYPE)
 
     // methods
-    val METHOD_DECLARATION = createTextAttributesKey("CSHARP_METHOD_DECLARATION_IDENTIFIER", METHOD)
-    val METHOD_CALL = createTextAttributesKey("CSHARP_METHOD_CALL_IDENTIFIER", METHOD_DECLARATION)
-    val STATIC_METHOD_DECLARATION = createTextAttributesKey("CSHARP_STATIC_METHOD_DECLARATION_IDENTIFIER", METHOD_DECLARATION)
+    val METHOD_DECLARATION = createTextAttributesKey("CSHARP_METHOD_DECLARATION_IDENTIFIER", Default.FUNCTION_DECLARATION)
+    val METHOD_CALL = createTextAttributesKey("CSHARP_METHOD_CALL_IDENTIFIER", METHOD)
+    val STATIC_METHOD_DECLARATION = createTextAttributesKey("CSHARP_STATIC_METHOD_DECLARATION_IDENTIFIER", Default.STATIC_METHOD)
     val STATIC_METHOD_CALL = createTextAttributesKey("CSHARP_STATIC_METHOD_CALL_IDENTIFIER", STATIC_METHOD_DECLARATION)
     val EXTENSION_METHOD_DECLARATION = createTextAttributesKey("CSHARP_EXTENSION_METHOD_DECLARATION_IDENTIFIER", METHOD_DECLARATION)
-    val EXTENSION_METHOD_CALL = createTextAttributesKey("CSHARP_EXTENSION_METHOD_CALL_IDENTIFIER", EXTENSION_METHOD_DECLARATION)
+    val EXTENSION_METHOD_CALL = createTextAttributesKey("CSHARP_EXTENSION_METHOD_CALL_IDENTIFIER", METHOD_CALL)
     val LOCAL_FUNCTION = createTextAttributesKey("CSHARP_LOCAL_FUNCTION_IDENTIFIER", METHOD_DECLARATION)
 
     // properties and variables
     val FIELD = createTextAttributesKey("CSHARP_FIELD_IDENTIFIER", MEMBER)
-    val STATIC_FIELD = createTextAttributesKey("CSHARP_STATIC_FIELD_IDENTIFIER", FIELD)
+    val STATIC_FIELD = createTextAttributesKey("CSHARP_STATIC_FIELD_IDENTIFIER", Default.STATIC_FIELD)
     /** `const` fields and enum members, as in Rider (bold). */
-    val CONSTANT = createTextAttributesKey("CSHARP_CONSTANT_IDENTIFIER", FIELD)
+    val CONSTANT = createTextAttributesKey("CSHARP_CONSTANT_IDENTIFIER", Default.CONSTANT)
     val PROPERTY = createTextAttributesKey("CSHARP_PROPERTY_IDENTIFIER", MEMBER)
-    val STATIC_PROPERTY = createTextAttributesKey("CSHARP_STATIC_PROPERTY_IDENTIFIER", PROPERTY)
+    val STATIC_PROPERTY = createTextAttributesKey("CSHARP_STATIC_PROPERTY_IDENTIFIER", Default.STATIC_FIELD)
     val EVENT = createTextAttributesKey("CSHARP_EVENT_IDENTIFIER", MEMBER)
     val LOCAL_VARIABLE = createTextAttributesKey("CSHARP_LOCAL_VARIABLE_IDENTIFIER", Default.LOCAL_VARIABLE)
     /** A local written after its declaration: underlined, as Rider's and the platform's "reassigned local variable". */
@@ -72,7 +75,7 @@ object CSharpColors {
     )
 }
 
-/** Settings | Editor | Color Scheme | C#. The groups and names are Rider's; the defaults (Rider-like) come from `colorSchemes/CSharp*.xml`. */
+/** Settings | Editor | Color Scheme | C#. The groups and names are Rider's; the defaults come from the scheme: its Language Defaults, or Rider's palette in "Rider Dark" / "Rider Light". */
 class CSharpColorSettingsPage : ColorSettingsPage {
     override fun getDisplayName(): String = "C#"
     override fun getIcon(): Icon = DotNetIcons.CSharp

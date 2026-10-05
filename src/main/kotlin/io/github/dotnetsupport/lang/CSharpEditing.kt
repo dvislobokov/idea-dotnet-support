@@ -221,10 +221,135 @@ object CSharpSemicolons {
 
 class CSharpSemicolonTypedHandler : com.intellij.codeInsight.editorActions.TypedHandlerDelegate() {
     override fun beforeCharTyped(c: Char, project: com.intellij.openapi.project.Project, editor: com.intellij.openapi.editor.Editor, file: PsiFile, fileType: com.intellij.openapi.fileTypes.FileType): Result {
-        if (c != ';' || file !is CSharpFile || editor.caretModel.caretCount != 1) return Result.CONTINUE
+        if (file !is CSharpFile || editor.caretModel.caretCount != 1) return Result.CONTINUE
         val offset = editor.caretModel.offset
-        if (!CSharpSemicolons.stepsOver(editor.document.immutableCharSequence, offset)) return Result.CONTINUE
-        editor.caretModel.moveToOffset(offset + 1)
+        val text = editor.document.immutableCharSequence
+        if (c == ')') {
+            if (!CSharpParentheses.closes(text, offset)) return Result.CONTINUE
+            editor.caretModel.moveToOffset(offset + 1)
+            return Result.STOP
+        }
+        if (c != ';') return Result.CONTINUE
+        if (CSharpSemicolons.stepsOver(text, offset)) {
+            editor.caretModel.moveToOffset(offset + 1)
+            return Result.STOP
+        }
+        val after = CSharpParentheses.semicolonAfter(text, offset) ?: return Result.CONTINUE
+        // `new Repository(|)` + `;`: `new Repository();|`, as in Rider (DEV_JOURNEY 4.3: the `)` was lost)
+        if (text.getOrNull(after) == ';') editor.caretModel.moveToOffset(after + 1)
+        else {
+            editor.document.insertString(after, ";")
+            editor.caretModel.moveToOffset(after + 1)
+        }
         return Result.STOP
+    }
+}
+
+/**
+ * The parentheses of a line by the tokens of [CSharpLexer] (what is in strings, chars and comments does not count): whether a typed `)` is
+ * the one that is there already, and where a `;` typed inside the parentheses that end a statement goes.
+ */
+object CSharpParentheses {
+    private val HEADERS = setOf("for", "foreach", "if", "while", "using", "lock", "switch", "catch", "fixed", "when")
+
+    private class Line(val tokens: List<Triple<com.intellij.psi.tree.IElementType, Int, Int>>, val end: Int)
+
+    private fun line(text: CharSequence, offset: Int): Line {
+        val start = if (offset == 0) 0 else text.lastIndexOf('\n', offset - 1) + 1
+        var end = text.indexOf('\n', offset).let { if (it < 0) text.length else it }
+        if (end > start && text[end - 1] == '\r') end--
+        val lexer = CSharpLexer()
+        lexer.start(text, start, end, 0)
+        val tokens = ArrayList<Triple<com.intellij.psi.tree.IElementType, Int, Int>>()
+        while (lexer.tokenType != null) {
+            tokens += Triple(lexer.tokenType!!, lexer.tokenStart, lexer.tokenEnd)
+            lexer.advance()
+        }
+        return Line(tokens, end)
+    }
+
+    /** Whether [offset] is inside a string, a char or a comment of its line. */
+    private fun inLiteral(line: Line, offset: Int): Boolean =
+        line.tokens.any { (type, start, end) -> offset in (start + 1) until end && (type in CSharpTokenTypes.STRINGS || type in CSharpTokenTypes.COMMENTS) }
+
+    /** The `(` open before [offset] on its line, less the `)` that close them. */
+    private fun open(line: Line, offset: Int): Int {
+        var depth = 0
+        for ((type, start, _) in line.tokens) {
+            if (start >= offset) break
+            if (type == CSharpTokenTypes.LPAREN) depth++ else if (type == CSharpTokenTypes.RPAREN && depth > 0) depth--
+        }
+        return depth
+    }
+
+    /** `)` typed right before a `)`: true when the line has as many `)` after [offset] as there are `(` open before it, so a new one would be extra. */
+    fun closes(text: CharSequence, offset: Int): Boolean {
+        if (text.getOrNull(offset) != ')') return false
+        val line = line(text, offset)
+        if (inLiteral(line, offset)) return false
+        val open = open(line, offset)
+        if (open == 0) return false
+        var depth = 0
+        var closing = 0
+        for ((type, start, _) in line.tokens) {
+            if (start < offset) continue
+            if (type == CSharpTokenTypes.LPAREN) depth++
+            else if (type == CSharpTokenTypes.RPAREN) { if (depth > 0) depth-- else closing++ }
+        }
+        return closing >= open
+    }
+
+    /**
+     * `;` typed at [offset], where only the `)` that close what is open before it follow on the line (a `;` after them at most): the offset
+     * after those `)`, where the `;` goes. Null in the header of `for (;;)`, `if (…)` and the like, in strings and comments.
+     */
+    fun semicolonAfter(text: CharSequence, offset: Int): Int? {
+        if (text.getOrNull(offset) != ')') return null
+        val line = line(text, offset)
+        if (inLiteral(line, offset)) return null
+        val first = line.tokens.firstOrNull { it.first != com.intellij.psi.TokenType.WHITE_SPACE }
+        if (first != null && text.subSequence(first.second, first.third).toString() in HEADERS) return null
+        if (line.tokens.any { it.first == CSharpTokenTypes.KEYWORD && it.second < offset && text.subSequence(it.second, it.third).toString() == "for" }) return null
+        var closing = 0
+        var after = offset
+        for ((type, start, end) in line.tokens) {
+            if (start < offset) continue
+            when {
+                type == CSharpTokenTypes.RPAREN && after == start -> { closing++; after = end }
+                type == com.intellij.psi.TokenType.WHITE_SPACE || type in CSharpTokenTypes.COMMENTS -> {}
+                type == CSharpTokenTypes.SEMICOLON && start >= after -> return if (closing in 1..open(line, offset)) start else null
+                else -> return null
+            }
+        }
+        return if (closing in 1..open(line, offset)) after else null
+    }
+}
+
+/**
+ * The list opens by itself after a space that follows `override`, `partial` or `new`, as in Rider: the members to override, the partial
+ * methods, the types to create. The client of the language server opens it on its trigger characters, but the server is off by
+ * default, and the platform opens a list by itself only on letters.
+ */
+class CSharpSpaceAutoPopupHandler : com.intellij.codeInsight.editorActions.TypedHandlerDelegate() {
+    override fun checkAutoPopup(charTyped: Char, project: com.intellij.openapi.project.Project, editor: com.intellij.openapi.editor.Editor, file: PsiFile): Result {
+        if (charTyped != ' ' || file !is CSharpFile || editor.caretModel.caretCount != 1) return Result.CONTINUE
+        val offset = editor.caretModel.offset
+        if (!CSharpSpaceAutoPopup.opens(editor.document.immutableCharSequence, offset)) return Result.CONTINUE
+        val leaf = file.findElementAt(offset - 1)
+        if (leaf != null && CSharpLeaves.isInStringOrComment(leaf)) return Result.CONTINUE
+        com.intellij.codeInsight.AutoPopupController.getInstance(project).scheduleAutoPopup(editor)
+        return Result.STOP
+    }
+}
+
+object CSharpSpaceAutoPopup {
+    private val WORDS = setOf("override", "partial", "new")
+
+    /** Whether a space typed at [offset] of [text] comes right after one of the words that open the list. */
+    fun opens(text: CharSequence, offset: Int): Boolean {
+        var start = offset
+        while (start > 0 && text[start - 1].isLetter()) start--
+        if (start == offset || start > 0 && (text[start - 1].isLetterOrDigit() || text[start - 1] == '_' || text[start - 1] == '@' || text[start - 1] == '.')) return false
+        return text.subSequence(start, offset).toString() in WORDS
     }
 }

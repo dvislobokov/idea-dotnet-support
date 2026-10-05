@@ -1,8 +1,10 @@
 package io.github.dotnetsupport.lang
 
+import com.intellij.codeInsight.AutoPopupController
 import com.intellij.codeInsight.completion.CompletionContributor
 import com.intellij.codeInsight.completion.CompletionParameters
 import com.intellij.codeInsight.completion.CompletionResultSet
+import com.intellij.codeInsight.completion.CompletionType
 import com.intellij.codeInsight.completion.CompletionUtil
 import com.intellij.codeInsight.completion.InsertHandler
 import com.intellij.codeInsight.completion.InsertionContext
@@ -53,18 +55,38 @@ import javax.swing.Icon
  * assemblies) are never dropped. The switch ROSLYN or a file of the heuristic tree: this contributor does nothing.
  */
 class NativeCSharpCompletionContributor : CompletionContributor() {
-    override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
+    // `status == `, `case `: the list of the expected enum opens by itself (0.1.88, see NativeCSharpExpectedCompletion.opensAfterSpace)
+    override fun invokeAutoPopup(position: PsiElement, typeChar: Char): Boolean = NativeCSharpExpectedCompletion.invokesAutoPopup(position, typeChar)
+
+    override fun fillCompletionVariants(parameters: CompletionParameters, given: CompletionResultSet) {
         val original = parameters.originalFile as? CSharpFile ?: return
         if (!CSharpFeatures.native(CSharpFeature.COMPLETION, original.project)) return
         val file = parameters.position.containingFile as? CSharpFile ?: return
         if (file.compilationUnit == null) return
         val place = NativeCSharpCompletionPlace.of(parameters.position) ?: return
-        if (!NativeCSharpCompletion.opensByItself(parameters, result.prefixMatcher.prefix, place.kind)) return
+        // `catch (|`: what derives from Exception is the first group, whatever the platform lifts (0.1.92)
+        val result = if (place.kind == NativeCompletionKind.TYPE && NativeCSharpExpectedCompletion.Analysis(place, file).typeRole == NativeCSharpExpectedCompletion.TypeRole.EXCEPTION_FIRST)
+            NativeCSharpExpectedCompletion.exceptionsFirst(parameters, given) else given
+        if (!NativeCSharpCompletion.opensByItself(parameters, result.prefixMatcher.prefix, place.kind, place.modifiers)) return
+        // Ctrl+Shift+Space: only what fits the expected type (0.1.88); where it is not known, the usual list
+        if (parameters.completionType == CompletionType.SMART) {
+            NativeCSharpExpectedCompletion.smartItems(place, file, result.prefixMatcher)?.let { smart ->
+                smart.forEach(result::addElement)
+                NativeCSharpDoubleCompletion.smart(parameters, place, file, result)   // the second press: chains (0.1.96)
+                result.stopHere()
+                return
+            }
+        }
         val excluded = HashSet<String>()
+        // what is not imported waits for the first letter ([NativeCSharpImportCompletion.MIN_PREFIX])
+        if (result.prefixMatcher.prefix.isEmpty() && NativeCSharpImportCompletion.waitsForLetters(place.kind)) {
+            result.restartCompletionOnPrefixChange(com.intellij.patterns.StandardPatterns.string().withLength(NativeCSharpImportCompletion.MIN_PREFIX))
+        }
         val items = NativeCSharpCompletion.items(place, file, result.prefixMatcher, excluded)
         for (item in items) result.addElement(item)
         val names = items.flatMapTo(HashSet()) { item -> item.allLookupStrings.map(NativeCSharpCompletion::nameOf) }
         names += excluded
+        NativeCSharpDoubleCompletion.basic(parameters, place, file, result, names)   // the second press: inaccessible members, unreferenced types (0.1.96)
         result.runRemainingContributors(parameters) { found ->
             if (!NativeCSharpCompletion.isDuplicate(found.lookupElement, names, place.keywordsAreNative)) result.passResult(found)
         }
@@ -83,17 +105,21 @@ object NativeCSharpCompletion {
      * Whether the native list is shown at a list that opened by itself with nothing typed yet. The client of the server opens it on every
      * trigger character of Roslyn (`{`, `(`, `[`, `:`, `<`, a space…), and Roslyn answers most of them with nothing: the native list of
      * the place would pop up after `GetStringAsync(...){`. As in Rider, a list opens by itself after `.`, after `[` of an attribute, and
-     * after a space where a type, a name after a type, a keyword, a namespace of `using` or an attribute is expected (`new `, `override `).
+     * after a space where a type, a name after a type, a keyword, a namespace of `using` or an attribute is expected (`new `), and after
+     * `override ` / `partial ` at the start of a member (the members to override, the partial methods; [CSharpSpaceAutoPopupHandler] opens it).
      * Ctrl+Space (an explicit call) and a typed prefix always get the list.
      */
-    fun opensByItself(parameters: CompletionParameters, prefix: String, kind: NativeCompletionKind): Boolean {
+    fun opensByItself(parameters: CompletionParameters, prefix: String, kind: NativeCompletionKind, modifiers: List<String> = emptyList()): Boolean {
         if (!parameters.isAutoPopup || prefix.isNotEmpty()) return true
+        if (CSharpCompletionAutoPopup.opensAt(parameters, kind)) return true
         val text = parameters.editor.document.charsSequence
         return when (text.getOrNull(parameters.offset - 1)) {
             '.' -> true
             '[' -> kind == NativeCompletionKind.ATTRIBUTE
             ' ', '\t' -> kind == NativeCompletionKind.TYPE || kind == NativeCompletionKind.DECLARATION_NAME || kind == NativeCompletionKind.KEYWORDS_ONLY ||
-                kind == NativeCompletionKind.USING_DIRECTIVE || kind == NativeCompletionKind.ATTRIBUTE
+                kind == NativeCompletionKind.USING_DIRECTIVE || kind == NativeCompletionKind.ATTRIBUTE ||
+                kind == NativeCompletionKind.MEMBER_START && modifiers.lastOrNull().let { it == "override" || it == "partial" || it == "new" } ||
+                kind == NativeCompletionKind.EXPRESSION && NativeCSharpExpectedCompletion.opensAfterSpace(parameters)
             else -> false
         }
     }
@@ -112,6 +138,7 @@ object NativeCSharpCompletion {
     const val KEYWORD = 0.0
     const val DECLARATION = 50.0
     const val COMMON_CALL = 300.0
+    private const val MAX_INITIALIZER_ROWS = 8
 
     // what fits the place goes up over its kind, as RoslynCompletionRanking does for the server's items
     const val EXPECTED_TYPE = 25.0
@@ -126,8 +153,9 @@ object NativeCSharpCompletion {
         if (!isServerItem(element)) return false
         // the server's `override` / `partial` members come with an empty lookup string, named by the text shown (`Describe(int digits)`)
         val name = nameOf(element.lookupString.ifBlank { LookupElementPresentation.renderElement(element).itemText.orEmpty() })
-        // a named argument (`amount:`, the lookup string `amount`) is not the local of the same name the native list has
-        if (name.isNotEmpty() && name in nativeNames) return LookupElementPresentation.renderElement(element).itemText?.endsWith(":") != true
+        // a named argument (`amount:`, the lookup string `amount`) is not the local of the same name the native list has, but its own `amount:` (NativeCSharpArgumentCompletion)
+        if (name.isNotEmpty() && LookupElementPresentation.renderElement(element).itemText?.endsWith(":") == true) return "$name:" in nativeNames
+        if (name.isNotEmpty() && name in nativeNames) return true
         return keywordsAreNative && element.lookupString in NativeCSharpCompletionPlace.ALL_KEYWORDS
     }
 
@@ -158,11 +186,18 @@ object NativeCSharpCompletion {
         private val added = HashSet<String>()
         private val resolver by lazy { NativeCSharpResolver(file) }
         private val at: PsiElement get() = place.name ?: place.leaf
-        private val expected by lazy { NativeCSharpExpectations.at(place, resolver) }
+        // the semantics of the place (0.1.88): the expected type where the tree alone does not say it
+        private val analysis by lazy { NativeCSharpExpectedCompletion.Analysis(place, file) }
+        private val expected by lazy { NativeCSharpExpectations.at(place, resolver) ?: NativeCSharpExpectedCompletion.rankingExpected(analysis) }
         // the resource of `using (|` / `using var x = |`: what is known not to be disposable is left out (A8, the types of C2)
         private val resource by lazy { NativeCSharpUsingChecks.resourcePlace(place)?.let { async -> NativeCSharpUsingChecks.Filter(file, async, at) } }
 
         fun build() {
+            // `new Order { |`, `o with { |`, `o is { |`: the members to name, nothing else
+            NativeCSharpExpectedCompletion.initializerMembers(analysis)?.let { members ->
+                members.forEach(::add)
+                return
+            }
             when (place.kind) {
                 NativeCompletionKind.KEYWORDS_ONLY -> keywords(place.keywords)
                 NativeCompletionKind.LABEL -> {
@@ -177,8 +212,14 @@ object NativeCSharpCompletion {
                     thisMembers()
                     NativeCSharpMemberCompletion.thisItems(place, file, matcher).forEach(::add)
                 }
-                NativeCompletionKind.MEMBER_ACCESS -> NativeCSharpMemberCompletion.items(place, file, matcher).forEach(::add)
-                NativeCompletionKind.ATTRIBUTE -> attributeTypes()
+                NativeCompletionKind.MEMBER_ACCESS -> {
+                    NativeCSharpMemberCompletion.items(place, file, matcher).forEach(::add)
+                    imports(NativeCSharpImportCompletion.extensions(place, file, matcher, added))
+                }
+                NativeCompletionKind.ATTRIBUTE -> {
+                    attributeTypes()
+                    imports(NativeCSharpImportCompletion.attributes(place, file, matcher, added, resolver))
+                }
                 NativeCompletionKind.MEMBER_START -> memberStart()
                 NativeCompletionKind.TOP_LEVEL -> {
                     NativeCSharpUsingCompletion.topItems(place).forEach(::add)
@@ -186,13 +227,19 @@ object NativeCSharpCompletion {
                 }
                 NativeCompletionKind.USING_DIRECTIVE -> NativeCSharpUsingCompletion.directiveItems(place, file, matcher).forEach(::add)
                 NativeCompletionKind.TYPE -> {
+                    NativeCSharpExpectedCompletion.typeItems(analysis).forEach(::add)
                     typeParameters()
                     nestedTypes()
                     solutionTypes()
-                    keywords(NativeCSharpCompletionPlace.PREDEFINED_TYPES, priority = TYPE)
-                    keywords(place.keywords + NativeCSharpKeywords.TYPE)
+                    if (analysis.typeRole.keywords) importedTypes()   // the filtered places of 0.1.88 (throw new, base list, event, constraint) keep to their own types
+                    if (analysis.typeRole.keywords) {
+                        keywords(NativeCSharpCompletionPlace.PREDEFINED_TYPES, priority = TYPE)
+                        keywords(place.keywords + NativeCSharpKeywords.TYPE)
+                    } else if (analysis.typeRole == NativeCSharpExpectedCompletion.TypeRole.CONSTRAINT) keywords(place.keywords)
                 }
                 NativeCompletionKind.STATEMENT, NativeCompletionKind.EXPRESSION -> {
+                    NativeCSharpExpectedCompletion.expressionItems(analysis).forEach(::add)
+                    items += NativeCSharpArgumentCompletion.items(place, file, matcher)
                     NativeCSharpCommonCalls.items(place).forEach(::add)
                     NativeCSharpUsingCompletion.statementItems(place).forEach(::add)
                     if (place.kind == NativeCompletionKind.STATEMENT && place.name?.let(NativeCSharpCompletionPlace::statementStart)?.parent is CSharpGlobalStatement) {
@@ -203,6 +250,7 @@ object NativeCSharpCompletion {
                     staticImports()
                     nestedTypes()
                     solutionTypes()
+                    if (analysis.typeRole.keywords) importedTypes()   // the filtered places of 0.1.88 (throw new, base list, event, constraint) keep to their own types
                     val keywords = if (place.kind == NativeCompletionKind.STATEMENT) NativeCSharpKeywords.statement(place) else NativeCSharpKeywords.expression(place)
                     keywords(keywords + place.keywords)
                     keywords(NativeCSharpCompletionPlace.PREDEFINED_TYPES)
@@ -312,6 +360,18 @@ object NativeCSharpCompletion {
             }
         }
 
+        /** The types of the assemblies the place sees and the ones it does not import ([NativeCSharpImportCompletion]). */
+        private fun importedTypes() = imports(NativeCSharpImportCompletion.types(place, file, matcher, added, resolver) { bonus(it, it) })
+
+        /** Rows of [NativeCSharpImportCompletion]: several of one name may stand (one per namespace), none of a name the list has. */
+        private fun imports(elements: List<LookupElement>) {
+            val before = HashSet(added)
+            for (element in elements) if (element.lookupString !in before || element.getUserData(NativeCSharpImportCompletion.NOT_IMPORTED) != null) {
+                added += element.lookupString
+                items += element
+            }
+        }
+
         private fun attributeTypes() {
             for ((name, arities) in NativeCSharpTypeNames.candidates(file, null, resolver)) {
                 if (!name.endsWith("Attribute") || name == "Attribute") continue
@@ -322,6 +382,9 @@ object NativeCSharpCompletion {
         }
 
         private fun type(name: String, info: TypeInfo) {
+            // a base list, `event`, a constraint, `throw new`: what cannot stand there is left out; what `new` / `catch` wants goes up
+            val verdict = if (place.kind == NativeCompletionKind.TYPE) analysis.verdict(info) else NativeCSharpExpectedCompletion.Verdict.NEUTRAL
+            if (verdict == NativeCSharpExpectedCompletion.Verdict.REJECT) return
             val icon = when (info.kind) {
                 TypeKind.INTERFACE -> AllIcons.Nodes.Interface
                 TypeKind.ENUM -> AllIcons.Nodes.Enum
@@ -336,7 +399,30 @@ object NativeCSharpCompletion {
             val handler = if (generic || constructed) NativeCSharpCalls.typeHandler(generic, constructed) else null
             val presentable = if (generic) "$name<${"".padEnd(info.arity - 1, ',')}>" else name
             val namespace = info.qualifiedName.substringBeforeLast('.', "")
-            add(element(name, icon, presentable, if (namespace.isEmpty()) null else " ($namespace)", null, TYPE + bonus(name, name), handler))
+            val fits = if (verdict == NativeCSharpExpectedCompletion.Verdict.FITS) EXPECTED_TYPE else 0.0
+            val tail = if (namespace.isEmpty()) null else " ($namespace)"
+            val priority = TYPE + maxOf(bonus(name, name), fits)
+            val row = element(name, icon, presentable, tail, null, priority, handler)
+            if (fits > 0 && analysis.typeRole == NativeCSharpExpectedCompletion.TypeRole.EXCEPTION_FIRST) NativeCSharpExpectedCompletion.markException(row)
+            if (!added.contains(name)) initializerRow(name, info, icon, tail, priority)
+            add(row)
+        }
+
+        private var initializerRows = 0
+
+        /**
+         * `Member { … }` under `Member` after `new` (0.1.102, [NativeCSharpObjectInitializers.initializerRow]): for the types of the solution
+         * whose name is typed (two letters at least) and the one the variable names (`var member = new |`), a few at most — the check is
+         * by the declarations, the list may have hundreds of types. Its lookup string is the name: added past the dedupe by name.
+         */
+        private fun initializerRow(name: String, info: TypeInfo, icon: Icon, tail: String?, priority: Double) {
+            if (place.name?.parent !is CSharpObjectCreationExpression || analysis.typeRole != NativeCSharpExpectedCompletion.TypeRole.NEW) return
+            if (initializerRows >= MAX_INITIALIZER_ROWS) return
+            val named = CSharpNameLikeness.of(expected?.name, name) == CSharpNameLikeness.Likeness.EXACT
+            if (!named && (matcher.prefix.length < 2 || !matcher.prefixMatches(name))) return
+            if (!NativeCSharpObjectInitializers.wantsInitializerRow(info)) return
+            initializerRows++
+            add(NativeCSharpObjectInitializers.initializerRow(name, icon, tail, priority - 0.01))
         }
 
         // ---- declarations
@@ -354,13 +440,14 @@ object NativeCSharpCompletion {
             val modifiers = place.modifiers
             val type = place.typeDeclaration
             if ("override" in modifiers && type != null) {
-                NativeCSharpOverrides.overrides(type, resolver, place).forEach(::add)
+                NativeCSharpOverrides.overrides(type, file, place).forEach(::add)
                 return
             }
             if ("partial" in modifiers && type != null) NativeCSharpOverrides.partialMethods(type, resolver, place).forEach(::add)
             keywords(NativeCSharpKeywords.memberStart(modifiers, type))
             nestedTypes()
             solutionTypes()
+            importedTypes()
             keywords(NativeCSharpCompletionPlace.PREDEFINED_TYPES, priority = TYPE)
         }
 
@@ -403,6 +490,11 @@ object NativeCSharpCompletion {
         private fun add(element: LookupElement) {
             val name = nameOf(element.lookupString)
             if (name == CompletionUtil.DUMMY_IDENTIFIER_TRIMMED || name.isEmpty()) return
+            // `Member { … }` shares the name of the row of its type
+            if (NativeCSharpObjectInitializers.isInitializerRow(element)) {
+                if (added.add("${element.lookupString} { }")) items += element
+                return
+            }
             // the innermost declaration of a name hides the outer ones; keywords and common calls are told by their whole text
             if (!added.add(element.lookupString)) return
             items += element
@@ -659,15 +751,26 @@ object NativeCSharpCalls {
         returnsNothing to takesArguments
     }
 
-    /** `()` / `();` after a method whose [shape] is (returns nothing, takes arguments in some overload). */
+    /**
+     * `()` / `();` after a method whose [shape] is (returns nothing, takes arguments in some overload). Chosen by Enter, Tab, `(` or inserted
+     * by itself as the only item; by the commit characters ([CSharpCommitCharFilter]) `.` (`Total().`, the members of the result open) and `;`
+     * (`Save();`, the caret in the parentheses when the method takes arguments), as in Rider.
+     */
     fun callHandler(shape: () -> Pair<Boolean, Boolean>): InsertHandler<LookupElement> = InsertHandler { context, _ ->
         if (!choosesWithCall(context)) return@InsertHandler
         val document = context.document
         val text = document.charsSequence
         val offset = context.tailOffset
-        if (context.completionChar == '(') context.setAddCompletionChar(false)
+        val char = context.completionChar
+        if (char == '.' || char == ';') {
+            if (offset < text.length && text[offset] == '(') return@InsertHandler
+            commitCall(context, offset, char, shape)
+            return@InsertHandler
+        }
+        if (char == '(') context.setAddCompletionChar(false)
         if (offset < text.length && text[offset] == '(') {
             context.editor.caretModel.moveToOffset(offset + 1)
+            NativeCSharpCallPopups.afterCall(context.editor)
             return@InsertHandler
         }
         val (returnsNothing, takesArguments) = shape()
@@ -675,15 +778,40 @@ object NativeCSharpCalls {
         document.insertString(offset, call.text)
         context.editor.caretModel.moveToOffset(offset + call.caret)
         context.commitDocument()
+        // the caret between the parentheses: what the server's items get (RoslynCompletionItems), the parameter info and the gray arguments
+        if (call.caret < call.text.length) NativeCSharpCallPopups.afterCall(context.editor)
     }
 
-    /** `List<|>`, `new Order(|)`, `new List<|>()`. */
+    /** `Total().` with the caret after the dot (the members of the result open); `Save();`, `Add(|);` with the caret inside when it takes arguments. */
+    private fun commitCall(context: InsertionContext, offset: Int, char: Char, shape: () -> Pair<Boolean, Boolean>) {
+        context.setAddCompletionChar(false)
+        val editor = context.editor
+        if (char == '.') {
+            context.document.insertString(offset, "().")
+            editor.caretModel.moveToOffset(offset + 3)
+            context.commitDocument()
+            AutoPopupController.getInstance(context.project).scheduleAutoPopup(editor)
+            return
+        }
+        val takesArguments = shape().second
+        val semicolon = context.document.charsSequence.getOrNull(offset) != ';'
+        context.document.insertString(offset, if (semicolon) "();" else "()")
+        editor.caretModel.moveToOffset(if (takesArguments) offset + 1 else offset + 3)
+        context.commitDocument()
+        if (takesArguments) NativeCSharpCallPopups.afterCall(editor)
+    }
+
+    private fun choosesByItself(char: Char): Boolean = char == Lookup.NORMAL_SELECT_CHAR || char == Lookup.REPLACE_SELECT_CHAR || char == Lookup.AUTO_INSERT_SELECT_CHAR
+
+    /** `List<|>`, `new Order(|)`, `new List<|>()`; also when the only item is inserted by itself. */
     fun typeHandler(generic: Boolean, constructed: Boolean): InsertHandler<LookupElement> = InsertHandler { context, _ ->
-        if (context.completionChar != Lookup.NORMAL_SELECT_CHAR && context.completionChar != Lookup.REPLACE_SELECT_CHAR) return@InsertHandler
+        if (!choosesByItself(context.completionChar)) return@InsertHandler
         val document = context.document
         val offset = context.tailOffset
         val next = document.charsSequence.getOrNull(offset)
         if (next == '<' || next == '(') return@InsertHandler
+        // `new OrderLine` of a type with required members: the initializer with them instead of `()` (0.1.98, as in Rider)
+        if (constructed && !generic && runCatching { NativeCSharpObjectInitializers.afterNewType(context) }.getOrDefault(false)) return@InsertHandler
         val text = (if (generic) "<>" else "") + (if (constructed) "()" else "")
         document.insertString(offset, text)
         context.editor.caretModel.moveToOffset(offset + 1)
@@ -692,7 +820,7 @@ object NativeCSharpCalls {
 
     private fun choosesWithCall(context: InsertionContext): Boolean {
         val char = context.completionChar
-        if (char != Lookup.NORMAL_SELECT_CHAR && char != Lookup.REPLACE_SELECT_CHAR && char != '(') return false
+        if (!choosesByItself(char) && char != '(' && char != '.' && char != ';') return false
         val text = context.document.charsSequence
         val start = context.startOffset
         val lineStart = text.lastIndexOf('\n', start - 1) + 1

@@ -269,6 +269,20 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         }
     }
 
+    /**
+     * What the receiver alone fixes of the type parameters of the extension method [symbol], before any argument is written: `orders.|` of
+     * a `List<Order>` gives `TSource` = `Order` (the completion list writes `ImmutableArray<Order> ToImmutableArray()`, as Rider); null where
+     * the receiver says nothing. Empty for a method that is not generic.
+     */
+    fun receiverTypeArguments(symbol: CSharpSymbol, receiver: SemanticType): List<SemanticType?> {
+        val arity = methodArity(symbol)
+        if (arity == 0 || !r.isExtension(symbol)) return emptyList()
+        val self = r.signature(symbol, false)?.firstOrNull()?.type?.invoke() ?: return emptyList()
+        val fixed = arrayOfNulls<SemanticType>(arity)
+        unify(self, receiver, fixed, (symbol as? CSharpSymbol.SourceMember)?.element)
+        return fixed.toList()
+    }
+
     internal fun mentionsUnfixed(type: SemanticType?, fixed: Array<SemanticType?>): Boolean = when (type) {
         null -> false
         is SemanticType.Parameter -> type.ofMethod && type.index in fixed.indices && fixed[type.index] == null
@@ -482,7 +496,26 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         }
     }
 
-    private fun substituteMethod(type: SemanticType, arguments: List<SemanticType?>): SemanticType? =
+    /**
+     * The type of the parameter the [index]-th positional argument of [call] (an invocation or a creation) goes to in each of [candidates]
+     * (the overloads, applicable or not), the method type arguments inferred from what is written; null for a candidate without one. For
+     * what an argument list offers before the argument is there (the lambdas of `Where(|`); a `params` array gives its element type.
+     */
+    fun parameterTypesAt(call: CSharpExpression, candidates: List<CSharpSymbol>, index: Int): List<SemanticType?> {
+        val callee = (call as? CSharpInvocationExpression)?.let(::callee)
+        if (call is CSharpInvocationExpression && callee == null) return emptyList()
+        return candidates.map { symbol ->
+            val offset = if (callee != null && isReduced(symbol, callee)) 1 else 0
+            val parameters = r.signature(symbol, false) ?: return@map null
+            val parameter = parameters.getOrNull(index + offset) ?: parameters.lastOrNull()?.takeIf { it.isParams } ?: return@map null
+            var type = parameter.type() ?: return@map null
+            if (parameter.isParams && type is SemanticType.ArrayOf) type = type.element ?: return@map null
+            val methodArguments = if (call is CSharpInvocationExpression && callee != null) typeArguments(symbol, call, callee) else emptyList()
+            if (methodArguments.isEmpty()) type else substituteMethod(type, methodArguments)
+        }
+    }
+
+    internal fun substituteMethod(type: SemanticType, arguments: List<SemanticType?>): SemanticType? =
         r.replace(type) { p -> if (p.ofMethod) arguments.getOrNull(p.index) ?: p else p }
 
     private fun declaredTarget(clause: CSharpEqualsValueClause): SemanticType? = when (val owner = clause.parent) {

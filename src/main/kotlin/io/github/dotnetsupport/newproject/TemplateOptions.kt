@@ -56,7 +56,9 @@ object TemplateOptions {
         emptyList()
     }
 
-    fun parse(help: String): List<TemplateOption> {
+    fun parse(help: String): List<TemplateOption> = parseAll(help).filter { it.name !in HIDDEN }
+
+    private fun parseAll(help: String): List<TemplateOption> {
         val lines = help.lines()
         val start = lines.indexOfFirst { it.trim().equals("Template options:", ignoreCase = true) }
         if (start < 0) return emptyList()
@@ -92,15 +94,26 @@ object TemplateOptions {
             }
         }
         current?.build()?.let(result::add)
-        return result.filter { it.name !in HIDDEN }
+        return result
     }
 
-    /** The `--framework` choices of the help, for the framework row: what the template really supports. */
+    /**
+     * The `--framework` choices of the help, for the framework row: what the template really supports. SDK 9 and 10 on Windows print them in
+     * the option line, `-f, --framework <net10.0|net9.0>`; the help of SDK 10 seen on Linux prints `-f, --framework <choice>` and the values
+     * only in the `Type: choice` block below it. The option line is read first, the block is the fallback; anything that is not a framework moniker
+     * (`choice`) is dropped, so an unreadable help means "any framework", not "none".
+     */
     fun frameworks(help: String): List<String> {
-        val lines = help.lines()
-        val line = lines.firstOrNull { it.trimStart().startsWith("-f, --framework <") || it.trimStart().startsWith("--framework <") } ?: return emptyList()
-        return line.substringAfter('<').substringBefore('>').split('|').map { it.trim() }.filter { it.isNotEmpty() }
+        val line = help.lines().firstOrNull { it.trimStart().startsWith("-f, --framework <") || it.trimStart().startsWith("--framework <") }
+        val fromLine = line?.substringAfter('<')?.substringBefore('>')?.split('|')?.map { it.trim() }?.filter(::isMoniker).orEmpty()
+        if (fromLine.isNotEmpty()) return fromLine.distinct()
+        return parseAll(help).firstOrNull { it.name == "--framework" }?.choices?.map { it.value }?.filter(::isMoniker).orEmpty().distinct()
     }
+
+    private val MONIKER = Regex("""(?i)^net(?:\d+(?:\.\d+)*(?:-[a-z0-9.]+)?|standard\d+(?:\.\d+)?|coreapp\d+(?:\.\d+)?)$""")
+
+    /** `net10.0`, `net9.0-windows`, `netstandard2.1`, `netcoreapp3.1`, `net48`. */
+    fun isMoniker(value: String): Boolean = MONIKER.matches(value)
 
     /** The `Description:` line at the top of the help: what the New Solution dialog writes under the list of templates. */
     fun description(help: String): String = header(help, "Description")
@@ -182,4 +195,120 @@ object TemplateHelpCache {
 
     /** After templates are installed or removed: a template of the same short name may now be another one. */
     fun clear() = cache.clear()
+}
+
+/**
+ * When an option of a template applies, so that the form shows it only then, as Rider does: the Azure AD fields of `webapi` only with an
+ * authentication that uses them. Two sources: the `Enabled if:` expression of the help (`UseMSTestSdk && (TestRunner == MSTest)`), whose
+ * symbols are matched to the options by name, and the words of the description of an option of a template with `--auth`
+ * ("use with SingleOrg or IndividualB2C auth", "only applies if IndividualB2C, SingleOrg, or MultiOrg aren't used for --auth").
+ * Anything not understood (a symbol with no option of its name) leaves the option shown.
+ */
+object TemplateOptionConditions {
+    private val APPLIES = Regex("""(?i)use with|only applies|applies only|applies if|applies to""")
+    private val NEGATED = Regex("""(?i)aren't used|are not used|isn't used|is not used""")
+
+    /** A test of the current values (option name -> value), or null when [option] always applies. */
+    fun condition(option: TemplateOption, all: List<TemplateOption>): ((Map<String, String>) -> Boolean)? {
+        option.enabledIf?.let { expression -> return parseExpression(expression, all) }
+        val auth = all.firstOrNull { it.name == "--auth" && it.kind == TemplateOption.Kind.CHOICE } ?: return null
+        if (option === auth || !APPLIES.containsMatchIn(option.description)) return null
+        val mentioned = auth.choices.map { it.value }.filter { it != "None" && Regex("""\b${Regex.escape(it)}\b""").containsMatchIn(option.description) }.toSet()
+        if (mentioned.isEmpty()) return null
+        val negated = NEGATED.containsMatchIn(option.description)
+        return { values -> (values[auth.name]?.takeIf { it.isNotEmpty() } ?: auth.default.orEmpty()).let { value -> mentioned.any { it.equals(value, ignoreCase = true) } } != negated }
+    }
+
+    /** The options to show for [values]: those without a condition and those whose condition holds. */
+    fun shown(options: List<TemplateOption>, values: Map<String, String>): List<TemplateOption> =
+        options.filter { option -> condition(option, options)?.invoke(values) ?: true }
+
+    private fun normalized(name: String) = name.lowercase().filter { it.isLetterOrDigit() }
+
+    // ---- `Enabled if:` expressions: identifiers, ==, !=, &&, ||, !, parentheses
+
+    private sealed interface Node {
+        fun eval(values: Map<String, String>): Any
+    }
+
+    private class Value(val text: String) : Node {
+        override fun eval(values: Map<String, String>): Any = text
+    }
+
+    private class Symbol(val option: TemplateOption) : Node {
+        override fun eval(values: Map<String, String>): Any = values[option.name]?.takeIf { it.isNotEmpty() } ?: option.default.orEmpty()
+    }
+
+    private class Not(val operand: Node) : Node {
+        override fun eval(values: Map<String, String>): Any = !truth(operand.eval(values))
+    }
+
+    private class Binary(val op: String, val left: Node, val right: Node) : Node {
+        override fun eval(values: Map<String, String>): Any = when (op) {
+            "&&" -> truth(left.eval(values)) && truth(right.eval(values))
+            "||" -> truth(left.eval(values)) || truth(right.eval(values))
+            "==" -> left.eval(values).toString().equals(right.eval(values).toString(), ignoreCase = true)
+            else -> !left.eval(values).toString().equals(right.eval(values).toString(), ignoreCase = true)
+        }
+    }
+
+    private fun truth(value: Any): Boolean = value == true || value.toString().equals("true", ignoreCase = true)
+
+    private val TOKEN = Regex("""\s*(&&|\|\||==|!=|!|\(|\)|"[^"]*"|'[^']*'|[^\s()!=&|]+)""")
+
+    /** A recursive descent over the tokens; null when a symbol names no option or the expression is not understood. */
+    private class Parser(val tokens: List<String>, val byName: Map<String, TemplateOption>) {
+        var position = 0
+        var unknown = false
+
+        fun peek(): String? = tokens.getOrNull(position)
+
+        fun operand(asValue: Boolean): Node {
+            val token = tokens.getOrNull(position++)
+            if (token == null) { unknown = true; return Value("") }
+            if (token.length >= 2 && (token.first() == '"' || token.first() == '\'')) return Value(token.substring(1, token.length - 1))
+            if (asValue) return Value(token)
+            val option = byName[normalized(token)]
+            if (option != null) return Symbol(option)
+            if (!token.equals("true", ignoreCase = true) && !token.equals("false", ignoreCase = true)) unknown = true
+            return Value(token)
+        }
+
+        fun primary(): Node = when (peek()) {
+            "!" -> { position++; Not(primary()) }
+            "(" -> {
+                position++
+                val inner = or()
+                if (peek() == ")") position++ else unknown = true
+                inner
+            }
+            else -> operand(asValue = false)
+        }
+
+        fun comparison(): Node {
+            val left = primary()
+            val op = peek()
+            if (op == "==" || op == "!=") { position++; return Binary(op, left, operand(asValue = true)) }
+            return left
+        }
+
+        fun and(): Node {
+            var node = comparison()
+            while (peek() == "&&") { position++; node = Binary("&&", node, comparison()) }
+            return node
+        }
+
+        fun or(): Node {
+            var node = and()
+            while (peek() == "||") { position++; node = Binary("||", node, and()) }
+            return node
+        }
+    }
+
+    private fun parseExpression(expression: String, all: List<TemplateOption>): ((Map<String, String>) -> Boolean)? {
+        val parser = Parser(TOKEN.findAll(expression).map { it.groupValues[1] }.toList(), all.associateBy { normalized(it.name) })
+        val root = parser.or()
+        if (parser.unknown || parser.position != parser.tokens.size) return null
+        return { values -> truth(root.eval(values)) }
+    }
 }

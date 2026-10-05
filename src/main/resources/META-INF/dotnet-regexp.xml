@@ -1,0 +1,7 @@
+<!-- Regular expressions in C# strings (CSharpRegexInjection.kt): loaded where the IDE has the RegExp module of the platform. -->
+<idea-plugin>
+  <extensions defaultExtensionNs="com.intellij">
+    <multiHostInjector implementation="io.github.dotnetsupport.lang.CSharpRegexInjector"/>
+    <regExpLanguageHost forClass="io.github.dotnetsupport.lang.CSharpStringLiteralLeaf" implementationClass="io.github.dotnetsupport.lang.CSharpRegExpHost"/>
+  </extensions>
+</idea-plugin>

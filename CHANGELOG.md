@@ -3,6 +3,295 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.103
+
+- Gray text no longer offers a variable name after a member of a value: `member.Ad` with `Admin` selected in the list showed `min admin`,
+  as after a type; now it shows `min = isAdmin;` — the member and the value at hand for it
+- `member.Email = ` (a statement) gets the value at hand as gray text with `;`, the properties of the values around included (`dto.Email;`);
+  never the member itself
+- The completion list at `Name = ` of an initializer and at `member.Name = ` has rows with the paths into the values at hand
+  (`dto.Name`, `dto.Email`), best first
+- No IDE error ("Read access is allowed from inside read-action only") from the gray text when the completion list closes
+- The list puts the path rows (`dto.Name`) under the value the gray text gives (`name`), so both say the same; `Name =` without a space gets ` name;` with one
+
+## 0.1.102
+
+- Gray text while the completion list is open: it follows the selected row and shows what choosing it gives — `new ` with `Member`
+  selected → `Member();`, `Draft(Mem` with `MemberDto` selected → `berDto memberDto`, the value of `Name = ` when the selected row begins
+  it. Tab takes the row with the gray text and closes the list; Enter takes the row alone, as before
+- `new Membe` lists `Member { … }` right under `Member` for a type created without arguments that has members to set: choosing it writes
+  the object initializer, a member a line, the required ones first, each with its value when one is at hand (`Name = name`); Tab goes
+  from value to value. Shown for the types whose name is typed (two letters at least), for the type the variable names
+  (`var member = new `) and for the expected type
+- `new OrderLine` of a type with required members fills their values from the variables at hand too, with the same Tab stops
+
+## 0.1.101
+
+- More gray text while typing, by rules (no machine learning), Tab takes it:
+  - `var user = new ` → `User();`, the type named as the variable (`var users = new ` → `List<User>();`), when it is created with no
+    arguments and has no required members
+  - `new User(|)` → a gray `;` after the `)`; Tab writes `new User();`. Also after the `}` of an initializer written over several lines
+  - on the empty line of `new User() { }`: the members a line each, the required ones first, with their values when they are at hand
+    (`Name = userDto.Name,`)
+  - `Name = ` in an object initializer → the variable, parameter or member of that name and a fitting type (`name`), or a property of
+    one (`userDto.Name`); no `;` there any more
+  - a name after a type: `UserDto ` → `userDto`, `List<User> ` → `users`, `IUserService ` → `userService`, `_userDto` for a private
+    field, also in `foreach`
+- After `class ` (`record`, `struct`, `interface`, `enum`) completion offers the name of the file; choosing it writes the body too
+- `public clas` lists `class` once: the live template of that name is no longer next to the keyword
+
+## 0.1.100
+
+- Alt+Enter on a name that does not resolve offers Rider's "Create …" quick fixes: "Create class / record / struct / interface / enum 'Foo'"
+  (a new file next to the current one, in its namespace; `new Foo(1, name)` gets a constructor with those parameters, `Foo.Bar` an enum
+  with `Bar`, a name in the base list an interface), "Create field / property / local variable / parameter 'x'" typed from the usage, and
+  "Create method 'M'" for a call (its parameters from the arguments, `void` / `Task` from the place); `x.Missing` creates the member in
+  that type of the solution
+- Implement missing members keeps the default values of parameters (`CancellationToken ct = default`, `= null`, `= 0`) and their
+  attributes (`[CallerMemberName]`): calls without those arguments no longer fail with CS7036 at the build
+- CS7036 ("There is no argument given that corresponds to the required parameter …") is shown before the build for a call of a class
+  whose method lacks a default value its interface has, and for `new T(…)` of a type of the solution; CS1729 when no constructor takes
+  that many arguments
+- Reformat Code lays out code written on one line as Rider's default style does: `class A { void M() { x(); } }` gets its braces and
+  statements on lines of their own; accessors, lambdas, enums and initializers stay on their line, and `csharp_preserve_single_line_blocks`
+  in `.editorconfig` still keeps blocks as they are
+- `;` typed inside the parentheses that end a statement goes after them (`new Repository(|)` + `;` gives `new Repository();`), and `)`
+  after a string steps over the one the editor put
+- Enter after an enum written on one line (`enum Status { New, Paid }`) keeps the indent of the declaration
+- Postfix templates are not offered after a type name (`OrderStatus.` lists the members only); `.new` and `.typeof` stay for classes
+- New → Class/Interface → Record puts the caret inside the `()` of the record
+- In `appsettings*.json` a `,` typed right before the comma a completion has put steps over it instead of writing `,,`
+- The welcome page no longer logs an IDE error ("JBCefApp$Holder <clinit> requests ProxyMigrationService") when it is the first embedded browser of the session.
+
+## 0.1.99
+
+- New Solution on SDK 10: the templates are no longer all under "Not supported for the selected Target Framework" and Create works again.
+  The frameworks of a template are read from the choices of `--framework` as well as from its option line, and a help that cannot be read
+  means "any framework", never "none"
+- "Manage NuGet Packages..." of a project no longer fails with a NullPointerException when the NuGet window opens for the first time
+- The NuGet window asks the password storage only about feeds that need credentials (stored by the plugin, or after a 401 / 403 of the
+  feed), once per session, and never about nuget.org: on Linux without a keychain every search used to show "IDE error occurred"
+- The notification of a failed build before a launch says the launch "was not started"
+- "Move to Solution Folder..." on projects of the Solution view, and dragging projects onto a solution folder or the solution moves them
+  there, as in Rider; dragging no longer logs "Access is allowed from EDT only"
+- Add | New Project... is the window of New Solution: the same kinds, template names and options; options of a template show only when
+  they apply (the Azure AD fields of Web API with an authentication that uses them)
+- After Add | New Project... the new project is selected and expanded in the Solution view
+
+## 0.1.98
+
+- Object initializers and C# 11 `required` members, as in Rider: choosing `new OrderLine` from completion for a type with required members
+  writes the initializer with them (`{ Sku = |, Title = }`, one member a line, the caret at the first value) instead of `()`; a type
+  whose constructors all take arguments keeps `new T(|)`. The row shows the members: `OrderLine { Sku, Title }`
+- CS9035 ("Required member 'OrderLine.Sku' must be set in the object initializer or attribute constructor") is shown without the language
+  server, for the types of the solution and of the referenced assemblies; a constructor marked `[SetsRequiredMembers]` sets them all.
+  Its quick fix "Add initializer for required members" writes the missing ones
+- Inside `new T { | }` completion offers "Fill required members" and "Fill all members"; choosing a member writes `Name = `
+- Alt+Enter in an object initializer: "Initialize members" and "Initialize required members"
+
+## 0.1.97
+
+- C# color palettes: Rider, Visual Studio, VS Code, Nord, Dracula, One Dark / One Light, Solarized and GitHub colors for C# on top of the
+  color scheme you use — the background and every other language stay as they are, and the dark or light variant follows the background
+  of the scheme (also when the theme is switched)
+- Choose it in Settings | .NET ("C# color palette") or in .NET → C# Color Palette…, which previews each palette in the open editors while
+  you move through the list (Esc puts the previous one back); "IDE default" returns the scheme's own C# colors
+- The first C# file opened with a scheme that leaves C# uncolored offers the palettes once ("Don't Show Again" silences it)
+
+## 0.1.96
+
+- Double completion, as in Rider and IntelliJ: the second Ctrl+Space shows what the first one leaves out, and the first one says so in the
+  line at the bottom of the list ("Press Ctrl+Space again to show…")
+- After a dot, the second press adds the members the place does not see (private, protected and internal of other types, protected members
+  of library types), grayed with "(not accessible)" at the bottom; choosing one writes it as it is, the compiler's error is then yours
+- Where a type may stand, the second press adds the types of the packages (and the outputs of projects) that other projects of the solution
+  reference and this one does not, as `Name (in Namespace, Package 1.2.3)`, from the first letter typed; choosing one adds the `using` and
+  offers to add the package or the project reference in a balloon (`dotnet add package` / `dotnet add reference` run by its button only)
+- The second Ctrl+Shift+Space adds the chains: `order.Customer`, `ledger.Count` — a member of a local, a parameter or a member of the
+  enclosing type whose value is of the expected type, one access deep, with `()` for a parameterless method
+
+## 0.1.95
+
+- MSBuild files: `$(` completes property names (those of the file, of the files it imports and of `Directory.Build.props` / `.targets` / `Directory.Packages.props`
+  above it, the ones MSBuild knows, the ones of the schema), `@(` item types, `%(` metadata (`%(Item.` of that item); the parenthesis is closed
+- MSBuild files: file paths in `<Import Project="…">` (MSBuild files) and `<ProjectReference Include="…">` (project files), `..\` and `$(MSBuildThisFileDirectory)` included
+- `[assembly: InternalsVisibleTo("` lists the projects of the solution; `extern alias ` the aliases of the references of the project; `delegate* unmanaged[` the calling conventions
+- `#:package ` in a file-based app lists the package ids of the feeds (after `@` their versions); `#:` lists the directives
+- New setting Settings | .NET → "Exclude from completion": types and namespaces (`System.Data.*`) the C# completion never offers, also not imported ones and their extension methods
+- Live templates `hal`, `ua`, `rta`, `ctx` for ASP.NET Core controllers
+- Format specifiers are listed for a format that starts with a digit (`$"{x:0`)
+
+## 0.1.94
+
+- Explicit interface implementation: after `void IFoo.`, `int IFoo.` or `IFoo.` at the start of a member the list offers the members of `IFoo`
+  that are not implemented explicitly yet and writes the whole signature with a body; `void ` itself offers the names of the implemented
+  interfaces, which write `IFoo.` and open the list
+- `[]` after the dot of an array, a string, a list, a dictionary or a type with an indexer (shown as `this[int index]`): it turns `x.` into `x[|]`
+- Names of tuple elements after the dot (`pair.Title`), and names for the variables of a deconstruction (`var (title, count) = pair;`,
+  `foreach (var (a, b) in pairs)`) taken from the tuple, from `Deconstruct` or from the positional record
+- `partial class |` (struct, record, interface) offers the partial types of the same namespace that have a part in another file
+
+## 0.1.93
+
+- Message templates of logging: in `logger.LogInformation("Order {OrderId}", …)` (every `Log…` method, `BeginScope`), Serilog's
+  `Log.Information(…)` and `[LoggerMessage(Message = "…")]` the placeholders have the color of format items, as in Rider; after `{` the
+  list offers names made of the arguments (`order.Id` → `OrderId`, `Id`; the argument of that placeholder first) or the parameters of the
+  `[LoggerMessage]` method, and Ctrl+Space in the text offers `{Name}` for an argument no placeholder takes yet
+- A warning when the number of arguments does not match the placeholders of a message template (as CA2017), on the placeholder without an
+  argument or on the argument without a placeholder; in `[LoggerMessage]`, on a placeholder without a parameter of the method
+- Route templates of `[Route]`, `[HttpGet]`…`[HttpOptions]` and of `MapGet` / `MapPost` / `MapGroup`…: braces, parameters and constraints
+  colored; after `{` the parameters of the action or the handler (not services, `CancellationToken`, `[FromBody]`), after `:` the route
+  constraints (`int`, `long`, `guid`, `alpha`, `minlength()`, `range()`, `regex()`…), after `[` `controller` / `action` / `area`
+- JSON in strings after `// lang=json`, in arguments of `[StringSyntax(StringSyntaxAttribute.Json)]` parameters and of `JsonDocument.Parse`,
+  `JsonSerializer.Deserialize`, `JObject.Parse`…: JSON colors, errors and Edit JSON Fragment (where the IDE has the JSON plugin)
+- Configuration keys: `configuration["…"]`, `GetSection("…")`, `GetValue<T>("…")` list the keys of the project's `appsettings*.json`
+  (nested ones as `Section:Key`, relative to a `GetSection` they are asked of), `GetConnectionString("…")` the connection strings
+- `services.AddScoped<IService, ` (`AddTransient`, `AddSingleton`, `TryAdd…`, `AddKeyed…`) lists the implementations of the service from the
+  solution first, with the `using` of their namespace
+- The list opens by itself after `{` of a template, `:` of a route parameter, the quote of a configuration key and `AddScoped<IService, `
+
+## 0.1.92
+
+- A method chosen from the completion list with `.` or `;` gets its call: `Total().` (the members of the result open), `Save();`,
+  `Register(|);` with the caret in the parentheses when it takes arguments; the only item inserted by itself gets `()` / `<>` as with Enter
+- Extension methods from assemblies show their types with what the receiver gives: `ToImmutableArray()` of a `List<Order>` returns
+  `ImmutableArray<Order>`, not `ImmutableArray<TSource>`; parameter info writes `Func<Order, bool> predicate`
+- A lambda place is found by the parameter's type, so a delegate with any name (`delegate bool Rule(Order o)`) opens the list with the
+  lambda and keeps the typed parameter name, not only `Func`, `Action` and `...Handler`
+- In `catch (` only types deriving from `Exception` come first: an enum or a class with a short name (`Ex`) no longer sits among them
+
+## 0.1.91
+
+- The completion list remembers what you choose: an item chosen before goes up among the items of its kind, while the order of the kinds
+  stays as in Rider (locals, members, types, keywords)
+- Commit characters: `.`, `,`, `;`, space, `=`, `[`, `)` and `(` take the selected item of a list that opened by itself and are typed
+  after it (`cou` + `;` → `counter;`); not with nothing typed, not for an item that matches only in the middle
+- Suggestion mode where a new name is written (`foreach (var `, `out var `, a name after its type, a lambda's parameter): the list shows
+  names without selecting one, so Enter and space keep what you typed
+- The list opens by itself after `#` at the start of a line, `<` of type arguments, `(` / `,` where a lambda may go, `== `, `case `,
+  `[` of an attribute, and after `new `, `using `, `override ` with the language server off
+- Quick Documentation (Ctrl+Q) of an item of the completion list, and the documentation popup that follows the selection
+- Keywords as Roslyn recommends them: `and` / `or` after a pattern, `when` in a switch, `with` / `switch` / `is` / `as` after an
+  expression, `get` / `set` / `init` and `add` / `remove` in accessor lists, `field` in a property accessor, `allows`, `extension` in a
+  static class, `assembly:` / `module:` in a file's attribute list, `managed` / `unmanaged` after `delegate*`
+- `nameof(` lists names only, `typeof(` types only (no `dynamic`); from three letters on, items that contain what you typed in the middle
+  are listed under those that start with it (`ReceiptLi` → `WriteReceiptLine`)
+
+## 0.1.90
+
+- Completion inside interpolated strings works in holes of every kind (`$"{order.}"`, `$@"…"`, raw `$$"""{{…}}"""`): names, and
+  members after a dot; the text of a string stays without a list
+- Format specifiers: after `{value:` in an interpolation, `{0:` in `string.Format` / `Console.WriteLine` / `AppendFormat`, inside
+  `ToString("…")` and the format of `DateTime.ParseExact` the list offers the formats of the value's type with examples, as in Rider:
+  numbers (`N2`, `C`, `P`, `X`, `D`…), dates and times (`d`, `D`, `t`, `T`, `yyyy-MM-dd`, `HH:mm:ss`, `o`, `s`, `u`…), `TimeSpan`,
+  `Guid`, enums
+- Regular expressions in strings: the patterns of `new Regex(…)`, of the static `Regex.IsMatch` / `Match` / `Replace` / `Split`…,
+  `[GeneratedRegex]`, `[RegularExpression]`, parameters marked `[StringSyntax(StringSyntaxAttribute.Regex)]` and strings after a
+  `// lang=regex` comment are highlighted as regular expressions, with completion (`\d`, `(?<name>`), brace matching, inspections and
+  Check RegExp of the IDE; .NET named groups `(?<name>…)` / `(?'name'…)` are understood
+- Preprocessor directives: `#` at the start of a line lists the directives; `#if` / `#elif` / `#define` list the symbols of the
+  project (its `DefineConstants`, the symbols of every target framework, `#define`s of the file); `#nullable` and `#pragma warning`
+  complete their arguments, `#pragma warning disable` the warning codes with titles
+- XML documentation comments: `<` lists the tags and writes their closing part, `</` closes an open tag, `<param name="` offers the
+  parameters not documented yet (`typeparam`, `paramref`, `typeparamref` likewise), `cref="` the members and types the place sees
+
+## 0.1.89
+
+- Postfix templates look at the type of the expression, as in Rider: `.await` is offered on tasks and awaitables only, `.foreach` on
+  collections, `.for` / `.forr` on collections and numbers (`for (var i = 0; i < orders.Count; i++)`, `.Length` of an array or a string),
+  `.if` / `.else` / `.while` / `.not` on `bool`, `.null` / `.notnull` not on value types that cannot be null, `.using` on disposables,
+  `.lock` on reference types, `.throw` on exceptions. When the type is not known, every template is offered as before
+- `.var`, `.foreach` and `.using` name the variable after the expression and its type (`order.Total.var` → `orderTotal`, `GetOrders().var` →
+  `orders`, `orders.foreach` → `order`) in a template box with the other names to choose from; a name already used nearby gets a number
+- New postfix templates of Rider: `.field` and `.prop` (introduce a field or a property for the expression), `.to` (assign to …), `.arg`
+  (wrap into a call), `.sel` (select the expression), `.parse` / `.tryparse` on strings with a list of target types, and `.inject` typed
+  between the members of a type (`IOrderService.inject`: a primary constructor parameter, or a constructor parameter and a field). The
+  templates have Rider's descriptions; statement templates are no longer offered between members
+- Live templates grow to Rider's set (69 instead of 33): `ctorf` / `ctorp` (constructor initializing all fields / properties), `itli`,
+  `itar`, `ritar`, `sfc`, `outv`, `out`, `asrt`, `asrtn`, `psvm`, `sim`, `~`, `indexer`, `iterator`, `iterindex`, `equals`, `Attribute`,
+  `Exception`, `namespace`, `#if`, `#region`, `checked`, `unchecked`, `unsafe`, `pci`, `pcs`, `psr`, `ear`, `nguid`, `from`, `join`, `mbox`,
+  `propdp` / `dependencyProperty`, `attachedProperty`; descriptions as in Rider. `foreach`, `itli`, `from` name the element after the
+  collection (`orders` → `order`)
+
+## 0.1.88
+
+- C# completion knows the expected type, as in Rider (built-in completion, no language server needed):
+  - object, collection and `with` initializers list only the members that can still be assigned (`new Order { Id = 1, |` → `Customer`,
+    `Status`…, not `Id`, read-only or `private set` ones); property patterns (`order is { |`, nested `{ Buyer: { |`) list the members of
+    the matched type
+  - the members of an expected enum come first as `OrderStatus.Paid` rows with their values: after `status == `, `case `, in a
+    `switch` arm, after `is `, in arguments, assignments and `{ Status: `; the list opens by itself after `== ` and `case `
+  - `await Highlights` rows for a method or local of `Task<T>` whose result is wanted; choosing one writes `await` and makes the method `async`
+  - `new` with a target type: `Order o = new ` offers `Order()` first, then the derived types; `throw new ` only exceptions (of the
+    solution and of the imported namespaces), `catch (` exceptions first; a base list offers classes and interfaces, `event ` delegates,
+    a constraint classes and interfaces
+  - smart completion (Ctrl+Shift+Space) lists only what fits the expected type: locals, members, methods returning it, static members of
+    the type itself (`String.Empty`), enum members, `await` rows, `new T()`, `null` / `default` / `true` / `false`; where the type is
+    unknown it is the usual list
+
+## 0.1.87
+
+- Completion without the language server offers the types of the referenced assemblies in the namespaces the file sees, with nothing
+  typed too: `Li` or Ctrl+Space on an empty line gives `List<>` where `System.Collections.Generic` is imported, by a `using`, the implicit
+  usings of the SDK or a `global using`. Types of the solution imported only by a `global using` are offered as well
+- Types that are not imported, from the first letter, as in Rider: `Receipt (in Shop.Billing)` for a class of the solution in a
+  neighbour namespace, `StringBuilder (in System.Text)` for one of the framework or a package. Choosing one adds the `using`; when the file
+  already sees another type of that name (`Timer` of `System.Threading`), the namespace is written in front of it instead
+- Extension methods of namespaces that are not imported after a dot (`numbers.ToImm` → `ToImmutableArray() (in
+  System.Collections.Immutable)`), of the assemblies and of the solution, only those that take the value left of the dot; choosing one
+  writes the call and adds the `using`
+- Attributes of the assemblies at `[`: `[Obs` gives `Obsolete` and `ObsoletedOSPlatform (in System.Runtime.Versioning)`
+
+## 0.1.86
+
+- Completion in an argument list works without the language server again (it is off by default since 0.1.76, and these features came
+  only from it):
+  - choosing a method in the completion list opens its parameter info by itself, with the gray text of the arguments at hand
+  - a lambda where a delegate is expected, first in the list and as gray text after `(` / `,`: `items.Where(` offers `x => ` and
+    `(x, i) => ` of the second overload, named after the parameter types as in Rider; delegates of the solution are named by their
+    parameters
+  - `Changed += ` offers `(sender, e) => {}` and "Create method OnChanged(object?, EventArgs)", which adds the handler to the class;
+    the same at a variable of a delegate type (`Func<int, bool> filter = `)
+  - named arguments: `Place(qu` offers `quantity:` first; after positional arguments the remaining parameters of the overloads that fit;
+    in an attribute the constructor parameters and the settable properties (`[Obsolete(DiagnosticId = `)
+
+## 0.1.85
+
+- Writing an override without the language server works as in Rider: after `override ` (or `public override `) the list opens by
+  itself with the members of the base classes that can still be overridden — of the solution, of assemblies (`BackgroundService`,
+  `Exception`, `object`) and of the C# the build generates (`Greeter.GreeterBase` of Grpc.Tools). The chosen member is written whole:
+  the base's accessibility, the types as the file names them (no `global::`), `return base.X(...)` or `throw new NotImplementedException()`,
+  `await` when `async` is typed, the `using` directives it needs
+- Missing members are red without the server: CS0534 (an abstract member of the base class) on the class name and CS0535 (an interface
+  member) on the interface in the base list. Alt+Enter there — and on an empty line of the class body — offers "Implement missing
+  members"; "Override members..." is on Alt+Enter on whitespace of the body and on the header of a class with a base class. Ctrl+O and
+  Ctrl+I open the same dialogs
+- `base.` lists the members of base classes from assemblies too (`base.StartAsync` in a `BackgroundService`)
+- Parameter Info (Ctrl+P) works in `: base(...)`, `: this(...)` and in the base of a primary constructor
+- Generate → Overriding members no longer adds `using System;` to a member that does not throw
+- The Override Members dialog shows one node per base type, and `override ` lists the members of the real base before those of `object`
+
+## 0.1.84
+
+- Colors of a C# file are there as it opens: identifiers, inactive `#if` text and format items no longer appear half a second after
+  the keywords and strings. A file opened again shows the colors it had when it was closed at once (before the first paint, while its
+  text is the same); a file opened for the first time gets them in about 0.15–0.25 s instead of 0.45–0.9 s, computed right away and
+  reused by the editor's analysis instead of being computed twice; the analysis that follows changes nothing on screen. While the IDE
+  indexes a project that has just opened, the file gets the plain colors at once and the full ones as soon as the indexes are ready
+- The colors of identifiers are computed once per change: the editor's repeated passes over an unchanged file reuse them
+
+## 0.1.83
+
+- No false "CS1061: does not contain a definition" on members inherited from a base class of the solution when the file that uses them
+  imports another type of the same name as the base (an EF Core entity `DirectStressTest : StressTest` queried in a handler that imports a
+  DTO `StressTest`): the base is the one the entity's own declaration sees, as in the compiler. Quick Documentation and Go to
+  Declaration of such members find them in that base
+
+- C# colors follow the color scheme of the IDE: the plugin no longer puts its own colors into the IDE's schemes, so C# kinds take the
+  scheme's Language Defaults (class, interface, function declaration and call, static method and field, constant, metadata) and edits of
+  them reach C#, in Dark, Islands Dark, Light and any other scheme alike. Rider's palette is a scheme to pick: Settings | Editor |
+  Color Scheme | "Rider Dark" or "Rider Light"
+
 ## 0.1.82
 
 - Analyzer results without the language server are as quiet as in Rider and Visual Studio: the editor shows warnings and errors at the

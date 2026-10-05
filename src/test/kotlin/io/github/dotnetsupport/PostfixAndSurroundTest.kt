@@ -1,6 +1,7 @@
 package io.github.dotnetsupport
 
 import com.intellij.codeInsight.generation.surroundWith.SurroundWithHandler
+import com.intellij.codeInsight.template.impl.TemplateManagerImpl
 import com.intellij.codeInsight.template.postfix.templates.PostfixTemplate
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.util.TextRange
@@ -11,6 +12,11 @@ import io.github.dotnetsupport.lang.CSharpSurroundDescriptor
 
 /** Postfix templates and Surround With, by tokens. */
 class PostfixAndSurroundTest : BasePlatformTestCase() {
+    override fun setUp() {
+        super.setUp()
+        TemplateManagerImpl.setTemplateTesting(testRootDisposable)
+    }
+
     private fun expression(text: String): String? {
         val offset = text.indexOf('|')
         val clean = text.replace("|", "")
@@ -23,6 +29,9 @@ class PostfixAndSurroundTest : BasePlatformTestCase() {
         assertEquals("list[0]", expression("list[0]|"))
         assertEquals("Make(1, \"a)b\").Result", expression("var r = Make(1, \"a)b\").Result|"))
         assertEquals("new Foo(x)", expression("new Foo(x)|"))
+        assertEquals("new List<Order>()", expression("new List<Order>()|"))
+        assertEquals("Make<Dictionary<string, int[]>>(1)", expression("x = Make<Dictionary<string, int[]>>(1)|"))
+        assertEquals("(b)", expression("a > (b)|"))
         assertEquals("await Load()", expression("await Load()|"))
         assertEquals("this.Items", expression("this.Items|"))
         assertEquals("!ready", expression("!ready|"))
@@ -48,6 +57,7 @@ class PostfixAndSurroundTest : BasePlatformTestCase() {
         myFixture.configureByText("A.cs", before)
         val context = myFixture.file.findElementAt(myFixture.caretOffset - 1)!!
         WriteCommandAction.runWriteCommandAction(project) { template.expand(context, myFixture.editor) }
+        TemplateManagerImpl.getTemplateState(myFixture.editor)?.gotoEnd(false)
         val text = myFixture.editor.document.text
         return text.substring(0, myFixture.caretOffset) + "<caret>" + text.substring(myFixture.caretOffset)
     }
@@ -60,9 +70,10 @@ class PostfixAndSurroundTest : BasePlatformTestCase() {
             expand(t.getValue(".if"), "class A { void M() {\n        ready<caret>\n    } }"),
         )
         assertEquals("class A { void M() { return Make(1)<caret>; } }".replace("<caret>;", ";<caret>"), expand(t.getValue(".return"), "class A { void M() { Make(1)<caret> } }"))
-        assertEquals("class A { void M() { var <caret>value = Load(); } }", expand(t.getValue(".var"), "class A { void M() { Load()<caret> } }"))
+        assertEquals("class A { void M() { var load = Load();<caret> } }", expand(t.getValue(".var"), "class A { void M() { Load()<caret> } }"))
         assertEquals("class A { void M() { var x = !ready<caret>; } }", expand(t.getValue(".not"), "class A { void M() { var x = ready<caret>; } }"))
-        assertEquals("class A { void M() { var x = await Load()<caret>; } }", expand(t.getValue(".await"), "class A { void M() { var x = Load()<caret>; } }"))
+        // as choosing `await` in completion, the method becomes async
+        assertEquals("class A { async Task M() { var x = await Load()<caret>; } }", expand(t.getValue(".await"), "class A { void M() { var x = Load()<caret>; } }"))
         assertEquals(
             "class A { void M() {\n    foreach (var item in items)\n    {\n        <caret>\n    }\n} }",
             expand(t.getValue(".foreach"), "class A { void M() {\n    items<caret>\n} }"),

@@ -175,14 +175,19 @@ Solution для живой проверки плагина: отладчика (
 - [ ] изменить `Console.csproj` внешним редактором (например `Nullable` на `disable`), Reload Project → Properties… показывает новое значение
 - [ ] меню .NET → Reload Solution / Reload Project '<имя>' (проект — по файлу в редакторе); без файла проекта пункт Reload Project выключен
 
-### Лямбда там, где ждут делегат — `Console/Editor/LambdaSuggestions.cs`
-Нужен загруженный solution («Roslyn: DebugPlayground.sln»): типы параметров берутся из signature help сервера. Проверено роботом 2026-09-30.
+### Лямбда там, где ждут делегат, именованные аргументы — `Console/Editor/LambdaSuggestions.cs`
+С 0.1.86 отвечает своя семантика плагина (Completion и Documentation = Built-in, по умолчанию), сервер не нужен. С сервером проверено роботом 2026-09-30.
 - [ ] `TYPE:lambda-action`: `Each(` → серый `lambdaOrder => ` сразу после скобки; по Ctrl+Space `lambdaOrder => ` первым, блочный вариант вторым
 - [ ] `TYPE:lambda-func`: `Register(` → серый `serviceProvider => ` (имя из типа `IServiceProvider`)
 - [ ] `TYPE:lambda-two`: `Retry(3, ` → серый `(i, s) => ` (`Func<int, string, bool>`, известные типы — по букве)
 - [ ] `TYPE:lambda-linq`: `_orders.Where(` → серый `lambdaOrder => `; в списке следом `(lambdaOrder, i) => ` второй перегрузки
-- [ ] `TYPE:lambda-event`: `Changed += ` и `Changed += (` → лямбды **нет**
+- [ ] `TYPE:lambda-event`: `Changed += ` + Ctrl+Space → первым `(sender, e) => {}`, вторым `Create method OnChanged(object?, EventArgs)`
+      (Enter: `Changed += OnChanged;` и новый метод `OnChanged(object? sender, EventArgs e)` под `Use`); серого текста здесь нет
 - [ ] `TYPE:lambda-silent`: `Console.WriteLine(` → лямбды **нет**
+- [ ] `TYPE:named-prefix`: `Place(qu` + Ctrl+Space → `quantity:` первым, Enter → `Place(quantity: `
+- [ ] `TYPE:named-next`: `Place(3, ` + Ctrl+Space → `name:`, `urgent:`, `when:` ниже значений, `quantity:` **нет**
+- [ ] `TYPE:named-attribute`: `[Obsolete(Di` → `DiagnosticId =`; `[Obsolete(` + Ctrl+Space → `message:`, `error:`, `DiagnosticId =`, `UrlFormat =`
+- [ ] `TYPE:parameter-info`: `Ret` → Enter на `Retry` → `Retry(|);` и parameter info открылась сама, без Ctrl+P
 
 ### Go to Base (Ctrl+U) на членах — `Console/Editor/GoToBase.cs`
 Нужен загруженный solution («Roslyn: DebugPlayground.sln»): базовые типы берутся из type hierarchy сервера. Ничего не набирать — курсор и Ctrl+U.
@@ -264,12 +269,23 @@ Settings | .NET | Language Server → Source of Features → «Completion» = Bu
 - [ ] `TYPE:complete-task-from-result`, `-task-completed` (`CommonCalls.cs`): `return ` → серый `Task.FromResult();` / `Task.CompletedTask;`, первый пункт completion; в `async` — нет
 - [ ] `TYPE:complete-await-async`, `-make-async`: выбор `await` / Alt+Enter «Make method async» — `async Task<int>`, `async Task` вместо `void`, обработчик события — `async void`
 
+### Completion по ожидаемому типу (0.1.88) — `Console/Editor/ExpectedTypeCompletion.cs`
+Built-in completion (умолчание с 0.1.76). Набрать под маркером, сверить с `EXPECT`, Ctrl+Z.
+- [ ] `TYPE:expected-initializer`, `-initializer-rest`, `-with`: `new ExpectedOrder { ` → `Buyer`, `Customer`, `Id`, `Lines`, `Status` (без `Total`, `Code`, `Summary`, локальных, ключевых слов); после `Id = 1, Status = …, ` — без них; `point with { X = 1, ` → `Y`
+- [ ] `TYPE:expected-property-pattern`, `-nested-pattern`: `order is { ` → члены `ExpectedOrder`; `{ Buyer: { ` → `Age`, `Name`; `{ Status: ` → `ExpectedStatus.*` первыми
+- [ ] `TYPE:expected-enum-equals`: `status == ` — список открывается сам, первые строки `ExpectedStatus.Cancelled : 7`, `New : 0`, `Paid : 5`, `Shipped : 6`; после `_created == ` сам не открывается
+- [ ] `TYPE:expected-enum-case`, `-enum-argument`: `case ` (открывается сам), `status switch { `, `order.Status is `, `Take(`, `status = ` → `ExpectedStatus.*` первыми
+- [ ] `TYPE:expected-await`: `string s = ` в `Plain` → `await Highlights : Task<string>`, Enter → `await Highlights();` и `private async Task<string> Plain()`
+- [ ] `TYPE:expected-new`, `-throw-new`, `-catch`: `ExpectedOrder o = new ` → `ExpectedOrder()` первым; `throw new ` — только исключения; `catch (` — исключения первыми
+- [ ] `TYPE:expected-base-list`, `-event`: базовый список — классы и интерфейсы (без sealed, enum, делегатов, `int`), у struct — интерфейсы; `public event ` — делегаты
+- [ ] `TYPE:expected-smart`: Ctrl+Shift+Space после `int n = ` — только `int` (`number`, `_created`, `await Counted`, `default`…); `string s = ` — `name`, `_mutable`, `String.Empty`, `null`; `Take(` — `ExpectedStatus.*`
+
 ### `using` по встроенному дереву (0.1.61) — `Console/Editor/Usings.cs`
 Completion — при «Completion» = Built-in; Alt+Enter — при любом источнике (при готовом сервере и «Typing assistance» = Language server
 вместо «Convert to 'using' declaration» — его «Use simple 'using' statement»). Набрать под маркером, сверить с `EXPECT`, Ctrl+Z.
 - [ ] `TYPE:using-var`, `-await`: `using var` / `await using var` в начале оператора (второго нет в геттере); выбор `await using var` делает метод `async Task`; Alt+Enter на `await` набранного `await using` — «Make method async» одной строкой
 - [ ] `TYPE:using-directive`: `using System.Coll` → `Collections`; `using static System.` → и типы (`Console`, `Math`); `global using` вверху файла
-- [ ] `TYPE:using-postfix`: `.using` → `using var reader = …` (имя выделено); `.awaitusing` → `await using var stream = …` и `async Task`
+- [ ] `TYPE:using-postfix`: `.using` → `using var reader = …` (имя в рамке, с 0.1.89); `.awaitusing` → `await using var stream = …` и `async Task`
 - [ ] `TYPE:using-to-declaration`, `-to-statement`, `-wrap`: «Convert to 'using' declaration» / «… statement», «Wrap in 'using' statement», отступы тела на уровень
 - [ ] `TYPE:using-sort`, `-global`: «Sort 'using' directives» (`System`, `System.IO`, `System.Text`); «Convert to 'global using'» — `Console/GlobalUsings.cs` (удалить после проверки)
 - [ ] `TYPE:using-cs1674` (0.1.65, «Errors and warnings» = Built-in): `using (var n = 5) { }` — CS1674 про `'int'` один раз (без копии сервера); `await using` на `CancellationTokenSource` — CS8417; `MemoryStream` и неизвестный тип — без ошибки
@@ -307,6 +323,11 @@ Settings | .NET | Language Server → Source of Features → «Colors of identif
 - [ ] `TYPE:colors-members`: члены базового класса и другой части partial-класса из `SemanticColorsPart.cs` раскрашены; в Built-in с 0.1.56 `Console` / `WriteLine` тоже (класс / static-метод)
 - [ ] `TYPE:colors-shadowing`: параметр лямбды и внешний параметр `count` — параметры, локальная `title` — не свойство `Title`
 - [ ] Settings | Editor | Color Scheme | C#: группы и имена Rider, все примеры превью раскрашены; переключение Built-in / Language server меняет цвета сразу по Apply
+
+### Цвета при открытии файла (0.1.84) — `Console/Editor/OpeningColors.cs`
+Открыть файл, закрыть вкладку, открыть снова; то же с самым большим файлом площадки `Console/Scenarios.cs` (или `Console/Editor/Formatting.cs`).
+Робот: `tools/ui-robot/scripts/color_timing.js` (время от открытия до первого цвета идентификатора, снимки редактора).
+- [ ] `TYPE:colors-on-open`: цвета идентификаторов, серый неактивный `#if` и элементы формата `{0}` — в одном кадре с ключевыми словами и строками; EXPECT: ни на миг белых имён, ничего не перекрашивается, когда пропадает «Analyzing…»
 
 ### Цвета внутри строк (0.1.71) — `Console/Editor/StringColors.cs`
 Сверить с `EXPECT` под маркерами (Darcula / Islands Dark), набранное отменять Ctrl+Z. Робот: `tools/ui-robot/scripts/highlight_keys.js` — ключи лексера
@@ -391,6 +412,21 @@ Language Server). Дождаться индексации сборок (посл
 - [ ] `TYPE:nullable-ctor`: CS8618 на `FlowOwner` первого конструктора, на остальных нет
 - [ ] `TYPE:nullable-unknown`: предупреждений нет (лямбда и делегат — молчим)
 
+### Completion в строках, регулярные выражения (0.1.90) — `Console/Editor/StringCompletion.cs`
+Сервер выключен, сборки проиндексированы. Набрать под маркером (Ctrl+Space, где сказано), сверить с `EXPECT`, Ctrl+Z.
+- [ ] `TYPE:string-hole`, `TYPE:string-hole-kinds`: в `$"{tic` / `$@"{ticket.` / `$$"""{{ticket.` — имена и члены, после `.` список сам; в тексте строки — пусто
+- [ ] `TYPE:format-number`: `{ticket.Price:` + Ctrl+Space → `0000 - custom`, `C - currency ¤1,234.45` … `P1` как у Rider; у `{count:` ещё `D`, `X`; у строки — ничего
+- [ ] `TYPE:format-date`, `TYPE:format-enum`: даты (`d`, `D`, `t`, `T`, `yyyy-MM-dd`, `o`, `s`, `u`), у enum `G F D X`
+- [ ] `TYPE:format-calls`: `{1:` у `Console.WriteLine` берёт тип второго аргумента; `ToString("` у `TimeSpan` → `hh\:mm\:ss` (вставляется `hh\\:mm\\:ss`); Guid — `N D B P`
+- [ ] `TYPE:regex-colors`, `TYPE:regex-generated`: шаблоны `Regex`, `[GeneratedRegex]`, после `// lang=regex`, аргумент `[StringSyntax(Regex)]`-параметра — цвета RegExp, `(?<year>` / `(?'month'` без ошибок, `Plain` и `"plain(text"` — обычные строки; Alt+Enter → Check RegExp
+- [ ] `TYPE:regex-completion`: после `\` в шаблоне Ctrl+Space → `\d`, `\w`, `\s`… с описаниями
+
+### Completion в директивах и XML-доках (0.1.90) — `Console/Editor/DocCompletion.cs`
+- [ ] `TYPE:directive-hash`: `#` в начале строки — список директив сам; `if` + Enter → `#if ` и список символов (`DEBUG` жирным, `NET9_0_OR_GREATER`…)
+- [ ] `TYPE:directive-arguments`, `TYPE:directive-elif`: `#nullable ` → `enable disable restore`; `#pragma warning disable ` → коды с названиями; `#elif ` → символы
+- [ ] `TYPE:doc-tags`: `<` в пустой строке `///` над `Find` — теги сами; `returns` → `<returns>|</returns>`; `param` → `<param name="|"></param>` и список `name`, `limit` (без `id`)
+- [ ] `TYPE:doc-names`, `TYPE:doc-cref`: `<typeparam name="` → `TKey`; `<see cref="` → `Find`, `Count`, типы; `<exception cref="` → `ArgumentNullException` первым
+
 ### Запросы LINQ как вызовы методов (0.1.80) — `Console/Editor/Queries.cs`
 Сервер выключен, сборки проиндексированы. Ctrl+Q — как в `EXPECT`, тип источника решает, чьи методы зовёт запрос.
 - [ ] `TYPE:queries-queryable`: `expensive` — `IQueryable<string>` (не `IEnumerable`), `o` — `(range variable) Order o`; ` && o.` после `where o.Total > 1` → `Total`, `Name`, `CustomerId`
@@ -399,6 +435,7 @@ Language Server). Дождаться индексации сборок (посл
 - [ ] `TYPE:queries-join`: `bought` — `IEnumerable<Order>` (join … into), `total` — `decimal`, `pairs` — `IQueryable<string>`
 - [ ] `TYPE:queries-own-source`: `boxed` — `QueryBox<string>` (свои методы экземпляра), `x` — `int`, `maybe` — `QueryMaybe<int>` (extension `Select`); красного нет
 - [ ] `TYPE:queries-group`: `g` — `IGrouping<int, Order>`, `groups` — `IQueryable<int>`; после `g.` — `Key`, `Count`, `Sum`
+- [ ] `TYPE:queries-inherited-member`: `x.BookDate` / `x.CalculationTypeId` (члены базы сущности из `QueryEntities.cs`) без красного CS1061, хотя файл импортирует DTO `QueryStressTest`; `x.` → `BookDate`, `CalculationTypeId`, `Comment`, `Id`; `x.Nope` — CS1061
 
 ### Completion после точки, quick documentation, Parameter Info (0.1.66) — `Console/Editor/MemberCompletion.cs`
 Settings | .NET | Language Server → Source of Features → «Completion» и «Documentation and parameter info» = Built-in (второе
@@ -410,6 +447,40 @@ Settings | .NET | Language Server → Source of Features → «Completion» и �
 - [ ] `TYPE:dot-namespace`, `TYPE:dot-this`: `System.Collections.Generic.` → `List<>`, `Dictionary<,>`; `this.` в наследнике `List<int>` → `Add`, `Count`, `_extra`
 - [ ] `TYPE:quick-doc`: Ctrl+Q / наведение на `WriteLine`, `Substring`, `Total`, `Add`, `limit`, `Documented` — строка как у Rider и текст документации; без второго окна сервера
 - [ ] `TYPE:parameter-info`: Ctrl+P в `first.Add("book", limit)` — две строки, вторая отмечена, `int count = 1` выделен; `Console.WriteLine(` — строка на перегрузку; `new StringBuilder(` — конструкторы
+
+### Поведение списка completion (0.1.91) — `Console/Editor/CompletionBehaviour.cs`
+«Completion» = Built-in (по умолчанию при выключенном сервере). Набрать под маркером, сверить с `EXPECT`, Ctrl+Z.
+- [ ] `TYPE:behaviour-stats`: после пяти выборов `_items` он выше `_counter`; локальные по-прежнему выше полей, ключевые слова внизу
+- [ ] `TYPE:behaviour-commit`: `var copy = cou` + `;` → `var copy = counter;`; `cou` + `)` в вызове, `CustomerNa` + `.`; `unt` + `;` остаётся `unt;`
+- [ ] `TYPE:behaviour-suggestion`: `foreach (var num` + пробел — список без выделения, остаётся `num `; `out var res` + пробел — то же; стрелка вниз выделяет пункт
+- [ ] `TYPE:behaviour-lambda`: `numbers.Where(` — список открывается сам, без выделения; `n` + пробел — остаётся `n `
+- [ ] `TYPE:behaviour-autopopup`: `new List<` — типы открываются сами; `Status == ` и `case ` — список открывается сам
+- [ ] `TYPE:behaviour-quickdoc`: `this.Ord` + Ctrl+Q при открытом списке — документация `OrderCount`; при движении по списку окно следует
+- [ ] `TYPE:behaviour-generic`: `new Dictionary<string, ` + Ctrl+Space — типы, без `if` / `for`
+- [ ] `TYPE:behaviour-keywords`: `is int and > 0 ` → только `and`, `or`; ветка `1 ` → `when`, `and`, `or`; `value ` → `as`, `is`, `switch`, `with`
+- [ ] `TYPE:behaviour-nameof`: `nameof(` — имена без ключевых слов; `typeof(` — только типы, без `dynamic`
+- [ ] `TYPE:behaviour-middle`: `ReceiptLi` → `WriteReceiptLine`; при `rec` он ниже пунктов, начинающихся с `rec`
+- [ ] `TYPE:behaviour-accessors`, `TYPE:behaviour-field`, `TYPE:behaviour-extension`: `get`/`set`/`init`; `field` в `get => `; `extension` в static-классе
+
+### Вставка из списка completion (0.1.92) — `Console/Editor/CompletionInsertion.cs`
+«Completion» = Built-in (по умолчанию). Набрать под маркером, сверить с `EXPECT`, Ctrl+Z.
+- [ ] `TYPE:insertion-dot`: `var text = Tot` + `.` → `var text = Total().`, каретка после точки, список членов `decimal` открылся сам; **не** `Total.`
+- [ ] `TYPE:insertion-semicolon`: `Recalcul` + `;` → `Recalculate();`; `Regist` + `;` → `Register(|);`, каретка в скобках, parameter info `int id` сама
+- [ ] `TYPE:insertion-auto`: `Recalcula` + Ctrl+Space → списка нет, вставлено `Recalculate();`; `var w = new Widgetr` + Ctrl+Space → `new Widgetry(|)`
+- [ ] `TYPE:insertion-extension-types`: `_orders.ToImm` → справа `ImmutableArray<InsertionOrder>`; `_orders.Fir` → `First : InsertionOrder`;
+      Ctrl+P в `_orders.Where(` → `Func<InsertionOrder, bool> predicate`, без `TSource`
+- [ ] `TYPE:insertion-delegate-lambda`: `Check(` → список сам, без выделения, `order => ` сверху; `o` + пробел — остаётся `o `
+- [ ] `TYPE:insertion-catch`: `try { } catch (` + Ctrl+Space → сначала исключения; `Ex` (enum) и `Exc` (класс) — ниже всех исключений
+
+### Языковые места completion (0.1.94) — `Console/Editor/LanguageCompletion.cs`
+«Completion» = Built-in (по умолчанию при выключенном сервере). Набрать под маркером, сверить с `EXPECT`, Ctrl+Z. Части partial-типов — `LanguageCompletionParts.cs`.
+- [ ] `TYPE:explicit-members`: `void ILcAudited.` → только `Audit`; Enter пишет `void ILcAudited.Audit(string who)` с `throw new NotImplementedException();`; `int ILcPriced.` → `Price` пишется как `decimal ILcPriced.Price { get => throw …; }`
+- [ ] `TYPE:explicit-names`: `void ` → `ILcPriced`, `ILcAudited`, `IDisposable`; выбор пишет `IFoo.` и открывает список членов; после `public void ` имён нет
+- [ ] `TYPE:explicit-alone`: `IDisposable.` → `Dispose`, пишется `void IDisposable.Dispose()`
+- [ ] `TYPE:indexer-string`, `TYPE:indexer-collections`: `text.`, `_numbers.`, `_names.`, `_counts.`, `self.` → `[]` (`this[int index]`); Enter даёт `x[|]`, `?.` — `?[|]`; у `object`, `Console.` и с набранной буквой пункта нет
+- [ ] `TYPE:tuple-names`: `pair.` → `Title`, `Count`; `named.` → `width`, `height`
+- [ ] `TYPE:deconstruct-var`, `TYPE:deconstruct-foreach`, `TYPE:deconstruct-record`: имя элемента в `var () = pair;`, `foreach (var (a, ) in pairs)`, `var (x, ) = new LcPoint(1, 2);` (`y`), `Deconstruct` с `units`, `currency`
+- [ ] `TYPE:partial-types`: `partial class ` → `LcOrder`, `LcCart`, `LcBox<T>`; не `LcMoney`, `LcTotals`, `LcOwn`; `partial struct ` → `LcTotals`; `partial interface ` → `ILcShape`
 
 ### Rename по встроенному дереву (0.1.53) — `Console/Editor/Rename.cs`
 Settings | .NET | Language Server → Source of Features → «Rename» = Built-in (умолчание пока Language server); каретка на имя,
@@ -447,6 +518,15 @@ Shift+F6, новое имя, Enter — сверить с `EXPECT`, затем о
 - [ ] `TYPE:gen-delegating` (0.1.81): сначала список «Delegate To» (`_items`, `Title`), затем члены `List<int>`; `Add` с вызовом `_items.Add(item)`, `Count => _items.Count`
 - [ ] `TYPE:gen-equality-comparer`, `gen-relational`, `gen-relational-comparer` (0.1.81): вложенные `NameAgeEqualityComparer` / `NameAgeRelationalComparer` и статическое свойство; `IComparable<GenPerson>, IComparable`, операторы `<` `>` `<=` `>=`; файл собирается
 
+### Переопределение и недостающие члены (0.1.85) — `Console/Editor/Overrides.cs`, `Grpc/Greeter.cs`
+Сервер выключен. Набирать на пустой строке под маркером, сверить с `EXPECT`, затем Ctrl+Z до исходного текста (файл собирается как есть).
+- [ ] `TYPE:override-popup`, `override-access`: список сам открывается после `override ` / `public override `; без `Area`, `ToString` (sealed), ключевых слов; доступ базы ставится перед `override`
+- [ ] `TYPE:grpc-override` (`Grpc/Greeter.cs`): после удаления `SayHello` — `public override ` предлагает `SayHello` из `Greeter.GreeterBase` (файл в `obj/`), типы без `global::`; Ctrl+O там же
+- [ ] `TYPE:override-library`, `override-base-dot`: члены `BackgroundService` (`StartAsync`, `StopAsync`), `async override` → `await base…`; `base.` — члены базы из сборки
+- [ ] `TYPE:override-ctrl-o`: Ctrl+O — диалог «Override Members», Ctrl+I — «Nothing to generate»
+- [ ] `TYPE:override-alt-enter`, `implement-missing`: красные CS0534 / CS0535; Alt+Enter «Implement missing members» первым — на имени класса, на интерфейсе в списке баз, на пустой строке тела; «Override members...» — на пустом месте тела и на заголовке класса с базой
+- [ ] `TYPE:override-ctor-info`: Ctrl+P в `: base(…)` — конструкторы `Exception`
+
 ### Extract Method и Introduce Field без сервера (0.1.75) — `Console/Editor/ExtractMethod.cs`
 Выделить, Ctrl+Alt+M (Introduce Field — Ctrl+Alt+F) или Refactor This; имя нового метода в рамке — набрать своё, Enter; затем Ctrl+Z.
 - [ ] `TYPE:extract-statements`, `extract-returned`, `extract-out`: параметры из локальных, возврат переменной, `out` для второй
@@ -461,6 +541,16 @@ Shift+F6, новое имя, Enter — сверить с `EXPECT`, затем о
 - [ ] `TYPE:introduce-parameter-args`: вызовы передают выражение со своими аргументами: `Twice(4, 4 * 2)`, `Twice(a + b, (a + b) * 2)`
 - [ ] `TYPE:introduce-parameter-optional`: новый параметр встаёт перед `int level = 1`
 - [ ] `TYPE:introduce-parameter-refused`: подсказка про локальную `local` и про вызов на другом объекте (`other.Seeded()`)
+
+### Postfix по типу, новые postfix и live templates Rider (0.1.89) — `Console/Editor/Postfix.cs`
+Набрать на пустой строке под маркером, Tab или Enter; имя в рамке — остановка шаблона (Tab дальше); затем Ctrl+Z.
+- [ ] `TYPE:postfix-by-type`: у `ready.` — `if`/`else`/`while`/`not`, нет `foreach`/`await`/`null`; у `orders.` — `foreach`/`for`/`forr`, нет `if`/`await`; у `task.` — `await`; у `count.` — `for`, нет `null`; у `name.` — `parse`/`tryparse`; у неизвестного имени — всё
+- [ ] `TYPE:postfix-loops`: `orders.for` → `i < orders.Count`, `numbers.forr` → `numbers.Length - 1`, `orders.foreach` → `var order` в рамке; у `sequence.` нет `for`
+- [ ] `TYPE:postfix-var-names`: `order.Total.var` → `var orderTotal` (в списке и `total`), `GetOrders().var` → `var orders`
+- [ ] `TYPE:postfix-field-prop`: `.field` в конструкторе → `private readonly DateTime _now;` после `_orders`; `.prop` → `public DateTime Now { get; }`
+- [ ] `TYPE:postfix-inject`: `IPostfixClock.inject` в `PostfixService` → primary constructor; в `PostfixRepository` → параметр конструктора, поле и присваивание; `.if` между членами не предлагается
+- [ ] `TYPE:postfix-to-arg-sel`: `.to`, `.arg`, `.sel`, `.parse` (список типов у `int`), `.tryparse` → `int.TryParse(name, out var value)`
+- [ ] `TYPE:live-templates`: `itli`, `nguid`, `unchecked`, `#if`, `sfc`, `outv`; в списке — описания Rider; в `PostfixCtor` — `ctorf`, `ctorp`, `equals`, `indexer`, `propdp`
 
 ### Встроенное дерево C# и символы `#if` фреймворка — `MultiTarget/ActiveBranch.cs`
 - [ ] `TYPE:active-branch`: Settings | .NET | Language Server → «Structure, folding and breadcrumbs» = Built-in; в Structure (Alt+7)
@@ -500,6 +590,19 @@ Shift+F6, новое имя, Enter — сверить с `EXPECT`, затем о
 - [ ] `TYPE:import-package`: `Assert.Equal` предлагается в проекте `Tests` и **не** предлагается в `Console`
 - [ ] две IDE с одним solution, открытые одновременно при пустом кэше: индексатор собран один раз, в `idea.log` второй IDE «Index of assemblies» — за десятки миллисекунд (всё уже проиндексировано)
 - [ ] `TYPE:import-stats`: в .NET → Suggestion Statistics причина `not imported`
+
+Без сервера (0.1.87, метод `NotImported` того же файла, соседние namespace — `Console/Editor/ImportCompletionTargets.cs`):
+
+- [ ] `TYPE:import-types-visible`: Ctrl+Space на пустой строке — среди типов `List<>`, `Dictionary<,>`, `Task`, `File` (неявные usings), строк «(in …)» нет
+- [ ] `TYPE:import-types-short`: `Li` → `List<>`, выбор даёт `List<|>`, нового `using` нет
+- [ ] `TYPE:import-neighbour-type`: `Recei` → `Receipt (in Playground.ImportCompletionTargets.Billing)`, выбор добавляет `using` вверху файла
+- [ ] `TYPE:import-neighbour-new`: `var book = new ReceiptB` → `new ReceiptBook<|>()` и `using`
+- [ ] `TYPE:import-library-type`: `StringBu` → `StringBuilder (in System.Text)`, выбор добавляет `using System.Text;`
+- [ ] `TYPE:import-qualified`: `Time` → `Timer (in System.Timers)`, выбор пишет `System.Timers.Timer` целиком, `using` не добавляется
+- [ ] `TYPE:import-extension`, `import-extension-generic`: `name.Yel` → `Yell() (in …Text)`, `numbers.EveryO` → `EveryOther()`; выбор — вызов и `using`; `numbers.Yel` — `Yell` нет
+- [ ] `TYPE:import-extension-library`: `numbers.ToImm` → `ToImmutableArray() (in System.Collections.Immutable)` и `using`
+- [ ] `TYPE:import-extension-silent`: `numbers.` — строк «(in …)» нет, с первой буквой появляются
+- [ ] `TYPE:import-attribute`: `[Obs` → `Obsolete` и `ObsoletedOSPlatform (in System.Runtime.Versioning)`, выбор второго добавляет `using`
 
 ## Редактор: схема `appsettings.json` из кода — `Console/Editor/AppSettingsSchema.cs`
 
@@ -720,3 +823,94 @@ AppHost запускает `Web` как ресурс `web`. Профиль `http
 - [ ] Debug у `TotalAppliesTheDiscount` (`BP:test`) по-прежнему останавливается; Run with Coverage — покрытие `Lib` в редакторе
 - [ ] в журнале плагина (.NET | Plugin Logs, категория `helpers`) — строка `DotNetSupport.TestLogger is built for netstandard2.0`
 - [ ] проект на Microsoft.Testing.Platform (MSTest runner / xunit.v3 / TUnit): как раньше — дерево из TRX в конце прогона
+
+## Редактор: редкие места, «Exclude from completion», `$(…)` в csproj (0.1.95) — `Console/Editor/RareCompletion.cs`, `Console/Console.csproj`
+
+Сценарии C# — в `Console/Editor/RareCompletion.cs`, сценарии MSBuild — в конце `Console/Console.csproj` (комментарии `TYPE:msbuild-*`).
+
+- [ ] `TYPE:rare-internals-visible-to`: `[assembly: InternalsVisibleTo("` над `namespace` → проекты solution, `Li` оставляет `Lib`
+- [ ] `TYPE:rare-extern-alias`: в `Console.csproj` временно `Aliases="LibAlias"` у ProjectReference на Lib; в пустом .cs `extern alias ` → `LibAlias` (без `Aliases` список пуст); вернуть csproj
+- [ ] `TYPE:rare-calling-convention`: `delegate* unmanaged[` → `Cdecl`, `Stdcall`, `Thiscall`, `Fastcall`, `SuppressGCTransition`
+- [ ] `TYPE:rare-file-package`: в пустом файле `#:package seri` → `Serilog`, `Serilog.AspNetCore`…; `#:package Serilog@` → версии; `#:` → `package`, `sdk`, `property`, `project`
+- [ ] `TYPE:rare-format-digit`: `$"{total:0` + Ctrl+Space → `0000`, `0.##`; после обычного числа списка по-прежнему нет
+- [ ] `TYPE:rare-exclude`: Settings | .NET → «Exclude from completion» = `System.Text.*` → `StringBu` не предлагает `StringBuilder (in System.Text)`; строку убрать — строка вернулась
+- [ ] `TYPE:msbuild-property` (файл `Console/Console.csproj`): `$(MSBuildProj` → `MSBuildProjectDirectory`…, `$(Root` → `RootNamespace`, скобка закрывается; `@(Comp` → `Compile`; `%(File` → `Filename`
+- [ ] `TYPE:msbuild-paths` (там же): `<Import Project="` → `..\`, папки, .props/.targets/.csproj; `<ProjectReference Include="..\Lib\` → только `Lib.csproj`
+- [ ] live templates `hal`, `ua`, `rta`, `ctx` в классе контроллера: `[HttpGet] public IActionResult Index()`, `Url.Action("Index", "Home")`, `return RedirectToAction("Index");`, `HttpContext.`
+
+## ShopApi — completion на живом сервисе
+
+Отдельный solution `ShopApi/ShopApi.sln`: ASP.NET Core на CQRS (MediatR), EF Core (PostgreSQL), OpenTelemetry (трассы и метрики,
+Prometheus), Serilog, фоновый outbox-воркер. Собирается офлайн из локального кэша NuGet; для запуска нужен PostgreSQL. Тур по completion —
+`ShopApi/Playground/CompletionTour.cs`, маркеры `TYPE:shop-*`, в порядке версий 0.1.85–0.1.91.
+Строки ASP.NET Core (0.1.93) — `ShopApi/Playground/AspNetCompletion.cs`:
+- [ ] `TYPE:shop-log-placeholder` — `{` в шаблоне `LogInformation` открывает список имён из аргументов (`OrderId`, `Id`), Enter дописывает `}`;
+  `{OrderId}` / `{Total}` цветом format item
+- [ ] `TYPE:shop-log-free`, `TYPE:shop-log-count` — Ctrl+Space в тексте даёт `{OrderCustomer}`; лишний / недостающий аргумент — жёлтое предупреждение
+- [ ] `TYPE:shop-log-serilog`, `TYPE:shop-log-message` — Serilog и `[LoggerMessage]`: цвета, параметры метода в списке, плейсхолдер без параметра — предупреждение
+- [ ] `TYPE:shop-route-param`, `TYPE:shop-route-constraint`, `TYPE:shop-route-token`, `TYPE:shop-map-param` — `{` → параметры действия / лямбды,
+  `:` → ограничения (`minlength()` с кареткой в скобках), `[` → `controller` / `action` / `area`; цвета `{id:long}`
+- [ ] `TYPE:shop-json` — JSON-цвета в строке после `// lang=json` и в `JsonDocument.Parse`, Alt+Enter → Edit JSON Fragment
+- [ ] `TYPE:shop-config-key`, `TYPE:shop-config-connection`, `TYPE:shop-config-section` — ключи `appsettings.json` (вложенные через `:`), строки подключения, ключи секции
+- [ ] `TYPE:shop-di-impl` — `AddScoped<IPriceCalculator, ` → реализации из solution сверху, без абстрактного класса
+
+### Double completion (0.1.96) — `ShopApi/Playground/DoubleCompletion.cs`
+«Completion» = Built-in. Набрать под маркером, нажать то, что сказано в маркере, сверить с `EXPECT`, Ctrl+Z.
+- [ ] `TYPE:shop-double-members`: `ledger.` + Ctrl+Space — строка «Press Ctrl+Space again to show members that are not accessible here»; второй Ctrl+Space — `_entries`, `_version` серым с «(not accessible)» внизу, без `Open`; Enter пишет `ledger._version`
+- [ ] `TYPE:shop-double-protected`: `order.` + Ctrl+Space дважды — `MemberwiseClone() (not accessible)` серым
+- [ ] `TYPE:shop-double-chain`: `Customer customer = ` + Ctrl+Shift+Space — `_fallback`, `null`, `default` и строка-реклама; второй раз — `order.Customer`, `ledger.LastCustomer`; Enter пишет цепочку
+- [ ] `TYPE:shop-double-chain-method`: `int n = ` + Ctrl+Shift+Space дважды — `ledger.Count : int`, `order.GetHashCode() : int`; нет `order.CustomerId`, нет `_fallback.Orders.Count`
+- [ ] `Console/Editor/DoubleCompletion.cs`, `TYPE:double-package` (основной solution): `GrpcServi` + Ctrl+Space дважды — `GrpcServiceOptions (in Grpc.AspNetCore.Server, Grpc.AspNetCore.Server 2.83.0)`; Enter — `using` и уведомление с кнопкой «Add package …»; `TYPE:double-nothing` — без буквы пакетов нет
+
+### Object initializers и `required` (0.1.98) — `ShopApi/Playground/RequiredMembers.cs`
+«Completion» и «Errors and warnings» = Built-in. Набрать под маркером, сверить с `EXPECT`, Ctrl+Z.
+- [ ] `TYPE:required-new`, `TYPE:required-expected`: `new OrderL` + Enter — `{` на своей строке, `Sku = ,` / `Title = ` по строке, каретка после `Sku = `, без `()`; строка списка — `OrderLine { Sku, Title }`
+- [ ] `TYPE:required-error`, `TYPE:required-partial`: `new OrderLine();` — красный CS9035 на `OrderLine` для `Sku` и `Title`; Alt+Enter → «Add initializer for required members» дописывает недостающие
+- [ ] `TYPE:required-fill`, `TYPE:required-member`: Ctrl+Space в `new OrderLine { }` — «Fill required members» / «Fill all members» сверху; выбор `Title` пишет `Title = `
+- [ ] `TYPE:required-intention`: Alt+Enter в инициализаторе — «Initialize members» (все незаданные), в пустом `{ }` ещё «Initialize required members»
+- [ ] `TYPE:required-sets`, `TYPE:required-ctor`: `new Money(1m)` без ошибки (`[SetsRequiredMembers]`), `new Mon` + Enter — `{ Amount =  }` в строку; `new Shipm` + Enter — `new Shipment(|)`, инициализатор — через fix
+
+### Серый текст при наборе (0.1.101) — `ShopApi/Playground/GhostSuggestions.cs`
+Серый текст по правилам (не ML), Tab принимает. Пока открыт список completion, серого нет — Esc.
+- [ ] `TYPE:ghost-new-by-name`: `var member = new ` (Esc; с 0.1.102 серое видно и при открытом списке) — серое `Member();`; `var members = new ` — `List<Member>();`; у `shipment` / `product` — ничего
+- [ ] `TYPE:ghost-close-call`: `var member = new Member(` — серая `;` за `)`, Tab — `new Member();` (одна `)`); у `new Shipment(|)` — ничего
+- [ ] `TYPE:ghost-fill`: `new Member()`, Enter, `{`, Enter — серые строки `Name = name,` / `Email = dto.Email,` / `Age = age,` / `Admin = `; после `}` — серая `;`
+- [ ] `TYPE:ghost-member-value`: `new Member { Name = ` — серое `name`, `Name = dt` — `o.Name`, `Email = ` — `dto.Email`; без `;`
+- [ ] `TYPE:ghost-parameter-name`, `TYPE:ghost-field-name`: `Draft(MemberDto ` — `memberDto`, `IMemberService ` — `memberService`, `List<Member> ` — `members`; поле `private static readonly MemberDto ` — `_memberDto`
+- [ ] `TYPE:ghost-list-new` (0.1.102): `var member = new ` — список открылся сам, выбрана `Member`, серое `Member();`; стрелкой на `MemberDto` — `MemberDto();`; Tab пишет строку и серое и закрывает список, Enter — только строку
+- [ ] `TYPE:ghost-list-name` (0.1.102): `Draft(Mem` + Ctrl+Space — на `MemberDto` серое `berDto memberDto`, Tab — `Draft(MemberDto memberDto)`
+- [ ] `TYPE:new-initializer-row` (0.1.102): `var member = new Membe` — под `Member` строка `Member { … }`, Enter — инициализатор со значениями шаблоном (Tab — по значениям); у `Product` — `Sku = |,` / `Title = ` тем же шаблоном; у `Shipment` строки нет
+- [ ] `TYPE:ghost-class-once`, `TYPE:ghost-file-name`: `public clas` — одна строка `class`; `public class ` + Ctrl+Space в конце файла — `GhostSuggestions` (file name), Enter — тело `{ }`, имя редактируется как в шаблоне
+
+## Палитры C# (0.1.97) — `ShopApi/Endpoints/OrderEndpoints.cs`
+
+Файл без маркеров: смотреть на весь файл. В нём есть почти всё, что красит палитра: `using` и namespace, статический класс, метод
+расширения `MapOrderEndpoints`, вызовы (`MapGroup`, `Send`, статические `TypedResults.Ok`), типы (`IMediator` — интерфейс, `OrderStatus` —
+enum, `ListOrders` — record, generic `Results<Ok<OrderView>, NotFound>`), параметры лямбд, локальные (`orders`, `id`), строки с `{id:long}`,
+интерполяцию `$"/api/orders/{id}"`, числа. Нужен готовый семантический цвет (Built-in или сервер), иначе видны только грубые цвета.
+- [ ] .NET → **C# Color Palette…**: стрелками по списку — файл перекрашивается сразу; фон редактора, выделение, строка каретки, номера строк
+  не меняются ни на одной палитре; Esc — вернулась прежняя палитра, Enter — выбранная осталась (и видна в Settings | .NET, «C# color palette»)
+- [ ] сравнить с оригиналом: Rider — синие ключевые слова, сиреневые типы, зелёные методы; Visual Studio — бирюзовые классы, светло-зелёные
+  структуры, жёлтые методы, голубые локальные; VS Code — то же семейство, константы `#4FC1FF`; Nord / Dracula / One Dark / Solarized /
+  GitHub — узнаются по ключевым словам и строкам
+- [ ] сменить тему IDE (Settings | Appearance, Dark ↔ Light) или схему (Settings | Editor | Color Scheme) — палитра осталась, в светлом
+  варианте (Alucard у Dracula, One Light у One); схема «Rider Dark» тоже перекрашивается выбранной палитрой
+- [ ] «IDE default» — C# снова в цветах Language Defaults схемы, ничего от палитр не осталось; JSON / XML / Java-файлы не меняются никогда
+- [ ] новая конфигурация IDE: первое открытие `.cs` при «IDE default» — уведомление «Make C# colors like Rider, Visual Studio, VS Code…?»,
+  «Choose Palette…» открывает тот же список, «Don't Show Again» — больше не появляется
+
+### Находки сквозного прохода (0.1.100) — `Console/Editor/JourneyFixes.cs`
+«Errors and warnings», «Completion», «Formatting» = Built-in. Сделать то, что сказано в маркере, сверить с `EXPECT`, Ctrl+Z (созданный fix'ом файл удалить).
+- [ ] `TYPE:journey-create-class`, `TYPE:journey-create-enum`: Alt+Enter на `InMemoryOrderStore` / `ShipmentState` — «Create class / record / struct / enum …», тип новым файлом в `Editor/`, `namespace Playground.Editor;`
+- [ ] `TYPE:journey-create-value`, `TYPE:journey-create-member`: «Create field '_total'» (`private decimal _total;`), local / parameter / property, «Create method 'Recalculate'», «Create property 'Count'» в `JourneyStore`
+- [ ] `TYPE:journey-implement-defaults`: Implement missing members — `ct = default`, `level = 0`, `params object[] args`, `[CallerMemberName] string caller = ""`
+- [ ] `TYPE:journey-semicolon`, `TYPE:journey-paren-string`: `new JourneyStore(` + `;` → `new JourneyStore();`; `Console.WriteLine($"…");` без лишней `)`
+- [ ] `TYPE:journey-indent-enum`, `TYPE:journey-indent-foreach`: Enter после `enum Kind { A, B }` — тот же отступ, после `foreach (…)` — +1
+- [ ] `TYPE:journey-reformat`: Ctrl+Alt+L раскладывает `JourneyOneLine` по строкам, как Rider
+- [ ] `TYPE:journey-cs7036`: `store.Add(1);` — CS7036, `new JourneyStore(1);` — CS1729 до сборки
+- [ ] `TYPE:journey-postfix-enum`, `TYPE:journey-record`, `TYPE:journey-appsettings-comma`: после `JourneyStatus.` без postfix; New → Record — каретка в `()`; `},` в appsettings.json без `,,`
+
+### Присваивание члену (0.1.103) — `ShopApi/Playground/GhostAssignments.cs`
+- [ ] `TYPE:ghost-assign-selected`: `member.Ad` — на выбранном `Admin` серое `min = isAdmin;`, а не `min admin`
+- [ ] `TYPE:ghost-assign-value`: `member.Email = ` — серое `dto.Email;`, `member.Name = ` — `name;`
+- [ ] `TYPE:ghost-assign-list`: `member.Email = ` + Ctrl+Space — строки `dto.Email`, `dto.Name` вверху списка

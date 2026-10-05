@@ -47,7 +47,7 @@ public class Usings
     }
 
     // TYPE:using-postfix — on the empty line in Postfix type `new StringReader("x").using` and Enter. EXPECT: `using var reader = new
-    // StringReader("x");` with `reader` selected. `new MemoryStream().awaitusing` gives `await using var stream = new MemoryStream();` and the
+    // StringReader("x");` with `reader` in a box (Tab, 0.1.89). `new MemoryStream().awaitusing` gives `await using var stream = new MemoryStream();` and the
     // method becomes `public async Task Postfix()`. Ctrl+Z.
     public void Postfix()
     {

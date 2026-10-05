@@ -24,7 +24,7 @@ import com.intellij.ui.dsl.builder.panel
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.msbuild.DotNetProjects
 import io.github.dotnetsupport.newproject.DotNetProjectCreator
-import io.github.dotnetsupport.newproject.DotNetTemplatePanel
+import io.github.dotnetsupport.newproject.NewSolutionDialog
 import io.github.dotnetsupport.solution.SolutionEditor
 import io.github.dotnetsupport.solution.SolutionService
 import io.github.dotnetsupport.view.resolveFile
@@ -79,59 +79,12 @@ open class NewDotNetProjectAction @JvmOverloads constructor(private val requires
         val baseDirectory = solutionFile?.parent?.path ?: project.guessProjectDir()?.path ?: return
         val folderPath = context?.folderId?.let { SolutionService.getInstance(project).solution(context.solutionFile).folderPath(it) }
 
-        val dialog = NewProjectDialog(project, baseDirectory, solutionFile?.name, folderPath)
+        // the window of New Solution, as in Rider: the same kinds, templates, display names and options that follow each other
+        val destination = listOfNotNull(solutionFile?.name, folderPath).joinToString(" / ").ifEmpty { null }
+        val dialog = NewSolutionDialog(project, addTo = NewSolutionDialog.AddProjectTarget(baseDirectory, destination))
         if (!dialog.showAndGet()) return
-        DotNetProjectCreator.addProject(project, solutionFile, folderPath, File(dialog.location), dialog.projectName, dialog.templateSettings)
-    }
-
-    private class NewProjectDialog(project: Project, private val baseDirectory: String, solutionName: String?, folderPath: String?) :
-        DialogWrapper(project) {
-
-        private val templatePanel = DotNetTemplatePanel()
-        private val nameField = JBTextField("NewProject")
-        private val locationField = TextFieldWithBrowseButton()
-        private var locationEdited = false
-        private val destination = listOfNotNull(solutionName, folderPath).joinToString(" / ").ifEmpty { null }
-
-        val projectName: String get() = nameField.text.trim()
-        val location: String get() = locationField.text.trim()
-        val templateSettings get() = templatePanel.settings
-
-        init {
-            title = "New .NET Project"
-            locationField.addBrowseFolderListener(project, FileChooserDescriptorFactory.createSingleFolderDescriptor().withTitle("Project Directory"))
-            locationField.text = defaultLocation()
-            nameField.document.addDocumentListener(object : com.intellij.ui.DocumentAdapter() {
-                override fun textChanged(e: javax.swing.event.DocumentEvent) {
-                    if (!locationEdited) locationField.text = defaultLocation()
-                }
-            })
-            locationField.textField.addKeyListener(object : java.awt.event.KeyAdapter() {
-                override fun keyTyped(e: java.awt.event.KeyEvent) {
-                    locationEdited = true
-                }
-            })
-            init()
-        }
-
-        private fun defaultLocation(): String = File(baseDirectory, nameField.text.trim()).path
-
-        override fun getPreferredFocusedComponent(): JComponent = nameField
-
-        override fun createCenterPanel(): JComponent = panel {
-            row("Name:") { cell(nameField).align(AlignX.FILL) }
-            templatePanel.addRows(this)
-            row("Location:") { cell(locationField).align(AlignX.FILL) }
-            if (destination != null) row("Add to:") { label(destination) }
-        }.apply { preferredSize = java.awt.Dimension(560, preferredSize.height) }
-
-        override fun doValidate(): ValidationInfo? = when {
-            projectName.isEmpty() -> ValidationInfo("Specify the project name", nameField)
-            projectName.any { it in "\\/:*?\"<>|" } -> ValidationInfo("The name contains characters that are not allowed in file names", nameField)
-            location.isEmpty() -> ValidationInfo("Specify the project directory", locationField)
-            File(location).let { it.isDirectory && !it.list().isNullOrEmpty() } -> ValidationInfo("The directory is not empty", locationField)
-            else -> null
-        }
+        val request = dialog.addProjectRequest() ?: return
+        DotNetProjectCreator.addProject(project, solutionFile, folderPath, request.directory, request.name, request.template)
     }
 }
 

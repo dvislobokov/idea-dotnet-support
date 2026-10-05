@@ -171,7 +171,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         return found
     }
 
-    private fun attributeType(attribute: CSharpAttribute): SemanticType? {
+    internal fun attributeType(attribute: CSharpAttribute): SemanticType? {
         val rightmost = when (val n = attribute.nameElement) {
             is CSharpSimpleName -> n
             is CSharpQualifiedName -> n.right
@@ -382,7 +382,12 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                     val bases = baseTypes(type).sortedBy { overloads.isInterface(it) }
                     for (base in bases) membersNamed(base, text, arity, depth + 1).takeIf { it.isNotEmpty() }?.let { return it }
                 }
-                for (base in libraryBases(type, depth)) membersNamed(base, text, arity, depth + 1).takeIf { it.isNotEmpty() }?.let { return it }
+                // the bases as their declarations resolve them, those of assemblies included: the map walks the bases of the solution by
+                // simple name as this file sees them, which may be another type of that name (a DTO imported here, E-190)
+                for (base in baseTypes(type).sortedBy { overloads.isInterface(it) }) {
+                    if (base is SemanticType.Source && base.info.key == type.info.key) continue
+                    membersNamed(base, text, arity, depth + 1).takeIf { it.isNotEmpty() }?.let { return it }
+                }
                 emptyList()
             }
             is SemanticType.Library -> {
@@ -551,12 +556,12 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         for (key in keys) for (member in session.extensions(assemblies, key)) {
             if (member.name == text && (arity == 0 || member.arity == arity) && member.type.namespace in imported) found += CSharpSymbol.LibraryMember(member)
         }
-        for (element in session.sourceExtensions(text)) sourceExtension(element, arity, imported, names)?.let { found += it }
+        for (element in session.sourceExtensions(text)) sourceExtension(element, arity, imported::contains, names)?.let { found += it }
         return found
     }
 
     /** An extension method of the solution found by name in the stub index, if it is imported where the lookup is and may take a receiver of [names]. */
-    private fun sourceExtension(element: PsiElement, arity: Int, imported: Set<String>, names: Set<String>): CSharpSymbol? {
+    private fun sourceExtension(element: PsiElement, arity: Int, imported: (String) -> Boolean, names: Set<String>): CSharpSymbol? {
         val stub = NativeCSharpStubDeclarations.stub(element)
         val method = element as? CSharpMethodDeclaration ?: return null
         if (arity != 0 && (stub?.arity ?: method.typeParameterList?.parameters?.size ?: 0) != arity) return null
@@ -565,7 +570,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         // `this string text`: the keyword is the type `String`
         val receiverName = written?.let { KEYWORD_TYPES[it]?.substringAfterLast('.') ?: it }
         val generic = stub?.arity?.let { it > 0 } ?: (method.typeParameterList != null)
-        if (namespace == null || namespace !in imported || receiverName == null) return null
+        if (namespace == null || !imported(namespace) || receiverName == null) return null
         if (!(receiverName in names || generic && receiverName.length <= 2 || generic && isMethodTypeParameter(method, receiverName))) return null
         return CSharpSymbol.SourceMember(method, Member.method(listOf("static"), true).at { method }, null)
     }
@@ -573,17 +578,18 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
     /**
      * Every extension method a value of [receiver] can call where [site] is (completion after a dot, task C3): those of the assemblies by
      * what they extend, those of the solution by the type of their `this` parameter, imported where [site] is and taking the receiver
-     * ([CSharpExpressionTypes.receiverFits]). [wanted]: the names worth looking at (the prefix typed), every name when null.
+     * ([CSharpExpressionTypes.receiverFits]). [wanted]: the names worth looking at (the prefix typed), every name when null. [namespaces]:
+     * the namespaces of the static classes to look in instead of the imported ones (the unimported ones, for import completion).
      */
-    fun extensionMethodsFor(receiver: SemanticType, site: PsiElement, wanted: ((String) -> Boolean)? = null): List<CSharpSymbol> {
-        val imported = importedNamespaces(site)
+    fun extensionMethodsFor(receiver: SemanticType, site: PsiElement, wanted: ((String) -> Boolean)? = null, namespaces: ((String) -> Boolean)? = null): List<CSharpSymbol> {
+        val imported = namespaces ?: importedNamespaces(site)::contains
         val found = ArrayList<CSharpSymbol>()
         val keys = LinkedHashSet<String>()
         val names = HashSet<String>()
         collectSupertypes(receiver, keys, names, 0)
         keys += AssemblyIndexSet.GENERIC_RECEIVER
         for (key in keys) for (member in session.extensions(assemblies, key)) {
-            if (member.type.namespace in imported && (wanted == null || wanted(member.name))) found += CSharpSymbol.LibraryMember(member)
+            if (imported(member.type.namespace) && (wanted == null || wanted(member.name))) found += CSharpSymbol.LibraryMember(member)
         }
         val index = StubIndex.getInstance()
         for (name in index.getAllKeys(CSharpStubIndexKeys.EXTENSION_METHODS, session.project)) {
