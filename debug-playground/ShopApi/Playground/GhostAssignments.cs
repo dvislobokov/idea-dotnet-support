@@ -31,4 +31,13 @@ public static class GhostAssignments
 
         return member;
     }
+
+    // TYPE:ghost-member-of-type — on the empty line in the body type `System.Text.Json.JsonSerializer.Serialize ` (with the space), then
+    //   `Console.Out ` (0.1.104).
+    // EXPECT (not): gray `serialize` / `out` — a method or a property of a type is no type to name a variable after.
+    //   `Shop.Api.Playground.MemberDto ` still gives gray `memberDto`.
+    public static void MemberOfAType()
+    {
+
+    }
 }

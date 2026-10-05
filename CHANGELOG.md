@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.104
+
+- Gray text no longer offers a variable name after a member of a type: `JsonSerializer.Serialize ` showed `serialize`, `Console.Out `
+  showed `out`, as if they were nested types; a nested type (`Json.Options `) still gets its name
+
 ## 0.1.103
 
 - Gray text no longer offers a variable name after a member of a value: `member.Ad` with `Admin` selected in the list showed `min admin`,

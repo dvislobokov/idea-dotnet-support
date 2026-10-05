@@ -117,6 +117,25 @@ object NativeCSharpTypingGhost {
         return lead.takeLastWhile { it.isLetterOrDigit() || it == '_' } in MODIFIERS
     }
 
+    private val QUALIFIED_BEFORE_NAME = Regex("""([A-Za-z_]\w*)\.([A-Za-z_]\w*)(?:<[^;={}()]*>)?\s+[A-Za-z_]?\w*$""")
+
+    /**
+     * `JsonSerializer.Serialize |`, `Console.Out |`: the text reads as a declaration of a nested type, but the name after the dot is a
+     * member of the type before it (a call, a property being written): no variable to name. By the semantics, as the text cannot tell.
+     */
+    private fun memberOfType(file: CSharpFile, text: CharSequence, offset: Int): Boolean {
+        val line = text.subSequence(lineStart(text, offset), offset)
+        val match = QUALIFIED_BEFORE_NAME.find(line) ?: return false
+        if (DumbService.isDumb(file.project) || file.compilationUnit == null) return false
+        val (qualifier, member) = match.destructured
+        return runCatching {
+            val r = CSharpSemanticSession(file.project).resolver(file)
+            val at = file.findElementAt(lineStart(text, offset).coerceAtMost(file.textLength - 1)) ?: return@runCatching false
+            val owner = types(r, at, qualifier).singleOrNull() ?: return@runCatching false
+            r.membersNamed(owner, member, 0).any { it is CSharpSymbol.SourceMember || it is CSharpSymbol.LibraryMember }
+        }.getOrElse { if (it is com.intellij.openapi.progress.ProcessCanceledException) throw it else false }
+    }
+
     private val MODIFIERS = setOf(
         "public", "internal", "protected", "private", "static", "readonly", "required", "virtual", "override", "abstract", "sealed", "new", "const", "volatile",
         "this", "params", "ref", "out", "in", "scoped", "unsafe", "extern", "partial", "foreach",
@@ -127,7 +146,7 @@ object NativeCSharpTypingGhost {
     /** The gray text at [offset] of [file] ([text]: its document, committed). */
     fun suggestion(file: CSharpFile, text: CharSequence, offset: Int): Suggestion? {
         val place = place(text, offset) ?: return null
-        if (place == Place.NAME) return name(text, offset)
+        if (place == Place.NAME) return if (memberOfType(file, text, offset)) null else name(text, offset)
         if (DumbService.isDumb(file.project) || file.compilationUnit == null) return null
         return runCatching {
             val r = CSharpSemanticSession(file.project).resolver(file)
@@ -268,6 +287,7 @@ object NativeCSharpTypingGhost {
         if (place == Place.NAME) {
             // the text as it is once the row is chosen and a space typed: the name the rule gives there
             val probe = StringBuilder(text).replace(start, offset, "$item ")
+            if (memberOfType(file, probe, start + item.length + 1)) return null
             val name = name(probe, start + item.length + 1)?.text ?: return null
             return Suggestion(SuggestionRules.AFTER_LOOKUP_ITEM, "$rest $name")
         }

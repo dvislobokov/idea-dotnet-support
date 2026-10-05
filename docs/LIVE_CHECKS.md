@@ -425,6 +425,7 @@
 | E-360 | 0.1.103 | `member.Ad` + выбранный `Admin` — серое `min = isAdmin;`, не `min admin`; Tab пишет `member.Admin = isAdmin;` | `ShopApi/Playground/GhostAssignments.cs`, `TYPE:ghost-assign-selected` | ⬜ (только тестом) |
 | E-361 | 0.1.103 | `member.Email = ` — серое `dto.Email;`; `member.Name = ` — `name;`; никогда сам член | `GhostAssignments.cs`, `TYPE:ghost-assign-value` | ⬜ (только тестом) |
 | E-362 | 0.1.103 | `member.Email = ` + Ctrl+Space — строки `dto.Email`, `dto.Name` вверху списка | `GhostAssignments.cs`, `TYPE:ghost-assign-list` | ⬜ (только тестом) |
+| E-363 | 0.1.104 | `JsonSerializer.Serialize ` / `Console.Out ` — серого имени (`serialize`, `out`) нет; `MemberDto ` с пространством имён — `memberDto` | `ShopApi/Playground/GhostAssignments.cs`, `TYPE:ghost-member-of-type` | ⬜ (только тестом) |
 
 Для E-01…E-13: открыть `Console/Editor/CompletionRanking.cs`, дождаться «Roslyn: DebugPlayground.sln», после каждого маркера — Ctrl+Z.
 

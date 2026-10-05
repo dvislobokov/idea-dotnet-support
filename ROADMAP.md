@@ -603,6 +603,8 @@
   (`TYPE:sem-*`), `debug-playground/Console/Editor/ImportType.cs` (`TYPE:import-type-*`); `docs/LIVE_CHECKS.md` E-109…E-114. Сборки
   проектов вне solution (как `Broken`) индексируются, когда открыт их файл. Проверено UI-роботом (Windows, IC 2026.1.4): ошибки как у
   сервера, fixes работают; синяя подсказка и дубли со сборкой не проверены, человеком вживую не проверено
+- [x] 0.1.104 — серый текст не предлагает имя после члена типа (`JsonSerializer.Serialize ` → было `serialize`); сценарий —
+  `GhostAssignments.cs` (`TYPE:ghost-member-of-type`).
 - [x] 0.1.103 — серый текст и список при присваивании члену: `member.Ad` + выбранный `Admin` → `min = isAdmin;` (а не имя, как после типа);
   `member.Email = ` → `dto.Email;`; строки `dto.Name` / `dto.Email` в списке у `Name = ` и `member.Name = `. Сценарий —
   `debug-playground/ShopApi/Playground/GhostAssignments.cs` (`TYPE:ghost-assign-*`).

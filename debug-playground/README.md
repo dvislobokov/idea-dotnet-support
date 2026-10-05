@@ -914,3 +914,4 @@ enum, `ListOrders` — record, generic `Results<Ok<OrderView>, NotFound>`), па
 - [ ] `TYPE:ghost-assign-selected`: `member.Ad` — на выбранном `Admin` серое `min = isAdmin;`, а не `min admin`
 - [ ] `TYPE:ghost-assign-value`: `member.Email = ` — серое `dto.Email;`, `member.Name = ` — `name;`
 - [ ] `TYPE:ghost-assign-list`: `member.Email = ` + Ctrl+Space — строки `dto.Email`, `dto.Name` вверху списка
+- [ ] `TYPE:ghost-member-of-type` (0.1.104): `JsonSerializer.Serialize ` / `Console.Out ` — без серого `serialize` / `out`

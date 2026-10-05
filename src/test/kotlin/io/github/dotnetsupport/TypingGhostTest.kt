@@ -170,6 +170,16 @@ $body
         assertTrue(myFixture.lookupElementStrings.orEmpty().toString(), "userDto.Email" in myFixture.lookupElementStrings.orEmpty())
     }
 
+    fun testAMemberOfATypeIsNoType() {
+        // `JsonSerializer.Serialize |` read as a declaration gave `serialize`: the name after the dot is a method of the type
+        val json = "$DEFAULT_TYPES\npublic static class Json { public static string Serialize(object value) => \"\"; public class Options { } }\n"
+        assertNull("a method", gray(code("        Json.Serialize <caret>", types = json)))
+        assertNull("a property of a library type", gray(code("        Console.Out <caret>", types = json)))
+        assertEquals("a nested type still is", "options", gray(code("        Json.Options <caret>", types = json)))
+        myFixture.configureByText("AfterRow${counter++}.cs", code("        Json.Ser<caret>", types = json))
+        assertNull("the selected method row", NativeCSharpTypingGhost.afterItem(myFixture.file as CSharpFile, myFixture.editor.document.charsSequence, myFixture.caretOffset, "Serialize"))
+    }
+
     fun testAMemberOfAValueIsNoType() {
         assertNull("`user.Admin ` is no type to name", gray(code("        var user = new User();\n        user.Admin <caret>")))
         assertEquals("the type of a namespace still is", "user", gray(code("        Shop.User <caret>")))
