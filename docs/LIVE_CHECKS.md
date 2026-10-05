@@ -28,7 +28,7 @@
 4. **Открыть** папку `debug-playground` (File | Open). Если IDE спросит, какой solution грузить, — выбрать `DebugPlayground.sln`.
    Для раздела .NET Framework — отдельно папку `debug-playground/NetFramework` (`NetFramework.sln`).
 5. **Дождаться сервера**: в статус-баре виджет «Roslyn: DebugPlayground.sln» (не `loading…`). Всё, что помечено «сервер», без него не проверять.
-6. **Переключатели «свой парсер / сервер»**: Settings | Tools | .NET | **Language Server** → группа **Source of Features**:
+6. **Переключатели «свой парсер / сервер»**: Settings | .NET | **Language Server** → группа **Source of Features**:
    «Structure, folding and breadcrumbs» и «Kinds of usages» — `Built-in` (по умолчанию, свой парсер) или `Language server` (сервер +
    прежние эвристики). Если в шагах не сказано иное — оставлять по умолчанию (Built-in).
 7. **Маркеры**: `// TYPE:<имя>` — курсор на пустую строку под маркером, набрать сказанное, сверить, **отменить Ctrl+Z** перед следующим
@@ -55,7 +55,7 @@
 | P-03 | 0.1.46 | То же: тип `UsageTally` | `FindUsages.cs`, `TYPE:find-usages-native-type` | 🤖 |
 | P-04 | 0.1.46 | Built-in: старые маркеры дают те же числа, что сервер | `FindUsages.cs`, `find-usages-field/-method/-type/-attribute` | 🤖 |
 | P-05 | 0.1.46 | Обратно на «Language server» — сразу, без переоткрытия | Source of Features → Kinds of usages | 🤖 |
-| P-06 | 0.1.45 | Переключатель «Structure, folding and breadcrumbs» на странице | Settings \| Tools \| .NET \| Language Server | 🤖 |
+| P-06 | 0.1.45 | Переключатель «Structure, folding and breadcrumbs» на странице | Settings \| .NET \| Language Server | 🤖 |
 | P-07 | 0.1.45 | Structure / folding / breadcrumbs: своё дерево = эвристика | `Console/Types.cs` (без маркера) | 🤖 |
 | P-08 | 0.1.45 | ▶ у тестов и `Main` на своём дереве | `Tests/PricingTests.cs`, `NetFramework/LegacyConsole/Program.cs` | 🤖 |
 | P-09 | 0.1.45 | Ветки `#if` по TFM тулбара | `MultiTarget/ActiveBranch.cs`, `TYPE:active-branch` | 🤖 |
@@ -132,7 +132,7 @@
 4. Вернуть `Built-in` — снова как в P-01…P-03, тоже без переоткрытия.
 
 #### P-06 Переключатель на странице настроек
-1. Settings | Tools | .NET | Language Server, группа Source of Features.
+1. Settings | .NET | Language Server, группа Source of Features.
 2. Ожидается строка «Structure, folding and breadcrumbs» со значением `Built-in` (и «Kinds of usages» — `Built-in`).
 3. Переключить на `Language server`, OK — открытые `.cs` перепарсены (Structure обновился), IDE не подвисает, в `idea.log` нет исключений. Вернуть `Built-in`.
 
@@ -184,35 +184,54 @@
 | # | Версия | Что проверить | Сценарий | Статус |
 |---|---|---|---|---|
 | E-41 | 0.1.48 | Без статических методов из индекса там, где нужен тип (`Task<str`) | `ImportCompletion.cs`, `TYPE:import-silent-type` | ⬜ |
-| E-42 | 0.1.49 | Встроенный форматтер: метод, файл, `switch`, инициализаторы, опции `.editorconfig` | `Formatting.cs`, `TYPE:format-method` / `-file` / `-switch` / `-initializers` / `-options` | 🤖 метод, `switch`, инициализаторы, файл совпали с сервером; `-options` — вживую |
+| E-42 | 0.1.49 | Встроенный форматтер: метод, файл, `switch`, инициализаторы, опции `.editorconfig` | `Formatting.cs`, `TYPE:format-method` / `-file` / `-switch` / `-initializers` / `-options` | 🤖 метод, `switch`, инициализаторы, файл совпали с сервером; `-options` — вживую; `-initializers` с 0.1.68 — по-новому, см. E-85 |
 | E-43 | 0.1.49 | Выбор форматтера: «Built-in» на лету, «dotnet format (on save)», CSharpier | `Formatting.cs`, `TYPE:format-choice`, `TYPE:format-csharpier` | 🤖 выбор не зависит от переключателя; «None» исправлен (форматировал) — после исправления не проверено роботом; Actions on Save — вживую |
-| E-44 | 0.1.50 | Go to Declaration и Ctrl+наведение по встроенному дереву: локальные, параметры, лямбды, метки, запросы, члены, типы | `Navigation.cs`, `TYPE:nav-locals` / `-lambdas` / `-labels-queries` / `-members` / `-types` | ⬜ |
-| E-45 | 0.1.50 | Подсветка использований по встроенному дереву (чтение / запись); неразрешимое и Go to Super — у сервера | `Navigation.cs`, `TYPE:nav-highlight`, `TYPE:nav-types`; `GoToBase.cs` | ⬜ |
-| E-46 | 0.1.51 | Цвета идентификаторов Built-in: виды типов, static / const / event, локальные, изменяемые (подчёркнуты), параметры, члены partial-класса и базового класса из другого файла | `SemanticColors.cs` (+ `SemanticColorsPart.cs`), `TYPE:colors-declarations` / `-locals` / `-members` / `-shadowing` | ⬜ |
-| E-47 | 0.1.51 | Цвета сервера в новой палитре и переключение «Colors of identifiers» на лету; страница Color Scheme \| C# | `SemanticColors.cs`, те же маркеры; Settings \| Editor \| Color Scheme \| C# | ⬜ |
-| E-48 | 0.1.53 | Rename (Shift+F6) по встроенному дереву: локальные, параметры, локальные функции, метки, запросы, лямбды, параметры типов, `@`; одно Ctrl+Z | `Rename.cs`, `TYPE:rename-local` / `-parameter` / `-local-function` / `-label-query-lambda` / `-type-parameter-keyword` | ⬜ |
-| E-49 | 0.1.53 | Rename: конфликты (диалог «Problems Detected»), члены и типы — серверу или подсказка, «Rename in place» выключен | `Rename.cs`, `TYPE:rename-conflict`, `TYPE:rename-primary-member` | ⬜ |
-| E-50 | 0.1.54 | Синтаксические ошибки Built-in: коды и места Roslyn, без двойных отметок, сразу при наборе | `Broken/SyntaxErrors.cs`, `TYPE:diag-semicolon` / `-paren` / `-expression` / `-brace` / `-edit` | ⬜ |
-| E-51 | 0.1.54 | Built-in: литералы, директивы, предупреждения, исключённый текст; сервер оставляет семантические и не пойманные деревом ошибки | `Broken/SyntaxErrors.cs`, `TYPE:diag-literals` / `-member` / `-misplaced` / `-directives` / `-end` / `-server-keeps` | ⬜ |
-| E-52 | 0.1.55 | Completion Built-in: ключевые слова по месту, порядок (локальные > параметры > члены > типы > ключевые слова), ожидаемый тип, без двойных пунктов после загрузки сервера | `NativeCompletion.cs`, `TYPE:complete-keywords` / `-expected` / `-goto-query` | ⬜ |
-| E-53 | 0.1.55 | Completion Built-in: `override` (член целиком), `partial`, имена переменной после типа | `NativeCompletion.cs`, `TYPE:complete-override` / `-partial` / `-names` | ⬜ |
-| E-54 | 0.1.55 | `return ` в не-`async` методе с `Task`: серый `Task.FromResult();` / `Task.CompletedTask;`, первый пункт; `await` делает метод `async`, Alt+Enter «Make method async» | `CommonCalls.cs`, `TYPE:complete-task-from-result` / `-task-completed` / `-await-async` / `-make-async` | ⬜ |
-| E-55 | 0.1.57 | Цвета Built-in у типов и членов сборок (`Console`, `WriteLine`, `List.Count`, `Math.PI`, extension-методы), namespace в `using`; файл на 1000 строк без задержки | `LibraryNames.cs`, `TYPE:library-colors`; `SemanticColors.cs`, `TYPE:colors-members` | ⬜ |
-| E-56 | 0.1.57 | Go to Declaration Built-in к члену значения известного типа (`Current.Total`); член сборки без сервера — никуда, не в неверное место | `LibraryNames.cs`, `TYPE:library-navigation` | ⬜ |
-| E-57 | 0.1.58 | Go to Declaration Built-in к члену после выражения: вызов с выводом типа, `await`, индексатор, `?.`, `??`, `?:` | `ExpressionTypes.cs`, `TYPE:types-after-call` / `-await` / `-operators` | ⬜ |
-| E-58 | 0.1.58 | Go to Declaration Built-in к члену кортежа, деконструкции, `foreach` по словарю, переменной запроса LINQ; цвета этих членов | `ExpressionTypes.cs`, `TYPE:types-tuples` / `-deconstruction` / `-query` | ⬜ |
+| E-44 | 0.1.50 | Go to Declaration и Ctrl+наведение по встроенному дереву: локальные, параметры, лямбды, метки, запросы, члены, типы | `Navigation.cs`, `TYPE:nav-locals` / `-lambdas` / `-labels-queries` / `-members` / `-types` | 🤖 робот (WSL), 0.1.67: Ctrl+наведение даёт строку `(local variable) int total` |
+| E-45 | 0.1.50 | Подсветка использований по встроенному дереву (чтение / запись); неразрешимое и Go to Super — у сервера | `Navigation.cs`, `TYPE:nav-highlight`, `TYPE:nav-types`; `GoToBase.cs` | 🤖 робот (WSL) |
+| E-46 | 0.1.51 | Цвета идентификаторов Built-in: виды типов, static / const / event, локальные, изменяемые (подчёркнуты), параметры, члены partial-класса и базового класса из другого файла | `SemanticColors.cs` (+ `SemanticColorsPart.cs`), `TYPE:colors-declarations` / `-locals` / `-members` / `-shadowing` | 🤖 робот (WSL), 0.1.67: исправлено — у папки без модуля файлы не индексировались (см. ниже) |
+| E-47 | 0.1.51 | Цвета сервера в новой палитре и переключение «Colors of identifiers» на лету; страница Color Scheme \| C# | `SemanticColors.cs`, те же маркеры; Settings \| Editor \| Color Scheme \| C# | 🤖 робот (WSL): цвета сервера, тёмная и светлая темы |
+| E-48 | 0.1.53 | Rename (Shift+F6) по встроенному дереву: локальные, параметры, локальные функции, метки, запросы, лямбды, параметры типов, `@`; одно Ctrl+Z | `Rename.cs`, `TYPE:rename-local` / `-parameter` / `-local-function` / `-label-query-lambda` / `-type-parameter-keyword` | 🤖 робот (WSL): `rename-local` |
+| E-49 | 0.1.53 | Rename: конфликты (диалог «Problems Detected»), члены и типы — серверу или подсказка, «Rename in place» выключен | `Rename.cs`, `TYPE:rename-conflict`, `TYPE:rename-primary-member` | 🤖 робот (WSL): `rename-conflict` |
+| E-50 | 0.1.54 | Синтаксические ошибки Built-in: коды и места Roslyn, без двойных отметок, сразу при наборе | `Broken/SyntaxErrors.cs`, `TYPE:diag-semicolon` / `-paren` / `-expression` / `-brace` / `-edit` | 🤖 робот (WSL) |
+| E-51 | 0.1.54 | Built-in: литералы, директивы, предупреждения, исключённый текст; сервер оставляет семантические и не пойманные деревом ошибки | `Broken/SyntaxErrors.cs`, `TYPE:diag-literals` / `-member` / `-misplaced` / `-directives` / `-end` / `-server-keeps` | 🤖 робот (WSL), 0.1.67: исключённый `#if` текст серый; CS0230 на `in` — как у Roslyn |
+| E-52 | 0.1.55 | Completion Built-in: ключевые слова по месту, порядок (локальные > параметры > члены > типы > ключевые слова), ожидаемый тип, без двойных пунктов после загрузки сервера | `NativeCompletion.cs`, `TYPE:complete-keywords` / `-expected` / `-goto-query` | 🤖 робот (WSL), 0.1.67: после `1` списка нет, Enter → новая строка |
+| E-53 | 0.1.55 | Completion Built-in: `override` (член целиком), `partial`, имена переменной после типа | `NativeCompletion.cs`, `TYPE:complete-override` / `-partial` / `-names` | 🤖 робот (WSL) |
+| E-54 | 0.1.55 | `return ` в не-`async` методе с `Task`: серый `Task.FromResult();` / `Task.CompletedTask;`, первый пункт; `await` делает метод `async`, Alt+Enter «Make method async» | `CommonCalls.cs`, `TYPE:complete-task-from-result` / `-task-completed` / `-await-async` / `-make-async` | 🤖 робот (WSL), 0.1.67: «Make method async» плагина в Alt+Enter, применяется |
+| E-55 | 0.1.57 | Цвета Built-in у типов и членов сборок (`Console`, `WriteLine`, `List.Count`, `Math.PI`, extension-методы), namespace в `using`; файл на 1000 строк без задержки | `LibraryNames.cs`, `TYPE:library-colors`; `SemanticColors.cs`, `TYPE:colors-members` | 🤖 робот (WSL), 0.1.67: 69 диапазонов `CSHARP_*` в `LibraryNames.cs` |
+| E-56 | 0.1.57 | Go to Declaration Built-in к члену значения известного типа (`Current.Total`); член сборки без сервера — никуда, не в неверное место | `LibraryNames.cs`, `TYPE:library-navigation` | 🤖 робот (WSL), с готовым сервером |
+| E-57 | 0.1.58 | Go to Declaration Built-in к члену после выражения: вызов с выводом типа, `await`, индексатор, `?.`, `??`, `?:` | `ExpressionTypes.cs`, `TYPE:types-after-call` / `-await` / `-operators` | 🤖 робот (WSL) |
+| E-58 | 0.1.58 | Go to Declaration Built-in к члену кортежа, деконструкции, `foreach` по словарю, переменной запроса LINQ; цвета этих членов | `ExpressionTypes.cs`, `TYPE:types-tuples` / `-deconstruction` / `-query` | 🤖 робот (WSL): навигация; цвета — см. E-46 |
 | E-60 | 0.1.59 | Сборки solution в Project view → External Libraries: reference packs, пакеты с версиями, dll внутри; не в project scope | `debug-playground/README.md`, «External Libraries» | ⬜ |
-| E-62 | 0.1.61 | Completion Built-in: `using var` / `await using var` (второй делает метод `async`), `using (` — локальные, `var`, `new` | `Usings.cs`, `TYPE:using-var` / `-await` | ⬜ |
-| E-63 | 0.1.61 | Completion Built-in в директивах: namespace solution и сборок по уровню, типы после `using static` / alias, `global using` вверху файла | `Usings.cs`, `TYPE:using-directive` | ⬜ |
-| E-64 | 0.1.61 | Postfix `.using` / `.awaitusing`: имя по типу, выделено; `.awaitusing` делает метод `async` | `Usings.cs`, `TYPE:using-postfix` | ⬜ |
-| E-65 | 0.1.61 | Alt+Enter: Convert to 'using' declaration / statement, Wrap in 'using' statement — без дубля строки сервера | `Usings.cs`, `TYPE:using-to-declaration` / `-to-statement` / `-wrap` | ⬜ |
-| E-66 | 0.1.61 | Alt+Enter на директиве: Sort 'using' directives, Convert to 'global using' (`GlobalUsings.cs` проекта) | `Usings.cs`, `TYPE:using-sort` / `-global` | ⬜ |
+| E-62 | 0.1.61 | Completion Built-in: `using var` / `await using var` (второй делает метод `async`), `using (` — локальные, `var`, `new` | `Usings.cs`, `TYPE:using-var` / `-await` | 🤖 робот (WSL): шаги 1–2; шаг 3 (Alt+Enter) — 0.1.67 |
+| E-63 | 0.1.61 | Completion Built-in в директивах: namespace solution и сборок по уровню, типы после `using static` / alias, `global using` вверху файла | `Usings.cs`, `TYPE:using-directive` | 🤖 робот (WSL): частично |
+| E-64 | 0.1.61 | Postfix `.using` / `.awaitusing`: имя по типу, выделено; `.awaitusing` делает метод `async` | `Usings.cs`, `TYPE:using-postfix` | 🤖 робот (WSL) |
+| E-65 | 0.1.61 | Alt+Enter: Convert to 'using' declaration / statement, Wrap in 'using' statement — без дубля строки сервера | `Usings.cs`, `TYPE:using-to-declaration` / `-to-statement` / `-wrap` | 🤖 робот (WSL), 0.1.67: «Convert to 'using' statement», «Wrap in 'using' statement» в Alt+Enter |
+| E-66 | 0.1.61 | Alt+Enter на директиве: Sort 'using' directives, Convert to 'global using' (`GlobalUsings.cs` проекта) | `Usings.cs`, `TYPE:using-sort` / `-global` | 🤖 робот (WSL), 0.1.67: «Sort 'using' directives», «Convert to 'global using'» в Alt+Enter |
 | E-70 | 0.1.63 | Decompile... на сборке фреймворка: список типов, C# read-only из реализации (не reference assembly), баннер, XML-доки | `debug-playground/README.md`, «Декомпиляция» | ⬜ |
 | E-71 | 0.1.63 | Decompile... на пакете и forwarded-тип (`String` через `System.Runtime`); время первого и следующих запросов | `debug-playground/README.md`, «Декомпиляция» | ⬜ |
 | E-72 | 0.1.63 | Декомпилированная вкладка: Back после закрытия, вкладка после перезапуска IDE, кэш, правка запрещена | `debug-playground/README.md`, «Декомпиляция» | ⬜ |
 | E-73 | 0.1.62 | Go to Class (Ctrl+N) по типам сборок только с «Include non-project items», `JsonSerializer (System.Text.Json, System.Text.Json 10.0)` один раз; Enter — metadata view | `debug-playground/README.md`, «Go to Class / Symbol по сборкам» | ⬜ |
 | E-74 | 0.1.62 | Metadata view: заголовок сборки, сигнатуры без тел, `///`-доки, вложенные типы, цвета и folding, только чтение, вкладка `X.cs [Сборка 10.0]`, баннер; вкладка переживает перезапуск | там же | ⬜ |
 | E-75 | 0.1.62 | Go to Symbol по членам сборок (перегрузки `WriteLine`) на строку члена; Ctrl+click Built-in без сервера по `Add` / `WriteLine` — в metadata view | там же; `LibraryNames.cs`, `TYPE:library-navigation` | ⬜ |
+| E-76 | 0.1.64 | Alt+Enter Built-in: «Convert to '?:' expression» / «Convert '?:' to 'if' statement» — формы `return` и присваивания, ветка `throw`; одна строка на действие (без строки сервера) | `ContextActions.cs`, `TYPE:ctx-if-to-conditional` / `-conditional-to-if` | ⬜ |
+| E-77 | 0.1.64 | Alt+Enter Built-in: «To expression body» / «To block body» — метод, `void`, свойство с `get`, аксессор; «Use explicit type» / «Use 'var'» по типам C2 | `ContextActions.cs`, `TYPE:ctx-expression-body` / `-block-body` / `-var` | ⬜ |
+| E-78 | 0.1.64 | Alt+Enter Built-in: «Introduce variable» (имя правится шаблоном в обоих местах, выделение) и «Inline variable» (скобки по месту); где их нет | `ContextActions.cs`, `TYPE:ctx-introduce` / `-inline` | ⬜ |
+| E-79 | 0.1.65 | CS1674 / CS8417 Built-in на `using` / `await using` без `IDisposable` / `IAsyncDisposable`, один раз; список `using (` без не-disposable | `Usings.cs`, `TYPE:using-cs1674` / `-list` | ⬜ |
+| E-80 | 0.1.66 | Completion Built-in после точки у значения: члены типа из сборок и solution, унаследованные, аргументы-типы подставлены, LINQ без `this`, видимость | `MemberCompletion.cs`, `TYPE:dot-instance` / `-generic` | ⬜ |
+| E-81 | 0.1.66 | Completion Built-in после типа и namespace: static-члены, вложенные типы, члены enum, namespace и типы; `this.` в наследнике библиотечного типа | `MemberCompletion.cs`, `TYPE:dot-static` / `-namespace` / `-this` | ⬜ |
+| E-82 | 0.1.66 | Completion после точки с готовым сервером: один пункт на имя, ничего из списка сервера не потеряно, выбор метода — `()` / `();` | `MemberCompletion.cs`, `TYPE:dot-generic` | ⬜ |
+| E-83 | 0.1.66 | Quick documentation Built-in (Ctrl+Q и наведение): строка как в Rider, XML-доки из `///` и из доков сборок, одно окно без сервера | `MemberCompletion.cs`, `TYPE:quick-doc` | ⬜ |
+| E-84 | 0.1.66 | Parameter Info Built-in (Ctrl+P): перегрузки строками, выбранная отмечена, параметр под кареткой выделен, конструкторы `new T(` | `MemberCompletion.cs`, `TYPE:parameter-info` | ⬜ |
+| E-85 | 0.1.68 | Встроенный форматтер как Rider: многострочные инициализаторы и `[...]` — скобки на своих строках, элементы на отступ глубже, разбиение по строкам прежнее; однострочные `{ 1, 2 }` / `[1, 2]` | `Formatting.cs`, `TYPE:format-initializers` | ⬜ |
+| E-86 | 0.1.68 | Встроенный форматтер как Rider: строки аргументов и параметров на отступ правее строки вызова (не под первым аргументом), одинокая `)` под ней, вложенные списки | `Formatting.cs`, `TYPE:format-arguments` | ⬜ |
+| E-91 | 0.1.70 | Настройки плагина — узел .NET в корне Settings (Toolset and Build, NuGet, Coverage, Debugger, Language Server), под Tools его нет | Settings (Ctrl+Alt+S) | 🤖 робот (WSL) |
+| E-92 | 0.1.70 | Тулбар: кнопка Build Solution перед Run widget вместо комбобокса Debug / TFM; меню стрелки — Build / Rebuild / Clean / Restore / Cancel Build, Configuration, Target Framework | тулбар, `MultiTarget` для TFM | 🤖 робот (WSL); статус «cancelled» после Cancel Build — не проверен |
+| E-93 | 0.1.70 | Refactor This (Ctrl+Alt+Shift+T) в C#: Rename, Inline / Introduce Variable, рефакторинги сервера; недоступного нет | `RiderPopups.cs`, `TYPE:refactor-method` / `-inline` / `-introduce` | 🤖 робот (WSL), с сервером; Built-in Inline / Introduce Variable — не проверены |
+| E-94 | 0.1.70 | Navigate To (Ctrl+Shift+G и меню Navigate): строки Rider (Declaration, Implementation, Base Symbols…), переходы | `RiderPopups.cs`, `TYPE:navigate-call` | 🤖 робот (WSL); пункт меню Navigate → Navigate To... — не проверен |
+| E-95 | 0.1.70 | Generate (Alt+Insert) одним списком в порядке Rider; ПКМ редактора C# — строки и порядок Rider | `RiderPopups.cs`, `TYPE:generate-in-class`, `TYPE:editor-menu` | 🤖 робот (WSL) |
+| E-96 | 0.1.71 | Цвета внутри строк: код в дырках `$"…{…}…"` цветами кода, скобки дырки, `,5` / `:N2` — элемент формата; raw `$$"""` | `StringColors.cs`, `TYPE:strings-holes` / `-format` / `-raw` | 🤖 робот (Windows, 2026-10-05): ключи лексера и аннотатора, набор — как в EXPECT; вид глазами — нет |
+| E-97 | 0.1.71 | Escape-последовательности: два чередующихся цвета, неверная (`\q`), `""` verbatim, `{{` / `}}`, char; набор — цвета по ходу, кавычка перешагивается | `StringColors.cs`, `TYPE:strings-escapes` / `-invalid-escape` / `-brace-escapes` / `-typing` | 🤖 робот (Windows, 2026-10-05): ключи лексера и аннотатора, набор — как в EXPECT; вид глазами — нет |
+| E-98 | 0.1.71 | Элементы формата `string.Format` / `Console.WriteLine` / `AppendFormat`; страница Color Scheme \| C# → String | `StringColors.cs`, `TYPE:strings-format-items` | 🤖 робот (Windows, 2026-10-05): ключи лексера и аннотатора, набор — как в EXPECT; вид глазами — нет |
 | E-01 | 0.1.44 | Ключевые слова выше неимпортированных типов | `CompletionRanking.cs`, `TYPE:keyword-order` | ⬜ |
 | E-02 | 0.1.44 | `string` первым в TYPE шаблона `prop` | `TYPE:prop-type` | ⬜ |
 | E-03 | 0.1.44 | Имя свойства не открывает список имён | `TYPE:property-name-ghost` | ⬜ |
@@ -262,7 +281,7 @@
 3. Контроль: `var x = count < Rang` — методы из индекса (`Enumerable.Range`) по-прежнему предлагаются.
 
 #### E-42 `TYPE:format-method`, `-file`, `-switch`, `-initializers`, `-options`
-1. Settings | Tools | .NET | Toolset and Build → «Formatter» = **Built-in**. OK.
+1. Settings | .NET | Toolset and Build → «Formatter» = **Built-in**. OK.
 2. `Console/Editor/Formatting.cs`: по каждому маркеру выполнить то, что написано в его комментарии (выделить, Ctrl+Alt+L), сравнить с `EXPECT` — пробелы, отступы, `{` на своей строке, `case` внутри `switch`; литералы и комментарии не тронуты.
 3. После каждой проверки Ctrl+Z — файл вернулся, как был.
 4. `TYPE:format-options`: положить рядом `.editorconfig` из комментария маркера, Ctrl+Alt+L → `{` остаётся на строке заголовка. Удалить `.editorconfig`.
@@ -275,9 +294,11 @@
 5. Вернуть «Auto». Ctrl+Z правок.
 
 #### E-44 `TYPE:nav-locals`, `-lambdas`, `-labels-queries`, `-members`, `-types`
+Робот 2026-10-05 (WSL, **0.1.67**): Ctrl+наведение на `total` в `return` строки `Locals` — подсказка `(local variable) int total` (`e44_ctrlhover_total.png`); раньше у Built-in-целей не было `lang.documentationProvider` C#.
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): Ctrl+click Built-in по всем пяти маркерам туда же, что ожидается: локальные (`total`, `parsed`, `first`, `value`, `input`, `text`, `item`, `index`), параметры лямбд (`x`, `p`, `n`, `seed`, `Twice`), метки и запросы (`retry`, `o`, `doubled`, `g`, `T`), члены (`_count`, `Total`, `this._count`, `Reset` во второй части partial, `Entry`), типы (`UsageSample` → FindUsages.cs:13, `UsageLog` → UsageLog.cs:7, `Record` → UsageLog.cs:11, `Count` → List.cs:79). Ctrl+наведение подчёркивает имя и даёт руку, на объявлении — нет. **Не так:** у целей Built-in (`total`, `parsed`) при Ctrl+наведении нет всплывающей подсказки, у целей сервера есть (`Length`); обычное наведение даёт `(local variable) int total` (`e44_ctrlhover_total.png`, `e44_ctrlhover_length.png`). `Add(1)` сразу в `Add(int)` без списка перегрузок — так и должно быть после выбора перегрузки 0.1.60, EXPECT шага и маркера устарел.
 Робот 2026-10-05 (0.1.60, `goto_batch.js`): 90 мест `Navigation.cs` и `LibraryNames.cs` — Built-in и сервер в одних и тех же местах
 (перегрузка `Add(1)`, члены сборок через сервер); `new UsageSample()` теперь к конструктору, как у сервера. Built-in — по умолчанию.
-1. Settings | Tools | .NET | Language Server → Source of Features → «Navigation and usages» = **Built-in**. OK.
+1. Settings | .NET | Language Server → Source of Features → «Navigation and usages» = **Built-in**. OK.
 2. Открыть `Console/Editor/Navigation.cs`. Можно не ждать сервера: переходы этих маркеров идут без него.
 3. `TYPE:nav-locals`: в строке `return total + parsed + …` метода `Locals` по очереди Ctrl+click на `total`, `parsed`, `first`, `value`,
    `input` — каретка сразу на имени в объявлении (`var total`, `out var parsed`, `var (first, …)`, параметры метода), без списка. Ctrl+click
@@ -295,6 +316,7 @@
 9. Повторить шаги 3–8 при «Navigation and usages» = **Language server** с готовым сервером — те же цели. Вернуть по умолчанию.
 
 #### E-45 `TYPE:nav-highlight`, fallback к серверу
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): на `total` — цвет записи на объявлении, `+=`, `++`, `out total`, цвет чтения на `return`; на `step` — объявление и одно чтение; на `_count` — все вхождения в файле; Ctrl+U на `Area` → `MiddleShape` (GoToBase.cs:34). Снимки `e45_*.png`.
 Робот 2026-10-05 (0.1.60, `goto_batch.js`): неразрешимое деревом (`Count` сборки, `Any`) уходит серверу и там же остаётся, как у
 сервера. Вживую — рамки подсветки чтения / записи.
 1. «Navigation and usages» = **Built-in**, `Console/Editor/Navigation.cs`.
@@ -309,9 +331,11 @@
 7. Вернуть «Navigation and usages» по умолчанию (Language server).
 
 #### E-46 `TYPE:colors-declarations`, `-locals`, `-members`, `-shadowing`
+Робот 2026-10-05 (WSL, **0.1.67**, снимки — `C:/tmp/wsl-fix/`): исправлено. Причина ❌ в 0.1.63 — IDEA 2026.1 открывает папку без системы сборки проектом без модулей, её файлы не индексируются (`CONTENT_NON_INDEXABLE`), и платформа пропускает в них всё, что не `DumbAware` (аннотаторы цветов, intention-действия плагина). Теперь плагин сам заводит модуль на папку с solution (`DotNetModuleSetup`), а аннотатор цветов и Alt+Enter-действия помечены `DumbAware`. `SemanticColors.cs`: 60 диапазонов `CSHARP_*` в строках 14–60.
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): **❌ цвета Built-in не видны.** `highlight_keys.js` — 0 диапазонов `CSHARP_*` в `SemanticColors.cs`, `Navigation.cs`, `LibraryNames.cs`, а `NativeCSharpSemanticColors.colors(file)` возвращает 95 записей за 20 мс, и аннотатор через `AnnotationHolderImpl` даёт 95 аннотаций. Не причина: dumb mode, incomplete-dependencies, essential highlighting, power save, уровень подсветки, перезапуск демона, переключение NATIVE→ROSLYN→NATIVE, правка файла. С ROSLYN цвета сервера появляются сразу. Аннотатор диагностики (DumbAware) работает, `NativeCSharpSemanticColorsAnnotator` (не DumbAware, на элементе `CSharpFile`) — нет; в журнале ошибок нет. На Windows-роботе 0.1.60 цвета были — вероятна регрессия 0.1.61–0.1.63 или пропуск аннотатора демоном. Снимки `e46_dark_1.png`, `e46_dark_decl.png`.
 Робот 2026-10-05 (0.1.60, `highlight_keys.js` на 4 файлах): всё, что красит сервер, Built-in красит тем же цветом или точнее
 (объявление метода, изменяемая локальная, локальная функция, параметр primary-конструктора). Built-in — по умолчанию.
-1. Settings | Tools | .NET | Language Server → Source of Features → «Colors of identifiers» = **Built-in**. Apply — цвета в открытом редакторе меняются сразу, без правки файла.
+1. Settings | .NET | Language Server → Source of Features → «Colors of identifiers» = **Built-in**. Apply — цвета в открытом редакторе меняются сразу, без правки файла.
 2. Дождаться конца индексации (во время неё цвета прежние, эвристические). Открыть `Console/Editor/SemanticColors.cs`.
 3. По каждому маркеру сверить имена под ним с `EXPECT` комментария (цвета Darcula / Islands Dark): классы фиолетовые, enum / record struct / delegate — светлее, интерфейс — как класс; поля и свойства бирюзовые, константы и члены enum — жирные; событие `Changed` — розовое; методы — зелёные; локальные и параметры — цвета текста; `total` подчёркнут во всех местах.
 4. `TYPE:colors-members`: `Tick`, `_ticks` (базовый класс в `SemanticColorsPart.cs`), `Reset`, `Count` (другая часть `partial class ColorRegistry`, через `using static`) раскрашены; `Console` и `WriteLine` — цвета текста (библиотечное знает только сервер).
@@ -320,6 +344,7 @@
 7. Роботом: `feature_source.js` (`SEMANTIC_COLORS`, `NATIVE`), затем `highlight_keys.js` по строкам каждого маркера — ключи `CSHARP_*_IDENTIFIER`, источник `daemon`.
 
 #### E-47 Цвета сервера и страница цветов
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): цвета сервера читаемы в тёмной (`e47_server_dark*.png`) и светлой (LAF «IntelliJ Light» + схема `_@user_Light`, `e47_server_light*.png`) темах: типы фиолетовые, методы зелёные, свойства бирюзовые, событие розовое. Отличия от EXPECT: сервер отдаёт `total` как `CSHARP_LOCAL_VARIABLE` без признака изменяемости — не подчёркнут; `MaxLines` серый (не используется), жирность не видна. Смена LAF не меняет схему редактора (её пришлось ставить отдельно); платформа пишет WARN «Theme IntelliJ Light refers to unknown color scheme IntelliJ Light». Переключение на Built-in — пусто, см. E-46.
 Робот 2026-10-05 (0.1.60): после переключения на Built-in цвета сервера больше не остаются под встроенными (раньше у каждого
 имени было два ключа до правки файла). Вживую — светлая тема и страница Color Scheme.
 1. «Colors of identifiers» = **Language server**, дождаться виджета «Roslyn: DebugPlayground.sln». Те же маркеры `SemanticColors.cs`: цвета те же, что в E-46, плюс сервер красит `Console` (статический класс) и `WriteLine` (статический метод) и подчёркивает `total`; методы и в объявлениях — цвета вызова (сервер их не различает).
@@ -328,9 +353,10 @@
 4. Светлая тема (Light / IntelliJ Light): цвета читаемы, константы жирные, `total` подчёркнут.
 
 #### E-48 `TYPE:rename-local`, `-parameter`, `-local-function`, `-label-query-lambda`, `-type-parameter-keyword`
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): `rename-local`: Shift+F6 на `subtotal`, `sum` — рамка вокруг набираемого имени, все три вхождения следуют при наборе; после Enter `var sum = 0m;`, `sum += price;`, `return sum * …`; одно Ctrl+Z возвращает файл (`e48_rename_typed.png`, `e48_rename_done.png`). Остальные маркеры не прогонялись.
 Робот 2026-10-05 (0.1.56, `rename_check.js`): все сценарии `Rename.cs` как у сервера, `<param name>` тоже; конфликт — диалог,
 отмена ничего не меняет. Вживую — подсветка рамки при наборе и ощущение скорости.
-1. Settings | Tools | .NET | Language Server → Source of Features → «Rename» = **Built-in**. OK. Дождаться конца индексации.
+1. Settings | .NET | Language Server → Source of Features → «Rename» = **Built-in**. OK. Дождаться конца индексации.
 2. Открыть `Console/Editor/Rename.cs`. Сервера можно не ждать: эти символы переименовываются без него.
 3. `TYPE:rename-local`: каретка на `subtotal` в `var subtotal = 0m;`, Shift+F6 — имя в рамке, остальные два `subtotal` метода тоже
    обведены. Набрать `sum` — все три меняются на лету. Enter: `var sum = 0m;`, `sum += price;`, `return sum * (1 - discount);`; в других
@@ -352,9 +378,11 @@
    Шаблону нужен фокус окна песочницы — если `template` не появился, проверить руками.
 
 #### E-55 `TYPE:library-colors`
+Робот 2026-10-05 (WSL, **0.1.67**, снимки — `C:/tmp/wsl-fix/`): исправлено. Причина ❌ в 0.1.63 — IDEA 2026.1 открывает папку без системы сборки проектом без модулей, её файлы не индексируются (`CONTENT_NON_INDEXABLE`), и платформа пропускает в них всё, что не `DumbAware` (аннотаторы цветов, intention-действия плагина). Теперь плагин сам заводит модуль на папку с solution (`DotNetModuleSetup`), а аннотатор цветов и Alt+Enter-действия помечены `DumbAware`. `LibraryNames.cs`: 69 диапазонов `CSHARP_*` в строках 1–60 (`e55_library_colors.png`).
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): **❌** `highlight_keys.js` на `LibraryNames.cs` — 0 диапазонов `CSHARP_*` с Built-in, имена сборок не окрашены; см. E-46.
 Робот 2026-10-05 (0.1.60, `highlight_keys.js`): все имена сборок `LibraryNames.cs` окрашены как у сервера, включая `WriteLine(x)` с
 аргументом неизвестного типа, `g.Key` после `into g` и `query.Any()`.
-1. «Colors of identifiers» = **Built-in**; для чистоты Language Server выключить (Settings | Tools | .NET). После restore площадки дождаться
+1. «Colors of identifiers» = **Built-in**; для чистоты Language Server выключить (Settings | .NET). После restore площадки дождаться
    конца индексации (сборки индексирует помощник плагина).
 2. `Console/Editor/LibraryNames.cs`, метод `Colors`: сверить с `EXPECT` маркера — `Console` / `StringBuilder` / `List` цветом класса, `Math`
    static-класса, `DateTime` структуры, `WriteLine` / `Round` / `Max` static-вызова, `Append` / `ToString` вызова, `Count` / `Length` / `Year`
@@ -396,6 +424,8 @@
 4. Время: индексация после открытия заметно не выросла (замер в тесте — ≈ 0,5 с на 592 dll). В GoLand / PyCharm — то же самое.
 
 #### E-62 `TYPE:using-var`, `-await`
+Робот 2026-10-05 (WSL, **0.1.67**): шаг 3 — см. E-65.
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): шаг 1: `usi` + Ctrl+Space — `using`, `using var`, `await using var`; `using var` → `using var |` (`e62_usi.png`); шаг 2: `aw` → `await using var` даёт `await using var ` и `public async Task Run()` (`e62_aw.png`, `e62_await_using.png`). Шаг 3 (Alt+Enter «Make method async») — см. ❌ E-54; шаг 4 (`using (`) не прогонялся.
 1. «Completion» = **Built-in**. `Console/Editor/Usings.cs`, метод `Var`: набрать `usi`, Ctrl+Space → в списке `using var`, `await using var`,
    `using`; Enter на `using var` → `using var |`. В геттере `Name` — `using var` есть, `await using var` нет. Ctrl+Z.
 2. `TYPE:using-await`, метод `Run`: `aw` → `await using var` → вставлено `await using var `, заголовок `public async Task Run()`. Ctrl+Z до исходного.
@@ -404,17 +434,21 @@
 4. Внутри метода набрать `using (` и Ctrl+Space → локальные, `var`, `new`.
 
 #### E-63 `TYPE:using-directive`
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): `using System.Coll` + Ctrl+Space — единственный вариант сразу вставлен: `using System.Collections` (`e63_coll.png`); `using static System.` — namespace и тип `Buffer (System)` (`e63_static.png`). Alias и `global using` не прогонялись.
 1. Built-in, после индексации и индекса сборок (restore сделан). Пустая строка под маркером вверху `Usings.cs`: `using System.Coll` +
    Ctrl+Space → `Collections` (иконка пакета), типов нет. `using static System.` → namespace и типы `Console`, `Math`. `using J =
    System.Text.` → `Json`, `Encoding`, `StringBuilder`. `using ` → `static` первым словом, после `using static ` его нет.
 2. На первой строке файла (до директив) Ctrl+Space → пункт `global using`; после обычного `using` его нет. Набрать `global ` → `using`. Ctrl+Z.
 
 #### E-64 `TYPE:using-postfix`
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): `new StringReader("x").using` — в списке два `using` («using var value = expr;» и «using statement», `e64_postfix_popup.png`); Enter или Tab по первому → `using var reader = new StringReader("x");`, `reader` выделено (`e64_postfix_tab.png`); `new MemoryStream().awaitusing` → `await using var stream = new MemoryStream();` и `public async Task Postfix()` (`e64_awaitusing_tab.png`).
 1. Метод `Postfix`: `new StringReader("x").using` + Enter → `using var reader = new StringReader("x");`, `reader` выделено (набор
    заменяет имя). `new MemoryStream().awaitusing` → `await using var stream = …;`, метод стал `public async Task Postfix()`. Ctrl+Z.
 2. В списке postfix-шаблонов (Settings | Editor | General | Postfix Completion → C#) есть `.awaitusing`.
 
 #### E-65 `TYPE:using-to-declaration`, `-to-statement`, `-wrap`
+Робот 2026-10-05 (WSL, **0.1.67**, снимки — `C:/tmp/wsl-fix/`): исправлено. Причина ❌ в 0.1.63 — IDEA 2026.1 открывает папку без системы сборки проектом без модулей, её файлы не индексируются (`CONTENT_NON_INDEXABLE`), и платформа пропускает в них всё, что не `DumbAware` (аннотаторы цветов, intention-действия плагина). Теперь плагин сам заводит модуль на папку с solution (`DotNetModuleSetup`), а аннотатор цветов и Alt+Enter-действия помечены `DumbAware`. «Convert to 'using' statement» первым, с превью, применяется (`e65_tostatement_popup.png`, `e65_tostatement_done.png`); «Wrap in 'using' statement» есть (`e65_wrap_popup.png`), рядом серверное «Introduce 'using' statement» (другое название, не скрыто).
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): **❌ строк плагина в Alt+Enter нет.** На `using` в `ToDeclaration` — только серверное «Fix All: Use simple 'using' statement» (`e65_todecl_popup.png`); на `using var writer` в `ToStatement` «Convert to 'using' statement» нет совсем; на `wrapped` в `Wrap` — серверное «Introduce 'using' statement», плагинного «Wrap in 'using' statement» нет. При этом `NativeCSharpToUsingDeclarationIntention.isAvailable` = true и на EDT, и в фоне, `ShowIntentionActionsHandler.availableFor` = true, интенция включена в настройках, а `ShowIntentionsPass.getActionsToShow` её не возвращает (`AddPartialPartIntention` и `CreateTestIntention` того же файла — возвращает). Общая причина с E-54 и E-66.
 1. Alt+Enter на `using` в `ToDeclaration` → «Convert to 'using' declaration»: `using var reader = …;`, `WriteLine` ниже на уровень левее,
    скобок нет. Ctrl+Z возвращает как было. Окно превью Alt+Enter показывает результат.
 2. «Typing assistance» = Language server и сервер готов: вместо своего — пункт сервера «Use simple 'using' statement»; Built-in — только
@@ -424,14 +458,60 @@
    Отступы при табах (другой `.editorconfig`) — только вживую.
 
 #### E-66 `TYPE:using-sort`, `-global`
+Робот 2026-10-05 (WSL, **0.1.67**, снимки — `C:/tmp/wsl-fix/`): исправлено. Причина ❌ в 0.1.63 — IDEA 2026.1 открывает папку без системы сборки проектом без модулей, её файлы не индексируются (`CONTENT_NON_INDEXABLE`), и платформа пропускает в них всё, что не `DumbAware` (аннотаторы цветов, intention-действия плагина). Теперь плагин сам заводит модуль на папку с solution (`DotNetModuleSetup`), а аннотатор цветов и Alt+Enter-действия помечены `DumbAware`. на `using System.Text;` — «Convert to 'global using'» и «Sort 'using' directives»; Sort применён (`e66_directive_popup.png`, `e66_sorted.png`).
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): **❌** на `using System.Text;` — серверные «Sort Usings» и «Fix All: Sort Usings», плагинных «Sort 'using' directives» и «Convert to 'global using'» нет (та же причина, что E-65).
 1. Alt+Enter на любой из трёх директив вверху `Usings.cs` → «Sort 'using' directives»: `System`, `System.IO`, `System.Text`. После
    сортировки пункта нет. Ctrl+Z.
 2. Alt+Enter на директиве `System.Text` → «Convert to 'global using'»: строка ушла, появился `Console/GlobalUsings.cs` с `global using
    System.Text;`, проект собирается. Ctrl+Z (если файл остался — удалить). В файле, где уже есть `global using`, директива переходит к ним.
 
+#### E-76 `TYPE:ctx-if-to-conditional`, `-conditional-to-if`
+1. Settings | .NET | Language Server → Source of Features → «Context actions» = **Built-in**, Apply. Открыть
+   `Console/Editor/ContextActions.cs`, дождаться конца индексации.
+2. Каретка на `if` в `Sign`, Alt+Enter → «Convert to '?:' expression»: четыре строки стали `return value >= 0 ? "plus" : "minus";`.
+   Превью Alt+Enter (справа от пункта) показывает то же. Ctrl+Z — как было, одним шагом.
+3. То же на `if` в `Clamp` (`if` + следующий `return`) → `return value > 100 ? 100 : value;`; в `Assign` → `_total = add ? _total + value :
+   _total - value;`. На `if` в `Mixed` пункта нет. Ctrl+Z.
+4. Каретка на `?` в `Parity`, Alt+Enter → «Convert '?:' to 'if' statement»: `if (value % 2 == 0)`, скобки на своих строках, `return "even";`
+   / `else` / `return "odd";`. В `Check` — ветка `else` `throw new ArgumentException("no text");`. В `Print` (аргумент) пункта нет. Ctrl+Z.
+5. При готовом сервере и Built-in в списке Alt+Enter нет строки сервера «Convert to conditional expression» рядом со своей; переключить
+   «Context actions» = Language server — снова есть только строка сервера, своих нет.
+
+#### E-77 `TYPE:ctx-expression-body`, `-block-body`, `-var`
+1. Built-in, как в E-76. Каретка на имени `Twice`, Alt+Enter → «To expression body»: `public int Twice(int value) => value * 2;`. На `Log` —
+   `=> Console.WriteLine(text);`; на `Name` — `public string Name => "context";`; на `get` у `Counter` — `get => _total;`, `set` остался.
+   На `Two` и внутри тела любого метода пункта нет. Ctrl+Z после каждого.
+2. На `Half` → «To block body»: блок с `return value / 2;`, скобки на своих строках, отступ как у класса. На `Shout` — без `return`. На
+   `Title` — `{ get { return "title"; } }` в три строки. На `set` у `Level` — `set { _total = value; }` в той же строке. Ctrl+Z.
+3. На `var` у `names` → «Use explicit type»: `List<string> names` (без `System.Collections.Generic.`). У `count` — `int`, у `query` —
+   `IEnumerable<string>`, у `var` в `foreach` — `string`. На `int` у `total` → «Use 'var'»; у `long big` и `IList<string> list` «Use 'var'»
+   нет. Ctrl+Z.
+4. При готовом сервере и Built-in: нет строк сервера «Use expression body for method», «Use block body for property», «Use explicit type»,
+   «Use implicit type».
+
+#### E-78 `TYPE:ctx-introduce`, `-inline`
+1. Built-in, как в E-76. Каретка на `Count` в первой строке `Introduce`, Alt+Enter → «Introduce variable»: строкой выше `var count =
+   items.Count;`, в вызове — `count * 2`, имя в рамке шаблона. Набрать `size` — меняется в обоих местах; Enter. Ctrl+Z (один-два шага) — как было.
+2. Выделить `items.Count * 2`, Alt+Enter → «Introduce variable»: `var value = items.Count * 2;`, в вызове `value`. Ctrl+Z.
+3. На `Ready()` после `&&` и на `items` без члена пункта нет.
+4. На `sum` в `Inline` → «Inline variable»: объявления нет, `return (a + b) * 2 + Math.Abs(a + b) + changed;`. На `changed` пункта нет. Ctrl+Z.
+5. При готовом сервере и Built-in нет строк сервера «Introduce local for '…'» и «Inline temporary variable» (его «Introduce constant …»
+   остаются).
+
+#### E-79 `TYPE:using-cs1674`, `-list`
+1. «Errors and warnings» = Built-in (по умолчанию), после индексации и restore. `Usings.cs`, метод `Errors`: на пустой строке набрать
+   `using (var n = 5) { }` → `var n = 5` подчёркнуто красным, подсказка `CS1674: 'int': type used in a using statement must implement
+   'System.IDisposable'.` При готовом сервере — одна отметка, не две (строка сервера без кода убрана).
+2. `using var b = new StringBuilder();` → CS1674 с `'System.Text.StringBuilder'`; `await using var t = new
+   System.Threading.CancellationTokenSource();` → CS8417 «… Did you mean 'using' rather than 'await using'?».
+3. Без ошибки: `using var s = new MemoryStream();`, `await using var m = new MemoryStream();`, `using (var x = Unknown()) { }` (только CS0103
+   сервера). Ctrl+Z.
+4. «Completion» = Built-in. Метод `List`, пустая строка: `using (` + Ctrl+Space → `reader`, `stream`, нет `count` и `title` (ни своих, ни
+   строк сервера). `using var x = ` + Ctrl+Space — то же. `await using (` + Ctrl+Space → `stream`, нет `reader`. Ctrl+Z.
+
 #### E-73 Go to Class по сборкам
 1. Открыть `debug-playground` (restore сделан), дождаться конца индексации сборок. Для чистоты Language Server выключить
-   (Settings | Tools | .NET) — Go to Class сервера тоже даёт типы сборок.
+   (Settings | .NET) — Go to Class сервера тоже даёт типы сборок.
 2. Ctrl+N, `JsonSerializer`: без «Include non-project items» — только типы solution (или ничего); Ctrl+N ещё раз (галочка) — строка
    `JsonSerializer (System.Text.Json, System.Text.Json 10.0)` **одна**, хотя сборку видят все проекты; иконка класса. В Search Everywhere
    (Shift Shift → Classes) — то же при «All Places» и ничего при «Project Files».
@@ -459,7 +539,140 @@
 3. С готовым сервером (включить, дождаться) — Ctrl+click по `WriteLine` открывает, как раньше, декомпилированный исходник сервера
    (`Console.cs [System.Console]` из `MetadataAsSource`), не metadata view.
 
+#### E-80 `TYPE:dot-instance`, `-generic`
+1. Settings | .NET | Language Server → Source of Features → «Completion» = **Built-in**; сервер выключить (Settings | .NET
+   → Language Server), дождаться индексации сборок после restore.
+2. `Console/Editor/MemberCompletion.cs`, метод `Instance`: на пустой строке набрать `text.` — список открылся сам: `Length`,
+   `Substring`, `ToUpper`, `Split`…, ниже — `Where`, `Select`, `First` с параметрами без `this string source`. Нет `IsNullOrEmpty`,
+   `Join` (static), `MemberwiseClone`, `Finalize` (protected), ключевых слов. Выбрать `Substring` — `text.Substring(|)`. Ctrl+Z.
+3. Метод `Generic`: `_orders.` — `Add` с хвостом `(MemberOrder item)`, `Count` с типом `int`, LINQ. `_orders[0].` — `Total`,
+   `Ship`, `Lines`, `Add` с `(+ 1)`; нет `_secret`. Ctrl+Z.
+
+#### E-81 `TYPE:dot-static`, `-namespace`, `-this`
+1. Настройки — как в E-80.
+2. Метод `Static`: `Console.` → `WriteLine` (`(string value) (+ N)`), `ReadLine`, `Out`, нет экземплярных членов; `string.` →
+   `Join`, `Empty`, `IsNullOrEmpty`, нет `Length`; `MemberOrder.` → `Empty`, `State`, нет `Total`; `MemberOrder.State.` → `New`, `Shipped`.
+3. Метод `Namespaces`: `System.Collections.Generic.` → `List<>`, `Dictionary<,>`, `HashSet<>` (выбор `List` — `List<|>`); `System.` → namespace
+   (`Collections`, `Text`) и типы (`Console`, `String`).
+4. Класс `Numbers`, метод `Fill`: `this.` → `Add`, `Count` (из `List<int>`) и `_extra`. Ctrl+Z после каждого.
+
+#### E-82 Completion после точки рядом с сервером
+1. «Completion» = **Built-in**, сервер включён и загружен (виджет в статус-баре без `loading…`).
+2. `TYPE:dot-generic`: `_orders.` — каждое имя один раз (нет второго `Add` / `Count` от сервера); всё, что сервер даёт сверх
+   встроенного списка (сниппеты, `await`-пункты), осталось. Выбор `Add` — `_orders.Add(|);`, `ToString` — `_orders.ToString()`.
+3. Переключить «Completion» = Language server — список тот же по составу (только сервер), без двойных пунктов.
+
+#### E-83 `TYPE:quick-doc`
+1. «Documentation and parameter info» = **Built-in**, сервер выключен; сборки проиндексированы.
+2. `MemberCompletion.cs`, метод `Documented`: Ctrl+Q на `WriteLine` — `void Console.WriteLine(string value) (+ N overloads)` и текст
+   документации System.Console с разделом Params; на `Substring` — `string string.Substring(int startIndex, int length) (+ 1 overload)`;
+   на `Total` — `decimal MemberOrder.Total { get; set; }` и «The sum of the lines.»; на `Add` — перегрузка с `count`, разделы Params;
+   на `limit` — `(parameter) int limit` и «How many to show.»; на имени `Documented` — «Shows the first orders.».
+3. То же наведением мыши (подсказка с задержкой). С включённым сервером и Built-in — одно окно, не два; с Language server — окно сервера.
+
+#### E-84 `TYPE:parameter-info`
+1. Настройки — как в E-83.
+2. Каретка в скобках `first.Add("book", limit)`, Ctrl+P: две строки — `string item` и `string item, int count = 1`, вторая отмечена,
+   `int count = 1` выделен; каретка на `"book"` — выделен первый параметр.
+3. `Console.WriteLine(` (набрать в `Documented`) — строка на каждую перегрузку; после второго аргумента перегрузки с одним параметром серые.
+   `new StringBuilder(` в `Build` — конструкторы `StringBuilder`. Ctrl+Z.
+
+#### E-85 `TYPE:format-initializers`
+1. Settings | .NET | Toolset and Build → «Formatter» = **Built-in** (или Auto при «Formatting» = Built-in). OK.
+2. `Console/Editor/Formatting.cs`, метод `Initializers`: выделить метод целиком, Ctrl+Alt+L. `var box = new Box` / `{` / `Count = 3,` /
+   `Name = "n"` / `};` — `{` и `}` под `var`, члены на 4 глубже; `new List<int>` / `{` / `1, 2,` / `3` / `};` — `1, 2,` остались вместе;
+   `int[] numbers =` / `[` / `1,` / `2` / `];`.
+3. `var pair = new` / `{` / `Box = new Box` / `{` (на 4 глубже) / `Count = 1,` … / `},` / `Total = 2` / `};` — соседи вложенного
+   многострочного инициализатора разложены по строкам. `new List<int> { 4, 5 }` и `[6, 7]` — в одну строку с пробелами как в Rider.
+   `Sum([` / `8,` / `9` / `]);` — `[` остался после `(`, `]` под `var`.
+4. Не должно быть: склеенных строк, элементов, выровненных по первому, изменений в запросе и в лямбде `print`. Повторный Ctrl+Alt+L
+   ничего не меняет. Ctrl+Z — метод вернулся.
+5. С «Formatter» = dotnet format те же многострочные инициализаторы остаются как были (так делает `dotnet format`) — это ожидаемо.
+
+#### E-86 `TYPE:format-arguments`
+1. Настройки — как в E-85.
+2. Метод `Arguments`: выделить, Ctrl+Alt+L. `Combine(1,` / `2,` / `3);` — `2,` и `3);` ровно на 4 правее `var` (не под `1`);
+   `Combine(` / `1,` / `2,` / `3` на 4 правее / `);` под `var`.
+3. `Combine(Combine(1,` / `2, 3),` на 8 правее `var` / `4, 5);` на 4; `Combine(1, Combine(2,` / `3, 4), 5);` — на 4.
+4. `if (Combine(a,` / `b, c) > d)` — `b` на 4 правее `Combine` (первого токена в скобках `if`), не под `a`.
+5. Параметры `private static int Combine(int x,` / `int y, int z)` — вторая строка на 4 правее `private`. Повторный Ctrl+Alt+L ничего
+   не меняет; строки не склеены и не разбиты. Ctrl+Z.
+
+#### E-91 Settings: узел .NET в корне
+Робот 2026-10-05 (WSL, 0.1.70; снимок `C:/tmp/rider-ui/06-settings-tree.png`): .NET на верхнем уровне между Backup and Sync и
+Advanced Settings, внутри Coverage, Debugger, Language Server, NuGet, Toolset and Build (по алфавиту, как сортирует платформа).
+1. Settings (Ctrl+Alt+S). В дереве слева на верхнем уровне — **.NET** (рядом с Build, Execution, Deployment / Languages & Frameworks /
+   Tools), раскрывается в Toolset and Build, NuGet, Coverage, Debugger, Language Server. Под Tools узла .NET нет.
+2. Editor | Code Style | C# и Editor | Color Scheme | C# — на прежних местах. Поиск в Settings по «Formatter» находит страницу .NET.
+3. Ссылки плагина на настройки (баннер «нет сервера языка», уведомление «нет dotnet») открывают страницы под новым узлом.
+
+#### E-92 Тулбар: Build Solution
+Робот 2026-10-05 (WSL, 0.1.70; `01-toolbar.png`…`04-build-running.png`): молоток со стрелкой перед виджетом запуска, подсказка
+`Build DebugPlayground.sln (Debug)` → после выбора Release `(Release)`; клик собирает (9 warnings, 0 errors); во время сборки Cancel Build
+активен и останавливает её. Найдено и исправлено: остановленная сборка показывалась как «failed with exit code» — теперь «cancelled»
+(после исправления вживую не смотрели).
+1. Открыть `debug-playground`. Справа в тулбаре перед виджетом запуска — молоток со стрелкой; комбобокса `Debug | …` больше нет.
+   Подсказка на молотке — `Build DebugPlayground.sln (Debug)`. Сравнить с `docs/rider-analysis/img/02-main-toolbar.png`.
+2. Клик по молотку — сборка solution в окне Build. Пока идёт — стрелка → **Cancel Build** активен и останавливает сборку.
+3. Стрелка: Build Solution, Rebuild Solution, Clean Solution, NuGet Restore, Cancel Build (серый без сборки); под заголовком
+   **Configuration** — Debug / Release с галочкой у выбранной; под **Target Framework** — Default, .NET 9.0, .NET 10.0 (из `MultiTarget`).
+   Выбор Release → подсказка молотка `(Release)`, следующая сборка с `-c Release`; ветки `#if` в `MultiTarget/ActiveBranch.cs` следуют TFM.
+
+#### E-93 `TYPE:refactor-method`, `-inline`, `-introduce`
+Робот 2026-10-05 (WSL, 0.1.70, сервер готов; `09-refactor-this.png`, `09b-…selection.png`, `09c-…method.png`): на `area` — Rename...,
+Move type, Introduce local, Inline temporary variable, Introduce parameter, Move File... / Copy File...; на выделении — Introduce local for
+'Math.Round(area, digits)', Extract method, Extract local function, выбор Introduce local применился, Ctrl+Z вернул. Найдено и исправлено:
+серверу уходила каретка, а не выделение (строк выделения не было). Change signature сервер не предлагает.
+1. `Console/Editor/RiderPopups.cs`. Каретка на `Describe`, Ctrl+Alt+Shift+T: попап «Refactor This», первая строка Rename...; с готовым
+   сервером — его рефакторинги (Move type, Extract base class...). Нет Java-строк и серых строк. Сравнить с `img/25-refactor-this.png`.
+2. Каретка на `area` в `var area = Area();` → среди строк **Inline Variable**; выбор подставляет `Area()` в `return`. Ctrl+Z.
+3. Выделить `Math.Round(area, digits)` → **Introduce Variable** (Built-in) или строки сервера по выделению: Introduce local for …,
+   Extract method, Extract local function. Выбор применяется, Ctrl+Z возвращает.
+4. В .txt / .json-файле Ctrl+Alt+Shift+T — прежний попап платформы.
+
+#### E-94 `TYPE:navigate-call`
+Робот 2026-10-05 (WSL, 0.1.70; `07-navigate-to.png`): строки и сочетания как в шаге 1, Declaration → `IPopupShape.Area` (16:12).
+1. Каретка на `Area` в `shape.Area()`, Ctrl+Shift+G: попап «Navigate To» — Declaration (Ctrl+B), Implementation (Ctrl+Alt+B), Base Symbols,
+   Find Usages, Related Files, Type of Symbol, Show Usages; Type Hierarchy, Call Hierarchy, IL Code; строка файлового менеджера.
+   Сравнить с `img/26-navigate-to.png`.
+2. Declaration → `IPopupShape.Area`; Implementation (с сервером) → `PopupCircle.Area`. Navigate → Navigate To... в главном меню — тот же попап.
+
+#### E-95 `TYPE:generate-in-class`, `TYPE:editor-menu`
+Робот 2026-10-05 (WSL, 0.1.70; `08-generate.png`, `10-generate-on-class.png`, `11-editor-menu.png`): на имени класса — Generate constructor
+'PopupCircle()', Unit Test, Extract interface..., Add 'DebuggerDisplay' attribute | Insert New GUID; на пустой строке сервер не даёт ничего —
+Unit Test и Insert New GUID. ПКМ — строки на местах Rider, Inspect ▸ Browse Call / Type Hierarchy, IL Viewer; Call Hierarchy из меню открылась.
+Найдено и исправлено: Call / Type Hierarchy в меню редактора спрашивали сервер в фоновом update под модальным прогрессом
+(`IllegalStateException: Calling invokeAndWait from read-action`) — теперь сервер спрашивается только по клику.
+1. Каретка на `PopupCircle` в объявлении класса, Alt+Insert: сразу один попап «Generate» — с готовым сервером его генераторы в порядке
+   Rider (конструктор первым), Unit Test, после разделителя — Insert New GUID. Второго попапа «Generate...» нет. На пустой строке сервер
+   генераторов не даёт (у Rider там полный список).
+   Сравнить с `img/24-generate-alt-insert.png` (у Rider недоступные генераторы серые, у нас их нет в списке).
+2. ПКМ на `Total`: порядок как в `TYPE:editor-menu` — после Find Usages строка Find Usages Settings..., подменю Inspect (Call Hierarchy,
+   Type Hierarchy, IL Code), Generate Code..., Quick Definition перед Compare with Clipboard. В .txt этих строк от плагина нет.
+
+#### E-96 `TYPE:strings-holes`, `TYPE:strings-format`, `TYPE:strings-raw`
+1. Схема Darcula или Islands Dark. `debug-playground/Console/Editor/StringColors.cs`, метод `Holes`.
+2. `$"Order {x + 1} of …"`: `+` — цвет оператора, `1` и `0` — цвет числа, `null` — ключевое слово, `"yes"` — отдельная строка, `{` `}`
+   дырок — цвет скобок, `x` / `name` / `Length` — как параметр и свойство; `Order ` и ` of ` — коричневые (строка).
+3. `$"{x,5:D} …"`: `,5:D`, `,-12:N2`, `:yyyy-MM-dd` — фиолетовые (элемент формата).
+4. Метод `BraceEscapes`, `$$"""…"""`: `{{` `}}` вокруг `count` — цвет скобок, `count` — код; одиночные `{` `}` и `\n` — текст строки.
+
+#### E-97 `TYPE:strings-escapes`, `TYPE:strings-invalid-escape`, `TYPE:strings-brace-escapes`, `TYPE:strings-typing`
+1. Метод `Escapes`: в `"a\tb\n\r\n\\ \u0041"` `\t` — розово-фиолетовый, `\n` — тоже, `\r` сразу после него — бирюзовый, следующий `\n` —
+   снова первый цвет (соседние чередуются); в `@"C:\dir ""quoted"" \d"` `""` — escape, `\d` — текст; `'\n'` — escape.
+2. Набрать `\q` между пробелами в `"bad  escape"` — красное волнистое подчёркивание (неверный escape); `\x41` вместо него — верный. Ctrl+Z.
+3. `$"{{ \"count\": {count} }}"`: `{{` и `}}` — цвет escape, `{count}` — дырка.
+4. `TYPE:strings-typing`: набрать `var t = $"{` `total` `}` `\t"` — `total` окрашивается сразу, `\t` — escape, последняя `"` перешагивает
+   закрывающую (в конце одна кавычка). Ctrl+Z.
+
+#### E-98 `TYPE:strings-format-items`
+1. Метод `FormatItems`: `{0}`, `{1,8:N2}` у `string.Format`, `{0:D}` у `Console.WriteLine`, `{0}{1}` у `AppendFormat` — фиолетовые;
+   `{{literal}}` и `Console.WriteLine("{0}")` без аргументов — без цвета формата.
+2. Settings | Editor | Color Scheme | C# → String: «String text», «Escape sequence» → Valid / Valid 2 / Invalid, «Format item», «Format item 2»;
+   выбор пункта подсвечивает его в превью; смена цвета «Format item» меняет `{0}` в редакторе.
+
 #### E-56 `TYPE:library-navigation`
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): с готовым сервером: Ctrl+click `Current.Total` → `LibraryOrder.Total` (48:16), `Lines` → поле (46:22), `Add` → `List.cs` 106:21, `WriteLine` → декомпилированный `Console.cs [System.Console]` 825:24 с баннером «Decompiled from System.Console 9.0.0.0. Read-only» (`e56_writeline.png`). Без сервера не проверено.
 Робот 2026-10-05 (0.1.60, `goto_batch.js`): члены значений известного типа и сборок — туда же, что сервер (метаданные сборок через сервер).
 1. «Navigation and usages» = **Built-in**, сервер выключен.
 2. `LibraryNames.cs`, метод `Navigation`: Ctrl+click по `Total` в `Current.Total` → свойство `Total` класса `LibraryOrder`; по `Lines` → поле.
@@ -467,7 +680,8 @@
    исходник. Не должно быть перехода в неверное место.
 
 #### E-57 `TYPE:types-after-call`, `-await`, `-operators`
-1. «Navigation and usages» и «Colors of identifiers» = **Built-in**, Language Server выключен (Settings | Tools | .NET); дождаться
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): Ctrl+click Built-in на `Total` / `Name` после `FirstOrDefault()?.`, `First(o => o.…)`, `_orders[0].`, `ElementAt(0).`, `Last().`, `(await LoadAsync()).`, `(await Task.Run(…)).`, `(… ?? new TypesOrder()).`, `Pick(true).` — все в `TypesOrder`.
+1. «Navigation and usages» и «Colors of identifiers» = **Built-in**, Language Server выключен (Settings | .NET); дождаться
    индексации сборок после restore.
 2. `Console/Editor/ExpressionTypes.cs`, метод `Members`: Ctrl+click по каждому `Total` (после `FirstOrDefault()?.`, `First(o => …)`,
    `[0]`, `ElementAt(0)`, `(await LoadAsync())`, `(await Task.Run(() => _orders[0]))`) → свойство `Total` класса `TypesOrder`;
@@ -476,6 +690,7 @@
 4. Перехода в неверное место быть не должно; член сборки (`Append`, `ToString`) — никуда без сервера.
 
 #### E-58 `TYPE:types-tuples`, `-deconstruction`, `-query`
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): Ctrl+click Built-in: `pair.Order.Total`, `order.Total` после деконструкции, `o.Total` в `foreach` по `Index().Values`, `big.Total`, `g.Key.Total`, `n.Name` в запросах — все в `TypesOrder`. Цвета этих членов не проверить — см. E-46.
 1. Настройки — как в E-57.
 2. `TYPE:types-tuples`: Ctrl+click по `Total` в `pair.Order.Total` → `TypesOrder.Total`; `Item1` (поле `ValueTuple`) — никуда.
 3. `TYPE:types-deconstruction`: `Total` после `order.` (из `var (order, count) = pair`) и после `o.` в `foreach (var o in Index().Values)`
@@ -484,22 +699,24 @@
 5. Открыть файл на 1000+ строк с LINQ и лямбдами: цвета без заметной задержки (замер теста `CSharpExpressionTypesTest` — 60–100 мс тёплым).
 
 #### E-49 `TYPE:rename-conflict`, `TYPE:rename-primary-member`
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): `rename-conflict`: `prices` + Enter — всплывает окно конфликтов «2 conflicts» с «A parameter named 'prices' is already declared at line 30» и кнопками Refactor Anyway / Cancel (вместо названного в EXPECT диалога «Problems Detected» — платформа 2026.1 так показывает конфликты); Cancel оставляет `subtotal` (`e49_conflict.png`). `rename-primary-member` не прогонялся.
 1. «Rename» = **Built-in**, `Console/Editor/Rename.cs`.
 2. `TYPE:rename-conflict`: каретка на `subtotal`, Shift+F6, набрать `prices`, Enter — диалог «Problems Detected»: «A parameter named
    'prices' is already declared…». Cancel — везде снова `subtotal`. Повторить, Continue — переименовано (код не компилируется), Ctrl+Z.
 3. `TYPE:rename-primary-member`: каретка на `owner` в `Describe`, Shift+F6, `customer`, Enter: `RenameScenarios(string customer)`,
    `<param name="customer">` над классом, `{customer}` в `Describe`. Ctrl+Z.
 4. Каретка на `Limit` в `Limit * discount`, Shift+F6. Сервер готов — переименовывает он (шаблон платформы, все использования); не готов
-   (сразу после открытия solution или Language Server выключен в Tools | .NET) — подсказка над кареткой «'Limit' is not a local symbol:
+   (сразу после открытия solution или Language Server выключен в Settings | .NET) — подсказка над кареткой «'Limit' is not a local symbol:
    members and types are renamed by the C# language server, which is not ready», текст не меняется. Не должно быть окна выбора
    «Rename: Built-in / Language server».
 5. Settings | Editor | Code Editing → снять «In-place» у Rename (Specify refactoring options → in modal dialogs): Shift+F6 на `subtotal` —
    окно «Rename subtotal to:», `sum`, OK — как в шаге 3 E-48. Вернуть галочку и «Rename» = Language server по умолчанию.
 
 #### E-50 `TYPE:diag-semicolon`, `-paren`, `-expression`, `-brace`, `-edit`
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): в светлой теме: `int x = 1` — одна CS1002 после конца строки, подсказка «CS1002: ; expected» (`e50_tooltip_light3.png`); `diag-paren` — CS1026 на `;` (+ CS1513 из-за автоматически вставленной `)`); `diag-expression` — CS1525 на `;`; `diag-brace` — автопара вставляет `}`, после её удаления CS1513 в 58:2 за `}` класса, но строка 40 меняется с CS1519 на CS1001 (похоже на Roslyn, а шаг говорит «ничего между»); `diag-edit` — отметки идут за правкой сразу. Пока открыт список completion, подсветка не обновляется (нормально).
 Робот 2026-10-05 (0.1.56, `errors_at.js` на копии файла в проекте `Console`): Built-in и сервер — те же 18 отметок в тех же местах,
 без задвоений при переключении в обе стороны. Вживую — подсказка по наведению, отметка в конце строки, вторая тема.
-1. Settings | Tools | .NET | Language Server → Source of Features → «Errors and warnings» = **Built-in**, Apply. Открыть `Broken/SyntaxErrors.cs`
+1. Settings | .NET | Language Server → Source of Features → «Errors and warnings» = **Built-in**, Apply. Открыть `Broken/SyntaxErrors.cs`
    (проект `Broken` — не в solution: открыть файл через Project или Ctrl+Shift+N).
 2. `TYPE:diag-semicolon`: на пустой строке под маркером набрать `int x = 1` без `;`. Красная отметка — **за концом этой строки** (не в
    начале следующей), подсказка `CS1002: ; expected`. Дождаться виджета «Roslyn: …» — второй отметки `CS1002` на той же строке не
@@ -513,6 +730,8 @@
    каждого набора; сравнить два прогона.
 
 #### E-51 `TYPE:diag-literals`, `-member`, `-misplaced`, `-directives`, `-end`, `-server-keeps`
+Робот 2026-10-05 (WSL, **0.1.67**): исключённый текст `#if NEVER` серый (`CSHARP_PREPROCESSOR_INACTIVE_BRANCH`, строка 67); CS0230 на `in` — так ставит и Roslyn, EXPECT поправлен; префикс «CS0230:» у текста ошибок сервера добавлен (вживую с сервером не смотрели).
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): коды и места как в EXPECT, CS1030 и CS1634 — жёлтые. Отличия: CS0230 на `in` (55:20), а не на `x`, и текст без префикса «CS0230:»; CS0029 нет (файл вне компиляции). **❌ Текст под `#if NEVER` не серый** ни в светлой, ни в тёмной теме (`e51_light.png`, `e51_dark_directives.png`) — возможно, та же причина, что в E-46.
 1. Built-in, `Broken/SyntaxErrors.cs` без правок. Сверить с `EXPECT` каждого маркера: `CS1011` у `''`, `CS1009` на `\q`, `CS1021` в начале
    большого числа, `CS0595` в начале `1e`; `CS1519` на `;` в `int ;`, `CS1001` на `)` в `Member(int)`; `CS1040` на `#` в `int a = 1; #if X`
    и больше ничего в этой строке.
@@ -525,9 +744,11 @@
 6. Подсказка по наведению (текст — `CSxxxx: …`, без HTML-мусора) и вторая тема — только вживую.
 
 #### E-52 `TYPE:complete-keywords`, `-expected`, `-goto-query`
+Робот 2026-10-05 (WSL, **0.1.67**): `int x = 1` — списка нет, Enter → перевод строки, без `_resized` (`e52_intx_1.png`, `e52_intx_enter.png`).
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): порядок `total`, `limit`, поля, `Count`, методы; `whi` + Enter → `while (|)` (вторая строка `while` — live template платформы); `break` внутри `foreach` предлагается (`e52_keywords.png`, `e52_whi.png`, `e52_break.png`). **❌ Числовой литерал:** `NativeCompletion.cs`, метод `Names`, пустая строка 80 — после `int x = ` открывается список ожидаемого типа, набор `1` его не закрывает и не фильтрует, Enter даёт `int x = 1_resized` (`e52_intx_eq.png`, `e52_intx_1.png`); с COMPLETION = ROSLYN Enter — перевод строки. То же в `SyntaxErrors.cs`. Ещё: в панели inline completion видно «Tab to complete io.github.dotnetsupport.declarations» — внутренний id наружу (`e50_semicolon_light.png`).
 Робот 2026-10-05 (0.1.60, `complete_at_line.js`, 26 мест): из списка сервера Built-in не теряет ничего, кроме `yield` вне итератора и
 `await` в геттере (там они неверны); недостающие ключевые слова добавлены, `override`-члены сервера больше не двоятся. Built-in — по умолчанию.
-1. Settings | Tools | .NET | Language Server → Source of Features → «Completion» = **Built-in**, Apply. Открыть
+1. Settings | .NET | Language Server → Source of Features → «Completion» = **Built-in**, Apply. Открыть
    `Console/Editor/NativeCompletion.cs` до готовности «Roslyn: DebugPlayground.sln» (или с выключенным сервером).
 2. `TYPE:complete-keywords`: Ctrl+Space на пустой строке — список есть сразу; `total`, `limit`, затем поля / свойства, методы, типы,
    ключевые слова в конце; нет `break` / `continue` / `case` / `public`. Внутри `foreach` — есть `break` и `continue`. `whi` + Enter → `while (|)`.
@@ -541,6 +762,7 @@
    В Rhino: сравнение строк — `String(x) == "true"`, числа в Java — `new java.lang.Integer(n)`.
 
 #### E-53 `TYPE:complete-override`, `-partial`, `-names`
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): `override` — Describe, Equals, GetHashCode, Sides, ToString; Describe пишет член целиком, каретка после `;`; `partial` — `OnResized` с пустым телом; после `StringBuilder ` — `builder`, `stringBuilder`, `@string` (`e53_*.png`).
 Робот 2026-10-05 (0.1.60, `complete_select.js`): Built-in `override Describe` и `partial OnResized` пишут член целиком; у сервера
 выбор этих пунктов больше не падает (StackOverflowError) и не оставляет `();`.
 1. Built-in. `TYPE:complete-override`: `public override ` + Ctrl+Space → `Describe`, `Sides`, `Equals`, `GetHashCode`, `ToString`, нет `Area`
@@ -551,6 +773,8 @@
    `private readonly StringBuilder ` → `_builder`. Ctrl+Z после каждого. Отступы вставленного члена при другом размере таба — только вживую.
 
 #### E-54 `TYPE:complete-task-from-result`, `-task-completed`, `-await-async`, `-make-async`
+Робот 2026-10-05 (WSL, **0.1.67**, снимки — `C:/tmp/wsl-fix/`): исправлено. Причина ❌ в 0.1.63 — IDEA 2026.1 открывает папку без системы сборки проектом без модулей, её файлы не индексируются (`CONTENT_NON_INDEXABLE`), и платформа пропускает в них всё, что не `DumbAware` (аннотаторы цветов, intention-действия плагина). Теперь плагин сам заводит модуль на папку с solution (`DotNetModuleSetup`), а аннотатор цветов и Alt+Enter-действия помечены `DumbAware`. `make-async`: Alt+Enter на `await` — «Make method async» плагина, даёт `public async Task<int> Delayed()` (`e54_make_async_popup.png`, `e54_make_async_after.png`). Серверное «Fix All: Make method async» стояло выше — с 0.1.67 скрыто вместе с его строкой.
+Робот 2026-10-05 (WSL, 0.1.63, Xvfb, настоящие мышь и клавиатура; снимки — `C:/tmp/wsl-checks/`): серый `Task.FromResult();` и первый пункт списка, Tab → `return Task.FromResult(|);` (`e54_fromresult_ghost.png`); `aw` → `await` делает `public async Task<int> Total()` (`e54_await_total.png`). **❌ `make-async`:** Alt+Enter на `await` в `Delayed` показывает только серверное «Fix All: Make method async» (и с COMPLETION = NATIVE, и с ROSLYN), применение ничего не меняет — заголовок остаётся `public int Delayed()`. `NativeCSharpMakeAsyncIntention.isAvailable` на `await` = true (смещения +8..+11), но строки плагина в списке нет — как у E-65/E-66 (`e54_make_async*.png`).
 Робот 2026-10-05 (0.1.60, `complete_select.js`): `Task.FromResult` первым и с кареткой в скобках; `await` делает `async Task<int> Total()`,
 `async Task Fire()`, `async void OnClick`; у сервера `await` больше не пишет `awaitait`.
 1. `Console/Editor/CommonCalls.cs`, любой источник «Completion». `TYPE:complete-task-from-result`: `return ` → серый `Task.FromResult();`,
@@ -929,13 +1153,13 @@
 2. Debug: первая остановка — master при `round == 2`, точка исчезает; следующая — slave при `round == 3`.
 
 #### D-10 Остальное этапа 2
-1. `BP:expensive`: `slow` описывается ~2 с, остальное дерево работает; выключить Settings | Tools | .NET | Debugger «Allow property evaluations…» → значения без вызова кода.
+1. `BP:expensive`: `slow` описывается ~2 с, остальное дерево работает; выключить Settings | .NET | Debugger «Allow property evaluations…» → значения без вызова кода.
 2. Run to Cursor (Alt+F9) из `BP:stepping` на строку с `Console.WriteLine`.
 3. `Console: Evil`, `BP:evil`: раскрыть `evil`, Stop — за секунды, в `idea.log` нет `Cannot send Ctrl+C`. `Console: Wait`: Pause → кадры в `Wait`, Stop.
 4. `MultiTarget`, `BP:multitarget`: `framework` = выбор в тулбаре. `BP:output`: stderr виден, кириллица (известная проблема адаптера на Windows — отметить, как выглядит).
 
 #### D-11 F7 во внешний код
-1. Settings | Tools | .NET | Debugger → включить «Enable external source debug».
+1. Settings | .NET | Debugger → включить «Enable external source debug».
 2. Конфигурация `Console` с аргументом `exceptions`, точка на строке `int.Parse("not a number")` в `Exceptions()` (`Scenarios.cs`), Debug.
 3. **F7** → шаг в исходник фреймворка (`Int32.Parse` / `Number.Parsing`). Без галочки — F7 не уходит во внешний код.
 
@@ -1200,10 +1424,14 @@
 | NF-09 | 0.1.41 | Цели WebApplications, WinFX при вычислении | нет сценария | ⬜ |
 | NF-10 | 0.1.28 | Legacy-проект в Solution view | временный `Legacy.csproj` | ⬜ |
 | NF-11 | 0.1.28 | Legacy: правка извне, wildcard, плохой `global.json` | временный `Legacy.csproj` | ⬜ |
-| NF-12 | 0.1.23 / 0.1.29 | Attach к .NET Framework за ключом реестра | README «Attach к процессам .NET Framework» | ⬜ |
+| NF-12 | 0.1.23 / 0.1.29 | Attach к .NET Framework: ключ реестра снят в 0.1.69 — см. E-90; хосты CLR (`powershell.exe`) | README «Attach к процессам .NET Framework» | ⬜ |
 | NF-13 | открыт | Roslyn LS и legacy-проекты | `NetFramework.sln` | ⬜ |
-| NF-14 | факт плана | Двойная сборка при Debug legacy | `NetFramework.sln` | ⬜ |
+| NF-14 | факт плана | Двойная сборка при Debug legacy — была (и у SDK-проектов), исправлено в 0.1.69, см. E-87 | `NetFramework.sln` | 🤖 |
 | NF-15 | для плана | `dotnet test` / `dotnet vstest` на legacy | нет сценария | ⬜ |
+| E-87 | 0.1.69 | Debug `LegacyConsole`: одна сборка, остановка, кадры, переменные, Evaluate, шаги, вывод, рабочая папка | `LegacyConsole/Program.cs`, `BP:legacy-console` | 🤖 |
+| E-88 | 0.1.69 | Debug `LegacyWpf`: клик → остановка, `clicks`, Step Over, Stop закрывает окно | `LegacyWpf/MainWindow.xaml.cs`, `BP:legacy-wpf-click` | 🤖 |
+| E-89 | 0.1.69 | 32-битная программа и процесс: отказ уведомлением до адаптера | `LegacyConsole.csproj` без `Prefer32Bit` | 🤖 |
+| E-90 | 0.1.69 | Attach to Process к net4x без ключа реестра; Debug теста `net481` | `BP:legacy-wpf-click`; свой проект тестов `net481` | 🤖 |
 
 #### NF-01 Run `LegacyConsole`
 1. Конфигурация «.NET Project» с `LegacyConsole`, аргументы `first "two words"`, Run.
@@ -1219,7 +1447,7 @@
 2. Restore проходит; в журнале `commands` у команды `-p:SolutionDir=…\NetFramework\`.
 
 #### NF-04 «MSBuild version»
-1. Settings | Tools | .NET | Toolset and Build: «MSBuild version» = «Auto», под ней — какая установка и где.
+1. Settings | .NET | Toolset and Build: «MSBuild version» = «Auto», под ней — какая установка и где.
 2. В списке ещё «.NET SDK (dotnet build)» и установки VS.
 
 #### NF-05 Build с чистого
@@ -1259,11 +1487,10 @@
 3. `global.json` с несуществующей версией SDK, перезапуск IDE → ошибка в журнале `msbuild`, дерево показывает все файлы, IDE не виснет. Убрать.
 
 #### NF-12 Attach к .NET Framework
-1. Запустить программу net4x (например `C:\Windows\Microsoft.NET\Framework64\v4.0.30319\AddInProcess.exe`). Run | Attach to Process → в «.NET» её **нет**.
-2. Help | Find Action → Registry → `dotnet.debugger.attach.netFramework` = true → процесс появился; `notepad.exe` — нет; `Playground.Console.exe` — есть.
-3. Attach → ожидаемо ошибка адаптера с кнопкой Plugin Logs, IDE не зависает.
-4. С ключом: `powershell.exe` 5.1 (64 и 32 бита, `SysWOW64`) в «.NET» (иногда со второго открытия), `pwsh.exe` — как .NET; журнал `diagnostics` без ошибок.
-5. Ключ выключен → `powershell.exe` нет, DiagnosticsHelper не запускается.
+С 0.1.69 ключа реестра нет: процессы net4x предлагаются всегда (на Windows); attach и отладка — E-90.
+1. Run | Attach to Process: `powershell.exe` 5.1 (64 и 32 бита, `SysWOW64`) в «.NET» (иногда со второго открытия), `pwsh.exe` — как .NET;
+   `notepad.exe` — нет; журнал `diagnostics` без ошибок.
+2. Attach к 32-битному `powershell.exe` → уведомление «Cannot Debug a 32-bit Process», сессии нет.
 
 #### NF-13 Roslyn LS и legacy
 1. Открыть `NetFramework`, дождаться виджета сервера. Plugin Logs, категория `roslyn` (и Show Language Server Log).
@@ -1271,8 +1498,38 @@
    Это исследование для открытого пункта ROADMAP — результат описать заметкой.
 
 #### NF-14 Двойная сборка при Debug
-1. Debug `LegacyConsole` (отладчик net4x пока не умеет — важна только сборка).
-2. В окне Build — одна сборка или две подряд? Записать.
+Было: две сборки подряд на каждый Debug (робот, 2026-10-05; у SDK-проектов так же). С 0.1.69 — одна: шаги в E-87.
+
+#### E-87 Debug `LegacyConsole` — `BP:legacy-console`
+1. Открыть `debug-playground/NetFramework` (копию), `NetFramework.sln`. Точка останова на строке `BP:legacy-console`. Конфигурация «.NET Project»
+   с `LegacyConsole`, аргументы `first second` → Debug.
+2. Окно Build: **одна** сборка `MSBuild.exe` (в Plugin Logs, категория `run`: `built before the launch N` и `debug of LegacyConsole (N): built
+   before the launch` с тем же N, второй `Build LegacyConsole.csproj` нет).
+3. Остановка на строке маркера; кадр `LegacyConsole.Program.Main()`; переменные `args` (`{string[2]}`) и `json` с `"Runtime":"4.0.30319.42000"`.
+4. Evaluate: `Environment.Version.ToString()` → `"4.0.30319.42000"`; `Environment.CurrentDirectory` → `…\LegacyConsole\bin\Debug` (папка вывода,
+   как у Run и Visual Studio); `Newtonsoft.Json.JsonConvert.SerializeObject(args)` → `"[\"first\",\"second\"]"`.
+5. Step Over → строка 14, Step Into → 15 (в `Console.WriteLine` не заходит), Resume → в Console JSON и «Кириллица: привет, ёжик» целиком, сессия кончается.
+   Человеку: вид окна Debug, подсказки значений в редакторе.
+
+#### E-88 Debug `LegacyWpf` — `BP:legacy-wpf-click`
+1. Точка останова на `BP:legacy-wpf-click`, Debug конфигурации с `LegacyWpf` → окно «Legacy WPF».
+2. Click → остановка в `OnClick`, кадры `LegacyWpf.MainWindow.OnClick()` и `[External Code]`, `this`, `sender` (`Button: Click`), `e`;
+   Evaluate `clicks` → 1, `Greeting.Text` → «Built by MSBuild of Visual Studio».
+3. Step Over → строка 20; Resume; второй Click → `clicks` = 2. Stop → окно закрыто, `LegacyWpf.exe` в диспетчере задач нет.
+
+#### E-89 32-битная программа
+1. В `LegacyConsole.csproj` убрать строку `<Prefer32Bit>false</Prefer32Bit>` → Debug `LegacyConsole`.
+2. Сборка проходит, адаптер не запускается; уведомление «Cannot Debug a 32-bit Process»: «LegacyConsole.exe runs as a 32-bit process (AnyCPU
+   with "Prefer 32-bit", …) … Set Prefer32Bit to false in LegacyConsole.csproj and debug again.» Платформенного «Error running» нет. Вернуть строку.
+3. Attach: запустить 32-битную сборку `LegacyWpf.exe` (собрать без `Prefer32Bit` в другую папку) → Attach to Process → то же уведомление
+   «LegacyWpf.exe (PID) is a 32-bit process…». Человеку: текст уведомления читается целиком (раскрыть стрелкой).
+
+#### E-90 Attach к net4x, тесты `net481`
+1. Запустить `LegacyWpf\bin\Debug\LegacyWpf.exe` вне IDE. Run | Attach to Process → он в группе «.NET» **с первого открытия** списка.
+2. Attach (точка на `BP:legacy-wpf-click`) → Click → остановка, `clicks` = 1. Stop (detach) → окно живо.
+3. SDK-проект тестов `net481` (`dotnet new mstest`, `TargetFramework` = `net481`), точка в тесте → Debug теста (▶ у метода или конфигурация
+   `dotnet test`) → сессия «Tests of …», остановка в тесте, Evaluate локальной; Resume → «Tests passed: 1».
+   Роботом проверено через API (список — `attach_list.js`, attach — `attach.js`); сам диалог Attach to Process человеку.
 
 #### NF-15 Тесты legacy (факт для плана)
 1. В консоли: `dotnet test` на legacy-проекте с тестами (появится `NetFramework/LegacyTests`) → ожидается MSB4057.
@@ -1350,7 +1607,7 @@
 
 #### O-01 Plugin Logs
 1. Меню .NET → **Plugin Logs**: события с категориями (`dotnet`, `sdk`, `roslyn`…); Clear, «Warnings and Errors Only», Open Logs Folder работают.
-2. Вызвать ошибку (например неверный путь к `dotnet` в Settings | Tools | .NET) → уведомление с кнопкой Plugin Logs. Вернуть путь.
+2. Вызвать ошибку (например неверный путь к `dotnet` в Settings | .NET) → уведомление с кнопкой Plugin Logs. Вернуть путь.
 
 #### O-02 Страницы о плагине
 1. Меню .NET → **Welcome to C# Project Support**: вкладка, код на первом экране набирается сам, в подвале «Редакция страницы 2026-09-29.5».
@@ -1358,7 +1615,7 @@
 3. Тема страниц = тема IDE; сменить тему и открыть снова — новая.
 
 #### O-03 Настройки по-русски
-1. Settings | Tools | .NET → «Language of the settings pages» = Русский, Apply, закрыть и открыть Settings.
+1. Settings | .NET → «Language of the settings pages» = Русский, Apply, закрыть и открыть Settings.
 2. Страницы .NET, Toolset and Build, NuGet, Coverage, Debugger, Language Server — по-русски; названия в дереве слева английские.
 3. Language Server: группы «Анализ», «Автодополнение», «Подсказки в коде»; значения (`openFiles`, `at_the_end`) не переведены.
 4. «Документация плагина...» внизу страницы .NET → системный браузер на разделе «Настройки». English / «Как в IDE» — английский.
@@ -1368,7 +1625,7 @@
 2. Переключить на тёмную (Settings | Appearance) — значки различимы, не «грязные», в стиле нового UI.
 
 #### O-05 Папки поиска `dotnet`
-1. Положить SDK в нестандартную папку (или указать папку с `dotnet*` внутри) в Settings | Tools | .NET → Additional search folders.
+1. Положить SDK в нестандартную папку (или указать папку с `dotnet*` внутри) в Settings | .NET → Additional search folders.
 2. Убрать `dotnet` из PATH для IDE (или переменная `DOTNET_SUPPORT_SEARCH_PATHS`) → плагин находит `dotnet` из папки, новейшую версию по имени.
 
 #### O-06 Безопасность

@@ -21,6 +21,7 @@ import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.CSharpVariableNames
 import io.github.dotnetsupport.lang.NativeCSharpCompletion
 import io.github.dotnetsupport.lang.NativeCSharpCompletionPlace
+import io.github.dotnetsupport.lang.isInNumericLiteral
 import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.suggest.SuggestionRules
 
@@ -449,6 +450,53 @@ class CSharpCompletionNativeTest : BasePlatformTestCase() {
             myFixture.completeBasic()
             myFixture.lookup?.hideLookup(true)
         }
+    }
+
+    /**
+     * A digit typed into the open list of the expected type (`int x = ` → `1`) closes it, as in Rider: a number is no name, and Enter
+     * after it is a line break, not the first item (robot 0.1.63: `int x = 1_resized`). Nor is a list made at or after a number.
+     */
+    /** The items of a list that opens by itself after [typed] is typed at `<caret>` (the auto-popup of a trigger character of the server). */
+    private fun autoPopup(text: String, typed: String): List<String> {
+        myFixture.configureByText("Auto${files++}.cs", text)
+        myFixture.type(typed)
+        val editor = myFixture.editor
+        com.intellij.codeInsight.completion.CodeCompletionHandlerBase(com.intellij.codeInsight.completion.CompletionType.BASIC, false, true, true)
+            .invokeCompletion(project, editor, 0)
+        com.intellij.util.ui.UIUtil.dispatchAllInvocationEvents()
+        return myFixture.lookup?.items?.filter { it.getUserData(NativeCSharpCompletion.NATIVE) == true }?.map { it.lookupString }.orEmpty()
+    }
+
+    fun testNoListOpensByItselfAfterABraceOrAParenthesis() {
+        // the screenshot of 2026-10-05: `GetStringAsync(CancellationToken cancellationToken = default){` opened the list of the body
+        val header = "using System.Threading; using System.Threading.Tasks; class R { private string _title = \"\";\n" +
+            "public async Task<string> GetStringAsync(CancellationToken cancellationToken = default)<caret>\n}"
+        assertEquals(emptyList<String>(), autoPopup(header, "{"))
+        assertEquals("after `(`", emptyList<String>(), autoPopup("class R { void M(int a) { Use<caret> } void Use(int x) { } }", "("))
+        assertTrue("after `.`", autoPopup("class R { int Count; void M() { this<caret> } }", ".").contains("Count"))
+        assertTrue("after `new `", autoPopup("class R { void M() { var r = new<caret> } }", " ").contains("R"))
+        // an explicit call still lists the body
+        assertTrue(native(header.replace("<caret>", "{<caret>")).contains("cancellationToken"))
+    }
+
+    fun testNoListOnANumber() {
+        for (number in listOf("1", "12", "0x1F", "1.5", "1_000", "2L", "1e")) {
+            myFixture.configureByText("Lit${files++}.cs", "class Lit { int _resized; void M() { int x = $number<caret> } }")
+            myFixture.completeBasic()
+            assertNull("a list after $number: ${myFixture.lookupElementStrings}", myFixture.lookup)
+        }
+        myFixture.configureByText("Lit${files++}.cs", "class Lit { int _resized; int Count => 0; void M() { int x = <caret> } }")
+        myFixture.completeBasic()
+        assertNotNull("the list of the expected type", myFixture.lookup)
+        myFixture.type('1')
+        com.intellij.util.ui.UIUtil.dispatchAllInvocationEvents()
+        assertTrue("the list after a digit: ${myFixture.lookupElementStrings}", myFixture.lookupElementStrings.isNullOrEmpty())
+        myFixture.lookup?.hideLookup(true)
+        myFixture.type('\n')
+        assertTrue(myFixture.editor.document.text, myFixture.editor.document.text.contains("int x = 1\n"))
+        // names with digits still complete
+        assertFalse(isInNumericLiteral("x1", 2))
+        assertTrue(isInNumericLiteral("= 0x1F", 6))
     }
 
     /** Items as the client of the server makes them: marked [NativeCSharpCompletion.SERVER]. */

@@ -7,6 +7,9 @@ import com.intellij.codeInsight.inline.completion.InlineCompletionInsertHandler
 import com.intellij.codeInsight.inline.completion.elements.InlineCompletionElement
 import com.intellij.codeInsight.inline.completion.InlineCompletionProvider
 import com.intellij.codeInsight.inline.completion.InlineCompletionProviderID
+import com.intellij.codeInsight.inline.completion.InlineCompletionProviderPresentation
+import javax.swing.JComponent
+import javax.swing.JLabel
 import com.intellij.codeInsight.inline.completion.InlineCompletionRequest
 import com.intellij.codeInsight.inline.completion.elements.InlineCompletionGrayTextElement
 import com.intellij.codeInsight.inline.completion.suggestion.InlineCompletionSingleSuggestion
@@ -473,6 +476,9 @@ object GhostPlace {
 class CSharpGhostTextProvider : InlineCompletionProvider {
     override val id: InlineCompletionProviderID = InlineCompletionProviderID("io.github.dotnetsupport.declarations")
 
+    // the panel of the gray text names its provider: the default shows the id («Tab to complete io.github.dotnetsupport.declarations»)
+    override val providerPresentation: InlineCompletionProviderPresentation = presentation()
+
     /** Exact: true only when there is something to show, so the other providers (the lambda of the server, Full Line) get their turn. */
     override fun isEnabled(event: InlineCompletionEvent): Boolean {
         val request = event.toRequest() ?: return false
@@ -531,6 +537,11 @@ class CSharpGhostTextProvider : InlineCompletionProvider {
     }
 
     companion object {
+        /** The name of the plugin for the panel of gray text, in place of the id of a provider. */
+        fun presentation(): InlineCompletionProviderPresentation = object : InlineCompletionProviderPresentation {
+            override fun getTooltip(project: Project?): JComponent = JLabel("C# Project Support")
+        }
+
         private val MODERN = Regex("""^net(\d+)\.\d+.*$""")
 
         /** `new()` is C# 9, the default language of .NET 5: a project for .NET Framework, .NET Standard or .NET Core 3 gets `new List<int>()`. */

@@ -29,7 +29,7 @@ Solution для живой проверки плагина: отладчика (
 - [ ] точки останова ставятся на строках с кодом и не ставятся на `using`, комментариях, заголовках методов (`Scenarios.cs`, `Program.cs`)
 - [ ] `BP:lambda`, `BP:iterator`, `BP:property`, `BP:lib`, `BP:lib-expression-body`
 - [ ] `Broken`: Debug → ошибки CS0029 / CS0103 в окне Build и в редакторе, сессия отладки не остаётся открытой
-- [ ] `Broken/SyntaxErrors.cs`, «Errors and warnings» = Built-in (Settings | Tools | .NET | Language Server): `TYPE:diag-semicolon` — `int x = 1` →
+- [ ] `Broken/SyntaxErrors.cs`, «Errors and warnings» = Built-in (Settings | .NET | Language Server): `TYPE:diag-semicolon` — `int x = 1` →
   одна красная отметка за концом строки, подсказка `CS1002: ; expected`, второй такой же от сервера нет; `TYPE:diag-paren`, `-expression`,
   `-brace`, `-edit` — по `EXPECT`; постоянные `TYPE:diag-literals`, `-member`, `-misplaced`, `-directives` (жёлтые `#warning` / `#pragma`,
   в `#if NEVER` ошибок нет), `-end` (незакрытый `/*`) — коды и места как в `EXPECT`; `TYPE:diag-server-keeps` — `CS0230` и `CS0029` от сервера
@@ -52,7 +52,7 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `Console: Evil`, `BP:evil`: раскрыть `evil`, нажать Stop — завершение за секунды, в `idea.log` нет `Cannot send Ctrl+C`
 - [ ] `Console: Wait`: Pause → кадры в `Wait`, Stop
 - [ ] `MultiTarget`: `BP:multitarget`, значение `framework` соответствует выбору в тулбаре
-- [ ] Settings | Tools | .NET | Debugger: «Enable external source debug» (F7 в `int.Parse` из `Exceptions`), «Allow property evaluations…»;
+- [ ] Settings | .NET | Debugger: «Enable external source debug» (F7 в `int.Parse` из `Exceptions`), «Allow property evaluations…»;
       «Save all files on debugger launch» под замком — платформа сохраняет файлы перед любым запуском сама
 - [ ] `BP:output`: кириллица в выводе (известная проблема адаптера на Windows), stderr
 
@@ -157,7 +157,7 @@ Solution для живой проверки плагина: отладчика (
 - [ ] на узле проекта / Analyzers / Projects пункта Decompile... нет
 
 ### Go to Class / Symbol по сборкам, metadata view (0.1.62)
-Кода не нужно: после restore дождаться индексации сборок; лучше с выключенным сервером (Settings | Tools | .NET → Language Server).
+Кода не нужно: после restore дождаться индексации сборок; лучше с выключенным сервером (Settings | .NET → Language Server).
 - [ ] Ctrl+N `JsonSerializer`: без «Include non-project items» — только типы solution; с галочкой — `JsonSerializer (System.Text.Json, System.Text.Json 10.0)` один раз, хотя сборку видят несколько проектов; Enter — вкладка `JsonSerializer.cs [System.Text.Json 10.0]`, баннер «Metadata of …», каретка на имени типа
 - [ ] в metadata view: `// Assembly …` / `// Assembly location …` в начале, `using`, `namespace`, тип с generic-параметрами и базами, члены без тел (`;`, `{ get; set; }`), `///`-доки, вложенные типы; цвета и сворачивание как у C#; набрать что-нибудь — файл только для чтения
 - [ ] Ctrl+Alt+Shift+N `WriteLine` с галочкой — перегрузки `WriteLine(string)` и т. д. `(Console, System, System.Console 10.0)`; Enter — на строке этой перегрузки
@@ -204,7 +204,7 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `TYPE:find-usages-type`: на `UsageSample` → «Declaration» 2, «Usage in base type list», «New instance creation», «Usage in typeof», «Type check (is / as)», «Usage in declaration type», «Usage in type argument», «Usage in nameof»
 - [ ] `TYPE:find-usages-attribute`: на `UsageNoteAttribute` → «Usage in attribute» 1 и «Declaration»
 - [ ] выключить Group by Usage Type / Module / File Structure → соответствующий уровень дерева пропадает, остальное как у Java / Kotlin
-- [ ] Виды использований по встроенному дереву (0.1.46): Settings | Tools | .NET | Language Server → Source of Features → «Kinds of usages» = Built-in (умолчание), затем:
+- [ ] Виды использований по встроенному дереву (0.1.46): Settings | .NET | Language Server → Source of Features → «Kinds of usages» = Built-in (умолчание), затем:
   - [ ] пункты выше (`find-usages-field` / `-method` / `-type` / `-attribute`) — те же числа, что с «Language server»
   - [ ] `TYPE:find-usages-native-field`: на `Total` класса `UsageTally` → 5: «Declaration» 1, «Write access» 2 (`(Total, var count) = other` и `Total = 3` в `Inner = { … }`), «Read access» 2 (`t.Total` в запросе сервер 5.12 не отдаёт)
   - [ ] `TYPE:find-usages-native-members`: на `Lines` → «Read access» 2 (в т. ч. `Lines = { 1, 2 }`), «Declaration» 1; на `Inner` → «Read access» 1, «Declaration» 1
@@ -212,11 +212,13 @@ Solution для живой проверки плагина: отладчика (
   - [ ] вернуть «Language server» → у `(Total, …) = other`, `Lines = { … }`, `Inner = { … }` снова «Read/Write access» по токенам (см. «tokens:» в EXPECT), `out UsageTally` — «Write access», `UsageTally { … }` — «Read access»; переключение действует сразу, без переоткрытия файла
 
 ### Помощь при наборе по встроенному дереву (0.1.48) — `Console/Editor/ExtendSelection.cs`, `Console/Editor/CompleteStatement.cs`
-Settings | Tools | .NET | Language Server → Source of Features → «Typing assistance» = Built-in (умолчание; Language server — прежние токены),
+Settings | .NET | Language Server → Source of Features → «Typing assistance» = Built-in (умолчание; Language server — прежние токены),
 затем маркеры; потом вернуть Language server и сверить с «Tokens:» в EXPECT. Набранное отменять Ctrl+Z.
 - [ ] `TYPE:extend-selection-call`: Ctrl+W на `name` → `name.Trim` → `name.Trim()` → аргументы → `Compute(…)` → `Compute(…) + 1` → … → `var total = …;` → с комментарием над ним → тело без скобок → тело → метод с `[Obsolete]` → метод с doc-комментарием
 - [ ] `TYPE:extend-selection-string`: `plain` → `plain text here` (без кавычек) → `"plain text here"`; в интерполированной строке — текст без `$"` и `"`
 - [ ] `TYPE:extend-selection-condition`: `>` → `total > 1` → `(total > 1)` → весь `if` с блоком
+- [ ] `TYPE:quote-interpolated` / `TYPE:quote-verbatim` (`Editor/Quotes.cs`): `$"`, `@"`, `$@"` получают вторую кавычку, закрывающая перешагивается
+- [ ] `TYPE:no-popup-after-brace` (`Editor/NativeCompletion.cs`): после `{` и `(` список сам не открывается, после `this.` открывается
 - [ ] `TYPE:complete-call` / `complete-nested`: `Make(a, b` + Ctrl+Shift+Enter → `Make(a, b);`, каретка на новой строке (токены: ничего не добавляют)
 - [ ] `TYPE:complete-two-lines`: каретка в конце `Make(a,` → вызов не разорван, новая строка под `b);`; без `;` — `;` добавлена после `b)`
 - [ ] `TYPE:complete-unfinished`: `Make(a, ` → ничего не добавлено в обоих режимах
@@ -226,19 +228,20 @@ Settings | Tools | .NET | Language Server → Source of Features → «Typing as
 - [ ] `TYPE:gray-semicolon`: серая `;` после `.Where(x => x > 0)` второй строки (токены: нет); после `Make(2, 3)` второй строки незакрытого `Make(1,` — нет (токены: есть)
 
 ### Встроенный форматтер (0.1.49) — `Console/Editor/Formatting.cs`
-Settings | Tools | .NET | Language Server → Source of Features → «Formatting» = Built-in (умолчание пока Language server), форматтер в
+Settings | .NET | Language Server → Source of Features → «Formatting» = Built-in (умолчание пока Language server), форматтер в
 Toolset and Build — Auto или dotnet format; затем маркеры (Ctrl+Alt+L), потом вернуть Language server и сравнить (текст должен совпасть).
 Робот: `tools/ui-robot/scripts/reformat.js` (см. `tools/ui-robot/README.md`). Изменения отменять Ctrl+Z.
 - [ ] `TYPE:format-method`: выделенный `Sum` — Allman, отступ 4, пробелы вокруг операторов и после `if`; `if (a > b) { return a - b; }` остаётся в строку; соседние методы не тронуты
 - [ ] `TYPE:format-file`: весь файл; пустые строки, строки-литералы, комментарии и ветка `#else` (выключенная при `DEBUG`) — как были; дырки `$"{…}"` отформатированы
 - [ ] `TYPE:format-switch`: `case` с отступом внутри `switch`, операторы глубже, блок `case 2:` — под `case`
-- [ ] `TYPE:format-initializers`: члены инициализатора объекта по строкам; многострочный `new List<int>{1,` … `3}` не тронут; `where`/`select` под `from`; тело лямбды от строки лямбды
+- [ ] `TYPE:format-initializers` (0.1.68, как в Rider): у многострочных инициализаторов и `[...]` скобка `{`/`[` на своей строке под `var`, элементы на 4 глубже, разбиение по строкам прежнее (`1, 2,` вместе), `}`/`]` под `{`; вложенный многострочный инициализатор раскладывает соседей по строкам; однострочные — `{ 4, 5 }` и `[6, 7]`; `Sum([` — `[` остаётся после `(`; запрос и лямбда не тронуты
+- [ ] `TYPE:format-arguments` (0.1.68, как в Rider): строки аргументов — на 4 правее строки вызова, а не под первым аргументом; одинокая `)` — под строкой вызова; `Combine(Combine(1,` при внешних аргументах по строкам — на два отступа; внутри `if (` — от первого токена условия; параметры `Combine` — на 4 правее `private`; строки не склеиваются и не разбиваются
 - [ ] `TYPE:format-options`: `.editorconfig` с `csharp_new_line_before_open_brace = none`, `indent_size = 2` → `{` в конце строки, отступ 2
 - [ ] `TYPE:format-choice`: «Built-in» форматирует выделение на лету, «dotnet format (on save)» — файл целиком, по Ctrl+Alt+L и при сохранении; «Auto» — по переключателю «Formatting»
 - [ ] `TYPE:format-csharpier`: при форматтере CSharpier — стиль CSharpier в обоих режимах; при None — ничего
 
 ### Навигация по встроенному дереву (0.1.50) — `Console/Editor/Navigation.cs`
-Settings | Tools | .NET | Language Server → Source of Features → «Navigation and usages» = Built-in (умолчание пока Language server);
+Settings | .NET | Language Server → Source of Features → «Navigation and usages» = Built-in (умолчание пока Language server);
 ничего не набирать — Ctrl+click / Ctrl+B / Ctrl+наведение / каретка, как сказано в маркере. Потом вернуть Language server и сравнить:
 цели те же (сервер должен быть готов). Робот: `tools/ui-robot/scripts/goto_declaration.js` (см. `tools/ui-robot/README.md`).
 - [ ] `TYPE:nav-locals`: в строке `return` метода `Locals` — `total`, `parsed` (`out var`), `text` (паттерн), `item` (`foreach`), `index` (`for`), `first` (деконструкция), `value` / `input` (параметры) — сразу на имя в объявлении, без списка; Ctrl+наведение подчёркивает, на самом объявлении — нет
@@ -250,7 +253,7 @@ Settings | Tools | .NET | Language Server → Source of Features → «Navigatio
 - [ ] Go to Super (Ctrl+U) в `GoToBase.cs` работает и при «Navigation and usages» = Built-in
 
 ### Completion по встроенному дереву (0.1.55) — `Console/Editor/NativeCompletion.cs`, `Console/Editor/CommonCalls.cs`
-Settings | Tools | .NET | Language Server → Source of Features → «Completion» = Built-in (умолчание пока Language server); набрать под
+Settings | .NET | Language Server → Source of Features → «Completion» = Built-in (умолчание пока Language server); набрать под
 маркером, сверить с `EXPECT`, Ctrl+Z. Робот: `tools/ui-robot/scripts/complete_at_line.js` в обоих режимах (`feature_source.js`, `COMPLETION`).
 - [ ] `TYPE:complete-keywords`: список сразу, до сервера; порядок локальные > параметры > члены > типы > ключевые слова; `break` / `continue` только в цикле; после загрузки сервера — без двойных пунктов
 - [ ] `TYPE:complete-expected`: подходящее по типу выше (`other` над `count`), объявляемой `copy` нет; в аргументе `Resize(` — `amount` первым
@@ -269,9 +272,34 @@ Completion — при «Completion» = Built-in; Alt+Enter — при любом
 - [ ] `TYPE:using-postfix`: `.using` → `using var reader = …` (имя выделено); `.awaitusing` → `await using var stream = …` и `async Task`
 - [ ] `TYPE:using-to-declaration`, `-to-statement`, `-wrap`: «Convert to 'using' declaration» / «… statement», «Wrap in 'using' statement», отступы тела на уровень
 - [ ] `TYPE:using-sort`, `-global`: «Sort 'using' directives» (`System`, `System.IO`, `System.Text`); «Convert to 'global using'» — `Console/GlobalUsings.cs` (удалить после проверки)
+- [ ] `TYPE:using-cs1674` (0.1.65, «Errors and warnings» = Built-in): `using (var n = 5) { }` — CS1674 про `'int'` один раз (без копии сервера); `await using` на `CancellationTokenSource` — CS8417; `MemoryStream` и неизвестный тип — без ошибки
+- [ ] `TYPE:using-list` (0.1.65): `using (` + Ctrl+Space — `reader`, `stream`, но не `count` / `title` (и не строки сервера с ними); `await using (` — `stream`, но не `reader`
+
+### Alt+Enter по встроенному дереву (0.1.64) — `Console/Editor/ContextActions.cs`
+«Context actions» = Built-in (по умолчанию пока Language server: при готовом сервере отвечают его действия); без сервера встроенные — при любом
+источнике. Каретка по маркеру, Alt+Enter, сверить с `EXPECT`, Ctrl+Z. При Built-in у каждого действия одна строка: строк сервера с тем же
+действием нет.
+- [ ] `TYPE:ctx-if-to-conditional`: «Convert to '?:' expression» в `Sign` (`if`/`else`), `Clamp` (`if` + `return`), `Assign` (присваивания); в `Mixed` — нет
+- [ ] `TYPE:ctx-conditional-to-if`: «Convert '?:' to 'if' statement» в `Parity`, в `Check` — ветка `throw`; в аргументе `Print` — нет
+- [ ] `TYPE:ctx-expression-body`, `-block-body`: «To expression body» / «To block body» — метод, `void`, свойство с одним `get`, аксессор (однострочный список — в той же строке)
+- [ ] `TYPE:ctx-var`: «Use explicit type» — `List<string>` без namespace, `int`, `IEnumerable<string>`, `string` в `foreach`; «Use 'var'» на `int total`, но не на `long big` / `IList<string> list`
+- [ ] `TYPE:ctx-introduce`, `-inline`: «Introduce variable» — `var count = items.Count;`, имя в рамке правится в обоих местах; не после `&&`; «Inline variable» — `(a + b) * 2`, на `changed` нет
+
+### Попапы Rider: Refactor This, Navigate To, Generate, ПКМ редактора (0.1.70) — `Console/Editor/RiderPopups.cs`
+
+Клавиши — раскладка по умолчанию, сочетания Rider: Refactor This — Ctrl+Alt+Shift+T, Navigate To — Ctrl+Shift+G, Generate — Alt+Insert.
+Строки сервера — когда готов виджет «Roslyn: DebugPlayground.sln». Попап закрывать Escape.
+
+- [ ] `TYPE:refactor-method` — Refactor This на методе: Rename... первым, рефакторинги сервера, недоступного нет
+- [ ] `TYPE:refactor-inline` / `TYPE:refactor-introduce` — Inline на локальной, Introduce / Extract method на выделении
+- [ ] `TYPE:navigate-call` — Navigate To: строки Rider, Declaration ведёт на `IPopupShape.Area`; то же из меню Navigate
+- [ ] `TYPE:generate-in-class` — Alt+Insert на имени класса: сразу список генераторов в порядке Rider, без второго попапа
+- [ ] `TYPE:editor-menu` — ПКМ: Find Usages Settings..., Inspect ▸, Generate Code..., Quick Definition на местах Rider
+- [ ] Тулбар: молоток Build Solution перед Run widget, в меню стрелки Rebuild / Clean / Restore / Cancel Build и Configuration / Target Framework
+- [ ] Settings: узел .NET в корне дерева, под Tools его нет
 
 ### Цвета идентификаторов (0.1.51) — `Console/Editor/SemanticColors.cs` (+ `SemanticColorsPart.cs`)
-Settings | Tools | .NET | Language Server → Source of Features → «Colors of identifiers» = Built-in (умолчание пока Language server); после
+Settings | .NET | Language Server → Source of Features → «Colors of identifiers» = Built-in (умолчание пока Language server); после
 индексации сверить имена под маркерами с `EXPECT`, затем вернуть Language server и сравнить. Робот: `tools/ui-robot/scripts/highlight_keys.js`.
 - [ ] `TYPE:colors-declarations`: виды типов своими цветами (enum / record struct / delegate светлее класса), константы и члены enum жирные, событие розовое, static-члены и методы
 - [ ] `TYPE:colors-locals`: локальные и параметры цвета текста, `total` подчёркнут везде, `TFormat` — цвет параметра типа, локальная функция `Indent` — зелёная и до объявления
@@ -279,8 +307,19 @@ Settings | Tools | .NET | Language Server → Source of Features → «Colors of
 - [ ] `TYPE:colors-shadowing`: параметр лямбды и внешний параметр `count` — параметры, локальная `title` — не свойство `Title`
 - [ ] Settings | Editor | Color Scheme | C#: группы и имена Rider, все примеры превью раскрашены; переключение Built-in / Language server меняет цвета сразу по Apply
 
+### Цвета внутри строк (0.1.71) — `Console/Editor/StringColors.cs`
+Сверить с `EXPECT` под маркерами (Darcula / Islands Dark), набранное отменять Ctrl+Z. Робот: `tools/ui-robot/scripts/highlight_keys.js` — ключи лексера
+(`CSHARP_ESCAPE_CHARACTER_1` / `_2`, `CSHARP_FORMAT_STRING_ITEM`) и аннотатора элементов формата.
+- [ ] `TYPE:strings-holes`: в дырках `$"…{…}…"` операторы, числа, `null`, вложенная строка — своими цветами, `{` `}` — цвет скобок; текст строки — коричневый
+- [ ] `TYPE:strings-format`: `,5`, `:D`, `,-12:N2`, `:yyyy-MM-dd` — цвет элемента формата (фиолетовый)
+- [ ] `TYPE:strings-escapes` / `TYPE:strings-invalid-escape`: `\t` и `\n` подряд — два разных цвета, `""` в verbatim — escape, `\d` там — текст; набранный `\q` — неверный escape (волнистое подчёркивание)
+- [ ] `TYPE:strings-brace-escapes` / `TYPE:strings-raw`: `{{` `}}` — escape; в `$$"""` дырка `{{count}}`, одиночные `{` `}` и `\n` — текст
+- [ ] `TYPE:strings-format-items`: `{0}`, `{1,8:N2}`, `{0:D}`, `{0}{1}` у `string.Format` / `Console.WriteLine` / `AppendFormat` — цвет элемента формата; у `Console.WriteLine("{0}")` без аргументов — нет
+- [ ] `TYPE:strings-typing`: набор `$"{total}\t"` — цвета появляются по ходу набора, закрывающая кавычка перешагивается
+- [ ] Settings | Editor | Color Scheme | C# → String: «String text», «Escape sequence» (Valid / Valid 2 / Invalid), «Format item» (и 2) — в превью видны
+
 ### Имена сборок без сервера (0.1.57) — `Console/Editor/LibraryNames.cs`
-Source of Features → «Colors of identifiers» и «Navigation and usages» = Built-in, лучше с выключенным сервером (Settings | Tools | .NET →
+Source of Features → «Colors of identifiers» и «Navigation and usages» = Built-in, лучше с выключенным сервером (Settings | .NET →
 Language Server). Дождаться индексации сборок (после restore). Робот: `tools/ui-robot/scripts/highlight_keys.js`.
 - [ ] `TYPE:library-colors`: типы и члены сборок своими цветами — `Console` / `StringBuilder` / `List` класс, `Math` static-класс, `DateTime` структура, `WriteLine` / `Round` static-вызов, `Count` / `Length` свойство, `PI` константа, `Where` / `First` extension; namespace в `using`
 - [ ] `TYPE:library-navigation`: Ctrl+click по `Total` / `Lines` ведёт в `LibraryOrder`; по `Add` / `WriteLine` без сервера — metadata view сборки на этом члене (с 0.1.62; не неверное место)
@@ -294,8 +333,19 @@ Language Server). Дождаться индексации сборок (посл
 - [ ] `TYPE:types-query`: `big.Total`, `g.Key.Total`, `n.Name` в запросах LINQ → `TypesOrder`
 - [ ] `TYPE:types-operators`: `Total` после `(… ?? new TypesOrder())` и `Pick(true).` → `TypesOrder.Total`
 
+### Completion после точки, quick documentation, Parameter Info (0.1.66) — `Console/Editor/MemberCompletion.cs`
+Settings | .NET | Language Server → Source of Features → «Completion» и «Documentation and parameter info» = Built-in (второе
+по умолчанию Language server); лучше с выключенным сервером, после restore и индексации сборок. Набрать под маркером, сверить с
+`EXPECT`, Ctrl+Z.
+- [ ] `TYPE:dot-instance`: `text.` → `Length`, `Substring`… и LINQ (`Where`, `Select`) ниже, без `this`-параметра; нет `IsNullOrEmpty`, `Join`, `MemberwiseClone`, ключевых слов
+- [ ] `TYPE:dot-generic`: `_orders.` → `Add(MemberOrder item)`, `Count : int`, LINQ; `_orders[0].` → `Total`, `Ship`, `Lines`, нет `_secret`; после загрузки сервера — без двойных пунктов
+- [ ] `TYPE:dot-static`: `Console.` → `WriteLine (+ N)`, `ReadLine`, `Out`; `string.` → `Join`, `Empty`; `MemberOrder.` → `Empty`, `State`; `MemberOrder.State.` → `New`, `Shipped`
+- [ ] `TYPE:dot-namespace`, `TYPE:dot-this`: `System.Collections.Generic.` → `List<>`, `Dictionary<,>`; `this.` в наследнике `List<int>` → `Add`, `Count`, `_extra`
+- [ ] `TYPE:quick-doc`: Ctrl+Q / наведение на `WriteLine`, `Substring`, `Total`, `Add`, `limit`, `Documented` — строка как у Rider и текст документации; без второго окна сервера
+- [ ] `TYPE:parameter-info`: Ctrl+P в `first.Add("book", limit)` — две строки, вторая отмечена, `int count = 1` выделен; `Console.WriteLine(` — строка на перегрузку; `new StringBuilder(` — конструкторы
+
 ### Rename по встроенному дереву (0.1.53) — `Console/Editor/Rename.cs`
-Settings | Tools | .NET | Language Server → Source of Features → «Rename» = Built-in (умолчание пока Language server); каретка на имя,
+Settings | .NET | Language Server → Source of Features → «Rename» = Built-in (умолчание пока Language server); каретка на имя,
 Shift+F6, новое имя, Enter — сверить с `EXPECT`, затем одно Ctrl+Z. Потом Language server с готовым сервером — результат тот же.
 Робот: `tools/ui-robot/scripts/inline_rename.js` (см. `tools/ui-robot/README.md`).
 - [ ] `TYPE:rename-local`: `subtotal` → `sum` (все три вхождения меняются при наборе), `price` → `cost` — только `foreach`; одно Ctrl+Z возвращает всё
@@ -307,7 +357,7 @@ Shift+F6, новое имя, Enter — сверить с `EXPECT`, затем о
 - [ ] `TYPE:rename-primary-member`: `owner` → `customer` (с `<param>` класса); `Limit` (свойство) — сервер, без него подсказка «… language server …»
 
 ### Встроенное дерево C# и символы `#if` фреймворка — `MultiTarget/ActiveBranch.cs`
-- [ ] `TYPE:active-branch`: Settings | Tools | .NET | Language Server → «Structure, folding and breadcrumbs» = Built-in; в Structure (Alt+7)
+- [ ] `TYPE:active-branch`: Settings | .NET | Language Server → «Structure, folding and breadcrumbs» = Built-in; в Structure (Alt+7)
       при .NET 10.0 в тулбаре — `Net10Only`, при .NET 9.0 / Default — `Net9Only` (второго класса нет); переключение без переоткрытия файла;
       обратно на «Language server» — файл сразу перепарсен эвристическим деревом
 
@@ -403,7 +453,7 @@ Shift+F6, новое имя, Enter — сверить с `EXPECT`, затем о
 - [ ] ссылка «Документация» в шапке открывает документацию **в той же вкладке**; «О плагине» возвращает обратно
 - [ ] меню .NET → **Plugin Documentation** открывает документацию сразу; содержание слева ведёт по разделам
 - [ ] тема страниц совпадает с темой IDE; после смены темы IDE и повторного открытия — новая
-- [ ] Settings | Tools | .NET → «Language of the settings pages» = Русский, Apply, закрыть и открыть Settings: страницы .NET, Toolset and Build, NuGet, Coverage,
+- [ ] Settings | .NET → «Language of the settings pages» = Русский, Apply, закрыть и открыть Settings: страницы .NET, Toolset and Build, NuGet, Coverage,
       Debugger, Language Server — по-русски; названия страниц в дереве слева остаются английскими (их берёт платформа по языку IDE)
 - [ ] на русской странице Language Server группы «Анализ», «Автодополнение», «Подсказки в коде»; значения в списках (`openFiles`, `at_the_end`) не переведены
 - [ ] «Документация плагина...» внизу страницы .NET открывает документацию в системном браузере на разделе «Настройки»
@@ -433,17 +483,16 @@ AppHost запускает `Web` как ресурс `web`. Профиль `http
 - [ ] известное ограничение шага 1: точка на `BP:web-start` (`Web/Program.cs`, старт сервиса) под AppHost обычно **проскакивает** — отладчик подключается
   после старта процесса; это решит шаг 2 (протокол IDE execution)
 
-## Attach к процессам .NET Framework (за флагом реестра)
-Нужна программа net4x: любой `.exe` .NET Framework (например, собранный под `net48` или `C:\Windows\Microsoft.NET\Framework64\v4.0.30319\AddInProcess.exe`, если его запустить).
-- [ ] Run | Attach to Process: процесса .NET Framework в группе «.NET» **нет**
-- [ ] Help | Find Action → Registry → `dotnet.debugger.attach.netFramework` = true: процесс появился в «.NET»; `notepad.exe` и другие нативные — нет; apphost `.NET` (`Playground.Console.exe`) — по-прежнему есть
-- [ ] attach к процессу net4x с текущим адаптером: ожидаемо ошибка адаптера (desktop CLR он пока не умеет) с кнопкой Plugin Logs, IDE не зависает
-- [ ] хосты, которые сами грузят desktop CLR (по exe не видно): с ключом реестра запустить `powershell.exe` (Windows PowerShell 5.1) и
+## Attach к процессам .NET Framework
+С 0.1.69 (адаптер `dotnet-debugger` 0.2.0) ключа реестра нет: на Windows процессы .NET Framework в «.NET» всегда. Отладка с attach — в разделе
+`NetFramework/NetFramework.sln` ниже.
+- [ ] Run | Attach to Process: запущенный `NetFramework\LegacyWpf\bin\Debug\LegacyWpf.exe` в группе «.NET» с первого открытия списка; `notepad.exe` и другие нативные — нет; apphost `.NET` (`Playground.Console.exe`) — есть
+- [ ] хосты, которые сами грузят desktop CLR (по exe не видно): запустить `powershell.exe` (Windows PowerShell 5.1) и
       `C:\Windows\SysWOW64\WindowsPowerShell\v1.0\powershell.exe` (32 бита) → Run | Attach to Process (при первом открытии помощник
       DiagnosticsHelper собирается, процессы могут появиться только со второго открытия списка) → оба `powershell.exe` в «.NET»; `pwsh.exe`
       (PowerShell 7) — тоже, но как .NET; `explorer.exe`, `notepad.exe` — нет; список открывается без заметной задержки; в .NET | Plugin Logs
       категория `diagnostics` — «starting DiagnosticsHelper», без ошибок
-- [ ] ключ реестра выключен → `powershell.exe` в «.NET» нет, помощник DiagnosticsHelper не запускается
+- [ ] Attach к 32-битному `powershell.exe` (`SysWOW64`) → уведомление «Cannot Debug a 32-bit Process» (адаптер отлаживает только 64-битные процессы), сессии нет
 
 ## MSBuild-вычисление проектов (MsBuildHost)
 Помощник `helpers/msbuildhost` вычисляет проекты MSBuild'ом SDK (условия, `$(…)`, импорты). Журнал — .NET → Plugin Logs, категория `msbuild`:
@@ -476,7 +525,7 @@ AppHost запускает `Web` как ресурс `web`. Профиль `http
 
 ## Сборка проектов старого формата MSBuild'ом Visual Studio — `NetFramework/NetFramework.sln`
 Нужны Visual Studio или Build Tools 2022 (workload «.NET desktop build tools») и targeting pack .NET Framework 4.8.1. Открыть папку `NetFramework`.
-- [ ] Settings | Tools | .NET | Toolset and Build: строка «MSBuild version» = «Auto», под ней — какая установка найдена и где; в списке ещё «.NET SDK (dotnet build)» и установки VS
+- [ ] Settings | .NET | Toolset and Build: строка «MSBuild version» = «Auto», под ней — какая установка найдена и где; в списке ещё «.NET SDK (dotnet build)» и установки VS
 - [ ] удалить `bin`, `obj` обоих проектов и папку `packages` → .NET → Build Solution: окно Build зелёное, в выводе «Восстановление пакета NuGet Newtonsoft.Json…»
       (restore `packages.config` самим MSBuild), `LegacyConsole -> …exe`, `LegacyWpf -> …exe`; в .NET | Plugin Logs, категория `commands`, — команда `MSBuild …\amd64\MSBuild.exe -t:Build -restore -p:RestorePackagesConfig=true -m -v:m …`
 - [ ] `LegacyWpf\bin\Debug\LegacyWpf.exe` запускается, окно «Legacy WPF», кнопка Click считает нажатия
@@ -491,6 +540,18 @@ AppHost запускает `Web` как ресурс `web`. Профиль `http
 - [ ] Run `LegacyWpf`: окно «Legacy WPF», Stop в Services закрывает его сразу (в диспетчере задач `LegacyWpf.exe` нет)
 - [ ] без Visual Studio (на другой машине или «MSBuild version» указывает на удалённый файл и VS нет): Build проекта старого формата — уведомление
       «Visual Studio Build Tools Not Found» с кнопкой Download Build Tools, один раз за сессию, сборка идёт через `dotnet build`
+
+### Отладка .NET Framework (0.1.69, адаптер `dotnet-debugger` ≥ 0.2.0, только Windows)
+Оба проекта собираются 64-битными (`<Prefer32Bit>false</Prefer32Bit>`): адаптер отлаживает только 64-битные процессы, а MSBuild без этой
+строки делает AnyCPU-программу «Prefer 32-bit». Открывать **копию** папки `NetFramework` (общий `.idea` с точками останова).
+- [ ] `BP:legacy-console` (`LegacyConsole/Program.cs`): Debug конфигурации с `LegacyConsole`, аргументы `first second` → в окне Build **одна**
+      сборка; остановка на строке маркера, кадр `Main`, `args` = `{string[2]}`, `json` с `"Runtime":"4.0.30319.42000"`; Evaluate
+      `Environment.CurrentDirectory` → папка `bin\Debug` (как у Run); Step Over → строка 14, Step Into → 15; Resume → JSON и кириллица в Console
+- [ ] `BP:legacy-wpf-click` (`LegacyWpf/MainWindow.xaml.cs`): Debug `LegacyWpf`, нажать Click → остановка, `clicks` = 1, `sender` — `Button: Click`;
+      Resume, ещё Click → `clicks` = 2; Stop закрывает окно
+- [ ] Attach to Process к запущенному вне IDE `LegacyWpf.exe` → Click → та же остановка; Stop отпускает процесс, окно живо
+- [ ] убрать `<Prefer32Bit>false</Prefer32Bit>` из `LegacyConsole.csproj` → Debug: сборка есть, сессии нет, уведомление «Cannot Debug a 32-bit Process»
+      с советом «Set Prefer32Bit to false in LegacyConsole.csproj»; вернуть строку
 
 ## Publish
 Диалог Publish (ПКМ на проекте в Solution view → **Publish...**, или меню .NET → **Publish...**), run configuration «.NET Publish», профили `.pubxml`.

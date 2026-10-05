@@ -1,13 +1,5 @@
 package io.github.dotnetsupport.build
 
-import com.intellij.openapi.actionSystem.ActionUpdateThread
-import com.intellij.openapi.actionSystem.AnAction
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.DataContext
-import com.intellij.openapi.actionSystem.DefaultActionGroup
-import com.intellij.openapi.actionSystem.Separator
-import com.intellij.openapi.actionSystem.ToggleAction
-import com.intellij.openapi.actionSystem.ex.ComboBoxAction
 import com.intellij.openapi.components.BaseState
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.SimplePersistentStateComponent
@@ -15,19 +7,16 @@ import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.StoragePathMacros
 import com.intellij.openapi.components.service
-import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import io.github.dotnetsupport.msbuild.CompilationModel
 import io.github.dotnetsupport.msbuild.DotNetProjects
-import io.github.dotnetsupport.msbuild.TargetFrameworks
 import io.github.dotnetsupport.solution.SolutionService
 import io.github.dotnetsupport.view.resolveFile
-import javax.swing.JComponent
 
 /**
- * The build configuration (Debug / Release / ...) and the target framework chosen in the toolbar; they apply to
+ * The build configuration (Debug / Release / ...) and the target framework chosen in the Build Solution button of the toolbar ([BuildSolutionBar]); they apply to
  * build, run and test. Kept per project in the workspace file: a personal choice, not something to commit.
  */
 @Service(Service.Level.PROJECT)
@@ -105,46 +94,5 @@ class DotNetBuildSettings(private val project: Project) : SimplePersistentStateC
         const val DEFAULT_CONFIGURATION = "Debug"
 
         fun getInstance(project: Project): DotNetBuildSettings = project.service()
-    }
-}
-
-/** Toolbar selector `Debug | .NET 9.0 ▾`, shown for projects with a solution. */
-class BuildConfigurationSelector : ComboBoxAction(), DumbAware {
-    override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
-
-    override fun update(e: AnActionEvent) {
-        val project = e.project
-        if (project == null || SolutionService.getInstance(project).solutionFiles().isEmpty()) {
-            e.presentation.isEnabledAndVisible = false
-            return
-        }
-        val settings = DotNetBuildSettings.getInstance(project)
-        e.presentation.isEnabledAndVisible = true
-        e.presentation.text = listOfNotNull(settings.configuration, settings.framework?.let(TargetFrameworks::displayName)).joinToString(" | ")
-        e.presentation.description = "Configuration and target framework for build, run and tests"
-    }
-
-    override fun createPopupActionGroup(button: JComponent, dataContext: DataContext): DefaultActionGroup {
-        val project = dataContext.getData(com.intellij.openapi.actionSystem.CommonDataKeys.PROJECT) ?: return DefaultActionGroup()
-        val settings = DotNetBuildSettings.getInstance(project)
-        val group = DefaultActionGroup()
-        group.add(Separator.create("Configuration"))
-        settings.availableConfigurations().forEach { name -> group.add(choice(name, { settings.configuration == name }) { settings.configuration = name }) }
-
-        val frameworks = settings.availableFrameworks()
-        if (frameworks.isNotEmpty()) {
-            group.add(Separator.create("Target Framework"))
-            group.add(choice("Default", { settings.framework == null }) { settings.framework = null })
-            frameworks.forEach { tfm -> group.add(choice(TargetFrameworks.displayName(tfm), { settings.framework == tfm }) { settings.framework = tfm }) }
-        }
-        return group
-    }
-
-    private fun choice(text: String, isSelected: () -> Boolean, select: () -> Unit): AnAction = object : ToggleAction(text), DumbAware {
-        override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
-        override fun isSelected(e: AnActionEvent): Boolean = isSelected()
-        override fun setSelected(e: AnActionEvent, state: Boolean) {
-            if (state) select()
-        }
     }
 }

@@ -31,15 +31,25 @@ import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubIndexKeys
 import io.github.dotnetsupport.index.AssemblyIndexService
 import io.github.dotnetsupport.lang.semantic.CSharpGlobalUsingIndex
+import io.github.dotnetsupport.lang.semantic.CSharpNameResolver
+import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
+import io.github.dotnetsupport.lang.semantic.CSharpSymbol
+import io.github.dotnetsupport.lang.semantic.CSharpTypeFacts
+import io.github.dotnetsupport.lang.semantic.SemanticType
 import io.github.dotnetsupport.lsp.RoslynServerStatus
+import com.intellij.openapi.project.DumbAware
+import com.intellij.openapi.project.DumbService
+import com.intellij.psi.util.CachedValueProvider
+import com.intellij.psi.util.CachedValuesManager
+import com.intellij.psi.util.PsiModificationTracker
 import io.github.dotnetsupport.msbuild.DotNetProjects
 
 /*
  * `using` directives and `using` / `await using` statements and declarations on csharp-psi's tree (CSHARP_PSI_MIGRATION.md, task A8), the
  * part that needs no types: completion of the directives and of `using var` / `await using var`, the conversions between the statement and
- * the declaration, "Wrap in 'using' statement", "Sort 'using' directives", "Convert to 'global using'". What needs to know whether a type
- * is `IDisposable` / `IAsyncDisposable` (CS1674, the `using` list filtered by it, "Add await") and which directive a name came through
- * (unused directives) waits for the semantics (C2 → C3 / D2).
+ * the declaration, "Wrap in 'using' statement", "Sort 'using' directives", "Convert to 'global using'". Since 0.1.65 the types of C2 tell
+ * whether a resource is `IDisposable` / `IAsyncDisposable` ([NativeCSharpUsingChecks]: CS1674 and its kin, the `using` list filtered by
+ * it); "Add await" and which directive a name came through (unused directives) still wait for the semantics (C3 / D2).
  */
 
 /** The completion of `using`: the targets of a directive, `using var` / `await using var` at a statement's start, `global using` at the top of a file. */
@@ -152,8 +162,8 @@ object NativeCSharpUsingCompletion {
         return result
     }
 
-    /** The types of the solution declared at the top of [namespace] whose names [matcher] takes: name and arity. */
-    private fun solutionTypesIn(file: CSharpFile, namespace: String, matcher: PrefixMatcher): List<Pair<String, Int>> {
+    /** The types of the solution declared at the top of [namespace] whose names [matcher] takes (all when null): name and arity. */
+    fun solutionTypesIn(file: CSharpFile, namespace: String, matcher: PrefixMatcher?): List<Pair<String, Int>> {
         val resolver = NativeCSharpResolver(file)
         val result = ArrayList<Pair<String, Int>>()
         for ((name, _) in NativeCSharpTypeNames.candidates(file, matcher, resolver)) {
@@ -194,11 +204,16 @@ object CSharpUsingNames {
         val text = expression.trim().removePrefix("await ").trim()
         CREATION.find(text)?.let { match -> CSharpVariableNames.forType(match.groupValues[1]).firstOrNull()?.let { return it } }
         CALL.find(text)?.let { match ->
-            var name = match.groupValues[1].removeSuffix("Async")
-            VERBS.firstOrNull { name.startsWith(it) && name.length > it.length && name[it.length].isUpperCase() }?.let { name = name.substring(it.length) }
-            if (name.firstOrNull()?.isUpperCase() == true) CSharpVariableNames.forType(name).firstOrNull()?.let { return it }
+            ofMethod(match.groupValues[1])?.let { name -> CSharpVariableNames.forType(name).firstOrNull()?.let { return it } }
         }
         return "value"
+    }
+
+    /** The noun a method's name makes a value of: `GetCustomerAsync` → `Customer`, `BeginTransaction` → `Transaction`; null when there is none. */
+    fun ofMethod(method: String): String? {
+        var name = method.removeSuffix("Async")
+        VERBS.firstOrNull { name.startsWith(it) && name.length > it.length && name[it.length].isUpperCase() }?.let { name = name.substring(it.length) }
+        return name.takeIf { it.firstOrNull()?.isUpperCase() == true }
     }
 }
 
@@ -207,14 +222,124 @@ object CSharpUsingNames {
  * server's under its own title). Read by the client of the server (`RoslynCodeActionsSupport`) per action; exact titles of Roslyn.
  */
 object NativeCSharpServerActions {
+    private const val FIX_ALL = "Fix All: "
+
     private val SHADOWED = mapOf(
         "Use simple 'using' statement" to CSharpFeature.EDITING,
         "Make method async" to CSharpFeature.COMPLETION,
+        // A7, the native context actions (NativeCSharpContextActions.kt)
+        "Convert to conditional expression" to CSharpFeature.CONTEXT_ACTIONS,
+        "Use explicit type" to CSharpFeature.CONTEXT_ACTIONS,
+        "Use explicit type instead of 'var'" to CSharpFeature.CONTEXT_ACTIONS,
+        "Use implicit type" to CSharpFeature.CONTEXT_ACTIONS,
+        "Use 'var' instead of explicit type" to CSharpFeature.CONTEXT_ACTIONS,
+        "Inline temporary variable" to CSharpFeature.CONTEXT_ACTIONS,
+    )
+
+    // titles with the member kind or the expression in them: "Use expression body for method", "Introduce local for 'a + b'"
+    private val SHADOWED_PREFIXES = listOf(
+        "Use expression body for " to CSharpFeature.CONTEXT_ACTIONS,
+        "Use block body for " to CSharpFeature.CONTEXT_ACTIONS,
+        "Introduce local for " to CSharpFeature.CONTEXT_ACTIONS,
     )
 
     fun shadowed(title: String?, project: Project): Boolean {
-        val feature = SHADOWED[title ?: return false] ?: return false
+        // its "Fix All: …" row goes with it: above the plugin's row, it took the first place of the list (robot 0.1.63, "Make method async")
+        val title = title?.removePrefix(FIX_ALL) ?: return false
+        val feature = SHADOWED[title] ?: SHADOWED_PREFIXES.firstOrNull { title.startsWith(it.first) }?.second ?: return false
         return CSharpFeatures.native(feature, project)
+    }
+}
+
+/**
+ * What the types of C2 tell about `using` (task A8): CS1674 / CS8410 / CS8417 / CS8418 on a resource that is not disposable as its
+ * `using` / `await using` asks ([CSharpTypeFacts.usingError]), and the `using (|` / `using var x = |` list without what is known not to
+ * be disposable. Only where the type is known through and through: an unknown type, an unresolved base, a type parameter, a type that
+ * may be disposable by the pattern (`DisposeAsync`, the `Dispose` of a `ref struct`) is never reported nor left out.
+ */
+object NativeCSharpUsingChecks {
+    class Problem(val range: TextRange, val error: CSharpTypeFacts.UsingError)
+
+    /** The errors of the `using` statements and declarations of [file], cached until the next change of PSI; none while the IDE indexes. */
+    fun of(file: CSharpFile): List<Problem> {
+        if (file.compilationUnit == null || DumbService.isDumb(file.project)) return emptyList()
+        return CachedValuesManager.getCachedValue(file) { CachedValueProvider.Result.create(compute(file), PsiModificationTracker.MODIFICATION_COUNT) }
+    }
+
+    private fun compute(file: CSharpFile): List<Problem> {
+        val unit = file.compilationUnit ?: return emptyList()
+        // most files have no `using` statement: no resolver for them
+        val resolver by lazy { CSharpSemanticSession(file.project).resolver(file) }
+        val found = ArrayList<Problem>()
+        PsiTreeUtil.processElements(unit) { element ->
+            when (element) {
+                is CSharpUsingStatement -> if (present(element.usingKeyword)) {
+                    val async = present(element.awaitKeyword)
+                    val declaration = element.declaration
+                    val expression = element.expression
+                    if (declaration != null) check(resolver, declaredType(resolver, declaration), async, declaration, found)
+                    else if (expression != null) check(resolver, resolver.typeOf(expression), async, expression, found)
+                }
+                is CSharpLocalDeclarationStatement -> if (present(element.usingKeyword)) {
+                    element.declaration?.let { check(resolver, declaredType(resolver, it), present(element.awaitKeyword), it, found) }
+                }
+            }
+            true
+        }
+        return found
+    }
+
+    private fun check(resolver: CSharpNameResolver, type: SemanticType?, async: Boolean, at: PsiElement, found: MutableList<Problem>) {
+        CSharpTypeFacts.usingError(resolver, type, async, at)?.let { found += Problem(at.textRange, it) }
+    }
+
+    private fun declaredType(resolver: CSharpNameResolver, declaration: CSharpVariableDeclaration): SemanticType? {
+        val type = declaration.type ?: return null
+        return if (resolver.isVar(type)) resolver.expressionType(type) else resolver.resolveType(type)
+    }
+
+    private fun present(token: PsiElement?): Boolean = (token?.textLength ?: 0) > 0
+
+    /** The resource of a `using` at the completion [place] (`using (|`, `using var x = |`, `using (var x = |`): `await using` or not; null elsewhere. */
+    fun resourcePlace(place: NativeCSharpCompletionPlace): Boolean? {
+        if (place.kind != NativeCompletionKind.EXPRESSION) return null
+        val name = place.name ?: return null
+        when (val holder = name.parent) {
+            is CSharpUsingStatement -> if (holder.expression == name) return present(holder.awaitKeyword)
+            is CSharpEqualsValueClause -> {
+                val declaration = holder.parent?.parent as? CSharpVariableDeclaration ?: return null
+                return when (val owner = declaration.parent) {
+                    is CSharpUsingStatement -> present(owner.awaitKeyword)
+                    is CSharpLocalDeclarationStatement -> if (present(owner.usingKeyword)) present(owner.awaitKeyword) else null
+                    else -> null
+                }
+            }
+        }
+        return null
+    }
+
+    /** The question of the completion at a resource: is this local or member known not to be disposable as [async] asks? */
+    class Filter(file: CSharpFile, private val async: Boolean, private val site: PsiElement) {
+        private val resolver = CSharpSemanticSession(file.project).resolver(file)
+
+        fun rejects(symbol: LocalSymbol): Boolean {
+            if (symbol.kind != LocalSymbolKind.LOCAL && symbol.kind != LocalSymbolKind.PARAMETER && symbol.kind != LocalSymbolKind.PRIMARY_CONSTRUCTOR_PARAMETER) return false
+            return rejects(resolver.valueType(CSharpSymbol.Local(symbol)))
+        }
+
+        fun rejects(member: Member): Boolean {
+            val target = member.targets().firstOrNull() ?: return false
+            // a field is told by its declarator (or its name), a property by its declaration
+            val type = when (target) {
+                is CSharpBasePropertyDeclaration -> target.type
+                is CSharpBaseFieldDeclaration -> target.declaration?.type
+                else -> PsiTreeUtil.getParentOfType(target, CSharpVariableDeclaration::class.java, false)?.type
+            } ?: return false
+            val owner = (type.containingFile as? CSharpFile)?.let { resolver.session.reachable(it) } ?: return false
+            return rejects(owner.resolveType(type))
+        }
+
+        private fun rejects(type: SemanticType?): Boolean = CSharpTypeFacts.usingError(resolver, type, async, site) != null
     }
 }
 
@@ -381,7 +506,7 @@ object NativeCSharpUsingEdits {
  * The `using` intentions on the native tree. Those the server has too (its "Use simple 'using' statement") stand back while it is ready and
  * the feature is its; when the feature is NATIVE, the server's one is dropped ([NativeCSharpServerActions]).
  */
-abstract class NativeCSharpUsingIntention(private val title: String, private val serverHasIt: Boolean) : IntentionAction, PriorityAction {
+abstract class NativeCSharpUsingIntention(private val title: String, private val serverHasIt: Boolean) : IntentionAction, PriorityAction, DumbAware {
     override fun getText(): String = title
     override fun getFamilyName(): String = title
     override fun startInWriteAction(): Boolean = true
@@ -438,7 +563,7 @@ class NativeCSharpSortUsingsIntention : NativeCSharpUsingIntention("Sort 'using'
  * global usings — this file when it has `global using` directives itself, else `GlobalUsings.cs` (or the first file of the project with
  * `global using` directives), made in the project's folder when there is none.
  */
-class NativeCSharpToGlobalUsingIntention : IntentionAction, PriorityAction {
+class NativeCSharpToGlobalUsingIntention : IntentionAction, PriorityAction, DumbAware {
     override fun getText(): String = "Convert to 'global using'"
     override fun getFamilyName(): String = text
     override fun startInWriteAction(): Boolean = true
@@ -446,7 +571,8 @@ class NativeCSharpToGlobalUsingIntention : IntentionAction, PriorityAction {
     override fun generatePreview(project: Project, editor: Editor, file: PsiFile): IntentionPreviewInfo = IntentionPreviewInfo.EMPTY
 
     override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean {
-        if (editor == null || file !is CSharpFile || file.compilationUnit == null) return false
+        // the file of global usings is looked up in an index (targetFile)
+        if (editor == null || file !is CSharpFile || file.compilationUnit == null || DumbService.isDumb(project)) return false
         val directive = NativeCSharpGlobalUsings.directiveAt(file, editor.caretModel.offset) ?: return false
         return NativeCSharpGlobalUsings.convertible(directive)
     }

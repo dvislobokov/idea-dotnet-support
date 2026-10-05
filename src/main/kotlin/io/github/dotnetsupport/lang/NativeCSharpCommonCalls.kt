@@ -10,6 +10,7 @@ import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
@@ -216,7 +217,7 @@ object NativeCSharpCommonCalls {
  * language server is ready and completion is its, its own fix (CS4032 / CS4033) is offered instead, and when completion is NATIVE the
  * server's row of the same title is dropped ([NativeCSharpServerActions]), so the two do not stand side by side.
  */
-class NativeCSharpMakeAsyncIntention : IntentionAction, PriorityAction {
+class NativeCSharpMakeAsyncIntention : IntentionAction, PriorityAction, DumbAware {
     override fun getText(): String = "Make method async"
     override fun getFamilyName(): String = "Make method async"
     override fun startInWriteAction(): Boolean = true

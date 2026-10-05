@@ -86,7 +86,7 @@ Roslyn главный: свои эвристики (раскраска иден�
 - `DotNet.MainMenu` — меню **.NET** в главной строке меню (после Tools), в нём подменю `DotNet.NuGet`, `DotNet.EfCore`;
 - `DotNet.SolutionViewPopup` — ПКМ в панели Solution; действия объявляются здесь, в главное меню попадают через `<reference>`
   (группа с объявлением должна идти в файле раньше ссылки);
-- настройки — Settings | Tools | .NET (`DotNetSettingsConfigurable`) и дочерние страницы: Toolset and Build, NuGet, Coverage, Debugger,
+- настройки — Settings | .NET (`DotNetSettingsConfigurable`) и дочерние страницы: Toolset and Build, NuGet, Coverage, Debugger,
   Language Server (`lsp/`, параметры `roslyn-language-server`; каталог опций — `RoslynOptions`, факты о сервере — `tools/roslyn-lsp`), плюс
   Editor | Code Style | C#. Группы и формулировки — как в Rider, но на страницах **только то, за чем есть реализация**: выключенных
   опций-заглушек «как в Rider, под замком» нет (убраны по решению пользователя 2026-09-21), опция появляется вместе с тем, что она включает.
@@ -98,7 +98,7 @@ Roslyn главный: свои эвристики (раскраска иден�
 - Комментарии и KDoc — **по-английски**, короткие, объясняют «почему» (часто с отсылкой «as in Rider»). `ROADMAP.md` и общение с пользователем — по-русски.
 - Тексты UI — английские, в Title Case для действий, формулировки сверять с Rider. **Страницы настроек — на двух языках** (решение пользователя
   2026-09-29): тексты лежат в `resources/messages/DotNetBundle.properties` и `DotNetBundle_ru.properties`, берутся через `DotNetBundle.message(key)`;
-  язык — параметр плагина (Settings | Tools | .NET, «Language of the settings pages»: как в IDE / English / Русский), потому что русского языкового
+  язык — параметр плагина (Settings | .NET, «Language of the settings pages»: как в IDE / English / Русский), потому что русского языкового
   пакета у самой IDE нет. Новый текст на странице настроек — ключ в обоих файлах (`DotNetBundleTest` сверяет ключи и параметры `{0}`); у опций сервера
   языка английский текст в `RoslynOptions`, русский — в файле под ключом `roslyn.option.<section>`. Меню, действия и окна остаются английскими.
 - Страницы о плагине: `docs/demo.html` (возможности, продающая, с анимациями) и `docs/guide.html` (документация). Вторая **генерируется**:

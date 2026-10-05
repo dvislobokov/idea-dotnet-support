@@ -3,6 +3,7 @@ package io.github.dotnetsupport.roslyn
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataContext
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -95,6 +96,17 @@ object RoslynHierarchies {
         val editor = dataContext.getData(CommonDataKeys.EDITOR) ?: return null
         val psiFile = dataContext.getData(CommonDataKeys.PSI_FILE) as? CSharpFile ?: return null
         return target(project, editor, psiFile)
+    }
+
+    /**
+     * The target of a hierarchy action. Its update asks for it in a background read action (the editor's menu, Navigate To), where a
+     * modal progress must not run: there a loaded server is enough to enable the action, and the request waits for the click on the EDT.
+     */
+    fun element(dataContext: DataContext, prepare: (Target) -> List<HierarchyItem>): PsiElement? {
+        val target = target(dataContext) ?: return null
+        if (!ApplicationManager.getApplication().isDispatchThread) return dataContext.getData(CommonDataKeys.PSI_FILE)
+        val item = prepare(target).firstOrNull() ?: return null
+        return HierarchyElement(target.project, target.client, item)
     }
 
     fun target(project: Project, editor: Editor, psiFile: PsiFile): Target? {

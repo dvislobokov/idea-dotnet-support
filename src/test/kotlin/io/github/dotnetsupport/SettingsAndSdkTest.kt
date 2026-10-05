@@ -99,9 +99,9 @@ class SettingsAndSdkTest : BasePlatformTestCase() {
     }
 
     fun testSettingsPageIsRegisteredAndBuilds() {
-        // Settings | Tools | .NET
+        // Settings | .NET
         val registration = Configurable.PROJECT_CONFIGURABLE.getExtensions(project).single { it.id == "io.github.dotnetsupport.settings" }
-        assertEquals("tools", registration.parentId)
+        assertEquals("a node of its own at the root of Settings", "root", registration.parentId)
         val page = DotNetSettingsConfigurable(project)
         try {
             assertNotNull(page.createComponent())

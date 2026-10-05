@@ -6,9 +6,9 @@ namespace Playground.Editor;
 
 /// <summary>
 /// Live check of the name resolution of layer 11a (0.1.57): types and members of the referenced assemblies, members of values whose type
-/// is known, extension methods — without the language server. Settings | Tools | .NET | Language Server → Source of Features →
-/// «Colors of identifiers» = Built-in and «Navigation and usages» = Built-in; best with the language server turned off (Settings | Tools |
-/// .NET → Language Server off) to be sure the answer is the plugin's. Nothing is typed: look at the names a <c>// TYPE:library-*</c>
+/// is known, extension methods — without the language server. Settings | .NET | Language Server → Source of Features →
+/// «Colors of identifiers» = Built-in and «Navigation and usages» = Built-in; best with the language server turned off (Settings | .NET
+/// → Language Server off) to be sure the answer is the plugin's. Nothing is typed: look at the names a <c>// TYPE:library-*</c>
 /// comment points at, or Ctrl+click them, and compare with EXPECT. The robot prints the keys: <c>tools/ui-robot/scripts/highlight_keys.js</c>.
 /// </summary>
 public class LibraryNames

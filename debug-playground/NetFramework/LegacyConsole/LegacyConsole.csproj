@@ -10,6 +10,9 @@
     <RootNamespace>LegacyConsole</RootNamespace>
     <AssemblyName>LegacyConsole</AssemblyName>
     <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
+    <!-- a 64-bit process: dotnet-debugger debugs no 32-bit ones, and MSBuild makes an AnyCPU program prefer 32 bits by default.
+         Remove the line to see the plugin refuse Debug with a message saying so (debug-playground/README.md, .NET Framework debugging) -->
+    <Prefer32Bit>false</Prefer32Bit>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

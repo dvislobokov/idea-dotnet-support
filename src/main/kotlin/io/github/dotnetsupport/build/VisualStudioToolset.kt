@@ -41,7 +41,7 @@ data class VisualStudioInstance(val displayName: String, val version: String, va
 /**
  * Which MSBuild builds a project: the one of the .NET SDK (`dotnet build`) or `MSBuild.exe` of Visual Studio / Build Tools. The SDK
  * builds a project of the old format only in part: it skips the XAML of WPF (the build then fails without `Main`), and it has no targets
- * of Visual Studio (web projects, C++). As in Rider, the toolset is chosen in Settings | Tools | .NET | Toolset and Build; "Auto" builds
+ * of Visual Studio (web projects, C++). As in Rider, the toolset is chosen in Settings | .NET | Toolset and Build; "Auto" builds
  * those projects, and the solutions with them, by the newest Visual Studio found, everything else by the SDK.
  */
 object VisualStudioToolset {

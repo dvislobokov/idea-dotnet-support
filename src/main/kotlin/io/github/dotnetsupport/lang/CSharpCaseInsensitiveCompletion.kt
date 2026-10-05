@@ -23,6 +23,11 @@ import com.intellij.codeInsight.lookup.WeighingContext
 class CSharpCaseInsensitiveCompletion : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
         if (parameters.originalFile !is CSharpFile) return
+        // in or right after a number nothing is completed, as in Rider and Visual Studio
+        if (isInNumericLiteral(parameters.editor.document.charsSequence, parameters.offset)) {
+            result.stopHere()
+            return
+        }
         val matcher = result.prefixMatcher
         if (matcher is CamelHumpMatcher && !matcher.isCaseSensitive) return
         val insensitive = result.withPrefixMatcher(CamelHumpMatcher(matcher.prefix, false))
@@ -34,6 +39,17 @@ class CSharpCaseInsensitiveCompletion : CompletionContributor() {
         // they have run: not a second time with the matcher of the platform
         result.stopHere()
     }
+}
+
+/**
+ * The caret at [offset] is in or right after a numeric literal (`1`, `0x1F`, `1.5e`, `2L`): the word before it starts with a digit. The
+ * platform takes the prefix of `1|` as empty (the copy reads `1IntellijIdeaRulezzz`, a number and a name), so a list there would offer
+ * every name with nothing typed, and Enter would write `1_resized` (robot 0.1.63, `int x = 1` + Enter).
+ */
+fun isInNumericLiteral(text: CharSequence, offset: Int): Boolean {
+    var start = offset.coerceAtMost(text.length)
+    while (start > 0 && (text[start - 1].isLetterOrDigit() || text[start - 1] == '_')) start--
+    return start < offset && text[start].isDigit()
 }
 
 /** 0 for an item one of whose lookup strings starts with the typed prefix in its case, 1 for one that matches only without the case. */

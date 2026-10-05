@@ -3,7 +3,7 @@ package io.github.dotnetsupport.cli
 import java.io.File
 
 /**
- * Finding the `dotnet` host in folders the user points at (Settings | Tools | .NET) or lists in the
+ * Finding the `dotnet` host in folders the user points at (Settings | .NET) or lists in the
  * [SEARCH_PATHS_ENV] environment variable — for a corporate install in a non-standard directory like
  * `/usr/share/dotnet-sdk-8.8.403`. Pure, so it is tested without a real installation.
  */

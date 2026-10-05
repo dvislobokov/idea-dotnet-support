@@ -24,10 +24,6 @@ public class CompletionRanking
     private void Send(string message) => Console.WriteLine(message);
     private void Run(CancellationToken token) => token.ThrowIfCancellationRequested();
 
-    public async Task<string> GetStringAsync(CancellationToken cancellationToken){
-        return Task.Fr
-    }
-
     public async Task<RankedOrder> Handle(RankedOrder order, string customerName, CancellationToken cancellationToken)
     {
         int count = 0;

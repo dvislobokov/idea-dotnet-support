@@ -6,7 +6,7 @@ namespace Playground.Editor;
 
 /// <summary>
 /// Live check of the common calls of a task method (0.1.55, ROADMAP «Подсказки для частых вызовов»). Completion items need
-/// Settings | Tools | .NET | Language Server → Source of Features → «Completion» = Built-in (the default is still «Language server»);
+/// Settings | .NET | Language Server → Source of Features → «Completion» = Built-in (the default is still «Language server»);
 /// the gray text of `return ` and the intention «Make method async» work with any source. Type on the empty line under a marker
 /// comment, check EXPECT, then undo (Ctrl+Z) so the file keeps compiling.
 /// </summary>

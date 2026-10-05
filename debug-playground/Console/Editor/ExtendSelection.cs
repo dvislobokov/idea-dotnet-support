@@ -1,7 +1,7 @@
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of Extend Selection (Ctrl+W, Shrink: Ctrl+Shift+W) on the plugin's own tree (0.1.48). Settings | Tools | .NET | Language Server →
+/// Live check of Extend Selection (Ctrl+W, Shrink: Ctrl+Shift+W) on the plugin's own tree (0.1.48). Settings | .NET | Language Server →
 /// Source of Features → «Typing assistance» = Built-in, then the markers below: put the caret where a <c>// TYPE:name</c> comment says and
 /// press Ctrl+W again and again. With «Language server» (the default for now) the tokens answer: the differences are named in EXPECT
 /// ("tokens: …"). Nothing is typed; the file only has to compile.

@@ -348,7 +348,7 @@ class NuGetService(private val project: Project) {
         run("Installing $packageId $version", changeable(projectFiles), onSuccess) { listOf("add", it.path, "package", packageId, "--version", version) }
 
     /**
-     * `dotnet restore` of solutions or projects, with the options of Settings | Tools | .NET | NuGet; the package lists are refreshed
+     * `dotnet restore` of solutions or projects, with the options of Settings | .NET | NuGet; the package lists are refreshed
      * afterwards. The packages.config projects among them, or in the solutions, are restored by the .NET helper ([restorePackagesConfig]):
      * `dotnet restore` does not know that format. A packages.config project given by itself is not passed to `dotnet restore`.
      */

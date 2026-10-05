@@ -18,26 +18,46 @@ object CSharpTypeDisplay {
         "System.Void" to "void", "System.IntPtr" to "nint", "System.UIntPtr" to "nuint",
     )
 
-    fun display(type: SemanticType?): String? = when (type) {
+    /**
+     * [qualified] false: the minimal form completion and quick documentation show (`List<int>` rather than
+     * `System.Collections.Generic.List<int>`), as Roslyn's minimally qualified format where the namespaces are imported.
+     */
+    fun display(type: SemanticType?, qualified: Boolean = true): String? = render(type, if (qualified) null else { _ -> true })
+
+    /**
+     * As [display], but a named type that [simple] accepts (the outermost one, for a nested type) is written without its namespace: the
+     * type as it is written in code where that name means it (`List<int>` under `using System.Collections.Generic;`).
+     */
+    fun display(type: SemanticType?, simple: ((SemanticType) -> Boolean)?): String? = render(type, simple)
+
+    private fun render(type: SemanticType?, simple: ((SemanticType) -> Boolean)?): String? = when (type) {
         null -> null
         is SemanticType.Parameter -> type.name
-        is SemanticType.ArrayOf -> display(type.element)?.let { element ->
+        is SemanticType.ArrayOf -> render(type.element, simple)?.let { element ->
             // `int[][,]`: Roslyn writes the ranks outermost first; the element of an array of arrays carries its own ranks after them
             val (core, inner) = splitRanks(element)
             core + "[" + ",".repeat((type.rank - 1).coerceAtLeast(0)) + "]" + inner
         }
         is SemanticType.Source -> {
-            val arguments = type.arguments.map { display(it) ?: return null }
+            val arguments = type.arguments.map { render(it, simple) ?: return null }
             val own = if (arguments.isEmpty()) "" else arguments.joinToString(", ", "<", ">")
             val outer = type.outer
             when {
-                outer != null -> display(outer)?.let { it + "." + type.info.qualifiedName.substringAfterLast('.') + own }
+                outer != null -> render(outer, simple)?.let { it + "." + type.info.qualifiedName.substringAfterLast('.') + own }
                 // nested in a generic type whose arguments are not known: `Outer.Inner` would be wrong
                 isNestedInGeneric(type) -> null
+                simple != null && simple(type) -> minimal(type) + own
                 else -> type.info.qualifiedName + own
             }
         }
-        is SemanticType.Library -> library(type)
+        is SemanticType.Library -> library(type, simple)
+    }
+
+    /** The name of a type of the solution without its namespace: `Outer.Inner` for a nested one. */
+    private fun minimal(type: SemanticType.Source): String {
+        val namespace = type.info.parts.firstNotNullOfOrNull { it.namespace }
+        if (namespace != null) return type.info.qualifiedName.removePrefix("$namespace.").takeIf { namespace.isNotEmpty() } ?: type.info.qualifiedName
+        return type.info.qualifiedName.substringAfterLast('.')
     }
 
     private fun isNestedInGeneric(type: SemanticType.Source): Boolean {
@@ -62,20 +82,21 @@ object CSharpTypeDisplay {
         return element.substring(0, at) to element.substring(at)
     }
 
-    private fun library(type: SemanticType.Library): String? {
+    private fun library(type: SemanticType.Library, simple: ((SemanticType) -> Boolean)?): String? {
         val full = type.type.fullName
         KEYWORDS[full]?.let { return it }
-        if (full == "System.Nullable`1") return display(type.arguments.singleOrNull() ?: return null)?.let { "$it?" }
+        if (full == "System.Nullable`1") return render(type.arguments.singleOrNull() ?: return null, simple)?.let { "$it?" }
         if (full.startsWith("System.ValueTuple`") && type.arguments.size in 2..7 && type.type.namespace == "System") {
             val names = type.tupleNames
             return type.arguments.mapIndexed { i, argument ->
-                val shown = display(argument) ?: return null
+                val shown = render(argument, simple) ?: return null
                 names?.getOrNull(i)?.let { "$shown $it" } ?: shown
             }.joinToString(", ", "(", ")")
         }
         val segments = IndexedTypeRef.segments(type.type.path)
         val total = segments.sumOf { it.second }
-        if (type.arguments.size != total) return if (total == 0) qualified(type.type.namespace, segments.joinToString(".") { it.first }) else null
+        val namespace = if (simple != null && simple(type)) "" else type.type.namespace
+        if (type.arguments.size != total) return if (total == 0) qualified(namespace, segments.joinToString(".") { it.first }) else null
         val result = StringBuilder()
         var next = 0
         for ((i, segment) in segments.withIndex()) {
@@ -85,12 +106,12 @@ object CSharpTypeDisplay {
                 result.append('<')
                 for (k in 0 until segment.second) {
                     if (k > 0) result.append(", ")
-                    result.append(display(type.arguments[next++]) ?: return null)
+                    result.append(render(type.arguments[next++], simple) ?: return null)
                 }
                 result.append('>')
             }
         }
-        return qualified(type.type.namespace, result.toString())
+        return qualified(namespace, result.toString())
     }
 
     private fun qualified(namespace: String, name: String): String = if (namespace.isEmpty()) name else "$namespace.$name"

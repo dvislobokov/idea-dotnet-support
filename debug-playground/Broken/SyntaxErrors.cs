@@ -1,7 +1,7 @@
 // Syntax errors for the built-in diagnostics (CSharpFeature.DIAGNOSTICS, «Errors and warnings», 0.1.54): Roslyn's syntax errors from the
 // plugin's own tree, with Roslyn's codes, messages and places. Excluded from the compilation of Broken (Broken.csproj) so that its Debug
 // scenario keeps its two errors; the editor and the language server still see the file.
-// Compare the two sources: Settings | Tools | .NET | Language Server | Source of Features | «Errors and warnings» = Built-in / Language server.
+// Compare the two sources: Settings | .NET | Language Server | Source of Features | «Errors and warnings» = Built-in / Language server.
 // Built-in: every error below is shown once, with the code first in the text and the tooltip; the server still adds its semantic errors.
 // The lines under "permanent" markers are broken as they are; under the others type on the empty line and undo with Ctrl+Z.
 namespace DebugPlayground.Broken;
@@ -50,7 +50,7 @@ class SyntaxErrors
     void Counted()
     {
         // TYPE:diag-server-keeps (permanent) — errors the built-in tree does not report itself stay the server's, also with Built-in:
-        // EXPECT: «CS0230: Type and identifier are both required in a foreach statement» on `x` (from the server, after it loads);
+        // EXPECT: «CS0230: Type and identifier are both required in a foreach statement» on `in`, where Roslyn puts it (from the server, after it loads);
         // EXPECT: «CS0029: Cannot implicitly convert type 'string' to 'int'» on "three" (semantic, the server's).
         foreach (x in new int[0]) { }
         int count = "three";
@@ -59,7 +59,7 @@ class SyntaxErrors
 
 // TYPE:diag-directives (permanent) — EXPECT: «CS1024: Preprocessor directive expected» on `foo`; a yellow «CS1030: #warning: 'Look here'»
 // on `Look here`; a yellow «CS1634: Expected 'disable' or 'restore'» on `foo` of the pragma; NOTHING inside the `#if NEVER` block
-// (the excluded text is not parsed: no error for `int broken = ;`).
+// (the excluded text is not parsed: no error for `int broken = ;`), and that text is gray like unused code (Built-in, also without the server).
 #foo
 #warning Look here
 #pragma warning foo

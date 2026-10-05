@@ -176,7 +176,7 @@ footer a { color: var(--text-2); }
 </ul>
 <h3>Первые шаги</h3>
 <ol>
-  <li><b>Установите инструменты.</b> Откройте <b>Settings | Tools | .NET</b>, раздел «Инструменты .NET», и нажмите «Установить» у нужных инструментов.</li>
+  <li><b>Установите инструменты.</b> Откройте <b>Settings | .NET</b>, раздел «Инструменты .NET», и нажмите «Установить» у нужных инструментов.</li>
   <li><b>Откройте папку с решением.</b> Именно папку, а не файл решения. Окно Project переключится на вид Solution.</li>
   <li><b>Выберите решение, если их несколько.</b> IDE спросит, какое загрузить. Позже выбор меняется щелчком на значке сервера в статус-баре.</li>
   <li><b>Дождитесь загрузки.</b> Значок сервера C# в статус-баре показывает состояние. Подсветка, структура и серое продолжение строки работают сразу,
@@ -248,7 +248,9 @@ footer a { color: var(--text-2); }
 <tr><td>Принять серое продолжение строки</td><td><kbd>Tab</kbd></td></tr>
 <tr><td>Список подсказок</td><td>Появляется при наборе; <kbd>Ctrl+Space</kbd> вызывает его вручную. Регистр букв не важен.</td></tr>
 <tr><td>Исправления и рефакторинги</td><td><kbd>Alt+Enter</kbd>; в списке есть Fix All для документа, проекта и решения.</td></tr>
-<tr><td>Создание кода: конструктор, Equals, переопределения</td><td><kbd>Alt+Insert</kbd></td></tr>
+<tr><td>Создание кода: конструктор, Equals, переопределения, тест</td><td><kbd>Alt+Insert</kbd>: список генераторов, как в Rider.</td></tr>
+<tr><td>Refactor This: все рефакторинги у курсора одним списком</td><td><kbd>Ctrl+Alt+Shift+T</kbd></td></tr>
+<tr><td>Navigate To: объявление, реализации, базовые символы, использования, тесты, IL</td><td><kbd>Ctrl+Shift+G</kbd></td></tr>
 <tr><td>Переименование</td><td><kbd>Shift+F6</kbd>; файл переименовывается вместе с типом.</td></tr>
 <tr><td>Переход к объявлению и реализациям</td><td><kbd>Ctrl+B</kbd>, <kbd>Ctrl+Alt+B</kbd>, щелчок с <kbd>Ctrl</kbd>.</td></tr>
 <tr><td>Иерархия типов и вызовов</td><td><kbd>Ctrl+H</kbd>, <kbd>Ctrl+Alt+H</kbd></td></tr>
@@ -264,7 +266,7 @@ footer a { color: var(--text-2); }
 <h2>Запуск и отладка</h2>
 <ul>
   <li><b>Конфигурации запуска</b> типа «.NET Project» создаются сами для запускаемых проектов и профилей из <code>launchSettings.json</code>.</li>
-  <li><b>Конфигурация и целевая платформа</b> (Debug или Release, <code>net10.0</code> и другие) переключаются в тулбаре и действуют на сборку, запуск и тесты.</li>
+  <li><b>Конфигурация и целевая платформа</b> (Debug или Release, <code>net10.0</code> и другие) выбираются в меню стрелки кнопки Build Solution в тулбаре (как в Rider) и действуют на сборку, запуск и тесты. Сам молоток собирает решение; в том же меню — Rebuild, Clean, NuGet Restore и Cancel Build.</li>
   <li><b>Отладка</b> работает в стандартном окне Debug: точки останова с условиями, остановка на исключениях, значения в коде, Evaluate, Watches.</li>
   <li><b>Set Next Statement</b> — в контекстном меню редактора во время отладки: делает строку под курсором следующей для выполнения.</li>
   <li><b>Attach</b> к уже работающему процессу и <b>отладка тестов</b> — из окна Unit Tests и значков у методов.</li>
@@ -287,10 +289,10 @@ footer a { color: var(--text-2); }
 
 <section id="settings">
 <h2>Настройки</h2>
-<p>Все страницы находятся в <b>Settings | Tools | .NET</b>. Названия параметров приведены по-русски, рядом серым — по-английски, как они выглядят,
+<p>Все страницы находятся в <b>Settings | .NET</b>. Названия параметров приведены по-русски, рядом серым — по-английски, как они выглядят,
    когда язык страниц английский. Язык выбирается на странице <a href="#settings-dotnet">.NET</a>, параметр «Язык страниц настроек».</p>
 <h3 id="settings-dotnet">.NET</h3>
-<p class="path">Settings | Tools | .NET</p>
+<p class="path">Settings | .NET</p>
 <p>Общие параметры плагина: где находится <code>dotnet</code>, какие инструменты установлены, чем форматировать код. Параметры этой страницы, кроме форматтера, действуют на все проекты на этой машине.</p>
 <h4>.NET CLI</h4>
 <div class="table"><table>
@@ -305,7 +307,7 @@ footer a { color: var(--text-2); }
 <h4>Инструменты .NET <small lang="en">.NET Tools</small></h4>
 <p>Глобальные инструменты, которые запускает плагин. Пустой путь: инструмент ищется в PATH и в ~/.dotnet/tools. Кнопки «Установить» и «Обновить» выполняют 'dotnet tool update --global'.</p>
 <div class="table"><table><thead><tr><th>Инструмент</th><th>Для чего нужен</th></tr></thead><tbody>
-<tr><td><code>roslyn-language-server</code></td><td>Сервер языка C# (Roslyn): Settings | Tools | .NET | Language Server</td></tr>
+<tr><td><code>roslyn-language-server</code></td><td>Сервер языка C# (Roslyn): Settings | .NET | Language Server</td></tr>
 <tr><td><code>dotnet-debugger-dap</code></td><td>Отладка: адаптер отладки (DAP), который стоит за кнопкой Debug</td></tr>
 <tr><td><code>csharpier</code></td><td>Reformat Code через CSharpier</td></tr>
 <tr><td><code>dotnet-ef</code></td><td>EF Core: миграции и команды базы данных</td></tr>
@@ -333,13 +335,13 @@ footer a { color: var(--text-2); }
 </tbody>
 </table></div>
 <h3 id="settings-build">Инструменты и сборка <small lang="en">Toolset and Build</small></h3>
-<p class="path">Settings | Tools | .NET | Toolset and Build</p>
+<p class="path">Settings | .NET | Toolset and Build</p>
 <p>Что добавляется к командам сборки. Параметры относятся к проекту, открытому в IDE, и хранятся в его рабочих файлах: в репозиторий они не попадают.</p>
 <h4>Инструменты <small lang="en">Toolset</small></h4>
 <div class="table"><table>
 <thead><tr><th>Параметр</th><th>По умолчанию</th><th>Что делает</th></tr></thead>
 <tbody>
-<tr><td><b>Путь к исполняемому файлу .NET CLI</b><small lang="en">.NET CLI executable path</small></td><td></td><td>Задаётся на родительской странице, Tools | .NET.</td></tr>
+<tr><td><b>Путь к исполняемому файлу .NET CLI</b><small lang="en">.NET CLI executable path</small></td><td></td><td>Задаётся на родительской странице, .NET.</td></tr>
 <tr><td><b>Версия MSBuild</b><small lang="en">MSBuild version</small></td><td>Автоматически</td><td>Проектам старого формата (без Sdk) и решениям с ними нужен MSBuild из Visual Studio: .NET SDK пропускает разметку WPF, цели веб-проектов и C++. «Автоматически» собирает их самой новой Visual Studio или Build Tools, остальное — .NET SDK. Выбранная установка Visual Studio собирает всё, и проекты SDK тоже. Только в Windows.</td></tr>
 <tr><td><b>Глобальные свойства MSBuild</b><small lang="en">MSBuild global properties</small></td><td>пусто</td><td><code>Name=Value;Other=Value</code>, передаются как <code>-p:</code> в сборку, пересборку, очистку, восстановление и запуск этого проекта</td></tr>
 </tbody>
@@ -364,7 +366,7 @@ footer a { color: var(--text-2); }
 </tbody>
 </table></div>
 <h3 id="settings-nuget">NuGet</h3>
-<p class="path">Settings | Tools | .NET | NuGet</p>
+<p class="path">Settings | .NET | NuGet</p>
 <p>Поиск пакетов и восстановление. Действует на все проекты на этой машине.</p>
 <h4>Поиск <small lang="en">Search</small></h4>
 <div class="table"><table>
@@ -386,7 +388,7 @@ footer a { color: var(--text-2); }
 <h4>Поставщики учётных данных <small lang="en">Credential Providers</small></h4>
 <p>dotnet CLI использует поставщиков учётных данных, установленных в <code>~/.nuget/plugins</code>.</p>
 <h3 id="settings-coverage">Покрытие <small lang="en">Coverage</small></h3>
-<p class="path">Settings | Tools | .NET | Coverage</p>
+<p class="path">Settings | .NET | Coverage</p>
 <p>Что делать с покрытием, собранным новым прогоном тестов.</p>
 <h4>Когда собрано новое покрытие <small lang="en">When new coverage is gathered</small></h4>
 <div class="table"><table>
@@ -406,7 +408,7 @@ footer a { color: var(--text-2); }
 </tbody>
 </table></div>
 <h3 id="settings-debugger">Отладчик <small lang="en">Debugger</small></h3>
-<p class="path">Settings | Tools | .NET | Debugger</p>
+<p class="path">Settings | .NET | Debugger</p>
 <p>Параметры, которые не зависят от языка (окно отладки, удаление точек останова), задаются в настройках IDE: <b>Build, Execution, Deployment | Debugger</b>.</p>
 <h4>Языки .NET <small lang="en">.NET Languages</small></h4>
 <div class="table"><table>
@@ -423,7 +425,7 @@ footer a { color: var(--text-2); }
 </tbody>
 </table></div>
 <h3 id="settings-server">Сервер языка <small lang="en">Language Server</small></h3>
-<p class="path">Settings | Tools | .NET | Language Server</p>
+<p class="path">Settings | .NET | Language Server</p>
 <p><code>roslyn-language-server</code> — сервер языка C# на основе Roslyn: ошибки компилятора, автодополнение, навигация, рефакторинги. Запускается, когда открыт файл C#. Изменение параметров группы «Сервер» перезапускает сервер, остальные применяются на лету.</p>
 <div class="table"><table>
 <thead><tr><th>Параметр</th><th>По умолчанию</th><th>Что делает</th></tr></thead>
@@ -435,7 +437,7 @@ footer a { color: var(--text-2); }
 <div class="table"><table>
 <thead><tr><th>Параметр</th><th>По умолчанию</th><th>Что делает</th></tr></thead>
 <tbody>
-<tr><td><b>Исполняемый файл</b><small lang="en">Executable</small></td><td></td><td>Инструмент <code>roslyn-language-server</code> на родительской странице, Tools | .NET.</td></tr>
+<tr><td><b>Исполняемый файл</b><small lang="en">Executable</small></td><td></td><td>Инструмент <code>roslyn-language-server</code> на родительской странице, .NET.</td></tr>
 <tr><td><b>Уровень журнала</b><small lang="en">Log level</small></td><td>Information</td><td><code>--logLevel</code>. Для разбора неполадок — Debug или Trace.</td></tr>
 <tr><td><b>Папка журналов</b><small lang="en">Log folder</small></td><td><code>~/idea-dotnet-logs/roslyn-language-server</code></td><td><code>--extensionLogDirectory</code>.</td></tr>
 <tr><td><b>Разрешить серверу самому искать проекты в папке без решения</b><small lang="en">Let the server find the projects of a folder without a solution</small></td><td>включено</td><td><code>--autoLoadProjects</code>. Решение всегда открывает плагин; из нескольких решений — выбранное в .NET | Select Solution for Language Server</td></tr>

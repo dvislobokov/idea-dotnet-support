@@ -85,7 +85,7 @@ public sealed class UsageNoteAttribute(string member) : Attribute
 // TYPE:find-usages-attribute — caret on `UsageNoteAttribute` above, Alt+F7. EXPECT: «Usage in attribute» 1 (the `[UsageNote(...)]` of
 // UsageSample) and «Declaration» (the server gives the name twice: the class and its primary constructor)
 
-// Kinds of usages on the plugin's own tree (0.1.46): Settings | Tools | .NET | Language Server → Source of Features → «Kinds of usages» =
+// Kinds of usages on the plugin's own tree (0.1.46): Settings | .NET | Language Server → Source of Features → «Kinds of usages» =
 // Built-in (the default), then the markers below. With «Language server» the same usages are grouped by the tokens: the differences are
 // named in EXPECT ("tokens: …"); everything else is the same with either choice.
 public class UsageTally

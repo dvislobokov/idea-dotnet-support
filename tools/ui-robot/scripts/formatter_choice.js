@@ -1,4 +1,4 @@
-// Sets the project's formatter as Settings | Tools | .NET | Toolset and Build → «Formatter» does: __CHOICE__ = AUTO | BUILT_IN |
+// Sets the project's formatter as Settings | .NET | Toolset and Build → «Formatter» does: __CHOICE__ = AUTO | BUILT_IN |
 // DOTNET_FORMAT | CSHARPIER | NONE. Prints the choice and what it resolves to for the project directory (reformat.js says who formats a file).
 importClass(com.intellij.openapi.project.ProjectManager)
 importClass(com.intellij.openapi.application.ApplicationManager)

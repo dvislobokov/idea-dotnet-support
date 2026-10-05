@@ -1,5 +1,6 @@
 package io.github.dotnetsupport.lang
 
+import com.intellij.openapi.editor.colors.CodeInsightColors
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors as Default
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.editor.colors.TextAttributesKey.createTextAttributesKey
@@ -60,6 +61,9 @@ object CSharpColors {
     val PRIMARY_CONSTRUCTOR_PARAMETER = createTextAttributesKey("CSHARP_PRIMARY_CONSTRUCTOR_PARAMETER_IDENTIFIER", PARAMETER)
     val LABEL = createTextAttributesKey("CSHARP_LABEL_IDENTIFIER", Default.LABEL)
 
+    /** The text of an inactive `#if` branch (Rider's `Preprocessor//Inactive branch`): gray, as unused code. Not an identifier, so not in [ALL]. */
+    val INACTIVE_BRANCH = createTextAttributesKey("CSHARP_PREPROCESSOR_INACTIVE_BRANCH", CodeInsightColors.NOT_USED_ELEMENT_ATTRIBUTES)
+
     /** Every key of the palette, coarse ones first: the color page and its test. */
     val ALL: List<TextAttributesKey> = listOf(
         TYPE, METHOD, MEMBER, CLASS, STATIC_CLASS, RECORD, STRUCT, RECORD_STRUCT, INTERFACE, ENUM, DELEGATE, TYPE_PARAMETER, ATTRIBUTE, NAMESPACE,
@@ -80,6 +84,9 @@ class CSharpColorSettingsPage : ColorSettingsPage {
 
     override fun getDemoText(): String = """
         #nullable enable
+        #if NEVER
+        <inactive>using Skipped;</inactive>
+        #endif
         using <ns>System</ns>.<ns>IO</ns>;
 
         namespace <ns>Demo</ns>;
@@ -99,7 +106,8 @@ class CSharpColorSettingsPage : ColorSettingsPage {
             public <type>Stream</type> <method>Open</method><<tparam>T</tparam>>(string <param>path</param>, <type>FileAccess</type> <param>access</param>)
             {
                 /* block comment */
-                var <local>message</local> = ${'$'}"Opening {<param>path</param>} with {<const>Retries</const>:D2}" + '\n';
+                var <local>message</local> = ${'$'}"Opening {<param>path</param>,-20} with {<const>Retries</const>:D2} of {<const>Retries</const> + 1}\t\r\n" + '\n';
+            var <local>table</local> = string.<scall>Format</scall>("<format>{0}</format><format2>{1,5:N2}</format2> <format>{2}</format>", <param>path</param>, 1.5, 2) + "\q is no escape" + @"a ""quoted"" word";
                 int <mutable>count</mutable> = 0;
                 <mutable>count</mutable>++;
                 <localfn>Log</localfn>(<local>message</local>);
@@ -141,7 +149,8 @@ class CSharpColorSettingsPage : ColorSettingsPage {
             "localfn" to CSharpColors.LOCAL_FUNCTION, "field" to CSharpColors.FIELD, "sfield" to CSharpColors.STATIC_FIELD, "const" to CSharpColors.CONSTANT,
             "prop" to CSharpColors.PROPERTY, "sprop" to CSharpColors.STATIC_PROPERTY, "event" to CSharpColors.EVENT, "local" to CSharpColors.LOCAL_VARIABLE,
             "mutable" to CSharpColors.MUTABLE_LOCAL_VARIABLE, "param" to CSharpColors.PARAMETER, "primary" to CSharpColors.PRIMARY_CONSTRUCTOR_PARAMETER,
-            "label" to CSharpColors.LABEL, "member" to CSharpColors.MEMBER, "anymethod" to CSharpColors.METHOD,
+            "label" to CSharpColors.LABEL, "member" to CSharpColors.MEMBER, "anymethod" to CSharpColors.METHOD, "inactive" to CSharpColors.INACTIVE_BRANCH,
+            "format" to CSharpSyntaxHighlighter.FORMAT_ITEM, "format2" to CSharpSyntaxHighlighter.FORMAT_ITEM_2,
         )
 
         val DESCRIPTORS = arrayOf(
@@ -178,12 +187,19 @@ class CSharpColorSettingsPage : ColorSettingsPage {
             AttributesDescriptor("Properties and variables//Parameter", CSharpColors.PARAMETER),
             AttributesDescriptor("Properties and variables//Primary constructor parameter", CSharpColors.PRIMARY_CONSTRUCTOR_PARAMETER),
             AttributesDescriptor("Properties and variables//Label", CSharpColors.LABEL),
-            AttributesDescriptor("String and char", CSharpSyntaxHighlighter.STRING),
+            // as Rider's Language Defaults | String
+            AttributesDescriptor("String//String text", CSharpSyntaxHighlighter.STRING),
+            AttributesDescriptor("String//Escape sequence//Valid", CSharpSyntaxHighlighter.ESCAPE),
+            AttributesDescriptor("String//Escape sequence//Valid 2", CSharpSyntaxHighlighter.ESCAPE_2),
+            AttributesDescriptor("String//Escape sequence//Invalid", CSharpSyntaxHighlighter.INVALID_ESCAPE),
+            AttributesDescriptor("String//Format item", CSharpSyntaxHighlighter.FORMAT_ITEM),
+            AttributesDescriptor("String//Format item 2", CSharpSyntaxHighlighter.FORMAT_ITEM_2),
             AttributesDescriptor("Number", CSharpSyntaxHighlighter.NUMBER),
             AttributesDescriptor("Comments//Line comment", CSharpSyntaxHighlighter.LINE_COMMENT),
             AttributesDescriptor("Comments//Block comment", CSharpSyntaxHighlighter.BLOCK_COMMENT),
             AttributesDescriptor("Comments//Documentation comment", CSharpSyntaxHighlighter.DOC_COMMENT),
-            AttributesDescriptor("Preprocessor directive", CSharpSyntaxHighlighter.PREPROCESSOR),
+            AttributesDescriptor("Preprocessor//Directive", CSharpSyntaxHighlighter.PREPROCESSOR),
+            AttributesDescriptor("Preprocessor//Inactive branch", CSharpColors.INACTIVE_BRANCH),
             AttributesDescriptor("Braces and operators//Braces", CSharpSyntaxHighlighter.BRACES),
             AttributesDescriptor("Braces and operators//Parentheses", CSharpSyntaxHighlighter.PARENTHESES),
             AttributesDescriptor("Braces and operators//Brackets", CSharpSyntaxHighlighter.BRACKETS),

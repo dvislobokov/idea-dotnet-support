@@ -23,8 +23,10 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * The native formatter (CSharpFeature.FORMATTING, 0.1.49). The `*.after.cs` files of `resources/formatting` are what
- * `dotnet format whitespace --folder` (SDK 10) made of the inputs with the `editorconfig` of their folder; the oracle over the
- * corpus is `./gradlew formatOracle` (tools/csharp-psi/format-oracle.sh), outside `test`, because it runs `dotnet`.
+ * `dotnet format whitespace --folder` (SDK 10) made of the inputs with the `editorconfig` of their folder, but for the multi-line
+ * initializers, collection expressions, argument and parameter lists, which are Rider's since 0.1.68 (`rider`, `rider-none`: what
+ * `jb cleanupcode` made of them); the oracle over the corpus is `./gradlew formatOracle` (tools/csharp-psi/format-oracle.sh),
+ * outside `test`, because it runs `dotnet`.
  */
 class CSharpFormattingTest : BasePlatformTestCase() {
     private val serverSettings get() = RoslynLanguageServerSettings.getInstance()
@@ -83,6 +85,37 @@ class CSharpFormattingTest : BasePlatformTestCase() {
     fun testTheDefaultStyleIsTheOneOfDotnetFormat() {
         for (name in listOf("Basics", "Structure")) {
             assertFormats(resource("default/$name.cs"), resource("default/$name.after.cs")) { reformat(lightFile(it, "$name.cs")) }
+        }
+    }
+
+    /**
+     * Initializers, collection expressions, argument and parameter lists as Rider lays them out (0.1.68): the `*.after.cs` of
+     * `resources/formatting/rider` are what `jb cleanupcode --profile="Built-in: Reformat Code"` (ReSharper 2026.2, no settings
+     * layers) made of the inputs, which are already formatted elsewhere, so that only these constructs differ from `dotnet format`.
+     */
+    fun testListsAsRiderLaysThemOut() {
+        for (name in listOf("Initializers", "Arguments")) {
+            assertFormats(resource("rider/$name.cs"), resource("rider/$name.after.cs")) { reformat(lightFile(it, "$name.cs")) }
+        }
+    }
+
+    /** `csharp_new_line_before_open_brace = none`: the brace of a multi-line initializer goes up to the line before, as Rider does. */
+    fun testListsWithBracesAtTheEndOfTheLine() {
+        myFixture.addFileToProject("FormattingRiderNone/.editorconfig", resource("rider-none/editorconfig"))
+        val file = myFixture.addFileToProject("FormattingRiderNone/None.cs", resource("rider-none/None.cs"))
+        val expected = resource("rider-none/None.after.cs")
+        assertEquals(expected, reformat(file))
+        assertEquals("idempotent", expected, reformat(file))
+    }
+
+    /** What `dotnet format` does with the same lists, for the oracle that compares with it. */
+    fun testDotnetFormatLayoutOfLists() {
+        CSharpFormatOptions.dotnetFormatOnly = true
+        try {
+            val input = "class A\n{\n    void M()\n    {\n        var list = new List<int>{1,\n2,\n3};\n        Foo(1,\n2);\n    }\n}\n"
+            assertEquals("class A\n{\n    void M()\n    {\n        var list = new List<int>{1,\n2,\n3};\n        Foo(1,\n2);\n    }\n}\n", reformat(lightFile(input)))
+        } finally {
+            CSharpFormatOptions.dotnetFormatOnly = false
         }
     }
 

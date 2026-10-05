@@ -45,7 +45,7 @@ class DotNetNewProjectWizard : GeneratorNewProjectWizard {
             templatePanel.addRows(builder)
             builder.row { cell(sameDirectory) }
             if (DotNetCli.findExecutable() == null) {
-                builder.row { comment("The 'dotnet' executable is not found: install the .NET SDK, or set its path in Settings | Tools | .NET.") }
+                builder.row { comment("The 'dotnet' executable is not found: install the .NET SDK, or set its path in Settings | .NET.") }
             }
         }
 

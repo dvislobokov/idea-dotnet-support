@@ -10,7 +10,7 @@ import com.intellij.ui.dsl.builder.panel
 import io.github.dotnetsupport.DotNetBundle
 
 /**
- * Settings | Tools | .NET | Debugger: what the debugger of the plugin (`PLATFORM_DAP_PLAN.md`) honors, in the groups and with the
+ * Settings | .NET | Debugger: what the debugger of the plugin (`PLATFORM_DAP_PLAN.md`) honors, in the groups and with the
  * wording of Rider. An option appears here when there is something behind it.
  */
 class DotNetDebuggerConfigurable(private val project: Project) : BoundConfigurable(DotNetBundle.message("page.debugger")) {

@@ -18,6 +18,7 @@ import io.github.dotnetsupport.csharp.lang.lexer.CSharpTokenTypes
 import io.github.dotnetsupport.lang.CSharpFeature
 import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFileType
+import io.github.dotnetsupport.lang.CSharpFormatOptions
 import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -27,7 +28,14 @@ import java.util.concurrent.TimeUnit
  * (it runs `dotnet`): `./gradlew formatOracle`, or tools/csharp-psi/format-oracle.sh. Options (`-PformatOracle.<name>=`):
  * `sample` files of the corpus (300), `corpus` its folder (`.corpus` of the repository or `~/csharp-psi/.corpus`), `variants`
  * (`orig,flat,knr`: the files as they are; every indent removed and the spaces between tokens doubled; `{` moved up to the line before),
- * `out` the folder of inputs, results and the report (`build/format-oracle`), `examples` per category (25), `dotnet` the command.
+ * `out` the folder of inputs, results and the report (`build/format-oracle`), `examples` per category (25), `dotnet` the command,
+ * `styles` (`dotnet,rider`).
+ *
+ * Two styles of the formatter: `dotnet` without Rider's lists ([CSharpFormatOptions.riderLists] off), which must be exactly
+ * `dotnet format`; `rider`, as Reformat Code runs it, whose multi-line initializers, collection expressions, argument and parameter
+ * lists are Rider's on purpose (0.1.68). A file of `rider` that differs counts as "only Rider's lists" when the difference is theirs:
+ * `dotnet` leaves the output of `dotnet format` as it is and `rider` makes of it what it made of the input. Rider's own layout is
+ * checked by the golden pairs of `resources/formatting/rider` (from `jb cleanupcode`), not here.
  *
  * Besides the comparison, every output must keep the code (only whitespace changed) and be stable (formatting it again changes nothing).
  */
@@ -50,6 +58,7 @@ class CSharpFormatOracle : BasePlatformTestCase() {
         val sample = option("sample")?.toInt() ?: 300
         val examples = option("examples")?.toInt() ?: 25
         val variants = (option("variants") ?: "orig,flat,knr").split(',').map { it.trim() }
+        val styles = (option("styles") ?: "$DOTNET,$RIDER").split(',').map { it.trim() }.onEach { require(it == DOTNET || it == RIDER) { "unknown style $it" } }
         val corpus = option("corpus")?.let(::File)
             ?: listOf(File(repo, ".corpus"), File(repo.parentFile, "csharp-psi/.corpus"), File(System.getProperty("user.home"), "csharp-psi/.corpus")).firstOrNull { it.isDirectory }
         RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.FORMATTING, CSharpFeatureSource.NATIVE)
@@ -82,31 +91,40 @@ class CSharpFormatOracle : BasePlatformTestCase() {
         val byVariant = LinkedHashMap<String, Stats>()
         val byCategory = LinkedHashMap<String, MutableList<String>>()
         var nativeTime = 0L
-        for (case in cases) {
-            val stats = byVariant.getOrPut(case.variant) { Stats() }
+        for (style in styles) for (case in cases) {
+            val key = "$style/${case.variant}"
+            val stats = byVariant.getOrPut(key) { Stats() }
             stats.files++
             val reference = normalize(File(expected, "${case.variant}/${case.name}").readText())
             val begin = System.nanoTime()
             val formatted = try {
-                format(case.text, case.name)
+                format(case.text, case.name, style)
             } catch (e: Throwable) {
                 stats.exceptions++
-                byCategory.getOrPut("exception") { ArrayList() } += "${case.variant}/${case.name} (${case.source}): $e\n    ${e.stackTrace.take(6).joinToString("\n    ")}"
+                byCategory.getOrPut("$style: exception") { ArrayList() } += "$key/${case.name} (${case.source}): $e\n    ${e.stackTrace.take(6).joinToString("\n    ")}"
                 continue
             }
             nativeTime += System.nanoTime() - begin
-            File(actual, "${case.variant}/${case.name}").apply { parentFile.mkdirs() }.writeText(formatted)
+            File(actual, "$key/${case.name}").apply { parentFile.mkdirs() }.writeText(formatted)
             if (nonWhitespace(formatted) != nonWhitespace(case.text)) {
                 stats.codeChanged++
-                byCategory.getOrPut("code changed") { ArrayList() } += "${case.variant}/${case.name} (${case.source})"
+                byCategory.getOrPut("$style: code changed") { ArrayList() } += "$key/${case.name} (${case.source})"
             }
-            val again = runCatching { format(formatted, case.name) }.getOrNull()
+            val again = runCatching { format(formatted, case.name, style) }.getOrNull()
             if (again != formatted) {
                 stats.unstable++
-                byCategory.getOrPut("not idempotent") { ArrayList() } += "${case.variant}/${case.name}: ${firstDifference(formatted, again ?: "<exception>")}"
+                byCategory.getOrPut("$style: not idempotent") { ArrayList() } += "$key/${case.name}: ${firstDifference(formatted, again ?: "<exception>")}"
             }
             if (formatted == reference) {
                 stats.same++
+                continue
+            }
+            // Rider's lists differ from dotnet format on purpose: the difference is theirs when dotnet format's own output is left as it
+            // is without them and becomes, with them, what the input became
+            if (style == RIDER && runCatching { format(reference, case.name, DOTNET) == reference && format(reference, case.name, RIDER) == formatted }.getOrDefault(false)) {
+                stats.riderLists++
+                byCategory.getOrPut("$style: Rider's lists (declared)") { ArrayList() } +=
+                    "$key/${case.name} (${case.source}): ${firstDifference(reference, formatted)}"
                 continue
             }
             val expectedLines = reference.lines()
@@ -121,8 +139,8 @@ class CSharpFormatOracle : BasePlatformTestCase() {
             val diffs = expectedLines.indices.filter { it < actualLines.size && expectedLines[it] != actualLines[it] }
             stats.lines += diffs.size
             val line = diffs.firstOrNull() ?: expectedLines.indices.firstOrNull { it >= actualLines.size || expectedLines[it] != actualLines[it] } ?: 0
-            byCategory.getOrPut(category) { ArrayList() } += buildString {
-                append("${case.variant}/${case.name} (${case.source}) line ${line + 1}, ${diffs.size} lines differ\n")
+            byCategory.getOrPut("$style: $category") { ArrayList() } += buildString {
+                append("$key/${case.name} (${case.source}) line ${line + 1}, ${diffs.size} lines differ\n")
                 for (k in maxOf(0, line - 2)..minOf(line + 2, expectedLines.size - 1)) {
                     append("    exp|").append(expectedLines[k]).append('\n')
                     append("    act|").append(actualLines.getOrElse(k) { "<none>" }).append('\n')
@@ -130,9 +148,11 @@ class CSharpFormatOracle : BasePlatformTestCase() {
                 if (category != "line breaks") append("    in |").append(inputLines.getOrElse(line) { "" }).append('\n')
             }
         }
-        report.append("format oracle: native formatter vs dotnet format whitespace, ${sources.size} files\n")
-        for ((variant, stats) in byVariant) {
-            report.append("  $variant: ${stats.files} files, ${stats.same} identical, ${stats.files - stats.same - stats.exceptions} differ (${stats.lines} lines) ${stats.categories}")
+        report.append("format oracle: native formatter vs dotnet format whitespace, ${sources.size} files ")
+        report.append("(dotnet: without Rider's lists; rider: as Reformat Code does, the differences of Rider's lists declared)\n")
+        for ((key, stats) in byVariant) {
+            val rider = if (key.startsWith("$RIDER/")) "${stats.riderLists} only Rider's lists, " else ""
+            report.append("  $key: ${stats.files} files, ${stats.same} identical, $rider${stats.files - stats.same - stats.riderLists - stats.exceptions} differ (${stats.lines} lines) ${stats.categories}")
             report.append(", code changed ${stats.codeChanged}, not idempotent ${stats.unstable}, exceptions ${stats.exceptions}\n")
         }
         report.append("  native formatter: ${nativeTime / 1_000_000} ms in all\n")
@@ -149,6 +169,12 @@ class CSharpFormatOracle : BasePlatformTestCase() {
     private companion object {
         val GENERATED_NAME = Regex("(?i)\\.(g|g\\.i|generated|designer)\\.cs$")
         val GENERATED_HEADER = Regex("(?i)<auto-?generated")
+
+        /** The formatter without Rider's lists ([CSharpFormatOptions.riderLists]): what must be exactly `dotnet format`. */
+        const val DOTNET = "dotnet"
+
+        /** The formatter as Reformat Code runs it: Rider's lists on. */
+        const val RIDER = "rider"
     }
 
     private class Case(val variant: String, val name: String, val source: String, val text: String)
@@ -156,6 +182,7 @@ class CSharpFormatOracle : BasePlatformTestCase() {
     private class Stats {
         var files = 0
         var same = 0
+        var riderLists = 0
         var lines = 0
         var codeChanged = 0
         var unstable = 0
@@ -248,13 +275,18 @@ class CSharpFormatOracle : BasePlatformTestCase() {
         return result.toString()
     }
 
-    private fun format(text: String, name: String): String {
+    private fun format(text: String, name: String, style: String): String {
         // no #if symbols, as `dotnet format --folder`
         val virtualFile = LightVirtualFile(name, CSharpFileType, text).apply { putUserData(CSharpPreprocessorSymbols.KEY, emptySet()) }
         val file = PsiManager.getInstance(project).findFile(virtualFile)!!
         val documents = PsiDocumentManager.getInstance(project)
         val document = documents.getDocument(file)!!
-        WriteCommandAction.runWriteCommandAction(project) { CodeStyleManager.getInstance(project).reformat(file) }
+        CSharpFormatOptions.dotnetFormatOnly = style == DOTNET
+        try {
+            WriteCommandAction.runWriteCommandAction(project) { CodeStyleManager.getInstance(project).reformat(file) }
+        } finally {
+            CSharpFormatOptions.dotnetFormatOnly = false
+        }
         documents.commitDocument(document)
         return document.text
     }

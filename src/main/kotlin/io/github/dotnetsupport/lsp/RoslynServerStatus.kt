@@ -105,6 +105,13 @@ object RoslynPolicy {
         (resolved == FormatterChoice.DOTNET_FORMAT || resolved == FormatterChoice.BUILT_IN && !nativeTree)
 
     /**
+     * The text of a diagnostic of the server with its code in front (`CS0230: Type and identifier...`), as the native ones and Rider show
+     * them, so the errors of the two sources read alike side by side. A message that carries the code already is left as it is.
+     */
+    fun diagnosticText(code: String?, message: String): String =
+        if (code.isNullOrBlank() || message.startsWith("$code:")) message else "$code: $message"
+
+    /**
      * A semantic token of the server in the palette of the plugin ([CSharpColors], the one of Rider), so a file looks the same before and
      * after the server is ready and with the native colors. The server tells `static` and a reassigned local (`ReassignedVariable`) by
      * modifiers, not a declaration from a use: a method is colored as a call. Null: what the lexer has colored already (comments, strings,

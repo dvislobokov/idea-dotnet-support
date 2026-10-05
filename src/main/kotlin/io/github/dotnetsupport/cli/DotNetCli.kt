@@ -39,7 +39,7 @@ object DotNetCli {
     private const val TIMEOUT_MS = 10 * 60 * 1000
     private const val HEARTBEAT_S = 30L
 
-    /** The executable to run: the one from Settings | Tools | .NET, otherwise the auto-detected one. */
+    /** The executable to run: the one from Settings | .NET, otherwise the auto-detected one. */
     fun findExecutable(): String? =
         DotNetSettings.getInstance().dotnetPath.takeIf { it.isNotEmpty() && File(it).isFile } ?: detectExecutable()
 

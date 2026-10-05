@@ -14,6 +14,7 @@ MSBuild'ом Visual Studio»).
 | 0.1.28 | MsBuildHost: вычисление legacy-проектов, дерево по вычисленным items | `msbuild/MsBuildEvaluation` |
 | 0.1.41 | Build / Rebuild / Clean legacy-проектов и решений с ними — `MSBuild.exe` из VS / Build Tools (`vswhere`); «MSBuild version» в Toolset and Build; `VSToolsPath` для MsBuildHost | `build/VisualStudioToolset` |
 | 0.1.42 | Run legacy-проекта — собранный exe напрямую; Stop у `WinExe` — жёсткий; вывод в OEM-кодировке; `SolutionDir` при сборке одного проекта | `run/ExecutableLaunch` |
+| 0.1.69 | Отладка net4x (адаптер `dotnet-debugger` 0.2.0): Debug legacy-проекта — `program` = `TargetPath`, папка вывода как рабочая; отказ 32-битной программе и процессу до адаптера; attach к net4x без ключа реестра; одна сборка перед Debug вместо двух | `debugger/DotNetDebugRunner`, `run/DebugBitness`, `run/DotNetDebugLaunch` |
 
 ## Дальше — по порядку
 
@@ -40,10 +41,19 @@ MSBuild'ом Visual Studio»).
 В журнале песочницы сервер грузит оба проекта площадки, но пишет «has unresolved dependencies». Выяснить, чего ему не хватает (restore
 `packages.config` он не делает — пробует `dotnet restore` решения), и нужно ли предупреждение без VS / Build Tools.
 
-### 4. Отладка .NET Framework (этап 3 ROADMAP, ждёт адаптера пользователя)
-Debug exe напрямую (`program` = `TargetPath`), выбор адаптера по разрядности (`PlatformTarget`, `Prefer32Bit`, PE), attach к net4x
-(снять ключ реестра `dotnet.debugger.attach.netFramework`), отладка тестов. Сценарии `// BP:legacy-console`, `// BP:legacy-wpf-click` уже в площадке.
-Run configuration «.NET Executable» для чужого exe.
+### 4. Отладка .NET Framework — сделано в 0.1.69 (адаптер `dotnet-debugger` 0.2.0), проверено UI-роботом
+- Debug legacy-проекта: «Build .NET Project» (`MSBuild.exe`) → `launch` с `program` = `TargetPath` и `cwd` = папка вывода, `console:
+  integratedTerminal` как у .NET (адаптер 0.2.0 сам создаёт процесс с консолью терминала). Остановка на `BP:legacy-console`, кадры, переменные,
+  Evaluate (в т. ч. `Newtonsoft.Json.JsonConvert.SerializeObject(args)`), Step Over / Into, Resume до конца, вывод с кириллицей. WPF: Debug,
+  клик по кнопке (UI Automation) → `BP:legacy-wpf-click`, `clicks` = 1, Stop закрывает окно.
+- Разрядность: адаптер отлаживает только 64-битные процессы, поэтому выбирать адаптер не из чего — плагин отказывает 32-битной программе
+  (PE: PE32 + `32BITREQUIRED`, с `32BITPREFERRED` — это «Prefer 32-bit»; PE32 без CLI-заголовка или не IL-only — x86) уведомлением с тем, что
+  поменять в проекте, ещё до запуска адаптера; attach к WOW64-процессу (`IsWow64Process`) — так же. В площадке `Prefer32Bit` = false.
+- Attach к net4x: ключ `dotnet.debugger.attach.netFramework` снят, процессы предлагаются на Windows; проверено роботом (attach, клик, стоп,
+  detach — процесс жив).
+- Тесты SDK-проекта `net481` (VSTest): Debug теста останавливается на точке в тесте (attach к `testhost`, он 64-битный). Тесты legacy-проектов —
+  п. 1 (их запуска ещё нет вовсе).
+- Не сделано: run configuration «.NET Executable» для чужого exe; кнопка «выключить Prefer 32-bit» в уведомлении (правка `.csproj`).
 
 ### 5. Крупное (этап 4 ROADMAP)
 - Legacy-модель проекта: новые файлы → `<Compile Include>` в `.csproj`, удаление / переименование с правкой проекта (4–5 дней).
@@ -66,10 +76,23 @@ Run configuration «.NET Executable» для чужого exe.
   `isComplete: false`, но MSBuild рабочий. Папка `MSBuild\Microsoft\VisualStudio\v18.0` есть без VS 18 (остаток Python Tools) — `VSToolsPath`
   берётся по major-версии установки, не по самой новой папке.
 - Run: то, что «Build .NET Project» кладёт в `ExecutionEnvironment`, до Run-state не доходит (2026.1) — путь exe берётся у MsBuildHost заново.
-  У Debug так же? `DotNetDebugRunner` в этом случае собирает заново (`buildNow`) — **проверить, нет ли двойной сборки при Debug**.
+  У Debug так же: **двойная сборка подтверждена** роботом 2026-10-05 (каждый Debug, не только legacy: задача собирает, `DotNetDebugRunner`
+  не видит её user data и собирает снова). `executionId` окружения у задачи и у runner'а один и тот же — по нему передаётся путь
+  (`BuiltBeforeLaunch`, 0.1.69); после этого в журнале одна сборка.
 - Консоль программы .NET Framework пишет в OEM-кодировке (`GetOEMCP`; на машине разработки 437 при русской локали) — кириллица теряется
   в самой программе. Вариант с `chcp 65001` через `cmd /c` отвергнут: экранирование аргументов через `cmd` и дерево процессов.
 - Мягкий Stop платформы — Ctrl+C; окну (`WinExe`, подсистема PE = 2) он не доходит, процесс остаётся жить, а вкладка пишет «Process finished».
 - Запуск из Services не виден `RunContentManager` и `ExecutionManager.getRunningProcesses()` (скрипты робота `run_consoles.js`, `stop_all.js`);
   Stop там — кнопка `//div[@myaction='Stop (Stop the process)' and contains(@myaction.key,'RunDashboard')]`.
 - Кириллица в JS-скриптах робота до IDE не доходит (аргументы конфигурации сохранились пустыми) — в скриптах латиница.
+
+## Факты, найденные по ходу (2026-10-05, отладка)
+- `dotnet-debugger` 0.2.0 на площадке (прогон DAP без IDE, `netfx-probe`): `launch` до остановки на точке — 0,4–0,6 с, `attach` — 0,15 с, шаги —
+  10–15 мс, Evaluate — 2–130 мс. Windows-PDB (`DebugType` full) читаются. Вывод кириллицы под отладчиком цел (адаптер переключает консоль).
+- MSBuild по умолчанию делает AnyCPU-программу net4.5+ «Prefer 32-bit» (`corflags` 0x20003) даже без `Prefer32Bit` в проекте — так собрана
+  площадка до 0.1.69, адаптер отказывал ей: «'LegacyConsole.exe' runs as a 32-bit process, which dotnet-debugger cannot debug…». SDK-проект
+  `net481` (`OutputType` Exe) — AnyCPU без предпочтения (0x1), 64-битный.
+- `ProcessInfo.executableCannonicalPath` платформы на Windows пустой — путь берётся у `ProcessHandle.info().command()`.
+- Адаптер: в Evaluate не видны `using` файла для типов из сборок пакетов (`JsonConvert` → «The name 'JsonConvert' does not exist», полное имя
+  работает; `Encoding` из `using System.Text` — работает) — и на .NET 10 тоже, не только net4x. Инициализатор коллекции (`new List<int> { 1, 2 }`)
+  не поддержан («Only member initializers are supported»). У `process` при attach `name` — PID строкой, а не имя exe.

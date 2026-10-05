@@ -33,6 +33,18 @@
     <option name="CSHARP_STRING">
         <value><option name="FOREGROUND" value="8C6C41"/></value>
     </option>
+    <option name="CSHARP_ESCAPE_CHARACTER_1">
+        <value><option name="FOREGROUND" value="A626A4"/></value>
+    </option>
+    <option name="CSHARP_ESCAPE_CHARACTER_2">
+        <value><option name="FOREGROUND" value="0093A1"/></value>
+    </option>
+    <option name="CSHARP_FORMAT_STRING_ITEM">
+        <value><option name="FOREGROUND" value="6B2FBA"/></value>
+    </option>
+    <option name="CSHARP_FORMAT_STRING_ITEM_2">
+        <value><option name="FOREGROUND" value="6B2FBA"/></value>
+    </option>
     <option name="CSHARP_NUMBER">
         <value><option name="FOREGROUND" value="AB2F6B"/></value>
     </option>

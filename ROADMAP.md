@@ -60,7 +60,8 @@
 - [x] TODO-индекс (2026-09-22): TODO / FIXME и прочие шаблоны Settings | Editor | TODO в комментариях C# (`//`, `///`, `/* */`) — окно TODO,
   счётчики, подсветка; в строках и именах не считаются (`CSharpTodoIndexer` на лексере + `CSharpIndexPatternBuilder`)
 - [ ] WordsScanner (текстовый Find Usages), spellchecker
-- [ ] Неактивные ветки `#if` по `DefineConstants`
+- [x] Неактивные ветки `#if` по `DefineConstants` — серые с 0.1.67 (исключённый текст своего дерева, `NativeCSharpInactiveCode`;
+  сценарий — `debug-playground/Broken/SyntaxErrors.cs`, `TYPE:diag-directives`)
 - [ ] Переименование файла вместе с типом
 - [x] Move `.cs` в другую папку (2026-09-29, по сообщению пользователя «мув не проводит полный рефакторинг»): `CSharpMoveFileHandler` после
   переноса спрашивает и меняет namespace на namespace папки — рефакторингом Roslyn «Change namespace to '…'» через EP
@@ -134,7 +135,7 @@
 
 ## Заход 4 — проект и окружение
 - [x] Настройки инструментов на той же странице: пути к `dotnet-counters`, `dotnet-stack`, `dotnet-gcdump`, `dotnet-dump`, `upgrade-assistant` (пусто — PATH и `~/.dotnet/tools`), кнопка Install / Update у каждого
-- [x] Страницы настроек по образцу Rider, дочерние к Settings | Tools | .NET, опция в опцию; то, за чем у плагина пока ничего нет, показано выключенным с замком и причиной в подсказке (`settings/RiderSettingsUi.kt`):
+- [x] Страницы настроек по образцу Rider, дочерние к Settings | .NET, опция в опцию; то, за чем у плагина пока ничего нет, показано выключенным с замком и причиной в подсказке (`settings/RiderSettingsUi.kt`):
   - **Toolset and Build** (на проект, workspace): MSBuild global properties (`-p:` для build / rebuild / clean / restore, `--property:` для run), Run build after solution is loaded, Restore NuGet packages before build (`--no-restore`), число процессов (`-m:N`), verbosity вывода, лог MSBuild в файл (`-fl -flp:`, папка, verbosity). Замок: Mono, версия MSBuild, авто-загрузка SDK, ReSharper Build, targets пропущенных проектов, design-time build
   - **NuGet** (на машину): Include prerelease (начальное состояние чекбокса окна и Upgrade Packages), автоматический restore после изменения `*.csproj` / `Directory.Packages.props` / `nuget.config` (в Log окна NuGet), Smart Restore on Build (`--no-restore`, пока `project.assets.json` новее всего, что решает состав пакетов), `--no-cache`, `--interactive`. Замок: unlisted, blob-фиды, dependency behavior, file conflict, uninstall-опции, restore engine, формат пакетов, credential providers
   - **Coverage**: что делать с новым покрытием (спросить / не применять / заменить / добавить к показанному — попадания суммируются), Activate Coverage View, проценты покрытия у файлов и папок в Project / Solution view
@@ -146,8 +147,8 @@
   - Выключенные опции-заглушки «как в Rider, под замком» убраны со всех страниц (2026-09-21): на страницах только работающее
   - **Editor | Code Style | C#**: Tabs and Indents настоящие (ими отступает редактор, EditorConfig IDE их переопределяет), остальное с первой вкладки Rider и прочие вкладки — под замком (нужен форматтер внутри IDE)
 - [x] Окно NuGet: вертикальный тулбар как в Rider — Restore (solution или проект из «Packages for»), Upgrade Packages in Solution, показать / скрыть карточку пакета, Settings, Help
-- [x] Страница настроек (Settings | Tools | .NET): путь к `dotnet` с проверкой, список установленных SDK, статус `global.json` проекта, переключатели поведения (автосоздание run configurations, окно Build при каждой сборке, автопереключение на Solution view)
-- [x] 0.1.18 — Дополнительные папки для поиска `dotnet` (Settings | Tools | .NET, поверх PATH): сама папка и вложенные `dotnet*` на один
+- [x] Страница настроек (Settings | .NET): путь к `dotnet` с проверкой, список установленных SDK, статус `global.json` проекта, переключатели поведения (автосоздание run configurations, окно Build при каждой сборке, автопереключение на Solution view)
+- [x] 0.1.18 — Дополнительные папки для поиска `dotnet` (Settings | .NET, поверх PATH): сама папка и вложенные `dotnet*` на один
   уровень (`/usr/share` находит `/usr/share/dotnet-sdk-8.8.403`), новейшая версия по имени папки; тот же список — переменной среды
   `DOTNET_SUPPORT_SEARCH_PATHS` для раскатки политикой на корп-машины (`DotNetSearch`, поиск чистыми функциями). **Вживую не проверено**
 - [x] Уведомление при открытии solution: `dotnet` не найден, или `global.json` требует неустановленный SDK (политики `rollForward` сверены с настоящим CLI)
@@ -312,11 +313,35 @@
 
 ### Панели и переключатели Rider
 - [x] ★ File nesting: `appsettings.*.json` под `appsettings.json`, `Foo.razor.cs` / `Foo.razor.css` под `Foo.razor`, `*.Designer.cs` под `.resx`, `*.xaml.cs` под `.xaml` — через `ProjectViewNestingRulesProvider` (пара часов)
-- [x] ★ Переключатель конфигурации решения в тулбаре: Debug / Release и target framework; подставляется в сборку, запуск и тесты (`-c`, `--framework`) (день)
+- [x] ★ Переключатель конфигурации решения в тулбаре: Debug / Release и target framework; подставляется в сборку, запуск и тесты (`-c`, `--framework`) (день).
+  С 0.1.70 — в меню стрелки кнопки Build Solution (ниже), отдельного комбобокса нет, как в Rider
+- [x] 0.1.70 — UI как в Rider (решения пользователя 2026-10-05; снимок Rider — `docs/rider-analysis`):
+  - настройки плагина — свой узел **.NET** в корне Settings (Toolset and Build, NuGet, Coverage, Debugger, Language Server), не под Tools;
+    Editor | Code Style | C# и Color Scheme | C# — на своих местах;
+  - в тулбаре вместо комбобоксов Debug/Release и TFM — split-кнопка **Build Solution** (`build/BuildSolutionBar`, перед Run widget, как
+    `BuildSolutionBar` Rider): молоток собирает solution, стрелка — Build / Rebuild / Clean / NuGet Restore / Cancel Build и выбор
+    конфигурации и target framework;
+  - в редакторе C#: **Refactor This** (Ctrl+Alt+Shift+T — сочетание Rider в раскладке по умолчанию; то же действие платформы
+    `Refactorings.QuickListPopupAction`, что настраивает Rider), **Navigate To** (Ctrl+Shift+G, `DotNet.NavigateTo`, ещё в меню Navigate),
+    **Generate** (Alt+Insert, действие платформы `Generate`): списки из того, что есть у каретки, — действия платформы под именами Rider
+    (Rename, Declaration, Base Symbols…), свои intention-рефакторинги и генераторы (Introduce / Inline Variable, Move type to file,
+    Unit Test), code actions сервера (`roslyn/RoslynPopupContributor`, точка расширения `csharpPopupContributor`); недоступное скрыто;
+  - ПКМ редактора C#: Find Usages Advanced… после Find Usages, подменю Inspect (Call / Type Hierarchy, IL Code), Quick Definition,
+    «Generate Code…» — как в Rider. Главное меню .NET не менялось.
+  Нет своих генераторов Rider: Constructor, Read-only properties / Properties, Missing / Overriding / Delegating / Partial members,
+  Deconstructor, Equality members / comparer, Relational members / comparer, Formatting members, Dispose pattern — пока только то, что
+  отдаёт сервер. Сценарий — `Console/Editor/RiderPopups.cs`; `docs/LIVE_CHECKS.md` E-91…E-95
 - [x] ★ Analyze .NET Stack Trace: вставить стектрейс из лога или тикета → кликабельные кадры (фильтр уже есть; час-два)
 - [x] Unit Tests explorer: окно со всеми тестами solution без запуска (токенное обнаружение уже есть), запуск выделенного, группировка проект / namespace / класс
 - [x] Окно Unit Tests внизу, как в Rider: вкладка Explorer плюс сессии — результаты `dotnet test` идут в это окно, а не в Run (свой program runner, повторный запуск переиспользует вкладку); окна Build и .NET Coverage не исчезают с панели
 - [ ] Continuous testing: `dotnet watch test` с тем же деревом результатов, рабочая кнопка «Toggle auto-test»
+- [x] 0.1.65 — хвосты A8, ждавшие C2 (`lang/NativeCSharpUsings`, `NativeCSharpUsingChecks`; типы — `lang/semantic/CSharpTypeFacts`):
+  CS1674 / CS8418 на ресурсе `using`, не реализующем `IDisposable`, CS8410 / CS8417 — на `await using` без `IAsyncDisposable` (тексты и
+  коды Roslyn, подчёркивание на объявлении или выражении; копия той же ошибки от сервера убирается); список `using (` / `using var x = `
+  без локальных, параметров, полей и свойств, про которые известно, что они не disposable (их строки сервера — тоже). Только где тип
+  известен целиком: неизвестный тип, нерешённая база, параметр типа, шаблон `DisposeAsync` / `Dispose` у `ref struct`, сборки без
+  System.Runtime — ни ошибки, ни фильтра. Сценарий — `Usings.cs`, `TYPE:using-cs1674`, `TYPE:using-list`; `docs/LIVE_CHECKS.md` E-79.
+  Вживую не проверено
 - [x] 0.1.63 — Декомпиляция сборок из Dependencies → C# read-only в редакторе. Не `ilspycmd`: DotNetHelper, метод `decompile`
   (`helpers/dotnethelper/Decompile.cs`, ICSharpCode.Decompiler 11.1, тот же, что у IL Viewer) — C# типа целиком, XML-доки, смещения членов по
   XML doc id; reference assembly подменяется реализацией (`decompiler/ImplementationAssemblies`: `packs/*.Ref` → `shared/`, `ref/` → `lib/`
@@ -407,7 +432,7 @@
 ### Этап 1 — быстрое
 - [x] 0.1.22 — Run / Debug N Projects при выделении нескольких проектов в Solution view: сборки по очереди, затем запуск вместе (`dotnet run --no-build`); сборки перед Debug идут по очереди (`DotNetDebugBuild.build`), так что и платформенный Compound не собирает общие зависимости дважды разом. Compound + Run по-прежнему собирает параллельно (`dotnet run` каждый сам). Тесты `ServicesAndNodeActionsTest`, `RiderPanelsTest`; чек-лист — `debug-playground/README.md` «Запуск нескольких проектов». Вживую не проверено
 - [x] 0.1.24 — `packages.config` (`msbuild/PackagesConfig`): пакеты в Dependencies → Packages и как установленные в окне NuGet; Install / Update / Remove у такого проекта выключены с объяснением, сервис их пропускает (запись в Log). Тесты `DependenciesTreeTest`, `NuGetTest`. Вживую не проверено
-- [x] 0.1.23 — Attach к процессам .NET Framework: управляемый `.exe` (CLI-заголовок PE, `PortableExecutable.isManaged`) без `runtimeconfig.json`; за ключом реестра `dotnet.debugger.attach.netFramework` до готовности адаптера. Хосты, сами грузящие CLR (`w3wp.exe`, Office), так не находятся — нужен список модулей процесса. Тест `DebugLaunchTest`; чек-лист — `debug-playground/README.md`
+- [x] 0.1.23 — Attach к процессам .NET Framework: управляемый `.exe` (CLI-заголовок PE, `PortableExecutable.isManaged`) без `runtimeconfig.json`; за ключом реестра `dotnet.debugger.attach.netFramework` до готовности адаптера (ключ снят в 0.1.69). Хосты, сами грузящие CLR (`w3wp.exe`, Office), так не находятся — нужен список модулей процесса. Тест `DebugLaunchTest`; чек-лист — `debug-playground/README.md`
 - [x] 0.1.26 — Hot Reload в `dotnet watch` (`run/HotReload`): состояние по выводу `dotnet watch` (`DOTNET_CLI_UI_LANGUAGE=en`; тексты SDK 9 и 10 сняты с живого CLI, SDK 8 — по исходникам) в строке Services и цветом в консоли, Restart ссылкой и кнопкой — перезапуск конфигурации (клавиши `dotnet watch` из pipe не читает). Тест `HotReloadTest`; сценарий — `debug-playground/Web/HotReload.cs`. Вживую не проверено
 - [x] 0.1.25 — Go to Base для членов (`roslyn/RoslynBaseMembers`): цепочка `typeHierarchy/supertypes`, член того же вида и имени в файле базового типа по сканеру объявлений (перегрузки — по числу параметров); ближайший базовый класс, затем интерфейсы. Тест `RoslynBaseMembersTest`; сценарий — `debug-playground/Console/Editor/GoToBase.cs`. Вживую не проверено
 ### Этап 2 — среднее
@@ -419,10 +444,10 @@
 ### Этап 3 — отладка .NET Framework (под доработанный адаптер)
 Договориться с адаптером: как он узнаёт desktop CLR (аргумент `launch` или по exe), x64 / x86 — два бинарника или один, какие `capabilities` объявляет.
 - [x] 0.1.42 — Run проекта старого формата: `TargetPath` (MsBuildHost) запускается напрямую, `run/ExecutableLaunch` — папка вывода как рабочая, аргументы и окружение конфигурации, вывод консоли в OEM-кодировке Windows (`GetOEMCP`; чего в ней нет — `?` уже в программе, как в `cmd`), Stop у `WinExe` (подсистема PE = 2) — сразу жёсткий (мягкий — Ctrl+C, окну он не доходит). Путь из окружения Before launch до Run-state не доходит — берётся у MsBuildHost заново (~10 мс). SDK-проекты `net48` — по-прежнему `dotnet run`. Тест `ExecutableLaunchTest`; проверено UI-роботом на `debug-playground/NetFramework`
-- [ ] Debug exe напрямую (`program` = `TargetPath`), заодно run configuration «.NET Executable» для чужого exe (1–2)
-- [ ] Выбор адаптера по разрядности цели (`PlatformTarget`, `Prefer32Bit`, PE-заголовок), понятная ошибка без подходящего адаптера (1)
-- [ ] Attach к net4x (снять флаг этапа 1), отладка тестов net4x (`VSTEST_HOST_DEBUG` → `testhost.net4x.exe`) (1–2)
-- [ ] Проект `net48` в `debug-playground` со сценариями `// BP:`, проверка UI-роботом (1)
+- [x] 0.1.69 — Debug проекта старого формата: адаптер `dotnet-debugger` 0.2.0 запускает `TargetPath` (`program`), рабочая папка — папка вывода (`DotNetLaunchArguments.startInOutputFolder`), как у Run; точки останова, шаги, переменные, Evaluate, консоль (кириллица под отладчиком цела — консоль переключает адаптер). Сборка перед Debug — одна: путь из «Build .NET Project» передаётся по `executionId` (`BuiltBeforeLaunch`; user data окружения до runner'а не доходит — каждый Debug, и не только legacy, собирал проект дважды). Тест `DebugLaunchTest`; проверено UI-роботом на `debug-playground/NetFramework` (`BP:legacy-console`, `BP:legacy-wpf-click`). «.NET Executable» для чужого exe — не сделано
+- [x] 0.1.69 — 32 бита: адаптер отлаживает только 64-битные процессы, а MSBuild делает AnyCPU-программу net4.5+ «Prefer 32-bit» по умолчанию. Плагин читает PE-заголовок (`PortableExecutable.thirtyTwoBit`: PE32+, флаги CLI `32BITREQUIRED` / `32BITPREFERRED`, нативный PE32) и до запуска адаптера отказывает уведомлением «Cannot Debug a 32-bit Process» с тем, что поменять в проекте (`DebugBitness`); attach к WOW64-процессу — так же. Второго адаптера под x86 нет — выбирать не из чего. Площадка — `Prefer32Bit` = false в обоих проектах. Тест `DebugLaunchTest`; проверено UI-роботом
+- [x] 0.1.69 — Attach к net4x без ключа реестра (на Windows); путь exe — из `ProcessHandle`, когда платформа его не дала (на Windows не даёт никогда: раньше net4x-программы находил только помощник диагностики, и не с первого открытия списка). Отладка тестов SDK-проекта `net481` (VSTest, `testhost` 64-битный) работает тем же attach — проверено UI-роботом. Тесты legacy-проектов — п. 1 `NET_FRAMEWORK_PLAN.md`
+- [x] 0.1.69 — Площадка `debug-playground/NetFramework` со сценариями `// BP:` (проверено UI-роботом)
 ### Этап 4 — крупное
 - [x] 0.1.36 — результаты тестов по ходу прогона (VSTest: xUnit, NUnit, MSTest): свой логгер + сборщик данных (`testlogger/`, netstandard2.0, ObjectModel 17.12 только для компиляции, собирается у пользователя один раз), события `*.jsonl` в каталоге из `DOTNET_SUPPORT_TEST_EVENTS`, плагин читает каждые 200 мс (`testing/LiveTestEvents.kt`), дерево по id, в конце сверка с TRX. Начало теста — сразу, результат — с задержкой до ~1 с (VSTest отдаёт логгерам пачками). Тест `LiveResultsTest`, сценарий — `debug-playground/Tests/LiveResultsTests.cs` (маркеры `LIVE:`). Вживую в IDE не проверено
 - [ ] Живые результаты для Microsoft Testing Platform (MSTest runner, xunit.v3, TUnit): json-rpc `--server` / `--dotnet-test-pipe`, как у VS; сейчас — TRX в конце
@@ -539,6 +564,46 @@
   `debug-playground/Console/Editor/Formatting.cs` (`TYPE:format-*`); робот — `reformat.js`. Роботом и вживую не проверено.
   Выбор в Toolset and Build → «Formatter» (по просьбе пользователя 2026-10-04): «Built-in» — на лету, «dotnet format (on save)» —
   только файлы целиком, по Reformat Code и при сохранении; «Auto» — по переключателю «Formatting» (`TYPE:format-choice`)
+- [x] 0.1.68 — встроенный форматтер раскладывает инициализаторы и аргументы как Rider (просьба пользователя 2026-10-05; там, где
+  `dotnet format` оставляет их как есть): многострочные инициализаторы объектов, коллекций, массивов, анонимных типов, `with` и
+  `[...]` — `{` / `[` на своей строке (кроме начала аргумента: `Sum([`), элементы на отступ глубже, `}` на своей строке; переносы
+  внутри сохраняются (`1, 2,` вместе), но если элемент сам многострочный — каждый элемент на своей строке; однострочные — `{ 1, 2 }`,
+  `[1, 2]`. Аргументы вызовов / `new` / индексаторов / атрибутов и параметры — на отступ правее строки, где стоит вызов (Rider не
+  выравнивает по первому аргументу), одинокая `)` — под ней; вложенные списки — от элементов внешнего списка, если тот разложен по
+  строкам; в скобках `if` / `while` / `foreach` / `using` — от первого токена в скобках. Умолчания Rider сняты `jb cleanupcode`
+  (ReSharper 2026.2) и записаны в KDoc `lang/NativeCSharpFormatter` (раздел «Rider's lists»); эталоны — `src/test/resources/formatting/rider`.
+  Оракул (`format-oracle.sh`) сравнивает два стиля: `dotnet` (без списков Rider — ровно `dotnet format`) и `rider` (отличия списков
+  Rider объявлены). Сценарий — `debug-playground/Console/Editor/Formatting.cs` (`TYPE:format-initializers`, `TYPE:format-arguments`),
+  `docs/LIVE_CHECKS.md` E-85, E-86. Вживую не проверено
+- [x] 0.1.71 — подсветка внутри строк как в Rider (`docs/rider-analysis/README.md`, §6 п. 2): у редактора свой лексер
+  (`lang/CSharpHighlightingLexer`, только для `CSharpSyntaxHighlighter`; `CSharpLexer` по-прежнему отдаёт литерал одним токеном) режет
+  строки на текст, escape-последовательности (верные — двумя чередующимися цветами `CSHARP_ESCAPE_CHARACTER_1` / `_2`, неверные —
+  `CSHARP_INVALID_ESCAPE_CHARACTER`; `""` verbatim-строк, `{{` / `}}` интерполированных, char-литералы), дырки интерполяции (скобки — цвет
+  скобок, код внутри — лексером C#, вложенные строки так же; raw-строки `$$"""` с многоскобочными дырками) и выравнивание / формат
+  (`,5`, `:N2` — `CSHARP_FORMAT_STRING_ITEM`). Элементы `{0,5:N2}` у `string.Format` / `Console.Write(Line)` / `AppendFormat` /
+  `Trace.TraceInformation` — аннотатор по имени метода (`lang/CSharpFormatItems`, DumbAware), соседние — `_2`. Кавычки (`CSharpQuoteHandler`)
+  понимают разрезанный литерал. Цвета Islands Dark, страница Color Scheme | C# — группа «String». Сценарий —
+  `debug-playground/Console/Editor/StringColors.cs` (`TYPE:strings-*`), `docs/LIVE_CHECKS.md` E-96…E-98. Проверено UI-роботом (ключи совпали с дампом Rider);
+  человеком вживую не проверено. Не сделано: подсветка пары «элемент формата ↔ аргумент» под кареткой (`MATCHED_FORMAT_STRING_ITEM`),
+  ошибки формата (`{x}` в `string.Format`), шаблоны логгеров `{Name}`, regex-инъекция
+- [x] 0.1.66 — шаг 11c, первая часть (задача C3): completion после точки на своей семантике (`lang/NativeCSharpMemberCompletion`,
+  `lang/semantic/CSharpMemberLookup`; «Completion» = Built-in) — члены типа значения из solution и сборок с унаследованными и
+  подставленными аргументами-типами (`Add(int item)` у `List<int>`), extension-методы в области (без `this`-параметра), static-члены и
+  вложенные типы после типа, namespace и типы после namespace, `a?.`, `this.` — и члены библиотечных баз (protected только через `this`);
+  видимость по C# (private внутри типа, protected в наследнике), дубли сервера убираются. Quick documentation (Ctrl+Q / наведение) и
+  Parameter Info (Ctrl+P) — переключатель «Documentation and parameter info» (по умолчанию Language server до робота;
+  `lang/NativeCSharpDocumentation`, `NativeCSharpParameterInfo`, `semantic/CSharpSymbolText`): строка как Quick Info Roslyn
+  (`void Console.WriteLine(string value) (+ N overloads)`, `(parameter) int limit`), XML-документация из `///` и из доков сборок
+  (summary, параметры, returns, exceptions, remarks), перегрузки строками. Extension-методы solution на `this string` теперь находятся
+  и резолвером. Сценарий — `debug-playground/Console/Editor/MemberCompletion.cs` (`TYPE:dot-*`, `TYPE:quick-doc`, `TYPE:parameter-info`);
+  `docs/LIVE_CHECKS.md` E-80…E-84. Роботом и вживую не проверено
+- [x] 0.1.67 — исправления по роботу в WSL (2026-10-05): папка без системы сборки открывается в IDEA 2026.1 проектом без модулей, её
+  файлы не индексируются, и платформа молча пропускает всё не-`DumbAware` — цвета Built-in и Alt+Enter-действия плагина пропадали.
+  `solution/DotNetModuleSetup` заводит модуль на папку с solution, цвета и intention-действия C# — `DumbAware` (E-46, E-55, E-54,
+  E-62, E-65, E-66). Серый неактивный `#if` (`CSharpColors.INACTIVE_BRANCH`, как `CSHARP_PREPROCESSOR_INACTIVE_BRANCH` в Rider), код
+  у текста ошибок сервера («CS0230: …»), нет списка completion внутри числа (`1` + Enter давало `1_resized`), строка Ctrl+наведения у
+  целей Built-in (`NativeCSharpQuickNavigateInfo`), имя поставщика серого текста «C# Project Support» вместо id, серверный «Fix All: …»
+  уходит вместе со своей строкой, которую заменяет действие плагина. Робот (WSL) — `docs/LIVE_CHECKS.md`; без сервера, кроме E-51
 - [x] 0.1.62 — шаг 10, Go to Class / Symbol по сборкам и metadata view (задача B4): `index/AssemblyGotoContributors` — типы (и члены
   для Go to Symbol) всех проиндексированных сборок solution, только при «Include non-project items» (`scope.isSearchInLibraries`), одна
   строка на сборку и версию, `List<T> (System.Collections.Generic, System.Collections 10.0)`; имена — отсортированные таблицы на индекс

@@ -15,7 +15,7 @@ import com.intellij.util.Alarm
 import io.github.dotnetsupport.build.SmartRestore
 import io.github.dotnetsupport.solution.SolutionService
 
-/** Settings | Tools | .NET | NuGet. Machine-wide: how one likes packages searched and restored does not depend on the solution. */
+/** Settings | .NET | NuGet. Machine-wide: how one likes packages searched and restored does not depend on the solution. */
 @Service(Service.Level.APP)
 @State(name = "DotNetNuGetSettings", storages = [Storage("dotnet-support.xml")])
 class NuGetSettings : SimplePersistentStateComponent<NuGetSettings.Settings>(Settings()) {

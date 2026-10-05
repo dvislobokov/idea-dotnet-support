@@ -55,7 +55,12 @@ enum class CSharpFeature(
      * list was lost but `yield` outside an iterator and `await` in a getter, where they are wrong (robot).
      */
     COMPLETION("Completion", needsIndexes = true, hasNative = true, defaultSource = CSharpFeatureSource.NATIVE),
-    DOCUMENTATION("Documentation and parameter info", needsIndexes = true),
+    /**
+     * Quick documentation and parameter info. Native since 0.1.66 ([NativeCSharpDocumentationTargetProvider], [NativeCSharpParameterInfoHandler]):
+     * the symbol the semantics of the plugin resolves (task C3), its Quick Info line and the XML documentation of the source or of the
+     * assembly; needs the indexes (stubs, the index of assemblies). ROSLYN by default until the robot has compared it with the server.
+     */
+    DOCUMENTATION("Documentation and parameter info", needsIndexes = true, hasNative = true),
     /**
      * Errors and warnings. Native since 0.1.54, the syntactic part ([NativeCSharpDiagnostics]): Roslyn's syntax errors from the file's tree,
      * its lexer and its directives, so no indexes; the semantic errors still come from the server, which gives way only on the syntax errors
@@ -77,7 +82,14 @@ enum class CSharpFeature(
      * and types still go to the server (needs the indexes: the stub index for named arguments and members). NATIVE by default since 0.1.56: the robot renamed
      * the scenarios of the playground as the server does (and the `<param name>` of the doc comment too).
      */
-    RENAME("Rename", needsIndexes = true, hasNative = true, defaultSource = CSharpFeatureSource.NATIVE);
+    RENAME("Rename", needsIndexes = true, hasNative = true, defaultSource = CSharpFeatureSource.NATIVE),
+    /**
+     * Alt+Enter context actions of the code. Native since 0.1.64 ([NativeCSharpContextAction]): `if` ↔ `?:`, block ↔ expression body,
+     * introduce / inline variable, `var` ↔ explicit type (the types of C2, hence the indexes). With the server ready and this switch
+     * ROSLYN the server's own actions answer and the native ones stand back; with NATIVE the server's rows of the same actions are
+     * dropped (`NativeCSharpServerActions`). ROSLYN by default until the robot has checked it.
+     */
+    CONTEXT_ACTIONS("Context actions", needsIndexes = true, hasNative = true);
 
     // in the language of the settings page; not `toString()`: see [io.github.dotnetsupport.PluginLanguage.label]
     val label: String get() = DotNetBundle.messageOr("feature.$name", title)

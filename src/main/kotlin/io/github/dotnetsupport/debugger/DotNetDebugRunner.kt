@@ -2,6 +2,7 @@ package io.github.dotnetsupport.debugger
 
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.ExecutionManager
+import com.intellij.execution.RunCanceledByUserException
 import com.intellij.execution.Executor
 import com.intellij.execution.configurations.RunProfile
 import com.intellij.execution.configurations.RunProfileState
@@ -34,16 +35,19 @@ import io.github.dotnetsupport.cli.DiagnosticsHelperService
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetTool
 import io.github.dotnetsupport.cli.PluginLog
+import io.github.dotnetsupport.run.BuiltBeforeLaunch
+import io.github.dotnetsupport.run.DebugBitness
 import io.github.dotnetsupport.run.DotNetCommand
 import io.github.dotnetsupport.run.DotNetDebugBuild
 import io.github.dotnetsupport.run.DotNetLaunchArguments
 import io.github.dotnetsupport.run.DotNetProcessAttacher
 import io.github.dotnetsupport.run.DotNetProcesses
-import com.intellij.openapi.util.registry.Registry
 import io.github.dotnetsupport.run.DotNetRunConfiguration
+import io.github.dotnetsupport.run.ExecutableLaunch
 import io.github.dotnetsupport.settings.DotNetSettings
 import org.jetbrains.concurrency.AsyncPromise
 import org.jetbrains.concurrency.Promise
+import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import javax.swing.Icon
 
@@ -79,10 +83,12 @@ class DotNetDebugRunner : AsyncProgramRunner<RunnerSettings>() {
                 PluginLog.info(DebugAdapterProcess.LOG_CATEGORY, "adapter started, pid ${adapter.pid}")
                 ApplicationManager.getApplication().invokeLater({
                     try {
-                        val session = XDebuggerManager.getInstance(project).startSession(environment, object : XDebugProcessStarter() {
+                        // the builder hands the descriptor out itself: `XDebugSession.runContentDescriptor` is deprecated in 2026.1
+                        // and logs an error ("should not be used in split mode")
+                        val started = XDebuggerManager.getInstance(project).newSessionBuilder(object : XDebugProcessStarter() {
                             override fun start(session: XDebugSession): XDebugProcess = DotNetDebugProcess(session, adapter, start, DotNetDebuggerLogs.newProtocolTrace())
-                        })
-                        result.setResult(session.runContentDescriptor)
+                        }).environment(environment).startSession()
+                        result.setResult(started.runContentDescriptor)
                     } catch (e: Exception) {
                         PluginLog.error(DebugAdapterProcess.LOG_CATEGORY, "the debug session could not be started", e)
                         adapter.stop(0)
@@ -91,7 +97,7 @@ class DotNetDebugRunner : AsyncProgramRunner<RunnerSettings>() {
                 }, ModalityState.nonModal())
             } catch (e: Exception) {
                 if (e !is ExecutionException) PluginLog.error(DebugAdapterProcess.LOG_CATEGORY, "cannot start debugging", e)
-                else PluginLog.warn(DebugAdapterProcess.LOG_CATEGORY, "cannot start debugging: ${e.message}")
+                else if (e !is RunCanceledByUserException) PluginLog.warn(DebugAdapterProcess.LOG_CATEGORY, "cannot start debugging: ${e.message}")
                 result.setError(e)
             }
         }
@@ -102,15 +108,25 @@ class DotNetDebugRunner : AsyncProgramRunner<RunnerSettings>() {
     private fun debugStart(environment: ExecutionEnvironment): DebugStart {
         val settings = DotNetSettings.getInstance()
         return when (val profile = environment.runProfile) {
-            is DotNetAttachProfile -> DebugStart(
-                attach = true, arguments = DotNetLaunchArguments.attach(profile.processId, !settings.debugExternalSource, settings.debugAllowImplicitEvaluation),
-                name = profile.name, skipInitialBreak = profile.skipInitialBreak,
-            )
+            is DotNetAttachProfile -> {
+                DebugBitness.checkProcess(environment.project, profile.processId, profile.name)
+                DebugStart(
+                    attach = true, arguments = DotNetLaunchArguments.attach(profile.processId, !settings.debugExternalSource, settings.debugAllowImplicitEvaluation),
+                    name = profile.name, skipInitialBreak = profile.skipInitialBreak,
+                )
+            }
             is DotNetRunConfiguration -> {
                 val arguments: MutableMap<String, Any?> = LinkedHashMap(profile.debugLaunchArguments())
-                val built = environment.getUserData(DotNetLaunchArguments.BUILT) == true
-                val targetPath = environment.getUserData(DotNetLaunchArguments.TARGET_PATH) ?: if (built) "" else buildNow(profile)
+                // what the build before the launch has found: without it the project is built here (a second build, if it had been built)
+                val handedOver = environment.getUserData(DotNetLaunchArguments.TARGET_PATH) ?: BuiltBeforeLaunch.take(environment.executionId)
+                    ?: "".takeIf { environment.getUserData(DotNetLaunchArguments.BUILT) == true }
+                PluginLog.info(DotNetDebugBuild.LOG_CATEGORY, "debug of ${profile.name} (${environment.executionId}): ${handedOver?.let { "built before the launch, program ${it.ifEmpty { "unknown" }}" } ?: "not built yet"}")
+                val targetPath = handedOver ?: buildNow(profile)
                 DotNetLaunchArguments.setProgram(arguments, targetPath)
+                if (ExecutableLaunch.applies(environment.project, profile.options)) {
+                    DotNetLaunchArguments.startInOutputFolder(arguments, targetPath, profile.options.workingDirectory)
+                }
+                (arguments["program"] as? String)?.let { DebugBitness.check(environment.project, File(it), File(profile.options.projectPath.orEmpty()).name.ifEmpty { null }) }
                 DebugStart(
                     attach = false, arguments = arguments, name = profile.name, launchUrl = profile.launchProfile()?.launchUrl, openBrowser = profile.options.openBrowser,
                     aspireHost = AspireHosts.isAppHost(environment.project, profile.options.projectPath),
@@ -173,9 +189,11 @@ class DotNetAttachDebuggerProvider : XAttachDebuggerProvider {
     override fun getAvailableDebuggers(project: Project, hostInfo: XAttachHost, process: ProcessInfo, contextHolder: UserDataHolder): List<XAttachDebugger> {
         val processId = process.pid.toLong()
         if (processId == ProcessHandle.current().pid() || processId in DebuggedProcesses) return emptyList()
-        val executable = process.executableCannonicalPath.orElse(null)
+        // empty on Windows (seen live): the path of the executable tells a .NET Framework program and an apphost of .NET
+        val executable = process.executableCannonicalPath.orElse(null) ?: ProcessHandle.of(processId).flatMap { it.info().command() }.orElse(null)
+        // .NET Framework only on Windows, where the adapter debugs it (since dotnet-debugger 0.2.0)
         val dotNet = DotNetProcesses.isDotNet(executable, process.executableName, process.commandLine) ||
-            Registry.`is`(DotNetProcesses.NET_FRAMEWORK_KEY, false) && (DotNetProcesses.isNetFramework(executable) || hasDesktopClr(processId))
+            SystemInfo.isWindows && (DotNetProcesses.isNetFramework(executable) || hasDesktopClr(processId))
         return if (dotNet) listOf(Debugger) else emptyList()
     }
 

@@ -64,9 +64,6 @@ object DotNetProcesses {
         return isDotNet(executableName, commandLine) { directory != null && File(directory, it).isFile }
     }
 
-    /** Offer .NET Framework processes too: off until the debug adapter can debug the desktop CLR. */
-    const val NET_FRAMEWORK_KEY = "dotnet.debugger.attach.netFramework"
-
     private val managedExecutables = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, Boolean>>()
 
     /**
@@ -121,4 +118,53 @@ object PortableExecutable {
     /** A window program: it has no console, so Ctrl+C, the soft stop of the IDE, never reaches it. */
     fun isWindowsGui(file: java.io.File): Boolean =
         runCatching { file.inputStream().use { it.readNBytes(4096) } }.getOrNull()?.let(::subsystem) == WINDOWS_GUI
+
+    /** Why a program runs as a 32-bit process on 64-bit Windows. */
+    enum class ThirtyTwoBit {
+        /** AnyCPU with "Prefer 32-bit": what MSBuild makes of a program of .NET Framework 4.5+ unless the project says `Prefer32Bit` false. */
+        PREFER_32_BIT,
+        /** Built for x86 (`PlatformTarget`, and the default of an SDK-style program of .NET Framework), or native / mixed 32-bit code. */
+        X86,
+    }
+
+    private const val IL_ONLY = 0x1L
+    private const val REQUIRES_32_BIT = 0x2L
+    private const val PREFERS_32_BIT = 0x20000L
+
+    /**
+     * How [image] (the start of a PE file, enough to hold its CLI header: [readStart]) runs on 64-bit Windows: null for a 64-bit
+     * process (PE32+, or IL-only AnyCPU) and for what cannot be read. The CLI header lives in a section, so its flags are found through
+     * the section table; a PE32 file without one is native 32-bit code (an apphost for x86).
+     */
+    fun thirtyTwoBit(image: ByteArray): ThirtyTwoBit? {
+        fun u16(at: Int) = if (at < 0 || at + 2 > image.size) -1 else (image[at].toInt() and 0xFF) or ((image[at + 1].toInt() and 0xFF) shl 8)
+        fun u32(at: Int): Long = if (at < 0 || at + 4 > image.size) -1 else (u16(at).toLong() or (u16(at + 2).toLong() shl 16))
+        if (u16(0) != 0x5A4D) return null // MZ
+        val pe = u32(0x3C).toInt()
+        if (pe <= 0 || u32(pe) != 0x4550L) return null // PE\0\0
+        val optional = pe + 24
+        if (u16(optional) != 0x10B) return null // PE32+ (or not a PE file): 64-bit
+        val cliRva = if (u32(optional + 92) > CLI_HEADER_DIRECTORY) u32(optional + 96 + CLI_HEADER_DIRECTORY * 8) else 0L
+        if (cliRva <= 0) return ThirtyTwoBit.X86
+        val sections = optional + u16(pe + 20)
+        val cliHeader = (0 until u16(pe + 6)).firstNotNullOfOrNull { i ->
+            val section = sections + i * 40
+            val (virtualSize, virtualAddress) = u32(section + 8) to u32(section + 12)
+            val (rawSize, rawPointer) = u32(section + 16) to u32(section + 20)
+            if (virtualAddress < 0 || rawPointer < 0) return null
+            if (cliRva >= virtualAddress && cliRva < virtualAddress + maxOf(virtualSize, rawSize)) (cliRva - virtualAddress + rawPointer).toInt() else null
+        } ?: return null
+        val flags = u32(cliHeader + 16).takeIf { it >= 0 } ?: return null
+        return when {
+            flags and IL_ONLY == 0L -> ThirtyTwoBit.X86 // mixed C++/CLI code of a PE32 file
+            flags and REQUIRES_32_BIT != 0L && flags and PREFERS_32_BIT != 0L -> ThirtyTwoBit.PREFER_32_BIT
+            flags and REQUIRES_32_BIT != 0L -> ThirtyTwoBit.X86
+            else -> null
+        }
+    }
+
+    /** [thirtyTwoBit] of a file on disk; the CLI header of a managed program is near the start of its first section. */
+    fun thirtyTwoBit(file: java.io.File): ThirtyTwoBit? = readStart(file)?.let(::thirtyTwoBit)
+
+    private fun readStart(file: java.io.File): ByteArray? = runCatching { file.inputStream().use { it.readNBytes(64 * 1024) } }.getOrNull()
 }

@@ -21,7 +21,7 @@
   `docs/platform-lsp-dap.html`), закрывает 30 из 37 нужных возможностей, включая pull-диагностику, без которой Roslyn бесполезен.
   Прежний план собственного клиента (2026-09-20, писался под GoLand 2025.1.3) снят; он остался в истории git.
 - **Сервер — `roslyn-language-server`** (dotnet tool, MIT, .NET 10; проверена версия 5.12). Факты о нём — `tools/roslyn-lsp/README.md`.
-- **Уже готово:** страница Settings | Tools | .NET | Language Server, `RoslynLanguageServer.arguments(...)` (командная строка),
+- **Уже готово:** страница Settings | .NET | Language Server, `RoslynLanguageServer.arguments(...)` (командная строка),
   `RoslynLanguageServer.configuration(...)` (ответ на `workspace/configuration`, отступы из Code Style), поиск tool с `.cmd`-шимом на Windows.
 - **Что грузит сервер (решение пользователя 2026-09-21).** Есть solution — его всегда называет плагин (`solution/open`), `--autoLoadProjects` при
   этом серверу не передаётся. Solution ищутся по всей открытой папке рекурсивно (мимо `bin` / `obj` / `node_modules` / `packages` и папок с точкой);

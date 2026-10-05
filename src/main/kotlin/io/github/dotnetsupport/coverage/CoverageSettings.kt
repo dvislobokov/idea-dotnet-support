@@ -48,7 +48,7 @@ class CoverageSettings : SimplePersistentStateComponent<CoverageSettings.Setting
     }
 }
 
-/** Settings | Tools | .NET | Coverage, the same options as Build, Execution, Deployment | Coverage has for the languages of the IDE. */
+/** Settings | .NET | Coverage, the same options as Build, Execution, Deployment | Coverage has for the languages of the IDE. */
 class CoverageSettingsConfigurable : BoundConfigurable(DotNetBundle.message("page.coverage")) {
     private val settings get() = CoverageSettings.getInstance()
 

@@ -369,6 +369,87 @@ class DebugLaunchTest : BasePlatformTestCase() {
         assertFalse(io.github.dotnetsupport.run.DotNetProcesses.isNetFramework(null))
     }
 
+    /** A PE file with one section (RVA 0x2000 at file offset 0x200) holding the CLI header at RVA 0x2008, as csc lays it out. */
+    private fun programImage(pe32Plus: Boolean = false, corFlags: Int? = 0x1): ByteArray {
+        val bytes = ByteArray(0x400)
+        fun put16(at: Int, value: Int) { bytes[at] = value.toByte(); bytes[at + 1] = (value shr 8).toByte() }
+        fun put32(at: Int, value: Int) { put16(at, value and 0xFFFF); put16(at + 2, value ushr 16) }
+        put16(0, 0x5A4D); put32(0x3C, 0x80); put32(0x80, 0x4550)
+        put16(0x80 + 4, if (pe32Plus) 0x8664 else 0x14C)
+        put16(0x80 + 6, 1)
+        val optionalSize = if (pe32Plus) 240 else 224
+        put16(0x80 + 20, optionalSize)
+        val optional = 0x80 + 24
+        put16(optional, if (pe32Plus) 0x20B else 0x10B)
+        val (count, directories) = if (pe32Plus) optional + 108 to optional + 112 else optional + 92 to optional + 96
+        put32(count, 16)
+        if (corFlags != null) { put32(directories + 14 * 8, 0x2008); put32(directories + 14 * 8 + 4, 0x48) }
+        val section = optional + optionalSize
+        put32(section + 8, 0x1000); put32(section + 12, 0x2000); put32(section + 16, 0x200); put32(section + 20, 0x200)
+        if (corFlags != null) put32(0x208 + 16, corFlags)
+        return bytes
+    }
+
+    fun testThirtyTwoBitProgramsAreToldByTheirHeaders() {
+        val pe = io.github.dotnetsupport.run.PortableExecutable
+        val reason = io.github.dotnetsupport.run.PortableExecutable.ThirtyTwoBit.entries
+        // the flags csc writes (corflags): AnyCPU 0x1, AnyCPU + Prefer 32-bit 0x20003, x86 0x3; x64 is PE32+
+        assertNull("AnyCPU runs as 64-bit", pe.thirtyTwoBit(programImage(corFlags = 0x1)))
+        assertEquals(reason[0], pe.thirtyTwoBit(programImage(corFlags = 0x20003)))
+        assertEquals(reason[1], pe.thirtyTwoBit(programImage(corFlags = 0x3)))
+        assertNull("x64", pe.thirtyTwoBit(programImage(pe32Plus = true, corFlags = 0x1)))
+        assertEquals("mixed C++/CLI code", reason[1], pe.thirtyTwoBit(programImage(corFlags = 0x0)))
+        assertEquals("a native apphost for x86", reason[1], pe.thirtyTwoBit(programImage(corFlags = null)))
+        assertNull(pe.thirtyTwoBit(ByteArray(64)))
+        assertNull("the CLI header is cut off", pe.thirtyTwoBit(programImage(corFlags = 0x20003).copyOf(0x210)))
+    }
+
+    fun testAThirtyTwoBitProgramIsRefusedBeforeTheAdapter() {
+        val directory = java.nio.file.Files.createTempDirectory("Bitness").toFile()
+        com.intellij.openapi.util.Disposer.register(testRootDisposable) { directory.deleteRecursively() }
+        val bitness = io.github.dotnetsupport.run.DebugBitness
+        val anyCpu = java.io.File(directory, "App.exe").apply { writeBytes(programImage(corFlags = 0x1)) }
+        val prefers = java.io.File(directory, "LegacyConsole.exe").apply { writeBytes(programImage(corFlags = 0x20003)) }
+        val x86 = java.io.File(directory, "Tool.exe").apply { writeBytes(programImage(corFlags = 0x3)) }
+        assertNull(bitness.refusal(anyCpu, "App.csproj"))
+        assertNull("a missing file is the adapter's to report", bitness.refusal(java.io.File(directory, "gone.exe"), null))
+        val message = bitness.refusal(prefers, "LegacyConsole.csproj")!!
+        assertTrue(message, message.startsWith("LegacyConsole.exe runs as a 32-bit process") && "Set Prefer32Bit to false in LegacyConsole.csproj" in message)
+        assertTrue(bitness.refusal(x86, null)!!.contains("Build it for x64 or AnyCPU (PlatformTarget in the project)"))
+        // the platform shows these texts as HTML
+        assertFalse(message.contains('<') || bitness.refusal(x86, null)!!.contains('<'))
+        // refused with a notification of its own; the launch ends as cancelled, so the platform adds no one-line balloon
+        bitness.check(project, anyCpu, "App.csproj")
+        try {
+            bitness.check(project, prefers, "LegacyConsole.csproj")
+            fail("no RunCanceledByUserException")
+        } catch (_: com.intellij.execution.RunCanceledByUserException) {
+        }
+        // this process (the IDE) is 64-bit, and one that cannot be opened is not refused
+        if (com.intellij.openapi.util.SystemInfo.isWindows) assertEquals(false, bitness.isWow64(ProcessHandle.current().pid()))
+        bitness.checkProcess(project, ProcessHandle.current().pid(), "the IDE")
+        assertEquals("LegacyWpf.exe (42) is a 32-bit process, and the .NET debugger debugs 64-bit processes only.", bitness.processMessage("LegacyWpf.exe (42)"))
+    }
+
+    fun testWhatTheBuildBeforeTheLaunchFoundReachesTheLaunch() {
+        val built = io.github.dotnetsupport.run.BuiltBeforeLaunch
+        built.put(9001, "C:/src/Legacy/bin/Debug/Legacy.exe")
+        built.put(9002, "")
+        assertNull("another execution", built.take(9003))
+        assertEquals("C:/src/Legacy/bin/Debug/Legacy.exe", built.take(9001))
+        assertNull("taken once", built.take(9001))
+        assertEquals("built, the output unknown", "", built.take(9002))
+    }
+
+    fun testAProgramOfTheOldFormatStartsInItsOutputFolder() {
+        fun cwd(targetPath: String?, workingDirectory: String?) = linkedMapOf<String, Any?>("cwd" to "/src/Legacy")
+            .also { DotNetLaunchArguments.startInOutputFolder(it, targetPath, workingDirectory) }["cwd"]
+        assertEquals(java.io.File("/src/Legacy/bin/Debug").path, cwd("/src/Legacy/bin/Debug/Legacy.exe", null))
+        assertEquals(java.io.File("/src/Legacy/bin/Debug").path, cwd("/src/Legacy/bin/Debug/Legacy.exe", " "))
+        assertEquals("the configuration names one", "/src/Legacy", cwd("/src/Legacy/bin/Debug/Legacy.exe", "/work"))
+        assertEquals("the output is unknown", "/src/Legacy", cwd("", null))
+    }
+
     fun testDebugOfTestsNeedsSomebodyToAttach() {
         val tests = configuration(DotNetCommand.TEST)
         assertNotNull("the debugger of the plugin is always there to attach", io.github.dotnetsupport.run.DotNetProcessAttacher.find())

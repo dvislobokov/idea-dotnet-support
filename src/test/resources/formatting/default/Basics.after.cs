@@ -70,9 +70,12 @@ namespace Demo.Formatting
             var anon = new { A = 1, B = "two" };
             var obj = new Basics(2) { Count = 3, Name = "n" };
             int[] arr = { 1, 2, 3 };
-            var list = new List<int>{1,
-2,
-3};
+            var list = new List<int>
+            {
+                1,
+                2,
+                3
+            };
             return $"{twice(2)}{anon.A} and {string.Join(",", arr)}";
         }
     }

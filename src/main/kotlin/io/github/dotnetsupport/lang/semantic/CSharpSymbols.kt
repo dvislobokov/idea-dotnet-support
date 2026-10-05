@@ -160,6 +160,9 @@ sealed class SemanticType {
 
     /** How Roslyn displays the type (`System.Collections.Generic.List<int>`, `int?`, `(int a, string b)`); null when a part is unknown. */
     val display: String? get() = CSharpTypeDisplay.display(this)
+
+    /** The same without namespaces (`List<int>`, `Dictionary<string, Order>`): how completion and quick documentation show it. */
+    val minimalDisplay: String? get() = CSharpTypeDisplay.display(this, qualified = false)
 }
 
 /**

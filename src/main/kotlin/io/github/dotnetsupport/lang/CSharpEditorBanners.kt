@@ -16,6 +16,7 @@ import io.github.dotnetsupport.cli.DotNetTool
 import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.msbuild.DotNetProjects
 import io.github.dotnetsupport.msbuild.MsBuildEvaluation
+import io.github.dotnetsupport.solution.SolutionService
 import java.util.function.Function
 import javax.swing.JComponent
 
@@ -76,7 +77,9 @@ class CSharpEditorBanners : EditorNotificationProvider {
                 return Banner(Kind.EXCLUDED, if (content.isEvaluated) "Not a part of ${projectFile.name}: the project file does not list it, it is not compiled."
                     else "Excluded from ${projectFile.name} by the project file (Compile Remove or DefaultItemExcludes): not compiled.", projectFile)
             }
-            if (shown(Kind.NOT_RESTORED) && projectFile.parent?.findFileByRelativePath("obj/project.assets.json") == null) {
+            // a project of the old format has no project.assets.json (packages.config goes to ..\packages): the banner was there for good
+            if (shown(Kind.NOT_RESTORED) && projectFile.parent?.findFileByRelativePath("obj/project.assets.json") == null &&
+                !SolutionService.getInstance(project).msBuildProject(projectFile).isLegacy) {
                 return Banner(Kind.NOT_RESTORED, "The packages of ${projectFile.name} are not restored: references are unresolved until they are.", projectFile)
             }
             return null

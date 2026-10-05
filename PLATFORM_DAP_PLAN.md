@@ -111,7 +111,7 @@ Resume, вывод программы в консоли, Stop завершает
   если процесс адаптера остаётся — переопределить `stopAsync()` и убивать процесс (он наш, из `launchDebugAdapter`). На Linux — и отлаживаемый процесс (L4).
 - Сопоставление путей (`createVirtualFileResolver`), если штатное не открывает файлы из других проектов solution / с другой формой пути.
 - Run to Cursor — штатный `runToPosition` (временная точка останова); проверить.
-- Снять замки на странице Settings | Tools | .NET | Debugger с опций, за которыми теперь есть реализация (Save all files on launch, Just My Code, …),
+- Снять замки на странице Settings | .NET | Debugger с опций, за которыми теперь есть реализация (Save all files on launch, Just My Code, …),
   обновить `SettingsPagesTest`.
 
 **Проверить вживую:** веб-проект с профилем https; большая коллекция (100k элементов) раскрывается порциями и не вешает IDE; объект с «вечным»
@@ -265,7 +265,7 @@ Before launch, задачи «Build .NET Project» в них нет. Сборк�
   и убивает дерево процессов — это же закрывает зависший адаптер (FINDINGS №6) и отлаживаемый процесс на Linux (L4). stderr адаптера — в `idea.log`.
 - **`launchBrowser` при отладке**: вывод программы приходит событиями `output`, `DotNetDebugProcess.formatAndPrintOutput` отдаёт его тому же
   `ListeningUrlListener`, что и Run.
-- **Настройки** (Settings | Tools | .NET | Debugger), замки сняты с трёх опций: Save all files on debugger launch (сборка перед отладкой сохраняет
+- **Настройки** (Settings | .NET | Debugger), замки сняты с трёх опций: Save all files on debugger launch (сборка перед отладкой сохраняет
   документы или нет), Enable external source debug (= `justMyCode: false`; по умолчанию выключено, в отличие от Rider: декомпилятора нет),
   Allow property evaluations and other implicit function calls (= `allowImplicitFuncEval`).
 - Без кода, только живая проверка: Evaluate / Watches / hover, Run to Cursor, длинные строки, большие коллекции, «дорогие» значения. Своя фабрика

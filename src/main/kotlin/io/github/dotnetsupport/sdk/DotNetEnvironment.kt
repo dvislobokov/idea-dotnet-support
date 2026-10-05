@@ -243,7 +243,7 @@ class DotNetEnvironmentDialog(private val project: Project?) : DialogWrapper(pro
 
     companion object {
         fun summaryHtml(environment: DotNetEnvironment): String {
-            if (environment.executable == null) return "<html><b>The dotnet executable is not found.</b> Set it in Settings | Tools | .NET or install the .NET SDK.</html>"
+            if (environment.executable == null) return "<html><b>The dotnet executable is not found.</b> Set it in Settings | .NET or install the .NET SDK.</html>"
             val rows = ArrayList<Pair<String, String>>()
             rows += "Executable" to environment.executable
             rows += environment.info?.summary().orEmpty()

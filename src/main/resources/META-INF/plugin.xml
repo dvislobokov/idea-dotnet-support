@@ -37,6 +37,8 @@
         <extensionPoint qualifiedName="io.github.dotnetsupport.processAttacher" interface="io.github.dotnetsupport.run.DotNetProcessAttacher" dynamic="true"/>
         <!-- who changes the namespace of a moved file together with its usages: the module of the language server -->
         <extensionPoint qualifiedName="io.github.dotnetsupport.namespaceAdjuster" interface="io.github.dotnetsupport.lang.CSharpNamespaceAdjuster" dynamic="true"/>
+        <!-- rows of Rider's Refactor This and Generate in C# that come from elsewhere: the code actions of the language server -->
+        <extensionPoint qualifiedName="io.github.dotnetsupport.csharpPopupContributor" interface="io.github.dotnetsupport.lang.CSharpPopupContributor" dynamic="true"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -77,6 +79,8 @@
         <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpIdentifierAnnotator"/>
         <!-- SEMANTIC_COLORS NATIVE: the palette of CSharpColors from the tree and the stubs; the one above steps aside then -->
         <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.NativeCSharpSemanticColorsAnnotator"/>
+        <!-- {0,5:N2} of string.Format / Console.WriteLine / AppendFormat, by the name of the method -->
+        <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpFormatItemsAnnotator"/>
         <!-- DIAGNOSTICS NATIVE: Roslyn's syntax errors from the tree; the server keeps the semantic ones -->
         <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.NativeCSharpDiagnosticsAnnotator"/>
         <!-- on the declarations CSharpDeclarations finds by tokens -->
@@ -111,6 +115,15 @@
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpWrapInUsingIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpSortUsingsIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToGlobalUsingIntention</className><category>C#</category></intentionAction>
+        <!-- A7: the context actions on the native tree (NativeCSharpContextActions.kt), behind CSharpFeature.CONTEXT_ACTIONS -->
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpIfToConditionalIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpConditionalToIfIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToExpressionBodyIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToBlockBodyIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpUseExplicitTypeIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpUseVarIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpIntroduceVariableIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpInlineVariableIntention</className><category>C#</category></intentionAction>
         <lang.foldingBuilder language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpFoldingBuilder"/>
         <!-- TODO / FIXME in the comments of C#: the TODO tool window and the highlighting -->
         <todoIndexer filetype="C#" implementationClass="io.github.dotnetsupport.lang.CSharpTodoIndexer"/>
@@ -186,6 +199,8 @@
         <!-- the content of a project as the SDK sees it: Remove / DefaultItemExcludes hide, DependentUpon nests; Solution view only -->
         <treeStructureProvider implementation="io.github.dotnetsupport.view.ProjectContentStructureProvider"/>
         <projectViewNestingRulesProvider implementation="io.github.dotnetsupport.view.DotNetNestingRulesProvider"/>
+        <!-- IDEA opens a folder without a module: its files are not indexed, so the plugin makes one (DotNetModuleSetup) -->
+        <postStartupActivity implementation="io.github.dotnetsupport.solution.DotNetModuleSetup"/>
         <postStartupActivity implementation="io.github.dotnetsupport.view.SolutionViewActivator"/>
         <postStartupActivity implementation="io.github.dotnetsupport.view.ToolWindowsSetup"/>
         <!-- the page about the plugin, once after the installation and after an update -->
@@ -209,9 +224,11 @@
         <!-- static members of types that are not imported, by the bare name: WriteLi -> Console.WriteLine and the using -->
         <completion.contributor language="C#" implementationClass="io.github.dotnetsupport.index.ImportCompletionContributor"/>
         <notificationGroup id=".NET" displayType="BALLOON"/>
-        <projectConfigurable parentId="tools" id="io.github.dotnetsupport.settings" key="page.dotnet" bundle="messages.DotNetBundle"
+        <!-- a node of its own at the root of Settings, next to Build, Execution, Deployment and Tools (the user's choice, 2026-10-05);
+             Editor | Code Style | C# and Editor | Color Scheme | C# stay where the platform keeps the pages of every language -->
+        <projectConfigurable parentId="root" id="io.github.dotnetsupport.settings" key="page.dotnet" bundle="messages.DotNetBundle"
                              instance="io.github.dotnetsupport.settings.DotNetSettingsConfigurable"/>
-        <!-- the pages of Rider under Tools | .NET, with the options the plugin has something behind -->
+        <!-- the pages of Rider under .NET, with the options the plugin has something behind -->
         <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.build" key="page.build" bundle="messages.DotNetBundle"
                              instance="io.github.dotnetsupport.build.DotNetBuildConfigurable"/>
         <applicationConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.nuget" key="page.nuget" bundle="messages.DotNetBundle"
@@ -256,6 +273,11 @@
         <completion.confidence language="C#" order="first" implementationClass="io.github.dotnetsupport.lang.CSharpPropertyNameConfidence"/>
         <completion.contributor language="C#" id="dotnetCaseInsensitive" order="first" implementationClass="io.github.dotnetsupport.lang.CSharpCaseInsensitiveCompletion"/>
         <completion.contributor language="C#" order="first, after dotnetCaseInsensitive" implementationClass="io.github.dotnetsupport.debugger.DotNetExpressionCompletionContributor"/>
+        <!-- DOCUMENTATION = Built-in: quick documentation and parameter info on the plugin's semantics, in front of the LSP client's (NativeCSharpDocumentation) -->
+        <platform.backend.documentation.targetProvider id="dotnetNativeCSharpDocumentation" order="first" implementation="io.github.dotnetsupport.lang.NativeCSharpDocumentationTargetProvider"/>
+        <codeInsight.parameterInfo language="C#" implementationClass="io.github.dotnetsupport.lang.NativeCSharpParameterInfoHandler"/>
+        <!-- the line of Ctrl + hover over a target of the native navigation (the platform asks the language of the target) -->
+        <lang.documentationProvider language="C#" implementationClass="io.github.dotnetsupport.lang.NativeCSharpQuickNavigateInfo"/>
         <!-- COMPLETION = Built-in: the list of the plugin's tree, in front of the server's, whose duplicates it drops (NativeCSharpCompletion) -->
         <completion.contributor language="C#" id="dotnetNativeCompletion" order="first, after dotnetCaseInsensitive" implementationClass="io.github.dotnetsupport.lang.NativeCSharpCompletionContributor"/>
         <!-- gray text of a declaration that continues one way only: { get; set; }, new(), _name = name; -->
@@ -264,8 +286,6 @@
                      description="Write the log of the dotnet-debugger adapter for every debug session (menu .NET | Show Debugger Logs)"/>
         <registryKey key="dotnet.debugger.protocol.trace" defaultValue="false"
                      description="Write every DAP message of the debug sessions next to the debugger logs (menu .NET | Trace Debugger Protocol)"/>
-        <registryKey key="dotnet.debugger.attach.netFramework" defaultValue="false"
-                     description="Offer .NET Framework processes in Run | Attach to Process: managed executables and hosts with the desktop CLR loaded (w3wp, Office), found by the diagnostics helper (needs a debug adapter that debugs the desktop CLR)"/>
         <stepsBeforeRunProvider implementation="io.github.dotnetsupport.run.BuildProjectBeforeRunTaskProvider"/>
         <runConfigurationProducer implementation="io.github.dotnetsupport.testing.DotNetTestConfigurationProducer"/>
         <runLineMarkerContributor language="C#"
@@ -417,11 +437,6 @@
             <add-to-group group-id="GenerateGroup" anchor="last"/>
         </action>
 
-        <action id="DotNet.BuildConfiguration" class="io.github.dotnetsupport.build.BuildConfigurationSelector"
-                text="Build Configuration" description="Configuration and target framework for build, run and tests">
-            <add-to-group group-id="MainToolbarRight" anchor="first"/>
-            <add-to-group group-id="NavBarToolBar" anchor="first"/>
-        </action>
         <action id="DotNet.AnalyzeStackTrace" class="io.github.dotnetsupport.run.AnalyzeDotNetStackTraceAction"
                 text="Analyze .NET Stack Trace..." description="Paste a stack trace and navigate its frames"/>
 
@@ -529,6 +544,50 @@
             <action id="DotNet.PlatformApiProbe" class="io.github.dotnetsupport.probe.PlatformApiProbeAction"
                     text="Probe Platform LSP / DAP API..." description="Check which LSP and DAP API of the platform this IDE has; the result can be copied as JSON"/>
             <add-to-group group-id="MainMenu" anchor="after" relative-to-action="ToolsMenu"/>
+        </group>
+
+        <!-- Rider's Build bar: the hammer builds the solution, its arrow has Rebuild / Clean / Restore / Cancel Build and the configuration
+             and target framework (no combo box of its own, as in Rider); right before the Run widget, where Rider has it -->
+        <action id="DotNet.CancelBuild" class="io.github.dotnetsupport.build.CancelBuildAction" text="Cancel Build" icon="AllIcons.Actions.Suspend"
+                description="Stop the builds of the solution that are running"/>
+        <group id="DotNet.BuildSolutionBar.Popup">
+            <reference ref="DotNet.BuildSolution"/>
+            <reference ref="DotNet.RebuildSolution"/>
+            <reference ref="DotNet.CleanSolution"/>
+            <reference ref="DotNet.RestoreSolution"/>
+            <reference ref="DotNet.CancelBuild"/>
+            <group id="DotNet.BuildConfigurationChoices" class="io.github.dotnetsupport.build.BuildConfigurationChoices"/>
+        </group>
+        <action id="DotNet.BuildSolutionBar" class="io.github.dotnetsupport.build.BuildSolutionBar" text="Build Solution Bar" icon="AllIcons.Actions.Compile"
+                description="Build the solution; the arrow: rebuild, clean, restore, cancel, the configuration and the target framework">
+            <add-to-group group-id="MainToolbarRight" anchor="before" relative-to-action="NewUiRunWidget"/>
+            <add-to-group group-id="NavBarToolBar" anchor="first"/>
+        </action>
+
+        <!-- the popups Rider builds for the caret of a C# file (CSharpRiderPopups.kt). Refactor This and Generate are the actions of the
+             platform with their ids and shortcuts, as Rider customizes them; anywhere but a C# editor they do what the platform does -->
+        <action id="Refactorings.QuickListPopupAction" class="io.github.dotnetsupport.lang.CSharpRefactorThisAction" overrides="true"/>
+        <action id="Generate" class="io.github.dotnetsupport.lang.CSharpGenerateAction" overrides="true"/>
+        <!-- Rider's ReSharperNavigateTo: Ctrl+Shift+G in its default keymap -->
+        <action id="DotNet.NavigateTo" class="io.github.dotnetsupport.lang.CSharpNavigateToAction" text="Navigate To..."
+                description="Where the symbol at the caret leads: declaration, implementation, base symbols, usages, related files, type, tests, IL">
+            <keyboard-shortcut keymap="$default" first-keystroke="control shift G"/>
+            <add-to-group group-id="GoToMenu" anchor="last"/>
+        </action>
+        <!-- the menu of the editor of a C# file, as Rider's: what the platform's menu lacks, only where the plugin has the action behind it -->
+        <group id="DotNet.CSharpEditor.FindUsagesAdvanced" class="io.github.dotnetsupport.lang.CSharpEditorMenuGroup">
+            <reference ref="ShowSettingsAndFindUsages"/>
+            <add-to-group group-id="EditorPopupMenu1.FindRefactor" anchor="after" relative-to-action="FindUsages"/>
+        </group>
+        <group id="DotNet.CSharpEditor.Inspect" class="io.github.dotnetsupport.lang.CSharpEditorMenuGroup" text="Inspect" popup="true">
+            <reference ref="CallHierarchy"/>
+            <reference ref="TypeHierarchy"/>
+            <reference ref="DotNet.IlViewer"/>
+            <add-to-group group-id="EditorPopupMenu1" anchor="after" relative-to-action="EditorPopupMenu1.FindRefactor"/>
+        </group>
+        <group id="DotNet.CSharpEditor.QuickDefinition" class="io.github.dotnetsupport.lang.CSharpEditorMenuGroup">
+            <reference ref="QuickImplementations"/>
+            <add-to-group group-id="EditorLangPopupMenu" anchor="after" relative-to-action="VersionControlsGroup"/>
         </group>
 
         <!-- Set Next Statement of Rider: next to Run to Cursor in the editor menu while debugging -->

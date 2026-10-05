@@ -7,7 +7,7 @@ import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.panel
 import io.github.dotnetsupport.DotNetBundle
 
-/** Settings | Tools | .NET | NuGet: the groups and the wording of Rider, only the options the plugin has something behind. */
+/** Settings | .NET | NuGet: the groups and the wording of Rider, only the options the plugin has something behind. */
 class NuGetSettingsConfigurable : BoundConfigurable(DotNetBundle.message("page.nuget")) {
     private val settings get() = NuGetSettings.getInstance()
 

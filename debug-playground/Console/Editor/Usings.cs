@@ -15,7 +15,7 @@ using System;
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of `using` on the plugin's own tree (0.1.61, CSHARP_PSI_MIGRATION.md task A8). Completion items need Settings | Tools | .NET
+/// Live check of `using` on the plugin's own tree (0.1.61, CSHARP_PSI_MIGRATION.md task A8). Completion items need Settings | .NET
 /// | Language Server → Source of Features → «Completion» = Built-in; the Alt+Enter actions work with any source (with the server ready and
 /// «Typing assistance» = Language server, "Convert to 'using' declaration" is the server's "Use simple 'using' statement" instead). Type
 /// on the empty line under a marker comment, check EXPECT, then undo (Ctrl+Z) so the file keeps compiling.
@@ -81,6 +81,30 @@ public class Usings
         var wrapped = new StringReader("wrap");
         var text = wrapped.ReadLine();
         Console.WriteLine(text);
+    }
+
+    // TYPE:using-cs1674 — on the empty line in Errors type `using (var n = 5) { }` (0.1.65; «Errors and warnings» = Built-in, after
+    // indexing). EXPECT: `var n = 5` underlined red, tooltip `CS1674: 'int': type used in a using statement must implement
+    // 'System.IDisposable'.` — once (not a second time from the server). `using var b = new StringBuilder();` → CS1674 with
+    // 'System.Text.StringBuilder'. `await using var t = new CancellationTokenSource();` → CS8417 "… Did you mean 'using' rather than
+    // 'await using'?". NOT underlined: `using var s = new MemoryStream();`, `await using var m = new MemoryStream();`,
+    // `using (var x = Unknown()) { }` (an unknown type: the error is the server's CS0103 only). Ctrl+Z.
+    public async System.Threading.Tasks.Task Errors()
+    {
+
+        await System.Threading.Tasks.Task.CompletedTask;
+    }
+
+    // TYPE:using-list — on the empty line in List type `using (` and Ctrl+Space (Completion = Built-in). EXPECT: `reader` and `stream`
+    // among the items, NOT `count` nor `title` (an int and a string are not disposable; neither the server's rows of them). `using var x =
+    // ` + Ctrl+Space: the same. `await using (` + Ctrl+Space: `stream` (a Stream is IAsyncDisposable), NOT `reader` (a TextReader is
+    // IDisposable only). Ctrl+Z.
+    public void List(int count, string title)
+    {
+        var reader = new StringReader(title);
+        var stream = new MemoryStream();
+
+        Console.WriteLine(count + reader.Peek() + stream.Length);
     }
 
     public Encoding Encoding => new StringBuilder().Length > 0 ? Encoding.UTF8 : Encoding.ASCII;

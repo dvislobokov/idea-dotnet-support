@@ -4,6 +4,7 @@ import com.intellij.codeInsight.editorActions.SimpleTokenSetQuoteHandler
 import com.intellij.lang.BracePair
 import com.intellij.lang.Commenter
 import com.intellij.lang.PairedBraceMatcher
+import com.intellij.openapi.editor.highlighter.HighlighterIterator
 import com.intellij.psi.PsiFile
 import com.intellij.psi.tree.IElementType
 
@@ -29,7 +30,39 @@ class CSharpBraceMatcher : PairedBraceMatcher {
     }
 }
 
-class CSharpQuoteHandler : SimpleTokenSetQuoteHandler(CSharpTokenTypes.STRINGS)
+/**
+ * `"` gets its pair. The token of a string starts at its prefix (`$"`, `@"`, `$@"`, `$$"""`), and the platform takes a quote for an opening
+ * one only where the token starts: `Console.WriteLine($"` was left without its `"`.
+ */
+class CSharpQuoteHandler : SimpleTokenSetQuoteHandler(CSharpStringTokens.LITERAL_TEXT) {
+    // The editor's tokens split a literal ([CSharpHighlightingLexer]): it starts with a piece of type STRING / CHAR and, when split, ends
+    // with STRING_END / CHAR_END. Where a literal ends is asked of [CSharpLexer], which keeps it whole.
+
+    override fun isOpeningQuote(iterator: HighlighterIterator, offset: Int): Boolean {
+        if (iterator.tokenType !in CSharpTokenTypes.STRINGS) return false
+        val text = iterator.document.charsSequence
+        val start = iterator.start
+        return offset >= start && (start until offset).all { text[it] == '$' || text[it] == '@' }
+    }
+
+    override fun isClosingQuote(iterator: HighlighterIterator, offset: Int): Boolean = when (iterator.tokenType) {
+        CSharpTokenTypes.STRING, CSharpTokenTypes.CHAR -> literalEnd(iterator.document.charsSequence, iterator.start) == iterator.end && offset == iterator.end - 1
+        CSharpStringTokens.STRING_END, CSharpStringTokens.CHAR_END -> offset == iterator.end - 1
+        else -> false
+    }
+
+    override fun isNonClosedLiteral(iterator: HighlighterIterator, chars: CharSequence): Boolean {
+        if (iterator.tokenType !in CSharpTokenTypes.STRINGS) return false
+        val end = literalEnd(chars, iterator.start)
+        return iterator.start >= end - 1 || (chars[end - 1] != '"' && chars[end - 1] != '\'')
+    }
+
+    private fun literalEnd(chars: CharSequence, start: Int): Int {
+        val lexer = CSharpLexer()
+        lexer.start(chars, start, chars.length, 0)
+        return lexer.tokenEnd
+    }
+}
 
 /**
  * `<` of a generic gets its `>`, as the parentheses get theirs: `AddSingleton<|>`, `new List<|>`, `Task<|>`. The platform pairs only what
@@ -148,7 +181,7 @@ class CSharpAngleBracketTypedHandler : com.intellij.codeInsight.editorActions.Ty
         val iterator = highlighter.createIterator(offset)
         if (iterator.atEnd()) return false
         val type = iterator.tokenType
-        return CSharpTokenTypes.STRINGS.contains(type) || CSharpTokenTypes.COMMENTS.contains(type) || type == CSharpTokenTypes.CHAR
+        return CSharpStringTokens.LITERAL_TEXT.contains(type) || CSharpTokenTypes.COMMENTS.contains(type)
     }
 }
 

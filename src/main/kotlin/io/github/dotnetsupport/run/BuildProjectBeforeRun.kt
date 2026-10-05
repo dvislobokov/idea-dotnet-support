@@ -55,6 +55,8 @@ class BuildProjectBeforeRunTaskProvider : BeforeRunTaskProvider<BuildProjectBefo
         val targetPath = (if (prebuilt) DotNetDebugBuild.locate(configuration, projectFile).orEmpty() else DotNetDebugBuild.buildAndLocate(configuration, projectFile)) ?: return false
         environment.putUserData(DotNetLaunchArguments.BUILT, true)
         targetPath.ifEmpty { null }?.let { environment.putUserData(DotNetLaunchArguments.TARGET_PATH, it) }
+        BuiltBeforeLaunch.put(environment.executionId, targetPath)
+        PluginLog.info(DotNetDebugBuild.LOG_CATEGORY, "built before the launch ${environment.executionId}: ${targetPath.ifEmpty { "the output is unknown" }}")
         return true
     }
 

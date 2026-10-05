@@ -67,7 +67,7 @@ class DotNetCoverageService(private val project: Project) : Disposable {
         ApplicationManager.getApplication().invokeLater({ gathered(merged, runName) }, project.disposed)
     }
 
-    /** New coverage of a run: what becomes of the shown one is decided by Settings | Tools | .NET | Coverage. */
+    /** New coverage of a run: what becomes of the shown one is decided by Settings | .NET | Coverage. */
     fun gathered(newReport: CoverageReport, runName: String) {
         var action = CoverageSettings.getInstance().onNewCoverage
         if (action == NewCoverageAction.ASK) {

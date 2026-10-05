@@ -7,9 +7,11 @@ import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.editor.colors.TextAttributesKey
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
+import com.intellij.psi.impl.source.tree.TreeUtil
 import io.github.dotnetsupport.csharp.lang.SyntaxKind
 import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
@@ -36,11 +38,41 @@ object NativeCSharpSemanticColors {
     fun colors(file: CSharpFile): List<Pair<TextRange, TextAttributesKey>> = Colorer(file).run()
 }
 
-/** Registered for C#; acts on the file element only (one pass), and only while [NativeCSharpSemanticColors.serves]. Not dumb-aware: it reads stubs. */
-class NativeCSharpSemanticColorsAnnotator : Annotator {
+/**
+ * Registered for C#; acts on the file element only (one pass), and only while [NativeCSharpSemanticColors.serves], which is false while the
+ * IDE indexes (it reads stubs). DumbAware all the same: the platform runs an annotator that is not on a file it does not index (a folder
+ * opened without a module, a project outside the opened folder) never, whatever the dumb mode (`DumbService.isUsableInCurrentContext`).
+ * Also grays the text of inactive `#if` branches ([NativeCSharpInactiveCode]), whoever colors the identifiers.
+ */
+class NativeCSharpSemanticColorsAnnotator : Annotator, DumbAware {
     override fun annotate(element: PsiElement, holder: AnnotationHolder) {
-        if (element !is CSharpFile || !NativeCSharpSemanticColors.serves(element)) return
+        if (element !is CSharpFile || element.compilationUnit == null) return
+        // the lexer of the editor knows no `#if` symbols: the tree, parsed with the project's, tells the inactive text (the server does not)
+        for (range in NativeCSharpInactiveCode.ranges(element)) {
+            holder.newSilentAnnotation(HighlightSeverity.INFORMATION).range(range).textAttributes(CSharpColors.INACTIVE_BRANCH).create()
+        }
+        if (!NativeCSharpSemanticColors.serves(element)) return
         for ((range, key) in NativeCSharpSemanticColors.colors(element)) holder.newSilentAnnotation(HighlightSeverity.INFORMATION).range(range).textAttributes(key).create()
+    }
+}
+
+/** The text of the inactive `#if` branches of a file of the native tree: its `DisabledTextTrivia`, whitespace around it left out. No index. */
+object NativeCSharpInactiveCode {
+    fun ranges(file: CSharpFile): List<TextRange> {
+        val out = ArrayList<TextRange>()
+        val text = file.viewProvider.contents
+        var leaf = TreeUtil.findFirstLeaf(file.node)
+        while (leaf != null) {
+            if (leaf.elementType === SyntaxKind.DisabledTextTrivia) {
+                var start = leaf.startOffset
+                var end = start + leaf.textLength
+                while (start < end && text[start].isWhitespace()) start++
+                while (end > start && text[end - 1].isWhitespace()) end--
+                if (end > start) out += TextRange(start, end)
+            }
+            leaf = TreeUtil.nextLeaf(leaf)
+        }
+        return out
     }
 }
 

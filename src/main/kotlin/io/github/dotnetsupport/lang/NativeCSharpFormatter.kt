@@ -30,7 +30,9 @@ import io.github.dotnetsupport.format.FormatterChoice
 
 /**
  * Reformat Code on csharp-psi's tree (CSHARP_PSI_MIGRATION.md, step 9, feature `FORMATTING`): what `dotnet format whitespace` does with
- * the options of `.editorconfig`, and nothing else. A model of the platform formatter ([NativeCSharpFormattingModelBuilder]) rather than a
+ * the options of `.editorconfig`, and nothing else — but for multi-line initializers, collection expressions, argument and parameter
+ * lists, which `dotnet format` leaves as they are and which are laid out as in Rider (0.1.68, "Rider's lists" in [NativeCSharpLayout]).
+ * A model of the platform formatter ([NativeCSharpFormattingModelBuilder]) rather than a
  * formatting service: Reformat Code, Reformat Selection, Code | Auto-Indent Lines and the indent of a paste come with it.
  *
  * It answers when the project's formatter is "Built-in" (chosen, or what "Auto" comes to with `FORMATTING` NATIVE, see
@@ -74,9 +76,18 @@ object CSharpEditorConfig {
  * The options of the formatter: the indent of the code style (the platform has put `indent_size`, `indent_style`, `tab_width` of
  * `.editorconfig` into it) and the `csharp_*` formatting options of `.editorconfig`, with the defaults of Roslyn.
  */
-class CSharpFormatOptions(val indentSize: Int = 4, val tabSize: Int = 4, private val editorConfig: Map<String, String> = emptyMap()) {
+class CSharpFormatOptions(
+    val indentSize: Int = 4,
+    val tabSize: Int = 4,
+    private val editorConfig: Map<String, String> = emptyMap(),
+    /** Rider's layout of initializers, collection expressions, argument and parameter lists ([NativeCSharpLayout]); false: exactly `dotnet format`. */
+    val riderLists: Boolean = true,
+) {
     // `true:warning` is the old form with a severity
     private fun value(name: String): String? = editorConfig[name]?.substringBefore(':')?.trim()?.takeIf { it.isNotEmpty() }
+
+    /** An option written in `.editorconfig`, not a default: Rider's layout gives way to it. */
+    fun isSet(name: String): Boolean = value(name) != null
     private fun flag(name: String, default: Boolean): Boolean = when (value(name)) { "true" -> true; "false" -> false; else -> default }
     private fun set(name: String, default: Set<String>): Set<String> = value(name)?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() }?.toSet() ?: default
 
@@ -126,8 +137,12 @@ class CSharpFormatOptions(val indentSize: Int = 4, val tabSize: Int = 4, private
     val spaceInSquareBrackets = flag("csharp_space_between_square_brackets", false)
 
     companion object {
+        /** The oracle's switch (CSharpFormatOracle): compare with `dotnet format` without Rider's lists. */
+        @Volatile
+        internal var dotnetFormatOnly = false
+
         fun of(file: PsiFile, indentOptions: CommonCodeStyleSettings.IndentOptions): CSharpFormatOptions =
-            CSharpFormatOptions(indentOptions.INDENT_SIZE, indentOptions.TAB_SIZE, CSharpEditorConfig.of(file.originalFile.virtualFile))
+            CSharpFormatOptions(indentOptions.INDENT_SIZE, indentOptions.TAB_SIZE, CSharpEditorConfig.of(file.originalFile.virtualFile), riderLists = !dotnetFormatOnly)
     }
 }
 
@@ -140,7 +155,8 @@ class CSharpFormatOptions(val indentSize: Int = 4, val tabSize: Int = 4, private
  * block, the members of a multi-line object initializer, `else` / `catch` / `finally`) and, on one line, the spaces (Roslyn's spacing
  * rules; a pair no rule knows keeps its spaces). A unit that starts a line gets a column: by the structure for statements, members,
  * braces, labels, comments; by its anchor for a continuation line, which keeps its offset from the start of its statement, as Roslyn's
- * anchors do; as it was inside collection initializers, which Roslyn does not indent.
+ * anchors do; as it was inside collection initializers, which Roslyn does not indent. Multi-line initializers, collection expressions,
+ * argument and parameter lists are laid out as Rider does instead ([CSharpFormatOptions.riderLists], see "Rider's lists" below).
  */
 internal class NativeCSharpLayout(private val root: ASTNode, private val text: CharSequence, private val options: CSharpFormatOptions) {
     enum class Kind { CODE, COMMENT, COMMENT_TAIL, DOC, DIRECTIVE, REGION, DISABLED }
@@ -151,6 +167,7 @@ internal class NativeCSharpLayout(private val root: ASTNode, private val text: C
     private val codeStarts = ArrayList<Int>()
     private val codeUnits = ArrayList<Int>()
     private val unitAt = HashMap<Int, Int>()
+    private val lists = HashMap<ASTNode, RiderList?>()
     private lateinit var lineStarts: IntArray
     private lateinit var startsLine: BooleanArray
     private lateinit var lineHead: IntArray
@@ -435,6 +452,7 @@ internal class NativeCSharpLayout(private val root: ASTNode, private val text: C
      * the gap before its `{` as inside, as Roslyn does for the spaces.
      */
     private fun frozen(a: Int, b: Int, before: Boolean = false): Boolean {
+        if (options.riderLists) return false
         var node = units[b].node?.treeParent
         while (node != null && node.treeParent != null) {
             if (construct(node) == Construct.COLLECTION) {
@@ -467,6 +485,209 @@ internal class NativeCSharpLayout(private val root: ASTNode, private val text: C
 
     private fun isLambdaBody(braces: Braces): Boolean = braces.construct == Construct.BLOCK && kindOf(braces.node.treeParent).let {
         it === SyntaxKind.SimpleLambdaExpression || it === SyntaxKind.ParenthesizedLambdaExpression || it === SyntaxKind.AnonymousMethodExpression
+    }
+
+    // ---- Rider's lists
+    //
+    // Initializers (object, collection, array, anonymous object, `with`, complex elements), collection expressions, argument lists
+    // (invocation, object creation, element access, attribute, constructor initializer) and parameter lists are laid out as Rider
+    // (ReSharper 2026.2, `jb cleanupcode --profile="Built-in: Reformat Code"`, no settings layers) does by default, where `dotnet format`
+    // leaves them as they are. Line breaks are kept, as Rider's "keep existing arrangement" does, except:
+    //  - a multi-line initializer / collection expression gets its open brace on a line of its own (unless it starts an item of an
+    //    outer list, `Sum([1,` and `Sum(\n[1,`; `csharp_new_line_before_open_brace` without `object_collection_array_initializers`
+    //    pulls it up to the line before), its elements start on the line after it, its close brace on a line of its own;
+    //  - when an element of a multi-line initializer spans lines, every element goes to a line of its own ("chop if multi-line");
+    //    elements on one line otherwise stay together (`1, 2,\n3, 4`). `csharp_new_line_before_members_in_*` written in
+    //    `.editorconfig` decide for object initializers and anonymous types instead.
+    // Columns: the elements / arguments / parameters that start a line go one indent right of the list's base, the close brace or
+    // parenthesis on a line of its own and the open brace go to the base. Rider does not align arguments with the first one
+    // (`ALIGN_MULTILINE_ARGUMENT` is off): `Foo(1,\n2)` is `Foo(1,\n    2)` under the line of `Foo`. The base ([listBase]) is the column
+    // of the nearest line start that belongs to the construct the list is in: the start of a node it is in, an operator token of
+    // such a node (`\n.Bar(`, `\n? Foo(`), the first token inside the parentheses of `if` / `while` / `foreach` / `using` / ...
+    // (Rider aligns there), or the column of the elements of an enclosing list that has elements on separate lines ("active":
+    // `Foo(Foo(1,\n2),\n3)` puts `2` two indents in, `Foo(1, Foo(2,\n3))` one). A line inside an element that does not start one
+    // keeps its offset from the element, as `dotnet format` keeps it from the statement.
+    // Not taken from Rider (its other defaults, outside these lists): wrapping long lines at 120, chopping `?:` and `for`, single-line
+    // lambda blocks, blank lines after blocks, comments at column 0 left there, aligning binary operands and conditions in `if (`.
+
+    /** A list of Rider's layout: its node, its open and close tokens (units), braces or parentheses. */
+    private class RiderList(val node: ASTNode, val open: Int, val close: Int, val braces: Boolean, val construct: Construct?) {
+        var active: Boolean? = null
+        var chopped: Boolean? = null
+        var base = -1
+    }
+
+    private fun list(node: ASTNode?): RiderList? {
+        if (!options.riderLists || node == null || node.firstChildNode == null) return null
+        if (lists.containsKey(node)) return lists[node]
+        return lists.getOrPut(node) {
+            if (kindOf(node) in ARGUMENT_LISTS) {
+                var open = -1
+                var close = -1
+                var child = node.firstChildNode
+                while (child != null) {
+                    val t = child.elementType
+                    if ((t === SyntaxKind.OpenParenToken || t === SyntaxKind.OpenBracketToken) && open < 0) open = unitAt[child.startOffset] ?: -1
+                    if (t === SyntaxKind.CloseParenToken || t === SyntaxKind.CloseBracketToken) close = unitAt[child.startOffset] ?: -1
+                    child = child.treeNext
+                }
+                if (open < 0) null else RiderList(node, open, close, braces = false, construct = null)
+            } else {
+                val construct = construct(node)?.takeIf { it in BRACE_LISTS }
+                construct?.let { bracesOf(node, it) }?.let { RiderList(node, it.open, it.close, braces = true, construct = construct) }
+            }
+        }
+    }
+
+    private fun isItem(list: RiderList, node: ASTNode): Boolean = node.treeParent === list.node && node.firstChildNode != null &&
+        node.startOffset > units[list.open].start && (list.close < 0 || node.startOffset < units[list.close].start) && firstCode(node) >= 0
+
+    private fun items(list: RiderList): List<ASTNode> = list.node.getChildren(null).filter { isItem(list, it) }
+
+    /** The list has elements (or its close token) on lines of their own: what is inside its elements is one indent further in. */
+    private fun active(list: RiderList): Boolean = list.active ?: run {
+        if (list.braces) multiLine(list.open, list.close)
+        else list.close >= 0 && originalBreak[list.close] || list.node.getChildren(null).any { child ->
+            child.elementType === SyntaxKind.CommaToken && unitAt[child.startOffset]?.let { originalBreak[it] } == true ||
+                isItem(list, child) && originalBreak[firstCode(child)]
+        }
+    }.also { list.active = it }
+
+    /** A multi-line brace list whose elements each go to a line of their own. */
+    private fun chopped(list: RiderList): Boolean = list.chopped ?: run {
+        if (!list.braces || !multiLine(list.open, list.close)) return@run false
+        val option = when (list.construct) {
+            Construct.OBJECT -> "csharp_new_line_before_members_in_object_initializers"
+            Construct.ANONYMOUS -> "csharp_new_line_before_members_in_anonymous_types"
+            else -> null
+        }
+        if (option != null && options.isSet(option)) {
+            if (list.construct == Construct.OBJECT) options.newLineBeforeMembersInObjectInitializers else options.newLineBeforeMembersInAnonymousTypes
+        } else items(list).any { multiLine(firstCode(it), lastCode(it)) }
+    }.also { list.chopped = it }
+
+    private fun multiLineBraces(list: RiderList?): Boolean = list != null && list.braces && multiLine(list.open, list.close)
+
+    /** The brace list whose open or close token unit [i] is. */
+    private fun braceListOf(i: Int): RiderList? {
+        val t = type(i)
+        if (t !== SyntaxKind.OpenBraceToken && t !== SyntaxKind.CloseBraceToken && t !== SyntaxKind.OpenBracketToken && t !== SyntaxKind.CloseBracketToken) return null
+        return list(units[i].node?.treeParent)?.takeIf { it.braces && (it.open == i || it.close == i) }
+    }
+
+    /** The open brace starts an element of an outer list (`Sum([1,`, `{ {"a", 1},`): it stays where it is. */
+    private fun opensItem(list: RiderList): Boolean {
+        var top = list.node
+        if (firstCode(top) != list.open) return false
+        while (true) {
+            val parent = top.treeParent ?: return false
+            list(parent)?.let { if (isItem(it, top)) return true }
+            if (parent.treeParent == null || firstCode(parent) != list.open) return false
+            top = parent
+        }
+    }
+
+    /** The list whose close token code unit [i] is: a line before it is a line of its elements. */
+    private fun listClosedBy(i: Int): RiderList? = list(units[i].node?.treeParent)?.takeIf { it.close == i }
+
+    private fun braceCategory(list: RiderList): String = if (list.construct == Construct.ANONYMOUS) "anonymous_types" else "object_collection_array_initializers"
+
+    /** The column of the open brace, the close token and what the elements are one indent right of. */
+    private fun listBase(list: RiderList): Int {
+        if (list.base < 0) list.base = computeBase(list)
+        return list.base
+    }
+
+    private fun computeBase(list: RiderList): Int {
+        val bound = list.open
+        var child: ASTNode = list.node
+        var node: ASTNode = list.node
+        while (true) {
+            if (node !== list.node) controlParenthesesColumn(node, child)?.let { return it }
+            headBefore(node, bound)?.let { return column[it] }
+            val parent = node.treeParent ?: return 0
+            if (parent.treeParent == null) return 0
+            list(parent)?.let { if (isItem(it, node) && active(it)) return listBase(it) + ind }
+            child = node
+            node = parent
+        }
+    }
+
+    /** Inside the parentheses of `if`, `while`, `foreach`, `using`, ...: Rider aligns with the first token after `(`. */
+    private fun controlParenthesesColumn(statement: ASTNode, child: ASTNode): Int? {
+        if (kindOf(statement) !in CONTROL_STATEMENTS) return null
+        var open: ASTNode? = null
+        var close: ASTNode? = null
+        var c = statement.firstChildNode
+        while (c != null) {
+            if (c.elementType === SyntaxKind.OpenParenToken && open == null) open = c
+            if (c.elementType === SyntaxKind.CloseParenToken && open != null && close == null) close = c
+            c = c.treeNext
+        }
+        if (open == null || child.startOffset < open.startOffset || close != null && child.startOffset > close.startOffset) return null
+        val first = firstCodeAfter(unitAt[open.startOffset] ?: return null)
+        return if (first in 0 until current) finalColumn(first) else null
+    }
+
+    /**
+     * The last line start before [bound] that belongs to [node] itself: its first token, a token of its own (`?` of a conditional,
+     * `+` of a binary) or the operator of the member access it calls (`\n.Bar(`). Line starts deeper in an earlier part of the node
+     * (the arguments of another call on the line) do not count.
+     */
+    private fun headBefore(node: ASTNode, bound: Int): Int? {
+        val first = firstCode(node)
+        if (first < 0 || first >= bound || bound == 0) return null
+        var h = lineHead[bound - 1]
+        while (h >= first) {
+            if (isCode(h)) {
+                val parent = units[h].node?.treeParent
+                if (h == first || parent === node || parent?.treeParent === node && kindOf(parent) in MEMBER_ACCESSES) return h
+            }
+            if (h == 0) break
+            h = lineHead[h - 1]
+        }
+        return null
+    }
+
+    /** The column of code unit [i] by Rider's lists when it starts a line; null: not a part of a list that Rider's layout places. */
+    private fun riderColumn(i: Int): Int? {
+        if (!options.riderLists) return null
+        val node = units[i].node ?: return null
+        list(node.treeParent)?.let { list ->
+            // a one-line `{ ... }` / `[...]` on a line of its own is a continuation like any other
+            if (i == list.close || i == list.open && multiLineBraces(list)) return listBase(list)
+            if (type(i) === SyntaxKind.CommaToken) return listBase(list) + ind
+        }
+        var top = node
+        while (true) {
+            val parent = top.treeParent ?: return null
+            list(parent)?.let { if (isItem(it, top)) return listBase(it) + ind }
+            if (parent.treeParent == null || firstCode(parent) != i) return null
+            top = parent
+        }
+    }
+
+    /** Line feeds Rider's lists put between code units [a] and [b]; null: not theirs to say. */
+    private fun riderBreaks(a: Int, b: Int): Int? {
+        if (!options.riderLists) return null
+        val after = braceListOf(a)
+        val before = braceListOf(b)
+        if (after != null && a == after.open && multiLineBraces(after)) return 1
+        if (before != null && b == before.close) return if (multiLineBraces(before)) 1 else 0
+        if (type(a) === SyntaxKind.CommaToken) {
+            val list = list(units[a].node!!.treeParent)
+            if (list != null && list.braces && chopped(list) && b != list.close) return 1
+        }
+        if (before != null) return if (multiLineBraces(before) && !opensItem(before) && options.braceOnNewLine(braceCategory(before))) 1 else 0
+        if (type(a) === SyntaxKind.CommaToken && list(units[a].node!!.treeParent)?.braces == true) return 0
+        return if (after != null && a == after.open) 0 else null
+    }
+
+    /** `{` of a multi-line initializer goes up to the line before when `.editorconfig` keeps such braces at the end of the line. */
+    private fun riderJoins(a: Int, b: Int): Boolean? {
+        if (!options.riderLists) return null
+        val list = braceListOf(b)?.takeIf { b == it.open } ?: return if (braceListOf(a) != null) false else null
+        return multiLineBraces(list) && !opensItem(list) && !options.braceOnNewLine(braceCategory(list)) && isCode(a)
     }
 
     // ---- columns
@@ -538,6 +759,7 @@ internal class NativeCSharpLayout(private val root: ASTNode, private val text: C
         placedBy = STRUCTURE
         val node = units[i].node!!
         if (interpolatedString(i) != null) return asIs(i)
+        riderColumn(i)?.let { return it }
         braces(i)?.let { braces ->
             return when {
                 // the `{` of `new[]` / `new int[]` on a line of its own is put under the line of `new`; the rest of the initializer stays
@@ -612,7 +834,7 @@ internal class NativeCSharpLayout(private val root: ASTNode, private val text: C
         while (node != null && node.treeParent != null) {
             if (firstCode(node) != i) {
                 val construct = construct(node)
-                if (construct == Construct.COLLECTION || construct == Construct.COLLECTION_EXPRESSION) return asIs(i)
+                if (!options.riderLists && (construct == Construct.COLLECTION || construct == Construct.COLLECTION_EXPRESSION)) return asIs(i)
                 if (isAnchor(node)) {
                     val anchor = firstCode(node)
                     if (anchor in 0 until i) {
@@ -638,7 +860,8 @@ internal class NativeCSharpLayout(private val root: ASTNode, private val text: C
         return when (kindOf(node)) {
             SyntaxKind.UsingDirective, SyntaxKind.ExternAliasDirective, SyntaxKind.EnumMemberDeclaration, SyntaxKind.SwitchExpressionArm,
             SyntaxKind.AnonymousObjectMemberDeclarator, SyntaxKind.ElseClause, SyntaxKind.CatchClause, SyntaxKind.FinallyClause, SyntaxKind.AttributeList -> true
-            else -> construct(node.treeParent) == Construct.OBJECT
+            // an element of a list: what continues it moves with it
+            else -> construct(node.treeParent) == Construct.OBJECT || list(node.treeParent)?.let { isItem(it, node) } == true
         }
     }
 
@@ -667,6 +890,7 @@ internal class NativeCSharpLayout(private val root: ASTNode, private val text: C
      */
     private fun columnBeforeCode(i: Int, region: Boolean): Int {
         val next = (i + 1 until units.size).firstOrNull { isCode(it) } ?: return 0
+        listClosedBy(next)?.let { return listBase(it) + ind }
         val braces = braces(next)
         if (braces != null && next == braces.close && braces.construct != Construct.COLLECTION && braces.construct != Construct.COLLECTION_EXPRESSION) {
             return if (region) openColumn(braces) else contentColumn(braces)
@@ -701,6 +925,7 @@ internal class NativeCSharpLayout(private val root: ASTNode, private val text: C
             units[b].kind != Kind.DIRECTIVE && units[b].kind != Kind.REGION && units[b].kind != Kind.DISABLED) return 2
         if (!isCode(a) || !isCode(b)) return 0
         if (frozen(a, b) || interpolatedString(b) != null) return 0
+        riderBreaks(a, b)?.let { return it }
         braces(b)?.let { braces ->
             if (b == braces.open && wrapsBefore(braces) && options.braceOnNewLine(category(braces))) return 1
             if (b == braces.close && wraps(braces)) return 1
@@ -753,6 +978,7 @@ internal class NativeCSharpLayout(private val root: ASTNode, private val text: C
     /** `csharp_new_line_before_open_brace` without the category, `..._else` false: the brace or the keyword goes up to the line before. */
     private fun joins(a: Int, b: Int): Boolean {
         if (!isCode(a) || !isCode(b)) return false
+        riderJoins(a, b)?.let { return it }
         braces(b)?.let { braces ->
             if (b == braces.open && wrapsBefore(braces) && !options.braceOnNewLine(category(braces))) return true
         }
@@ -839,6 +1065,7 @@ internal class NativeCSharpLayout(private val root: ASTNode, private val text: C
     /** The indent of a new line before unit [index] (Enter, Auto-Indent of an empty line). */
     fun indentBefore(index: Int): Int {
         if (index >= units.size) return 0
+        if (isCode(index)) listClosedBy(index)?.let { return listBase(it) + ind }
         val braces = if (isCode(index)) braces(index) else null
         if (braces != null && index == braces.close && braces.construct != Construct.COLLECTION) return contentColumn(braces)
         return when (units[index].kind) {
@@ -1096,6 +1323,14 @@ internal class NativeCSharpLayout(private val root: ASTNode, private val text: C
         )
 
         private val CREATIONS = TokenSet.create(SyntaxKind.ObjectCreationExpression, SyntaxKind.ImplicitObjectCreationExpression, SyntaxKind.WithExpression)
+
+        private val ARGUMENT_LISTS = TokenSet.create(
+            SyntaxKind.ArgumentList, SyntaxKind.BracketedArgumentList, SyntaxKind.AttributeArgumentList, SyntaxKind.ParameterList, SyntaxKind.BracketedParameterList,
+        )
+
+        private val BRACE_LISTS = setOf(Construct.OBJECT, Construct.ANONYMOUS, Construct.COLLECTION, Construct.COLLECTION_EXPRESSION)
+
+        private val MEMBER_ACCESSES = TokenSet.create(SyntaxKind.SimpleMemberAccessExpression, SyntaxKind.PointerMemberAccessExpression, SyntaxKind.MemberBindingExpression)
 
         private const val STRUCTURE = -1
         private const val AS_IS = -2

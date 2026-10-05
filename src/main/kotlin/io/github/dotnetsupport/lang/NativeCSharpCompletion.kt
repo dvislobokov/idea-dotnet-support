@@ -46,8 +46,9 @@ import javax.swing.Icon
  *    kind and its rank;
  *  - where the tree decides which keywords are legal ([NativeCSharpCompletionPlace.keywordsAreNative]: a statement, an expression, a
  *    type, a member's start...), every keyword item of the server: the native list has the legal ones.
- * Members after a dot, types and members of referenced assemblies, unimported types, snippets, lambdas, `await Method()`: the server's
- * (when it is ready) and the index of assemblies', untouched; where the native part has no place (after `a.`, in an accessor list) it
+ * Members after a dot are [NativeCSharpMemberCompletion]'s (task C3: the semantics of `lang/semantic`), and where it cannot type the left
+ * side it adds nothing. Types and members of referenced assemblies without a dot, unimported types, snippets, lambdas, `await Method()`:
+ * the server's (when it is ready) and the index of assemblies', untouched; where the native part has no place (in an accessor list) it
  * adds nothing and passes everything. The targets of `using` directives and `using var` are [NativeCSharpUsingCompletion]'s (task A8). Items of other contributors (live templates, postfix templates, the index of
  * assemblies) are never dropped. The switch ROSLYN or a file of the heuristic tree: this contributor does nothing.
  */
@@ -58,9 +59,12 @@ class NativeCSharpCompletionContributor : CompletionContributor() {
         val file = parameters.position.containingFile as? CSharpFile ?: return
         if (file.compilationUnit == null) return
         val place = NativeCSharpCompletionPlace.of(parameters.position) ?: return
-        val items = NativeCSharpCompletion.items(place, file, result.prefixMatcher)
+        if (!NativeCSharpCompletion.opensByItself(parameters, result.prefixMatcher.prefix, place.kind)) return
+        val excluded = HashSet<String>()
+        val items = NativeCSharpCompletion.items(place, file, result.prefixMatcher, excluded)
         for (item in items) result.addElement(item)
         val names = items.flatMapTo(HashSet()) { item -> item.allLookupStrings.map(NativeCSharpCompletion::nameOf) }
+        names += excluded
         result.runRemainingContributors(parameters) { found ->
             if (!NativeCSharpCompletion.isDuplicate(found.lookupElement, names, place.keywordsAreNative)) result.passResult(found)
         }
@@ -74,6 +78,25 @@ object NativeCSharpCompletion {
 
     /** Put by the client of the server on its items (`RoslynCompletionSupport`): what [isDuplicate] may drop. */
     val SERVER: Key<Boolean> = Key.create("dotnet.serverCompletion")
+
+    /**
+     * Whether the native list is shown at a list that opened by itself with nothing typed yet. The client of the server opens it on every
+     * trigger character of Roslyn (`{`, `(`, `[`, `:`, `<`, a space…), and Roslyn answers most of them with nothing: the native list of
+     * the place would pop up after `GetStringAsync(...){`. As in Rider, a list opens by itself after `.`, after `[` of an attribute, and
+     * after a space where a type, a name after a type, a keyword, a namespace of `using` or an attribute is expected (`new `, `override `).
+     * Ctrl+Space (an explicit call) and a typed prefix always get the list.
+     */
+    fun opensByItself(parameters: CompletionParameters, prefix: String, kind: NativeCompletionKind): Boolean {
+        if (!parameters.isAutoPopup || prefix.isNotEmpty()) return true
+        val text = parameters.editor.document.charsSequence
+        return when (text.getOrNull(parameters.offset - 1)) {
+            '.' -> true
+            '[' -> kind == NativeCompletionKind.ATTRIBUTE
+            ' ', '\t' -> kind == NativeCompletionKind.TYPE || kind == NativeCompletionKind.DECLARATION_NAME || kind == NativeCompletionKind.KEYWORDS_ONLY ||
+                kind == NativeCompletionKind.USING_DIRECTIVE || kind == NativeCompletionKind.ATTRIBUTE
+            else -> false
+        }
+    }
 
     /** The object of the lookup elements of the LSP client of the platform. */
     const val SERVER_OBJECT = "com.intellij.platform.lsp.impl.features.completion.LspCompletionObject"
@@ -118,18 +141,26 @@ object NativeCSharpCompletion {
     }
 
     /** Everything the native list has at [place] of [file] (the copy the platform completes in). */
-    fun items(place: NativeCSharpCompletionPlace, file: CSharpFile, matcher: PrefixMatcher): List<LookupElement> {
+    /**
+     * [excluded] gets the names left out on purpose (a local that is not disposable at `using (|`): the server's items of those names
+     * go too.
+     */
+    fun items(place: NativeCSharpCompletionPlace, file: CSharpFile, matcher: PrefixMatcher, excluded: MutableSet<String>? = null): List<LookupElement> {
         val builder = Builder(place, file, matcher)
         builder.build()
+        excluded?.addAll(builder.excluded)
         return builder.items
     }
 
     private class Builder(val place: NativeCSharpCompletionPlace, val file: CSharpFile, val matcher: PrefixMatcher) {
         val items = ArrayList<LookupElement>()
+        val excluded = HashSet<String>()
         private val added = HashSet<String>()
         private val resolver by lazy { NativeCSharpResolver(file) }
         private val at: PsiElement get() = place.name ?: place.leaf
         private val expected by lazy { NativeCSharpExpectations.at(place, resolver) }
+        // the resource of `using (|` / `using var x = |`: what is known not to be disposable is left out (A8, the types of C2)
+        private val resource by lazy { NativeCSharpUsingChecks.resourcePlace(place)?.let { async -> NativeCSharpUsingChecks.Filter(file, async, at) } }
 
         fun build() {
             when (place.kind) {
@@ -142,7 +173,11 @@ object NativeCSharpCompletion {
                     declarationNames()
                     keywords(place.keywords)
                 }
-                NativeCompletionKind.THIS_MEMBERS -> thisMembers()
+                NativeCompletionKind.THIS_MEMBERS -> {
+                    thisMembers()
+                    NativeCSharpMemberCompletion.thisItems(place, file, matcher).forEach(::add)
+                }
+                NativeCompletionKind.MEMBER_ACCESS -> NativeCSharpMemberCompletion.items(place, file, matcher).forEach(::add)
                 NativeCompletionKind.ATTRIBUTE -> attributeTypes()
                 NativeCompletionKind.MEMBER_START -> memberStart()
                 NativeCompletionKind.TOP_LEVEL -> {
@@ -189,6 +224,10 @@ object NativeCSharpCompletion {
                     LocalSymbolKind.TYPE_PARAMETER -> TYPE_PARAMETER to AllIcons.Nodes.Type
                     LocalSymbolKind.LABEL -> continue
                 }
+                if (resource?.rejects(symbol) == true) {
+                    excluded += symbol.name
+                    continue
+                }
                 val type = NativeCSharpLocals.typeOf(symbol)
                 if (symbol.kind == LocalSymbolKind.LOCAL_FUNCTION) {
                     val function = symbol.declaration.parent as? CSharpLocalFunctionStatement
@@ -227,6 +266,10 @@ object NativeCSharpCompletion {
 
         private fun member(key: String, member: Member) {
             val kind = NativeCSharpMembers.kind(member)
+            if ((kind == NativeCSharpMembers.Kind.FIELD || kind == NativeCSharpMembers.Kind.PROPERTY || kind == NativeCSharpMembers.Kind.CONSTANT) && resource?.rejects(member) == true) {
+                excluded += key
+                return
+            }
             val type = NativeCSharpMembers.typeIn(member, file)
             when (kind) {
                 NativeCSharpMembers.Kind.METHOD -> add(name(key, AllIcons.Nodes.Method, type, METHOD, "()", NativeCSharpCalls.handler { member.targets() }))
@@ -602,16 +645,7 @@ object NativeCSharpExpectations {
 object NativeCSharpCalls {
     private val SUBSCRIPTION = Regex("""[+-]=\s*$""")
 
-    fun handler(targets: () -> List<PsiElement>): InsertHandler<LookupElement> = InsertHandler { context, _ ->
-        if (!choosesWithCall(context)) return@InsertHandler
-        val document = context.document
-        val text = document.charsSequence
-        val offset = context.tailOffset
-        if (context.completionChar == '(') context.setAddCompletionChar(false)
-        if (offset < text.length && text[offset] == '(') {
-            context.editor.caretModel.moveToOffset(offset + 1)
-            return@InsertHandler
-        }
+    fun handler(targets: () -> List<PsiElement>): InsertHandler<LookupElement> = callHandler {
         val functions = runCatching(targets).getOrDefault(emptyList())
         val (returnType, parameters) = functions.map { function ->
             when (function) {
@@ -622,6 +656,21 @@ object NativeCSharpCalls {
         }.let { pairs -> pairs.map { it.first } to pairs.map { it.second } }
         val returnsNothing = returnType.isNotEmpty() && returnType.all { it == "void" }
         val takesArguments = parameters.isEmpty() || parameters.any { it == null || it > 0 }
+        returnsNothing to takesArguments
+    }
+
+    /** `()` / `();` after a method whose [shape] is (returns nothing, takes arguments in some overload). */
+    fun callHandler(shape: () -> Pair<Boolean, Boolean>): InsertHandler<LookupElement> = InsertHandler { context, _ ->
+        if (!choosesWithCall(context)) return@InsertHandler
+        val document = context.document
+        val text = document.charsSequence
+        val offset = context.tailOffset
+        if (context.completionChar == '(') context.setAddCompletionChar(false)
+        if (offset < text.length && text[offset] == '(') {
+            context.editor.caretModel.moveToOffset(offset + 1)
+            return@InsertHandler
+        }
+        val (returnsNothing, takesArguments) = shape()
         val call = CSharpCalls.call(returnsNothing, takesArguments, false, CSharpCalls.endsStatement(text, context.startOffset), CSharpCalls.restOfLine(text, offset))
         document.insertString(offset, call.text)
         context.editor.caretModel.moveToOffset(offset + call.caret)

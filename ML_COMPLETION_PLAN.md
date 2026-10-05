@@ -226,7 +226,7 @@ property, method, type, keyword, snippet…); вид контекста (one-hot
   hash схемы, версия глобальной модели), `lm-project.bin`, `rank-delta.bin`, `accept-log.bin`. Несовпадение версии → удалить и пересчитать.
   Лимиты: ≤ 64 МБ на проект на диске, ≤ 32 МБ кучи (LRU по проектам, выгрузка при закрытии проекта).
 - [ ] Приватность: ничего не уходит с машины, нет телеметрии, нет «улучшить модель отправкой данных». Модели нескольких проектов не смешиваются.
-- [ ] Настройки (C#: Settings | Tools | .NET → «Code completion», ключи в `DotNetBundle.properties` и `_ru`, перегенерировать `docs/guide.html`;
+- [ ] Настройки (C#: Settings | .NET → «Code completion», ключи в `DotNetBundle.properties` и `_ru`, перегенерировать `docs/guide.html`;
   Go: страница настроек плагина): «Rank completion items with a model» (вкл.), «Learn from this project» (вкл.), «Suggest continuations
   (gray text)» (выкл. до приёмки §7), кнопка «Reset Learned Data». Опция появляется вместе с реализацией (правило «без заглушек»).
 

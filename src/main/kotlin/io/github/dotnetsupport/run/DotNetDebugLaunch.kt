@@ -64,6 +64,33 @@ object DotNetLaunchArguments {
             arguments["program"] = targetPath
         }
     }
+
+    /**
+     * A program of the old format starts in its output folder, where its `app.config` and content files are, as in Visual Studio and
+     * under Run ([ExecutableLaunch]); a working directory of the configuration still wins.
+     */
+    fun startInOutputFolder(arguments: MutableMap<String, Any?>, targetPath: String?, workingDirectory: String?) {
+        if (targetPath.isNullOrBlank() || !workingDirectory.isNullOrBlank()) return
+        File(targetPath).parent?.let { arguments["cwd"] = it }
+    }
+}
+
+/**
+ * What "Build .NET Project" has found before a launch, by `ExecutionEnvironment.executionId`. The user data the task puts into its
+ * environment does not reach the runner nor the run state (seen live in 2026.1: every Debug built the project twice); the id of the
+ * execution does. Taken once; a launch that never comes leaves an entry behind, so the table is cleared when it grows.
+ */
+object BuiltBeforeLaunch {
+    private val programs = java.util.concurrent.ConcurrentHashMap<Long, String>()
+
+    /** [targetPath] "": built, the output unknown. */
+    fun put(executionId: Long, targetPath: String) {
+        if (programs.size > 32) programs.clear()
+        programs[executionId] = targetPath
+    }
+
+    /** Null: the task has not run for this execution; "": built, the output unknown. */
+    fun take(executionId: Long): String? = programs.remove(executionId)
 }
 
 /** `dotnet msbuild -getProperty:TargetPath`: where the build puts the assembly of a project. */

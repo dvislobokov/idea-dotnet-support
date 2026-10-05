@@ -1,7 +1,7 @@
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of Complete Statement (Ctrl+Shift+Enter) and of the gray <c>;</c> on the plugin's own tree (0.1.48). Settings | Tools | .NET |
+/// Live check of Complete Statement (Ctrl+Shift+Enter) and of the gray <c>;</c> on the plugin's own tree (0.1.48). Settings | .NET |
 /// Language Server → Source of Features → «Typing assistance» = Built-in, then the markers below: type what a <c>// TYPE:name</c> comment says
 /// on the empty line under it, press what it says, compare with EXPECT, undo with Ctrl+Z. With «Language server» (the default for now) the
 /// tokens answer: the differences are named in EXPECT ("tokens: …"). The file only has to compile.

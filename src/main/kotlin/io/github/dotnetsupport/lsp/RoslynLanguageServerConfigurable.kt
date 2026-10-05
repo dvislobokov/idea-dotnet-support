@@ -26,7 +26,7 @@ import io.github.dotnetsupport.settings.DotNetSettingsConfigurable
 import java.io.File
 
 /**
- * Settings | Tools | .NET | Language Server: how `roslyn-language-server` is started and the settings it asks its client for.
+ * Settings | .NET | Language Server: how `roslyn-language-server` is started and the settings it asks its client for.
  * The second part is generated from [RoslynOptions]: a new option of the server is a line there.
  */
 class RoslynLanguageServerConfigurable(private val project: Project) : BoundConfigurable(DotNetBundle.message("page.languageServer")) {

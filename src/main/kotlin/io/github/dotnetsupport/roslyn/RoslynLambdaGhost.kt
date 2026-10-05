@@ -46,6 +46,7 @@ import org.eclipse.lsp4j.SignatureHelpParams
  */
 class RoslynLambdaGhost : InlineCompletionProvider {
     override val id: InlineCompletionProviderID = ID
+    override val providerPresentation = io.github.dotnetsupport.lang.CSharpGhostTextProvider.presentation()
 
     override fun isEnabled(event: InlineCompletionEvent): Boolean {
         val request = event.toRequest() ?: return false

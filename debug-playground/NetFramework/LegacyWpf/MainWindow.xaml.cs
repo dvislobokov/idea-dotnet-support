@@ -16,7 +16,7 @@ namespace LegacyWpf
         private void OnClick(object sender, RoutedEventArgs e)
         {
             clicks++;
-            Greeting.Text = "Clicks: " + clicks; // BP:legacy-wpf-click — after the debugger of .NET Framework is there; EXPECT: clicks is the number of clicks
+            Greeting.Text = "Clicks: " + clicks; // BP:legacy-wpf-click — Debug (or Attach to Process), click the button: stops here; EXPECT: clicks is the number of clicks
         }
     }
 }

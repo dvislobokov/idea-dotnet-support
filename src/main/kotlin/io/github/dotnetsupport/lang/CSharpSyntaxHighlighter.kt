@@ -14,7 +14,8 @@ import com.intellij.psi.TokenType
 import com.intellij.psi.tree.IElementType
 
 class CSharpSyntaxHighlighter : SyntaxHighlighterBase() {
-    override fun getHighlightingLexer(): Lexer = CSharpLexer()
+    /** Splits literals into text, escapes and holes ([CSharpHighlightingLexer]); [CSharpLexer] itself keeps them whole for everything else. */
+    override fun getHighlightingLexer(): Lexer = CSharpHighlightingLexer()
 
     override fun getTokenHighlights(tokenType: IElementType): Array<TextAttributesKey> = pack(KEYS[tokenType])
 
@@ -34,6 +35,15 @@ class CSharpSyntaxHighlighter : SyntaxHighlighterBase() {
         val DOT = createTextAttributesKey("CSHARP_DOT", Default.DOT)
         val OPERATOR = createTextAttributesKey("CSHARP_OPERATOR", Default.OPERATION_SIGN)
         val BAD_CHARACTER = createTextAttributesKey("CSHARP_BAD_CHARACTER", HighlighterColors.BAD_CHARACTER)
+
+        // inside literals: the keys of Rider (`ReSharper.CSHARP_ESCAPE_CHARACTER_1` / `_2`, `ReSharper.FORMAT_STRING_ITEM` / `_2`)
+        val ESCAPE = createTextAttributesKey("CSHARP_ESCAPE_CHARACTER_1", Default.VALID_STRING_ESCAPE)
+        val ESCAPE_2 = createTextAttributesKey("CSHARP_ESCAPE_CHARACTER_2", ESCAPE)
+        val INVALID_ESCAPE = createTextAttributesKey("CSHARP_INVALID_ESCAPE_CHARACTER", Default.INVALID_STRING_ESCAPE)
+        /** Alignment and format of a hole (`,5`, `:N2`) and an item of a format string (`{0,5:N2}` of `string.Format`, [CSharpFormatItemsAnnotator]). */
+        val FORMAT_ITEM = createTextAttributesKey("CSHARP_FORMAT_STRING_ITEM", Default.VALID_STRING_ESCAPE)
+        /** The second of two format items side by side: `{0}{1}`. */
+        val FORMAT_ITEM_2 = createTextAttributesKey("CSHARP_FORMAT_STRING_ITEM_2", FORMAT_ITEM)
 
         private val KEYS: Map<IElementType, TextAttributesKey> = mapOf(
             CSharpTokenTypes.KEYWORD to KEYWORD,
@@ -55,6 +65,14 @@ class CSharpSyntaxHighlighter : SyntaxHighlighterBase() {
             CSharpTokenTypes.DOT to DOT,
             CSharpTokenTypes.OPERATOR to OPERATOR,
             TokenType.BAD_CHARACTER to BAD_CHARACTER,
+            CSharpStringTokens.TEXT to STRING,
+            CSharpStringTokens.STRING_END to STRING,
+            CSharpStringTokens.CHAR_END to STRING,
+            CSharpStringTokens.ESCAPE to ESCAPE,
+            CSharpStringTokens.ESCAPE_2 to ESCAPE_2,
+            CSharpStringTokens.INVALID_ESCAPE to INVALID_ESCAPE,
+            CSharpStringTokens.INTERPOLATION_BRACE to BRACES,
+            CSharpStringTokens.FORMAT to FORMAT_ITEM,
         )
     }
 }

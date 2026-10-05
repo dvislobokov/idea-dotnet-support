@@ -175,14 +175,14 @@ class RoslynSolutionProblems(override val project: Project) : Disposable, Proble
         return Problem(this, file, start?.line ?: 0, start?.character ?: 0, diagnostic.message.orEmpty().trim(), code, error)
     }
 
-    /** `background_analysis.dotnet_compiler_diagnostics_scope` of Settings | Tools | .NET | Language Server. */
+    /** `background_analysis.dotnet_compiler_diagnostics_scope` of Settings | .NET | Language Server. */
     private fun isFullSolutionScope(): Boolean =
         RoslynLanguageServer.configuration(listOf(COMPILER_SCOPE), RoslynLanguageServerSettings.getInstance(), null).single()?.toString() == "fullSolution"
 
     private fun hintAboutScope() {
         if (!scopeHintShown.compareAndSet(false, true)) return
         NotificationGroupManager.getInstance().getNotificationGroup(DotNetCli.NOTIFICATION_GROUP)
-            .createNotification("Solution-wide problems are off", "The Problems tool window lists the errors of the whole solution when \"Compiler diagnostics for\" is fullSolution (Settings | Tools | .NET | Language Server).", NotificationType.INFORMATION)
+            .createNotification("Solution-wide problems are off", "The Problems tool window lists the errors of the whole solution when \"Compiler diagnostics for\" is fullSolution (Settings | .NET | Language Server).", NotificationType.INFORMATION)
             .addAction(NotificationAction.createSimpleExpiring("Open Settings") { ShowSettingsUtil.getInstance().showSettingsDialog(project, "Language Server") })
             .notify(project)
     }

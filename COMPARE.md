@@ -468,7 +468,7 @@ IDE на платформе по данным `docs/platform-lsp-dap.html`; GoLa
 
 | Страница | Rider | Плагин |
 |---|---|---|
-| Tools \| .NET | Toolset and Build (аналог) | ✅ путь `dotnet` + Check, Installed SDKs, `global.json`, ссылка на «.NET on This Machine»; .NET Tools (9 строк с Install/Update); Formatter (Auto / CSharpier / dotnet format / None, Auto = CSharpier, если репозиторий им пользуется); Behavior: автосоздание run configurations, окно Build при каждой сборке, автопереключение на Solution view |
+| Settings \| .NET | Toolset and Build (аналог) | ✅ путь `dotnet` + Check, Installed SDKs, `global.json`, ссылка на «.NET on This Machine»; .NET Tools (9 строк с Install/Update); Formatter (Auto / CSharpier / dotnet format / None, Auto = CSharpier, если репозиторий им пользуется); Behavior: автосоздание run configurations, окно Build при каждой сборке, автопереключение на Solution view |
 | Toolset and Build | ✅ | ✅ MSBuild global properties, Run build after solution is loaded, Restore before build, Use up to N processes, verbosity, файловый лог (папка, verbosity, «Open the log folder») |
 | NuGet | ✅ | ✅ Include prerelease; Automatically restore, Smart Restore on Build, `--no-cache`, `--interactive`; ссылка на Credential Provider |
 | Coverage | dotCover | ✅ When new coverage is gathered (Ask / Do not apply / Replace / Add), Activate Coverage View, Show coverage in the project view |
@@ -582,7 +582,7 @@ GoLand / PyCharm Pro), HTTP Client (те же), Docker / Kubernetes плагин
 3. Открыть любой `.cs` — стартует `roslyn-language-server` (если не установлен — нотификация с **Install**; нужен runtime .NET 10). Несколько solution в папке —
    диалог «Select Solution for Language Server». Статус — значок C# в статус-баре: «Roslyn: loading X.sln» → «Roslyn: X.sln»; клик показывает CPU и память сервера.
 4. Run configurations для запускаемых проектов появятся сами (по одной на профиль `launchSettings.json`).
-5. Полезно сразу поставить tools: **Settings | Tools | .NET → .NET Tools → Install** у `dotnet-debugger-dap` (Debug), `roslyn-language-server`, `csharpier` (если репозиторий им пользуется),
+5. Полезно сразу поставить tools: **Settings | .NET → .NET Tools → Install** у `dotnet-debugger-dap` (Debug), `roslyn-language-server`, `csharpier` (если репозиторий им пользуется),
    `dotnet-ef`, `dotnet-counters` / `dotnet-stack` / `dotnet-gcdump` / `dotnet-dump` (Monitor).
 
 ### 7.2 Где что лежит
@@ -667,9 +667,9 @@ GoLand / PyCharm Pro), HTTP Client (те же), Docker / Kubernetes плагин
 ### 7.10 Настройки, которые стоит знать
 | Настройка | Где | Зачем |
 |---|---|---|
-| Formatter: Auto / CSharpier / dotnet format / None | Tools \| .NET | что делает Ctrl+Alt+L |
-| Create run configurations for the runnable projects | Tools \| .NET | отключить автогенерацию |
-| Open the Build tool window on every build | Tools \| .NET | тишина при удачной сборке |
+| Formatter: Auto / CSharpier / dotnet format / None | Settings \| .NET | что делает Ctrl+Alt+L |
+| Create run configurations for the runnable projects | Settings \| .NET | отключить автогенерацию |
+| Open the Build tool window on every build | Settings \| .NET | тишина при удачной сборке |
 | MSBuild global properties; Use up to N processes; Write MSBuild log to file | Toolset and Build | воспроизводимость и диагностика сборки |
 | Include prerelease; Automatically restore; Smart Restore on Build | NuGet | скорость и предсказуемость restore |
 | Enable external source debug; Allow property evaluations… | Debugger | шаги во фреймворк; скорость раскрытия переменных |
@@ -738,7 +738,7 @@ GoLand / PyCharm Pro), HTTP Client (те же), Docker / Kubernetes плагин
 | `coverage` | Cobertura, сервис, gutter, окно, настройки, декоратор | 437 |
 | `lsp` | настройки Language Server (модель, страница, каталог опций), RoslynServerStatus / RoslynPolicy | 425 |
 | `probe` | Probe Platform LSP / DAP API | 347 |
-| `settings` | Tools \| .NET, Debugger | 335 |
+| `settings` | Settings \| .NET, Debugger | 335 |
 | `solution` | модель и парсеры `.sln`/`.slnx`, SolutionService, SolutionEditor | 311 |
 | `upgrade` | Upgrade Assistant analyze | 276 |
 

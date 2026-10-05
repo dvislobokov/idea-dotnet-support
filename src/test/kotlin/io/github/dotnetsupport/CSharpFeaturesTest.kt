@@ -35,10 +35,11 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
     fun testEveryFeatureStartsAtItsDefault() {
         assertEquals(
             "the tree of step 7, the formatting (0.1.49), the typing assistance (0.1.48), the kinds of usages (0.1.46), navigation (0.1.50), completion (0.1.55), " +
-                "the syntax errors (0.1.54), the colors (0.1.51) and rename (0.1.53) of step 9",
+                "the syntax errors (0.1.54), the colors (0.1.51), rename (0.1.53) and the context actions (0.1.64) of step 9, the documentation (0.1.66) of step 11",
             listOf(
                 CSharpFeature.SYNTAX_TREE, CSharpFeature.FORMATTING, CSharpFeature.EDITING, CSharpFeature.USAGE_KINDS, CSharpFeature.NAVIGATION,
-                CSharpFeature.COMPLETION, CSharpFeature.DIAGNOSTICS, CSharpFeature.SEMANTIC_COLORS, CSharpFeature.RENAME,
+                CSharpFeature.COMPLETION, CSharpFeature.DOCUMENTATION, CSharpFeature.DIAGNOSTICS, CSharpFeature.SEMANTIC_COLORS, CSharpFeature.RENAME,
+                CSharpFeature.CONTEXT_ACTIONS,
             ),
             CSharpFeatures.offered(),
         )
@@ -59,14 +60,16 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
         assertEquals("the formatter matched the server on the playground (robot, 0.1.49)", CSharpFeatureSource.NATIVE, CSharpFeature.FORMATTING.defaultSource)
         assertFalse("the formatter reads the file's own tree", CSharpFeature.FORMATTING.needsIndexes)
         for (feature in CSharpFeature.entries) {
-            // every offered feature since 0.1.60 (navigation, completion and the colors after the robot); documentation has no native code
-            val native = feature != CSharpFeature.DOCUMENTATION
+            // every offered feature since 0.1.60 (navigation, completion and the colors after the robot); documentation (0.1.66) and the context actions (0.1.64) wait for the robot
+            val native = feature != CSharpFeature.DOCUMENTATION && feature != CSharpFeature.CONTEXT_ACTIONS
             assertEquals(feature.name, if (native) CSharpFeatureSource.NATIVE else CSharpFeatureSource.ROSLYN, settings.source(feature))
             assertEquals(feature.name, native, CSharpFeatures.native(feature, project))
             assertEquals(feature.name, !native, RoslynFeatures.serves(feature, project))
         }
         assertEquals("defaults are not stored", emptyMap<String, String>(), settings.state.features.toMap())
+        assertTrue("the documentation reads the stubs and the index of assemblies", CSharpFeature.DOCUMENTATION.needsIndexes)
         // a NATIVE written by another version of the plugin, for a feature that has no native code here, changes nothing
+        CSharpFeatures.implementForTests(CSharpFeatures.offered().toSet() - CSharpFeature.DOCUMENTATION, testRootDisposable)
         settings.setSource(CSharpFeature.DOCUMENTATION, CSharpFeatureSource.NATIVE)
         assertFalse(CSharpFeatures.native(CSharpFeature.DOCUMENTATION, project))
         // and without the server the heuristics stay what they are: nothing is native that does not exist
@@ -148,7 +151,7 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
         assertFalse("no server: the native one", RoslynFeatures.serves(CSharpFeature.RENAME, project))
     }
 
-    /** Settings | Tools | .NET | Language Server: a switch per feature that has a native implementation: the tree, the formatting, the typing assistance, the kinds of usages. */
+    /** Settings | .NET | Language Server: a switch per feature that has a native implementation: the tree, the formatting, the typing assistance, the kinds of usages. */
     fun testThePageOffersTheImplementedFeaturesOnly() {
         fun labels(page: RoslynLanguageServerConfigurable) = UIUtil.findComponentsOfType(page.createComponent()!!.also { page.reset() }, JLabel::class.java).map { it.text }
         fun sources(page: RoslynLanguageServerConfigurable) = UIUtil.findComponentsOfType(page.createComponent()!!, JComboBox::class.java)
@@ -163,10 +166,10 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
         assertTrue(labels(today).contains("Rename:"))
         assertTrue(labels(today).contains("Errors and warnings:"))
         assertTrue(labels(today).contains("Completion:"))
-        assertFalse(labels(today).contains("Documentation and parameter info:"))
+        assertTrue(labels(today).contains("Documentation and parameter info:"))
         assertEquals(
-            "every offered feature at its default: all native since the robot of 0.1.60",
-            CSharpFeatures.offered().map { CSharpFeatureSource.NATIVE },
+            "every offered feature at its default: native since the robot of 0.1.60, the documentation (0.1.66) and the context actions (0.1.64) on the server until their robot",
+            CSharpFeatures.offered().map { it.defaultSource },
             sources(today).map { it.selectedItem },
         )
         today.disposeUIResources()

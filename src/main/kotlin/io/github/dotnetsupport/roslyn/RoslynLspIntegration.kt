@@ -215,6 +215,12 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
                 if (NativeCSharpDiagnostics.repeatsNative(holder.currentAnnotationSession.file, diagnostic.message, textRange.startOffset)) return
                 super.createAnnotation(holder, diagnostic, textRange, quickFixes)
             }
+
+            // `CS0230: …` as the native errors: the code is a field of the diagnostic, the server leaves it out of the message
+            override fun getMessage(diagnostic: Diagnostic): String = RoslynPolicy.diagnosticText(diagnostic.code?.get()?.toString(), diagnostic.message)
+
+            override fun getTooltip(diagnostic: Diagnostic): String =
+                com.intellij.openapi.util.text.StringUtil.escapeXmlEntities(RoslynPolicy.diagnosticText(diagnostic.code?.get()?.toString(), diagnostic.message))
         }
 
         // Three defaults of the platform are "only for plain text and TextMate files": semantic tokens (below), rename and the
@@ -278,7 +284,7 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
     }
 }
 
-/** Settings | Tools | .NET | Language Server was applied: registered in the descriptor of the module, so it works before any server has started. */
+/** Settings | .NET | Language Server was applied: registered in the descriptor of the module, so it works before any server has started. */
 class RoslynSettingsListener : RoslynLanguageServerSettings.Listener {
     override fun settingsChanged(restart: Boolean) = ProjectManager.getInstance().openProjects.forEach { it.service<RoslynWorkspace>().settingsChanged(restart) }
 }

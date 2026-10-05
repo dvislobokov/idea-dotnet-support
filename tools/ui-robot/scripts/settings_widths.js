@@ -1,5 +1,5 @@
 // Opens Settings on the page __CONFIGURABLE__ (a class name) and lists the components of the page whose preferred width exceeds
-// __LIMIT__ pixels, after the dialog is resized to __WIDTH__ pixels: who makes a settings page wider than its dialog (seen live: a horizontal scroll bar under Tools | .NET).
+// __LIMIT__ pixels, after the dialog is resized to __WIDTH__ pixels: who makes a settings page wider than its dialog (seen live: a horizontal scroll bar under Settings | .NET).
 // The dialog is modal: it is opened with invokeLater and left open; close it with `click "//div[@class='MyDialog']//div[@text='Cancel']"`.
 importClass(com.intellij.openapi.project.ProjectManager)
 importClass(com.intellij.openapi.application.ApplicationManager)

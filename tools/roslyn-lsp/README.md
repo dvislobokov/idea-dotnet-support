@@ -2,7 +2,7 @@
 
 К сборке плагина не относится. Здесь зонд (`probe.py`) и то, что он выяснил про сервер **5.12.0-1.26426.8** (dotnet tool
 `roslyn-language-server`, внутри — `Microsoft.CodeAnalysis.LanguageServer`, .NET 10). На этих фактах стоит страница настроек
-Settings | Tools | .NET | Language Server (`src/main/kotlin/io/github/dotnetsupport/lsp`) и будет стоять клиент из `LSP_PLAN.md`.
+Settings | .NET | Language Server (`src/main/kotlin/io/github/dotnetsupport/lsp`) и будет стоять клиент из `LSP_PLAN.md`.
 
 ```sh
 python tools/roslyn-lsp/probe.py <папка с solution> --out tools/roslyn-lsp/out/probe.json   # PYTHONIOENCODING=utf-8

@@ -6,7 +6,7 @@ namespace Playground.Editor;
 
 /// <summary>
 /// Live check of Reformat Code on the plugin's own tree (0.1.49): what <c>dotnet format whitespace</c> does, without a process.
-/// Settings | Tools | .NET | Language Server → Source of Features → «Formatting» = Built-in; Settings | Tools | .NET | Toolset and Build →
+/// Settings | .NET | Language Server → Source of Features → «Formatting» = Built-in; Settings | .NET | Toolset and Build →
 /// formatter «Auto» or «dotnet format» (with CSharpier chosen or found, CSharpier formats in both modes). Then the markers below: the code
 /// under a <c>// TYPE:name</c> comment is badly formatted on purpose; put the caret or the selection where the marker says, press
 /// Ctrl+Alt+L, compare with EXPECT, undo with Ctrl+Z. With «Language server» (the default for now) the server (or <c>dotnet format</c>)
@@ -18,22 +18,24 @@ public class Formatting
     // at the indent of the class, its braces on lines of their own (Allman), the body indented by 4; `if (a > b) { return a - b; }` stays
     // on one line (a single-line block is kept), `return b - a;` one level under `else`; the methods around are not touched.
     // Server: same text; `dotnet format` without the server formats whole files only (the whole file changes)
-public  int  Sum(int a,int b){
-if(a>b){return a-b;}
-    else
-    return b-a ;
-}
+    public int Sum(int a, int b)
+    {
+        if (a > b) { return a - b; }
+        else
+            return b - a;
+    }
 
     // TYPE:format-file — caret anywhere, Ctrl+Alt+L with no selection (or Code | Reformat File). EXPECT: every method of the file as
     // the markers say; the blank lines are kept; the string literals, the comments and the `#else` branch (disabled while `DEBUG` is
     // defined) are left exactly as they are. Server: same text
-    public string Literals(){
-        var verbatim=@"line one
+    public string Literals()
+    {
+        var verbatim = @"line one
     line two keeps   its spaces";
-        string text="a  b";   // a trailing comment keeps   its spaces
-        var hole=$"{verbatim.Length+1} and {string.Join(",",text)}";
+        string text = "a  b";   // a trailing comment keeps   its spaces
+        var hole = $"{verbatim.Length + 1} and {string.Join(",", text)}";
 #if DEBUG
-            return verbatim+text+hole;
+        return verbatim + text + hole;
 #else
             return   verbatim  +  text ;
 #endif
@@ -43,14 +45,16 @@ if(a>b){return a-b;}
     // statements one level deeper, `case 2:` with its block `{` under `case` and contents one level deeper still. Server: same text
     public static string Name(int code)
     {
-        switch(code){
-        case 1:
-        return "one";
-        case 2:{
-        return "two";
-        }
-        default:
-        return "many";
+        switch (code)
+        {
+            case 1:
+                return "one";
+            case 2:
+                {
+                    return "two";
+                }
+            default:
+                return "many";
         }
     }
 
@@ -59,16 +63,19 @@ if(a>b){return a-b;}
     // the query clauses line up under `from`; the lambda body is indented from the line of the lambda. Server: same text
     public List<int> Initializers()
     {
-        var box=new Box{Count=3,
-        Name="n"};
-        var list=new List<int>{1,
-2,
-3};
-        var query=from n in list
-              where n>box.Count
-           select n*2;
-        Action<string> print=s=>{
-        Console.WriteLine(s);
+        var box = new Bo { Count = 3, Name = "n" };
+        var list = new List<int>
+        {
+            1,
+            2,
+            3
+        };
+        var query = from n in list
+                    where n > box.Count
+                    select n * 2;
+        Action<string> print = s =>
+        {
+            Console.WriteLine(s);
         };
         print(box.Name);
         return query.ToList();

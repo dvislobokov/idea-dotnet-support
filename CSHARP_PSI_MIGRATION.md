@@ -88,7 +88,7 @@
 
 ## Принципы
 
-1. **Один переключатель на фичу** `ROSLYN | NATIVE` (`CSharpFeatures`, страница Settings | Tools | .NET | Language Server).
+1. **Один переключатель на фичу** `ROSLYN | NATIVE` (`CSharpFeatures`, страница Settings | .NET | Language Server).
    Умолчание меняется на `NATIVE` только после корпусного гейта, робота и живой проверки; оба пути живут рядом хотя бы
    один релиз.
 2. **Исключающие переключатели, не порядок EP.** Один источник на фичу: обработчик модуля `roslyn` отвечает `null`,
@@ -160,7 +160,14 @@
   `Task<T>` / `Task`, `async` в заголовок по набранному `await` — сделано в 0.1.55 (2026-10-05); NATIVE по умолчанию с 0.1.60 после
   робота (`complete_at_line.js` / `complete_select.js`, 26 мест: из списка сервера не теряется ничего, кроме `yield` вне итератора и
   `await` в геттере; доделаны ключевые слова, убраны двойные `override` сервера; у сервера починен `roslyn.client.completionComplexEdit`)
-- [ ] A7. Alt+Enter без сервера: `if` ↔ тернарный, block ↔ expression body, extract / inline variable, `var` ↔ явный тип (тип — 11b)
+- [x] A7. Alt+Enter без сервера: `if` ↔ тернарный, block ↔ expression body, extract / inline variable, `var` ↔ явный тип (тип — 11b) —
+  сделано в 0.1.64 (2026-10-05): `lang/NativeCSharpContextActions.kt`, переключатель `CONTEXT_ACTIONS` («Context actions», пока ROSLYN
+  по умолчанию — до робота), тест `CSharpContextActionsTest`, сценарий `Console/Editor/ContextActions.cs` (`TYPE:ctx-*`). Тексты Rider:
+  «Convert to '?:' expression», «Convert '?:' to 'if' statement», «To expression body» / «To block body», «Use explicit type» / «Use
+  'var'», «Introduce variable» / «Inline variable»; строки сервера тех же действий при NATIVE убираются (`NativeCSharpServerActions`, по
+  заголовкам и префиксам Roslyn). Тип для явного — C2 с коротким именем, если оно на этом месте значит тот же тип
+  (`CSharpTypeFacts.written`). Не сделано: `var x = c ? a : b` → `if` (нужен тип для объявления без значения), «all occurrences» у
+  Introduce, вынос из лямбды с выражением-телом
 - [ ] A8. `using`: директивы, операторы и объявления `using` / `await using` (`lang/NativeCSharpUsings.kt`, тест `CSharpUsingsTest`,
   сценарий `debug-playground/Console/Editor/Usings.cs`, `TYPE:using-*`). Синтаксическая часть сделана в 0.1.61 (2026-10-05):
   - [x] completion (`COMPLETION`): в начале оператора `using var` и `await using var` (второй — где `await` законен или метод можно
@@ -179,8 +186,12 @@
     `GlobalUsings.cs` в папке проекта, как в Rider)
   - [ ] неиспользуемые директивы (серым, «Remove unused directives in file») — **ждёт C2/C3**: резолвер C1 не говорит, через какую
     директиву пришло имя (`Level.imports` смешивает директивы файла и global usings), а гадать по тексту нельзя
-  - [ ] **ждёт C2** (тип выражения): CS1674 (не `IDisposable`), `await using` на не-`IAsyncDisposable`, список `using (` / `using var x = `
-    по `IDisposable`, «Add await» для `IAsyncDisposable`, «Wrap in 'using'» на значениях вызовов (сейчас только `new`), проверка, что
+  - [x] по типам C2 (0.1.65, 2026-10-05; `NativeCSharpUsingChecks`, `CSharpTypeFacts.usingError`, тест `CSharpUsingTypesTest`, сценарий
+    `Usings.cs`, `TYPE:using-cs1674` / `TYPE:using-list`): CS1674 (не `IDisposable`; CS8418 — если есть `IAsyncDisposable`), CS8410 / CS8417
+    на `await using`, список `using (` / `using var x = ` без того, что точно не disposable. Только при полностью известном типе: нет
+    ошибки на неизвестном типе, нерешённой базе, параметре типа, `DisposeAsync` (метод или extension) и `Dispose` у структуры (`ref struct`
+    индекс не различает), без System.Runtime
+  - [ ] ещё по C2: «Add await» для `IAsyncDisposable`, «Wrap in 'using'» на значениях вызовов (сейчас только `new`), проверка, что
     переменная `using` не переприсваивается в области
   - [ ] **ждёт D2**: «Remove unused directives» как fix с диагностикой (IDE0005 / CS8019) и Fix All по solution
 
@@ -231,6 +242,23 @@
   Declaration Built-in разрешают член после точки у любого выражения. Гейт типов — 99,0 % (было 4,9 %), см. шаг 11, «После C2»
 - [ ] C3. 11c — completion после точки, Go to Declaration / Find Usages / rename по solution, цвета ссылок, quick documentation,
   parameter info; `CancellationToken` метода в вызов, `await Method` пунктом completion
+  - [x] completion после точки (0.1.66, 2026-10-05; `COMPLETION`): `lang/semantic/CSharpMemberLookup` — что стоит за точкой по
+    `Qualifier` резолвера: члены типа значения (solution — по частям и базам с подстановкой, сборки — `libraryMembers` с унаследованными),
+    extension-методы в области (`CSharpNameResolver.extensionMethodsFor`: ключи сборок по супертипам + все имена stub-индекса, фильтр
+    `receiverFits`), static-члены и вложенные типы после типа, namespace и типы после namespace (stub-индекс + `AssemblyIndexSet`),
+    `a?.`, `A.B.` в типе, `this.` — и члены библиотечных баз; видимость C# по модификаторам (`Member.modifiers`), protected сборок — только
+    через `this`, `EditorBrowsable(Never)` скрыт. Пункты — `lang/NativeCSharpMemberCompletion` (вид, хвост параметров, тип по
+    `SemanticType.minimalDisplay`, `()` / `();`); место — `NativeCompletionKind.MEMBER_ACCESS`; дубли сервера убирает прежний merge A6.
+    Попутно: extension-методы solution на `this string` (ключевое слово) не находились и резолвером. Тест `CSharpMemberCompletionTest`
+  - [x] quick documentation и parameter info (0.1.66; `DOCUMENTATION` получил встроенную реализацию, по умолчанию сервер до робота):
+    `lang/NativeCSharpDocumentation` — `DocumentationTargetProvider` перед провайдером LSP-клиента (первый с целями выигрывает), строка
+    Quick Info Roslyn (`lang/semantic/CSharpSymbolText.quickInfo`), XML-доки из `///` (как `docTags` rename) и из `AssemblyDocs`;
+    `lang/NativeCSharpParameterInfo` — перегрузки строками, выбранная резолвером отмечена; обработчик модуля `roslyn` молчит при Built-in.
+    Тест `CSharpQuickDocTest`. Гейт не упал: имена 98,8 % (25 997 из 26 310, неверных 16), типы 99,0 % (38 791 из 39 181, неверных 8) — с `MemberCompletion.cs` площадки; baseline вырос
+  - [ ] осталось: Find Usages и rename членов и типов по solution (нужен поиск кандидатов по слову + резолв каждого; Go to Declaration к
+    членам solution уже есть с C1), цвета ссылок — уже по резолверу (C1/C2), сверить роботом; `<inheritdoc/>` в доках (база / интерфейс),
+    `cref` ссылками в окне документации, доки `var` (тип выражения); completion: ожидаемый тип после точки выше, `await Method` и
+    `CancellationToken` пунктами, именованные аргументы в Parameter Info; робот по E-80…E-84 и NATIVE по умолчанию для «Documentation»
 - [ ] C4. Веха 12.1: сервер выключен по умолчанию, требование .NET 10 снято, замер памяти без сервера в CHANGELOG
 
 **D. Полный отказ → веха 12.2**

@@ -487,7 +487,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
      * of the assemblies by what they extend (the type, its bases and interfaces, arrays, `this T`), of the solution by the type their
      * `this` parameter names.
      */
-    private fun extensionMethods(receiver: SemanticType, text: String, arity: Int, site: PsiElement): List<CSharpSymbol> {
+    internal fun extensionMethods(receiver: SemanticType, text: String, arity: Int, site: PsiElement): List<CSharpSymbol> {
         val imported = importedNamespaces(site)
         val found = ArrayList<CSharpSymbol>()
         val keys = LinkedHashSet<String>()
@@ -497,19 +497,46 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         for (key in keys) for (member in session.extensions(assemblies, key)) {
             if (member.name == text && (arity == 0 || member.arity == arity) && member.type.namespace in imported) found += CSharpSymbol.LibraryMember(member)
         }
-        for (element in session.sourceExtensions(text)) {
-            val stub = NativeCSharpStubDeclarations.stub(element)
-            val method = element as? CSharpMethodDeclaration
-            if (method != null && (arity == 0 || (stub?.arity ?: method.typeParameterList?.parameters?.size ?: 0) == arity)) {
-                val namespace = stub?.let { s -> s.parentStub?.let { it as? CSharpStub }?.let { namespaceOfStub(it) } } ?: namespaceOfPsi(method)
-                val receiverName = stub?.parameters?.let(::firstParameterType) ?: method.parameterList?.parameters?.firstOrNull()?.type?.let { TypePart.simpleName(it)?.first }
-                val generic = stub?.arity?.let { it > 0 } ?: (method.typeParameterList != null)
-                if (namespace != null && namespace in imported && receiverName != null && (receiverName in names || generic && receiverName.length <= 2 || generic && isMethodTypeParameter(method, receiverName))) {
-                    found += CSharpSymbol.SourceMember(method, Member.method(listOf("static"), true).at { method }, null)
-                }
-            }
-        }
+        for (element in session.sourceExtensions(text)) sourceExtension(element, arity, imported, names)?.let { found += it }
         return found
+    }
+
+    /** An extension method of the solution found by name in the stub index, if it is imported where the lookup is and may take a receiver of [names]. */
+    private fun sourceExtension(element: PsiElement, arity: Int, imported: Set<String>, names: Set<String>): CSharpSymbol? {
+        val stub = NativeCSharpStubDeclarations.stub(element)
+        val method = element as? CSharpMethodDeclaration ?: return null
+        if (arity != 0 && (stub?.arity ?: method.typeParameterList?.parameters?.size ?: 0) != arity) return null
+        val namespace = stub?.let { s -> s.parentStub?.let { it as? CSharpStub }?.let { namespaceOfStub(it) } } ?: namespaceOfPsi(method)
+        val written = stub?.parameters?.let(::firstParameterType) ?: method.parameterList?.parameters?.firstOrNull()?.type?.let { TypePart.simpleName(it)?.first ?: it.text }
+        // `this string text`: the keyword is the type `String`
+        val receiverName = written?.let { KEYWORD_TYPES[it]?.substringAfterLast('.') ?: it }
+        val generic = stub?.arity?.let { it > 0 } ?: (method.typeParameterList != null)
+        if (namespace == null || namespace !in imported || receiverName == null) return null
+        if (!(receiverName in names || generic && receiverName.length <= 2 || generic && isMethodTypeParameter(method, receiverName))) return null
+        return CSharpSymbol.SourceMember(method, Member.method(listOf("static"), true).at { method }, null)
+    }
+
+    /**
+     * Every extension method a value of [receiver] can call where [site] is (completion after a dot, task C3): those of the assemblies by
+     * what they extend, those of the solution by the type of their `this` parameter, imported where [site] is and taking the receiver
+     * ([CSharpExpressionTypes.receiverFits]). [wanted]: the names worth looking at (the prefix typed), every name when null.
+     */
+    fun extensionMethodsFor(receiver: SemanticType, site: PsiElement, wanted: ((String) -> Boolean)? = null): List<CSharpSymbol> {
+        val imported = importedNamespaces(site)
+        val found = ArrayList<CSharpSymbol>()
+        val keys = LinkedHashSet<String>()
+        val names = HashSet<String>()
+        collectSupertypes(receiver, keys, names, 0)
+        keys += AssemblyIndexSet.GENERIC_RECEIVER
+        for (key in keys) for (member in session.extensions(assemblies, key)) {
+            if (member.type.namespace in imported && (wanted == null || wanted(member.name))) found += CSharpSymbol.LibraryMember(member)
+        }
+        val index = StubIndex.getInstance()
+        for (name in index.getAllKeys(CSharpStubIndexKeys.EXTENSION_METHODS, session.project)) {
+            if (wanted != null && !wanted(name)) continue
+            for (element in session.sourceExtensions(name)) sourceExtension(element, 0, imported, names)?.let { found += it }
+        }
+        return found.filter { expressions.receiverFits(it, receiver) }
     }
 
     private fun isMethodTypeParameter(method: CSharpMethodDeclaration, name: String): Boolean = method.typeParameterList?.parameters?.any { it.identifier?.text == name } == true

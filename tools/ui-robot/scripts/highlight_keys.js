@@ -1,8 +1,8 @@
 // The colors of identifiers on screen (CSharpColors, CSHARP_PSI_MIGRATION.md, task A4): opens __FILE__ (forward slashes) and prints, for the
 // lines __LINE__..__END__ (from 1; __END__ empty = __LINE__ alone), every range with a key of the palette: `line: text -> KEY (where)`, where
 // is `daemon` (annotators: HighlightInfo.forcedTextAttributesKey or the key of its type) or `markup` (range highlighters of the editor and the
-// document: the semantic tokens of the language server may land there; a range and key printed from the daemon is not repeated). Lexer
-// colors (keywords, strings, comments, punctuation) are left out. Highlighting needs a moment after an open or a switch of «Colors of
+// document: the semantic tokens of the language server may land there; a range and key printed from the daemon is not repeated) or `lexer`
+// (the editor's highlighter: escapes, format of holes since 0.1.71). The plain lexer colors (keywords, strings, comments, punctuation) are left out. Highlighting needs a moment after an open or a switch of «Colors of
 // identifiers» (feature_source.js SEMANTIC_COLORS): run again until the output settles.
 importClass(com.intellij.openapi.project.ProjectManager)
 importClass(com.intellij.openapi.application.ApplicationManager)
@@ -41,6 +41,12 @@ ApplicationManager.getApplication().invokeAndWait(new java.lang.Runnable({ run: 
             put(info.startOffset, info.endOffset, key, "daemon")
             return true
         })
+        var tokens = editor.getHighlighter().createIterator(start)
+        while (!tokens.atEnd() && tokens.getStart() < end) {
+            var keys = tokens.getTextAttributesKeys()
+            for (var k = 0; k < keys.length; k++) put(tokens.getStart(), tokens.getEnd(), keys[k], "lexer")
+            tokens.advance()
+        }
         var models = [editor.getMarkupModel(), com.intellij.openapi.editor.impl.DocumentMarkupModel.forDocument(document, project, false)]
         for (var m = 0; m < models.length; m++) {
             if (models[m] == null) continue

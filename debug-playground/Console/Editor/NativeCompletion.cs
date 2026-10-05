@@ -7,7 +7,7 @@ using System.Threading;
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of the completion list of the plugin's own tree (0.1.55). Settings | Tools | .NET | Language Server → Source of
+/// Live check of the completion list of the plugin's own tree (0.1.55). Settings | .NET | Language Server → Source of
 /// Features → «Completion» = Built-in (the default is still «Language server»: then the list is the server's, as before). Type on the
 /// empty line under a marker comment, press Ctrl+Space where it says, compare with EXPECT, then undo (Ctrl+Z) so the file keeps
 /// compiling. With Built-in the items of the markers come at once, before «Roslyn: DebugPlayground.sln» is ready; once the server is
@@ -95,4 +95,17 @@ public partial class CompletionSquare : CompletionShape
 public partial class CompletionSquare
 {
     partial void OnResized(int amount);
+}
+
+public class CompletionAutoPopup
+{
+    private string _title = "";
+
+    // TYPE:no-popup-after-brace — on the empty line below the method, type
+    // `public string Title(CancellationToken token = default){` and wait a second. EXPECT: no completion list opens by itself after
+    // `{`, nor after `(` (Rider opens none there); Ctrl+Space inside the new body still lists `token`, `_title`, `if`… Then type `this.` —
+    // the list of members opens by itself. Not expected: the list `token, _title, Title, …` popping up after `{` (before 0.1.70).
+    // Ctrl+Z to undo
+    public string Name() => _title;
+
 }

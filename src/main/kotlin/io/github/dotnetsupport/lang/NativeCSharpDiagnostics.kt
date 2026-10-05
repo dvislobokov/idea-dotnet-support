@@ -49,7 +49,9 @@ object NativeCSharpDiagnostics {
         val document = PsiDocumentManager.getInstance(file.project).getDocument(file) ?: return false
         if (offset > document.textLength) return false
         val line = document.getLineNumber(offset)
-        return of(file as CSharpFile).any { it.message == description && it.start <= document.textLength && document.getLineNumber(it.start) == line }
+        if (of(file as CSharpFile).any { it.message == description && it.start <= document.textLength && document.getLineNumber(it.start) == line }) return true
+        // the errors of `using` the native pass reports from the types of C2 (CS1674 and its kin)
+        return NativeCSharpUsingChecks.of(file).any { it.error.message == description && it.range.startOffset <= document.textLength && document.getLineNumber(it.range.startOffset) == line }
     }
 
     /**
@@ -78,6 +80,11 @@ class NativeCSharpDiagnosticsAnnotator : Annotator, DumbAware {
             val severity = if (d.isWarning) HighlightSeverity.WARNING else HighlightSeverity.ERROR
             val builder = holder.newAnnotation(severity, d.text).range(range).tooltip(StringUtil.escapeXmlEntities(d.text))
             (if (afterEndOfLine) builder.afterEndOfLine() else builder).create()
+        }
+        // the semantic ones of `using` (0.1.65): the types of C2, so not while the IDE indexes (of() answers nothing then)
+        for (problem in NativeCSharpUsingChecks.of(element)) {
+            if (problem.range.endOffset > document.textLength) continue
+            holder.newAnnotation(HighlightSeverity.ERROR, problem.error.text).range(problem.range).tooltip(StringUtil.escapeXmlEntities(problem.error.text)).create()
         }
     }
 }

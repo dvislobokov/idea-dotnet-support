@@ -5,8 +5,8 @@ namespace Playground.Editor;
 /// <summary>
 /// Live check of the types of expressions of layer 11b (0.1.58): the plugin knows the type of any expression — a call with inferred type
 /// arguments, `await`, an element access, an operator, a tuple, a query — and resolves the member after a dot on it without the language
-/// server. Settings | Tools | .NET | Language Server → Source of Features → «Colors of identifiers» = Built-in and «Navigation and usages» =
-/// Built-in; best with the language server turned off (Settings | Tools | .NET → Language Server off) to be sure the answer is the plugin's.
+/// server. Settings | .NET | Language Server → Source of Features → «Colors of identifiers» = Built-in and «Navigation and usages» =
+/// Built-in; best with the language server turned off (Settings | .NET → Language Server off) to be sure the answer is the plugin's.
 /// Nothing is typed: look at the names a <c>// TYPE:types-*</c> comment points at, or Ctrl+click them, and compare with EXPECT.
 /// </summary>
 public class ExpressionTypes

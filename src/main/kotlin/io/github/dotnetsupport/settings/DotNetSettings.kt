@@ -61,7 +61,7 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
         /** Package id of a global tool -> its executable; a tool without an entry is looked up on PATH and in `~/.dotnet/tools`. */
         var toolPaths by map<String, String>()
 
-        // Settings | Tools | .NET | Debugger
+        // Settings | .NET | Debugger
         /** Off, unlike in Rider: there is no decompiler behind it, stepping into code without symbols ends in frames with no source. */
         var debugExternalSource by property(false)
         var debugAllowImplicitEvaluation by property(true)
@@ -118,7 +118,7 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
     }
 }
 
-/** Settings | Tools | .NET */
+/** Settings | .NET */
 class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurable(DotNetBundle.message("page.dotnet")) {
     private val settings get() = DotNetSettings.getInstance()
     private val pathField = TextFieldWithBrowseButton()

@@ -118,7 +118,7 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
             }
 
             override fun startProcess(): ProcessHandler {
-                val commandLine = if (ExecutableLaunch.applies(project, options)) executableCommandLine(environment.getUserData(DotNetLaunchArguments.TARGET_PATH) ?: locateProgram())
+                val commandLine = if (ExecutableLaunch.applies(project, options)) executableCommandLine(environment.getUserData(DotNetLaunchArguments.TARGET_PATH) ?: BuiltBeforeLaunch.take(environment.executionId)?.ifEmpty { null } ?: locateProgram())
                     else buildCommandLine(prebuilt = environment.getUserData(PREBUILT) == true)
                 val handler = KillableColoredProcessHandler(commandLine)
                 // Stop of a window program (WPF, Windows Forms) is a hard one at once: the soft stop is Ctrl+C, which only a console gets

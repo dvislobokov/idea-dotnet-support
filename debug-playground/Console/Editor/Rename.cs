@@ -5,7 +5,7 @@ using System.Linq;
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of Rename (Shift+F6) on the plugin's own tree (0.1.53). Settings | Tools | .NET | Language Server → Source of Features →
+/// Live check of Rename (Shift+F6) on the plugin's own tree (0.1.53). Settings | .NET | Language Server → Source of Features →
 /// «Rename» = Built-in. Put the caret where a <c>// TYPE:name</c> comment says, press Shift+F6, type the new name, Enter; compare with
 /// EXPECT, then Ctrl+Z (one Ctrl+Z must bring back the whole old text). With «Language server» (the default for now) the server renames
 /// once «Roslyn: DebugPlayground.sln» is ready: the result must be the same. With Built-in the locals below are renamed without the server

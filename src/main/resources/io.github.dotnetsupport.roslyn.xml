@@ -8,6 +8,8 @@
 
     <extensions defaultExtensionNs="io.github.dotnetsupport">
         <namespaceAdjuster implementation="io.github.dotnetsupport.roslyn.RoslynNamespaceAdjuster"/>
+        <!-- the server's generators and refactorings as rows of Rider's Generate and Refactor This (CSharpRiderPopups) -->
+        <csharpPopupContributor implementation="io.github.dotnetsupport.roslyn.RoslynPopupContributor"/>
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -45,10 +47,6 @@
     <actions>
         <!-- the action of the platform with its id, shortcut and texts; only C# files with a loaded server go to the server -->
         <action id="GotoImplementation" class="io.github.dotnetsupport.roslyn.RoslynGotoImplementationAction" overrides="true"/>
-        <!-- Alt+Insert: the generators of the server (constructor, Equals, overrides, Implement interface...) as one list -->
-        <action id="DotNet.Roslyn.Generate" class="io.github.dotnetsupport.roslyn.RoslynGenerateAction" text="Generate..." description="Constructor, Equals and GetHashCode, overrides, the members of an interface: what the C# language server can generate at the caret">
-            <add-to-group group-id="GenerateGroup" anchor="first"/>
-        </action>
         <action id="DotNet.Roslyn.SelectSolution" class="io.github.dotnetsupport.roslyn.SelectRoslynSolutionAction" text="Select Solution for Language Server..."
                 description="Choose which of the solutions of the opened folder the C# language server loads">
             <add-to-group group-id="DotNet.MainMenu" anchor="last"/>

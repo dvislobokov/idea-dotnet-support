@@ -8,7 +8,7 @@ import java.util.MissingResourceException
 import java.util.ResourceBundle
 import java.util.concurrent.ConcurrentHashMap
 
-/** The language of the settings pages: the one of the IDE, or chosen on Settings | Tools | .NET. */
+/** The language of the settings pages: the one of the IDE, or chosen on Settings | .NET. */
 enum class PluginLanguage {
     AUTO, ENGLISH, RUSSIAN;
 

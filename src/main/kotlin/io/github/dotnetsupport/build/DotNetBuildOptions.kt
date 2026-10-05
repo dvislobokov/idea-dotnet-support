@@ -28,7 +28,7 @@ enum class MsBuildVerbosity(val title: String, val argument: String) {
 }
 
 /**
- * Settings | Tools | .NET | Toolset and Build: what is added to the `dotnet build` of the project. In the workspace file:
+ * Settings | .NET | Toolset and Build: what is added to the `dotnet build` of the project. In the workspace file:
  * global properties and a log folder belong to a checkout, not to the repository.
  */
 @Service(Service.Level.PROJECT)

@@ -40,14 +40,16 @@ enum class NativeCompletionKind {
 
     /** The target of a `using` directive: namespaces, and types after `using static` / `using X =` ([NativeCSharpUsingCompletion]). */
     USING_DIRECTIVE,
+
+    /** After `a.`, `a?.`, `A.B.` (not `this.` / `base.`): what the semantics finds on the left ([NativeCSharpMemberCompletion], task C3). */
+    MEMBER_ACCESS,
 }
 
 /**
  * The place of the caret for the native completion: decided by the token before it and the nodes around the identifier the platform
  * inserts at the caret (`IntellijIdeaRulezzz`, see the probes in `CSharpCompletionNativeTest`). The parser of a half-typed line makes
  * odd trees (`Foo⏎ var y` is a declaration of `y` of type `Foo`), so the place is decided by the token before the caret first and by the
- * node only where the token tells nothing. Null where the native completion has nothing to say (after a dot outside a `using` directive, inside an
- * accessor list...): the list is then the server's and the other contributors' alone.
+ * node only where the token tells nothing. Null where the native completion has nothing to say (`global::`, inside an accessor list...): the list is then the server's and the other contributors' alone.
  */
 class NativeCSharpCompletionPlace(
     val kind: NativeCompletionKind,
@@ -78,7 +80,7 @@ class NativeCSharpCompletionPlace(
 
     /** The tree decides which keywords are legal here: keyword items of the server are dropped (see [NativeCSharpCompletion]). */
     val keywordsAreNative: Boolean get() = kind != NativeCompletionKind.THIS_MEMBERS && kind != NativeCompletionKind.DECLARATION_NAME && kind != NativeCompletionKind.ATTRIBUTE &&
-        kind != NativeCompletionKind.USING_DIRECTIVE
+        kind != NativeCompletionKind.USING_DIRECTIVE && kind != NativeCompletionKind.MEMBER_ACCESS
 
     val offset: Int get() = leaf.textRange.startOffset
 
@@ -104,9 +106,15 @@ class NativeCSharpCompletionPlace(
                     val qualifier = holder.expression
                     return if (qualifier is CSharpThisExpression || qualifier is CSharpBaseExpression) {
                         NativeCSharpCompletionPlace(NativeCompletionKind.THIS_MEMBERS, leaf, name, prev, base = qualifier is CSharpBaseExpression)
-                    } else null
+                    } else NativeCSharpCompletionPlace(NativeCompletionKind.MEMBER_ACCESS, leaf, name, prev)
                 }
-                holder is CSharpMemberBindingExpression || holder is CSharpQualifiedName && holder.right == name || holder is CSharpAliasQualifiedName -> return null
+                holder is CSharpMemberBindingExpression -> return NativeCSharpCompletionPlace(NativeCompletionKind.MEMBER_ACCESS, leaf, name, prev)
+                holder is CSharpQualifiedName && holder.right == name -> {
+                    // the name of a namespace being declared is no reference
+                    if (generateSequence<PsiElement>(name) { it.parent }.takeWhile { it !is CSharpFile }.any { (it.parent as? CSharpBaseNamespaceDeclaration)?.nameElement == it }) return null
+                    return NativeCSharpCompletionPlace(NativeCompletionKind.MEMBER_ACCESS, leaf, name, prev)
+                }
+                holder is CSharpAliasQualifiedName -> return null
                 holder is CSharpNameColon || holder is CSharpNameEquals -> return null
                 holder is CSharpGotoStatement -> return if (holder.caseOrDefaultKeyword == null) NativeCSharpCompletionPlace(NativeCompletionKind.LABEL, leaf, name, prev) else null
                 holder is CSharpAttribute && holder.nameElement == name -> return NativeCSharpCompletionPlace(NativeCompletionKind.ATTRIBUTE, leaf, name, prev)

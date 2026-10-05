@@ -383,7 +383,13 @@ enum class TypeKind(val key: TextAttributesKey) {
 class Member(val declarationKey: TextAttributesKey, val referenceKey: TextAttributesKey, val nestedType: String? = null, val nestedArity: Int = 0) {
     private val sources = ArrayList<() -> PsiElement?>(1)
 
+    /** The modifiers as written (of the first declaration when merged): who may see the member after a dot (task C3). */
+    var modifiers: Collection<String> = emptyList()
+        private set
+
     fun at(source: () -> PsiElement?): Member = apply { sources += source }
+
+    fun withModifiers(modifiers: Collection<String>): Member = apply { this.modifiers = modifiers }
 
     internal fun merge(other: Member) {
         sources += other.sources
@@ -396,7 +402,7 @@ class Member(val declarationKey: TextAttributesKey, val referenceKey: TextAttrib
             extension -> Member(CSharpColors.EXTENSION_METHOD_DECLARATION, CSharpColors.EXTENSION_METHOD_CALL)
             "static" in modifiers -> Member(CSharpColors.STATIC_METHOD_DECLARATION, CSharpColors.STATIC_METHOD_CALL)
             else -> Member(CSharpColors.METHOD_DECLARATION, CSharpColors.METHOD_CALL)
-        }
+        }.withModifiers(modifiers)
 
         fun field(modifiers: Collection<String>, event: Boolean): Member = same(
             when {
@@ -405,9 +411,9 @@ class Member(val declarationKey: TextAttributesKey, val referenceKey: TextAttrib
                 "static" in modifiers -> CSharpColors.STATIC_FIELD
                 else -> CSharpColors.FIELD
             },
-        )
+        ).withModifiers(modifiers)
 
-        fun property(modifiers: Collection<String>): Member = same(if ("static" in modifiers) CSharpColors.STATIC_PROPERTY else CSharpColors.PROPERTY)
+        fun property(modifiers: Collection<String>): Member = same(if ("static" in modifiers) CSharpColors.STATIC_PROPERTY else CSharpColors.PROPERTY).withModifiers(modifiers)
 
         fun same(key: TextAttributesKey): Member = Member(key, key)
     }
@@ -452,7 +458,7 @@ sealed class TypePart(val qualifiedName: String, val name: String, val namespace
                         member.typeParameterList?.parameters?.size?.let { n -> sink("${it.text}<$n>", Member.method(modifiers, isExtension(member)).at { member }) }
                     }
                     is CSharpPropertyDeclaration -> member.identifier?.let { sink(it.text, Member.property(modifiers).at { member }) }
-                    is CSharpEventDeclaration -> member.identifier?.let { sink(it.text, Member.same(CSharpColors.EVENT).at { member }) }
+                    is CSharpEventDeclaration -> member.identifier?.let { sink(it.text, Member.same(CSharpColors.EVENT).withModifiers(modifiers).at { member }) }
                     is CSharpBaseFieldDeclaration -> {
                         val variables = member.declaration?.variables.orEmpty()
                         for (variable in variables) variable.identifier?.let {
@@ -465,7 +471,7 @@ sealed class TypePart(val qualifiedName: String, val name: String, val namespace
                         val nestedName = CSharpDeclarationNames.nameElement(member)?.text ?: continue
                         val kind = TypeKind.of(member.node.elementType, modifiers) ?: continue
                         val nestedArity = typeParameters(member)
-                        val nested = { Member(kind.key, kind.key, "$qualifiedName.$nestedName", nestedArity).at { member } }
+                        val nested = { Member(kind.key, kind.key, "$qualifiedName.$nestedName", nestedArity).withModifiers(modifiers).at { member } }
                         sink(nestedName, nested())
                         sink("$nestedName`$nestedArity", nested())
                     }
@@ -494,7 +500,7 @@ sealed class TypePart(val qualifiedName: String, val name: String, val namespace
                         if (child.arity > 0) sink("$it<${child.arity}>", Member.method(child.modifiers, child.isExtensionMethod).at { child.psi })
                     }
                     SyntaxKind.PropertyDeclaration -> child.name?.let { sink(it, Member.property(child.modifiers).at { child.psi }) }
-                    SyntaxKind.EventDeclaration -> child.name?.let { sink(it, Member.same(CSharpColors.EVENT).at { child.psi }) }
+                    SyntaxKind.EventDeclaration -> child.name?.let { sink(it, Member.same(CSharpColors.EVENT).withModifiers(child.modifiers).at { child.psi }) }
                     SyntaxKind.FieldDeclaration, SyntaxKind.EventFieldDeclaration -> for (declaration in child.childrenStubs) {
                         val variables = declaration.childrenStubs
                         for (variable in variables) (variable as? CSharpStub)?.name?.let {
@@ -505,7 +511,7 @@ sealed class TypePart(val qualifiedName: String, val name: String, val namespace
                     else -> {
                         val kind = TypeKind.of(type, child.modifiers) ?: continue
                         val nestedName = child.name ?: continue
-                        val nested = { Member(kind.key, kind.key, "$qualifiedName.$nestedName", child.arity).at { child.psi } }
+                        val nested = { Member(kind.key, kind.key, "$qualifiedName.$nestedName", child.arity).withModifiers(child.modifiers).at { child.psi } }
                         sink(nestedName, nested())
                         sink("$nestedName`${child.arity}", nested())
                     }

@@ -6,6 +6,7 @@ import com.intellij.build.DefaultBuildDescriptor
 import com.intellij.build.FilePosition
 import com.intellij.build.events.MessageEvent
 import com.intellij.build.events.impl.FailureResultImpl
+import com.intellij.build.events.impl.SkippedResultImpl
 import com.intellij.build.events.impl.SuccessResultImpl
 import com.intellij.execution.ExecutionException
 import com.intellij.execution.process.OSProcessHandler
@@ -50,6 +51,19 @@ fun interface DotNetBuildListener {
 /** Runs `dotnet build` and friends and reports to the Build tool window. */
 @Service(Service.Level.PROJECT)
 class DotNetBuildService(private val project: Project) {
+    /** The processes of the builds that are running: Cancel Build of the Build Solution button stops them. */
+    private val running = java.util.concurrent.ConcurrentHashMap.newKeySet<OSProcessHandler>()
+    private val cancelled = java.util.concurrent.ConcurrentHashMap.newKeySet<OSProcessHandler>()
+
+    /** Whether a build, a clean, a restore or a target started here is running. */
+    val isBuilding: Boolean get() = running.any { !it.isProcessTerminated }
+
+    /** Cancel Build (as in Rider): stops every running build of the project. */
+    fun cancel() = running.toList().forEach {
+        cancelled.add(it)
+        it.destroyProcess()
+    }
+
 
     /**
      * [target] is a solution or a project file. [onFinished] gets whether the build has succeeded, for a launch that waits for it.
@@ -110,6 +124,7 @@ class DotNetBuildService(private val project: Project) {
             return
         }
 
+        running.add(handler)
         buildView.onEvent(buildId, BuildViewEvents.started(descriptor.withProcessHandler(StopHandle(title, handler), null), "running..."))
         handler.addProcessListener(object : ProcessListener {
             private val reported = HashSet<MsBuildMessage>()
@@ -132,10 +147,13 @@ class DotNetBuildService(private val project: Project) {
             }
 
             override fun processTerminated(event: ProcessEvent) {
+                running.remove(handler)
+                val wasCancelled = cancelled.remove(handler)
                 report(pending.toString())
                 val failed = event.exitCode != 0
-                val result = if (failed) FailureResultImpl() else SuccessResultImpl()
+                val result = if (wasCancelled) SkippedResultImpl() else if (failed) FailureResultImpl() else SuccessResultImpl()
                 val message = when {
+                    wasCancelled -> "cancelled"
                     !failed -> "finished"
                     errors > 0 -> "failed with $errors error${if (errors == 1) "" else "s"}"
                     else -> "failed with exit code ${event.exitCode}"

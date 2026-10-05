@@ -6,7 +6,7 @@ namespace Playground.Editor;
 /// <summary>
 /// Live check of the colors of identifiers (Settings | Editor | Color Scheme | C#, the keys of Rider). Nothing is typed here: look at the names
 /// a <c>// TYPE:colors-*</c> comment points at and compare with EXPECT (colors of Darcula / Islands Dark; the light scheme has darker ones). Two modes:
-/// Settings | Tools | .NET | Language Server → Source of Features → «Colors of identifiers» = Built-in (the plugin's own tree and stubs) or
+/// Settings | .NET | Language Server → Source of Features → «Colors of identifiers» = Built-in (the plugin's own tree and stubs) or
 /// Language server (semantic tokens of the server). Since 0.1.56 Built-in also colors types and members of the referenced assemblies
 /// (`Console`, `WriteLine`; more in LibraryNames.cs); a name it cannot resolve where only a type can stand gets the plain type color. The robot prints the keys:
 /// <c>tools/ui-robot/scripts/highlight_keys.js</c>. The other part of the partial class and the base class are in SemanticColorsPart.cs.

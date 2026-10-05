@@ -1,4 +1,4 @@
-// Settings | Tools | .NET | Debugger: externalSource=__EXTERNAL__, allowImplicitEvaluation=__IMPLICIT__
+// Settings | .NET | Debugger: externalSource=__EXTERNAL__, allowImplicitEvaluation=__IMPLICIT__
 importClass(com.intellij.ide.plugins.PluginManagerCore)
 importClass(com.intellij.openapi.extensions.PluginId)
 importClass(com.intellij.openapi.application.ApplicationManager)

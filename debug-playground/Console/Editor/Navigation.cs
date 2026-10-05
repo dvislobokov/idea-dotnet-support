@@ -7,7 +7,7 @@ namespace Playground.Editor;
 
 /// <summary>
 /// Live check of Go to Declaration (Ctrl+B, Ctrl+click), Ctrl+hover and the highlighting of usages under the caret on the plugin's own
-/// tree (0.1.50). Settings | Tools | .NET | Language Server → Source of Features → «Navigation and usages» = Built-in. Nothing is typed:
+/// tree (0.1.50). Settings | .NET | Language Server → Source of Features → «Navigation and usages» = Built-in. Nothing is typed:
 /// put the caret (or the mouse with Ctrl held) where a <c>// TYPE:name</c> comment says and compare with EXPECT. With «Language server»
 /// (the default for now) the server answers once «Roslyn: DebugPlayground.sln» is ready: the targets must be the same. With Built-in the
 /// targets of the markers below come without the server (stop it or open the file before it is ready to see that); what the tree cannot

@@ -39,7 +39,7 @@ object DotNetToolManifest {
 
 /**
  * The global tools (`dotnet tool install --global ...`) the plugin drives. Where each one is looked for:
- * the path from Settings | Tools | .NET, then PATH, then `~/.dotnet/tools` (a shell profile that was not re-read
+ * the path from Settings | .NET, then PATH, then `~/.dotnet/tools` (a shell profile that was not re-read
  * after the installation leaves the directory out of PATH).
  */
 enum class DotNetTool(val packageId: String, val purpose: String, val documentation: String, command: String? = null, private val olderCommands: List<String> = emptyList()) {
@@ -52,7 +52,7 @@ enum class DotNetTool(val packageId: String, val purpose: String, val documentat
     // the package and the command it installs are named differently
     DEBUGGER("dotnet-debugger-dap", "Debug: the debug adapter (DAP) behind the Debug button", "https://github.com/dvislobokov/dotnet-debugger", command = "dotnet-debugger"),
 
-    ROSLYN_LANGUAGE_SERVER("roslyn-language-server", "C# language server (Roslyn): Settings | Tools | .NET | Language Server", "https://www.nuget.org/packages/roslyn-language-server"),
+    ROSLYN_LANGUAGE_SERVER("roslyn-language-server", "C# language server (Roslyn): Settings | .NET | Language Server", "https://www.nuget.org/packages/roslyn-language-server"),
 
     // a tool from the manifest of a repository wins over this one, see EfTool
     EF("dotnet-ef", "EF Core: migrations and database commands", "https://learn.microsoft.com/ef/core/cli/dotnet"),

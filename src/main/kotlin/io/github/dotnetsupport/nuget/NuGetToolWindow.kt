@@ -208,7 +208,7 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
                 detailsPane.parent?.revalidate()
             }
         }
-        val settings = action("NuGet Settings", "Settings | Tools | .NET | NuGet", AllIcons.General.Settings) {
+        val settings = action("NuGet Settings", "Settings | .NET | NuGet", AllIcons.General.Settings) {
             ShowSettingsUtil.getInstance().showSettingsDialog(project, NuGetSettingsConfigurable::class.java)
         }
         val help = action("Help", "NuGet in the .NET CLI", AllIcons.Actions.Help) { BrowserUtil.browse("https://learn.microsoft.com/nuget/consume-packages/install-use-packages-dotnet-cli") }

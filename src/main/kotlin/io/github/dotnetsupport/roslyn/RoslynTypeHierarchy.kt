@@ -20,11 +20,7 @@ import javax.swing.JTree
  * builds its tool window around PSI elements; the items of the server are [HierarchyElement]s.
  */
 class RoslynTypeHierarchyProvider : HierarchyProvider {
-    override fun getTarget(dataContext: DataContext): PsiElement? {
-        val target = RoslynHierarchies.target(dataContext) ?: return null
-        val item = RoslynHierarchies.prepareType(target).firstOrNull() ?: return null
-        return HierarchyElement(target.project, target.client, item)
-    }
+    override fun getTarget(dataContext: DataContext): PsiElement? = RoslynHierarchies.element(dataContext, RoslynHierarchies::prepareType)
 
     override fun createHierarchyBrowser(target: PsiElement): HierarchyBrowser = RoslynTypeHierarchyBrowser(target.project, target as HierarchyElement)
 

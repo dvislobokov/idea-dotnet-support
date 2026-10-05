@@ -20,6 +20,9 @@ class EditorExtrasTest : BasePlatformTestCase() {
         myFixture.addFileToProject("bn/Ok/Ok.csproj", """<Project Sdk="Microsoft.NET.Sdk"/>""")
         myFixture.addFileToProject("bn/Ok/obj/project.assets.json", "{}")
         val fine = myFixture.addFileToProject("bn/Ok/Program.cs", "class Program { }").virtualFile
+        // the old format has no project.assets.json at all: packages.config is restored into ..\packages
+        myFixture.addFileToProject("bn/Legacy/Legacy.csproj", """<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003"><ItemGroup><Compile Include="Program.cs" /></ItemGroup></Project>""")
+        val legacy = myFixture.addFileToProject("bn/Legacy/Program.cs", "class Program { }").virtualFile
 
         // the machine may lack the server: that banner is the first one and would hide the others, so it is skipped when present
         fun banner(file: com.intellij.openapi.vfs.VirtualFile) = CSharpEditorBanners.bannerFor(project, file)?.takeIf { it.kind != CSharpEditorBanners.Kind.NO_SERVER }
@@ -29,6 +32,7 @@ class EditorExtrasTest : BasePlatformTestCase() {
             assertEquals(CSharpEditorBanners.Kind.EXCLUDED, banner(excluded)?.kind)
             assertEquals(CSharpEditorBanners.Kind.NOT_RESTORED, banner(notRestored)?.kind)
             assertNull(banner(fine))
+            assertNull("a project of the old format", banner(legacy))
             assertNull("not a C# file", CSharpEditorBanners.bannerFor(project, myFixture.addFileToProject("bn/loose/readme.md", "").virtualFile))
         }
     }

@@ -38,7 +38,8 @@ object CSharpSemanticEnvironment {
 
     /** The project file [file] is compiled in; null for a loose file (and in tests without one). */
     fun projectOf(file: PsiFile): VirtualFile? {
-        val virtualFile = file.viewProvider.virtualFile
+        // the copy completion works in is a light file: its original says the project
+        val virtualFile = file.originalFile.viewProvider.virtualFile
         return CompilationModel.getInstance(file.project).projectOf(virtualFile)
     }
 

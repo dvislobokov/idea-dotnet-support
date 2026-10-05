@@ -100,7 +100,8 @@ python robot.py action Exit && python robot.py click "//div[@class='MyDialog']//
 Скрипты-шаблоны с `__ПОДСТАНОВКАМИ__`: `state.js`, `evaluate.js`, `set_value.js` (через модификатор значения, как F2), `run_to.js` (Run to Cursor),
 `add_exception_bp.js` / `default_bp.js` / `exception_bps.js` (точки на исключения), `debugger_settings.js`, `edit_unsaved.js`, `stop_all.js`.
 Для этапов 4–5: `line_bp_extras.js` (hit count и log message точки), `line_bp_condition.js`, `test_configuration.js` (конфигурация `dotnet test` с
-фильтром), `attach.js` (подключиться к PID, как Attach to Process), `sessions.js` (все отладочные сессии), `resume_all.js`, `show_settings.js`, `complete.js` (completion в поле Evaluate: текст → элементы списка).
+фильтром), `attach.js` (подключиться к PID, как Attach to Process), `attach_list.js` (`__NAME__` — часть имени exe: каким процессам
+Attach to Process предлагает отладчик .NET — провайдер плагина спрашивается так же, как диалог), `sessions.js` (все отладочные сессии), `resume_all.js`, `show_settings.js`, `complete.js` (completion в поле Evaluate: текст → элементы списка).
 Для языкового сервера: `editor_file.js` (файл выбранного редактора: путь, заголовок вкладки, можно ли править, баннеры, строка каретки),
 `rename_via_server.js` (переименование как у LSP-клиента платформы, но без её inline-шаблона: `textDocument/rename` через клиент и применение
 правки одной командой; `__AT__` / `__NAME__` / `__NEW__`), `inline_rename.js` (настоящий Shift+F6 с шаблоном — у робота ненадёжен, шаблону нужен фокус; при «Rename» = Built-in обработчик —

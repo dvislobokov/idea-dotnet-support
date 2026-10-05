@@ -98,7 +98,7 @@ def settings():
         original = english if english is not None else EN.get(key, title)
         out.append("<h4>%s%s</h4>" % (e(title), "" if title == original else ' <small lang="en">%s</small>' % e(original)))
 
-    page("settings-dotnet", "Settings | Tools | .NET", "page.dotnet",
+    page("settings-dotnet", "Settings | .NET", "page.dotnet",
          "Общие параметры плагина: где находится <code>dotnet</code>, какие инструменты установлены, чем форматировать код. "
          "Параметры этой страницы, кроме форматтера, действуют на все проекты на этой машине.")
     group("settings.cli.group")
@@ -129,7 +129,7 @@ def settings():
                note("settings.language.comment") + " Русского языкового пакета для самой IDE нет, поэтому язык страниц плагина выбирается здесь."),
     ]))
 
-    page("settings-build", "Settings | Tools | .NET | Toolset and Build", "page.build",
+    page("settings-build", "Settings | .NET | Toolset and Build", "page.build",
          "Что добавляется к командам сборки. Параметры относятся к проекту, открытому в IDE, и хранятся в его рабочих файлах: в репозиторий они не попадают.")
     group("build.toolset")
     out.append(table([
@@ -154,7 +154,7 @@ def settings():
         (name("build.logFolder.chooser"), "<code>~/idea-dotnet-logs/DotNetBuild</code>", "Куда складываются журналы сборки."),
     ]))
 
-    page("settings-nuget", "Settings | Tools | .NET | NuGet", "page.nuget", "Поиск пакетов и восстановление. Действует на все проекты на этой машине.")
+    page("settings-nuget", "Settings | .NET | NuGet", "page.nuget", "Поиск пакетов и восстановление. Действует на все проекты на этой машине.")
     group("nuget.search")
     out.append(table([option("nuget.prerelease", OFF)]))
     group("nuget.restore")
@@ -167,7 +167,7 @@ def settings():
     group("nuget.credentials")
     out.append("<p>%s.</p>" % note("nuget.credentials.comment"))
 
-    page("settings-coverage", "Settings | Tools | .NET | Coverage", "page.coverage", "Что делать с покрытием, собранным новым прогоном тестов.")
+    page("settings-coverage", "Settings | .NET | Coverage", "page.coverage", "Что делать с покрытием, собранным новым прогоном тестов.")
     group("coverage.onNew")
     out.append(table([
         option("coverage.onNew.ask", "выбрано", "Вопрос задаётся, только если какое-то покрытие уже показано."),
@@ -180,14 +180,14 @@ def settings():
         option("coverage.projectView", ON),
     ]))
 
-    page("settings-debugger", "Settings | Tools | .NET | Debugger", "page.debugger",
+    page("settings-debugger", "Settings | .NET | Debugger", "page.debugger",
          note("debugger.common") + " <b>Build, Execution, Deployment | Debugger</b>.")
     group("debugger.languages")
     out.append(table([option("debugger.external", OFF)]))
     group("debugger.values")
     out.append(table([option("debugger.implicit", ON)]))
 
-    page("settings-server", "Settings | Tools | .NET | Language Server", "page.languageServer",
+    page("settings-server", "Settings | .NET | Language Server", "page.languageServer",
          note("server.about") + " Изменение параметров группы «%s» перезапускает сервер, остальные применяются на лету." % e(RU["server.group"]))
     out.append(table([option("server.enabled", ON, "Выключено: сервер не запускается, редактор работает на собственных эвристиках плагина — без ошибок компилятора и рефакторингов.")]))
     group("server.group")
@@ -248,7 +248,7 @@ def content():
 </ul>
 <h3>Первые шаги</h3>
 <ol>
-  <li><b>Установите инструменты.</b> Откройте <b>Settings | Tools | .NET</b>, раздел «%(tools_group)s», и нажмите «%(install)s» у нужных инструментов.</li>
+  <li><b>Установите инструменты.</b> Откройте <b>Settings | .NET</b>, раздел «%(tools_group)s», и нажмите «%(install)s» у нужных инструментов.</li>
   <li><b>Откройте папку с решением.</b> Именно папку, а не файл решения. Окно Project переключится на вид Solution.</li>
   <li><b>Выберите решение, если их несколько.</b> IDE спросит, какое загрузить. Позже выбор меняется щелчком на значке сервера в статус-баре.</li>
   <li><b>Дождитесь загрузки.</b> Значок сервера C# в статус-баре показывает состояние. Подсветка, структура и серое продолжение строки работают сразу,
@@ -285,7 +285,7 @@ def content():
 <h2>Запуск и отладка</h2>
 <ul>
   <li><b>Конфигурации запуска</b> типа «.NET Project» создаются сами для запускаемых проектов и профилей из <code>launchSettings.json</code>.</li>
-  <li><b>Конфигурация и целевая платформа</b> (Debug или Release, <code>net10.0</code> и другие) переключаются в тулбаре и действуют на сборку, запуск и тесты.</li>
+  <li><b>Конфигурация и целевая платформа</b> (Debug или Release, <code>net10.0</code> и другие) выбираются в меню стрелки кнопки Build Solution в тулбаре (как в Rider) и действуют на сборку, запуск и тесты. Сам молоток собирает решение; в том же меню — Rebuild, Clean, NuGet Restore и Cancel Build.</li>
   <li><b>Отладка</b> работает в стандартном окне Debug: точки останова с условиями, остановка на исключениях, значения в коде, Evaluate, Watches.</li>
   <li><b>Set Next Statement</b> — в контекстном меню редактора во время отладки: делает строку под курсором следующей для выполнения.</li>
   <li><b>Attach</b> к уже работающему процессу и <b>отладка тестов</b> — из окна Unit Tests и значков у методов.</li>
@@ -308,7 +308,7 @@ def content():
 
 <section id="settings">
 <h2>Настройки</h2>
-<p>Все страницы находятся в <b>Settings | Tools | .NET</b>. Названия параметров приведены по-русски, рядом серым — по-английски, как они выглядят,
+<p>Все страницы находятся в <b>Settings | .NET</b>. Названия параметров приведены по-русски, рядом серым — по-английски, как они выглядят,
    когда язык страниц английский. Язык выбирается на странице <a href="#settings-dotnet">.NET</a>, параметр «%(language)s».</p>
 %(settings)s
 </section>
@@ -379,7 +379,9 @@ def content():
             ("Принять серое продолжение строки", "<kbd>Tab</kbd>"),
             ("Список подсказок", "Появляется при наборе; <kbd>Ctrl+Space</kbd> вызывает его вручную. Регистр букв не важен."),
             ("Исправления и рефакторинги", "<kbd>Alt+Enter</kbd>; в списке есть Fix All для документа, проекта и решения."),
-            ("Создание кода: конструктор, Equals, переопределения", "<kbd>Alt+Insert</kbd>"),
+            ("Создание кода: конструктор, Equals, переопределения, тест", "<kbd>Alt+Insert</kbd>: список генераторов, как в Rider."),
+            ("Refactor This: все рефакторинги у курсора одним списком", "<kbd>Ctrl+Alt+Shift+T</kbd>"),
+            ("Navigate To: объявление, реализации, базовые символы, использования, тесты, IL", "<kbd>Ctrl+Shift+G</kbd>"),
             ("Переименование", "<kbd>Shift+F6</kbd>; файл переименовывается вместе с типом."),
             ("Переход к объявлению и реализациям", "<kbd>Ctrl+B</kbd>, <kbd>Ctrl+Alt+B</kbd>, щелчок с <kbd>Ctrl</kbd>."),
             ("Иерархия типов и вызовов", "<kbd>Ctrl+H</kbd>, <kbd>Ctrl+Alt+H</kbd>"),

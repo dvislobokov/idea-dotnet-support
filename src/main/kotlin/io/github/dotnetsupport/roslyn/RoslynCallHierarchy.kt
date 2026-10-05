@@ -15,11 +15,7 @@ import javax.swing.JTree
 
 /** Call Hierarchy (Ctrl+Alt+H) of a C# member: callers and callees from the server, level by level. */
 class RoslynCallHierarchyProvider : HierarchyProvider {
-    override fun getTarget(dataContext: DataContext): PsiElement? {
-        val target = RoslynHierarchies.target(dataContext) ?: return null
-        val item = RoslynHierarchies.prepareCall(target).firstOrNull() ?: return null
-        return HierarchyElement(target.project, target.client, item)
-    }
+    override fun getTarget(dataContext: DataContext): PsiElement? = RoslynHierarchies.element(dataContext, RoslynHierarchies::prepareCall)
 
     override fun createHierarchyBrowser(target: PsiElement): HierarchyBrowser = RoslynCallHierarchyBrowser(target.project, target as HierarchyElement)
 

@@ -3,6 +3,118 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.71
+
+- Colors inside C# strings, as in Rider: the code in the holes of interpolated strings (`$"Total {x + 1:N2}"`) is colored as code
+  (keywords, numbers, operators, nested strings), the braces of a hole as braces, alignment and format (`,5`, `:N2`) as a format item;
+  raw strings with `$$"""` holes too
+- Escape sequences are highlighted: `\t`, `\n`, `A`, `""` of verbatim strings, `{{` / `}}` of interpolated ones, in two alternating
+  colors when they stand side by side; an invalid one (`\q`) is marked
+- Format items of `string.Format`, `Console.WriteLine`, `StringBuilder.AppendFormat` (`{0}`, `{1,5:N2}`) get the format item color
+- Settings | Editor | Color Scheme | C#: new group "String" with "String text", "Escape sequence" (Valid, Valid 2, Invalid) and "Format item"
+
+## 0.1.70
+
+- The settings of the plugin have a node of their own at the root of Settings: **.NET**, with Toolset and Build, NuGet, Coverage,
+  Debugger and Language Server under it (they were under Tools). Editor | Code Style | C# and Color Scheme | C# stay where they were
+- The main toolbar has Rider's **Build Solution** button right before the Run widget instead of the Debug / Release and target
+  framework combo box: the hammer builds the solution, its arrow opens Build, Rebuild, Clean, NuGet Restore, Cancel Build and the
+  choice of the configuration and the target framework
+- **Refactor This** (Ctrl+Alt+Shift+T) in a C# file lists what can be done at the caret or on the selection, as in Rider: Rename,
+  Introduce / Inline Variable, Move type to its file, the refactorings of the language server (Introduce local, Extract method,
+  Extract base class...) — only what is available
+- **Navigate To** (Ctrl+Shift+G, also in the Navigate menu): Declaration, Implementation, Base Symbols, Find Usages, Related Files,
+  Type of Symbol, Related Tests, Show Usages, Type / Call Hierarchy, IL Code, Reveal in the file manager
+- **Generate** (Alt+Insert) in a C# file shows the generators at once, in Rider's order: those of the language server (constructor,
+  Equals and GetHashCode, overrides, interface members), Unit Test, Partial Part, Insert New GUID — no second popup
+- The menu of the editor of a C# file has Rider's Find Usages Advanced..., Inspect (Call Hierarchy, Type Hierarchy, IL Code),
+  Quick Definition and "Generate Code..."
+- Fixed: Call / Type Hierarchy asked the language server while a menu was being shown and reported an IDE error; the server is now
+  asked when the action is chosen. A build stopped with Cancel Build is shown as cancelled, not as failed
+- The completion list no longer opens by itself after `{`, `(`, `,` and the other characters the language server triggers on with
+  nothing typed (`GetStringAsync(...){` listed the parameters and fields of the class): as in Rider, it opens by itself after `.`,
+  after `[` of an attribute and after a space where a type, a name or a keyword is expected; Ctrl+Space lists everything as before
+
+## 0.1.69
+
+- Debugging of .NET Framework 4.x programs on Windows with `dotnet-debugger` 0.2.0: Debug of a project of the old format starts the
+  program its build has made (`TargetPath`), in its output folder as in Visual Studio; breakpoints, stepping, variables and evaluation
+  work as for .NET
+- A 32-bit program (AnyCPU with "Prefer 32-bit", the default of old project templates, or x86) is refused before the debugger starts,
+  with what to change in the project: the debugger debugs 64-bit processes only. Attach to a 32-bit process is refused the same way
+- Run | Attach to Process offers .NET Framework processes on Windows without a registry key (the key
+  `dotnet.debugger.attach.netFramework` is gone): managed executables, from the first opening of the list, and hosts with the desktop
+  CLR loaded
+- Debug builds the project once: the program found by "Build .NET Project" reaches the debugger (every Debug used to build the project
+  a second time)
+- The editor no longer says that the packages of a project of the old format are not restored: such a project has no
+  `project.assets.json`
+- Typing `"` after `$` or `@` (`Console.WriteLine($"`) puts the closing quote, as for a plain string
+- Debug no longer reports an IDE error "[Split debugger] RunContentDescriptor should not be used in split mode" on every start
+  (IntelliJ 2026.1)
+
+## 0.1.68
+
+- The built-in formatter (Reformat Code with the formatter "Built-in") lays out initializers and argument lists as Rider does, where
+  `dotnet format` leaves them as they are. A multi-line object, collection, array or anonymous-object initializer and a multi-line
+  collection expression get the `{` / `[` and the `}` / `]` on lines of their own, the elements one indent in; the elements keep their
+  lines (`1, 2,` stays together) unless one of them spans lines, then each goes to a line of its own. One-line ones get Rider's spaces:
+  `new List<int> { 1, 2, 3 }`, `[1, 2, 3]`. `csharp_new_line_before_open_brace` without `object_collection_array_initializers` keeps
+  the brace at the end of the line
+- The lines of a multi-line argument list (calls, `new`, indexers, attributes, `: base(...)`) and of a parameter list go one indent
+  right of the line of the call, as in Rider (not under the first argument); a `)` on a line of its own goes under that line, nested
+  lists one indent further when the outer arguments are on lines of their own. Line breaks are never added or removed there
+
+## 0.1.67
+
+- A folder with a .NET solution or project opened in IntelliJ IDEA gets a module with the folder as its content root, as GoLand,
+  PyCharm and WebStorm make one. IDEA 2026.1 opened such a folder without a module, and then its C# files were not indexed: the
+  Built-in identifier colors, the plugin's Alt+Enter actions ("Make method async", the `using` conversions, "Convert to 'global using'",
+  the context actions), the types of other files and Go to Class were missing. The Built-in colors and the Alt+Enter actions also
+  work in a C# file the IDE does not index (a project outside the opened folder)
+- The text of an inactive `#if` branch is gray (Settings | Editor | Color Scheme | C# → Preprocessor → Inactive branch), from the
+  symbols of the project and the configuration chosen in the toolbar
+- No completion list in or right after a number: `int x = 1` and Enter no longer writes `1_resized`
+- The errors of the language server carry their code like the plugin's own (`CS0230: Type and identifier are both required…`)
+- Ctrl + hover over a name the plugin's navigation resolves (a local, a parameter, a member) shows its line (`(local variable) int total`)
+- The panel of gray text names the plugin, not an internal id ("Tab to complete io.github.dotnetsupport.declarations")
+- Alt+Enter: the server's "Fix All: Make method async" (and the other "Fix All" rows of actions the plugin does itself) no longer
+  stands above the plugin's own row
+
+## 0.1.66
+
+- Completion after a dot without the language server (Settings | Tools | .NET | Language Server → "Completion" = Built-in): `orders.`
+  lists the members of the type of `orders` — of the solution and of the referenced assemblies, the inherited ones included, with the
+  type arguments filled in (`Add(int item)` of a `List<int>`) — and the extension methods of the imported namespaces, without their
+  `this` parameter; `Console.` lists the static members and nested types, `System.` the namespaces and types, `Color.` the enum members.
+  Only what C# lets the place see: private members inside their type, protected ones inside a derived type (of a library base only
+  through `this.`). The language server's items of the same names are not shown twice
+- Quick documentation (Ctrl+Q, hover) and Parameter Info (Ctrl+P) on the plugin's own semantics, with "Documentation and parameter info"
+  = Built-in (the language server stays the default until checked live): the first line as Rider writes it
+  (`void Console.WriteLine(string value) (+ 17 overloads)`, `(parameter) int limit`, `decimal Order.Total { get; set; }`), the XML
+  documentation of `///` comments and of the documentation files of assemblies (summary, parameters, returns, exceptions, remarks);
+  every overload of a call as a row, the one that fits marked
+- Extension methods of the solution declared on a keyword type (`this string text`) are found for colors and Go to Declaration too
+
+## 0.1.65
+
+- Errors of `using` without the language server ("Errors and warnings" = Built-in): CS1674 on a resource of `using` that is not
+  `IDisposable` (`using (var n = 5)`), CS8410 on `await using` of something not `IAsyncDisposable`, and Roslyn's "Did you mean 'using'
+  rather than 'await using'?" / the reverse when the other interface is there — with the texts and codes of the compiler, shown once.
+  Nothing is reported where the type is not known through and through (an unknown type or base, a type parameter, a `DisposeAsync`
+  method of the pattern)
+- The completion list at `using (` and `using var x = ` leaves out the locals, parameters, fields and properties known not to be
+  disposable (`IAsyncDisposable` for `await using`)
+
+## 0.1.64
+
+- Alt+Enter actions of the C# code without the language server (Settings | Tools | .NET | Language Server → "Context actions" =
+  Built-in; without the server they work anyway): "Convert to '?:' expression" for an `if` that returns or assigns in both branches,
+  "Convert '?:' to 'if' statement", "To expression body" / "To block body" for methods, local functions, constructors, operators,
+  properties, indexers and accessors, "Use explicit type" (the type as the place writes it) / "Use 'var'", "Introduce variable" (the
+  selection or the call at the caret, the name edited in both places at once) and "Inline variable". With Built-in the server's rows
+  of the same actions are not shown twice
+
 ## 0.1.63
 
 - Decompiled sources, as in Rider: Solution view → Dependencies → a package, an assembly of a framework (Frameworks →

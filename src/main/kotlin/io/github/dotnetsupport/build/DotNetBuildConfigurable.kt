@@ -18,7 +18,7 @@ import io.github.dotnetsupport.DotNetBundle
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.settings.DotNetSettingsConfigurable
 
-/** Settings | Tools | .NET | Toolset and Build: the groups and the wording of Rider, only the options the plugin has something behind. */
+/** Settings | .NET | Toolset and Build: the groups and the wording of Rider, only the options the plugin has something behind. */
 class DotNetBuildConfigurable(private val project: Project) : BoundConfigurable(DotNetBundle.message("page.build")) {
     private val options get() = DotNetBuildOptions.getInstance(project).state
 

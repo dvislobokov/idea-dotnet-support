@@ -119,11 +119,11 @@ class RiderPanelsTest : BasePlatformTestCase() {
 
     fun testRegistration() {
         val actionManager = ActionManager.getInstance()
-        assertNotNull(actionManager.getAction("DotNet.BuildConfiguration"))
+        assertNotNull(actionManager.getAction("DotNet.BuildSolutionBar"))
         assertNotNull(actionManager.getAction("DotNet.AnalyzeStackTrace"))
-        // the selector sits in the toolbar of the new UI
+        // the Build Solution button, with the configuration in its menu, sits in the toolbar of the new UI (RiderUiTest)
         val toolbar = actionManager.getAction("MainToolbarRight") as DefaultActionGroup
-        assertTrue(toolbar.getChildActionsOrStubs().any { actionManager.getId(it) == "DotNet.BuildConfiguration" })
+        assertTrue(toolbar.getChildActionsOrStubs().any { actionManager.getId(it) == "DotNet.BuildSolutionBar" })
         // .NET frames are links in every console, the stack trace analyzer included
         assertTrue(ConsoleFilterProvider.FILTER_PROVIDERS.extensionList.any { it is DotNetConsoleFilterProvider })
     }

@@ -393,7 +393,7 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
         val missingRuntime = missingFramework != null || runtimes.isNotBlank() && !RoslynPolicy.hasRuntime(runtimes, SERVER_RUNTIME)
         val dotnet = DotNetCli.findExecutable()
         val text = when {
-            missingFramework != null -> missingFramework.describe() + " Install the .NET $SERVER_RUNTIME runtime there, or point the plugin (Settings | Tools | .NET) at a <code>dotnet</code> that has it: the server is started with that installation as <code>DOTNET_ROOT</code>."
+            missingFramework != null -> missingFramework.describe() + " Install the .NET $SERVER_RUNTIME runtime there, or point the plugin (Settings | .NET) at a <code>dotnet</code> that has it: the server is started with that installation as <code>DOTNET_ROOT</code>."
             missingRuntime -> "The server needs the .NET $SERVER_RUNTIME runtime, and <code>dotnet --list-runtimes</code> of <code>$dotnet</code> has no Microsoft.NETCore.App $SERVER_RUNTIME.x."
             errors.isNotBlank() -> "The server has stopped unexpectedly. It printed: <code>${errors.trim().lines().last()}</code>"
             else -> "The server has stopped unexpectedly. Its log says why."

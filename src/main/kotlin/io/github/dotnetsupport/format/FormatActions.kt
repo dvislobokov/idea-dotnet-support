@@ -46,7 +46,7 @@ abstract class FormatTargetAction(private val verify: Boolean) : AnAction(), Dum
             return DotNetCli.notifyError(project, title, e.message.orEmpty())
         } catch (e: ExecutionException) { // no SDK
             return DotNetCli.notifyError(project, title, e.message.orEmpty())
-        } ?: return DotNetCli.notifyInfo(project, title, "No formatter is selected in Settings | Tools | .NET.")
+        } ?: return DotNetCli.notifyInfo(project, title, "No formatter is selected in Settings | .NET.")
         DotNetCli.runInBackground(project, title, listOf(command), refresh = listOf(target.parentFile)) {
             DotNetCli.notifyInfo(project, title, if (verify) "Everything is formatted." else "Done.")
         }

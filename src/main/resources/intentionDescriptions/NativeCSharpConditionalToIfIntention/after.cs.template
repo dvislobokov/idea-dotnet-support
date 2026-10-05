@@ -1,0 +1,8 @@
+if (count > 0)
+{
+    return "some";
+}
+else
+{
+    return "none";
+}
