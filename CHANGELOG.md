@@ -5,6 +5,9 @@ Every feature is a new version `0.1.x`. The build puts these sections into the c
 
 ## 0.1.79
 
+- Analyzers and source generators of a project (and the design-time build behind them) no longer run for a project opened in Safe Mode
+  (not trusted): they are code of the project
+
 - Compound runs as in Rider: .NET Project configurations started together (a compound configuration, Run / Debug N Projects, or several
   started one right after another) are built by one build before any of them starts — the projects of a solution as one solution-filter
   build in the Build tool window, shared libraries once — and then run with `dotnet run --no-build`, so their builds no longer fight over

@@ -209,6 +209,7 @@ class CodeAnalysisService(private val project: Project) : Disposable {
     private fun schedule(projectFile: VirtualFile, generate: Boolean, paths: Collection<String>, delayMs: Int = DEBOUNCE_MS) {
         if (disposed || (!generate && paths.isEmpty())) return
         if (ApplicationManager.getApplication().isUnitTestMode && testConnection == null) return
+        if (testConnection == null && !com.intellij.ide.trustedProjects.TrustedProjects.isProjectTrusted(project)) return   // Safe Mode: see connection()
         val entry = pending.computeIfAbsent(key(projectFile.path)) { Pending(projectFile) }
         if (generate) entry.generate = true
         entry.paths += paths
@@ -415,6 +416,9 @@ class CodeAnalysisService(private val project: Project) : Disposable {
         if (disposed || project.isDisposed) throw HelperException("the project is closed")
         connection?.let { return it }
         if (ApplicationManager.getApplication().isUnitTestMode) throw HelperException("CodeAnalysisHelper is not started in tests")
+        // the helper runs code of the project: MSBuild targets (design-time build), analyzer and generator dlls of its packages — never for
+        // a project the user has not trusted (Safe Mode), as MsBuildEvaluation and CompilationModel
+        if (!com.intellij.ide.trustedProjects.TrustedProjects.isProjectTrusted(project)) throw HelperException("the project is not trusted: analyzers and source generators do not run in Safe Mode")
         return HelperConnection.of(HELPER, LOG_CATEGORY, ::workDirectory).also { connection = it; Disposer.register(this, it) }
     }
 
