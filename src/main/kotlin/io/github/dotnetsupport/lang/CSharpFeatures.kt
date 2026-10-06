@@ -98,7 +98,21 @@ enum class CSharpFeature(
      * dropped (`NativeCSharpServerActions`). NATIVE by default since 0.1.72: on ContextActions.cs the robot found each action where the
      * server has it (and where it has none: `if` → `?:`, `var` → explicit type), one row per action in both modes.
      */
-    CONTEXT_ACTIONS("Context actions", needsIndexes = true, hasNative = true, defaultSource = CSharpFeatureSource.NATIVE);
+    CONTEXT_ACTIONS("Context actions", needsIndexes = true, hasNative = true, defaultSource = CSharpFeatureSource.NATIVE),
+    /**
+     * Inlay hints: the names of parameters at arguments and the types of `var`, lambda parameters, `new()` and collection expressions.
+     * Native since 0.1.117 ([NativeCSharpInlayHints]): Roslyn's rules over the plugin's own overload resolution and expression types, driven by
+     * the same options of Settings | .NET | Language Server as the server's; the types need the indexes (stubs, the index of assemblies).
+     * NATIVE by default: the server is off by default since 0.1.76, so without this the hints were gone; with ROSLYN the server's hints answer.
+     */
+    INLAY_HINTS("Inlay hints", needsIndexes = true, hasNative = true, defaultSource = CSharpFeatureSource.NATIVE),
+
+    /**
+     * Code Vision above types and members: "N usages", "N implementations", "Run | Debug" over tests ([NativeCSharpCodeLens]). Native on
+     * the plugin's own Find Usages and hierarchy (hence the indexes), governed by the two Code Lens options of the page exactly as the
+     * server's `textDocument/codeLens` is; with ROSLYN the server's lenses answer and the native ones stand down, and the other way round.
+     */
+    CODE_LENS("Code Vision", needsIndexes = true, hasNative = true, defaultSource = CSharpFeatureSource.NATIVE);
 
     // in the language of the settings page; not `toString()`: see [io.github.dotnetsupport.PluginLanguage.label]
     val label: String get() = DotNetBundle.messageOr("feature.$name", title)

@@ -25,6 +25,8 @@ import io.github.dotnetsupport.lang.CSharpFileType
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSymbol
 import io.github.dotnetsupport.lsp.RoslynServerStatus
+import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.sourcelink.LibrarySources
 import java.io.File
 import java.util.function.Function
 import javax.swing.JComponent
@@ -135,9 +137,25 @@ object AssemblyNavigation {
     fun targets(project: Project, symbol: CSharpSymbol): List<PsiElement> {
         if (RoslynServerStatus.isReady(project)) return emptyList()
         return when (symbol) {
-            is CSharpSymbol.LibraryType -> listOfNotNull(decompiled(project, symbol.type, symbol.type.docId) ?: target(project, symbol.type))
-            is CSharpSymbol.LibraryMember -> listOfNotNull(decompiled(project, symbol.member.type, symbol.member.docId) ?: target(project, symbol.member))
+            is CSharpSymbol.LibraryType -> listOfNotNull(original(project, symbol.type, null) ?: decompiled(project, symbol.type, symbol.type.docId) ?: target(project, symbol.type))
+            is CSharpSymbol.LibraryMember -> listOfNotNull(original(project, symbol.member.type, symbol.member) ?: decompiled(project, symbol.member.type, symbol.member.docId)
+                ?: target(project, symbol.member))
             else -> emptyList()
+        }
+    }
+
+    /**
+     * The original source of [type] or [member] by the PDB of the assembly (Source Link, embedded sources; `LibrarySources`), as Rider goes to it
+     * first with the option on: the declaration in the file when it is here already, else a target that gets it in the background and opens it, or
+     * the decompiled code / the metadata view when there is none. Null when the option is off or the assembly is known to have no sources. Read action.
+     */
+    private fun original(project: Project, type: IndexedType, member: IndexedMember?): PsiElement? {
+        val assembly = assemblyFile(type.index.mvid) ?: return null
+        val docId = member?.docId ?: type.docId
+        return LibrarySources.getInstance(project).target(assembly, type.fullName, docId, member?.name ?: type.simpleName) {
+            val decompiler = AssemblyDecompiler.getInstance(project)
+            if (decompiler.isAvailable) decompiler.open(assembly.path, type.fullName, member?.docId, onFailure = { navigate(project, type, member, true) })
+            else navigate(project, type, member, true)
         }
     }
 
@@ -159,6 +177,8 @@ object AssemblyNavigation {
      * seconds for the helper). Read action.
      */
     private fun decompiled(project: Project, type: IndexedType, docId: String): PsiElement? {
+        // the page of the server decides for the native path too: off, the metadata view as the server's "metadata as source"
+        if (!RoslynOptions.isOn("navigation.dotnet_navigate_to_decompiled_sources")) return null
         val decompiler = AssemblyDecompiler.getInstance(project)
         if (!decompiler.isAvailable) return null
         val assembly = assemblyFile(type.index.mvid) ?: return null

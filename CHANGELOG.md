@@ -3,6 +3,106 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.126
+
+- `override` completion as in Rider: typing the start of the return type (`public override str`) keeps the members of that type
+  (`string Describe()`, `string ToString()`), `public override string D` completes Describe over the typed type, and `struct`, `class`
+  and other keywords no longer show after `override`
+- From `public ov` the list offers `override string Describe` rows that write the whole member, and gray text shows the best member to
+  override: Tab writes it with its `using` directives and puts the caret in the body
+
+## 0.1.125
+
+- The Project tool window reliably opens in the Solution view the first time a folder with a solution is opened: the switch used to
+  race the creation of the tool window and was never retried when it lost. After the first switch the pane you choose is kept on reopen
+
+## 0.1.124
+
+- Code Vision: no "N usages" / "N implementations" / Run / Debug lenses over library sources opened via Source Link, decompiled types
+  or the metadata view — only over the sources of the solution, as in Rider
+- Shared frameworks a package requires (`Grpc.AspNetCore` → `Microsoft.AspNetCore.App`) are now part of what the project compiles
+  against: their types resolve in completion, Go to Declaration and the compiler-error checks without a `FrameworkReference` or the Web
+  SDK in the project file
+
+## 0.1.123
+
+- Source Link works: every download failed in 0.1.121 and 0.1.122, and the decompiled code opened instead
+- Code Vision: every declaration of a line keeps its own lens entry — `int a, b;` reads "1 usage | no usages", a one-line enum shows
+  the type and each member
+- Code Vision: the counts of members below an edit in the file no longer drop to "no usages" until the file is reopened; the lenses of
+  every open editor are recomputed when another file changes or indexing ends
+- Find Usages: a constructor initializer `base(...)` / `this(...)` is a usage of the constructor only, not of the type, as Roslyn and
+  Rider count it; "N usages" of a class agrees with Show Usages
+- No "Read access is allowed from inside read-action only" error when clicking "N implementations" or the gutter of overrides with
+  several targets
+
+## 0.1.122
+
+- The "Analysis" scopes of Settings | .NET | Language Server work without the language server: with "Compiler diagnostics for"
+  fullSolution the Problems tool window (Project Errors) lists the errors and warnings of every file of the solution, checked in the
+  background and updated as files change; openFiles lists the open files; none shows no compiler diagnostics at all, as Roslyn does
+- "Analyzer diagnostics for" fullSolution analyzes whole projects on save and after a build and puts the analyzer warnings into the same
+  tab; none hides them in the editor (Run Code Analysis still lists them)
+- With the server on, only one provider fills the Project Errors tab: the server when "Errors and warnings" is Language server, the
+  plugin when Built-in
+- Every option of Settings | .NET | Language Server now works with the server off
+
+## 0.1.121
+
+- Go to Declaration on a type or member of a library opens its original source when the PDB of the assembly has Source Link or embedded
+  sources (the option "Navigate to Source Link and embedded sources" of Settings | .NET | Language Server, now honoured without the
+  server): the file is downloaded by the IDE's HTTP client, checked against the hash in the PDB, cached on disk and shown read-only with
+  the banner "Navigated to source from Source Link: <url>"; without a PDB, a mapping or the network the decompiled code or the metadata
+  view opens as before
+- Source Link URLs are followed only over HTTPS to public hosts, without redirects and up to 16 MB: a PDB cannot make the IDE reach this
+  machine or the local network
+
+## 0.1.120
+
+- Applying Settings | .NET | Language Server redraws the inlay hints and Code Vision of the open C# files at once: a toggled Inlay Hints
+  or Code Lens option, or a switched source of "Inlay hints" / "Code Vision", no longer waits for the next edit
+- Switching "Inlay hints" or "Code Vision" to the language server while it runs shows the server's hints and lenses immediately,
+  without a restart of the server
+- No false CS7036 on a named argument in its own position followed by positional ones (`Draw(width: 1, "t", shape: s)`, C# 7.2):
+  the arguments are bound as Roslyn binds them
+
+## 0.1.119
+
+- Code Vision without the language server: "N usages" above every type and member, counted by the plugin's own Find Usages (a click
+  opens Show Usages), "N implementations / overrides / inheritors" where there are any, and "Run | Debug" above test methods and test
+  classes, running the same configurations as the gutter
+- The Code Lens options "References" and "Run and debug tests" of Settings | .NET | Language Server govern the built-in lenses too; new
+  switch "Code Vision" in Source of Features (Built-in by default); with Language server the server's lenses show instead, never both
+- Usages outside the edited file are cached until another file changes, so typing in a large file recounts that file alone
+
+## 0.1.118
+
+- Every option of Settings | .NET | Language Server now applies to the built-in C# features as it does to the server: completion from
+  unimported namespaces, name suggestions, regex completion, completion in argument lists, decompiled navigation, remarks in quick
+  documentation, symbol search in reference assemblies, documentation comment auto-insert, regex / JSON highlighting in strings, the
+  insertion location of generated members and throwing vs auto generated properties
+- "Organize 'using' directives when formatting": Reformat Code with the built-in formatter removes unused directives and sorts the rest
+  (`System` first unless `dotnet_sort_system_directives_first = false` in .editorconfig)
+- Implemented interface and abstract properties throw `NotImplementedException` by default, as in Roslyn ("Generated properties: prefer
+  throwing properties"); choose "prefer auto properties" for `{ get; set; }`
+
+## 0.1.117
+
+- Inlay hints without the language server: parameter names before arguments and the types of `var`, lambda parameters, `new()` and
+  collection expressions, computed by the plugin's own semantics with Roslyn's rules; the Inlay Hints options of Settings | .NET |
+  Language Server apply to them exactly as to the server's
+- New switch "Inlay hints" in Source of Features (Built-in by default); with Language server the server's hints answer and the built-in
+  ones stand back, never both
+- A click on a type hint opens the type: a declaration of the solution or the metadata view of an assembly type
+
+## 0.1.116
+
+- Colored matching brackets in C# files: pairs of `()`, `[]`, `{}` and the `<>` of generic type lists are colored by nesting depth
+  (three levels, VS Code's colors for light and dark schemes; Editor | Color Scheme | C# | Braces and operators | Matching brackets).
+  Strings, characters, comments and inactive `#if` branches are left alone; interpolation holes count as code; an unmatched bracket stays
+  plain and does not shift the rest of the file. Painted at once as a file opens
+- Settings | .NET: "Colorize matching brackets" (on by default); switching it re-highlights the open editors
+
 ## 0.1.115
 
 - Errors of statements without the language server: a value returned from a void method, an `async Task` or a lambda, or a missing one

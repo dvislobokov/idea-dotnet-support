@@ -73,6 +73,57 @@ internal static partial class IlViewer
         return info.Exists ? (info.LastWriteTimeUtc.Ticks, info.Length) : (0, 0);
     }
 
+    /** The portable PDB next to the assembly, at the path the assembly names, or embedded; else why there is none. */
+    internal static (MetadataReader? Pdb, string? File, string? Name, string? Problem) ReadPdb(PEReader reader, string path)
+    {
+        var name = System.IO.Path.GetFileName(path);
+        string? named = null;
+        BlobContentId? expected = null;
+        foreach (var entry in reader.ReadDebugDirectory())
+        {
+            if (entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb)
+                return (reader.ReadEmbeddedPortablePdbDebugDirectoryData(entry).GetMetadataReader(), null, "embedded", null);
+            if (entry.Type == DebugDirectoryEntryType.CodeView && named == null)
+            {
+                var codeView = reader.ReadCodeViewDebugDirectoryData(entry);
+                named = codeView.Path;
+                if (entry.IsPortableCodeView) expected = new BlobContentId(codeView.Guid, entry.Stamp);
+            }
+        }
+        var candidates = new List<string> { System.IO.Path.ChangeExtension(path, ".pdb") };
+        if (!string.IsNullOrEmpty(named))
+        {
+            candidates.Add(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(path)!, System.IO.Path.GetFileName(named.Replace('\\', '/').Split('/').Last())));
+            // the path comes from the assembly: a UNC or device path there (`\\host`, `//host`, `/\host`, `\\?\UNC`) would make File.Exists
+            // reach a server and give it the NTLM hash, so only a local path is followed: a drive letter on Windows, `/x` elsewhere
+            if (IsLocalRooted(named)) candidates.Add(named);
+        }
+        foreach (var candidate in candidates.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            if (!File.Exists(candidate)) continue;
+            var bytes = ReadShared(candidate);
+            if (bytes.Length >= 4 && bytes[0] == 'B' && bytes[1] == 'S' && bytes[2] == 'J' && bytes[3] == 'B')
+            {
+                var pdb = MetadataReaderProvider.FromPortablePdbImage(ImmutableArray.Create(bytes)).GetMetadataReader();
+                if (expected != null && pdb.DebugMetadataHeader != null && new BlobContentId(pdb.DebugMetadataHeader.Id) != expected)
+                    return (null, candidate, null, $"{System.IO.Path.GetFileName(candidate)} does not match {name} (left from another build)");
+                return (pdb, candidate, candidate, null);
+            }
+            if (Encoding.ASCII.GetString(bytes, 0, Math.Min(bytes.Length, 19)) == "Microsoft C/C++ MSF")
+                return (null, candidate, null, $"{System.IO.Path.GetFileName(candidate)} is a Windows PDB, only portable PDBs are read (<DebugType>portable</DebugType>)");
+            return (null, candidate, null, $"{System.IO.Path.GetFileName(candidate)} is not a PDB");
+        }
+        return (null, candidates[0], null, $"no PDB for {name} (<DebugType>none</DebugType>?)");
+    }
+
+    /** `C:\...` on Windows, `/...` elsewhere; never a network or device path, whatever its slashes. */
+    internal static bool IsLocalRooted(string path)
+    {
+        if (OperatingSystem.IsWindows())
+            return path.Length >= 3 && char.IsAsciiLetter(path[0]) && path[1] == ':' && (path[2] == '\\' || path[2] == '/');
+        return path.StartsWith('/') && !path.StartsWith("//");
+    }
+
     /** The whole file, opened so that a writer or a delete at the same moment is not refused: the build of the project must never fail on us. */
     internal static byte[] ReadShared(string path)
     {
@@ -334,7 +385,7 @@ internal static partial class IlViewer
             var metadata = Module.Metadata;
             foreach (var handle in metadata.TypeDefinitions) types[FullName(metadata, handle)] = handle;
 
-            (Pdb, PdbFile, PdbName, PdbProblem) = ReadPdb();
+            (Pdb, PdbFile, PdbName, PdbProblem) = IlViewer.ReadPdb(Module.Reader, Path);
             PdbStamp = IlViewer.Stamp(PdbFile);
             if (Pdb != null)
             {
@@ -361,58 +412,6 @@ internal static partial class IlViewer
                 }
             }
             StateMachinesByAttributes(metadata);
-        }
-
-        /** The portable PDB next to the assembly, at the path the assembly names, or embedded; else why there is none. */
-        private (MetadataReader?, string?, string?, string?) ReadPdb()
-        {
-            var reader = Module.Reader;
-            var name = System.IO.Path.GetFileName(Path);
-            string? named = null;
-            BlobContentId? expected = null;
-            foreach (var entry in reader.ReadDebugDirectory())
-            {
-                if (entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb)
-                    return (reader.ReadEmbeddedPortablePdbDebugDirectoryData(entry).GetMetadataReader(), null, "embedded", null);
-                if (entry.Type == DebugDirectoryEntryType.CodeView && named == null)
-                {
-                    var codeView = reader.ReadCodeViewDebugDirectoryData(entry);
-                    named = codeView.Path;
-                    if (entry.IsPortableCodeView) expected = new BlobContentId(codeView.Guid, entry.Stamp);
-                }
-            }
-            var candidates = new List<string> { System.IO.Path.ChangeExtension(Path, ".pdb") };
-            if (!string.IsNullOrEmpty(named))
-            {
-                candidates.Add(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path)!, System.IO.Path.GetFileName(named.Replace('\\', '/').Split('/').Last())));
-                // the path comes from the assembly: a UNC or device path there (`\\host`, `//host`, `/\host`, `\\?\UNC`) would make File.Exists
-                // reach a server and give it the NTLM hash, so only a local path is followed: a drive letter on Windows, `/x` elsewhere
-                if (IsLocalRooted(named)) candidates.Add(named);
-            }
-            foreach (var candidate in candidates.Distinct(StringComparer.OrdinalIgnoreCase))
-            {
-                if (!File.Exists(candidate)) continue;
-                var bytes = ReadShared(candidate);
-                if (bytes.Length >= 4 && bytes[0] == 'B' && bytes[1] == 'S' && bytes[2] == 'J' && bytes[3] == 'B')
-                {
-                    var pdb = MetadataReaderProvider.FromPortablePdbImage(ImmutableArray.Create(bytes)).GetMetadataReader();
-                    if (expected != null && pdb.DebugMetadataHeader != null && new BlobContentId(pdb.DebugMetadataHeader.Id) != expected)
-                        return (null, candidate, null, $"{System.IO.Path.GetFileName(candidate)} does not match {name} (left from another build)");
-                    return (pdb, candidate, candidate, null);
-                }
-                if (Encoding.ASCII.GetString(bytes, 0, Math.Min(bytes.Length, 19)) == "Microsoft C/C++ MSF")
-                    return (null, candidate, null, $"{System.IO.Path.GetFileName(candidate)} is a Windows PDB, only portable PDBs are read (<DebugType>portable</DebugType>)");
-                return (null, candidate, null, $"{System.IO.Path.GetFileName(candidate)} is not a PDB");
-            }
-            return (null, candidates[0], null, $"no PDB for {name} (<DebugType>none</DebugType>?)");
-        }
-
-        /** `C:\...` on Windows, `/...` elsewhere; never a network or device path, whatever its slashes. */
-        private static bool IsLocalRooted(string path)
-        {
-            if (OperatingSystem.IsWindows())
-                return path.Length >= 3 && char.IsAsciiLetter(path[0]) && path[1] == ':' && (path[2] == '\\' || path[2] == '/');
-            return path.StartsWith('/') && !path.StartsWith("//");
         }
 
         /** The state machines of async methods and iterators by their attributes too: without a PDB, and for the method found by name. */

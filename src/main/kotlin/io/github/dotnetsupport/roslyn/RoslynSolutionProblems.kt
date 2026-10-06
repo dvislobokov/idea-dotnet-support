@@ -16,8 +16,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.platform.lsp.api.LspClient
 import io.github.dotnetsupport.cli.DotNetCli
-import io.github.dotnetsupport.lsp.RoslynLanguageServer
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
+import io.github.dotnetsupport.lang.CSharpFeature
+import io.github.dotnetsupport.lang.AnalysisScopes
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DiagnosticSeverity
 import org.eclipse.lsp4j.PreviousResultId
@@ -59,6 +59,12 @@ class RoslynSolutionProblems(override val project: Project) : Disposable, Proble
     /** After the projects are loaded: the loop of requests, one at a time, until [stop] or a restart of the server. */
     fun start(client: LspClient) {
         val myGeneration = generation.incrementAndGet()
+        // «Errors and warnings» Built-in: the plugin's own pass fills the tab (NativeCSharpSolutionProblems), not two providers at once
+        if (!RoslynFeatures.serves(CSharpFeature.DIAGNOSTICS, project)) {
+            loopRunning = false
+            clear()
+            return
+        }
         if (!isFullSolutionScope()) {
             loopRunning = false
             clear()
@@ -89,6 +95,7 @@ class RoslynSolutionProblems(override val project: Project) : Disposable, Proble
      * so the tab gets them from here. The key is the same uri: when the document is closed, the workspace answer takes over.
      */
     fun documentReport(uri: String, file: VirtualFile, diagnostics: List<Diagnostic>) {
+        if (!RoslynFeatures.serves(CSharpFeature.DIAGNOSTICS, project)) return
         publish(uri, diagnostics.mapNotNull { toProblem(file, it) })
     }
 
@@ -176,8 +183,7 @@ class RoslynSolutionProblems(override val project: Project) : Disposable, Proble
     }
 
     /** `background_analysis.dotnet_compiler_diagnostics_scope` of Settings | .NET | Language Server. */
-    private fun isFullSolutionScope(): Boolean =
-        RoslynLanguageServer.configuration(listOf(COMPILER_SCOPE), RoslynLanguageServerSettings.getInstance(), null).single()?.toString() == "fullSolution"
+    private fun isFullSolutionScope(): Boolean = AnalysisScopes.compiler() == AnalysisScopes.FULL_SOLUTION
 
     private fun hintAboutScope() {
         if (!scopeHintShown.compareAndSet(false, true)) return
@@ -188,7 +194,7 @@ class RoslynSolutionProblems(override val project: Project) : Disposable, Proble
     }
 
     companion object {
-        const val COMPILER_SCOPE = "background_analysis.dotnet_compiler_diagnostics_scope"
+        const val COMPILER_SCOPE = AnalysisScopes.COMPILER
         private const val REQUEST_TIMEOUT_MS = 10 * 60 * 1000 // the server holds the request until the workspace changes
         private const val RETRY_MS = 5_000L
         private const val IDLE_MS = 1_000L

@@ -345,10 +345,15 @@ class CSharpSpaceAutoPopupHandler : com.intellij.codeInsight.editorActions.Typed
 object CSharpSpaceAutoPopup {
     private val WORDS = setOf("override", "partial", "new")
 
-    /** Whether a space typed at [offset] of [text] comes right after one of the words that open the list. */
+    /** `override string`, `public override Task<int>`: the return type of a member to override, its name follows (0.1.126). */
+    private val OVERRIDE_TYPE = Regex("""(?:^|\s)override\s+(?:global::)?[A-Za-z_][\w.]*(?:<[^;{}()=]*>)?(?:\[[,\s]*\])*\??$""")
+
+    /** Whether a space typed at [offset] of [text] comes right after one of the words that open the list, or after `override T`. */
     fun opens(text: CharSequence, offset: Int): Boolean {
         var start = offset
         while (start > 0 && text[start - 1].isLetter()) start--
+        val lineStart = text.lastIndexOf('\n', offset - 1) + 1
+        if (offset > lineStart && OVERRIDE_TYPE.containsMatchIn(text.subSequence(lineStart, offset))) return true
         if (start == offset || start > 0 && (text[start - 1].isLetterOrDigit() || text[start - 1] == '_' || text[start - 1] == '@' || text[start - 1] == '.')) return false
         return text.subSequence(start, offset).toString() in WORDS
     }

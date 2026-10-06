@@ -57,7 +57,7 @@ class NuGetHelper : Disposable {
     override fun dispose() = connection.dispose()
 
     companion object {
-        val HELPER = DotNetHelper("dotnethelper", "DotNetHelper", "HelperFramework", listOf("Program.cs", "Il.cs", "Decompile.cs", "AppSettings.cs", "Protocol.cs"))
+        val HELPER = DotNetHelper("dotnethelper", "DotNetHelper", "HelperFramework", listOf("Program.cs", "Il.cs", "Decompile.cs", "SourceLink.cs", "AppSettings.cs", "Protocol.cs"))
 
         /** A feed behind a slow proxy, and NuGet retries a failed request itself before it says so. */
         private const val FEED_TIMEOUT_MS = 90_000L

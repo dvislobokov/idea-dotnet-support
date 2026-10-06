@@ -526,6 +526,9 @@ Shift+F6, новое имя, Enter — сверить с `EXPECT`, затем о
 - [ ] `TYPE:override-ctrl-o`: Ctrl+O — диалог «Override Members», Ctrl+I — «Nothing to generate»
 - [ ] `TYPE:override-alt-enter`, `implement-missing`: красные CS0534 / CS0535; Alt+Enter «Implement missing members» первым — на имени класса, на интерфейсе в списке баз, на пустой строке тела; «Override members...» — на пустом месте тела и на заголовке класса с базой
 - [ ] `TYPE:override-ctor-info`: Ctrl+P в `: base(…)` — конструкторы `Exception`
+- [ ] `TYPE:override-by-type`: `public override str` — в списке Describe (тип string), `bo` — Equals; нет `struct` / `class` / `string` и шаблонов; `public override string ` — список сам, только члены типа string, `string D` заменяется целиком; пробел после `str` не выбирает строку
+- [ ] `TYPE:override-early`: `public ov` — ключевое слово `override` первым, под ним строки `override string Describe` и т. д.; выбор пишет весь член; `ov` без доступа — доступ базы (`protected override int Sides`)
+- [ ] `TYPE:override-gray`: серый текст лучшего override при `public ov` (и за выбранной строкой списка), `public override `, `public override str` / `bo`; Tab — то же, что выбор строки, каретка в теле; без `public` и для protected-члена серого текста нет
 
 ### Extract Method и Introduce Field без сервера (0.1.75) — `Console/Editor/ExtractMethod.cs`
 Выделить, Ctrl+Alt+M (Introduce Field — Ctrl+Alt+F) или Refactor This; имя нового метода в рамке — набрать своё, Enter; затем Ctrl+Z.
@@ -921,3 +924,64 @@ enum, `ListOrders` — record, generic `Results<Ok<OrderView>, NotFound>`), па
 - [ ] `TYPE:expected-enum-assign` (0.1.106): `Console.BackgroundColor = ` — список сам, Enter на `ConsoleColor.Black` пишет `ConsoleColor.Black;`
 - [ ] `TYPE:enum-*` в `ShopApi/Playground/EnumCompletion.cs` (0.1.106–0.1.107): enum после `= `, `==`, `(`, `return `, и без `=` — `Console.ForegroundColor ` → `= ConsoleColor.Black;`
 - [ ] `Broken/Errors/CSxxxx.cs` (0.1.108–0.1.115): по файлу на ошибку компилятора — подчёркнуты ровно строки с `// ERROR CSxxxx`, остальные чистые; робот: `tools/diag/check_errors.py ide debug-playground/Broken/Errors`
+
+### Цветные парные скобки — `Console/Editor/BracketColors.cs`
+Settings | .NET, «Colorize matching brackets» (по умолчанию включено); три цвета по кругу: Darcula — золотой, орхидея, голубой, светлые схемы — синий, зелёный, коричневый (умолчания VS Code).
+- [ ] `TYPE:brackets-nesting`: `{` `}` класса — уровень 1, метода — 2, `(` `)` у `Range`, `Select`, `ToArray` — 3, пустые `[` `]` у `new[]` и `{` `}` инициализатора за ними — снова 1, `(i + 1)` — 2; у пары один цвет с обоих концов; после закрытия и открытия вкладки цвета есть сразу, без перекраски
+- [ ] `TYPE:brackets-generics`: `<` `>` у `Dictionary<string, List<int>>` и `Generics<T>` — как скобки, `<` `>` у `a < b`, `b > 1`, `=>` — обычный цвет оператора
+- [ ] `TYPE:brackets-strings`: скобки в строках, символе и комментариях не раскрашены; в `$"…"` скобки `(` `)` внутри дырки раскрашены, `{` `}` дырки — нет
+- [ ] `TYPE:brackets-mismatch`: набрать `(` — она без цвета, скобки этого и следующего метода не сдвигаются; Ctrl+Z
+- [ ] `TYPE:brackets-inactive`: скобки в ветке `#if NEVER` серые, в активной — цветные
+- [ ] `TYPE:brackets-off`: снять галку, Apply — все скобки обычного цвета сразу; вернуть — снова цветные; Settings | Editor | Color Scheme | C# | Braces and operators | Matching brackets — три уровня, превью на строке `Enumerable.Range(…)`
+
+### Inlay hints без сервера (0.1.117) — `Console/Editor/InlayHints.cs`
+Settings | .NET | Language Server → Source of Features → «Inlay hints» = Built-in, сервер выключен; в Settings | Editor | Inlay Hints | C# есть «Parameter names» и «Types», оба включены. Опции группы «Inlay Hints» той же страницы .NET действуют на встроенные подсказки так же, как на серверные.
+- [ ] `TYPE:inlay-literals`: `width:` `title:` `shape:` у литералов и `new Shape()`, ничего у `Draw(number, text, shape)` («for everything else» выключено)
+- [ ] `TYPE:inlay-others`: с «for everything else» имена есть и там, но не у `width` (аргумент назван как параметр), не у `this.Width` / `Width`; `predicate:` у лямбды
+- [ ] `TYPE:inlay-indexer`: `key:` у `map["a"]`; пропадает с выключенным «for indexers»
+- [ ] `TYPE:inlay-named-params`: нет подсказки у `width: 1`, нет у аргументов `params`; `TYPE:inlay-suffix`, `TYPE:inlay-intent`, `TYPE:inlay-constructors` — по `EXPECT`, включая обратное при выключении опции подавления
+- [ ] `TYPE:inlay-var`: типы `var` — объявление, `foreach`, `out var`, деконструкция `var (a, b)`; ничего у `int plain`; `TYPE:inlay-linq` (пример из отчёта): `IOrderedEnumerable<Certificate>` у `resp`, `Certificate` перед `certificate` и `c`, `int` перед `x`, `y`; ничего перед `(int x)`
+- [ ] `TYPE:inlay-new`, `TYPE:inlay-collection`: по умолчанию ничего; с «of 'new()' expressions» — `List<int>` после `new`, с «of collection expressions» — `List<int>` перед `[1, 2]` и `[3]`
+- [ ] `TYPE:inlay-click`: клик по подсказке `Certificate` ведёт в `class Certificate`, по `List<int>` — в metadata view `List<T>`
+- [ ] `TYPE:inlay-switch`: «Inlay hints» = Language server при включённом сервере — подсказки только серверные, двух одинаковых в одном месте нет; обратно Built-in — только встроенные (после перерисовки файла)
+
+### Настройки страницы Language Server у встроенных фич — `Console/Editor/ServerOptions.cs`
+Сервер выключен, все фичи Built-in; каждую опцию переключить (Apply), сделать по маркеру, проверить `EXPECT`, вернуть опцию.
+- [ ] `TYPE:option-unimported`, `-names`, `-regex-completion`, `-arguments`: опции группы Completion выключены — нет типов чужих пространств имён (`StringBuilder`, `ToImmutableList()`; `System.Linq` импортирован через `ImplicitUsings`, по нему не судить) / имён после типа / списка в regex / списка после `(`; включены — всё на месте
+- [ ] `TYPE:option-decompiled`, `-remarks`, `-symbol-search`: Ctrl+Click только в metadata view, Ctrl+Q без «Remarks:», Ctrl+N без типов сборок
+- [ ] `TYPE:option-auto-insert`: `///` не раскрывается, Enter не продолжает `/// `; пара `{` `}` остаётся платформенной
+- [ ] `TYPE:option-regex-highlight`, `-json-highlight`: строка без цветов и без парной скобки
+- [ ] `TYPE:option-organize`: Reformat Code сортирует `using` (System первым) и убирает неиспользуемые; при выключенной опции — не трогает
+- [ ] `TYPE:option-insertion`, `-properties`: конструктор / свойство в конце типа при `at_the_end`; Implement missing members — авто-свойство при `prefer_auto_properties`, бросающее по умолчанию
+
+### Code Vision без сервера (0.1.119) — `Console/Editor/CodeLens.cs`, `Tests/CodeLensTests.cs`
+«Code Vision» = Built-in (по умолчанию), Settings | .NET | Language Server → Code Lens: «References» и «Run and debug tests» включены. Смотреть на серую строку над объявлением, сверять с `EXPECT`.
+- Маркеры линз стоят отдельной строкой над объявлением: при позиции Code Vision «Right» линза видна сразу за кодом, а не после длинного комментария
+- [ ] `TYPE:lens-interface`, `TYPE:lens-class`, `TYPE:lens-constructor`, `TYPE:lens-property`, `TYPE:lens-enum`: «N usages» над типами и членами с числами из EXPECT (`base(radius)` — использование конструктора, не типа; у однострочного enum три записи в одной строке: тип и оба члена); клик — Show Usages плагина ровно с N строками
+- [ ] `TYPE:lens-interface-member`, `TYPE:lens-override`, `TYPE:lens-virtual`, `TYPE:lens-override-only`: у члена интерфейса, реализации и переопределения одно число — как у Find Usages (каскад по иерархии); «2 implementations» / «1 override» / «1 inheritor» рядом, клик — список
+- [ ] `TYPE:lens-no-usages`, `TYPE:lens-two-fields`, `TYPE:lens-overloads`: «no usages»; у `int _a, _b;` одна строка с двумя записями «1 usage | no usages»; перегрузки считаются порознь, по вызовам («1 usage» и «2 usages»)
+- [ ] `TYPE:lens-typing`: набрать `public void Extra() { Sum(); }` — над `Sum` сразу «1 usage», остальные линзы файла не мигают и не исчезают; Ctrl+Z
+- [ ] `TYPE:lens-test-class`, `TYPE:lens-test-method`, `TYPE:lens-test-theory`, `TYPE:lens-test-helper`: «Run | Debug» над тестами и классом тестов (над `[Fact]`, не под ним), не над helper; Run запускает ту же конфигурацию `dotnet test --filter`, что ▶ в гаттере, Debug — под отладчиком
+- [ ] выключить «References» — «N usages» пропадают при следующем проходе, «Run | Debug» остаются; выключить «Run and debug tests» — наоборот; Settings | Editor | Inlay Hints | Code Vision: группы «Usages», «Inheritors», «C# tests» тоже выключают своё
+- [ ] «Code Vision» = Language server при включённом сервере: линзы сервера «N references» вместо родных, никогда обе; обратно — родные
+
+### Исходники библиотек по Source Link и из PDB (0.1.116) — `Grpc/SourceLink.cs`
+Сервер выключен, опция Settings | .NET | Language Server → «Navigate to Source Link and embedded sources» включена (по умолчанию), сеть есть.
+PDB с Source Link лежат рядом с dll в кэше NuGet у Grpc.Net.* 2.83.0 (Grpc.AspNetCore площадки); у Microsoft.Extensions.* PDB нет —
+откат к декомпиляту. Журнал: .NET | Plugin Logs, категория «sourcelink».
+- [ ] `TYPE:sourcelink-type`: Ctrl+Click по `GzipCompressionProvider` — вкладка «GzipCompressionProvider.cs [Grpc.Net.Common]» с настоящим
+  исходником grpc-dotnet, каретка на `class GzipCompressionProvider`, баннер «Navigated to source from Source Link: https://raw.githubusercontent.com/…
+  Read-only» с «Open in Browser»; в первый раз — прогресс «Looking for the source of …»; набор в файле ничего не меняет; Back / Forward ведут обратно
+- [ ] `TYPE:sourcelink-member`: Ctrl+Click по `CreateCompressionStream` — та же вкладка без повторной загрузки, каретка на методе; `Status`,
+  `StatusCode` — «Status.cs [Grpc.Core.Api]», каретка на struct / на свойстве
+- [ ] `TYPE:sourcelink-fallback`: Ctrl+Click по `Host` — сразу декомпилят (или метаданные), в журнале одна строка «No source location … no PDB»
+- [ ] `TYPE:sourcelink-off`: опция выключена — декомпилят; включена снова — вкладка Source Link сразу, из кэша на диске
+- [ ] `TYPE:sourcelink-offline`: без сети — после прогресса декомпилят, в журнале «could not be downloaded from …», IDE не замирает
+
+### Scope «Analysis» без сервера (0.1.122) — `Console/Editor/SolutionProblems.cs`
+Settings | .NET | Language Server, группа Analysis: «Compiler diagnostics for» / «Analyzer diagnostics for» (openFiles / fullSolution / none) действуют и без сервера. Окно Problems → вкладка Project Errors.
+- [ ] `TYPE:problems-closed-file`: fullSolution, файл не открыт — в Project Errors под `SolutionProblems.cs` строка CS0219 (жёлтая); у остальных файлов solution — их настоящие ошибки и предупреждения, по одной строке на диагностику; `Broken` (не в solution) не перечислен; в журнале плагина (.NET → Plugin Logs, категория «solution problems») — «N files checked in M ms»
+- [ ] openFiles — вкладка показывает только открытые файлы, закрыл вкладку файла — строки ушли; none — C#-строк нет, в редакторе нет ни одной CSxxxx (ошибки последней сборки остаются)
+- [ ] `TYPE:problems-typing`: fullSolution, набрать `int broken = ;` — строка CS1525 появляется в Project Errors через ~1 с один раз, Ctrl+Z — исчезает; набор не тормозит; Build Solution — вкладка не мигает (те же строки остаются)
+- [ ] `TYPE:problems-analyzers`: «Analyzer diagnostics for» = fullSolution, Build Solution или сохранить любой `.cs` — предупреждения анализаторов Console (три из `Analyzers.cs`) в той же вкладке с их ID, Info-подсказок нет; openFiles — их строк нет, в открытом файле подчёркивания есть; none — подчёркиваний нет, Run Code Analysis по-прежнему показывает всё в окне Build
+- [ ] Сервер включён, «Errors and warnings» = Language server, fullSolution — вкладку заполняет сервер (как раньше); Built-in — плагин; строки не удваиваются при переключении

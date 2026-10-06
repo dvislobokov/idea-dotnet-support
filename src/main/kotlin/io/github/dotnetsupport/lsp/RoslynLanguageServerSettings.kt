@@ -89,8 +89,19 @@ class RoslynLanguageServerSettings : SimplePersistentStateComponent<RoslynLangua
     }
 }
 
+/**
+ * Whether the plugin's own C# (the native features of `lang/`) obeys an option of the page as the server does (rule of the user 2026-10-06:
+ * every option works for both). [READ]: native code reads it by its section ([RoslynOptions.isOn] / [RoslynOptions.value]);
+ * [SERVER_ONLY]: about the process of the server or a thing the plugin owns elsewhere; [PENDING]: the native feature does not read it yet.
+ * `RoslynOptionsNativeTest` keeps the list honest.
+ */
+enum class NativeSupport { READ, SERVER_ONLY, PENDING }
+
 /** One setting the server asks for: `csharp|<section>` or, for the ones that do not depend on the language, `<section>`. */
-class RoslynOption(val group: String, val section: String, val label: String, val default: String, val values: List<String>? = null, val comment: String? = null) {
+class RoslynOption(
+    val group: String, val section: String, val label: String, val default: String, val values: List<String>? = null, val comment: String? = null,
+    val native: NativeSupport = NativeSupport.PENDING,
+) {
     val isToggle: Boolean get() = values == null && (default == "true" || default == "false")
     val isText: Boolean get() = values == null && !isToggle
 
@@ -107,62 +118,72 @@ class RoslynOption(val group: String, val section: String, val label: String, va
 object RoslynOptions {
     private val SCOPES = listOf("openFiles", "fullSolution", "none")
 
-    private fun toggle(group: String, section: String, label: String, default: Boolean, comment: String? = null) = RoslynOption(group, section, label, default.toString(), comment = comment)
+    private fun toggle(group: String, section: String, label: String, default: Boolean, comment: String? = null, native: NativeSupport = NativeSupport.PENDING) =
+        RoslynOption(group, section, label, default.toString(), comment = comment, native = native)
 
     val ALL: List<RoslynOption> = listOf(
-        RoslynOption("Analysis", "background_analysis.dotnet_compiler_diagnostics_scope", "Compiler diagnostics for:", "openFiles", SCOPES),
+        RoslynOption("Analysis", "background_analysis.dotnet_compiler_diagnostics_scope", "Compiler diagnostics for:", "openFiles", SCOPES, native = NativeSupport.READ),
         RoslynOption("Analysis", "background_analysis.dotnet_analyzer_diagnostics_scope", "Analyzer diagnostics for:", "openFiles", SCOPES,
-            "\"fullSolution\" analyzes every file of the solution in the background: accurate, and heavy on a large solution"),
+            "\"fullSolution\" analyzes every file of the solution in the background: accurate, and heavy on a large solution", native = NativeSupport.READ),
 
-        toggle("Projects", "projects.dotnet_enable_automatic_restore", "Restore NuGet packages when a project needs it", true),
+        // the server's own restore on loading a project; without the server the plugin restores by its own rule, Settings | .NET | NuGet
+        // ("Automatically restore missing packages when necessary", `NuGetAutoRestore`), so one switch is not made to mean two things
+        toggle("Projects", "projects.dotnet_enable_automatic_restore", "Restore NuGet packages when a project needs it", true, native = NativeSupport.SERVER_ONLY),
         // off by default (2026-09-22, decision of the user): with it on, a .cs file created and opened while the solution is loaded is taken as a
         // program of its own and stays one until its tab is reopened - no errors in it, no types from the other files (seen live)
         toggle("Projects", "projects.dotnet_enable_file_based_programs", "Support file-based programs (a .cs file run with 'dotnet run file.cs')", false,
-            comment = "On: a new .cs file of a project is analysed on its own until its tab is reopened"),
-        toggle("Projects", "projects.dotnet_enable_file_based_programs_when_ambiguous", "Treat a loose .cs file as a file-based program when it is ambiguous", false),
-        RoslynOption("Projects", "projects.dotnet_binary_log_path", "Folder for MSBuild binary logs of project loading:", "", comment = "Empty: no binary logs"),
+            comment = "On: a new .cs file of a project is analysed on its own until its tab is reopened", native = NativeSupport.SERVER_ONLY),
+        toggle("Projects", "projects.dotnet_enable_file_based_programs_when_ambiguous", "Treat a loose .cs file as a file-based program when it is ambiguous", false, native = NativeSupport.SERVER_ONLY),
+        RoslynOption("Projects", "projects.dotnet_binary_log_path", "Folder for MSBuild binary logs of project loading:", "", comment = "Empty: no binary logs", native = NativeSupport.SERVER_ONLY),
 
-        toggle("Completion", "completion.dotnet_show_completion_items_from_unimported_namespaces", "Show items from namespaces that are not imported", true),
-        toggle("Completion", "completion.dotnet_show_name_completion_suggestions", "Suggest names for new members and variables", true),
-        toggle("Completion", "completion.dotnet_provide_regex_completions", "Completion inside regular expressions", true),
-        toggle("Completion", "completion.dotnet_trigger_completion_in_argument_lists", "Show completion in argument lists automatically", true),
+        toggle("Completion", "completion.dotnet_show_completion_items_from_unimported_namespaces", "Show items from namespaces that are not imported", true, native = NativeSupport.READ),
+        toggle("Completion", "completion.dotnet_show_name_completion_suggestions", "Suggest names for new members and variables", true, native = NativeSupport.READ),
+        toggle("Completion", "completion.dotnet_provide_regex_completions", "Completion inside regular expressions", true, native = NativeSupport.READ),
+        toggle("Completion", "completion.dotnet_trigger_completion_in_argument_lists", "Show completion in argument lists automatically", true, native = NativeSupport.READ),
 
-        toggle("Navigation and Documentation", "navigation.dotnet_navigate_to_decompiled_sources", "Navigate to decompiled sources", true),
-        toggle("Navigation and Documentation", "navigation.dotnet_navigate_to_source_link_and_embedded_sources", "Navigate to Source Link and embedded sources", true),
-        toggle("Navigation and Documentation", "quick_info.dotnet_show_remarks_in_quick_info", "Show remarks in quick documentation", true),
-        toggle("Navigation and Documentation", "symbol_search.dotnet_search_reference_assemblies", "Search symbols in reference assemblies", true),
+        toggle("Navigation and Documentation", "navigation.dotnet_navigate_to_decompiled_sources", "Navigate to decompiled sources", true, native = NativeSupport.READ),
+        toggle("Navigation and Documentation", "navigation.dotnet_navigate_to_source_link_and_embedded_sources", "Navigate to Source Link and embedded sources", true, native = NativeSupport.READ),
+        toggle("Navigation and Documentation", "quick_info.dotnet_show_remarks_in_quick_info", "Show remarks in quick documentation", true, native = NativeSupport.READ),
+        toggle("Navigation and Documentation", "symbol_search.dotnet_search_reference_assemblies", "Search symbols in reference assemblies", true, native = NativeSupport.READ),
 
-        toggle("Code Lens", "code_lens.dotnet_enable_references_code_lens", "References", true),
-        toggle("Code Lens", "code_lens.dotnet_enable_tests_code_lens", "Run and debug tests", true),
+        toggle("Code Lens", "code_lens.dotnet_enable_references_code_lens", "References", true, native = NativeSupport.READ),
+        toggle("Code Lens", "code_lens.dotnet_enable_tests_code_lens", "Run and debug tests", true, native = NativeSupport.READ),
 
         // on by default as in Rider (decision of the user 2026-09-22): names of literal / indexer / new arguments, types of var and lambda
         // parameters; "everything else", new() and collection expressions stay off: they make a line noisy
-        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_parameters", "Parameter names", true),
-        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_literal_parameters", "Parameter names: for literals", true),
-        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_indexer_parameters", "Parameter names: for indexers", true),
-        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_object_creation_parameters", "Parameter names: for 'new' expressions", true),
-        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_other_parameters", "Parameter names: for everything else", false),
-        toggle("Inlay Hints", "inlay_hints.dotnet_suppress_inlay_hints_for_parameters_that_differ_only_by_suffix", "Parameter names: not when the names differ only by suffix", true),
-        toggle("Inlay Hints", "inlay_hints.dotnet_suppress_inlay_hints_for_parameters_that_match_method_intent", "Parameter names: not when the name matches the intent of the method", true),
-        toggle("Inlay Hints", "inlay_hints.dotnet_suppress_inlay_hints_for_parameters_that_match_argument_name", "Parameter names: not when the argument has the same name", true),
-        toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_types", "Types", true),
-        toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_implicit_variable_types", "Types: of 'var' variables", true),
-        toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_lambda_parameter_types", "Types: of lambda parameters", true),
-        toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_implicit_object_creation", "Types: of 'new()' expressions", false),
-        toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_collection_expressions", "Types: of collection expressions", false),
+        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_parameters", "Parameter names", true, native = NativeSupport.READ),
+        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_literal_parameters", "Parameter names: for literals", true, native = NativeSupport.READ),
+        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_indexer_parameters", "Parameter names: for indexers", true, native = NativeSupport.READ),
+        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_object_creation_parameters", "Parameter names: for 'new' expressions", true, native = NativeSupport.READ),
+        toggle("Inlay Hints", "inlay_hints.dotnet_enable_inlay_hints_for_other_parameters", "Parameter names: for everything else", false, native = NativeSupport.READ),
+        toggle("Inlay Hints", "inlay_hints.dotnet_suppress_inlay_hints_for_parameters_that_differ_only_by_suffix", "Parameter names: not when the names differ only by suffix", true, native = NativeSupport.READ),
+        toggle("Inlay Hints", "inlay_hints.dotnet_suppress_inlay_hints_for_parameters_that_match_method_intent", "Parameter names: not when the name matches the intent of the method", true, native = NativeSupport.READ),
+        toggle("Inlay Hints", "inlay_hints.dotnet_suppress_inlay_hints_for_parameters_that_match_argument_name", "Parameter names: not when the argument has the same name", true, native = NativeSupport.READ),
+        toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_types", "Types", true, native = NativeSupport.READ),
+        toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_implicit_variable_types", "Types: of 'var' variables", true, native = NativeSupport.READ),
+        toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_lambda_parameter_types", "Types: of lambda parameters", true, native = NativeSupport.READ),
+        toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_implicit_object_creation", "Types: of 'new()' expressions", false, native = NativeSupport.READ),
+        toggle("Inlay Hints", "inlay_hints.csharp_enable_inlay_hints_for_collection_expressions", "Types: of collection expressions", false, native = NativeSupport.READ),
 
-        toggle("Editing", "auto_insert.dotnet_enable_auto_insert", "Insert documentation comments and closing braces automatically", true),
-        toggle("Editing", "formatting.dotnet_organize_imports_on_format", "Organize 'using' directives when formatting", false),
-        toggle("Editing", "highlighting.dotnet_highlight_related_regex_components", "Highlight related parts of regular expressions", true),
-        toggle("Editing", "highlighting.dotnet_highlight_related_json_components", "Highlight related parts of JSON strings", true),
+        toggle("Editing", "auto_insert.dotnet_enable_auto_insert", "Insert documentation comments and closing braces automatically", true, native = NativeSupport.READ),
+        toggle("Editing", "formatting.dotnet_organize_imports_on_format", "Organize 'using' directives when formatting", false, native = NativeSupport.READ),
+        toggle("Editing", "highlighting.dotnet_highlight_related_regex_components", "Highlight related parts of regular expressions", true, native = NativeSupport.READ),
+        toggle("Editing", "highlighting.dotnet_highlight_related_json_components", "Highlight related parts of JSON strings", true, native = NativeSupport.READ),
 
         RoslynOption("Code Generation", "type_members.dotnet_member_insertion_location", "Insert generated members:", "with_other_members_of_the_same_kind",
-            listOf("with_other_members_of_the_same_kind", "at_the_end")),
+            listOf("with_other_members_of_the_same_kind", "at_the_end"), native = NativeSupport.READ),
         RoslynOption("Code Generation", "type_members.dotnet_property_generation_behavior", "Generated properties:", "prefer_throwing_properties",
-            listOf("prefer_throwing_properties", "prefer_auto_properties")),
+            listOf("prefer_throwing_properties", "prefer_auto_properties"), native = NativeSupport.READ),
     )
 
     val GROUPS: List<String> = ALL.map { it.group }.distinct()
+
+    fun option(section: String): RoslynOption = ALL.firstOrNull { it.section == section } ?: error("not an option of the page: $section")
+
+    /** The value of the option [section] as the page shows it: what the native features read, so they agree with the server. */
+    fun value(section: String): String = RoslynLanguageServerSettings.getInstance().value(option(section))
+
+    fun isOn(section: String): Boolean = value(section) == "true"
 
     fun key(group: String): String = "roslyn.group." + group.lowercase().replace(' ', '_')
 

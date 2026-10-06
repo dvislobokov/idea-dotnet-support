@@ -141,7 +141,8 @@ class CSharpGenerateTest : BasePlatformTestCase() {
         """)
         assertTrue(text, text.startsWith("using System;\n\n"))
         assertTrue(text, text.contains("public Order Find(int id)\n    {\n        throw new NotImplementedException();\n    }"))
-        assertTrue(text, text.contains("public string? Name { get; }"))
+        // the default of the page of the server: "prefer throwing properties"
+        assertTrue(text, text.contains("public string? Name\n    {\n        get => throw new NotImplementedException();\n    }"))
         assertTrue(text, text.contains("public void Save(Order item, out bool created)"))
     }
 
@@ -163,7 +164,7 @@ class CSharpGenerateTest : BasePlatformTestCase() {
             }
         """)
         assertTrue(text, text.contains("public override double Area()\n    {\n        throw new NotImplementedException();\n    }"))
-        assertTrue(text, text.contains("protected override string Label { get; set; }"))
+        assertTrue(text, text.contains("protected override string Label\n    {\n        get => throw new NotImplementedException();\n        set => throw new NotImplementedException();\n    }"))
         assertTrue(text, text.contains("public void Dispose()\n    {\n        throw new NotImplementedException();\n    }"))
         assertTrue(text, text.contains("public int CompareTo(Circle? other)"))
         assertFalse("a virtual member is not missing: $text", text.contains("Draw()\n    {\n        throw"))

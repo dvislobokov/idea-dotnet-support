@@ -119,26 +119,31 @@ class CSharpRemoveUnusedUsingsFix : IntentionAction {
     override fun invoke(project: Project, editor: Editor?, file: PsiFile?) {
         if (file !is CSharpFile) return
         val document = PsiDocumentManager.getInstance(project).getDocument(file) ?: return
-        val ranges = unused(file).map { lineOf(document.charsSequence, it) }.sortedByDescending { it.startOffset }
+        val ranges = unusedLines(file, document.charsSequence)
         WriteCommandAction.runWriteCommandAction(project, text, null, {
             for (range in ranges) document.deleteString(range.startOffset, range.endOffset)
             PsiDocumentManager.getInstance(project).commitDocument(document)
         }, file)
     }
 
-    private fun unused(file: CSharpFile): List<TextRange> = NativeCSharpSemanticDiagnostics.of(file).filter { it.code == "CS8019" }.map { it.range }
+    companion object {
+        fun unused(file: CSharpFile): List<TextRange> = NativeCSharpSemanticDiagnostics.of(file).filter { it.code == "CS8019" }.map { it.range }
 
-    /** The directive with its line when nothing else is on it. */
-    private fun lineOf(text: CharSequence, range: TextRange): TextRange {
-        var start = range.startOffset
-        while (start > 0 && (text[start - 1] == ' ' || text[start - 1] == '\t')) start--
-        var end = range.endOffset
-        while (end < text.length && (text[end] == ' ' || text[end] == '\t')) end++
-        if ((start == 0 || text[start - 1] == '\n') && end < text.length && (text[end] == '\n' || text[end] == '\r')) {
-            if (text[end] == '\r') end++
-            if (end < text.length && text[end] == '\n') end++
-            return TextRange(start, end)
+        /** The lines of the unused directives, last first, so that deleting them one by one keeps the offsets of the others. */
+        fun unusedLines(file: CSharpFile, text: CharSequence): List<TextRange> = unused(file).map { lineOf(text, it) }.sortedByDescending { it.startOffset }
+
+        /** The directive with its line when nothing else is on it. */
+        private fun lineOf(text: CharSequence, range: TextRange): TextRange {
+            var start = range.startOffset
+            while (start > 0 && (text[start - 1] == ' ' || text[start - 1] == '\t')) start--
+            var end = range.endOffset
+            while (end < text.length && (text[end] == ' ' || text[end] == '\t')) end++
+            if ((start == 0 || text[start - 1] == '\n') && end < text.length && (text[end] == '\n' || text[end] == '\r')) {
+                if (text[end] == '\r') end++
+                if (end < text.length && text[end] == '\n') end++
+                return TextRange(start, end)
+            }
+            return range
         }
-        return range
     }
 }

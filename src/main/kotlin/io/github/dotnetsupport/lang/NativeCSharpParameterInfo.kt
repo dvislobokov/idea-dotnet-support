@@ -169,6 +169,20 @@ object NativeCSharpParameterInfo {
         else -> listOf(symbol)
     }
 
+    /** The constructor the arguments of [list] (of `new`, `: this(…)` / `: base(…)`, a primary constructor's base) pick; null when the resolver cannot pick one. */
+    internal fun chosenConstructor(list: CSharpBaseArgumentList, resolver: CSharpNameResolver): CSharpSymbol? {
+        val type = when (val owner = list.parent) {
+            is CSharpBaseObjectCreationExpression -> resolver.typeOf(owner)
+            is CSharpConstructorInitializer, is CSharpPrimaryConstructorBaseType -> {
+                val declaration = PsiTreeUtil.getParentOfType(list, CSharpTypeDeclaration::class.java) ?: return null
+                val own = resolver.selfType(resolver.syntax.declaredType(declaration) ?: return null)
+                if ((owner as? CSharpConstructorInitializer)?.thisOrBaseKeyword?.text == "this") own else resolver.baseTypes(own).firstOrNull { !NativeCSharpGenerate.isInterface(it) }
+            }
+            else -> null
+        } ?: return null
+        return resolver.pickConstructor(constructorsOf(type), list.arguments)
+    }
+
     private fun creation(creation: CSharpBaseObjectCreationExpression, resolver: CSharpNameResolver, text: CSharpSymbolText): List<Row> =
         constructorRows(resolver.typeOf(creation) ?: return emptyList(), creation.argumentList?.arguments.orEmpty(), resolver, text)
 

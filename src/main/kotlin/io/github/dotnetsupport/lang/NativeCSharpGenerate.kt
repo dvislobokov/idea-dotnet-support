@@ -83,6 +83,11 @@ class CSharpGenerateSite(
             val resolver = CSharpSemanticSession(file.project).resolver(file)
             val info = resolver.syntax.declaredType(type) ?: return null
             val members = type.members
+            // "Insert generated members: at the end" of the page of the server: after the last member, wherever the caret is
+            if (CSharpGenerationOptions.atEnd) {
+                val last = members.lastOrNull()
+                return CSharpGenerateSite(file, type, resolver, info, resolver.selfType(info), last?.textRange?.endOffset ?: open.textRange.endOffset, last != null, nullableContext(file, offset))
+            }
             val inside = offset.coerceIn(open.textRange.endOffset, close.textRange.startOffset)
             val holder = members.firstOrNull { it.textRange.startOffset < inside && inside < it.textRange.endOffset }
             // a blank line between members takes the members where the caret is, as in Rider
@@ -1114,7 +1119,9 @@ class NativeCSharpInheritedMembers(private val site: CSharpGenerateSite) {
                         if (a == "get") "    get => base.$name;\n" else "    $a => base.$name = value;\n"
                     } + "}"
                     Mode.EXPLICIT -> "${signature.type} $explicitPrefix$name\n{\n" + accessors.joinToString("") { a -> "    $a => $throwing;\n" } + "}"
-                    else -> "$head${signature.type} $name { " + accessors.joinToString(" ") { "$it;" } + " }"
+                    // "Generated properties: prefer throwing properties" of the page of the server (Roslyn's default), else an auto property
+                    else -> if (CSharpGenerationOptions.throwingProperties) "$head${signature.type} $name\n{\n" + accessors.joinToString("") { a -> "    $a => $throwing;\n" } + "}"
+                    else "$head${signature.type} $name { " + accessors.joinToString(" ") { "$it;" } + " }"
                 }
             }
             Kind.INDEXER -> {

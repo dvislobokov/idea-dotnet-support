@@ -11,6 +11,7 @@ import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
+import io.github.dotnetsupport.lsp.RoslynOptions
 
 /**
  * The list opens by itself with nothing typed where Rider opens it (COMPLETION_GAPS 2.10; Rider dumps 1, 10, 15, 23, 33, 36): after `#` at
@@ -24,20 +25,28 @@ import com.intellij.psi.PsiFile
  */
 class CSharpCompletionAutoPopup : TypedHandlerDelegate() {
     override fun charTyped(c: Char, project: Project, editor: Editor, file: PsiFile): Result {
-        if (file !is CSharpFile || c !in TRIGGERS || editor.caretModel.caretCount != 1) return Result.CONTINUE
-        if (LookupManager.getActiveLookup(editor) != null) return Result.CONTINUE
-        val text = editor.document.immutableCharSequence
-        val offset = editor.caretModel.offset
-        if (!triggers(text, offset)) return Result.CONTINUE
-        if ((c == '(' || c == ',') && !delegateArgument(project, editor, file, offset)) return Result.CONTINUE
-        AutoPopupController.getInstance(project).scheduleAutoPopup(editor)
+        if (schedules(c, project, editor, file)) AutoPopupController.getInstance(project).scheduleAutoPopup(editor)
         return Result.CONTINUE
     }
 
     companion object {
+        /** Whether [c] just typed opens the list: a C# file, one caret, a place of [triggers], and for `(` / `,` an argument where a lambda goes, when the option says so. */
+        fun schedules(c: Char, project: Project, editor: Editor, file: PsiFile): Boolean {
+            if (file !is CSharpFile || c !in TRIGGERS || editor.caretModel.caretCount != 1) return false
+            if (LookupManager.getActiveLookup(editor) != null) return false
+            val text = editor.document.immutableCharSequence
+            val offset = editor.caretModel.offset
+            if (!triggers(text, offset)) return false
+            return !(c == '(' || c == ',') || (inArgumentLists && delegateArgument(project, editor, file, offset))
+        }
+
+        /** `completion.dotnet_trigger_completion_in_argument_lists` of the server's page: off, `(` and `,` open nothing, as with the server. */
+        val inArgumentLists: Boolean get() = RoslynOptions.isOn("completion.dotnet_trigger_completion_in_argument_lists")
+
         /** After a method chosen with `(` ([CSharpCommitCharFilter]): when the caret ends in an argument where a lambda may go, the list opens. */
         fun afterCommit(editor: Editor) {
             val project = editor.project ?: return
+            if (!inArgumentLists) return
             ApplicationManager.getApplication().invokeLater({
                 if (project.isDisposed || editor.isDisposed || LookupManager.getActiveLookup(editor) != null) return@invokeLater
                 val file = PsiDocumentManager.getInstance(project).getPsiFile(editor.document) ?: return@invokeLater

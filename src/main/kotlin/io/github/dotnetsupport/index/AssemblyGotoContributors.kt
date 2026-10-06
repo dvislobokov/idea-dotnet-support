@@ -12,6 +12,7 @@ import com.intellij.util.indexing.FindSymbolParameters
 import com.intellij.util.indexing.IdFilter
 import io.github.dotnetsupport.lang.CSharpIcons
 import io.github.dotnetsupport.lang.DeclarationKind
+import io.github.dotnetsupport.lsp.RoslynOptions
 import java.util.Collections
 import java.util.WeakHashMap
 import javax.swing.Icon
@@ -73,14 +74,17 @@ internal class AssemblyIndexNames private constructor(val typeNames: Array<Strin
  * from the index when they are asked for by name and open the metadata view of the type ([AssemblyNavigation]).
  */
 abstract class AssemblyGotoContributor(private val members: Boolean) : ChooseByNameContributorEx, DumbAware {
+    // `symbol_search.dotnet_search_reference_assemblies` of the server's page: off, the native side does not search the libraries either
+    private val enabled: Boolean get() = RoslynOptions.isOn("symbol_search.dotnet_search_reference_assemblies")
+
     override fun processNames(processor: Processor<in String>, scope: GlobalSearchScope, filter: IdFilter?) {
-        if (!scope.isSearchInLibraries) return
+        if (!scope.isSearchInLibraries || !enabled) return
         val project = scope.project ?: return
         for (name in names(AssemblyIndexService.getInstance(project).allIndexes())) if (!processor.process(name)) return
     }
 
     override fun processElementsWithName(name: String, processor: Processor<in NavigationItem>, parameters: FindSymbolParameters) {
-        if (!parameters.isSearchInLibraries) return
+        if (!parameters.isSearchInLibraries || !enabled) return
         val project = parameters.project
         val seen = HashSet<String>()
         val indexes = AssemblyIndexService.getInstance(project).allIndexes()

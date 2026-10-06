@@ -29,8 +29,12 @@ import io.github.dotnetsupport.lang.TypePart
 class CSharpSearchTarget(val name: String, val kind: Kind, val declarations: List<PsiElement>, val library: CSharpSymbol? = null) {
     enum class Kind { TYPE, METHOD, PROPERTY, INDEXER, FIELD, EVENT, ENUM_MEMBER, CONSTRUCTOR }
 
-    /** The declarations as places: a declaration is the same whether its PSI comes from a stub or from the AST. */
-    val keys: Set<Key> = declarations.mapNotNullTo(LinkedHashSet(), Key::of)
+    /**
+     * The declarations as places: a declaration is the same whether its PSI comes from a stub or from the AST. Read anew each time, not
+     * once: a target outlives edits of its file in the cache of the lenses ([io.github.dotnetsupport.lang.CSharpUsageCounts]), and an edit
+     * above a declaration moves it — its offset of before the edit would match nothing.
+     */
+    val keys: Set<Key> get() = declarations.mapNotNullTo(LinkedHashSet(), Key::of)
 
     val isType: Boolean get() = kind == Kind.TYPE
 
@@ -258,6 +262,7 @@ object CSharpSolutionSearch {
      * of the value, with the number of parameters the construct passes.
      */
     private fun processImplicitCalls(project: Project, target: CSharpSearchTarget, scope: SearchScope, session: CSharpSemanticSession, consumer: (Usage) -> Boolean): Boolean {
+        val keys = target.keys
         fun calls(resolver: CSharpNameResolver, type: SemanticType?, arguments: Int): Boolean {
             if (type == null) return false
             val methods = resolver.membersNamed(type, target.name, 0).filter(resolver::isMethod).filter { method ->
@@ -266,7 +271,7 @@ object CSharpSolutionSearch {
             }
             val method = methods.singleOrNull() ?: return false
             target.library?.let { return method == it }
-            return method.declarations.any { CSharpSearchTarget.Key.of(it) in target.keys }
+            return method.declarations.any { CSharpSearchTarget.Key.of(it) in keys }
         }
         fun inScope(element: PsiElement): Boolean = when (scope) {
             is LocalSearchScope -> scope.containsRange(element.containingFile, element.textRange)
@@ -389,9 +394,10 @@ object CSharpSolutionSearch {
     }
 
     /**
-     * The calls of constructors that do not write the type's name, which Roslyn counts as usages of the type and of the constructor: the
-     * `base(…)` initializers of the subtypes' constructors, the `this(…)` ones of the type, target-typed `new(…)`. Their leaf is the keyword
-     * (`base`, `this`, `new`) — a usage to show, not a name to rename.
+     * The calls of constructors that do not write the type's name: the `base(…)` initializers of the subtypes' constructors and the `this(…)`
+     * ones of the type — usages of the constructor alone, as Roslyn and Rider count them (a constructor initializer names no type) — and
+     * target-typed `new(…)`, a usage of the constructor and of the type. Their leaf is the keyword (`base`, `this`, `new`) — a usage to
+     * show, not a name to rename.
      */
     private fun processConstructorCalls(project: Project, target: CSharpSearchTarget, scope: SearchScope, session: CSharpSemanticSession, consumer: (Usage) -> Boolean): Boolean {
         val constructor = target.primary as? CSharpConstructorDeclaration
@@ -412,7 +418,7 @@ object CSharpSolutionSearch {
             else -> true
         }
         val own = typeTarget.keys
-        for (holder in typeTarget.declarations + directSubtypes(project, typeTarget, session)) {
+        for (holder in if (constructor == null) emptyList() else typeTarget.declarations + directSubtypes(project, typeTarget, session)) {
             val isOwn = CSharpSearchTarget.Key.of(holder) in own
             for (member in (holder as? CSharpTypeDeclaration)?.members.orEmpty()) {
                 val initializer = (member as? CSharpConstructorDeclaration)?.initializer ?: continue
@@ -511,7 +517,8 @@ object CSharpSolutionSearch {
         val symbols = resolve(resolver, leaf) ?: return false
         if (target.kind == CSharpSearchTarget.Kind.CONSTRUCTOR) return constructorUsage(leaf, symbols, target)
         target.library?.let { library -> return symbols.any { it == library } }
-        return symbols.any { symbol -> symbol.declarations.any { CSharpSearchTarget.Key.of(it) in target.keys } }
+        val keys = target.keys
+        return symbols.any { symbol -> symbol.declarations.any { CSharpSearchTarget.Key.of(it) in keys } }
     }
 
     /** `new T(…)` of the constructor's type: the constructor when the type has one of its arity, or this one is the only one. */
@@ -566,6 +573,7 @@ object CSharpSolutionSearch {
             candidates += it
             true
         }
+        val keys = target.keys
         for (candidate in candidates) {
             ProgressManager.checkCanceled()
             val declaration = candidate as? CSharpBaseTypeDeclaration ?: continue
@@ -574,7 +582,7 @@ object CSharpSolutionSearch {
             val names = declaration.baseList?.types.orEmpty().mapNotNull { it.type }
             val hit = names.any { written ->
                 when (val type = resolver.resolveType(written)) {
-                    is SemanticType.Source -> type.info.targets().any { CSharpSearchTarget.Key.of(it) in target.keys }
+                    is SemanticType.Source -> type.info.targets().any { CSharpSearchTarget.Key.of(it) in keys }
                     is SemanticType.Library -> (target.library as? CSharpSymbol.LibraryType)?.type == type.type
                     else -> false
                 }
@@ -594,13 +602,14 @@ object CSharpSolutionSearch {
     /** Every subtype of [target], the nearer first. */
     fun allSubtypes(project: Project, target: CSharpSearchTarget, session: CSharpSemanticSession, limit: Int = 500): List<PsiElement> {
         val seen = LinkedHashMap<CSharpSearchTarget.Key, PsiElement>()
+        val own = target.keys
         var level = listOf(target)
         var depth = 0
         while (level.isNotEmpty() && depth++ < 32 && seen.size < limit) {
             val next = ArrayList<CSharpSearchTarget>()
             for (type in level) for (sub in directSubtypes(project, type, session)) {
                 val key = CSharpSearchTarget.Key.of(sub) ?: continue
-                if (key in target.keys || seen.putIfAbsent(key, sub) != null) continue
+                if (key in own || seen.putIfAbsent(key, sub) != null) continue
                 targetOf(sub)?.let { next += it }
             }
             level = next

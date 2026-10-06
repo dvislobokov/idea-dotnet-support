@@ -48,9 +48,12 @@ object NativeCSharpFormatting {
     }
 }
 
-/** `csharp_*` options of the `.editorconfig` files above a source file; the nearest file wins, `root = true` ends the search. */
+/**
+ * `csharp_*` options of the `.editorconfig` files above a source file (and `dotnet_sort_system_directives_first`, for the `using` directives
+ * organized on format); the nearest file wins, `root = true` ends the search.
+ */
 object CSharpEditorConfig {
-    private val OPTION = Regex("""^[ \t]*(csharp_\w+)[ \t]*=[ \t]*([^#;\r\n]*)""", RegexOption.MULTILINE)
+    private val OPTION = Regex("""^[ \t]*(csharp_\w+|dotnet_sort_system_directives_first)[ \t]*=[ \t]*([^#;\r\n]*)""", RegexOption.MULTILINE)
     private val ROOT = Regex("""^\s*root\s*=\s*true""", setOf(RegexOption.MULTILINE, RegexOption.IGNORE_CASE))
 
     /** Sections are not told apart: `csharp_*` options are only ever written for C# files. */

@@ -280,6 +280,33 @@ class CSharpSemanticErrorsTest : BasePlatformTestCase() {
         """)))
     }
 
+    /**
+     * C# 7.2 non-trailing named arguments: a named argument in its own position lets positional ones follow (the playground's
+     * `Draw(width: 1, "t", shape: shape)` got a false CS7036 on `title`, robot 0.1.117); out of position it does not (CS8323 in Roslyn,
+     * nothing here); CS7036 names the first parameter no argument is bound to, by position or by name.
+     */
+    fun testNamedArgumentsBindAsRoslynBindsThem() {
+        assertEquals(listOf(
+            "Draw -> CS7036: There is no argument given that corresponds to the required parameter 'title' of 'Errors.Draw(int, string, int)'",
+            "Draw -> CS7036: There is no argument given that corresponds to the required parameter 'title' of 'Errors.Draw(int, string, int)'",
+            "Draw -> CS7036: There is no argument given that corresponds to the required parameter 'shape' of 'Errors.Draw(int, string, int)'",
+        ), errors(wrap("""
+            Draw(width: 1, "t", shape: 2);
+            Draw(1, title: "t", shape: 2);
+            Draw(width: 1, title: "t", 2);
+            Draw(shape: 2, width: 1, title: "t");
+            Draw(title: "t", 1, 2);
+            Log(format: "x", 1, 2);
+            Log("x", args: new object[] { 1 });
+            Draw(width: 1, shape: 2);
+            Draw(1, shape: 2);
+            Draw(title: "t", width: 1);
+        """, """
+            void Draw(int width, string title, int shape) { }
+            void Log(string format, params object[] args) { }
+        """)))
+    }
+
     fun testConversions() {
         assertEquals(listOf(
             "\"three\" -> CS0029: Cannot implicitly convert type 'string' to 'int'",

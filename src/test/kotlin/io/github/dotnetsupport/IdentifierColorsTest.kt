@@ -5,6 +5,7 @@ import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFeature
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import io.github.dotnetsupport.lang.CSharpBracketColors
 import io.github.dotnetsupport.lang.CSharpIdentifierAnnotator
 import io.github.dotnetsupport.lang.CSharpIdentifierClassifier
 import io.github.dotnetsupport.lang.IdentifierKind.MEMBER
@@ -116,8 +117,9 @@ class IdentifierColorsTest : BasePlatformTestCase() {
     }
 
     fun testAnnotatorAndRiderPalette() {
+        // the brackets have their own test (CSharpBracketColorsTest)
         myFixture.configureByText("A.cs", "class Program { static void Main() { Console.WriteLine(1); } }")
-        val highlighted = myFixture.doHighlighting().mapNotNull { info -> info.forcedTextAttributesKey?.let { "${info.text}:${it.externalName}" } }
+        val highlighted = myFixture.doHighlighting().mapNotNull { info -> info.forcedTextAttributesKey?.takeIf { it !in CSharpBracketColors.LEVELS }?.let { "${info.text}:${it.externalName}" } }
         assertEquals(listOf("Program:CSHARP_TYPE", "Main:CSHARP_METHOD", "Console:CSHARP_TYPE", "WriteLine:CSHARP_METHOD"), highlighted)
 
         // the bundled scheme gives the keys their Rider colors

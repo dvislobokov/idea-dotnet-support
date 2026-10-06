@@ -24,6 +24,7 @@ import io.github.dotnetsupport.lang.semantic.CSharpSymbolText
 import io.github.dotnetsupport.suggest.SuggestionRules
 import io.github.dotnetsupport.suggest.SuggestionStats
 import java.util.Collections
+import io.github.dotnetsupport.lsp.RoslynOptions
 import java.util.WeakHashMap
 import java.util.concurrent.ConcurrentHashMap
 import javax.swing.Icon
@@ -47,6 +48,9 @@ import javax.swing.Icon
 object NativeCSharpImportCompletion {
     /** What is not imported is offered from this many letters typed. */
     const val MIN_PREFIX = 1
+
+    /** `completion.dotnet_show_completion_items_from_unimported_namespaces` of the server's page: off, only what a `using` sees is listed. */
+    val unimportedEnabled: Boolean get() = RoslynOptions.isOn("completion.dotnet_show_completion_items_from_unimported_namespaces")
 
     /** Of what is not imported, the rows a call gives at most, the most likely first: `System` first, then the shorter names. */
     const val MAX_UNIMPORTED = 150
@@ -104,7 +108,7 @@ object NativeCSharpImportCompletion {
                 val info = syntax.typeInfo(part.qualifiedName, part.arity) ?: continue
                 result += sourceElement(name, info, part.namespace!!, imported = true)
             }
-            if (prefix.length < MIN_PREFIX) return result
+            if (prefix.length < MIN_PREFIX || !unimportedEnabled) return result
             val unimported = ArrayList<Pair<String, () -> LookupElement>>()
             for ((name, parts) in solution) for (part in parts) {
                 val namespace = part.namespace ?: continue
@@ -216,7 +220,7 @@ object NativeCSharpImportCompletion {
      * `numbers.Shu|` → `Shuffle (in Shop.Collections)`; choosing it writes the call and the `using`. Nothing before the first letter.
      */
     fun extensions(place: NativeCSharpCompletionPlace, file: CSharpFile, matcher: PrefixMatcher, taken: Set<String>): List<LookupElement> {
-        if (matcher.prefix.length < MIN_PREFIX) return emptyList()
+        if (matcher.prefix.length < MIN_PREFIX || !unimportedEnabled) return emptyList()
         val name = place.name ?: return emptyList()
         val resolver = CSharpSemanticSession(file.project).resolver(file)
         val qualifier = CSharpMemberLookup(resolver).qualifierOf(name) ?: return emptyList()

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Matching brackets of C# by depth (CSharpBracketColors) in the light schemes: the defaults of VS Code's bracket pair colorization
+     (editorBracketHighlight.foreground1..3 of its light themes). Added to "Default", inherited by every scheme based on it. -->
+<list>
+  <option name="CSHARP_BRACES_LEVEL_1">
+    <value><option name="FOREGROUND" value="0431fa"/></value>
+  </option>
+  <option name="CSHARP_BRACES_LEVEL_2">
+    <value><option name="FOREGROUND" value="319331"/></value>
+  </option>
+  <option name="CSHARP_BRACES_LEVEL_3">
+    <value><option name="FOREGROUND" value="7b3814"/></value>
+  </option>
+</list>

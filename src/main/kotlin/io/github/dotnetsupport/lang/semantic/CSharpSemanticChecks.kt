@@ -462,14 +462,28 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         return "$typeName.${owner.identifier?.text}(${shown.joinToString(", ")})"
     }
 
-    /** With named arguments, only the one method of its name: CS7036 for a required parameter no argument gives. */
+    /**
+     * With named arguments, only the one method of its name: CS7036 for a required parameter no argument gives, the arguments bound as
+     * Roslyn binds them (§12.6.2.2): by position until a named one, by name after; a named argument in its own position lets positional
+     * ones follow (C# 7.2, `Draw(width: 1, "t", shape: s)`), out of position it does not (CS8323 in Roslyn, nothing here).
+     */
     private fun checkNamedArguments(candidates: List<CSharpSymbol>, signatures: List<List<CSharpNameResolver.Parameter>>, arguments: List<CSharpArgument>, leaf: PsiElement) {
         val parameters = signatures.singleOrNull() ?: return
-        val names = arguments.mapNotNull { it.nameColon?.nameElement?.identifier?.text }
-        if (names.any { n -> parameters.none { it.name == n } }) return
-        val positional = arguments.takeWhile { it.nameColon == null }.size
-        if (positional > parameters.size) return
-        val missing = parameters.drop(positional).firstOrNull { !it.optional && !it.isParams && it.name !in names } ?: return
+        val bound = HashSet<Int>()
+        var positional = true
+        for ((i, argument) in arguments.withIndex()) {
+            val name = argument.nameColon?.nameElement?.identifier?.text
+            val index = if (name != null) {
+                parameters.indexOfFirst { it.name == name }.takeIf { it >= 0 } ?: return
+            } else {
+                if (!positional) return
+                // past the last parameter only the arguments of `params` go; more than that is CS1501, not this
+                if (i < parameters.size) i else if (parameters.lastOrNull()?.isParams == true) parameters.size - 1 else return
+            }
+            if (name != null && index != i) positional = false
+            if (!bound.add(index) && !parameters[index].isParams) return
+        }
+        val missing = parameters.withIndex().firstOrNull { (p, it) -> p !in bound && !it.optional && !it.isParams }?.value ?: return
         val shown = methodDisplay(candidates.single()) ?: return
         report("CS7036", "There is no argument given that corresponds to the required parameter '${missing.name}' of '$shown'", leaf.textRange)
     }

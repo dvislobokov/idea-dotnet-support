@@ -17,6 +17,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
+import io.github.dotnetsupport.lsp.RoslynOptions
 
 /** Live templates of `liveTemplates/CSharp.xml` apply to C# files. */
 class CSharpTemplateContext : TemplateContextType("C#") {
@@ -34,6 +35,12 @@ class CSharpTypeNameMacro : MacroBase("csharpTypeName", "csharpTypeName()") {
 
 /** XML documentation comments: what `///` above a declaration expands to. */
 object CSharpDocComments {
+    /**
+     * `auto_insert.dotnet_enable_auto_insert` of the page of the server, what its `OnAutoInsert` does: the `///` skeleton and `///` on
+     * Enter inside a doc comment. The pair of `{` and `}` on Enter is the platform's (Settings | Editor | Smart Keys), as in VS Code.
+     */
+    val autoInsert: Boolean get() = RoslynOptions.isOn("auto_insert.dotnet_enable_auto_insert")
+
     /** `a`, `b` of `(int a, string b = "x", params object[] rest)`: the last word of each parameter before its default value. */
     fun parameterNames(parameters: String?): List<String> {
         val inner = parameters?.trim()?.removePrefix("(")?.removeSuffix(")")?.removePrefix("[")?.removeSuffix("]") ?: return emptyList()
@@ -81,7 +88,7 @@ object CSharpDocComments {
 /** The third `/` above a declaration makes the summary, with `param` and `returns` for a method. */
 class CSharpDocCommentTypedHandler : TypedHandlerDelegate() {
     override fun charTyped(c: Char, project: Project, editor: Editor, file: PsiFile): Result {
-        if (c != '/' || file !is CSharpFile) return Result.CONTINUE
+        if (c != '/' || file !is CSharpFile || !CSharpDocComments.autoInsert) return Result.CONTINUE
         val document = editor.document
         val offset = editor.caretModel.offset
         val line = document.getLineNumber(offset)
@@ -171,7 +178,7 @@ class CSharpDocCommentEnterHandler : EnterHandlerDelegateAdapter() {
         file: PsiFile, editor: Editor, caretOffset: Ref<Int>, caretAdvance: Ref<Int>, dataContext: DataContext, originalHandler: EditorActionHandler?,
     ): EnterHandlerDelegate.Result {
         inDocComment = false
-        if (file !is CSharpFile) return EnterHandlerDelegate.Result.Continue
+        if (file !is CSharpFile || !CSharpDocComments.autoInsert) return EnterHandlerDelegate.Result.Continue
         val document = editor.document
         val offset = caretOffset.get()
         val lineStart = document.getLineStartOffset(document.getLineNumber(offset))

@@ -64,7 +64,7 @@ public class Formatting
     // the query clauses line up under `from`; the lambda body is indented from the line of the lambda. Server: same text
     public List<int> Initializers()
     {
-        var box = new Bo { Count = 3, Name = "n" };
+        var box = new Box { Count = 3, Name = "n" };
         var list = new List<int>
         {
             1,

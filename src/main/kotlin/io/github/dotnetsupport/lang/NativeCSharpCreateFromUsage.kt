@@ -279,7 +279,7 @@ object CSharpCreateFromUsage {
     // ---- the edits
 
     /** Inserts [member] (4-space levels) into [type] of [document]: a field after the fields (or first), the rest after [after] or last. */
-    internal fun insertMember(document: Document, type: CSharpTypeDeclaration, member: String, field: Boolean, after: CSharpMemberDeclaration?, unit: String): Int {
+    internal fun insertMember(document: Document, type: CSharpTypeDeclaration, member: String, field: Boolean, after: CSharpMemberDeclaration?, unit: String, property: Boolean = false): Int {
         val text = document.charsSequence
         val open = type.openBraceToken!!.textRange.endOffset
         val close = type.closeBraceToken!!.textRange.startOffset
@@ -294,11 +294,16 @@ object CSharpCreateFromUsage {
             return open + 1 + typeIndent.length + unit.length
         }
         val fields = type.members.filter { it is CSharpFieldDeclaration }
+        val properties = type.members.filter { it is CSharpPropertyDeclaration }
         val anchor: Int
         val insertion: String
+        // the page of the server: a member of its own kind after the last of that kind, or everything at the end of the type
+        val atEnd = CSharpGenerationOptions.atEnd
         when {
+            atEnd && type.members.isNotEmpty() -> { anchor = type.members.last().textRange.endOffset; insertion = "\n\n" + indented }
             field && fields.isNotEmpty() -> { anchor = fields.last().textRange.endOffset; insertion = "\n" + indented }
             field -> { anchor = open; insertion = "\n" + indented + "\n" }
+            property && properties.isNotEmpty() -> { anchor = properties.last().textRange.endOffset; insertion = "\n\n" + indented }
             after != null -> { anchor = after.textRange.endOffset; insertion = "\n\n" + indented }
             else -> {
                 val last = type.members.lastOrNull()
@@ -372,7 +377,7 @@ object CSharpCreateFromUsage {
                 val after = if (same) memberOf(usage, target) else null
                 var caret = -1
                 WriteCommandAction.runWriteCommandAction(project, "Create ${kind.word.replaceFirstChar { it.uppercase() }}", null, {
-                    caret = insertMember(targetDocument, target, text, kind == CSharpCreateKind.FIELD, after, NativeCSharpContextEdits.unit(targetFile))
+                    caret = insertMember(targetDocument, target, text, kind == CSharpCreateKind.FIELD, after, NativeCSharpContextEdits.unit(targetFile), property = kind == CSharpCreateKind.PROPERTY)
                     if (text.contains("NotImplementedException")) {
                         val before = targetDocument.textLength
                         documents.commitDocument(targetDocument)

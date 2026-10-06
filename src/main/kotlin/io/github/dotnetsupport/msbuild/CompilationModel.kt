@@ -62,7 +62,12 @@ class CompilationModel(private val project: Project) : Disposable {
      * The C# project [file] is compiled in: the project of its directory (or the one above) when that one does not leave it out, else an
      * evaluated project that lists it (`<Compile Include="..\Shared\X.cs" />`), else still the project of its directory.
      */
-    fun projectOf(file: VirtualFile): VirtualFile? {
+    fun projectOf(file: VirtualFile): VirtualFile? = projectOf(file, strict = false)
+
+    /** As [projectOf], but null for a file no project compiles (`<Compile Remove>`, `DefaultItemExcludes`): the solution-wide pass skips it, as the compiler does. */
+    fun compiledIn(file: VirtualFile): VirtualFile? = projectOf(file, strict = true)
+
+    private fun projectOf(file: VirtualFile, strict: Boolean): VirtualFile? {
         if (file.isDirectory) return null
         // a file a source generator made, in the caches of the IDE (D4): compiled in the project whose generator made it
         project.getServiceIfCreated(io.github.dotnetsupport.codeanalysis.CodeAnalysisService::class.java)?.projectOfGenerated(file)?.let { return it }
@@ -75,7 +80,7 @@ class CompilationModel(private val project: Project) : Disposable {
             if (included) return owning
         }
         val linking = evaluated.values.firstOrNull { it.projectFile != owning && it.projectFile.isValid && it.options?.compiles(path) == true }?.projectFile
-        return linking ?: owning
+        return linking ?: owning.takeUnless { strict }
     }
 
     /** The options of [projectFile] in the configuration and framework of the toolbar: the evaluated ones once MsBuildHost has answered. */

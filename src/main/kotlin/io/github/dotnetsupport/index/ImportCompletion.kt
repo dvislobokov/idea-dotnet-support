@@ -30,6 +30,7 @@ import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpLeaves
 import io.github.dotnetsupport.lang.CSharpTypeNames
 import io.github.dotnetsupport.lang.CSharpUsings
+import io.github.dotnetsupport.lang.NativeCSharpImportCompletion
 import io.github.dotnetsupport.msbuild.DotNetProjects
 import io.github.dotnetsupport.solution.SolutionService
 import io.github.dotnetsupport.suggest.SuggestionRules
@@ -425,6 +426,8 @@ class ImportCompletionContributor : CompletionContributor() {
         for (item in ImportCompletion.items(indexes, prefix, visible, CSharpUsings.importedStatically(text))) {
             var priority = ImportCompletion.PRIORITY
             if (visible(item.type.namespace)) priority += ImportCompletion.PRIORITY_IMPORTED
+            // the server's "items from unimported namespaces" off: only the static members of the types a `using` sees
+            else if (!NativeCSharpImportCompletion.unimportedEnabled) continue
             if (CSharpTypeNames.matches(expected?.type, item.first.returnType)) priority += ImportCompletion.PRIORITY_TYPE
             result.addElement(PrioritizedLookupElement.withPriority(element(item, everywhere), priority))
         }

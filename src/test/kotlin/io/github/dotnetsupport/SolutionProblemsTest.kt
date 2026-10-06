@@ -1,11 +1,14 @@
 package io.github.dotnetsupport
 
+import io.github.dotnetsupport.lang.CSharpFeature
+import io.github.dotnetsupport.lang.CSharpFeatureSource
 import com.intellij.analysis.problemsView.Problem
 import com.intellij.analysis.problemsView.ProblemsCollector
 import com.intellij.analysis.problemsView.ProblemsListener
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.PlatformTestUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.roslyn.RoslynSolutionProblems
 import org.eclipse.lsp4j.Diagnostic
 import org.eclipse.lsp4j.DiagnosticSeverity
@@ -50,8 +53,24 @@ class SolutionProblemsTest : BasePlatformTestCase() {
         assertEquals(1, disappeared.size)
         assertEquals(1, collector.getFileProblemCount(file))
 
-        // an open document reports through textDocument/diagnostic under the same key; closing it clears until the workspace answers
-        problems.documentReport(uri, file, listOf(diagnostic(0, "CS0103", DiagnosticSeverity.Error, "The name 'x' does not exist"), diagnostic(3, "CS8600", DiagnosticSeverity.Warning, "Converting null literal")))
+        // an open document reports through textDocument/diagnostic under the same key; closing it clears until the workspace answers.
+        // Only while the server serves «Errors and warnings»: with it off the native pass fills the tab (NativeCSharpSolutionProblems)
+        val settings = RoslynLanguageServerSettings.getInstance()
+        val enabled = settings.state.enabled
+        settings.state.enabled = false
+        problems.documentReport(uri, file, listOf(diagnostic(0, "CS0103", DiagnosticSeverity.Error, "The name 'x' does not exist")))
+        PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+        assertEquals("the server stands down without the switch", 1, collector.getFileProblemCount(file))
+        // the server serves «Errors and warnings» when it is on AND the switch says Language server (Built-in is the default since 0.1.56)
+        val source = settings.source(CSharpFeature.DIAGNOSTICS)
+        settings.state.enabled = true
+        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.ROSLYN)
+        try {
+            problems.documentReport(uri, file, listOf(diagnostic(0, "CS0103", DiagnosticSeverity.Error, "The name 'x' does not exist"), diagnostic(3, "CS8600", DiagnosticSeverity.Warning, "Converting null literal")))
+        } finally {
+            settings.setSource(CSharpFeature.DIAGNOSTICS, source)
+            settings.state.enabled = enabled
+        }
         PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
         assertEquals(2, collector.getFileProblemCount(file))
         // no workspace loop in tests: a closed document is cleared (with the loop its rows wait for the next workspace answer)

@@ -2,6 +2,7 @@
 <idea-plugin>
   <extensions defaultExtensionNs="com.intellij">
     <multiHostInjector implementation="io.github.dotnetsupport.lang.CSharpRegexInjector"/>
+    <completion.contributor language="RegExp" order="first" implementationClass="io.github.dotnetsupport.lang.CSharpRegexCompletionSwitch"/>
     <regExpLanguageHost forClass="io.github.dotnetsupport.lang.CSharpStringLiteralLeaf" implementationClass="io.github.dotnetsupport.lang.CSharpRegExpHost"/>
   </extensions>
 </idea-plugin>

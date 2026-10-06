@@ -7,6 +7,7 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VirtualFileFilter
 import com.intellij.psi.impl.PsiManagerEx
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import io.github.dotnetsupport.lang.CSharpBracketColors
 import io.github.dotnetsupport.lang.CSharpColorSettingsPage
 import io.github.dotnetsupport.lang.CSharpColors
 import io.github.dotnetsupport.lang.CSharpFeature
@@ -323,7 +324,8 @@ class CSharpSemanticColorsTest : BasePlatformTestCase() {
     fun testTheSwitchChoosesTheAnnotator() {
         settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         myFixture.configureByText("SemSwitch.cs", "class SemSwitch { static void Main() { int n = 1; n++; } }")
-        fun highlighted() = myFixture.doHighlighting().mapNotNull { info -> info.forcedTextAttributesKey?.let { "${info.text}:${short(it)}" } }
+        // the identifiers only: the matching brackets have colors of their own (CSharpBracketColors)
+        fun highlighted() = myFixture.doHighlighting().mapNotNull { info -> info.forcedTextAttributesKey?.takeIf { it !in CSharpBracketColors.LEVELS }?.let { "${info.text}:${short(it)}" } }
         assertEquals(listOf("SemSwitch:CLASS", "Main:STATIC_METHOD_DECLARATION", "n:MUTABLE_LOCAL_VARIABLE", "n:MUTABLE_LOCAL_VARIABLE"), highlighted())
         settings.setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.ROSLYN)
         com.intellij.codeInsight.daemon.DaemonCodeAnalyzer.getInstance(project).restart(myFixture.file)

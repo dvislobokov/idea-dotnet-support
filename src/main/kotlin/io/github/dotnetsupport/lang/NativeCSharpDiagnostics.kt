@@ -33,8 +33,12 @@ import java.util.concurrent.atomic.AtomicReference
  * `RoslynLspIntegration`), so nothing is shown twice and nothing the plugin does not know yet is lost.
  */
 object NativeCSharpDiagnostics {
-    /** The native diagnostics answer for [file]: the switch, and a file of the native tree. */
-    fun serves(file: PsiFile): Boolean = file is CSharpFile && file.compilationUnit != null && CSharpFeatures.native(CSharpFeature.DIAGNOSTICS, file.project)
+    /**
+     * The native diagnostics answer for [file]: the switch, a file of the native tree, and «Compiler diagnostics for» not `none` — as
+     * Roslyn's `CompilerDiagnosticsScope.None`, which reports no compiler diagnostic for any file, open ones included (the build is then
+     * the only source of errors; the last build's errors still show, they are not background analysis).
+     */
+    fun serves(file: PsiFile): Boolean = file is CSharpFile && file.compilationUnit != null && CSharpFeatures.native(CSharpFeature.DIAGNOSTICS, file.project) && AnalysisScopes.compiler() != AnalysisScopes.NONE
 
     /** The syntax diagnostics of [file] (native tree), cached until the next change of PSI. */
     fun of(file: CSharpFile): List<CSharpSyntaxDiagnostic> = CachedValuesManager.getCachedValue(file) {
@@ -129,17 +133,24 @@ class NativeCSharpDiagnosticsAnnotator : Annotator, DumbAware {
     }
 }
 
-/** The errors on screen follow «Errors and warnings» of the Language Server page at once: highlighting restarts on Apply, as for the colors. */
+/**
+ * The errors on screen follow «Errors and warnings» and the «Analysis» scopes of the Language Server page at once: highlighting restarts
+ * on Apply, as for the colors, and the solution-wide pass ([NativeCSharpSolutionProblems]) starts or stops.
+ */
 class NativeCSharpDiagnosticsSwitch : RoslynLanguageServerSettings.Listener {
     override fun settingsChanged(restart: Boolean) {
-        val native = CSharpFeatures.native(CSharpFeature.DIAGNOSTICS)
-        if (last.getAndSet(native) == native) return
+        val now = listOf(CSharpFeatures.native(CSharpFeature.DIAGNOSTICS).toString(), AnalysisScopes.compiler(), AnalysisScopes.analyzer())
+        if (last.getAndSet(now) == now) return
         ApplicationManager.getApplication().invokeLater({
-            for (project in ProjectManager.getInstance().openProjects) if (!project.isDisposed) DaemonCodeAnalyzer.getInstance(project).restart()
+            for (project in ProjectManager.getInstance().openProjects) {
+                if (project.isDisposed) continue
+                DaemonCodeAnalyzer.getInstance(project).restart()
+                NativeCSharpSolutionProblems.getInstance(project).settingsChanged()
+            }
         }, ModalityState.nonModal())
     }
 
     private companion object {
-        val last = AtomicReference<Boolean?>(null)
+        val last = AtomicReference<List<String>?>(null)
     }
 }

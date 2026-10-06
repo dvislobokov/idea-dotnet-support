@@ -35,11 +35,12 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
     fun testEveryFeatureStartsAtItsDefault() {
         assertEquals(
             "the tree of step 7, the formatting (0.1.49), the typing assistance (0.1.48), the kinds of usages (0.1.46), navigation (0.1.50), completion (0.1.55), " +
-                "the syntax errors (0.1.54), the colors (0.1.51), rename (0.1.53) and the context actions (0.1.64) of step 9, the documentation (0.1.66) of step 11",
+                "the syntax errors (0.1.54), the colors (0.1.51), rename (0.1.53) and the context actions (0.1.64) of step 9, the documentation (0.1.66) of step 11, " +
+                "the inlay hints (0.1.117), Code Vision (0.1.119)",
             listOf(
                 CSharpFeature.SYNTAX_TREE, CSharpFeature.FORMATTING, CSharpFeature.EDITING, CSharpFeature.USAGE_KINDS, CSharpFeature.NAVIGATION,
                 CSharpFeature.COMPLETION, CSharpFeature.DOCUMENTATION, CSharpFeature.DIAGNOSTICS, CSharpFeature.SEMANTIC_COLORS, CSharpFeature.RENAME,
-                CSharpFeature.CONTEXT_ACTIONS,
+                CSharpFeature.CONTEXT_ACTIONS, CSharpFeature.INLAY_HINTS, CSharpFeature.CODE_LENS,
             ),
             CSharpFeatures.offered(),
         )
@@ -50,6 +51,8 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
         assertEquals("completion is native after the robot (0.1.60)", CSharpFeatureSource.NATIVE, CSharpFeature.COMPLETION.defaultSource)
         assertEquals("the documentation is native after the robot (0.1.72)", CSharpFeatureSource.NATIVE, CSharpFeature.DOCUMENTATION.defaultSource)
         assertEquals("the context actions are native after the robot (0.1.72)", CSharpFeatureSource.NATIVE, CSharpFeature.CONTEXT_ACTIONS.defaultSource)
+        assertEquals("Code Vision counts with the native Find Usages", CSharpFeatureSource.NATIVE, CSharpFeature.CODE_LENS.defaultSource)
+        assertTrue("and that reads the stubs of the solution", CSharpFeature.CODE_LENS.needsIndexes)
         assertTrue("completion reads the types of the solution from the stubs", CSharpFeature.COMPLETION.needsIndexes)
         assertFalse("the syntax errors read the file alone", CSharpFeature.DIAGNOSTICS.needsIndexes)
         assertTrue("the colors read the stubs of the solution", CSharpFeature.SEMANTIC_COLORS.needsIndexes)
@@ -70,6 +73,8 @@ class CSharpFeaturesTest : BasePlatformTestCase() {
         }
         assertEquals("defaults are not stored", emptyMap<String, String>(), settings.state.features.toMap())
         assertTrue("the documentation reads the stubs and the index of assemblies", CSharpFeature.DOCUMENTATION.needsIndexes)
+        assertTrue("the types of the hints come from the stubs and the index of assemblies", CSharpFeature.INLAY_HINTS.needsIndexes)
+        assertEquals("the server is off by default, so the hints are the plugin's", CSharpFeatureSource.NATIVE, CSharpFeature.INLAY_HINTS.defaultSource)
         // a NATIVE written by another version of the plugin, for a feature that has no native code here, changes nothing
         CSharpFeatures.implementForTests(CSharpFeatures.offered().toSet() - CSharpFeature.DOCUMENTATION, testRootDisposable)
         settings.setSource(CSharpFeature.DOCUMENTATION, CSharpFeatureSource.NATIVE)

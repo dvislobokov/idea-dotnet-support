@@ -42,7 +42,8 @@ object CSharpPostfixMembers {
 
     private fun declare(text: CharSequence, type: CSharpDeclarationInfo, declaration: String, unit: String, after: List<DeclarationKind>): Edit {
         val indent = memberIndent(text, type, unit)
-        val previous = after.firstNotNullOfOrNull { kind -> type.children.lastOrNull { it.kind == kind } }
+        // "at the end" of the page of the server: after the last member of any kind
+        val previous = if (CSharpGenerationOptions.atEnd) type.children.lastOrNull() else after.firstNotNullOfOrNull { kind -> type.children.lastOrNull { it.kind == kind } }
         // a property after the fields starts a group of its own: a blank line between
         if (previous != null) return Edit(previous.range.endOffset, 0, (if (previous.kind == after.first()) "\n" else "\n\n") + "$indent$declaration")
         val open = type.body!!.startOffset + 1

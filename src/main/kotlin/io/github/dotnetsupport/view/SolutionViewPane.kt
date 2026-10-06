@@ -14,6 +14,7 @@ import com.intellij.openapi.actionSystem.DataSink
 import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileCopyEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileCreateEvent
@@ -39,6 +40,15 @@ class SolutionViewPane(project: Project) : AbstractProjectViewPaneWithAsyncSuppo
     override fun getIcon(): Icon = DotNetIcons.Solution
     override fun getId(): String = ID
     override fun getWeight(): Int = WEIGHT
+
+    /**
+     * The pane the platform selects when the project has no saved one (its first open): a folder with a solution in its root opens in the
+     * Solution view at once, as in Rider, with no switch to race against. Asked on EDT while the tool window is built, so only the root is
+     * looked at; solutions deeper down are handled by [SolutionViewActivator], which walks the folder off EDT.
+     */
+    override fun isDefaultPane(project: Project): Boolean =
+        io.github.dotnetsupport.settings.DotNetSettings.getInstance().switchToSolutionView &&
+            project.guessProjectDir()?.children?.any { !it.isDirectory && it.extension?.lowercase() in SOLUTION_EXTENSIONS } == true
 
     override fun createSelectInTarget(): SelectInTarget = object : ProjectViewSelectInTarget(myProject) {
         override fun toString(): String = title

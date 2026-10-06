@@ -24,6 +24,8 @@ import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
+import com.intellij.ide.util.PsiNavigationSupport
+import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.openapi.ui.popup.JBPopupFactory
 import com.intellij.pom.Navigatable
 import com.intellij.psi.PsiElement
@@ -42,6 +44,7 @@ import java.awt.event.MouseEvent
 import javax.swing.Icon
 import javax.swing.JPanel
 import javax.swing.JTree
+import javax.swing.ListCellRenderer
 
 /**
  * Go to Super (Ctrl+U), Type Hierarchy (Ctrl+H), Call Hierarchy (Ctrl+Alt+H) and the gutter of overrides and implementations without the
@@ -92,18 +95,38 @@ object NativeCSharpHierarchies {
         return presentation?.locationString?.takeIf { it.isNotEmpty() } ?: inType ?: element.containingFile?.name
     }
 
-    /** One element: go; several: a list to choose from, as the platform lists targets. */
+    /**
+     * A row of the list of targets: what the renderer shows and where a choice goes, read from the PSI up front. The renderer and the
+     * callback run on the EDT, which has no read access of its own: a row reads nothing.
+     */
+    class Row(val text: String, val location: String?, val icon: Icon?, private val target: Navigatable?) {
+        val label: String get() = text + location?.let { "  ($it)" }.orEmpty()
+        fun navigate() = target?.navigate(true) ?: Unit
+    }
+
+    /** The rows of [elements], in a read action: texts, icons and the places to go (a descriptor of the file and offset, no PSI). */
+    fun rows(elements: List<PsiElement>): List<Row> = ReadAction.compute<List<Row>, RuntimeException> {
+        elements.map { Row(text(it), location(it), it.getIcon(0), PsiNavigationSupport.getInstance().getDescriptor(it) ?: it as? Navigatable) }
+    }
+
+    fun renderer(): ListCellRenderer<Row> = SimpleListCellRenderer.create { label, row, _ ->
+        label.text = row.label
+        label.icon = row.icon
+    }
+
+    /** The list to choose a target from, as the platform lists targets; a choice goes there. */
+    fun chooser(rows: List<Row>, title: String): JBPopup = JBPopupFactory.getInstance().createPopupChooserBuilder(rows)
+        .setTitle(title)
+        .setRenderer(renderer())
+        .setNamerForFiltering { it.text }
+        .setItemChosenCallback { it.navigate() }
+        .createPopup()
+
+    /** One element: go; several: a list to choose from. */
     fun choose(editor: Editor, elements: List<PsiElement>, title: String) {
-        if (elements.size == 1) return (elements.single() as? Navigatable)?.navigate(true) ?: Unit
-        JBPopupFactory.getInstance().createPopupChooserBuilder(elements)
-            .setTitle(title)
-            .setRenderer(SimpleListCellRenderer.create { label, element, _ ->
-                label.text = text(element) + location(element)?.let { "  ($it)" }.orEmpty()
-                label.icon = element.getIcon(0)
-            })
-            .setNamerForFiltering(::text)
-            .setItemChosenCallback { (it as? Navigatable)?.navigate(true) }
-            .createPopup().showInBestPositionFor(editor)
+        val rows = rows(elements)
+        if (rows.size == 1) return rows.single().navigate()
+        chooser(rows, title).showInBestPositionFor(editor)
     }
 
     fun <T> underProgress(project: Project, title: String, compute: () -> T): T =
@@ -405,18 +428,11 @@ class NativeCSharpInheritanceLineMarkerProvider : LineMarkerProvider {
     private fun marker(leaf: PsiElement, icon: Icon, tooltip: String, targets: () -> List<PsiElement>): LineMarkerInfo<PsiElement> {
         val handler = GutterIconNavigationHandler<PsiElement> { event: MouseEvent, element: PsiElement ->
             val project = element.project
-            val found = NativeCSharpHierarchies.underProgress(project, tooltip) { targets() }
-            when (found.size) {
+            val rows = NativeCSharpHierarchies.underProgress(project, tooltip) { NativeCSharpHierarchies.rows(targets()) }
+            when (rows.size) {
                 0 -> {}
-                1 -> (found.single() as? Navigatable)?.navigate(true)
-                else -> JBPopupFactory.getInstance().createPopupChooserBuilder(found)
-                    .setTitle(tooltip)
-                    .setRenderer(SimpleListCellRenderer.create { label, item, _ ->
-                        label.text = NativeCSharpHierarchies.text(item) + NativeCSharpHierarchies.location(item)?.let { "  ($it)" }.orEmpty()
-                        label.icon = item.getIcon(0)
-                    })
-                    .setItemChosenCallback { (it as? Navigatable)?.navigate(true) }
-                    .createPopup().show(RelativePoint(event))
+                1 -> rows.single().navigate()
+                else -> NativeCSharpHierarchies.chooser(rows, tooltip).show(RelativePoint(event))
             }
         }
         return LineMarkerInfo(leaf, leaf.textRange, icon, { tooltip }, handler, GutterIconRenderer.Alignment.RIGHT) { tooltip }

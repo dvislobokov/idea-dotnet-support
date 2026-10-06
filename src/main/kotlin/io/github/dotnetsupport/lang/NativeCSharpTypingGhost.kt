@@ -55,10 +55,19 @@ import io.github.dotnetsupport.suggest.SuggestionStats
  * two continuations are as likely, and never something that does not compile — except the empty values of the members filled in.
  */
 object NativeCSharpTypingGhost {
-    enum class Place { NEW_TYPE, CLOSE_CALL, FILL, VALUE, ASSIGN, NAME }
+    enum class Place { NEW_TYPE, CLOSE_CALL, FILL, VALUE, ASSIGN, NAME, OVERRIDE }
 
-    /** [skip]: what is in the document already right after the caret and the gray text goes over (`)` of `new User(|)`), then [text]. */
-    class Suggestion(val rule: String, val text: String, val skip: String = "")
+    /**
+     * [skip]: what is in the document already right after the caret and the gray text goes over (`)` of `new User(|)`), then [text].
+     * [member]: the member to override [text] writes — once inserted, its `using` directives are added and the caret goes [caretFromEnd]
+     * characters back from the end of the text, into the body, as the row of the list does.
+     */
+    class Suggestion(val rule: String, val text: String, val skip: String = "", val member: NativeCSharpOverrides.Candidate? = null, val caretFromEnd: Int = 0)
+
+    /** `public ov|`, `public override |`, `public override str|`, `public override string D|`: a member to override being typed (0.1.126). */
+    private val OVERRIDE_LINE = Regex(
+        """^\s*((?:(?:public|protected|internal|private|async|sealed|unsafe|extern)\s+)*)(?:(override)\s+(?:((?:global::)?[A-Za-z_][\w.]*(?:<[^;={}()]*>)?(?:\[[,\s]*\])*\??)\s+)?)?([A-Za-z_]\w*)?$""",
+    )
 
     private val NEW_BY_NAME = Regex("""^\s*var\s+@?([A-Za-z_]\w*)\s*=\s*new(\s+)([A-Za-z_]\w*)?$""")
     private val NEW_CALL = Regex("""(?:\bnew\s+[A-Za-z_][\w.]*(?:<[^()]*>)?|[A-Za-z_]\w*(?:<[^()]*>)?)\s*\($""")
@@ -93,9 +102,67 @@ object NativeCSharpTypingGhost {
         if (restBlank && NEW_BY_NAME.matches(before)) return Place.NEW_TYPE
         if ((restBlank || after.trimStart().let { it.startsWith("}") || it.startsWith(",") }) && VALUE.containsMatchIn(before) && initializerBrace(text, offset) != null) return Place.VALUE
         if (restBlank && ASSIGN.matches(before) && initializerBrace(text, offset) == null) return Place.ASSIGN
+        if (restBlank && overrideLine(before) != null) return Place.OVERRIDE
         if (nameAfterType(before, after)) return Place.NAME
         return null
     }
+
+    /** The parts of a line where a member to override is being typed ([OVERRIDE_LINE]). */
+    private class OverrideLine(val modifiers: List<String>, val access: String, val override: Boolean, val written: String)
+
+    /**
+     * [before] (the line up to the caret) types a member to override: `override` and what follows it, or the start of `override`
+     * ([NativeCSharpOverrides.startsOverride]). The accessibility typed: the gray text only adds, it cannot put the base's one before.
+     */
+    private fun overrideLine(before: String): OverrideLine? {
+        val match = OVERRIDE_LINE.matchEntire(before) ?: return null
+        val modifiers = match.groupValues[1].split(' ', '\t').filter { it.isNotEmpty() }
+        val access = modifiers.filter { it in NativeCSharpOverrides.ACCESS }.joinToString(" ")
+        if (access.isEmpty()) return null
+        val override = match.groups[2] != null
+        val word = match.groupValues[4]
+        if (!override && !NativeCSharpOverrides.startsOverride(word, modifiers)) return null
+        val written = if (override) before.substring(match.groups[2]!!.range.last + 1).trimStart() else word
+        return OverrideLine(modifiers, access, override, written)
+    }
+
+    /** `public override str|`: the rest of the best member to override that begins so, the real base's before `object`'s. */
+    private fun override(file: CSharpFile, text: CharSequence, offset: Int): Suggestion? {
+        val start = lineStart(text, offset)
+        val line = overrideLine(text.subSequence(start, offset).toString()) ?: return null
+        val type = PsiTreeUtil.getParentOfType(file.findElementAt(offset - 1), CSharpTypeDeclaration::class.java) ?: return null
+        val candidates = NativeCSharpOverrides.overrideCandidates(type, file, offset, "async" in line.modifiers)
+        return candidates.sortedByDescending(NativeCSharpOverrides::isOwnBase).firstNotNullOfOrNull { overrideText(file, text, offset, line, it) }
+    }
+
+    /** The gray text of [candidate] at [offset]: what its row writes, past what is typed of it; null when that is not a continuation. */
+    private fun overrideText(file: CSharpFile, text: CharSequence, offset: Int, line: OverrideLine, candidate: NativeCSharpOverrides.Candidate): Suggestion? {
+        // `public override` of a protected member does not compile
+        if (candidate.access != line.access) return null
+        val whole = if (line.override) candidate else NativeCSharpOverrides.early(candidate, typedAccess = true)
+        val indent = text.subSequence(lineStart(text, offset), offset).takeWhile { it == ' ' || it == '\t' }.toString()
+        val member = NativeCSharpOverrides.memberText(whole, indent, NativeCSharpOverrides.unit(file))
+        if (!member.startsWith(line.written) || member == line.written) return null
+        val caretFromEnd = member.length - NativeCSharpOverrides.caretIn(member, whole, indent)
+        return Suggestion(SuggestionRules.OVERRIDE, member.substring(line.written.length), member = whole, caretFromEnd = caretFromEnd)
+    }
+
+    /**
+     * With the list open at a member to override: the row selected — a member of `override |` or `override Name` of `public ov|` — in
+     * gray, or the best one under the keyword `override`. Null for other rows and where the row's text does not continue the line.
+     */
+    fun afterOverrideItem(file: CSharpFile, text: CharSequence, offset: Int, item: LookupElement): Suggestion? {
+        if (offset > text.length || restOfLine(text, offset).isNotBlank()) return null
+        val line = overrideLine(text.subSequence(lineStart(text, offset), offset).toString()) ?: return null
+        if (item.lookupString == "override" && NativeCSharpOverrides.rowOf(item) == null) return if (line.override) null else override(file, text, offset)
+        val candidate = NativeCSharpOverrides.rowOf(item) ?: return null
+        if (NativeCSharpOverrides.isEarlyRow(item) == line.override) return null
+        return overrideText(file, text, offset, line, candidate)
+    }
+
+    /** The list at [offset] is one [afterOverrideItem] may follow, its selected row [item]. */
+    fun followsOverrideItem(text: CharSequence, offset: Int, item: LookupElement): Boolean =
+        (NativeCSharpOverrides.rowOf(item) != null || item.lookupString == "override") && place(text, offset) == Place.OVERRIDE
 
     /** [CSharpValueGhost] keeps silent where this one answers: `Name = ` of an initializer is no statement, a `;` is wrong there. */
     fun claims(text: CharSequence, offset: Int): Boolean = place(text, offset).let { it == Place.VALUE || it == Place.ASSIGN }
@@ -159,6 +226,7 @@ object NativeCSharpTypingGhost {
                 // the semantics know the members of the members (`dto.Name`); where they find nothing, the names of the file ([CSharpValueGhost])
                 Place.ASSIGN -> assignment(file, r, text, offset) ?: CSharpValueGhost.suggest(text, offset)?.let { Suggestion(SuggestionRules.VALUE, it) }
                 Place.NAME -> null
+                Place.OVERRIDE -> override(file, text, offset)
             }
         }.getOrElse { if (it is com.intellij.openapi.progress.ProcessCanceledException) throw it else null }
     }
@@ -677,6 +745,7 @@ class NativeCSharpTypingGhostProvider : InlineCompletionProvider {
             val item = request.lookupElement ?: return false
             // `Member { … }`: its initializer is the gray text's own business once written (the members of an empty one)
             if (NativeCSharpObjectInitializers.isInitializerRow(item)) return false
+            if (NativeCSharpTypingGhost.followsOverrideItem(text, request.endOffset, item)) return true
             return NativeCSharpTypingGhost.itemPlace(text, request.endOffset, item.lookupString) != null
         }
         if (event !is InlineCompletionEvent.LookupCancelled && LookupManager.getActiveLookup(request.editor) != null) return false
@@ -688,10 +757,15 @@ class NativeCSharpTypingGhostProvider : InlineCompletionProvider {
 
     override suspend fun getSuggestion(request: InlineCompletionRequest): InlineCompletionSuggestion {
         val file = request.file as? CSharpFile
-        val item = request.lookupElement?.lookupString?.takeIf { request.event is InlineCompletionEvent.LookupChange }
+        val element = request.lookupElement?.takeIf { request.event is InlineCompletionEvent.LookupChange }
+        val item = element?.lookupString
         val ghost = if (file == null) null else constrainedReadAction(ReadConstraint.withDocumentsCommitted(file.project)) {
             val text = request.document.immutableCharSequence
             val offset = request.endOffset
+            // a member to override selected (or the keyword `override` at `public ov|`): what choosing it writes (0.1.126)
+            if (element != null && NativeCSharpTypingGhost.followsOverrideItem(text, offset, element)) {
+                return@constrainedReadAction NativeCSharpTypingGhost.afterOverrideItem(file, text, offset, element)
+            }
             if (item != null) return@constrainedReadAction NativeCSharpTypingGhost.afterItem(file, text, offset, item)
             NativeCSharpTypingGhost.suggestion(file, text, offset)
                 // `Save(|)`: this provider stands before the one of the arguments, which gets the place back when there is no `;` to give
@@ -702,6 +776,8 @@ class NativeCSharpTypingGhostProvider : InlineCompletionProvider {
         if (ghost != null) {
             shownRule = ghost.rule
             shownSkip = ghost.skip
+            shownMember = ghost.member
+            shownCaretFromEnd = ghost.caretFromEnd
             SuggestionStats.getInstance().shown(ghost.rule, readAction { GhostPlace.of(request) })
         }
         return InlineCompletionSingleSuggestion.build(UserDataHolderBase()) {
@@ -718,6 +794,12 @@ class NativeCSharpTypingGhostProvider : InlineCompletionProvider {
     @Volatile
     private var shownSkip: String = ""
 
+    @Volatile
+    private var shownMember: NativeCSharpOverrides.Candidate? = null
+
+    @Volatile
+    private var shownCaretFromEnd: Int = 0
+
     override val insertHandler: InlineCompletionInsertHandler = object : InlineCompletionInsertHandler {
         override fun afterInsertion(environment: InlineCompletionInsertEnvironment, elements: List<InlineCompletionElement>) {
             DefaultInlineCompletionInsertHandler.INSTANCE.afterInsertion(environment, elements)
@@ -731,6 +813,15 @@ class NativeCSharpTypingGhostProvider : InlineCompletionProvider {
                     document.deleteString(end, end + skip.length)
                     PsiDocumentManager.getInstance(environment.file.project).commitDocument(document)
                 }
+            }
+            // a member to override: its `using` directives and the caret in its body, as its row of the list leaves them
+            val member = shownMember
+            if (member != null && shownRule == SuggestionRules.OVERRIDE) {
+                val document = environment.editor.document
+                val project = environment.file.project
+                val caret = NativeCSharpOverrides.addUsings(project, document, member, environment.insertedRange.endOffset - shownCaretFromEnd)
+                environment.editor.caretModel.moveToOffset(caret)
+                PsiDocumentManager.getInstance(project).commitDocument(document)
             }
         }
     }

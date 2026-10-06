@@ -25,7 +25,7 @@ import io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStub
  * Without the index of assemblies (no SDK yet) `Equals`, `GetHashCode` and `ToString` of `object` are still offered.
  */
 object NativeCSharpOverrides {
-    private val ACCESS = setOf("public", "protected", "internal", "private")
+    val ACCESS = setOf("public", "protected", "internal", "private")
 
     /**
      * One member to write: [header] — the lines before `{` (the whole member when [body] is null: `int Count { get; set; }`), [body] —
@@ -36,8 +36,79 @@ object NativeCSharpOverrides {
         val usings: Set<String> = emptySet(), val base: String? = null,
     )
 
-    fun overrides(type: CSharpTypeDeclaration, file: CSharpFile, place: NativeCSharpCompletionPlace): List<LookupElement> =
-        overrideCandidates(type, file, place.offset, "async" in place.modifiers).map { element(it, place) }
+    /**
+     * `override |`: the rows of the members to override, found by their name and by their return type (`override str|` keeps `string
+     * Describe()` and `string ToString()`, as Rider). After a typed return type (`override string |`, [NativeCSharpCompletionPlace.overrideType])
+     * only those of that type, written over it.
+     */
+    fun overrides(type: CSharpTypeDeclaration, file: CSharpFile, place: NativeCSharpCompletionPlace): List<LookupElement> {
+        val candidates = overrideCandidates(type, file, place.offset, "async" in place.modifiers)
+        val written = place.overrideType ?: return candidates.map { element(it, place) }
+        val typed = written.text
+        return candidates.filter { sameType(it.type, typed) }.map { element(it, place, written.textRange.startOffset) }
+    }
+
+    /**
+     * `public ov|`, `ov|` at the start of a member (0.1.126): beside the keyword, a row per member to override that writes the whole
+     * member — `override string Describe()` — as the row of `override |` does, with the base's accessibility when none is typed. From
+     * two letters of `override` on, where the modifiers typed allow an override.
+     */
+    fun earlyOverrides(type: CSharpTypeDeclaration, file: CSharpFile, place: NativeCSharpCompletionPlace, prefix: String): List<LookupElement> {
+        if (!startsOverride(prefix, place.modifiers)) return emptyList()
+        val typedAccess = place.modifiers.any { it in ACCESS }
+        return overrideCandidates(type, file, place.offset, "async" in place.modifiers).mapIndexed { i, candidate ->
+            val whole = early(candidate, typedAccess)
+            var builder = LookupElementBuilder.create("override ${candidate.name}").withPresentableText("override ${candidate.type.orEmpty()} ${candidate.name}".replace("  ", " "))
+                .withIcon(if (candidate.property) AllIcons.Nodes.Property else AllIcons.Nodes.Method)
+                .withTailText(candidate.tail + " { ... }" + (candidate.base?.let { " ($it)" } ?: ""), true)
+                .withInsertHandler(InsertHandler { context, _ -> insert(context, whole, place) })
+            builder.putUserData(NativeCSharpCompletion.NATIVE, true)
+            builder.putUserData(ROW, candidate)
+            val priority = NativeCSharpCompletion.TYPE + 1 - i * 0.01
+            PrioritizedLookupElement.withPriority(builder, priority).also { it.putUserData(NativeCSharpCompletion.NATIVE, true); it.putUserData(ROW, candidate) }
+        }
+    }
+
+    /** [prefix] typed after [modifiers] may become `override`: two letters of it at least, no modifier that rules an override out. */
+    fun startsOverride(prefix: String, modifiers: List<String>): Boolean =
+        prefix.length >= 2 && "override".startsWith(prefix) && prefix != "override" && modifiers.all { it in EARLY_MODIFIERS }
+
+    private val EARLY_MODIFIERS = ACCESS + setOf("async", "sealed", "unsafe", "extern")
+
+    /** [candidate] written from the start of `ov|`: `override` and, when no accessibility is typed, the base's one before it. */
+    fun early(candidate: Candidate, typedAccess: Boolean): Candidate {
+        val modifiers = if (typedAccess || candidate.access.isEmpty()) "override " else "${candidate.access} override "
+        return Candidate(candidate.name, "", modifiers + candidate.header, candidate.body, candidate.tail, candidate.type, candidate.property, candidate.usings, candidate.base)
+    }
+
+    /**
+     * The row of a member to override: the member as `override |` offers it (the gray text shows what the row writes, [NativeCSharpTypingGhost]);
+     * the commit characters leave it alone. The rows of [earlyOverrides] have a lookup string `override Name` ([isEarlyRow]).
+     */
+    val ROW: com.intellij.openapi.util.Key<Candidate> = com.intellij.openapi.util.Key.create("dotnet.overrideRow")
+
+    fun rowOf(element: LookupElement): Candidate? {
+        var current: LookupElement? = element
+        while (current != null) {
+            current.getUserData(ROW)?.let { return it }
+            current = (current as? com.intellij.codeInsight.lookup.LookupElementDecorator<*>)?.delegate
+        }
+        return null
+    }
+
+    fun isEarlyRow(element: LookupElement): Boolean = rowOf(element) != null && element.lookupString.startsWith("override ")
+
+    /** `string?` of the base and the typed `string` are one return type; `Task<HelloReply>` and `Task<global::X.HelloReply>` are not told apart. */
+    fun sameType(candidate: String?, typed: String): Boolean {
+        candidate ?: return false
+        fun norm(s: String) = s.filterNot { it.isWhitespace() }.removePrefix("global::").removeSuffix("?")
+        val a = norm(candidate)
+        val b = norm(typed)
+        return a == b || a.endsWith(".$b") || b.endsWith(".$a")
+    }
+
+    /** What [candidate] starts with in the text: its return type (`string` of `string? ToString()`) — the row is found by it too. */
+    private fun typeLookup(candidate: Candidate): String? = candidate.type?.removePrefix("global::")?.removeSuffix("?")?.takeIf { it.isNotEmpty() && it != candidate.name }
 
     fun partialMethods(type: CSharpTypeDeclaration, resolver: NativeCSharpResolver, place: NativeCSharpCompletionPlace): List<LookupElement> =
         partialCandidates(type, resolver).map { element(it, place) }
@@ -143,17 +214,22 @@ object NativeCSharpOverrides {
         Candidate("ToString", "public", "string? ToString()", listOf("return base.ToString();"), "()", "string?", property = false),
     )
 
-    private fun element(candidate: Candidate, place: NativeCSharpCompletionPlace): LookupElement {
+    private fun element(candidate: Candidate, place: NativeCSharpCompletionPlace, from: Int? = null): LookupElement {
         val tail = candidate.tail + " { ... }"
         var builder = LookupElementBuilder.create(candidate.name).withIcon(if (candidate.property) AllIcons.Nodes.Property else AllIcons.Nodes.Method)
             .withTailText(tail + (candidate.base?.let { " ($it)" } ?: ""), true).bold()
+        // `override str|`: the start of the return type finds the row as well as the start of the name
+        if (from == null) typeLookup(candidate)?.let { builder = builder.withLookupStrings(listOf(candidate.name, it)) }
         if (candidate.type != null) builder = builder.withTypeText(candidate.type)
-        builder = builder.withInsertHandler(InsertHandler { context, _ -> insert(context, candidate, place) })
+        builder = builder.withInsertHandler(InsertHandler { context, _ -> insert(context, candidate, place, from ?: context.startOffset) })
         builder.putUserData(NativeCSharpCompletion.NATIVE, true)
+        builder.putUserData(ROW, candidate)
         // the members of the real base above those of `object` (SayHello before Equals)
-        val priority = NativeCSharpCompletion.DECLARATION + if (candidate.base != null && candidate.base != "object") 1.0 else 0.0
-        return PrioritizedLookupElement.withPriority(builder, priority).also { it.putUserData(NativeCSharpCompletion.NATIVE, true) }
+        val priority = NativeCSharpCompletion.DECLARATION + if (isOwnBase(candidate)) 1.0 else 0.0
+        return PrioritizedLookupElement.withPriority(builder, priority).also { it.putUserData(NativeCSharpCompletion.NATIVE, true); it.putUserData(ROW, candidate) }
     }
+
+    fun isOwnBase(candidate: Candidate): Boolean = candidate.base != null && candidate.base != "object"
 
     /**
      * The member in place of the typed name: the header, `{`, the body indented by the code style, `}` (Allman, as the defaults of .NET);
@@ -166,20 +242,10 @@ object NativeCSharpOverrides {
         val start = from
         val lineStart = text.lastIndexOf('\n', start - 1) + 1
         val indent = text.subSequence(lineStart, start).takeWhile { it == ' ' || it == '\t' }.toString()
-        val options = CodeStyle.getIndentOptions(context.file)
-        val unit = if (options.USE_TAB_CHARACTER) "\t" else " ".repeat(options.INDENT_SIZE.coerceAtLeast(1))
-        val header = NativeCSharpGenerateEdits.reindent(candidate.header, indent, unit).removePrefix(indent)
-        val body = candidate.body
-        val member = if (body == null) header else {
-            val lines = body.joinToString("\n") { if (it.isEmpty()) "$indent$unit" else NativeCSharpGenerateEdits.reindent(it, "$indent$unit", unit) }
-            "$header\n$indent{\n$lines\n$indent}"
-        }
+        val member = memberText(candidate, indent, unit(context.file))
         // a `;` or `{ }` the list was opened before stays after the member
         document.replaceString(start, context.tailOffset, member)
-        var caret = if (body == null) start + member.length else {
-            val first = start + header.length + 1 + indent.length + 2
-            first + (document.charsSequence.indexOf('\n', first).takeIf { it >= 0 }?.minus(first) ?: 0)
-        }
+        var caret = start + caretIn(member, candidate, indent)
         val typedAccess = place?.modifiers?.any { it in ACCESS } == true
         if (!typedAccess && candidate.access.isNotEmpty()) {
             // before the first typed modifier: `override` / `partial` and the others stay as typed
@@ -189,16 +255,44 @@ object NativeCSharpOverrides {
                 caret += candidate.access.length + 1
             }
         }
-        val file = PsiDocumentManager.getInstance(context.project).getPsiFile(document) as? CSharpFile
+        caret = addUsings(context.project, document, candidate, caret)
+        context.editor.caretModel.moveToOffset(caret)
+        context.commitDocument()
+    }
+
+    /** The `using` directives [candidate]'s types need, not visible yet; [caret] moved past what is inserted before it. */
+    fun addUsings(project: com.intellij.openapi.project.Project, document: com.intellij.openapi.editor.Document, candidate: Candidate, caret: Int): Int {
+        var result = caret
+        val file = PsiDocumentManager.getInstance(project).getPsiFile(document) as? CSharpFile
         for (namespace in candidate.usings) {
             val current = document.charsSequence
             if (CSharpUsings.isVisible(namespace, current) || file != null && NativeCSharpGenerateEdits.globallyImported(file, namespace)) continue
             val insertion = CSharpUsings.insertion(current, namespace) ?: continue
             document.insertString(insertion.offset, insertion.text)
-            if (insertion.offset <= caret) caret += insertion.text.length
+            if (insertion.offset <= result) result += insertion.text.length
         }
-        context.editor.caretModel.moveToOffset(caret)
-        context.commitDocument()
+        return result
+    }
+
+    fun unit(file: com.intellij.psi.PsiFile): String {
+        val options = CodeStyle.getIndentOptions(file)
+        return if (options.USE_TAB_CHARACTER) "\t" else " ".repeat(options.INDENT_SIZE.coerceAtLeast(1))
+    }
+
+    /** The member [candidate] writes on a line indented by [indent]: the header, `{`, the body indented by [unit], `}` (Allman). */
+    fun memberText(candidate: Candidate, indent: String, unit: String): String {
+        val header = NativeCSharpGenerateEdits.reindent(candidate.header, indent, unit).removePrefix(indent)
+        val body = candidate.body ?: return header
+        val lines = body.joinToString("\n") { if (it.isEmpty()) "$indent$unit" else NativeCSharpGenerateEdits.reindent(it, "$indent$unit", unit) }
+        return "$header\n$indent{\n$lines\n$indent}"
+    }
+
+    /** Where the caret goes in [member] ([memberText]): the end of the body's first line, the end of a member without a body. */
+    fun caretIn(member: String, candidate: Candidate, indent: String): Int {
+        if (candidate.body == null) return member.length
+        val open = member.indexOf("\n$indent{\n").takeIf { it >= 0 } ?: return member.length
+        val first = open + indent.length + 3
+        return member.indexOf('\n', first).takeIf { it >= 0 } ?: member.length
     }
 
     /** Where the modifiers before [nameStart] begin on its line. */

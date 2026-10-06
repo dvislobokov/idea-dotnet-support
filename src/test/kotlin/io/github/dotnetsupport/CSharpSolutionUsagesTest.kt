@@ -116,7 +116,8 @@ class CSharpSolutionUsagesTest : BasePlatformTestCase() {
         shapes()
         val circle = psiManager.findFile(myFixture.findFileInTempDir("usages/Circle.cs")) as CSharpFile
         val shape = psiManager.findFile(myFixture.findFileInTempDir("usages/IShape.cs")) as CSharpFile
-        assertEquals(listOf("Circle.cs:9:Circle", "Circle.cs:11:base", "IShape.cs:2:Circle", "Use.cs:7:Circle", "Use.cs:12:Circle"), usages(declarationAt(circle, 0)))
+        // `base(1)` of Ring is a usage of the constructor, not of the type, as Roslyn and Rider count it
+        assertEquals(listOf("Circle.cs:9:Circle", "IShape.cs:2:Circle", "Use.cs:7:Circle", "Use.cs:12:Circle"), usages(declarationAt(circle, 0)))
         assertEquals("the hierarchy, as the server: the call on Circle and the one on IShape", listOf("Use.cs:10:Area", "Use.cs:11:Area"), usages(declarationAt(circle, 3)))
         assertEquals(listOf("Use.cs:10:Area", "Use.cs:11:Area"), usages(declarationAt(shape, 1)))
         assertEquals("new Circle(2) and base(1) are the constructor's", listOf("Circle.cs:11:base", "Use.cs:7:Circle"), usages(declarationAt(circle, 1)))
@@ -148,7 +149,10 @@ class CSharpSolutionUsagesTest : BasePlatformTestCase() {
         assertEquals("Read access", kinds["Use.cs:13:Radius"])
     }
 
-    /** What the server's Find References counts beyond the names: `base(…)`, target-typed `new()`, property patterns, the member's hierarchy. */
+    /**
+     * What the server's Find References counts beyond the names: target-typed `new()`, property patterns, the member's hierarchy; `base(…)`
+     * of a subtype's constructor is a usage of the constructor alone.
+     */
     fun testUsagesTheServerCountsToo() {
         val file = file("usages/More.cs", """
             public class /*^*/Tally
@@ -168,9 +172,11 @@ class CSharpSolutionUsagesTest : BasePlatformTestCase() {
             public static class Lists { public static Tally[] All = [new()]; }
         """.trimIndent())
         assertEquals(
-            listOf("More.cs:6:new", "More.cs:6:Tally", "More.cs:7:Tally", "More.cs:9:Tally", "More.cs:11:base", "More.cs:13:Tally", "More.cs:15:new", "More.cs:15:Tally").sorted(),
+            listOf("More.cs:6:new", "More.cs:6:Tally", "More.cs:7:Tally", "More.cs:9:Tally", "More.cs:13:Tally", "More.cs:15:new", "More.cs:15:Tally").sorted(),
             usages(declarationAt(file, 0)).sorted(),
         )
+        val constructor = CSharpSolutionSearch.declarationNamedBy(file.findElementAt(file.text.indexOf("Tally() { }"))!!)!!
+        assertEquals("the constructor: the two `new()` and `base()`", listOf("More.cs:6:new", "More.cs:11:base", "More.cs:15:new"), usages(constructor))
         assertEquals(listOf("More.cs:7:Total"), usages(declarationAt(file, 1)))
         val bigSize = CSharpSolutionSearch.declarationNamedBy(file.findElementAt(file.text.indexOf("Size() => 1"))!!)!!
         assertEquals("the override: the calls of the virtual member too", listOf("More.cs:13:Size", "More.cs:13:Size"), usages(bigSize))

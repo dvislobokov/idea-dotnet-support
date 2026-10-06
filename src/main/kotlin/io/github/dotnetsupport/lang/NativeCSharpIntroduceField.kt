@@ -72,7 +72,8 @@ object NativeCSharpIntroduceField {
         val modifiers = listOfNotNull("private", "static".takeIf { plan.isStatic }, "readonly".takeIf { plan.inInitializer }).joinToString(" ")
         val field = "$modifiers ${plan.type} ${plan.name}" + (if (plan.inInitializer) " = ${expression.text}" else "") + ";"
         val typeIndent = NativeCSharpUsingEdits.indentOf(text, plan.owner.textRange.startOffset).orEmpty()
-        val lastField = plan.owner.members.lastOrNull { it is CSharpFieldDeclaration }
+        // "at the end" of the page of the server: after the last member of any kind
+        val lastField = if (CSharpGenerationOptions.atEnd) plan.owner.members.lastOrNull() else plan.owner.members.lastOrNull { it is CSharpFieldDeclaration }
         val fieldAt: Int
         val fieldText: String
         if (lastField != null) {

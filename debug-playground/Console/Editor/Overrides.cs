@@ -34,6 +34,30 @@ public class OvSquare : OvShape
     // `override`) with `get => base.Sides;` and `set => base.Sides = value;`. Then type `protected override ` — the typed access stays.
 }
 
+/// <summary>Typing an override by its return type, from the start of `override`, and its gray text (0.1.116).</summary>
+public class OvRing : OvShape
+{
+    public override double Area() => 1;
+
+    // TYPE:override-by-type — type `public override str`. EXPECT: the list keeps Describe(int digits) (type string) and ToString is NOT
+    // there (sealed in OvShape); NOT: the keywords `struct`, `string`, `class`, `interface`, `enum`, `record`, `namespace`, no templates.
+    // Erase `str`, type `bo`: Equals(object? obj). Then type `public override string ` (with the space): the list opens by itself with
+    // Describe only; type `D` and Enter. EXPECT: `public override string Describe(int digits)` with `return base.Describe(digits);` —
+    // `string D` written over, not doubled. A space after `public override str` types the space (the type goes on), it does not choose a row.
+
+    // TYPE:override-early — type `public ov`. EXPECT: the list has the keyword `override` first, then rows `override string Describe`,
+    // `override int Sides`, `override bool Equals`, `override int GetHashCode` (each with its parameters, `{ ... }` and the base). Choose
+    // `override string Describe`. EXPECT: the same member as `public override ` + Describe writes. Then type `ov` alone (no `public`) and
+    // choose `override int Sides`: `protected override int Sides` with `get => base.Sides;` / `set => base.Sides = value;`. Typing
+    // `public override` + space still gives the keyword (the list of `override ` opens), not a member.
+
+    // TYPE:override-gray — type `public ov` and look at the gray text after the caret: `erride string Describe(int digits)` and its body
+    // under it — for the selected `override` keyword and for each `override …` row as the selection moves. Tab. EXPECT: the member as
+    // the row writes it, the caret at the end of `return base.Describe(digits);`. Then Esc any list and type `public override str`: gray
+    // `ing Describe(int digits)…`; `public override bo`: gray `ol Equals(object? obj)…`. NOT: gray text after `override ` without
+    // `public` (the base's accessibility would have to go before), nor `public override ` + Sides (protected in the base).
+}
+
 /// <summary>A base of an assembly (Microsoft.Extensions.Hosting): its abstract and virtual members are offered as well.</summary>
 public class OvWorker : BackgroundService
 {

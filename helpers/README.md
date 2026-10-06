@@ -7,7 +7,7 @@
 |---|---|---|
 | `protocol/` | — | `Protocol.cs`: общий цикл запросов, его берут все помощники |
 | `msbuildhost/` | MsBuildHost | вычисление проектов MSBuild (`Microsoft.Build` + `MSBuildLocator`) |
-| `dotnethelper/` | DotNetHelper | клиент NuGet; IL Viewer (`Il.cs`, `ICSharpCode.Decompiler` + portable PDB); дальше — тесты через TestPlatform, декомпилятор, метаданные сборок |
+| `dotnethelper/` | DotNetHelper | клиент NuGet; IL Viewer (`Il.cs`, `ICSharpCode.Decompiler` + portable PDB); декомпилятор (`Decompile.cs`); где исходник типа по PDB — Source Link и встроенные исходники (`SourceLink.cs`, метод `sourceLocation`); дальше — тесты через TestPlatform |
 | `diagnostics/` | DiagnosticsHelper | ClrMD (какой CLR в процессе, дампы); дальше — TraceEvent, `allocwatch` |
 | `codeanalysis/` | CodeAnalysisHelper | source generators и анализаторы Roslyn с code fixes без сервера (0.1.77, пакет `codeanalysis`): `generate`, `analyze`, `fix`, `invalidate`, `info`. Roslyn — не пакет, а сборки SDK из `DotnetTools/dotnet-format` (HintPath, первая сборка без сети), поэтому собирается под каждый SDK отдельно (`perSdk`); проект — design-time `dotnet msbuild -t:Compile -getItem:CscCommandLineArgs`, отсюда **SDK ≥ 8**. Один на solution, выход после простоя |
 

@@ -351,7 +351,8 @@ object CSharpGhostText {
     private val CAUGHT = Regex("""\bcatch\s*\(\s*[\w.]+\s+(\w+)\s*\)""")
 
     private val ACCESS = setOf("public", "internal", "protected", "required")
-    private val NOT_FOR_PROPERTY = setOf("readonly", "const", "async", "volatile", "extern", "partial")
+    // `override`: the member of the base, written whole by the gray text of [NativeCSharpTypingGhost] (0.1.126)
+    private val NOT_FOR_PROPERTY = setOf("readonly", "const", "async", "volatile", "extern", "partial", "override")
 
     /** A method header `(...)` on its own line, for the NotImplementedException body; nested parens in the parameter list are left out. */
     private val METHOD_HEAD = Regex("""^\s*((?:(?:$MODIFIERS)\s+)*)($TYPE)\s+([A-Za-z_]\w*)\s*(?:<[^<>]*>)?\s*\([^()]*\)$""")

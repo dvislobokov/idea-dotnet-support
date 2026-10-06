@@ -75,6 +75,8 @@ class NativeCSharpCompletionPlace(
     val usingTypes: Boolean = false,
     /** USING_DIRECTIVE: the first name after `using` (`static` may still be typed). */
     val usingFirst: Boolean = false,
+    /** MEMBER_START after `override T |`: the return type typed before the name — the members to override of that type, written over it. */
+    val overrideType: PsiElement? = null,
 ) {
     enum class NameStyle { LOCAL, PRIVATE_FIELD, PUBLIC_MEMBER }
 
@@ -208,6 +210,13 @@ class NativeCSharpCompletionPlace(
                 return NativeCSharpCompletionPlace(NativeCompletionKind.KEYWORDS_ONLY, leaf, null, prev, keywords = listOf("return", "break"))
             }
             val field = declaration.parent as? CSharpBaseFieldDeclaration
+            // `public override string |`: the name of a member to override, of the type typed (Rider), not a field's name
+            if (field != null && declaration.variables.size == 1 && field.modifiers.any { it.text == "override" }) {
+                val container = field.parent as? CSharpTypeDeclaration ?: return null
+                return NativeCSharpCompletionPlace(
+                    NativeCompletionKind.MEMBER_START, leaf, null, prev, modifiers = field.modifiers.map { it.text }, typeDeclaration = container, overrideType = declaration.type,
+                )
+            }
             // `partial |`, `async |`: a contextual modifier is read as the type of a field
             if (field != null && type in CONTEXTUAL_MODIFIERS && declaration.variables.size == 1) {
                 val modifiers = field.modifiers.map { it.text } + type

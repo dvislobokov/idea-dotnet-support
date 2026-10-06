@@ -29,6 +29,7 @@ import io.github.dotnetsupport.lang.CSharpGotoDeclarationHandler
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
 import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
+import io.github.dotnetsupport.lsp.RoslynOptions
 import java.io.File
 
 /**
@@ -60,6 +61,7 @@ class AssemblyGotoLibraryTest : BasePlatformTestCase() {
             AssemblyIndexService.getInstance(project).clearIndexes()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
+            RoslynLanguageServerSettings.getInstance().state.options = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -153,6 +155,47 @@ class AssemblyGotoLibraryTest : BasePlatformTestCase() {
         // the view is highlighted as any C# file: the annotators of the plugin take a file of no project
         myFixture.openFileInEditor(editor.virtualFile!!)
         myFixture.doHighlighting()
+    }
+
+    /** `symbol_search.dotnet_search_reference_assemblies` of the page of the server, off: the libraries are not searched. */
+    fun testGoToClassAndSymbolObeyTheSearchReferenceAssembliesOption() {
+        val option = RoslynOptions.option("symbol_search.dotnet_search_reference_assemblies")
+        RoslynLanguageServerSettings.getInstance().setValue(option, "false")
+        assertEmpty(names(AssemblyGotoClassContributor(), ProjectScope.getAllScope(project)))
+        assertEmpty(items(AssemblyGotoClassContributor(), "List", everywhere = true))
+        assertEmpty(names(AssemblyGotoSymbolContributor(), ProjectScope.getAllScope(project)))
+        assertEmpty(items(AssemblyGotoSymbolContributor(), "WriteLine", everywhere = true))
+        RoslynLanguageServerSettings.getInstance().setValue(option, "true")
+        assertTrue("List" in names(AssemblyGotoClassContributor(), ProjectScope.getAllScope(project)))
+    }
+
+    /** `navigation.dotnet_navigate_to_decompiled_sources` off: the metadata view, and the decompiler is never asked. */
+    fun testGoToDeclarationStaysOnTheMetadataViewWithDecompiledSourcesOff() {
+        CSharpSemanticEnvironment.setAssembliesForTests { AssemblyIndexSet(listOf(FIXTURE)) }
+        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.NAVIGATION, CSharpFeatureSource.NATIVE)
+        RoslynLanguageServerSettings.getInstance().setValue(RoslynOptions.option("navigation.dotnet_navigate_to_decompiled_sources"), "false")
+        val decompiler = io.github.dotnetsupport.decompiler.AssemblyDecompiler.getInstance(project)
+        val helper = decompiler.source
+        val dll = java.io.File(com.intellij.openapi.util.io.FileUtil.createTempDirectory("gotoMetadata", null), "IndexFixture.dll").apply { writeText("not really an assembly") }
+        val answer = io.github.dotnetsupport.decompiler.DecompilerAnswers.parse(com.google.gson.JsonParser.parseString(javaClass.classLoader.getResource("decompiler/circle.json")!!.readText()))!!
+        val requests = java.util.concurrent.atomic.AtomicInteger()
+        AssemblyIndexService.getInstance(project).setAssemblyFile(FIXTURE, dll)
+        decompiler.source = object : io.github.dotnetsupport.decompiler.DecompilerSource {
+            override fun decompile(request: io.github.dotnetsupport.decompiler.DecompileRequest) = answer.also { requests.incrementAndGet() }
+            override fun types(assembly: String) = emptyList<io.github.dotnetsupport.decompiler.AssemblyTypeInfo>()
+        }
+        try {
+            val file = myFixture.addFileToProject("GotoMetadata/Program.cs", "class Program { Fixture.Circle shape; }")
+            val at = file.text.indexOf("Circle")
+            repeat(2) {
+                val target = AssemblyNavigation.declarationTargets(file.findElementAt(at)!!)!!.single()
+                assertTrue("the metadata view", target.containingFile.virtualFile is AssemblyMetadataFile)
+            }
+            Thread.sleep(200)
+            assertEquals("the decompiler is not asked", 0, requests.get())
+        } finally {
+            decompiler.source = helper
+        }
     }
 
     fun testGoToDeclarationOfTheNativeTreeOpensTheMetadataView() {

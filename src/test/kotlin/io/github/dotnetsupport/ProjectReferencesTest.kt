@@ -97,6 +97,41 @@ class ProjectReferencesTest {
         assertEquals("Vendor of both is one library with one assembly", listOf("/App/lib/Vendor.dll"), relative(merged.last().assemblies))
     }
 
+    /**
+     * `Grpc.AspNetCore` requires `Microsoft.AspNetCore.App`: restore writes that under the package in the target, not under the project
+     * (which declares `Microsoft.NETCore.App` alone) — `Host` of `Microsoft.Extensions.Hosting` did not resolve in a library using gRPC.
+     */
+    @Test
+    fun `the shared frameworks the packages require, next to the ones the project declares`() {
+        file("packages/grpc.aspnetcore.server/2.83.0/lib/net9.0/Grpc.AspNetCore.Server.dll")
+        file("dotnet/packs/Microsoft.NETCore.App.Ref/9.0.6/ref/net9.0/System.Runtime.dll")
+        file("dotnet/packs/Microsoft.AspNetCore.App.Ref/9.0.6/ref/net9.0/Microsoft.Extensions.Hosting.dll")
+        val assets = """
+            {
+              "targets": {
+                "net9.0": {
+                  "Grpc.AspNetCore.Server/2.83.0": {
+                    "type": "package", "compile": { "lib/net9.0/Grpc.AspNetCore.Server.dll": {} }, "frameworkReferences": [ "Microsoft.AspNetCore.App" ]
+                  },
+                  "Grpc.Core.Api/2.83.0": { "type": "package", "compile": {}, "frameworkReferences": [ "Microsoft.NETCore.App" ] }
+                }
+              },
+              "libraries": { "Grpc.AspNetCore.Server/2.83.0": { "type": "package", "path": "grpc.aspnetcore.server/2.83.0" } },
+              "packageFolders": { "$folder": {} },
+              "project": { "frameworks": { "net9.0": { "frameworkReferences": { "Microsoft.NETCore.App": { "privateAssets": "all" } } } } }
+            }
+        """.trimIndent()
+        val references = ProjectAssemblies.references(ProjectAssemblies.Request(assets, File(root, "App"), File(root, "dotnet"), "net9.0"))
+        assertEquals(listOf(
+            "/packages/grpc.aspnetcore.server/2.83.0/lib/net9.0/Grpc.AspNetCore.Server.dll",
+            "/dotnet/packs/Microsoft.NETCore.App.Ref/9.0.6/ref/net9.0/System.Runtime.dll",
+            "/dotnet/packs/Microsoft.AspNetCore.App.Ref/9.0.6/ref/net9.0/Microsoft.Extensions.Hosting.dll",
+        ), relative(references.assemblies))
+        assertEquals("a framework named by the project and by a package is one library",
+            listOf("PACKAGE Grpc.AspNetCore.Server 2.83.0", "FRAMEWORK Microsoft.NETCore.App.Ref 9.0.6", "FRAMEWORK Microsoft.AspNetCore.App.Ref 9.0.6"),
+            references.libraries.map { "${it.kind} ${it.presentableName}" })
+    }
+
     @Test
     fun `an SDK project for dotnet Framework`() {
         for (name in listOf("mscorlib", "System", "System.Core", "System.Xml", "System.Web")) {

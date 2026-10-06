@@ -62,6 +62,8 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
 
         /** Types and namespaces (`System.Data.*`) the C# completion never offers, see [io.github.dotnetsupport.lang.CSharpCompletionExclusions]. */
         var completionExclusions by list<String>()
+        /** Matching brackets of C# by depth, see [io.github.dotnetsupport.lang.CSharpBracketColors]. */
+        var colorizeBrackets by property(true)
 
         /** Of the settings pages: the one of the IDE, or chosen here (there is no Russian language pack for the IDE itself). */
         var language by enum(PluginLanguage.AUTO)
@@ -122,6 +124,10 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
             // a new list: that is how BaseState notices the change
             state.completionExclusions = trimmed.toMutableList()
         }
+
+    var colorizeBrackets: Boolean
+        get() = state.colorizeBrackets
+        set(value) { state.colorizeBrackets = value }
 
     var createRunConfigurations: Boolean
         get() = state.createRunConfigurations
@@ -313,6 +319,7 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
                         .comment(DotNetBundle.message("settings.behavior.buildWindow.comment"), maxLineLength = COMMENT_WIDTH)
                 }
                 row { checkBox(DotNetBundle.message("settings.behavior.solutionView")).bindSelected(settings::switchToSolutionView).comment(DotNetBundle.message("settings.behavior.solutionView.comment"), maxLineLength = COMMENT_WIDTH) }
+                row { checkBox(DotNetBundle.message("settings.behavior.bracketColors")).bindSelected(settings::colorizeBrackets).comment(DotNetBundle.message("settings.behavior.bracketColors.comment"), maxLineLength = COMMENT_WIDTH) }
                 row(DotNetBundle.message("settings.language")) {
                     comboBox(PluginLanguage.entries, textListCellRenderer { it?.label }).bindItem({ settings.language }, { settings.language = it ?: PluginLanguage.AUTO })
                         .comment(DotNetBundle.message("settings.language.comment"), maxLineLength = COMMENT_WIDTH)
@@ -380,7 +387,9 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
         toolRows.values.any { it.path.text.trim() != settings.toolPath(it.tool) }
 
     override fun apply() {
+        val bracketColors = settings.colorizeBrackets
         super.apply()
+        if (settings.colorizeBrackets != bracketColors) io.github.dotnetsupport.lang.CSharpBracketColors.rehighlight()
         settings.dotnetPath = pathField.text
         settings.dotnetSearchPaths = searchPathsModel.items
         toolRows.values.forEach { settings.setToolPath(it.tool, it.path.text) }

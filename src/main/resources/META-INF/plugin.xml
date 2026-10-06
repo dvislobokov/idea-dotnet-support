@@ -92,6 +92,10 @@
         <!-- 0.1.93: placeholders of logging message templates (with the count check of CA2017) and parts of route templates -->
         <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpLoggerTemplateAnnotator"/>
         <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpRouteTemplateAnnotator"/>
+        <!-- matching brackets by depth (Settings | .NET, "Colorize matching brackets"); the keys get VS Code's colors in the base schemes -->
+        <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpBracketColorsAnnotator"/>
+        <additionalTextAttributes scheme="Default" file="colorSchemes/CSharpBracketsLight.xml"/>
+        <additionalTextAttributes scheme="Darcula" file="colorSchemes/CSharpBracketsDark.xml"/>
         <!-- DIAGNOSTICS NATIVE: Roslyn's syntax errors from the tree; the server keeps the semantic ones -->
         <annotator language="C#" implementationClass="io.github.dotnetsupport.lang.NativeCSharpDiagnosticsAnnotator"/>
         <!-- the colors of the annotators above on screen as a C# editor opens, before the daemon's first pass (0.1.84) -->
@@ -110,10 +114,18 @@
         <editorNotificationProvider implementation="io.github.dotnetsupport.decompiler.DecompiledBanner"/>
         <editorTabTitleProvider implementation="io.github.dotnetsupport.decompiler.DecompiledTabTitle"/>
         <writingAccessProvider implementation="io.github.dotnetsupport.decompiler.DecompiledWritingAccess"/>
+        <!-- the original sources of a library by Source Link or embedded in its PDB (sourcelink/): a file system of their own, read-only, a banner -->
+        <virtualFileSystem key="dotnet-source" implementationClass="io.github.dotnetsupport.sourcelink.LibrarySourceFileSystem"/>
+        <editorNotificationProvider implementation="io.github.dotnetsupport.sourcelink.LibrarySourceBanner"/>
+        <editorTabTitleProvider implementation="io.github.dotnetsupport.sourcelink.LibrarySourceTabTitle"/>
+        <writingAccessProvider implementation="io.github.dotnetsupport.sourcelink.LibrarySourceWritingAccess"/>
         <!-- the .NET options of .editorconfig (csharp_*, dotnet_*) that the EditorConfig plugin ships but shows only in Rider -->
         <postStartupActivity implementation="io.github.dotnetsupport.lang.EditorConfigDotNetSupport"/>
         <!-- #if symbols and LangVersion of each C# file for the native parser (CSHARP_PSI_MIGRATION.md, steps 7 and 10) -->
         <postStartupActivity implementation="io.github.dotnetsupport.lang.CSharpParseOptions$Startup"/>
+        <!-- the «Analysis» scopes without the server: the errors of the solution in the Problems tool window (NativeCSharpSolutionProblems) -->
+        <postStartupActivity implementation="io.github.dotnetsupport.lang.NativeCSharpSolutionProblems$Startup"/>
+        <editorFactoryDocumentListener implementation="io.github.dotnetsupport.lang.NativeCSharpSolutionProblems$Documents"/>
         <!-- Alt+Enter on the file: the namespace of the folder, a type into its own file, the file named after its type, a partial part, a test -->
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.AdjustNamespaceIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.MoveTypeToFileIntention</className><category>C#</category></intentionAction>
@@ -220,6 +232,13 @@
         <typeHierarchyProvider language="C#" order="first" implementationClass="io.github.dotnetsupport.lang.NativeCSharpTypeHierarchyProvider"/>
         <callHierarchyProvider language="C#" order="first" implementationClass="io.github.dotnetsupport.lang.NativeCSharpCallHierarchyProvider"/>
         <codeInsight.lineMarkerProvider language="C#" implementationClass="io.github.dotnetsupport.lang.NativeCSharpInheritanceLineMarkerProvider"/>
+        <!-- Code Vision on the native search (NativeCSharpCodeLens.kt, CODE_LENS NATIVE): "N usages", "N implementations", "Run | Debug" over
+             tests, behind the two Code Lens options of the Language Server page; with ROSLYN the server's code lens answers -->
+        <codeInsight.codeVisionProvider implementation="io.github.dotnetsupport.lang.NativeCSharpReferencesCodeVisionProvider"/>
+        <codeInsight.codeVisionProvider implementation="io.github.dotnetsupport.lang.NativeCSharpInheritorsCodeVisionProvider"/>
+        <codeInsight.codeVisionProvider implementation="io.github.dotnetsupport.lang.NativeCSharpRunTestCodeVisionProvider"/>
+        <codeInsight.codeVisionProvider implementation="io.github.dotnetsupport.lang.NativeCSharpDebugTestCodeVisionProvider"/>
+        <config.codeVisionGroupSettingProvider implementation="io.github.dotnetsupport.lang.NativeCSharpTestsCodeVisionGroupSettingProvider"/>
         <!-- Find Usages as in Rider, behind the toggles of the Usages view: usage kind, .NET project, type and member -->
         <usageGroupingRuleProvider implementation="io.github.dotnetsupport.lang.CSharpUsageGroupingRuleProvider"/>
         <fileStructureGroupRuleProvider implementation="io.github.dotnetsupport.lang.CSharpMemberGroupRuleProvider"/>
@@ -309,6 +328,8 @@
         <formattingService implementation="io.github.dotnetsupport.format.DotNetFormattingService"/>
         <!-- CSharpFeature.FORMATTING NATIVE: the platform formatter on csharp-psi's tree, engaged only when the switch says so (NativeCSharpFormatting) -->
         <lang.formatter language="C#" implementationClass="io.github.dotnetsupport.lang.NativeCSharpFormattingModelBuilder"/>
+        <!-- "Organize 'using' directives when formatting" of the page of the server, for the native formatter -->
+        <postFormatProcessor implementation="io.github.dotnetsupport.lang.NativeCSharpOrganizeImports"/>
         <postStartupActivity implementation="io.github.dotnetsupport.run.DotNetRunConfigurationStartupActivity"/>
         <runConfigurationProducer implementation="io.github.dotnetsupport.run.DotNetRunConfigurationProducer"/>
         <runLineMarkerContributor language="C#"
@@ -332,6 +353,13 @@
         <!-- a click on a `cref` of that documentation: the documentation of what it names (F4 opens it) -->
         <platform.backend.documentation.linkHandler implementation="io.github.dotnetsupport.lang.NativeCSharpDocumentationLinkHandler"/>
         <codeInsight.parameterInfo language="C#" implementationClass="io.github.dotnetsupport.lang.NativeCSharpParameterInfoHandler"/>
+        <!-- INLAY_HINTS = Built-in: parameter names and types on the plugin's semantics with Roslyn's rules and the options of Settings | .NET | Language Server
+             (NativeCSharpInlayHints); the server's hints are off meanwhile (RoslynLspIntegration). A click on a type of an assembly opens its metadata view. -->
+        <codeInsight.declarativeInlayProvider language="C#" implementationClass="io.github.dotnetsupport.lang.NativeCSharpParameterHintsProvider" isEnabledByDefault="true"
+                                              group="PARAMETERS_GROUP" providerId="dotnet.csharp.parameters" bundle="messages.DotNetBundle" nameKey="inlay.provider.parameters"/>
+        <codeInsight.declarativeInlayProvider language="C#" implementationClass="io.github.dotnetsupport.lang.NativeCSharpTypeHintsProvider" isEnabledByDefault="true"
+                                              group="TYPES_GROUP" providerId="dotnet.csharp.types" bundle="messages.DotNetBundle" nameKey="inlay.provider.types"/>
+        <codeInsight.inlayActionHandler handlerId="dotnet.csharp.library.type" implementationClass="io.github.dotnetsupport.lang.NativeCSharpLibraryTypeHintHandler"/>
         <!-- the line of Ctrl + hover over a target of the native navigation (the platform asks the language of the target) -->
         <lang.documentationProvider language="C#" implementationClass="io.github.dotnetsupport.lang.NativeCSharpQuickNavigateInfo"/>
         <!-- COMPLETION = Built-in: the list of the plugin's tree, in front of the server's, whose duplicates it drops (NativeCSharpCompletion) -->
@@ -734,6 +762,11 @@
                   topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
         <listener class="io.github.dotnetsupport.codeanalysis.CodeAnalysisEditorListener"
                   topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
+        <!-- the solution-wide pass of the native diagnostics follows files that change on disk and editors that open and close -->
+        <listener class="io.github.dotnetsupport.lang.NativeCSharpSolutionProblems$Files"
+                  topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+        <listener class="io.github.dotnetsupport.lang.NativeCSharpSolutionProblems$Editors"
+                  topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
         <!-- the colors painted as a C# editor opens give way to the daemon's once it has finished with the editor -->
         <listener class="io.github.dotnetsupport.lang.CSharpOpeningColors$Daemon"
                   topic="com.intellij.codeInsight.daemon.DaemonCodeAnalyzer$DaemonListener"/>
@@ -751,6 +784,11 @@
         <listener class="io.github.dotnetsupport.lang.NativeCSharpSemanticColorsSwitch"
                   topic="io.github.dotnetsupport.lsp.RoslynLanguageServerSettings$Listener"/>
         <listener class="io.github.dotnetsupport.lang.NativeCSharpDiagnosticsSwitch"
+                  topic="io.github.dotnetsupport.lsp.RoslynLanguageServerSettings$Listener"/>
+        <!-- the inlay hints and the Code Vision of open C# files are made again on Apply: their passes run only when the PSI changed -->
+        <listener class="io.github.dotnetsupport.lang.NativeCSharpInlayHintsSwitch"
+                  topic="io.github.dotnetsupport.lsp.RoslynLanguageServerSettings$Listener"/>
+        <listener class="io.github.dotnetsupport.lang.NativeCSharpCodeLensSwitch"
                   topic="io.github.dotnetsupport.lsp.RoslynLanguageServerSettings$Listener"/>
         <!-- the C# palette follows a switch of the color scheme or of the theme, in the variant of the new background -->
         <listener class="io.github.dotnetsupport.lang.palette.CSharpPaletteSchemeListener"

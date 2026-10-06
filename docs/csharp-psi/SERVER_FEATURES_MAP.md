@@ -35,7 +35,7 @@ generators, 12 — «только Roslyn, по запросу» (12.1 — сер
 | Автодополнение: `provide_regex_completions` | completion внутри регулярных выражений | инъекция языка RegExp платформы: эвристика по вызову (`new Regex("…")`, `Regex.IsMatch`) — **9**; точно по `[StringSyntax("Regex")]` — **11c** | нет |
 | Автодополнение: `trigger_completion_in_argument_lists` | автопопап в списке аргументов | ожидаемый тип параметра — **11c**, при перегрузках — **11d** | `CSharpArguments` / `CSharpExpectations` (`lang/CSharpScopeTypes.kt`, по токенам), `RoslynLambdaCompletion` (на signature help сервера) |
 | Навигация: `navigate_to_decompiled_sources` | Go to Declaration в сборку — декомпилят | см. часть 2: по имени типа — сразу / **8**, по символу — **11a/11c** | IL Viewer (`helpers/dotnethelper/Il.cs`, `ICSharpCode.Decompiler`); оформление декомпилята `roslyn/RoslynDecompiledSources.kt` |
-| Навигация: `navigate_to_source_link_and_embedded_sources` | исходники пакета по Source Link / встроенные в PDB | часть 2 | чтение portable PDB (рядом, embedded) в `Il.cs` |
+| Навигация: `navigate_to_source_link_and_embedded_sources` | исходники пакета по Source Link / встроенные в PDB | сделано 0.1.116: `sourcelink/LibrarySources` (метод `sourceLocation` помощника, `helpers/dotnethelper/SourceLink.cs`) | чтение portable PDB (рядом, embedded) в `Il.cs` |
 | Навигация: `show_remarks_in_quick_info` | `<remarks>` в quick documentation | quick doc — **11c** + XML-документация пакетов (в индексе её нет, расширение формата — **10**) | для C# нет; документация только у MSBuild (`MsBuildDocumentationProvider`) |
 | Навигация: `search_reference_assemblies` | искать символы в эталонных сборках | часть 3: Go to Symbol по `AssemblyIndex` — сразу | `AssemblyIndex` (типы + статические члены) |
 | Code Lens: `enable_references_code_lens` | «N references» над объявлением | Find Usages по solution — **11c** (счёт по слову из IdIndex раньше возможен, но врёт на одноимённых — не предлагаю) | нет |
@@ -90,7 +90,8 @@ IL Viewer, `il/IlViewerService` и др.). `CSharpDecompiler` в том же п�
 `capture-5.12/14-textDocument_definition_framework_type_metadata_as_source.json`). Сервер этот файл понимает: hover и переход
 дальше работают (`tools/roslyn-lsp/README.md`). Плагин только оформляет его: `RoslynDecompiledWritingAccess` (только чтение),
 `RoslynDecompiledTabTitle` (`Console.cs [System.Console]`), `RoslynDecompiledBanner` (сборка и версия из `#region Assembly …`,
-ссылка на dll). Опции `navigate_to_decompiled_sources` и `navigate_to_source_link_and_embedded_sources` — серверные.
+ссылка на dll). Опции `navigate_to_decompiled_sources` и `navigate_to_source_link_and_embedded_sources` — серверные; вторую с 0.1.116
+читает и своя навигация (`sourcelink/LibrarySources`).
 Не проверено: подставляет ли сервер реализацию вместо эталонной сборки (`ref/` содержит только `throw null`). Это видно по
 строке `// <путь к dll>` в шапке декомпилята.
 

@@ -603,6 +603,64 @@
   (`TYPE:sem-*`), `debug-playground/Console/Editor/ImportType.cs` (`TYPE:import-type-*`); `docs/LIVE_CHECKS.md` E-109…E-114. Сборки
   проектов вне solution (как `Broken`) индексируются, когда открыт их файл. Проверено UI-роботом (Windows, IC 2026.1.4): ошибки как у
   сервера, fixes работают; синяя подсказка и дубли со сборкой не проверены, человеком вживую не проверено
+- [x] 0.1.126 — `override` как в Rider: начало типа возврата (`public override str`) оставляет члены этого типа (`string Describe()`,
+  `string ToString()`), `public override string D` дописывает Describe поверх набранного типа, `override string ` — члены этого типа;
+  после `override` нет `struct`, `class` и шаблонов. С `public ov` в списке строки `override string Describe`, которые пишут член целиком,
+  и серый текст лучшего члена (Tab — то же, что выбор строки, с `using` и кареткой в теле). Сценарии `Overrides.cs`:
+  `TYPE:override-by-type`, `TYPE:override-early`, `TYPE:override-gray`. Вживую не проверено
+- [x] 0.1.125 — окно Project надёжно открывается на Solution при первом открытии папки с solution: переключение гонялось с созданием
+  содержимого окна (`ProjectViewImpl.setupImpl` позже стартовой активности) и при проигрыше не повторялось, а флаг «уже переключали»
+  ставился заранее; теперь ждём `ProjectViewListener.paneShown`, флаг — только после переключения, Solution — `isDefaultPane` для папки
+  с `.sln/.slnx` в корне; после первого переключения выбор пользователя сохраняется. Решение — чистая функция, `SolutionViewSwitchTest`.
+  Сценарии линз (`CodeLens.cs`, `CodeLensTests.cs`): маркеры над объявлениями, чтобы линза при позиции Right не уезжала за комментарий.
+  Вживую не проверено
+- [x] 0.1.124 — линз Code Vision нет над исходниками библиотек (Source Link), декомпилированным кодом и metadata view — только над файлами
+  solution, как в Rider (inlay hints там остаются). Общие фреймворки, которые требуют пакеты (`Grpc.AspNetCore` → `Microsoft.AspNetCore.App`,
+  `targets.<tfm>.<пакет>.frameworkReferences` в `project.assets.json`), теперь среди сборок проекта: `Host` в Grpc-проекте разрешается
+  (completion, Go to Declaration, нет ложной CS0246). Узел Dependencies → Frameworks по-прежнему показывает только объявленные проектом.
+  Тесты `CSharpCodeLensTest`, `ProjectReferencesTest`. Вживую не проверено
+- [x] 0.1.123 — по второй проверке роботом (WSL, 2026-10-06): Source Link снова скачивает (запрет редиректов через `redirectLimit(0)` ронял
+  каждую загрузку; теперь `followRedirects(false)`, тест с настоящим HTTP-клиентом на локальном сервере). Code Vision: у каждого объявления
+  строки своя запись (`int _a, _b;`, однострочный enum и его члены) — провайдер теперь прямой `CodeVisionProvider` с
+  `singleEntryPerLine = false`; счётчики членов ниже правки не сбрасываются; `base(...)` — использование конструктора, не типа; клик по
+  «N implementations» и gutter переопределений без ошибки «Read access is allowed from inside read-action only». Прошло роботом:
+  области анализа (97 файлов за 3,9 с, набор без задержек), исправления 0.1.120, «Run» над тестом. Исправления 0.1.123 проверены роботом (WSL): Source Link открывает исходник с GitHub и падает на декомпилят при выключенной опции; все линзы `CodeLens.cs` как в EXPECT, линзы обновляются после правки другого файла (~6 с), попап реализаций без ошибок. Не разрешается `Host` в Grpc-проекте (до Source Link не доходит); человеком вживую не проверено
+- [x] 0.1.122 — области «Analysis» без сервера (Compiler / Analyzer diagnostics for: openFiles / fullSolution / none): `fullSolution` —
+  фоновый проход по всем `.cs` solution в Problems → Project Errors (`lang/NativeCSharpSolutionProblems`, ~9 мс на файл, 196 файлов площадки
+  за 1,7 с), перепроверка изменённого файла через 1 с и всего — после сборки; `none` — без диагностик компилятора вовсе, как у Roslyn;
+  анализаторы при `fullSolution` — по проекту целиком в ту же вкладку, при `none` — только по Run Code Analysis. Вкладку заполняет один
+  провайдер: сервер при «Errors and warnings» = Language server, иначе плагин. Правка файла перепроверяет только его (зависимые — после
+  сборки). Теперь все 35 опций страницы Language Server работают и без сервера (`RoslynOptionsNativeTest`: PENDING пуст). Сценарий —
+  `Console/Editor/SolutionProblems.cs` (`TYPE:problems-*`), тест `CSharpSolutionProblemsTest`. Вживую не проверено
+- [x] 0.1.121 — переход в исходники библиотеки по Source Link и встроенным в PDB исходникам без сервера (опция «Navigate to Source Link and
+  embedded sources»): помощник читает portable PDB (`helpers/dotnethelper/SourceLink.cs`, метод `sourceLocation`), плагин скачивает файл
+  HTTP-клиентом IDE (только https, не локальная сеть и не сама машина, без редиректов, до 16 МБ), сверяет хеш из PDB, кэширует на диске и
+  открывает read-only (`dotnet-source://`, пакет `sourcelink`); без PDB / Source Link / сети — декомпилированный код или метаданные. Работает
+  для пакетов с PDB рядом с dll (Grpc.*, Microsoft.CodeAnalysis.*…); большинство пакетов кладут PDB только в `.snupkg` — символьные серверы не
+  сделаны. Сценарий — `debug-playground/Grpc/SourceLink.cs` (`TYPE:sourcelink-*`), тест `SourceLinkTest`. Вживую не проверено
+- [x] 0.1.120 — по проверке роботом 0.1.116–0.1.118 (WSL, 2026-10-06; скобки, inlay hints, в том числе на EF Core `IOrderedQueryable<Order>`,
+  и 5 из 13 сценариев опций прошли): Apply страницы Language Server сразу перерисовывает inlay hints и Code Vision открытых файлов (раньше —
+  только после правки); переключение «Inlay hints» / «Code Vision» на сервер работает без его перезапуска; нет ложной CS7036 у именованного
+  аргумента на своей позиции перед позиционными (C# 7.2). Вживую исправления не проверены
+- [x] 0.1.119 — Code Vision без сервера: «N usages» над типами и членами (счёт — встроенный Find Usages, клик — Show Usages),
+  «N implementations / overrides / inheritors», «Run | Debug» над тестами и классами тестов (те же конфигурации, что ▶ в gutter); опции
+  Code Lens «References» и «Run and debug tests» страницы Language Server действуют и для встроенной реализации; переключатель «Code Vision»
+  (Built-in по умолчанию), с сервером — линзы сервера вместо встроенных. Перегрузки считаются вместе (встроенный Find Usages не различает
+  их по аргументам). Сценарии — `Console/Editor/CodeLens.cs` (`TYPE:lens-*`), `Tests/CodeLensTests.cs`, тест `CSharpCodeLensTest`. Вживую не проверено
+- [x] 0.1.118 — опции страницы Language Server действуют и для встроенных фич: completion (неимпортированные namespace, имена, regex,
+  список в аргументах), навигация в декомпилированный код, remarks в документации, поиск символов в сборках, автовставка `///`, подсветка
+  regex / JSON в строках, место вставки сгенерированных членов, бросающие или авто-свойства (по умолчанию, как у Roslyn, — бросающие).
+  Новое: «Organize 'using' directives when formatting» у встроенного форматтера. У каждой опции — `NativeSupport` (READ / SERVER_ONLY /
+  PENDING), guard-тест `RoslynOptionsNativeTest`; остаток PENDING — Code Lens, области анализа, Source Link. Сценарий —
+  `debug-playground/Console/Editor/ServerOptions.cs` (`TYPE:option-*`), тест `NativeServerOptionsTest`. Вживую не проверено
+- [x] 0.1.117 — inlay hints без сервера: имена параметров и типы `var` / параметров лямбд / `new()` / коллекций по собственной семантике, правила
+  Roslyn, все 13 опций группы «Inlay Hints» страницы Language Server, переключатель «Inlay hints» (Built-in по умолчанию; при Language server
+  встроенные молчат), клик по типу ведёт к объявлению или в metadata view. Причина: подсказки давал только сервер, с 0.1.76 выключенный по
+  умолчанию (сообщение пользователя 2026-10-06). Сценарий — `debug-playground/Console/Editor/InlayHints.cs` (`TYPE:inlay-*`), тест
+  `CSharpInlayHintsTest`. Вживую не проверено
+- [x] 0.1.116 — цветные парные скобки в C# (`()`, `[]`, `{}`, `<>` списков типов) по глубине вложенности, как в VS Code / Rider; настройка
+  «Colorize matching brackets» на Settings | .NET (включена по умолчанию), цвета — Editor | Color Scheme | C#. Сценарий —
+  `debug-playground/Console/Editor/BracketColors.cs` (`TYPE:brackets-*`), тест `CSharpBracketColorsTest`. Вживую не проверено
 - [x] 0.1.108–0.1.115 — ошибки компилятора без сервера, 94 новых кода по группам: обобщённые параметры (0.1.108), повторные объявления (0.1.109),
   неприсвоенные переменные (0.1.110), доступ и только для чтения, индекс формата 4 (0.1.111), операторы и приведения (0.1.112), перегрузки и лямбды
   (0.1.113), наследование (0.1.114), return / await / switch / переходы (0.1.115). Файл на каждый код — `debug-playground/Broken/Errors/CSxxxx.cs`

@@ -5,6 +5,7 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.elementType
 import io.github.dotnetsupport.csharp.lang.SyntaxKind
 import io.github.dotnetsupport.csharp.lang.psi.*
+import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.index.IndexedMemberKind
 import io.github.dotnetsupport.index.IndexedTypeRef
 import io.github.dotnetsupport.index.IndexedTypeKind
@@ -157,7 +158,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
     }
 
     /** `xs.Where(...)` of an extension method: the receiver is its first argument. */
-    private fun isReduced(symbol: CSharpSymbol, callee: CSharpSimpleName): Boolean {
+    internal fun isReduced(symbol: CSharpSymbol, callee: CSharpSimpleName): Boolean {
         if (!r.isExtension(symbol)) return false
         return when (val parent = callee.parent) {
             is CSharpMemberAccessExpression -> parent.nameElement == callee && parent.expression?.let(r::qualifier).let { it is CSharpNameResolver.Qualifier.Value || it is CSharpNameResolver.Qualifier.ValueOrType }
@@ -759,29 +760,57 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
             is SemanticType.ArrayOf -> if (ranged) receiver else receiver.element
             is SemanticType.Library -> {
                 if (receiver.type.fullName == "System.String") return if (ranged) receiver else r.libraryType("System.Char")
-                val indexers = r.session.libraryMembers(r.assemblies, receiver.type)["Item"].orEmpty().filter { inherited ->
-                    val parameters = r.session.parameters(inherited.member)
-                    inherited.member.kind == IndexedMemberKind.INDEXER && arguments.size <= parameters.size && parameters.drop(arguments.size).all { it.isOptional || it.hasDefault || it.isParams } &&
-                        // `span[1..]` is `Slice`, not the `int` indexer
-                        (!ranged || parameters.firstOrNull()?.typeRef.let { it is IndexedTypeRef.Named && it.fullName == "System.Range" })
-                }
-                val chosen = indexers.singleOrNull() ?: run {
-                    val types = arguments.map { a -> a.expression?.let(r::typeOf) }
-                    indexers.filter { inherited -> r.session.parameters(inherited.member).zip(types).all { (p, t) -> t == null || r.fromRef(p.typeRef, r.declaringArguments(receiver, inherited.from))?.let { r.conversion(t, it) } in OK } }.singleOrNull()
-                } ?: return if (ranged) slice(receiver) else null
+                val chosen = libraryIndexer(receiver, arguments, ranged) ?: return if (ranged) slice(receiver) else null
                 r.fromRef(chosen.member.typeRef, r.declaringArguments(receiver, chosen.from))
             }
             is SemanticType.Source -> {
-                for (part in receiver.info.parts) {
-                    val declaration = part.element() as? CSharpTypeDeclaration ?: continue
-                    val resolver = (declaration.containingFile as? CSharpFile)?.let(r.session::reachable) ?: continue
-                    val indexer = declaration.members.filterIsInstance<CSharpIndexerDeclaration>().filter { it.parameterList?.parameters?.size == arguments.size }.singleOrNull() ?: continue
-                    return r.substitute(indexer.type?.let(resolver::resolveType), receiver)
-                }
+                sourceIndexer(receiver, arguments)?.let { (indexer, resolver) -> return r.substitute(indexer.type?.let(resolver::resolveType), receiver) }
                 r.libraryBases(receiver).firstNotNullOfOrNull { indexed(it, arguments) }
             }
             is SemanticType.Parameter -> null
         }
+    }
+
+    /** The parameters of the indexer `a[i]` goes to (inlay hints name them); null for arrays, strings and where none fits. */
+    fun indexerParameters(receiver: SemanticType, arguments: List<CSharpArgument>): List<CSharpNameResolver.Parameter>? = when (receiver) {
+        is SemanticType.Library -> {
+            val ranged = arguments.size == 1 && arguments.single().expression is CSharpRangeExpression
+            if (receiver.type.fullName == "System.String") null
+            else libraryIndexer(receiver, arguments, ranged)?.let { chosen ->
+                val declaring = r.declaringArguments(receiver, chosen.from)
+                r.session.parameters(chosen.member).map { p -> CSharpNameResolver.Parameter(p.name, p.isOptional || p.hasDefault, p.isParams, p.isRef || p.isOut) { r.fromRef(p.typeRef, declaring) } }
+            }
+        }
+        is SemanticType.Source -> sourceIndexer(receiver, arguments)?.let { (indexer, resolver) ->
+            indexer.parameterList?.parameters.orEmpty().map { p ->
+                val modifiers = p.modifiers.map { it.text }
+                CSharpNameResolver.Parameter(p.identifier?.text.orEmpty(), p.default != null, "params" in modifiers, "ref" in modifiers || "out" in modifiers) { r.substitute(p.type?.let(resolver::resolveType), receiver) }
+            }
+        } ?: r.libraryBases(receiver).firstNotNullOfOrNull { indexerParameters(it, arguments) }
+        else -> null
+    }
+
+    private fun libraryIndexer(receiver: SemanticType.Library, arguments: List<CSharpArgument>, ranged: Boolean): AssemblyIndexSet.Inherited? {
+        val indexers = r.session.libraryMembers(r.assemblies, receiver.type)["Item"].orEmpty().filter { inherited ->
+            val parameters = r.session.parameters(inherited.member)
+            inherited.member.kind == IndexedMemberKind.INDEXER && arguments.size <= parameters.size && parameters.drop(arguments.size).all { it.isOptional || it.hasDefault || it.isParams } &&
+                // `span[1..]` is `Slice`, not the `int` indexer
+                (!ranged || parameters.firstOrNull()?.typeRef.let { it is IndexedTypeRef.Named && it.fullName == "System.Range" })
+        }
+        return indexers.singleOrNull() ?: run {
+            val types = arguments.map { a -> a.expression?.let(r::typeOf) }
+            indexers.filter { inherited -> r.session.parameters(inherited.member).zip(types).all { (p, t) -> t == null || r.fromRef(p.typeRef, r.declaringArguments(receiver, inherited.from))?.let { r.conversion(t, it) } in OK } }.singleOrNull()
+        }
+    }
+
+    private fun sourceIndexer(receiver: SemanticType.Source, arguments: List<CSharpArgument>): Pair<CSharpIndexerDeclaration, CSharpNameResolver>? {
+        for (part in receiver.info.parts) {
+            val declaration = part.element() as? CSharpTypeDeclaration ?: continue
+            val resolver = (declaration.containingFile as? CSharpFile)?.let(r.session::reachable) ?: continue
+            val indexer = declaration.members.filterIsInstance<CSharpIndexerDeclaration>().filter { it.parameterList?.parameters?.size == arguments.size }.singleOrNull() ?: continue
+            return indexer to resolver
+        }
+        return null
     }
 
     /** `span[1..]`: a `Slice` of the same type, as the language makes ranges of `Span` and `ReadOnlySpan`. */

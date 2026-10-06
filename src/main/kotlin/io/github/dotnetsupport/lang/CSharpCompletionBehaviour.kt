@@ -256,6 +256,8 @@ class CSharpCommitCharFilter : CharFilter() {
         if (isTemplate(item)) return null
         if (!impl.isSelectionTouched) {
             if (prefixLength == 0) return Result.HIDE_LOOKUP
+            // `override str` + space is the return type being typed, `public overr` + `i` the keyword: a whole member is chosen by Enter / Tab only
+            if (NativeCSharpOverrides.rowOf(item) != null) return Result.HIDE_LOOKUP
             if (!impl.itemMatcher(item).isStartMatch(item)) return Result.HIDE_LOOKUP
             // what is typed is the item already: the character is just typed
             if (item.lookupString == impl.itemPattern(item)) return null

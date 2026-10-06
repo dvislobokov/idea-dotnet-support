@@ -138,4 +138,32 @@ class TypingGhostInlineTest : BasePlatformTestCase() {
             assertFileContent("${types}public static class E\n{\n    public static void M(User user<caret>)\n    {\n    }\n}\n")
         }
     }
+
+    // ---- the override being typed (0.1.126): the best one in gray, Tab writes what the row of the list writes
+
+    private fun lens(line: String) = "class LensCircle\n{\n    public virtual string Describe() => \"\";\n}\nclass LensRing : LensCircle\n{\n    $line\n}\n"
+
+    fun testTheBestOverrideAfterTheStartOfItsReturnType() {
+        myFixture.testInlineCompletion {
+            init(CSharpFileType, lens("public override str<caret>"))
+            callInlineCompletion()
+            delay()
+            assertInlineRender("ing Describe()\n    {\n        return base.Describe();\n    }")
+            insert()
+            assertFileContent(lens("public override string Describe()\n    {\n        return base.Describe();<caret>\n    }"))
+        }
+    }
+
+    fun testTheOverrideRowOfTheListInGray() {
+        myFixture.testInlineCompletion {
+            init(CSharpFileType, lens("public ov<caret>"))
+            createLookup()
+            pickLookupElement("override Describe")
+            delay()
+            assertInlineRender("erride string Describe()\n    {\n        return base.Describe();\n    }")
+            insertWithTab()
+            assertFileContent(lens("public override string Describe()\n    {\n        return base.Describe();<caret>\n    }"))
+            assertNoLookup()
+        }
+    }
 }

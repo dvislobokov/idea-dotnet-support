@@ -25,6 +25,7 @@ import com.intellij.psi.util.PsiTreeUtil
 import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.csharp.lang.psi.impl.CSharpStubElementImpl
 import io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubIndexKeys
+import io.github.dotnetsupport.lsp.RoslynOptions
 import javax.swing.Icon
 
 /**
@@ -87,7 +88,10 @@ class NativeCSharpCompletionContributor : CompletionContributor() {
         val names = items.flatMapTo(HashSet()) { item -> item.allLookupStrings.map(NativeCSharpCompletion::nameOf) }
         names += excluded
         NativeCSharpDoubleCompletion.basic(parameters, place, file, result, names)   // the second press: inaccessible members, unreferenced types (0.1.96)
+        // `override |`, `override str|`: the members to override only — no `struct`, `class` or a template of another contributor (0.1.126)
+        val afterOverride = place.kind == NativeCompletionKind.MEMBER_START && "override" in place.modifiers
         result.runRemainingContributors(parameters) { found ->
+            if (afterOverride && NativeCSharpCompletion.isKeywordOrTemplate(found.lookupElement)) return@runRemainingContributors
             if (!NativeCSharpCompletion.isDuplicate(found.lookupElement, names, place.keywordsAreNative)) result.passResult(found)
         }
         result.stopHere()
@@ -97,6 +101,9 @@ class NativeCSharpCompletionContributor : CompletionContributor() {
 object NativeCSharpCompletion {
     /** The items of the list made by the plugin's tree: tests and the merge tell them by this key. */
     val NATIVE: Key<Boolean> = Key.create("dotnet.nativeCompletion")
+
+    /** The option of the server's page the names after a type (`Person |`, `foreach (var |`, parameters) obey, as the server's name provider. */
+    const val NAME_SUGGESTIONS = "completion.dotnet_show_name_completion_suggestions"
 
     /** Put by the client of the server on its items (`RoslynCompletionSupport`): what [isDuplicate] may drop. */
     val SERVER: Key<Boolean> = Key.create("dotnet.serverCompletion")
@@ -157,6 +164,17 @@ object NativeCSharpCompletion {
         if (name.isNotEmpty() && LookupElementPresentation.renderElement(element).itemText?.endsWith(":") == true) return "$name:" in nativeNames
         if (name.isNotEmpty() && name in nativeNames) return true
         return keywordsAreNative && element.lookupString in NativeCSharpCompletionPlace.ALL_KEYWORDS
+    }
+
+    /** A keyword or a live template of another contributor: nothing of that goes after `override`. */
+    fun isKeywordOrTemplate(element: LookupElement): Boolean {
+        if (element.lookupString in NativeCSharpCompletionPlace.ALL_KEYWORDS) return true
+        var current: LookupElement? = element
+        while (current != null) {
+            if (current.javaClass.name.contains("LiveTemplateLookupElement")) return true
+            current = (current as? LookupElementDecorator<*>)?.delegate
+        }
+        return false
     }
 
     fun isServerItem(element: LookupElement): Boolean {
@@ -428,6 +446,8 @@ object NativeCSharpCompletion {
         // ---- declarations
 
         private fun declarationNames() {
+            // `completion.dotnet_show_name_completion_suggestions` of the server's page, as the server's NameCompletionProvider
+            if (!RoslynOptions.isOn(NAME_SUGGESTIONS)) return
             val type = place.declaredType ?: return
             val taken = NativeCSharpLocals.visible(resolver.scopes, place.leaf).mapTo(HashSet()) { it.name }
             for ((index, suggestion) in CSharpVariableNames.forType(type, place.nameStyle).withIndex()) {
@@ -444,6 +464,14 @@ object NativeCSharpCompletion {
                 return
             }
             if ("partial" in modifiers && type != null) NativeCSharpOverrides.partialMethods(type, resolver, place).forEach(::add)
+            // `public ov|`: the keyword first, then the whole members to override (0.1.126), then the types
+            if (type != null && NativeCSharpOverrides.startsOverride(matcher.prefix, modifiers)) {
+                val early = NativeCSharpOverrides.earlyOverrides(type, file, place, matcher.prefix)
+                if (early.isNotEmpty() && "override" in NativeCSharpKeywords.memberStart(modifiers, type)) {
+                    keywords(listOf("override"), priority = TYPE + 2)
+                    early.forEach(::add)
+                }
+            }
             keywords(NativeCSharpKeywords.memberStart(modifiers, type))
             nestedTypes()
             solutionTypes()

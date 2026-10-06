@@ -47,6 +47,7 @@ object SuggestionRules {
     const val MEMBER_VALUE = "member value"
     const val DECLARATION_NAME = "declaration name"
     const val AFTER_LOOKUP_ITEM = "after the selected item"
+    const val OVERRIDE = "override"
 
     /** What made an item of the completion list go up. */
     const val SIGNAL_TYPE = "expected type"

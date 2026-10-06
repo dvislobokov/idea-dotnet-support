@@ -119,6 +119,7 @@ class CSharpColorSettingsPage : ColorSettingsPage {
                 <type>Trace</type>.<anymethod>Write</anymethod>(<param>path</param>.<member>Length</member>);
                 <event>Opened</event>?.<call>Invoke</call>();
                 <sclass>Console</sclass>.<scall>WriteLine</scall>(<local>message</local>.<ext>Shout</ext>() + <const>Kind</const>.<const>Text</const>);
+                var <local>pairs</local> = <type>Enumerable</type>.<scall>Range</scall><b1>(</b1>0, <b2>(</b2><b3>(</b3><const>Retries</const> + 1<b3>)</b3> * 2<b2>)</b2><b1>)</b1>.<call>Select</call><b1>(</b1>i => new <b2>[</b2><b3>{</b3> i <b3>}</b3><b2>]</b2><b1>)</b1>;
             retry:
                 if (<sfield>_opened</sfield> < 0) goto <label>retry</label>;
                 return new <class>FileStream</class>(<param>path</param>, <enum>FileMode</enum>.<const>Open</const>, <param>access</param>);
@@ -154,6 +155,7 @@ class CSharpColorSettingsPage : ColorSettingsPage {
             "mutable" to CSharpColors.MUTABLE_LOCAL_VARIABLE, "param" to CSharpColors.PARAMETER, "primary" to CSharpColors.PRIMARY_CONSTRUCTOR_PARAMETER,
             "label" to CSharpColors.LABEL, "member" to CSharpColors.MEMBER, "anymethod" to CSharpColors.METHOD, "inactive" to CSharpColors.INACTIVE_BRANCH,
             "format" to CSharpSyntaxHighlighter.FORMAT_ITEM, "format2" to CSharpSyntaxHighlighter.FORMAT_ITEM_2,
+            "b1" to CSharpBracketColors.LEVELS[0], "b2" to CSharpBracketColors.LEVELS[1], "b3" to CSharpBracketColors.LEVELS[2],
         )
 
         val DESCRIPTORS = arrayOf(
@@ -206,6 +208,9 @@ class CSharpColorSettingsPage : ColorSettingsPage {
             AttributesDescriptor("Braces and operators//Braces", CSharpSyntaxHighlighter.BRACES),
             AttributesDescriptor("Braces and operators//Parentheses", CSharpSyntaxHighlighter.PARENTHESES),
             AttributesDescriptor("Braces and operators//Brackets", CSharpSyntaxHighlighter.BRACKETS),
+            AttributesDescriptor("Braces and operators//Matching brackets//Level 1", CSharpBracketColors.LEVELS[0]),
+            AttributesDescriptor("Braces and operators//Matching brackets//Level 2", CSharpBracketColors.LEVELS[1]),
+            AttributesDescriptor("Braces and operators//Matching brackets//Level 3", CSharpBracketColors.LEVELS[2]),
             AttributesDescriptor("Braces and operators//Operator", CSharpSyntaxHighlighter.OPERATOR),
             AttributesDescriptor("Braces and operators//Dot", CSharpSyntaxHighlighter.DOT),
             AttributesDescriptor("Braces and operators//Comma", CSharpSyntaxHighlighter.COMMA),

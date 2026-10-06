@@ -15,6 +15,7 @@ import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.NativeCSharpCompletion
 import io.github.dotnetsupport.lang.NativeCSharpParameterInfo
+import io.github.dotnetsupport.lang.NativeCSharpTypingGhost
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
 import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
@@ -185,7 +186,8 @@ class CSharpOverrideCompletionTest : BasePlatformTestCase() {
             choose(text, "Open"),
         )
         assertTrue(choose(text, "Count").contains("    protected override int Count\n    {\n        get => base.Count;\n        set => base.Count = value;\n    }"))
-        assertTrue(choose(text, "Label").contains("    public override string Label { get; }\n"))
+        // "prefer throwing properties", the default of the page of the server
+        assertTrue(choose(text, "Label").contains("    public override string Label\n    {\n        get => throw new NotImplementedException();\n    }\n"))
     }
 
     fun testAsyncTypedBeforeAwaitsTheBase() {
@@ -232,9 +234,88 @@ class CSharpOverrideCompletionTest : BasePlatformTestCase() {
         assertEquals("int size", NativeCSharpParameterInfo.rows(myFixture.file as CSharpFile, list).single().parameters.single())
     }
 
+    // ---- the return type typed after `override`, the early rows at `public ov` (0.1.126)
+
+    private val lens = "class LensCircle\n{\n    public virtual string Describe() => \"\";\n    public virtual int Count { get; set; }\n}\nclass LensRing : LensCircle\n{\n    %s\n}\n"
+
+    private fun lens(line: String) = lens.format(line)
+
+    /** Every row of the list, of any contributor. */
+    private fun everything(text: String): List<String> {
+        myFixture.configureByText("Override${files++}.cs", text)
+        myFixture.completeBasic()
+        return myFixture.lookupElements.orEmpty().map { it.lookupString }
+    }
+
+    fun testTheStartOfTheReturnTypeKeepsTheCandidatesOfThatType() {
+        val list = names(lens("public override str<caret>"))
+        assertTrue(list.toString(), list.containsAll(listOf("Describe", "ToString")))
+        assertFalse("not of type string: $list", "Equals" in list || "GetHashCode" in list || "Count" in list)
+        val bools = names(lens("public override bo<caret>"))
+        assertTrue(bools.toString(), "Equals" in bools)
+        assertFalse(bools.toString(), "Describe" in bools)
+        val all = everything(lens("public override str<caret>"))
+        for (keyword in listOf("struct", "string", "class", "interface", "enum", "record", "namespace")) assertFalse("$keyword after override: $all", keyword in all)
+        assertEquals(
+            lens("public override string Describe()\n    {\n        return base.Describe();\n    }"),
+            choose(lens("public override str<caret>"), "Describe"),
+        )
+    }
+
+    fun testTheNameAfterATypedReturnType() {
+        val list = names(lens("public override string D<caret>"))
+        assertEquals(list.toString(), listOf("Describe"), list)
+        assertEquals(
+            lens("public override string Describe()\n    {\n        return base.Describe();\n    }"),
+            choose(lens("public override string D<caret>"), "Describe"),
+        )
+        val typed = names(lens("public override string <caret>"))
+        assertTrue(typed.toString(), typed.containsAll(listOf("Describe", "ToString")))
+        assertFalse(typed.toString(), "Equals" in typed || "Count" in typed)
+        assertTrue(names(lens("public override int <caret>")).let { it.contains("Count") && it.contains("GetHashCode") && !it.contains("Describe") })
+    }
+
+    fun testTheStartOfOverrideOffersTheWholeMembers() {
+        val list = names(lens("public ov<caret>"))
+        assertTrue(list.toString(), "override" in list)
+        assertTrue(list.toString(), list.containsAll(listOf("override Describe", "override ToString", "override Equals")))
+        val describe = lookup(lens("public ov<caret>")).first { it.lookupString == "override Describe" }
+        assertEquals("override string Describe", LookupElementPresentation.renderElement(describe).itemText)
+        assertEquals(
+            lens("public override string Describe()\n    {\n        return base.Describe();\n    }"),
+            choose(lens("public ov<caret>"), "override Describe"),
+        )
+        // no accessibility typed: the base's one
+        assertEquals(
+            lens("public override int Count\n    {\n        get => base.Count;\n        set => base.Count = value;\n    }"),
+            choose(lens("ov<caret>"), "override Count"),
+        )
+        assertFalse("nothing to override in an interface", names("interface IS\n{\n    public ov<caret>\n}\n").any { it.startsWith("override ") })
+        assertFalse("`o` alone is too short", names(lens("public o<caret>")).any { it.startsWith("override ") })
+    }
+
+    private fun gray(text: String): String? {
+        myFixture.configureByText("Override${files++}.cs", text)
+        return NativeCSharpTypingGhost.suggestion(myFixture.file as CSharpFile, myFixture.editor.document.charsSequence, myFixture.caretOffset)?.text
+    }
+
+    fun testTheGrayTextOfTheBestOverride() {
+        val body = "()\n    {\n        return base.Describe();\n    }"
+        assertEquals("erride string Describe$body", gray(lens("public ov<caret>")))
+        assertEquals("string Describe$body", gray(lens("public override <caret>")))
+        assertEquals("ing Describe$body", gray(lens("public override str<caret>")))
+        assertEquals("ol Equals(object? obj)\n    {\n        return base.Equals(obj);\n    }", gray(lens("public override bo<caret>")))
+        assertEquals("escribe$body", gray(lens("public override string D<caret>")))
+        assertNull("no access typed: the base's one goes before, gray text only adds", gray(lens("override <caret>")))
+        assertNull("protected in the base", gray("class A { protected virtual void Run() { } }\nclass B : A\n{\n    public override R<caret>\n}\n"))
+        assertNull("text after the caret", gray(lens("public override <caret> string Describe() => \"\";")))
+        assertNull("not an override", gray(lens("public string <caret>")))
+        assertNull("an interface", gray("interface I\n{\n    public ov<caret>\n}\n"))
+    }
+
     fun testASpaceAfterOverrideOpensTheList() {
-        for (text in listOf("    override", "    public override", "    partial", "var x = new", "\toverride")) assertTrue(text, CSharpSpaceAutoPopup.opens(text, text.length))
-        for (text in listOf("    overrides", "    public", "x.new", "renew", "")) assertFalse(text, CSharpSpaceAutoPopup.opens(text, text.length))
+        for (text in listOf("    override", "    public override", "    partial", "var x = new", "\toverride", "    public override string", "    override Task<int>")) assertTrue(text, CSharpSpaceAutoPopup.opens(text, text.length))
+        for (text in listOf("    overrides", "    public", "x.new", "renew", "", "    public string", "    override string Name")) assertFalse(text, CSharpSpaceAutoPopup.opens(text, text.length))
     }
 
     private companion object {

@@ -12,6 +12,7 @@ import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpCallGraph
 import io.github.dotnetsupport.lang.NativeCSharpCallHierarchyProvider
 import io.github.dotnetsupport.lang.NativeCSharpGotoSuperHandler
+import io.github.dotnetsupport.lang.NativeCSharpHierarchies
 import io.github.dotnetsupport.lang.NativeCSharpTypeHierarchyBrowser
 import io.github.dotnetsupport.lang.NativeCSharpTypeHierarchyProvider
 import io.github.dotnetsupport.lang.NativeCSharpTypeHierarchyStructure
@@ -130,6 +131,27 @@ class CSharpNativeHierarchiesTest : BasePlatformTestCase() {
         shapes("Circle.cs", "Circle : IShape")
         val tooltips = myFixture.findAllGutters().mapNotNull { it.tooltipText }.sorted()
         assertEquals(listOf("Has subclasses", "Implements member", "Is overridden", "Overrides member"), tooltips)
+    }
+
+    /**
+     * The list of implementations (a click on "N implementations", on the gutter, Go to Super) is drawn on the EDT, which has no read access:
+     * its rows carry what the renderer shows, read in a read action beforehand — rendering reads no PSI.
+     */
+    fun testTheRowsOfTheChooserAreRenderedWithoutReadAccess() {
+        shapes("Circle.cs", "Circle : IShape")
+        val circle = NativeCSharpTypeHierarchyProvider().getTarget(dataContext)!!
+        val session = io.github.dotnetsupport.lang.semantic.CSharpSemanticSession(project)
+        val found = io.github.dotnetsupport.lang.semantic.CSharpSolutionSearch.targetOf(circle)!!.let { io.github.dotnetsupport.lang.semantic.CSharpSolutionSearch.allSubtypes(project, it, session) }
+        val rows = NativeCSharpHierarchies.rows(found + circle)
+        assertEquals(listOf("Ring  (Shapes)", "Circle  (Shapes)"), rows.map { it.label })
+        // a pooled thread holds no read lock, as the EDT of the IDE holds none while it paints
+        val labels = com.intellij.openapi.application.ApplicationManager.getApplication().executeOnPooledThread<List<String>> {
+            assertFalse(com.intellij.openapi.application.ApplicationManager.getApplication().isReadAccessAllowed)
+            val renderer = NativeCSharpHierarchies.renderer()
+            rows.map { row -> (renderer.getListCellRendererComponent(javax.swing.JList(), row, 0, false, false) as javax.swing.JLabel).text }
+        }.get()
+        assertEquals(rows.map { it.label }, labels)
+        assertTrue(rows.all { it.icon != null })
     }
 
     fun testTheServerAnswersWithNavigationOnIt() {

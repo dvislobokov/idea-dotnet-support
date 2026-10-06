@@ -35,6 +35,7 @@ import io.github.dotnetsupport.lang.semantic.CSharpNameResolver
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSymbol
 import io.github.dotnetsupport.lang.semantic.CSharpSymbolText
+import io.github.dotnetsupport.lsp.RoslynOptions
 
 /**
  * Quick documentation (Ctrl+Q, the popup on hover) of C# on the plugin's semantics (CSHARP_PSI_MIGRATION.md, task C3), behind
@@ -487,7 +488,8 @@ object NativeCSharpDocumentation {
         doc.returns?.let { sections += "Returns:" to inline(it) }
         doc.value?.let { sections += "Value:" to inline(it) }
         doc.exceptions.takeIf { it.isNotEmpty() }?.let { list -> sections += "Exceptions:" to list.joinToString("<br>") { (cref, text) -> "${linked(cref, links)} – ${inline(text)}" } }
-        doc.remarks?.let { sections += "Remarks:" to inline(it) }
+        // `quick_info.dotnet_show_remarks_in_quick_info` of the server's page, obeyed by the native documentation too
+        if (RoslynOptions.isOn("quick_info.dotnet_show_remarks_in_quick_info")) doc.remarks?.let { sections += "Remarks:" to inline(it) }
         if (sections.isNotEmpty()) {
             append(DocumentationMarkup.SECTIONS_START)
             for ((header, body) in sections) {

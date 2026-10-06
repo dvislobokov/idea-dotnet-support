@@ -457,7 +457,7 @@ object NativeCSharpUsingEdits {
     // ---- sort
 
     /** The directives of the place of [directive] (the compilation unit or a namespace) in Rider's order, when they are not in it yet. */
-    fun sort(directive: CSharpUsingDirective, text: CharSequence): CSharpTextEdit? {
+    fun sort(directive: CSharpUsingDirective, text: CharSequence, systemFirst: Boolean = true): CSharpTextEdit? {
         val usings = when (val owner = directive.parent) {
             is CSharpCompilationUnit -> owner.usings
             is CSharpBaseNamespaceDeclaration -> owner.usings
@@ -466,7 +466,7 @@ object NativeCSharpUsingEdits {
         if (usings.size < 2 || usings.any { (it.semicolonToken?.textLength ?: 0) == 0 }) return null
         // only whitespace between them: a comment or `#if` there belongs to its neighbor, and moving them apart would lose it
         for (i in 1 until usings.size) if (text.subSequence(usings[i - 1].textRange.endOffset, usings[i].textRange.startOffset).isNotBlank()) return null
-        val sorted = usings.sortedWith(ORDER)
+        val sorted = usings.sortedWith(order(systemFirst))
         if (sorted == usings) return null
         val indent = indentOf(text, usings.first().textRange.startOffset) ?: ""
         val joined = sorted.joinToString("\n$indent") { CSharpStubsText.collapse(it.text) }
@@ -474,11 +474,14 @@ object NativeCSharpUsingEdits {
     }
 
     /** Global ones first (the compiler wants them so), then namespaces, `using static`, aliases; `System` first, then the alphabet. */
-    val ORDER: Comparator<CSharpUsingDirective> = compareBy<CSharpUsingDirective> { if ((it.globalKeyword?.textLength ?: 0) > 0) 0 else 1 }
-        .thenBy { if (it.alias != null) 2 else if (it.staticKeyword != null) 1 else 0 }
-        .thenBy { sortKey(if (it.alias != null) it.alias!!.nameElement?.text.orEmpty() else NativeCSharpResolver.compact(it.namespaceOrType).removePrefix("global::")) }
+    val ORDER: Comparator<CSharpUsingDirective> = order(systemFirst = true)
 
-    fun sortKey(name: String): String = (if (name == "System" || name.startsWith("System.")) "0" else "1") + name.lowercase()
+    /** [ORDER], with `System` among the others when [systemFirst] is off (`dotnet_sort_system_directives_first = false` of `.editorconfig`). */
+    fun order(systemFirst: Boolean): Comparator<CSharpUsingDirective> = compareBy<CSharpUsingDirective> { if ((it.globalKeyword?.textLength ?: 0) > 0) 0 else 1 }
+        .thenBy { if (it.alias != null) 2 else if (it.staticKeyword != null) 1 else 0 }
+        .thenBy { sortKey(if (it.alias != null) it.alias!!.nameElement?.text.orEmpty() else NativeCSharpResolver.compact(it.namespaceOrType).removePrefix("global::"), systemFirst) }
+
+    fun sortKey(name: String, systemFirst: Boolean = true): String = (if (systemFirst && (name == "System" || name.startsWith("System."))) "0" else "1") + name.lowercase()
 
     // ---- text
 

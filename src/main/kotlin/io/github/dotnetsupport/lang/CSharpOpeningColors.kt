@@ -73,8 +73,8 @@ object CSharpOpeningColors {
 
     /**
      * Everything the color annotators of C# paint on [file] — inactive `#if` text ([NativeCSharpSemanticColorsAnnotator]), identifiers
-     * (the same, or [CSharpIdentifierAnnotator] when the native colors do not serve), format items ([CSharpFormatItemsAnnotator]) — in the
-     * order of the text. Under a read action; reads the stubs only when the native colors serve, which they do not in dumb mode.
+     * (the same, or [CSharpIdentifierAnnotator] when the native colors do not serve), format items ([CSharpFormatItemsAnnotator]), matching
+     * brackets ([CSharpBracketColorsAnnotator]) — in the order of the text. Under a read action; reads the stubs only when the native colors serve, which they do not in dumb mode.
      */
     fun compute(file: CSharpFile): List<Pair<TextRange, TextAttributesKey>> {
         val out = ArrayList<Pair<TextRange, TextAttributesKey>>()
@@ -87,6 +87,7 @@ object CSharpOpeningColors {
         for ((range, second) in CSharpFormatItems.items(file.viewProvider.contents)) {
             out += range to if (second) CSharpSyntaxHighlighter.FORMAT_ITEM_2 else CSharpSyntaxHighlighter.FORMAT_ITEM
         }
+        if (CSharpBracketColors.enabled()) out += CSharpBracketColors.colors(file)
         return out.sortedBy { it.first.startOffset }
     }
 
@@ -123,7 +124,7 @@ object CSharpOpeningColors {
         return if (snapshot.matches(text)) snapshot.colors else null
     }
 
-    @TestOnly
+    /** Tests, and a change of what the annotators paint (the bracket colors switched): a remembered snapshot would show the old colors first. */
     fun forgetAll() = synchronized(snapshots) { snapshots.clear() }
 
     // ---- the layer of an editor

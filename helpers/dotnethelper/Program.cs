@@ -61,6 +61,8 @@ public static class Program
             Params.String(p, "typeName") ?? throw new HelperException("`decompile` needs a typeName"), Params.String(p, "memberId"), Params.String(p, "xmlDoc"),
             Params.Strings(p, "referenceDirs"), Params.String(p, "languageVersion"), token),
         "assemblyTypes" => TypeDecompiler.Types(Params.String(p, "assembly") ?? throw new HelperException("`assemblyTypes` needs an assembly")),
+        "sourceLocation" => SourceLocator.Locate(Params.String(p, "assembly") ?? throw new HelperException("`sourceLocation` needs an assembly"),
+            Params.String(p, "typeName") ?? throw new HelperException("`sourceLocation` needs a typeName"), Params.String(p, "memberId"), token), // SourceLink.cs
         "appsettingsSchema" => AppSettingsSchema.Build(p, token), // AppSettings.cs
         _ => throw new HelperException($"DotNetHelper has no method `{method}`"),
     };

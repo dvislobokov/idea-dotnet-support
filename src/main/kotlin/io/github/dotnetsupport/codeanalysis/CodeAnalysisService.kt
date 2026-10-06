@@ -37,10 +37,13 @@ import io.github.dotnetsupport.cli.HelperConnection
 import io.github.dotnetsupport.cli.HelperException
 import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.lang.CSharpFileType
+import io.github.dotnetsupport.lang.NativeCSharpSolutionProblems
+import io.github.dotnetsupport.lang.AnalysisScopes
 import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.msbuild.CompilationModel
 import io.github.dotnetsupport.settings.DotNetSettings
 import io.github.dotnetsupport.solution.SolutionService
+import io.github.dotnetsupport.view.resolveFile
 import org.jetbrains.annotations.TestOnly
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
@@ -52,7 +55,7 @@ class GeneratedState(val projectPath: String, val run: GeneratedRun, val output:
 }
 
 /** The analyzer diagnostics of one file, with the text of each one's line then: the way to find it again after edits (as [io.github.dotnetsupport.build.BuildProblems]). */
-class AnalyzedFile(val projectPath: String, val diagnostics: List<AnalyzerDiagnostic>, val lineTexts: List<String?>, val target: JsonObject)
+class AnalyzedFile(val projectPath: String, val diagnostics: List<AnalyzerDiagnostic>, val lineTexts: List<String?>, val target: JsonObject, val path: String? = null)
 
 /**
  * Source generators and Roslyn analyzers without the language server (CSHARP_PSI_MIGRATION.md, D3 and D4), through CodeAnalysisHelper
@@ -83,6 +86,8 @@ class CodeAnalysisService(private val project: Project) : Disposable {
 
     private class Pending(val projectFile: VirtualFile) {
         @Volatile var generate = false
+        /** The whole project is analyzed (`fullSolution`), whatever [paths] say. */
+        @Volatile var whole = false
         val paths: MutableSet<String> = ConcurrentHashMap.newKeySet()
     }
 
@@ -136,6 +141,25 @@ class CodeAnalysisService(private val project: Project) : Disposable {
     fun generatedRoots(): List<VirtualFile> = generated.values.mapNotNull { LocalFileSystem.getInstance().findFileByPath(it.output) }
 
     fun analyzedFile(path: String): AnalyzedFile? = analyzed[key(path)]
+
+    /** What the helper reported for the files of [projectPath], for the Problems view under `fullSolution`. */
+    fun analyzedOf(projectPath: String): List<AnalyzedFile> = analyzed.values.filter { it.projectPath.equals(projectPath, ignoreCase = true) }
+
+    fun analyzedProjects(): Set<String> = analyzed.values.mapTo(HashSet()) { it.projectPath }
+
+    /** `background_analysis.dotnet_analyzer_diagnostics_scope` of Settings | .NET | Language Server, honoured without the server as with it. */
+    private val analyzerScope: String get() = AnalysisScopes.analyzer()
+
+    /** Whether the helper runs on a save or an opening: not with `none` (Run Code Analysis still does), and only with the switch on. */
+    private val analyzesOnSave: Boolean get() = analyzersActive && DotNetSettings.getInstance().runAnalyzersOnSave && analyzerScope != AnalysisScopes.NONE
+
+    /** The C# projects of the solutions of the IDE project (a loose `.csproj` when there is none). */
+    fun solutionProjects(): List<VirtualFile> {
+        val solutions = SolutionService.getInstance(project).solutionFiles()
+        val projects = solutions.flatMap { solution -> SolutionService.getInstance(project).solution(solution).allProjects.mapNotNull { it.resolveFile(solution) } }
+            .ifEmpty { generated.values.mapNotNull { LocalFileSystem.getInstance().findFileByPath(it.projectPath) } }
+        return projects.filter { it.extension.equals("csproj", ignoreCase = true) }.distinct()
+    }
 
     // ---- what the targets of the build generate (XAML, gRPC, resources: BuildGeneratedSources)
 
@@ -231,16 +255,25 @@ class CodeAnalysisService(private val project: Project) : Disposable {
     /** A C# file was saved: its project generates again (if it has generators or has not run yet) and the file is analyzed. */
     fun saved(file: VirtualFile) {
         val projectFile = ReadAction.compute<VirtualFile?, RuntimeException> { CompilationModel.getInstance(project).projectOf(file) } ?: return
-        schedule(projectFile, generate = needsGeneration(projectFile), paths = if (analyzersActive && DotNetSettings.getInstance().runAnalyzersOnSave) listOf(file.path) else emptyList())
+        // `fullSolution`: the whole project again, as the server's background analysis does on a change — a save may change what the other files say
+        val whole = analyzesOnSave && analyzerScope == AnalysisScopes.FULL_SOLUTION
+        schedule(projectFile, generate = needsGeneration(projectFile), paths = if (analyzesOnSave && !whole) listOf(file.path) else emptyList(), whole = whole)
     }
 
-    /** A C# file was opened: its project generates once, the file is analyzed when it has not been. */
+    /** A C# file was opened: its project generates once, the file is analyzed when it has not been (the whole project under `fullSolution`). */
     fun opened(file: VirtualFile) {
         if (file.fileType != CSharpFileType || isGenerated(file)) return
         val projectFile = ReadAction.compute<VirtualFile?, RuntimeException> { CompilationModel.getInstance(project).projectOf(file) } ?: return
         val generate = DotNetSettings.getInstance().runSourceGenerators && generated[key(projectFile.path)] == null
-        val analyze = analyzersActive && DotNetSettings.getInstance().runAnalyzersOnSave && analyzed[key(file.path)] == null
-        if (generate || analyze) schedule(projectFile, generate, if (analyze) listOf(file.path) else emptyList())
+        val whole = analyzesOnSave && analyzerScope == AnalysisScopes.FULL_SOLUTION && projectFile.path !in analyzedProjects()
+        val analyze = !whole && analyzesOnSave && analyzed[key(file.path)] == null
+        if (generate || analyze || whole) schedule(projectFile, generate, if (analyze) listOf(file.path) else emptyList(), whole = whole)
+    }
+
+    /** `fullSolution` for the analyzers: every project of the solution is analyzed as a whole (after a build, on a switch of the scope). */
+    fun analyzeSolution() {
+        if (!analyzesOnSave || analyzerScope != AnalysisScopes.FULL_SOLUTION) return
+        for (projectFile in solutionProjects()) schedule(projectFile, generate = false, paths = emptyList(), whole = true)
     }
 
     /** Project files, props, `.editorconfig` or the set of sources changed: the helper loads those projects again, they generate again. */
@@ -253,6 +286,7 @@ class CodeAnalysisService(private val project: Project) : Disposable {
     private fun afterBuild() {
         if (disposed) return
         for (state in generated.values) LocalFileSystem.getInstance().findFileByPath(state.projectPath)?.let { schedule(it, generate = true, paths = emptyList()) }
+        analyzeSolution()
     }
 
     /** Refresh Generated Files: every C# project of the solution (or [projects]) generates now. */
@@ -274,12 +308,13 @@ class CodeAnalysisService(private val project: Project) : Disposable {
         }.map { it.path }
     }
 
-    private fun schedule(projectFile: VirtualFile, generate: Boolean, paths: Collection<String>, delayMs: Int = DEBOUNCE_MS) {
-        if (disposed || (!generate && paths.isEmpty())) return
+    private fun schedule(projectFile: VirtualFile, generate: Boolean, paths: Collection<String>, delayMs: Int = DEBOUNCE_MS, whole: Boolean = false) {
+        if (disposed || (!generate && paths.isEmpty() && !whole)) return
         if (ApplicationManager.getApplication().isUnitTestMode && testConnection == null) return
         if (testConnection == null && !com.intellij.ide.trustedProjects.TrustedProjects.isProjectTrusted(project)) return   // Safe Mode: see connection()
         val entry = pending.computeIfAbsent(key(projectFile.path)) { Pending(projectFile) }
         if (generate) entry.generate = true
+        if (whole) entry.whole = true
         entry.paths += paths
         alarm.cancelAllRequests()
         alarm.addRequest({ executor.execute(::drain) }, delayMs)
@@ -293,9 +328,10 @@ class CodeAnalysisService(private val project: Project) : Disposable {
                 if (entry.generate && DotNetSettings.getInstance().runSourceGenerators) {
                     generate(entry.projectFile)
                     // files opened before the solution was known (projectOf was null then) are analyzed with their project
-                    if (analyzersActive && DotNetSettings.getInstance().runAnalyzersOnSave) entry.paths += unanalyzedOpenFiles(entry.projectFile)
+                    if (analyzesOnSave && !entry.whole) entry.paths += unanalyzedOpenFiles(entry.projectFile)
                 }
-                if (entry.paths.isNotEmpty() && analyzersActive) analyze(entry.projectFile, entry.paths.toList(), fixes = true)
+                if (entry.whole && analyzersActive) analyze(entry.projectFile, emptyList(), fixes = true)
+                else if (entry.paths.isNotEmpty() && analyzersActive) analyze(entry.projectFile, entry.paths.toList(), fixes = true)
             } catch (e: HelperException) {
                 PluginLog.warn(LOG_CATEGORY, "${entry.projectFile.name}: ${e.message}")
             }
@@ -354,12 +390,14 @@ class CodeAnalysisService(private val project: Project) : Disposable {
     private fun store(projectFile: VirtualFile, target: JsonObject, paths: List<String>, run: AnalysisRun) {
         val byFile = run.diagnostics.groupBy { key(it.path) }
         if (paths.isEmpty()) analyzed.entries.removeIf { it.value.projectPath == projectFile.path } else paths.forEach { analyzed.remove(key(it)) }
-        for (path in paths) if (key(path) !in byFile) analyzed[key(path)] = AnalyzedFile(projectFile.path, emptyList(), emptyList(), target)
+        for (path in paths) if (key(path) !in byFile) analyzed[key(path)] = AnalyzedFile(projectFile.path, emptyList(), emptyList(), target, path)
         for ((path, diagnostics) in byFile) {
             val lines = runCatching { File(diagnostics.first().path).readLines() }.getOrNull()
-            analyzed[path] = AnalyzedFile(projectFile.path, diagnostics, diagnostics.map { lines?.getOrNull(it.startLine)?.trim() }, target)
+            analyzed[path] = AnalyzedFile(projectFile.path, diagnostics, diagnostics.map { lines?.getOrNull(it.startLine)?.trim() }, target, diagnostics.first().path)
         }
         ApplicationManager.getApplication().invokeLater({ if (!project.isDisposed) DaemonCodeAnalyzer.getInstance(project).restart("analyzer diagnostics of ${projectFile.name}") }, ModalityState.any())
+        // the Problems view under `fullSolution`
+        if (!project.isDisposed) NativeCSharpSolutionProblems.getInstance(project).analyzersChanged(projectFile.path)
     }
 
     /**

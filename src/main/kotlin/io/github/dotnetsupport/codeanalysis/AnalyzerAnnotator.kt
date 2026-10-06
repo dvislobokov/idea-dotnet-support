@@ -13,6 +13,7 @@ import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.PsiFile
 import io.github.dotnetsupport.build.BuildProblem
 import io.github.dotnetsupport.build.BuildProblems
+import io.github.dotnetsupport.lang.AnalysisScopes
 import io.github.dotnetsupport.settings.DotNetSettings
 
 /**
@@ -29,7 +30,8 @@ class AnalyzerAnnotator : ExternalAnnotator<AnalyzerAnnotator.Input, List<Analyz
 
     override fun collectInformation(file: PsiFile): Input? {
         val service = file.project.getServiceIfCreated(CodeAnalysisService::class.java) ?: return null
-        if (!service.analyzersActive) return null
+        // «Analyzer diagnostics for» none: nothing in the editor, as with the server; Run Code Analysis still lists them in the Build window
+        if (!service.analyzersActive || AnalysisScopes.analyzer() == AnalysisScopes.NONE) return null
         val path = file.viewProvider.virtualFile.path
         val analyzed = service.analyzedFile(path)?.takeIf { it.diagnostics.isNotEmpty() } ?: return null
         return Input(analyzed, file.viewProvider.document ?: return null, DotNetSettings.getInstance().showAnalyzerSuggestions)

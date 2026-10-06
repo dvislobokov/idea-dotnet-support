@@ -26,6 +26,7 @@ import com.intellij.platform.lsp.api.LspServerListener
 import com.intellij.platform.lsp.api.LspServerNotificationsHandler
 import com.intellij.platform.lsp.api.customization.LspCodeActionsCustomizer
 import com.intellij.platform.lsp.api.customization.LspCodeLensCustomizer
+import com.intellij.platform.lsp.api.customization.LspCodeLensDisabled
 import com.intellij.platform.lsp.api.customization.LspCompletionCustomizer
 import com.intellij.platform.lsp.api.customization.LspCodeLensSupport
 import com.intellij.platform.lsp.api.customization.LspCommandsCustomizer
@@ -248,13 +249,17 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
         private val commands = RoslynClientCommands()
         override val commandsCustomizer: LspCommandsCustomizer = commands
 
-        // a click on "N references" does not go through the customizer above: a code lens has a way of its own
-        override val codeLensCustomizer: LspCodeLensCustomizer = object : LspCodeLensSupport() {
+        // a click on "N references" does not go through the customizer above: a code lens has a way of its own. With «Code Vision» = Built-in
+        // the plugin's own lenses (NativeCSharpCodeLens) answer and the server's must not stand beside them; read per request, and Apply asks the
+        // Code Vision host anew (NativeCSharpCodeLensSwitch), so a switch applies at once
+        private val codeLens = object : LspCodeLensSupport() {
             override fun codeLensClicked(lspClient: LspClient, contextFile: VirtualFile, command: Command, mouseEvent: MouseEvent?) = commands.executeCommand(lspClient, contextFile, command)
 
             @Suppress("OVERRIDE_DEPRECATION", "DEPRECATION")
             override fun codeLensClicked(lspServer: LspServer, contextFile: VirtualFile, command: Command, mouseEvent: MouseEvent?) = commands.executeCommand(lspServer as LspClient, contextFile, command)
         }
+        override val codeLensCustomizer: LspCodeLensCustomizer
+            get() = if (serves(CSharpFeature.CODE_LENS)) codeLens else LspCodeLensDisabled
 
         // the palette of the plugin (the one of Rider), so a file looks the same before and after the server is ready
         override val semanticTokensCustomizer: LspSemanticTokensCustomizer = object : LspSemanticTokensSupport() {
@@ -282,6 +287,13 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
         private val hover = com.intellij.platform.lsp.api.customization.LspHoverSupport()
         override val hoverCustomizer: com.intellij.platform.lsp.api.customization.LspHoverCustomizer
             get() = if (serves(CSharpFeature.DOCUMENTATION)) hover else com.intellij.platform.lsp.api.customization.LspHoverDisabled
+
+        // Inlay hints: with INLAY_HINTS Built-in the plugin's providers draw (NativeCSharpInlayHints) and the server's must not stand beside them;
+        // the platform asks this when it makes the pass, and Apply forces that pass in the open editors (NativeCSharpInlayHintsSwitch), so a
+        // switch takes effect at once, without an edit or a restart of the server
+        private val inlayHints = com.intellij.platform.lsp.api.customization.LspInlayHintSupport()
+        override val inlayHintCustomizer: com.intellij.platform.lsp.api.customization.LspInlayHintCustomizer
+            get() = if (serves(CSharpFeature.INLAY_HINTS)) inlayHints else com.intellij.platform.lsp.api.customization.LspInlayHintDisabled
 
         // the switches of CSharpFeatures, read per request (RoslynFeatures)
         private fun serves(feature: CSharpFeature): Boolean = RoslynFeatures.serves(feature, project)

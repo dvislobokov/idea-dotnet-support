@@ -125,6 +125,9 @@ def settings():
         option("settings.behavior.runConfigurations", ON, "Для каждого запускаемого проекта и каждого профиля из <code>launchSettings.json</code> создаётся конфигурация запуска."),
         option("settings.behavior.buildWindow", ON),
         option("settings.behavior.solutionView", ON, "Окно Project показывает решение так, как его видит сборка. Вернуться к обычному виду можно в заголовке окна."),
+        option("settings.behavior.bracketColors", ON,
+               note("settings.behavior.bracketColors.comment") + ". Как в VS Code: закрывающая скобка берёт ближайшую открывающую своего вида, лишние остаются "
+               "нераскрашенными, неактивные ветки <code>#if</code> не раскрашиваются; <code>&lt;&gt;</code> — только списки типов, не сравнения."),
         option("settings.language", e(RU["language.AUTO"]),
                note("settings.language.comment") + " Русского языкового пакета для самой IDE нет, поэтому язык страниц плагина выбирается здесь."),
         option("settings.palette", e(RU["palette.default"]),

@@ -63,6 +63,24 @@ internal static class TypeDecompiler
         }
     }
 
+    /**
+     * The definition of [typeName] with the module it lives in (a type forwarded by a reference assembly: its implementation) and the path
+     * of that module, for a reader that needs the metadata of the right file (the PDB of a library, SourceLink.cs). The work is done under the
+     * lock of the loaded assembly; references are resolved without the folders of a project, which the type system does not need for this.
+     */
+    public static T WithDefinition<T>(string assembly, string typeName, Func<ITypeDefinition, PEFile, string, T> use)
+    {
+        var loaded = Load(Path.GetFullPath(assembly), null, [], LanguageVersion.Latest);
+        lock (loaded)
+        {
+            var definition = loaded.Find(typeName) ?? throw new HelperException($"{Path.GetFileName(loaded.Path)} has no type {typeName}");
+            var module = definition.ParentModule?.MetadataFile as PEFile;
+            var file = module?.FileName;
+            if (module != null && file != null && File.Exists(file)) return use(definition, module, Path.GetFullPath(file));
+            return use(definition, loaded.Module, loaded.Path);
+        }
+    }
+
     public static List<AssemblyTypeInfo> Types(string assembly)
     {
         var loaded = Load(Path.GetFullPath(assembly), null, [], LanguageVersion.Latest);
@@ -127,6 +145,7 @@ internal static class TypeDecompiler
         public readonly (long, long) Stamp;
         public readonly DecompilerTypeSystem TypeSystem;
         public DateTime LastUse = DateTime.UtcNow;
+        public PEFile Module => module;
         private readonly PEFile module;
         private readonly DecompilerSettings settings;
         private readonly UniversalAssemblyResolver resolver;

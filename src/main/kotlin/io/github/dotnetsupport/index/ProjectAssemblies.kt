@@ -76,12 +76,15 @@ object ProjectAssemblies {
         val outputs = LinkedHashSet<File>()
         val found = ArrayList<Library>()
         var netFrameworkPack: File? = null
+        // the shared frameworks a package brings along (`Grpc.AspNetCore` -> `Microsoft.AspNetCore.App`): `frameworkReferences` of the package in the target
+        val transitiveFrameworks = LinkedHashSet<String>()
 
         for ((id, value) in targets.obj(target)?.entrySet().orEmpty()) {
             val library = value as? JsonObject ?: continue
             val compiled = library.obj("compile")?.keySet().orEmpty().filter { it.endsWith(".dll", ignoreCase = true) }
             when (library.get("type")?.asString) {
                 "package" -> {
+                    library.get("frameworkReferences")?.takeIf { it.isJsonArray }?.asJsonArray?.forEach { reference -> reference.takeIf { it.isJsonPrimitive }?.let { transitiveFrameworks += it.asString } }
                     val path = libraries?.obj(id)?.get("path")?.asString ?: id.lowercase()
                     val files = compiled.mapNotNull { relative -> folders.map { File(File(it, path), relative) }.firstOrNull { it.isFile } }
                     assemblies += files
@@ -104,7 +107,10 @@ object ProjectAssemblies {
         val frameworks = root.obj("project")?.obj("frameworks")
         val declared = frameworks?.keySet()?.firstOrNull { it.equals(target, ignoreCase = true) } ?: frameworks?.keySet()?.firstOrNull()
         val declaredFramework = declared?.let { frameworks?.obj(it) }
-        for (reference in declaredFramework?.obj("frameworkReferences")?.keySet().orEmpty()) {
+        // the frameworks the project declares (`Microsoft.NET.Sdk.Web` adds `Microsoft.AspNetCore.App` itself; restore writes it here) and the ones
+        // its packages require, which restore does not repeat under the project: without them the types of ASP.NET Core resolved only in a Web project
+        val frameworkReferences = LinkedHashSet(declaredFramework?.obj("frameworkReferences")?.keySet().orEmpty()) + transitiveFrameworks
+        for (reference in frameworkReferences) {
             // a pack the SDK has, else the one restore has downloaded for a framework the SDK has no pack of
             val pack = referencePack(request.dotnetRoot, reference, target).ifEmpty { downloadedPack(folders, declaredFramework, reference, target) }
             assemblies += pack
