@@ -186,6 +186,7 @@ class CSharpMemberLookup(private val resolver: CSharpNameResolver) {
                     // the destructor of `object`: C# cannot call it, Roslyn does not offer it after `this.` (robot, E-81)
                     if (name == "Finalize" && found.member.type.fullName == OBJECT) continue
                     val seen = !member.isProtected || throughThis && derivesFromLibrary(found.from?.type ?: type.type, site)
+                        && (!member.isFriendOnly || resolver.assemblies.grants(member.type.index))
                     if (!seen && !sink.inaccessibleToo) continue
                     val isStatic = member.isStatic || member.kind == IndexedMemberKind.CONSTANT || member.kind == IndexedMemberKind.ENUM_MEMBER
                     if (isStatic != static) continue

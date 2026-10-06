@@ -61,6 +61,9 @@ object NativeCSharpMemberCompletion {
         return entries.mapNotNull { element(it, text, resolver, true, receiverOf(qualifier)) }
     }
 
+    /** `ConsoleColor.Black|` at the end of a statement: its `;` (and an open `)`), as the enum rows of an expected type do. */
+    private val CLOSES_STATEMENT = com.intellij.codeInsight.completion.InsertHandler<LookupElement> { context, _ -> NativeCSharpExpectedCompletion.closeStatement(context) }
+
     /** The value left of the dot; null when a type or a namespace is there. */
     fun receiverOf(qualifier: CSharpNameResolver.Qualifier): SemanticType? = when (qualifier) {
         is CSharpNameResolver.Qualifier.Value -> qualifier.type
@@ -109,7 +112,7 @@ object NativeCSharpMemberCompletion {
                         build(name, AllIcons.Nodes.Method, name, tail, type, if (extension) EXTENSION else NativeCSharpCompletion.METHOD, handler)
                     }
                     NativeCSharpMembers.Kind.PROPERTY -> build(name, AllIcons.Nodes.Property, name, null, type, NativeCSharpCompletion.VALUE_MEMBER, null)
-                    NativeCSharpMembers.Kind.CONSTANT -> build(name, AllIcons.Nodes.Constant, name, null, type, NativeCSharpCompletion.VALUE_MEMBER, null)
+                    NativeCSharpMembers.Kind.CONSTANT -> build(name, AllIcons.Nodes.Constant, name, null, type, NativeCSharpCompletion.VALUE_MEMBER, CLOSES_STATEMENT)
                     NativeCSharpMembers.Kind.EVENT, NativeCSharpMembers.Kind.FIELD -> build(name, AllIcons.Nodes.Field, name, null, type, NativeCSharpCompletion.VALUE_MEMBER, null)
                 }
             }
@@ -123,7 +126,8 @@ object NativeCSharpMemberCompletion {
                     val handler = NativeCSharpCalls.callHandler { entry.symbols.all(text::returnsNothing) to entry.symbols.any { text.parameters(it, reduced)?.isNotEmpty() != false } }
                     build(name, AllIcons.Nodes.Method, name, tail, type, if (extension) EXTENSION else NativeCSharpCompletion.METHOD, handler, strikeout = member.obsolete)
                 } else {
-                    build(name, ImportCompletion.icon(member.kind), name, null, type, NativeCSharpCompletion.VALUE_MEMBER, null, strikeout = member.obsolete)
+                    val handler = if (member.kind == IndexedMemberKind.ENUM_MEMBER || member.kind == IndexedMemberKind.CONSTANT) CLOSES_STATEMENT else null
+                    build(name, ImportCompletion.icon(member.kind), name, null, type, NativeCSharpCompletion.VALUE_MEMBER, handler, strikeout = member.obsolete)
                 }
             }
             is CSharpSymbol.Local -> null

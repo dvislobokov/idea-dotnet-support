@@ -33,6 +33,14 @@ data class CompilationOptions(
      */
     val compileFiles: List<String>?,
     val source: Source,
+    /** `AssemblyName`: what other assemblies' `InternalsVisibleTo` name it by; null when not known (the file name of the project then). */
+    val assemblyName: String? = null,
+    /** The `InternalsVisibleTo` items: the SDK writes `[assembly: InternalsVisibleTo]` of them (their `Key` dropped: a name is compared). */
+    val internalsVisibleTo: List<String> = emptyList(),
+    /** `ProduceReferenceAssembly`: its references compile against a reference assembly, which drops internal members without a friend. */
+    val produceReferenceAssembly: Boolean? = null,
+    /** `SignAssembly`: an `InternalsVisibleTo` with a public key makes a friend of a signed assembly only. */
+    val signAssembly: Boolean = false,
 ) {
     enum class Source { EVALUATED, STATIC }
 
@@ -54,8 +62,8 @@ data class CompilationOptions(
 
     companion object {
         /** The properties MsBuildHost is asked for. */
-        val PROPERTIES: List<String> = listOf("DefineConstants", "LangVersion", "Nullable", "ImplicitUsings", "RootNamespace", "TargetFramework")
-        val ITEM_TYPES: List<String> = listOf("Compile", "Using")
+        val PROPERTIES: List<String> = listOf("DefineConstants", "LangVersion", "Nullable", "ImplicitUsings", "RootNamespace", "TargetFramework", "AssemblyName", "ProduceReferenceAssembly", "SignAssembly")
+        val ITEM_TYPES: List<String> = listOf("Compile", "Using", "InternalsVisibleTo")
 
         /**
          * Run on the evaluation before it is read: the SDK adds the symbols of the framework (`NET10_0`, `NETFRAMEWORK`, `NET48_OR_GREATER`...)
@@ -81,6 +89,10 @@ data class CompilationOptions(
                 rootNamespace = result.property("RootNamespace"),
                 compileFiles = result.items["Compile"]?.map { EvaluatedFiles.normalize(it.include) },
                 source = Source.EVALUATED,
+                assemblyName = result.property("AssemblyName"),
+                internalsVisibleTo = result.items["InternalsVisibleTo"].orEmpty().map { it.include.trim() }.filter { it.isNotEmpty() },
+                produceReferenceAssembly = result.property("ProduceReferenceAssembly")?.let(::isTrue),
+                signAssembly = result.property("SignAssembly")?.let(::isTrue) == true,
             )
         }
 

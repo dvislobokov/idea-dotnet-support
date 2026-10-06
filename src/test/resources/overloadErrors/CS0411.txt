@@ -1,0 +1,18 @@
+43:20-26 CS0411: The type arguments for method 'Factory.Create<T>()' cannot be inferred from the usage. Try specifying the type arguments explicitly.
+45:9-17 CS0411: The type arguments for method 'Factory.Register<T>()' cannot be inferred from the usage. Try specifying the type arguments explicitly.
+47:9-14 CS0411: The type arguments for method 'Factory.Store<T>(T)' cannot be inferred from the usage. Try specifying the type arguments explicitly.
+48:15-20 CS0411: The type arguments for method 'Factory.Store<T>(T)' cannot be inferred from the usage. Try specifying the type arguments explicitly.
+51:9-14 CS0411: The type arguments for method 'Factory.Batch<T>(params T[])' cannot be inferred from the usage. Try specifying the type arguments explicitly.
+53:9-13 CS0411: The type arguments for method 'Factory.Pair<TKey, TValue>(TKey, TValue)' cannot be inferred from the usage. Try specifying the type arguments explicitly.
+55:27-32 CS0411: The type arguments for method 'Array.Empty<T>()' cannot be inferred from the usage. Try specifying the type arguments explicitly.
+57:20-24 CS0411: The type arguments for method 'Factory.Many<T>()' cannot be inferred from the usage. Try specifying the type arguments explicitly.
+58:20-24 CS0411: The type arguments for method 'Factory.Many<T>(T, T)' cannot be inferred from the usage. Try specifying the type arguments explicitly.
+60:9-18 CS0411: The type arguments for method 'Factory.Configure<T>(int)' cannot be inferred from the usage. Try specifying the type arguments explicitly.
+63:9-13 CS0411: The type arguments for method 'Factory.Fill<T>(ref int)' cannot be inferred from the usage. Try specifying the type arguments explicitly.
+64:9-14 CS0411: The type arguments for method 'Factory.Apply<T>(Func<T, int>)' cannot be inferred from the usage. Try specifying the type arguments explicitly.
+67:9-16 CS0411: The type arguments for method 'Factory.Combine<T>(T, Func<T, int>)' cannot be inferred from the usage. Try specifying the type arguments explicitly.
+69:9-14 CS0411: The type arguments for method 'Factory.Apply<T>(Func<T, int>)' cannot be inferred from the usage. Try specifying the type arguments explicitly.
+71:39-43 CS0411: The type arguments for method 'Registry<int>.Slot.Make<T>()' cannot be inferred from the usage. Try specifying the type arguments explicitly.
+72:38-44 CS0411: The type arguments for method 'Registry<string>.Lookup<T>(string)' cannot be inferred from the usage. Try specifying the type arguments explicitly.
+73:34-38 CS0411: The type arguments for method 'Tools.Parse.From<T>(string)' cannot be inferred from the usage. Try specifying the type arguments explicitly.
+74:34-39 CS0411: The type arguments for method 'Enumerable.Empty<TResult>()' cannot be inferred from the usage. Try specifying the type arguments explicitly.

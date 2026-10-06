@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    An assembly for the tests of the errors of access against a library (CSharpAccessErrorsTest): what other assemblies do not see —
+    internal and private types, internal and private protected members, accessors narrower than their property — and a friend
+    assembly (`InternalsVisibleTo("Probe.Friend")`). Built apart from IndexFixture so that the tests of completion and of the index,
+    which list what IndexFixture has, do not change. The command that makes `src/test/resources/index/AccessFixture.dnix` is in
+    indexer/README.md (tools/index-fixture/fixtures.sh).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <NoWarn>$(NoWarn);CS0067;CS0649;CS0169;CS0414;CS1700</NoWarn>
+    <Deterministic>true</Deterministic>
+    <DebugType>none</DebugType>
+    <PathMap>$(MSBuildProjectDirectory)=/fixture</PathMap>
+  </PropertyGroup>
+</Project>

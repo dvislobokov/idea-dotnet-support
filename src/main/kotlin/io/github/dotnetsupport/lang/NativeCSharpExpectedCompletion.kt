@@ -223,7 +223,7 @@ object NativeCSharpExpectedCompletion {
 
     // ---- the auto-popup
 
-    /** `status == `, `status != `, `case `: the list opens by itself when an enum is expected there (as in Rider). */
+    /** `status == `, `status != `, `case `, `Console.BackgroundColor = `: the list opens by itself when an enum is expected there (as in Rider). */
     fun opensAfterSpace(parameters: CompletionParameters): Boolean = opensAfterSpace(parameters.position)
 
     /** [opensAfterSpace] at the identifier the platform completes ([position], in the copy of the file). */
@@ -239,7 +239,7 @@ object NativeCSharpExpectedCompletion {
         typeChar == ' ' && position.text in POPUP_AFTER && position.containingFile is CSharpFile && CSharpFeatures.native(CSharpFeature.COMPLETION, position.project)
 
     /** Tokens a space after which opens the list where an enum is expected ([opensAfterSpace]). */
-    val POPUP_AFTER = setOf("==", "!=", "case")
+    val POPUP_AFTER = setOf("==", "!=", "case", "=", "return")
 
     // ---- initializers and property patterns
 
@@ -392,14 +392,48 @@ object NativeCSharpExpectedCompletion {
                 .withInsertHandler { context, _ ->
                     context.document.replaceString(context.startOffset, context.tailOffset, qualified)
                     context.editor.caretModel.moveToOffset(context.startOffset + qualified.length)
+                    context.tailOffset = context.startOffset + qualified.length
+                    closeStatement(context)
                     context.commitDocument()
                 }
             prioritized(builder, ENUM_MEMBER)
         }
     }
 
+    /**
+     * A value chosen at the end of a line closes what it ends, as typing on would: `Console.BackgroundColor = ConsoleColor.Black|` gets `;`,
+     * `Paint(ConsoleColor.Black|` gets `);`, `if (status == Status.New|` gets `)`. Nothing when something follows on the line, inside an
+     * initializer (`Status = Status.New,`) or where the line is no whole statement (`.Where(x => x.Status == Status.New` of a chain).
+     */
+    fun closeStatement(context: com.intellij.codeInsight.completion.InsertionContext) {
+        val document = context.document
+        val text = document.charsSequence
+        val end = context.tailOffset
+        val lineEnd = text.indexOf('\n', end).let { if (it < 0) text.length else it }
+        if (text.subSequence(end, lineEnd).isNotBlank()) return
+        if (CSharpCalls.inInitializer(text, end)) return
+        val lineStart = text.lastIndexOf('\n', (end - 1).coerceAtLeast(0)) + 1
+        val line = text.subSequence(lineStart, end).toString()
+        val tokens = CSharpExpressions.tokenize(line)
+        val first = tokens.firstOrNull() ?: return
+        val open = tokens.count { it.type == CSharpTokenTypes.LPAREN } - tokens.count { it.type == CSharpTokenTypes.RPAREN }
+        if (open < 0) return
+        val closed = ")".repeat(open)
+        val tail = when {
+            CSharpCompleteStatement.needsSemicolon(line + closed) -> "$closed;"
+            // `if (status == Status.New`: the header closed, its body is the next thing typed
+            open > 0 && first.type == CSharpTokenTypes.KEYWORD && first.text in CLOSED_HEADERS -> closed
+            else -> return
+        }
+        document.insertString(end, tail)
+        context.editor.caretModel.moveToOffset(end + tail.length)
+        context.tailOffset = end + tail.length
+    }
+
+    private val CLOSED_HEADERS = setOf("if", "while", "switch", "foreach", "for", "using", "lock")
+
     /** The members of an enum with their values as written (or counted on from the last one). */
-    private fun enumMembers(type: SemanticType): List<Pair<String, String?>> = when (type) {
+    fun enumMembers(type: SemanticType): List<Pair<String, String?>> = when (type) {
         is SemanticType.Library -> type.type.members.filter { it.kind == IndexedMemberKind.ENUM_MEMBER }.map { it.name to it.constantValue }
         is SemanticType.Source -> {
             val result = ArrayList<Pair<String, String?>>()

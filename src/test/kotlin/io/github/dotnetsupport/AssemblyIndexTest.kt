@@ -57,6 +57,16 @@ class AssemblyIndexTest {
     }
 
     @Test
+    fun `protected internal apart from protected (format 4)`() {
+        val runtime = AssemblyIndex.read(fixture("System.Runtime"))
+        val scheduler = runtime.allTypes.single { it.fullName == "System.Threading.Tasks.TaskScheduler" }.members.associateBy { it.name }
+        assertTrue(scheduler.getValue("QueueTask").let { it.isProtected && it.isProtectedInternal })
+        assertTrue(scheduler.getValue("TryDequeue").let { it.isProtected && it.isProtectedInternal })
+        assertTrue(scheduler.getValue("GetScheduledTasks").let { it.isProtected && !it.isProtectedInternal })
+        assertFalse(scheduler.getValue("Id").isProtectedInternal)
+    }
+
+    @Test
     fun `a static method by the beginning of its name`() {
         val found = console.members("WriteLi")
         assertTrue(found.isNotEmpty())

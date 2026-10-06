@@ -1,6 +1,7 @@
 package io.github.dotnetsupport.lang.semantic
 
 import com.intellij.psi.PsiElement
+import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.elementType
 import io.github.dotnetsupport.csharp.lang.SyntaxKind
 import io.github.dotnetsupport.csharp.lang.psi.*
@@ -347,7 +348,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         }
         when (value) {
             is CSharpImplicitObjectCreationExpression, is CSharpThrowExpression -> return Conversion.IMPLICIT
-            is CSharpAnonymousFunctionExpression -> return lambda(value, to)
+            is CSharpAnonymousFunctionExpression -> return if (strict) strictLambda(value, to) else lambda(value, to)
             is CSharpCollectionExpression -> return collection(to)
             is CSharpConditionalExpression -> if (type == null) {
                 val branches = listOfNotNull(value.whenTrue, value.whenFalse)
@@ -367,7 +368,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
                 if (isHandler(to)) return when (constantInterpolation(value)) { false -> Conversion.IMPLICIT; true -> Conversion.NONE; null -> Conversion.UNKNOWN }
             }
         }
-        methodGroup(value)?.let { return groupConversion(it, to) }
+        methodGroup(value)?.let { return if (strict) strictGroup(it, to) else groupConversion(it, to) }
         val source = type ?: return Conversion.UNKNOWN
         val conversion = classify(source, to)
         if (conversion == Conversion.NONE && constantFits(value, to)) return Conversion.IMPLICIT
@@ -386,6 +387,202 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         // a body that does not use untyped parameters is typed before the call is resolved: `() => 1` is no `Action`, `() => Log()` no `Func<int>`
         if (!r.expressions.lambdaFits(lambda, to, typeBody = hasNaturalType(lambda) || r.expressions.lambdaParameterCount(lambda) == 0)) return Conversion.NONE
         return Conversion.IMPLICIT
+    }
+
+    /**
+     * [lambda] to [to] where only what is sure counts ([strict]): the number of parameters, their `ref` kinds and written types, a value
+     * for a delegate that returns none; a body is taken as valid (its own errors are reported in it), but its type must be known where
+     * the delegate returns a value. Async lambdas and blocks whose end is reachable are not judged.
+     */
+    private fun strictLambda(lambda: CSharpAnonymousFunctionExpression, to: SemanticType): Conversion {
+        if (to is SemanticType.Parameter) return Conversion.UNKNOWN
+        val target = r.expressions.unwrapExpression(to) ?: return Conversion.UNKNOWN
+        val delegate = r.expressions.delegateSignature(target)
+        if (delegate == null) {
+            val tn = r.definitionName(target)
+            if (tn in NATURAL_TARGETS) return if (hasNaturalType(lambda)) Conversion.IMPLICIT else Conversion.UNKNOWN
+            return if (noDelegate(target)) Conversion.NONE else Conversion.UNKNOWN
+        }
+        val count = r.expressions.lambdaParameterCount(lambda)
+        val parameters = when (lambda) {
+            is CSharpSimpleLambdaExpression -> listOfNotNull(lambda.parameter)
+            is CSharpParenthesizedLambdaExpression -> lambda.parameterList?.parameters.orEmpty()
+            else -> (lambda as? CSharpAnonymousMethodExpression)?.parameterList?.parameters
+        }
+        if (count != null && count != delegate.first.size) return Conversion.NONE
+        val kinds = delegateRefKinds(target) ?: return Conversion.UNKNOWN
+        var unknown = false
+        if (parameters != null) for ((i, p) in parameters.withIndex()) {
+            val written = lambdaRefKind(p) ?: return Conversion.UNKNOWN
+            val expected = kinds.getOrNull(i) ?: return Conversion.UNKNOWN
+            if (written != expected) return if (written == "in" && expected == "ref") Conversion.UNKNOWN else Conversion.NONE
+            val syntax = p.type ?: continue
+            val type = r.resolveType(syntax) ?: return Conversion.UNKNOWN
+            val wanted = delegate.first.getOrNull(i) ?: return Conversion.UNKNOWN
+            if (mentionsCandidateParameter(wanted)) return Conversion.UNKNOWN
+            when (same(type, wanted)) {
+                false -> return Conversion.NONE
+                null -> unknown = true
+                true -> {}
+            }
+        }
+        if (unknown || r.expressions.isAsync(lambda.modifiers)) return Conversion.UNKNOWN
+        if (delegate.first.any { it == null || mentionsCandidateParameter(it) }) return Conversion.UNKNOWN
+        val returns = delegate.second ?: return Conversion.UNKNOWN
+        if (mentionsCandidateParameter(returns)) return Conversion.UNKNOWN
+        val void = r.definitionName(returns) == VOID
+        val body = lambda.expressionBody
+        if (body != null) {
+            if (void) return if (isStatementExpression(unparenthesized(body))) Conversion.IMPLICIT else Conversion.NONE
+            return when (argument(body, r.typeOf(unparenthesized(body)), returns)) {
+                Conversion.IDENTITY, Conversion.IMPLICIT -> Conversion.IMPLICIT
+                Conversion.NONE -> Conversion.NONE
+                Conversion.UNKNOWN -> Conversion.UNKNOWN
+            }
+        }
+        val block = lambda.block ?: return Conversion.UNKNOWN
+        val returned = returnsOf(block, lambda)
+        if (void) return if (returned.all { it.expression == null }) Conversion.IMPLICIT else Conversion.UNKNOWN
+        if (returned.isEmpty() || returned.any { it.expression == null }) return Conversion.UNKNOWN
+        if (CSharpReachability(r).endOf(block) != CSharpReachability.Reach.NO) return Conversion.UNKNOWN
+        var result = Conversion.IMPLICIT
+        for (statement in returned) {
+            val value = statement.expression ?: return Conversion.UNKNOWN
+            when (argument(value, r.typeOf(unparenthesized(value)), returns)) {
+                Conversion.NONE -> return Conversion.NONE
+                Conversion.UNKNOWN -> result = Conversion.UNKNOWN
+                else -> {}
+            }
+        }
+        return result
+    }
+
+    /** A type no lambda or method group converts to: closed, no interface, without user-defined conversions. */
+    private fun noDelegate(type: SemanticType): Boolean {
+        if (!closed(type) || isInterface(type) || type is SemanticType.ArrayOf) return type is SemanticType.ArrayOf
+        if (type is SemanticType.Library && type.type.kind == IndexedTypeKind.DELEGATE) return false
+        val operators = operators(type) ?: return false
+        return operators.isEmpty() || type is SemanticType.Library && type.type.fullName == STRING
+    }
+
+    private fun mentionsCandidateParameter(type: SemanticType): Boolean = when (type) {
+        is SemanticType.Parameter -> isOpen(type) || isCandidateParameter(type)
+        is SemanticType.ArrayOf -> type.element?.let(::mentionsCandidateParameter) ?: true
+        is SemanticType.Library -> type.arguments.any { it == null || mentionsCandidateParameter(it) }
+        is SemanticType.Source -> type.arguments.any { it == null || mentionsCandidateParameter(it) }
+    }
+
+    /** The `return` statements of [lambda]'s own body (not of the lambdas and local functions in it). */
+    private fun returnsOf(block: CSharpBlock, lambda: CSharpAnonymousFunctionExpression): List<CSharpReturnStatement> =
+        PsiTreeUtil.findChildrenOfType(block, CSharpReturnStatement::class.java).filter {
+            PsiTreeUtil.getParentOfType(it, CSharpAnonymousFunctionExpression::class.java, CSharpLocalFunctionStatement::class.java) == lambda
+        }
+
+    /** The type the body of [lambda] gives: its expression, or what every `return` gives, the same type; null when not known. */
+    private fun strictReturnType(lambda: CSharpAnonymousFunctionExpression): SemanticType? {
+        if (r.expressions.isAsync(lambda.modifiers)) return null
+        lambda.expressionBody?.let { return r.typeOf(it) }
+        val block = lambda.block ?: return null
+        val types = returnsOf(block, lambda).map { s -> s.expression?.let(r::typeOf) ?: return null }
+        val first = types.firstOrNull() ?: return null
+        return first.takeIf { types.all { same(it, first) == true } }
+    }
+
+    private fun isStatementExpression(e: CSharpExpression): Boolean = e is CSharpInvocationExpression || e is CSharpAssignmentExpression ||
+        e is CSharpAwaitExpression || e is CSharpBaseObjectCreationExpression || e is CSharpPostfixUnaryExpression ||
+        (e is CSharpPrefixUnaryExpression && (e.operatorToken?.text == "++" || e.operatorToken?.text == "--")) || e is CSharpThrowExpression
+
+    /** `ref`, `out`, `in` or "" (by value) of a parameter of a lambda; null for `scoped`, `ref readonly` and what else is not modeled. */
+    internal fun lambdaRefKind(p: CSharpParameter): String? {
+        val modifiers = p.modifiers.map { it.text }
+        if (modifiers.any { it != "ref" && it != "out" && it != "in" }) return null
+        return when {
+            "out" in modifiers -> "out"
+            "in" in modifiers -> "in"
+            "ref" in modifiers -> "ref"
+            else -> ""
+        }
+    }
+
+    /** The `ref` kinds of the parameters of a delegate type ("" by value); null when not known (`ref readonly`, `scoped`, `params`). */
+    internal fun delegateRefKinds(type: SemanticType): List<String>? = when (type) {
+        is SemanticType.Library -> type.type.members.firstOrNull { it.name == "Invoke" }?.let { invoke ->
+            r.session.parameters(invoke).map { p -> if (p.isOut) "out" else if (p.isIn) "in" else if (p.isRef) "ref" else "" }
+        }
+        is SemanticType.Source -> type.info.parts.firstNotNullOfOrNull { it.element() as? CSharpDelegateDeclaration }?.parameterList?.parameters?.map { p ->
+            val modifiers = p.modifiers.map { it.text }
+            if (modifiers.any { it != "ref" && it != "out" && it != "in" }) return null
+            if ("out" in modifiers) "out" else if ("in" in modifiers) "in" else if ("ref" in modifiers) "ref" else ""
+        }
+        else -> null
+    }
+
+    /**
+     * A method group to [to], strictly: methods of the group that are not generic and have neither optional, `params` nor by-reference
+     * parameters, compatible by their return type (C# 7.3) and applicable to the delegate's parameter types; NONE when none is, IMPLICIT
+     * when exactly one is and its parameters take the delegate's by identity or reference conversion.
+     */
+    private fun strictGroup(methods: List<CSharpSymbol>, to: SemanticType): Conversion {
+        if (to is SemanticType.Parameter) return Conversion.UNKNOWN
+        val target = r.expressions.unwrapExpression(to) ?: return Conversion.UNKNOWN
+        val delegate = r.expressions.delegateSignature(target)
+        if (delegate == null) {
+            val tn = r.definitionName(target)
+            if (tn == "System.Delegate" || tn == "System.MulticastDelegate" || tn == OBJECT) return Conversion.UNKNOWN
+            return if (noDelegate(target)) Conversion.NONE else Conversion.UNKNOWN
+        }
+        if (delegateRefKinds(target)?.all { it.isEmpty() } != true) return Conversion.UNKNOWN
+        val inputs = delegate.first.map { it ?: return Conversion.UNKNOWN }
+        val returns = delegate.second ?: return Conversion.UNKNOWN
+        if (inputs.any(::mentionsCandidateParameter) || mentionsCandidateParameter(returns)) return Conversion.UNKNOWN
+        val compatible = ArrayList<List<CSharpNameResolver.Parameter>>()
+        for (method in methods) {
+            if (r.isGeneric(method)) return Conversion.UNKNOWN
+            val parameters = r.signature(method, false) ?: return Conversion.UNKNOWN
+            if (parameters.any { it.optional || it.isParams || it.byRef } || hasRefParameters(method)) return Conversion.UNKNOWN
+            if (parameters.size != inputs.size) continue
+            val result = r.returnType(method, emptyList()) ?: return Conversion.UNKNOWN
+            val returnFits = when {
+                r.definitionName(returns) == VOID -> r.definitionName(result) == VOID
+                r.definitionName(result) == VOID -> false
+                else -> when (same(result, returns)) {
+                    true -> true
+                    null -> return Conversion.UNKNOWN
+                    false -> if (isReference(result) == false || isReference(returns) == false) false
+                    else when (classify(result, returns, userDefined = false)) {
+                        Conversion.IMPLICIT, Conversion.IDENTITY -> if (isReference(result) == true && isReference(returns) == true) true else return Conversion.UNKNOWN
+                        Conversion.NONE -> false
+                        Conversion.UNKNOWN -> return Conversion.UNKNOWN
+                    }
+                }
+            }
+            if (!returnFits) continue
+            var applicable = true
+            for ((p, input) in parameters.zip(inputs)) {
+                val type = p.type() ?: return Conversion.UNKNOWN
+                when (classify(input, type)) {
+                    Conversion.NONE -> { applicable = false; break }
+                    Conversion.UNKNOWN -> return Conversion.UNKNOWN
+                    else -> {}
+                }
+            }
+            if (applicable) compatible += parameters
+        }
+        if (compatible.isEmpty()) return Conversion.NONE
+        val single = compatible.singleOrNull() ?: return Conversion.UNKNOWN
+        for ((p, input) in single.zip(inputs)) {
+            val type = p.type() ?: return Conversion.UNKNOWN
+            if (same(input, type) == true) continue
+            if (isReference(input) == true && isReference(type) == true) continue
+            return Conversion.UNKNOWN
+        }
+        return Conversion.IMPLICIT
+    }
+
+    private fun hasRefParameters(method: CSharpSymbol): Boolean = when (method) {
+        is CSharpSymbol.LibraryMember -> r.session.parameters(method.member).any { it.isByReference }
+        is CSharpSymbol.SourceMember -> parameterList(method.element)?.parameters?.any { p -> p.modifiers.any { it.text != "this" } } ?: true
+        else -> true
     }
 
     /** C# 10: a lambda whose parameters are typed (or that takes none) has a function type, `Func<…>` / `Action<…>`. */
@@ -543,7 +740,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         val r2 = d2.second ?: return null
         val void1 = r.definitionName(r1) == VOID
         val void2 = r.definitionName(r2) == VOID
-        val body = r.expressions.lambdaReturnType(lambda)
+        val body = if (strict) strictReturnType(lambda) else r.expressions.lambdaReturnType(lambda)
         if (void1 != void2) {
             if (body == null || r.definitionName(body) == VOID) return null
             return if (void1) -1 else 1
@@ -579,12 +776,172 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
     // ---- overload resolution
 
     /** A candidate in the form it is applicable in: the parameter type each argument goes to (method type arguments substituted). */
-    private class Form(
+    internal class Form(
         val symbol: CSharpSymbol, val declared: List<CSharpNameResolver.Parameter>, val targets: List<SemanticType?>, val declaredTargets: List<SemanticType?>,
         val expanded: Boolean, val defaults: Boolean, val generic: Boolean, val paramsType: SemanticType?,
         /** The `this` parameter of an extension method called on a receiver, substituted: the receiver is its first argument (§12.8.10.3). */
         val receiverTarget: SemanticType? = null,
+        /** `ref` / `out` / `in` or null: how the parameter each argument goes to takes it. */
+        val refKinds: List<String?> = emptyList(),
+        /** The type arguments of a generic method, inferred or written. */
+        val methodArguments: List<SemanticType?> = emptyList(),
     )
+
+    /**
+     * For the compiler errors of [CSharpOverloadChecks]: conversions of lambdas and method groups are NONE or IMPLICIT only where that is
+     * sure (the lenient answers of navigation would make an inapplicable candidate applicable there), anything else UNKNOWN.
+     */
+    private var strict = false
+
+    /** How a candidate fares with the arguments of a call ([evaluate]). */
+    internal sealed class Outcome {
+        class Applicable(val form: Form) : Outcome()
+        /** No form takes that many arguments. */
+        object Count : Outcome()
+        /** A form takes them and an argument surely does not convert: [form] the one Roslyn names, [bad] the indices of those arguments. */
+        class Bad(val form: Form, val bad: List<Int>, val refMismatch: Boolean) : Outcome()
+        object InferenceFailed : Outcome()
+        object ConstraintFailed : Outcome()
+        object Unknown : Outcome()
+    }
+
+    /**
+     * [symbol] against a call, strictly (§12.6.4.2): the normal form, then the expanded one; the type arguments of a generic method [written]
+     * or by [infer] (the declared type each argument goes to, the receiver and the `this` parameter of a reduced call). [receiver]: the
+     * type of the receiver of a reduced call of an extension method.
+     */
+    internal fun evaluate(
+        symbol: CSharpSymbol, reduced: Boolean, receiver: SemanticType?, arguments: List<CSharpArgument>, all: List<CSharpSymbol>, written: List<SemanticType?>?,
+        infer: (List<SemanticType?>, Pair<SemanticType, SemanticType?>?) -> CSharpTypeInference.Inferred,
+    ): Outcome {
+        val owners = all.mapNotNull { (it as? CSharpSymbol.SourceMember)?.element }
+        val wasStrict = strict
+        strict = true
+        openOwners += owners
+        twins = paramsTwins(all)
+        try {
+            return evaluateStrict(symbol, reduced, receiver, arguments, written, infer)
+        } finally {
+            strict = wasStrict
+            openOwners -= owners.toSet()
+        }
+    }
+
+    private fun evaluateStrict(
+        symbol: CSharpSymbol, reduced: Boolean, receiver: SemanticType?, arguments: List<CSharpArgument>, written: List<SemanticType?>?,
+        infer: (List<SemanticType?>, Pair<SemanticType, SemanticType?>?) -> CSharpTypeInference.Inferred,
+    ): Outcome {
+        val all = r.signature(symbol, false) ?: return Outcome.Unknown
+        if (reduced && (all.isEmpty() || receiver == null)) return Outcome.Unknown
+        val parameters = (if (reduced) all.drop(1) else all).let(::withParamsSpan)
+        val generic = r.isGeneric(symbol)
+        val types = arguments.map { a -> a.expression?.let(::argumentType) }
+        var unknown = false
+        var inferenceFailed = false
+        var constraintFailed = false
+        val bad = ArrayList<Outcome.Bad>()
+        for (expanded in listOf(false, true)) {
+            if (expanded && parameters.lastOrNull()?.isParams != true) break
+            val map = map(parameters, arguments, expanded) ?: continue
+            val declaredTargets = arguments.indices.map { i ->
+                val declared = parameters[map[i]].type()
+                if (expanded && map[i] == parameters.size - 1) declared?.let(::elementOf) else declared
+            }
+            var methodArguments: List<SemanticType?> = emptyList()
+            if (generic) {
+                methodArguments = written ?: when (val inferred = infer(declaredTargets, if (reduced) receiver!! to all.first().type() else null)) {
+                    is CSharpTypeInference.Inferred.Known -> inferred.types
+                    CSharpTypeInference.Inferred.Failed -> { inferenceFailed = true; continue }
+                    CSharpTypeInference.Inferred.Unknown -> { unknown = true; continue }
+                }
+                when (constraintsHoldStrict(symbol, methodArguments)) {
+                    false -> { constraintFailed = true; continue }
+                    null -> { unknown = true; continue }
+                    true -> {}
+                }
+            }
+            fun substituted(type: SemanticType?): SemanticType? = if (methodArguments.isEmpty()) type else substitute(type, symbol, methodArguments)
+            var receiverTarget: SemanticType? = null
+            if (reduced) {
+                receiverTarget = substituted(all.first().type()) ?: return Outcome.Unknown
+                if (classify(receiver!!, receiverTarget, userDefined = false) !in listOf(Conversion.IDENTITY, Conversion.IMPLICIT)) return Outcome.Unknown
+            }
+            val targets = declaredTargets.map(::substituted)
+            val refKinds = arguments.indices.map { refKind(symbol, map[it], reduced) }
+            val wrong = ArrayList<Int>()
+            var refMismatch = false
+            var formUnknown = false
+            for ((i, argument) in arguments.withIndex()) {
+                val expression = argument.expression ?: return Outcome.Unknown
+                val target = targets[i] ?: return Outcome.Unknown
+                val writtenKind = argument.refKindKeyword?.text
+                val kind = refKinds[i]
+                val handlerByRef = kind == "ref" && writtenKind == null && unparenthesized(expression) is CSharpInterpolatedStringExpression && isHandler(target)
+                if (!(writtenKind == kind || handlerByRef || kind == "in" && (writtenKind == null || writtenKind == "ref") || kind == null && writtenKind == null)) {
+                    wrong += i; refMismatch = true; continue
+                }
+                val byRef = writtenKind == "ref" || writtenKind == "out"
+                val conversion = if (expression is CSharpDeclarationExpression && expression.type?.let(r::isVar) != false) Conversion.IDENTITY else argument(expression, types[i], target)
+                when (conversion) {
+                    Conversion.NONE -> wrong += i
+                    Conversion.UNKNOWN -> formUnknown = true
+                    Conversion.IMPLICIT -> if (byRef) { wrong += i; refMismatch = true }
+                    Conversion.IDENTITY -> {}
+                }
+            }
+            val defaults = parameters.indices.any { p -> p !in map && !(expanded && p == parameters.size - 1) }
+            val form = Form(symbol, parameters, targets, declaredTargets, expanded, defaults, generic, if (expanded) parameters.last().type() else null, receiverTarget, refKinds, methodArguments)
+            if (wrong.isNotEmpty()) bad += Outcome.Bad(form, wrong, refMismatch)
+            else if (formUnknown) unknown = true
+            else return Outcome.Applicable(form)
+        }
+        if (unknown) return Outcome.Unknown
+        if (bad.isNotEmpty()) {
+            if (inferenceFailed || constraintFailed) return Outcome.Unknown
+            if (bad.size == 1) return bad.single()
+            // both forms of a `params` method fail: the expanded one when the last argument is no array of it (as `checkArgumentTypes`)
+            val (normal, expanded) = bad
+            return if ((arguments.size - 1) in normal.bad) expanded else normal
+        }
+        if (constraintFailed) return Outcome.ConstraintFailed
+        if (inferenceFailed) return Outcome.InferenceFailed
+        return Outcome.Count
+    }
+
+    /**
+     * Of the applicable [forms], those no other one is better than (§12.6.4.3): one is the best member, two or more an ambiguity; null when
+     * a comparison is not known. [receiver]: of a reduced call of extension methods.
+     */
+    internal fun unbeaten(forms: List<Form>, arguments: List<CSharpArgument>, receiver: SemanticType?): List<Form>? {
+        val owners = forms.mapNotNull { (it.symbol as? CSharpSymbol.SourceMember)?.element }
+        val wasStrict = strict
+        strict = true
+        openOwners += owners
+        try {
+            val types = arguments.map { a -> a.expression?.let(::argumentType) }
+            val beaten = HashSet<Form>()
+            for (m in forms) for (n in forms) {
+                if (m !== n && (betterMember(m, n, arguments, types, receiver) ?: return null)) beaten += n
+            }
+            return forms.filter { it !in beaten }
+        } finally {
+            strict = wasStrict
+            openOwners -= owners.toSet()
+        }
+    }
+
+    /** The conversion of the argument [e] to [to], strictly ([strict]). */
+    internal fun strictArgument(e: CSharpExpression, to: SemanticType): Conversion {
+        val wasStrict = strict
+        strict = true
+        try {
+            return argument(e, argumentType(e), to)
+        } finally {
+            strict = wasStrict
+        }
+    }
+
+    internal fun instancesOf(type: SemanticType, definition: String): List<SemanticType.Library>? = instances(type, definition, 0)
 
     /**
      * The one candidate of [candidates] a call with [arguments] calls, or null when that cannot be told surely. [reduced]: extension methods
@@ -619,6 +976,30 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
                 }
             }
             return best?.symbol
+        } finally {
+            openOwners -= owners.toSet()
+        }
+    }
+
+    /**
+     * CS0121: the applicable candidates of a call that no other applicable one beats, when there are two or more of them (none is the best,
+     * §12.6.4.1). Null unless the applicability of every candidate and every comparison between the applicable ones is known.
+     */
+    fun ambiguity(candidates: List<CSharpSymbol>, arguments: List<CSharpArgument>, site: CSharpSimpleName): List<CSharpSymbol>? {
+        if (candidates.size < 2 || candidates.any(::hasPriority)) return null
+        val call = r.invocationOf(site) ?: return null
+        val types = arguments.map { a -> a.expression?.let(::argumentType) }
+        val owners = candidates.mapNotNull { (it as? CSharpSymbol.SourceMember)?.element }
+        openOwners += owners
+        try {
+            twins = paramsTwins(candidates)
+            val applicable = candidates.mapNotNull { symbol -> applicable(symbol, false, arguments, types, call, site, false)?.also { if (it === UNKNOWN_FORM) return null } }
+            if (applicable.size < 2) return null
+            val beaten = HashSet<CSharpSymbol>()
+            for (m in applicable) for (n in applicable) {
+                if (m !== n && (betterMember(m, n, arguments, types) ?: return null)) beaten += n.symbol
+            }
+            return applicable.map { it.symbol }.filter { it !in beaten }.takeIf { it.size >= 2 }
         } finally {
             openOwners -= owners.toSet()
         }
@@ -813,6 +1194,47 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         }
     }
 
+    /** Whether the type arguments [arguments] of [symbol] satisfy its constraints; null when that is not known (`new()`, `unmanaged`, ...). */
+    private fun constraintsHoldStrict(symbol: CSharpSymbol, arguments: List<SemanticType?>): Boolean? {
+        if (!constraintsHold(symbol, arguments)) return false
+        fun converts(argument: SemanticType, type: SemanticType): Boolean = classify(argument, type).let { it == Conversion.IDENTITY || it == Conversion.IMPLICIT }
+        when (symbol) {
+            is CSharpSymbol.LibraryMember -> for ((i, parameter) in symbol.member.typeParameters.withIndex()) {
+                val argument = arguments.getOrNull(i) ?: return null
+                if (parameter.isStruct && isReference(argument) != false || parameter.isClass && isReference(argument) != true) return null
+                if (parameter.hasNew || parameter.isUnmanaged || parameter.allowsRefStruct) return null
+                for (constraint in parameter.constraints) {
+                    val type = r.fromRef(constraint, symbol.declaringArguments, arguments) ?: return null
+                    if (!converts(argument, type)) return null
+                }
+            }
+            is CSharpSymbol.SourceMember -> {
+                val method = symbol.element as? CSharpMethodDeclaration ?: return null
+                val resolver = (method.containingFile as? CSharpFile)?.let(r.session::reachable) ?: return null
+                val names = r.typeParameterNames(method)
+                for (clause in method.constraintClauses) {
+                    val argument = arguments.getOrNull(names.indexOf(clause.nameElement?.identifier?.text)) ?: return null
+                    for (constraint in clause.constraints) {
+                        when (constraint) {
+                            is CSharpClassOrStructConstraint -> {
+                                val struct = constraint.text.startsWith("struct")
+                                if (struct && isReference(argument) != false || !struct && isReference(argument) != true) return null
+                                if (constraint.text.endsWith("?") || struct && r.isNullable(argument)) return null
+                            }
+                            is CSharpTypeConstraint -> {
+                                val type = constraint.type?.let(resolver::resolveType)?.let { substitute(it, symbol, arguments) } ?: return null
+                                if (constraint.text == "notnull" || constraint.text == "unmanaged" || !converts(argument, type)) return null
+                            }
+                            else -> return null
+                        }
+                    }
+                }
+            }
+            else -> return null
+        }
+        return true
+    }
+
     /** Whether the type arguments inferred for [symbol] may satisfy its constraints: false only when one surely does not. */
     private fun constraintsHold(symbol: CSharpSymbol, arguments: List<SemanticType?>): Boolean {
         when (symbol) {
@@ -885,6 +1307,18 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         if (mBetter != nBetter) return mBetter
         if (mBetter) return false
         if (!identical) return false
+        // C# 7.2: an argument without `in` goes better to a parameter by value than to an `in` one
+        if (m.refKinds.size == arguments.size && n.refKinds.size == arguments.size) {
+            var mValue = false
+            var nValue = false
+            for ((i, argument) in arguments.withIndex()) {
+                if (argument.refKindKeyword != null) continue
+                if (m.refKinds[i] == null && n.refKinds[i] == "in") mValue = true
+                if (n.refKinds[i] == null && m.refKinds[i] == "in") nValue = true
+            }
+            if (mValue != nValue) return mValue
+            if (mValue) return false
+        }
         // the tie-breaks, when the parameter types of the arguments are the same
         if (!m.generic && n.generic) return true
         if (m.generic && !n.generic) return false

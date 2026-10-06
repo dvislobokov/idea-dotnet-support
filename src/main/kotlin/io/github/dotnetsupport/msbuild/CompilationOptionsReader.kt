@@ -100,6 +100,7 @@ object CompilationOptionsReader {
         private val directory = projectPath.substringBeforeLast('/')
         private val compile = ArrayList<String>()
         private val usings = ArrayList<GlobalUsing>()
+        private val friends = ArrayList<String>()
 
         init {
             properties += globals
@@ -185,6 +186,10 @@ object CompilationOptionsReader {
                     include.mapTo(usings) { CompilationOptions.usingOf(it, metadata(element, "Alias"), metadata(element, "Static")) }
                     usings.removeAll { using -> remove.any { it.equals(using.namespace, ignoreCase = true) } }
                 }
+                "InternalsVisibleTo" -> {
+                    friends += include
+                    friends.removeAll { friend -> remove.any { it.equals(friend, ignoreCase = true) } }
+                }
             }
         }
 
@@ -240,6 +245,11 @@ object CompilationOptionsReader {
                 rootNamespace = property("RootNamespace").trim().ifEmpty { if (sdk == null) null else property("MSBuildProjectName") },
                 compileFiles = if (explicitCompile) compile.distinctBy { it.lowercase() } else null,
                 source = CompilationOptions.Source.STATIC,
+                assemblyName = property("AssemblyName").trim().ifEmpty { property("MSBuildProjectName") }.ifEmpty { null },
+                internalsVisibleTo = friends.distinct(),
+                // the SDK's default, which a static reading cannot work out for every framework: unknown unless the project says
+                produceReferenceAssembly = property("ProduceReferenceAssembly").trim().ifEmpty { null }?.let { it.equals("true", ignoreCase = true) },
+                signAssembly = property("SignAssembly").trim().equals("true", ignoreCase = true),
             )
         }
 

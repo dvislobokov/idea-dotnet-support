@@ -603,6 +603,17 @@
   (`TYPE:sem-*`), `debug-playground/Console/Editor/ImportType.cs` (`TYPE:import-type-*`); `docs/LIVE_CHECKS.md` E-109…E-114. Сборки
   проектов вне solution (как `Broken`) индексируются, когда открыт их файл. Проверено UI-роботом (Windows, IC 2026.1.4): ошибки как у
   сервера, fixes работают; синяя подсказка и дубли со сборкой не проверены, человеком вживую не проверено
+- [x] 0.1.108–0.1.115 — ошибки компилятора без сервера, 94 новых кода по группам: обобщённые параметры (0.1.108), повторные объявления (0.1.109),
+  неприсвоенные переменные (0.1.110), доступ и только для чтения, индекс формата 4 (0.1.111), операторы и приведения (0.1.112), перегрузки и лямбды
+  (0.1.113), наследование (0.1.114), return / await / switch / переходы (0.1.115). Файл на каждый код — `debug-playground/Broken/Errors/CSxxxx.cs`
+  (строки `// ERROR CSxxxx`), сверка — `tools/diag/check_errors.py roslyn | ide [--source roslyn]`, тест — `BrokenErrorFilesTest`.
+- [x] 0.1.107 — присваивание без `=`: после `Console.BackgroundColor ` список сам предлагает `= ConsoleColor.Black` / `= dto.Name`, Enter пишет с `;`;
+  сценарий — `debug-playground/ShopApi/Playground/EnumCompletion.cs` (`TYPE:enum-assign-no-equals`).
+  Там же: обобщённые методы расширения проверяют `where` своего `this T` — у `DayOfWeek` больше нет `AddEndpointFilter`, вызов — CS1061 (`TYPE:enum-no-foreign-extension`).
+- [x] 0.1.106 — enum: список открывается сам после `= ` / `return `, выбор значения в конце строки закрывает оператор (`;`, `)`);
+  сценарий — `debug-playground/Console/Editor/ExpectedTypeCompletion.cs` (`TYPE:expected-enum-assign`).
+- [x] 0.1.105 — навигация внутри декомпилированного кода: его имена разрешаются по сборкам проекта, ссылающегося на dll;
+  сценарий — `debug-playground/Console/Editor/DecompiledNavigation.cs` (`TYPE:decompiled-ctrl-click`).
 - [x] 0.1.104 — серый текст не предлагает имя после члена типа (`JsonSerializer.Serialize ` → было `serialize`); сценарий —
   `GhostAssignments.cs` (`TYPE:ghost-member-of-type`).
 - [x] 0.1.103 — серый текст и список при присваивании члену: `member.Ad` + выбранный `Admin` → `min = isAdmin;` (а не имя, как после типа);

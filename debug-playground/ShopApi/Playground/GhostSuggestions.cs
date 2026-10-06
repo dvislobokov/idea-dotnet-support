@@ -50,8 +50,6 @@ public static class GhostSuggestionsTour
         //   `Product` row, no `Product { … }`.
         // EXPECT (not): `Shipment { … }` after `var shipment = new Shipm` (no constructor without arguments); a `{ … }` row after `new M`
         //   (one letter: not for every type of the list) — but `var member = new ` has it, the type the variable names.
-
-        var member = new Member();
         // TYPE:ghost-new-by-name — type `var member = new ` and press Esc if the list opened.
         // EXPECT: gray `Member();` after `new `; Tab writes `var member = new Member();`. The list (Ctrl+Space) has `Member` first.
         //   `var members = new ` → gray `List<Member>();`. `var mem = new Me` → nothing gray.
@@ -60,8 +58,6 @@ public static class GhostSuggestionsTour
         // TYPE:ghost-close-call — type `var member = new Member(` (the `)` comes by itself, the caret stays between the parentheses).
         // EXPECT: a gray `;` after the `)`; Tab writes `var member = new Member();` with the caret after `;` — one `)`, not two.
         // EXPECT (not): a gray `;` in `var shipment = new Shipment(|)` (its constructor wants an argument).
-        member.Name =
-        
 
         // TYPE:ghost-fill — type `var member = new Member()`, Enter, `{`, Enter (the `}` comes by itself, the caret on the empty line).
         // EXPECT: gray lines `Name = name,` / `Email = dto.Email,` / `Age = age,` / `Admin = ` (the parameter `name` wins over `dto.Name`:

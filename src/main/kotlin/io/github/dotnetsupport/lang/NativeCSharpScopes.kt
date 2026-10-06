@@ -71,7 +71,9 @@ class NativeCSharpScopes private constructor(
                 is CSharpMemberBindingExpression -> false
                 is CSharpQualifiedName -> name != parent.right
                 is CSharpAliasQualifiedName -> false
-                is CSharpNameColon, is CSharpNameEquals, is CSharpGotoStatement -> false
+                is CSharpNameColon, is CSharpNameEquals -> false
+                // `goto label`; the constant of `goto case Name` is an ordinary name
+                is CSharpGotoStatement -> parent.caseOrDefaultKeyword != null
                 is CSharpAssignmentExpression -> !(name == parent.left && isObjectInitializer(parent.parent))
                 else -> !inPropertyPattern(name)
             }
@@ -245,9 +247,18 @@ class NativeCSharpScopes private constructor(
                         // the receiver of `extension(string s) { ... }` is a parameter of each of its members
                         val extension = element.node.elementType == SyntaxKind.ExtensionBlockDeclaration
                         val kind = if (extension) LocalSymbolKind.PARAMETER else LocalSymbolKind.PRIMARY_CONSTRUCTOR_PARAMETER
-                        if (record) element.parameterList?.parameters?.forEach { declare(it.identifier, kind, into = null, isMember = true) }
-                        else declareParameters(element.parameterList, kind)
-                        visitChildren(element)
+                        if (record) {
+                            val positional = element.parameterList?.parameters.orEmpty().mapNotNull { declare(it.identifier, kind, into = null, isMember = true) }
+                            // ... but the arguments of its base, `record Employee(string Name) : Person(Name)`, are given the parameters
+                            var child = element.firstChild
+                            while (child != null) {
+                                if (child is CSharpBaseList) scoped(child) { positional.forEach { scope.names[it.name] = it }; visit(child) } else visit(child)
+                                child = child.nextSibling
+                            }
+                        } else {
+                            declareParameters(element.parameterList, kind)
+                            visitChildren(element)
+                        }
                     }
                 }
                 is CSharpBaseTypeDeclaration -> {
@@ -357,13 +368,13 @@ class NativeCSharpScopes private constructor(
                     visitChildren(element)
                 }
                 is CSharpGotoStatement -> {
-                    (element.expression as? CSharpIdentifierName)?.identifier?.let { gotos += function to it }
+                    if (element.caseOrDefaultKeyword == null) (element.expression as? CSharpIdentifierName)?.identifier?.let { gotos += function to it }
                     visitChildren(element)
                 }
                 is CSharpSimpleName -> {
                     names += element
                     val identifier = element.identifier
-                    if (identifier != null && element.parent !is CSharpGotoStatement && isFreeName(element)) {
+                    if (identifier != null && isFreeName(element)) {
                         val symbol = lookup(identifier.text)
                         if (symbol != null && (symbol.kind == LocalSymbolKind.TYPE_PARAMETER || !NativeCSharpTypePositions.isType(element))) reference(symbol, identifier)
                     }

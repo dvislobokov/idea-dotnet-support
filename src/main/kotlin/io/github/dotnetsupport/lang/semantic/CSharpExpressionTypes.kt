@@ -6,6 +6,7 @@ import com.intellij.psi.util.elementType
 import io.github.dotnetsupport.csharp.lang.SyntaxKind
 import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.index.IndexedMemberKind
+import io.github.dotnetsupport.index.IndexedTypeRef
 import io.github.dotnetsupport.index.IndexedTypeKind
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.NativeCSharpTypePositions
@@ -171,6 +172,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
      */
     fun receiverFits(symbol: CSharpSymbol, receiver: SemanticType): Boolean {
         if (!r.isExtension(symbol)) return true
+        if (!constraintsFit(symbol, receiver)) return false
         val parameter = r.signature(symbol, false)?.firstOrNull()?.type?.invoke() ?: return true
         val shown = parameter.display ?: return true
         if (mentionsMethodParameter(parameter)) return true
@@ -179,6 +181,34 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         if ((parameter as SemanticType.Library).arguments.isEmpty()) return true
         val instance = instanceOf(receiver, definition) ?: return true
         return instance.display == shown
+    }
+
+    /**
+     * `this TBuilder builder where TBuilder : IEndpointConventionBuilder`: a receiver of the type parameter has to satisfy its constraints —
+     * without this `AddEndpointFilter` was a method of every value (`day.AddEndpointFilter`). The constraint types are compared by the
+     * metadata names of what the receiver derives from (by the simple name for a type of the solution), `class` / `struct` by its kind.
+     */
+    private fun constraintsFit(symbol: CSharpSymbol, receiver: SemanticType): Boolean {
+        val member = (symbol as? CSharpSymbol.LibraryMember)?.member ?: return true
+        val first = member.parameters.firstOrNull()?.typeRef as? IndexedTypeRef.TypeParameter ?: return true
+        if (!first.ofMethod) return true
+        val parameter = member.typeParameters.getOrNull(first.index) ?: return true
+        if (receiver is SemanticType.Parameter) return true
+        val kind = (receiver as? SemanticType.Library)?.type?.kind
+        val valueType = kind == IndexedTypeKind.STRUCT || kind == IndexedTypeKind.ENUM
+        if (parameter.isClass && valueType || parameter.isStruct && kind != null && !valueType) return false
+        val constraints = parameter.constraints.mapNotNull {
+            when (it) {
+                is IndexedTypeRef.Named -> it.fullName
+                is IndexedTypeRef.Generic -> it.definition.fullName
+                else -> null
+            }
+        }.filter { it != "System.Object" && it != "System.ValueType" }
+        if (constraints.isEmpty()) return true
+        val keys = HashSet<String>()
+        val names = HashSet<String>()
+        r.collectSupertypes(receiver, keys, names, 0)
+        return constraints.all { it in keys || receiver is SemanticType.Source && it.substringAfterLast('.').substringAfterLast('+').substringBefore('`') in names }
     }
 
     private fun mentionsMethodParameter(type: SemanticType?): Boolean = when (type) {
@@ -731,7 +761,9 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
                 if (receiver.type.fullName == "System.String") return if (ranged) receiver else r.libraryType("System.Char")
                 val indexers = r.session.libraryMembers(r.assemblies, receiver.type)["Item"].orEmpty().filter { inherited ->
                     val parameters = r.session.parameters(inherited.member)
-                    inherited.member.kind == IndexedMemberKind.INDEXER && arguments.size <= parameters.size && parameters.drop(arguments.size).all { it.isOptional || it.hasDefault || it.isParams }
+                    inherited.member.kind == IndexedMemberKind.INDEXER && arguments.size <= parameters.size && parameters.drop(arguments.size).all { it.isOptional || it.hasDefault || it.isParams } &&
+                        // `span[1..]` is `Slice`, not the `int` indexer
+                        (!ranged || parameters.firstOrNull()?.typeRef.let { it is IndexedTypeRef.Named && it.fullName == "System.Range" })
                 }
                 val chosen = indexers.singleOrNull() ?: run {
                     val types = arguments.map { a -> a.expression?.let(r::typeOf) }

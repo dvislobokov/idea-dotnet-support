@@ -554,7 +554,11 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         collectSupertypes(receiver, keys, names, 0)
         keys += AssemblyIndexSet.GENERIC_RECEIVER
         for (key in keys) for (member in session.extensions(assemblies, key)) {
-            if (member.name == text && (arity == 0 || member.arity == arity) && member.type.namespace in imported) found += CSharpSymbol.LibraryMember(member)
+            if (member.name == text && (arity == 0 || member.arity == arity) && member.type.namespace in imported) {
+                // `where TBuilder : IEndpointConventionBuilder`: not a method of a value that does not satisfy it
+                val symbol = CSharpSymbol.LibraryMember(member)
+                if (key != AssemblyIndexSet.GENERIC_RECEIVER || expressions.receiverFits(symbol, receiver)) found += symbol
+            }
         }
         for (element in session.sourceExtensions(text)) sourceExtension(element, arity, imported::contains, names)?.let { found += it }
         return found
@@ -1346,6 +1350,9 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
 
     /** Whether the extension method [symbol] may take a receiver of [receiver] (its `this` parameter). */
     internal fun receiverFits(symbol: CSharpSymbol, receiver: SemanticType): Boolean = expressions.receiverFits(symbol, receiver)
+
+    /** The scopes extension methods are looked up in from [at], innermost first (C# §12.8.10.3): a namespace and what its `using`s import. */
+    internal fun extensionScopes(at: PsiElement): List<Pair<String, List<String>>> = levels(at).map { it.namespace to it.imports }
 
     /** The namespace of the static class an extension method of the solution is declared in; null when nested or broken. */
     internal fun namespaceOfMethod(method: PsiElement): String? = namespaceOfPsi(method)

@@ -426,6 +426,11 @@
 | E-361 | 0.1.103 | `member.Email = ` — серое `dto.Email;`; `member.Name = ` — `name;`; никогда сам член | `GhostAssignments.cs`, `TYPE:ghost-assign-value` | ⬜ (только тестом) |
 | E-362 | 0.1.103 | `member.Email = ` + Ctrl+Space — строки `dto.Email`, `dto.Name` вверху списка | `GhostAssignments.cs`, `TYPE:ghost-assign-list` | ⬜ (только тестом) |
 | E-363 | 0.1.104 | `JsonSerializer.Serialize ` / `Console.Out ` — серого имени (`serialize`, `out`) нет; `MemberDto ` с пространством имён — `memberDto` | `ShopApi/Playground/GhostAssignments.cs`, `TYPE:ghost-member-of-type` | ⬜ (только тестом) |
+| E-364 | 0.1.105 | Ctrl+Click внутри декомпилированного `StringBuilder.cs` — `ArgumentOutOfRangeException`, `Span<T>`, `Math.Max` открывают следующий декомпилированный тип | `Console/Editor/DecompiledNavigation.cs`, `TYPE:decompiled-ctrl-click` | ⬜ (только тестом) |
+| E-365 | 0.1.106 | `Console.BackgroundColor = ` — список открылся сам, Enter на `ConsoleColor.Black` пишет `…Black;`; `Take(` → `Take(ExpectedStatus.Paid);`; в инициализаторе и при тексте после — без `;` | `Console/Editor/ExpectedTypeCompletion.cs`, `TYPE:expected-enum-assign` | ⬜ (только тестом) |
+| E-366 | 0.1.107 | `Console.ForegroundColor ` (без `=`) — список сам с `= ConsoleColor.*`, Enter пишет `= ConsoleColor.Black;`; после `Console.WriteLine ` — нет | `ShopApi/Playground/EnumCompletion.cs`, `TYPE:enum-assign-no-equals` (и остальные `TYPE:enum-*`) | ⬜ (только тестом) |
+| E-367 | 0.1.107 | `day.` — нет `AddEndpointFilter` / `WithName`; `day.AddEndpointFilter(null!);` подчёркнут CS1061 | `ShopApi/Playground/EnumCompletion.cs`, `TYPE:enum-no-foreign-extension` | ⬜ (только тестом) |
+| E-368 | 0.1.108–0.1.115 | Ошибки компилятора: каждый файл `debug-playground/Broken/Errors/CSxxxx.cs` — подчёркнуты ровно строки `// ERROR` | `tools/diag/check_errors.py ide debug-playground/Broken/Errors` (робот) и `--source roslyn` (сервер) | ✅ робот 2026-10-06: плагин 101/101; сервер 98/101 — три расхождения только в его ошибках-следствиях после ошибок объявлений |
 
 Для E-01…E-13: открыть `Console/Editor/CompletionRanking.cs`, дождаться «Roslyn: DebugPlayground.sln», после каждого маркера — Ctrl+Z.
 

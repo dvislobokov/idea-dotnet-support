@@ -16,6 +16,7 @@ import com.intellij.codeInsight.inline.completion.elements.InlineCompletionGrayT
 import com.intellij.codeInsight.inline.completion.elements.InlineCompletionSkipTextElement
 import com.intellij.codeInsight.inline.completion.suggestion.InlineCompletionSingleSuggestion
 import com.intellij.codeInsight.inline.completion.suggestion.InlineCompletionSuggestion
+import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementBuilder
 import com.intellij.codeInsight.lookup.LookupManager
 import com.intellij.codeInsight.template.TemplateManager
@@ -417,6 +418,80 @@ object NativeCSharpTypingGhost {
         return ValueTarget(assignment, member, wanted, match.groupValues[2], null)
     }
 
+    /** `Console.BackgroundColor |`, `member.Name na|`: a member at the start of a statement, a space, maybe the start of a value; no `=` yet. */
+    private val MEMBER_THEN_SPACE = Regex("""^\s*((?:this|@?[A-Za-z_]\w*)(?:\.[A-Za-z_]\w*)+)\s+([A-Za-z_]\w*)?$""")
+
+    /** `Console.BackgroundColor|` before a space is typed: the list may open after it ([NativeCSharpAssignmentCompletion]). */
+    private val MEMBER_AT_END = Regex("""^\s*(?:this|@?[A-Za-z_]\w*)(?:\.[A-Za-z_]\w*)+$""")
+
+    fun memberAtLineEnd(text: CharSequence, offset: Int): Boolean =
+        offset <= text.length && restOfLine(text, offset).isBlank() && MEMBER_AT_END.matches(text.subSequence(lineStart(text, offset), offset))
+
+    /**
+     * `member.Status`, `Console.BackgroundColor`, `this.Name`, `_order.Status`: the member the chain ends with and its type, segment by
+     * segment from a local, a parameter, a member of the types around or a type; null where a segment is not known.
+     */
+    fun chainMember(r: CSharpNameResolver, site: PsiElement, chain: String): Pair<CSharpSymbol, SemanticType>? {
+        val segments = chain.split('.')
+        if (segments.size < 2) return null
+        val head = segments[0].removePrefix("@")
+        var type: SemanticType? = when (head) {
+            "this" -> r.syntax.enclosingTypes(site).firstOrNull()?.let(r::selfType)
+            else -> NativeCSharpLocals.visible(r.syntax.scopes, site).firstOrNull { it.name == head }?.let { r.valueType(CSharpSymbol.Local(it)) }
+                ?: r.syntax.enclosingTypes(site).firstNotNullOfOrNull { info ->
+                    r.membersNamed(r.selfType(info), head, 0).firstOrNull { it is CSharpSymbol.SourceMember && !r.isMethod(it) }?.let(r::valueType)
+                }
+                ?: types(r, site, head).singleOrNull()
+        }
+        var symbol: CSharpSymbol? = null
+        for (segment in segments.drop(1)) {
+            val owner = type ?: return null
+            symbol = r.membersNamed(owner, segment, 0).firstOrNull { (it is CSharpSymbol.SourceMember || it is CSharpSymbol.LibraryMember) && !r.isMethod(it) } ?: return null
+            type = r.valueType(symbol)
+        }
+        return (symbol ?: return null) to (type ?: return null)
+    }
+
+    /**
+     * `Console.BackgroundColor |` with no `=` typed: rows that write it with the value, `= ConsoleColor.Black` for each member of an enum, else
+     * `= name` / `= dto.Name` for the values at hand; their `;` with them. Null where the line is no member of a value to set; empty where it
+     * is one but nothing is found (the names of a declaration, which the text reads there, are no use either).
+     */
+    fun assignmentRows(file: CSharpFile, text: CharSequence, offset: Int): List<LookupElement>? {
+        if (offset > text.length || restOfLine(text, offset).isNotBlank()) return null
+        val start = lineStart(text, offset)
+        val match = MEMBER_THEN_SPACE.matchEntire(text.subSequence(start, offset)) ?: return null
+        if (DumbService.isDumb(file.project) || file.compilationUnit == null) return null
+        val chain = match.groupValues[1]
+        return runCatching {
+            val r = CSharpSemanticSession(file.project).resolver(file)
+            val site = file.findElementAt(start + match.groups[1]!!.range.last) ?: return@runCatching null
+            val (symbol, type) = chainMember(r, site, chain) ?: return@runCatching null
+            if (!NativeCSharpExpectedCompletion.writable(symbol, site)) return@runCatching null
+            val enum = (type as? SemanticType.Library)?.type?.kind == io.github.dotnetsupport.index.IndexedTypeKind.ENUM || (type as? SemanticType.Source)?.info?.kind == TypeKind.ENUM
+            val values: List<Pair<String, String?>> = if (enum) {
+                val qualifier = type.minimalDisplay ?: type.name
+                NativeCSharpExpectedCompletion.enumMembers(type).map { (member, value) -> "$qualifier.$member" to value }
+            } else ranked(r, site, chain.substringAfterLast('.'), type, "", chain).take(MAX_ROWS).map { it.first to null }
+            values.mapIndexed { i, (value, right) ->
+                val written = "= $value"
+                val element = LookupElementBuilder.create(value.substringAfterLast('.')).withLookupStrings(listOf(value.substringAfterLast('.'), value))
+                    .withPresentableText(written).withTypeText(right).withIcon(if (enum) AllIcons.Nodes.Constant else AllIcons.Nodes.Variable)
+                    .withInsertHandler { context, _ ->
+                        context.document.replaceString(context.startOffset, context.tailOffset, written)
+                        context.tailOffset = context.startOffset + written.length
+                        context.editor.caretModel.moveToOffset(context.tailOffset)
+                        NativeCSharpExpectedCompletion.closeStatement(context)
+                        context.commitDocument()
+                    }
+                element.putUserData(NativeCSharpCompletion.NATIVE, true)
+                PrioritizedLookupElement.withPriority(element, NativeCSharpCompletion.DECLARATION + 10 - i * 0.01)
+            }
+        }.getOrElse { if (it is com.intellij.openapi.progress.ProcessCanceledException) throw it else null }
+    }
+
+    private const val MAX_ROWS = 6
+
     /** The values the list offers at `Name = |` / `member.Name = |`, best first: the paths into the values at hand (`dto.Name`) among them. */
     fun valuesAt(file: CSharpFile, text: CharSequence, offset: Int): List<String> {
         val place = place(text, offset)
@@ -722,6 +797,29 @@ class NativeCSharpValueCompletion : CompletionContributor() {
 
     private companion object {
         const val MAX = 6
+    }
+}
+
+/**
+ * `Console.BackgroundColor |`: no need to type `=` — the list opens by itself after the space with `= ConsoleColor.Black`… (the members of
+ * an enum) or `= name`, `= dto.Name` (the values at hand), and Enter writes the assignment with its `;`. Where the line is a member of a
+ * value, the names of a declaration (`backgroundColor`) that the text also reads there are not offered.
+ */
+class NativeCSharpAssignmentCompletion : CompletionContributor() {
+    override fun invokeAutoPopup(position: PsiElement, typeChar: Char): Boolean {
+        if (typeChar != ' ') return false
+        val file = position.containingFile as? CSharpFile ?: return false
+        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, file.project)) return false
+        val text = file.viewProvider.document?.charsSequence ?: return false
+        return NativeCSharpTypingGhost.memberAtLineEnd(text, position.textRange.endOffset)
+    }
+
+    override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
+        val file = parameters.originalFile as? CSharpFile ?: return
+        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, file.project)) return
+        val rows = NativeCSharpTypingGhost.assignmentRows(file, parameters.editor.document.immutableCharSequence, parameters.offset) ?: return
+        rows.forEach(result::addElement)
+        result.stopHere()
     }
 }
 

@@ -1,0 +1,13 @@
+10:40-42 CS1660: Cannot convert lambda expression to type 'int' because it is not a delegate type
+21:36-38 CS1660: Cannot convert lambda expression to type 'int' because it is not a delegate type
+26:24-26 CS1660: Cannot convert lambda expression to type 'int' because it is not a delegate type
+28:25-27 CS1660: Cannot convert lambda expression to type 'string' because it is not a delegate type
+31:26-28 CS1660: Cannot convert lambda expression to type 'Order' because it is not a delegate type
+32:28-30 CS1660: Cannot convert lambda expression to type 'Status' because it is not a delegate type
+33:25-27 CS1660: Cannot convert lambda expression to type 'int?' because it is not a delegate type
+35:20-22 CS1660: Cannot convert lambda expression to type 'int' because it is not a delegate type
+37:19-21 CS1660: Cannot convert lambda expression to type 'int' because it is not a delegate type
+39:16-18 CS1660: Cannot convert lambda expression to type 'int' because it is not a delegate type
+41:17-19 CS1660: Cannot convert lambda expression to type 'int' because it is not a delegate type
+43:37-39 CS1660: Cannot convert lambda expression to type 'int' because it is not a delegate type
+45:21-29 CS1660: Cannot convert anonymous method to type 'int' because it is not a delegate type

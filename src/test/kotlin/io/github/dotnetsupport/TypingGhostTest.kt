@@ -180,6 +180,28 @@ $body
         assertNull("the selected method row", NativeCSharpTypingGhost.afterItem(myFixture.file as CSharpFile, myFixture.editor.document.charsSequence, myFixture.caretOffset, "Serialize"))
     }
 
+    private fun pick(text: String, item: String): String {
+        myFixture.configureByText("Assign${counter++}.cs", text)
+        val rows = myFixture.completeBasic()?.toList().orEmpty()
+        val row = rows.firstOrNull { it.allLookupStrings.contains(item) } ?: error("no $item in ${rows.map { it.lookupString }}")
+        myFixture.lookup.currentItem = row
+        myFixture.finishLookup(com.intellij.codeInsight.lookup.Lookup.NORMAL_SELECT_CHAR)
+        return myFixture.editor.document.text
+    }
+
+    fun testAnAssignmentWithoutTheEqualsSign() {
+        // `Console.BackgroundColor |`: the list opens by itself with `= ConsoleColor.Black`…, Enter writes the assignment with its `;`
+        val text = code("        Console.BackgroundColor <caret>")
+        myFixture.configureByText("Assign${counter++}.cs", text)
+        assertTrue(NativeCSharpTypingGhost.memberAtLineEnd(myFixture.editor.document.charsSequence, myFixture.caretOffset - 1))
+        assertTrue(pick(text, "Black").contains("Console.BackgroundColor = ConsoleColor.Black;\n"))
+        assertTrue("a typed prefix", pick(code("        Console.BackgroundColor Bl<caret>"), "Blue").contains("Console.BackgroundColor = ConsoleColor.Blue;\n"))
+        val user = "        var user = new User();\n"
+        assertTrue("the values at hand", pick(code("$user        user.Email <caret>", parameters = "UserDto dto"), "dto.Email").contains("user.Email = dto.Email;\n"))
+        assertNull("no member to set: a type and a name", NativeCSharpTypingGhost.assignmentRows(myFixture.file as CSharpFile, "        Shop.User ", 18))
+        assertFalse("a method is no member to set", NativeCSharpTypingGhost.memberAtLineEnd("Console.WriteLine(", 18))
+    }
+
     fun testAMemberOfAValueIsNoType() {
         assertNull("`user.Admin ` is no type to name", gray(code("        var user = new User();\n        user.Admin <caret>")))
         assertEquals("the type of a namespace still is", "user", gray(code("        Shop.User <caret>")))

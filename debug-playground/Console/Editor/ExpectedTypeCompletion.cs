@@ -52,6 +52,13 @@ public class ExpectedTypeCompletion
         // TYPE:expected-enum-argument — type `Take(` then Ctrl+Space, and `status = ` then Ctrl+Space. EXPECT: `ExpectedStatus.*` first,
         // `status` right under them
 
+        // TYPE:expected-enum-assign — type `Console.BackgroundColor = ` (the space too) (0.1.106).
+        // EXPECT: the list opens by itself with `ConsoleColor.Black : 0`… first; Enter on `ConsoleColor.Black` writes
+        //   `Console.BackgroundColor = ConsoleColor.Black;` with the caret after `;`. `Take(` + Ctrl+Space + `ExpectedStatus.Paid` gives
+        //   `Take(ExpectedStatus.Paid);`, `if (status == ` + `ExpectedStatus.Paid` gives `if (status == ExpectedStatus.Paid)`;
+        //   `Console.ForegroundColor = ConsoleColor.` + `Black` gives the `;` too.
+        // EXPECT (not): a `;` when something follows on the line, or inside `new ExpectedOrder { Status = ` (an initializer: `,` is next)
+
     }
 
     // TYPE:expected-await — on the empty line in Plain type `string s = ` and Ctrl+Space. EXPECT: a row `await Highlights : Task<string>`;

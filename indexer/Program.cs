@@ -13,7 +13,9 @@ namespace DotNetSupport.Indexer;
 
 // The index of an assembly: what other code may name in it — its public and protected types with their generic parameters, bases,
 // interfaces and attributes, and every public and protected member of them with its signature — read from the metadata alone:
-// nothing is loaded, nothing of the assembly runs. One file per assembly, named by the MVID of the module: a package of NuGet and a
+// nothing is loaded, nothing of the assembly runs. Since format 4 also what the compiler imports but other code cannot reach, apart from
+// the rest (internal and private types, internal and private protected members, the accessibility of accessors, InternalsVisibleTo):
+// the errors of access (CS0122, CS0272) and the friend assemblies. One file per assembly, named by the MVID of the module: a package of NuGet and a
 // reference pack of the SDK never change, so neither does their index, and a project is a list of such files. The XML documentation
 // next to the assembly (`System.Console.xml`) goes into a second file, `<mvid>.dnxd`, read only when a documentation is asked for.
 // The format is fixed-size records behind one header, little-endian, read by the plugin through a mapped buffer
@@ -28,7 +30,7 @@ namespace DotNetSupport.Indexer;
 // the second process waits for the first and then finds the indexes made.
 public static class Program
 {
-    public const int FormatVersion = 3;
+    public const int FormatVersion = 4;
 
     public static int Main(string[] args)
     {
@@ -206,19 +208,60 @@ public enum MemberKind : byte
     Method = 1, ExtensionMethod = 2, Property = 3, Field = 4, Constant = 5, EnumMember = 6, Constructor = 7, Indexer = 8, Event = 9, Operator = 10,
 }
 
-/// <summary>Of a type. Protected: a nested type that only the derived types see (protected, protected internal).</summary>
+/// <summary>
+/// Of a type. Protected: a nested type that only the derived types see (protected, protected internal). Internal: it or a type around it is
+/// internal or private protected (seen by the friend assemblies only); Private: it or a type around it is private (seen by no other
+/// assembly). The last two are apart in the index (format 4): the compiler imports them to say CS0122, nobody else names them.
+/// </summary>
 [Flags]
 public enum TypeFlags
 {
     None = 0, Obsolete = 1, Hidden = 2, Abstract = 4, Sealed = 8, Static = 16, Record = 32, ReadOnly = 64, RefLike = 128, Protected = 256,
+    Internal = 512, Private = 1024,
 }
 
-/// <summary>Of a member. Getter and Setter: the accessors other code may call; ReadOnly: a readonly field, a readonly member of a struct.</summary>
+/// <summary>
+/// Of a member. Getter and Setter: the accessors other code may call; ReadOnly: a readonly field, a readonly member of a struct. The access:
+/// Protected for protected, protected internal and private protected; Internal for internal, protected internal and private protected;
+/// PrivateProtected for private protected. The accessibility of each accessor of a property (format 4) is an <see cref="Access"/> at
+/// <see cref="GetterShift"/> and <see cref="SetterShift"/>: an accessor the compiler does not import (a private one) is <see cref="Access.None"/>.
+/// </summary>
 [Flags]
 public enum MemberFlags
 {
     None = 0, Obsolete = 1, Hidden = 2, Static = 4, Protected = 8, Abstract = 16, Virtual = 32, Override = 64, Sealed = 128, ReadOnly = 256,
-    Getter = 512, Setter = 1024, InitOnly = 2048, Required = 4096,
+    Getter = 512, Setter = 1024, InitOnly = 2048, Required = 4096, Internal = 8192, PrivateProtected = 16384,
+}
+
+/// <summary>The accessibility of an accessor, 3 bits of <see cref="MemberFlags"/>.</summary>
+public enum Access { None = 0, Public = 1, Protected = 2, Internal = 3, ProtectedInternal = 4, PrivateProtected = 5 }
+
+public static class AccessBits
+{
+    public const int GetterShift = 15, SetterShift = 18;
+
+    public static Access Of(MethodAttributes attributes) => (attributes & MethodAttributes.MemberAccessMask) switch
+    {
+        MethodAttributes.Public => Access.Public,
+        MethodAttributes.Family => Access.Protected,
+        MethodAttributes.Assembly => Access.Internal,
+        MethodAttributes.FamORAssem => Access.ProtectedInternal,
+        MethodAttributes.FamANDAssem => Access.PrivateProtected,
+        _ => Access.None,
+    };
+
+    /// <summary>The flags of a member of that access: Protected, Internal, PrivateProtected.</summary>
+    public static MemberFlags Flags(Access access) => access switch
+    {
+        Access.Protected => MemberFlags.Protected,
+        Access.Internal => MemberFlags.Internal,
+        Access.ProtectedInternal => MemberFlags.Protected | MemberFlags.Internal,
+        Access.PrivateProtected => MemberFlags.Protected | MemberFlags.Internal | MemberFlags.PrivateProtected,
+        _ => MemberFlags.None,
+    };
+
+    /// <summary>Internal or private protected: only a friend assembly may reach it, it goes apart from what everyone sees.</summary>
+    public static bool IsFriendOnly(MemberFlags flags) => (flags & MemberFlags.Internal) != 0 && ((flags & MemberFlags.Protected) == 0 || (flags & MemberFlags.PrivateProtected) != 0);
 }
 
 [Flags]
@@ -280,6 +323,8 @@ public sealed class AssemblyData
     public string Name = "";
     public string Version = "";
     public readonly List<TypeEntry> Types = new();
+    /// <summary>The assemblies `[assembly: InternalsVisibleTo("Name, PublicKey=…")]` names: `Name`, or `Name,key` when a key is required.</summary>
+    public readonly List<string> InternalsVisibleTo = new();
 }
 
 /// <summary>The types other assemblies see and their members, from the metadata tables.</summary>
@@ -307,13 +352,28 @@ public sealed class MetadataScanner(MetadataReader reader)
             var assembly = reader.GetAssemblyDefinition();
             data.Name = reader.GetString(assembly.Name);
             data.Version = assembly.Version.ToString();
+            foreach (var handle in assembly.GetCustomAttributes())
+            {
+                var attribute = reader.GetCustomAttribute(handle);
+                if (AttributeType(attribute) != CompilerServices + ".InternalsVisibleToAttribute") continue;
+                try
+                {
+                    // `Name, PublicKey=…` makes a friend of the assembly signed with that key only: the key itself is not needed, that there is one is
+                    var parts = StringArgument(attribute).Split(',');
+                    var friend = parts[0].Trim() + (parts.Skip(1).Any(p => p.Trim().StartsWith("PublicKey", StringComparison.OrdinalIgnoreCase)) ? ",key" : "");
+                    if (parts[0].Trim().Length > 0 && !data.InternalsVisibleTo.Contains(friend)) data.InternalsVisibleTo.Add(friend);
+                }
+                catch (BadImageFormatException)
+                {
+                    // an attribute the metadata cannot decode names no friend
+                }
+            }
         }
         var entries = new Dictionary<TypeDefinitionHandle, TypeEntry>();
         foreach (var handle in reader.TypeDefinitions)
         {
             var type = reader.GetTypeDefinition(handle);
-            var protectedOnly = false;
-            if (!IsVisible(type, ref protectedOnly)) continue;
+            var visibility = VisibilityOf(type);
             var name = reader.GetString(type.Name);
             if (name.Contains('<')) continue;
             var custom = type.GetCustomAttributes();
@@ -322,7 +382,7 @@ public sealed class MetadataScanner(MetadataReader reader)
             while (outermost.IsNested) outermost = reader.GetTypeDefinition(outermost.GetDeclaringType());
             entry.Namespace = reader.GetString(outermost.Namespace);
             entry.Path = PathOf(type);
-            entry.Flags = TypeFlagsOf(type, custom, protectedOnly);
+            entry.Flags = TypeFlagsOf(type, custom, (visibility & TypeFlags.Protected) != 0) | (visibility & (TypeFlags.Internal | TypeFlags.Private));
             entries[handle] = entry;
             data.Types.Add(entry);
 
@@ -337,6 +397,8 @@ public sealed class MetadataScanner(MetadataReader reader)
                 entry.Interfaces.Add(TypeRefs.Encode(Decode(interfaceImplementation.Interface), Annotations.Of(reader, AttributeType, interfaceImplementation.GetCustomAttributes(), context)));
             }
 
+            // a private type is there for its name only: no other assembly reaches anything of it
+            if ((visibility & TypeFlags.Private) != 0) continue;
             AddMethods(entry, type, context);
             AddProperties(entry, type, context);
             AddEvents(entry, type, context);
@@ -361,7 +423,7 @@ public sealed class MetadataScanner(MetadataReader reader)
         {
             var method = reader.GetMethodDefinition(handle);
             var attributes = method.Attributes;
-            if (!IsVisible(attributes & MethodAttributes.MemberAccessMask)) continue;
+            if (AccessBits.Of(attributes) == Access.None) continue;
             var name = reader.GetString(method.Name);
             if (name.Contains('<')) continue;
             MemberKind kind;
@@ -577,16 +639,20 @@ public sealed class MetadataScanner(MetadataReader reader)
             var accessors = property.GetAccessors();
             var getter = accessors.Getter.IsNil ? (MethodDefinition?)null : reader.GetMethodDefinition(accessors.Getter);
             var setter = accessors.Setter.IsNil ? (MethodDefinition?)null : reader.GetMethodDefinition(accessors.Setter);
-            var getterVisible = getter != null && IsVisible(getter.Value.Attributes & MethodAttributes.MemberAccessMask);
-            var setterVisible = setter != null && IsVisible(setter.Value.Attributes & MethodAttributes.MemberAccessMask);
-            if (!getterVisible && !setterVisible) continue;
+            var getterAccess = getter == null ? Access.None : AccessBits.Of(getter.Value.Attributes);
+            var setterAccess = setter == null ? Access.None : AccessBits.Of(setter.Value.Attributes);
+            // a private accessor is not imported by the compiler: as if there were none
+            if (getterAccess == Access.None && setterAccess == Access.None) continue;
+            var getterVisible = IsVisible(getterAccess);
+            var setterVisible = IsVisible(setterAccess);
             var name = reader.GetString(property.Name);
             if (name.Contains('<')) continue;
-            var accessor = getterVisible ? getter!.Value : setter!.Value;
+            var accessor = getterVisible || !setterVisible && getterAccess != Access.None ? getter!.Value : setter!.Value;
             var custom = property.GetCustomAttributes();
-            var flags = MethodFlags(accessor.Attributes, custom, entry.Kind == TypeKind.Interface);
             // the wider of the two accessors says who sees the property
-            if (getterVisible && setterVisible && (!IsProtected(getter!.Value.Attributes) || !IsProtected(setter!.Value.Attributes))) flags &= ~MemberFlags.Protected;
+            var flags = MethodFlags(accessor.Attributes, custom, entry.Kind == TypeKind.Interface) & ~(MemberFlags.Protected | MemberFlags.Internal | MemberFlags.PrivateProtected);
+            flags |= AccessBits.Flags(Wider(getterAccess, setterAccess));
+            flags |= (MemberFlags)((int)getterAccess << AccessBits.GetterShift | (int)setterAccess << AccessBits.SetterShift);
             if (getterVisible) flags |= MemberFlags.Getter;
             if (setterVisible) flags |= MemberFlags.Setter;
             if (getter != null && Has(getter.Value.GetCustomAttributes(), CompilerServices, "IsReadOnlyAttribute")) flags |= MemberFlags.ReadOnly;
@@ -629,7 +695,7 @@ public sealed class MetadataScanner(MetadataReader reader)
             var adder = @event.GetAccessors().Adder;
             if (adder.IsNil) continue;
             var accessor = reader.GetMethodDefinition(adder);
-            if (!IsVisible(accessor.Attributes & MethodAttributes.MemberAccessMask)) continue;
+            if (AccessBits.Of(accessor.Attributes) == Access.None) continue;
             var name = reader.GetString(@event.Name);
             if (name.Contains('<')) continue;
             var custom = @event.GetCustomAttributes();
@@ -653,14 +719,14 @@ public sealed class MetadataScanner(MetadataReader reader)
                 if (entry.Kind == TypeKind.Enum) entry.Underlying = TypeRefs.Encode(field.DecodeSignature(_provider, null), Annotations.None);
                 continue;
             }
-            if (!IsVisible((MethodAttributes)(int)(attributes & FieldAttributes.FieldAccessMask))) continue;
+            if (AccessBits.Of((MethodAttributes)(int)(attributes & FieldAttributes.FieldAccessMask)) == Access.None) continue;
             var name = reader.GetString(field.Name);
             if (name.Contains('<')) continue;
             var custom = field.GetCustomAttributes();
             var kind = entry.Kind == TypeKind.Enum ? MemberKind.EnumMember : (attributes & FieldAttributes.Literal) != 0 ? MemberKind.Constant : MemberKind.Field;
             var flags = CommonFlags(custom);
             if ((attributes & FieldAttributes.Static) != 0) flags |= MemberFlags.Static;
-            if ((attributes & FieldAttributes.FieldAccessMask) is FieldAttributes.Family or FieldAttributes.FamORAssem) flags |= MemberFlags.Protected;
+            flags |= AccessBits.Flags(AccessBits.Of((MethodAttributes)(int)(attributes & FieldAttributes.FieldAccessMask)));
             if ((attributes & FieldAttributes.InitOnly) != 0) flags |= MemberFlags.ReadOnly;
             if (Has(custom, CompilerServices, "RequiredMemberAttribute")) flags |= MemberFlags.Required;
             var constant = field.GetDefaultValue();
@@ -712,7 +778,7 @@ public sealed class MetadataScanner(MetadataReader reader)
     {
         var flags = CommonFlags(custom);
         if ((attributes & MethodAttributes.Static) != 0) flags |= MemberFlags.Static;
-        if (IsProtected(attributes)) flags |= MemberFlags.Protected;
+        flags |= AccessBits.Flags(AccessBits.Of(attributes));
         if ((attributes & MethodAttributes.Abstract) != 0) flags |= MemberFlags.Abstract;
         else if ((attributes & MethodAttributes.Virtual) != 0 && (attributes & MethodAttributes.Final) == 0) flags |= MemberFlags.Virtual;
         if ((attributes & MethodAttributes.Virtual) != 0 && (attributes & MethodAttributes.NewSlot) == 0 && !ofInterface) flags |= MemberFlags.Override;
@@ -729,10 +795,20 @@ public sealed class MetadataScanner(MetadataReader reader)
         return flags;
     }
 
-    private static bool IsProtected(MethodAttributes attributes) => (attributes & MethodAttributes.MemberAccessMask) is MethodAttributes.Family or MethodAttributes.FamORAssem;
-
     /// <summary>Public, protected and protected internal: what code of another assembly may see; not private protected.</summary>
-    private static bool IsVisible(MethodAttributes access) => access is MethodAttributes.Public or MethodAttributes.Family or MethodAttributes.FamORAssem;
+    private static bool IsVisible(Access access) => access is Access.Public or Access.Protected or Access.ProtectedInternal;
+
+    /// <summary>The accessibility of a property of two accessors: the union of what each lets in.</summary>
+    private static Access Wider(Access a, Access b)
+    {
+        if (a == Access.None) return b;
+        if (b == Access.None || a == b) return a;
+        if (a == Access.Public || b == Access.Public) return Access.Public;
+        if (a == Access.PrivateProtected) return b;
+        if (b == Access.PrivateProtected) return a;
+        // protected and internal, or one of them and protected internal
+        return Access.ProtectedInternal;
+    }
 
     private TypeFlags TypeFlagsOf(TypeDefinition type, CustomAttributeHandleCollection custom, bool protectedOnly)
     {
@@ -761,15 +837,25 @@ public sealed class MetadataScanner(MetadataReader reader)
         return flags;
     }
 
-    /// <summary>Whether another assembly sees the type: public all the way out, or nested protected (then [protectedOnly]).</summary>
-    private bool IsVisible(TypeDefinition type, ref bool protectedOnly)
+    /// <summary>
+    /// Who in another assembly sees the type, all the way out: everyone (none), the derived types (Protected: nested protected), a friend
+    /// assembly (Internal: internal or private protected), nobody (Private).
+    /// </summary>
+    private TypeFlags VisibilityOf(TypeDefinition type)
     {
+        var flags = TypeFlags.None;
         while (true)
         {
             var visibility = type.Attributes & TypeAttributes.VisibilityMask;
-            if (!type.IsNested) return visibility == TypeAttributes.Public;
-            if (visibility is TypeAttributes.NestedFamily or TypeAttributes.NestedFamORAssem) protectedOnly = true;
-            else if (visibility != TypeAttributes.NestedPublic) return false;
+            if (!type.IsNested) return visibility == TypeAttributes.Public ? flags : flags | TypeFlags.Internal;
+            flags |= visibility switch
+            {
+                TypeAttributes.NestedPublic => TypeFlags.None,
+                TypeAttributes.NestedFamily or TypeAttributes.NestedFamORAssem => TypeFlags.Protected,
+                TypeAttributes.NestedAssembly => TypeFlags.Internal,
+                TypeAttributes.NestedFamANDAssem => TypeFlags.Internal | TypeFlags.Protected,
+                _ => TypeFlags.Private,
+            };
             type = reader.GetTypeDefinition(type.GetDeclaringType());
         }
     }
@@ -1211,15 +1297,20 @@ public static class Literals
 /// is followed by its items (0 is the empty list); -1 is no string, no reference, no type.
 /// <code>
 /// header    "DNIX", version, mvid (16 bytes), assembly name, assembly version,
-///           strings, types, members, parameters, generics, ints, names, extensions: for each its count and the offset of its table
+///           strings, types, members, parameters, generics, ints, names, extensions: for each its count and the offset of its table,
+///           all the types, all the members (format 4: the counts above are of what other assemblies see), the friend assemblies
+///           (list of InternalsVisibleTo: `Name`, `Name,key` when it needs a key)                              108 bytes
 /// strings   count + 1 offsets into the data that follows them, UTF-8
 /// types     namespace, path (`Dictionary`2+Enumerator`), kind | flags &lt;&lt; 8, declaring type, base (reference),
 ///           interfaces (list of references), first generic, generic count, first member, member count, nested (list of types),
-///           attributes (list of names), underlying type of an enum                                              52 bytes
-///           sorted by the namespace, then by the path: a type by its name and the types of a namespace by a binary search
+///           attributes (list of names), underlying type of an enum, first and count of the members only a friend sees,
+///           the nested types only a friend or no one sees (list)                                                 64 bytes
+///           the types other assemblies see sorted by the namespace, then by the path: a type by its name and the types of a
+///           namespace by a binary search; after them the internal and private ones (no members for a private one), sorted so too
 /// members   name, type, kind | flags &lt;&lt; 8, type (reference), first parameter, parameter count, first generic,
-///           generic count, attributes (list of names), value                                                     40 bytes
-///           the ones of a type together, in the order of the types
+///           generic count, attributes (list of names), value, nullability                                        44 bytes
+///           the ones of a type together, in the order of the types: first the members everyone sees of the types everyone sees,
+///           then the internal and private protected members, and all the members of the internal types
 /// params    type (reference), name, flags, default value                                                        16 bytes
 /// generics  name, flags, constraints (list of references)                                                       12 bytes
 /// names     name, target: a type, or a member with the highest bit set                                           8 bytes
@@ -1232,7 +1323,11 @@ public static class Literals
 public static class IndexWriter
 {
     public const int MemberBit = unchecked((int)0x80000000);
-    public const int HeaderSize = 4 + 4 + 16 + 4 + 4 + 8 * 8;
+    public const int HeaderSize = 4 + 4 + 16 + 4 + 4 + 8 * 8 + 3 * 4;
+    public const int TypeSize = 16 * 4;
+
+    /// <summary>A type other assemblies see (public, or nested protected): not only a friend, not nobody.</summary>
+    private static bool IsSeen(TypeEntry type) => (type.Flags & (TypeFlags.Internal | TypeFlags.Private)) == 0;
 
     public static void Write(string file, Guid mvid, AssemblyData data)
     {
@@ -1241,9 +1336,13 @@ public static class IndexWriter
         int Ref(string? value) => value == null ? -1 : strings.Id(value);
         int Refs(IEnumerable<string> values) => ints.Id(values.Select(strings.Id).ToList());
 
-        var types = data.Types
+        // what other assemblies see first, sorted; then what only a friend sees or no one, sorted on its own (format 4)
+        var types = data.Types.Where(IsSeen)
             .OrderBy(type => type.Namespace, StringComparer.Ordinal).ThenBy(type => type.Path, StringComparer.Ordinal)
             .ToList();
+        var seenTypes = types.Count;
+        types.AddRange(data.Types.Where(type => !IsSeen(type))
+            .OrderBy(type => type.Namespace, StringComparer.Ordinal).ThenBy(type => type.Path, StringComparer.Ordinal));
         var typeIndex = new Dictionary<TypeEntry, int>(ReferenceEqualityComparer.Instance);
         for (var i = 0; i < types.Count; i++) typeIndex[types[i]] = i;
 
@@ -1261,14 +1360,11 @@ public static class IndexWriter
             return first;
         }
 
-        for (var t = 0; t < types.Count; t++)
+        // the members everyone sees of the types everyone sees first: the rows below the count of the header; the rest after them
+        int AddMembers(int t, IEnumerable<MemberEntry> members, bool offered)
         {
-            var type = types[t];
-            var firstGeneric = Generics(type.Generics);
-            var firstMember = memberRows.Count;
-            var visibleType = (type.Flags & TypeFlags.Protected) == 0;
-            if (visibleType) names.Add((SimpleName(type.Path), t));
-            foreach (var member in type.Members)
+            var first = memberRows.Count;
+            foreach (var member in members)
             {
                 var row = memberRows.Count;
                 var firstParameter = parameterRows.Count;
@@ -1279,14 +1375,42 @@ public static class IndexWriter
                     memberGeneric, member.Generics.Count, Refs(member.Attributes), Ref(member.Value), Ref(member.Nullability),
                 ]);
                 // what import completion offers: a static member other code sees, called by the name of its type
-                if (visibleType && (member.Flags & (MemberFlags.Static | MemberFlags.Protected)) == MemberFlags.Static && member.Kind is not (MemberKind.Constructor or MemberKind.Operator))
+                if (offered && (member.Flags & (MemberFlags.Static | MemberFlags.Protected)) == MemberFlags.Static && member.Kind is not (MemberKind.Constructor or MemberKind.Operator))
                     names.Add((member.Name, row | MemberBit));
                 if (member.ExtensionKey != null) extensions.Add((member.ExtensionKey, row));
             }
+            return first;
+        }
+
+        var memberRanges = new (int First, int Count, int FirstFriend, int FriendCount)[types.Count];
+        for (var t = 0; t < seenTypes; t++)
+        {
+            var seen = types[t].Members.Where(member => !AccessBits.IsFriendOnly(member.Flags)).ToList();
+            memberRanges[t] = (AddMembers(t, seen, (types[t].Flags & TypeFlags.Protected) == 0), seen.Count, 0, 0);
+        }
+        var seenMembers = memberRows.Count;
+        for (var t = 0; t < types.Count; t++)
+        {
+            if (t >= seenTypes)
+            {
+                var own = types[t].Members.Where(member => !AccessBits.IsFriendOnly(member.Flags)).ToList();
+                memberRanges[t] = (AddMembers(t, own, false), own.Count, 0, 0);
+            }
+            var friend = types[t].Members.Where(member => AccessBits.IsFriendOnly(member.Flags)).ToList();
+            memberRanges[t] = memberRanges[t] with { FirstFriend = AddMembers(t, friend, false), FriendCount = friend.Count };
+        }
+
+        for (var t = 0; t < types.Count; t++)
+        {
+            var type = types[t];
+            var firstGeneric = Generics(type.Generics);
+            if (t < seenTypes && (type.Flags & TypeFlags.Protected) == 0) names.Add((SimpleName(type.Path), t));
+            var range = memberRanges[t];
             typeRows.Add([
                 strings.Id(type.Namespace), strings.Id(type.Path), (byte)type.Kind | ((int)type.Flags << 8), type.Declaring == null ? -1 : typeIndex[type.Declaring],
-                Ref(type.Base), Refs(type.Interfaces), firstGeneric, type.Generics.Count, firstMember, type.Members.Count,
-                ints.Id(type.Nested.Select(nested => typeIndex[nested]).OrderBy(index => index).ToList()), Refs(type.Attributes), Ref(type.Underlying),
+                Ref(type.Base), Refs(type.Interfaces), firstGeneric, type.Generics.Count, range.First, range.Count,
+                ints.Id(type.Nested.Where(IsSeen).Select(nested => typeIndex[nested]).OrderBy(index => index).ToList()), Refs(type.Attributes), Ref(type.Underlying),
+                range.FirstFriend, range.FriendCount, ints.Id(type.Nested.Where(nested => !IsSeen(nested)).Select(nested => typeIndex[nested]).OrderBy(index => index).ToList()),
             ]);
         }
         // a nested type is found by its own name: `Enumerator` of `Dictionary.Enumerator`
@@ -1300,11 +1424,12 @@ public static class IndexWriter
             .ToList();
         var assembly = strings.Id(data.Name);
         var version = strings.Id(data.Version);
+        var friends = Refs(data.InternalsVisibleTo);
 
         var stringTable = HeaderSize;
         var stringData = stringTable + (strings.Count + 1) * 4;
         var typeTable = Align(stringData + strings.Bytes);
-        var memberTable = typeTable + typeRows.Count * 52;
+        var memberTable = typeTable + typeRows.Count * TypeSize;
         var parameterTable = memberTable + memberRows.Count * 44;
         var genericTable = parameterTable + parameterRows.Count * 16;
         var intTable = genericTable + genericRows.Count * 12;
@@ -1320,13 +1445,16 @@ public static class IndexWriter
         writer.Write(version);
         foreach (var (count, offset) in new[]
                  {
-                     (strings.Count, stringTable), (typeRows.Count, typeTable), (memberRows.Count, memberTable), (parameterRows.Count, parameterTable),
+                     (strings.Count, stringTable), (seenTypes, typeTable), (seenMembers, memberTable), (parameterRows.Count, parameterTable),
                      (genericRows.Count, genericTable), (ints.Count, intTable), (sortedNames.Count, nameTable), (sortedExtensions.Count, extensionTable),
                  })
         {
             writer.Write(count);
             writer.Write(offset);
         }
+        writer.Write(typeRows.Count);
+        writer.Write(memberRows.Count);
+        writer.Write(friends);
         var position = 0;
         foreach (var bytes in strings.Encoded)
         {

@@ -3,6 +3,94 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.115
+
+- Errors of statements without the language server: a value returned from a void method, an `async Task` or a lambda, or a missing one
+  (CS0127, CS1997, CS0126, CS8030, CS8031), `return` in an iterator (CS1622), `await` outside an `async` method or lambda (CS4032, CS4033,
+  CS4034, with Alt+Enter «Make method async» on it), `await` inside `lock` (CS1996)
+- Switch and jump errors: duplicate `case` labels found by their constant values — enum members, constants, folded expressions (CS0152),
+  falling through or out of a case (CS0163, CS8070), `break` / `continue` outside a loop (CS0139), `goto` to a missing label or case (CS0159),
+  leaving a `finally` (CS0157)
+- Error messages name types with their nullable annotations, as the compiler does
+
+## 0.1.114
+
+- Override errors: no member to override (CS0115), a base member that is not virtual or is sealed (CS0506, CS0239), a changed access
+  modifier (CS0507, `protected internal` of libraries too) or return type (CS0508, CS1715) — against bases of the solution and of libraries
+- Abstract and body errors (CS0513, CS0500, CS0501), deriving from a sealed or static type, a record or a class among interfaces (CS0509,
+  CS0709, CS8864, CS8865, CS0527), `new` of an abstract type, interface or static class, target-typed `new()` too (CS0144, CS0712), a static
+  member through an instance (CS0176), instance members in field initializers (CS0236)
+- No more false «name does not exist» on a positional parameter passed to a record's base: `record Employee(string Name) : Person(Name)`
+
+## 0.1.113
+
+- Ambiguous calls (CS0121) and type arguments that cannot be inferred (CS0411), with generics, `params`, optional and `ref` parameters,
+  extension methods and library types, named in the order the compiler uses
+- Lambda errors: a wrong number of parameters (CS1593), a lambda where no delegate is expected (CS1660), mismatched parameter types or
+  `ref` / `out` / `in` (CS1661, CS1678, CS1676, CS1677), a block body that does not return on every path (CS1643) — in overloaded and generic
+  calls, `return`, property initializers and event `+=`
+- Bad arguments (CS1503) are reported against the same overload `dotnet build` picks: derived types first, library methods in metadata order
+- Errors on calls are no longer hidden by extension methods the file does not import (EF Core's `Like`, `Vector.Store`) or that cannot
+  take the receiver (`Queryable.Take` next to `Enumerable.Take` on a `List<int>`)
+
+## 0.1.112
+
+- Operators and casts as `dotnet build` reports them: an operator that cannot take its operands (CS0019, CS0023 — `decimal * double`,
+  `bool + int`, `!count`), an impossible cast (CS0030); silent wherever a user-defined operator or conversion may apply
+- Statement forms and implicit typing: `count + 1;` (CS0201), a type or method used as a value (CS0119), a method group assigned to a value
+  (CS0428), `var` with `null`, a void call, no initializer or an array initializer (CS0815, CS0818, CS0820), indexing what has no indexer
+  (CS0021), `this` without an instance (CS0026, CS0027)
+- Range indexing of spans (`span[1..]`) is typed as a span, not as its element
+
+## 0.1.111
+
+- Access errors across projects and libraries as `dotnet build` reports them: `InternalsVisibleTo` (MSBuild items and attributes, the
+  friend's public key, `AssemblyName`), internal and private types and protected members (CS0122, overloads and constructors too)
+- Read-only targets: properties and indexers without a reachable setter (CS0200, CS0272), getters (CS0154, CS0271), readonly and static
+  readonly fields (CS0191, CS0198), init-only properties (CS8852), something that is no variable (CS0131), readonly fields, properties and
+  indexers passed by `ref` / `out` (CS0192, CS0199, CS0206)
+- The index of assemblies (format 4) keeps internal and private types, internal members and the accessibility of accessors; the indexes are
+  rebuilt once
+
+## 0.1.110
+
+- `Use of unassigned local variable` (CS0165) and `Use of unassigned out parameter` (CS0269) with the compiler's flow rules: branches, loops,
+  `try` / `finally`, `&&` / `||`, `out` arguments, `is` patterns and lambdas; an `out` parameter left unassigned on a `return` or at the end
+  of the method (CS0177)
+
+## 0.1.109
+
+- Duplicate declarations: a local, local function or parameter declared twice (CS0128, CS0100), a local reusing a name of an enclosing scope
+  (CS0136), LINQ range variables (CS1930, CS1931), a local used before its declaration (CS0841, CS0844)
+- Duplicate members and types: the same name twice (CS0102), the same parameter types (CS0111), overloads differing only by `ref` / `out` /
+  `in` (CS0663), conversions (CS0557), partial methods (CS0756, CS0757), interface members implemented twice (CS8646), partial parts with
+  other type parameter names (CS0264), a type declared twice in a namespace — across files and folders, in the compile order of MSBuild (CS0101)
+
+## 0.1.108
+
+- Type arguments that break the constraints of a generic type or method (CS0311, CS0315, CS0452, CS0453, CS0310), written or inferred,
+  for types and methods of the solution and of libraries; the wrong number of type arguments (CS0305, CS0308)
+- Every compiler error of the plugin has a file in `debug-playground/Broken/Errors` with its lines marked `// ERROR CSxxxx`;
+  `tools/diag/check_errors.py` compares the marks with `dotnet build`, the plugin in the IDE and roslyn-language-server
+
+## 0.1.107
+
+- No need to type `=`: after `Console.BackgroundColor ` (a settable member and a space) the list opens by itself with
+  `= ConsoleColor.Black`… for an enum, or `= name`, `= dto.Name` for other values, and Enter writes the assignment with its `;`
+- Generic extension methods respect the constraints of their `this` type parameter: `AddEndpointFilter` (`where TBuilder : IEndpointConventionBuilder`)
+  is no longer offered after `day.`, and calling it on such a value is an error (CS1061)
+
+## 0.1.106
+
+- The completion list opens by itself after `= ` and `return ` where an enum is expected (`Console.BackgroundColor = `), as after `==` and `case`
+- An enum member chosen at the end of a line closes the statement: `Console.BackgroundColor = ConsoleColor.Black;`, `Take(Status.Paid);`,
+  `if (status == Status.Paid)` — also after `ConsoleColor.`; nothing is added when the line goes on or inside an initializer
+
+## 0.1.105
+
+- Ctrl+Click goes on inside decompiled code: the names of a decompiled type resolve against a project compiled against its assembly
+  (else the project with the most references), so a type or call in it opens the next decompiled type
+
 ## 0.1.104
 
 - Gray text no longer offers a variable name after a member of a type: `JsonSerializer.Serialize ` showed `serialize`, `Console.Out `

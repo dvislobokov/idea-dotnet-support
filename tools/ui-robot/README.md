@@ -229,6 +229,11 @@ configuration cache («cannot serialize Gradle script object references») — �
 вместе с точками останова и конфигурациями. Плагин в песочнице обновляется только перезапуском задачи. Лог песочницы —
 `.intellijPlatform/sandbox/idea-dotnet-support/IU-*/log_runIdeForUiTests/idea.log` (дописывается между запусками), логи адаптера — рядом в `dotnet-debugger/`.
 
+Ошибки компилятора по файлу на код (0.1.108–0.1.115): `tools/diag/check_errors.py ide debug-playground/Broken/Errors --host debug-playground/ShopApi`
+сверяет подсветку плагина с пометками `// ERROR CSxxxx`, с `--source roslyn` — подсветку сервера (включает его на время прогона и выключает), без
+`ide` — `roslyn` — с `dotnet build`. Файлы проверяются копиями внутри открытого проекта: файл вне проектов solution не проверяет ни плагин, ни сервер.
+Сервер в IDE выдаёт ещё и ошибки-следствия в файлах с ошибками объявлений (CS0229, CS0121, CS1729), которых нет у `dotnet build`: пометки — по `dotnet build`.
+
 ## Замеры редактора (`baseline.py`)
 
 Исходные замеры шага 0 `CSHARP_PSI_MIGRATION.md` (раздел «Исходные замеры»); тем же скриптом потом меряется путь `NATIVE`.

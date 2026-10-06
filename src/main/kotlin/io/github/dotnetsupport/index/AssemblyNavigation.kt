@@ -179,9 +179,12 @@ object AssemblyNavigation {
 
     /**
      * The assemblies to resolve the names of a metadata view against: the ones of a project that refers to its assembly, else the assembly
-     * alone. A hook for `CSharpSemanticEnvironment.assemblies` (a metadata file belongs to no project); null for any other file.
+     * alone; for a decompiled type the ones of a project compiled against its dll. A hook for `CSharpSemanticEnvironment.assemblies` (a
+     * metadata file belongs to no project); null for any other file.
      */
     fun assembliesOf(project: Project, file: VirtualFile?): AssemblyIndexSet? {
+        // a decompiled type: the names of its text (`List<T>`, `ArgumentNullException`) resolve, so Ctrl+Click goes on from it
+        if (file is io.github.dotnetsupport.decompiler.DecompiledFile) return AssemblyIndexService.getInstance(project).symbolsWithAssembly(java.io.File(file.key.assembly))
         val metadata = file as? AssemblyMetadataFile ?: return null
         return AssemblyIndexService.getInstance(project).symbolsWith(metadata.index) ?: AssemblyIndexSet(listOf(metadata.index))
     }

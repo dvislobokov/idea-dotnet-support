@@ -27,10 +27,6 @@ public sealed class ReportWorker(IServiceScopeFactory scopes, ILogger<ReportWork
         // TYPE:shop-dbset — type `db.`
         // EXPECT: Customers, Orders, OrderLines, Products, Outbox first (members of ShopDbContext), then DbContext's: SaveChangesAsync, Database, Set…
         // EXPECT: no CS1061 on `db.Orders` anywhere in this file.
-        db.OrderLines.Add(entity: new OrderLine()
-        {
-
-        })
         // TYPE:shop-lambda — type `db.Orders.Where(`
         // EXPECT: the list opens by itself with `order => ` / `o => ` on top (a lambda place); a space after `o` does not replace it.
 

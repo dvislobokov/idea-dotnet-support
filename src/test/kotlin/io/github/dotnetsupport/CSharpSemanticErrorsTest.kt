@@ -164,6 +164,24 @@ class CSharpSemanticErrorsTest : BasePlatformTestCase() {
         assertEmpty(codes(wrap("missing();")))
     }
 
+    fun testAGenericExtensionOfAReceiverOutsideItsConstraint() {
+        // `day.AddEndpointFilter(...)`: `where TBuilder : IEndpointConventionBuilder` — `Twice<T>(this T) where T : Shape` the same way
+        val text = """
+            using System;
+            using Fixture;
+
+            class C
+            {
+                void M(Circle circle, DayOfWeek day)
+                {
+                    circle.Twice();
+                    day.Twice();
+                }
+            }
+        """
+        assertEquals(listOf("Twice CS1061"), codes(text))
+    }
+
     fun testNothingWhenTheProjectGeneratesSources() {
         CSharpSemanticEnvironment.setGeneratesForTests(true)
         assertEquals(listOf("Nope CS1061"), codes(wrap("missing(); calc.Nope();")))
@@ -176,7 +194,8 @@ class CSharpSemanticErrorsTest : BasePlatformTestCase() {
         """
         assertEmpty(codes(wrap("", members = members)))
         CSharpSemanticEnvironment.setGeneratedKnownForTests(true)
-        assertEquals(listOf("Generated CS0103", "Other CS1061"), codes(wrap("", members = members)))
+        // the types of the first file are declared again by the second: CS0101 there, as csc would say
+        assertEquals(listOf("Generated CS0103", "Other CS1061"), codes(wrap("", members = members)).filterNot { it.endsWith("CS0101") })
     }
 
     /** The part a generator wrote is in another file, with `global::` names as generators write them (the JSON context of the playground). */

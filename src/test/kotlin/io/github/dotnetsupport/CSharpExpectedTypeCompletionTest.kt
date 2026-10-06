@@ -199,6 +199,32 @@ class CSharpExpectedTypeCompletionTest : BasePlatformTestCase() {
         assertTrue(text, text.contains("if (status == OrderStatus.Paid) { }"))
     }
 
+    fun testAnEnumMemberChosenAtTheEndOfALineClosesTheStatement() {
+        // `Console.BackgroundColor = ConsoleColor.Black;`: the `;` (and the `)` left open) come with the member, as typing on would
+        assertTrue(choose(code("status = <caret>"), "Paid").contains("status = OrderStatus.Paid;\n"))
+        assertTrue(choose(code("Console.BackgroundColor = <caret>"), "Black").contains("Console.BackgroundColor = ConsoleColor.Black;\n"))
+        assertTrue(choose(code("Take(<caret>"), "Paid").contains("Take(OrderStatus.Paid);\n"))
+        assertTrue(choose(code("if (status == <caret>"), "Paid").contains("if (status == OrderStatus.Paid)\n"))
+        assertTrue("after `ConsoleColor.`", choose(code("Console.ForegroundColor = ConsoleColor.<caret>"), "Black").contains("Console.ForegroundColor = ConsoleColor.Black;\n"))
+        assertTrue("something follows on the line", choose(code("status = <caret> // later"), "Paid").contains("status = OrderStatus.Paid // later"))
+        assertTrue("an initializer", choose(code("var o = new Order\n{\n    Status = <caret>\n};"), "Paid").contains("Status = OrderStatus.Paid\n"))
+    }
+
+    fun testTheListOpensAfterAnAssignmentOfAnEnum() {
+        myFixture.configureByText("Popup${counter++}.cs", code("Console.BackgroundColor = IntellijIdeaRulezzz "))
+        assertTrue(NativeCSharpExpectedCompletion.opensAfterSpace(myFixture.file.findElementAt(myFixture.file.text.indexOf("IntellijIdeaRulezzz"))!!))
+        myFixture.configureByText("Popup${counter++}.cs", code("number = IntellijIdeaRulezzz "))
+        assertFalse("no enum expected", NativeCSharpExpectedCompletion.opensAfterSpace(myFixture.file.findElementAt(myFixture.file.text.indexOf("IntellijIdeaRulezzz"))!!))
+    }
+
+    fun testAGenericExtensionNeedsItsConstraint() {
+        // `AddEndpointFilter<TBuilder>(this TBuilder) where TBuilder : IEndpointConventionBuilder` was a method of `DayOfWeek`
+        fun members(receiver: String) = native("using System;\nusing Fixture;\nclass C { void M(Circle circle, DayOfWeek day, string text) { $receiver.<caret> } }")
+        assertTrue("`where T : Shape` of a circle", "Twice" in members("circle"))
+        assertFalse("not of an enum", "Twice" in members("day"))
+        assertFalse("not of a string", "Twice" in members("text"))
+    }
+
     fun testNoEnumRowsWhereNothingIsExpected() {
         val names = texts(code("<caret>"))
         assertFalse(names.toString(), names.any { it.startsWith("OrderStatus.") })

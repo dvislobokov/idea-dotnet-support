@@ -915,3 +915,9 @@ enum, `ListOrders` — record, generic `Results<Ok<OrderView>, NotFound>`), па
 - [ ] `TYPE:ghost-assign-value`: `member.Email = ` — серое `dto.Email;`, `member.Name = ` — `name;`
 - [ ] `TYPE:ghost-assign-list`: `member.Email = ` + Ctrl+Space — строки `dto.Email`, `dto.Name` вверху списка
 - [ ] `TYPE:ghost-member-of-type` (0.1.104): `JsonSerializer.Serialize ` / `Console.Out ` — без серого `serialize` / `out`
+
+### Навигация в декомпилированном коде (0.1.105) — `Console/Editor/DecompiledNavigation.cs`
+- [ ] `TYPE:decompiled-ctrl-click`: Ctrl+Click по `StringBuilder`, внутри — по `ArgumentOutOfRangeException`, `Span<T>`, `Math.Max`: открывается следующий декомпилированный тип
+- [ ] `TYPE:expected-enum-assign` (0.1.106): `Console.BackgroundColor = ` — список сам, Enter на `ConsoleColor.Black` пишет `ConsoleColor.Black;`
+- [ ] `TYPE:enum-*` в `ShopApi/Playground/EnumCompletion.cs` (0.1.106–0.1.107): enum после `= `, `==`, `(`, `return `, и без `=` — `Console.ForegroundColor ` → `= ConsoleColor.Black;`
+- [ ] `Broken/Errors/CSxxxx.cs` (0.1.108–0.1.115): по файлу на ошибку компилятора — подчёркнуты ровно строки с `// ERROR CSxxxx`, остальные чистые; робот: `tools/diag/check_errors.py ide debug-playground/Broken/Errors`

@@ -117,6 +117,17 @@ class AssemblyIndexService(private val project: Project) : Disposable {
         byProject.entries.firstOrNull { (_, indexes) -> indexes.any { it === index } }?.let { (path, _) -> symbols.computeIfAbsent(path) { AssemblyIndexSet(byProject[path].orEmpty()) } }
 
     /**
+     * The indexes of a project that is compiled against the dll [assembly] (a decompiled type of it: its names resolve as that project
+     * sees them), else of the project with the most of them; null before the indexer has run.
+     */
+    fun symbolsWithAssembly(assembly: File): AssemblyIndexSet? {
+        val path = assembly.path
+        val owner = byProject.entries.firstOrNull { (_, indexes) -> indexes.any { assemblyFiles[it.mvid]?.path.equals(path, ignoreCase = true) } }
+            ?: byProject.entries.maxByOrNull { it.value.size } ?: return null
+        return symbols.computeIfAbsent(owner.key) { AssemblyIndexSet(byProject[owner.key].orEmpty()) }
+    }
+
+    /**
      * Whether every assembly the project of [projectFile] is compiled against is indexed (the outputs of referenced projects aside: their
      * sources are in the solution). False until the indexer has run, and when an assembly could not be indexed.
      */
@@ -128,8 +139,11 @@ class AssemblyIndexService(private val project: Project) : Disposable {
     /** The indexes of the project together, for a resolver: types by name, members with the inherited ones, extension methods, docs. */
     fun symbols(projectFile: VirtualFile): AssemblyIndexSet {
         val indexes = indexes(projectFile)
-        symbols[projectFile.path]?.takeIf { it.indexes === indexes }?.let { return it }
-        return AssemblyIndexSet(indexes).also { symbols[projectFile.path] = it }
+        // the assembly the project compiles to: the libraries whose InternalsVisibleTo name it show it their internals
+        val options = CompilationModel.getInstance(project).options(projectFile)
+        val assemblyName = options.assemblyName ?: projectFile.nameWithoutExtension
+        symbols[projectFile.path]?.takeIf { it.indexes === indexes && it.assemblyName == assemblyName && it.signed == options.signAssembly }?.let { return it }
+        return AssemblyIndexSet(indexes, assemblyName, options.signAssembly).also { symbols[projectFile.path] = it }
     }
 
     init {

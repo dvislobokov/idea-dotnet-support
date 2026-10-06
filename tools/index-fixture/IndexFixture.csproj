@@ -17,4 +17,8 @@
     <DebugType>none</DebugType>
     <PathMap>$(MSBuildProjectDirectory)=/fixture</PathMap>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- the assembly of the errors of access is built on its own -->
+    <Compile Remove="access/**" />
+  </ItemGroup>
 </Project>

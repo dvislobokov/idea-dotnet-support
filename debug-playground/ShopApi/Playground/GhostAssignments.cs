@@ -7,17 +7,6 @@ public static class GhostAssignments
 {
     public static Member Update(MemberDto dto, bool isAdmin, string name)
     {
-        var member = new Member(){
-            Name = name,
-            Email = dto.Email,
-            Age = ,
-            Admin = isAdmin
-        };
-        member.Name = dto.Name;
-        member.Admin = isAdmin;
-
-        member.Name = name;
-        member.Admin = isAdmin;u
         // TYPE:ghost-assign-selected — type `member.Ad` and let the list open (or Ctrl+Space).
         // EXPECT: with `Admin` selected the gray text is `min = isAdmin;`; Tab writes `member.Admin = isAdmin;`.
         // EXPECT (not): `min admin` (a name as after a type) — `member.Admin` is a member of a value, not a type.
@@ -29,7 +18,7 @@ public static class GhostAssignments
         // TYPE:ghost-assign-list — type `member.Email = ` and press Ctrl+Space.
         // EXPECT: the rows `dto.Email` (gray `value` at the right) and `dto.Name` near the top, before the rest of the list; Enter writes the path.
 
-        return member;
+        return null;
     }
 
     // TYPE:ghost-member-of-type — on the empty line in the body type `System.Text.Json.JsonSerializer.Serialize ` (with the space), then
@@ -38,6 +27,5 @@ public static class GhostAssignments
     //   `Shop.Api.Playground.MemberDto ` still gives gray `memberDto`.
     public static void MemberOfAType()
     {
-
     }
 }

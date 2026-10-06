@@ -1,0 +1,21 @@
+12:56-57 CS1678: Parameter 1 is declared as type 'string' but should be 'int'
+12:59-61 CS1661: Cannot convert lambda expression to type 'Func<int, int>' because the parameter types do not match the delegate parameter types
+18:47-48 CS1678: Parameter 1 is declared as type 'string' but should be 'int'
+18:50-52 CS1661: Cannot convert lambda expression to type 'Func<int, int>' because the parameter types do not match the delegate parameter types
+23:40-41 CS1678: Parameter 1 is declared as type 'string' but should be 'int'
+23:43-45 CS1661: Cannot convert lambda expression to type 'Func<int, int>' because the parameter types do not match the delegate parameter types
+25:45-46 CS1678: Parameter 1 is declared as type 'object' but should be 'DebugPlayground.Broken.Errors.CS1661.Customer'
+25:48-50 CS1661: Cannot convert lambda expression to type 'Func<Customer, int>' because the parameter types do not match the delegate parameter types
+27:46-51 CS1678: Parameter 2 is declared as type 'long' but should be 'int'
+27:53-55 CS1661: Cannot convert lambda expression to type 'Measure' because the parameter types do not match the delegate parameter types
+29:21-22 CS1678: Parameter 1 is declared as type 'long' but should be 'int'
+29:24-26 CS1661: Cannot convert lambda expression to type 'Func<int, int>' because the parameter types do not match the delegate parameter types
+31:21-22 CS1678: Parameter 1 is declared as type 'long' but should be 'string'
+31:24-26 CS1661: Cannot convert lambda expression to type 'Func<string, int>' because the parameter types do not match the delegate parameter types
+33:30-34 CS1678: Parameter 1 is declared as type 'long' but should be 'int'
+33:45-53 CS1678: Parameter 2 is declared as type 'ref long' but should be 'ref int'
+33:55-57 CS1661: Cannot convert lambda expression to type 'Advance' because the parameter types do not match the delegate parameter types
+35:9-37 CS1661: Cannot convert lambda expression to type 'Action<int>' because the parameter types do not match the delegate parameter types
+35:28-29 CS1678: Parameter 1 is declared as type 'string' but should be 'int'
+37:36-44 CS1661: Cannot convert anonymous method to type 'Func<int, int>' because the parameter types do not match the delegate parameter types
+37:53-54 CS1678: Parameter 1 is declared as type 'string' but should be 'int'

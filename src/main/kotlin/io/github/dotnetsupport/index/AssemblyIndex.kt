@@ -39,9 +39,19 @@ class IndexedTypeParameter(val name: String, private val flags: Int, val constra
     override fun toString(): String = listOfNotNull("out".takeIf { isCovariant }, "in".takeIf { isContravariant }, name).joinToString(" ")
 }
 
+/** Who may call an accessor of a property of an assembly (format 4); [NONE]: there is none the compiler imports (a private one). */
+enum class IndexedAccess {
+    NONE, PUBLIC, PROTECTED, INTERNAL, PROTECTED_INTERNAL, PRIVATE_PROTECTED;
+
+    companion object {
+        fun of(code: Int): IndexedAccess = entries.getOrElse(code) { NONE }
+    }
+}
+
 /**
  * A type of an indexed assembly: public, or nested protected ([isProtected]). Read from the index when a property is asked for;
- * two objects of the same row are equal.
+ * two objects of the same row are equal. Since format 4 also an internal ([isInternal]) or private ([isPrivate]) one, kept apart: the
+ * lookups by name do not find them ([AssemblyIndex.findType]), the compiler's errors of access do ([AssemblyIndex.findHiddenType]).
  */
 class IndexedType internal constructor(val index: AssemblyIndex, val row: Int) {
     val namespace: String = index.string(index.typeInt(row, 0))
@@ -77,6 +87,12 @@ class IndexedType internal constructor(val index: AssemblyIndex, val row: Int) {
     val isRefLike: Boolean get() = flags and 128 != 0
     /** Nested protected: seen by the types derived from the one around it only. */
     val isProtected: Boolean get() = flags and 256 != 0
+    /** It or a type around it is internal or private protected: a friend assembly (InternalsVisibleTo) sees it. */
+    val isInternal: Boolean get() = flags and 512 != 0
+    /** It or a type around it is private: no other assembly sees it; only its name and kind are in the index. */
+    val isPrivate: Boolean get() = flags and 1024 != 0
+    /** Other assemblies see it (public, or nested protected): not [isInternal] nor [isPrivate]. */
+    val isSeen: Boolean get() = row < index.typeCount
 
     val declaringType: IndexedType? get() = index.typeInt(row, 3).takeIf { it >= 0 }?.let(index::type)
     /** Of a class; null for `object`, an interface, a struct (its base is `System.ValueType` and says nothing). */
@@ -85,6 +101,10 @@ class IndexedType internal constructor(val index: AssemblyIndex, val row: Int) {
     val typeParameters: List<IndexedTypeParameter> get() = index.typeParameters(index.typeInt(row, 6), arity)
     val members: List<IndexedMember> get() = List(index.typeInt(row, 9)) { index.member(index.typeInt(row, 8) + it) }
     val nestedTypes: List<IndexedType> get() = index.list(index.typeInt(row, 10)).map(index::type)
+    /** The internal and private protected members (and the protected ones of an internal type): a friend assembly sees them. */
+    val friendMembers: List<IndexedMember> get() = List(index.typeInt(row, 14)) { index.member(index.typeInt(row, 13) + it) }
+    /** The nested types other assemblies do not see: internal, private protected, private. */
+    val hiddenNestedTypes: List<IndexedType> get() = index.list(index.typeInt(row, 15)).map(index::type)
     /** The full names of its attributes but the ones the compiler writes for itself (`[Nullable]`, `[IsReadOnly]`…): `System.ObsoleteAttribute`. */
     val attributes: List<String> get() = index.list(index.typeInt(row, 11)).map(index::string)
     val enumUnderlyingType: IndexedTypeRef? get() = index.ref(index.typeInt(row, 12))
@@ -150,6 +170,16 @@ class IndexedMember internal constructor(private val index: AssemblyIndex, val r
     val hasSetter: Boolean get() = flags and 1024 != 0
     val isInitOnly: Boolean get() = flags and 2048 != 0
     val isRequired: Boolean get() = flags and 4096 != 0
+    /** Internal, protected internal or private protected (with [isProtected]: protected internal, but for [isPrivateProtected]). */
+    val isInternal: Boolean get() = flags and 8192 != 0
+    val isPrivateProtected: Boolean get() = flags and 16384 != 0
+    /** Of an [isProtected] one: `protected internal` rather than `protected` (an override of it from another assembly is `protected`: CS0507). */
+    val isProtectedInternal: Boolean get() = isProtected && isInternal && !isPrivateProtected
+    /** Internal or private protected: only a friend assembly (InternalsVisibleTo) may reach it; apart from the members of [IndexedType.members]. */
+    val isFriendOnly: Boolean get() = isInternal && (!isProtected || isPrivateProtected)
+    /** Of a property or an indexer: who may call its getter and its setter (format 4); [IndexedAccess.NONE] for none the compiler imports. */
+    val getterAccess: IndexedAccess get() = IndexedAccess.of(flags ushr 15 and 7)
+    val setterAccess: IndexedAccess get() = IndexedAccess.of(flags ushr 18 and 7)
 
     /** What a method returns (`void` too); the type of a property, an indexer, a field, a constant, an event. */
     val typeRef: IndexedTypeRef get() = index.ref(index.memberInt(row, 3))!!
@@ -242,6 +272,9 @@ class AssemblyIndex private constructor(private val buffer: ByteBuffer, docsFile
     private val nameTable = buffer.getInt(84)
     val extensionCount: Int = buffer.getInt(88)
     private val extensionTable = buffer.getInt(92)
+    /** All the types and members, the ones other assemblies do not see among them (format 4); [typeCount] and [memberCount] are of the seen ones. */
+    val allTypeCount: Int = buffer.getInt(96)
+    val allMemberCount: Int = buffer.getInt(100)
     private val stringData = stringTable + (stringCount + 1) * 4
     private val strings = arrayOfNulls<String>(stringCount)
     private val refs = arrayOfNulls<IndexedTypeRef>(stringCount)
@@ -257,17 +290,23 @@ class AssemblyIndex private constructor(private val buffer: ByteBuffer, docsFile
         assemblyVersion = string(buffer.getInt(28))
     }
 
+    /**
+     * The assemblies its `[assembly: InternalsVisibleTo]` names: `Name`, or `Name,key` when the attribute has a public key (then only an
+     * assembly signed with it is a friend). They see its internal types and members.
+     */
+    val internalsVisibleTo: List<String> by lazy { list(buffer.getInt(104)).map(::string) }
+
     fun type(index: Int): IndexedType {
-        require(index in 0 until typeCount) { "type $index of $typeCount" }
+        require(index in 0 until allTypeCount) { "type $index of $allTypeCount" }
         return IndexedType(this, index)
     }
 
     fun member(index: Int): IndexedMember {
-        require(index in 0 until memberCount) { "member $index of $memberCount" }
+        require(index in 0 until allMemberCount) { "member $index of $allMemberCount" }
         return IndexedMember(this, index, type(memberInt(index, 1)))
     }
 
-    /** Every type, sorted by the namespace, then by the name. */
+    /** Every type other assemblies see, sorted by the namespace, then by the name. */
     val allTypes: List<IndexedType> get() = List(typeCount) { type(it) }
 
     /** Types whose name begins with [prefix], whatever the case of the letters; a nested type by its own name. Not the protected ones. */
@@ -283,9 +322,19 @@ class AssemblyIndex private constructor(private val buffer: ByteBuffer, docsFile
         return if (dot < 0) findType("", fullName) else findType(fullName.substring(0, dot), fullName.substring(dot + 1))
     }
 
-    fun findType(namespace: String, path: String): IndexedType? {
-        var low = 0
-        var high = typeCount
+    fun findType(namespace: String, path: String): IndexedType? = findType(namespace, path, 0, typeCount)
+
+    /** An internal or private type (format 4): what other assemblies do not see; [findType] does not find it. */
+    fun findHiddenType(namespace: String, path: String): IndexedType? = findType(namespace, path, typeCount, allTypeCount)
+
+    fun findHiddenType(fullName: String): IndexedType? {
+        val dot = fullName.substringBefore('+').lastIndexOf('.')
+        return if (dot < 0) findHiddenType("", fullName) else findHiddenType(fullName.substring(0, dot), fullName.substring(dot + 1))
+    }
+
+    private fun findType(namespace: String, path: String, from: Int, to: Int): IndexedType? {
+        var low = from
+        var high = to
         while (low < high) {
             val middle = (low + high) ushr 1
             val order = compareType(middle, namespace, path)
@@ -298,11 +347,12 @@ class AssemblyIndex private constructor(private val buffer: ByteBuffer, docsFile
         return null
     }
 
-    /** The types of [namespace] (not of the namespaces in it); the nested ones too when [nested]. */
-    fun typesIn(namespace: String, nested: Boolean = false): List<IndexedType> {
-        var at = firstOfNamespace(namespace)
+    /** The types of [namespace] (not of the namespaces in it); the nested ones too when [nested]. [hidden]: the internal and private ones instead. */
+    fun typesIn(namespace: String, nested: Boolean = false, hidden: Boolean = false): List<IndexedType> {
+        val end = if (hidden) allTypeCount else typeCount
+        var at = firstOfNamespace(namespace, if (hidden) typeCount else 0, end)
         val found = ArrayList<IndexedType>()
-        while (at < typeCount && string(typeInt(at, 0)) == namespace) {
+        while (at < end && string(typeInt(at, 0)) == namespace) {
             if (nested || typeInt(at, 3) < 0) found += type(at)
             at++
         }
@@ -312,11 +362,14 @@ class AssemblyIndex private constructor(private val buffer: ByteBuffer, docsFile
     /** The namespaces that have a type. */
     val namespaces: Set<String> by lazy { (0 until typeCount).mapTo(LinkedHashSet()) { string(typeInt(it, 0)) } }
 
+    /** The namespaces that have only internal or private types: C# knows them all the same (`using` one is no error). */
+    val hiddenNamespaces: Set<String> by lazy { (typeCount until allTypeCount).mapTo(LinkedHashSet()) { string(typeInt(it, 0)) } - namespaces }
+
     /**
      * Extension methods by what their `this` parameter is: a type by its metadata name (`System.Collections.Generic.IEnumerable`1`,
      * not its instance), `[]` for an array, `!` for a type parameter of the method (`this T value`, whatever its constraints).
      */
-    fun extensions(key: String): List<IndexedMember> {
+    fun extensions(key: String, hidden: Boolean = false): List<IndexedMember> {
         var low = 0
         var high = extensionCount
         while (low < high) {
@@ -325,7 +378,9 @@ class AssemblyIndex private constructor(private val buffer: ByteBuffer, docsFile
         }
         val found = ArrayList<IndexedMember>()
         while (low < extensionCount && string(buffer.getInt(extensionTable + low * EXTENSION_SIZE)) == key) {
-            found += member(buffer.getInt(extensionTable + low * EXTENSION_SIZE + 4))
+            val row = buffer.getInt(extensionTable + low * EXTENSION_SIZE + 4)
+            // the extension methods only a friend sees are among them (format 4): asked for by [AssemblyIndexSet] for a friend only
+            if (hidden || row < memberCount) found += member(row)
             low++
         }
         return found
@@ -334,9 +389,9 @@ class AssemblyIndex private constructor(private val buffer: ByteBuffer, docsFile
     /** The documentation of a member or a type by its ID ([IndexedMember.docId], [IndexedType.docId]). */
     fun doc(docId: String): IndexedDoc? = docs?.doc(docId)
 
-    private fun firstOfNamespace(namespace: String): Int {
-        var low = 0
-        var high = typeCount
+    private fun firstOfNamespace(namespace: String, from: Int, to: Int): Int {
+        var low = from
+        var high = to
         while (low < high) {
             val middle = (low + high) ushr 1
             if (string(typeInt(middle, 0)) < namespace) low = middle + 1 else high = middle
@@ -415,12 +470,12 @@ class AssemblyIndex private constructor(private val buffer: ByteBuffer, docsFile
     }
 
     companion object {
-        const val FORMAT_VERSION = 3
+        const val FORMAT_VERSION = 4
         const val EXTENSION = "dnix"
         const val DEFAULT_LIMIT = 200
         private const val MAGIC = 0x58494E44 // "DNIX", little-endian
-        private const val HEADER_SIZE = 96
-        private const val TYPE_SIZE = 52
+        private const val HEADER_SIZE = 108
+        private const val TYPE_SIZE = 64
         private const val MEMBER_SIZE = 44
         private const val PARAMETER_SIZE = 16
         private const val GENERIC_SIZE = 12
@@ -443,7 +498,8 @@ class AssemblyIndex private constructor(private val buffer: ByteBuffer, docsFile
             // a file cut short by a full disk or a killed process: every table has to be inside
             val limit = buffer.limit().toLong()
             for ((at, size) in listOf(32 to 4, 40 to TYPE_SIZE, 48 to MEMBER_SIZE, 56 to PARAMETER_SIZE, 64 to GENERIC_SIZE, 72 to 4, 80 to NAME_SIZE, 88 to EXTENSION_SIZE)) {
-                val rows = buffer.getInt(at).toLong()
+                // the tables of types and members hold the hidden rows after the counted ones
+                val rows = when (at) { 40 -> buffer.getInt(96); 48 -> buffer.getInt(100); else -> buffer.getInt(at) }.toLong()
                 val from = buffer.getInt(at + 4).toLong()
                 require(rows >= 0 && from >= HEADER_SIZE && from + rows * size <= limit) { "The index is cut short" }
             }

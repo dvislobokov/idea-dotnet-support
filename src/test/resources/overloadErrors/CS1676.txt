@@ -1,0 +1,7 @@
+15:26-31 CS1676: Parameter 1 must be declared with the 'ref' keyword
+17:32-37 CS1676: Parameter 1 must be declared with the 'ref' keyword
+18:42-47 CS1676: Parameter 2 must be declared with the 'out' keyword
+20:47-52 CS1676: Parameter 2 must be declared with the 'out' keyword
+21:26-31 CS1676: Parameter 1 must be declared with the 'in' keyword
+23:33-38 CS1676: Parameter 1 must be declared with the 'in' keyword
+24:15-20 CS1676: Parameter 1 must be declared with the 'ref' keyword

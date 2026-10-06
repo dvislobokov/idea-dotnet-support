@@ -107,7 +107,8 @@ class CompilationOptionsTest : BasePlatformTestCase() {
             val expected = evaluated(answer, project, configuration)
             val actual = CompilationOptionsReader.read(CompilationOptionsReader.Input("C:/src/$project", projectText, props, configuration, selectedFramework = framework))
             assertEquals(CompilationOptions.Source.STATIC, actual.source)
-            assertEquals(answer, expected.copy(source = actual.source, compileFiles = null), actual.copy(compileFiles = null))
+            // AssemblyName: the answers were captured before it was asked for; the static reading names the project file
+            assertEquals(answer, expected.copy(source = actual.source, compileFiles = null), actual.copy(compileFiles = null, assemblyName = null))
             if (actual.compileFiles != null) assertEquals(answer, expected.compileFiles, actual.compileFiles)
         }
         check("net10-debug.json", "Net10/Net10.csproj", "Debug")

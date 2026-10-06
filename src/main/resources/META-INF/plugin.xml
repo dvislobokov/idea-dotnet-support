@@ -370,6 +370,7 @@
         <!-- 0.1.101: the file's name after `class `; one `class` row (the keyword), not the keyword and the live template -->
         <completion.contributor language="C#" order="first, after dotnetCaseInsensitive, before dotnetNativeCompletion" implementationClass="io.github.dotnetsupport.lang.NativeCSharpTypeNameCompletion"/>
         <completion.contributor language="C#" order="first, after dotnetCaseInsensitive, before dotnetNativeCompletion" implementationClass="io.github.dotnetsupport.lang.NativeCSharpValueCompletion"/>
+        <completion.contributor language="C#" order="first, after dotnetCaseInsensitive, before dotnetNativeCompletion" implementationClass="io.github.dotnetsupport.lang.NativeCSharpAssignmentCompletion"/>
         <completion.contributor language="C#" order="first, before liveTemplates, before dotnetCaseInsensitive" implementationClass="io.github.dotnetsupport.lang.CSharpTemplateKeywordDedupe"/>
         <registryKey key="dotnet.debugger.adapter.log" defaultValue="true"
                      description="Write the log of the dotnet-debugger adapter for every debug session (menu .NET | Show Debugger Logs)"/>

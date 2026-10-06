@@ -52,22 +52,33 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
     private val session = resolver.session
     private val found = ArrayList<CSharpSemanticProblem>()
     private val known = IdentityHashMap<Any, Boolean>()
-    private val generated: Boolean by lazy { CSharpSemanticEnvironment.mayGenerateTypes(file) }
+    internal val generated: Boolean by lazy { CSharpSemanticEnvironment.mayGenerateTypes(file) }
     /** The source generators of the project have run and are fresh (D4): a partial type is then complete, its generated parts indexed. */
     private val generatorsKnown: Boolean by lazy { !generated && CSharpSemanticEnvironment.generatedKnown(file) }
     private val broken: List<TextRange> by lazy { brokenRanges() }
 
     private val warnings = CSharpSemanticWarnings(resolver) { found += it }
+    private val generics = CSharpGenericChecks(this, resolver) { found += it }
+    private val access = CSharpAccessChecks(resolver, this) { found += it }
+    private val inheritance = CSharpInheritanceChecks(resolver, this) { code, message, range -> report(code, message, range) }
+    private val overloadChecks = CSharpOverloadChecks(this, resolver)
+    private val operators = CSharpOperatorChecks(resolver, this) { code, message, range -> report(code, message, range) }
 
     fun run(): List<CSharpSemanticProblem> {
         val unit = file.compilationUnit ?: return emptyList()
         if (file.name.endsWith(".csx")) return emptyList()
+        // a file outside the projects of the solution is compiled with nothing we know: its extension methods, partial parts, global usings
+        if (!inSources()) return emptyList()
         if (!CSharpSemanticEnvironment.referencesComplete(file) || resolver.libraryType(OBJECT) == null) return emptyList()
         if (unit.externs.isNotEmpty()) return emptyList()
         warnings.generatorsKnown = generatorsKnown
         PsiTreeUtil.processElements(unit) { element ->
             ProgressManager.checkCanceled()
+            if (element is CSharpSimpleName && !isQuiet(element)) generics.check(element)
             if (element is CSharpElement && !isQuiet(element)) {
+                operators.visit(element)
+                overloadChecks.visit(element)
+                inheritance.check(element)
                 when (element) {
                     is CSharpSimpleName -> { checkName(element); checkInstanceFromStatic(element) }
                     is CSharpInvocationExpression -> checkArguments(element)
@@ -82,13 +93,39 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
                     is CSharpTypeDeclaration -> { warnings.checkUninitialized(element); checkMissingMembers(element) }
                     is CSharpBlock -> if (isFunctionBody(element)) warnings.checkUnreachable(element)
                 }
+                access.check(element)
             }
             true
         }
+        CSharpDeclarationChecks(resolver, ::isQuiet, this) { code, message, range -> report(code, message, range) }.run()
         CSharpNullableFlow(resolver, ::isQuiet, generatorsKnown) { code, message, range -> warnings.warn(code, message, range) }.run(unit)
+        CSharpStatementChecks(resolver, ::isQuiet) { found += it }.run(unit)
+        CSharpDefiniteAssignmentChecks(resolver, ::isQuiet) { code, message, range -> report(code, message, range) }.run(unit)
         if (broken.isEmpty()) warnings.checkUnusedLocals()
         if (broken.isEmpty()) CSharpUnusedUsings(resolver).find(unit).let(found::addAll)
-        return found.distinctBy { Triple(it.code, it.range, it.message) }
+        return withoutFlowOfBrokenDeclarations(found).distinctBy { Triple(it.code, it.range, it.message) }
+    }
+
+    /**
+     * A local with a declaration error is not checked for definite assignment, as Roslyn: no CS0165 next to CS0841 (used before its
+     * declaration) on the same name, nor for a name declared twice in the same member (CS0128 / CS0136).
+     */
+    private fun withoutFlowOfBrokenDeclarations(problems: List<CSharpSemanticProblem>): List<CSharpSemanticProblem> {
+        val declarationErrors = problems.filter { it.code == "CS0841" || it.code == "CS0844" || it.code == "CS0128" || it.code == "CS0136" }
+        if (declarationErrors.isEmpty()) return problems
+        fun name(problem: CSharpSemanticProblem) = QUOTED.find(problem.message)?.groupValues?.get(1)
+        fun member(problem: CSharpSemanticProblem) =
+            PsiTreeUtil.getParentOfType(file.findElementAt(problem.range.startOffset), CSharpMemberDeclaration::class.java, false)?.textRange
+        val broken = declarationErrors.mapNotNull { e -> name(e)?.let { it to member(e) } }.toSet()
+        return problems.filterNot { it.code == "CS0165" && (name(it) to member(it)) in broken }
+    }
+
+    private val QUOTED = Regex("'([^']+)'")
+
+    private fun inSources(): Boolean {
+        val virtualFile = file.viewProvider.virtualFile
+        if (virtualFile is com.intellij.testFramework.LightVirtualFile) return true
+        return io.github.dotnetsupport.codeanalysis.CSharpSourceScope.of(file.project).contains(virtualFile)
     }
 
     // ---- where nothing is said
@@ -183,6 +220,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         }
         if (!typeOnly) for (static in resolver.staticTypes(at)) if (!isKnown(static) || has(static, text)) return false
         for (arity in 0..MAX_ARITY) if (resolver.typeOrNamespace(at, text, arity).isNotEmpty()) return false
+        if (access.hidesType(at, text)) return false
         // a type of the solution of that name somewhere the lookup did not reach (a stub not yet in the index of this file): no verdict
         return true
     }
@@ -199,6 +237,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
 
     private fun inNamespaceAbsent(namespace: String, text: String): Boolean {
         for (arity in 0..MAX_ARITY) if (resolver.typesIn(namespace, text, arity).isNotEmpty()) return false
+        if (access.hidesTypeIn(namespace, text)) return false
         return !session.namespaceExists(CSharpNameResolver.join(namespace, text), resolver.assemblies)
     }
 
@@ -222,7 +261,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
             }
             is CSharpNameResolver.Qualifier.Value -> {
                 val type = qualifier.type
-                if (!checkable(type) || has(type, text) || extensionNamed(text, name)) return
+                if (!checkable(type) || has(type, text) || extensionNamed(text, name, type)) return
                 val shown = CSharpTypeDisplay.display(type, qualified = false) ?: return
                 report("CS1061", "'$shown' does not contain a definition for '$text' and no accessible extension method '$text' accepting a first argument of type '$shown' " +
                     "could be found (are you missing a using directive or an assembly reference?)", leaf.textRange, text, importsForExtension(name, text, type), extension = true)
@@ -232,14 +271,14 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
     }
 
     /** A type whose members are all known: of the solution (not partial, bases known) or of an assembly, not `object`, a tuple, a delegate, an array, a type parameter. */
-    private fun checkable(type: SemanticType): Boolean = when (type) {
+    internal fun checkable(type: SemanticType): Boolean = when (type) {
         is SemanticType.Source -> !isPartial(type.info) && type.info.kind != TypeKind.DELEGATE && type.info.kind != null && isKnown(type)
         is SemanticType.Library -> type.type.fullName != OBJECT && !type.type.fullName.startsWith("System.ValueTuple") && type.type.kind != IndexedTypeKind.DELEGATE &&
             type.type.fullName != "System.Delegate" && type.type.fullName != "System.MulticastDelegate" && !type.type.fullName.startsWith("System.Nullable") && isKnown(type)
         else -> false
     }
 
-    private fun isPartial(info: io.github.dotnetsupport.lang.TypeInfo): Boolean = !generatorsKnown && info.parts.any { "partial" in it.modifiers }
+    internal fun isPartial(info: io.github.dotnetsupport.lang.TypeInfo): Boolean = !generatorsKnown && info.parts.any { "partial" in it.modifiers }
 
     /**
      * Whether everything [type] derives from resolves (task C4c): the base list of every part of a type of the solution, the base classes and
@@ -290,8 +329,8 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
                 val t = type.type
                 if (t.kind == IndexedTypeKind.DELEGATE) return true
                 if (session.libraryMembers(resolver.assemblies, t)[text].orEmpty().isNotEmpty()) return true
-                if (t.nestedTypes.any { it.simpleName == text }) return true
-                if (session.baseTypes(resolver.assemblies, t).any { base -> base.type.nestedTypes.any { it.simpleName == text } }) return true
+                if ((t.nestedTypes + t.hiddenNestedTypes).any { it.simpleName == text }) return true
+                if (session.baseTypes(resolver.assemblies, t).any { base -> (base.type.nestedTypes + base.type.hiddenNestedTypes).any { it.simpleName == text } }) return true
                 t.kind == IndexedTypeKind.INTERFACE && t.fullName != OBJECT && resolver.libraryType(OBJECT)?.let { has(it, text, depth + 1) } != false
             }
         }
@@ -299,14 +338,18 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
 
     /**
      * Whether something that may be an extension member named [text] is there: a member of a static class of the assemblies in a namespace
-     * [site] sees (extension methods, and what C# 14 extension blocks compile to), any extension method of the solution of that name.
+     * [site] sees (extension methods, and what C# 14 extension blocks compile to), any extension method of the solution of that name. An
+     * extension method of a type parameter whose constraints [receiver] does not satisfy is no excuse (`day.AddEndpointFilter`).
      */
-    private fun extensionNamed(text: String, site: PsiElement): Boolean {
+    private fun extensionNamed(text: String, site: PsiElement, receiver: SemanticType): Boolean {
         if (session.sourceExtensions(text).isNotEmpty()) return true
         val visible = resolver.visibleNamespaces(site)
         val all = resolver.assemblies.membersNamed(text) + resolver.assemblies.membersNamed("get_$text")
         // extension methods, and the accessors of C# 14 extension properties (static methods of a static class, `get_X`)
-        return all.any { it.type.isStatic && it.type.namespace in visible && (it.kind == IndexedMemberKind.EXTENSION_METHOD || it.name.startsWith("get_")) }
+        return all.any {
+            it.type.isStatic && it.type.namespace in visible && (it.kind == IndexedMemberKind.EXTENSION_METHOD && resolver.receiverFits(CSharpSymbol.LibraryMember(it), receiver) ||
+                it.name.startsWith("get_"))
+        }
     }
 
     // ---- «Import type»
@@ -436,7 +479,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
      * parameter (the element type in the expanded form of `params`). Not for parameters of a type parameter of the method (inference
      * decides those), `ref` / `out` / `in`, lambdas and method groups.
      */
-    private fun checkArgumentTypes(symbol: CSharpSymbol, parameters: List<CSharpNameResolver.Parameter>, arguments: List<CSharpArgument>) {
+    internal fun checkArgumentTypes(symbol: CSharpSymbol, parameters: List<CSharpNameResolver.Parameter>, arguments: List<CSharpArgument>) {
         if (arguments.any { it.refKindKeyword != null } || parameters.any { it.byRef } || hasModifiers(symbol)) return
         val overloads = resolver.overloads
         val last = parameters.lastOrNull()
@@ -490,7 +533,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
      * when none of the nearest fits. Null when that set is not surely complete: a member of another kind, an unknown or partial type,
      * extension methods of that name, a local function or a delegate.
      */
-    private fun overloads(callee: CSharpSimpleName, text: String, explicitArity: Int?): List<CSharpSymbol>? {
+    internal fun overloads(callee: CSharpSimpleName, text: String, explicitArity: Int?, extensions: Boolean = true): List<CSharpSymbol>? {
         val parent = callee.parent
         var static = false
         val type: SemanticType = when {
@@ -506,7 +549,9 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
                 resolver.selfType(owner)
             }
         }
-        if (!checkable(type) || !static && extensionNamed(text, callee)) return null
+        // extension methods are looked up for `x.M(...)` only, never for a simple name (C# §12.8.10.3)
+        val reduced = parent is CSharpMemberAccessExpression || parent is CSharpMemberBindingExpression
+        if (!checkable(type) || extensions && reduced && !static && extensionNamed(text, callee, type)) return null
         val found = ArrayList<CSharpSymbol>()
         return if (collect(type, text, found, 0, explicitArity)) found else null
     }
@@ -553,7 +598,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
     }
 
     /** `Calc.Add(int, int)` as Roslyn's messages write a method: the type without its namespace, the types of the parameters. */
-    private fun methodDisplay(symbol: CSharpSymbol): String? = when (symbol) {
+    internal fun methodDisplay(symbol: CSharpSymbol): String? = when (symbol) {
         is CSharpSymbol.SourceMember -> {
             val method = symbol.element as? CSharpMethodDeclaration
             val owner = method?.let { PsiTreeUtil.getParentOfType(it, CSharpBaseTypeDeclaration::class.java) }
@@ -577,7 +622,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
     }
 
     /** `Outer.Inner` of a type declaration of the solution; null inside a generic type. */
-    private fun declaringName(declaration: CSharpBaseTypeDeclaration): String? {
+    internal fun declaringName(declaration: CSharpBaseTypeDeclaration): String? {
         val names = ArrayList<String>()
         var at: PsiElement? = declaration
         while (at is CSharpBaseTypeDeclaration) {
@@ -740,6 +785,8 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         val leaf = name.identifier ?: return
         if (resolver.syntax.symbolAt(leaf) != null) return
         val context = staticContext(name) ?: return
+        if (CSharpInheritanceChecks.initializerOf(name) != null) return // CS0236, as Roslyn
+        if (CSharpInheritanceChecks.initializerOf(name) != null) return // CS0236, as Roslyn
         val symbols = resolver.resolve(leaf)?.symbols?.takeIf { it.isNotEmpty() } ?: return
         if (symbols.any { it !is CSharpSymbol.SourceMember || resolver.overloads.isStatic(it) != false }) return
         val members = symbols.map { (it as CSharpSymbol.SourceMember).element }
@@ -997,7 +1044,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
 
     // ----
 
-    private fun report(code: String, message: String, range: TextRange, name: String? = null, imports: List<String> = emptyList(), extension: Boolean = false) {
+    internal fun report(code: String, message: String, range: TextRange, name: String? = null, imports: List<String> = emptyList(), extension: Boolean = false) {
         found += CSharpSemanticProblem(code, message, range, name = name, imports = imports, extension = extension)
     }
 

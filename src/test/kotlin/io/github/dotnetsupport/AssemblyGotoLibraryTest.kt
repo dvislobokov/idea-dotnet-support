@@ -183,6 +183,19 @@ class AssemblyGotoLibraryTest : BasePlatformTestCase() {
         assertNull("a declaration of the solution is not the view's", AssemblyNavigation.declarationTargets(file.findElementAt(text.indexOf("Main"))!!))
     }
 
+    /** Ctrl+Click inside decompiled code goes on: its names resolve against a project compiled against its dll, else the largest one. */
+    fun testADecompiledTypeResolvesAgainstAProjectThatRefersToItsAssembly() {
+        val console = "C:/dotnet/packs/Microsoft.NETCore.App.Ref/10.0.0/ref/net10.0/System.Console.dll"
+        fun decompiled(assembly: String) = io.github.dotnetsupport.decompiler.DecompiledFile(
+            io.github.dotnetsupport.decompiler.DecompiledKey(assembly, "System.Console"),
+            io.github.dotnetsupport.decompiler.DecompiledType(assembly, "System.Console", "10.0.0.0", 0, "System.Console", "public static class Console { }", emptyList()), 0)
+        val own = AssemblyNavigation.assembliesOf(project, decompiled(console))!!
+        assertTrue("the project of the dll", own.indexes.any { it === CONSOLE })
+        val other = AssemblyNavigation.assembliesOf(project, decompiled("C:/elsewhere/System.Private.CoreLib.dll"))!!
+        assertTrue("an implementation assembly no project refers to: the largest project", other.indexes.any { it === CONSOLE })
+        assertNull("a file of the solution is no decompiled one", AssemblyNavigation.assembliesOf(project, app))
+    }
+
     /** With the decompiler of DotNetHelper: the first Go to Declaration is the metadata view and decompiles behind it; the next one is the code. */
     fun testGoToDeclarationGoesToTheDecompiledCodeOnceItIsThere() {
         CSharpSemanticEnvironment.setAssembliesForTests { AssemblyIndexSet(listOf(FIXTURE)) }
