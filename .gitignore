@@ -18,3 +18,5 @@ out/
 # the assembly of the tests of the index (indexer/README.md)
 /tools/index-fixture/bin/
 /tools/index-fixture/obj/
+# ml-core (copy of the engine module): build output
+/ml-core/build/
