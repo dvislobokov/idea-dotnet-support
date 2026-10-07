@@ -314,6 +314,9 @@
         <projectViewNodeDecorator implementation="io.github.dotnetsupport.coverage.CoverageProjectViewDecorator"/>
         <postStartupActivity implementation="io.github.dotnetsupport.build.BuildAfterSolutionIsLoaded"/>
         <postStartupActivity implementation="io.github.dotnetsupport.sdk.SdkCheckActivity"/>
+        <!-- a user association (a .cs opened as text before the install) shadows the declarative ones: a dialog and a banner with the fix -->
+        <postStartupActivity implementation="io.github.dotnetsupport.sdk.DotNetFileTypeCheckActivity"/>
+        <editorNotificationProvider implementation="io.github.dotnetsupport.sdk.DotNetFileTypeNotificationProvider"/>
         <postStartupActivity implementation="io.github.dotnetsupport.run.DevCertCheckActivity"/>
 
         <configurationType implementation="io.github.dotnetsupport.run.DotNetConfigurationType"/>
@@ -743,6 +746,9 @@
                   topic="com.intellij.codeInsight.lookup.LookupManagerListener"/>
         <listener class="io.github.dotnetsupport.monitor.DotNetProcessStartListener"
                   topic="com.intellij.execution.ExecutionListener"/>
+        <!-- a .cs / .sln / .csproj opened as another file type: the file type dialog at once -->
+        <listener class="io.github.dotnetsupport.sdk.DotNetFileTypeCheckActivity$OnOpen"
+                  topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
         <!-- what "Wait for" of a .NET Project configuration looks at, and the running ones Save as Compound Configuration takes -->
         <listener class="io.github.dotnetsupport.run.RunningLaunches$Listener"
                   topic="com.intellij.execution.ExecutionListener"/>

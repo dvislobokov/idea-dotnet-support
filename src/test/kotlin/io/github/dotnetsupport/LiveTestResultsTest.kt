@@ -71,6 +71,29 @@ class LiveTestResultsTest : BasePlatformTestCase() {
         }
     }
 
+    /**
+     * The platform forgets a node once it is finished and logs "Parent node is undefined" for a child that starts afterwards (seen live
+     * in the Go plugin): every testStarted has to name a suite that is started and not finished yet, in every order the events come.
+     */
+    fun testEveryTestStartsUnderAnOpenSuite() {
+        fun check(run: String, messages: List<String>) {
+            val open = HashSet<String>()
+            val attribute = { m: String, name: String -> Regex("$name='([^']*)'").find(m)?.groupValues?.get(1) }
+            for (m in messages) when {
+                m.startsWith("##teamcity[testSuiteStarted") -> open += attribute(m, "nodeId")!!
+                m.startsWith("##teamcity[testSuiteFinished") -> assertTrue("$run: $m", open.remove(attribute(m, "nodeId")!!))
+                m.startsWith("##teamcity[testStarted") -> assertTrue("$run: parent not open for $m", attribute(m, "parentNodeId") in open)
+            }
+        }
+        for (run in listOf("xunit", "nunit", "mstest", "xunit-stopped", "xunit-stopped-batch")) {
+            val tree = LiveTestTree("C:/src")
+            check(run, (events(run, "collector.jsonl") + events(run, "logger.jsonl")).flatMap { tree.onEvent(it) } + tree.onReport(trx(run)) + tree.finish())
+        }
+        // the report first, the logger late: the same
+        val tree = LiveTestTree("C:/src")
+        check("report first", tree.onReport(trx("xunit")) + events("xunit", "logger.jsonl").flatMap { tree.onEvent(it) } + tree.finish())
+    }
+
     fun testTheReportAddsWhatTheLoggerMissed() {
         val tree = LiveTestTree("C:/src")
         val logger = events("xunit", "logger.jsonl")

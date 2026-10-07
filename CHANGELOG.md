@@ -3,6 +3,20 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.128
+
+- A `.cs`, `.csx`, `.sln`, `.slnx` or `.csproj` that opens as another file type (a user association made before the plugin was installed,
+  typically Text, shadows the plugin's own and nothing of C# works in the file) gets a banner "This file opens as "Text", not as C#" with
+  Associate with C# and File Types Settings…; a .NET project with such an association gets a modal dialog at startup and when such a
+  file is opened, with the same fix ("Not Now" holds for the session, "Don't ask again" keeps the banner only)
+
+## 0.1.127
+
+- The gray text and the typing assistance of the native C# tree no longer log "Read access is allowed from inside read-action only"
+  when the inline completion handler asks on the EDT (seen in the sandbox log): the tree is read under a read action
+- A test that every test of a live `dotnet test` run starts under a suite that is still open, in every order the events come (the
+  platform forgets a finished node and logs "Parent node is undefined" for a child that comes after it)
+
 ## 0.1.126
 
 - `override` completion as in Rider: typing the start of the return type (`public override str`) keeps the members of that type
