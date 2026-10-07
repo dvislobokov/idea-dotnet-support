@@ -125,3 +125,90 @@
   worktree по очереди (`~/work/cs-export-launch.sh` на сервере), потом стартовать воркеры.
 - Сводки `ml: …` при `-q` не попадают в консоль — только в `build/test-results/mlDataset/*.xml` после окончания задачи; для живого
   прогресса удобнее писать их ещё и в файл `-Pml.out/progress.log` (по строке на репозиторий).
+
+
+## 7. Ускорение и полнота headless-экспорта (2026-10-07 вечер, замеры на сервере)
+
+Три изменения, каждое измерено на одном репозитории rank-fold'а (`vpenades__SharpGLTF`: 387 `.cs`, 24 проекта, 25 PackageReference,
+net8/net10/netstandard/net471), `-Pml.maxFiles=60 -Pml.maxCopy=400 -Pml.names=true -Pml.seed=7`, один JVM, сервер под нагрузкой
+16 воркеров основного экспорта (LA ≈ 21 из 32). Все цифры — строка `ml: TOTAL` из `build/test-results/mlDataset/*.xml`; wall — вся
+Gradle-задача без демона (компиляция не считается, классы собраны заранее).
+
+| конфигурация | wall / тело теста | мс/позиция | позиций | списков | recall | no-list | answer-missing | канд./список | после `.`: список / ответ в нём |
+|---|---|---|---|---|---|---|---|---|---|
+| baseline (0.1.130) | 316 с / 223 с | 334 | 599 | 241 | 0.707 | 258 | 100 | 56.2 | 128 / 117 из 211 |
+| a) общий system/config (`-Pml.sandbox`), холодный / тёплый | 314 / 312 с | 335 / 340 | 599 | 241 | 0.707 | 258 | 100 | 56.2 | 128 / 117 |
+| a+b) + `dotnet restore` + индекс сборок (`-Pml.restore=true -Pml.projects=…`), холодный / тёплый | 318 / 314 с | 340 / 330 | 599 | **343** | **0.807** | **174** | **82** | 51.7 | **206 / 206** |
+| a+b+c₁) + снимок имён типов **на файл** + debug-лог теста выключен | 247 с / 146 с | 134 | 599 | 343 | 0.807 | 174 | 82 | 51.7 | 206 / 206 |
+| a+b+c₂) снимок **на репозиторий** (итог, 0.1.131) | **76 с / ~30 с** | **45** | 599 | 344 | 0.808 | 173 | 82 | 52.1 | 207 / 207 |
+| (справочно) a+b + только выключенный debug-лог, без снимка | 318 с | 294 | 599 | 343 | 0.807 | 174 | 82 | 51.7 | 206 / 206 |
+
+Шарды a+b и a+b+c₁ побайтно одинаковы; c₂ отличается одним списком из 599 (снимок не включает типы дополняемого файла — они идут из PSI).
+restore: 9 с холодный / 3–7 с тёплый кэш NuGet; индекс 206 сборок: 10 с при первом запуске (сборка индексатора + индекс всех dll), 0–1 с
+потом — оба живут в `-Pml.helpers`. Разница wall − тело теста ≈ 45–90 с — Gradle без демона + старт IDE + tearDown.
+
+Подтверждение на двух других репозиториях rank-fold'а (не из `sets/rank.txt`), те же настройки; «baseline» здесь = тот же код с
+`-Pml.restore=false -Pml.snapshot=false` (debug-лог уже выключен, т.е. baseline чуть лучше 0.1.130):
+
+| репозиторий | конфигурация | мс/позиция | позиций | списков | recall | no-list | answer-missing | после `.`: список / ответ |
+|---|---|---|---|---|---|---|---|---|
+| `jjrdk__ArchiMetrics` (4 проекта, 39 сборок) | baseline | 264 | 590 | 114 | 0.487 | 356 | 120 | 1 / 0 из 148 |
+| | итог | **35** | 590 | **182** | **0.659** | 314 | 94 | **40 / 33** |
+| `gishys__Hx.Workflow` (9 проектов, 502 сборки) | baseline | 2114 | 594 | 39 | 0.206 | 405 | 150 | 17 / 17 из 199 |
+| | итог | **38** | 594 | **193** | **0.687** | 313 | 88 | **108 / 108** |
+
+Оба репозитория вместе: baseline 1569 с wall, итог **102 с** (restore 1–2 с, индекс 0 с на тёплом кэше, снимок 0–3 с). У `Hx.Workflow` с
+большим числом типов baseline — 2 с на позицию: скан стаб-индекса на каждую позицию растёт с размером решения, снимок это снимает.
+`ArchiMetrics` после точки по-прежнему слаб (40 из 148): это Roslyn-анализатор, большая часть точек — на типах `Microsoft.CodeAnalysis`;
+restore прошёл, но 39 сборок — видимо, старые target'ы; не разбирался.
+
+Что оказалось не так, как думали:
+
+- Общий system-каталог сам по себе (a) ничего не даёт: репозиторий каждый раз копируется в новый tmp-каталог, его стабы индексируются
+  заново. Он нужен как место для индексатора и индексов сборок (b), и только там экономит (10 с → 0–1 с на репозиторий).
+- Корпус `csharp/repos` не содержит `.csproj`/`.sln` вообще (снимки — только `*.cs` + LICENSE/README), так что `dotnet restore` без
+  дополнительных файлов невозможен. `tools/ml-dataset/fetch-projects.sh <out> <owner__repo>…` качает tarball с codeload и оставляет
+  только MSBuild-файлы (`*.csproj *.sln *.slnx *.props *.targets *.config global.json`) в `<out>/<owner__repo>/…`; экспортёр накладывает
+  их поверх копии (`-Pml.projects=<out>`). Репозиторий без проектов получает синтетический `__ml_export.csproj` (net10.0, все `.cs` дерева) —
+  тогда хотя бы BCL (`string`, `List<T>`) резолвится. SDK сам докачивает `Microsoft.NETFramework.ReferenceAssemblies.*` для net4x-проектов и
+  `microsoft.netcore.app.ref` старых версий, плагин их видит через assets.
+- Снимок `NativeCSharpTypeNames.Snapshot` в первой версии не работал (343 мс): completion идёт в копии файла, `file.viewProvider.virtualFile`
+  там — LightVirtualFile, снимок с ключом по оригиналу не находился. Ключ по `file.originalFile` — 134 мс.
+- Снимок на файл (полный проход по всем ключам стаб-индекса на каждый из 60 файлов) не попадал в «мс/позицию», но на `Hx.Workflow` стоил
+  ~15 мин на репозиторий. Теперь он читается один раз на репозиторий (1–3 с) и при переходе к следующему файлу перечитываются только имена,
+  объявленные в предыдущем файле (его стабы перестроены правками) и в новом; типы дополняемого файла в снимок не входят (их даёт PSI, а их
+  стабы в снимке протухают после первой правки — `PsiInvalidElementAccessException: … onContentReload` в первой версии на `ArchiMetrics`).
+- Главная статья времени после этого — не поиск в индексе, а **debug-лог тестового фреймворка**: `TestLoggerFactory` буферизует каждую
+  debug-запись с форматированием даты (`String.format` → `Calendar`), а `FileBasedIndexImpl.runIfHaveNewUpdatesFor` пишет такую запись на
+  каждый запрос к индексу после изменения документа — в профиле ~40 % времени completion-потока. `ApplicationManagerEx.setInStressTest(true)`
+  в `setUp` выключает debug-уровень у `TestLogger` (в IDE debug и так выключен).
+- EDT в экспорте в основном ждёт (`Unsafe.park`): сама completion бежит в пуле, профилировать надо не EDT, а `DefaultDispatcher-worker` с
+  `fillCompletionVariants` в стеке; JFR с глубиной стека по умолчанию (64) режет нижние кадры — удобнее `jstack` раз в 1–2 с.
+- Между двумя запусками одного и того же кода шард может отличаться в одном примере (base vs a): есть небольшая недетерминированность
+  списков, не разбирался.
+
+Рецепт для следующего полного экспорта (воркер `n`):
+
+```sh
+# один раз: MSBuild-файлы всех репозиториев набора (сеть, ~1–5 с на репозиторий, overlay вне корпуса)
+tools/ml-dataset/fetch-projects.sh ~/work/ml-data/csharp/projects $(cat ~/work/ml-data/csharp/psi/sets/rank.txt)
+# воркер: свой system-каталог (индексы IDE нельзя делить между процессами), общий каталог индексатора/индексов сборок
+HOME=/root bash gradlew -q --no-daemon mlDataset -PlocalIdePath=/root/work/idea -Pml.repos=… -Pml.lm=… -Pml.data=… -Pml.out=… \
+  -Pml.maxFiles=60 -Pml.maxCopy=400 -Pml.names=true -Pml.heap=6g \
+  -Pml.sandbox=/root/work/dotnet-psi/w$n -Pml.helpers=/root/work/dotnet-psi/dotnet-support \
+  -Pml.restore=true -Pml.projects=/root/work/ml-data/csharp/projects -Pml.restoreTimeout=300   # -Pml.snapshot=true по умолчанию
+```
+
+`HOME` обязателен под systemd (кэш NuGet `~/.nuget/packages`, общий для воркеров — NuGet сам блокирует). Свойства: `ml.restore` (restore +
+индекс сборок, по умолчанию false), `ml.restoreTimeout` (секунд на репозиторий, 300; решения верхних двух уровней, иначе до 40 проектов),
+`ml.projects` (overlay), `ml.snapshot` (true), `ml.sandbox` / `ml.helpers` (только Gradle: `-Didea.system.path`, `-Didea.config.path`,
+`-Didea.log.path`, `-Ddotnet.support.root`). В сводке `ml: …` добавлены `after-dot=N listed=M found=K` (позиции после точки / из них со
+списком / с ответом в нём), `projects= restored= assemblies=` и время `copy= restore= index= indexing= snapshot=`. Схема признаков не
+менялась — шарды совместимы с текущим экспортом. Прикидка: 300 репозиториев rank-набора ≈ 300 × (~30 с экспорт + ~45 с Gradle/IDE на
+процесс, но процесс один на список) — порядка 3–4 часов в один процесс против ~8 часов в 16.
+
+Код: `CSharpMlExporter` (overlay, restore, `AssemblyIndexService.refreshForTests`, снимок на репозиторий, статистика после точки),
+`CSharpMlDatasetExport` (свойства, stress-test режим), `AssemblyIndexService.refreshForTests` (синхронный refresh для заданных проектов —
+в unit-test режиме `schedule()` не работает, а `SolutionService` ищет решения только в каталоге проекта IDE), `DotNetHelper.root()`
+(`-Ddotnet.support.root`), `NativeCSharpTypeNames.Snapshot` + `NativeCSharpResolver.stubParts` (test-only снимок; в IDE путь прежний:
+снимок никогда не установлен), `build.gradle.kts` (`ml.sandbox`, `ml.helpers`), `tools/ml-dataset/fetch-projects.sh`.

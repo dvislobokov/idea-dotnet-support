@@ -113,8 +113,12 @@ class DotNetHelper(
         private const val VERSION_TIMEOUT_MS = 20_000
         private const val ERROR_TAIL = 1_500
 
-        /** Everything the plugin keeps of its helpers: what is built and what they have made. */
-        fun root(): File = File(PathManager.getSystemPath(), "dotnet-support")
+        /**
+         * Everything the plugin keeps of its helpers: what is built and what they have made. `-Ddotnet.support.root=<dir>` moves it out of the
+         * system directory of the IDE: the dataset export runs many IDE processes with their own system directories and one folder of
+         * indexes (the indexer locks the folder between processes anyway).
+         */
+        fun root(): File = System.getProperty("dotnet.support.root")?.takeIf { it.isNotBlank() }?.let(::File) ?: File(PathManager.getSystemPath(), "dotnet-support")
 
         /** `10.0.401` -> `net10.0`, `9.0.301` -> `net9.0`; null for what is older than the helpers can be built with. */
         fun framework(sdkVersion: String): String? {

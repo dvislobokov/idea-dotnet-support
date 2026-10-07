@@ -195,9 +195,16 @@ class AssemblyIndexService(private val project: Project) : Disposable {
         }
     }
 
-    private fun refresh() {
+    /**
+     * The index made for [projectFiles] now, on this thread (the dataset export, which has restored the projects of a content root the
+     * solution finder does not see): what [schedule] does in the background in the IDE.
+     */
+    @TestOnly
+    fun refreshForTests(projectFiles: List<VirtualFile>) = refresh(projectFiles)
+
+    private fun refresh(explicit: List<VirtualFile>? = null) {
         val solutions = SolutionService.getInstance(project)
-        val inSolutions = solutions.solutionFiles().flatMap { solution -> solutions.solution(solution).allProjects.mapNotNull { it.resolveFile(solution) } }
+        val inSolutions = explicit ?: solutions.solutionFiles().flatMap { solution -> solutions.solution(solution).allProjects.mapNotNull { it.resolveFile(solution) } }
         val outside = loose.mapNotNull { com.intellij.openapi.vfs.LocalFileSystem.getInstance().findFileByPath(it)?.takeIf { file -> file.isValid } }
         val projectFiles = (inSolutions + outside).distinctBy { it.path }
         references.keys.retainAll(projectFiles.mapTo(HashSet()) { it.path })

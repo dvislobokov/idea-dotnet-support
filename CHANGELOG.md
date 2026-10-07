@@ -3,6 +3,17 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.131
+
+- The headless export of completion lists for the ML ranker (`mlDataset`) is 7× faster per position (45 ms, was 334; 2 s on a
+  solution of 500 types) and sees the libraries: the
+  projects of a repository are restored (`dotnet restore`, with their MSBuild files fetched apart from the source corpus) and their
+  assemblies indexed before the export, so the members of `string`, `List<T>` and NuGet types are in the lists after a dot (98 % of
+  such positions get a list, was 61 %; recall 0.81, was 0.71); the type names of the solution are read from the stub index once per
+  repository instead of once per position, and the debug log of the test framework, which formatted a time stamp on every index
+  lookup, is off. A persistent system directory and one folder of assembly indexes for all workers (`-Pml.sandbox`, `-Pml.helpers`). Nothing
+  changes in the editor: the per-file snapshot exists only while the export sets it
+
 ## 0.1.130
 
 - Offline export of real completion lists for the ML ranker (Gradle task `mlDataset`, the plugin half of experiment e18 of the shared

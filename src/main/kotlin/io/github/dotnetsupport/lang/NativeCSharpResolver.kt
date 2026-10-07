@@ -1,7 +1,9 @@
 package io.github.dotnetsupport.lang
 
 import com.intellij.openapi.editor.colors.TextAttributesKey
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.stubs.StubIndex
@@ -171,53 +173,11 @@ class NativeCSharpResolver(val file: CSharpFile) {
     /** `Ns.Outer.Inner` of a type declaration of the file, as the stubs spell it; null when a name around is missing. */
     private fun qualifiedName(declaration: PsiElement): String? = qualifiedNames.getOrPut(declaration) { psiQualifiedName(declaration) }
 
-    /** The namespace of a type declared at the top of a namespace (`""` for the global one); null for a nested type. */
-    private fun namespaceOf(declaration: PsiElement): String? {
-        val names = ArrayList<String>()
-        var current: PsiElement? = declaration.parent
-        while (current != null && current !is CSharpFile) {
-            when (current) {
-                is CSharpBaseNamespaceDeclaration -> names += CSharpDeclarationNames.name(current) ?: return null
-                is CSharpBaseTypeDeclaration, is CSharpDelegateDeclaration -> return null
-            }
-            current = current.parent
-        }
-        return names.asReversed().joinToString(".")
-    }
-
     // ---- types: of the file, of the solution (stubs)
 
     private fun stubTypes(name: String): List<TypePart> = stubsByName.getOrPut(name) {
-        val parts = ArrayList<TypePart>()
-        StubIndex.getInstance().processElements(CSharpStubIndexKeys.TYPE_NAMES, name, project, io.github.dotnetsupport.codeanalysis.CSharpSourceScope.of(project), CSharpElement::class.java) { element ->
-            if (element.containingFile?.viewProvider?.virtualFile != virtualFile && (element is CSharpBaseTypeDeclaration || element is CSharpDelegateDeclaration)) {
-                val stub = (element as? CSharpStubElementImpl)?.greenStub
-                if (stub != null) {
-                    val containers = NativeCSharpStubDeclarations.containers(stub)
-                    val namespace = if (containers.any { it.second.isType }) null else containers.joinToString(".") { it.first }
-                    parts += TypePart.Stub(stub, (containers.map { it.first } + name).joinToString("."), name, namespace)
-                } else if (element is CSharpMemberDeclaration) {
-                    // the AST of that file is loaded anyway (it is open): its PSI answers
-                    psiQualifiedName(element)?.let { parts += TypePart.Psi(element, it, name, namespaceOf(element)) }
-                }
-            }
-            true
-        }
-        parts
-    }
-
-    private fun psiQualifiedName(declaration: PsiElement): String? {
-        val names = ArrayList<String>()
-        var current: PsiElement? = declaration
-        while (current != null && current !is CSharpFile) {
-            when (current) {
-                is CSharpBaseNamespaceDeclaration -> names += CSharpDeclarationNames.name(current) ?: return null
-                is CSharpBaseTypeDeclaration, is CSharpDelegateDeclaration ->
-                    if (current.node.elementType != SyntaxKind.ExtensionBlockDeclaration) names += CSharpDeclarationNames.nameElement(current)?.text ?: return null
-            }
-            current = current.parent
-        }
-        return names.asReversed().joinToString(".")
+        NativeCSharpTypeNames.snapshotOf(file.originalFile.viewProvider.virtualFile)?.let { return@getOrPut it.stubs[name].orEmpty() }
+        stubParts(project, virtualFile, name)
     }
 
     /** Every declaration of a type named [name] (any arity, any namespace, nested ones too) of this file and of the solution's other files. */
@@ -354,6 +314,59 @@ class NativeCSharpResolver(val file: CSharpFile) {
     private fun Member.nestedType(): TypeInfo? = nestedType?.let { typeInfo(it, nestedArity) }
 
     companion object {
+        /**
+         * The parts of the types named [name] in the files of the solution other than [virtualFile] (null: all): from the stubs; from the PSI
+         * where the AST is loaded anyway. [files] collects the files of every declaration of that name, the ones of [virtualFile] included.
+         */
+        fun stubParts(project: Project, virtualFile: VirtualFile?, name: String, files: MutableCollection<VirtualFile>? = null): List<TypePart> {
+            val parts = ArrayList<TypePart>()
+            StubIndex.getInstance().processElements(CSharpStubIndexKeys.TYPE_NAMES, name, project, io.github.dotnetsupport.codeanalysis.CSharpSourceScope.of(project), CSharpElement::class.java) { element ->
+                val file = element.containingFile?.viewProvider?.virtualFile
+                if (files != null && file != null) files += file
+                if (file != virtualFile && (element is CSharpBaseTypeDeclaration || element is CSharpDelegateDeclaration)) {
+                    val stub = (element as? CSharpStubElementImpl)?.greenStub
+                    if (stub != null) {
+                        val containers = NativeCSharpStubDeclarations.containers(stub)
+                        val namespace = if (containers.any { it.second.isType }) null else containers.joinToString(".") { it.first }
+                        parts += TypePart.Stub(stub, (containers.map { it.first } + name).joinToString("."), name, namespace)
+                    } else if (element is CSharpMemberDeclaration) {
+                        // the AST of that file is loaded anyway (it is open): its PSI answers
+                        psiQualifiedName(element)?.let { parts += TypePart.Psi(element, it, name, namespaceOf(element)) }
+                    }
+                }
+                true
+            }
+            return parts
+        }
+
+        /** The namespace of a type declared at the top of a namespace (`""` for the global one); null for a nested type. */
+        private fun namespaceOf(declaration: PsiElement): String? {
+            val names = ArrayList<String>()
+            var current: PsiElement? = declaration.parent
+            while (current != null && current !is CSharpFile) {
+                when (current) {
+                    is CSharpBaseNamespaceDeclaration -> names += CSharpDeclarationNames.name(current) ?: return null
+                    is CSharpBaseTypeDeclaration, is CSharpDelegateDeclaration -> return null
+                }
+                current = current.parent
+            }
+            return names.asReversed().joinToString(".")
+        }
+
+        private fun psiQualifiedName(declaration: PsiElement): String? {
+            val names = ArrayList<String>()
+            var current: PsiElement? = declaration
+            while (current != null && current !is CSharpFile) {
+                when (current) {
+                    is CSharpBaseNamespaceDeclaration -> names += CSharpDeclarationNames.name(current) ?: return null
+                    is CSharpBaseTypeDeclaration, is CSharpDelegateDeclaration ->
+                        if (current.node.elementType != SyntaxKind.ExtensionBlockDeclaration) names += CSharpDeclarationNames.nameElement(current)?.text ?: return null
+                }
+                current = current.parent
+            }
+            return names.asReversed().joinToString(".")
+        }
+
         fun arity(name: CSharpSimpleName): Int = (name as? CSharpGenericName)?.typeArgumentList?.arguments?.size ?: 0
 
         fun compact(element: PsiElement?): String = element?.text?.filterNot(Char::isWhitespace).orEmpty()

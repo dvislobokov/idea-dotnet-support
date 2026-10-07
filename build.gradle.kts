@@ -176,7 +176,8 @@ intellijPlatformTesting.testIde.register("semanticGate") {
 // `./gradlew mlDataset` (ML_RANKER_EXPORT_TASK.md, ADAPTER.md §3): runs the plugin's real completion headlessly over C# repositories and
 // writes one ml-core example shard per repository for the ranker of https://github.com/dvislobokov/idea-ml-completion. Not a test of
 // behaviour, never part of `test`. Options: -Pml.repos=<file with repository names> -Pml.lm=<n-gram .cml> [-Pml.data=<corpus root>
-// -Pml.out=<shards dir> -Pml.perFile=10 -Pml.maxFiles=120 -Pml.cache=0.3 -Pml.names=false -Pml.seed=7 -Pml.heap=6g], read by CSharpMlDatasetExport.
+// -Pml.out=<shards dir> -Pml.perFile=10 -Pml.maxFiles=120 -Pml.cache=0.3 -Pml.names=false -Pml.seed=7 -Pml.heap=6g -Pml.restore=false -Pml.projects=<dir> -Pml.snapshot=true
+// -Pml.sandbox=<dir> -Pml.helpers=<dir>], read by CSharpMlDatasetExport (the last two by this task).
 val mlDatasetPattern = "*MlDatasetExport"
 tasks.test {
     filter { excludeTestsMatching(mlDatasetPattern) }
@@ -204,6 +205,17 @@ intellijPlatformTesting.testIde.register("mlDataset") {
         outputs.upToDateWhen { false }
         maxHeapSize = providers.gradleProperty("ml.heap").orNull ?: "6g"
         providers.gradlePropertiesPrefixedBy("ml.").get().forEach { (key, value) -> if (key != "ml.heap") systemProperty(key, value) }
+        // -Pml.sandbox=<dir>: a persistent system/config directory instead of the sandbox of the build (the indexes of the IDE and the index
+        // of assemblies survive between runs); -Pml.helpers=<dir>: the indexer and its indexes, one folder for all the workers (its own lock).
+        // Added last, after the sandbox properties of the platform plugin: the last -D wins.
+        val sandbox = providers.gradleProperty("ml.sandbox").orNull
+        val helpers = providers.gradleProperty("ml.helpers").orNull
+        jvmArgumentProviders.add(CommandLineArgumentProvider {
+            listOfNotNull(
+                sandbox?.let { "-Didea.system.path=$it/system" }, sandbox?.let { "-Didea.config.path=$it/config" }, sandbox?.let { "-Didea.log.path=$it/log" },
+                helpers?.let { "-Ddotnet.support.root=$it" },
+            )
+        })
         // one broken repository must not fail the export of hundreds; corpora contain generated files above the platform's 2.5 MB PSI limit
         systemProperty("intellij.testFramework.rethrow.logged.errors", "false")
         systemProperty("idea.max.intellisense.filesize", "20000")

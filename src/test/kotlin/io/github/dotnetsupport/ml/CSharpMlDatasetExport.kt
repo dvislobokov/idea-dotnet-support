@@ -1,6 +1,7 @@
 package io.github.dotnetsupport.ml
 
 import com.intellij.codeInsight.CodeInsightSettings
+import com.intellij.openapi.application.ex.ApplicationManagerEx
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.completionml.core.ngram.NgramModel
 import io.github.completionml.core.rank.ExampleShards
@@ -24,6 +25,11 @@ import java.io.File
  *  - `ml.perFile`  sampled completion positions per file (10), `ml.maxFiles` per repository (120, 0 = all), `ml.cache` λ of the file cache (0.3),
  *    `ml.maxCopy` at most this many `.cs` files copied into the content root (0 = all; the sampled sources always are),
  *    `ml.names` write candidate names into the shards (false), `ml.seed` (7)
+ *  - `ml.restore` `dotnet restore` every repository before the export and index its assemblies (false), `ml.restoreTimeout` seconds per repository (300),
+ *    `ml.projects` overlay directory with the MSBuild files of the repositories (`tools/ml-dataset/fetch-projects.sh`; the corpus has only sources),
+ *    `ml.snapshot` read the solution's type names once per file instead of once per position (true)
+ *  - Gradle only: `ml.sandbox` a persistent IDE system/config directory (`-Didea.system.path`, `-Didea.config.path`) instead of the sandbox of
+ *    the build, `ml.helpers` the folder of the indexer and its indexes (`-Ddotnet.support.root`), shared by all workers — section 7 of the task
  *
  * Per position: the identifier token is cut to a 0–2 character prefix, the caret is put there, `completeBasic()` runs, the answer is the
  * identifier that was in the source. Lists without the answer are counted (the plugin's recall) and skipped. One broken repository is
@@ -40,9 +46,14 @@ class CSharpMlDatasetExport : BasePlatformTestCase() {
         cacheLambda = System.getProperty("ml.cache")?.toDouble() ?: 0.3,
         seed = System.getProperty("ml.seed")?.toLong() ?: 7L,
         maxCopy = System.getProperty("ml.maxCopy")?.toInt() ?: 0,
+        restore = System.getProperty("ml.restore")?.toBoolean() ?: false,
+        restoreTimeoutSec = System.getProperty("ml.restoreTimeout")?.toInt() ?: 300,
+        projects = System.getProperty("ml.projects")?.let(::File)?.takeIf { it.isDirectory },
+        typeSnapshot = System.getProperty("ml.snapshot")?.toBoolean() ?: true,
     )
     private val withNames = System.getProperty("ml.names")?.toBoolean() ?: false
     private var autocomplete = true
+    private var stressTest = false
 
     override fun setUp() {
         super.setUp()
@@ -56,10 +67,16 @@ class CSharpMlDatasetExport : BasePlatformTestCase() {
             .onFailure { println("ml: cannot disable code vision: $it") }
         runCatching { com.intellij.codeInsight.daemon.DaemonCodeAnalyzer.getInstance(project).disableUpdateByTimer(testRootDisposable) }
             .onFailure { println("ml: cannot disable the daemon timer: $it") }
+        // The test logger buffers every debug record with a formatted time stamp, and the index logs one on every lookup after a change
+        // of the document (FileBasedIndexImpl.runIfHaveNewUpdatesFor): 40 % of the completion time on the server. Stress-test mode turns
+        // the debug level off (TestLoggerFactory.TestLogger.isDebugEnabled); the IDE never logs debug anyway.
+        stressTest = ApplicationManagerEx.isInStressTest()
+        ApplicationManagerEx.setInStressTest(true)
     }
 
     override fun tearDown() {
         try {
+            ApplicationManagerEx.setInStressTest(stressTest)
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
             RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
@@ -73,6 +90,7 @@ class CSharpMlDatasetExport : BasePlatformTestCase() {
     fun testExport() {
         requireNotNull(reposFile) { "-Pml.repos=<file with repository names> is required" }
         requireNotNull(lmFile) { "-Pml.lm=<lm.cml> is required (train it on repositories disjoint from ml.repos)" }
+        println("ml: system=${com.intellij.openapi.application.PathManager.getSystemPath()} helpers=${io.github.dotnetsupport.cli.DotNetHelper.root()} options: restore=${options.restore} projects=${options.projects} snapshot=${options.typeSnapshot}")
         val lm = NgramModel.read(File(lmFile))
         val extractor = FeatureExtractor(CSharpMlFeatures.schema, lm.vocab, lm, options.cacheLambda)
         val exporter = CSharpMlExporter(myFixture, project, myFixture.module, testRootDisposable, lm.vocab, extractor, options)

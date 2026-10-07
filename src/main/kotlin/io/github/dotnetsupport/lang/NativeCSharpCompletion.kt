@@ -703,6 +703,66 @@ object NativeCSharpMembers {
 object NativeCSharpTypeNames {
     private const val MAX_NAMES = 2000
 
+    /**
+     * The types of the solution outside [file], read from the stub index once (the dataset export completes hundreds of positions of one
+     * file whose other files do not change; the IDE never sets it): [names] with their arities, [stubs] the parts by name, as
+     * [NativeCSharpResolver.stubParts] finds them, [files] the files declaring each name ([file] included, so that [refresh] knows what to
+     * read again). The types of [file] itself are left out: the resolver has them from its PSI, and their stubs go stale with every edit.
+     */
+    class Snapshot(
+        val file: com.intellij.openapi.vfs.VirtualFile, val names: Map<String, Set<Int>>, val stubs: Map<String, List<TypePart>>,
+        val files: Map<String, Set<com.intellij.openapi.vfs.VirtualFile>>,
+    ) {
+        /**
+         * The snapshot for [next] after [changed] files were edited (the file exported before, whose stubs were rebuilt): the names declared
+         * in those files and in [next] are read from the index again, the rest is kept.
+         */
+        fun refresh(project: com.intellij.openapi.project.Project, next: com.intellij.openapi.vfs.VirtualFile, changed: Collection<com.intellij.openapi.vfs.VirtualFile>): Snapshot {
+            val stale = (changed + next + file).toSet()
+            val names = LinkedHashMap(this.names); val stubs = HashMap(this.stubs); val files = HashMap(this.files)
+            for ((name, declaredIn) in this.files) {
+                if (declaredIn.none { it in stale }) continue
+                read(project, next, name, names, stubs, files)
+            }
+            return Snapshot(next, names, stubs, files)
+        }
+
+        companion object {
+            internal fun read(
+                project: com.intellij.openapi.project.Project, file: com.intellij.openapi.vfs.VirtualFile, name: String,
+                names: MutableMap<String, Set<Int>>, stubs: MutableMap<String, List<TypePart>>, files: MutableMap<String, Set<com.intellij.openapi.vfs.VirtualFile>>,
+            ) {
+                val declaredIn = HashSet<com.intellij.openapi.vfs.VirtualFile>()
+                val parts = NativeCSharpResolver.stubParts(project, file, name, declaredIn)
+                if (declaredIn.isEmpty()) files.remove(name) else files[name] = declaredIn
+                if (parts.isEmpty()) { names.remove(name); stubs.remove(name) } else { names[name] = parts.mapTo(HashSet()) { it.arity }; stubs[name] = parts }
+            }
+        }
+    }
+
+    @Volatile private var snapshot: Snapshot? = null
+
+    /** The snapshot for [file] (the original: completion works in a copy) while one is set and is of that file. */
+    fun snapshotOf(file: com.intellij.openapi.vfs.VirtualFile): Snapshot? = snapshot?.takeIf { it.file == file }
+
+    @org.jetbrains.annotations.TestOnly
+    fun setSnapshotForTests(value: Snapshot?) {
+        snapshot = value
+    }
+
+    /**
+     * Reads every type name of the stub index of [project] into a [Snapshot] for [file], for [setSnapshotForTests]; [Snapshot.refresh] moves
+     * it to the next file of the same solution (reading the whole index takes a second on a big solution, a minute when done for every file).
+     */
+    @org.jetbrains.annotations.TestOnly
+    fun snapshot(project: com.intellij.openapi.project.Project, file: com.intellij.openapi.vfs.VirtualFile): Snapshot {
+        val names = LinkedHashMap<String, Set<Int>>()
+        val stubs = HashMap<String, List<TypePart>>()
+        val files = HashMap<String, Set<com.intellij.openapi.vfs.VirtualFile>>()
+        for (key in StubIndex.getInstance().getAllKeys(CSharpStubIndexKeys.TYPE_NAMES, project)) Snapshot.read(project, file, key, names, stubs, files)
+        return Snapshot(file, names, stubs, files)
+    }
+
     /** Name → arities. [matcher] null: every name (capped). */
     fun candidates(file: CSharpFile, matcher: PrefixMatcher?, resolver: NativeCSharpResolver): Map<String, Set<Int>> {
         val result = LinkedHashMap<String, MutableSet<Int>>()
@@ -713,6 +773,15 @@ object NativeCSharpTypeNames {
         }
         val project = file.project
         val index = StubIndex.getInstance()
+        snapshotOf(file.originalFile.viewProvider.virtualFile)?.let { snapshot ->
+            var taken = 0
+            for ((name, arities) in snapshot.names) {
+                if (matcher != null && !matcher.prefixMatches(name)) continue
+                if (taken++ >= MAX_NAMES) break
+                result.getOrPut(name) { HashSet() } += arities
+            }
+            return result
+        }
         val keys = index.getAllKeys(CSharpStubIndexKeys.TYPE_NAMES, project).filter { matcher == null || matcher.prefixMatches(it) }.take(MAX_NAMES)
         val scope = io.github.dotnetsupport.codeanalysis.CSharpSourceScope.of(project)
         for (key in keys) {
