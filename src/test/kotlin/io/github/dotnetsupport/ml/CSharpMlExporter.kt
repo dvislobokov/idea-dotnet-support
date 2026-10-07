@@ -42,7 +42,12 @@ class CSharpMlExporter(
     private val options: Options,
 ) {
     /** @param perFile sampled positions per file; @param maxFiles per repository (0 = all); @param cacheLambda λ of the file cache LM (0 = off). */
-    class Options(val perFile: Int = 10, val maxFiles: Int = 120, val cacheLambda: Double = 0.3, val seed: Long = 7L, val maxCandidates: Int = 100)
+    class Options(
+        val perFile: Int = 10, val maxFiles: Int = 120, val cacheLambda: Double = 0.3, val seed: Long = 7L, val maxCandidates: Int = 100,
+        /** At most this many `.cs` files are copied into the content root (0 = all): the sampled sources first, then a random subset
+         *  of the rest. Indexing the whole repository dominated the export time on the server (~10 min for a big repository). */
+        val maxCopy: Int = 0,
+    )
 
     class Stats {
         var files = 0; var positions = 0; var lists = 0; var noAnswer = 0; var empty = 0; var single = 0; var candidates = 0L; var millis = 0L
@@ -62,13 +67,21 @@ class CSharpMlExporter(
     fun exportRepository(repoDir: File, writer: ExampleShards.Writer, stats: Stats) {
         val tmp = FileUtil.createTempDirectory("csml-", repoDir.name, true)
         val sources = ArrayList<File>()
+        val all = ArrayList<Pair<File, String>>()     // (file, relative path) of every copyable file
         repoDir.walkTopDown().onEnter { d -> !d.name.startsWith(".") && d.name.lowercase() !in SKIPPED_DIRS }.forEach { f ->
-            if (!f.isFile) return@forEach
-            val ext = f.extension.lowercase()
-            if (ext !in COPIED_EXTENSIONS) return@forEach
-            val rel = f.relativeTo(repoDir).path
+            if (f.isFile && f.extension.lowercase() in COPIED_EXTENSIONS) all.add(f to f.relativeTo(repoDir).path)
+        }
+        // which .cs files are sampled (the first maxFiles sources by path) and which are copied at all (maxCopy)
+        val csFiles = all.filter { it.first.extension.lowercase() == "cs" }
+        val sampled = csFiles.filter { isSource(it.second, it.first) }.sortedBy { it.first.path }.let { if (options.maxFiles > 0) it.take(options.maxFiles) else it }
+        val copied: Set<String> = if (options.maxCopy <= 0 || csFiles.size <= options.maxCopy) csFiles.map { it.second }.toSet() else {
+            val rest = csFiles.map { it.second }.toMutableSet().also { it.removeAll(sampled.map { s -> s.second }.toSet()) }
+            sampled.map { it.second }.toSet() + rest.shuffled(Random(options.seed)).take((options.maxCopy - sampled.size).coerceAtLeast(0))
+        }
+        for ((f, rel) in all) {
+            if (f.extension.lowercase() == "cs" && rel !in copied) continue
             val dst = File(tmp, rel); dst.parentFile.mkdirs(); f.copyTo(dst)
-            if (ext == "cs" && isSource(rel, f)) sources.add(dst)
+            if (f.extension.lowercase() == "cs" && isSource(rel, f)) sources.add(dst)
         }
         VfsRootAccess.allowRootAccess(disposable, tmp.path)
         val root = LocalFileSystem.getInstance().refreshAndFindFileByIoFile(tmp) ?: error("no VFS root for $tmp")

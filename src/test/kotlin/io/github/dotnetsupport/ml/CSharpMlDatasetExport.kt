@@ -22,6 +22,7 @@ import java.io.File
  *  - `ml.lm`       the n-gram model whose vocabulary and probabilities feed the common features (`ml-models/csharp/e15-a.cml`: trained on the lm fold, not on these repositories)
  *  - `ml.out`      output directory for `<repo>.cmlx` (default `<data>/shards`); a repository whose shard exists is skipped (resumable)
  *  - `ml.perFile`  sampled completion positions per file (10), `ml.maxFiles` per repository (120, 0 = all), `ml.cache` λ of the file cache (0.3),
+ *    `ml.maxCopy` at most this many `.cs` files copied into the content root (0 = all; the sampled sources always are),
  *    `ml.names` write candidate names into the shards (false), `ml.seed` (7)
  *
  * Per position: the identifier token is cut to a 0–2 character prefix, the caret is put there, `completeBasic()` runs, the answer is the
@@ -38,6 +39,7 @@ class CSharpMlDatasetExport : BasePlatformTestCase() {
         maxFiles = System.getProperty("ml.maxFiles")?.toInt() ?: 120,
         cacheLambda = System.getProperty("ml.cache")?.toDouble() ?: 0.3,
         seed = System.getProperty("ml.seed")?.toLong() ?: 7L,
+        maxCopy = System.getProperty("ml.maxCopy")?.toInt() ?: 0,
     )
     private val withNames = System.getProperty("ml.names")?.toBoolean() ?: false
     private var autocomplete = true
