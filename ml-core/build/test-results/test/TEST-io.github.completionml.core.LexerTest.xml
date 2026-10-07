@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.completionml.core.LexerTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-07T13:59:39.253Z" hostname="aabbcc" time="0.007">
+  <properties/>
+  <testcase name="csharpStringsAndDirectives()" classname="io.github.completionml.core.LexerTest" time="0.002"/>
+  <testcase name="csharpBasics()" classname="io.github.completionml.core.LexerTest" time="0.001"/>
+  <testcase name="offsetsAreSourcePositions()" classname="io.github.completionml.core.LexerTest" time="0.001"/>
+  <testcase name="goAutoSemicolons()" classname="io.github.completionml.core.LexerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

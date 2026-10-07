@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.completionml.core.nn.NnHealParityTest" tests="2" skipped="2" failures="0" errors="0" timestamp="2026-10-07T13:59:41.669Z" hostname="aabbcc" time="0.006">
+  <properties/>
+  <testcase name="fixtureContainsAllHealingKinds()" classname="io.github.completionml.core.nn.NnHealParityTest" time="0.003">
+    <skipped message="org.opentest4j.TestAbortedException: Assumption failed: heal parity fixture not present" type="org.opentest4j.TestAbortedException">org.opentest4j.TestAbortedException: Assumption failed: heal parity fixture not present
+	at org.junit.jupiter.api.Assumptions.throwAssumptionFailed(Assumptions.java:316)
+	at org.junit.jupiter.api.Assumptions.assumeTrue(Assumptions.java:115)
+	at io.github.completionml.core.nn.NnHealParityTest.fixtureContainsAllHealingKinds(NnHealParityTest.kt:128)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+</skipped>
+  </testcase>
+  <testcase name="healedCompletionMatchesPython()" classname="io.github.completionml.core.nn.NnHealParityTest" time="0.002">
+    <skipped message="org.opentest4j.TestAbortedException: Assumption failed: heal parity fixture / model / vocab not present" type="org.opentest4j.TestAbortedException">org.opentest4j.TestAbortedException: Assumption failed: heal parity fixture / model / vocab not present
+	at org.junit.jupiter.api.Assumptions.throwAssumptionFailed(Assumptions.java:316)
+	at org.junit.jupiter.api.Assumptions.assumeTrue(Assumptions.java:115)
+	at io.github.completionml.core.nn.NnHealParityTest.healedCompletionMatchesPython(NnHealParityTest.kt:106)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+</skipped>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

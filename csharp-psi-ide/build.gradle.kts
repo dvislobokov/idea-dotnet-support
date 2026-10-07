@@ -16,6 +16,8 @@ repositories {
 dependencies {
     implementation(project(":csharp-psi-core"))
     implementation(project(":csharp-psi-semantic"))
+    // ML completion engine (shared with idea-golang-support): n-gram LM, ranker, neural inference + native kernels in its jar
+    implementation(project(":ml-core"))
     intellijPlatform {
         // Like the root project: the installed IDE from localIdePath when it exists (nothing is downloaded), otherwise IntelliJ IDEA of platformVersion.
         val localIde = providers.gradleProperty("localIdePath").orNull

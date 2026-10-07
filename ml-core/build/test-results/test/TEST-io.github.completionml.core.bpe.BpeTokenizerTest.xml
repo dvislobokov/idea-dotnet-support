@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.completionml.core.bpe.BpeTokenizerTest" tests="6" skipped="1" failures="0" errors="0" timestamp="2026-10-07T13:59:41.018Z" hostname="aabbcc" time="0.043">
+  <properties/>
+  <testcase name="randomBytesRoundTrip()" classname="io.github.completionml.core.bpe.BpeTokenizerTest" time="0.025"/>
+  <testcase name="specialsAreNeverProducedFromText()" classname="io.github.completionml.core.bpe.BpeTokenizerTest" time="0.003"/>
+  <testcase name="layoutAndSpecials()" classname="io.github.completionml.core.bpe.BpeTokenizerTest" time="0.003"/>
+  <testcase name="throughput()" classname="io.github.completionml.core.bpe.BpeTokenizerTest" time="0.004">
+    <skipped message="org.opentest4j.TestAbortedException: Assumption failed: set CML_BPE_BENCH=&lt;vocab.bpe&gt; to run the throughput benchmark" type="org.opentest4j.TestAbortedException">org.opentest4j.TestAbortedException: Assumption failed: set CML_BPE_BENCH=&lt;vocab.bpe&gt; to run the throughput benchmark
+	at org.junit.jupiter.api.Assumptions.throwAssumptionFailed(Assumptions.java:316)
+	at org.junit.jupiter.api.Assumptions.assumeTrue(Assumptions.java:115)
+	at io.github.completionml.core.bpe.BpeTokenizerTest.throughput(BpeTokenizerTest.kt:67)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+</skipped>
+  </testcase>
+  <testcase name="stringApiRoundTrip()" classname="io.github.completionml.core.bpe.BpeTokenizerTest" time="0.002"/>
+  <testcase name="offsetsAndLengths()" classname="io.github.completionml.core.bpe.BpeTokenizerTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

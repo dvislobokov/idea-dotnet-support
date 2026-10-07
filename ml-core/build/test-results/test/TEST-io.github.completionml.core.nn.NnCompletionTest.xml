@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="io.github.completionml.core.nn.NnCompletionTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-07T13:59:41.558Z" hostname="aabbcc" time="0.11">
+  <properties/>
+  <testcase name="repetitionGuard()" classname="io.github.completionml.core.nn.NnCompletionTest" time="0.011"/>
+  <testcase name="longPreTokensAreChunkedAt128Bytes()" classname="io.github.completionml.core.nn.NnCompletionTest" time="0.001"/>
+  <testcase name="withoutHealingThePromptEndsAtTheCaret()" classname="io.github.completionml.core.nn.NnCompletionTest" time="0.014"/>
+  <testcase name="prefixTableMatchesBruteForce()" classname="io.github.completionml.core.nn.NnCompletionTest" time="0.023"/>
+  <testcase name="showPolicy()" classname="io.github.completionml.core.nn.NnCompletionTest" time="0.008"/>
+  <testcase name="constrainedGenerationStartsWithTheTypedRemainder()" classname="io.github.completionml.core.nn.NnCompletionTest" time="0.019"/>
+  <testcase name="prefixCutIsTheEvalCut()" classname="io.github.completionml.core.nn.NnCompletionTest" time="0.001"/>
+  <testcase name="healingBoundaries()" classname="io.github.completionml.core.nn.NnCompletionTest" time="0.013"/>
+  <testcase name="boundariesMatchEncoding()" classname="io.github.completionml.core.nn.NnCompletionTest" time="0.002"/>
+  <testcase name="maskedLogProbIsTheMaskedSoftmax()" classname="io.github.completionml.core.nn.NnCompletionTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
