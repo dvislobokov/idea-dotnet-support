@@ -3,6 +3,29 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.132
+
+- ML completion in a build with `-PmlEnabled=true` (`bash gradlew buildPlugin -PmlEnabled=true [-Pml.big=true]` → `idea-dotnet-support-<v>-ml.zip`;
+  the plain build is unchanged): grey text to the end of the line in C# files from our own transformer `cs31m-e2-lr2e3` (31 M parameters,
+  the engine of idea-ml-completion in `lib/ml-core.jar` with its native SIMD kernels, scalar fallback) while typing, while the completion
+  popup is open or on an explicit call; Tab accepts. The confidence gate is 0.7 (14 % of positions, 94 % exact lines), 0.5 right after
+  `.` / `?.` / `::` / `->`, 0.25 on a line just opened by Enter; a suggestion of closing brackets only is hidden (a setting shows it).
+  Adopted from the Go plugin's live use (0.2.199–0.2.206): the provider is first and asks a host's own provider before the network, one
+  KV-cache session per editor, the model copied once to the IDE system directory by SHA-256, the tail of a suggestion the rest of the
+  line already has is dropped, the gate counts the code tokens only (the text inside a string literal is the guess, a setting), an
+  uncertain line shows its longest certain start, every answer of the network can go to the plugin log (category `ml`)
+- The completion list ordered by the ML ranker `e18-rank` trained on the plugin's own exported lists (MRR 0.71 against 0.53 of the
+  rules): the native list is held back until every contributor has answered, each candidate gets the same features as the export
+  (the n-gram model `e15-a` with the per-file cache, the 19 language features) through the same code — a parity test replays the
+  export on its fixture and compares the vectors — and the weigher puts the score before the rule priority; the rows carry a grey
+  `ML` mark (a setting); the plugin's own order stays while the models load and in a build without them
+- Preload: the models load and warm up in the background when a project with C# files opens (after indexing; a project without `.cs`
+  files pays nothing, the application start loads nothing), and every C# editor opened prefills the KV cache of its session with the
+  file at the caret on the model's thread, so the first grey-text request there is incremental (~25 ms) instead of a cold prefill
+- Settings | .NET | ML completion: the ranker and its mark, the grey text with its three gates, closers, string guessing, the big
+  model `cs50m-e3-lr2e3` (when packed with `-Pml.big=true`), a directory with other models, the log of every answer, and what is
+  loaded (models, kernels, shown / accepted counts)
+
 ## 0.1.131
 
 - The headless export of completion lists for the ML ranker (`mlDataset`) is 7× faster per position (45 ms, was 334; 2 s on a

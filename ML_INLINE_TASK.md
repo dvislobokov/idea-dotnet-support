@@ -114,3 +114,18 @@ e16–e18 (цифры). Go-плагин: файлы из §0 как образе
 ## Порог после точки (2026-10-07, измерено на 3000 позициях)
 После `.` модель угадывает не хуже, но менее уверена: при пороге 0.7 показывается Go 37 % / C# 20 % позиций (точность 96 / 98 %), при 0.5 — Go 51 % / C# 30 % (92 / 96 %).
 В провайдере: `showThreshold = 0.5`, если байт перед кареткой — `.` (в C# также `?.`, `::`, `->`), иначе 0.7 — через `Options.copy(showThreshold = …)` на вызов.
+
+## Статус (2026-10-07, 0.1.132) — сделано
+
+- Упаковка: `bash gradlew buildPlugin -PmlEnabled=true -PlocalIdePath=… [-Pml.models=<каталог> -Pml.big=true]` → `build/distributions/idea-dotnet-support-<v>-ml.zip`
+  с `lib/ml-core.jar` (native/*) и `ml/csharp/{cs31m-e2-lr2e3.cml,cs-16384.bpe,e15-a.cml,e18-rank.cml[,cs50m-e3-lr2e3.cml]}`; `src/ml/resources/META-INF/csharp-ml.xml`
+  подключён в plugin.xml через `xi:fallback`. Без флага zip не меняется (в plugin.xml постоянно есть только weigher `dotnetMlRanker`, без моделей он пустой).
+- Код (`src/main/kotlin/io/github/dotnetsupport/ml/`): `CSharpMlSettings` (APP, `dotnet-support-ml.xml`), `CSharpMlModels` (APP-сервис: n-gram + ранкер
+  в пуле, сеть + сессии на одном потоке, копия модели в `<system>/dotnet-support/ml/<sha256>/`, прогрев, `prefill`, счётчики, статус),
+  `CSharpNnInline` (чистая часть: контекст 40/16 KB, порог после точки, trimOverlap, codeConfidence, certainPrefix, blankLine),
+  `CSharpNnInlineCompletionProvider` (+ `CSharpNnEditorListener`: загрузка при первом редакторе, prefill при открытии, release при закрытии;
+  `CSharpMlPreloadActivity`: загрузка при открытии проекта с .cs; `CSharpMlLogBridge`), `CSharpMlCompletionRanker` (Batch в контрибьюторе,
+  признаки через `CSharpMlFeatures.languageBlock` + `FeatureExtractor`, декоратор « ML», `CSharpMlCompletionWeigher`), `CSharpMlConfigurable`.
+- Тесты: `CSharpNnInlineTest` (чистая часть с заглушкой движка), `CSharpNnModelTest` (реальная модель из `ml-models/csharp`: healing, prefill+complete),
+  `CSharpMlRankerParityTest` (экспорт на фикстуре ↔ признаки weigher'а побайтно, порядок по score, метка ML), `CSharpMlBundledModelsTest` (ML-сборка).
+- Не сделано: живая проверка в IDE (на сервере нет дисплея); счётчик «принято» считает только Tab через insertHandler; подавление в строках/комментариях.

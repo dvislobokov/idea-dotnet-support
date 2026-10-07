@@ -240,6 +240,7 @@ class CSharpMlExporter(
                     val answer = candidates[chosenAll]
                     candidates = (candidates.filterIndexed { idx, _ -> idx != chosenAll }.shuffled(rnd).take(options.maxCandidates - 1) + answer).shuffled(rnd)
                 }
+                candidates = CSharpMlFeatures.ordered(candidates)
                 val chosen = candidates.indexOfFirst { it.lookupString == t.text }
                 val language = CSharpMlFeatures.languageBlock(caret, afterDot, candidates)
                 val names = Array(candidates.size) { candidates[it].lookupString }

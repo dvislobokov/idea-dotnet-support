@@ -27,6 +27,7 @@ import io.github.dotnetsupport.csharp.lang.psi.impl.CSharpStubElementImpl
 import io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubIndexKeys
 import io.github.dotnetsupport.lsp.RoslynOptions
 import io.github.dotnetsupport.ml.CSharpMlCandidateKind
+import io.github.dotnetsupport.ml.CSharpMlCompletionRanker
 import io.github.dotnetsupport.ml.CSharpMlScope
 import javax.swing.Icon
 
@@ -86,7 +87,10 @@ class NativeCSharpCompletionContributor : CompletionContributor() {
             result.restartCompletionOnPrefixChange(com.intellij.patterns.StandardPatterns.string().withLength(NativeCSharpImportCompletion.MIN_PREFIX))
         }
         val items = NativeCSharpCompletion.items(place, file, result.prefixMatcher, excluded)
-        for (item in items) result.addElement(item)
+        // the ML ranker (CSharpMlCompletionRanker, ML build) needs the whole list for its list-relative features: with it active the items
+        // are held back and added scored once the other contributors have answered; without it they go in as they are
+        val ml = CSharpMlCompletionRanker.batch(parameters, result)
+        for (item in items) ml?.add(item) ?: result.addElement(item)
         val names = items.flatMapTo(HashSet()) { item -> item.allLookupStrings.map(NativeCSharpCompletion::nameOf) }
         names += excluded
         NativeCSharpDoubleCompletion.basic(parameters, place, file, result, names)   // the second press: inaccessible members, unreferenced types (0.1.96)
@@ -94,8 +98,9 @@ class NativeCSharpCompletionContributor : CompletionContributor() {
         val afterOverride = place.kind == NativeCompletionKind.MEMBER_START && "override" in place.modifiers
         result.runRemainingContributors(parameters) { found ->
             if (afterOverride && NativeCSharpCompletion.isKeywordOrTemplate(found.lookupElement)) return@runRemainingContributors
-            if (!NativeCSharpCompletion.isDuplicate(found.lookupElement, names, place.keywordsAreNative)) result.passResult(found)
+            if (!NativeCSharpCompletion.isDuplicate(found.lookupElement, names, place.keywordsAreNative)) ml?.pass(found) ?: result.passResult(found)
         }
+        ml?.flush()
         result.stopHere()
     }
 }

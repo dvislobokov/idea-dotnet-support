@@ -106,8 +106,9 @@
 
 Не сделано / дальше:
 
-- Weigher `CSharpMlCompletionRanker` (§4 контракта) — после того как движок обучит `e18-rank.cml`; сервис моделей — по `ML_INLINE_TASK.md`.
-- Тест паритета weigher ↔ экспорт (обязателен по контракту) — вместе с weigher.
+- ~~Weigher `CSharpMlCompletionRanker`~~ — сделан в 0.1.132 (`src/main/kotlin/io/github/dotnetsupport/ml/CSharpMlCompletionRanker.kt`: контрибьютор
+  собирает весь список, признаки через тот же `CSharpMlFeatures.languageBlock` + `FeatureExtractor`, `e18-rank.cml`, weigher перед priority);
+  паритет с экспортом — `CSharpMlRankerParityTest` (экспорт на фикстуре, затем те же позиции в IDE-пути: признаки равны побайтно).
 - Члены библиотечных типов в экспорте есть только при индексе сборок (`CSharpSemanticEnvironment`): в headless-прогоне без собранных проектов
   списки после точки у `string` / `List<T>` пустые или только из решения — измерить по `answer-missing` в сводке; индекс .NET runtime на сервере —
   отдельная работа.

@@ -40,9 +40,10 @@ dependencies {
         pluginComposedModule(implementation(project(":csharp-psi-ide")))
     }
     testImplementation("junit:junit:4.13.2")
-    // The offline export of completion lists for the ML ranker (CSharpMlDatasetExport, task mlDataset) writes ml-core's shards; the main
-    // module itself never touches ml-core (its C# adapter lives in csharp-psi-ide).
-    testImplementation(project(":ml-core"))
+    // The ML completion engine (ml-core/, a copy of idea-ml-completion's module): the C# adapter of its ranker lives in csharp-psi-ide,
+    // the models service, the weigher and the grey-text provider (ml/CSharpMl*, ML_INLINE_TASK.md) in the main module; the offline
+    // export of completion lists (CSharpMlDatasetExport, task mlDataset) writes its shards. The jar is lib/ml-core.jar of the plugin.
+    implementation(project(":ml-core"))
 }
 
 java {
@@ -171,6 +172,31 @@ intellijPlatformTesting.testIde.register("semanticGate") {
             showStandardStreams = true
         }
     }
+}
+
+// ML completion (ML_INLINE_TASK.md): `-PmlEnabled=true` (or MLENABLED=true in the environment) puts the ML features into the plugin —
+// META-INF/csharp-ml.xml (the grey-text inline provider, the weigher of the completion list, the Settings | .NET | ML completion page)
+// and the models of `-Pml.models` (a directory; default ml-models/csharp) under ml/csharp/: the transformer cs31m-e2-lr2e3.cml with its
+// vocabulary cs-16384.bpe (required), the ranker pair e15-a.cml + e18-rank.cml (optional: without them only the grey text works) and,
+// with `-Pml.big=true`, the big transformer cs50m-e3-lr2e3.cml (a switch on the settings page). The proxy ranker e15-a-rank.cml is never
+// shipped. The zip gets the classifier `-ml`; a build without the flag has no trace of any of it.
+val mlEnabled = providers.gradleProperty("mlEnabled").orElse(providers.environmentVariable("MLENABLED")).map { it.equals("true", ignoreCase = true) }.getOrElse(false)
+if (mlEnabled) {
+    val mlModels = providers.gradleProperty("ml.models").map { file(it) }.getOrElse(file("ml-models/csharp"))
+    val mlBig = providers.gradleProperty("ml.big").map { it.equals("true", ignoreCase = true) }.getOrElse(false)
+    val nnFiles = listOf("cs31m-e2-lr2e3.cml", "cs-16384.bpe")
+    for (name in nnFiles) check(File(mlModels, name).isFile) { "mlEnabled: $name not found in $mlModels" }
+    val rankerFiles = listOf("e15-a.cml", "e18-rank.cml").filter { File(mlModels, it).isFile }
+    val bigFiles = if (mlBig) listOf("cs50m-e3-lr2e3.cml").also { for (name in it) check(File(mlModels, name).isFile) { "ml.big: $name not found in $mlModels" } } else emptyList()
+    tasks.processResources {
+        from("src/ml/resources")
+        from(mlModels) {
+            include(nnFiles + rankerFiles + bigFiles)
+            into("ml/csharp")
+        }
+    }
+    // the ML build is a separate file next to the plain one: idea-dotnet-support-<version>-ml.zip
+    tasks.buildPlugin { archiveClassifier.set("ml") }
 }
 
 // `./gradlew mlDataset` (ML_RANKER_EXPORT_TASK.md, ADAPTER.md §3): runs the plugin's real completion headlessly over C# repositories and

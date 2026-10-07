@@ -121,6 +121,14 @@ object CSharpMlFeatures {
         }
     }
 
+    /**
+     * The order of the candidates of one list as both the export and the IDE ranker feed them to the feature extractor: the plugin's
+     * rule order (priority descending, then the lookup string). The list-relative common features of the engine (`freq_rank_log`,
+     * `lm_rank_log`) break their ties by the input order, so the order has to be the same in both paths — the lookup's own order is not
+     * known before the weigher runs (0.1.132; the e18 shards used the lookup order, which is this one up to the prefix and statistics weighers).
+     */
+    fun ordered(candidates: List<CSharpMlCandidate>): List<CSharpMlCandidate> = candidates.sortedWith(compareBy({ -it.rulePriority }, { it.lookupString }))
+
     /** Index of [name] in the language block (tests and reports). */
     fun index(name: String): Int = NAMES.indexOf(name).also { require(it >= 0) { "no language feature '$name'" } }
 

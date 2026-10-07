@@ -31,6 +31,8 @@
     <xi:include href="/META-INF/csharp-psi-core.xml" xpointer="xpointer(/idea-plugin/*)"/>
     <xi:include href="/META-INF/csharp-psi-semantic.xml" xpointer="xpointer(/idea-plugin/*)"/>
     <xi:include href="/META-INF/csharp-psi-ide.xml" xpointer="xpointer(/idea-plugin/*)"/>
+    <!-- ML completion (ML_INLINE_TASK.md): csharp-ml.xml and the models exist only in a build with -PmlEnabled=true; without them nothing is registered -->
+    <xi:include href="/META-INF/csharp-ml.xml" xpointer="xpointer(/idea-plugin/*)"><xi:fallback/></xi:include>
 
     <extensions defaultExtensionNs="io.github.dotnetsupport">
         <processAttacher implementation="io.github.dotnetsupport.debugger.DotNetProcessAttacherImpl"/>
@@ -375,6 +377,9 @@
         <completion.contributor language="C#" order="first, after dotnetCaseInsensitive, before dotnetNativeCompletion"
                                 implementationClass="io.github.dotnetsupport.lang.NativeCSharpLanguageCompletionContributor"/>
         <lookup.charFilter id="dotnetCSharpCommit" order="before default" implementation="io.github.dotnetsupport.lang.CSharpCommitCharFilter"/>
+        <!-- the score of the ML ranker (ml/CSharpMlCompletionRanker.kt, a build with -PmlEnabled=true) before the priority of the plugin's rules, which then breaks
+             ties; inert without the models (every row is unscored) -->
+        <weigher key="completion" id="dotnetMlRanker" order="first, before priority" implementationClass="io.github.dotnetsupport.ml.CSharpMlCompletionWeigher"/>
         <weigher key="completion" id="dotnetSuggestionStats" order="after prefix, before stats" implementationClass="io.github.dotnetsupport.lang.CSharpSuggestionStatsWeigher"/>
         <typedHandler implementation="io.github.dotnetsupport.lang.CSharpCompletionAutoPopup"/>
         <platform.backend.documentation.lookupElementTargetProvider implementation="io.github.dotnetsupport.lang.CSharpLookupDocumentationTargetProvider"/>
