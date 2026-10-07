@@ -50,6 +50,12 @@ class CSharpMlDatasetExport : BasePlatformTestCase() {
         RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false   // a single candidate must stay a list, not an insertion
+        // Every document change in the fixture editor otherwise schedules the daemon and the plugin's CodeVision pass over the whole
+        // file: on the server 34 CodeVision threads burnt thousands of CPU seconds per repository while the export itself needed minutes.
+        runCatching { com.intellij.codeInsight.codeVision.settings.CodeVisionSettings.getInstance().codeVisionEnabled = false }
+            .onFailure { println("ml: cannot disable code vision: $it") }
+        runCatching { com.intellij.codeInsight.daemon.DaemonCodeAnalyzer.getInstance(project).disableUpdateByTimer(testRootDisposable) }
+            .onFailure { println("ml: cannot disable the daemon timer: $it") }
     }
 
     override fun tearDown() {
