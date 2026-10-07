@@ -724,7 +724,9 @@ object NativeCSharpExpectedCompletion {
 
     private fun prioritized(builder: LookupElementBuilder, priority: Double): LookupElement {
         builder.putUserData(NativeCSharpCompletion.NATIVE, true)
-        return PrioritizedLookupElement.withPriority(builder, priority).also { it.putUserData(NativeCSharpCompletion.NATIVE, true) }
+        val row = PrioritizedLookupElement.withPriority(builder, priority).also { it.putUserData(NativeCSharpCompletion.NATIVE, true) }
+        // every row here is what the place expects (the ML ranker's `expected_type_match`); its kind is not told
+        return NativeCSharpMlInfo.attach(row, NativeCSharpMlInfo.OTHER, priority, expectedTypeMatch = 2)
     }
 
     /** The expected type as the ranking of the native list compares it (by its text), where the tree alone does not say it. */

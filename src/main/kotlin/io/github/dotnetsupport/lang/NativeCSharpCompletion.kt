@@ -26,6 +26,8 @@ import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.csharp.lang.psi.impl.CSharpStubElementImpl
 import io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubIndexKeys
 import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.ml.CSharpMlCandidateKind
+import io.github.dotnetsupport.ml.CSharpMlScope
 import javax.swing.Icon
 
 /**
@@ -251,7 +253,7 @@ object NativeCSharpCompletion {
                     solutionTypes()
                     if (analysis.typeRole.keywords) importedTypes()   // the filtered places of 0.1.88 (throw new, base list, event, constraint) keep to their own types
                     if (analysis.typeRole.keywords) {
-                        keywords(NativeCSharpCompletionPlace.PREDEFINED_TYPES, priority = TYPE)
+                        keywords(NativeCSharpCompletionPlace.PREDEFINED_TYPES, priority = TYPE, kind = CSharpMlCandidateKind.TYPE)
                         keywords(place.keywords + NativeCSharpKeywords.TYPE)
                     } else if (analysis.typeRole == NativeCSharpExpectedCompletion.TypeRole.CONSTRAINT) keywords(place.keywords)
                 }
@@ -271,7 +273,7 @@ object NativeCSharpCompletion {
                     if (analysis.typeRole.keywords) importedTypes()   // the filtered places of 0.1.88 (throw new, base list, event, constraint) keep to their own types
                     val keywords = if (place.kind == NativeCompletionKind.STATEMENT) NativeCSharpKeywords.statement(place) else NativeCSharpKeywords.expression(place)
                     keywords(keywords + place.keywords)
-                    keywords(NativeCSharpCompletionPlace.PREDEFINED_TYPES)
+                    keywords(NativeCSharpCompletionPlace.PREDEFINED_TYPES, kind = CSharpMlCandidateKind.TYPE)
                 }
             }
         }
@@ -295,25 +297,38 @@ object NativeCSharpCompletion {
                     continue
                 }
                 val type = NativeCSharpLocals.typeOf(symbol)
+                val shape = localShape(symbol)
                 if (symbol.kind == LocalSymbolKind.LOCAL_FUNCTION) {
                     val function = symbol.declaration.parent as? CSharpLocalFunctionStatement
-                    add(name(symbol.name, icon, type, priority, "()", NativeCSharpCalls.handler { listOfNotNull(function) }))
+                    add(name(symbol.name, icon, type, priority, "()", NativeCSharpCalls.handler { listOfNotNull(function) }, shape))
                 } else {
-                    add(name(symbol.name, icon, type, priority))
+                    add(name(symbol.name, icon, type, priority, shape = shape))
                 }
             }
+        }
+
+        /** The ML shape of a local symbol: its kind, the local scope, its declaration (in this file by definition). */
+        private fun localShape(symbol: LocalSymbol): NativeCSharpMlInfo.Shape {
+            val kind = when (symbol.kind) {
+                LocalSymbolKind.LOCAL -> CSharpMlCandidateKind.LOCAL
+                LocalSymbolKind.PARAMETER, LocalSymbolKind.PRIMARY_CONSTRUCTOR_PARAMETER -> CSharpMlCandidateKind.PARAMETER
+                LocalSymbolKind.LOCAL_FUNCTION -> CSharpMlCandidateKind.LOCAL_FUNCTION
+                LocalSymbolKind.TYPE_PARAMETER -> CSharpMlCandidateKind.TYPE_PARAMETER
+                LocalSymbolKind.LABEL -> CSharpMlCandidateKind.OTHER
+            }
+            return NativeCSharpMlInfo.Shape(kind, CSharpMlScope.LOCAL) { symbol.declaration }
         }
 
         private fun labels() {
             val offset = place.offset
             for (symbol in resolver.scopes.symbols) {
-                if (symbol.kind == LocalSymbolKind.LABEL && symbol.scope.textRange.contains(offset)) add(name(symbol.name, AllIcons.Nodes.Tag, null, VALUE_MEMBER))
+                if (symbol.kind == LocalSymbolKind.LABEL && symbol.scope.textRange.contains(offset)) add(name(symbol.name, AllIcons.Nodes.Tag, null, VALUE_MEMBER, shape = localShape(symbol)))
             }
         }
 
         private fun typeParameters() {
             for (symbol in NativeCSharpLocals.visible(resolver.scopes, place.leaf)) {
-                if (symbol.kind == LocalSymbolKind.TYPE_PARAMETER) add(name(symbol.name, AllIcons.Nodes.Type, null, TYPE_PARAMETER))
+                if (symbol.kind == LocalSymbolKind.TYPE_PARAMETER) add(name(symbol.name, AllIcons.Nodes.Type, null, TYPE_PARAMETER, shape = localShape(symbol)))
             }
         }
 
@@ -330,19 +345,20 @@ object NativeCSharpCompletion {
             }
         }
 
-        private fun member(key: String, member: Member) {
+        private fun member(key: String, member: Member, scope: Int = CSharpMlScope.MEMBER) {
             val kind = NativeCSharpMembers.kind(member)
             if ((kind == NativeCSharpMembers.Kind.FIELD || kind == NativeCSharpMembers.Kind.PROPERTY || kind == NativeCSharpMembers.Kind.CONSTANT) && resource?.rejects(member) == true) {
                 excluded += key
                 return
             }
             val type = NativeCSharpMembers.typeIn(member, file)
+            val shape = NativeCSharpMlInfo.Shape(NativeCSharpMembers.mlKind(kind), scope, NativeCSharpMembers.isStatic(member)) { member.targets().firstOrNull() }
             when (kind) {
-                NativeCSharpMembers.Kind.METHOD -> add(name(key, AllIcons.Nodes.Method, type, METHOD, "()", NativeCSharpCalls.handler { member.targets() }))
-                NativeCSharpMembers.Kind.PROPERTY -> add(name(key, AllIcons.Nodes.Property, type, VALUE_MEMBER))
-                NativeCSharpMembers.Kind.CONSTANT -> add(name(key, AllIcons.Nodes.Constant, type, VALUE_MEMBER))
-                NativeCSharpMembers.Kind.EVENT -> add(name(key, AllIcons.Nodes.Field, type, VALUE_MEMBER))
-                NativeCSharpMembers.Kind.FIELD -> add(name(key, AllIcons.Nodes.Field, type, VALUE_MEMBER))
+                NativeCSharpMembers.Kind.METHOD -> add(name(key, AllIcons.Nodes.Method, type, METHOD, "()", NativeCSharpCalls.handler { member.targets() }, shape))
+                NativeCSharpMembers.Kind.PROPERTY -> add(name(key, AllIcons.Nodes.Property, type, VALUE_MEMBER, shape = shape))
+                NativeCSharpMembers.Kind.CONSTANT -> add(name(key, AllIcons.Nodes.Constant, type, VALUE_MEMBER, shape = shape))
+                NativeCSharpMembers.Kind.EVENT -> add(name(key, AllIcons.Nodes.Field, type, VALUE_MEMBER, shape = shape))
+                NativeCSharpMembers.Kind.FIELD -> add(name(key, AllIcons.Nodes.Field, type, VALUE_MEMBER, shape = shape))
             }
         }
 
@@ -351,14 +367,14 @@ object NativeCSharpCompletion {
             val types = if (place.base) NativeCSharpMembers.baseTypes(own, resolver) else listOf(own)
             for (type in types) for ((key, member) in resolver.membersOf(type)) {
                 if ('<' in key || '`' in key || member.nestedType != null || NativeCSharpMembers.isStatic(member)) continue
-                member(key, member)
+                member(key, member, if (place.base) CSharpMlScope.BASE_MEMBER else CSharpMlScope.MEMBER)
             }
         }
 
         private fun staticImports() {
             for (type in resolver.staticImports) for ((key, member) in resolver.membersOf(type)) {
                 if ('<' in key || '`' in key || member.nestedType != null || !NativeCSharpMembers.isStatic(member)) continue
-                member(key, member)
+                member(key, member, CSharpMlScope.RECEIVER)
             }
         }
 
@@ -367,7 +383,7 @@ object NativeCSharpCompletion {
             for (type in resolver.enclosingTypes(at)) for ((key, member) in resolver.membersOf(type)) {
                 if ('<' in key || '`' in key || member.nestedType == null) continue
                 val info = resolver.typeInfo(member.nestedType, member.nestedArity) ?: continue
-                type(key, info)
+                type(key, info, CSharpMlScope.MEMBER)
             }
         }
 
@@ -399,7 +415,7 @@ object NativeCSharpCompletion {
             }
         }
 
-        private fun type(name: String, info: TypeInfo) {
+        private fun type(name: String, info: TypeInfo, scope: Int = CSharpMlScope.IMPORTED) {
             // a base list, `event`, a constraint, `throw new`: what cannot stand there is left out; what `new` / `catch` wants goes up
             val verdict = if (place.kind == NativeCompletionKind.TYPE) analysis.verdict(info) else NativeCSharpExpectedCompletion.Verdict.NEUTRAL
             if (verdict == NativeCSharpExpectedCompletion.Verdict.REJECT) return
@@ -420,7 +436,8 @@ object NativeCSharpCompletion {
             val fits = if (verdict == NativeCSharpExpectedCompletion.Verdict.FITS) EXPECTED_TYPE else 0.0
             val tail = if (namespace.isEmpty()) null else " ($namespace)"
             val priority = TYPE + maxOf(bonus(name, name), fits)
-            val row = element(name, icon, presentable, tail, null, priority, handler)
+            val shape = NativeCSharpMlInfo.Shape(CSharpMlCandidateKind.TYPE, scope, info.kind == TypeKind.STATIC_CLASS) { info.targets().firstOrNull() }
+            val row = element(name, icon, presentable, tail, null, priority, handler, shape, fits > 0 || fitsExpected(name))
             if (fits > 0 && analysis.typeRole == NativeCSharpExpectedCompletion.TypeRole.EXCEPTION_FIRST) NativeCSharpExpectedCompletion.markException(row)
             if (!added.contains(name)) initializerRow(name, info, icon, tail, priority)
             add(row)
@@ -452,7 +469,7 @@ object NativeCSharpCompletion {
             val taken = NativeCSharpLocals.visible(resolver.scopes, place.leaf).mapTo(HashSet()) { it.name }
             for ((index, suggestion) in CSharpVariableNames.forType(type, place.nameStyle).withIndex()) {
                 val name = CSharpVariableNames.unique(suggestion, taken)
-                add(element(name, AllIcons.Nodes.Variable, name, null, null, DECLARATION - index, null))
+                add(element(name, AllIcons.Nodes.Variable, name, null, null, DECLARATION - index, null, NativeCSharpMlInfo.Shape(CSharpMlCandidateKind.OTHER, CSharpMlScope.LOCAL)))
             }
         }
 
@@ -476,31 +493,41 @@ object NativeCSharpCompletion {
             nestedTypes()
             solutionTypes()
             importedTypes()
-            keywords(NativeCSharpCompletionPlace.PREDEFINED_TYPES, priority = TYPE)
+            keywords(NativeCSharpCompletionPlace.PREDEFINED_TYPES, priority = TYPE, kind = CSharpMlCandidateKind.TYPE)
         }
 
         // ---- the elements
 
-        private fun keywords(keywords: List<String>, priority: Double = KEYWORD) {
+        private fun keywords(keywords: List<String>, priority: Double = KEYWORD, kind: CSharpMlCandidateKind = CSharpMlCandidateKind.KEYWORD) {
             for (keyword in keywords) {
                 if (!added.add(keyword)) continue
                 val handler = NativeCSharpKeywords.handler(keyword, place)
                 val element = LookupElementBuilder.create(keyword).bold().withInsertHandler(handler)
                 element.putUserData(NATIVE, true)
-                items += PrioritizedLookupElement.withPriority(element, priority).also { it.putUserData(NATIVE, true) }
+                val row = PrioritizedLookupElement.withPriority(element, priority).also { it.putUserData(NATIVE, true) }
+                items += NativeCSharpMlInfo.attach(row, NativeCSharpMlInfo.Shape(kind, CSharpMlScope.LOCAL), priority)
             }
         }
 
-        private fun name(name: String, icon: Icon, type: String?, priority: Double, tail: String? = null, handler: InsertHandler<LookupElement>? = null): LookupElement =
-            element(name, icon, name, tail, type, priority + bonus(name, type), handler)
+        private fun name(
+            name: String, icon: Icon, type: String?, priority: Double, tail: String? = null, handler: InsertHandler<LookupElement>? = null,
+            shape: NativeCSharpMlInfo.Shape = NativeCSharpMlInfo.OTHER,
+        ): LookupElement = element(name, icon, name, tail, type, priority + bonus(name, type), handler, shape, fitsExpected(type))
 
-        private fun element(lookup: String, icon: Icon, presentable: String, tail: String?, type: String?, priority: Double, handler: InsertHandler<LookupElement>?): LookupElement {
+        /** Whether [type] is the type the place wants (the part of [bonus] that is the `expected_type_match` feature of the ML ranker). */
+        private fun fitsExpected(type: String?): Boolean = expected?.let { CSharpTypeNames.matches(it.type, type) } == true
+
+        private fun element(
+            lookup: String, icon: Icon, presentable: String, tail: String?, type: String?, priority: Double, handler: InsertHandler<LookupElement>?,
+            shape: NativeCSharpMlInfo.Shape = NativeCSharpMlInfo.OTHER, fits: Boolean = false,
+        ): LookupElement {
             var builder = LookupElementBuilder.create(lookup).withIcon(icon).withPresentableText(presentable)
             if (tail != null) builder = builder.withTailText(tail, tail.startsWith(" "))
             if (type != null) builder = builder.withTypeText(type)
             if (handler != null) builder = builder.withInsertHandler(handler)
             builder.putUserData(NATIVE, true)
-            return PrioritizedLookupElement.withPriority(builder, priority).also { it.putUserData(NATIVE, true) }
+            val row = PrioritizedLookupElement.withPriority(builder, priority).also { it.putUserData(NATIVE, true) }
+            return NativeCSharpMlInfo.attach(row, shape, priority, if (fits) 2 else 0, file)
         }
 
         private fun bonus(name: String, type: String?): Double {
@@ -623,6 +650,15 @@ object NativeCSharpMembers {
     }
 
     fun isStatic(member: Member): Boolean = member.declarationKey in STATIC
+
+    /** The kind as the ML ranker's one-hot block names it ([io.github.dotnetsupport.ml.CSharpMlFeatures]). */
+    fun mlKind(kind: Kind): CSharpMlCandidateKind = when (kind) {
+        Kind.METHOD -> CSharpMlCandidateKind.METHOD
+        Kind.PROPERTY -> CSharpMlCandidateKind.PROPERTY
+        Kind.FIELD -> CSharpMlCandidateKind.FIELD
+        Kind.CONSTANT -> CSharpMlCandidateKind.CONSTANT
+        Kind.EVENT -> CSharpMlCandidateKind.EVENT
+    }
 
     private val STATIC = setOf(
         CSharpColors.STATIC_METHOD_DECLARATION, CSharpColors.EXTENSION_METHOD_DECLARATION, CSharpColors.STATIC_PROPERTY, CSharpColors.STATIC_FIELD,

@@ -21,6 +21,8 @@ import io.github.dotnetsupport.lang.semantic.CSharpNameResolver
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSymbol
 import io.github.dotnetsupport.lang.semantic.CSharpSymbolText
+import io.github.dotnetsupport.ml.CSharpMlCandidateKind
+import io.github.dotnetsupport.ml.CSharpMlScope
 import io.github.dotnetsupport.suggest.SuggestionRules
 import io.github.dotnetsupport.suggest.SuggestionStats
 import java.util.Collections
@@ -206,10 +208,12 @@ object NativeCSharpImportCompletion {
             }
             builder.putUserData(NativeCSharpCompletion.NATIVE, true)
             val priority = (if (imported) NativeCSharpCompletion.TYPE else UNIMPORTED) + bonus(name)
-            return PrioritizedLookupElement.withPriority(builder, priority).also {
+            val row = PrioritizedLookupElement.withPriority(builder, priority).also {
                 it.putUserData(NativeCSharpCompletion.NATIVE, true)
                 if (!imported) it.putUserData(NOT_IMPORTED, namespace)
             }
+            val shape = NativeCSharpMlInfo.Shape(CSharpMlCandidateKind.TYPE, if (imported) CSharpMlScope.IMPORTED else CSharpMlScope.UNIMPORTED, needsUsing = !imported)
+            return NativeCSharpMlInfo.attach(row, shape, priority)
         }
     }
 
@@ -258,10 +262,11 @@ object NativeCSharpImportCompletion {
                 builder.putUserData(NativeCSharpCompletion.NATIVE, true)
                 builder.putUserData(SuggestionStats.SIGNALS, setOf(SuggestionRules.SIGNAL_INDEX))
                 builder.putUserData(NOT_IMPORTED, namespace)
-                PrioritizedLookupElement.withPriority(builder, UNIMPORTED).also {
+                val row = PrioritizedLookupElement.withPriority(builder, UNIMPORTED).also {
                     it.putUserData(NativeCSharpCompletion.NATIVE, true)
                     it.putUserData(NOT_IMPORTED, namespace)
                 }
+                NativeCSharpMlInfo.attach(row, NativeCSharpMlInfo.Shape(CSharpMlCandidateKind.METHOD, CSharpMlScope.UNIMPORTED, isStatic = true, needsUsing = true), UNIMPORTED)
             }
     }
 

@@ -1,11 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="io.github.completionml.core.nn.NnModelTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-07T13:59:41.676Z" hostname="aabbcc" time="0.173">
+<testsuite name="io.github.completionml.core.nn.NnModelTest" tests="5" skipped="0" failures="1" errors="0" timestamp="2026-10-07T15:18:33.346Z" hostname="DESKTOP-PUVEQGK" time="0.465">
   <properties/>
-  <testcase name="int8RoundTrip()" classname="io.github.completionml.core.nn.NnModelTest" time="0.003"/>
-  <testcase name="kernelsMatchOnLargerShapes()" classname="io.github.completionml.core.nn.NnModelTest" time="0.057"/>
-  <testcase name="incrementalDecodeMatchesReference()" classname="io.github.completionml.core.nn.NnModelTest" time="0.066"/>
-  <testcase name="generateGreedyWithLogProbs()" classname="io.github.completionml.core.nn.NnModelTest" time="0.009"/>
-  <testcase name="writeReadRoundTrip()" classname="io.github.completionml.core.nn.NnModelTest" time="0.035"/>
+  <testcase name="int8RoundTrip()" classname="io.github.completionml.core.nn.NnModelTest" time="0.041"/>
+  <testcase name="kernelsMatchOnLargerShapes()" classname="io.github.completionml.core.nn.NnModelTest" time="0.189"/>
+  <testcase name="incrementalDecodeMatchesReference()" classname="io.github.completionml.core.nn.NnModelTest" time="0.154"/>
+  <testcase name="generateGreedyWithLogProbs()" classname="io.github.completionml.core.nn.NnModelTest" time="0.014"/>
+  <testcase name="writeReadRoundTrip()" classname="io.github.completionml.core.nn.NnModelTest" time="0.044">
+    <failure message="java.nio.file.AccessDeniedException: C:\Users\dvislobokov\AppData\Local\Temp\nnfmt11294084201822287908\m.cml.tmp -&gt; C:\Users\dvislobokov\AppData\Local\Temp\nnfmt11294084201822287908\m.cml" type="java.nio.file.AccessDeniedException">java.nio.file.AccessDeniedException: C:\Users\dvislobokov\AppData\Local\Temp\nnfmt11294084201822287908\m.cml.tmp -&gt; C:\Users\dvislobokov\AppData\Local\Temp\nnfmt11294084201822287908\m.cml
+	at java.base/sun.nio.fs.WindowsException.translateToIOException(WindowsException.java:91)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(WindowsException.java:106)
+	at java.base/sun.nio.fs.WindowsFileCopy.move(WindowsFileCopy.java:310)
+	at java.base/sun.nio.fs.WindowsFileSystemProvider.move(WindowsFileSystemProvider.java:287)
+	at java.base/java.nio.file.Files.move(Files.java:1319)
+	at io.github.completionml.core.nn.NnFormat.write(NnFormat.kt:148)
+	at io.github.completionml.core.nn.NnModelTest.writeReadRoundTrip(NnModelTest.kt:63)
+	at io.github.completionml.core.nn.NnModelTest.writeReadRoundTrip(NnModelTest.kt:50)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+</failure>
+  </testcase>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

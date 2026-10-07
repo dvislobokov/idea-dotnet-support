@@ -40,6 +40,9 @@ dependencies {
         pluginComposedModule(implementation(project(":csharp-psi-ide")))
     }
     testImplementation("junit:junit:4.13.2")
+    // The offline export of completion lists for the ML ranker (CSharpMlDatasetExport, task mlDataset) writes ml-core's shards; the main
+    // module itself never touches ml-core (its C# adapter lives in csharp-psi-ide).
+    testImplementation(project(":ml-core"))
 }
 
 java {
@@ -164,6 +167,46 @@ intellijPlatformTesting.testIde.register("semanticGate") {
         maxHeapSize = "3g"
         systemProperty("semanticGate.repoRoot", layout.projectDirectory.asFile.absolutePath)
         providers.gradlePropertiesPrefixedBy("semanticGate.").get().forEach { (key, value) -> systemProperty(key, value) }
+        testLogging {
+            showStandardStreams = true
+        }
+    }
+}
+
+// `./gradlew mlDataset` (ML_RANKER_EXPORT_TASK.md, ADAPTER.md §3): runs the plugin's real completion headlessly over C# repositories and
+// writes one ml-core example shard per repository for the ranker of https://github.com/dvislobokov/idea-ml-completion. Not a test of
+// behaviour, never part of `test`. Options: -Pml.repos=<file with repository names> -Pml.lm=<n-gram .cml> [-Pml.data=<corpus root>
+// -Pml.out=<shards dir> -Pml.perFile=10 -Pml.maxFiles=120 -Pml.cache=0.3 -Pml.names=false -Pml.seed=7 -Pml.heap=6g], read by CSharpMlDatasetExport.
+val mlDatasetPattern = "*MlDatasetExport"
+tasks.test {
+    filter { excludeTestsMatching(mlDatasetPattern) }
+}
+intellijPlatformTesting.testIde.register("mlDataset") {
+    val localIde = providers.gradleProperty("localIdePath").orNull?.let(::file)?.takeIf { it.exists() }
+    if (localIde != null) localPath = localIde
+    else {
+        type = org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdea
+        version = providers.gradleProperty("platformVersion")
+    }
+    task {
+        description = "Exports ML ranker training examples (*MlDatasetExport) from C# repositories: -Pml.repos=<list> -Pml.lm=<lm.cml> [-Pml.data -Pml.out -Pml.perFile -Pml.maxFiles -Pml.cache -Pml.names -Pml.seed -Pml.heap]."
+        group = "verification"
+        testClassesDirs = sourceSets.test.get().output.classesDirs
+        classpath += tasks.test.get().classpath
+        useJUnit()
+        isScanForTestClasses = false
+        include("**/*MlDatasetExport.class")
+        filter {
+            includeTestsMatching(mlDatasetPattern)
+            isFailOnNoMatchingTests = false
+        }
+        mustRunAfter("prepareTestSandbox")
+        outputs.upToDateWhen { false }
+        maxHeapSize = providers.gradleProperty("ml.heap").orNull ?: "6g"
+        providers.gradlePropertiesPrefixedBy("ml.").get().forEach { (key, value) -> if (key != "ml.heap") systemProperty(key, value) }
+        // one broken repository must not fail the export of hundreds; corpora contain generated files above the platform's 2.5 MB PSI limit
+        systemProperty("intellij.testFramework.rethrow.logged.errors", "false")
+        systemProperty("idea.max.intellisense.filesize", "20000")
         testLogging {
             showStandardStreams = true
         }

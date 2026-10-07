@@ -20,6 +20,8 @@ import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSymbol
 import io.github.dotnetsupport.lang.semantic.CSharpSymbolText
 import io.github.dotnetsupport.lang.semantic.SemanticType
+import io.github.dotnetsupport.ml.CSharpMlCandidateKind
+import io.github.dotnetsupport.ml.CSharpMlScope
 import javax.swing.Icon
 
 /**
@@ -44,7 +46,7 @@ object NativeCSharpMemberCompletion {
         val receiver = receiverOf(qualifier)
         return entries.mapNotNull { entry ->
             ProgressManager.checkCanceled()
-            element(entry, text, resolver, receiver != null, receiver)
+            element(entry, text, resolver, receiver != null, receiver, file)
         }
     }
 
@@ -58,7 +60,7 @@ object NativeCSharpMemberCompletion {
         // `base.` of an override (`base.ExecuteAsync(...)` of a BackgroundService): the members of library bases too; no extension methods there (CS0175)
         val entries = lookup.entries(qualifier, name, false, matcher, throughThis = true, inaccessibleToo = inaccessible)
             .filter { entry -> entry.inaccessible == inaccessible && (!place.base || entry.symbols.any { !resolver.isExtension(it) }) }
-        return entries.mapNotNull { element(it, text, resolver, true, receiverOf(qualifier)) }
+        return entries.mapNotNull { element(it, text, resolver, true, receiverOf(qualifier), file) }
     }
 
     /** `ConsoleColor.Black|` at the end of a statement: its `;` (and an open `)`), as the enum rows of an expected type do. */
@@ -80,8 +82,8 @@ object NativeCSharpMemberCompletion {
         return !(declaration != null && declaration.type == top && declaration.parent is CSharpLocalDeclarationStatement)
     }
 
-    private fun element(entry: CSharpMemberLookup.Entry, text: CSharpSymbolText, resolver: CSharpNameResolver, reduced: Boolean, receiver: SemanticType?): LookupElement? {
-        val element = row(entry, text, resolver, reduced, receiver) ?: return null
+    private fun element(entry: CSharpMemberLookup.Entry, text: CSharpSymbolText, resolver: CSharpNameResolver, reduced: Boolean, receiver: SemanticType?, file: CSharpFile): LookupElement? {
+        val element = row(entry, text, resolver, reduced, receiver)?.let { NativeCSharpMlInfo.attach(it, shape(entry.first), NativeCSharpMlInfo.priorityOf(it), 0, file) } ?: return null
         return if (entry.inaccessible) NativeCSharpDoubleCompletion.inaccessible(element) else element
     }
 
@@ -132,6 +134,26 @@ object NativeCSharpMemberCompletion {
             }
             is CSharpSymbol.Local -> null
         }
+    }
+
+    /** What the row is for the ML ranker ([NativeCSharpMlInfo]): the kind of the first symbol of the name, its staticness, the receiver's scope. */
+    private fun shape(symbol: CSharpSymbol): NativeCSharpMlInfo.Shape = when (symbol) {
+        is CSharpSymbol.Namespace -> NativeCSharpMlInfo.Shape(CSharpMlCandidateKind.NAMESPACE, CSharpMlScope.RECEIVER)
+        is CSharpSymbol.SourceType -> NativeCSharpMlInfo.Shape(CSharpMlCandidateKind.TYPE, CSharpMlScope.RECEIVER, symbol.info.kind == TypeKind.STATIC_CLASS) { symbol.info.targets().firstOrNull() }
+        is CSharpSymbol.LibraryType -> NativeCSharpMlInfo.Shape(CSharpMlCandidateKind.TYPE, CSharpMlScope.RECEIVER, symbol.type.isStatic)
+        is CSharpSymbol.SourceMember ->
+            NativeCSharpMlInfo.Shape(NativeCSharpMembers.mlKind(NativeCSharpMembers.kind(symbol.member)), CSharpMlScope.RECEIVER, NativeCSharpMembers.isStatic(symbol.member)) { symbol.element }
+        is CSharpSymbol.LibraryMember -> {
+            val kind = when (symbol.member.kind) {
+                IndexedMemberKind.METHOD, IndexedMemberKind.EXTENSION_METHOD, IndexedMemberKind.CONSTRUCTOR, IndexedMemberKind.OPERATOR -> CSharpMlCandidateKind.METHOD
+                IndexedMemberKind.PROPERTY, IndexedMemberKind.INDEXER -> CSharpMlCandidateKind.PROPERTY
+                IndexedMemberKind.FIELD -> CSharpMlCandidateKind.FIELD
+                IndexedMemberKind.CONSTANT, IndexedMemberKind.ENUM_MEMBER -> CSharpMlCandidateKind.CONSTANT
+                IndexedMemberKind.EVENT -> CSharpMlCandidateKind.EVENT
+            }
+            NativeCSharpMlInfo.Shape(kind, CSharpMlScope.RECEIVER, symbol.member.isStatic)
+        }
+        is CSharpSymbol.Local -> NativeCSharpMlInfo.Shape(CSharpMlCandidateKind.LOCAL, CSharpMlScope.LOCAL) { symbol.symbol.declaration }
     }
 
     /** The type arguments of an extension method that the receiver fixes (`ToImmutableArray()` of a `List<Order>`: `Order`); empty for the rest. */

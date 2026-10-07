@@ -23,7 +23,10 @@ public class OvSquare : OvShape
 
     public OvSquare(double side) => _side = side;
 
-    public override double Area() => _side * _side;
+    public override double Area()
+    {
+        throw new NotImplementedException();
+    }
 
     // TYPE:override-popup — type `public override ` (with the space). EXPECT: the list opens by itself after the space (no Ctrl+Space):
     // Describe(int digits), Sides, Equals(object? obj), GetHashCode() — bold, each with its type and the base in parentheses. NOT: Area

@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="io.github.completionml.core.ExampleShardsTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-07T13:59:39.112Z" hostname="aabbcc" time="0.139">
-  <properties/>
-  <testcase name="shards round-trip examples, names and schema()" classname="io.github.completionml.core.ExampleShardsTest" time="0.08"/>
-  <testcase name="schema with a language block keeps the common block first and hashes differently()" classname="io.github.completionml.core.ExampleShardsTest" time="0.002"/>
-  <testcase name="extractor appends the language block after the common features()" classname="io.github.completionml.core.ExampleShardsTest" time="0.001"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

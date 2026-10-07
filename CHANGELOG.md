@@ -3,6 +3,15 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.130
+
+- Offline export of real completion lists for the ML ranker (Gradle task `mlDataset`, the plugin half of experiment e18 of the shared
+  completion engine): the plugin's own completion runs headlessly over C# repositories, every sampled position records the list the
+  IDE would show with the identifier of the source as the answer, and each candidate carries the features the ranker learns from — its
+  kind, static or not, how far its declaration is (local, member, base, receiver, imported, not imported), whether a `using` is needed,
+  whether it fits the expected type, the distance to its declaration and the plugin's own rule order. The same feature code will rank
+  the list in the IDE once a model is trained on these exports. Nothing changes in the editor in this version
+
 ## 0.1.129
 
 - The pass that gives every C# file of the project its `#if` symbols and language version (at startup, on another framework in the

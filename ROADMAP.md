@@ -48,6 +48,16 @@
   EDT: `checkCanceled` перед каждым файлом (write action прерывает non-blocking read action, иначе ждёт его вместе с UI — фризы 7–19 с
   на репозитории из 31 проекта и 530 файлов, дампы 2026-10-07), проход возобновляется с места остановки, путь нормализуется один раз
   (`CompilationOptions.compilesNormalized`), модель спрашивается один раз на файл. Тесты в `CSharpParseOptionsTest`, `CompilationOptionsTest`
+- [x] 0.1.130 — экспорт реальных списков completion для ML-ранкера (`ML_RANKER_EXPORT_TASK.md`, плагинная половина e18 движка
+  `../idea-ml-completion`): признаки кандидата — `csharp-psi-ide` `ml/CSharpMlFeatures.kt` (`CSharpMlLanguage`, `CSharpMlCandidate`, 19 признаков
+  языкового блока поверх 13 общих `ml-core`: вид one-hot, static, уровень области `CSharpMlScope` 0–5, нужен ли `using`, совпадение с ожидаемым
+  типом, объявлен ли в файле и расстояние, ранг по правилам плагина, после точки); completion плагина вешает `CSharpMlCandidate` на каждый свой
+  элемент (`lang/NativeCSharpMlInfo`: имена без точки, члены после точки, импорт, строки ожидаемого типа; чужие элементы — fallback OTHER
+  с приоритетом). Экспорт — test-scope основной части (не `csharp-psi-ide`: completion живёт в основном модуле) `ml/CSharpMlDatasetExport.kt` +
+  `CSharpMlExporter`, Gradle-задача `mlDataset` (`-Pml.repos -Pml.lm -Pml.data -Pml.out -Pml.perFile=10 -Pml.maxFiles=120 -Pml.cache=0.3
+  -Pml.names -Pml.seed -Pml.heap=6g`): шард `.cmlx` на репозиторий, готовые пропускаются, сломанный репозиторий логируется и не роняет прогон,
+  сводка `ml: TOTAL …` с recall. Тест `CSharpMlDatasetExportTest` (экспорт на фикстурном репозитории, языковой блок, инфо на элементах).
+  Weigher `CSharpMlCompletionRanker` — после обучения ранкера в движке
 - [x] Live templates для C# (33: `ctor` с именем типа, `prop*`, `cw`, циклы, `try`, `using`, `svm`, типы, `fact` / `theory` / `test` / `testm`, `region`…), Enter внутри `///` продолжает комментарий, третий `/` над объявлением даёт `<summary>` с `<param>` и `<returns>`
 - [x] 0.1.17 — серый текст: `break;` первой (пустой) строкой секции `case`/`default` (`CSharpGhostText.breakInCase`, тест). Вживую не проверено
 - [x] 0.1.16 — серый текст (Tab): `;` в конце незавершённого оператора (те же безопасные случаи, что у Complete Statement) и

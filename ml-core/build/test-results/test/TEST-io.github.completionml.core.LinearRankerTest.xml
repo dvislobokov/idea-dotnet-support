@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="io.github.completionml.core.LinearRankerTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-07T13:59:39.262Z" hostname="aabbcc" time="0.127">
-  <properties/>
-  <testcase name="learnsSeparableSignal()" classname="io.github.completionml.core.LinearRankerTest" time="0.105"/>
-  <testcase name="anchorKeepsWeightsClose()" classname="io.github.completionml.core.LinearRankerTest" time="0.015"/>
-  <testcase name="roundTrip()" classname="io.github.completionml.core.LinearRankerTest" time="0.005"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
