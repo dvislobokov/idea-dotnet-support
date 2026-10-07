@@ -10,6 +10,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.impl.LoadTextUtil
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
+import com.intellij.openapi.progress.ProgressManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.vfs.VirtualFile
@@ -45,10 +46,15 @@ class CSharpParseOptions(private val project: Project) : Disposable {
      */
     private val pending: MutableSet<VirtualFile> = ConcurrentHashMap.newKeySet()
 
-    /** Recomputes [files] (null: every C# file of the project) in the background, then reparses the changed ones. */
+    /**
+     * Recomputes [files] (null: every C# file of the project) in the background, then reparses the changed ones. The full pass keeps what
+     * it has done across the restarts of the read action: a write action cancels it (see [fill]), and a project of hundreds of files
+     * would otherwise start over at every save.
+     */
     fun refresh(files: Collection<VirtualFile>?) {
         if (project.isDisposed || ApplicationManager.getApplication().isUnitTestMode && !CSharpSyntaxTreeSwitch.reactInTests) return
-        var task = ReadAction.nonBlocking(Callable { fill(files ?: allFiles()) }).expireWith(this)
+        val done: MutableSet<VirtualFile> = ConcurrentHashMap.newKeySet()
+        var task = ReadAction.nonBlocking(Callable { fill(files ?: allFiles(), done) }).expireWith(this)
         if (files == null) task = task.inSmartMode(project).coalesceBy(this)
         task.finishOnUiThread(ModalityState.nonModal()) { reparsePending() }.submit(AppExecutorUtil.getAppExecutorService())
     }
@@ -57,10 +63,23 @@ class CSharpParseOptions(private val project: Project) : Disposable {
      * Puts the keys on [files] (a read action); the ones whose values changed. Their stubs are built again where the parse may differ from the
      * one the index has (step 8): the indexer parses with the keys there are at that time, and a stub tree that does not match the AST is an
      * error of the platform. The tree depends on the symbols only through `#if`, on the version only through version-gated syntax.
+     *
+     * Checks for cancellation before every file: the project lookup walks the directories and asks every evaluated project, and a
+     * non-blocking read action that never checks cannot be interrupted by a write action — the EDT then waits for it (seen live 2026-10-07:
+     * freezes of 7–19 s on a repository of 31 projects and 530 files, every thread dump in this pass). Files in [done] are skipped, and
+     * every file put is added to it.
      */
-    fun fill(files: Collection<VirtualFile>): List<VirtualFile> {
+    fun fill(files: Collection<VirtualFile>, done: MutableSet<VirtualFile> = HashSet()): List<VirtualFile> {
         val model = CompilationModel.getInstance(project)
-        val changed = files.filter { file -> file.isValid && !project.isDisposed && put(file, model.symbolsFor(file), model.languageVersionFor(file)) }
+        val changed = ArrayList<VirtualFile>()
+        for (file in files) {
+            if (file in done) continue
+            ProgressManager.checkCanceled()
+            if (!file.isValid || project.isDisposed) continue
+            val options = model.optionsFor(file)
+            if (put(file, options?.preprocessorSymbols, options?.languageVersion)) changed += file
+            done += file
+        }
         if (CSharpSyntaxTrees.nativeTree()) changed.filter(::mayParseDifferently).forEach(FileBasedIndex.getInstance()::requestReindex)
         pending.addAll(changed)
         return changed

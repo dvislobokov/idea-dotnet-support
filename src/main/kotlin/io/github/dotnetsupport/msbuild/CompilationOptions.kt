@@ -54,10 +54,15 @@ data class CompilationOptions(
     private val compilePatterns: List<MsBuildGlob> by lazy { compileFiles.orEmpty().filter(::isPattern).map(::MsBuildGlob) }
 
     /** Whether [path] (full) is a `Compile` item; null when the items are not known ([compileFiles] null). */
-    fun compiles(path: String): Boolean? {
+    fun compiles(path: String): Boolean? = compilesNormalized(EvaluatedFiles.normalize(path))
+
+    /**
+     * [compiles] for a path already through [EvaluatedFiles.normalize]: a caller that asks every project of the solution about one file
+     * normalizes once (seen live: the pass over all files of a project did it per file per project, inside one read action).
+     */
+    fun compilesNormalized(normalized: String): Boolean? {
         val keys = compileKeys ?: return null
-        val normalized = EvaluatedFiles.normalize(path)
-        return key(normalized) in keys || compilePatterns.any { it.matches(normalized) }
+        return normalized.lowercase() in keys || compilePatterns.any { it.matches(normalized) }
     }
 
     companion object {

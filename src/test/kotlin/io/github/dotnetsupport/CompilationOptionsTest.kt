@@ -48,6 +48,10 @@ class CompilationOptionsTest : BasePlatformTestCase() {
         assertEquals(true, options.compiles("C:/src/Net10/Program.cs"))
         assertEquals(true, options.compiles("c:\\src\\shared\\linked.cs"))
         assertEquals(false, options.compiles("C:/src/Net10/Excluded/Old.cs"))
+        // the pass over all files normalizes once and asks every project with the result: the same answers, letters of the key ignoring case
+        assertEquals(true, options.compilesNormalized("C:/src/Net10/Program.cs"))
+        assertEquals(true, options.compilesNormalized("C:/SRC/Shared/Linked.cs"))
+        assertEquals(false, options.compilesNormalized("C:/src/Net10/Excluded/Old.cs"))
     }
 
     fun testMultiTargetedNet10AndNet48() {

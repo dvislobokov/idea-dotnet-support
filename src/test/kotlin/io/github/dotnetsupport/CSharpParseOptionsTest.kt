@@ -1,6 +1,11 @@
 package io.github.dotnetsupport
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.progress.EmptyProgressIndicator
+import com.intellij.openapi.progress.ProcessCanceledException
+import com.intellij.openapi.progress.ProgressManager
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiManager
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.testFramework.LightVirtualFile
@@ -112,5 +117,29 @@ class CSharpParseOptionsTest : BasePlatformTestCase() {
         assertTrue(CSharpParseOptions.put(file, null, null))
         assertNull(file.getUserData(CSharpPreprocessorSymbols.KEY))
         assertNull(file.getUserData(CSharpLanguageLevel.KEY))
+    }
+
+    /** The pass over the files of the project yields to a write action (a cancelled indicator here) and does not redo the files it has put. */
+    fun testThePassOverTheFilesChecksForCancellationAndResumes() {
+        val files = (1..3).map { myFixture.addFileToProject("Pass/File$it.cs", "class C$it { }").virtualFile }
+        val options = CSharpParseOptions.getInstance(project)
+        val done: MutableSet<VirtualFile> = HashSet()
+        val indicator = EmptyProgressIndicator()
+        // a plain thread: the test runner keeps the EDT in a non-cancelable section, and the application pool inherits that thread context;
+        // cancelled inside the process: runProcess starts the indicator, and the start clears a cancellation made before it
+        var cancelled = false
+        Thread {
+            try {
+                ProgressManager.getInstance().runProcess({ indicator.cancel(); ReadAction.run<RuntimeException> { options.fill(files, done) } }, indicator)
+            } catch (_: ProcessCanceledException) {
+                cancelled = true
+            }
+        }.apply { start(); join() }
+        assertTrue("a cancelled indicator stops the pass before the first file", cancelled)
+        assertEmpty(done)
+        done += files[0]
+        options.fill(files, done)
+        assertEquals("the skipped file keeps whatever it had, the others are put", files.toSet(), done)
+        files.drop(1).forEach { assertTrue("put a loose file: no symbols, the parser's defaults", it.getUserData(CSharpPreprocessorSymbols.KEY) == null) }
     }
 }

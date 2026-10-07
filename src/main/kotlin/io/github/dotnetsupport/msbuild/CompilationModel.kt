@@ -72,14 +72,14 @@ class CompilationModel(private val project: Project) : Disposable {
         // a file a source generator made, in the caches of the IDE (D4): compiled in the project whose generator made it
         project.getServiceIfCreated(io.github.dotnetsupport.codeanalysis.CodeAnalysisService::class.java)?.projectOfGenerated(file)?.let { return it }
         val owning = DotNetProjects.findOwningProject(file)?.takeIf { it.extension.equals("csproj", ignoreCase = true) }
-        val path = file.path
+        val path = EvaluatedFiles.normalize(file.path)
         if (owning != null) {
-            val compiles = options(owning).compiles(path)
+            val compiles = options(owning).compilesNormalized(path)
             val relative = VfsUtilCore.getRelativePath(file, owning.parent, '/')
             val included = compiles ?: (relative == null || !ProjectContent(SolutionService.getInstance(project).msBuildProject(owning)).isExcluded(relative))
             if (included) return owning
         }
-        val linking = evaluated.values.firstOrNull { it.projectFile != owning && it.projectFile.isValid && it.options?.compiles(path) == true }?.projectFile
+        val linking = evaluated.values.firstOrNull { it.projectFile != owning && it.projectFile.isValid && it.options?.compilesNormalized(path) == true }?.projectFile
         return linking ?: owning.takeUnless { strict }
     }
 

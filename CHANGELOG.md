@@ -3,6 +3,14 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.129
+
+- The pass that gives every C# file of the project its `#if` symbols and language version (at startup, on another framework in the
+  toolbar) no longer freezes the IDE: it checks for cancellation before every file, so a write action (a save, a VFS refresh) interrupts
+  it instead of waiting for it with the UI, and it resumes where it was instead of starting over. Each file is normalized once and asks
+  the project model once (was twice, and once per project of the solution). Seen live 2026-10-07: freezes of 7–19 s on a repository of
+  31 projects and 530 files, every thread dump in this pass
+
 ## 0.1.128
 
 - A `.cs`, `.csx`, `.sln`, `.slnx` or `.csproj` that opens as another file type (a user association made before the plugin was installed,

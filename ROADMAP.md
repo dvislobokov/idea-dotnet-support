@@ -43,7 +43,11 @@
 - [x] 0.1.128 — перехваченная ассоциация типов файлов (`DotNetFileTypeCheck`, по образцу Go-плагина): `*.cs` / `*.csx` / `*.sln` / `*.slnx` / `*.csproj`,
   открывающиеся не нашим типом (пользовательская карта `filetypes.xml` перебивает декларативные `extensions`), — модальный диалог при старте .NET-проекта
   и при открытии такого файла (один за раз, «Not Now» на сессию, «Don't ask again» навсегда) и баннер над файлом с Associate with C# (`DotNetFileTypeNotificationProvider`;
-  платформенный тест `DotNetFileTypeCheckTest`). Вживую не проверено
+  платформенный тест `DotNetFileTypeCheckTest`). Проверено вживую 2026-10-07 в песочнице (баннер и Associate with C#)
+- [x] 0.1.129 — проход `CSharpParseOptions.fill` по всем C#-файлам проекта (символы `#if` и версия языка на `VirtualFile`) больше не держит
+  EDT: `checkCanceled` перед каждым файлом (write action прерывает non-blocking read action, иначе ждёт его вместе с UI — фризы 7–19 с
+  на репозитории из 31 проекта и 530 файлов, дампы 2026-10-07), проход возобновляется с места остановки, путь нормализуется один раз
+  (`CompilationOptions.compilesNormalized`), модель спрашивается один раз на файл. Тесты в `CSharpParseOptionsTest`, `CompilationOptionsTest`
 - [x] Live templates для C# (33: `ctor` с именем типа, `prop*`, `cw`, циклы, `try`, `using`, `svm`, типы, `fact` / `theory` / `test` / `testm`, `region`…), Enter внутри `///` продолжает комментарий, третий `/` над объявлением даёт `<summary>` с `<param>` и `<returns>`
 - [x] 0.1.17 — серый текст: `break;` первой (пустой) строкой секции `case`/`default` (`CSharpGhostText.breakInCase`, тест). Вживую не проверено
 - [x] 0.1.16 — серый текст (Tab): `;` в конце незавершённого оператора (те же безопасные случаи, что у Complete Statement) и
