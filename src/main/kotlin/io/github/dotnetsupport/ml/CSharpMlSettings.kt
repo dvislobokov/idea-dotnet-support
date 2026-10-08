@@ -10,21 +10,22 @@ import com.intellij.openapi.components.service
 /**
  * Machine-wide switches of the ML completion (Settings | .NET | ML completion; the page exists only in a build that bundles the models,
  * `-PmlEnabled=true`, [CSharpMlModels.isBundled]): the ranker of the completion list ([CSharpMlCompletionRanker]) and the grey text of
- * the transformer ([CSharpNnInlineCompletionProvider]). The defaults are the measured ones (ML_INLINE_TASK.md, the engine's
- * NN-COMPLETION-API.md); the thresholds after a dot and on an empty line are separate gates, adopted from the Go plugin's live use.
+ * the transformer ([CSharpNnInlineCompletionProvider]). Both are off by default (the user's decision 2026-10-08: a build with the models
+ * changes nothing until the user turns them on); the thresholds are the measured ones (ML_INLINE_TASK.md, the engine's NN-COMPLETION-API.md),
+ * the ones after a dot and on an empty line are separate gates, adopted from the Go plugin's live use.
  */
 @Service(Service.Level.APP)
 @State(name = "CSharpMlCompletion", storages = [Storage("dotnet-support-ml.xml")])
 class CSharpMlSettings : SimplePersistentStateComponent<CSharpMlSettings.Options>(Options()) {
     class Options : BaseState() {
-        /** The ranker of the completion list; off: the plugin's own order, the ranker pair is not even loaded. */
-        var rankerEnabled by property(true)
+        /** The ranker of the completion list; off (the default): the plugin's own order, the ranker pair is not even loaded. */
+        var rankerEnabled by property(false)
         /** Grey "ML" after the rows the model ordered. */
         var showMarker by property(false)
         /** A directory with the model files (the names of `ml-models/csharp`) instead of the bundled ones; empty: bundled. */
         var modelDirectory by string("")
-        /** Grey text to the end of the line from the transformer; off: the network is not even loaded. */
-        var inlineEnabled by property(true)
+        /** Grey text to the end of the line from the transformer; off (the default): the network is not even loaded. */
+        var inlineEnabled by property(false)
         /** The big network (`cs50m-e3-lr2e3.cml`, +1.4 p.p. exact lines for 1.7× the latency) when the build or the directory has it. */
         var bigModel by property(false)
         /** `confProd` a suggestion needs to be shown (0.7: 14 % of positions, 94 % exact lines; 0.8: 10 % / 97 %). */

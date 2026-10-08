@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.145
+
+- ML completion is off by default in a build that bundles the models: both the ranker of the completion list and the grey text are turned
+  on by the user in Settings | .NET | ML completion; until then the models are not even loaded.
+
 ## 0.1.144
 
 - Definite assignment of structs, field by field, as Roslyn: `s.f = 1` assigns the field, reading `s.f` before that is CS0170 («Use of
