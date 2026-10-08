@@ -24,6 +24,8 @@
         <editorNotificationProvider implementation="io.github.dotnetsupport.roslyn.RoslynDecompiledBanner"/>
         <!-- several solutions in the folder and none chosen: the file is analyzed by nobody until one is -->
         <editorNotificationProvider implementation="io.github.dotnetsupport.roslyn.RoslynSolutionBanner"/>
+        <!-- a file of a project of another solution of the folder than the loaded one: the server does not know it, the banner says so -->
+        <editorNotificationProvider implementation="io.github.dotnetsupport.roslyn.RoslynUnloadedSolutionBanner"/>
         <!-- adds no items: makes the first letter after a space start the popup again, see the class -->
         <completion.contributor language="C#" order="first, after dotnetCaseInsensitive" implementationClass="io.github.dotnetsupport.roslyn.RoslynCompletionRestart"/>
         <!-- a lambda first in the list where a delegate is expected, see the class -->
