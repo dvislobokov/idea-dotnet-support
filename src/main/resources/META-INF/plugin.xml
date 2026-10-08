@@ -243,6 +243,8 @@
         <config.codeVisionGroupSettingProvider implementation="io.github.dotnetsupport.lang.NativeCSharpTestsCodeVisionGroupSettingProvider"/>
         <!-- Find Usages as in Rider, behind the toggles of the Usages view: usage kind, .NET project, type and member -->
         <usageGroupingRuleProvider implementation="io.github.dotnetsupport.lang.CSharpUsageGroupingRuleProvider"/>
+        <!-- every occurrence of a C# search on its own row, as in Rider (the platform merges the usages of one line into one row) -->
+        <usageViewFactory implementation="io.github.dotnetsupport.lang.CSharpUsageViewFactory" order="first"/>
         <fileStructureGroupRuleProvider implementation="io.github.dotnetsupport.lang.CSharpMemberGroupRuleProvider"/>
         <colorSettingsPage implementation="io.github.dotnetsupport.lang.CSharpColorSettingsPage"/>
         <!-- no colors of our own in the IDE's schemes: C# keys fall back to their Language Defaults; Rider's palette is a scheme to pick -->

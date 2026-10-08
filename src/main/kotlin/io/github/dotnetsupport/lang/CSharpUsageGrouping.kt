@@ -139,3 +139,20 @@ private class MemberGroup(private val project: Project, private val file: Virtua
     override fun equals(other: Any?): Boolean = other is MemberGroup && other.file == file && other.path == path
     override fun hashCode(): Int = file.hashCode() * 31 + path.hashCode()
 }
+
+/**
+ * The Usages view of a C# declaration lists every occurrence on its own row, as Rider does: the platform merges the usages of one line into
+ * one row (Merge Usages from the Same Line, on by default), so `Counter + 1 + Counter.ToString()` showed as one result and the view counted
+ * one usage fewer than the search found. Creates no view of its own: it turns the merging off in the presentation of a C# search and lets the
+ * platform build the view.
+ */
+class CSharpUsageViewFactory : com.intellij.usages.impl.UsageViewFactory {
+    override fun createUsageView(targets: Array<out UsageTarget>, usages: Array<out Usage>, presentation: UsageViewPresentation,
+                                 usageSearcherFactory: com.intellij.openapi.util.Factory<out com.intellij.usages.UsageSearcher>?): com.intellij.usages.impl.UsageViewEx? {
+        if (targets.any(::isCSharp)) presentation.isMergeDupLinesAvailable = false
+        return null
+    }
+
+    private fun isCSharp(target: UsageTarget): Boolean =
+        com.intellij.openapi.application.runReadAction { (target as? com.intellij.usages.PsiElementUsageTarget)?.element?.containingFile is CSharpFile }
+}
