@@ -77,6 +77,9 @@
   -Pml.names -Pml.seed -Pml.heap=6g`): шард `.cmlx` на репозиторий, готовые пропускаются, сломанный репозиторий логируется и не роняет прогон,
   сводка `ml: TOTAL …` с recall. Тест `CSharpMlDatasetExportTest` (экспорт на фикстурном репозитории, языковой блок, инфо на элементах).
   Weigher `CSharpMlCompletionRanker` — после обучения ранкера в движке
+- [x] 0.1.149 — по итогам прогона роботом (`docs/ROBOT_REVIEW_2026-10-08.md`, план `docs/ROBOT_FIX_PLAN_2026-10-08.md`, пп. 1–3): имена
+  переменных без `@string`; первые ошибки упавшей сборки — в журнал плагина рядом с «failed with N errors»; индексатор сборок не
+  перезапускается без изменений (`IndexRunMemo` в `ImportCompletion`). Вживую не проверено
 - [x] 0.1.148 — обобщённые методы в списке после точки: строка на имя и арность (`AddSingleton(Type, Type) (+ 7)`, `AddSingleton<TService>() (+ 5)`,
   `AddSingleton<TService, TImplementation>() (+ 3)`), имена параметров типа из индекса; строка, у которой аргументы типа не выводятся из параметров,
   вставляет `<>()` с кареткой в скобках (`NativeCSharpCalls.genericCallHandler`), остальные — обычный вызов (`NativeCSharpMemberCompletion.byArity`,

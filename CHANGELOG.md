@@ -3,6 +3,15 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.149
+
+- Variable name suggestions no longer include a keyword in its `@` form (`@string` for a `StringBuilder`) when other names are
+  available.
+- The plugin journal lists the first compiler errors of a failed build next to the "failed with N errors" line (the build before a
+  launch too).
+- The assembly indexer is not started again when the assemblies, the .NET SDK and the framework are unchanged since the last run
+  (a live session showed 93 runs of the indexer process for nothing).
+
 ## 0.1.148
 
 - The completion list after a dot shows generic methods as such, one row per name and arity as in Rider: `AddSingleton(Type serviceType,
