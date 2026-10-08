@@ -278,6 +278,7 @@
         <postStartupActivity implementation="io.github.dotnetsupport.welcome.WelcomePageActivity"/>
         <!-- New Solution of the Welcome screen right after New Project, which is a different action in IDEA and in GoLand / PyCharm / WebStorm -->
         <dynamicActionConfigurationCustomizer implementation="io.github.dotnetsupport.newproject.WelcomeNewSolutionPlacement"/>
+        <dynamicActionConfigurationCustomizer implementation="io.github.dotnetsupport.view.SolutionPopupCleanup"/>
         <!-- the index of the assemblies of the projects, made in the background by the indexer the plugin builds on this machine -->
         <postStartupActivity implementation="io.github.dotnetsupport.index.AssemblyIndexStartup"/>
         <!-- the referenced assemblies as External Libraries (CSHARP_PSI_MIGRATION.md, B3) -->
@@ -483,9 +484,6 @@
                 <!-- next to the eye in the title of the tool window; shows itself for the Solution view only -->
                 <add-to-group group-id="ProjectViewToolbar" anchor="first"/>
             </action>
-            <action id="DotNet.ReloadProject" class="io.github.dotnetsupport.actions.ReloadProjectAction" text="Reload Project"
-                    description="Read the project from the disk again: its file, its folder, what restore has resolved for it"
-                    icon="AllIcons.Actions.Refresh"/>
             <group id="DotNet.AddToSolution" class="io.github.dotnetsupport.actions.AddToSolutionGroup"
                    text="Add" popup="true" icon="AllIcons.General.Add">
                 <action id="DotNet.AddNewProject" class="io.github.dotnetsupport.actions.AddNewProjectToSolutionAction"
@@ -499,14 +497,10 @@
                 <action id="DotNet.AddAssemblyReference" class="io.github.dotnetsupport.actions.AddAssemblyReferenceAction"
                         text="Assembly Reference..." description="Reference a .dll by its path (HintPath)"/>
             </group>
-            <action id="DotNet.RenameProject" class="io.github.dotnetsupport.actions.RenameProjectAction" text="Rename Project..."
-                    description="Rename the project file and optionally its directory; the solution, project references and run configurations follow"/>
-            <action id="DotNet.MoveToSolutionFolder" class="io.github.dotnetsupport.actions.MoveToSolutionFolderAction" text="Move to Solution Folder..."
-                    description="Move the selected projects into a solution folder or to the root of the solution; dragging them onto a folder does the same"/>
-            <action id="DotNet.EditProjectFile" class="io.github.dotnetsupport.actions.EditProjectFileAction" text="Edit Project File"
-                    icon="AllIcons.Actions.Edit" description="Open the .csproj of the project or the solution file in the editor"/>
-            <action id="DotNet.ProjectProperties" class="io.github.dotnetsupport.actions.ProjectPropertiesAction" text="Properties..."
-                    icon="AllIcons.General.Settings" description="Target frameworks, output type, nullable, language version, warnings, package metadata of the project"/>
+            <action id="DotNet.BuildSelected" class="io.github.dotnetsupport.build.BuildSelected" text="Build"
+                    icon="AllIcons.Actions.Compile"/>
+            <action id="DotNet.RebuildSelected" class="io.github.dotnetsupport.build.RebuildSelected" text="Rebuild"/>
+            <action id="DotNet.CleanSelected" class="io.github.dotnetsupport.build.CleanSelected" text="Clean"/>
             <action id="DotNet.RunProject" class="io.github.dotnetsupport.run.RunSelectedProjectAction" text="Run Project"
                     icon="AllIcons.Actions.Execute" description="Run the selected executable or test project"/>
             <action id="DotNet.DebugProject" class="io.github.dotnetsupport.run.DebugSelectedProjectAction" text="Debug Project"
@@ -515,11 +509,8 @@
                     description="A compound run configuration of the selected projects, or of the .NET configurations running now, to start them together">
                 <add-to-group group-id="RunMenu" anchor="last"/>
             </action>
-            <action id="DotNet.BuildSelected" class="io.github.dotnetsupport.build.BuildSelected" text="Build"
-                    icon="AllIcons.Actions.Compile"/>
-            <action id="DotNet.RebuildSelected" class="io.github.dotnetsupport.build.RebuildSelected" text="Rebuild"/>
-            <action id="DotNet.Publish" class="io.github.dotnetsupport.publish.PublishAction" text="Publish..." icon="AllIcons.Nodes.Deploy"
-                    description="dotnet publish of the project to a folder or a container image: configuration, runtime, self-contained, single file, trimming, ReadyToRun, a .pubxml profile"/>
+            <action id="DotNet.RunTestsWithCoverage" class="io.github.dotnetsupport.testing.RunTestsWithCoverageAction"
+                    text="Run Tests with Coverage" icon="AllIcons.General.RunWithCoverage"/>
             <action id="DotNet.ManageNuGet" class="io.github.dotnetsupport.nuget.ManageNuGetPackagesAction"
                     text="Manage NuGet Packages..." icon="/icons/nuget.svg"/>
             <action id="DotNet.DecompileDependency" class="io.github.dotnetsupport.decompiler.DecompileDependencyAction" text="Decompile..."
@@ -546,28 +537,41 @@
                         icon="AllIcons.Nodes.DataTables" description="The EF Core tool window: migrations of every DbContext with their status in the database"/>
                 <action id="DotNet.EfInstallTool" class="io.github.dotnetsupport.ef.InstallEfToolAction" text="Install or Update dotnet-ef"/>
             </group>
-            <action id="DotNet.RunTestsWithCoverage" class="io.github.dotnetsupport.testing.RunTestsWithCoverageAction"
-                    text="Run Tests with Coverage" icon="AllIcons.General.RunWithCoverage"/>
-            <action id="DotNet.RunMsBuildTarget" class="io.github.dotnetsupport.build.RunMsBuildTargetAction"
-                    text="Run MSBuild Target..." icon="AllIcons.Nodes.Target"/>
-            <action id="DotNet.AnalyzeUpgrade" class="io.github.dotnetsupport.upgrade.AnalyzeUpgradeAction"
-                    text="Analyze Upgrade to Newer .NET..." description="Run the .NET Upgrade Assistant analysis: packages, project properties and APIs that block a newer target framework"/>
-            <action id="DotNet.CalculateCodeMetrics" class="io.github.dotnetsupport.metrics.CalculateCodeMetricsAction"
-                    text="Calculate Code Metrics" icon="AllIcons.Toolwindows.ToolWindowAnalyzeDataflow"
-                    description="Maintainability index, cyclomatic complexity, depth of inheritance, class coupling and lines of code of the project or solution, as Analyze | Calculate Code Metrics of Visual Studio"/>
-            <!-- the Roslyn analyzers and source generators of the project without the language server (codeanalysis/, CodeAnalysisHelper) -->
-            <group id="DotNet.CodeAnalysis" text="Code Analysis" popup="true">
-                <action id="DotNet.RunCodeAnalysis" class="io.github.dotnetsupport.codeanalysis.RunCodeAnalysisAction" text="Run Code Analysis"
-                        icon="AllIcons.Actions.Lightning"
-                        description="Run the Roslyn analyzers of the project or solution (packages, CA and IDE rules of the SDK, by .editorconfig) and list what they report in the Build tool window"/>
-                <action id="DotNet.RefreshGeneratedFiles" class="io.github.dotnetsupport.codeanalysis.RefreshGeneratedFilesAction" text="Refresh Generated Files"
-                        description="Run the source generators of the project or solution now; their files are under Dependencies → Analyzers"/>
+            <!-- the rarer commands, under Tools as in Rider -->
+            <group id="DotNet.ProjectTools" text="Tools" popup="true" icon="AllIcons.General.GearPlain">
+                <action id="DotNet.Publish" class="io.github.dotnetsupport.publish.PublishAction" text="Publish..." icon="AllIcons.Nodes.Deploy"
+                        description="dotnet publish of the project to a folder or a container image: configuration, runtime, self-contained, single file, trimming, ReadyToRun, a .pubxml profile"/>
+                <action id="DotNet.RunMsBuildTarget" class="io.github.dotnetsupport.build.RunMsBuildTargetAction"
+                        text="Run MSBuild Target..." icon="AllIcons.Nodes.Target"/>
+                <action id="DotNet.AnalyzeUpgrade" class="io.github.dotnetsupport.upgrade.AnalyzeUpgradeAction"
+                        text="Analyze Upgrade to Newer .NET..." description="Run the .NET Upgrade Assistant analysis: packages, project properties and APIs that block a newer target framework"/>
+                <action id="DotNet.CalculateCodeMetrics" class="io.github.dotnetsupport.metrics.CalculateCodeMetricsAction"
+                        text="Calculate Code Metrics" icon="AllIcons.Toolwindows.ToolWindowAnalyzeDataflow"
+                        description="Maintainability index, cyclomatic complexity, depth of inheritance, class coupling and lines of code of the project or solution, as Analyze | Calculate Code Metrics of Visual Studio"/>
+                <!-- the Roslyn analyzers and source generators of the project without the language server (codeanalysis/, CodeAnalysisHelper) -->
+                <group id="DotNet.CodeAnalysis" text="Code Analysis" popup="true">
+                    <action id="DotNet.RunCodeAnalysis" class="io.github.dotnetsupport.codeanalysis.RunCodeAnalysisAction" text="Run Code Analysis"
+                            icon="AllIcons.Actions.Lightning"
+                            description="Run the Roslyn analyzers of the project or solution (packages, CA and IDE rules of the SDK, by .editorconfig) and list what they report in the Build tool window"/>
+                    <action id="DotNet.RefreshGeneratedFiles" class="io.github.dotnetsupport.codeanalysis.RefreshGeneratedFilesAction" text="Refresh Generated Files"
+                            description="Run the source generators of the project or solution now; their files are under Dependencies → Analyzers"/>
+                </group>
+                <action id="DotNet.FormatSelected" class="io.github.dotnetsupport.format.FormatSelectedAction" text="Format"
+                        description="Format the project or solution with the formatter of the repository: CSharpier or dotnet format"/>
+                <action id="DotNet.VerifyFormatting" class="io.github.dotnetsupport.format.VerifyFormattingAction" text="Verify Formatting"
+                        description="Check that everything is formatted, the way a CI does: csharpier check / dotnet format --verify-no-changes"/>
             </group>
-            <action id="DotNet.FormatSelected" class="io.github.dotnetsupport.format.FormatSelectedAction" text="Format"
-                    description="Format the project or solution with the formatter of the repository: CSharpier or dotnet format"/>
-            <action id="DotNet.VerifyFormatting" class="io.github.dotnetsupport.format.VerifyFormattingAction" text="Verify Formatting"
-                    description="Check that everything is formatted, the way a CI does: csharpier check / dotnet format --verify-no-changes"/>
-            <action id="DotNet.CleanSelected" class="io.github.dotnetsupport.build.CleanSelected" text="Clean"/>
+            <action id="DotNet.EditProjectFile" class="io.github.dotnetsupport.actions.EditProjectFileAction" text="Edit Project File"
+                    icon="AllIcons.Actions.Edit" description="Open the .csproj of the project or the solution file in the editor"/>
+            <action id="DotNet.ProjectProperties" class="io.github.dotnetsupport.actions.ProjectPropertiesAction" text="Properties..."
+                    icon="AllIcons.General.Settings" description="Target frameworks, output type, nullable, language version, warnings, package metadata of the project"/>
+            <action id="DotNet.ReloadProject" class="io.github.dotnetsupport.actions.ReloadProjectAction" text="Reload Project"
+                    description="Read the project from the disk again: its file, its folder, what restore has resolved for it"
+                    icon="AllIcons.Actions.Refresh"/>
+            <action id="DotNet.RenameProject" class="io.github.dotnetsupport.actions.RenameProjectAction" text="Rename Project..."
+                    description="Rename the project file and optionally its directory; the solution, project references and run configurations follow"/>
+            <action id="DotNet.MoveToSolutionFolder" class="io.github.dotnetsupport.actions.MoveToSolutionFolderAction" text="Move to Solution Folder..."
+                    description="Move the selected projects into a solution folder or to the root of the solution; dragging them onto a folder does the same"/>
             <action id="DotNet.ConvertToSlnx" class="io.github.dotnetsupport.actions.ConvertSolutionToSlnxAction"
                     text="Convert to .slnx..."/>
             <action id="DotNet.RemoveFromSolution" class="io.github.dotnetsupport.actions.RemoveProjectFromSolutionAction"

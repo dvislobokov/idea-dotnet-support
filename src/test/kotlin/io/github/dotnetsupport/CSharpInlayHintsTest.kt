@@ -15,6 +15,7 @@ import io.github.dotnetsupport.lang.NativeCSharpInlayHints.Options
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
 import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.DotNetSettings
 
 /**
  * Inlay hints on the plugin's own semantics ([NativeCSharpInlayHints]), over the fixtures of src/test/resources/index: Roslyn's rules for
@@ -24,12 +25,16 @@ import io.github.dotnetsupport.lsp.RoslynOptions
 class CSharpInlayHintsTest : BasePlatformTestCase() {
     private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var serverEnabled = false
+    private var hideObvious = true
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { ASSEMBLIES }
         serverEnabled = settings.state.enabled
+        // the older cases show every `var` hint; the obvious ones are tested below
+        hideObvious = DotNetSettings.getInstance().hideObviousTypeHints
+        DotNetSettings.getInstance().hideObviousTypeHints = false
     }
 
     override fun tearDown() {
@@ -37,6 +42,7 @@ class CSharpInlayHintsTest : BasePlatformTestCase() {
             settings.state.features = mutableMapOf()
             settings.state.options = mutableMapOf()
             settings.state.enabled = serverEnabled
+            DotNetSettings.getInstance().hideObviousTypeHints = hideObvious
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
@@ -325,6 +331,49 @@ class CSharpInlayHintsTest : BasePlatformTestCase() {
         assertEquals("List<int> xs = new«List<int>»();\nList<int> ys = «List<int>»[1, 2];\nFill(«size:»«List<int>»[3]);", render(body, members))
     }
 
+    fun testObviousInitializersGetNoTypeHint() {
+        val members = "List<Certificate> _orders = new(); enum Color { Red, Green } Color Pick() => Color.Red; Color Shade = Color.Red;"
+        val body = """
+            var when = new DateTime(2026, 9, 21);
+            var color = Color.Green;
+            var text = "multiline";
+            var count = 42;
+            var ok = true;
+            var c = 'x';
+            var d = default(DateTime);
+            var t = typeof(string);
+            var cast = (object)text;
+            var asText = cast as string;
+            var name = nameof(text);
+            var first = _orders.First();
+            var picked = Pick();
+            var fromMember = Shade;
+            var implicitNew = new Certificate();
+        """.trimIndent()
+        val hidden = render(body, members, Options(parameters = false, hideObvious = true))
+        assertEquals(
+            """
+            var when = new DateTime(2026, 9, 21);
+            var color = Color.Green;
+            var text = "multiline";
+            var count = 42;
+            var ok = true;
+            var c = 'x';
+            var d = default(DateTime);
+            var t = typeof(string);
+            var cast = (object)text;
+            var asText = cast as string;
+            var name = nameof(text);
+            var «Certificate»first = _orders.First();
+            var «Color»picked = Pick();
+            var «Color»fromMember = Shade;
+            var implicitNew = new Certificate();
+            """.trimIndent(), hidden,
+        )
+        val all = render(body, members, Options(parameters = false, hideObvious = false))
+        assertTrue(all, "var «DateTime»when = new DateTime(2026, 9, 21);" in all && "var «Color»color = Color.Green;" in all && "var «Certificate»first = _orders.First();" in all)
+    }
+
     fun testTheTypeOptionsOneByOne() {
         val body = """
             var list = new List<int>();
@@ -353,7 +402,7 @@ class CSharpInlayHintsTest : BasePlatformTestCase() {
                 }
             }
         """.trimIndent()) as CSharpFile
-        val hints = NativeCSharpInlayHints.hints(f, Options())
+        val hints = NativeCSharpInlayHints.hints(f, Options(hideObvious = false))
         assertEquals(listOf("Own", "List<Own>"), hints.map { it.text })
         val own = hints[0].target as NativeCSharpInlayHints.Target.Source
         assertEquals("class Own {}", own.element.text)
