@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.156
+
+- A C# file of a project that the loaded solution does not contain, but another solution of the folder does, gets a banner: "This
+  file belongs to ShopApi.sln, which is not loaded: library members, completion and errors are limited." Load ShopApi.sln switches
+  the language server to that solution; Don't Show Again hides the banner for the project.
+
 ## 0.1.155
 
 - Debugger: tuple elements show their declared names, as in Rider. A local or a parameter declared as `(Id: 1, Name: "tuple")` is
