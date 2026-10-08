@@ -396,8 +396,13 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         while (at.parent is CSharpParenthesizedExpression) at = at.parent
         val argument = at.parent as? CSharpArgument
         if (argument != null) {
-            // overloads that differ in what the delegate returns (`Sum(x => x.Total)`) still agree on what it takes
-            val found = parameterTypesOf(argument, lambdaParameterCount(lambda)).map { type -> unwrapExpression(type)?.let(::delegateSignature)?.first?.getOrNull(index) ?: return null }
+            // overloads that differ in what the delegate returns (`Sum(x => x.Total)`) still agree on what it takes; one taking `Delegate` or
+            // `object` says nothing and cannot take a lambda without a natural type anyway (`MapGet(pattern, Delegate)` next to `RequestDelegate`)
+            val natural = r.overloads.hasNaturalType(lambda)
+            val found = parameterTypesOf(argument, lambdaParameterCount(lambda)).mapNotNull { type ->
+                val target = unwrapExpression(type) ?: return null
+                delegateSignature(target)?.first?.getOrNull(index) ?: if (!natural && r.definitionName(target) in CSharpOverloads.NATURAL_TARGETS) null else return null
+            }
             val first = found.firstOrNull() ?: return null
             return if (found.all { it.display != null && it.display == first.display }) first else null
         }
@@ -410,7 +415,9 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
      * returns none, or for a body whose type surely does not convert (`() => "x"` is no `Func<Task>`).
      */
     fun lambdaFits(lambda: CSharpAnonymousFunctionExpression, parameterType: SemanticType, typeBody: Boolean = true): Boolean {
-        val delegate = unwrapExpression(parameterType)?.let(::delegateSignature) ?: return true
+        val target = unwrapExpression(parameterType) ?: return true
+        // `Delegate`, `object`, `Expression` take a lambda by its natural type only (C# 10): none without typed parameters
+        val delegate = delegateSignature(target) ?: return r.overloads.hasNaturalType(lambda) || r.definitionName(target) !in CSharpOverloads.NATURAL_TARGETS
         val count = lambdaParameterCount(lambda)
         if (count != null && delegate.first.size != count) return false
         // explicitly typed parameters take only a delegate with exactly those types (§10.7.1): `(int id) => …` is no `RequestDelegate`
@@ -448,7 +455,20 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         val call = r.invocationOf(site) ?: return candidates
         val arguments = call.argumentList?.arguments.orEmpty()
         if (arguments.none { it.expression is CSharpAnonymousFunctionExpression }) return candidates
-        val scored = candidates.mapNotNull { symbol ->
+        // `Delegate` / `object` / `Expression` take a lambda by its natural type only (C# 10): the overloads with them drop out first for a
+        // lambda with untyped parameters, whatever its body does — `MapGet("/", context => { … })` is the `RequestDelegate` overload even when
+        // the body fits no delegate (CS1643 of that overload, as Roslyn reports it)
+        val eligible = candidates.filter { symbol ->
+            val parameters = r.signature(symbol, false) ?: return@filter true
+            val offset = if (isReduced(symbol, site)) 1 else 0
+            arguments.withIndex().none { (i, argument) ->
+                val lambda = argument.expression as? CSharpAnonymousFunctionExpression ?: return@none false
+                val target = parameterFor(parameters, arguments, i, offset)?.type?.invoke()?.let(::unwrapExpression) ?: return@none false
+                delegateSignature(target) == null && r.definitionName(target) in CSharpOverloads.NATURAL_TARGETS && !r.overloads.hasNaturalType(lambda)
+            }
+        }.ifEmpty { candidates }
+        if (eligible.size == 1) return eligible
+        val scored = eligible.mapNotNull { symbol ->
             val parameters = r.signature(symbol, false) ?: return@mapNotNull symbol to 0
             val offset = if (isReduced(symbol, site)) 1 else 0
             var exact = 0
@@ -464,7 +484,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
             }
             symbol to exact
         }
-        if (scored.isEmpty()) return candidates
+        if (scored.isEmpty()) return eligible
         val best = scored.maxOf { it.second }
         return scored.filter { it.second == best }.map { it.first }
     }
@@ -508,11 +528,21 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
     /** The type of the parameter [argument] goes to in each candidate of the call, the method type arguments filled in. */
     private fun parameterTypesOf(argument: CSharpArgument, lambdaParameters: Int?): List<SemanticType> {
         val list = argument.parent as? CSharpArgumentList ?: return emptyList()
+        val arguments = list.arguments
+        val i = arguments.indexOf(argument)
+        // `new Timer(state => …)`: the constructors of the created type are the candidates
+        val creation = list.parent as? CSharpBaseObjectCreationExpression
+        if (creation != null) {
+            val created = (if (creation is CSharpObjectCreationExpression) creation.type?.let(r::resolveType) else target(creation)) ?: return emptyList()
+            return CSharpRequiredMembers(r).constructorsOf(created).mapNotNull { constructor ->
+                val parameters = r.signature(constructor, false) ?: return@mapNotNull null
+                val type = parameterFor(parameters, arguments, i, 0)?.type?.invoke() ?: return@mapNotNull null
+                if (lambdaParameters != null && unwrapExpression(type)?.let(::delegateSignature)?.first?.size?.let { it != lambdaParameters } == true) null else type
+            }
+        }
         val call = list.parent as? CSharpInvocationExpression ?: return emptyList()
         val callee = callee(call) ?: return emptyList()
         val symbols = r.resolveName(callee)?.symbols ?: return emptyList()
-        val arguments = list.arguments
-        val i = arguments.indexOf(argument)
         return symbols.filter(r::isMethod).mapNotNull { symbol ->
             val reduced = isReduced(symbol, callee)
             val parameters = r.signature(symbol, false) ?: return@mapNotNull null

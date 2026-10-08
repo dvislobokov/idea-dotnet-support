@@ -348,6 +348,7 @@ LIVE_CHECKS E-109…E-114.
 - [ ] `TYPE:sem-broken-statement` (0.1.141): после набора строки с `id");` CS1061 на `nope` строкой ниже остаётся, имя красное; в самой сломанной строке только синтаксические ошибки
 - [ ] `Broken/SemanticErrors.cs` (0.1.143), маркеры `ERR:accessibility`, `ERR:modifiers`, `ERR:struct-cycle`, `ERR:partial-half`, `ERR:await-int` — коды из комментариев `EXPECT` светятся красным, лишнего в блоке нет
 - [ ] `Broken/SemanticErrors.cs` (0.1.144), маркеры `ERR:struct-field`, `ERR:struct-whole`, `ERR:self-init`, `ERR:local-paths` — CS0170 / CS0165 / CS0161 из комментариев `EXPECT`, строка с `n.P.A = 1` без подсветок
+- [ ] `Broken/SemanticErrors.cs` (0.1.146), маркеры `ERR:ref-local`, `ERR:ref-return`, `ERR:ref-field`, `ERR:ref-struct-this`, `ERR:ref-library` — CS8168 / CS8150 / CS9059 / CS8170 из комментариев `EXPECT`, строки с `[UnscopedRef]` и `ref arr[0]` без подсветок
 - [ ] `Broken/RiderComparison.cs` (0.1.141): CASE:* — открыть тот же файл в Rider и у нас, сверить коды, позиции и красные имена с EXPECT
 - [ ] `TYPE:sem-arguments`, `-conversions`, `-conversions-silent`, `-paths`: CS1501 / CS7036, CS0029 / CS0266, CS0161
 - [ ] `TYPE:import-stats-choice`, `-list` (0.1.138): пространства имён в «Import type» и строки `(in …)` списка в порядке статистики корпуса
@@ -869,6 +870,17 @@ Prometheus), Serilog, фоновый outbox-воркер. Собирается �
   `:` → ограничения (`minlength()` с кареткой в скобках), `[` → `controller` / `action` / `area`; цвета `{id:long}`
 - [ ] `TYPE:shop-json` — JSON-цвета в строке после `// lang=json` и в `JsonDocument.Parse`, Alt+Enter → Edit JSON Fragment
 - [ ] `TYPE:shop-config-key`, `TYPE:shop-config-connection`, `TYPE:shop-config-section` — ключи `appsettings.json` (вложенные через `:`), строки подключения, ключи секции
+
+Типы параметров лямбд (0.1.147) — `ShopApi/Playground/LambdaParameterTypes.cs`, в каждом маркере написано, на что навести и что должно показаться:
+- [ ] `TYPE:lambda-context`, `TYPE:lambda-context-members`, `TYPE:lambda-context-paths`, `TYPE:lambda-context-async` — `context` в `MapGet` / `MapPost` это
+  `HttpContext`: hover, список после `context.` (и пока тело не дописано), CS1643 у блока без `return`; Ctrl+B на `MapGet` — перегрузка с `RequestDelegate`,
+  подсказка `requestDelegate:`
+- [ ] `TYPE:lambda-delegate-typed`, `TYPE:lambda-delegate-none` — лямбда с типами параметров или без параметров уходит в перегрузку с `Delegate`
+- [ ] `TYPE:lambda-use-context`, `TYPE:lambda-use-next-context`, `TYPE:lambda-run`, `TYPE:lambda-exception-handler`, `TYPE:lambda-filter` — middleware,
+  `Run`, `UseExceptionHandler`, фильтры: `context` / `invocation` / `next` типизированы (у `Use` тип `next` различается по перегрузкам — что показывает, записать)
+- [ ] `TYPE:lambda-di-provider`, `TYPE:lambda-options`, `TYPE:lambda-http-client`, `TYPE:lambda-log-filter` — DI, options, `AddHttpClient`, `AddFilter`
+- [ ] `TYPE:lambda-timer`, `TYPE:lambda-thread`, `TYPE:lambda-event`, `TYPE:lambda-linq`, `TYPE:lambda-foreach`, `TYPE:lambda-parallel`, `TYPE:lambda-sort`,
+  `TYPE:lambda-task-run`, `TYPE:lambda-dictionary`, `TYPE:lambda-string-join` — конструкторы, события, LINQ и BCL
 - [ ] `TYPE:shop-di-impl` — `AddScoped<IPriceCalculator, ` → реализации из solution сверху, без абстрактного класса
 
 ### Double completion (0.1.96) — `ShopApi/Playground/DoubleCompletion.cs`

@@ -380,8 +380,9 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         val target = r.expressions.unwrapExpression(to) ?: return Conversion.UNKNOWN
         if (r.expressions.delegateSignature(target) == null) {
             val tn = r.definitionName(target)
-            // the natural type of a lambda (C# 10) goes to `Delegate`, `object` and `Expression`
-            if (tn in NATURAL_TARGETS) return if (hasNaturalType(lambda)) Conversion.IMPLICIT else Conversion.UNKNOWN
+            // the natural type of a lambda (C# 10) goes to `Delegate`, `object` and `Expression`; a lambda without one has no conversion
+            // there (CS8917): `MapGet("/", context => …)` takes the `RequestDelegate` overload, never the `Delegate` one
+            if (tn in NATURAL_TARGETS) return if (hasNaturalType(lambda)) Conversion.IMPLICIT else Conversion.NONE
             return if (closed(target)) Conversion.NONE else Conversion.UNKNOWN
         }
         // a body that does not use untyped parameters is typed before the call is resolved: `() => 1` is no `Action`, `() => Log()` no `Func<int>`
@@ -400,7 +401,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         val delegate = r.expressions.delegateSignature(target)
         if (delegate == null) {
             val tn = r.definitionName(target)
-            if (tn in NATURAL_TARGETS) return if (hasNaturalType(lambda)) Conversion.IMPLICIT else Conversion.UNKNOWN
+            if (tn in NATURAL_TARGETS) return if (hasNaturalType(lambda)) Conversion.IMPLICIT else Conversion.NONE
             return if (noDelegate(target)) Conversion.NONE else Conversion.UNKNOWN
         }
         val count = r.expressions.lambdaParameterCount(lambda)
@@ -586,7 +587,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
     }
 
     /** C# 10: a lambda whose parameters are typed (or that takes none) has a function type, `Func<…>` / `Action<…>`. */
-    private fun hasNaturalType(lambda: CSharpAnonymousFunctionExpression): Boolean = when (lambda) {
+    fun hasNaturalType(lambda: CSharpAnonymousFunctionExpression): Boolean = when (lambda) {
         is CSharpParenthesizedLambdaExpression -> lambda.parameterList?.parameters.orEmpty().all { it.type != null }
         is CSharpAnonymousMethodExpression -> lambda.parameterList != null && lambda.parameterList?.parameters.orEmpty().all { it.type != null }
         else -> false
@@ -1395,7 +1396,8 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         private const val NULLABLE = "System.Nullable`1"
         private const val VALUE_TYPE = "System.ValueType"
 
-        private val NATURAL_TARGETS = setOf(
+        /** The non-delegate types a lambda converts to by its natural type (C# 10) and by nothing else. */
+        val NATURAL_TARGETS = setOf(
             "System.Delegate", "System.MulticastDelegate", OBJECT, "System.Linq.Expressions.Expression", "System.Linq.Expressions.LambdaExpression",
         )
 

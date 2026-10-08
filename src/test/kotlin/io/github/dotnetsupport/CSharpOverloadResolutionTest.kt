@@ -222,6 +222,35 @@ class CSharpOverloadResolutionTest : BasePlatformTestCase() {
         )
     }
 
+    /**
+     * `Delegate` / `object` take a lambda by its natural type only (C# 10): a lambda with untyped parameters goes to the overload with a
+     * real delegate (minimal APIs: `MapGet(pattern, RequestDelegate)` next to `MapGet(pattern, Delegate)`), one with typed parameters or
+     * none has a natural type and may go to `Delegate` when the delegate does not fit it.
+     */
+    fun testLambdasNextToADelegateOverload() {
+        assertEquals(
+            listOf(
+                "static void MapGet(string pattern, RequestDelegate requestDelegate)", "static void MapGet(string pattern, RequestDelegate requestDelegate)",
+                "static void MapGet(string pattern, Delegate handler)", "static void MapGet(string pattern, Delegate handler)", "static void MapGet(string pattern, Delegate handler)",
+            ),
+            calls(
+                """
+                /*@*/MapGet("/a", context => context.Done());
+                /*@*/MapGet("/b", async context => { await context.Done(); });
+                /*@*/MapGet("/c", (string name) => name.Length);
+                /*@*/MapGet("/d", () => 1);
+                /*@*/MapGet("/e", (HttpContext context, int id) => id);
+                """.trimIndent(),
+                """
+                class HttpContext { public Task Done() => Task.CompletedTask; }
+                delegate Task RequestDelegate(HttpContext context);
+                static void MapGet(string pattern, RequestDelegate requestDelegate) { }
+                static void MapGet(string pattern, Delegate handler) { }
+                """.trimIndent(),
+            ),
+        )
+    }
+
     private companion object {
         const val MARK = "/*@*/"
     }

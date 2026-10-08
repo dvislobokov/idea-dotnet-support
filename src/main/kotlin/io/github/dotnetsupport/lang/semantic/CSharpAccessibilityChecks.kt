@@ -177,7 +177,8 @@ internal class CSharpAccessibilityChecks(
 
     /** [declared] of a symbol declared in [container] (a type declaration, or a member of one), met with [containerAcc]. */
     private fun meet(declared: Acc, container: PsiElement, containerAcc: Effective?): Effective {
-        val scope = if (declared == Acc.PRIVATE) PsiTreeUtil.getParentOfType(container, CSharpBaseTypeDeclaration::class.java, container !is CSharpBaseTypeDeclaration) else null
+        // a private member or nested type is seen in the type that contains it (not in the nested type itself: the ref probe of 2026-10-08)
+        val scope = if (declared == Acc.PRIVATE) PsiTreeUtil.getParentOfType(container, CSharpBaseTypeDeclaration::class.java, true) else null
         val own = Effective(declared, scope)
         if (containerAcc == null || containerAcc.acc == Acc.PUBLIC) return own
         if (declared == Acc.PUBLIC) return containerAcc

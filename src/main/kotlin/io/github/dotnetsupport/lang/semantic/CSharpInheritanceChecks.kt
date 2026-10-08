@@ -187,7 +187,9 @@ internal class CSharpInheritanceChecks(
     private class Overriding(
         val kind: Kind, val name: String, val at: PsiElement, val parameters: List<CSharpParameter>, val arity: Int, val display: String, val returnType: CSharpType?,
         val typeParameters: List<String> = emptyList(), val readOnly: Boolean = false,
-    )
+    ) {
+        val refReturn: String get() = refReturnOf(returnType)
+    }
 
     /**
      * A member of a base class: [parameters] substituted with the type arguments the derived type gives (a type parameter of the method as
@@ -198,6 +200,8 @@ internal class CSharpInheritanceChecks(
     private class BaseMember(
         val kind: Kind, val parameters: List<SemanticType?>, val refKinds: List<String?>, val arity: Int, val modifiers: Set<String>, val display: String?,
         val returnType: SemanticType?, val void: Boolean, val access: String? = null, val required: String? = null, val readOnly: Boolean = false,
+        /** `ref` / `ref readonly` / "" of the return; null where not known (a library member: the index does not say). */
+        val refReturn: String? = null,
     )
 
     private fun checkOverride(member: CSharpMemberDeclaration) {
@@ -235,6 +239,8 @@ internal class CSharpInheritanceChecks(
                 val own = accessOf(member.modifiers.map { it.text })
                 if (match.access != null && match.required != null && match.required != own) {
                     report("CS0507", "'$shown': cannot change access modifiers when overriding '${match.access}' inherited member '$base'", overriding.at.textRange)
+                } else if (match.refReturn != null && match.refReturn != overriding.refReturn && overriding.kind != Kind.EVENT) {
+                    report("CS8148", "'$shown' must match by reference return of overridden member '$base'", overriding.at.textRange)
                 } else if (overriding.kind == Kind.METHOD) {
                     val expected = returnMismatch(overriding, match) ?: return
                     report("CS0508", "'$shown': return type must be '$expected' to match overridden member '$base'", overriding.at.textRange)
@@ -342,7 +348,7 @@ internal class CSharpInheritanceChecks(
                     val shownParameters = parametersOf(member).mapIndexed { i, p -> parameterDisplay(p.modifiers.map { it.text }, parameters[i]) }
                     val readOnly = (member as? CSharpBasePropertyDeclaration)?.let(::readOnly) ?: false
                     val nameShown = overriding.name + (member as? CSharpMethodDeclaration)?.typeParameterList?.parameters?.joinToString(", ", "<", ">") { it.identifier?.text.orEmpty() }.orEmpty()
-                    found += BaseMember(kind, parameters, refKinds, arity, modifiers, signature(typeShown, kind, nameShown, shownParameters), returnType, void, known, known, readOnly)
+                    found += BaseMember(kind, parameters, refKinds, arity, modifiers, signature(typeShown, kind, nameShown, shownParameters), returnType, void, known, known, readOnly, refReturnOf(returnSyntax))
                 }
             }
             is SemanticType.Library -> {
@@ -806,6 +812,12 @@ internal class CSharpInheritanceChecks(
     }
 
     companion object {
+        fun refReturnOf(type: CSharpType?): String = when {
+            type !is CSharpRefType -> ""
+            type.readOnlyKeyword != null -> "ref readonly"
+            else -> "ref"
+        }
+
         private const val MAX_DEPTH = 32
         private val ACCESS = listOf("private", "protected", "internal", "public", "file")
         private val INSTANCE_KINDS = setOf(IndexedMemberKind.METHOD, IndexedMemberKind.PROPERTY, IndexedMemberKind.FIELD, IndexedMemberKind.EVENT)

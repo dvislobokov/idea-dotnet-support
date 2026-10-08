@@ -170,3 +170,21 @@ class StructFlow
         int Local(int a) { if (a > 0) return 1; }               // ERR:local-paths  EXPECT: CS0161 on Local
     }
 }
+
+// 0.1.146: the rules of ref. EXPECT: only the marked lines are red.
+class RefRules
+{
+    int plain;
+    ref int field;                          // ERR:ref-field  EXPECT: CS9059 on ref (a ref field only in a ref struct)
+    ref int Local() { int x = 1; return ref x; }   // ERR:ref-local  EXPECT: CS8168 on x ("Cannot return local 'x' by reference")
+    ref int Value() { return plain; }       // ERR:ref-return  EXPECT: CS8150 on plain (by-value return in a ref method)
+    ref int Fine(int[] arr) { ref int ok = ref arr[0]; return ref ok; }   // EXPECT: nothing
+    ref int Library(System.ReadOnlySpan<int> s) => ref s[0];   // ERR:ref-library  EXPECT: CS8333 on s[0] (a ref readonly indexer of the library by writable reference)
+    ref int LibraryFine(System.Span<int> s) => ref s[0];       // EXPECT: nothing
+}
+struct RefStruct
+{
+    public int d;
+    public ref int M() { return ref d; }    // ERR:ref-struct-this  EXPECT: CS8170 on d
+    [System.Diagnostics.CodeAnalysis.UnscopedRef] public ref int N() { return ref d; }   // EXPECT: nothing
+}

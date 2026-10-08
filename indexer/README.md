@@ -176,7 +176,8 @@ sh tools/index-fixture/fixtures.sh       # собирает индексатор
            сначала члены, которые видят все, потом только для друга (internal, private protected; все члены internal-типов).
            Флаги члена: 8192 internal, 16384 private protected (у protected internal и private protected есть и protected);
            у свойства и индексатора доступность геттера — `(флаги >> 15) & 7`, сеттера — `(флаги >> 18) & 7`: 0 нет (или
-           private), 1 public, 2 protected, 3 internal, 4 protected internal, 5 private protected. Флаги типа: 512 internal, 1024 private
+           private), 1 public, 2 protected, 3 internal, 4 protected internal, 5 private protected; 1 << 21 — возврат `ref readonly`
+           (с версии 5; что возврат по ссылке, видно по типу члена `&T`). Флаги типа: 512 internal, 1024 private
 параметры  тип (ссылка), имя, флаги (1 optional, 2 out, 4 ref, 8 params, 16 this, 32 in, 64 есть значение), значение   16 байт
 generic    имя, флаги (1 out, 2 in, 4 class, 8 struct, 16 new(), 32 allows ref struct, 64 unmanaged), ограничения (список)   12 байт
 имена      имя, цель: номер типа, у члена — со старшим битом                                                              8 байт

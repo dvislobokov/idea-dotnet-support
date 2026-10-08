@@ -13,6 +13,13 @@ var startedWith = new
 };
 app.Logger.LogInformation("Started with {Settings}", startedWith); // BP:web-start
 
+try{
+    int why = 0/0;
+}catch(Exception ex){
+    app.Logger.LogError(ex, $"{ex.GetType().Name}")
+}
+
+
 app.MapGet("/", () => Results.Text(
     $"""
     Playground.Web
@@ -35,11 +42,26 @@ app.MapGet("/orders/{count:int}", (int count) =>
     return Results.Json(new { count, total, lines });
 });
 
+app.Use((httpContext, func) => {
+
+});
+
 app.MapGet("/aspire", () =>
 {
     var pid = Environment.ProcessId; // BP:aspire-service — Debug `AspireHost`, open the `web` endpoint + /aspire from the dashboard; EXPECT: a debug tab "Web (<pid>)" appears by itself and stops here; NOT a second Web process or a stop in the AppHost tab
     return Results.Text($"Playground.Web under Aspire, process {pid}");
 });
+
+app.MapGet("/healthy", context => {
+    if(context == null){
+        return 123;
+    }
+    context.Response.StatusCode = 504;
+    return Results.Json(new {
+        Status = "healthy",
+    });
+});
+
 
 app.MapGet("/slow", async () =>
 {

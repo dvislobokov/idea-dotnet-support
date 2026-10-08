@@ -37,6 +37,22 @@ class AssemblyIndexSemanticsTest {
     private fun IndexedMember.parameterTypes(nullable: Boolean = false): List<String> = parameters.map { display(it.typeRef, nullable) }
 
     @Test
+    fun `ref and ref readonly returns`() {
+        // format 5: a by-reference return is a ByRef type, `ref readonly` a flag; the ref checks of the semantics rely on both
+        val cursor = type("Fixture.Cursor")
+        val peek = cursor.member("Peek")
+        assertTrue("ref readonly int Peek()", peek.typeRef is IndexedTypeRef.ByRef && peek.isRefReadOnly)
+        val runtime = AssemblyIndex.read(bytes("System.Runtime.dnix"))   // without its docs
+        val span = runtime.findType("System.Span`1")!!.members.single { it.kind == IndexedMemberKind.INDEXER }
+        val readOnlySpan = runtime.findType("System.ReadOnlySpan`1")!!.members.single { it.kind == IndexedMemberKind.INDEXER }
+        assertTrue("ref T Span<T>.this[int]", span.typeRef is IndexedTypeRef.ByRef && !span.isRefReadOnly)
+        assertTrue("ref readonly T ReadOnlySpan<T>.this[int]", readOnlySpan.typeRef is IndexedTypeRef.ByRef && readOnlySpan.isRefReadOnly)
+        val pin = runtime.findType("System.ReadOnlySpan`1")!!.member("GetPinnableReference")
+        assertTrue("ref readonly T GetPinnableReference()", pin.typeRef is IndexedTypeRef.ByRef && pin.isRefReadOnly)
+        assertFalse("a by-value member", runtime.findType("System.ReadOnlySpan`1")!!.member("Length").isRefReadOnly)
+    }
+
+    @Test
     fun `a type by its name and the types of a namespace`() {
         val box = type("Fixture.Box`1")
         assertEquals(IndexedTypeKind.CLASS, box.kind)

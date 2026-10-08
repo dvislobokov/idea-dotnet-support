@@ -30,7 +30,7 @@ namespace DotNetSupport.Indexer;
 // the second process waits for the first and then finds the indexes made.
 public static class Program
 {
-    public const int FormatVersion = 4;
+    public const int FormatVersion = 5;
 
     public static int Main(string[] args)
     {
@@ -231,6 +231,8 @@ public enum MemberFlags
 {
     None = 0, Obsolete = 1, Hidden = 2, Static = 4, Protected = 8, Abstract = 16, Virtual = 32, Override = 64, Sealed = 128, ReadOnly = 256,
     Getter = 512, Setter = 1024, InitOnly = 2048, Required = 4096, Internal = 8192, PrivateProtected = 16384,
+    /// <summary>A method, property or indexer that returns `ref readonly` (format 5; bits 15–20 are the accesses of the accessors).</summary>
+    RefReadOnly = 1 << 21,
 }
 
 /// <summary>The accessibility of an accessor, 3 bits of <see cref="MemberFlags"/>.</summary>
@@ -452,6 +454,7 @@ public sealed class MetadataScanner(MetadataReader reader)
             };
             var (returnAttributes, parameters, nullability) = Parameters(method.GetParameters(), signature.ParameterTypes, context, extension);
             member.Type = TypeRefs.Encode(signature.ReturnType, Annotations.Of(reader, AttributeType, returnAttributes, context));
+            if (returnAttributes != null && Has(returnAttributes.Value, CompilerServices, "IsReadOnlyAttribute")) member.Flags |= MemberFlags.RefReadOnly;
             member.Parameters = parameters;
             NullableCodes(custom, "m", nullability);
             NullableCodes(returnAttributes, "r", nullability);
@@ -658,6 +661,7 @@ public sealed class MetadataScanner(MetadataReader reader)
             if (getter != null && Has(getter.Value.GetCustomAttributes(), CompilerServices, "IsReadOnlyAttribute")) flags |= MemberFlags.ReadOnly;
             if (Has(custom, CompilerServices, "RequiredMemberAttribute")) flags |= MemberFlags.Required;
             if (setter != null && setter.Value.DecodeSignature(_provider, null).ReturnType is ModifiedSig { Modifier: CompilerServices + ".IsExternalInit" }) flags |= MemberFlags.InitOnly;
+            if (getter != null && ReturnsReadOnlyRef(reader, getter.Value)) flags |= MemberFlags.RefReadOnly;
             var context = Context(accessor.GetCustomAttributes(), typeContext);
             var signature = property.DecodeSignature(_provider, null);
             var member = new MemberEntry
@@ -785,6 +789,17 @@ public sealed class MetadataScanner(MetadataReader reader)
         if ((attributes & MethodAttributes.Final) != 0 && (attributes & MethodAttributes.NewSlot) == 0 && !ofInterface) flags |= MemberFlags.Sealed;
         if (Has(custom, CompilerServices, "IsReadOnlyAttribute")) flags |= MemberFlags.ReadOnly;
         return flags;
+    }
+
+    /// <summary>A getter of `ref readonly`: the IsReadOnlyAttribute is on its return parameter (sequence 0).</summary>
+    private bool ReturnsReadOnlyRef(MetadataReader reader, MethodDefinition getter)
+    {
+        foreach (var handle in getter.GetParameters())
+        {
+            var parameter = reader.GetParameter(handle);
+            if (parameter.SequenceNumber == 0) return Has(parameter.GetCustomAttributes(), CompilerServices, "IsReadOnlyAttribute");
+        }
+        return false;
     }
 
     private MemberFlags CommonFlags(CustomAttributeHandleCollection custom)

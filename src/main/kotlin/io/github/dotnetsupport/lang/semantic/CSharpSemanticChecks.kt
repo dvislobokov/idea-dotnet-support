@@ -106,6 +106,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         CSharpDefiniteAssignmentChecks(resolver, ::isQuiet, ::surelyUnresolved) { code, message, range -> report(code, message, range) }.run(unit)
         CSharpAccessibilityChecks(resolver, ::isQuiet) { code, message, range -> report(code, message, range) }.run()
         CSharpModifierChecks(resolver, ::isQuiet) { code, message, range -> report(code, message, range) }.run(unit)
+        CSharpRefChecks(resolver, ::isQuiet) { code, message, range -> report(code, message, range) }.run(unit)
         if (broken.isEmpty()) warnings.checkUnusedLocals()
         if (broken.isEmpty()) CSharpUnusedUsings(resolver).find(unit).let(found::addAll)
         return withoutFlowOfBrokenDeclarations(found).distinctBy { Triple(it.code, it.range, it.message) }

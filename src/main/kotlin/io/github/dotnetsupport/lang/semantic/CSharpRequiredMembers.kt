@@ -100,7 +100,7 @@ class CSharpRequiredMembers(private val r: CSharpNameResolver) {
         type is SemanticType.Source && (type.info.kind == io.github.dotnetsupport.lang.TypeKind.STRUCT || type.info.kind == io.github.dotnetsupport.lang.TypeKind.RECORD_STRUCT)
 
     /** The instance constructors: [CSharpSymbol.LibraryMember] of an assembly, [CSharpSymbol.SourceMember] (and a primary constructor) of the solution. */
-    private fun constructorsOf(type: SemanticType): List<CSharpSymbol> = when (type) {
+    internal fun constructorsOf(type: SemanticType): List<CSharpSymbol> = when (type) {
         is SemanticType.Library -> type.type.members.filter { it.kind == IndexedMemberKind.CONSTRUCTOR && !it.isStatic && !it.isHidden }.map { CSharpSymbol.LibraryMember(it, type.arguments) }
         is SemanticType.Source -> type.info.parts.mapNotNull { it.element() as? CSharpTypeDeclaration }.flatMap { declaration ->
             val explicit = declaration.members.filterIsInstance<CSharpConstructorDeclaration>().filter { c -> c.modifiers.none { it.text == "static" } }

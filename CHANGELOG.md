@@ -3,6 +3,34 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.147
+
+- The parameter of a lambda next to an overload taking `Delegate` is typed, as in Rider: minimal APIs (`app.MapGet("/", context => …)`,
+  `MapPost`, `Map`, `MapMethods`) see `context` as `HttpContext` in the hover, in the completion list after `context.` and while the body
+  is still being typed; Go to Declaration opens the `RequestDelegate` overload, the inlay hint says `requestDelegate:`. A lambda with
+  untyped parameters has no natural type (C# 10), so `Delegate` / `object` / `Expression` never take it: CS8917 where one is expected
+  (`Delegate d = x => x;`), and a block body without `return` is CS1643 of the `RequestDelegate` overload, as Roslyn reports it.
+- The parameter of a lambda given to a constructor is typed too (`new Timer(state => …)`, `new Thread(argument => …)`).
+- Live check: `debug-playground/ShopApi/Playground/LambdaParameterTypes.cs` (`TYPE:lambda-*`) — minimal APIs, middleware, endpoint
+  filters, DI, options, logging filters, `Timer`, `Thread`, events, LINQ, `Parallel`, `Sort`.
+- Compiler-messages corpus: 309 of 403 errors matched, no false positive (0.1.146: 306 of 400; the lambda probe was added).
+
+## 0.1.146
+
+- The rules of `ref`, as Roslyn reports them: a `ref` field outside a `ref struct` (CS9059), a property returning by reference without
+  `get` or with `set` / `init` (CS8146, CS8147), an override or an interface implementation whose return differs by reference (CS8148,
+  CS8152), `return ref` in a function returning by value and the reverse (CS8149, CS8150), `return ref` of a wrong type, a non-variable,
+  a range variable, a plain local or parameter or a member of one, a `ref` local initialized from one, an instance member of a struct
+  (unless `[UnscopedRef]`), a `readonly` field or a member of one by writable reference (CS8151, CS8156, CS8159, CS8168, CS8166, CS8169,
+  CS8167, CS8157, CS8158, CS8170, CS8160, CS8161, CS8162, CS8333); `ref` locals without an initializer, with a value, or a value local
+  with `= ref` (CS8174, CS8172, CS8171), `= ref` of a non-variable or another type (CS1510, CS8173); a `ref struct` result returned
+  with `ref local` for a parameter that is not `scoped` (CS8347 with CS8168).
+- Library members too: the index says a `ref` return by the type of the member and, from format 5 of the index, `ref readonly` by a
+  flag (`ReadOnlySpan<T>.this[]`, `GetPinnableReference`), so `return ref span[0]` by writable reference is CS8333 and
+  `ref int r = ref span[0]` CS8329, as for an `in` parameter; a member of one is CS8334. The index cache is rebuilt once (format 5).
+- A private nested type is seen by the private members of its owner: no false CS0050–CS0052 on them.
+- Compiler-messages corpus: 306 of 400 errors matched, no false positive (0.1.144: 253 of 376; two ref probes were added).
+
 ## 0.1.145
 
 - ML completion is off by default in a build that bundles the models: both the ranker of the completion list and the grey text are turned

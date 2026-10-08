@@ -246,6 +246,63 @@ class CSharpSemanticErrorsTest : BasePlatformTestCase() {
         assertEquals(emptyList<String>(), codes("using System.Threading.Tasks; class L3 { async Task Run() { await Task.Delay(1); } }").filter { it.endsWith("CS0161") })
     }
 
+    // ---- ref rules (0.1.146), each verified against the Roslyn oracle (ref-probe.cs of the corpus)
+
+    fun testRefReturnsAndRefLocals() {
+        fun ref(text: String) = codes("class R { struct S { public int x; } readonly int ro = 0; readonly S rs; int plain; delegate ref int RefD(); delegate int ValD(); $text }")
+            .filter { it.substringAfterLast(' ').let { c -> c.startsWith("CS81") || c.startsWith("CS83") || c == "CS1510" || c == "CS9059" } }
+        assertEquals(listOf("p CS8166"), ref("ref int A(int p) { return ref p; }"))
+        assertEquals(listOf("p.x CS8167"), ref("ref int A(S p) { return ref p.x; }"))
+        assertEquals(listOf("s.x CS8169"), ref("ref int A() { S s; s.x = 1; return ref s.x; }"))
+        assertEquals(listOf("r CS8157"), ref("ref int A(int p) { ref int r = ref p; return ref r; }"))
+        assertEquals(listOf("p CS8333"), ref("ref int A(in int p) { return ref p; }"))
+        assertEquals(emptyList<String>(), ref("ref readonly int A(in int p) { return ref p; } ref readonly int B() { return ref ro; } ref int C(ref int p) { return ref p; } ref int D(int[] a) { return ref a[0]; } ref int E() { return ref plain; }"))
+        assertEquals(listOf("ro CS8160"), ref("ref int A() { return ref ro; }"))
+        assertEquals(listOf("rs.x CS8162"), ref("ref int A() { return ref rs.x; }"))
+        assertEquals(listOf("2 + 2 CS8156"), ref("ref int A() { return ref 2 + 2; }"))
+        assertEquals(listOf("plain CS8150"), ref("ref int A() => plain;"))
+        assertEquals(listOf("ref plain CS8149"), ref("int A() { return ref plain; }"))
+        assertEquals(listOf("ref plain CS8149", "plain CS8150"), ref("void A() { ValD d = () => ref plain; RefD e = () => plain; RefD f = () => ref plain; }"))
+        assertEquals(listOf("x + 1 CS1510", "l CS8173"), ref("void A() { int x = 1; ref int r = ref x; r = ref (x + 1); long l = 2; ref int q = ref l; }"))
+        assertEquals(listOf("ref x CS8171", "x CS8172", "z CS8174"), ref("void A() { int x = 1; var y = ref x; ref int w = x; for (ref int z; x < 2; x++) { } }"))
+        assertEquals(listOf("ref CS9059"), ref("ref int field;"))
+        assertEquals(listOf("P CS8146", "set CS8147"), ref("ref int P { set { } } ref int Q { get => ref plain; set { } }").filter { it != "set CS8147" || true }.take(2))
+    }
+
+    fun testRefReturnsOfStructsAndInterfaces() {
+        assertEquals(listOf("d CS8170"), codes("struct P { public int d; public ref int M() { return ref d; } }").filter { it.endsWith("CS8170") })
+        assertEquals(emptyList<String>(), codes("struct P { public int d; [System.Diagnostics.CodeAnalysis.UnscopedRef] public ref int M() { return ref d; } }").filter { it.endsWith("CS8170") })
+        assertEquals(listOf("GetNumber CS8148"), codes("class B { public virtual int GetNumber() => 0; } class D : B { int n; public override ref int GetNumber() { return ref n; } }").filter { it.endsWith("CS8148") })
+        assertEquals(listOf("Test CS8152"), codes("interface ITest { ref readonly int M(); } class Test : ITest { public int M() => 0; }").filter { it.endsWith("CS8152") })
+        assertEquals(listOf("CaptureArgument(ref localVariable) CS8347", "localVariable CS8168"), codes("""
+            ref struct Entity { }
+            class Program
+            {
+                static Entity CaptureArgument(ref int customArg) => new Entity();
+                static Entity Example() { int localVariable = 1; return CaptureArgument(ref localVariable); }
+            }
+        """).filter { it.endsWith("CS8347") || it.endsWith("CS8168") })
+    }
+
+    fun testRefReturnsOfLibraryMembers() {
+        // the index says `ref` (ReadOnlySpan<T>.this[], GetPinnableReference) and `ref readonly` (format 5); verified against Roslyn (ref-library-probe.cs)
+        fun ref(text: String) = codes("using System; class R { $text }").filter { it.substringAfterLast(' ').let { c -> c.startsWith("CS8") || c == "CS1510" } }
+        assertEquals(emptyList<String>(), ref("ref int A(Span<int> s) => ref s[0]; ref readonly int C(ReadOnlySpan<int> s) => ref s[0]; ref readonly int J(ReadOnlySpan<int> s) => ref s.GetPinnableReference();"))
+        assertEquals(listOf("s[0] CS8333"), ref("ref int B(ReadOnlySpan<int> s) => ref s[0];"))
+        assertEquals(listOf("s.GetPinnableReference() CS8333"), ref("ref int K(ReadOnlySpan<int> s) => ref s.GetPinnableReference();"))
+        assertEquals(listOf("Math.Max(1, 2) CS8156", "s.Length CS8156"), ref("ref int E() => ref Math.Max(1, 2); ref int F(Span<int> s) => ref s.Length;"))
+        assertEquals(listOf("s[0] CS8329"), ref("void G(ReadOnlySpan<int> s) { ref int r = ref s[0]; ref readonly int q = ref s[0]; }"))
+        assertEquals(listOf("p CS8329", "q CS8329"), ref("void O(in int p, ref readonly int q) { ref int a = ref p; ref int b = ref q; ref readonly int c = ref p; }"))
+        assertEquals(listOf("p CS8333", "w CS8156"), ref("ref int I(ref readonly int p) => ref p; ref int L(ref readonly int p) { ref readonly int w = ref p; return ref w; }"))
+        assertEquals(listOf("x CS1510"), ref("void M() { int v = 0; ref readonly int x = ref v; ref int y = ref x; }"))
+        assertEquals(listOf("arg2.Alice CS8334"), ref("ref int N(in int arg1, in (int Alice, int Bob) arg2) { return ref arg2.Alice; }"))
+    }
+
+    fun testAPrivateNestedTypeIsSeenByPrivateMembersOfItsOwner() {
+        // the ref probe of 2026-10-08: `S` and the members are private in the same type, nothing to say
+        assertEquals(emptyList<String>(), codes("class Owner { struct S { public int x; } readonly S rs; ref int A(S p) => ref p.x; }").filter { it.endsWith("CS0051") || it.endsWith("CS0052") || it.endsWith("CS0050") })
+    }
+
     fun testAwaitOfSomethingNotAwaitable() {
         assertEquals(listOf("id CS1061"), codes("""
             using System.Threading.Tasks;

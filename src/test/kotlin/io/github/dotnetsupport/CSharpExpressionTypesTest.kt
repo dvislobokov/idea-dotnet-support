@@ -351,6 +351,66 @@ class CSharpExpressionTypesTest : BasePlatformTestCase() {
         assertTrue("colors took $runs ms", runs.min() < 500)
     }
 
+    /**
+     * A lambda without typed parameters next to an overload taking `Delegate` (minimal APIs: `MapGet(pattern, RequestDelegate)` and
+     * `MapGet(pattern, Delegate)`): it has no natural type, so the `Delegate` overload cannot take it and the parameter is the delegate's
+     * (`HttpContext`), whatever the body is: a value, a block without `return` (CS1643 later), an unfinished one, `async`.
+     */
+    fun testLambdaParameterNextToADelegateOverload() {
+        assertEquals(
+            listOf("Sample.HttpContext", "Sample.HttpContext", "Sample.HttpContext", "Sample.HttpContext", "System.Threading.Tasks.Task", "int"),
+            types("""
+                MapGet("/a", context => /*<*/context/*>*/.Done());
+                MapGet("/b", context => { /*<*/context/*>*/.Done(); });
+                MapGet("/c", context => { /*<*/context/*>*/. });
+                MapGet("/d", async context => { await /*<*/context/*>*/.Done(); });
+                MapGet("/e", (HttpContext context) => /*<*/context.Done()/*>*/);
+                MapGet("/f", () => /*<*/1/*>*/);
+            """.trimIndent(), members = """
+                class HttpContext { public Task Done() => Task.CompletedTask; }
+                delegate Task RequestDelegate(HttpContext context);
+                static void MapGet(string pattern, RequestDelegate requestDelegate) { }
+                static void MapGet(string pattern, Delegate handler) { }
+            """.trimIndent()),
+        )
+    }
+
+    /**
+     * The parameter of a lambda in the common places of an application: a constructor (`new Timer(state => …)`), middleware-like overloads
+     * that agree on the parameter (`Use(Func<HttpContext, RequestDelegate, Task>)` / `Use(Func<HttpContext, Func<Task>, Task>)`), a method
+     * with an explicit type argument (`Configure<T>(Action<T>)`), an event, a declared delegate, `List<T>.ForEach`.
+     */
+    fun testLambdaParametersInCommonPlaces() {
+        assertEquals(
+            listOf("object", "Sample.HttpContext", "Sample.HttpContext", "Sample.HttpContext", "int", "int", "Sample.HttpContext", "Sample.HttpContext"),
+            types("""
+                var t = new Timer(state => /*<*/state/*>*/.ToString());
+                app.Use(async (context, next) => { await /*<*/context/*>*/.Done(); await next(); });
+                app.Use(async (context, next) => { await /*<*/context/*>*/.Done(); await next(context); });
+                app.Configure<HttpContext>(o => /*<*/o/*>*/.Done());
+                Func<int, string> f = n => /*<*/n/*>*/.ToString();
+                numbers.ForEach(n => /*<*/n/*>*/.ToString());
+                app.Started += (sender, e) => /*<*/e/*>*/.Done();
+                app.OnError(ex => /*<*/ex/*>*/.Done());
+            """.trimIndent(), members = """
+                class HttpContext { public Task Done() => Task.CompletedTask; }
+                delegate Task RequestDelegate(HttpContext context);
+                delegate void TimerCallback(object state);
+                class Timer { public Timer(TimerCallback callback) { } public Timer(TimerCallback callback, object state, int due, int period) { } }
+                class App
+                {
+                    public void Use(Func<HttpContext, RequestDelegate, Task> middleware) { }
+                    public void Use(Func<HttpContext, Func<Task>, Task> middleware) { }
+                    public void Configure<TOptions>(Action<TOptions> configure) { }
+                    public event EventHandler<HttpContext> Started;
+                    public void OnError(Action<HttpContext> handler) { }
+                    public void OnError(Func<HttpContext, Task> handler) { }
+                }
+                App app = new App();
+            """.trimIndent()),
+        )
+    }
+
     private companion object {
         const val OPEN = "/*<*/"
         const val CLOSE = "/*>*/"

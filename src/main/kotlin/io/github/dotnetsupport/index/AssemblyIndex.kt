@@ -180,6 +180,8 @@ class IndexedMember internal constructor(private val index: AssemblyIndex, val r
     /** Of a property or an indexer: who may call its getter and its setter (format 4); [IndexedAccess.NONE] for none the compiler imports. */
     val getterAccess: IndexedAccess get() = IndexedAccess.of(flags ushr 15 and 7)
     val setterAccess: IndexedAccess get() = IndexedAccess.of(flags ushr 18 and 7)
+    /** A method, property or indexer whose [typeRef] is a [IndexedTypeRef.ByRef] returns `ref readonly` rather than `ref` (format 5). */
+    val isRefReadOnly: Boolean get() = flags and (1 shl 21) != 0
 
     /** What a method returns (`void` too); the type of a property, an indexer, a field, a constant, an event. */
     val typeRef: IndexedTypeRef get() = index.ref(index.memberInt(row, 3))!!
@@ -470,7 +472,7 @@ class AssemblyIndex private constructor(private val buffer: ByteBuffer, docsFile
     }
 
     companion object {
-        const val FORMAT_VERSION = 4
+        const val FORMAT_VERSION = 5
         const val EXTENSION = "dnix"
         const val DEFAULT_LIMIT = 200
         private const val MAGIC = 0x58494E44 // "DNIX", little-endian

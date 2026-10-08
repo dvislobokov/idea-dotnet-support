@@ -2094,6 +2094,7 @@ Unit Test и Insert New GUID. ПКМ — строки на местах Rider, I
 | E-378 | 0.1.142 | Ошибки как у компилятора: `Broken/RiderComparison.cs` в Rider и у нас — одни коды и места (CS0246/CS0234 на `using`, CS0103 после синтаксической ошибки в другом операторе, красные имена); остаются CS0161 и CS1061 на `await id` | `Broken/RiderComparison.cs`, `CASE:*`; `Broken/SemanticErrors.cs`, `TYPE:sem-broken-statement` | не проверено |
 | E-379 | 0.1.143 | Ошибки объявлений как у Roslyn: `Broken/SemanticErrors.cs`, маркеры `ERR:accessibility`, `ERR:modifiers`, `ERR:struct-cycle`, `ERR:partial-half`, `ERR:await-int` — красные CS0050/CS0051, CS0106, CS0523, CS8795/CS0759, CS1061 на `await id`; остальное в файле без новых подсветок | нет |
 | E-380 | 0.1.144 | Присваивание структур по полям: `Broken/SemanticErrors.cs`, маркеры `ERR:struct-field`, `ERR:struct-whole`, `ERR:self-init`, `ERR:local-paths` — красные CS0170 на `p.B`, CS0165 на `p`, CS0165 на `d`, CS0161 на `Local`; `n.P.A = 1` и дальше без подсветок | нет |
+| E-381 | 0.1.146 | Правила `ref`: `Broken/SemanticErrors.cs`, маркеры `ERR:ref-local`, `ERR:ref-return`, `ERR:ref-field`, `ERR:ref-struct-this`, `ERR:ref-library` — красные CS8168 на `x`, CS8150 на `plain`, CS9059 на `ref`, CS8170 на `d`; `[UnscopedRef]`-метод и `ref int ok = ref arr[0]` без подсветок | нет |
 
 #### NF-01 Run `LegacyConsole`
 1. Конфигурация «.NET Project» с `LegacyConsole`, аргументы `first "two words"`, Run.

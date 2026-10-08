@@ -118,7 +118,10 @@ internal class CSharpOverloadChecks(private val checks: CSharpSemanticChecks, pr
         }
         val (group, outcomes) = failed ?: return quiet
         if (outcomes.any { it is Outcome.ConstraintFailed }) return quiet
-        val bad = group.candidates.indices.filter { outcomes[it] is Outcome.Bad }
+        var bad = group.candidates.indices.filter { outcomes[it] is Outcome.Bad }
+        // Roslyn reports the errors of a lambda bound to the delegate of a failing candidate before anything else: `MapGet("/", context => { … })`
+        // is CS1643 of `RequestDelegate`, the overload with `Delegate` (which takes no lambda without a natural type) stays silent
+        if (bad.size > 1) bad.filter { i -> (outcomes[i] as Outcome.Bad).let { o -> o.bad.any { a -> lambdaToDelegate(arguments[a], o.form.targets[a]) } } }.singleOrNull()?.let { bad = listOf(it) }
         val pool = bad.ifEmpty { group.candidates.indices.filter { outcomes[it] is Outcome.InferenceFailed } }
         if (pool.isEmpty() || pool.size > 1 && !group.ordered) return quiet
         return Analysis(callee, arguments, only, reported = group.candidates[pool.first()], outcome = outcomes[pool.first()])
@@ -490,6 +493,11 @@ internal class CSharpOverloadChecks(private val checks: CSharpSemanticChecks, pr
         if (r.definitionName(target) == EXPRESSION || mentionsTypeParameter(target)) return
         val delegate = r.expressions.delegateSignature(target)
         if (delegate == null) {
+            // `Delegate d = x => x;`: `Delegate`, `object`, `Expression` take a lambda by its natural type (C# 10), which untyped parameters deny
+            if (r.definitionName(target) in NATURAL_TARGETS) {
+                if (!overloads.hasNaturalType(lambda)) checks.report("CS8917", "The delegate type could not be inferred.", at)
+                return
+            }
             if (!notDelegate(target)) return
             val shown = CSharpTypeDisplay.display(target, qualified = false) ?: return
             return checks.report("CS1660", "Cannot convert $kind to type '$shown' because it is not a delegate type", at)
@@ -599,6 +607,12 @@ internal class CSharpOverloadChecks(private val checks: CSharpSemanticChecks, pr
         if (delegate.first.size != parametersOf(lambda)?.size) return
         val shown = CSharpTypeDisplay.display(target, qualified = false) ?: return
         checkPaths(lambda, delegate.second, "lambda expression", shown, at)
+    }
+
+    /** [argument] is a lambda and [target] a delegate type it is bound to (not `Delegate` / `object`, which bind by the natural type only). */
+    private fun lambdaToDelegate(argument: CSharpArgument, target: SemanticType?): Boolean {
+        if (argument.expression !is CSharpAnonymousFunctionExpression || target == null) return false
+        return r.expressions.unwrapExpression(target)?.let(r.expressions::delegateSignature) != null
     }
 
     private fun argumentOf(lambda: CSharpExpression): CSharpArgument? {

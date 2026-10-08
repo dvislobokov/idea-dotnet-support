@@ -77,6 +77,15 @@
   -Pml.names -Pml.seed -Pml.heap=6g`): шард `.cmlx` на репозиторий, готовые пропускаются, сломанный репозиторий логируется и не роняет прогон,
   сводка `ml: TOTAL …` с recall. Тест `CSharpMlDatasetExportTest` (экспорт на фикстурном репозитории, языковой блок, инфо на элементах).
   Weigher `CSharpMlCompletionRanker` — после обучения ранкера в движке
+- [x] 0.1.147 — тип параметра лямбды рядом с перегрузкой `Delegate` (minimal API: `MapGet("/", context => …)` — `context` это `HttpContext`,
+  навигация в перегрузку с `RequestDelegate`, подсказка `requestDelegate:`): лямбда без типов параметров не имеет естественного типа и к
+  `Delegate` / `object` / `Expression` не приводится (`CSharpOverloads.lambda`, `lambdaFits`, `lambdaParameterType`); CS8917 там, где такой тип ожидается,
+  CS1643 блочного тела — у кандидата с настоящим делегатом (`CSharpOverloadChecks.analyze`). Лямбда в аргументе конструктора (`new Timer(state => …)`)
+  тоже типизирована. Тесты `CSharpExpressionTypesTest.testLambdaParameter*`, `CSharpOverloadResolutionTest.testLambdasNextToADelegateOverload`,
+  корпус `lambda-probe.cs`. Сценарий — `debug-playground/ShopApi/Playground/LambdaParameterTypes.cs` (`TYPE:lambda-*`). Вживую не проверено
+- [x] 0.1.146 — паритет, правила `ref` (`CSharpRefChecks`): CS8146–CS8174, CS8329, CS8333, CS8334, CS8347, CS9059, CS1510 на `= ref`; CS8148 в проверке
+  переопределений; библиотечные члены — по индексу (формат 5: бит `ref readonly`); исправлена область видимости приватного вложенного типа
+  (ложные CS0050–CS0052). Покрытие 306 из 400, ложных 0. Вживую не проверено
 - [x] 0.1.145 — ML по умолчанию выключен: `rankerEnabled` / `inlineEnabled` false, включаются в Settings | .NET | ML completion
 - [x] 0.1.144 — паритет, поток управления: структуры по полям в `CSharpDefiniteAssignmentChecks` (CS0170, CS0165 / CS0177 на структурах),
   локальная в своём инициализаторе, первый источник query; CS0161 на локальных функциях и при нерезолвленном типе возврата. Покрытие 253
