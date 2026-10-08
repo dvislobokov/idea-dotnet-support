@@ -77,6 +77,9 @@
   -Pml.names -Pml.seed -Pml.heap=6g`): шард `.cmlx` на репозиторий, готовые пропускаются, сломанный репозиторий логируется и не роняет прогон,
   сводка `ml: TOTAL …` с recall. Тест `CSharpMlDatasetExportTest` (экспорт на фикстурном репозитории, языковой блок, инфо на элементах).
   Weigher `CSharpMlCompletionRanker` — после обучения ранкера в движке
+- [x] 0.1.157 — план робота п. 13: сосед-провайдер серого текста с пустой подсказкой больше не глушит сеть (`CSharpNnInlineCompletionProvider.nonEmpty`),
+  тест `CSharpNnInlineProviderTest`; перезапуск после включения ML не нужен (настройка читается на каждое событие); маркер `ml-return-line`
+  исправлен (Enter, не End). Вживую не проверено
 - [x] 0.1.156 — план робота п. 12: баннер над `.cs` файлом проекта из незагруженного solution той же папки с «Load <solution>»
   (`roslyn/RoslynUnloadedSolutionBanner`, `RoslynWorkspace.loadedSolution`). Уточнение: индекс сборок покрывает все solution папки, пусто в таких
   файлах из-за сервера, который файлов чужого solution не знает. Вживую не проверено

@@ -15,7 +15,7 @@ public class MlInline
         var customer = _customers.GetValueOrDefault(id);
         if (customer == null)
         {
-            // TYPE:ml-return-line — leave the caret on the empty line below (or press End there). EXPECT: grey `return Result.NotFound();`
+            // TYPE:ml-return-line — put the caret at the end of the `{` line above the empty line and press Enter (the grey text answers a change of the document; a caret move alone does not ask it), or press Alt+\ on the empty line. EXPECT: grey `return Result.NotFound();`
             // (or another statement) to its `;` — a certain start of an uncertain line may end with `;`; never cut to `return Result.NotFound`
 
         }

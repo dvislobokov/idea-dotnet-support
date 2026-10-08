@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.157
+
+- ML grey text: the network is no longer silenced where another grey-text provider of the plugin is enabled but has nothing to
+  suggest (for example, a type name selected in the completion list). Turning the ML options on or off applies at once, no restart.
+- The `ml-return-line` scenario of the playground now says to press Enter: the grey text answers a change of the document, not a
+  caret move.
+
 ## 0.1.156
 
 - A C# file of a project that the loaded solution does not contain, but another solution of the folder does, gets a banner: "This
