@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.153
+
+- Find Usages lists every occurrence of a C# symbol on its own row, as in Rider: two usages on one line
+  (`Counter + 1 + Counter.ToString()`) are no longer merged into one result by the Usages view, and the count includes all of them.
+
 ## 0.1.152
 
 - No inlay type hint after `var` when the initializer already says the type: `new T(...)`, a literal, `default(T)`, `typeof(T)`,

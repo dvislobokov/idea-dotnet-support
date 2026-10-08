@@ -77,6 +77,8 @@
   -Pml.names -Pml.seed -Pml.heap=6g`): шард `.cmlx` на репозиторий, готовые пропускаются, сломанный репозиторий логируется и не роняет прогон,
   сводка `ml: TOTAL …` с recall. Тест `CSharpMlDatasetExportTest` (экспорт на фикстурном репозитории, языковой блок, инфо на элементах).
   Weigher `CSharpMlCompletionRanker` — после обучения ранкера в движке
+- [x] 0.1.153 — план робота п. 10: окно Usages не схлопывает два использования в одной строке (`CSharpUsageViewFactory` выключает
+  «Merge Usages from the Same Line» для C#; сам поиск находил оба). Тест `CSharpSolutionUsagesTest.testTwoReadsOnOneLine`. Вживую не проверено
 - [x] 0.1.151–0.1.152 — план робота пп. 7–8: контекстное меню проекта как в Rider (редкие действия — в подменю Tools, платформенные серые
   Cut/Copy/Paste и дубль Rename скрыты на узлах solution/проекта: `view/SolutionPopupCleanup`); подсказка типа `var` не показывается при
   очевидном инициализаторе (`new T(...)`, литерал, `default`, `typeof`, приведение, член enum, `nameof`), опция «Hide type hints for obvious
