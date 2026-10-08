@@ -50,4 +50,14 @@ object MsBuildOutputParser {
             projectFile = match.groups["project"]?.value,
         )
     }
+
+    /** The first [max] errors as journal lines (`Program.cs(3,5): error CS1002: ; expected`), so a failed build says why without opening the Build window. */
+    fun errorSummary(messages: Collection<MsBuildMessage>, max: Int = 3): String {
+        val errors = messages.filter { it.isError }
+        val lines = errors.take(max).map { m ->
+            val where = m.file?.let { f -> f + if (m.line > 0) "(${m.line}${if (m.column > 0) ",${m.column}" else ""})" else "" } ?: "MSBuild"
+            "$where: error ${listOfNotNull(m.code, m.text).joinToString(": ")}"
+        }
+        return (lines + listOfNotNull("... and ${errors.size - max} more".takeIf { errors.size > max })).joinToString("\n")
+    }
 }

@@ -312,6 +312,7 @@ class CSharpCompletionNativeTest : BasePlatformTestCase() {
         assertEquals(listOf("people"), CSharpVariableNames.forType("List<Person>"))
         assertEquals(listOf("client", "httpClient"), CSharpVariableNames.forType("System.Net.Http.HttpClient?"))
         assertEquals(listOf("@event"), CSharpVariableNames.forType("Event"))
+        assertFalse(CSharpVariableNames.forType("StringBuilder").any { it.startsWith("@") })
         assertEquals(listOf("Logger"), CSharpVariableNames.forType("ILogger<Program>", NativeCSharpCompletionPlace.NameStyle.PUBLIC_MEMBER))
         assertEquals(emptyList<String>(), CSharpVariableNames.forType("int"))
         assertEquals("builder2", CSharpVariableNames.unique("builder", setOf("builder", "builder1")))

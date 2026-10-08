@@ -18,11 +18,11 @@ object CSharpVariableNames {
     private const val MAX = 4
 
     fun forType(type: String, style: NativeCSharpCompletionPlace.NameStyle = NativeCSharpCompletionPlace.NameStyle.LOCAL): List<String> =
-        bases(type).map { styled(it, style) }.distinct().take(MAX)
+        withoutKeywords(bases(type)).map { styled(it, style) }.distinct().take(MAX)
 
     /** The type's whole name (`UserDto` → `userDto`, `IOrderService` → `orderService`, `List<OrderLine>` → `orderLines`): the gray text after a type. */
     fun full(type: String, style: NativeCSharpCompletionPlace.NameStyle = NativeCSharpCompletionPlace.NameStyle.LOCAL): String? =
-        bases(type).lastOrNull()?.let { styled(it, style) }
+        withoutKeywords(bases(type)).lastOrNull()?.let { styled(it, style) }
 
     /** `builder` → `builder1` when taken. */
     fun unique(name: String, taken: Set<String>): String {
@@ -99,6 +99,9 @@ object CSharpVariableNames {
         NativeCSharpCompletionPlace.NameStyle.PRIVATE_FIELD -> "_$name"
         NativeCSharpCompletionPlace.NameStyle.PUBLIC_MEMBER -> name.replaceFirstChar { it.uppercase() }
     }
+
+    /** A candidate that is a keyword (`string`) is dropped when others remain, as in Rider; alone it stays and gets `@`. */
+    private fun withoutKeywords(names: List<String>): List<String> = names.filter { it !in NativeCSharpCompletionPlace.RESERVED }.ifEmpty { names }
 
     private fun escaped(name: String): String = if (name in NativeCSharpCompletionPlace.RESERVED) "@$name" else name
 }

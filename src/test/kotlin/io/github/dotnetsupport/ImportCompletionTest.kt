@@ -251,4 +251,20 @@ class ImportCompletionTest : BasePlatformTestCase() {
     private companion object {
         var counter = 0
     }
+
+    fun testTheIndexerIsNotRunTwiceForTheSameAssemblies() {
+        val dll = java.io.File.createTempFile("memo", ".dll").also { it.deleteOnExit() }
+        val memo = io.github.dotnetsupport.index.IndexRunMemo()
+        var runs = 0
+        val run = { runs++; mapOf(dll to dll) }
+        val key = io.github.dotnetsupport.index.IndexRunMemo.key(listOf(dll), null, "net10.0")
+        memo.get(key, run)
+        memo.get(io.github.dotnetsupport.index.IndexRunMemo.key(listOf(dll), null, "net10.0"), run)
+        assertEquals(1, runs)
+        memo.get(io.github.dotnetsupport.index.IndexRunMemo.key(listOf(dll), null, "net9.0"), run)
+        assertEquals("another framework runs it again", 2, runs)
+        dll.setLastModified(dll.lastModified() + 5000)
+        memo.get(io.github.dotnetsupport.index.IndexRunMemo.key(listOf(dll), null, "net9.0"), run)
+        assertEquals("a changed dll runs it again", 3, runs)
+    }
 }

@@ -226,7 +226,9 @@ class AssemblyIndexService(private val project: Project) : Disposable {
         val all = lists.values.flatten().distinct()
         if (all.isEmpty()) return
         val started = System.nanoTime()
-        val indexed = IndexerTool.getInstance().index(all, IndexerTool.indexDirectory())
+        // the same assemblies, dotnet and framework as at the last good run: the indexer would find everything done, so it is not started
+        var ran = false
+        val indexed = lastRun.get(IndexRunMemo.key(all, dotnetRoot, framework)) { ran = true; IndexerTool.getInstance().index(all, IndexerTool.indexDirectory()) }
         if (indexed.isEmpty()) return
         for ((path, assemblies) in lists) {
             byProject[path] = assemblies.mapNotNull { assembly -> indexed[assembly]?.let(::open)?.also { assemblyFiles[it.mvid] = assembly } }
@@ -235,7 +237,7 @@ class AssemblyIndexService(private val project: Project) : Disposable {
         modificationTracker.incModificationCount()
         // the errors of the open files were computed without the indexes (silent): compute them again
         ApplicationManager.getApplication().invokeLater({ com.intellij.codeInsight.daemon.DaemonCodeAnalyzer.getInstance(project).restart() }, project.disposed)
-        LOG.info("Index of assemblies: ${lists.size} projects, ${all.size} assemblies, ${indexed.size} indexed, ${(System.nanoTime() - started) / 1_000_000} ms")
+        if (ran) LOG.info("Index of assemblies: ${lists.size} projects, ${all.size} assemblies, ${indexed.size} indexed, ${(System.nanoTime() - started) / 1_000_000} ms")
     }
 
     /**
@@ -262,6 +264,8 @@ class AssemblyIndexService(private val project: Project) : Disposable {
         references.clear()
         found.forEach { (file, value) -> references[file.path] = value }
     }
+
+    private val lastRun = IndexRunMemo()
 
     private fun open(file: File): AssemblyIndex? = opened[file] ?: runCatching { AssemblyIndex.open(file.toPath()) }
         .onFailure { LOG.warn("Not an index: $file (${it.message})") }.getOrNull()?.also { opened[file] = it }
@@ -472,5 +476,25 @@ class ImportCompletionContributor : CompletionContributor() {
         }
         context.commitDocument()
         if (inside) AutoPopupController.getInstance(context.project).autoPopupParameterInfo(context.editor, null)
+    }
+}
+
+/** The result of the last good indexer run, kept under a key of what it was run for: the same key gives the same result without a process. */
+class IndexRunMemo {
+    private var key: String? = null
+    private var result: Map<File, File> = emptyMap()
+
+    @Synchronized
+    fun get(key: String, run: () -> Map<File, File>): Map<File, File> {
+        if (key == this.key) return result
+        val fresh = run()
+        if (fresh.isNotEmpty()) { this.key = key; result = fresh }
+        return fresh
+    }
+
+    companion object {
+        /** Sorted paths of the assemblies with their modification times, the format of the index, `dotnet` and the framework. */
+        fun key(assemblies: Collection<File>, dotnetRoot: File?, framework: String?): String =
+            assemblies.map { "${it.path}|${it.lastModified()}" }.sorted().joinToString("\n", "v${AssemblyIndex.FORMAT_VERSION}\n${dotnetRoot?.path}\n$framework\n")
     }
 }

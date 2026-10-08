@@ -159,7 +159,7 @@ class DotNetBuildService(private val project: Project) {
                     else -> "failed with exit code ${event.exitCode}"
                 }
                 buildView.onEvent(buildId, BuildViewEvents.finished(buildId, message, result))
-                DotNetLogs.commandFinished(title, "$message (exit code ${event.exitCode})", failed)
+                DotNetLogs.commandFinished(title, "$message (exit code ${event.exitCode})", failed, MsBuildOutputParser.errorSummary(reported))
                 // what the compiler has said goes to the editor too; a clean or a restore says nothing about the code
                 if (arguments.firstOrNull() in COMPILING_COMMANDS) BuildProblems.getInstance(project).replace(reported)
                 VfsUtil.markDirtyAndRefresh(true, true, true, File(workDirectory))

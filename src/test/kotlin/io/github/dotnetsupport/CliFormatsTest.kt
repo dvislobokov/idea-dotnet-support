@@ -164,4 +164,16 @@ class CliFormatsTest {
         assertTrue(listOf("net48", "net472", "netstandard2.0", "netcoreapp3.1", "net5.0").all(CSharpNamespaces::isLegacyFramework))
         assertFalse(listOf("net6.0", "net8.0-windows", "net10.0").any(CSharpNamespaces::isLegacyFramework))
     }
+
+    fun testTheJournalGetsTheFirstThreeErrorsOfAFailedBuild() {
+        val lines = listOf(
+            "Program.cs(3,5): error CS1002: ; expected [/p/a.csproj]", "Program.cs(4,1): warning CS0168: unused [/p/a.csproj]",
+            "A.cs(1,1): error CS0103: no x [/p/a.csproj]", "B.cs(2): error CS0103: no y [/p/a.csproj]", "C.cs(2,2): error CS0103: no z [/p/a.csproj]",
+        ).mapNotNull { io.github.dotnetsupport.build.MsBuildOutputParser.parseLine(it) }
+        assertEquals(
+            "Program.cs(3,5): error CS1002: ; expected\nA.cs(1,1): error CS0103: no x\nB.cs(2): error CS0103: no y\n... and 1 more",
+            io.github.dotnetsupport.build.MsBuildOutputParser.errorSummary(lines),
+        )
+        assertEquals("", io.github.dotnetsupport.build.MsBuildOutputParser.errorSummary(emptyList()))
+    }
 }
