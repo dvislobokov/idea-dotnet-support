@@ -11,7 +11,9 @@ import io.github.dotnetsupport.debugger.StackFrames
 import io.github.dotnetsupport.debugger.DotNetDebugProcess
 import io.github.dotnetsupport.debugger.DotNetExceptionBreakpointHandler
 import io.github.dotnetsupport.debugger.DotNetLineBreakpointHandler
+import io.github.dotnetsupport.debugger.DotNetTupleNames
 import io.github.dotnetsupport.debugger.DotNetValue
+import io.github.dotnetsupport.debugger.TupleShape
 import io.github.dotnetsupport.debugger.int
 import io.github.dotnetsupport.debugger.json
 import io.github.dotnetsupport.debugger.string
@@ -158,6 +160,42 @@ class DapClientTest : TestCase() {
         // a short word goes on to the visualizers of the platform, which need the application: not in this test
         assertTrue(DotNetValue.wantsViewer("line\nline"))
         assertTrue(DotNetValue.wantsViewer("x".repeat(61)))
+    }
+
+    /**
+     * A `ValueTuple` has no names at runtime: the adapter answers `Item1`, `Item2` (the `variables` of `tuple` in Scenarios.Variables), the
+     * declared names replace them, nested tuples too; what has no name keeps the adapter's.
+     */
+    fun testTupleElementsTakeTheDeclaredNames() {
+        val answer = JsonParser.parseString("""{"variables": [
+            {"name": "Item1", "value": "1", "type": "int", "evaluateName": "tuple.Item1", "variablesReference": 0},
+            {"name": "Item2", "value": "\"tuple\"", "type": "string", "evaluateName": "tuple.Item2", "variablesReference": 0},
+            {"name": "Raw View", "value": "", "type": "", "variablesReference": 7}]}""").asJsonObject
+        val children = answer.getAsJsonArray("variables").map { it.asJsonObject.string("name")!! }
+        val named = TupleShape(listOf("Id", "Name"), listOf(null, null))
+        assertEquals(listOf("Id", "Name", "Raw View"), DotNetTupleNames.names(children, named))
+        assertEquals("(Id: 1, Name: \"tuple\")", DotNetTupleNames.summary("(1, \"tuple\")", named))
+        // no shape (an expression, a field): the names of the adapter
+        assertEquals(children, DotNetTupleNames.names(children, null))
+        // `(int Id, string)`: the second element has no name
+        val partial = TupleShape(listOf("Id", null), listOf(null, null))
+        assertEquals(listOf("Id", "Item2", "Raw View"), DotNetTupleNames.names(children, partial))
+        assertEquals("(Id: 1, \"a, (b)\")", DotNetTupleNames.summary("(1, \"a, (b)\")", partial))
+        // `(int Id, (string Name, bool Ok) Inner)`: the inner tuple is expanded with its own names
+        val nested = TupleShape(listOf("Id", "Inner"), listOf(null, TupleShape(listOf("Name", "Ok"), listOf(null, null))))
+        val (inner, innerShape) = DotNetTupleNames.child("Item2", nested)
+        assertEquals("Inner", inner)
+        assertEquals(listOf("Name", "Ok"), DotNetTupleNames.names(listOf("Item1", "Item2"), innerShape))
+        assertEquals("(Id: 1, Inner: (Name: \"x\", Ok: true))", DotNetTupleNames.summary("(1, (\"x\", true))", nested))
+        // `(int, (string Name, bool))`: only the nested tuple names something
+        val deep = TupleShape(listOf(null, null), listOf(null, TupleShape(listOf("Name", null), listOf(null, null))))
+        assertEquals("Item2", DotNetTupleNames.child("Item2", deep).first)
+        assertEquals("(1, (Name: \"x\", true))", DotNetTupleNames.summary("(1, (\"x\", true))", deep))
+        // a value that is not the elements stays as it is
+        assertEquals("{System.ValueTuple<int, string>}", DotNetTupleNames.summary("{System.ValueTuple<int, string>}", named))
+        assertEquals("(1, 2, 3)", DotNetTupleNames.summary("(1, 2, 3)", named))
+        assertTrue(DotNetTupleNames.isTupleType("System.ValueTuple<int, string>") && !DotNetTupleNames.isTupleType("int"))
+        assertTrue(DotNetTupleNames.isName(" tuple ") && !DotNetTupleNames.isName("tuple.Item1") && !DotNetTupleNames.isName("Get()"))
     }
 
     /** The breakpoints of `setBreakpoints`: 1-based lines, the condition, the hit count and the log message as the adapter takes them. */

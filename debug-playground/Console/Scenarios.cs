@@ -61,7 +61,7 @@ public static class Scenarios
         var line = new OrderLine("Tea", 4.5m, 2);
         var person = new Person("Ada", 36) { Friend = new Person("Grace", 85) };
         object boxed = number;
-        Console.WriteLine($"{number} {big} {ratio} {money} {flag} {letter} {text} {nothing} {maybe} {when} {color} {access} {point} {tuple} {line} {person} {boxed}"); // BP:variables — locals of every kind; Evaluate: person.Friend.Name, number * 2, text.Length, access.HasFlag(Access.Write)
+        Console.WriteLine($"{number} {big} {ratio} {money} {flag} {letter} {text} {nothing} {maybe} {when} {color} {access} {point} {tuple} {line} {person} {boxed}"); // BP:variables — locals of every kind; Evaluate: person.Friend.Name, number * 2, text.Length, access.HasFlag(Access.Write). EXPECT: `tuple` shows `Id = 1`, `Name = "tuple"`, not Item1/Item2 (in Variables and in Evaluate of `tuple`)
     }
 
     private static void Collections()

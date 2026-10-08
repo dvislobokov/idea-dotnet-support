@@ -39,6 +39,7 @@ class DotNetValue(
     private val evaluateName: String?,
     private val frameId: Int,
     hint: JsonObject?,
+    private val tuple: TupleShape? = null,
 ) : XNamedValue(name), XValueTextProvider {
     private val kind = hint?.string("kind")
 
@@ -46,7 +47,8 @@ class DotNetValue(
     private val text: String? = if (isStringType(type)) unquote(value) else null
 
     override fun computePresentation(node: XValueNode, place: XValuePlace) {
-        node.setPresentation(icon(), XRegularValuePresentation(value, type?.takeIf { it.isNotBlank() }), reference > 0)
+        val shown = tuple?.let { DotNetTupleNames.summary(value, it) } ?: value
+        node.setPresentation(icon(), XRegularValuePresentation(shown, type?.takeIf { it.isNotBlank() }), reference > 0)
         // "View" opens the platform's popup, which adds JSON / XML / HTML / JWT tabs when the text is one (as the viewers of Rider)
         if (text != null && wantsViewer(text)) node.setFullValueEvaluator(TextEvaluator(text))
     }
@@ -68,7 +70,7 @@ class DotNetValue(
         else -> AllIcons.Nodes.Variable
     }
 
-    override fun computeChildren(node: XCompositeNode) = DotNetValueChildren(process, reference, indexed, frameId).load(node, 0)
+    override fun computeChildren(node: XCompositeNode) = DotNetValueChildren(process, reference, indexed, frameId, tuple = tuple).load(node, 0)
 
     /** Add to Watches and Copy Reference take the expression of the adapter, not the name of the row (`[0]`, `Name`). */
     override fun calculateEvaluationExpression(): Promise<XExpression> =
@@ -148,19 +150,24 @@ class DotNetValue(
         fun setExpressionArguments(expression: String, value: String, frameId: Int?): JsonObject =
             json("expression" to expression, "value" to value.trim(), "frameId" to frameId)
 
-        fun of(process: DotNetDebugProcess, variable: JsonObject, frameId: Int) = DotNetValue(
-            process, variable.string("name").orEmpty(), variable.string("value").orEmpty(), variable.string("type"),
+        /** [name]: the name to show when it is not the adapter's (an element of a named tuple); [tuple]: the names of its own elements. */
+        fun of(process: DotNetDebugProcess, variable: JsonObject, frameId: Int, name: String? = null, tuple: TupleShape? = null) = DotNetValue(
+            process, name ?: variable.string("name").orEmpty(), variable.string("value").orEmpty(), variable.string("type"),
             variable.int("variablesReference") ?: 0, variable.int("indexedVariables"), variable.string("evaluateName"), frameId,
-            variable.getAsJsonObject("presentationHint"),
+            variable.getAsJsonObject("presentationHint"), tuple,
         )
     }
 }
 
 /**
  * The children of a reference, a page at a time and always with `start` / `count`: without them a big collection kills the adapter on
- * Linux and blocks it for minutes on Windows (`dap-probe/FINDINGS.md`). "Show more" asks for the next page.
+ * Linux and blocks it for minutes on Windows (`dap-probe/FINDINGS.md`). "Show more" asks for the next page. The elements of a [tuple]
+ * get their declared names; the variables of a frame ([source]) that are tuples are looked up in the source for theirs.
  */
-class DotNetValueChildren(private val process: DotNetDebugProcess, private val reference: Int, private val indexed: Int?, private val frameId: Int) {
+class DotNetValueChildren(
+    private val process: DotNetDebugProcess, private val reference: Int, private val indexed: Int?, private val frameId: Int,
+    private val source: DotNetFrameSource? = null, private val tuple: TupleShape? = null,
+) {
     /** [groups] (the other scopes of a frame) go below the variables of the first page. */
     fun load(node: XCompositeNode, start: Int, groups: List<XValueGroup> = emptyList()) {
         if (reference <= 0) return node.addChildren(XValueChildrenList().also { list -> groups.forEach(list::addBottomGroup) }, true)
@@ -169,16 +176,28 @@ class DotNetValueChildren(private val process: DotNetDebugProcess, private val r
                 if (node.isObsolete) return@whenComplete
                 if (error != null) return@whenComplete node.setErrorMessage(DotNetDebugProcess.errorText(error))
                 val variables = answer.objects("variables")
-                val children = XValueChildrenList(variables.size)
-                variables.forEach { children.add(DotNetValue.of(process, it, frameId)) }
-                groups.forEach(children::addBottomGroup)
-                val more = variables.size >= PAGE
-                node.addChildren(children, !more)
-                if (more) {
-                    val shown = start + variables.size
-                    node.tooManyChildren(indexed?.let { (it - shown).coerceAtLeast(1) } ?: PAGE) { load(node, shown) }
+                val tuples = variables.filter { DotNetTupleNames.isTupleType(it.string("type")) }.mapNotNull { it.string("name") }
+                if (source == null || tuples.isEmpty()) return@whenComplete show(node, start, variables, groups) { DotNetTupleNames.child(it, tuple) }
+                // a source that cannot be read leaves the names of the adapter
+                source.shapes(tuples).exceptionally { emptyMap() }.thenAccept { shapes ->
+                    if (!node.isObsolete) show(node, start, variables, groups) { name -> name to shapes[name] }
                 }
             }
+    }
+
+    private fun show(node: XCompositeNode, start: Int, variables: List<JsonObject>, groups: List<XValueGroup>, named: (String) -> Pair<String, TupleShape?>) {
+        val children = XValueChildrenList(variables.size)
+        for (variable in variables) {
+            val (name, shape) = named(variable.string("name").orEmpty())
+            children.add(DotNetValue.of(process, variable, frameId, name, shape))
+        }
+        groups.forEach(children::addBottomGroup)
+        val more = variables.size >= PAGE
+        node.addChildren(children, !more)
+        if (more) {
+            val shown = start + variables.size
+            node.tooManyChildren(indexed?.let { (it - shown).coerceAtLeast(1) } ?: PAGE) { load(node, shown) }
+        }
     }
 
     companion object {
