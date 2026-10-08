@@ -861,6 +861,10 @@ AppHost запускает `Web` как ресурс `web`. Профиль `http
 Отдельный solution `ShopApi/ShopApi.sln`: ASP.NET Core на CQRS (MediatR), EF Core (PostgreSQL), OpenTelemetry (трассы и метрики,
 Prometheus), Serilog, фоновый outbox-воркер. Собирается офлайн из локального кэша NuGet; для запуска нужен PostgreSQL. Тур по completion —
 `ShopApi/Playground/CompletionTour.cs`, маркеры `TYPE:shop-*`, в порядке версий 0.1.85–0.1.91.
+- [ ] (0.1.156) открыть папку `debug-playground` с загруженным `DebugPlayground.sln`, открыть `ShopApi/Playground/LambdaParameterTypes.cs` — над редактором
+  баннер «This file belongs to ShopApi.sln, which is not loaded…»; «Load ShopApi.sln» переключает solution (сервер перезапускается, в виджете — `ShopApi.sln`),
+  баннер уходит, после загрузки список `services.` и тип `context` в `MapGet` появляются; у файлов `Console/` теперь баннер про `DebugPlayground.sln`.
+  «Don't Show Again» прячет баннер в этом проекте. Файл вне любого `.csproj` этого баннера не получает
 Строки ASP.NET Core (0.1.93) — `ShopApi/Playground/AspNetCompletion.cs`:
 - [ ] `TYPE:shop-log-placeholder` — `{` в шаблоне `LogInformation` открывает список имён из аргументов (`OrderId`, `Id`), Enter дописывает `}`;
   `{OrderId}` / `{Total}` цветом format item

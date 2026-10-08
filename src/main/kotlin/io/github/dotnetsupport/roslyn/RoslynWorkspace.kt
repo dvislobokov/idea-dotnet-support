@@ -85,6 +85,11 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
     var target: String? = null
         private set
 
+    /** The absolute path of the solution the server of this session has been told to open, null for loose projects or no server. */
+    @Volatile
+    var loadedSolution: String? = null
+        private set
+
     private fun phase(phase: RoslynPhase, target: String? = this.target) {
         this.phase = phase
         this.target = target
@@ -203,6 +208,7 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
             is RoslynWorkspaceTarget.Solution -> phase(RoslynPhase.LOADING, target.path.substringAfterLast('/'))
             else -> phase(RoslynPhase.LOADING, null)
         }
+        loadedSolution(if (target is RoslynWorkspaceTarget.Solution) target.path else null)
         // what the server will know about: Go to Class / Symbol of the plugin leaves these files to it, see RoslynServerStatus.covers
         project.service<RoslynServerStatus>().loadedRoots = when (target) {
             is RoslynWorkspaceTarget.Solution -> listOf(target.path.substringBeforeLast('/'))
@@ -246,6 +252,16 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
             .addAction(NotificationAction.createSimpleExpiring("Select Solution...") { chooseSolution() })
             .notify(project)
     }
+
+    /** The banner of a file of another solution ([RoslynUnloadedSolutionBanner]) follows what the server loads. */
+    private fun loadedSolution(path: String?) {
+        if (loadedSolution == path) return
+        loadedSolution = path
+        if (!project.isDisposed) com.intellij.ui.EditorNotifications.getInstance(project).updateAllNotifications()
+    }
+
+    /** [path] is absolute: what Load <solution> of [RoslynUnloadedSolutionBanner] chooses, as if picked in [chooseSolution]. */
+    fun loadSolution(path: String) = solutionChosen(relative(path))
 
     /** [solution] is relative to the opened folder. The server holds one solution: another one means another server. */
     fun solutionChosen(solution: String) {
@@ -322,6 +338,7 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
         opened = false
         // the server of a closed project stops after the project is disposed: no service of it may be looked up then
         if (project.isDisposed) return
+        loadedSolution(null)
         project.service<RoslynSolutionProblems>().stop()
         phase(RoslynPhase.STARTING, null)
         if (!shutdownNormally) ApplicationManager.getApplication().executeOnPooledThread { explainCrash() }
