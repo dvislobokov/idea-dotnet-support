@@ -182,6 +182,35 @@ class CSharpSolutionUsagesTest : BasePlatformTestCase() {
         assertEquals("the override: the calls of the virtual member too", listOf("More.cs:13:Size", "More.cs:13:Size"), usages(bigSize))
     }
 
+    /** Two reads of a field on one line, one of them the receiver of a call on it: two usages, both «Read access» (`TYPE:find-usages-field`). */
+    fun testTwoReadsOnOneLine() {
+        val file = file("usages/TwoReads.cs", """
+            public class Twice
+            {
+                public int /*^*/Counter;
+                public int Read() => Counter + 1 + Counter.ToString().Length;
+            }
+        """.trimIndent())
+        val references = ReferencesSearch.search(declarationAt(file), GlobalSearchScope.projectScope(project)).findAll()
+        assertEquals(listOf("TwoReads.cs:4:Counter", "TwoReads.cs:4:Counter"), references.map { describe(it.element) })
+        assertEquals(listOf("Read access", "Read access"), references.map { CSharpUsageTypeProvider().getUsageType(it.element).toString() })
+
+        // the Usages view: a row each, not one row for the line (the platform merges the usages of one line unless the presentation forbids it)
+        val usages = references.map { com.intellij.usages.UsageInfo2UsageAdapter(com.intellij.usageView.UsageInfo(it)) }.toTypedArray<com.intellij.usages.Usage>()
+        val targets = arrayOf<com.intellij.usages.UsageTarget>(com.intellij.find.findUsages.PsiElement2UsageTargetAdapter(declarationAt(file), false))
+        val presentation = com.intellij.usages.UsageViewPresentation()
+        val view = com.intellij.usages.UsageViewManager.getInstance(project).createUsageView(targets, usages, presentation, null) as com.intellij.usages.impl.UsageViewImpl
+        try {
+            com.intellij.testFramework.PlatformTestUtil.waitForFuture(com.intellij.openapi.application.ApplicationManager.getApplication().executeOnPooledThread { view.drainQueuedUsageNodes() })
+            com.intellij.testFramework.PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
+            val rows = com.intellij.util.ui.tree.TreeUtil.treeNodeTraverser(view.root).filter(com.intellij.usages.impl.UsageNode::class.java).toList()
+            assertEquals(2, rows.size)
+            assertFalse(presentation.isMergeDupLinesAvailable)
+        } finally {
+            com.intellij.openapi.util.Disposer.dispose(view)
+        }
+    }
+
     /** The EXPECT of `debug-playground/Console/Editor/SolutionUsages.cs` (`TYPE:solution-*`) on its two files. */
     fun testThePlaygroundScenario() {
         fun load(path: String, name: String) = file("playground/$name", java.io.File(path).readText().replace("\r\n", "\n"))
