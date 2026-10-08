@@ -136,6 +136,8 @@ def settings():
                note("settings.behavior.importStats.comment") + ". Статистика снята с открытого корпуса C# (эксперимент e20 движка): для имени типа — "
                "частота каждого пространства имён и его связь с уже подключёнными using. Пространства, которых нет в индексе, никогда не предлагаются; "
                "сопутствующие using по статистике не добавляются."),
+        option("settings.behavior.hideObviousHints", ON,
+               note("settings.behavior.hideObviousHints.comment") + ". Как «Hide hints for obvious types» в Rider; подсказки параметров и лямбд не затрагивает."),
         option("settings.behavior.rememberChoices", ON,
                note("settings.behavior.rememberChoices.comment") + ". Вид места — после точки, начало оператора, аргумент, тип, справа от <code>=</code>. "
                "Без ML-ранкера выбранное поднимается внутри группы одного приоритета; с ранкером к его оценке прибавляется "

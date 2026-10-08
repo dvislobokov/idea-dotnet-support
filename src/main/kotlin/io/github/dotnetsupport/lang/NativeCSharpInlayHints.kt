@@ -39,6 +39,7 @@ import io.github.dotnetsupport.lang.semantic.CSharpTypeFacts
 import io.github.dotnetsupport.lang.semantic.SemanticType
 import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.DotNetSettings
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -67,6 +68,8 @@ object NativeCSharpInlayHints {
         val parameters: Boolean = true, val literals: Boolean = true, val indexers: Boolean = true, val objectCreation: Boolean = true, val others: Boolean = true,
         val suppressSuffix: Boolean = true, val suppressIntent: Boolean = true, val suppressArgumentName: Boolean = true,
         val types: Boolean = true, val varTypes: Boolean = true, val lambdaTypes: Boolean = true, val implicitNew: Boolean = true, val collections: Boolean = true,
+        /** No type after `var` when the initializer says it (`new T()`, a literal, a cast, an enum member…), as Rider's «Hide hints for obvious types»; plugin setting, not the server's. */
+        val hideObvious: Boolean = true,
     ) {
         /** Any hint of [kind] can come out of these options. */
         fun any(kind: Kind): Boolean = when (kind) {
@@ -85,7 +88,7 @@ object NativeCSharpInlayHints {
                     suppressIntent = on("inlay_hints.dotnet_suppress_inlay_hints_for_parameters_that_match_method_intent"), suppressArgumentName = on("inlay_hints.dotnet_suppress_inlay_hints_for_parameters_that_match_argument_name"),
                     types = on("inlay_hints.csharp_enable_inlay_hints_for_types"), varTypes = on("inlay_hints.csharp_enable_inlay_hints_for_implicit_variable_types"),
                     lambdaTypes = on("inlay_hints.csharp_enable_inlay_hints_for_lambda_parameter_types"), implicitNew = on("inlay_hints.csharp_enable_inlay_hints_for_implicit_object_creation"),
-                    collections = on("inlay_hints.csharp_enable_inlay_hints_for_collection_expressions"),
+                    collections = on("inlay_hints.csharp_enable_inlay_hints_for_collection_expressions"), hideObvious = DotNetSettings.getInstance().hideObviousTypeHints,
                 )
             }
         }
@@ -105,7 +108,7 @@ object NativeCSharpInlayHints {
     /** The hints [element] itself carries (an argument, a declaration, a lambda parameter, `new()`, `[…]`); the tree is walked by the caller. */
     fun hintsOf(element: PsiElement, options: Options, resolver: CSharpNameResolver): List<Hint> = when (element) {
         is CSharpArgument -> listOfNotNull(if (options.parameters) parameterHint(element, options, resolver) else null)
-        is CSharpVariableDeclaration -> listOfNotNull(if (options.types && options.varTypes) varHint(element, resolver) else null)
+        is CSharpVariableDeclaration -> listOfNotNull(if (options.types && options.varTypes) varHint(element, options, resolver) else null)
         is CSharpForEachStatement -> listOfNotNull(if (options.types && options.varTypes) forEachHint(element, resolver) else null)
         is CSharpDeclarationExpression -> listOfNotNull(if (options.types && options.varTypes) declarationHint(element, resolver) else null)
         is CSharpSingleVariableDesignation -> listOfNotNull(if (options.types && options.varTypes) deconstructionHint(element, resolver) else null)
@@ -230,10 +233,34 @@ object NativeCSharpInlayHints {
     private fun isVar(type: CSharpType?): Boolean = type is CSharpIdentifierName && type.identifier?.text == "var"
 
     /** `var x = …` (also `using var`, `for (var …`): the type before the name, as the place writes it. */
-    private fun varHint(declaration: CSharpVariableDeclaration, resolver: CSharpNameResolver): Hint? {
+    private fun varHint(declaration: CSharpVariableDeclaration, options: Options, resolver: CSharpNameResolver): Hint? {
         if (!isVar(declaration.type)) return null
         val variable = declaration.variables.singleOrNull() ?: return null
+        if (options.hideObvious && isObvious(variable.initializer?.value, resolver)) return null
         return localHint(variable.identifier ?: return null, resolver)
+    }
+
+    /**
+     * The initializer names the type by itself: `new T(…)` with the type written (not `new()`), a literal, `default(T)`, `typeof(T)`, `(T)x`, `x as T`,
+     * a member of an enum (`Color.Green`) or `nameof(…)`. Calls, queries, `await` and other member accesses are not: the type is the news there.
+     */
+    internal fun isObvious(value: CSharpExpression?, resolver: CSharpNameResolver): Boolean = when (value) {
+        null -> false
+        is CSharpParenthesizedExpression -> isObvious(value.expression, resolver)
+        is CSharpObjectCreationExpression, is CSharpArrayCreationExpression, is CSharpCastExpression, is CSharpTypeOfExpression, is CSharpInterpolatedStringExpression -> true
+        is CSharpDefaultExpression -> true
+        is CSharpLiteralExpression -> value.text != "null" && value.text != "default"
+        is CSharpPrefixUnaryExpression -> value.operatorToken?.text.let { it == "-" || it == "+" } && value.operand is CSharpLiteralExpression
+        is CSharpBinaryExpression -> value.operatorToken?.text == "as"
+        is CSharpInvocationExpression -> (value.expression as? CSharpIdentifierName)?.identifier?.text == "nameof"
+        is CSharpMemberAccessExpression -> (value.nameElement as? CSharpSimpleName)?.let { name ->
+            when (val symbol = resolver.resolveName(name)?.single) {
+                is CSharpSymbol.SourceMember -> symbol.element is CSharpEnumMemberDeclaration
+                is CSharpSymbol.LibraryMember -> symbol.member.kind == IndexedMemberKind.ENUM_MEMBER
+                else -> false
+            }
+        } == true
+        else -> false
     }
 
     private fun forEachHint(statement: CSharpForEachStatement, resolver: CSharpNameResolver): Hint? =
@@ -344,7 +371,7 @@ class NativeCSharpTypeHintsProvider : NativeCSharpInlayHintsProvider(NativeCShar
  */
 class NativeCSharpInlayHintsSwitch : RoslynLanguageServerSettings.Listener {
     override fun settingsChanged(restart: Boolean) {
-        val now = RoslynOptions.ALL.filter { it.section.startsWith("inlay_hints.") }.map { RoslynOptions.value(it.section) } + CSharpFeatures.native(CSharpFeature.INLAY_HINTS).toString()
+        val now = RoslynOptions.ALL.filter { it.section.startsWith("inlay_hints.") }.map { RoslynOptions.value(it.section) } + CSharpFeatures.native(CSharpFeature.INLAY_HINTS).toString() + DotNetSettings.getInstance().hideObviousTypeHints.toString()
         if (last.getAndSet(now) == now) return
         CSharpEditorRefresh.onEdt {
             InlayHintsPassFactoryInternal.forceHintsUpdateOnNextPass()

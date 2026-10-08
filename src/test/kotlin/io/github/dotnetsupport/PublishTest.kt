@@ -187,7 +187,8 @@ class PublishTest : BasePlatformTestCase() {
     fun testActionIsInTheSolutionViewAndTheDotNetMenu() {
         val actions = ActionManager.getInstance()
         assertTrue(actions.getAction("DotNet.Publish") is PublishAction)
-        for (parent in listOf("DotNet.MainMenu", "DotNet.SolutionViewPopup")) {
+        // in the popup of the Solution view it is one of the rarer commands, under Tools
+        for (parent in listOf("DotNet.MainMenu", "DotNet.ProjectTools")) {
             val children = (actions.getAction(parent) as DefaultActionGroup).childActionsOrStubs.map { actions.getId(it) }
             assertTrue(parent, "DotNet.Publish" in children)
         }
