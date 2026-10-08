@@ -108,6 +108,7 @@ class TrxEventsConverter(
         synchronized(this) {
             terminated = true
             val results = resultsDirectory.walkTopDown().filter { it.isFile && it.extension.equals("trx", ignoreCase = true) }.flatMap { TrxParser.parse(it.readText()) }.toList()
+            if (results.isNotEmpty()) TestRunSummary.record(projectDirectory, TestRunSummary.of(results))
             send(tree.onReport(results))
             send(tree.finish())
         }

@@ -45,8 +45,14 @@ object WelcomePage {
 
     fun pluginVersion(): String? = PluginManagerCore.getPlugin(PluginId.getId(PLUGIN_ID))?.version
 
-    /** Once per version: a new installation has no record, an update has the record of the version before. */
-    fun isNewFor(shownVersion: String?, currentVersion: String?): Boolean = currentVersion != null && shownVersion != currentVersion
+    /** The page opens on a new installation (no record) and when the first two numbers change (`0.1.x` to `0.2.x`); other releases only notify. */
+    fun isNewFor(shownVersion: String?, currentVersion: String?): Boolean =
+        currentVersion != null && (shownVersion == null || majorMinor(shownVersion) != majorMinor(currentVersion))
+
+    private fun majorMinor(version: String) = version.split('.').take(2)
+
+    /** Any change of the version, to be recorded and announced. */
+    fun isUpdate(shownVersion: String?, currentVersion: String?): Boolean = currentVersion != null && shownVersion != currentVersion
 
     /** The page as the IDE shows it: in the theme of the IDE, without the links that lead into the repository. */
     fun html(dark: Boolean, page: String = INDEX): String? {
@@ -102,9 +108,20 @@ class WelcomePageActivity : ProjectActivity {
         if (application.isUnitTestMode || application.isHeadlessEnvironment) return
         val properties = PropertiesComponent.getInstance()
         val version = WelcomePage.pluginVersion()
-        if (!WelcomePage.isNewFor(properties.getValue(WelcomePage.SHOWN_VERSION_KEY), version)) return
+        val shown = properties.getValue(WelcomePage.SHOWN_VERSION_KEY)
+        if (!WelcomePage.isUpdate(shown, version)) return
         // recorded before it is shown: two projects opening together show it once
         properties.setValue(WelcomePage.SHOWN_VERSION_KEY, version)
+        if (!WelcomePage.isNewFor(shown, version)) {
+            application.invokeLater({
+                if (project.isDisposed) return@invokeLater
+                NotificationGroupManager.getInstance().getNotificationGroup(".NET")
+                    .createNotification("C# Project Support updated to $version", "", NotificationType.INFORMATION)
+                    .addAction(NotificationAction.createSimpleExpiring("What's New") { WelcomePage.open(project) })
+                    .notify(project)
+            }, ModalityState.nonModal())
+            return
+        }
         application.invokeLater({
             if (project.isDisposed) return@invokeLater
             runCatching { WelcomePage.open(project) }.onFailure { failure ->

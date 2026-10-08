@@ -72,3 +72,28 @@ object TrxParser {
     private fun Element.child(name: String): Element? = children.firstOrNull { it.name == name }
     private fun String.normalizeLines(): String = replace("\r\n", "\n").replace('\r', '\n')
 }
+
+/** Counts of the last run of a test project, as the `.trx` has them: a theory case or a skipped test counts here, but not in the sources. */
+data class TestRunSummary(val passed: Int, val failed: Int, val skipped: Int) {
+    val total: Int get() = passed + failed + skipped
+
+    companion object {
+        fun of(results: List<TrxTestResult>) = TestRunSummary(
+            results.count { it.outcome == TestOutcome.PASSED }, results.count { it.outcome == TestOutcome.FAILED }, results.count { it.outcome == TestOutcome.SKIPPED })
+
+        private val byProject = java.util.concurrent.ConcurrentHashMap<String, TestRunSummary>()
+
+        /** Keyed by the project directory; the explorer reads it when it is reloaded. */
+        fun record(projectDirectory: String, summary: TestRunSummary) { byProject[normalize(projectDirectory)] = summary }
+        fun last(projectDirectory: String): TestRunSummary? = byProject[normalize(projectDirectory)]
+        private fun normalize(path: String) = path.replace('\\', '/').trimEnd('/').lowercase()
+
+        /** The text of a project node: methods found in the sources (a theory is one), then what the last run reported (every case). */
+        fun label(methods: Int, last: TestRunSummary?): String {
+            val found = "$methods test methods"
+            if (last == null) return found
+            val parts = listOf(last.passed to "passed", last.failed to "failed", last.skipped to "skipped").filter { it.first > 0 }.joinToString(", ") { "${it.first} ${it.second}" }
+            return "$found \u00b7 last run ${last.total}" + if (parts.isEmpty()) "" else ": $parts"
+        }
+    }
+}

@@ -77,6 +77,12 @@ class TestingAndCoverageTest : BasePlatformTestCase() {
         </TestRun>
     """.trimIndent()
 
+    fun testTheProjectNodeSaysMethodsAndTheLastRun() {
+        assertEquals("10 test methods", io.github.dotnetsupport.testing.TestRunSummary.label(10, null))
+        assertEquals("10 test methods \u00b7 last run 12: 10 passed, 1 failed, 1 skipped", io.github.dotnetsupport.testing.TestRunSummary.label(10, io.github.dotnetsupport.testing.TestRunSummary(10, 1, 1)))
+        assertEquals("3 test methods \u00b7 last run 3: 3 passed", io.github.dotnetsupport.testing.TestRunSummary.label(3, io.github.dotnetsupport.testing.TestRunSummary(3, 0, 0)))
+    }
+
     fun testDiscovery() {
         val targets = TestDiscovery.targets(testSource)
         assertEquals(
