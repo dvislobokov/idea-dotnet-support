@@ -17,6 +17,9 @@ python tools/ui-robot/robot.py wait          # дождаться порта (о
 
 - `--no-daemon`: песочница — дочерний процесс того, кто выполняет задачу. На общем демоне Gradle её убивает любой `--stop` или сборка из
   соседнего проекта, которая уронила демон (так пропала песочница 2026-09-30).
+- **Заблокированный рабочий стол Windows** (`powershell Get-Process LogonUI` даёт процесс, пользователь ушёл): у окна песочницы нет фокуса,
+  попапы completion и серый текст не показываются, `complete_at_line.js` отвечает `items: 0`, настоящие мышь и клавиатура (`desktop.ps1`)
+  никуда не попадают. Для редактора в этом случае — только песочница в WSL (ниже); API-проверки без UI (ошибки, навигация, Find Usages) работают.
 - Если в окружении есть `HTTP_PROXY`, робот не ответит (`451` или сброс соединения — это прокси, а не IDE): перед командами
   `export NO_PROXY=127.0.0.1` (Python читает и `no_proxy`).
 - Песочница при старте открывает последний проект — обычно сам `debug-playground` с общим `.idea`; открыть копию (`open`), а исходный
@@ -102,6 +105,29 @@ python robot.py shot out.png
 python robot.py action Stop
 python robot.py action Exit && python robot.py click "//div[@class='MyDialog']//div[@text='Exit']"
 ```
+
+## Скрипты, добавленные прогоном 2026-10-08 (`scripts/`, итоги — `docs/ROBOT_REVIEW_2026-10-08.md`)
+
+- `complete_poll.js` (`__FILE__`, `__LINE__` с 1, `__TYPE__`, `__LIMIT__`, `__WAIT__` мс, `__UNDO__` = `yes`, `__EXPLICIT__` = `yes` — Ctrl+Space,
+  если автопопап не открылся, `__FIND__` — имена через запятую): набирает через `TypedAction` в конце строки, опрашивает живой lookup и печатает
+  текст строки, число пунктов, строки с презентацией (`lookup [item] хвост : тип`) и позиции искомых. Надёжнее `complete_at_line.js`, который
+  снимает список в момент показа и часто отвечает `items: 0`. Строку набора брать по файлу: первая пустая строка после маркера `TYPE:` обычно не
+  та (многострочный комментарий маркера) — смотреть номер в исходнике.
+- `doc_at.js` (`__FILE__`, `__AT__`, `__AFTER__`): Quick Doc элемента через провайдеры документации, без попапа (`popup_at.js` в 2026.1.4 падает
+  с `ClassCastException`). Печатает `(parameter) HttpContext context` и т. п.
+- `inlays.js` (`__FILE__`, `__WAIT__`): все inlay-подсказки файла с текстом — имена параметров, типы `var`, Code Vision.
+- `show_tool_window.js` (`__ID__`): открыть окно инструментов по id (`NuGet`, `Unit Tests`, `.NET Monitor`, `DotNetEndpoints`, `IL Viewer`,
+  `EF Core`) и напечатать его вкладки; затем `screen.sh shot`.
+- `hover_point.js` (`__FILE__`, `__AT__`, `__AFTER__`): координаты для `screen.sh move` относительно рамки IDE — `screen_point.js` в Xvfb без
+  оконного менеджера даёт `y` за пределами экрана. На практике к `y` нужно прибавить ~30 (высота заголовка).
+- `all_highlights.js` (`__FILE__`): как `errors_at.js`, но все уровни, включая слабые предупреждения и информационные подсветки.
+- Rename роботом: `rename_check.js` / `inline_rename.js` / `rename_solution.js` в 2026.1.4 отвечают `handler: none`, хотя Shift+F6 с настоящей
+  клавиатуры переименовывает. Рабочий путь в WSL: поставить каретку скриптом (`openTextEditor` + `moveToOffset` + `requestFocusInWindow`),
+  затем `screen.sh key shift+F6`, `screen.sh type <имя>`, `screen.sh key Return`, `editor_lines.js`.
+- `test_configuration.js`: `__PROJECT__` — путь к `.csproj`, не имя проекта; с именем открывается модальный диалог «Project file not found»,
+  и робот виснет до клика по Cancel настоящей мышью.
+- `copy-playground.sh` берёт из HEAD только `CompletionRanking.cs`; если площадка в HEAD не собирается (2026-10-08: `Console/Editor/CodeLens.cs:59`,
+  `ShopApi/Controllers/CustomersController.cs:26`, `Web/Program.cs:25`), сборку перед запуском отладчика чинить в копии `~/robot/playground`.
 
 ## Скрипты для проверок отладчика (`scripts/`)
 
