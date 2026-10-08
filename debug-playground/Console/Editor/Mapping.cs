@@ -1,7 +1,7 @@
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of the mapping completion (0.1.134, ROADMAP: «Mapping completion»).
+/// Live check of the mapping completion (0.1.134, ROADMAP: «Mapping completion») and of the memory of chosen items (0.1.135).
 /// Lines to type on are marked <c>// TYPE:name</c>: put the caret on the empty line under the marker, type what the comment says,
 /// compare the list with EXPECT. Nothing here is called, the file only has to compile: undo what was typed (Ctrl+Z) before the next marker.
 /// </summary>
@@ -57,6 +57,8 @@ public class Mapping
 
         // TYPE:map-off — Settings | .NET → Behavior → «Offer to copy members…» off, then `var d = new MappingUserDto { ` + Ctrl+Space. EXPECT: no `… = user.…` rows
 
+        // TYPE:remember — choose `user` from the list three times at the start of a statement (type `us`, Enter, Ctrl+Z), then Ctrl+Space on an
+        // empty line. EXPECT: `user` above the other parameters/locals of its group; after .NET → Behavior → «Forget the Choices» the order is back
         return new MappingUserDto { Id = user.Id };
     }
 }

@@ -3,6 +3,16 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.135
+
+- The completion list learns from the user: every item chosen in a list of a C# file is counted per project and kind of place (after a
+  dot, the start of a statement, an argument, a type, the right side of `=` — the kinds of the ML ranker's schema), in the workspace
+  file of the project, halved every month. Without the ML ranker the chosen items go first among the rows of one priority group (the
+  weigher `dotnetAcceptedBefore`, the rules' order between groups stays); with the ranker `0.3 × ln(1 + count)` is added to its score
+  (the weight on Settings | .NET | ML completion: three choices win a close call, not a clear loss). The counts are recorded off the EDT
+  and never read while the setting is off. Settings | .NET → Behavior: "Remember what I choose in the completion list", "Forget the
+  Choices". What is stored and how: `ML_ACCEPTANCE.md`
+
 ## 0.1.134
 
 - Mapping completion: copying the members of one object into another. In an object initializer (`var dto = new UserDto { | }`,

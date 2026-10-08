@@ -39,6 +39,12 @@ class CSharpMlSettings : SimplePersistentStateComponent<CSharpMlSettings.Options
         var inlineGuessStrings by property(true)
         /** Every answer of the network (text, confidence, gate, shown or not) goes to the plugin log (.NET | Plugin Logs, category `ml`). */
         var inlineDebugLog by property(false)
+        /**
+         * The memory of chosen items (`CSharpAcceptanceMemory`, 0.1.135) in the ranker's score: `weight × ln(1 + count)`. 0.3 on the scale of
+         * `e18-rank` (a close call is 0.2–0.5 apart, a clear loss — not imported, a keyword at a value — 1.5 or more): three choices win the
+         * close call (0.42), ten do not win the clear loss (0.72). 0: not added.
+         */
+        var acceptanceWeight by property(0.3f)
     }
 
     var rankerEnabled: Boolean
@@ -84,6 +90,10 @@ class CSharpMlSettings : SimplePersistentStateComponent<CSharpMlSettings.Options
     var inlineDebugLog: Boolean
         get() = state.inlineDebugLog
         set(value) { state.inlineDebugLog = value }
+
+    var acceptanceWeight: Double
+        get() = state.acceptanceWeight.toString().toDouble()
+        set(value) { state.acceptanceWeight = value.toFloat() }
 
     companion object {
         fun getInstance(): CSharpMlSettings = service()

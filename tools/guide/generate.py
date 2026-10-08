@@ -132,6 +132,10 @@ def settings():
                note("settings.behavior.mapping.comment") + ". Имена сравниваются точно, без учёта регистра, по общему началу или концу слов "
                "(<code>UserId</code> ↔ <code>Id</code>) и по перекрытию camel-слов; тип должен приводиться неявно. Строки стоят первыми, когда контекст "
                "явно mapping (рядом уже есть присваивание из того же объекта), иначе после обычных; помечены серым <code>map</code>."),
+        option("settings.behavior.rememberChoices", ON,
+               note("settings.behavior.rememberChoices.comment") + ". Вид места — после точки, начало оператора, аргумент, тип, справа от <code>=</code>. "
+               "Без ML-ранкера выбранное поднимается внутри группы одного приоритета; с ранкером к его оценке прибавляется "
+               "<code>0,3 × ln(1 + счётчик)</code>. Кнопка «%s» очищает память проекта. Подробности — <code>ML_ACCEPTANCE.md</code>." % e(RU["settings.behavior.resetChoices"])),
         option("settings.language", e(RU["language.AUTO"]),
                note("settings.language.comment") + " Русского языкового пакета для самой IDE нет, поэтому язык страниц плагина выбирается здесь."),
         option("settings.palette", e(RU["palette.default"]),

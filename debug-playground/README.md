@@ -985,6 +985,7 @@ PDB с Source Link лежат рядом с dll в кэше NuGet у Grpc.Net.* 
   Enter на `Name = user.Name` дописывает запятую; map-all пишет Name и Email (Note — другой объект, Active — нечем)
 - [ ] `TYPE:map-empty`: `var d = new MappingUserDto { ` → строки mapping первыми; с `Active = true, ` перед кареткой — после членов
 - [ ] `TYPE:map-off`: Settings | .NET → Behavior → «Offer to copy members…» выключено → строк `… = user.…` нет
+- [ ] `TYPE:remember`: трижды выбрать `user` в начале оператора, затем Ctrl+Space на пустой строке → `user` выше соседей своей группы; .NET → Behavior → «Forget the Choices» возвращает порядок
 
 ### Scope «Analysis» без сервера (0.1.122) — `Console/Editor/SolutionProblems.cs`
 Settings | .NET | Language Server, группа Analysis: «Compiler diagnostics for» / «Analyzer diagnostics for» (openFiles / fullSolution / none) действуют и без сервера. Окно Problems → вкладка Project Errors.

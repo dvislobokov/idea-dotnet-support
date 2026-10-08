@@ -66,6 +66,8 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
         var colorizeBrackets by property(true)
         /** `Name = user.Name,` rows in initializers and assignment blocks, see [io.github.dotnetsupport.lang.NativeCSharpMappingCompletion] (0.1.134). */
         var mappingCompletion by property(true)
+        /** The per-project memory of chosen completion items, see [io.github.dotnetsupport.suggest.CSharpAcceptanceMemory] (0.1.135). */
+        var rememberChoices by property(true)
 
         /** Of the settings pages: the one of the IDE, or chosen here (there is no Russian language pack for the IDE itself). */
         var language by enum(PluginLanguage.AUTO)
@@ -121,6 +123,10 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
     var mappingCompletion: Boolean
         get() = state.mappingCompletion
         set(value) { state.mappingCompletion = value }
+
+    var rememberChoices: Boolean
+        get() = state.rememberChoices
+        set(value) { state.rememberChoices = value }
 
     var completionExclusions: List<String>
         get() = state.completionExclusions.toList()
@@ -184,6 +190,7 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
     private val cliStatus = JBLabel()
     private val sdkList = JBLabel()
     private val globalJsonStatus = JBLabel()
+    private val choicesStatus = JBLabel()
     private val toolRows = DotNetTool.entries.associateWith { ToolRow(it) }
     private val formatting get() = DotNetFormattingSettings.getInstance(project)
     // a comment of the DSL, not a label: it wraps at the width of the page, a label makes the page as wide as its text
@@ -327,6 +334,16 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
                 row { checkBox(DotNetBundle.message("settings.behavior.solutionView")).bindSelected(settings::switchToSolutionView).comment(DotNetBundle.message("settings.behavior.solutionView.comment"), maxLineLength = COMMENT_WIDTH) }
                 row { checkBox(DotNetBundle.message("settings.behavior.bracketColors")).bindSelected(settings::colorizeBrackets).comment(DotNetBundle.message("settings.behavior.bracketColors.comment"), maxLineLength = COMMENT_WIDTH) }
                 row { checkBox(DotNetBundle.message("settings.behavior.mapping")).bindSelected(settings::mappingCompletion).comment(DotNetBundle.message("settings.behavior.mapping.comment"), maxLineLength = COMMENT_WIDTH) }
+                row {
+                    checkBox(DotNetBundle.message("settings.behavior.rememberChoices")).bindSelected(settings::rememberChoices).comment(DotNetBundle.message("settings.behavior.rememberChoices.comment"), maxLineLength = COMMENT_WIDTH)
+                }
+                row("") {
+                    button(DotNetBundle.message("settings.behavior.resetChoices")) {
+                        io.github.dotnetsupport.suggest.CSharpAcceptanceMemory.getInstance(project).reset()
+                        choicesStatus.text = DotNetBundle.message("settings.behavior.resetChoices.done")
+                    }
+                    cell(choicesStatus)
+                }
                 row(DotNetBundle.message("settings.language")) {
                     comboBox(PluginLanguage.entries, textListCellRenderer { it?.label }).bindItem({ settings.language }, { settings.language = it ?: PluginLanguage.AUTO })
                         .comment(DotNetBundle.message("settings.language.comment"), maxLineLength = COMMENT_WIDTH)
@@ -345,6 +362,7 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
                 row { link(DotNetBundle.message("settings.documentation")) { io.github.dotnetsupport.welcome.WelcomePage.open(project, io.github.dotnetsupport.welcome.WelcomePage.GUIDE, "settings", inBrowser = true) } }
             }
         }.also {
+            choicesStatus.text = DotNetBundle.message("settings.behavior.resetChoices.count", io.github.dotnetsupport.suggest.CSharpAcceptanceMemory.getInstance(project).size())
             refreshInformation(settings.dotnetPath)
             toolRows.values.forEach { it.refresh() }
             refreshFormatter(formatting.formatter)

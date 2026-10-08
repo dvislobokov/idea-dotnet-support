@@ -25,6 +25,9 @@ class CSharpMlConfigurable : BoundConfigurable(DotNetBundle.message("page.ml")) 
         group(DotNetBundle.message("ml.ranker.group")) {
             row { checkBox(DotNetBundle.message("ml.ranker.enabled")).bindSelected(settings::rankerEnabled).comment(DotNetBundle.message("ml.ranker.enabled.comment")) }
             row { checkBox(DotNetBundle.message("ml.showMarker")).bindSelected(settings::showMarker).comment(DotNetBundle.message("ml.showMarker.comment")) }
+            row(DotNetBundle.message("ml.acceptanceWeight")) {
+                spinner(0.0..2.0, 0.1).bindValue(settings::acceptanceWeight).comment(DotNetBundle.message("ml.acceptanceWeight.comment"))
+            }
             row(DotNetBundle.message("ml.status")) { cell(status) }
         }
         group(DotNetBundle.message("ml.inline.group")) {

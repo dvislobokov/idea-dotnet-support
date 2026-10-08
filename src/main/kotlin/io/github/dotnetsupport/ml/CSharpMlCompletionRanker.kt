@@ -9,10 +9,13 @@ import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.codeInsight.lookup.LookupElementDecorator
 import com.intellij.codeInsight.lookup.LookupElementPresentation
 import com.intellij.openapi.util.Key
+import com.intellij.openapi.project.Project
 import io.github.completionml.core.rank.FeatureSchema
 import io.github.completionml.core.rank.FileState
+import io.github.completionml.core.spi.ContextKind
 import io.github.dotnetsupport.lang.NativeCSharpMappingCompletion
 import io.github.dotnetsupport.lang.NativeCSharpMlInfo
+import io.github.dotnetsupport.suggest.CSharpAcceptanceMemory
 
 /**
  * The ML ranking of the native completion list (ML_RANKER_EXPORT_TASK.md §4, ADAPTER.md §4): the file before the caret feeds the per-file
@@ -52,7 +55,10 @@ object CSharpMlCompletionRanker {
      * Scores the candidates of one list, in list order: [text] is the file as it is (the identifier being typed included), [caret] the
      * offset of the caret in it, [prefix] what is typed of the identifier. Null when the list has fewer than two candidates.
      */
-    fun scores(models: CSharpMlModels.Loaded, text: CharSequence, caret: Int, prefix: String, candidates: List<CSharpMlCandidate>): List<Score>? {
+    fun scores(
+        models: CSharpMlModels.Loaded, text: CharSequence, caret: Int, prefix: String, candidates: List<CSharpMlCandidate>,
+        bonus: ((ContextKind, String) -> Double)? = null,
+    ): List<Score>? {
         if (candidates.size < 2) return null
         // the tokens before the caret, without the prefix being typed: what the export fed to the file state
         val end = (caret - prefix.length).coerceIn(0, text.length)
@@ -67,8 +73,18 @@ object CSharpMlCompletionRanker {
         return List(candidates.size) { c ->
             val full = FloatArray(models.ranker.schema.size)
             FeatureSchema.expand(base[c], kind, full)
-            Score(models.ranker.score(full).toDouble(), base[c])
+            // the memory of chosen items (0.1.135, CSharpAcceptanceMemory): an additive bonus on the ranker's scale
+            Score(models.ranker.score(full).toDouble() + (bonus?.invoke(kind, names[c]) ?: 0.0), base[c])
         }
+    }
+
+    /** The bonus of the memory of chosen items for the lists of [project]: null when the memory or its weight is off (nothing is read then). */
+    fun acceptanceBonus(project: Project): ((ContextKind, String) -> Double)? {
+        if (!CSharpAcceptanceMemory.isEnabled()) return null
+        val weight = CSharpMlSettings.getInstance().acceptanceWeight
+        if (weight <= 0.0) return null
+        val memory = CSharpAcceptanceMemory.getInstance(project)
+        return { kind, name -> CSharpAcceptanceMemory.bonus(memory.count(kind, name), weight) }
     }
 
     /** Starts a batch for [parameters] when the ranking is active, else null (the contributor then adds its items directly). */
@@ -105,7 +121,7 @@ object CSharpMlCompletionRanker {
             val candidates = CSharpMlFeatures.ordered(elements.map(NativeCSharpMlInfo::candidateOf).distinctBy { it.lookupString })
             val text = parameters.originalFile.viewProvider.contents
             val prefix = result.prefixMatcher.prefix
-            val scores = scores(models, text, parameters.offset, prefix, candidates) ?: return emptyMap()
+            val scores = scores(models, text, parameters.offset, prefix, candidates, acceptanceBonus(parameters.originalFile.project)) ?: return emptyMap()
             val byName = HashMap<String, Score>(scores.size * 2)
             for (i in candidates.indices) byName[candidates[i].lookupString] = scores[i]
             val marker = marker

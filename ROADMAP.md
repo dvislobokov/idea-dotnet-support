@@ -56,6 +56,11 @@
   неоднозначный лучший кандидат — строки нет; `init` только в инициализаторах, required первыми. Первыми в списке, когда контекст явно mapping,
   иначе после обычных; серое ` map`. Настройка Settings | .NET → Behavior. Тесты `CSharpMappingCompletionTest`; сценарий `Console/Editor/Mapping.cs`.
   Вживую не проверено
+- [x] 0.1.135 — память выбора («учится у меня», `suggest/CSharpAcceptanceMemory.kt`, `ML_ACCEPTANCE.md`): счётчик выбранных элементов списка на
+  проект по (вид места `ContextKind` движка: после точки / начало оператора / аргумент / тип / справа от `=` / прочее, lookup string) в workspace-файле,
+  вдвое меньше каждый месяц, лимиты; `LookupListener` на каждом списке C# (вид места читается не на EDT). Без ранкера — weigher `dotnetAcceptedBefore`
+  (после `priority`: внутри группы одного приоритета чаще выбранное выше); с ML-ранкером — `0.3 × ln(1 + count)` к оценке (вес на странице ML completion).
+  Настройка on/off и кнопка «Forget the Choices» в Settings | .NET → Behavior. Тесты `CSharpAcceptanceMemoryTest`. Вживую не проверено
 - [x] 0.1.130 — экспорт реальных списков completion для ML-ранкера (`ML_RANKER_EXPORT_TASK.md`, плагинная половина e18 движка
   `../idea-ml-completion`): признаки кандидата — `csharp-psi-ide` `ml/CSharpMlFeatures.kt` (`CSharpMlLanguage`, `CSharpMlCandidate`, 19 признаков
   языкового блока поверх 13 общих `ml-core`: вид one-hot, static, уровень области `CSharpMlScope` 0–5, нужен ли `using`, совпадение с ожидаемым

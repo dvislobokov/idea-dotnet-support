@@ -380,6 +380,8 @@
         <!-- the score of the ML ranker (ml/CSharpMlCompletionRanker.kt, a build with -PmlEnabled=true) before the priority of the plugin's rules, which then breaks
              ties; inert without the models (every row is unscored) -->
         <weigher key="completion" id="dotnetMlRanker" order="first, before priority" implementationClass="io.github.dotnetsupport.ml.CSharpMlCompletionWeigher"/>
+        <!-- 0.1.135: what was chosen before in the same kind of place of this project goes up among the rows of one priority (suggest/CSharpAcceptanceMemory.kt) -->
+        <weigher key="completion" id="dotnetAcceptedBefore" order="after prefix, before dotnetSuggestionStats" implementationClass="io.github.dotnetsupport.suggest.CSharpAcceptedBeforeWeigher"/>
         <weigher key="completion" id="dotnetSuggestionStats" order="after prefix, before stats" implementationClass="io.github.dotnetsupport.lang.CSharpSuggestionStatsWeigher"/>
         <typedHandler implementation="io.github.dotnetsupport.lang.CSharpCompletionAutoPopup"/>
         <platform.backend.documentation.lookupElementTargetProvider implementation="io.github.dotnetsupport.lang.CSharpLookupDocumentationTargetProvider"/>
@@ -748,6 +750,9 @@
     <projectListeners>
         <!-- what is chosen in the completion list of a C# file and where it stood: the statistics of suggestions -->
         <listener class="io.github.dotnetsupport.suggest.CompletionAcceptListener"
+                  topic="com.intellij.codeInsight.lookup.LookupManagerListener"/>
+        <!-- 0.1.135: the memory of chosen items per project and kind of place (CSharpAcceptanceMemory) -->
+        <listener class="io.github.dotnetsupport.suggest.CSharpAcceptanceListener"
                   topic="com.intellij.codeInsight.lookup.LookupManagerListener"/>
         <listener class="io.github.dotnetsupport.monitor.DotNetProcessStartListener"
                   topic="com.intellij.execution.ExecutionListener"/>
