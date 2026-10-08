@@ -411,13 +411,8 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         }
     }
 
-    private fun isExplicitImplementation(element: PsiElement): Boolean = when {
-        // the stubs do not keep the interface of the name: a file that is not parsed is not parsed for it (taken as an ordinary member)
-        (element as? com.intellij.extapi.psi.StubBasedPsiElementBase<*>)?.stub != null -> false
-        element is CSharpMethodDeclaration -> element.explicitInterfaceSpecifier != null
-        element is CSharpBasePropertyDeclaration -> element.explicitInterfaceSpecifier != null
-        else -> false
-    }
+    /** `IEnumerator IEnumerable.GetEnumerator()`: no member of its type by its simple name (C# §19.6.2); a file with only stubs answers by its stub. */
+    internal fun isExplicitImplementation(element: PsiElement): Boolean = io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubs.isExplicitImplementation(element)
 
     /** The methods of an interface overload those of `object` of the same name (C# §12.5: an interface's lookup includes object's members). */
     private fun withObjectMethods(type: SemanticType, found: List<CSharpSymbol>, text: String, arity: Int, depth: Int): List<CSharpSymbol> {

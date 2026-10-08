@@ -23,6 +23,8 @@ import io.github.dotnetsupport.csharp.lang.CSharpParserDefinition
 import io.github.dotnetsupport.csharp.lang.SyntaxKind as K
 import io.github.dotnetsupport.csharp.lang.psi.CSharpAliasQualifiedName
 import io.github.dotnetsupport.csharp.lang.psi.CSharpBaseMethodDeclaration
+import io.github.dotnetsupport.csharp.lang.psi.CSharpBasePropertyDeclaration
+import io.github.dotnetsupport.csharp.lang.psi.CSharpConversionOperatorDeclaration
 import io.github.dotnetsupport.csharp.lang.psi.CSharpBaseTypeDeclaration
 import io.github.dotnetsupport.csharp.lang.psi.CSharpDeclarationNames
 import io.github.dotnetsupport.csharp.lang.psi.CSharpDelegateDeclaration
@@ -31,16 +33,18 @@ import io.github.dotnetsupport.csharp.lang.psi.CSharpIndexerDeclaration
 import io.github.dotnetsupport.csharp.lang.psi.CSharpMemberDeclaration
 import io.github.dotnetsupport.csharp.lang.psi.CSharpMethodDeclaration
 import io.github.dotnetsupport.csharp.lang.psi.CSharpName
+import io.github.dotnetsupport.csharp.lang.psi.CSharpOperatorDeclaration
 import io.github.dotnetsupport.csharp.lang.psi.CSharpQualifiedName
 import io.github.dotnetsupport.csharp.lang.psi.CSharpSimpleName
 import io.github.dotnetsupport.csharp.lang.psi.CSharpTypeDeclaration
 import io.github.dotnetsupport.csharp.lang.psi.impl.CSharpPsiImplTable
+import io.github.dotnetsupport.csharp.lang.psi.impl.CSharpStubElementImpl
 
 /**
  * The stub of a node of a stub-based class (docs/csharp-psi/GRAMMAR.md, "Stubs"): syntax only, as written. [name] is
  * [CSharpDeclarationNames.name] (null for the compilation unit, an extension block, the variable declaration of a field, a field with several
  * declarators and a declaration whose name is missing); [flags] the modifiers ([CSharpStubs.MODIFIERS], bit per position) and
- * [CSharpStubs.EXTENSION]; [arity] the number of type parameters of a type, delegate or method; [parameters] the parameter list of a method,
+ * [CSharpStubs.EXTENSION], [CSharpStubs.EXPLICIT]; [arity] the number of type parameters of a type, delegate or method; [parameters] the parameter list of a method,
  * constructor, destructor, operator, indexer, delegate or primary constructor with its whitespace collapsed to one space; [baseTypes] the
  * types of a base list as written (whitespace collapsed); [attributes] the simple names of the attributes of a member as written (`Fact` of
  * `[Xunit.Fact]`, `FactAttribute`).
@@ -54,10 +58,13 @@ class CSharpStub(
 
     val isExtensionMethod: Boolean get() = flags and CSharpStubs.EXTENSION != 0
 
+    val isExplicitImplementation: Boolean get() = flags and CSharpStubs.EXPLICIT != 0
+
     override fun toString(): String = buildString {
         append("CSharpStub")
         name?.let { append(" name=").append(it) }
-        if (flags != 0) append(" modifiers=").append(modifiers).append(if (isExtensionMethod) " extension" else "")
+        if (flags and CSharpStubs.EXPLICIT.inv() != 0) append(" modifiers=").append(modifiers).append(if (isExtensionMethod) " extension" else "")
+        if (isExplicitImplementation) append(" explicit")
         if (arity != 0) append(" arity=").append(arity)
         parameters?.let { append(" parameters=").append(it) }
         if (baseTypes.isNotEmpty()) append(" bases=").append(baseTypes)
@@ -68,7 +75,7 @@ class CSharpStub(
 /** The stub layer of csharp-psi (CSHARP_PSI_MIGRATION.md, step 8): version, modifier bits, the rules of which nodes are stubbed. */
 object CSharpStubs {
     /** The version of the stubs: bump on any change of what is stubbed or how it is serialized ([CSharpStubElementFactory]), of [CSharpStubRules]. */
-    const val VERSION = 2
+    const val VERSION = 3
 
     /** Roslyn's modifier keywords; a stub keeps bit `i` for `MODIFIERS[i]`. Append only (the bits are serialized). */
     val MODIFIERS: List<String> = listOf(
@@ -78,6 +85,23 @@ object CSharpStubs {
 
     /** A method whose first parameter has the `this` modifier. */
     const val EXTENSION: Int = 1 shl 30
+
+    /** A member that implements an interface's explicitly (`IEnumerator IEnumerable.GetEnumerator()`): no member of its type by its simple name. */
+    const val EXPLICIT: Int = 1 shl 29
+
+    /** Whether [psi] is an explicit interface implementation; from the stub when the file has only stubs (without loading the AST). */
+    fun isExplicitImplementation(psi: PsiElement): Boolean {
+        (psi as? CSharpStubElementImpl)?.greenStub?.let { return it.isExplicitImplementation }
+        return explicitSpecified(psi)
+    }
+
+    private fun explicitSpecified(psi: PsiElement): Boolean = when (psi) {
+        is CSharpMethodDeclaration -> psi.explicitInterfaceSpecifier != null
+        is CSharpBasePropertyDeclaration -> psi.explicitInterfaceSpecifier != null
+        is CSharpOperatorDeclaration -> psi.explicitInterfaceSpecifier != null
+        is CSharpConversionOperatorDeclaration -> psi.explicitInterfaceSpecifier != null
+        else -> false
+    }
 
     private val WHITESPACE = Regex("""\s+""")
 
@@ -107,6 +131,7 @@ object CSharpStubs {
         var flags = 0
         (psi as? CSharpMemberDeclaration)?.modifiers?.forEach { modifier -> MODIFIERS.indexOf(modifier.text).takeIf { it >= 0 }?.let { flags = flags or (1 shl it) } }
         if (psi is CSharpMethodDeclaration && psi.parameterList?.parameters?.firstOrNull()?.modifiers?.any { it.node.elementType == K.ThisKeyword } == true) flags = flags or EXTENSION
+        if (explicitSpecified(psi)) flags = flags or EXPLICIT
         val arity = when (psi) {
             is CSharpTypeDeclaration -> psi.typeParameterList?.parameters?.size
             is CSharpDelegateDeclaration -> psi.typeParameterList?.parameters?.size

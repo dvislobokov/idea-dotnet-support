@@ -102,9 +102,12 @@ class CSharpMemberLookup(private val resolver: CSharpNameResolver) {
                         sourceMembers(current, static, typesOnly, site, sink)
                         // `Color.|`: the members of the enum, not the static methods of System.Enum (as Roslyn, robot E-81)
                         if (static && current.info.kind == TypeKind.ENUM) continue
+                        // a class or struct does not get the members of its interfaces (C# §12.5): what it implements explicitly
+                        // (`void IDisposable.Dispose()`) is not offered after `bag.`, as Roslyn
+                        val face = current.info.kind == TypeKind.INTERFACE
                         for (base in resolver.baseTypes(current)) when (base) {
-                            is SemanticType.Source -> next += base
-                            is SemanticType.Library -> members(base, static, typesOnly, site, sink, depth + 1)
+                            is SemanticType.Source -> if (face || base.info.kind != TypeKind.INTERFACE) next += base
+                            is SemanticType.Library -> if (face || base.type.kind != io.github.dotnetsupport.index.IndexedTypeKind.INTERFACE) members(base, static, typesOnly, site, sink, depth + 1)
                             else -> {}
                         }
                     }
@@ -138,7 +141,8 @@ class CSharpMemberLookup(private val resolver: CSharpNameResolver) {
                 return@members
             }
             if (typesOnly || NativeCSharpMembers.isStatic(member) != static) return@members
-            for (target in member.targets()) if (seen) own.getOrPut(key) { ArrayList() } += CSharpSymbol.SourceMember(target, member, type) else sink.addInaccessible(key, CSharpSymbol.SourceMember(target, member, type))
+            // an explicit implementation is no member after a dot: `bag.` does not offer `IDisposable.Dispose` (C# §19.6.2)
+            for (target in member.namedTargets()) if (seen) own.getOrPut(key) { ArrayList() } += CSharpSymbol.SourceMember(target, member, type) else sink.addInaccessible(key, CSharpSymbol.SourceMember(target, member, type))
         }
         for ((key, symbols) in own) for (symbol in symbols.distinct()) sink.add(key, symbol, overloads = isMethod(symbol))
         sink.closeLevel()

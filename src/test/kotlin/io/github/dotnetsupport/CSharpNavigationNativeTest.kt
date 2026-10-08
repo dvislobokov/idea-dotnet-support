@@ -266,6 +266,25 @@ class CSharpNavigationNativeTest : BasePlatformTestCase() {
         """.trimIndent(),
     )
 
+    /** An explicit implementation is no member by its simple name: `GetEnumerator()` inside `IEnumerable.GetEnumerator` is the public method (C# §19.6.2). */
+    fun testAnExplicitImplementationIsNoTargetByName() = check(
+        """
+        using System;
+        using System.Collections;
+        using System.Collections.Generic;
+        class ExplicitBag : IEnumerable<int>, IDisposable
+        {
+            public IEnumerator<int> /*D:own,dot,other*/GetEnumerator() => null;
+            IEnumerator IEnumerable.GetEnumerator() => /*U:own*/GetEnumerator();
+            void IDisposable.Dispose() { }
+            void Use(ExplicitBag bag) { bag./*U:dot*/GetEnumerator(); }
+        }
+        """,
+        """
+        class BagUser { void Use(ExplicitBag bag) { bag./*U:other*/GetEnumerator(); bag./*U:none*/Dispose(); } }
+        """,
+    )
+
     fun testScopesOfCSharp() = check(
         """
         using System.Linq;

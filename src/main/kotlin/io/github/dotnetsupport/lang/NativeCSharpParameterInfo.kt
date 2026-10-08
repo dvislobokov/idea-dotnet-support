@@ -164,7 +164,7 @@ object NativeCSharpParameterInfo {
             val name = method?.identifier?.text
             val info = type?.let(resolver.syntax::declaredType)
             if (info == null || name == null) listOf(symbol)
-            else resolver.syntax.membersOf(info)[name]?.targets().orEmpty().filterIsInstance<CSharpMethodDeclaration>().map { CSharpSymbol.SourceMember(it, symbol.member, symbol.owner) }
+            else resolver.syntax.membersOf(info)[name]?.namedTargets().orEmpty().filterIsInstance<CSharpMethodDeclaration>().map { CSharpSymbol.SourceMember(it, symbol.member, symbol.owner) }
         }
         else -> listOf(symbol)
     }
