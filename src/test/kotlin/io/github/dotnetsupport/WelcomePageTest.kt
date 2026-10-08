@@ -26,7 +26,10 @@ class WelcomePageTest : BasePlatformTestCase() {
 
     fun testShownOncePerVersion() {
         assertTrue("a new installation", WelcomePage.isNewFor(null, "0.1.0"))
-        assertTrue("an update", WelcomePage.isNewFor("0.1.0", "0.2.0"))
+        assertTrue("a new minor version", WelcomePage.isNewFor("0.1.149", "0.2.0"))
+        assertFalse("a release of the same line only notifies", WelcomePage.isNewFor("0.1.148", "0.1.149"))
+        assertTrue(WelcomePage.isUpdate("0.1.148", "0.1.149"))
+        assertFalse(WelcomePage.isUpdate("0.1.0", "0.1.0"))
         assertFalse(WelcomePage.isNewFor("0.1.0", "0.1.0"))
         assertFalse("the version is not known: nothing to record", WelcomePage.isNewFor(null, null))
     }

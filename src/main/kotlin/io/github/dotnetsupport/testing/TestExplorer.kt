@@ -108,7 +108,7 @@ private class TestExplorerPanel(private val project: Project) : SimpleToolWindow
                     is TestProject -> {
                         icon = DotNetIcons.forProjectFile(item.projectFile.name)
                         append(item.name)
-                        append("  ${item.tests.count { it.target.methodName != null }} tests", SimpleTextAttributes.GRAYED_ATTRIBUTES)
+                        append("  " + TestRunSummary.label(item.tests.count { it.target.methodName != null }, TestRunSummary.last(item.projectFile.parent.path)), SimpleTextAttributes.GRAYED_ATTRIBUTES)
                     }
                     is DiscoveredTest -> {
                         val target = item.target

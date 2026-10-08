@@ -55,6 +55,16 @@ class AspireTest : BasePlatformTestCase() {
         assertFalse(AspireHosts.isAppHost(project, null))
     }
 
+    fun testStartupProjectIsNotTheAppHost() {
+        myFixture.addFileToProject("AspireStartup/Host/Host.csproj", "<Project Sdk=\"Aspire.AppHost.Sdk/13.6.0\"><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup></Project>")
+        myFixture.addFileToProject("AspireStartup/Console/Console.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup></Project>")
+        myFixture.addFileToProject("AspireStartup/AspireStartup.slnx", "<Solution><Project Path=\"Host/Host.csproj\"/><Project Path=\"Console/Console.csproj\"/></Solution>")
+
+        val targets = DotNetRunConfigurationGenerator.getInstance(project).collectTargets().filter { it.projectPath.contains("AspireStartup") }
+        assertEquals(listOf("Host", "Console"), targets.map { it.name })
+        assertEquals(listOf("Console"), targets.filter { it.preferred }.map { it.name })
+    }
+
     fun testDashboardLinkOfTheAppHost() {
         // what the AppHost logs itself: under the debugger, which starts the program and not `dotnet run`
         val output = resource("apphost-13.6-output.log")

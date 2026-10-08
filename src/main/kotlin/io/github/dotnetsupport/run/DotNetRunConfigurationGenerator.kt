@@ -18,7 +18,7 @@ import io.github.dotnetsupport.view.resolveFile
  */
 @Service(Service.Level.PROJECT)
 class DotNetRunConfigurationGenerator(private val project: Project) {
-    data class Target(val name: String, val projectPath: String, val launchProfile: String?, val openBrowser: Boolean = false) {
+    data class Target(val name: String, val projectPath: String, val launchProfile: String?, val openBrowser: Boolean = false, val preferred: Boolean = false) {
         val key: String get() = "$projectPath|${launchProfile.orEmpty()}"
     }
 
@@ -34,16 +34,20 @@ class DotNetRunConfigurationGenerator(private val project: Project) {
 
     fun collectTargets(): List<Target> {
         val solutions = SolutionService.getInstance(project)
-        return solutions.solutionFiles()
+        val runnable = solutions.solutionFiles()
             .flatMap { solutionFile -> solutions.solution(solutionFile).allProjects.mapNotNull { it.resolveFile(solutionFile)?.let { file -> it.name to file } } }
             .distinctBy { it.second }
             .filter { (_, file) -> solutions.msBuildProject(file).let { it.isRunnable && !it.isTestProject } }
-            // an Aspire AppHost starts the whole solution: its configuration goes first and is the one selected, as in Rider
+        // the startup project, as in Rider: the first executable project in the order of the solution that is not an AppHost
+        val startup = runnable.firstOrNull { (_, file) -> !solutions.msBuildProject(file).isAspireHost }?.second
+        return runnable
+            // an Aspire AppHost starts the whole solution: its configuration goes first in the list, but is not the one selected by default
             .sortedByDescending { (_, file) -> solutions.msBuildProject(file).isAspireHost }
             .flatMap { (name, file) ->
                 val profiles = LaunchSettings.profiles(file)
-                if (profiles.isEmpty()) listOf(Target(name, file.path, null))
-                else profiles.map { Target("$name: ${it.name}", file.path, it.name, openBrowser = it.launchBrowser) } // as the profile asks
+                val isStartup = file == startup
+                if (profiles.isEmpty()) listOf(Target(name, file.path, null, preferred = isStartup))
+                else profiles.mapIndexed { i, it -> Target("$name: ${it.name}", file.path, it.name, openBrowser = it.launchBrowser, preferred = isStartup && i == 0) } // as the profile asks
             }
     }
 
@@ -55,6 +59,8 @@ class DotNetRunConfigurationGenerator(private val project: Project) {
         val existing = runManager.allConfigurationsList.filterIsInstance<DotNetRunConfiguration>()
             .mapTo(HashSet()) { Target("", it.options.projectPath.orEmpty(), it.options.launchProfile).key }
 
+        val created = ArrayList<Pair<Target, com.intellij.execution.RunnerAndConfigurationSettings>>()
+        val previouslyGenerated = generated.toSet()
         for (target in targets) {
             if (!generated.add(target.key) || target.key in existing) continue
             val settings = runManager.createConfiguration(target.name, DotNetConfigurationType.instance.factory)
@@ -65,8 +71,13 @@ class DotNetRunConfigurationGenerator(private val project: Project) {
             }
             settings.storeInLocalWorkspace()
             runManager.addConfiguration(settings)
-            if (runManager.selectedConfiguration == null) runManager.selectedConfiguration = settings
+            created += target to settings
         }
+        // the user's own choice stays: only an empty selection or a configuration this generator made earlier is replaced
+        val selected = runManager.selectedConfiguration?.configuration as? DotNetRunConfiguration
+        val selectedKey = selected?.let { Target("", it.options.projectPath.orEmpty(), it.options.launchProfile).key }
+        if (created.isNotEmpty() && (runManager.selectedConfiguration == null || selectedKey in previouslyGenerated || created.any { it.second.configuration === selected }))
+            runManager.selectedConfiguration = (created.firstOrNull { it.first.preferred } ?: created.first()).second
         properties.setList(GENERATED_KEY, generated.toList())
     }
 
