@@ -3,6 +3,20 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.152
+
+- No inlay type hint after `var` when the initializer already says the type: `new T(...)`, a literal, `default(T)`, `typeof(T)`,
+  a cast or `as`, an enum member, `nameof(...)`; calls, LINQ, `await`, member accesses and `new()` keep their hints.
+- Settings | .NET | Behavior: "Hide type hints for obvious initializers" (on by default) turns this off.
+
+## 0.1.151
+
+- The context menu of a project in the Solution view follows Rider: Add, Build, Rebuild, Clean, Run, Debug, Manage NuGet Packages,
+  Edit Project File, Properties, Reload, Rename Project, Move to Solution Folder and Remove from Solution stay on top; Publish,
+  Run MSBuild Target, Analyze Upgrade, Calculate Code Metrics, Code Analysis, Format and Verify Formatting moved to a Tools submenu.
+- The disabled Cut / Copy / Paste and the duplicate Rename... are gone from solution, solution folder and project nodes (files and
+  ordinary folders keep them).
+
 ## 0.1.150
 
 - The run configuration selected after generation is the startup project: the first executable project of the solution that is not

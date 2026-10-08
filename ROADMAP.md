@@ -77,6 +77,10 @@
   -Pml.names -Pml.seed -Pml.heap=6g`): шард `.cmlx` на репозиторий, готовые пропускаются, сломанный репозиторий логируется и не роняет прогон,
   сводка `ml: TOTAL …` с recall. Тест `CSharpMlDatasetExportTest` (экспорт на фикстурном репозитории, языковой блок, инфо на элементах).
   Weigher `CSharpMlCompletionRanker` — после обучения ранкера в движке
+- [x] 0.1.151–0.1.152 — план робота пп. 7–8: контекстное меню проекта как в Rider (редкие действия — в подменю Tools, платформенные серые
+  Cut/Copy/Paste и дубль Rename скрыты на узлах solution/проекта: `view/SolutionPopupCleanup`); подсказка типа `var` не показывается при
+  очевидном инициализаторе (`new T(...)`, литерал, `default`, `typeof`, приведение, член enum, `nameof`), опция «Hide type hints for obvious
+  initializers» на Settings | .NET. Вживую не проверено
 - [x] 0.1.150 — план робота пп. 4–6: стартовая конфигурация — первый исполняемый проект solution не-AppHost (`DotNetRunConfigurationGenerator`,
   `Target.preferred`); Welcome только при установке и смене минорной версии, иначе уведомление «updated to …» с What's New; Unit Tests
   explorer — «N test methods · last run …» по `.trx` (`TestRunSummary`). Вживую не проверено
