@@ -15,8 +15,6 @@ import io.github.completionml.core.nn.NnSession
 import io.github.completionml.core.nn.native.NativeLib
 import io.github.completionml.core.rank.FeatureExtractor
 import io.github.completionml.core.rank.LinearRanker
-import kotlinx.coroutines.asCoroutineDispatcher
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
 import java.nio.file.FileAlreadyExistsException
@@ -26,7 +24,7 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.PosixFilePermissions
 import java.security.MessageDigest
-import java.util.concurrent.Executors
+import java.util.concurrent.Callable
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
@@ -66,13 +64,13 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
 
     private val state = AtomicReference<State>(State.Idle)
 
-    // --- network state: [nnState] and [generation] under the lock; [current] and [sessions] only on [executor]
+    // --- network state: [nnState] and [generation] under the lock; [current] and [sessions] only on [thread]
     private var nnState: NnState = NnState.Idle
     private var generation = 0
     private var current: Nn? = null
     private val sessions = HashMap<Any, NnSession>()
-    private val executor = Executors.newSingleThreadExecutor { Thread(it, "C# NN completion").apply { isDaemon = true; priority = Thread.MIN_PRIORITY + 1 } }
-    private val dispatcher = executor.asCoroutineDispatcher()
+    /** The model's thread: low priority for the background work, normal while a completion waits ([NnThread]). */
+    private val thread = NnThread("C# NN completion")
     private val shown = AtomicInteger()
     private val accepted = AtomicInteger()
     /** Editors whose prefill is queued and not yet done: a second request for the same editor is dropped, a completion in between cancels it. */
@@ -83,7 +81,7 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
     /** Suggestions of the network accepted with Tab since the start of the IDE. */
     val acceptedCount: Int get() = accepted.get()
     /** Sessions alive (tests: no leak after the editors close). */
-    val sessionCount: Int get() = executor.submit<Int> { sessions.size }.get()
+    val sessionCount: Int get() = thread.submit(Callable { sessions.size }).get()
 
     /** The ranker models for [modelDirectory] (empty: bundled), or null while they load or when there are none. Never blocks. */
     fun get(modelDirectory: String): Loaded? {
@@ -116,7 +114,7 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
             nnState = NnState.Loading
             generation
         }
-        executor.execute {
+        thread.execute {
             closeNn()
             val ready = loadNn(key)
             val stale = synchronized(this) { (generation != g).also { if (!it) { nnState = ready; current = ready.nn } } }
@@ -135,10 +133,10 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
     override suspend fun complete(editor: Any, context: CSharpNnInline.Context): CSharpNnInline.Answer? {
         val settings = CSharpMlSettings.getInstance()
         nn(settings.modelDirectory) ?: return null
-        return withContext(dispatcher) {
+        return thread.complete {
             prefillQueued.remove(editor)
             // a reset between the check and this task closed the model: [current] is null then
-            val nn = current ?: return@withContext null
+            val nn = current ?: return@complete null
             val dot = CSharpNnInline.afterDot(context.before)
             val blank = CSharpNnInline.blankLine(context.before)
             val gate = when { blank -> settings.inlineEmptyLineThreshold; dot -> settings.inlineDotThreshold; else -> settings.inlineThreshold }
@@ -174,9 +172,9 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
      * then only shortens that request). Never blocks the caller.
      */
     fun prefill(editor: Any, context: CSharpNnInline.Context) {
-        if (executor.isShutdown) return
+        if (thread.isShutdown) return
         val nn = synchronized(this) { (nnState as? NnState.Ready)?.nn } ?: return
-        executor.execute {
+        thread.execute {
             if (!prefillQueued.add(editor)) return@execute
             try {
                 if (current !== nn || editor !in sessions && sessions.size >= MAX_PREFILL_SESSIONS) return@execute
@@ -195,7 +193,7 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
     override fun accepted() { accepted.incrementAndGet() }
 
     /** Frees the KV cache of a closed editor (native memory). */
-    fun release(editor: Any) { if (!executor.isShutdown) executor.execute { prefillQueued.remove(editor); sessions.remove(editor)?.close() } }
+    fun release(editor: Any) { if (!thread.isShutdown) thread.execute { prefillQueued.remove(editor); sessions.remove(editor)?.close() } }
 
     /** Status of the ranker for the settings page: what is loaded, or why nothing is. */
     fun status(modelDirectory: String): String = when (val s = state.get()) {
@@ -224,16 +222,16 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
     fun reset() {
         state.set(State.Idle)
         synchronized(this) { generation++; nnState = NnState.Idle }
-        executor.execute { closeNn() }
+        thread.execute { closeNn() }
     }
 
     override fun dispose() {
         synchronized(this) { generation++; nnState = NnState.Idle }
-        executor.execute { closeNn() }
-        executor.shutdown()
+        thread.execute { closeNn() }
+        thread.shutdown()
     }
 
-    /** On [executor]: closes the sessions and the model. */
+    /** On [thread]: closes the sessions and the model. */
     private fun closeNn() {
         sessions.values.forEach { it.close() }
         sessions.clear()
@@ -270,7 +268,7 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
         return Loaded(NgramModel.read(lm), LinearRanker.read(rank), dir.path)
     }
 
-    /** On [executor]: reads, builds and warms up the network. */
+    /** On [thread]: reads, builds and warms up the network. */
     private fun loadNn(key: String): NnState.Ready = try {
         val big = key.endsWith(BIG_SUFFIX)
         val dir = key.removeSuffix(BIG_SUFFIX).takeIf { it.isNotEmpty() }?.let(::File)

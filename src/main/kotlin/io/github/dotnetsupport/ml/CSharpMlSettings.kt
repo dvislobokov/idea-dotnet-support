@@ -39,6 +39,8 @@ class CSharpMlSettings : SimplePersistentStateComponent<CSharpMlSettings.Options
         var inlineGuessStrings by property(true)
         /** Every answer of the network (text, confidence, gate, shown or not) goes to the plugin log (.NET | Plugin Logs, category `ml`). */
         var inlineDebugLog by property(false)
+        /** Grey text with the caret inside a string literal or a comment too (free text, the model guesses prose); off: the network is not asked there. */
+        var inlineInStringsAndComments by property(false)
     }
 
     var rankerEnabled: Boolean
@@ -84,6 +86,10 @@ class CSharpMlSettings : SimplePersistentStateComponent<CSharpMlSettings.Options
     var inlineDebugLog: Boolean
         get() = state.inlineDebugLog
         set(value) { state.inlineDebugLog = value }
+
+    var inlineInStringsAndComments: Boolean
+        get() = state.inlineInStringsAndComments
+        set(value) { state.inlineInStringsAndComments = value }
 
     companion object {
         fun getInstance(): CSharpMlSettings = service()

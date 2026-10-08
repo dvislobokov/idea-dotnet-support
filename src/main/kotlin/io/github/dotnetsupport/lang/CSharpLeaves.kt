@@ -74,7 +74,8 @@ object CSharpLeaves {
 
     private fun step(element: PsiElement, forward: Boolean): PsiElement? = if (forward) PsiTreeUtil.nextLeaf(element) else PsiTreeUtil.prevLeaf(element)
 
-    private fun commentAround(element: PsiElement): PsiComment? =
+    /** The comment [element] is or lies in (a native doc comment has a structure of its own under it), or null. */
+    fun commentAround(element: PsiElement): PsiComment? =
         element as? PsiComment ?: PsiTreeUtil.getParentOfType(element, PsiComment::class.java, true, CSharpFile::class.java)
 }
 

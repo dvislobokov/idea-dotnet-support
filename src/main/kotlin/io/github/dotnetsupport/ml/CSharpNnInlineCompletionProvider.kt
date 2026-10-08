@@ -29,7 +29,11 @@ import io.github.dotnetsupport.lang.CSharpFileType
 /**
  * Grey text to the end of the line from our transformer ([CSharpMlModels], `NnCompletion` of the engine) while typing in a C# file, while
  * the completion popup is open, or on an explicit call; Tab accepts it. Only what passes the gate ([CSharpMlSettings.inlineThreshold],
- * the lower ones after a dot and on an empty line; no lone closers unless [CSharpMlSettings.inlineShowClosers]), otherwise nothing.
+ * the lower ones after a dot and on an empty line; no lone closers unless [CSharpMlSettings.inlineShowClosers]), otherwise nothing; nothing
+ * inside a string literal or a comment unless [CSharpMlSettings.inlineInStringsAndComments] (the network is not even asked there).
+ *
+ * With the completion list open the platform arbitrates Tab itself: `InlineCompletionActionsPromoter` puts `InsertInlineCompletionAction`
+ * first while the grey text is shown and `InlineCompletionHandler.insert()` hides the lookup, so one Tab inserts the grey text only.
  *
  * Registered `order="first"` like the Go plugin's: the platform asks only the first enabled provider, so this one asks the next enabled
  * provider first (a host's own grey text, if any) and answers where it has nothing; the insert handler of whoever answered applies.
@@ -60,8 +64,11 @@ class CSharpNnInlineCompletionProvider internal constructor(private val engine: 
             if (suggestion !== InlineCompletionSuggestion.Empty) { answered = provider; return suggestion }
         }
         answered = null
-        val context = readAction { CSharpNnInline.context(request.document.immutableCharSequence, request.endOffset, path(request.file)) }
-        return CSharpNnInline.suggestion(CSharpNnInline.text(engine().complete(request.editor, context), context.after))
+        val context = readAction {
+            if (!CSharpMlSettings.getInstance().inlineInStringsAndComments && CSharpNnInline.inStringOrComment(request.file, request.document, request.endOffset)) null
+            else CSharpNnInline.context(request.document.immutableCharSequence, request.endOffset, path(request.file))
+        } ?: return InlineCompletionSuggestion.Empty
+        return CSharpNnInline.suggestion(CSharpNnInline.text(engine().complete(request.editor, context), context.after, context.before))
     }
 
     override val insertHandler: InlineCompletionInsertHandler = object : InlineCompletionInsertHandler {

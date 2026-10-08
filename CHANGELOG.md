@@ -3,6 +3,23 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+### Unreleased — quick wins of the grey text (fold into the next version)
+
+- No grey text inside string and character literals or comments: the provider looks at the PSI leaf at the caret (either tree:
+  string, verbatim, raw and interpolated-string text tokens, `//`, `///`, `/* */`) before it asks the network, or at the host lexer's
+  token while the document is not yet committed; right after the closing quote or `*/` and in a hole of an interpolated string it is
+  code again, `// ⟨caret⟩` on an empty comment stays suppressed. Setting "Suggest inside strings and comments" (off) turns the gate
+  off; the code-only confidence gate (`codeConfidence`) is unchanged — this one is in addition to it
+- The thread of the network runs at a low priority (`MIN_PRIORITY + 1`) while it loads, warms up or prefills an opened file and at the
+  normal priority while a grey-text request is queued or running (`NnThread`: raised by the request, lowered when none waits; no
+  extra threads)
+- A suggestion that is exactly what already follows the caret on the line, or that would make the line a copy of the previous one
+  (the model repeating the line above: `a.Name = b.Name;` twice) is dropped (`CSharpNnInline.repeatsPreviousLine`); the engine's own
+  guard sees only repetitions inside the generated text
+- Tab with the completion list and the grey text both shown is arbitrated by the platform (checked on 2026.1.4: `InlineCompletionActionsPromoter`
+  puts `InsertInlineCompletionAction` first while the grey text is shown and `InlineCompletionHandler.insert()` hides the lookup), so
+  one Tab inserts the grey text only, never the list's item on top of it; no change needed
+
 ## 0.1.133
 
 - The " ML" mark on the ranked completion items is off by default (`CSharpMlSettings.showMarker`); Settings | .NET | ML completion turns it on.
