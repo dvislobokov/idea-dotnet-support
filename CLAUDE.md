@@ -15,6 +15,16 @@ Rider-подобная работа с .NET **без LSP, Roslyn и (пока) �
 стоит (`index/IndexerTool`). Формат индекса, замеры и блокировки — `indexer/README.md`; читатель и completion — пакет `index`. Меняешь формат — подними
 `Program.FormatVersion` и `AssemblyIndex.FORMAT_VERSION` вместе и пересоздай фикстуры `src/test/resources/index` (команда — в README индексатора).
 
+## Ошибки компилятора
+
+Правило пользователя (2026-10-08): **каждая ошибка Roslyn — ошибка и у нас**, в том же месте, с тем же кодом; имя, которого нет, красное.
+Семантика не молчит «на всякий случай»: синтаксическая ошибка глушит проверки только на своих токенах, нерезолвленный `using` — ошибка на
+директиве, а не повод замолчать. Мера — `CompilerMessagesCoverageTest`: корпус примеров со страниц compiler-messages dotnet/docs против
+оракула Roslyn (`tools/compiler-messages/README.md`, состояние в `src/test/resources/compilerMessages/coverage.txt`: `ok` / `missing` /
+`extra`). `extra` (у нас есть, у Roslyn нет) — хуже, чем `missing`; тест падает на любое изменение состояния — просмотреть
+`build/reports/compilerMessages/coverage.txt` и скопировать. Новая семантическая проверка — сначала пример в корпус (или в
+`debug-playground/Broken/RiderComparison.cs`, его копия там же), потом код.
+
 ## Сборка и проверка
 
 Системных JDK и Gradle нет. Wrapper запускать с JBR целевой IDE (Git Bash):

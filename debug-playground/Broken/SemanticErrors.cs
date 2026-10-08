@@ -117,4 +117,56 @@ public class SemanticErrors
     {
 
     }
+
+    public void BrokenStatement(int id)
+    {
+        // TYPE:sem-broken-statement — type `Log("Customer {CustomerId} not found", id");` on the empty line below (the `"` after `id` opens a
+        // string to the end of the line). EXPECT: that line gets its syntax errors only (unterminated string, `)` and `;` expected at its end);
+        // `nope` on the line after it KEEPS its red «CS1061: 'SemanticErrors' does not contain a definition for 'nope' …» — the name itself is
+        // painted red, as Rider paints an unresolved symbol. Undo with Ctrl+Z.
+
+        this.nope.Add(id);
+    }
+}
+
+// 0.1.143: declaration errors, as Roslyn reports them. EXPECT: each marked line is red with the code in the comment, nothing else in this block.
+class HiddenType { }
+public class Accessibility
+{
+    public static HiddenType Make() => new HiddenType(); // ERR:accessibility  EXPECT: CS0050 on Make
+    public void Take(HiddenType t) { }                   // EXPECT: CS0051 on Take
+    public HiddenType Field;                             // EXPECT: CS0052 on Field
+}
+public class Modifiers
+{
+    public virtual int field;              // ERR:modifiers  EXPECT: CS0106 on virtual
+    public readonly void M() { }           // EXPECT: CS0106 on readonly
+    static const int Limit = 1;            // EXPECT: CS0504 on Limit
+}
+struct Self { public Self other; }         // ERR:struct-cycle  EXPECT: CS0523 on other
+public partial class Halves
+{
+    public partial void Defined(int x);    // ERR:partial-half  EXPECT: CS8795 on Defined (no implementation anywhere)
+    public partial void Implemented() { }  // EXPECT: CS0759 on Implemented
+}
+class Awaiting
+{
+    async System.Threading.Tasks.Task M(int id) { await id; } // ERR:await-int  EXPECT: CS1061 on id ('int' has no GetAwaiter)
+}
+
+// 0.1.144: definite assignment of structs, field by field. EXPECT: only the marked lines are red.
+struct Pair2 { public int A; public int B; }
+struct Nest2 { public Pair2 P; public int Z; }
+class StructFlow
+{
+    delegate void Del();
+    void Fields()
+    {
+        Pair2 p; p.A = 1;
+        System.Console.WriteLine(p.B);      // ERR:struct-field  EXPECT: CS0170 on p.B ("Use of possibly unassigned field 'B'")
+        System.Console.WriteLine(p);        // ERR:struct-whole  EXPECT: CS0165 on p
+        Nest2 n; n.P.A = 1; n.P.B = 2; n.Z = 3; System.Console.WriteLine(n);   // EXPECT: nothing (a field of a field is not modeled)
+        Del d = delegate() { System.Console.WriteLine(d); };   // ERR:self-init  EXPECT: CS0165 on the d inside the delegate
+        int Local(int a) { if (a > 0) return 1; }               // ERR:local-paths  EXPECT: CS0161 on Local
+    }
 }

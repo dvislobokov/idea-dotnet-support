@@ -22,6 +22,8 @@ builder.Services.AddDbContext<ShopDbContext>(options => options
     .UseNpgsql(builder.Configuration.GetConnectionString("Shop"))
     .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
 
+builder.Services.AddOpenTelemetry();
+
 builder.Services.AddMediatR(configuration =>
 {
     configuration.RegisterServicesFromAssemblyContaining<Program>();

@@ -19,6 +19,12 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
 {
     public Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
+        var name = typeof(TRequest).Name;
+        using var activity = ShopTelemetry.Source.StartActivity(name);
+        activity?.SetTag("request.type", typeof(TRequest).FullName);
+
+
+
         if (request is IValidatable validatable)
         {
             var errors = validatable.Validate().ToList();

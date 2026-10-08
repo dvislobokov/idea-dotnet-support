@@ -140,27 +140,41 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
             val nn = current ?: return@complete null
             val dot = CSharpNnInline.afterDot(context.before)
             val blank = CSharpNnInline.blankLine(context.before)
-            val gate = when { blank -> settings.inlineEmptyLineThreshold; dot -> settings.inlineDotThreshold; else -> settings.inlineThreshold }
             val completion = nn.completion
             val session = sessions.getOrPut(editor) { nn.model.newSession(SESSION_CAPACITY) }
             val started = System.nanoTime()
             val r = completion.complete(context.path, context.before, context.after, session)
+            // a `;` to end the statement is shown without inlineShowClosers, under the gate after a dot: the model is as right there but
+            // splits its confidence between `;` and ` ;` (0.56–0.57 on `return NotFound()⟨⟩`, never past the gate of 0.7). Only at the end
+            // of the line: at `NotFound(⟨⟩)` the engine trims `);` to `;`, which belongs after the paired `)`, not before it
+            val end = CSharpNnInline.statementEnd(r.text) && CSharpNnInline.restOfLine(context.after).isBlank()
+            val gate = when { blank -> settings.inlineEmptyLineThreshold; dot || end -> settings.inlineDotThreshold; else -> settings.inlineThreshold }
             // the engine's show rule with the gate of this call (its options carry none that matters): a sound answer above the gate
-            val sound = r.text.isNotEmpty() && !r.repeated && !r.healMiss && !(r.punctOnly && !settings.inlineShowClosers)
+            val sound = r.text.isNotEmpty() && !r.repeated && !r.healMiss && !(r.punctOnly && !end && !settings.inlineShowClosers)
             // the gate over the code tokens only: a guessed string literal does not hide a certain line (CSharpNnInline.codeConfidence)
             val code = if (settings.inlineGuessStrings && sound && r.confProd < gate)
                 CSharpNnInline.codeConfidence(CSharpNnInline.lineBefore(context.before, r.typed.size), r.tokens.map { completion.tok.tokenBytes(it) }, r.logProbs, r.stopLogProb)
             else r.confProd
             var show = sound && (r.confProd >= gate || code >= gate)
-            var text = r.textString
+            var text = if (end) r.textString.trim() else r.textString
             // the whole line is not certain: its certain start may be
             if (!show && sound && r.tokens.isNotEmpty()) {
                 val prefix = CSharpNnInline.certainPrefix(r.tokens.map { completion.tok.tokenBytes(it) }, r.logProbs, r.typed.size, gate)
                 if (prefix != null) { text = String(prefix, Charsets.UTF_8); show = true }
             }
+            // a bracket left open at the end of the line: the statement goes on below (a fluent chain line by line, as the file does it),
+            // so the next lines are asked one by one, each under the empty-line gate, until the brackets close or a line fails the gate
+            if (show && settings.inlineContinueOpenBrackets && CSharpNnInline.restOfLine(context.after).isBlank()) {
+                text = CSharpNnInline.continueOpenBrackets(CSharpNnInline.lineBefore(context.before, 0), text, MAX_CONTINUATION_LINES) { accepted ->
+                    val n = completion.complete(context.path, context.before + accepted, context.after, session)
+                    n.textString.takeIf { n.text.isNotEmpty() && !n.repeated && !n.healMiss && n.confProd >= settings.inlineEmptyLineThreshold }
+                }
+            }
             if (show) shown.incrementAndGet()
+            val lines = text.count { it == '\n' } + 1
             val line = "NN completion ${(System.nanoTime() - started) / 1_000_000} ms, confProd ${"%.3f".format(r.confProd)}, code ${"%.3f".format(code)}, " +
-                "gate $gate${if (dot) " (dot)" else if (blank) " (empty line)" else ""}, show $show: $text${if (text != r.textString) " (of: ${r.textString})" else ""}"
+                "gate $gate${if (dot) " (dot)" else if (blank) " (empty line)" else if (end) " (statement end)" else ""}, show $show${if (lines > 1) ", $lines lines" else ""}: " +
+                "${text.replace("\n", "⏎")}${if (text != r.textString && lines == 1) " (of: ${r.textString})" else ""}"
             if (settings.inlineDebugLog) debugSink?.invoke(line) ?: LOG.info(line) else LOG.debug(line)
             CSharpNnInline.Answer(text, show, maxOf(r.confProd, code))
         }
@@ -293,6 +307,8 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
         const val NN_VOCAB = "cs-16384.bpe"
         /** KV cache of an editor's session: the prompt (≤ 2000 tokens) and the generated line; capped by the model's context. */
         private const val SESSION_CAPACITY = 2048
+        /** Lines of a grey block at most ([CSharpNnInline.continueOpenBrackets]): a chain of a dozen calls is a rare thing, and every line costs a decode. */
+        private const val MAX_CONTINUATION_LINES = 8
         /** A prefill opens no session beyond this many editors (each holds a KV cache); a completion always gets one. */
         private const val MAX_PREFILL_SESSIONS = 16
         private const val BIG_SUFFIX = "|big"

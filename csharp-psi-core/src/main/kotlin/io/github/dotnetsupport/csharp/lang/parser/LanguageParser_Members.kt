@@ -1118,7 +1118,7 @@ private fun LanguageParser.parseAccessorDeclaration(declaringKind: AccessorDecla
             SyntaxKind.SemicolonToken -> eatToken()
             else -> if (accessorKind !== SyntaxKind.UnknownAccessorDeclaration) {
                 if (!isTerminator()) parseMethodOrAccessorBodyBlock(isAccessorBody = true)
-                else eatToken(SyntaxKind.SemicolonToken)
+                else if (!tryEatToken(SyntaxKind.SemicolonToken)) createMissingToken(SyntaxKind.SemicolonToken, message = CSharpErrorCode.ERR_SemiOrLBraceOrArrowExpected.describe())  // EatToken(Semicolon, ERR_SemiOrLBraceOrArrowExpected) (LP 4700)
             }
         }
         m.done(accessorKind)

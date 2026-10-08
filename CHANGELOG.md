@@ -3,6 +3,59 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.144
+
+- Definite assignment of structs, field by field, as Roslyn: `s.f = 1` assigns the field, reading `s.f` before that is CS0170 («Use of
+  possibly unassigned field»), reading `s` needs every field (CS0165), an `out` struct parameter needs every field assigned (CS0177);
+  auto-properties count as fields only a whole assignment sets. A local read inside its own initializer (`Del d = delegate { d(); }`,
+  `int x = x + 1`) is CS0165; the first source of a query expression is read where it stands.
+- CS0161 («not all code paths return a value») on local functions, and on an `async` method whose return type is nowhere (Roslyn goes
+  on with an error type); an `out` parameter of such a type still needs assigning (CS0177).
+- Compiler-messages corpus: 253 of 376 errors matched, no false positive (0.1.143: 231 of 363; a definite-assignment probe was added).
+
+## 0.1.143
+
+- Compiler errors of declarations, as Roslyn reports them: inconsistent accessibility (CS0050–CS0061, CS7025: a return, parameter, field,
+  property, event, indexer, operator, delegate or base type less visible than what names it), modifiers not valid for the item (CS0106:
+  `virtual` on a field, `static` on an indexer, `readonly` on a member of a class, `public` on a local function; CS1527 / CS1530 on a type of
+  a namespace), `static const` (CS0504), a cycle in a struct layout (CS0523), a partial method without its other half (CS0759 / CS8795,
+  when every part of the type is in the file and no generator may add one).
+- `await` of a value whose type has no `GetAwaiter` (`await id` on an `int`): CS1061 on the value, as Rider shows it.
+- Compiler-messages corpus: 231 of 363 errors matched, no false positive (0.1.142: 203).
+
+## 0.1.142
+
+- A `using` of a namespace that is nowhere is an error on the directive (CS0246 / CS0234), and the rest of the file is checked all the
+  same, as the compiler does; before, one unresolved `using` silenced every «does not exist» error of the file.
+- An accessor without a body (`int Value { get }`) reports CS8180 as Roslyn does, not `; expected`.
+- A corpus of the compiler-messages pages of dotnet/docs (250 examples) is checked against Roslyn: `CompilerMessagesCoverageTest` and
+  `src/test/resources/compilerMessages/coverage.txt` show which compiler errors the plugin reports and which it still lacks.
+
+## 0.1.141
+
+- A syntax error silences the semantic checks of its own statement only, not of the whole member: with an unterminated string in one line,
+  `this.db` two lines below (a primary-constructor parameter, no such member) gets its CS1061, as in Rider. An error in a signature or an
+  expression body still silences the member, top-level code the file.
+- A name that is nowhere (CS0103, CS0246, CS0234, CS1061, CS0117) is painted as an unresolved reference (red text of the colour scheme) on
+  top of the squiggle, as Rider does.
+
+## 0.1.140
+
+- ML grey text goes on to the next lines while a bracket of the caret's line is open: `.WithMetrics(metrics => metrics` (the file writes its
+  chains line by line) comes with `.AddMeter(…)`, `.AddAspNetCoreInstrumentation()`, `.AddPrometheusExporter());` below it, Tab inserts the block.
+  Every line is asked on its own and must pass the empty-line threshold; the block ends where a line fails it, where the brackets close, or at
+  8 lines. A line with its brackets balanced is never continued, so one-line suggestions are as before. Settings | .NET | ML completion →
+  "Continue to the next lines while a bracket is open" (on).
+
+## 0.1.139
+
+- ML grey text: a certain start of an uncertain line may end with `;` (`return NotFound();` was shown as `return NotFound`: `();` is one token
+  and a cut was allowed only after a word or a closing bracket); a `;` that ends the statement (`;`, `);`) is suggested after `return NotFound()`
+  even with "Show suggestions that are only closing brackets" off, under the threshold after a dot (its confidence is split between `;` and ` ;`).
+- NuGet window: the Prerelease box re-filters the versions of the selected package's card at once (the list reloaded, but the card kept the
+  versions it had filtered for the previous state of the box while the same package stayed selected); the full version list is kept per
+  package, so the toggle does not ask the feed again.
+
 ## 0.1.138
 
 - Namespaces ordered by corpus statistics (engine e20, `ml-models/csharp/cs-imports-e20.cml`: for a type name, how often each namespace

@@ -144,6 +144,8 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
     @Volatile private var warningsByPackage: Map<String, List<PackageWarning>> = emptyMap()
     @Volatile private var sources: List<String> = listOf(NuGetService.NUGET_ORG)
     private var shownDetails: NuGetPackageDetails? = null
+    /** Every published version of the package of the card, as the feed listed them: re-filtered when the Prerelease box changes. */
+    private var allVersions: Pair<String, List<String>>? = null
     // remembered while the window lives, as in Rider: whoever wants the details keeps them open for every package
     private var infoExpanded = false
     private var dependenciesExpanded = false
@@ -444,12 +446,15 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
         }
 
         val knownVersions = (row.found?.versions.orEmpty() + row.installedIn.values.mapNotNull { it.version } + listOfNotNull(row.latest)).distinct()
-        if (versionCombo.getClientProperty(PACKAGE_KEY) != row.id) {
-            versionCombo.putClientProperty(PACKAGE_KEY, row.id)
-            setVersions(row, knownVersions)
+        // the key carries the Prerelease box: the same package stays selected over a reload, and its versions must be filtered anew
+        val key = row.id + "|" + prerelease.isSelected
+        if (versionCombo.getClientProperty(PACKAGE_KEY) != key) {
+            versionCombo.putClientProperty(PACKAGE_KEY, key)
+            val loaded = allVersions?.takeIf { it.first.equals(row.id, ignoreCase = true) }?.second
+            setVersions(row, loaded ?: knownVersions)
             // the search result lists only the latest versions, an installed package none at all
-            background(detailsRequests, { service.client.versions(row.id, sources) }) { all ->
-                if (selectedPackage()?.id == row.id && all.isNotEmpty()) { setVersions(row, all); renderCard(row) }
+            if (loaded == null) background(detailsRequests, { service.client.versions(row.id, sources) }) { all ->
+                if (selectedPackage()?.id == row.id && all.isNotEmpty()) { allVersions = row.id to all; setVersions(row, all); renderCard(row) }
             }
         }
         renderCard(row)

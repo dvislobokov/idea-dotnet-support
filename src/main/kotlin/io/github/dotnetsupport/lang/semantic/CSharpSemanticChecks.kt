@@ -55,7 +55,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
     private val known = IdentityHashMap<Any, Boolean>()
     internal val generated: Boolean by lazy { CSharpSemanticEnvironment.mayGenerateTypes(file) }
     /** The source generators of the project have run and are fresh (D4): a partial type is then complete, its generated parts indexed. */
-    private val generatorsKnown: Boolean by lazy { !generated && CSharpSemanticEnvironment.generatedKnown(file) }
+    internal val generatorsKnown: Boolean by lazy { !generated && CSharpSemanticEnvironment.generatedKnown(file) }
     private val broken: List<TextRange> by lazy { brokenRanges() }
 
     private val warnings = CSharpSemanticWarnings(resolver) { found += it }
@@ -90,7 +90,9 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
                     is CSharpArrowExpressionClause -> checkArrow(element)
                     is CSharpMethodDeclaration -> checkPaths(element)
                     is CSharpAccessorDeclaration -> checkPaths(element)
+                    is CSharpLocalFunctionStatement -> checkPaths(element)
                     is CSharpExpressionStatement -> warnings.checkNotAwaited(element)
+                    is CSharpAwaitExpression -> checkAwaitable(element)
                     is CSharpTypeDeclaration -> { warnings.checkUninitialized(element); checkMissingMembers(element) }
                     is CSharpBlock -> if (isFunctionBody(element)) warnings.checkUnreachable(element)
                 }
@@ -101,7 +103,9 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         CSharpDeclarationChecks(resolver, ::isQuiet, this) { code, message, range -> report(code, message, range) }.run()
         CSharpNullableFlow(resolver, ::isQuiet, generatorsKnown) { code, message, range -> warnings.warn(code, message, range) }.run(unit)
         CSharpStatementChecks(resolver, ::isQuiet) { found += it }.run(unit)
-        CSharpDefiniteAssignmentChecks(resolver, ::isQuiet) { code, message, range -> report(code, message, range) }.run(unit)
+        CSharpDefiniteAssignmentChecks(resolver, ::isQuiet, ::surelyUnresolved) { code, message, range -> report(code, message, range) }.run(unit)
+        CSharpAccessibilityChecks(resolver, ::isQuiet) { code, message, range -> report(code, message, range) }.run()
+        CSharpModifierChecks(resolver, ::isQuiet) { code, message, range -> report(code, message, range) }.run(unit)
         if (broken.isEmpty()) warnings.checkUnusedLocals()
         if (broken.isEmpty()) CSharpUnusedUsings(resolver).find(unit).let(found::addAll)
         return withoutFlowOfBrokenDeclarations(found).distinctBy { Triple(it.code, it.range, it.message) }
@@ -131,7 +135,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
 
     // ---- where nothing is said
 
-    /** Inside a member with a syntax error, documentation, a directive, `nameof(...)`, a pattern, an extension block, an incomplete member. */
+    /** Inside a statement (or a member) with a syntax error, documentation, a directive, `nameof(...)`, a pattern, an extension block, an incomplete member. */
     private fun isQuiet(element: PsiElement): Boolean {
         val range = element.textRange
         if (broken.any { it.intersects(range) }) return true
@@ -155,13 +159,28 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
     private fun isNameof(call: PsiElement?): Boolean =
         call is CSharpInvocationExpression && (call.expression as? CSharpIdentifierName)?.identifier?.text == "nameof"
 
-    /** The members (or the whole file, for a top-level one) with a syntax error: what is typed there is not finished. */
+    /**
+     * Where a syntax error silences the semantic checks: the innermost statement around it (what is typed there is not finished; the
+     * other statements of the method are whole and checked, as Roslyn and Rider do — the live case of 2026-10-08: `this.db` two lines
+     * below an unterminated string), else the member (an error in a signature or an expression body), else the file (top-level code).
+     * A zero-width diagnostic (`)` expected at the end of the line) is looked up on both sides of its position.
+     */
     private fun brokenRanges(): List<TextRange> {
         val ranges = ArrayList<TextRange>()
         for (d in NativeCSharpDiagnostics.of(file)) {
             if (d.isWarning) continue
-            val at = file.findElementAt(d.start.coerceIn(0, (file.textLength - 1).coerceAtLeast(0)))
-            val member = PsiTreeUtil.getParentOfType(at, CSharpMemberDeclaration::class.java, false)?.takeIf { it !is CSharpBaseTypeDeclaration && it !is CSharpBaseNamespaceDeclaration }
+            val last = (file.textLength - 1).coerceAtLeast(0)
+            val around = listOfNotNull(file.findElementAt(d.start.coerceIn(0, last)), if (d.start > 0) file.findElementAt((d.start - 1).coerceIn(0, last)) else null)
+            // inside a body (a statement, an expression body, an initializer): only the tokens of the error are quiet — the parser's recovery
+            // may have swallowed the next line into a call (`Log("a", id");` + `this.nope.Add(id)`), and Roslyn binds what it parsed all the same
+            val inBody = around.any { PsiTreeUtil.getParentOfType(it, CSharpStatement::class.java, CSharpArrowExpressionClause::class.java, CSharpEqualsValueClause::class.java) != null }
+            if (inBody) {
+                ranges += TextRange(d.start, d.end)
+                for (leaf in around) ranges += leaf.textRange
+                continue
+            }
+            val member = around.firstNotNullOfOrNull { PsiTreeUtil.getParentOfType(it, CSharpMemberDeclaration::class.java, false) }
+                ?.takeIf { it !is CSharpBaseTypeDeclaration && it !is CSharpBaseNamespaceDeclaration }
             ranges += member?.textRange ?: file.textRange
         }
         return ranges
@@ -176,22 +195,22 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         when {
             parent is CSharpMemberAccessExpression && name == parent.nameElement -> parent.expression?.let { checkMember(name, resolver.qualifier(it), parent) }
             parent is CSharpMemberBindingExpression -> resolver.receiverOfBinding(parent)?.let { checkMember(name, CSharpNameResolver.Qualifier.Value(it), parent) }
-            parent is CSharpQualifiedName && name == parent.right -> if (!inUsingDirective(name)) parent.left?.let { checkQualified(name, it) }
+            parent is CSharpQualifiedName && name == parent.right -> parent.left?.let { checkQualified(name, it) }
             parent is CSharpAliasQualifiedName -> {}
             NativeCSharpScopes.isFreeName(name) -> checkFree(name)
         }
     }
 
-    private fun inUsingDirective(element: PsiElement): Boolean = PsiTreeUtil.getParentOfType(element, CSharpUsingDirective::class.java) != null
 
     private fun checkFree(name: CSharpSimpleName) {
         val leaf = name.identifier ?: return
         val text = leaf.text
-        if (text in IMPLICIT || inUsingDirective(name)) return
+        if (text in IMPLICIT) return
         if (resolver.syntax.symbolAt(leaf) != null || resolver.resolve(leaf) != null) return
         val parent = name.parent
         val attribute = (parent as? CSharpAttribute)?.takeIf { it.nameElement == name }
-        val typeOnly = attribute != null || NativeCSharpTypePositions.isType(name) || (parent as? CSharpQualifiedName)?.left == name
+        // the target of a `using` is a namespace or a type: «type or namespace name» (CS0246), as the left part of a qualified name
+        val typeOnly = attribute != null || NativeCSharpTypePositions.isType(name) || (parent as? CSharpQualifiedName)?.left == name || parent is CSharpUsingDirective
         if (!absent(name, text, typeOnly) || (attribute != null && !absent(name, text + "Attribute", true))) return
         if (generated) return
         val arity = NativeCSharpResolver.arity(name)
@@ -205,6 +224,27 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         } else {
             report("CS0103", "The name '$text' does not exist in the current context", leaf.textRange, text, importsForType(name, text, arity))
         }
+    }
+
+    /**
+     * `await x` where the type of `x` is known through and through and has no `GetAwaiter`, instance or extension: CS1061 on `x`, as Roslyn
+     * (the live case of 2026-10-08, `await id` on an `int`). `object`, tuples, delegates, nullables and type parameters are not checkable.
+     */
+    private fun checkAwaitable(await: CSharpAwaitExpression) {
+        val operand = await.expression ?: return
+        val type = resolver.typeOf(operand) ?: return
+        if (!checkable(type) || has(type, "GetAwaiter") || extensionNamed("GetAwaiter", operand, type) || generated) return
+        val shown = CSharpTypeDisplay.display(type, qualified = false) ?: return
+        report("CS1061", "'$shown' does not contain a definition for 'GetAwaiter' and no accessible extension method 'GetAwaiter' accepting a first argument of type '$shown' " +
+            "could be found (are you missing a using directive or an assembly reference?)", operand.textRange, "GetAwaiter", importsForExtension(operand, "GetAwaiter", type), extension = true)
+    }
+
+    /** A type name that is surely nowhere (CS0246 is reported on it): Roslyn goes on with an error type, which is not `void` and needs assigning. */
+    private fun surelyUnresolved(type: CSharpType): Boolean {
+        val name = type as? CSharpSimpleName ?: return false
+        val leaf = name.identifier ?: return false
+        if (generated || resolver.syntax.symbolAt(leaf) != null || resolver.resolve(leaf) != null) return false
+        return absent(name, leaf.text, typeOnly = true)
     }
 
     /**
@@ -974,13 +1014,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         when (element) {
             is CSharpMethodDeclaration -> {
                 body = element.body ?: return
-                val returnType = element.returnType ?: return
-                if (returnType is CSharpPredefinedType && returnType.text == "void") return
-                if (hasYield(element)) return
-                if (element.modifiers.any { it.text == "async" }) {
-                    val type = resolver.resolveType(returnType) as? SemanticType.Library ?: return
-                    if (type.type.fullName != "System.Threading.Tasks.Task`1" && type.type.fullName != "System.Threading.Tasks.ValueTask`1") return
-                }
+                if (!returnsAValue(element.returnType, element.modifiers, element)) return
                 at = element.identifier ?: return
                 val owner = PsiTreeUtil.getParentOfType(element, CSharpBaseTypeDeclaration::class.java) ?: return
                 if (element.typeParameterList != null || element.explicitInterfaceSpecifier != null) return
@@ -989,6 +1023,16 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
                     p.type?.let(resolver::resolveType)?.let { CSharpTypeDisplay.display(it, qualified = false) } ?: return
                 }
                 shown = "${declaringName(owner) ?: return}.${at.text}(${parameters.joinToString(", ")})"
+            }
+            is CSharpLocalFunctionStatement -> {
+                body = element.body ?: return
+                if (!returnsAValue(element.returnType, element.modifiers, element)) return
+                at = element.identifier ?: return
+                val parameters = element.parameterList?.parameters.orEmpty().map { p ->
+                    if (p.modifiers.isNotEmpty() || p.default != null) return
+                    p.type?.let(resolver::resolveType)?.let { CSharpTypeDisplay.display(it, qualified = false) } ?: return
+                }
+                shown = "${at.text}(${parameters.joinToString(", ")})"
             }
             is CSharpAccessorDeclaration -> {
                 if (element.keyword?.text != "get") return
@@ -1003,6 +1047,22 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         }
         if (PsiTreeUtil.findChildOfAnyType(body, CSharpGotoStatement::class.java, CSharpLabeledStatement::class.java) != null) return
         if (CSharpReachability(resolver).endOf(body) == CSharpReachability.Reach.YES) report("CS0161", "'$shown': not all code paths return a value", at.textRange)
+    }
+
+    /** Whether a function of [returnType] must return a value on every path: not `void`, not an iterator, not an `async` of `Task` / `ValueTask` / `void`. */
+    private fun returnsAValue(returnType: CSharpType?, modifiers: List<PsiElement>, function: CSharpElement): Boolean {
+        returnType ?: return false
+        if (returnType is CSharpPredefinedType && returnType.text == "void") return false
+        if (hasYield(function)) return false
+        if (modifiers.any { it.text == "async" }) {
+            // a return type that is surely nowhere: Roslyn goes on with an error type, which is not a task of nothing
+            when (val type = resolver.resolveType(returnType)) {
+                null -> if (!surelyUnresolved(returnType)) return false
+                is SemanticType.Library -> if (type.type.fullName != "System.Threading.Tasks.Task`1" && type.type.fullName != "System.Threading.Tasks.ValueTask`1") return false
+                else -> return false
+            }
+        }
+        return true
     }
 
     // ---- CS0534, CS0535

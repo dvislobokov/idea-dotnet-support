@@ -17,13 +17,13 @@ public class AnalyzerScenarios
     // return an awaitable type» on `Load`, «CA1822: Member 'Twice' does not access instance data…» on `Twice`, «VSTHRD103: …» on
     // `File.ReadAllText` in Load. The tooltip ends with «Roslyn analyzer». NOT: the same warning twice (once from the last build).
 
-    public async Task<string> Load(string path)
+    public async Task<string> LoadAsync(string path)
     {
         await Task.Yield();
-        return File.ReadAllText(path) + counter;
+        return await File.ReadAllTextAsync(path) + counter;
     }
 
-    public int Twice(int value) => value * 2;
+    public static int Twice(int value) => value * 2;
 
     public int Count() => counter++;
 

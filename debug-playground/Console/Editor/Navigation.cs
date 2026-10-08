@@ -53,7 +53,7 @@ public partial class Navigation(int seed)
     public List<T> Pick<T>(IEnumerable<T> source, int[] numbers)
     {
         var attempts = 0;
-        retry:
+    retry:
         attempts++;
         if (attempts < 3) goto retry;
         var query = from o in numbers

@@ -1,0 +1,45 @@
+// docs: nullable-warnings.md #15; codes: CS8597 CS8598 CS8600 CS8601 CS8602 CS8603 CS8604 CS8605 CS8607 CS8608 CS8609 CS8610 CS8611 CS8612 CS8613 CS8614 CS8615 CS8616 CS8617 CS8618 CS8619 CS8620 CS8621 CS8622 CS8623 CS8624 CS8625 CS8628 CS8629 CS8631 CS8632 CS8633 CS8634 CS8636 CS8637 CS8639 CS8643 CS8644 CS8645 CS8650 CS8651 CS8655 CS8667 CS8668 CS8669 CS8670 CS8714 CS8762 CS8763 CS8764 CS8765 CS8766 CS8767 CS8768 CS8769 CS8770 CS8774 CS8775 CS8776 CS8777 CS8819 CS8824 CS8825 CS8847
+
+    using System.Diagnostics.CodeAnalysis;
+
+    public class Person
+    {
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+
+        public Person(string firstName, string lastName)
+        {
+            FirstName = firstName;
+            LastName = lastName;
+        }
+
+        public Person() : this("John", "Doe") { }
+    }
+
+    public class Student : Person
+    {
+        public string Major { get; set; }
+
+        public Student(string firstName, string lastName, string major)
+            : base(firstName, lastName)
+        {
+            SetMajor(major);
+        }
+
+        public Student(string firstName, string lastName) :
+            base(firstName, lastName)
+        {
+            SetMajor();
+        }
+
+        public Student()
+        {
+            SetMajor();
+        }
+
+        [MemberNotNull(nameof(Major))]
+        private void SetMajor(string? major = default)
+        {
+            Major = major ?? "Undeclared";
+        }
+    }

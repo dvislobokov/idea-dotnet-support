@@ -42,6 +42,14 @@ public sealed class Order : Entity
         UpdatedAt = DateTimeOffset.UtcNow;
     }
 
+    public decimal Price(){
+        var total = 0;
+        foreach (var line in Lines) {
+            total += line.Price * line.Quantity;
+        }
+        return total;
+    }
+
     public void Cancel(string reason)
     {
         Status = OrderStatus.Cancelled;

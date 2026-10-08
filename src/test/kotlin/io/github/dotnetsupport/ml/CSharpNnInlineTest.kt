@@ -136,6 +136,51 @@ class CSharpNnInlineTest {
         assertEquals("tring.Format", prefix(listOf(" string", ".", "Format", "(", "\"x\""), lp(1.0, 1.0, 1.0, 1.0, 0.1), typed = 2))
         assertNull(prefix(listOf(" o", ".", "Curr", "ency", " =="), lp(1.0, 1.0, 1.0, 0.5, 1.0), typed = 1))
         assertEquals("o.Count()", prefix(listOf(" o", ".", "Count", "()", " =="), lp(1.0, 1.0, 1.0, 1.0, 0.5), typed = 1))
+        // the live case of 2026-10-08: `return NotFound();` on an empty line, `();` is one token — the cut ends at the `;`, not at `NotFound`
+        assertEquals("return NotFound();", prefix(listOf("return", " NotFound", "();"), lp(0.79, 0.77, 0.76), typed = 0, gate = 0.25))
+        assertEquals("return NotFound", prefix(listOf("return", " NotFound", "();"), lp(0.79, 0.77, 0.3), typed = 0, gate = 0.25))
+        assertEquals("x.Save();", prefix(listOf(" x", ".", "Save", "();", " //", " done"), lp(1.0, 1.0, 1.0, 1.0, 0.3, 1.0), typed = 1))
+    }
+
+    @Test fun openBracketsOfALine() {
+        fun open(before: String, text: String) = CSharpNnInline.openBrackets(before.toByteArray(), text.toByteArray())
+        assertEquals(1, open("    ", ".WithMetrics(metrics => metrics"))
+        assertEquals(0, open("    ", ".WithMetrics(metrics => metrics.AddMeter());"))
+        assertEquals(0, open("        ", ".AddMeter(x)"))
+        assertEquals(-1, open("        ", ".AddPrometheusExporter());"))
+        assertEquals(1, open("    foo(", "a, b"))                       // the bracket opened before the caret counts
+        assertEquals(0, open("    ", "Log(\"(\", ')')"))                  // brackets inside literals do not
+        assertEquals(0, open("    ", "x = 1; // ("))
+        assertEquals(2, open("", "if (a) { f("))
+    }
+
+    @Test fun aLineWithAnOpenBracketGoesOnUntilTheBracketsClose() {
+        val answers = ArrayDeque(listOf("        .AddMeter(ShopMetrics.MeterName)", "        .AddAspNetCoreInstrumentation()", "        .AddPrometheusExporter());", "never asked"))
+        val asked = ArrayList<String>()
+        val text = CSharpNnInline.continueOpenBrackets("    ".toByteArray(), ".WithMetrics(metrics => metrics", 8) { accepted -> asked += String(accepted); answers.removeFirst() }
+        assertEquals(".WithMetrics(metrics => metrics\n        .AddMeter(ShopMetrics.MeterName)\n        .AddAspNetCoreInstrumentation()\n        .AddPrometheusExporter());", text)
+        assertEquals(3, asked.size)
+        assertEquals(".WithMetrics(metrics => metrics\n", asked[0])                       // what to append to the caret's prefix
+        assertTrue(asked[2].endsWith(".AddAspNetCoreInstrumentation()\n"))
+        // a line that fails the gate ends the block with what passed; a balanced line is never continued; the line limit holds
+        assertEquals(".WithMetrics(metrics => metrics\n        .AddMeter(x)", CSharpNnInline.continueOpenBrackets("    ".toByteArray(), ".WithMetrics(metrics => metrics", 8, ArrayDeque(listOf("        .AddMeter(x)", null)).let { q -> { _: ByteArray -> q.removeFirst() } }))
+        assertEquals("return NotFound();", CSharpNnInline.continueOpenBrackets("    ".toByteArray(), "return NotFound();", 8) { error("not asked") })
+        assertEquals("f(\n a,\n b,", CSharpNnInline.continueOpenBrackets("".toByteArray(), "f(", 3, ArrayDeque(listOf(" a,", " b,", " c)")).let { q -> { _: ByteArray -> q.removeFirst() } }))
+    }
+
+    @Test fun aSemicolonEndingTheStatementIsNotALoneCloser() {
+        fun end(s: String) = CSharpNnInline.statementEnd(s.toByteArray())
+        assertTrue(end(";"))
+        assertTrue(end(" ;"))          // the model's odd choice at `return NotFound()⟨⟩`
+        assertTrue(end(");"))
+        assertTrue(end("});"))
+        assertTrue(end("; "))
+        assertFalse(end(")"))          // the closers the editor pairs: still behind inlineShowClosers
+        assertFalse(end("}"))
+        assertFalse(end(""))
+        assertFalse(end("; }"))
+        assertFalse(end("x;"))         // code, not punctuation: the usual rule applies
+        assertFalse(end("\"a\";"))
     }
 
     @Test fun blankLineIsIndentationOnly() {

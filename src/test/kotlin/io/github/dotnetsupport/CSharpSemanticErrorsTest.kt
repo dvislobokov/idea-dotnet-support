@@ -159,6 +159,106 @@ class CSharpSemanticErrorsTest : BasePlatformTestCase() {
         """)))
     }
 
+    /** The live case of 2026-10-08: an unterminated string in one statement, `this.db` (a primary-constructor parameter, no member) in another. */
+    fun testASyntaxErrorSilencesItsStatementOnly() {
+        val text = wrap("""
+            int id = 1;
+            Log("Customer {CustomerId} not found", id"); // log warn about
+            this.nope.Add(id);
+            calc.Nope();
+        """)
+        val found = codes(text)
+        assertTrue(found.toString(), found.any { it.contains("CS1010") })
+        // Roslyn binds the recovered tree: `Log` is nowhere (CS0103) even in the broken statement, and the other statements are checked
+        assertEquals(found.toString(), listOf("Log CS0103", "nope CS1061", "Nope CS1061"), found.filter { it.endsWith("CS0103") || it.endsWith("CS1061") })
+        // an error in the signature still silences the whole member
+        assertEquals(emptyList<String>(), codes(wrap("", members = "void Broken(int { calc.Nope(); }")).filter { it.endsWith("CS1061") })
+    }
+
+    // ---- compiler-messages parity (0.1.143)
+
+    fun testInconsistentAccessibility() {
+        assertEquals(listOf("MyMethod CS0050"), codes("""
+            class Hidden { }
+            public class Shown { public static Hidden MyMethod() => new Hidden(); }
+        """))
+        assertEquals(listOf("F CS0051", "M CS0052", "P CS0053", "E CS7025", "Deleg CS0059", "Derived CS0060"), codes("""
+            public class A
+            {
+                class B { }
+                public static void F(B b) { }
+                public B M;
+                public B P { get; set; }
+                public event System.Action<B> E;
+                public delegate void Deleg(B b);
+                public class Derived : B { }
+                private B fine;
+                internal B Also(B b) => b;   // internal member of a public type with a private type: CS0050 / CS0051 too
+            }
+        """).filter { it.endsWith("CS0050") || it.endsWith("CS0051") || it.endsWith("CS0052") || it.endsWith("CS0053") || it.endsWith("CS7025") || it.endsWith("CS0059") || it.endsWith("CS0060") }.take(6))
+        // a protected member of a public type is seen by derived types of other assemblies: an internal type there is CS0051; in an
+        // internal type the member is effectively private protected, and the internal type is fine
+        assertEquals(listOf("M CS0051"), codes("""
+            internal class Inner { }
+            public class Open { protected void M(Inner i) { } internal Inner N() => null; }
+            internal class Closed { protected void M(Inner i) { } }
+        """).filter { it.endsWith("CS0051") || it.endsWith("CS0050") })
+    }
+
+    fun testModifiersNotValidForTheItem() {
+        fun only106(text: String) = codes(text).filter { it.endsWith("CS0106") }
+        assertEquals(listOf("virtual CS0106"), only106("public class C1 { public virtual int field; }"))
+        assertEquals(listOf("static CS0106"), only106("public class C2 { public static int this[int i] => i; }"))
+        assertEquals(listOf("readonly CS0106"), only106("public class C3 { public readonly void M() { } }"))
+        assertEquals(emptyList<String>(), only106("public struct C4 { public readonly void M() { } }"))
+        assertEquals(listOf("abstract CS0106"), only106("public class C5 { public abstract struct S { } }"))
+        // `public` inside a block ends the block (as Roslyn parses it): the rest is a member of the class, nothing to say about the modifier
+        assertEquals(listOf("public CS0106"), only106("public void TopLevel() { }"))
+        assertEquals(listOf("i CS0504"), codes("public class K { static const int i = 0; }").filter { it.endsWith("CS0504") })
+        assertEquals(listOf("private CS1527", "new CS1530"), codes("private class P1 { } new class P2 { }").filter { it.endsWith("CS1527") || it.endsWith("CS1530") })
+    }
+
+    fun testStructLayoutCycle() {
+        assertEquals(listOf("other CS0523", "maybe CS0523", "Next CS0523", "Back CS0523"), codes("""
+            struct Self { public Self other; public static Self fine; public Self? maybe; }
+            struct Ring { public Link Next { get; set; } }
+            struct Link { public Ring Back; }
+            class Ok { public Ok self; }
+        """).filter { it.endsWith("CS0523") }.distinct().take(4))
+    }
+
+    fun testPartialMethodsWithoutTheOtherHalf() {
+        CSharpSemanticEnvironment.setGeneratedKnownForTests(true)
+        assertEquals(listOf("Defined CS8795", "Implemented CS0759"), codes("""
+            public partial class PartialType
+            {
+                public partial void Defined(int x);
+                public partial void Implemented(int y) { }
+                partial void Fine();
+            }
+        """).filter { it.endsWith("CS8795") || it.endsWith("CS0759") })
+    }
+
+    fun testNotAllPathsReturnInALocalFunctionOrWithAnUnknownReturnType() {
+        assertEquals(listOf("Local CS0161"), codes("class L { void M() { int Local(int a) { if (a > 0) return 1; } } }").filter { it.endsWith("CS0161") })
+        // `Task` nowhere (no using): Roslyn goes on with an error type, a value is expected
+        assertEquals(listOf("Nowhere CS0246", "Run CS0161"), codes("class L2 { async Nowhere Run() { await System.Threading.Tasks.Task.Delay(1); } }").filter { it.endsWith("CS0161") || it.endsWith("CS0246") })
+        assertEquals(emptyList<String>(), codes("using System.Threading.Tasks; class L3 { async Task Run() { await Task.Delay(1); } }").filter { it.endsWith("CS0161") })
+    }
+
+    fun testAwaitOfSomethingNotAwaitable() {
+        assertEquals(listOf("id CS1061"), codes("""
+            using System.Threading.Tasks;
+            class W { async Task M(int id, Task t, Task<int> u) { await id; await t; await u; } }
+        """).filter { it.endsWith("CS1061") })
+    }
+
+    fun testANameThatIsNowhereIsPaintedAsUnresolved() {
+        val infos = highlight(wrap("calc.Nope(); missing(); Unknown u = null;"))
+        val unresolved = infos.filter { it.forcedTextAttributesKey == com.intellij.openapi.editor.colors.CodeInsightColors.WRONG_REFERENCES_ATTRIBUTES }.map { it.description?.substringBefore(':') }
+        assertEquals(listOf("CS1061", "CS0103", "CS0246"), unresolved)
+    }
+
     fun testNothingWhenTheReferencesAreNotAllKnown() {
         assemblies = null
         assertEmpty(codes(wrap("missing();")))
@@ -220,10 +320,16 @@ class CSharpSemanticErrorsTest : BasePlatformTestCase() {
         assertEquals(listOf("Customer CS1061", "Missing CS0117"), codes(text))
     }
 
-    fun testNothingWhenAnImportIsUnknown() {
-        assertEmpty(codes("""
+    /** 0.1.142: a `using` of a namespace that is nowhere is an error on the directive, and the rest is checked all the same (as Roslyn). */
+    fun testAnUnknownImportIsAnErrorAndTheRestIsChecked() {
+        assertEquals(listOf("Vendor CS0246", "Helper CS0103", "Thing CS0246"), codes("""
             using Vendor.Missing;
             class A { void M() { Helper.Run(); Thing t = null!; } }
+        """))
+        assertEquals(listOf("Nothing CS0234", "Alone CS0246"), codes("""
+            using System.Nothing;
+            using Alone;
+            class UnknownImports { }
         """))
     }
 

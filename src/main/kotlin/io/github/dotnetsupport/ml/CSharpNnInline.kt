@@ -1,5 +1,7 @@
 package io.github.dotnetsupport.ml
 
+import io.github.completionml.core.nn.NnCompletion
+
 import com.intellij.codeInsight.inline.completion.elements.InlineCompletionGrayTextElement
 import com.intellij.codeInsight.inline.completion.suggestion.InlineCompletionSingleSuggestion
 import com.intellij.codeInsight.inline.completion.suggestion.InlineCompletionSuggestion
@@ -200,8 +202,8 @@ object CSharpNnInline {
             if (Math.exp(sum) < gate) break
             best = i
         }
-        // the longest cut that reads as a finished piece: at a word boundary, never inside an identifier, ending with a word or a
-        // closing bracket, brackets balanced, at least three word bytes beyond what is typed
+        // the longest cut that reads as a finished piece: at a word boundary, never inside an identifier, ending with a word, a
+        // closing bracket or `;`, brackets balanced, at least three word bytes beyond what is typed
         val raw = ByteArray(tokens.sumOf { it.size })
         var n = 0
         for (t in tokens) { System.arraycopy(t, 0, raw, n, t.size); n += t.size }
@@ -217,8 +219,9 @@ object CSharpNnInline {
     }
 
     private fun finished(raw: ByteArray, from: Int, to: Int): Boolean {
+        // `;` ends a statement: `return NotFound();` is the most finished cut there is (`();` is one BPE token, so it has to count as such)
         val last = raw[to - 1].toInt().toChar()
-        if (!isWordByte(raw[to - 1]) && last != ')' && last != ']' && last != '}') return false
+        if (!isWordByte(raw[to - 1]) && last != ')' && last != ']' && last != '}' && last != ';') return false
         var depth = 0; var words = 0
         for (i in from until to) {
             when (raw[i].toInt().toChar()) { '(', '[', '{' -> depth++; ')', ']', '}' -> depth-- }
@@ -230,6 +233,51 @@ object CSharpNnInline {
     private fun isWordByte(b: Byte): Boolean {
         val c = b.toInt() and 0xff
         return c in 65..90 || c in 97..122 || c in 48..57 || c == 95 || c >= 128
+    }
+
+    /**
+     * True when [text] is the end of a statement and nothing else: closers with `;` last (`;`, `);`, `});`, with the odd space the
+     * model puts before it). Unlike a lone `)` or `}`, which the editor paired already, a `;` is something the user has to type, so it is
+     * shown even without [CSharpMlSettings.inlineShowClosers] (the live case of 2026-10-08: `return NotFound()⟨⟩` answered `;`).
+     */
+    fun statementEnd(text: ByteArray): Boolean {
+        if (!NnCompletion.punctOnly(text)) return false
+        var i = text.size
+        while (i > 0 && (text[i - 1] == ' '.code.toByte() || text[i - 1] == '\t'.code.toByte())) i--
+        return i > 0 && text[i - 1] == ';'.code.toByte()
+    }
+
+    /** The brackets `(`, `[`, `{` left open at the end of [lineBefore] + [text] (strings, chars and comments skipped); 0 or less: none. */
+    fun openBrackets(lineBefore: ByteArray, text: ByteArray): Int {
+        val state = LiteralState()
+        val one = ByteArray(1)
+        var depth = 0
+        for (bytes in arrayOf(lineBefore, text)) for (b in bytes) {
+            val code = !state.inText
+            one[0] = b
+            state.scan(one)
+            if (code && !state.inText) when (b.toInt().toChar()) { '(', '[', '{' -> depth++; ')', ']', '}' -> depth-- }
+        }
+        return depth
+    }
+
+    /**
+     * [text] continued to the lines below while a bracket opened on the caret's line ([lineBefore] + [text]) stays open: the statement goes
+     * on, as in a fluent chain written line by line (`.WithMetrics(metrics => metrics` + `.AddMeter(…)` + `.AddPrometheusExporter());` —
+     * the live case of 2026-10-08). [next] answers the line after what was accepted so far (the bytes to append to the caret's prefix),
+     * null when nothing sound is above the gate: the block ends there. At most [maxLines] lines in all; a blank answer ends it too.
+     */
+    fun continueOpenBrackets(lineBefore: ByteArray, text: String, maxLines: Int, next: (accepted: ByteArray) -> String?): String {
+        var depth = openBrackets(lineBefore, text.toByteArray(Charsets.UTF_8))
+        var result = text
+        var lines = 1
+        while (depth > 0 && lines < maxLines) {
+            val line = next((result + "\n").toByteArray(Charsets.UTF_8))?.takeIf { it.isNotBlank() } ?: break
+            result += "\n" + line
+            depth += openBrackets(ByteArray(0), line.toByteArray(Charsets.UTF_8))
+            lines++
+        }
+        return result
     }
 
     /** True when the caret's line has nothing but indentation before it: the line just opened by Enter, where the whole statement is a guess. */

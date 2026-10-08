@@ -29,14 +29,16 @@ class CSharpMlSettings : SimplePersistentStateComponent<CSharpMlSettings.Options
         var bigModel by property(false)
         /** `confProd` a suggestion needs to be shown (0.7: 14 % of positions, 94 % exact lines; 0.8: 10 % / 97 %). */
         var inlineThreshold by property(0.7f)
-        /** The gate right after `.`, `?.`, `::`, `->`: the model is as right there but less sure (0.5: 30 % of such positions, 96 % exact). */
+        /** The gate right after `.`, `?.`, `::`, `->` (0.5: 30 % of such positions, 96 % exact) and for a `;` that ends the statement: the model is as right there but less sure. */
         var inlineDotThreshold by property(0.5f)
         /** The gate on a line with nothing typed yet (after Enter): the first statement of a block is a guess among a few. */
         var inlineEmptyLineThreshold by property(0.25f)
-        /** Show suggestions that are punctuation only (`);`, `}`): off by default, the editor pairs the brackets anyway. */
+        /** Show suggestions that are closing brackets only (`)`, `}`): off by default, the editor pairs them anyway; a `;` ending the statement is shown regardless. */
         var inlineShowClosers by property(false)
         /** Gate on the confidence of the code tokens only, so a line with a string literal is shown with its text guessed. */
         var inlineGuessStrings by property(true)
+        /** A line that leaves a bracket open goes on to the lines below until the brackets close ([CSharpNnInline.continueOpenBrackets]); off: one line. */
+        var inlineContinueOpenBrackets by property(true)
         /** Every answer of the network (text, confidence, gate, shown or not) goes to the plugin log (.NET | Plugin Logs, category `ml`). */
         var inlineDebugLog by property(false)
         /**
@@ -90,6 +92,9 @@ class CSharpMlSettings : SimplePersistentStateComponent<CSharpMlSettings.Options
     var inlineGuessStrings: Boolean
         get() = state.inlineGuessStrings
         set(value) { state.inlineGuessStrings = value }
+    var inlineContinueOpenBrackets: Boolean
+        get() = state.inlineContinueOpenBrackets
+        set(value) { state.inlineContinueOpenBrackets = value }
 
     var inlineDebugLog: Boolean
         get() = state.inlineDebugLog

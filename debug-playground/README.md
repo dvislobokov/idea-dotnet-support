@@ -345,6 +345,10 @@ Settings | .NET | Language Server → Source of Features → «Colors of identif
 LIVE_CHECKS E-109…E-114.
 - [ ] `TYPE:sem-names`, `-namespace`: CS0103, CS0246, CS0234 — тексты Roslyn
 - [ ] `TYPE:sem-members`, `-members-silent`: CS1061 / CS0117; на `ToString` интерфейса, `Deconstruct` записи, `First()` — ничего
+- [ ] `TYPE:sem-broken-statement` (0.1.141): после набора строки с `id");` CS1061 на `nope` строкой ниже остаётся, имя красное; в самой сломанной строке только синтаксические ошибки
+- [ ] `Broken/SemanticErrors.cs` (0.1.143), маркеры `ERR:accessibility`, `ERR:modifiers`, `ERR:struct-cycle`, `ERR:partial-half`, `ERR:await-int` — коды из комментариев `EXPECT` светятся красным, лишнего в блоке нет
+- [ ] `Broken/SemanticErrors.cs` (0.1.144), маркеры `ERR:struct-field`, `ERR:struct-whole`, `ERR:self-init`, `ERR:local-paths` — CS0170 / CS0165 / CS0161 из комментариев `EXPECT`, строка с `n.P.A = 1` без подсветок
+- [ ] `Broken/RiderComparison.cs` (0.1.141): CASE:* — открыть тот же файл в Rider и у нас, сверить коды, позиции и красные имена с EXPECT
 - [ ] `TYPE:sem-arguments`, `-conversions`, `-conversions-silent`, `-paths`: CS1501 / CS7036, CS0029 / CS0266, CS0161
 - [ ] `TYPE:import-stats-choice`, `-list` (0.1.138): пространства имён в «Import type» и строки `(in …)` списка в порядке статистики корпуса
   (`JObject` → Newtonsoft.Json.Linq первым; `Canvas` — порядок индекса; настройка Behavior off → порядок индекса)
@@ -842,6 +846,14 @@ AppHost запускает `Web` как ресурс `web`. Профиль `http
 - [ ] `TYPE:msbuild-property` (файл `Console/Console.csproj`): `$(MSBuildProj` → `MSBuildProjectDirectory`…, `$(Root` → `RootNamespace`, скобка закрывается; `@(Comp` → `Compile`; `%(File` → `Filename`
 - [ ] `TYPE:msbuild-paths` (там же): `<Import Project="` → `..\`, папки, .props/.targets/.csproj; `<ProjectReference Include="..\Lib\` → только `Lib.csproj`
 - [ ] live templates `hal`, `ua`, `rta`, `ctx` в классе контроллера: `[HttpGet] public IActionResult Index()`, `Url.Action("Index", "Home")`, `return RedirectToAction("Index");`, `HttpContext.`
+
+### Серый текст сети (ML-сборка, 0.1.139) — `Console/Editor/MlInline.cs`
+Нужна сборка с `-PmlEnabled=true` (песочница: `runIdeForUiTests -PmlEnabled=true [-Pml.big=true]`); Settings | .NET | ML completion →
+«Писать каждый ответ сети в журнал», ответы — в .NET | Plugin Logs, категория `ml`.
+- [ ] `TYPE:ml-return-line` — на пустой строке в `if (customer == null) {` серым `return NotFound();` целиком (или уверенное начало до `;`), не `return NotFound`
+- [ ] `TYPE:ml-semicolon` — после набранного `return NotFound()` серая `;` (журнал: `gate 0.5 (statement end)`), Tab ставит её; без пробела перед `;`; пока парная `)` ещё впереди каретки — ничего
+- [ ] `TYPE:ml-if-header` — после `i` серым `if (customer == null)` без `{`: ожидаемо, подсказка до конца строки (многострочная — отдельная фича)
+- [ ] `TYPE:ml-open-bracket` (0.1.140) — после `.Con` серый блок на несколько строк до `.Finish());`, Tab вставляет весь; журнал: `N lines`
 
 ## ShopApi — completion на живом сервисе
 

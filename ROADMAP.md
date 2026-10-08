@@ -77,6 +77,35 @@
   -Pml.names -Pml.seed -Pml.heap=6g`): шард `.cmlx` на репозиторий, готовые пропускаются, сломанный репозиторий логируется и не роняет прогон,
   сводка `ml: TOTAL …` с recall. Тест `CSharpMlDatasetExportTest` (экспорт на фикстурном репозитории, языковой блок, инфо на элементах).
   Weigher `CSharpMlCompletionRanker` — после обучения ранкера в движке
+- [x] 0.1.144 — паритет, поток управления: структуры по полям в `CSharpDefiniteAssignmentChecks` (CS0170, CS0165 / CS0177 на структурах),
+  локальная в своём инициализаторе, первый источник query; CS0161 на локальных функциях и при нерезолвленном типе возврата. Покрытие 253
+  из 376, ложных 0. Вживую не проверено
+- [x] 0.1.143 — паритет, партия объявлений: `CSharpAccessibilityChecks` (CS0050–CS0061, CS7025), `CSharpModifierChecks` (CS0106, CS1527,
+  CS1530, CS0504, CS0523), CS0759 / CS8795 в `CSharpDeclarationChecks`, `await` без `GetAwaiter` — CS1061. Покрытие 231 из 363, ложных 0.
+  Вживую не проверено
+- [x] 0.1.142 — **паритет с ошибками компилятора** (правило пользователя 2026-10-08: каждая ошибка Roslyn должна светиться и у нас):
+  корпус примеров со страниц compiler-messages dotnet/docs (`tools/compiler-messages/extract.py`, 250 файлов в
+  `src/test/resources/compilerMessages/cases`), оракул Roslyn по файлу (`tools/compiler-messages/oracle.py` → `cases.roslyn.txt`),
+  тест `CompilerMessagesCoverageTest` сверяет по коду и строке и держит состояние в `coverage.txt` (ok / missing / extra), отчёт по кодам —
+  `build/reports/compilerMessages/by-code.md`. Состояние 0.1.142: из 363 ошибок Roslyn совпадает 203, ложных 0. Сделано по дороге:
+  нерезолвленный `using` — CS0246 / CS0234 на директиве, остальной файл проверяется (раньше глушил весь файл); аксессор без тела —
+  CS8180, как Roslyn. Дальше — закрывать `missing` по убыванию частоты в реальном коде
+- [x] 0.1.141 — синтаксическая ошибка глушит семантику только своего оператора, а не всего члена (`CSharpSemanticChecks.brokenRanges`:
+  ближайший `CSharpStatement`, иначе член, иначе файл; ошибка нулевой ширины ищется по обе стороны позиции): `this.db` под незакрытой строкой
+  получает CS1061, как в Rider. Имя, которого нет (CS0103/CS0246/CS0234/CS1061/CS0117), красится как unresolved reference
+  (`WRONG_REFERENCES_ATTRIBUTES`) поверх волны. Тесты в `CSharpSemanticErrorsTest`, сценарий `Broken/SemanticErrors.cs` (`TYPE:sem-broken-statement`).
+  Вживую не проверено
+- [x] 0.1.140 — серый текст сети на несколько строк, пока открыта скобка: `.WithMetrics(metrics => metrics` продолжается строками
+  `.AddMeter(…)` … `.AddPrometheusExporter());` (`CSharpNnInline.continueOpenBrackets`: каждая следующая строка — отдельный вызов сети под
+  порогом пустой строки, конец — закрытие скобок, непрошедшая строка или 8 строк; сбалансированная строка не продолжается). Опция
+  «Continue to the next lines while a bracket is open». Тесты `CSharpNnInlineTest`, `CSharpNnModelTest` (реальная модель на цепочке).
+  Сценарий `MlInline.cs` (`TYPE:ml-open-bracket`). Вживую не проверено
+- [x] 0.1.139 — серый текст сети: уверенное начало может кончаться `;` (`return NotFound();` показывался как `return NotFound`: `();` — один
+  токен, а срез разрешался только после слова или закрывающей скобки); `;` в конце оператора (`;`, `);`) предлагается после `return NotFound()`
+  и при выключенной «Show suggestions that are only closing brackets», под порогом после точки (`CSharpNnInline.statementEnd`, тесты).
+  Сценарий — `debug-playground/Console/Editor/MlInline.cs` (`TYPE:ml-*`, нужна ML-сборка). Вживую не проверено.
+  Там же: окно NuGet — галка Prerelease сразу перефильтровывает версии карточки выбранного пакета (ключ комбо версий включает состояние
+  галки, полный список версий пакета хранится в `allVersions` и повторно у фида не спрашивается). Вживую не проверено
 - [x] Live templates для C# (33: `ctor` с именем типа, `prop*`, `cw`, циклы, `try`, `using`, `svm`, типы, `fact` / `theory` / `test` / `testm`, `region`…), Enter внутри `///` продолжает комментарий, третий `/` над объявлением даёт `<summary>` с `<param>` и `<returns>`
 - [x] 0.1.17 — серый текст: `break;` первой (пустой) строкой секции `case`/`default` (`CSharpGhostText.breakInCase`, тест). Вживую не проверено
 - [x] 0.1.16 — серый текст (Tab): `;` в конце незавершённого оператора (те же безопасные случаи, что у Complete Statement) и

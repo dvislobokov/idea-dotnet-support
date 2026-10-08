@@ -4,6 +4,7 @@ import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.lang.annotation.AnnotationHolder
 import com.intellij.lang.annotation.Annotator
 import com.intellij.lang.annotation.HighlightSeverity
+import com.intellij.openapi.editor.colors.CodeInsightColors
 import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
@@ -119,6 +120,8 @@ class NativeCSharpDiagnosticsAnnotator : Annotator, DumbAware {
                 continue
             }
             var builder = holder.newAnnotation(HighlightSeverity.ERROR, problem.text).range(problem.range).tooltip(StringUtil.escapeXmlEntities(problem.text))
+            // a name that is nowhere is painted as the platform paints an unresolved reference (red text), as Rider does: the squiggle alone is easy to miss
+            if (problem.code in UNRESOLVED_NAME_CODES) builder = builder.textAttributes(CodeInsightColors.WRONG_REFERENCES_ATTRIBUTES)
             if (problem.imports.isNotEmpty() && problem.name != null) builder = builder.withFix(CSharpImportTypeFix(problem.name, problem.imports, problem.extension, problem.range))
             // one fix for all the CS9035 of a creation: it fills every missing member
             if (problem.code == "CS9035" && requiredFixed.add(problem.range)) AddRequiredMembersFix.at(element, problem.range.startOffset)?.let { builder = builder.withFix(it) }
@@ -130,6 +133,8 @@ class NativeCSharpDiagnosticsAnnotator : Annotator, DumbAware {
 
     private companion object {
         val GRAY_WARNINGS = setOf("CS0162", "CS0168", "CS0219")
+        /** The errors of a name that is nowhere: CS0103 (no such name), CS0246 (no such type), CS0234 (not in the namespace), CS1061 / CS0117 (no such member). */
+        val UNRESOLVED_NAME_CODES = setOf("CS0103", "CS0246", "CS0234", "CS1061", "CS0117")
     }
 }
 

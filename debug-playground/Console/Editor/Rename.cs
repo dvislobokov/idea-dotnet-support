@@ -51,7 +51,7 @@ public class RenameScenarios(string owner)
     public int Labels(string[] lines, int[] numbers)
     {
         var attempts = 0;
-        again:
+    again:
         attempts++;
         if (attempts < 3) goto again;
         var trimmed = lines.Select(line => line.Trim()).Count();

@@ -11,13 +11,24 @@ public sealed record CustomerInput(string Name, string Email, string? Phone);
 [Route("api/customers")]
 public sealed class CustomersController(ShopDbContext db, ILogger<CustomersController> logger) : ControllerBase
 {
+
+    public void Empty(){
+
+    }
+
     [HttpGet("{id:long}")]
     [ProducesResponseType<Customer>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Customer>> Get(long id, CancellationToken cancellationToken)
     {
-        var customer = await db.Customers.Include(customer => customer.Orders).FirstOrDefaultAsync(customer => customer.Id == id, cancellationToken);
-        return customer is null ? NotFound() : Ok(customer);
+        var customer = await  db.Customers.Include(customer => customer.Orders).FirstOrDefault(customer => customer.Id == id); // TODO: Implement customers await db.Customers.Include(customer => customer.Orders).FirstOrDefaultAsync(customer => customer.Id == id, cancellationToken);
+        if (customer == null) {
+            logger.LogWarning("Customer {CustomerId} not found", id"); // log warn about
+            return NotFound(); // TODO
+        }
+        this.db.Customers.Add(customer);
+
+        return Ok(customer); // TODO
     }
 
     [HttpPost]

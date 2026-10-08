@@ -1286,11 +1286,12 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         fun hasAlias(name: String): Boolean = name in aliases
 
         /**
-         * Whether all this level brings is known (task C4c): every imported namespace exists, every alias and `using static` type resolves.
-         * When not, an assembly or a generated file is missing from the view, and a name the level does not find may well be there.
+         * Whether all this level brings is known (task C4c): every alias and `using static` type resolves. When not, an assembly or a
+         * generated file is missing from the view, and a name the level does not find may well be there. A `using` of a namespace that is
+         * nowhere does not count (0.1.142): the compiler reports it on the directive (CS0246 / CS0234) and goes on, nothing comes from it.
          */
         val known: Boolean by lazy {
-            imports.all { session.namespaceExists(it, assemblies) } && aliases.values.all { it() != null } &&
+            aliases.values.all { it() != null } &&
                 statics().size == usings.count { it.alias == null && it.staticKeyword != null } + global.count { it.isStatic }
         }
 

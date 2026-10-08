@@ -62,7 +62,7 @@ class CSharpDefiniteAssignmentErrorsTest : BasePlatformTestCase() {
         myFixture.configureByText("Flow${files++}.cs", text)
         val document = myFixture.editor.document.text
         return myFixture.doHighlighting(HighlightSeverity.ERROR)
-            .filter { it.severity == HighlightSeverity.ERROR && it.description?.let { d -> d.startsWith("CS0165") || d.startsWith("CS0177") || d.startsWith("CS0269") } == true }
+            .filter { it.severity == HighlightSeverity.ERROR && it.description?.let { d -> d.startsWith("CS0165") || d.startsWith("CS0177") || d.startsWith("CS0269") || d.startsWith("CS0170") } == true }
             .sortedBy { it.startOffset }.map { document.substring(it.startOffset, it.endOffset) + " -> " + it.description }
     }
 
@@ -130,6 +130,42 @@ class CSharpDefiniteAssignmentErrorsTest : BasePlatformTestCase() {
             public void E(out int p) => Use(1);
             public void Ok(out int p) => p = 1;
         """))
+    }
+
+    // ---- structs field by field (0.1.144), as the Roslyn probe of 2026-10-08
+
+    fun testAStructIsAssignedFieldByField() {
+        assertEquals(listOf("p.B -> CS0170: Use of possibly unassigned field 'B'"), errors("void M1() { Pair p; p.A = 1; Use(p.B); }"))
+        assertEquals(listOf("p -> CS0165: Use of unassigned local variable 'p'"), errors("void M2() { Pair p; p.A = 1; Use(p); }"))
+        assertEquals(emptyList<String>(), errors("void M3() { Pair p; p.A = 1; p.B = 2; Use(p); Pair q; q = p; Use(q); Pair r; Get(out r.A); Get(out r.B); Use(r); }"))
+        assertEquals(listOf("M4 -> CS0177: The out parameter 'p' must be assigned to before control leaves the current method"), errors("void M4(out Pair p) { p.A = 1; }"))
+        assertEquals(listOf("p.A -> CS0170: Use of possibly unassigned field 'A'"), errors("void M5() { Pair p; p.A++; }"))
+        assertEquals(listOf("p.A -> CS0170: Use of possibly unassigned field 'A'"), errors("void M6() { Pair p; p.A += 1; }"))
+        // a property or a method of the struct reads the whole; a class field's member is a read of the field
+        assertEquals(listOf("p -> CS0165: Use of unassigned local variable 'p'"), errors("void M7() { Pair p; Use(p.ToString()); }"))
+        assertEquals(listOf("s.U -> CS0170: Use of possibly unassigned field 'U'"), errors("struct S { public Holder U; } void M8() { S s; s.U.Value = 5; }"))
+        // a field of a struct field assigned on its own: not modeled, silent
+        assertEquals(emptyList<String>(), errors("struct Nest { public Pair P; public int Z; } void M9() { Nest n; n.P.A = 1; n.P.B = 2; n.Z = 3; Use(n); }"))
+        // auto-properties are hidden fields: only the whole assigns them
+        assertEquals(listOf("a -> CS0165: Use of unassigned local variable 'a'"), errors("struct Auto { public int A { get; set; } public int F; } void M10() { Auto a; a.F = 1; Use(a.F); Use(a); }"))
+        assertEquals(emptyList<String>(), errors("struct Empty { } void M11(out Empty e) { }"))
+    }
+
+    fun testALocalReadInItsOwnInitializer() {
+        assertEquals(listOf("d -> CS0165: Use of unassigned local variable 'd'"), errors("delegate void Del(); void M1() { Del d = delegate() { Use(d); }; }"))
+        assertEquals(listOf("x -> CS0165: Use of unassigned local variable 'x'"), errors("void M2() { int x = x + 1; }"))
+        assertEquals(emptyList<String>(), errors("void M3() { int x = 1; int y = x + 1; Use(y); }"))
+    }
+
+    fun testAnErrorTypedOutParameterMustStillBeAssigned() {
+        // Roslyn goes on with an error type: CS0177 at the end, no error on its reads
+        assertEquals(listOf("M1 -> CS0177: The out parameter 's' must be assigned to before control leaves the current method"), errors("void M1(out Nowhere s) { }"))
+        assertEquals(emptyList<String>(), errors("void M2(out Nowhere s) { var t = s; s = default; }"))
+    }
+
+    fun testTheFirstSourceOfAQueryIsRead() {
+        assertEquals(listOf("items -> CS0165: Use of unassigned local variable 'items'"), errors("void M1() { List<int> items; var q = from x in items select x; Use(q); }"))
+        assertEquals(emptyList<String>(), errors("void M2() { int k; var q = from x in new[] { 1 } where x > k select x; Use(q); }"))
     }
 
     fun testSilentWhereTheFlowIsNotModeled() {

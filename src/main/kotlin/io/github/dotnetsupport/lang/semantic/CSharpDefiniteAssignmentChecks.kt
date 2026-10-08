@@ -8,7 +8,9 @@ import com.intellij.psi.util.elementType
 import io.github.dotnetsupport.csharp.lang.SyntaxKind
 import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.index.IndexedTypeKind
+import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.LocalSymbol
+import io.github.dotnetsupport.lang.TypeInfo
 import io.github.dotnetsupport.lang.TypeKind
 import java.util.BitSet
 import java.util.IdentityHashMap
@@ -26,11 +28,15 @@ import java.util.IdentityHashMap
  * Precision first: a function is silent as a whole where its flow is not modeled — `goto`, a local function that touches a tracked
  * variable, a query, `&x`, `ref` expressions, a switch that may be exhaustive without `default`, a condition that may be a constant,
  * a `?.` / `??` / `when` that would assign something. Only variables whose type surely has state are tracked: reference types,
- * primitives, enums, `Nullable<T>` (a struct without fields is assigned when declared; a struct is assigned field by field).
+ * primitives, enums, `Nullable<T>`, a type name that is surely nowhere (Roslyn goes on with an error type, tracked as a reference), and
+ * structs of the solution field by field (0.1.144, C# §9.4.1): `s.f = 1` assigns the field, reading `s.f` before that is CS0170, reading
+ * `s` needs every field, auto-properties are hidden fields only the whole assigns; `s.f.g = 1` (a field of a field) is not modeled and
+ * leaves the function silent. A local read in its own initializer (`Del d = delegate { d(); }`) is CS0165 too.
  */
 internal class CSharpDefiniteAssignmentChecks(
     private val resolver: CSharpNameResolver,
     private val quiet: (PsiElement) -> Boolean,
+    private val unresolved: (CSharpType) -> Boolean,
     private val report: (code: String, message: String, range: TextRange) -> Unit,
 ) {
     private val reachability = CSharpReachability(resolver)
@@ -77,12 +83,24 @@ internal class CSharpDefiniteAssignmentChecks(
         val returns = ArrayList<Jump>()
     }
 
-    private class Variable(val symbol: LocalSymbol, val out: Boolean)
+    /**
+     * A tracked bit: a variable, or ([field] set) one field of a struct variable. [errorType]: the type is surely nowhere — Roslyn reports
+     * CS0177 on it, but no read of it (its reads are already wrong).
+     */
+    private class Variable(val symbol: LocalSymbol, val out: Boolean, val field: String? = null, val errorType: Boolean = false)
+    /** A struct variable: the bit of each field by name (hidden ones under [HIDDEN]), [all] of them, and [leaves]: the fields with no fields of their own. */
+    private class StructVar(val symbol: LocalSymbol, val out: Boolean, val fields: Map<String, Int>, val all: IntArray, val leaves: Set<Int>)
+    /** A field of a struct: [leaf] when its type has no fields to assign one by one (a reference, a primitive, an enum, `Nullable<T>`). */
+    private class Field(val name: String, val leaf: Boolean)
+    /** `s.f` found: the struct, the field's bit, the access of `s.f` itself, and whether the chain goes on past it. */
+    private class Hit(val struct: StructVar, val bit: Int, val access: CSharpMemberAccessExpression, val deep: Boolean)
 
     private inner class Function(private val root: PsiElement) {
         private val tracked = IdentityHashMap<LocalSymbol, Int>()
+        private val structs = IdentityHashMap<LocalSymbol, StructVar>()
         private val variables = ArrayList<Variable>()
         private val reported = BitSet()
+        private val reportedStructs = HashSet<LocalSymbol>()
         private val found = ArrayList<Triple<String, String, TextRange>>()
         private val frames = ArrayList<Frame>()
         private var steps = 0
@@ -100,12 +118,12 @@ internal class CSharpDefiniteAssignmentChecks(
                 is CSharpLocalFunctionStatement -> root.parameterList?.parameters.orEmpty()
                 else -> emptyList()
             }
-            for (p in parameters) if (p.modifiers.any { it.text == "out" }) p.identifier?.let { leaf -> if (eligible(p.type?.let(resolver::resolveType))) track(leaf, out = true) }
+            for (p in parameters) if (p.modifiers.any { it.text == "out" }) p.identifier?.let { leaf -> trackAny(leaf, p.type, out = true) }
             collect(body)
             if (variables.isEmpty()) return
             if (PsiTreeUtil.findChildrenOfAnyType(body, CSharpGotoStatement::class.java, CSharpLabeledStatement::class.java).isNotEmpty()) return
             for (local in PsiTreeUtil.findChildrenOfType(body, CSharpLocalFunctionStatement::class.java)) {
-                if (PsiTreeUtil.collectElements(local) { e -> resolver.syntax.symbolAt(e)?.let { it in tracked } == true }.isNotEmpty()) return
+                if (touches(local)) return
             }
             try {
                 val exit = Exit(outs = true)
@@ -134,19 +152,49 @@ internal class CSharpDefiniteAssignmentChecks(
             for ((code, message, range) in found) report(code, message, range)
         }
 
-        /** CS0177 for each `out` parameter not assigned where control leaves the function. */
+        /** CS0177 for each `out` parameter not assigned where control leaves the function (a struct: any of its fields). */
         private fun leave(state: St, at: TextRange) {
             if (state.dead) return
             variables.forEachIndexed { i, v ->
-                if (v.out && !state.has(i)) found += Triple("CS0177", "The out parameter '${v.symbol.name}' must be assigned to before control leaves the current method", at)
+                if (v.out && v.field == null && !state.has(i)) found += Triple("CS0177", "The out parameter '${v.symbol.name}' must be assigned to before control leaves the current method", at)
+            }
+            for (sv in structs.values) {
+                if (sv.out && sv.all.any { !state.has(it) }) found += Triple("CS0177", "The out parameter '${sv.symbol.name}' must be assigned to before control leaves the current method", at)
             }
         }
 
-        private fun track(leaf: PsiElement, out: Boolean) {
+        /** Whether [element] mentions a tracked variable. */
+        private fun touches(element: PsiElement): Boolean =
+            PsiTreeUtil.collectElements(element) { e -> resolver.syntax.symbolAt(e)?.let { it in tracked || it in structs } == true }.isNotEmpty()
+
+        private fun track(leaf: PsiElement, out: Boolean, errorType: Boolean = false) {
             val symbol = resolver.syntax.symbolAt(leaf) ?: return
-            if (symbol.declaration != leaf || symbol in tracked) return
+            if (symbol.declaration != leaf || symbol in tracked || symbol in structs) return
             tracked[symbol] = variables.size
-            variables += Variable(symbol, out)
+            variables += Variable(symbol, out, errorType = errorType)
+        }
+
+        private fun trackStruct(leaf: PsiElement, out: Boolean, fields: List<Field>) {
+            val symbol = resolver.syntax.symbolAt(leaf) ?: return
+            if (symbol.declaration != leaf || symbol in tracked || symbol in structs) return
+            val bits = LinkedHashMap<String, Int>()
+            val leaves = HashSet<Int>()
+            for (field in fields) {
+                bits[field.name] = variables.size
+                if (field.leaf) leaves += variables.size
+                variables += Variable(symbol, out, field.name)
+            }
+            structs[symbol] = StructVar(symbol, out, bits, bits.values.toIntArray(), leaves)
+        }
+
+        /** Tracks [leaf] of the declared [type] (null for `var`) as a plain variable, as a struct field by field, or not at all. */
+        private fun trackAny(leaf: PsiElement, type: CSharpType?, out: Boolean) {
+            val semantic = type?.let(resolver::resolveType)
+            when {
+                eligible(semantic) -> track(leaf, out)
+                semantic == null -> if (type != null && unresolved(type)) track(leaf, out, errorType = true)
+                semantic is SemanticType.Source && semantic.arguments.isEmpty() -> structFields(semantic.info)?.takeIf { it.isNotEmpty() }?.let { trackStruct(leaf, out, it) }
+            }
         }
 
         /** The variables that start unassigned: locals declared without a value, `out var x` / `out T x`, `is T x`; not inside local functions. */
@@ -159,11 +207,13 @@ internal class CSharpDefiniteAssignmentChecks(
                         val declaration = child.declaration
                         val type = declaration?.type
                         if (declaration != null && type != null && child.modifiers.none { it.text == "const" }) {
-                            val semantic = if (resolver.isVar(type)) null else resolver.resolveType(type)
+                            val declared = if (resolver.isVar(type)) null else type
                             for (v in declaration.variables) {
                                 val leaf = v.identifier ?: continue
                                 // `Color Color;`: `Color.Red` may be the type, not a read of the local
-                                if (v.initializer == null && v.argumentList == null && eligible(semantic) && leaf.text != typeName(type)) track(leaf, out = false)
+                                if (leaf.text == typeName(type)) continue
+                                if (v.initializer == null && v.argumentList == null) trackAny(leaf, declared, out = false)
+                                else if (eligible(declared?.let(resolver::resolveType)) && resolver.syntax.symbolAt(leaf)?.references?.any { PsiTreeUtil.isAncestor(v, it, false) } == true) track(leaf, out = false)
                             }
                         }
                         collect(child)
@@ -339,6 +389,8 @@ internal class CSharpDefiniteAssignmentChecks(
             for (v in declaration.variables) {
                 v.argumentList?.let { state = arguments(it, state) }
                 v.initializer?.value?.let { state = expression(it, state) }
+                // a local with a value is tracked only when its own initializer reads it: assigned once the value is there
+                if (v.initializer != null || v.argumentList != null) v.identifier?.let(resolver.syntax::symbolAt)?.let { tracked[it] }?.let { state = state.with(it) }
             }
             return state
         }
@@ -530,7 +582,7 @@ internal class CSharpDefiniteAssignmentChecks(
                     if (callee is CSharpIdentifierName && callee.identifier?.text == "nameof" && resolver.syntax.symbolAt(callee.identifier!!) == null) return s
                     arguments(e.argumentList, expression(callee, s))
                 }
-                is CSharpMemberAccessExpression -> expression(e.expression, s)
+                is CSharpMemberAccessExpression -> fieldAccess(e)?.let { readField(it, s) } ?: expression(e.expression, s)
                 is CSharpConditionalAccessExpression -> {
                     val receiver = expression(e.expression, s)
                     if (expression(e.whenNotNull, receiver).beyond(receiver)) throw Silent()
@@ -567,7 +619,13 @@ internal class CSharpDefiniteAssignmentChecks(
                     DEAD
                 }
                 is CSharpDeclarationExpression -> s
-                is CSharpQueryExpression, is CSharpRefExpression, is CSharpMakeRefExpression -> throw Silent()
+                is CSharpQueryExpression -> {
+                    // the first source is evaluated here; the rest are lambdas of the query's methods, not modeled
+                    val state = expression(e.fromClause?.expression, s)
+                    if (listOfNotNull(e.fromClause?.type, e.body).any(::touches)) throw Silent()
+                    state
+                }
+                is CSharpRefExpression, is CSharpMakeRefExpression -> throw Silent()
                 is CSharpTupleExpression -> e.arguments.fold(s) { state, it -> if (it.refKindKeyword != null) throw Silent() else expression(it.expression, state) }
                 else -> children(e, s)
             }
@@ -591,8 +649,15 @@ internal class CSharpDefiniteAssignmentChecks(
 
         private fun read(name: CSharpIdentifierName, s: St): St {
             val leaf = name.identifier ?: return s
-            val i = resolver.syntax.symbolAt(leaf)?.let { tracked[it] } ?: return s
-            if (s.has(i) || reported[i]) return s
+            val symbol = resolver.syntax.symbolAt(leaf) ?: return s
+            structs[symbol]?.let { sv ->
+                if (sv.all.all(s::has) || !reportedStructs.add(symbol)) return s
+                found += if (sv.out) Triple("CS0269", "Use of unassigned out parameter '${sv.symbol.name}'", leaf.textRange)
+                else Triple("CS0165", "Use of unassigned local variable '${sv.symbol.name}'", leaf.textRange)
+                return s
+            }
+            val i = tracked[symbol] ?: return s
+            if (s.has(i) || reported[i] || variables[i].errorType) return s
             reported.set(i)
             val v = variables[i]
             found += if (v.out) Triple("CS0269", "Use of unassigned out parameter '${v.symbol.name}'", leaf.textRange)
@@ -600,12 +665,58 @@ internal class CSharpDefiniteAssignmentChecks(
             return s
         }
 
-        private fun target(e: CSharpExpression?): Int? {
+        /**
+         * `s.f` or `s.f.g…` where `s` is a struct variable and `f` one of its fields: the struct, the field's bit, whether the chain goes on;
+         * null for a property or method of `s`, or anything else.
+         */
+        private fun fieldAccess(e: CSharpMemberAccessExpression): Hit? {
+            var access = e
+            var deep = false
+            while (true) {
+                var receiver = access.expression
+                while (receiver is CSharpParenthesizedExpression) receiver = receiver.expression
+                when (receiver) {
+                    is CSharpMemberAccessExpression -> { access = receiver; deep = true }
+                    is CSharpIdentifierName -> {
+                        val sv = receiver.identifier?.let(resolver.syntax::symbolAt)?.let(structs::get) ?: return null
+                        val i = (access.nameElement as? CSharpIdentifierName)?.identifier?.text?.let(sv.fields::get) ?: return null
+                        return Hit(sv, i, access, deep)
+                    }
+                    else -> return null
+                }
+            }
+        }
+
+        /** CS0170 on `s.f` (what follows it is not part of the mark), once per field, as Roslyn. */
+        private fun readField(hit: Hit, s: St): St {
+            val i = hit.bit
+            if (s.has(i) || reported[i]) return s
+            reported.set(i)
+            found += Triple("CS0170", "Use of possibly unassigned field '${variables[i].field}'", hit.access.textRange)
+            return s
+        }
+
+        /**
+         * The bits an assignment to [e] sets: a variable, every field of a struct variable, one field of it (`s.f`); null when [e] is
+         * none of those — `s.f.g = …` through a field with no fields of its own (a class) is a read of `s.f`; through a struct field it
+         * is not modeled: silent.
+         */
+        private fun targets(e: CSharpExpression?): IntArray? {
             var x = e
             while (x is CSharpParenthesizedExpression) x = x.expression
+            if (x is CSharpMemberAccessExpression) {
+                val hit = fieldAccess(x) ?: return null
+                if (!hit.deep) return intArrayOf(hit.bit)
+                if (hit.bit in hit.struct.leaves) return null
+                throw Silent()
+            }
             val leaf = (x as? CSharpIdentifierName)?.identifier ?: (x as? CSharpDeclarationExpression)?.let { (it.designation as? CSharpSingleVariableDesignation)?.identifier } ?: return null
-            return resolver.syntax.symbolAt(leaf)?.let { tracked[it] }
+            val symbol = resolver.syntax.symbolAt(leaf) ?: return null
+            structs[symbol]?.let { return it.all }
+            return tracked[symbol]?.let { intArrayOf(it) }
         }
+
+        private fun withAll(s: St, bits: IntArray): St = bits.fold(s) { st, i -> st.with(i) }
 
         private fun isName(e: CSharpExpression?): Boolean {
             var x = e
@@ -615,7 +726,7 @@ internal class CSharpDefiniteAssignmentChecks(
 
         private fun increment(operand: CSharpExpression?, s: St): St {
             val state = expression(operand, s)
-            return target(operand)?.let(state::with) ?: state
+            return targets(operand)?.let { withAll(state, it) } ?: state
         }
 
         private fun assignment(e: CSharpAssignmentExpression, s: St): St {
@@ -623,30 +734,29 @@ internal class CSharpDefiniteAssignmentChecks(
             val operator = e.operatorToken?.text
             if (operator == "=") {
                 if (left is CSharpTupleExpression) {
-                    val targets = ArrayList<Int>()
+                    val targets = ArrayList<IntArray>()
                     val state = deconstructionTargets(left, s, targets)
-                    return targets.fold(expression(e.right, state)) { st, i -> st.with(i) }
+                    return targets.fold(expression(e.right, state), ::withAll)
                 }
-                if (isName(left)) return expression(e.right, s).let { st -> target(left)?.let(st::with) ?: st }
+                targets(left)?.let { return withAll(expression(e.right, s), it) }
+                if (isName(left)) return expression(e.right, s)
                 return expression(e.right, expression(left, s))
             }
             val state = expression(left, s)
             val right = expression(e.right, state)
             if (operator == "??=" && right.beyond(state)) throw Silent()
             val result = if (operator == "??=") state else right
-            return target(left)?.let(result::with) ?: result
+            return targets(left)?.let { withAll(result, it) } ?: result
         }
 
         /** `(a, b) = …`: the variables it assigns, after the receivers of the other targets. */
-        private fun deconstructionTargets(tuple: CSharpTupleExpression, s: St, into: MutableList<Int>): St {
+        private fun deconstructionTargets(tuple: CSharpTupleExpression, s: St, into: MutableList<IntArray>): St {
             var state = s
             for (argument in tuple.arguments) {
                 val e = argument.expression
-                when {
-                    e is CSharpTupleExpression -> state = deconstructionTargets(e, state, into)
-                    isName(e) -> target(e)?.let(into::add)
-                    else -> state = expression(e, state)
-                }
+                if (e is CSharpTupleExpression) { state = deconstructionTargets(e, state, into); continue }
+                val bits = targets(e)
+                if (bits != null) into += bits else if (!isName(e)) state = expression(e, state)
             }
             return state
         }
@@ -655,16 +765,17 @@ internal class CSharpDefiniteAssignmentChecks(
         private fun arguments(list: CSharpBaseArgumentList?, s: St): St {
             list ?: return s
             var state = s
-            val outs = ArrayList<Int>()
+            val outs = ArrayList<IntArray>()
             for (argument in list.arguments) {
                 val e = argument.expression
                 if (argument.refKindKeyword?.text == "out") {
-                    if (isName(e)) target(e)?.let(outs::add) else state = expression(e, state)
+                    val bits = targets(e)
+                    if (bits != null) outs += bits else if (!isName(e)) state = expression(e, state)
                 } else {
                     state = expression(e, state)
                 }
             }
-            return outs.fold(state) { st, i -> st.with(i) }
+            return outs.fold(state, ::withAll)
         }
 
         /** `{ P = v, [i] = v, { a, b }, x }`: the names of members are not reads. */
@@ -680,6 +791,40 @@ internal class CSharpDefiniteAssignmentChecks(
             }
             return state
         }
+    }
+
+    /**
+     * The fields definite assignment follows in a struct of the solution: instance fields by name; auto-properties and field-like events as
+     * hidden fields only the whole assigns. Null where the struct is not modeled: a part not seen, a positional record struct, a `fixed`
+     * or `ref` field.
+     */
+    private fun structFields(info: TypeInfo): List<Field>? {
+        if (info.kind != TypeKind.STRUCT && info.kind != TypeKind.RECORD_STRUCT) return null
+        val fields = ArrayList<Field>()
+        for (part in info.parts) {
+            val declaration = part.element() as? CSharpTypeDeclaration ?: return null
+            if (declaration is CSharpRecordDeclaration && declaration.parameterList != null) return null
+            val owner = (declaration.containingFile as? CSharpFile)?.let(resolver.session::reachable) ?: return null
+            for (member in declaration.members) {
+                val modifiers = member.modifiers.map { it.text }
+                if ("static" in modifiers || "const" in modifiers) continue
+                when (member) {
+                    is CSharpFieldDeclaration -> {
+                        val type = member.declaration?.type ?: return null
+                        if ("fixed" in modifiers || "ref" in modifiers || type is CSharpRefType) return null
+                        val leaf = eligible(owner.resolveType(type))
+                        for (v in member.declaration?.variables.orEmpty()) fields += Field(v.identifier?.text ?: return null, leaf)
+                    }
+                    is CSharpPropertyDeclaration -> {
+                        val accessors = member.accessorList?.accessors ?: continue
+                        if (accessors.isNotEmpty() && accessors.all { it.body == null && it.expressionBody == null }) fields += Field(HIDDEN + (member.identifier?.text ?: return null), false)
+                    }
+                    is CSharpEventFieldDeclaration -> for (v in member.declaration?.variables.orEmpty()) fields += Field(HIDDEN + (v.identifier?.text ?: return null), false)
+                    else -> {}
+                }
+            }
+        }
+        return fields
     }
 
     /** A type whose variables have a state to assign: a reference type, a primitive, an enum, `Nullable<T>`. */
@@ -713,6 +858,8 @@ internal class CSharpDefiniteAssignmentChecks(
         const val MAX_STEPS = 50_000
         private val DEAD = St(BitSet(), true)
         const val NULLABLE = "System.Nullable`1"
+        /** The prefix of a hidden field's name: no C# name starts with it. */
+        const val HIDDEN = "~"
         val PRIMITIVES = setOf("System.Boolean", "System.Char", "System.SByte", "System.Byte", "System.Int16", "System.UInt16", "System.Int32", "System.UInt32",
             "System.Int64", "System.UInt64", "System.Single", "System.Double", "System.Decimal")
         val OPEN_TYPES = setOf("System.Int32", "System.Int64", "System.String", "System.Char", "System.Int16", "System.UInt32", "System.UInt64", "System.Byte", "System.SByte", "System.UInt16")

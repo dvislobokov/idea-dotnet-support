@@ -25,6 +25,28 @@ class CSharpNnModelTest {
         } finally { nn.model.close() }
     }
 
+    @Test fun aFluentChainGoesOnBelowTheLineWithTheOpenBracket() {
+        assumeTrue("no ml-models/csharp/${CSharpMlModels.NN_MODEL}", dir != null)
+        val nn = checkNotNull(CSharpMlModels.loadNn(dir)) { "no network in $dir" }
+        try {
+            // the file shows the style (the ShopApi Program.cs of 2026-10-08): the model continues the chain line by line
+            val head = "using OpenTelemetry.Metrics;\n\nvar builder = WebApplication.CreateBuilder(args);\n\nbuilder.Services.AddOpenTelemetry()\n    .WithTracing(tracing => tracing\n        .AddSource(ShopTelemetry.ServiceName)\n        .AddAspNetCoreInstrumentation()\n        .AddOtlpExporter())\n    .WithMetrics(metrics => metrics\n        .AddMeter(ShopMetrics.MeterName)\n        .AddAspNetCoreInstrumentation()\n        .AddPrometheusExporter());\n\nbuilder.Services.AddOpenTelemetry()\n    "
+            val tail = "\n\nvar app = builder.Build();\napp.Run();\n"
+            nn.model.newSession(4096).use { s ->
+                val c = CSharpNnInline.context(head + tail, head.length, "Program.cs")
+                val first = nn.completion.complete(c.path, c.before, c.after, s)
+                val text = CSharpNnInline.continueOpenBrackets(CSharpNnInline.lineBefore(c.before, 0), first.textString, 8) { accepted ->
+                    val n = nn.completion.complete(c.path, c.before + accepted, c.after, s)
+                    n.textString.takeIf { n.text.isNotEmpty() && !n.repeated && !n.healMiss && n.confProd >= 0.25 }
+                }
+                println("CSharpNnModelTest: fluent chain -> '${text.replace("\n", "⏎")}' (first line confProd ${first.confProd})")
+                assertTrue("the first line opens a bracket: '${first.textString}'", CSharpNnInline.openBrackets(ByteArray(0), first.text) > 0)
+                assertTrue("goes on below: '$text'", text.contains('\n'))
+                assertTrue("the brackets close: '$text'", CSharpNnInline.openBrackets(ByteArray(0), text.toByteArray()) <= 0)
+            }
+        } finally { nn.model.close() }
+    }
+
     @Test fun prefillThenCompleteReusesTheSession() {
         assumeTrue("no ml-models/csharp/${CSharpMlModels.NN_MODEL}", dir != null)
         val nn = checkNotNull(CSharpMlModels.loadNn(dir)) { "no network in $dir" }

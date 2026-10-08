@@ -304,6 +304,8 @@ internal class CSharpDeclarationChecks(
 
     private enum class Kind { TYPE, METHOD, OTHER }
 
+    private val ACCESS_MODIFIERS = setOf("public", "private", "protected", "internal")
+
     /**
      * A member as Roslyn's name conflict checks see it: [name] its metadata name (`op_Addition`, `Ns.IFoo.Run` for an explicit
      * implementation), [shown] what CS0111 calls it (`this` for an indexer, the type for a constructor), [at] what gets the error.
@@ -344,7 +346,7 @@ internal class CSharpDeclarationChecks(
         val record = type as? CSharpRecordDeclaration
         // the parts of other files are not seen: a positional parameter may have its member there
         if (record != null && (!partialType || info.parts.size == 1)) positionalMembers(record, members)
-        checkPartialMethods(members, shown)
+        checkPartialMethods(members, shown, allPartsHere = checks.generatorsKnown && info.parts.all { (it as? TypePart.Psi)?.declaration?.containingFile == file })
         val entries = members.entries.sortedBy { it.declaration.textRange.startOffset }.let { sorted ->
             // a synthesized member of a positional parameter comes before the members written in the record
             sorted.filter { it.declaration is CSharpParameter } + sorted.filter { it.declaration !is CSharpParameter }
@@ -478,7 +480,7 @@ internal class CSharpDeclarationChecks(
      * Partial methods of the parts of this file, by signature: a second defining declaration is CS0756 and CS0111, a second implementing
      * one CS0757. A definition and its implementation are one member, at the definition (an implementation alone stands for itself).
      */
-    private fun checkPartialMethods(out: Members, shown: String) {
+    private fun checkPartialMethods(out: Members, shown: String, allPartsHere: Boolean = false) {
         for ((name, methods) in out.partialMethods.groupBy { it.identifier!!.text }) {
             val signatures = methods.map { signature(it) }
             if (signatures.any { it == null }) { out.unsure += name; continue }
@@ -490,6 +492,13 @@ internal class CSharpDeclarationChecks(
                     report("CS0111", "Type '$shown' already defines a member called '$name' with the same parameter types", at.textRange)
                 }
                 for (implementation in implementations.drop(1)) report("CS0757", "A partial method may not have multiple implementing declarations", implementation.identifier!!.textRange)
+                // the other half may be in another part of the type: only when every part is in this file and no generator may add one (0.1.143)
+                if (allPartsHere) {
+                    if (definitions.isEmpty()) implementations.first().let { report("CS0759", "No defining declaration found for implementing declaration of partial method '${partialShown(it, shown)}'", it.identifier!!.textRange) }
+                    if (implementations.isEmpty()) definitions.first().let { d ->
+                        if (d.modifiers.any { it.text in ACCESS_MODIFIERS }) report("CS8795", "Partial method '${partialShown(d, shown)}' must have an implementation part because it has accessibility modifiers.", d.identifier!!.textRange)
+                    }
+                }
                 val member = definitions.firstOrNull() ?: implementations.first()
                 // where Roslyn places the pair among the other members is not sure when something of the name lies between them
                 val first = implementations.firstOrNull()
@@ -498,6 +507,16 @@ internal class CSharpDeclarationChecks(
                 out.entries += Entry(name, Kind.METHOD, member.identifier!!, member)
             }
         }
+    }
+
+    /** `PartialType.M1(int)`: a partial method as CS0759 / CS8795 name it. */
+    private fun partialShown(method: CSharpMethodDeclaration, type: String): String? {
+        val parameters = method.parameterList?.parameters?.map { p ->
+            val shown = p.type?.let(resolver::resolveType)?.let { CSharpTypeDisplay.display(it, qualified = false) } ?: return null
+            (p.modifiers.map { it.text }.filter { it == "ref" || it == "out" || it == "in" || it == "params" } + shown).joinToString(" ")
+        } ?: return null
+        val typeParameters = method.typeParameterList?.parameters?.map { it.identifier?.text ?: return null }?.joinToString(", ", "<", ">").orEmpty()
+        return "$type.${method.identifier?.text}$typeParameters(${parameters.joinToString(", ")})"
     }
 
     /**
@@ -640,7 +659,8 @@ internal class CSharpDeclarationChecks(
             else -> return null
         }
         if (parameters == null || parameters.any { it.identifier?.node?.elementType != SyntaxKind.IdentifierToken }) return null
-        val types = listOf("`$arity") + parameters.map { p -> p.type?.let(resolver::resolveType)?.let(::key) ?: return null }
+        // `dynamic` is `object` in a signature (Roslyn compares them equal: CS0111 / partial pairing)
+        val types = listOf("`$arity") + parameters.map { p -> if (p.type?.text == "dynamic") "System.Object<>" else p.type?.let(resolver::resolveType)?.let(::key) ?: return null }
         val refs = parameters.map { p -> p.modifiers.map { it.text }.filter { it == "ref" || it == "out" || it == "in" || it == "readonly" }.joinToString(" ") }
         return Signature(types, refs)
     }

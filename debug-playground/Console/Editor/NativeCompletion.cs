@@ -84,7 +84,7 @@ public partial class CompletionSquare : CompletionShape
     // `from x in items ` in the query below Ctrl+Space: `where`, `select`, `orderby`, `join`, `let`, `group`
     public int Queries(int[] items)
     {
-        again:
+    again:
         var query = from x in items
                     select x;
 
