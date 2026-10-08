@@ -48,6 +48,7 @@ class CSharpStubTest : BasePlatformTestCase() {
                 public int Count { get; set; }
                 public int this[int i] => i;
                 public event Action E { add { } remove { } }
+                void IOrder.Ship() { }
                 [Fact, Xunit.Trait("a", "b")]
                 public async Task<int> RunAsync<V>(V   value,
                     int other) { return 0; }

@@ -13,6 +13,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.indexing.FindSymbolParameters
 import io.github.dotnetsupport.csharp.lang.psi.CSharpElement
 import io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubIndexKeys
+import io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubs
 import io.github.dotnetsupport.build.DotNetBuildSettings
 import io.github.dotnetsupport.lang.CSharpGotoClassContributor
 import io.github.dotnetsupport.lang.CSharpParseOptions
@@ -72,6 +73,30 @@ class CSharpStubNavigationTest : BasePlatformTestCase() {
         assertEquals(listOf("B (StubOrder) icon=true B"), rows(symbols, "B"))
         assertEquals(listOf("Twice(this int x) (StubExtensions) icon=true Twice"), rows(symbols, "Twice"))
         assertFalse("Go to Class / Symbol read the stubs only", (psiManager.findFile(file) as PsiFileImpl).isContentsLoaded)
+        Disposer.dispose(noAst)
+    }
+
+    /** The stub knows an explicit interface implementation (no member by its simple name), so the semantics ask it without the AST. */
+    fun testExplicitImplementationsFromTheStubs() {
+        val file = myFixture.addFileToProject("StubExplicit/Bag.cs", """
+            using System.Collections;
+            using System.Collections.Generic;
+            public class StubExplicitBag : IEnumerable<int>
+            {
+                public IEnumerator<int> GetEnumerator() => null;
+                IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+                int ICollection<int>.Count => 0;
+            }
+        """.trimIndent()).virtualFile
+        PsiManagerEx.getInstanceEx(project).dropPsiCaches()
+        val noAst = Disposer.newDisposable(testRootDisposable)
+        PsiManagerEx.getInstanceEx(project).setAssertOnFileLoadingFilter(VirtualFileFilter.ALL, noAst)
+        val scope = GlobalSearchScope.fileScope(project, file)
+        fun explicit(name: String): List<Boolean> = StubIndex.getElements(CSharpStubIndexKeys.MEMBER_NAMES, name, project, scope, CSharpElement::class.java)
+            .sortedBy { NativeCSharpStubDeclarations.stub(it)!!.isExplicitImplementation }.map { CSharpStubs.isExplicitImplementation(it) }
+        assertEquals(listOf(false, true), explicit("GetEnumerator"))
+        assertEquals(listOf(true), explicit("Count"))
+        assertFalse((psiManager.findFile(file) as PsiFileImpl).isContentsLoaded)
         Disposer.dispose(noAst)
     }
 

@@ -128,6 +128,63 @@ class CSharpOverloadErrorsTest : BasePlatformTestCase() {
         """))
     }
 
+    /** `IEnumerator IEnumerable.GetEnumerator()` is no candidate of `GetEnumerator()` (C# §19.6.2): Roslyn finds the public method alone. */
+    fun testAnExplicitImplementationIsNoCandidate() {
+        val bag = """
+            using System;
+            using System.Collections;
+            using System.Collections.Generic;
+
+            namespace Probe.Explicit;
+
+            public sealed class ExplicitBag : IEnumerable<int>, IDisposable
+            {
+                private readonly List<int> items = new List<int>();
+                public IEnumerator<int> GetEnumerator() => items.GetEnumerator();
+                IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+                void IDisposable.Dispose() => items.Clear();
+                public void Dispose(bool all) => items.Clear();
+                public void Twice(int a, long b) { }
+                public void Twice(long a, int b) { }
+                public int Sum() { var sum = 0; foreach (var item in this) sum += item; using var e = GetEnumerator(); Dispose(true); return sum; }
+            }
+        """.trimIndent()
+        val user = """
+            using System;
+            using System.Collections;
+
+            namespace Probe.Explicit;
+
+            public static class BagUser
+            {
+                public static void Use(ExplicitBag bag)
+                {
+                    using var e = bag.GetEnumerator();
+                    IEnumerator plain = ((IEnumerable)bag).GetEnumerator();
+                    ((IDisposable)bag).Dispose();
+                    bag.Dispose(true);
+                    bag.Twice(1, 1);
+                }
+            }
+        """.trimIndent()
+        fun errors(): List<String> {
+            val document = myFixture.editor.document.text
+            return myFixture.doHighlighting(HighlightSeverity.ERROR).filter { it.severity == HighlightSeverity.ERROR && it.description?.startsWith("CS") == true }
+                .map { document.substring(it.startOffset, it.endOffset) + " -> " + it.description }
+        }
+        // the declarations from the PSI of the open file
+        myFixture.configureByText("ExplicitBag.cs", bag)
+        assertEquals(emptyList<String>(), errors())
+        // the declarations from the stubs of a file that is not open
+        myFixture.addFileToProject("ExplicitStub/ExplicitBag.cs", bag.replace("Probe.Explicit", "Probe.ExplicitStub"))
+        com.intellij.psi.impl.PsiManagerEx.getInstanceEx(project).dropPsiCaches()
+        myFixture.configureByText("BagUser.cs", user.replace("Probe.Explicit", "Probe.ExplicitStub"))
+        assertEquals(listOf(
+            "Twice -> CS0121: The call is ambiguous between the following methods or properties: 'Probe.ExplicitStub.ExplicitBag.Twice(int, long)' and " +
+                "'Probe.ExplicitStub.ExplicitBag.Twice(long, int)'",
+        ), errors())
+    }
+
     fun testTypeArgumentsThatCannotBeInferred() {
         assertEquals(listOf(
             "Make -> CS0411: The type arguments for method 'Amb.Make<T>()' cannot be inferred from the usage. Try specifying the type arguments explicitly.",

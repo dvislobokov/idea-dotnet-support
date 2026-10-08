@@ -624,6 +624,8 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
                     part.members { name, member ->
                         if (name != text) return@members
                         for (target in member.targets()) {
+                            // `IEnumerator IEnumerable.GetEnumerator()` is no candidate of a call by name (C# §19.6.2)
+                            if (resolver.isExplicitImplementation(target)) continue
                             if (target !is CSharpMethodDeclaration) { ok = false; continue }
                             if (arity == null || (target.typeParameterList?.parameters?.size ?: 0) == arity) into += CSharpSymbol.SourceMember(target, member, type)
                         }

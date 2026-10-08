@@ -1,4 +1,4 @@
-# CSharpStubs.VERSION = 2
+# CSharpStubs.VERSION = 3
 PsiFileStubImpl
   CompilationUnit:CSharpStub
     NamespaceDeclaration:CSharpStub name=Shop.Orders
@@ -24,6 +24,7 @@ PsiFileStubImpl
         PropertyDeclaration:CSharpStub name=Count modifiers=[public]
         IndexerDeclaration:CSharpStub name=this modifiers=[public] parameters=[int i]
         EventDeclaration:CSharpStub name=E modifiers=[public]
+        MethodDeclaration:CSharpStub name=Ship explicit parameters=()
         MethodDeclaration:CSharpStub name=RunAsync modifiers=[public, async] arity=1 parameters=(V value, int other) attributes=[Fact, Trait]
         ClassDeclaration:CSharpStub name=Nested modifiers=[public]
           MethodDeclaration:CSharpStub name=Check parameters=() attributes=[TestAttribute]

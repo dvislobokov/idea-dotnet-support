@@ -13,6 +13,7 @@ import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.csharp.lang.psi.impl.CSharpStubElementImpl
 import io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStub
 import io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubIndexKeys
+import io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubs
 import java.util.IdentityHashMap
 
 /**
@@ -120,16 +121,16 @@ class NativeCSharpResolver(val file: CSharpFile) {
         val parent = name.parent
         return when {
             parent is CSharpQualifiedName && name == parent.right -> qualifierType(parent.left)?.let { membersOf(it)["$text`$arity"]?.targets() }.orEmpty()
-            parent is CSharpMemberAccessExpression && name == parent.nameElement -> qualifierType(parent.expression)?.let { membersOf(it)[text]?.targets() }.orEmpty()
+            parent is CSharpMemberAccessExpression && name == parent.nameElement -> qualifierType(parent.expression)?.let { membersOf(it)[text]?.namedTargets() }.orEmpty()
             parent is CSharpAssignmentExpression && name == parent.left && NativeCSharpScopes.isObjectInitializer(parent.parent) -> {
                 val creation = parent.parent?.parent as? CSharpObjectCreationExpression
-                creation?.type?.let(::typeOf)?.let { membersOf(it)[text]?.targets() }.orEmpty()
+                creation?.type?.let(::typeOf)?.let { membersOf(it)[text]?.namedTargets() }.orEmpty()
             }
             !NativeCSharpScopes.isFreeName(name) || text in NativeCSharpScopes.CONTEXTUAL -> emptyList()
             isTypeOrNamespace(name) -> typeTargets(name, text, arity)
             else -> {
                 val member = if (arity == 0) enclosingMember(name, text) else enclosingMembers(name).firstNotNullOfOrNull { it["$text<$arity>"] ?: it["$text`$arity"] }
-                member?.targets() ?: staticImports.firstNotNullOfOrNull { membersOf(it)[text] }?.targets() ?: visibleTypes(name, text, arity).flatMap { it.targets() }
+                member?.namedTargets()?.ifEmpty { null } ?: staticImports.firstNotNullOfOrNull { membersOf(it)[text] }?.targets() ?: visibleTypes(name, text, arity).flatMap { it.targets() }
             }
         }
     }
@@ -426,6 +427,9 @@ class Member(val declarationKey: TextAttributesKey, val referenceKey: TextAttrib
     }
 
     fun targets(): List<PsiElement> = sources.mapNotNull { it() }.distinct()
+
+    /** [targets] without the explicit interface implementations (`IEnumerator IEnumerable.GetEnumerator()`): what a lookup by the simple name finds (C# §19.6.2). */
+    fun namedTargets(): List<PsiElement> = targets().filterNot(CSharpStubs::isExplicitImplementation)
 
     companion object {
         fun method(modifiers: Collection<String>, extension: Boolean): Member = when {

@@ -191,6 +191,24 @@ class CSharpMemberCompletionTest : BasePlatformTestCase() {
         assertFalse(list.contains("s_total"))
     }
 
+    /** `bag.` does not offer an explicit implementation (`IDisposable.Dispose`): it is no member by its simple name (C# §19.6.2). */
+    fun testNoExplicitImplementationAfterADot() {
+        val list = native("""
+            using System;
+            using System.Collections;
+            using System.Collections.Generic;
+            class ExplicitBag : IEnumerable<int>, IDisposable
+            {
+                public IEnumerator<int> GetEnumerator() => null;
+                IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+                void IDisposable.Dispose() { }
+                static void Use(ExplicitBag bag) { bag.<caret> }
+            }
+        """)
+        assertTrue(list.toString(), "GetEnumerator" in list)
+        assertFalse(list.toString(), "Dispose" in list)
+    }
+
     fun testSourceExtensionMethods() {
         myFixture.addFileToProject("Ext/OrderExtensions.cs", """
             namespace Ext;

@@ -1,4 +1,4 @@
-# 254 examples, Roslyn errors 403, matched 309, missing 94, extra 0
+# 255 examples, Roslyn errors 404, matched 310, missing 94, extra 0
 array-declaration-errors-1.cs	CS1922@6	missing
 array-declaration-errors-2.cs	CS0246@10	ok
 array-declaration-errors-2.cs	CS0246@11	ok
@@ -214,6 +214,7 @@ dynamic-type-and-binding-errors-1.cs	CS0103@2	ok
 dynamic-type-and-binding-errors-1.cs	CS0246@8	ok
 dynamic-type-and-binding-errors-2.cs	CS0103@3	ok
 dynamic-type-and-binding-errors-2.cs	CS0103@9	ok
+explicit-impl-probe.cs	CS0121@32	ok
 lambda-probe.cs	CS1643@17	ok
 lambda-probe.cs	CS8917@21	ok
 lambda-probe.cs	CS8917@22	ok
