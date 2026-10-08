@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.155
+
+- Debugger: tuple elements show their declared names, as in Rider. A local or a parameter declared as `(Id: 1, Name: "tuple")` is
+  shown as `(Id: 1, Name: "tuple")` with children `Id` and `Name` instead of `Item1` / `Item2`, nested tuples too, in Variables and in
+  Evaluate of the variable's name. Fields, tuples of eight or more elements and nullable tuples keep the adapter's names.
+
 ## 0.1.154
 
 - An explicit interface implementation (`IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();`) is no longer a candidate of a

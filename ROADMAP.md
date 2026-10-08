@@ -77,6 +77,8 @@
   -Pml.names -Pml.seed -Pml.heap=6g`): шард `.cmlx` на репозиторий, готовые пропускаются, сломанный репозиторий логируется и не роняет прогон,
   сводка `ml: TOTAL …` с recall. Тест `CSharpMlDatasetExportTest` (экспорт на фикстурном репозитории, языковой блок, инфо на элементах).
   Weigher `CSharpMlCompletionRanker` — после обучения ранкера в движке
+- [x] 0.1.155 — план робота п. 11: имена элементов кортежа в отладчике по объявлению локальной/параметра в кадре
+  (`lang/CSharpFrameLocals`, `debugger/DotNetTupleNames`), вложенные тоже; сценарий `BP:variables`. Вживую не проверено
 - [x] 0.1.154 — план робота п. 9: явная реализация интерфейса не кандидат вызова по простому имени (`CSharpSemanticChecks.collect`,
   `Member.namedTargets()`), бит `EXPLICIT` в stubs (`CSharpStubs.VERSION` 3), completion после точки без явных реализаций и членов
   интерфейсов класса; корпус `explicit-impl-probe.cs`, покрытие 310 из 404, ложных 0. Вживую не проверено
