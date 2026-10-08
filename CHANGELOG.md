@@ -3,6 +3,10 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.133
+
+- The " ML" mark on the ranked completion items is off by default (`CSharpMlSettings.showMarker`); Settings | .NET | ML completion turns it on.
+
 ## 0.1.132
 
 - ML completion in a build with `-PmlEnabled=true` (`bash gradlew buildPlugin -PmlEnabled=true [-Pml.big=true]` → `idea-dotnet-support-<v>-ml.zip`;

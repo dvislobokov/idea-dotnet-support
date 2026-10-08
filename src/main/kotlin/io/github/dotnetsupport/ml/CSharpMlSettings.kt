@@ -20,7 +20,7 @@ class CSharpMlSettings : SimplePersistentStateComponent<CSharpMlSettings.Options
         /** The ranker of the completion list; off: the plugin's own order, the ranker pair is not even loaded. */
         var rankerEnabled by property(true)
         /** Grey "ML" after the rows the model ordered. */
-        var showMarker by property(true)
+        var showMarker by property(false)
         /** A directory with the model files (the names of `ml-models/csharp`) instead of the bundled ones; empty: bundled. */
         var modelDirectory by string("")
         /** Grey text to the end of the line from the transformer; off: the network is not even loaded. */

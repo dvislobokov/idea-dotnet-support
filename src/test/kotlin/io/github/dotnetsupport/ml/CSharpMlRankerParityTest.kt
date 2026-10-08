@@ -37,11 +37,13 @@ class CSharpMlRankerParityTest : BasePlatformTestCase() {
         RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
+        CSharpMlSettings.getInstance().showMarker = true   // off by default; the test checks the mark on every ranked row
     }
 
     override fun tearDown() {
         try {
             CSharpMlCompletionRanker.modelsForTests = null
+            CSharpMlSettings.getInstance().showMarker = false
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
             RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
