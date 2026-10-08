@@ -346,6 +346,8 @@ LIVE_CHECKS E-109…E-114.
 - [ ] `TYPE:sem-names`, `-namespace`: CS0103, CS0246, CS0234 — тексты Roslyn
 - [ ] `TYPE:sem-members`, `-members-silent`: CS1061 / CS0117; на `ToString` интерфейса, `Deconstruct` записи, `First()` — ничего
 - [ ] `TYPE:sem-arguments`, `-conversions`, `-conversions-silent`, `-paths`: CS1501 / CS7036, CS0029 / CS0266, CS0161
+- [ ] `TYPE:import-stats-choice`, `-list` (0.1.138): пространства имён в «Import type» и строки `(in …)` списка в порядке статистики корпуса
+  (`JObject` → Newtonsoft.Json.Linq первым; `Canvas` — порядок индекса; настройка Behavior off → порядок индекса)
 - [ ] `TYPE:sem-unused`, `TYPE:import-type-unused`: серые `using` (CS8019, CS8933), «Remove unused directives in file»
 - [ ] `TYPE:sem2-unreachable`, `-unused`, `-static`, `-await` (`Broken/SemanticErrors2.cs`, 0.1.78): CS0162 серым до конца блока, CS0168 / CS0219
   серым и «Remove unused variable», CS0120, CS4014 и «Add 'await'»

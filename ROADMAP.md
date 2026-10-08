@@ -56,6 +56,12 @@
   неоднозначный лучший кандидат — строки нет; `init` только в инициализаторах, required первыми. Первыми в списке, когда контекст явно mapping,
   иначе после обычных; серое ` map`. Настройка Settings | .NET → Behavior. Тесты `CSharpMappingCompletionTest`; сценарий `Console/Editor/Mapping.cs`.
   Вживую не проверено
+- [x] 0.1.138 — порядок пространств имён по статистике корпуса (`ml/CSharpImportStats.kt`, артефакт движка e20 `ml-models/csharp/cs-imports-e20.cml`):
+  в «Import type» (список исправления и то, что оно добавляет одним шагом) и среди ещё не подключённых типов списка дополнения (weigher `dotnetImportStats`
+  после `priority`) первым идёт пространство, которое корпус чаще берёт для этого имени вместе с уже имеющимися using (own namespace и global usings тоже
+  контекст). Только порядок найденного индексом; неизвестное имя — порядок индекса; using по `rankCoImports` не добавляются. Загрузка лениво на pooled
+  thread из каталога моделей настроек / ресурсов ML-сборки / `ml-models/csharp`; работает и в обычной сборке. Настройка Settings | .NET → Behavior.
+  Тесты `CSharpImportStatsTest`; сценарий `Console/Editor/ImportType.cs` (`import-stats-*`). Вживую не проверено
 - [x] 0.1.135 — память выбора («учится у меня», `suggest/CSharpAcceptanceMemory.kt`, `ML_ACCEPTANCE.md`): счётчик выбранных элементов списка на
   проект по (вид места `ContextKind` движка: после точки / начало оператора / аргумент / тип / справа от `=` / прочее, lookup string) в workspace-файле,
   вдвое меньше каждый месяц, лимиты; `LookupListener` на каждом списке C# (вид места читается не на EDT). Без ранкера — weigher `dotnetAcceptedBefore`

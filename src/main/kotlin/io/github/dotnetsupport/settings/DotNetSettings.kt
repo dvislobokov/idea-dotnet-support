@@ -68,6 +68,8 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
         var mappingCompletion by property(true)
         /** The per-project memory of chosen completion items, see [io.github.dotnetsupport.suggest.CSharpAcceptanceMemory] (0.1.135). */
         var rememberChoices by property(true)
+        /** The order of the namespaces of the «Import type» fix and of the not-imported types in the list, see [io.github.dotnetsupport.ml.CSharpImportStats] (0.1.138). */
+        var importStatistics by property(true)
 
         /** Of the settings pages: the one of the IDE, or chosen here (there is no Russian language pack for the IDE itself). */
         var language by enum(PluginLanguage.AUTO)
@@ -127,6 +129,10 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
     var rememberChoices: Boolean
         get() = state.rememberChoices
         set(value) { state.rememberChoices = value }
+
+    var importStatistics: Boolean
+        get() = state.importStatistics
+        set(value) { state.importStatistics = value }
 
     var completionExclusions: List<String>
         get() = state.completionExclusions.toList()
@@ -334,6 +340,7 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
                 row { checkBox(DotNetBundle.message("settings.behavior.solutionView")).bindSelected(settings::switchToSolutionView).comment(DotNetBundle.message("settings.behavior.solutionView.comment"), maxLineLength = COMMENT_WIDTH) }
                 row { checkBox(DotNetBundle.message("settings.behavior.bracketColors")).bindSelected(settings::colorizeBrackets).comment(DotNetBundle.message("settings.behavior.bracketColors.comment"), maxLineLength = COMMENT_WIDTH) }
                 row { checkBox(DotNetBundle.message("settings.behavior.mapping")).bindSelected(settings::mappingCompletion).comment(DotNetBundle.message("settings.behavior.mapping.comment"), maxLineLength = COMMENT_WIDTH) }
+                row { checkBox(DotNetBundle.message("settings.behavior.importStats")).bindSelected(settings::importStatistics).comment(DotNetBundle.message("settings.behavior.importStats.comment"), maxLineLength = COMMENT_WIDTH) }
                 row {
                     checkBox(DotNetBundle.message("settings.behavior.rememberChoices")).bindSelected(settings::rememberChoices).comment(DotNetBundle.message("settings.behavior.rememberChoices.comment"), maxLineLength = COMMENT_WIDTH)
                 }

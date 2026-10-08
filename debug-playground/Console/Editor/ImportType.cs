@@ -26,6 +26,17 @@ public class ImportType
         // Playground.ImportTargets.Drawing, Playground.ImportTargets.Printing; the chosen one is added as `using`. Escape adds nothing.
         // NOT an error: `Timer timer = null!;` — System.Threading is an implicit using of the project.
 
+        // TYPE:import-stats-choice (0.1.138) — type `JObject o = null!;` (two classes `JObject` in ImportTypeTargets.cs), Alt+Enter →
+        // «Import type 'JObject'…».
+        // EXPECT: the list is Newtonsoft.Json.Linq, Newtonsoft.Json — the corpus statistics put the usual namespace of the name first (the
+        // alphabet would say Newtonsoft.Json first); the same two namespaces, nothing else. `Canvas canvas = null!;` still lists
+        // Playground.ImportTargets.Drawing, Playground.ImportTargets.Printing: a name the corpus never saw keeps the index order.
+        // Settings | .NET → Behavior → «Order namespaces by corpus statistics» off → `JObject` lists Newtonsoft.Json, Newtonsoft.Json.Linq.
+
+        // TYPE:import-stats-list (0.1.138) — type `JObj` and Ctrl+Space.
+        // EXPECT: `JObject (in Newtonsoft.Json.Linq)` is above `JObject (in Newtonsoft.Json)` (both rows under the usual items, as before);
+        // choosing the first adds `using Newtonsoft.Json.Linq;`. With the setting off the rows are the same, Newtonsoft.Json first.
+
         // TYPE:import-type-extension — type `new List<int>().AsReadOnly2();`.
         // EXPECT: CS1061 «'List<int>' does not contain a definition for 'AsReadOnly2' and no accessible extension method …» — no import is
         // offered (there is no such method anywhere).

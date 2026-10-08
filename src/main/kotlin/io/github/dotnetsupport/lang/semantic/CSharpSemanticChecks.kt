@@ -20,6 +20,7 @@ import io.github.dotnetsupport.lang.NativeCSharpResolver
 import io.github.dotnetsupport.lang.NativeCSharpScopes
 import io.github.dotnetsupport.lang.NativeCSharpTypePositions
 import io.github.dotnetsupport.lang.TypeKind
+import io.github.dotnetsupport.ml.CSharpImportStats
 import java.util.IdentityHashMap
 
 /**
@@ -366,7 +367,8 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
             if (type.declaringType != null || type.ownArity != arity || type.isHidden || type.namespace.isEmpty() || type.namespace in visible) continue
             found += type.namespace
         }
-        return found.sortedWith(compareBy<String> { !(it == "System" || it.startsWith("System.")) }.thenBy { it })
+        // the index order (System first); the corpus statistics put the namespace usual for the name with these usings first (0.1.138)
+        return CSharpImportStats.getInstance().order(text, visible, found.sortedWith(compareBy<String> { !(it == "System" || it.startsWith("System.")) }.thenBy { it }))
     }
 
     /** The namespaces with an extension method [text] that takes a receiver of [receiver], that [at] does not import. */

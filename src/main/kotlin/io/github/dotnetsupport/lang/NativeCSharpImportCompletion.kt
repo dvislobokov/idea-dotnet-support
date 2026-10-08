@@ -21,6 +21,7 @@ import io.github.dotnetsupport.lang.semantic.CSharpNameResolver
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSymbol
 import io.github.dotnetsupport.lang.semantic.CSharpSymbolText
+import io.github.dotnetsupport.ml.CSharpImportStats
 import io.github.dotnetsupport.ml.CSharpMlCandidateKind
 import io.github.dotnetsupport.ml.CSharpMlScope
 import io.github.dotnetsupport.suggest.SuggestionRules
@@ -62,6 +63,9 @@ object NativeCSharpImportCompletion {
 
     /** On the rows of what is not imported: they stand next to a row of the same name the place sees (`Timer (in System.Timers)`). */
     val NOT_IMPORTED: com.intellij.openapi.util.Key<String> = com.intellij.openapi.util.Key.create("dotnet.notImported")
+
+    /** [CSharpImportStats.WEIGHT] of a namespace the statistics know the name of but never saw it in. */
+    private const val UNLISTED = -1_000_000
 
     /** Whether [kind] gets something from here that depends on the letters typed: the contributor restarts at the first one. */
     fun waitsForLetters(kind: NativeCompletionKind): Boolean = kind in TYPE_PLACES || kind == NativeCompletionKind.MEMBER_ACCESS || kind == NativeCompletionKind.ATTRIBUTE
@@ -190,6 +194,19 @@ object NativeCSharpImportCompletion {
 
         // ---- the rows
 
+        /**
+         * The corpus statistics' order of [namespace] for the type [name] ([CSharpImportStats], attributes by their full name) with the
+         * namespaces the place sees: minus the rank; a namespace the statistics do not list for a known name goes last; null when the
+         * name is unknown or the statistics are off.
+         */
+        private fun importWeight(name: String, namespace: String): Int? {
+            val stats = CSharpImportStats.getInstance()
+            val full = if (attributes) name + "Attribute" else name
+            val rank = stats.rank(full, namespace, visible) ?: stats.rank(name, namespace, visible)
+            if (rank != null) return -rank
+            return if (stats.model()?.prior(full)?.isNotEmpty() == true) UNLISTED else null
+        }
+
         private fun element(name: String, icon: Icon, arity: Int, namespace: String, imported: Boolean, constructed: Boolean, obsolete: Boolean): LookupElement {
             val generic = arity > 0 && !attributes
             val presentable = if (generic) "$name<${"".padEnd(arity - 1, ',')}>" else name
@@ -203,6 +220,7 @@ object NativeCSharpImportCompletion {
                 builder = builder.withInsertHandler(importHandler(namespace, qualified, typeHandler))
                 builder.putUserData(SuggestionStats.SIGNALS, setOf(SuggestionRules.SIGNAL_INDEX))
                 builder.putUserData(NOT_IMPORTED, namespace)
+                importWeight(name, namespace)?.let { builder.putUserData(CSharpImportStats.WEIGHT, it) }
             } else if (typeHandler != null) {
                 builder = builder.withInsertHandler(typeHandler)
             }

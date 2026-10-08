@@ -3,6 +3,26 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.138
+
+- Namespaces ordered by corpus statistics (engine e20, `ml-models/csharp/cs-imports-e20.cml`: for a type name, how often each namespace
+  supplies it in open-source C# and which usings go together, 2.6 MB, ~100 ms to load, microseconds per query; top-1 0.814 with the
+  file's usings vs 0.777 by frequency alone on the engine's test fold). Where it applies: the "Import type" quick fix and its popup — the
+  namespaces the plugin's own resolution found for the unresolved type (`Task`: `System.Threading.Tasks` before `Microsoft.Build.Utilities`,
+  `Color`: `UnityEngine` by frequency, `System.Drawing` once `System.Drawing.Imaging` is imported) are ordered by `rankImports(name,
+  usings)` with the file's own `using`s, global usings and its namespace as the context, and the first one is what the fix adds in
+  one step; the not-yet-imported rows of the completion list (`Widget (in Alpha)` / `Widget (in Beta)`) by the weigher
+  `dotnetImportStats` after `priority` (the ML ranker's weigher runs before the priority and keeps the last word over the whole list).
+  Attributes are looked up as `FooAttribute`; a name the corpus never saw keeps the index order (`System` first, then alphabetical);
+  the statistics only order what the project and its assemblies really have, a namespace the index does not know is never offered.
+  Decided against adding usings from the co-import statistics (`rankCoImports`): a `using` nobody asked for is noise, the context
+  only ranks. Loading: application service `CSharpImportStats`, lazily on a pooled thread at the first query, from
+  Settings | .NET | ML completion → model directory when set, else the plugin's resources (the ML build bundles the file), else
+  `ml-models/csharp` of the working directory; while it loads or without the file the current order stays. Works in the plain
+  build too. Settings | .NET → Behavior: "Order namespaces by corpus statistics" (on). Tests `CSharpImportStatsTest` (a stub model
+  whose answer flips with the present usings, unknown name, setting off, the real artifact on stable names); scenario
+  `Console/Editor/ImportType.cs` (`import-stats-*`)
+
 ## 0.1.137
 
 - Grey text inside string and character literals is back ON by default (log and error messages, format and interpolated strings: the

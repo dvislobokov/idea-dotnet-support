@@ -381,6 +381,8 @@
              ties; inert without the models (every row is unscored) -->
         <weigher key="completion" id="dotnetMlRanker" order="first, before priority" implementationClass="io.github.dotnetsupport.ml.CSharpMlCompletionWeigher"/>
         <!-- 0.1.135: what was chosen before in the same kind of place of this project goes up among the rows of one priority (suggest/CSharpAcceptanceMemory.kt) -->
+        <!-- 0.1.138: after the priority, among the not-yet-imported types, the namespace the corpus statistics expect first (CSharpImportStats) -->
+        <weigher key="completion" id="dotnetImportStats" order="after priority" implementationClass="io.github.dotnetsupport.ml.CSharpImportStatsWeigher"/>
         <weigher key="completion" id="dotnetAcceptedBefore" order="after prefix, before dotnetSuggestionStats" implementationClass="io.github.dotnetsupport.suggest.CSharpAcceptedBeforeWeigher"/>
         <weigher key="completion" id="dotnetSuggestionStats" order="after prefix, before stats" implementationClass="io.github.dotnetsupport.lang.CSharpSuggestionStatsWeigher"/>
         <typedHandler implementation="io.github.dotnetsupport.lang.CSharpCompletionAutoPopup"/>
