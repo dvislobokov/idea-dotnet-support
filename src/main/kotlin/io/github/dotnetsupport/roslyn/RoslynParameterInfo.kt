@@ -22,7 +22,7 @@ import org.eclipse.lsp4j.SignatureInformation
  */
 class RoslynParameterInfoHandler : ParameterInfoHandler<PsiFile, SignatureInformation>, DumbAware {
     override fun findElementForParameterInfo(context: CreateParameterInfoContext): PsiFile? {
-        if (!RoslynFeatures.serves(CSharpFeature.DOCUMENTATION, context.project)) return null
+        if (!RoslynFeatures.serves(CSharpFeature.DOCUMENTATION, context.file)) return null
         val help = signatureHelp(context.file, context.offset) ?: return null
         context.itemsToShow = help.signatures.toTypedArray()
         return context.file

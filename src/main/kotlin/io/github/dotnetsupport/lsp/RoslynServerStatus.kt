@@ -4,11 +4,17 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.io.FileUtil
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.testFramework.LightVirtualFile
+import com.intellij.util.containers.CollectionFactory
 import io.github.dotnetsupport.format.FormatterChoice
 import io.github.dotnetsupport.lang.CSharpColors
 import io.github.dotnetsupport.lang.CSharpSyntaxHighlighter
+import io.github.dotnetsupport.msbuild.DotNetProjects
+import io.github.dotnetsupport.solution.Solution
+import io.github.dotnetsupport.solution.SolutionService
+import io.github.dotnetsupport.view.resolveFile
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -29,28 +35,97 @@ class RoslynServerStatus {
      */
     val coloredByServer: MutableSet<VirtualFile> = ConcurrentHashMap.newKeySet()
 
-    /** Directories of what the server has loaded (the solution, or the projects): the files it knows about are in them. */
+    /** The absolute path of the solution the server has loaded (`solution/open`); null for loose projects or nothing. See [loaded]. */
     @Volatile
-    var loadedRoots: List<String> = emptyList()
+    var loadedSolution: String? = null
+        private set
+
+    /** The project files the server has loaded without a solution (`project/open`, or found by itself); empty with a solution. */
+    @Volatile
+    var loadedProjects: List<String> = emptyList()
+        private set
+
+    /** [covers] per file for one list of loaded projects: dropped when the loaded solution changes or its file is read anew. */
+    private class Coverage(val source: Any?, val projects: Set<String>?, val files: ConcurrentHashMap<VirtualFile, Boolean> = ConcurrentHashMap())
+
+    @Volatile
+    private var coverage: Coverage? = null
+
+    @Volatile
+    private var solutionFile: VirtualFile? = null
+
+    /**
+     * Written by the content module when it tells the server what to open, and with nulls when the server stops. [file] is the solution
+     * when the caller has it (tests: the light project is not on the local file system); otherwise it is found by [solution].
+     */
+    fun loaded(solution: String?, projects: List<String> = emptyList(), file: VirtualFile? = null) {
+        loadedSolution = solution
+        loadedProjects = projects
+        solutionFile = file
+        coverage = null
+    }
+
+    /** A project or a solution file was read anew or came and went (Reload, a new `.csproj`): the owners of files are found again. */
+    fun forgetCoverage() {
+        coverage = null
+    }
+
+    /** Whether the server has loaded the project of [file], by the solution (or the projects) it was told to open. Cached per file. */
+    fun hasLoaded(project: Project, file: VirtualFile): Boolean {
+        val solution = loadedSolution
+        // the parsed solution is cached by SolutionService until its file changes or Reload Solution: a new object means a new list
+        val solutionFile = if (solution == null) null else this.solutionFile?.takeIf { it.isValid } ?: LocalFileSystem.getInstance().findFileByPath(solution)?.also { this.solutionFile = it }
+        val source: Any? = if (solution == null) loadedProjects else solutionFile?.let { SolutionService.getInstance(project).solution(it) }
+        val current = coverage?.takeIf { it.source === source } ?: Coverage(source, projectsOf(solutionFile, source)).also { coverage = it }
+        return current.files.getOrPut(file) { RoslynCoverage.covers(DotNetProjects.findOwningProject(file)?.path, current.projects) }
+    }
+
+    private fun projectsOf(solutionFile: VirtualFile?, source: Any?): Set<String>? = when (source) {
+        is Solution -> CollectionFactory.createFilePathSet(source.allProjects.mapNotNull { p -> solutionFile?.let { p.resolveFile(it)?.path } })
+        is List<*> -> source.takeIf { it.isNotEmpty() }?.let { CollectionFactory.createFilePathSet(it.filterIsInstance<String>()) }
+        else -> null
+    }
 
     companion object {
         fun isReady(project: Project): Boolean = !project.isDisposed && project.service<RoslynServerStatus>().isReady
 
         /**
-         * The server answers about [file]: it is ready and the file is in what it has loaded. For the places where the plugin has its own
-         * answer for the same question and would double the one of the server — Go to Class / Symbol. A file outside (a project that is in
-         * no solution, a loose file) stays with the plugin.
+         * The server answers about [file]: it is ready and the project of the file is in the solution (or the projects) it has loaded. Not
+         * the folder of the solution: a solution in the root of the folder has the projects of the other solutions under it, and the server
+         * knows nothing of them (`ShopApi/` next to `DebugPlayground.sln`). A file of no project is not the server's either.
          */
-        fun covers(project: Project, file: VirtualFile): Boolean {
-            if (!isReady(project)) return false
-            val roots = project.service<RoslynServerStatus>().loadedRoots
-            return roots.any { FileUtil.isAncestor(it, file.path, false) }
+        fun covers(project: Project, file: VirtualFile?): Boolean =
+            file != null && isReady(project) && project.service<RoslynServerStatus>().hasLoaded(project, file)
+
+        /**
+         * The server is ready and does not know [file] (a project of another solution, a loose file on disk): what the plugin has of its own
+         * answers there as with the server off, and the server is not asked. A file in memory (a copy of completion, a fragment) is never
+         * outside: its callers decide by the original file or by the project, as before. Nor is anything while the server has loaded neither
+         * a solution nor projects (loose files): its miscellaneous files are all it has, as before.
+         */
+        fun outside(project: Project, file: VirtualFile?): Boolean {
+            if (file == null || file is LightVirtualFile || !isReady(project)) return false
+            val status = project.service<RoslynServerStatus>()
+            return (status.loadedSolution != null || status.loadedProjects.isNotEmpty()) && !status.hasLoaded(project, file)
         }
+
+        /** [isReady] for a feature of one file: false also while the server is ready, when it does not know the file ([outside]). */
+        fun isReady(project: Project, file: VirtualFile?): Boolean = isReady(project) && !outside(project, file)
 
         /** The semantic tokens of the server color the identifiers of [file] (see [coloredByServer]); readiness alone is not enough. */
         fun colorsIdentifiers(project: Project, file: VirtualFile?): Boolean =
             file != null && !project.isDisposed && file in project.service<RoslynServerStatus>().coloredByServer
     }
+}
+
+/** Which files the loaded server knows: a pure rule, so it is tested without a server. */
+object RoslynCoverage {
+    /** [projectFile] owns the file (null: no project); [loaded] are the project files of what the server has loaded (null: nothing). */
+    fun covers(projectFile: String?, loaded: Set<String>?): Boolean = projectFile != null && loaded != null && projectFile in loaded
+
+    /** [covers] over plain paths, compared as the file system does (case on Windows). */
+    fun covers(projectFile: String?, loaded: Collection<String>?): Boolean =
+        covers(projectFile, loaded?.let { CollectionFactory.createFilePathSet(it) })
 }
 
 /** What the server of a project is busy with, from its start to the moment it answers. */

@@ -27,7 +27,7 @@ import io.github.dotnetsupport.lsp.RoslynServerStatus
  */
 object NativeCSharpNavigation {
     /** The file is the native tree's and the switch gives NAVIGATION to it. Settings and dumb mode only (the stub index needs smart mode). */
-    fun serves(file: PsiFile?): Boolean = file is CSharpFile && file.compilationUnit != null && CSharpFeatures.native(CSharpFeature.NAVIGATION, file.project)
+    fun serves(file: PsiFile?): Boolean = file is CSharpFile && file.compilationUnit != null && CSharpFeatures.native(CSharpFeature.NAVIGATION, file)
 
     /**
      * Where Go to Declaration from [leaf] goes; null when the tree cannot tell, [leaf] is no name, or it names a declaration itself. What the
@@ -94,7 +94,7 @@ class CSharpGotoDeclarationHandler : GotoDeclarationHandler {
         // a type or member of an assembly: its metadata view (B4) when the server is not ready to give its decompiled source
         val targets = NativeCSharpNavigation.targets(leaf) ?: AssemblyNavigation.declarationTargets(leaf) ?: return null
         // overloads are not resolved by syntax (step 11d): a ready server picks the one of the call, the tree offers them all only without it
-        if (targets.size > 1 && RoslynServerStatus.isReady(leaf.project)) return null
+        if (targets.size > 1 && RoslynServerStatus.isReady(leaf.project, leaf.containingFile?.virtualFile)) return null
         return targets.toTypedArray()
     }
 }

@@ -38,7 +38,7 @@ import javax.swing.Icon
 class NativeCSharpLanguageCompletionContributor : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
         val original = parameters.originalFile as? CSharpFile ?: return
-        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, original.project)) return
+        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, original)) return
         val file = parameters.position.containingFile as? CSharpFile ?: return
         if (file.compilationUnit == null) return
         val prefix = result.prefixMatcher.prefix

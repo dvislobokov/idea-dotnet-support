@@ -39,7 +39,7 @@ object NativeCSharpDiagnostics {
      * Roslyn's `CompilerDiagnosticsScope.None`, which reports no compiler diagnostic for any file, open ones included (the build is then
      * the only source of errors; the last build's errors still show, they are not background analysis).
      */
-    fun serves(file: PsiFile): Boolean = file is CSharpFile && file.compilationUnit != null && CSharpFeatures.native(CSharpFeature.DIAGNOSTICS, file.project) && AnalysisScopes.compiler() != AnalysisScopes.NONE
+    fun serves(file: PsiFile): Boolean = file is CSharpFile && file.compilationUnit != null && CSharpFeatures.native(CSharpFeature.DIAGNOSTICS, file) && AnalysisScopes.compiler() != AnalysisScopes.NONE
 
     /** The syntax diagnostics of [file] (native tree), cached until the next change of PSI. */
     fun of(file: CSharpFile): List<CSharpSyntaxDiagnostic> = CachedValuesManager.getCachedValue(file) {

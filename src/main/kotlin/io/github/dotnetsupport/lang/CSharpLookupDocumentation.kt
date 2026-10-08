@@ -18,7 +18,7 @@ import com.intellij.psi.impl.source.PsiFileImpl
 class CSharpLookupDocumentationTargetProvider : LookupElementDocumentationTargetProvider {
     override fun documentationTarget(psiFile: PsiFile, element: LookupElement, offset: Int): DocumentationTarget? {
         val file = psiFile as? CSharpFile ?: return null
-        if (!CSharpFeatures.native(CSharpFeature.DOCUMENTATION, file.project)) return null
+        if (!CSharpFeatures.native(CSharpFeature.DOCUMENTATION, file)) return null
         val doc = CSharpLookupDocumentation.of(file, element, offset) ?: return null
         return NativeCSharpDocumentationTarget(doc, file.project)
     }

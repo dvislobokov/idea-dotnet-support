@@ -96,7 +96,7 @@ object NativeCSharpInlayHints {
 
     /** The file is the native tree's, the switch gives INLAY_HINTS to the plugin and the indexes are ready (settings and dumb mode only, no PSI). */
     fun serves(file: PsiFile?): Boolean =
-        file is CSharpFile && file.compilationUnit != null && !DumbService.isDumb(file.project) && CSharpFeatures.native(CSharpFeature.INLAY_HINTS, file.project)
+        file is CSharpFile && file.compilationUnit != null && !DumbService.isDumb(file.project) && CSharpFeatures.native(CSharpFeature.INLAY_HINTS, file)
 
     /** Every hint of [file], in the order of the text (tests and the whole-file callers). */
     fun hints(file: CSharpFile, options: Options, resolver: CSharpNameResolver = CSharpSemanticSession(file.project).resolver(file)): List<Hint> {

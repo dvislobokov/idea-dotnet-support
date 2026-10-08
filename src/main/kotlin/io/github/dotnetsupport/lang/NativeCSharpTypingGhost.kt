@@ -769,7 +769,7 @@ class NativeCSharpTypingGhostProvider : InlineCompletionProvider {
             if (item != null) return@constrainedReadAction NativeCSharpTypingGhost.afterItem(file, text, offset, item)
             NativeCSharpTypingGhost.suggestion(file, text, offset)
                 // `Save(|)`: this provider stands before the one of the arguments, which gets the place back when there is no `;` to give
-                ?: if (NativeCSharpTypingGhost.place(text, offset) == NativeCSharpTypingGhost.Place.CLOSE_CALL && CSharpFeatures.native(CSharpFeature.DOCUMENTATION, file.project)) {
+                ?: if (NativeCSharpTypingGhost.place(text, offset) == NativeCSharpTypingGhost.Place.CLOSE_CALL && CSharpFeatures.native(CSharpFeature.DOCUMENTATION, file)) {
                     NativeCSharpLambdaGhost.suggestion(file, text, offset)?.let { NativeCSharpTypingGhost.Suggestion(it.rule, it.text) }
                 } else null
         }
@@ -834,7 +834,7 @@ class NativeCSharpTypingGhostProvider : InlineCompletionProvider {
  */
 class CSharpTemplateKeywordDedupe : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
-        if (parameters.originalFile !is CSharpFile || !CSharpFeatures.native(CSharpFeature.COMPLETION, parameters.originalFile.project)) return
+        if (parameters.originalFile !is CSharpFile || !CSharpFeatures.native(CSharpFeature.COMPLETION, parameters.originalFile)) return
         val keywords = HashSet<String>()
         val templates = ArrayList<com.intellij.codeInsight.completion.CompletionResult>()
         result.runRemainingContributors(parameters) { found ->
@@ -900,14 +900,14 @@ class NativeCSharpAssignmentCompletion : CompletionContributor() {
     override fun invokeAutoPopup(position: PsiElement, typeChar: Char): Boolean {
         if (typeChar != ' ') return false
         val file = position.containingFile as? CSharpFile ?: return false
-        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, file.project)) return false
+        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, file)) return false
         val text = file.viewProvider.document?.charsSequence ?: return false
         return NativeCSharpTypingGhost.memberAtLineEnd(text, position.textRange.endOffset)
     }
 
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
         val file = parameters.originalFile as? CSharpFile ?: return
-        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, file.project)) return
+        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, file)) return
         val rows = NativeCSharpTypingGhost.assignmentRows(file, parameters.editor.document.immutableCharSequence, parameters.offset) ?: return
         rows.forEach(result::addElement)
         result.stopHere()

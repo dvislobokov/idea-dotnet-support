@@ -225,7 +225,7 @@ class NativeCSharpMakeAsyncIntention : IntentionAction, PriorityAction, DumbAwar
 
     override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean {
         if (editor == null || file !is CSharpFile || file.compilationUnit == null) return false
-        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, project) && RoslynServerStatus.isReady(project)) return false
+        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, file) && RoslynServerStatus.isReady(project, file.virtualFile)) return false
         return awaitAt(file, editor.caretModel.offset)?.let(NativeCSharpCommonCalls::functionToMakeAsync) != null
     }
 

@@ -236,7 +236,7 @@ object NativeCSharpExpectedCompletion {
 
     /** A space typed after [position] (the token before the caret) may open the list: the place decides in [opensAfterSpace]. */
     fun invokesAutoPopup(position: PsiElement, typeChar: Char): Boolean =
-        typeChar == ' ' && position.text in POPUP_AFTER && position.containingFile is CSharpFile && CSharpFeatures.native(CSharpFeature.COMPLETION, position.project)
+        typeChar == ' ' && position.text in POPUP_AFTER && position.containingFile is CSharpFile && CSharpFeatures.native(CSharpFeature.COMPLETION, position.containingFile)
 
     /** Tokens a space after which opens the list where an enum is expected ([opensAfterSpace]). */
     val POPUP_AFTER = setOf("==", "!=", "case", "=", "return")

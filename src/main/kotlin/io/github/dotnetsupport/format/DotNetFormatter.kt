@@ -137,7 +137,7 @@ class DotNetFormattingService : AsyncDocumentFormattingService() {
         // the built-in formatter of the plugin's own tree does what `dotnet format whitespace` does (CSharpFeature.FORMATTING NATIVE)
         if (NativeCSharpFormatting.engaged(file)) return false
         // the whitespace formatter of Roslyn is what the language server runs, without a process per file: left to the LSP client
-        return !RoslynServerStatus.isReady(file.project) || !RoslynPolicy.formatsByServer(settings.resolve(virtualFile), true)
+        return !RoslynServerStatus.isReady(file.project, virtualFile) || !RoslynPolicy.formatsByServer(settings.resolve(virtualFile), true)
     }
 
     override fun getNotificationGroupId(): String = DotNetCli.NOTIFICATION_GROUP

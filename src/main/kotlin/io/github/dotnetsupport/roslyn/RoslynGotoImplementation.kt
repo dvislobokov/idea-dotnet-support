@@ -51,7 +51,7 @@ class RoslynGotoImplementationHandler(private val platform: CodeInsightActionHan
         val client = workspace.clients.firstOrNull()
         val virtualFile = file.virtualFile
         // NAVIGATION Built-in: the platform's handler on the plugin's DefinitionsScopedSearch (CSharpDefinitionsSearcher)
-        if (file !is CSharpFile || virtualFile == null || client == null || !workspace.isLoaded || !RoslynFeatures.serves(io.github.dotnetsupport.lang.CSharpFeature.NAVIGATION, project)) {
+        if (file !is CSharpFile || virtualFile == null || client == null || !workspace.isLoaded || !RoslynFeatures.serves(io.github.dotnetsupport.lang.CSharpFeature.NAVIGATION, file)) {
             return platform.invoke(project, editor, file)
         }
 

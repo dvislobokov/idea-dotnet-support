@@ -50,7 +50,7 @@ import io.github.dotnetsupport.lsp.RoslynOptions
 class NativeCSharpDocumentationTargetProvider : DocumentationTargetProvider {
     override fun documentationTargets(file: PsiFile, offset: Int): List<DocumentationTarget> {
         val csharp = file as? CSharpFile ?: return emptyList()
-        if (!CSharpFeatures.native(CSharpFeature.DOCUMENTATION, file.project)) return emptyList()
+        if (!CSharpFeatures.native(CSharpFeature.DOCUMENTATION, file)) return emptyList()
         val doc = NativeCSharpDocumentation.at(csharp, offset) ?: return emptyList()
         return listOf(NativeCSharpDocumentationTarget(doc, file.project))
     }

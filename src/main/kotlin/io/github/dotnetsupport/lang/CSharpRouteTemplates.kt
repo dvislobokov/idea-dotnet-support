@@ -203,7 +203,7 @@ class CSharpRouteTemplateAnnotator : Annotator, DumbAware {
 class CSharpRouteTemplateCompletion : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
         val original = parameters.originalFile as? CSharpFile ?: return
-        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, original.project)) return
+        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, original)) return
         val leaf = parameters.position
         val literal = CSharpStringArguments.literalOf(leaf) ?: return
         if (!CSharpRouteTemplates.isRoute(literal)) return

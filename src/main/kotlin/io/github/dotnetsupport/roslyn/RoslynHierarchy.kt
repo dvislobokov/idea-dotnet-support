@@ -105,7 +105,7 @@ object RoslynHierarchies {
     fun element(dataContext: DataContext, prepare: (Target) -> List<HierarchyItem>): PsiElement? {
         val target = target(dataContext) ?: return null
         // NAVIGATION Built-in: the native hierarchies answer (NativeCSharpHierarchies), first among the providers
-        if (!RoslynFeatures.serves(io.github.dotnetsupport.lang.CSharpFeature.NAVIGATION, target.project)) return null
+        if (!RoslynFeatures.serves(io.github.dotnetsupport.lang.CSharpFeature.NAVIGATION, target.project) || !RoslynFeatures.knows(target.project, target.file)) return null
         if (!ApplicationManager.getApplication().isDispatchThread) return dataContext.getData(CommonDataKeys.PSI_FILE)
         val item = prepare(target).firstOrNull() ?: return null
         return HierarchyElement(target.project, target.client, item)

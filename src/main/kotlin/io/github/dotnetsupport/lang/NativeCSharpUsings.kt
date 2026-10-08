@@ -522,7 +522,7 @@ abstract class NativeCSharpUsingIntention(private val title: String, private val
 
     override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean {
         if (editor == null || file !is CSharpFile || file.compilationUnit == null) return false
-        if (serverHasIt && !CSharpFeatures.native(CSharpFeature.EDITING, project) && RoslynServerStatus.isReady(project)) return false
+        if (serverHasIt && !CSharpFeatures.native(CSharpFeature.EDITING, file) && RoslynServerStatus.isReady(project, file.virtualFile)) return false
         return edit(file, editor.caretModel.offset, editor.document.charsSequence) != null
     }
 

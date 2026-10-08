@@ -36,9 +36,11 @@ class RoslynCompletionSupport : LspCompletionSupport() {
     /**
      * Whatever the switch of [CSharpFeature.COMPLETION]: with Built-in the native list ([NativeCSharpCompletionContributor]) stands in front
      * and drops the items of the server it has itself (marked [NativeCSharpCompletion.SERVER] below), so members after a dot and library
-     * types still come from here.
+     * types still come from here. Not for a file of a project the server has not loaded: it would answer from its miscellaneous files, and
+     * the list would wait for that answer; the plugin's own list is the whole one there.
      */
-    override fun shouldRunCodeCompletion(parameters: CompletionParameters): Boolean = super.shouldRunCodeCompletion(parameters)
+    override fun shouldRunCodeCompletion(parameters: CompletionParameters): Boolean =
+        super.shouldRunCodeCompletion(parameters) && RoslynFeatures.knows(parameters.originalFile.project, parameters.originalFile.virtualFile)
 
     /**
      * The tail and the type of a row as in Rider (`WriteLine`  `(string? value)  +18 overloads`  `void`): Roslyn sends neither, only the

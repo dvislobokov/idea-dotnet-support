@@ -132,10 +132,11 @@ object AssemblyNavigation {
     /**
      * Where the built-in Go to Declaration goes for a symbol of an assembly the resolver has found (`CSharpSymbol.LibraryType` /
      * `LibraryMember`, which have no declaration in the sources): its metadata view. Empty for other symbols, and while the language
-     * server is ready: its decompiled source has the bodies, and a name the tree leaves unresolved goes on to it.
+     * server is ready: its decompiled source has the bodies, and a name the tree leaves unresolved goes on to it. [from] is the file of the
+     * name: one the server has not loaded is ours.
      */
-    fun targets(project: Project, symbol: CSharpSymbol): List<PsiElement> {
-        if (RoslynServerStatus.isReady(project)) return emptyList()
+    fun targets(project: Project, symbol: CSharpSymbol, from: VirtualFile? = null): List<PsiElement> {
+        if (RoslynServerStatus.isReady(project, from)) return emptyList()
         return when (symbol) {
             is CSharpSymbol.LibraryType -> listOfNotNull(original(project, symbol.type, null) ?: decompiled(project, symbol.type, symbol.type.docId) ?: target(project, symbol.type))
             is CSharpSymbol.LibraryMember -> listOfNotNull(original(project, symbol.member.type, symbol.member) ?: decompiled(project, symbol.member.type, symbol.member.docId)
@@ -166,9 +167,9 @@ object AssemblyNavigation {
     fun declarationTargets(leaf: PsiElement): List<PsiElement>? {
         val file = leaf.containingFile as? CSharpFile ?: return null
         val project = file.project
-        if (DumbService.isDumb(project) || RoslynServerStatus.isReady(project)) return null
+        if (DumbService.isDumb(project) || RoslynServerStatus.isReady(project, file.virtualFile)) return null
         val symbols = CSharpSemanticSession(project).resolver(file).resolve(leaf)?.symbols ?: return null
-        return symbols.filter { it.declarations.isEmpty() }.flatMap { targets(project, it) }.distinct().ifEmpty { null }
+        return symbols.filter { it.declarations.isEmpty() }.flatMap { targets(project, it, file.virtualFile) }.distinct().ifEmpty { null }
     }
 
     /**
