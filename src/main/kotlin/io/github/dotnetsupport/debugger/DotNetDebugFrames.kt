@@ -121,7 +121,10 @@ class DotNetStackFrame(private val process: DotNetDebugProcess, private val fram
     // the ids of frames are new at every stop: the selection is kept by what the frame is
     override fun getEqualityObject(): Any = "$name|$path"
 
-    override fun getEvaluator(): XDebuggerEvaluator = DotNetEvaluator(process, id)
+    /** Where the variables were declared: tuples show the names of their elements. */
+    private val source: DotNetFrameSource? by lazy { position?.let { DotNetFrameSource(process.session.project, it.file, it.line) } }
+
+    override fun getEvaluator(): XDebuggerEvaluator = DotNetEvaluator(process, id, source)
 
     override fun customizePresentation(component: ColoredTextContainer) {
         component.append(name, if (subtle) SimpleTextAttributes.GRAYED_ATTRIBUTES else SimpleTextAttributes.REGULAR_ATTRIBUTES)
@@ -137,7 +140,7 @@ class DotNetStackFrame(private val process: DotNetDebugProcess, private val fram
             val first = scopes.firstOrNull() ?: return@whenComplete node.addChildren(XValueChildrenList.EMPTY, true)
             // the other scopes (statics, registers) as groups; the locals are what a stop is looked at for
             val groups = scopes.drop(1).map { scope -> ScopeGroup(process, scope, id) }
-            DotNetValueChildren(process, first.int("variablesReference") ?: 0, first.int("indexedVariables"), id).load(node, 0, groups)
+            DotNetValueChildren(process, first.int("variablesReference") ?: 0, first.int("indexedVariables"), id, source).load(node, 0, groups)
         }
     }
 }
@@ -152,12 +155,16 @@ private class ScopeGroup(private val process: DotNetDebugProcess, private val sc
  * Evaluate, watches, the hover in the editor, conditions of the platform's own: `evaluate` in the frame. The expression under the mouse
  * is found by tokens ([CSharpHoverExpression]): the plugin has no parser, and the evaluator must say what to evaluate there.
  */
-class DotNetEvaluator(private val process: DotNetDebugProcess, private val frameId: Int) : XDebuggerEvaluator() {
+class DotNetEvaluator(private val process: DotNetDebugProcess, private val frameId: Int, private val source: DotNetFrameSource? = null) : XDebuggerEvaluator() {
     override fun evaluate(expression: String, callback: XEvaluationCallback, expressionPosition: XSourcePosition?) {
         process.evaluate(expression, frameId, "watch").whenComplete { answer, error ->
-            if (error != null) callback.errorOccurred(DotNetDebugProcess.errorText(error))
-            else callback.evaluated(DotNetValue(process, expression, answer.string("result").orEmpty(), answer.string("type"),
-                answer.int("variablesReference") ?: 0, answer.int("indexedVariables"), expression, frameId, answer.getAsJsonObject("presentationHint")))
+            if (error != null) return@whenComplete callback.errorOccurred(DotNetDebugProcess.errorText(error))
+            fun evaluated(tuple: TupleShape?) = callback.evaluated(DotNetValue(process, expression, answer.string("result").orEmpty(), answer.string("type"),
+                answer.int("variablesReference") ?: 0, answer.int("indexedVariables"), expression, frameId, answer.getAsJsonObject("presentationHint"), tuple))
+            // a variable by its name has a declaration to take the names of tuple elements from; any other expression keeps `Item1`
+            val name = expression.trim()
+            if (source == null || !DotNetTupleNames.isName(name) || !DotNetTupleNames.isTupleType(answer.string("type"))) return@whenComplete evaluated(null)
+            source.shapes(listOf(name)).exceptionally { emptyMap() }.thenAccept { evaluated(it[name]) }
         }
     }
 
