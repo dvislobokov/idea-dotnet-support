@@ -44,7 +44,8 @@ class CSharpMlConfigurable : BoundConfigurable(DotNetBundle.message("page.ml")) 
             }
             row { checkBox(DotNetBundle.message("ml.inline.showClosers")).bindSelected(settings::inlineShowClosers).comment(DotNetBundle.message("ml.inline.showClosers.comment")) }
             row { checkBox(DotNetBundle.message("ml.inline.guessStrings")).bindSelected(settings::inlineGuessStrings).comment(DotNetBundle.message("ml.inline.guessStrings.comment")) }
-            row { checkBox(DotNetBundle.message("ml.inline.inStringsAndComments")).bindSelected(settings::inlineInStringsAndComments).comment(DotNetBundle.message("ml.inline.inStringsAndComments.comment")) }
+            row { checkBox(DotNetBundle.message("ml.inline.inStrings")).bindSelected(settings::inlineInStrings).comment(DotNetBundle.message("ml.inline.inStrings.comment")) }
+            row { checkBox(DotNetBundle.message("ml.inline.inComments")).bindSelected(settings::inlineInComments).comment(DotNetBundle.message("ml.inline.inComments.comment")) }
             row { checkBox(DotNetBundle.message("ml.inline.debugLog")).bindSelected(settings::inlineDebugLog).comment(DotNetBundle.message("ml.inline.debugLog.comment")) }
             row(DotNetBundle.message("ml.nnStatus")) { cell(nnStatus) }
         }

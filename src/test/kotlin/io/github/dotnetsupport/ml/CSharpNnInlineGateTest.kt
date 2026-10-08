@@ -111,6 +111,17 @@ class CSharpNnInlineGateTest : BasePlatformTestCase() {
         assertTrue(CSharpNnInline.inStringOrComment("/* open", 7))
     }
 
+    fun testLiteralKindTellsStringsFromComments() {
+        // strings are allowed by default (log and error messages), comments are not: the kind decides which setting applies
+        assertEquals(CSharpNnInline.Literal.STRING, CSharpNnInline.literalAt("_log.Error(\"failed to ", 20))
+        assertEquals(CSharpNnInline.Literal.STRING, CSharpNnInline.literalAt("var s = @\"raw", 13))
+        assertEquals(CSharpNnInline.Literal.COMMENT, CSharpNnInline.literalAt("// a note", 9))
+        assertEquals(CSharpNnInline.Literal.COMMENT, CSharpNnInline.literalAt("/* open", 7))
+        assertNull(CSharpNnInline.literalAt("var s = \"a\";", 11))
+        assertTrue(CSharpMlSettings.getInstance().inlineInStrings)
+        assertFalse(CSharpMlSettings.getInstance().inlineInComments)
+    }
+
     fun testClosedString() {
         assertTrue(CSharpNnInline.closedString("\"a\""))
         assertTrue(CSharpNnInline.closedString("'a'"))

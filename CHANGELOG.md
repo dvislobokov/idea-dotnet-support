@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.137
+
+- Grey text inside string and character literals is back ON by default (log and error messages, format and interpolated strings: the
+  model continues them like code); only comments stay suppressed. The single setting of 0.1.136 became two: "Suggest inside string
+  literals" (on) and "Suggest inside comments" (off); `CSharpNnInline.literalAt` tells the kind (`STRING` / `COMMENT`) the provider gates on
+
 ## 0.1.136
 
 - GBDT ranker (engine e19): `ml-models/csharp/e19-rank-gbdt.cml` (200 trees, 100 KB) ships as `rank.cml` of the ML build instead of the

@@ -97,34 +97,42 @@ object CSharpNnInline {
 
     /**
      * True when the caret stands inside a string or character literal (the text of an interpolated string, a raw or verbatim one) or in
-     * a comment (`// ⟨⟩` and `///` included), where the grey text is free text and off unless [CSharpMlSettings.inlineInStringsAndComments];
+     * a comment (`// ⟨⟩` and `///` included), gated by [CSharpMlSettings.inlineInStrings] (on: log and error messages are code-like) and [CSharpMlSettings.inlineInComments] (off: prose);
      * right after the closing quote or the end of a block comment it is code again, and so is a hole of an interpolated string on the native tree. From the PSI
      * leaf at the caret (either tree, [CSharpLeaves]) while the document is committed, else from the host lexer over the text (the
      * request of a typing event comes with the cached PSI, which may be behind the document).
      */
-    fun inStringOrComment(file: PsiFile, document: Document, offset: Int): Boolean {
-        if (offset <= 0) return false
-        val text = document.immutableCharSequence
-        if (!PsiDocumentManager.getInstance(file.project).isCommitted(document)) return inStringOrComment(text, offset)
-        val leaf = file.findElementAt(offset - 1) ?: return false
-        if (CSharpLeaves.STRINGS.contains(leaf.node.elementType)) return offset < leaf.textRange.endOffset || !closedString(leaf.text)
-        val comment = CSharpLeaves.commentAround(leaf) ?: return false
-        val block = comment.text.startsWith("/*")
-        return if (block) offset < comment.textRange.endOffset || !comment.text.endsWith("*/") else text[offset - 1] != '\n'
-    }
+    fun inStringOrComment(file: PsiFile, document: Document, offset: Int): Boolean = literalAt(file, document, offset) != null
 
     /** [inStringOrComment] over the text alone: the token of the host lexer that holds the character before the caret. */
-    fun inStringOrComment(text: CharSequence, offset: Int): Boolean {
-        if (offset <= 0) return false
+    fun inStringOrComment(text: CharSequence, offset: Int): Boolean = literalAt(text, offset) != null
+
+    /** What the caret is inside of: a string / character literal, a comment, or nothing (code). */
+    enum class Literal { STRING, COMMENT }
+
+    /** [Literal] at the caret, or null in code; strings are gated by [CSharpMlSettings.inlineInStrings], comments by [CSharpMlSettings.inlineInComments]. */
+    fun literalAt(file: PsiFile, document: Document, offset: Int): Literal? {
+        if (offset <= 0) return null
+        val text = document.immutableCharSequence
+        if (!PsiDocumentManager.getInstance(file.project).isCommitted(document)) return literalAt(text, offset)
+        val leaf = file.findElementAt(offset - 1) ?: return null
+        if (CSharpLeaves.STRINGS.contains(leaf.node.elementType)) return Literal.STRING.takeIf { offset < leaf.textRange.endOffset || !closedString(leaf.text) }
+        val comment = CSharpLeaves.commentAround(leaf) ?: return null
+        val block = comment.text.startsWith("/*")
+        return Literal.COMMENT.takeIf { if (block) offset < comment.textRange.endOffset || !comment.text.endsWith("*/") else text[offset - 1] != '\n' }
+    }
+
+    fun literalAt(text: CharSequence, offset: Int): Literal? {
+        if (offset <= 0) return null
         val lexer = CSharpLexer()
         lexer.start(text, 0, text.length, 0)
         while (true) {
-            val type = lexer.tokenType ?: return false
+            val type = lexer.tokenType ?: return null
             if (lexer.tokenEnd >= offset) return when (type) {
-                CSharpTokenTypes.STRING, CSharpTokenTypes.CHAR -> offset < lexer.tokenEnd || !closedString(lexer.tokenSequence)
-                CSharpTokenTypes.LINE_COMMENT, CSharpTokenTypes.DOC_COMMENT -> text[offset - 1] != '\n'
-                CSharpTokenTypes.BLOCK_COMMENT -> offset < lexer.tokenEnd || !(lexer.tokenSequence.length >= 4 && lexer.tokenSequence.endsWith("*/"))
-                else -> false
+                CSharpTokenTypes.STRING, CSharpTokenTypes.CHAR -> Literal.STRING.takeIf { offset < lexer.tokenEnd || !closedString(lexer.tokenSequence) }
+                CSharpTokenTypes.LINE_COMMENT, CSharpTokenTypes.DOC_COMMENT -> Literal.COMMENT.takeIf { text[offset - 1] != '\n' }
+                CSharpTokenTypes.BLOCK_COMMENT -> Literal.COMMENT.takeIf { offset < lexer.tokenEnd || !(lexer.tokenSequence.length >= 4 && lexer.tokenSequence.endsWith("*/")) }
+                else -> null
             }
             lexer.advance()
         }

@@ -30,7 +30,7 @@ import io.github.dotnetsupport.lang.CSharpFileType
  * Grey text to the end of the line from our transformer ([CSharpMlModels], `NnCompletion` of the engine) while typing in a C# file, while
  * the completion popup is open, or on an explicit call; Tab accepts it. Only what passes the gate ([CSharpMlSettings.inlineThreshold],
  * the lower ones after a dot and on an empty line; no lone closers unless [CSharpMlSettings.inlineShowClosers]), otherwise nothing; nothing
- * inside a string literal or a comment unless [CSharpMlSettings.inlineInStringsAndComments] (the network is not even asked there).
+ * inside a string literal or a comment unless [CSharpMlSettings.inlineInStrings] / [CSharpMlSettings.inlineInComments] (the network is not even asked there).
  *
  * With the completion list open the platform arbitrates Tab itself: `InlineCompletionActionsPromoter` puts `InsertInlineCompletionAction`
  * first while the grey text is shown and `InlineCompletionHandler.insert()` hides the lookup, so one Tab inserts the grey text only.
@@ -65,7 +65,9 @@ class CSharpNnInlineCompletionProvider internal constructor(private val engine: 
         }
         answered = null
         val context = readAction {
-            if (!CSharpMlSettings.getInstance().inlineInStringsAndComments && CSharpNnInline.inStringOrComment(request.file, request.document, request.endOffset)) null
+            val settings = CSharpMlSettings.getInstance()
+            val literal = CSharpNnInline.literalAt(request.file, request.document, request.endOffset)
+            if (literal == CSharpNnInline.Literal.STRING && !settings.inlineInStrings || literal == CSharpNnInline.Literal.COMMENT && !settings.inlineInComments) null
             else CSharpNnInline.context(request.document.immutableCharSequence, request.endOffset, path(request.file))
         } ?: return InlineCompletionSuggestion.Empty
         return CSharpNnInline.suggestion(CSharpNnInline.text(engine().complete(request.editor, context), context.after, context.before))
