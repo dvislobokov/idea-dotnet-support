@@ -3,6 +3,15 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.150
+
+- The run configuration selected after generation is the startup project: the first executable project of the solution that is not
+  an Aspire AppHost, instead of the first by name (`AspireHost: https` in the playground); a choice you made yourself is kept.
+- The welcome page opens only on the first installation and on a new minor version (0.1.x to 0.2.x); other updates show a
+  "C# Project Support updated to ..." notification with a What's New action.
+- Unit Tests explorer: the project node says "N test methods" and, after a run, what the run reported (passed, failed and skipped,
+  theory cases included) instead of a count that misses theory cases and skipped tests.
+
 ## 0.1.149
 
 - Variable name suggestions no longer include a keyword in its `@` form (`@string` for a `StringBuilder`) when other names are
