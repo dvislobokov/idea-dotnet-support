@@ -45,6 +45,8 @@ class CSharpMlSettings : SimplePersistentStateComponent<CSharpMlSettings.Options
          * close call (0.42), ten do not win the clear loss (0.72). 0: not added.
          */
         var acceptanceWeight by property(0.3f)
+        /** Grey text with the caret inside a string literal or a comment too (free text, the model guesses prose); off: the network is not asked there. */
+        var inlineInStringsAndComments by property(false)
     }
 
     var rankerEnabled: Boolean
@@ -94,6 +96,9 @@ class CSharpMlSettings : SimplePersistentStateComponent<CSharpMlSettings.Options
     var acceptanceWeight: Double
         get() = state.acceptanceWeight.toString().toDouble()
         set(value) { state.acceptanceWeight = value.toFloat() }
+    var inlineInStringsAndComments: Boolean
+        get() = state.inlineInStringsAndComments
+        set(value) { state.inlineInStringsAndComments = value }
 
     companion object {
         fun getInstance(): CSharpMlSettings = service()

@@ -6,7 +6,7 @@ import com.intellij.codeInsight.lookup.Lookup
 import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.completionml.core.ngram.NgramModel
-import io.github.completionml.core.rank.LinearRanker
+import io.github.completionml.core.rank.Rankers
 import io.github.completionml.core.spi.ContextKind
 import io.github.dotnetsupport.lang.CSharpFeature
 import io.github.dotnetsupport.lang.CSharpFeatureSource
@@ -169,7 +169,7 @@ class CSharpAcceptanceMemoryTest : BasePlatformTestCase() {
         assertEquals(0.3 * ln(4.0), CSharpAcceptanceMemory.bonus(3, 0.3), 1e-9)
         val modelDir = listOf(File("ml-models/csharp"), File("../ml-models/csharp")).firstOrNull { File(it, CSharpMlModels.LM).isFile && File(it, CSharpMlModels.RANKER).isFile }
         if (modelDir == null) { println("CSharpAcceptanceMemoryTest: no ml-models/csharp, the bonus in the score is not checked"); return }
-        val models = CSharpMlModels.Loaded(NgramModel.read(File(modelDir, CSharpMlModels.LM)), LinearRanker.read(File(modelDir, CSharpMlModels.RANKER)), modelDir.path)
+        val models = CSharpMlModels.Loaded(NgramModel.read(File(modelDir, CSharpMlModels.LM)), Rankers.read(File(modelDir, CSharpMlModels.RANKER)), modelDir.path)
         val text = "class Stats { int alpha; int zeta; void M() { "
         val candidates = listOf("alpha", "zeta").map { CSharpMlCandidate(it, CSharpMlCandidateKind.FIELD, false, CSharpMlScope.MEMBER, false, 0, null, 40.0) }
         val plain = CSharpMlCompletionRanker.scores(models, text, text.length, "", candidates)!!

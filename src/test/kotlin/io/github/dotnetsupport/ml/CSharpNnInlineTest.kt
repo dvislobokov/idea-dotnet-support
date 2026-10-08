@@ -44,6 +44,25 @@ class CSharpNnInlineTest {
         assertEquals("", CSharpNnInline.restOfLine("\n}".toByteArray()))
     }
 
+    @Test fun whatRepeatsTheLineIsDropped() {
+        fun b(s: String) = s.toByteArray()
+        // the suggestion is exactly what follows the caret on the line: nothing (the overlap trim leaves nothing either)
+        assertNull(CSharpNnInline.text(CSharpNnInline.Answer("items);", show = true, confProd = 0.9), b("items);\n}\n")))
+        assertEquals("o.", CSharpNnInline.text(CSharpNnInline.Answer("o.items);", show = true, confProd = 0.9), b("items);\n}\n")))
+        // the line would copy the previous one: `a.Name = b.Name;` twice (the model repeats the line above)
+        assertTrue(CSharpNnInline.repeatsPreviousLine(b("void F() {\n    a.Name = b.Name;\n    a."), "Name = b.Name;"))
+        assertTrue(CSharpNnInline.repeatsPreviousLine(b("    a.Name = b.Name;\n    "), "a.Name = b.Name;"))
+        assertNull(CSharpNnInline.text(CSharpNnInline.Answer("Name = b.Name;", show = true, confProd = 0.9), b("\n}\n"), b("void F() {\n    a.Name = b.Name;\n    a.")))
+        // a different line, a longer or shorter one, a differing indentation, an empty previous line: shown
+        assertFalse(CSharpNnInline.repeatsPreviousLine(b("    a.Name = b.Name;\n    a."), "Age = b.Age;"))
+        assertFalse(CSharpNnInline.repeatsPreviousLine(b("    a.Name = b.Name;\n    a."), "Name = b.Name2;"))
+        assertFalse(CSharpNnInline.repeatsPreviousLine(b("    a.Name = b.Name;\n        a."), "Name = b.Name;"))
+        assertFalse(CSharpNnInline.repeatsPreviousLine(b("\n    a."), "Name"))
+        assertFalse(CSharpNnInline.repeatsPreviousLine(b("    a."), "Name"))
+        assertFalse(CSharpNnInline.repeatsPreviousLine(b(""), "x"))
+        assertEquals("Age = b.Age;", CSharpNnInline.text(CSharpNnInline.Answer("Age = b.Age;", show = true, confProd = 0.9), b("\n}\n"), b("    a.Name = b.Name;\n    a.")))
+    }
+
     @Test fun suggestionIsEmptyWithoutText() {
         assertSame(InlineCompletionSuggestion.Empty, CSharpNnInline.suggestion(null))
         assertNotSame(InlineCompletionSuggestion.Empty, CSharpNnInline.suggestion("Line()"))

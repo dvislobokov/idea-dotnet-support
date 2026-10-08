@@ -10,7 +10,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.completionml.core.ngram.NgramModel
 import io.github.completionml.core.rank.ExampleShards
 import io.github.completionml.core.rank.FeatureExtractor
-import io.github.completionml.core.rank.LinearRanker
+import io.github.completionml.core.rank.Rankers
 import io.github.completionml.core.spi.TokenKind
 import io.github.dotnetsupport.lang.CSharpFeature
 import io.github.dotnetsupport.lang.CSharpFeatureSource
@@ -90,7 +90,7 @@ class CSharpMlRankerParityTest : BasePlatformTestCase() {
     fun testWeigherFeaturesEqualTheExport() {
         if (modelDir == null) { println("CSharpMlRankerParityTest: no ml-models/csharp, skipped"); return }
         val lm = NgramModel.read(File(modelDir, CSharpMlModels.LM))
-        val ranker = LinearRanker.read(File(modelDir, CSharpMlModels.RANKER))
+        val ranker = Rankers.read(File(modelDir, CSharpMlModels.RANKER))
         val loaded = CSharpMlModels.Loaded(lm, ranker, modelDir.path)
         assertEquals(CSharpMlFeatures.schema.names, ranker.schema.names)
 

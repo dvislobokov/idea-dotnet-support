@@ -7,6 +7,7 @@
 | `cs-16384.bpe` | the BPE vocabulary of that model (`tokenizerSha256` in the .cml meta must match: `bc9b48da…`) | 137 KB | `bc9b48daedd84612` | loaded with the model |
 | `e15-a.cml` | n-gram LM, order 5, MKN, 24-bit fingerprints (ppl 5.3 on the test fold) | 32.7 MB | `5c8b6e466bea6124` | ranker feature `lm_logprob`, per-file cache; optional |
 | `e18-rank.cml` | **ranker on real plugin lists** (127 rank-fold repos, 22 k lists exported by `mlDataset` 0.1.130; 224 weights = 13 common + 19 language features × context kinds) | 2 KB | — | the C# ranker to ship: MRR 0.711 / top-1 0.588 vs the plugin's rule order 0.526 / 0.367 (test split by repository, 4 670 lists); needs the weigher `CSharpMlCompletionRanker` on the same `CSharpMlFeatures` + a parity test with the export |
+| `e19-rank-gbdt.cml` | **GBDT ranker on the same real lists** (engine e19: 200 trees, 100 KB; 26 held-out repos MRR 0.759 / top-1 0.651 vs linear e18 0.713 / 0.589, plugin rules 0.530 / 0.370; 0.3 ms per list of 50 on one core). The ranker of the ML build (`CSharpMlModels.RANKER`), loaded through `Rankers.read`. |
 | `e15-a-rank.cml` | **proxy** ranker (linear, trained on synthetic candidate lists from the corpus) | 1.7 KB | `4313a6c148c35858` | pipeline debugging only — NOT for users: on Go the same kind of proxy ranker scored below the plugin's own ordering on real lists (MRR 0.518 vs 0.527); a real C# ranker needs lists exported from this plugin (e18) |
 
 Measured quality of `cs31m-e2-lr2e3` (3 000 test positions, SPM prompt, token healing, repetition guard — the behaviour

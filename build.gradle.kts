@@ -177,7 +177,7 @@ intellijPlatformTesting.testIde.register("semanticGate") {
 // ML completion (ML_INLINE_TASK.md): `-PmlEnabled=true` (or MLENABLED=true in the environment) puts the ML features into the plugin —
 // META-INF/csharp-ml.xml (the grey-text inline provider, the weigher of the completion list, the Settings | .NET | ML completion page)
 // and the models of `-Pml.models` (a directory; default ml-models/csharp) under ml/csharp/: the transformer cs31m-e2-lr2e3.cml with its
-// vocabulary cs-16384.bpe (required), the ranker pair e15-a.cml + e18-rank.cml (optional: without them only the grey text works) and,
+// vocabulary cs-16384.bpe (required), the ranker pair e15-a.cml + e19-rank-gbdt.cml (GBDT, engine e19) (optional: without them only the grey text works) and,
 // with `-Pml.big=true`, the big transformer cs50m-e3-lr2e3.cml (a switch on the settings page). The proxy ranker e15-a-rank.cml is never
 // shipped. The zip gets the classifier `-ml`; a build without the flag has no trace of any of it.
 val mlEnabled = providers.gradleProperty("mlEnabled").orElse(providers.environmentVariable("MLENABLED")).map { it.equals("true", ignoreCase = true) }.getOrElse(false)
@@ -186,7 +186,7 @@ if (mlEnabled) {
     val mlBig = providers.gradleProperty("ml.big").map { it.equals("true", ignoreCase = true) }.getOrElse(false)
     val nnFiles = listOf("cs31m-e2-lr2e3.cml", "cs-16384.bpe")
     for (name in nnFiles) check(File(mlModels, name).isFile) { "mlEnabled: $name not found in $mlModels" }
-    val rankerFiles = listOf("e15-a.cml", "e18-rank.cml").filter { File(mlModels, it).isFile }
+    val rankerFiles = listOf("e15-a.cml", "e19-rank-gbdt.cml").filter { File(mlModels, it).isFile }
     val bigFiles = if (mlBig) listOf("cs50m-e3-lr2e3.cml").also { for (name in it) check(File(mlModels, name).isFile) { "ml.big: $name not found in $mlModels" } } else emptyList()
     tasks.processResources {
         from("src/ml/resources")

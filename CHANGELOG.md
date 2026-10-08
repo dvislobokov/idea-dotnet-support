@@ -3,6 +3,27 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.136
+
+- GBDT ranker (engine e19): `ml-models/csharp/e19-rank-gbdt.cml` (200 trees, 100 KB) ships as `rank.cml` of the ML build instead of the
+  linear `e18-rank.cml`: on 26 held-out repositories MRR 0.759 / top-1 0.651 vs 0.713 / 0.589 (plugin rules 0.530 / 0.370), 0.3 ms per
+  list of 50 candidates on one core; `CSharpMlModels` loads any ranker through `Rankers.read` (linear or tree, by the `.cml` kind).
+  ml-core synced to the engine 0bcfb9f
+- No grey text inside string and character literals or comments: the provider looks at the PSI leaf at the caret (either tree:
+  string, verbatim, raw and interpolated-string text tokens, `//`, `///`, `/* */`) before it asks the network, or at the host lexer's
+  token while the document is not yet committed; right after the closing quote or `*/` and in a hole of an interpolated string it is
+  code again, `// ⟨caret⟩` on an empty comment stays suppressed. Setting "Suggest inside strings and comments" (off) turns the gate
+  off; the code-only confidence gate (`codeConfidence`) is unchanged — this one is in addition to it
+- The thread of the network runs at a low priority (`MIN_PRIORITY + 1`) while it loads, warms up or prefills an opened file and at the
+  normal priority while a grey-text request is queued or running (`NnThread`: raised by the request, lowered when none waits; no
+  extra threads)
+- A suggestion that is exactly what already follows the caret on the line, or that would make the line a copy of the previous one
+  (the model repeating the line above: `a.Name = b.Name;` twice) is dropped (`CSharpNnInline.repeatsPreviousLine`); the engine's own
+  guard sees only repetitions inside the generated text
+- Tab with the completion list and the grey text both shown is arbitrated by the platform (checked on 2026.1.4: `InlineCompletionActionsPromoter`
+  puts `InsertInlineCompletionAction` first while the grey text is shown and `InlineCompletionHandler.insert()` hides the lookup), so
+  one Tab inserts the grey text only, never the list's item on top of it; no change needed
+
 ## 0.1.135
 
 - The completion list learns from the user: every item chosen in a list of a C# file is counted per project and kind of place (after a

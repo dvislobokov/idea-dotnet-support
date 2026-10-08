@@ -3,6 +3,12 @@ package io.github.dotnetsupport.ml
 import com.intellij.codeInsight.inline.completion.elements.InlineCompletionGrayTextElement
 import com.intellij.codeInsight.inline.completion.suggestion.InlineCompletionSingleSuggestion
 import com.intellij.codeInsight.inline.completion.suggestion.InlineCompletionSuggestion
+import com.intellij.openapi.editor.Document
+import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiFile
+import io.github.dotnetsupport.lang.CSharpLeaves
+import io.github.dotnetsupport.lang.CSharpLexer
+import io.github.dotnetsupport.lang.CSharpTokenTypes
 
 /** The network behind [CSharpNnInlineCompletionProvider]; [CSharpMlModels] implements it, tests fake it. */
 interface CSharpNnEngine {
@@ -64,11 +70,81 @@ object CSharpNnInline {
 
     /**
      * The grey text of [answer]: only what is shown, without the tail that the line already has after the caret (the model writes the
-     * line to its end and sees what is there: at `Validate(int⟨⟩) {` it may answer `, string name) {` before `) {`).
+     * line to its end and sees what is there: at `Validate(int⟨⟩) {` it may answer `, string name) {` before `) {`). Nothing when the
+     * suggestion is what already follows the caret on the line, or when it would make the line a copy of the previous one
+     * ([repeatsPreviousLine]).
      */
-    fun text(answer: Answer?, after: ByteArray = ByteArray(0)): String? {
+    fun text(answer: Answer?, after: ByteArray = ByteArray(0), before: ByteArray = ByteArray(0)): String? {
         val text = answer?.takeIf { it.show }?.text?.takeIf { it.isNotEmpty() } ?: return null
-        return trimOverlap(text, restOfLine(after)).takeIf { it.isNotEmpty() }
+        val rest = restOfLine(after)
+        if (text == rest || repeatsPreviousLine(before, text)) return null
+        return trimOverlap(text, rest).takeIf { it.isNotEmpty() }
+    }
+
+    /**
+     * True when the line of the caret completed with [text] equals the previous line exactly: the model copied the line above
+     * (`a.Name = b.Name;` twice), a repetition the engine's n-gram guard does not see because the copy is in the prompt, not in the output.
+     */
+    fun repeatsPreviousLine(before: ByteArray, text: String): Boolean {
+        val line = lineBefore(before, 0)
+        val prevEnd = before.size - line.size - 1   // the `\n` before the current line
+        if (prevEnd < 0) return false
+        var prevStart = prevEnd
+        while (prevStart > 0 && before[prevStart - 1] != '\n'.code.toByte()) prevStart--
+        if (prevEnd == prevStart) return false   // an empty previous line is no copy
+        return String(before, prevStart, prevEnd - prevStart, Charsets.UTF_8) == String(line, Charsets.UTF_8) + text
+    }
+
+    /**
+     * True when the caret stands inside a string or character literal (the text of an interpolated string, a raw or verbatim one) or in
+     * a comment (`// ⟨⟩` and `///` included), where the grey text is free text and off unless [CSharpMlSettings.inlineInStringsAndComments];
+     * right after the closing quote or the end of a block comment it is code again, and so is a hole of an interpolated string on the native tree. From the PSI
+     * leaf at the caret (either tree, [CSharpLeaves]) while the document is committed, else from the host lexer over the text (the
+     * request of a typing event comes with the cached PSI, which may be behind the document).
+     */
+    fun inStringOrComment(file: PsiFile, document: Document, offset: Int): Boolean {
+        if (offset <= 0) return false
+        val text = document.immutableCharSequence
+        if (!PsiDocumentManager.getInstance(file.project).isCommitted(document)) return inStringOrComment(text, offset)
+        val leaf = file.findElementAt(offset - 1) ?: return false
+        if (CSharpLeaves.STRINGS.contains(leaf.node.elementType)) return offset < leaf.textRange.endOffset || !closedString(leaf.text)
+        val comment = CSharpLeaves.commentAround(leaf) ?: return false
+        val block = comment.text.startsWith("/*")
+        return if (block) offset < comment.textRange.endOffset || !comment.text.endsWith("*/") else text[offset - 1] != '\n'
+    }
+
+    /** [inStringOrComment] over the text alone: the token of the host lexer that holds the character before the caret. */
+    fun inStringOrComment(text: CharSequence, offset: Int): Boolean {
+        if (offset <= 0) return false
+        val lexer = CSharpLexer()
+        lexer.start(text, 0, text.length, 0)
+        while (true) {
+            val type = lexer.tokenType ?: return false
+            if (lexer.tokenEnd >= offset) return when (type) {
+                CSharpTokenTypes.STRING, CSharpTokenTypes.CHAR -> offset < lexer.tokenEnd || !closedString(lexer.tokenSequence)
+                CSharpTokenTypes.LINE_COMMENT, CSharpTokenTypes.DOC_COMMENT -> text[offset - 1] != '\n'
+                CSharpTokenTypes.BLOCK_COMMENT -> offset < lexer.tokenEnd || !(lexer.tokenSequence.length >= 4 && lexer.tokenSequence.endsWith("*/"))
+                else -> false
+            }
+            lexer.advance()
+        }
+    }
+
+    /**
+     * True when the literal [text] ends with its closing quote: `"a"`, `'a'`, `@"a\"` (verbatim: no escapes), `"""a"""`, `"a"u8`;
+     * not `"a`, `"a\"`, a lone `"` or the text of an interpolated string (no quotes at all).
+     */
+    fun closedString(text: CharSequence): Boolean {
+        var t = text
+        if (t.length > 2 && (t.endsWith("u8") || t.endsWith("U8"))) t = t.subSequence(0, t.length - 2)
+        val open = t.indexOfFirst { it == '"' || it == '\'' }
+        if (open < 0 || t.length < open + 2 || t[t.length - 1] != t[open]) return false
+        val verbatim = t.subSequence(0, open).contains('@') || t.length >= open + 3 && t[open + 1] == '"' && t[open + 2] == '"' && t[open] == '"'
+        if (verbatim) return true
+        var backslashes = 0
+        var i = t.length - 2
+        while (i > open && t[i] == '\\') { backslashes++; i-- }
+        return backslashes % 2 == 0
     }
 
     /** [text] without its longest tail that is also the start of [rest] (whitespace included: `, error) {` before `) {` → `, error`). */
