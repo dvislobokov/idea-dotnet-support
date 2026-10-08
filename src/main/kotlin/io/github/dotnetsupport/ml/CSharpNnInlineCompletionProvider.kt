@@ -9,6 +9,7 @@ import com.intellij.codeInsight.inline.completion.InlineCompletionProviderID
 import com.intellij.codeInsight.inline.completion.InlineCompletionRequest
 import com.intellij.codeInsight.inline.completion.elements.InlineCompletionElement
 import com.intellij.codeInsight.inline.completion.suggestion.InlineCompletionSuggestion
+import com.intellij.codeInsight.inline.completion.suggestion.InlineCompletionVariant
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.application.readAction
@@ -25,6 +26,8 @@ import com.intellij.psi.search.FileTypeIndex
 import com.intellij.psi.search.GlobalSearchScope
 import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.lang.CSharpFileType
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.toList
 
 /**
  * Grey text to the end of the line from our transformer ([CSharpMlModels], `NnCompletion` of the engine) while typing in a C# file, while
@@ -37,8 +40,16 @@ import io.github.dotnetsupport.lang.CSharpFileType
  *
  * Registered `order="first"` like the Go plugin's: the platform asks only the first enabled provider, so this one asks the next enabled
  * provider first (a host's own grey text, if any) and answers where it has nothing; the insert handler of whoever answered applies.
+ * "Nothing" is a suggestion without elements too, not only [InlineCompletionSuggestion.Empty]: the plugin's own providers are enabled by
+ * the place (`NativeCSharpTypingGhostProvider` on a type name selected in the list) and build an empty suggestion when the semantics have
+ * no answer, which used to silence the network there.
+ *
+ * [CSharpMlSettings.inlineEnabled] is read on every event: turning the grey text on or off takes effect at once, without a restart.
  */
-class CSharpNnInlineCompletionProvider internal constructor(private val engine: () -> CSharpNnEngine) : InlineCompletionProvider {
+class CSharpNnInlineCompletionProvider internal constructor(
+    private val engine: () -> CSharpNnEngine,
+    private val providers: () -> List<InlineCompletionProvider> = { InlineCompletionProvider.EP_NAME.extensionList },
+) : InlineCompletionProvider {
     constructor() : this({ CSharpMlModels.getInstance() })
 
     override val id: InlineCompletionProviderID get() = InlineCompletionProviderID("io.github.dotnetsupport.nn")
@@ -52,7 +63,7 @@ class CSharpNnInlineCompletionProvider internal constructor(private val engine: 
         // lookup events too: while the completion list is open the platform hides the grey text of a typing event
         if (event !is InlineCompletionEvent.DocumentChange && event !is InlineCompletionEvent.DirectCall && event !is InlineCompletionEvent.InlineLookupEvent) return false
         if (!CSharpMlSettings.getInstance().inlineEnabled || event.toRequest()?.file?.fileType != CSharpFileType) return false
-        val providers = InlineCompletionProvider.EP_NAME.extensionList
+        val providers = providers()
         next = providers.indexOfFirst { it === this }.takeIf { it >= 0 }
             ?.let { i -> providers.subList(i + 1, providers.size).firstOrNull { it.isEnabled(event) } }?.let { event to it }
         return true
@@ -60,8 +71,8 @@ class CSharpNnInlineCompletionProvider internal constructor(private val engine: 
 
     override suspend fun getSuggestion(request: InlineCompletionRequest): InlineCompletionSuggestion {
         next?.takeIf { it.first === request.event }?.second?.let { provider ->
-            val suggestion = provider.getSuggestion(request)
-            if (suggestion !== InlineCompletionSuggestion.Empty) { answered = provider; return suggestion }
+            val suggestion = nonEmpty(provider.getSuggestion(request))
+            if (suggestion != null) { answered = provider; return suggestion }
         }
         answered = null
         val context = readAction {
@@ -83,6 +94,19 @@ class CSharpNnInlineCompletionProvider internal constructor(private val engine: 
     }
 
     companion object {
+        /**
+         * [suggestion] with its variants collected, or null when none of them has an element (or it is [InlineCompletionSuggestion.Empty]).
+         * The providers of the plugin compute their text before building the suggestion, so collecting their flows here costs nothing.
+         */
+        suspend fun nonEmpty(suggestion: InlineCompletionSuggestion): InlineCompletionSuggestion? {
+            if (suggestion === InlineCompletionSuggestion.Empty) return null
+            val variants = suggestion.getVariants().map { it.data to it.elements.toList() }.filter { it.second.isNotEmpty() }
+            if (variants.isEmpty()) return null
+            return object : InlineCompletionSuggestion {
+                override suspend fun getVariants(): List<InlineCompletionVariant> = variants.map { (data, elements) -> InlineCompletionVariant.build(data, elements.asFlow()) }
+            }
+        }
+
         fun path(file: PsiFile): String =
             CSharpNnInline.relativePath(file.project.basePath, file.virtualFile?.path ?: file.originalFile.virtualFile?.path ?: file.name)
     }
