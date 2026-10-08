@@ -3,6 +3,16 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.154
+
+- An explicit interface implementation (`IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();`) is no longer a candidate of a
+  call by its simple name: no false CS0121 "The call is ambiguous between 'GetEnumerator()' and 'GetEnumerator()'", as with Roslyn.
+- Completion after a dot no longer offers explicit implementations (`void IDisposable.Dispose()`) or other members of a class's
+  interfaces; Go to Declaration and parameter info skip explicit implementations too.
+- The C# stubs remember explicit implementations, so a file that is not open answers without being parsed (stub version 3: the
+  index is rebuilt once).
+- Compiler-messages corpus: 310 of 404 errors matched, no false positive (the explicit-implementation probe was added).
+
 ## 0.1.153
 
 - Find Usages lists every occurrence of a C# symbol on its own row, as in Rider: two usages on one line
