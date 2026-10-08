@@ -128,6 +128,10 @@ def settings():
         option("settings.behavior.bracketColors", ON,
                note("settings.behavior.bracketColors.comment") + ". Как в VS Code: закрывающая скобка берёт ближайшую открывающую своего вида, лишние остаются "
                "нераскрашенными, неактивные ветки <code>#if</code> не раскрашиваются; <code>&lt;&gt;</code> — только списки типов, не сравнения."),
+        option("settings.behavior.mapping", ON,
+               note("settings.behavior.mapping.comment") + ". Имена сравниваются точно, без учёта регистра, по общему началу или концу слов "
+               "(<code>UserId</code> ↔ <code>Id</code>) и по перекрытию camel-слов; тип должен приводиться неявно. Строки стоят первыми, когда контекст "
+               "явно mapping (рядом уже есть присваивание из того же объекта), иначе после обычных; помечены серым <code>map</code>."),
         option("settings.language", e(RU["language.AUTO"]),
                note("settings.language.comment") + " Русского языкового пакета для самой IDE нет, поэтому язык страниц плагина выбирается здесь."),
         option("settings.palette", e(RU["palette.default"]),

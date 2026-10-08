@@ -134,12 +134,13 @@ class CSharpExpectedTypeCompletionTest : BasePlatformTestCase() {
     // ---- initializers and property patterns
 
     fun testObjectInitializerListsTheMembersToAssign() {
-        val names = native(code("var o = new Order { <caret> };"))
+        // without the mapping rows of 0.1.134 (`Buyer = order.Buyer`, CSharpMappingCompletionTest)
+        val names = native(code("var o = new Order { <caret> };")).filterNot { " = " in it || it.startsWith("Map all") }
         assertEquals(names.toString(), listOf("Buyer", "Customer", "Fill all members", "Id", "Lines", "Status").sorted(), names.sorted())
     }
 
     fun testObjectInitializerLeavesOutTheAssignedOnes() {
-        val names = native(code("var o = new Order { Id = 1, Status = OrderStatus.New, <caret> };"))
+        val names = native(code("var o = new Order { Id = 1, Status = OrderStatus.New, <caret> };")).filterNot { " = " in it || it.startsWith("Map all") }
         assertEquals(names.toString(), listOf("Buyer", "Customer", "Fill all members", "Lines"), names.sorted())
     }
 

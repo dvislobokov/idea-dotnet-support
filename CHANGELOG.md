@@ -3,6 +3,21 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.134
+
+- Mapping completion: copying the members of one object into another. In an object initializer (`var dto = new UserDto { | }`,
+  `return new Dto { Id = user.Id, | }`) and at the start of a statement under a block of assignments to one target
+  (`dto.Name = user.Name;`), every member the target still lets set gets a row with the value at hand whose name is like the member's
+  and whose type converts to it — `Name = user.Name,` / `dto.Email = user.Email;` — from locals, parameters, the fields and properties
+  of the enclosing type and their public members two deep (`user.Profile.Email`), plus one row "Map all remaining members from user"
+  that writes every confident match at once in the order the members are declared, at the indentation of the line. Names are compared
+  exactly, ignoring case, by a shared start or end (`UserId` ↔ `Id`) and by the overlap of their camel-case words; the object the
+  neighbouring assignments copy from (the mapping partner) wins ties; a member whose best value is not clearly the best gets no row.
+  `init`-only members are offered in initializers only, the required ones first, the set ones skipped. The rows come first when the
+  context is clearly a mapping (an assignment with the partner already written, an empty initializer with an object at hand that fills
+  two members), after the usual items otherwise; marked by a grey `map`. Pure PSI and the plugin's own semantics (the plain build);
+  Settings | .NET → Behavior turns it off
+
 ## 0.1.133
 
 - The " ML" mark on the ranked completion items is off by default (`CSharpMlSettings.showMarker`); Settings | .NET | ML completion turns it on.

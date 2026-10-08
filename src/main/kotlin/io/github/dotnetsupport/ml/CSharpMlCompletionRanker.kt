@@ -11,6 +11,7 @@ import com.intellij.codeInsight.lookup.LookupElementPresentation
 import com.intellij.openapi.util.Key
 import io.github.completionml.core.rank.FeatureSchema
 import io.github.completionml.core.rank.FileState
+import io.github.dotnetsupport.lang.NativeCSharpMappingCompletion
 import io.github.dotnetsupport.lang.NativeCSharpMlInfo
 
 /**
@@ -109,6 +110,8 @@ object CSharpMlCompletionRanker {
             for (i in candidates.indices) byName[candidates[i].lookupString] = scores[i]
             val marker = marker
             return elements.associateWithTo(java.util.IdentityHashMap()) { e ->
+                // the mapping rows (0.1.134) keep their own place: first when the context is clearly a mapping, last otherwise
+                if (NativeCSharpMappingCompletion.isMappingRow(e)) return@associateWithTo e
                 val score = byName[e.lookupString] ?: return@associateWithTo e
                 Marked(e, marker).also { it.putUserData(SCORE, score) }
             }
@@ -143,11 +146,13 @@ object CSharpMlCompletionRanker {
  */
 class CSharpMlCompletionWeigher : CompletionWeigher() {
     override fun weigh(element: LookupElement, location: CompletionLocation): Comparable<*> {
-        val score = CSharpMlCompletionRanker.scoreOf(element) ?: return UNSCORED
+        val score = CSharpMlCompletionRanker.scoreOf(element) ?: return if (NativeCSharpMappingCompletion.isTopRow(element)) MAPPING_TOP else UNSCORED
         return score.value
     }
 
     private companion object {
         val UNSCORED = Double.NEGATIVE_INFINITY
+        /** A mapping row of a context that is clearly a mapping (0.1.134): before every scored row. */
+        val MAPPING_TOP = Double.POSITIVE_INFINITY
     }
 }

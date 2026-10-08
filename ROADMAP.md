@@ -48,6 +48,14 @@
   EDT: `checkCanceled` перед каждым файлом (write action прерывает non-blocking read action, иначе ждёт его вместе с UI — фризы 7–19 с
   на репозитории из 31 проекта и 530 файлов, дампы 2026-10-07), проход возобновляется с места остановки, путь нормализуется один раз
   (`CompilationOptions.compilesNormalized`), модель спрашивается один раз на файл. Тесты в `CSharpParseOptionsTest`, `CompilationOptionsTest`
+- [x] 0.1.134 — mapping completion (`lang/NativeCSharpMappingCompletion.kt`): в инициализаторе объекта и в начале оператора под блоком присваиваний
+  `dto.X = user.X;` — строка `Name = user.Name,` / `dto.Name = user.Name;` для каждого ещё не заданного члена цели, которому по имени (точно, без
+  учёта регистра, общее начало/конец слов `UserId` ↔ `Id`, перекрытие camel-слов) и по типу (identity / implicit, nullable) подходит значение
+  под рукой (локальные, параметры, поля и свойства типа и их публичные члены на два уровня), плюс строка «Map all remaining members from user»
+  (все уверенные совпадения партнёра в порядке объявления, с отступом строки). Партнёр — объект, из которого копируют соседние присваивания;
+  неоднозначный лучший кандидат — строки нет; `init` только в инициализаторах, required первыми. Первыми в списке, когда контекст явно mapping,
+  иначе после обычных; серое ` map`. Настройка Settings | .NET → Behavior. Тесты `CSharpMappingCompletionTest`; сценарий `Console/Editor/Mapping.cs`.
+  Вживую не проверено
 - [x] 0.1.130 — экспорт реальных списков completion для ML-ранкера (`ML_RANKER_EXPORT_TASK.md`, плагинная половина e18 движка
   `../idea-ml-completion`): признаки кандидата — `csharp-psi-ide` `ml/CSharpMlFeatures.kt` (`CSharpMlLanguage`, `CSharpMlCandidate`, 19 признаков
   языкового блока поверх 13 общих `ml-core`: вид one-hot, static, уровень области `CSharpMlScope` 0–5, нужен ли `using`, совпадение с ожидаемым

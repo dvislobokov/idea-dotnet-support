@@ -140,7 +140,10 @@ object NativeCSharpObjectInitializers {
     }
 
     /** The members of [type] an initializer may set with `Name = value` and [taken] does not set yet: the bases' first, in the order written. */
-    fun settable(type: SemanticType, r: CSharpNameResolver, site: PsiElement, taken: Set<String>): List<String> {
+    fun settable(type: SemanticType, r: CSharpNameResolver, site: PsiElement, taken: Set<String>): List<String> = settableSymbols(type, r, site, taken).map { it.first }
+
+    /** [settable] with the symbol of each member (the mapping completion asks their types). */
+    fun settableSymbols(type: SemanticType, r: CSharpNameResolver, site: PsiElement, taken: Set<String>): List<Pair<String, CSharpSymbol>> {
         val found = ArrayList<Pair<String, CSharpSymbol>>()
         for (entry in CSharpMemberLookup(r).entries(CSharpNameResolver.Qualifier.Value(type), site)) {
             ProgressManager.checkCanceled()
@@ -170,7 +173,7 @@ object NativeCSharpObjectInitializers {
                     ?.let { r.syntax.declaredType(it)?.key }?.let { depth[it] } ?: 0)
                 else -> 0
             }
-        }, { pair -> (pair.second as? CSharpSymbol.SourceMember)?.element?.textRange?.startOffset ?: 0 })).map { it.first }
+        }, { pair -> (pair.second as? CSharpSymbol.SourceMember)?.element?.textRange?.startOffset ?: 0 }))
     }
 
     // ---- completion

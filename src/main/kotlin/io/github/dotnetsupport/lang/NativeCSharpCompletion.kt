@@ -221,6 +221,8 @@ object NativeCSharpCompletion {
             // `new Order { |`, `o with { |`, `o is { |`: the members to name, nothing else
             NativeCSharpExpectedCompletion.initializerMembers(analysis)?.let { members ->
                 members.forEach(::add)
+                // `Name = user.Name,` and "Map all remaining members from user" (0.1.134)
+                NativeCSharpMappingCompletion.initializerItems(analysis).forEach(::add)
                 return
             }
             when (place.kind) {
@@ -263,6 +265,8 @@ object NativeCSharpCompletion {
                     } else if (analysis.typeRole == NativeCSharpExpectedCompletion.TypeRole.CONSTRAINT) keywords(place.keywords)
                 }
                 NativeCompletionKind.STATEMENT, NativeCompletionKind.EXPRESSION -> {
+                    // `dto.Email = user.Email;` under a block of such assignments (0.1.134)
+                    if (place.kind == NativeCompletionKind.STATEMENT) NativeCSharpMappingCompletion.statementItems(analysis).forEach(::add)
                     NativeCSharpExpectedCompletion.expressionItems(analysis).forEach(::add)
                     items += NativeCSharpArgumentCompletion.items(place, file, matcher)
                     NativeCSharpCommonCalls.items(place).forEach(::add)

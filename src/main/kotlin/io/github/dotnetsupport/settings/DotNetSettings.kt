@@ -64,6 +64,8 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
         var completionExclusions by list<String>()
         /** Matching brackets of C# by depth, see [io.github.dotnetsupport.lang.CSharpBracketColors]. */
         var colorizeBrackets by property(true)
+        /** `Name = user.Name,` rows in initializers and assignment blocks, see [io.github.dotnetsupport.lang.NativeCSharpMappingCompletion] (0.1.134). */
+        var mappingCompletion by property(true)
 
         /** Of the settings pages: the one of the IDE, or chosen here (there is no Russian language pack for the IDE itself). */
         var language by enum(PluginLanguage.AUTO)
@@ -115,6 +117,10 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
             // a new list: that is how BaseState notices the change (as with toolPaths)
             state.dotnetSearchPaths = trimmed.toMutableList()
         }
+
+    var mappingCompletion: Boolean
+        get() = state.mappingCompletion
+        set(value) { state.mappingCompletion = value }
 
     var completionExclusions: List<String>
         get() = state.completionExclusions.toList()
@@ -320,6 +326,7 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
                 }
                 row { checkBox(DotNetBundle.message("settings.behavior.solutionView")).bindSelected(settings::switchToSolutionView).comment(DotNetBundle.message("settings.behavior.solutionView.comment"), maxLineLength = COMMENT_WIDTH) }
                 row { checkBox(DotNetBundle.message("settings.behavior.bracketColors")).bindSelected(settings::colorizeBrackets).comment(DotNetBundle.message("settings.behavior.bracketColors.comment"), maxLineLength = COMMENT_WIDTH) }
+                row { checkBox(DotNetBundle.message("settings.behavior.mapping")).bindSelected(settings::mappingCompletion).comment(DotNetBundle.message("settings.behavior.mapping.comment"), maxLineLength = COMMENT_WIDTH) }
                 row(DotNetBundle.message("settings.language")) {
                     comboBox(PluginLanguage.entries, textListCellRenderer { it?.label }).bindItem({ settings.language }, { settings.language = it ?: PluginLanguage.AUTO })
                         .comment(DotNetBundle.message("settings.language.comment"), maxLineLength = COMMENT_WIDTH)

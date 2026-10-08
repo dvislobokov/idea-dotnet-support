@@ -978,6 +978,14 @@ PDB с Source Link лежат рядом с dll в кэше NuGet у Grpc.Net.* 
 - [ ] `TYPE:sourcelink-off`: опция выключена — декомпилят; включена снова — вкладка Source Link сразу, из кэша на диске
 - [ ] `TYPE:sourcelink-offline`: без сети — после прогресса декомпилят, в журнале «could not be downloaded from …», IDE не замирает
 
+### Mapping completion и память выбора (0.1.134, 0.1.135) — `Console/Editor/Mapping.cs`
+- [ ] `TYPE:map-statement`: Ctrl+Space под `dto.Id = user.Id;` → первыми `dto.Name = user.Name;`, `dto.Email = user.Profile.Email;` (серое `map`, `from user`)
+  и жирная «Map all remaining members from user»; `dto.Note` (init), `dto.Id` (задан), `dto.Created` (DateTime → int) **нет**; Enter на map-all пишет обе строки с отступом строки
+- [ ] `TYPE:map-initializer`: в инициализаторе после `Id = user.Id,` → `Name = user.Name`, `Email = user.Profile.Email`, `Note = note` первыми, потом обычные члены;
+  Enter на `Name = user.Name` дописывает запятую; map-all пишет Name и Email (Note — другой объект, Active — нечем)
+- [ ] `TYPE:map-empty`: `var d = new MappingUserDto { ` → строки mapping первыми; с `Active = true, ` перед кареткой — после членов
+- [ ] `TYPE:map-off`: Settings | .NET → Behavior → «Offer to copy members…» выключено → строк `… = user.…` нет
+
 ### Scope «Analysis» без сервера (0.1.122) — `Console/Editor/SolutionProblems.cs`
 Settings | .NET | Language Server, группа Analysis: «Compiler diagnostics for» / «Analyzer diagnostics for» (openFiles / fullSolution / none) действуют и без сервера. Окно Problems → вкладка Project Errors.
 - [ ] `TYPE:problems-closed-file`: fullSolution, файл не открыт — в Project Errors под `SolutionProblems.cs` строка CS0219 (жёлтая); у остальных файлов solution — их настоящие ошибки и предупреждения, по одной строке на диагностику; `Broken` (не в solution) не перечислен; в журнале плагина (.NET → Plugin Logs, категория «solution problems») — «N files checked in M ms»
