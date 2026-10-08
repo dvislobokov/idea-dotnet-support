@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.158
+
+- A C# file of a project that the loaded solution does not have (another solution of the folder, e.g. `ShopApi/` next to the root
+  solution) is served by the plugin as with the language server off: completion, types, errors, navigation and highlighting no
+  longer wait for a server that does not know the file. Coverage by the server is decided by the file's project, not by the folder.
+
 ## 0.1.157
 
 - ML grey text: the network is no longer silenced where another grey-text provider of the plugin is enabled but has nothing to
