@@ -213,6 +213,43 @@ class CSharpMemberCompletionTest : BasePlatformTestCase() {
         assertTrue("void: the statement ends", choose("WriteLine").contains("Console.WriteLine();"))
     }
 
+    /**
+     * One row per name and arity (0.1.148), as Rider lists them: `AddSingleton(Type, Type)`, `AddSingleton<TService>()`,
+     * `AddSingleton<TService, TImplementation>()`; a generic row whose parameters do not tell the type arguments inserts `<>()` with the
+     * caret between the angle brackets, one whose parameters do inserts the plain call.
+     */
+    fun testGenericOverloadsHaveTheirOwnRows() {
+        val text = """
+            using System;
+            static class Services
+            {
+                public static void AddSingleton(Type serviceType, Type implementationType) { }
+                public static void AddSingleton(Type serviceType, object instance) { }
+                public static void AddSingleton<TService>() { }
+                public static void AddSingleton<TService>(TService instance) { }
+                public static void AddSingleton<TService, TImplementation>() { }
+                public static TResult Convert<TResult>(object value) => default;
+                public static T Echo<T>(T value) => value;
+            }
+            class Client { void M() { Services.<caret> } }
+        """
+        // the order of the rows is the sorter's
+        val rows = lookup(text).filter { it.getUserData(NativeCSharpCompletion.NATIVE) == true && it.lookupString == "AddSingleton" }.map(::shown).sorted()
+        assertEquals(
+            listOf("AddSingleton(Type serviceType, Type implementationType) (+ 1) : void", "AddSingleton<TService, TImplementation>() : void", "AddSingleton<TService>() (+ 1) : void"),
+            rows,
+        )
+        fun choose(presentable: String): String {
+            lookup(text)
+            myFixture.lookup.currentItem = myFixture.lookupElements!!.first { LookupElementPresentation.renderElement(it).itemText == presentable }
+            myFixture.finishLookup(Lookup.NORMAL_SELECT_CHAR)
+            return myFixture.editor.document.text
+        }
+        choose("AddSingleton<TService>").let { assertTrue(it, it.contains("Services.AddSingleton<>()")) }
+        choose("Convert<TResult>").let { assertTrue(it, it.contains("Services.Convert<>()")) }
+        choose("Echo<T>").let { assertTrue(it, it.contains("Services.Echo()")) }
+    }
+
     fun testTheServersDuplicatesAreDropped() {
         CSharpCompletionNativeTest.FakeServer.items = listOf(CSharpCompletionNativeTest.FakeServer.Item("Length", 40.0), CSharpCompletionNativeTest.FakeServer.Item("Something", 30.0))
         val all = lookup(body("text.<caret>"))

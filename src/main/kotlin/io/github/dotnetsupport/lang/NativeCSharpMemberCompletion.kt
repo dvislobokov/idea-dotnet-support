@@ -8,6 +8,7 @@ import com.intellij.icons.AllIcons
 import com.intellij.openapi.progress.ProgressManager
 import com.intellij.psi.PsiElement
 import io.github.dotnetsupport.csharp.lang.psi.CSharpLocalDeclarationStatement
+import io.github.dotnetsupport.csharp.lang.psi.CSharpMethodDeclaration
 import io.github.dotnetsupport.csharp.lang.psi.CSharpQualifiedName
 import io.github.dotnetsupport.csharp.lang.psi.CSharpSimpleName
 import io.github.dotnetsupport.csharp.lang.psi.CSharpVariableDeclaration
@@ -44,7 +45,7 @@ object NativeCSharpMemberCompletion {
         val entries = lookup.entries(qualifier, name, typesOnly(name), matcher, inaccessibleToo = inaccessible).filter { it.inaccessible == inaccessible }
         val text = CSharpSymbolText(resolver)
         val receiver = receiverOf(qualifier)
-        return entries.mapNotNull { entry ->
+        return entries.flatMap(::byArity).mapNotNull { entry ->
             ProgressManager.checkCanceled()
             element(entry, text, resolver, receiver != null, receiver, file)
         }
@@ -60,7 +61,46 @@ object NativeCSharpMemberCompletion {
         // `base.` of an override (`base.ExecuteAsync(...)` of a BackgroundService): the members of library bases too; no extension methods there (CS0175)
         val entries = lookup.entries(qualifier, name, false, matcher, throughThis = true, inaccessibleToo = inaccessible)
             .filter { entry -> entry.inaccessible == inaccessible && (!place.base || entry.symbols.any { !resolver.isExtension(it) }) }
-        return entries.mapNotNull { element(it, text, resolver, true, receiverOf(qualifier), file) }
+        return entries.flatMap(::byArity).mapNotNull { element(it, text, resolver, true, receiverOf(qualifier), file) }
+    }
+
+    /**
+     * One row per name and arity, as Rider lists `AddSingleton(Type, Type)`, `AddSingleton<TService>()` and `AddSingleton<TService, TImplementation>()`
+     * apart (0.1.148): one row per name hid every generic form behind `(+ N)` of the first overload of the assembly.
+     */
+    private fun byArity(entry: CSharpMemberLookup.Entry): List<CSharpMemberLookup.Entry> {
+        if (entry.symbols.size < 2 || !entry.symbols.all(::isMethod)) return listOf(entry)
+        val groups = entry.symbols.groupBy { typeParameters(it).size }
+        if (groups.size < 2) return listOf(entry)
+        return groups.toSortedMap().map { (_, symbols) -> CSharpMemberLookup.Entry(entry.name, symbols, entry.inaccessible) }
+    }
+
+    private fun isMethod(symbol: CSharpSymbol): Boolean = when (symbol) {
+        is CSharpSymbol.SourceMember -> NativeCSharpMembers.kind(symbol.member) == NativeCSharpMembers.Kind.METHOD
+        is CSharpSymbol.LibraryMember -> symbol.member.kind.isCallable
+        else -> false
+    }
+
+    /** The type parameters of a method by name (`TService, TImplementation`); empty for a non-generic one. */
+    private fun typeParameters(symbol: CSharpSymbol): List<String> = when (symbol) {
+        is CSharpSymbol.SourceMember -> (symbol.element as? CSharpMethodDeclaration)?.typeParameterList?.parameters?.map { it.identifier?.text.orEmpty() }.orEmpty()
+        is CSharpSymbol.LibraryMember -> if (symbol.member.arity > 0) symbol.member.typeParameters.map { it.name } else emptyList()
+        else -> emptyList()
+    }
+
+    /**
+     * The text and the insertion of a method row: `AddSingleton<TService, TImplementation>` for a generic method, and `<>()` with the caret
+     * between the angle brackets when the parameters of some overload of the row cannot tell the type arguments (`AddSingleton<|>()` for
+     * `AddSingleton<TService>()` next to `AddSingleton<TService>(TService instance)`, as in Rider); `Select(|)` when every overload infers them.
+     */
+    private fun methodRow(
+        name: String, symbols: List<CSharpSymbol>, parametersOf: (CSharpSymbol) -> List<String>?, shape: () -> Pair<Boolean, Boolean>,
+    ): Triple<Any, String, com.intellij.codeInsight.completion.InsertHandler<LookupElement>> {
+        val typeParameters = typeParameters(symbols.first())
+        if (typeParameters.isEmpty()) return Triple(name, name, NativeCSharpCalls.callHandler(shape))
+        val presentable = typeParameters.joinToString(", ", "$name<", ">")
+        val explicit = symbols.any { CSharpCalls.needsTypeArguments(typeParameters(it), parametersOf(it).orEmpty()) }
+        return Triple("$name<${typeParameters.size}>", presentable, if (explicit) NativeCSharpCalls.genericCallHandler(shape) else NativeCSharpCalls.callHandler(shape))
     }
 
     /** `ConsoleColor.Black|` at the end of a statement: its `;` (and an open `)`), as the enum rows of an expected type do. */
@@ -109,9 +149,11 @@ object NativeCSharpMemberCompletion {
                 when (kind) {
                     NativeCSharpMembers.Kind.METHOD -> {
                         val extension = resolver.isExtension(first)
-                        val tail = tail(text.parameters(first, reduced && extension, inferred), entry.symbols.size)
-                        val handler = NativeCSharpCalls.callHandler { entry.symbols.all(text::returnsNothing) to entry.symbols.any { text.parameters(it, reduced && resolver.isExtension(it))?.isNotEmpty() != false } }
-                        build(name, AllIcons.Nodes.Method, name, tail, type, if (extension) EXTENSION else NativeCSharpCompletion.METHOD, handler)
+                        val parameters = text.parameters(first, reduced && extension, inferred)
+                        val tail = tail(parameters, entry.symbols.size)
+                        val parametersOf = { s: CSharpSymbol -> text.parameters(s, reduced && resolver.isExtension(s)) }
+                        val (key, presentable, handler) = methodRow(name, entry.symbols, parametersOf) { entry.symbols.all(text::returnsNothing) to entry.symbols.any { parametersOf(it)?.isNotEmpty() != false } }
+                        build(name, AllIcons.Nodes.Method, presentable, tail, type, if (extension) EXTENSION else NativeCSharpCompletion.METHOD, handler, key = key)
                     }
                     NativeCSharpMembers.Kind.PROPERTY -> build(name, AllIcons.Nodes.Property, name, null, type, NativeCSharpCompletion.VALUE_MEMBER, null)
                     NativeCSharpMembers.Kind.CONSTANT -> build(name, AllIcons.Nodes.Constant, name, null, type, NativeCSharpCompletion.VALUE_MEMBER, CLOSES_STATEMENT)
@@ -124,9 +166,11 @@ object NativeCSharpMemberCompletion {
                 val type = runCatching { text.typeOf(first, inferred) }.getOrNull()
                 if (member.kind.isCallable) {
                     val extension = member.kind == IndexedMemberKind.EXTENSION_METHOD
-                    val tail = tail(text.parameters(first, reduced, inferred), entry.symbols.size)
-                    val handler = NativeCSharpCalls.callHandler { entry.symbols.all(text::returnsNothing) to entry.symbols.any { text.parameters(it, reduced)?.isNotEmpty() != false } }
-                    build(name, AllIcons.Nodes.Method, name, tail, type, if (extension) EXTENSION else NativeCSharpCompletion.METHOD, handler, strikeout = member.obsolete)
+                    val parameters = text.parameters(first, reduced, inferred)
+                    val tail = tail(parameters, entry.symbols.size)
+                    val parametersOf = { s: CSharpSymbol -> text.parameters(s, reduced) }
+                    val (key, presentable, handler) = methodRow(name, entry.symbols, parametersOf) { entry.symbols.all(text::returnsNothing) to entry.symbols.any { parametersOf(it)?.isNotEmpty() != false } }
+                    build(name, AllIcons.Nodes.Method, presentable, tail, type, if (extension) EXTENSION else NativeCSharpCompletion.METHOD, handler, strikeout = member.obsolete, key = key)
                 } else {
                     val handler = if (member.kind == IndexedMemberKind.ENUM_MEMBER || member.kind == IndexedMemberKind.CONSTANT) CLOSES_STATEMENT else null
                     build(name, ImportCompletion.icon(member.kind), name, null, type, NativeCSharpCompletion.VALUE_MEMBER, handler, strikeout = member.obsolete)
@@ -186,12 +230,18 @@ object NativeCSharpMemberCompletion {
     private fun build(
         lookup: String, icon: Icon, presentable: String, tail: String?, type: String?, priority: Double,
         handler: com.intellij.codeInsight.completion.InsertHandler<LookupElement>?, strikeout: Boolean = false,
+        /** What tells the rows of one name apart (the arity of a method): equal builders of one lookup string collapse into one. */
+        key: Any = lookup,
     ): LookupElement {
-        var builder = LookupElementBuilder.create(lookup).withIcon(icon).withPresentableText(presentable).withStrikeoutness(strikeout)
+        var builder = LookupElementBuilder.create(key, lookup).withIcon(icon).withPresentableText(presentable).withStrikeoutness(strikeout)
         if (tail != null) builder = builder.withTailText(tail, true)
         if (type != null) builder = builder.withTypeText(type)
         if (handler != null) builder = builder.withInsertHandler(handler)
         builder.putUserData(NativeCSharpCompletion.NATIVE, true)
-        return PrioritizedLookupElement.withPriority(builder, priority).also { it.putUserData(NativeCSharpCompletion.NATIVE, true) }
+        if (key != lookup) builder.putUserData(NativeCSharpCompletion.ROW_KEY, key.toString())
+        return PrioritizedLookupElement.withPriority(builder, priority).also {
+            it.putUserData(NativeCSharpCompletion.NATIVE, true)
+            if (key != lookup) it.putUserData(NativeCSharpCompletion.ROW_KEY, key.toString())
+        }
     }
 }

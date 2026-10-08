@@ -36,6 +36,16 @@ export JAVA_HOME="C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 202
 ./gradlew.bat test --tests "io.github.dotnetsupport.NuGetTest" -q
 ```
 
+Сборка плагина и запуск песочницы, без ML и с ML (модели — `ml-models/csharp`, см. комментарий к `mlEnabled` в `build.gradle.kts`):
+
+```sh
+./gradlew.bat buildPlugin                                                  # обычная сборка: build/distributions/idea-dotnet-support-<v>.zip
+./gradlew.bat buildPlugin -PmlEnabled=true                                 # ML-сборка с трансформером 31m: …-<v>-ml.zip
+./gradlew.bat buildPlugin -PmlEnabled=true -Pml.big=true                   # ML-сборка с 31m и большим 50m (переключатель на Settings | .NET | ML completion)
+./gradlew.bat runIde --offline --no-configuration-cache                    # песочница IDE без ML
+./gradlew.bat runIde -PmlEnabled=true -Pml.big=true --offline --no-configuration-cache   # песочница IDE с ML и 50m
+```
+
 - Целевая платформа — локальная **IntelliJ IDEA Community Edition 2026.1.4** (`localIdePath` в `gradle.properties`; решение пользователя 2026-10-05:
   все прогоны — на публичном дистрибутиве, без платных плагинов и библиотек; полная IDEA 2026.1.4 тоже стоит, но для сборки не используется — то,
   чего нет в Community, плагину недоступно), ничего не скачивается. `sinceBuild = 261`:

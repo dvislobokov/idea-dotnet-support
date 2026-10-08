@@ -108,6 +108,8 @@ class NativeCSharpCompletionContributor : CompletionContributor() {
 object NativeCSharpCompletion {
     /** The items of the list made by the plugin's tree: tests and the merge tell them by this key. */
     val NATIVE: Key<Boolean> = Key.create("dotnet.nativeCompletion")
+    /** What tells apart the rows of one lookup string that all stand (`AddSingleton` and `AddSingleton<TService>`): the list drops a row of a key it has. */
+    val ROW_KEY: Key<String> = Key.create("dotnet.nativeCompletion.rowKey")
 
     /** The option of the server's page the names after a type (`Person |`, `foreach (var |`, parameters) obey, as the server's name provider. */
     const val NAME_SUGGESTIONS = "completion.dotnet_show_name_completion_suggestions"
@@ -559,8 +561,9 @@ object NativeCSharpCompletion {
                 if (added.add("${element.lookupString} { }")) items += element
                 return
             }
-            // the innermost declaration of a name hides the outer ones; keywords and common calls are told by their whole text
-            if (!added.add(element.lookupString)) return
+            // the innermost declaration of a name hides the outer ones; keywords and common calls are told by their whole text; the generic
+            // rows of a method name stand next to the plain one (ROW_KEY)
+            if (!added.add(element.getUserData(ROW_KEY) ?: element.lookupString)) return
             items += element
         }
     }
@@ -922,6 +925,27 @@ object NativeCSharpCalls {
         context.commitDocument()
         // the caret between the parentheses: what the server's items get (RoslynCompletionItems), the parameter info and the gray arguments
         if (call.caret < call.text.length) NativeCSharpCallPopups.afterCall(context.editor)
+    }
+
+    /**
+     * `AddSingleton<|>()` for a generic method whose type arguments its parameters do not tell (0.1.148, as in Rider): the angle brackets
+     * with the caret inside, then the call of [callHandler]'s [shape]; nothing when `<` or `(` already follows.
+     */
+    fun genericCallHandler(shape: () -> Pair<Boolean, Boolean>): InsertHandler<LookupElement> = InsertHandler { context, _ ->
+        if (!choosesWithCall(context)) return@InsertHandler
+        val document = context.document
+        val text = document.charsSequence
+        val offset = context.tailOffset
+        if (context.completionChar == '(' || context.completionChar == '.' || context.completionChar == ';') context.setAddCompletionChar(false)
+        if (offset < text.length && (text[offset] == '<' || text[offset] == '(')) {
+            context.editor.caretModel.moveToOffset(offset + 1)
+            return@InsertHandler
+        }
+        val (returnsNothing, takesArguments) = shape()
+        val call = CSharpCalls.call(returnsNothing, takesArguments, false, CSharpCalls.endsStatement(text, context.startOffset), CSharpCalls.restOfLine(text, offset))
+        document.insertString(offset, "<>" + call.text)
+        context.editor.caretModel.moveToOffset(offset + 1)
+        context.commitDocument()
     }
 
     /** `Total().` with the caret after the dot (the members of the result open); `Save();`, `Add(|);` with the caret inside when it takes arguments. */

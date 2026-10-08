@@ -77,6 +77,11 @@
   -Pml.names -Pml.seed -Pml.heap=6g`): шард `.cmlx` на репозиторий, готовые пропускаются, сломанный репозиторий логируется и не роняет прогон,
   сводка `ml: TOTAL …` с recall. Тест `CSharpMlDatasetExportTest` (экспорт на фикстурном репозитории, языковой блок, инфо на элементах).
   Weigher `CSharpMlCompletionRanker` — после обучения ранкера в движке
+- [x] 0.1.148 — обобщённые методы в списке после точки: строка на имя и арность (`AddSingleton(Type, Type) (+ 7)`, `AddSingleton<TService>() (+ 5)`,
+  `AddSingleton<TService, TImplementation>() (+ 3)`), имена параметров типа из индекса; строка, у которой аргументы типа не выводятся из параметров,
+  вставляет `<>()` с кареткой в скобках (`NativeCSharpCalls.genericCallHandler`), остальные — обычный вызов (`NativeCSharpMemberCompletion.byArity`,
+  `methodRow`). Тест `CSharpMemberCompletionTest.testGenericOverloadsHaveTheirOwnRows`. Сценарий — `debug-playground/ShopApi/Playground/GenericMethodRows.cs`
+  (`TYPE:generic-*`). Вживую не проверено
 - [x] 0.1.147 — тип параметра лямбды рядом с перегрузкой `Delegate` (minimal API: `MapGet("/", context => …)` — `context` это `HttpContext`,
   навигация в перегрузку с `RequestDelegate`, подсказка `requestDelegate:`): лямбда без типов параметров не имеет естественного типа и к
   `Delegate` / `object` / `Expression` не приводится (`CSharpOverloads.lambda`, `lambdaFits`, `lambdaParameterType`); CS8917 там, где такой тип ожидается,

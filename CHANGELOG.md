@@ -3,6 +3,15 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.148
+
+- The completion list after a dot shows generic methods as such, one row per name and arity as in Rider: `AddSingleton(Type serviceType,
+  Type implementationType) (+ 7)`, `AddSingleton<TService>() (+ 5)`, `AddSingleton<TService, TImplementation>() (+ 3)` instead of one row
+  of the first overload with everything else behind `(+ 15)`. A generic row whose parameters do not tell the type arguments inserts
+  `AddSingleton<|>()` with the caret between the angle brackets; `Select`, `Where`, `OfType`-like ones with inferable arguments insert
+  the plain call.
+- Live check: `debug-playground/ShopApi/Playground/GenericMethodRows.cs` (`TYPE:generic-rows`, `TYPE:generic-inferred`).
+
 ## 0.1.147
 
 - The parameter of a lambda next to an overload taking `Delegate` is typed, as in Rider: minimal APIs (`app.MapGet("/", context => …)`,

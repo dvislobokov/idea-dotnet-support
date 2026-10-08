@@ -871,6 +871,11 @@ Prometheus), Serilog, фоновый outbox-воркер. Собирается �
 - [ ] `TYPE:shop-json` — JSON-цвета в строке после `// lang=json` и в `JsonDocument.Parse`, Alt+Enter → Edit JSON Fragment
 - [ ] `TYPE:shop-config-key`, `TYPE:shop-config-connection`, `TYPE:shop-config-section` — ключи `appsettings.json` (вложенные через `:`), строки подключения, ключи секции
 
+Обобщённые методы в списке (0.1.148) — `ShopApi/Playground/GenericMethodRows.cs`:
+- [ ] `TYPE:generic-rows` — `services.AddSin` даёт три строки `AddSingleton`: без `<>`, `<TService>`, `<TService, TImplementation>`, каждая со своим `(+ N)`;
+  Enter на `<TService>` пишет `AddSingleton<|>()` с кареткой в угловых скобках
+- [ ] `TYPE:generic-inferred` — `orders.Sel` даёт `Select<TResult>(…)`, Enter пишет `Select(|)` без `<>`
+
 Типы параметров лямбд (0.1.147) — `ShopApi/Playground/LambdaParameterTypes.cs`, в каждом маркере написано, на что навести и что должно показаться:
 - [ ] `TYPE:lambda-context`, `TYPE:lambda-context-members`, `TYPE:lambda-context-paths`, `TYPE:lambda-context-async` — `context` в `MapGet` / `MapPost` это
   `HttpContext`: hover, список после `context.` (и пока тело не дописано), CS1643 у блока без `return`; Ctrl+B на `MapGet` — перегрузка с `RequestDelegate`,
