@@ -135,8 +135,9 @@ class CSharpPostfixTemplate(
             editor.caretModel.moveToOffset(start + expansion.caret)
             expansion.select?.let { editor.selectionModel.setSelection(start + it.first, start + it.last + 1) }
         }
-        if (awaits && (CSharpFeatures.native(CSharpFeature.COMPLETION, project) || !RoslynServerStatus.isReady(project))) {
+        if (awaits) {
             val psi = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return
+            if (!CSharpFeatures.native(CSharpFeature.COMPLETION, psi) && RoslynServerStatus.isReady(project, psi.virtualFile)) return
             NativeCSharpCommonCalls.makeAsyncAt(psi, start, editor)
         }
     }

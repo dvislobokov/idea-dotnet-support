@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicReference
  */
 object NativeCSharpSemanticColors {
     /** The native colors answer for [file]: the switch, and a file of the native tree. Settings and a child lookup: cheap. */
-    fun serves(file: CSharpFile): Boolean = file.compilationUnit != null && CSharpFeatures.native(CSharpFeature.SEMANTIC_COLORS, file.project)
+    fun serves(file: CSharpFile): Boolean = file.compilationUnit != null && CSharpFeatures.native(CSharpFeature.SEMANTIC_COLORS, file)
 
     /**
      * The identifiers of [file] with their keys, in the order of the text. Cached on the file until a change of PSI, of the indexes of

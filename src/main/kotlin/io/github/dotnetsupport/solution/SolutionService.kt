@@ -40,6 +40,7 @@ class SolutionService(private val project: Project) {
     /** A solution or a filter file appeared, disappeared or moved: the next question walks the folder again. */
     fun solutionFilesChanged() {
         found = null
+        project.getServiceIfCreated(io.github.dotnetsupport.lsp.RoslynServerStatus::class.java)?.forgetCoverage()
     }
 
     /**
@@ -48,6 +49,8 @@ class SolutionService(private val project: Project) {
      */
     fun reload(projectFile: VirtualFile? = null) {
         project.getServiceIfCreated(io.github.dotnetsupport.msbuild.MsBuildEvaluation::class.java)?.reload(projectFile)
+        // which files the language server knows is a question of the projects of its solution
+        project.getServiceIfCreated(io.github.dotnetsupport.lsp.RoslynServerStatus::class.java)?.forgetCoverage()
         if (projectFile == null) {
             found = null
             solutions.clear()

@@ -27,7 +27,7 @@ class RoslynLambdaCompletion : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
         val file = parameters.originalFile as? CSharpFile ?: return
         // the native list makes its own lambdas from the plugin's semantics (NativeCSharpLambdas)
-        if (CSharpFeatures.native(CSharpFeature.COMPLETION, file.project)) return
+        if (CSharpFeatures.native(CSharpFeature.COMPLETION, file)) return
         val workspace = file.project.service<RoslynWorkspace>()
         val client = workspace.clients.firstOrNull()?.takeIf { workspace.isLoaded } ?: return
         // only where an argument begins: right after `(` or `,`, or a name that is being typed there

@@ -23,7 +23,7 @@ import io.github.dotnetsupport.lang.semantic.SemanticType
 class CSharpFormatSpecifierCompletion : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
         val original = parameters.originalFile as? CSharpFile ?: return
-        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, original.project)) return
+        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, original)) return
         val file = parameters.position.containingFile as? CSharpFile ?: return
         val place = CSharpFormatPlaces.at(parameters.position, parameters.offset, parameters.editor.document.charsSequence) ?: return
         val resolver = CSharpSemanticSession(file.project).resolver(file)

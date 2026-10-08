@@ -64,7 +64,7 @@ class NativeCSharpCompletionContributor : CompletionContributor() {
 
     override fun fillCompletionVariants(parameters: CompletionParameters, given: CompletionResultSet) {
         val original = parameters.originalFile as? CSharpFile ?: return
-        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, original.project)) return
+        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, original)) return
         val file = parameters.position.containingFile as? CSharpFile ?: return
         if (file.compilationUnit == null) return
         val place = NativeCSharpCompletionPlace.of(parameters.position) ?: return

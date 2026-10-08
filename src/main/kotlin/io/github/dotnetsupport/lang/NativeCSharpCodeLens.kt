@@ -78,7 +78,7 @@ object NativeCSharpCodeLens {
 
     class Lens(val range: TextRange, val text: String, val declaration: PsiElement)
 
-    fun serves(file: PsiFile?): Boolean = file is CSharpFile && file.compilationUnit != null && isSolutionSource(file) && CSharpFeatures.native(CSharpFeature.CODE_LENS, file.project)
+    fun serves(file: PsiFile?): Boolean = file is CSharpFile && file.compilationUnit != null && isSolutionSource(file) && CSharpFeatures.native(CSharpFeature.CODE_LENS, file)
 
     /**
      * Lenses stand over the sources of the solution alone, as in Rider: not over a library source from Source Link, a decompiled type or

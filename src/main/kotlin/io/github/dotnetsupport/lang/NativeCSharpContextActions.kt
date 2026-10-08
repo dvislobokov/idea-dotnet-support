@@ -798,7 +798,7 @@ abstract class NativeCSharpContextAction(private val title: String, private val 
 
     override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean {
         if (editor == null || file !is CSharpFile || file.compilationUnit == null) return false
-        if (serverHasIt && !CSharpFeatures.native(CSharpFeature.CONTEXT_ACTIONS, project) && RoslynServerStatus.isReady(project)) return false
+        if (serverHasIt && !CSharpFeatures.native(CSharpFeature.CONTEXT_ACTIONS, file) && RoslynServerStatus.isReady(project, file.virtualFile)) return false
         if (needsTypes && DumbService.isDumb(project)) return false
         return edit(file, editor) != null
     }

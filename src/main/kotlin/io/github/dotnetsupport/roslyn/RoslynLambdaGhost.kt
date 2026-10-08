@@ -52,7 +52,7 @@ class RoslynLambdaGhost : InlineCompletionProvider {
         val request = event.toRequest() ?: return false
         if (request.file !is CSharpFile) return false
         // the parameter info of the plugin's semantics answers instead (NativeCSharpLambdaGhost)
-        if (io.github.dotnetsupport.lang.CSharpFeatures.native(CSharpFeature.DOCUMENTATION, request.file.project)) return false
+        if (io.github.dotnetsupport.lang.CSharpFeatures.native(CSharpFeature.DOCUMENTATION, request.file)) return false
         // where an argument begins, and nowhere else: a method of this file is answered from its text, before the solution is loaded
         return LambdaSuggestions.atArgumentStart(request.document.immutableCharSequence, request.endOffset)
     }
@@ -68,7 +68,7 @@ class RoslynLambdaGhost : InlineCompletionProvider {
         // reported: `Save(` offered nothing, `Save(order, ` offered the token)
         val local = CSharpLocalCalls.at(text, offset)?.let { call -> CSharpArguments.list(call.parameters, call.active, visible) }
         val workspace = file.project.service<RoslynWorkspace>()
-        val client = workspace.clients.firstOrNull()?.takeIf { workspace.isLoaded && RoslynFeatures.serves(CSharpFeature.DOCUMENTATION, file.project) }
+        val client = workspace.clients.firstOrNull()?.takeIf { workspace.isLoaded && RoslynFeatures.serves(CSharpFeature.DOCUMENTATION, file) }
         val virtualFile = file.virtualFile
         val ghost = if (local != null) CSharpGhostText.Ghost(SuggestionRules.ARGUMENTS, local)
         else if (client == null || virtualFile == null) null
@@ -119,7 +119,10 @@ class RoslynLambdaGhost : InlineCompletionProvider {
          */
         fun offer(editor: Editor) {
             val project = editor.project
-            if (project != null && io.github.dotnetsupport.lang.CSharpFeatures.native(CSharpFeature.DOCUMENTATION, project)) return io.github.dotnetsupport.lang.NativeCSharpLambdaGhost.offer(editor)
+            val file = com.intellij.openapi.fileEditor.FileDocumentManager.getInstance().getFile(editor.document)
+            if (project != null && (io.github.dotnetsupport.lang.CSharpFeatures.native(CSharpFeature.DOCUMENTATION, project) || !RoslynFeatures.knows(project, file))) {
+                return io.github.dotnetsupport.lang.NativeCSharpLambdaGhost.offer(editor)
+            }
             ApplicationManager.getApplication().invokeLater({
                 if (editor.isDisposed) return@invokeLater
                 val handler = InlineCompletion.getHandlerOrNull(editor) ?: return@invokeLater

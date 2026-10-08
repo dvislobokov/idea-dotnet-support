@@ -91,7 +91,7 @@ internal object CSharpUsages {
      * classified on the same tokens. Two cached values: flipping the switch takes effect at once.
      */
     fun analysis(file: PsiFile): CSharpUsageKindAnalysis {
-        if (file is CSharpFile && file.compilationUnit != null && CSharpFeatures.native(CSharpFeature.USAGE_KINDS, file.project)) {
+        if (file is CSharpFile && file.compilationUnit != null && CSharpFeatures.native(CSharpFeature.USAGE_KINDS, file)) {
             return CachedValuesManager.getCachedValue(file, NATIVE) { CachedValueProvider.Result.create(NativeCSharpUsageKinds.Analysis(file), file) }
         }
         return CachedValuesManager.getCachedValue(file, HEURISTIC) {

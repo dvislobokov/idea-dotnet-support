@@ -45,7 +45,7 @@ class CSharpCompletionBehaviourContributor : CompletionContributor() {
             lookup.putUserData(CSharpSuggestionMode.KEY, namePlace)
             if (namePlace && parameters.isAutoPopup && !lookup.isSelectionTouched) lookup.lookupFocusDegree = LookupFocusDegree.UNFOCUSED
         }
-        val native = CSharpFeatures.native(CSharpFeature.COMPLETION, parameters.originalFile.project)
+        val native = CSharpFeatures.native(CSharpFeature.COMPLETION, parameters.originalFile)
         val recommendation = if (native && !namePlace) CSharpKeywordRecommendations.at(position) else null
         val inNameof = native && CSharpKeywordRecommendations.inNameof(position)
         val inTypeof = native && CSharpKeywordRecommendations.inTypeof(position)

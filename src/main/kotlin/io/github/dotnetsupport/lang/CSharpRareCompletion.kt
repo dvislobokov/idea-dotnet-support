@@ -31,7 +31,7 @@ import java.util.concurrent.Callable
 class CSharpRareCompletion : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
         val file = parameters.originalFile as? CSharpFile ?: return
-        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, file.project)) return
+        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, file)) return
         val text = parameters.editor.document.charsSequence
         val offset = parameters.offset
         val line = text.subSequence(CSharpPreprocessor.lineStart(text, offset), offset).toString()

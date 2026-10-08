@@ -36,7 +36,7 @@ class NativeCSharpLambdaGhost : InlineCompletionProvider {
     override fun isEnabled(event: InlineCompletionEvent): Boolean {
         val request = event.toRequest() ?: return false
         val file = request.file as? CSharpFile ?: return false
-        if (!CSharpFeatures.native(CSharpFeature.DOCUMENTATION, file.project)) return false
+        if (!CSharpFeatures.native(CSharpFeature.DOCUMENTATION, file)) return false
         return CSharpLambdaNames.atArgumentStart(request.document.immutableCharSequence, request.endOffset)
     }
 

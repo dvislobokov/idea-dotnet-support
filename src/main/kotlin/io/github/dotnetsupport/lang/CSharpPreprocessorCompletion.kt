@@ -35,7 +35,7 @@ import io.github.dotnetsupport.msbuild.FrameworkDefaults
 class CSharpPreprocessorCompletion : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
         val file = parameters.originalFile as? CSharpFile ?: return
-        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, file.project)) return
+        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, file)) return
         if (CSharpLeaves.STRINGS.contains(parameters.position.elementType)) return
         val text = parameters.editor.document.charsSequence
         val offset = parameters.offset

@@ -25,7 +25,7 @@ object NativeCSharpEditing {
     /** The switch says NATIVE and [file] is of the native tree (a file parsed under the other switch keeps its tree for a while). */
     fun usable(file: PsiFile?): Boolean =
         // the tree is PSI: the inline completion handler asks on the EDT without read access (seen live, 2026.1 has no implicit read access there)
-        file is CSharpFile && read { file.compilationUnit != null } && CSharpFeatures.native(CSharpFeature.EDITING, file.project)
+        file is CSharpFile && read { file.compilationUnit != null } && CSharpFeatures.native(CSharpFeature.EDITING, file)
 
     internal fun <T> read(compute: () -> T): T =
         if (ApplicationManager.getApplication().isReadAccessAllowed) compute() else ReadAction.compute<T, RuntimeException>(compute)

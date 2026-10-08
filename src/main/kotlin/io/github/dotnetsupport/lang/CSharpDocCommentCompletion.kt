@@ -28,7 +28,7 @@ import io.github.dotnetsupport.csharp.lang.psi.CSharpSimpleName
 class CSharpDocCommentCompletion : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
         val file = parameters.originalFile as? CSharpFile ?: return
-        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, file.project)) return
+        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, file)) return
         val text = parameters.editor.document.charsSequence
         val offset = parameters.offset
         val rest = CSharpDocCommentItems.restOfLine(text, offset) ?: return

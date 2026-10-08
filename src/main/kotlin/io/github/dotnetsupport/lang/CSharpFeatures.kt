@@ -4,8 +4,10 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Disposer
+import com.intellij.psi.PsiFile
 import io.github.dotnetsupport.DotNetBundle
 import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
+import io.github.dotnetsupport.lsp.RoslynServerStatus
 import org.jetbrains.annotations.TestOnly
 
 /**
@@ -161,6 +163,19 @@ object CSharpFeatures {
 
     /** Settings and dumb mode only, no PSI: safe on the EDT and in the background without a read action. */
     fun native(feature: CSharpFeature, project: Project): Boolean = native(feature, dumb = feature.needsIndexes && DumbService.isDumb(project))
+
+    /**
+     * [native] for a feature of [file]: also when the switch is ROSLYN, the plugin answers for a file the ready server does not know (a
+     * project of another solution of the folder, a loose file: `RoslynServerStatus.outside`), as it does with the server off. The copy of
+     * completion is asked by its original.
+     */
+    fun native(feature: CSharpFeature, file: PsiFile?): Boolean {
+        if (file == null) return false
+        val project = file.project
+        if (native(feature, project)) return true
+        if (!hasNative(feature) || feature.needsIndexes && DumbService.isDumb(project)) return false
+        return RoslynServerStatus.outside(project, file.originalFile.virtualFile ?: file.viewProvider.virtualFile)
+    }
 
     /**
      * Application settings only, for who has no project (the parser definition, `CSharpSyntaxTrees.nativeTree`): the answer for [dumb]

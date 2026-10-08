@@ -128,7 +128,7 @@ object CSharpConfigurationKeys {
 class CSharpConfigurationKeyCompletion : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
         val original = parameters.originalFile as? CSharpFile ?: return
-        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, original.project)) return
+        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, original)) return
         val leaf = parameters.position
         val literal = CSharpStringArguments.literalOf(leaf) ?: return
         val place = CSharpConfigurationKeys.placeOf(literal) ?: return

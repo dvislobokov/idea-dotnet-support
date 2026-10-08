@@ -61,7 +61,7 @@ import com.intellij.openapi.roots.ProjectFileIndex
  */
 object NativeCSharpRename {
     /** The switch gives RENAME to the native tree and [file] is of it. */
-    fun serves(file: PsiFile?): Boolean = file is CSharpFile && file.compilationUnit != null && CSharpFeatures.native(CSharpFeature.RENAME, file.project)
+    fun serves(file: PsiFile?): Boolean = file is CSharpFile && file.compilationUnit != null && CSharpFeatures.native(CSharpFeature.RENAME, file)
 
     private val forwarding = ThreadLocal.withInitial { false }
 
@@ -106,13 +106,13 @@ object NativeCSharpRename {
         val owner = owner(symbol)
         // every part of a partial type or method declares its type parameters (and a partial method its parameters) again
         if (symbol.kind != LocalSymbolKind.PRIMARY_CONSTRUCTOR_PARAMETER && owner is CSharpMemberDeclaration && owner.modifiers.any { it.textMatches("partial") }) {
-            return elsewhere(file.project, "'${symbol.name}' is declared by every part of a partial declaration: it is renamed by the C# language server, which is not ready")
+            return elsewhere(file, "'${symbol.name}' is declared by every part of a partial declaration: it is renamed by the C# language server, which is not ready")
         }
         val extra = ArrayList<TextRange>()
         if (symbol.kind == LocalSymbolKind.PARAMETER || symbol.kind == LocalSymbolKind.PRIMARY_CONSTRUCTOR_PARAMETER) {
             val named = namedArguments(file, resolver, symbol, owner)
             if (named == null || deep && owner !is CSharpLocalFunctionStatement && namedArgumentsElsewhere(file, symbol.name.removePrefix("@"))) {
-                return elsewhere(file.project, "Parameter '${symbol.name}' is used as a named argument the built-in rename cannot follow: it is renamed by the C# language server, which is not ready")
+                return elsewhere(file, "Parameter '${symbol.name}' is used as a named argument the built-in rename cannot follow: it is renamed by the C# language server, which is not ready")
             }
             extra += named
         }
@@ -132,11 +132,11 @@ object NativeCSharpRename {
     private fun solution(file: CSharpFile, leaf: PsiElement): Decision {
         val project = file.project
         val notLocal = "'${leaf.text}' is not a local symbol: it is renamed by the C# language server, which is not ready"
-        if (leaf.parent is CSharpParameter || DumbService.isDumb(project)) return elsewhere(project, notLocal)
-        var target = CSharpSolutionSearch.targetAt(leaf, CSharpSemanticSession(project)) ?: return elsewhere(project, notLocal)
+        if (leaf.parent is CSharpParameter || DumbService.isDumb(project)) return elsewhere(file, notLocal)
+        var target = CSharpSolutionSearch.targetAt(leaf, CSharpSemanticSession(project)) ?: return elsewhere(file, notLocal)
         // a constructor is named by its type: renaming it renames the type, as in Rider
         if (target.kind == CSharpSearchTarget.Kind.CONSTRUCTOR) {
-            target = target.primary?.let(CSharpSolutionSearch::ownerType)?.let(CSharpSolutionSearch::targetOf) ?: return elsewhere(project, notLocal)
+            target = target.primary?.let(CSharpSolutionSearch::ownerType)?.let(CSharpSolutionSearch::targetOf) ?: return elsewhere(file, notLocal)
         }
         if (target.declarations.isEmpty()) return Refuse("'${target.name}' is declared in a referenced assembly and cannot be renamed")
         val index = ProjectFileIndex.getInstance(project)
@@ -148,7 +148,8 @@ object NativeCSharpRename {
         return Solution(target)
     }
 
-    private fun elsewhere(project: Project, reason: String): Decision = if (RoslynServerStatus.isReady(project)) Server else Refuse(reason)
+    // a file of a project the server has not loaded is not renamed by it either
+    private fun elsewhere(file: PsiFile, reason: String): Decision = if (RoslynServerStatus.isReady(file.project, file.virtualFile)) Server else Refuse(reason)
 
     /** What declares the parameters or type parameters [symbol] is one of: a method, a lambda, a type...; null for locals and labels. */
     private fun owner(symbol: LocalSymbol): PsiElement? = when (val parent = symbol.declaration.parent) {

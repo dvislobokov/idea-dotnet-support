@@ -25,7 +25,7 @@ import io.github.dotnetsupport.lang.semantic.SemanticType
  */
 class NativeCSharpParameterInfoHandler : ParameterInfoHandler<CSharpBaseArgumentList, NativeCSharpParameterInfo.Row> {
     override fun findElementForParameterInfo(context: CreateParameterInfoContext): CSharpBaseArgumentList? {
-        if (!CSharpFeatures.native(CSharpFeature.DOCUMENTATION, context.project)) return null
+        if (!CSharpFeatures.native(CSharpFeature.DOCUMENTATION, context.file)) return null
         val file = context.file as? CSharpFile ?: return null
         val list = NativeCSharpParameterInfo.listAt(file, context.offset) ?: return null
         val rows = NativeCSharpParameterInfo.rows(file, list).ifEmpty { return null }
