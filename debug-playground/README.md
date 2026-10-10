@@ -849,7 +849,7 @@ AppHost запускает `Web` как ресурс `web`. Профиль `http
 - [ ] live templates `hal`, `ua`, `rta`, `ctx` в классе контроллера: `[HttpGet] public IActionResult Index()`, `Url.Action("Index", "Home")`, `return RedirectToAction("Index");`, `HttpContext.`
 
 ### Серый текст сети (ML-сборка, 0.1.139) — `Console/Editor/MlInline.cs`
-Нужна сборка с `-PmlEnabled=true` (песочница: `runIdeForUiTests -PmlEnabled=true [-Pml.big=true]`); Settings | .NET | ML completion →
+Нужна сборка с `-PmlEnabled=true` (песочница: `runIdeForUiTests -PmlEnabled=true`); Settings | .NET | ML completion →
 «Писать каждый ответ сети в журнал», ответы — в .NET | Plugin Logs, категория `ml`.
 - [ ] `TYPE:ml-return-line` — на пустой строке в `if (customer == null) {` серым `return NotFound();` целиком (или уверенное начало до `;`), не `return NotFound`
 - [ ] `TYPE:ml-semicolon` — после набранного `return NotFound()` серая `;` (журнал: `gate 0.5 (statement end)`), Tab ставит её; без пробела перед `;`; пока парная `)` ещё впереди каретки — ничего

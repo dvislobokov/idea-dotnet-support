@@ -40,10 +40,9 @@ export JAVA_HOME="C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 202
 
 ```sh
 ./gradlew.bat buildPlugin                                                  # обычная сборка: build/distributions/idea-dotnet-support-<v>.zip
-./gradlew.bat buildPlugin -PmlEnabled=true                                 # ML-сборка с трансформером 31m: …-<v>-ml.zip
-./gradlew.bat buildPlugin -PmlEnabled=true -Pml.big=true                   # ML-сборка с 31m и большим 50m (переключатель на Settings | .NET | ML completion)
+./gradlew.bat buildPlugin -PmlEnabled=true                                 # ML-сборка с трансформером 50m (cs50m-caret-ft5e5): …-<v>-ml.zip
 ./gradlew.bat runIde --offline --no-configuration-cache                    # песочница IDE без ML
-./gradlew.bat runIde -PmlEnabled=true -Pml.big=true --offline --no-configuration-cache   # песочница IDE с ML и 50m
+./gradlew.bat runIde -PmlEnabled=true --offline --no-configuration-cache   # песочница IDE с ML
 ```
 
 - Целевая платформа — локальная **IntelliJ IDEA Community Edition 2026.1.4** (`localIdePath` в `gradle.properties`; решение пользователя 2026-10-05:

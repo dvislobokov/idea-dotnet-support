@@ -25,11 +25,13 @@ class CSharpNnModelTest {
         } finally { nn.model.close() }
     }
 
-    @Test fun aFluentChainGoesOnBelowTheLineWithTheOpenBracket() {
+    @Test fun aFluentChainIsContinuedWithItsBracketsClosed() {
         assumeTrue("no ml-models/csharp/${CSharpMlModels.NN_MODEL}", dir != null)
         val nn = checkNotNull(CSharpMlModels.loadNn(dir)) { "no network in $dir" }
         try {
-            // the file shows the style (the ShopApi Program.cs of 2026-10-08): the model continues the chain line by line
+            // the file shows the style (the ShopApi Program.cs of 2026-10-08). cs31m continued the chain line by line (`.WithTracing(tracing => tracing`,
+            // then the lines below); cs50m-caret-ft5e5 (0.1.159), fine-tuned on single-line completions, usually writes the call on one line —
+            // both are right as long as the continuation is a call of the chain and its brackets close
             val head = "using OpenTelemetry.Metrics;\n\nvar builder = WebApplication.CreateBuilder(args);\n\nbuilder.Services.AddOpenTelemetry()\n    .WithTracing(tracing => tracing\n        .AddSource(ShopTelemetry.ServiceName)\n        .AddAspNetCoreInstrumentation()\n        .AddOtlpExporter())\n    .WithMetrics(metrics => metrics\n        .AddMeter(ShopMetrics.MeterName)\n        .AddAspNetCoreInstrumentation()\n        .AddPrometheusExporter());\n\nbuilder.Services.AddOpenTelemetry()\n    "
             val tail = "\n\nvar app = builder.Build();\napp.Run();\n"
             nn.model.newSession(4096).use { s ->
@@ -40,8 +42,8 @@ class CSharpNnModelTest {
                     n.textString.takeIf { n.text.isNotEmpty() && !n.repeated && !n.healMiss && n.confProd >= 0.25 }
                 }
                 println("CSharpNnModelTest: fluent chain -> '${text.replace("\n", "⏎")}' (first line confProd ${first.confProd})")
-                assertTrue("the first line opens a bracket: '${first.textString}'", CSharpNnInline.openBrackets(ByteArray(0), first.text) > 0)
-                assertTrue("goes on below: '$text'", text.contains('\n'))
+                assertTrue("a call of the chain: '${first.textString}'", first.textString.startsWith("."))
+                if (CSharpNnInline.openBrackets(ByteArray(0), first.text) > 0) assertTrue("an open bracket goes on below: '$text'", text.contains('\n'))
                 assertTrue("the brackets close: '$text'", CSharpNnInline.openBrackets(ByteArray(0), text.toByteArray()) <= 0)
             }
         } finally { nn.model.close() }

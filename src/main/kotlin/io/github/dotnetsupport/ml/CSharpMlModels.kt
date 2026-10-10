@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicReference
  * `-PmlEnabled=true`) or taken from the directory of [CSharpMlSettings.modelDirectory] (the file names of `ml-models/csharp`):
  *  - the ranker pair — the n-gram language model [LM] and the ranker [RANKER] (linear or GBDT, by the `.cml` kind) of [CSharpMlCompletionRanker]; loaded once, in the
  *    background, on the first completion (or by [CSharpMlPreloadActivity] when a project with C# files opens); until then the ranker abstains;
- *  - the network — the transformer [NN_MODEL] (or [NN_BIG_MODEL] with [CSharpMlSettings.bigModel]) and its vocabulary [NN_VOCAB] of the grey
+ *  - the network — the transformer [NN_MODEL] and its vocabulary [NN_VOCAB] of the grey
  *    text ([CSharpNnInlineCompletionProvider]). One [NnModel] per application (~100 MB, the int8 weights memory-mapped from a copy of the
  *    resource in the system directory, keyed by SHA-256), loaded and warmed up on the first C# editor or at project open. The model is not
  *    reentrant, so everything that touches it — loading, `complete`, the prefill of an opened file, closing sessions — runs on one daemon
@@ -105,7 +105,7 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
     fun nn(modelDirectory: String): Nn? {
         val settings = CSharpMlSettings.getInstance()
         if (!settings.inlineEnabled) return null
-        val key = nnKey(modelDirectory, settings.bigModel)
+        val key = modelDirectory.trim()
         val g = synchronized(this) {
             when (val s = nnState) {
                 is NnState.Ready -> if (s.key == key) return s.nn
@@ -285,9 +285,8 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
 
     /** On [thread]: reads, builds and warms up the network. */
     private fun loadNn(key: String): NnState.Ready = try {
-        val big = key.endsWith(BIG_SUFFIX)
-        val dir = key.removeSuffix(BIG_SUFFIX).takeIf { it.isNotEmpty() }?.let(::File)
-        val nn = loadNn(dir, big)
+        val dir = key.takeIf { it.isNotEmpty() }?.let(::File)
+        val nn = loadNn(dir)
         NnState.Ready(nn, key, if (nn == null) "no network in ${dir ?: "the plugin"}" else null)
     } catch (e: Throwable) {
         LOG.warn("ML inline completion network could not be loaded", e)
@@ -302,8 +301,7 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
         /** The files of `ml-models/csharp` (bundled by the ML build, or in the directory of the settings). */
         const val LM = "e15-a.cml"
         const val RANKER = "e19-rank-gbdt.cml"
-        const val NN_MODEL = "cs31m-e2-lr2e3.cml"
-        const val NN_BIG_MODEL = "cs50m-e3-lr2e3.cml"
+        const val NN_MODEL = "cs50m-caret-ft5e5.cml"
         const val NN_VOCAB = "cs-16384.bpe"
         /** KV cache of an editor's session: the prompt (≤ 2000 tokens) and the generated line; capped by the model's context. */
         private const val SESSION_CAPACITY = 2048
@@ -311,12 +309,9 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
         private const val MAX_CONTINUATION_LINES = 8
         /** A prefill opens no session beyond this many editors (each holds a KV cache); a completion always gets one. */
         private const val MAX_PREFILL_SESSIONS = 16
-        private const val BIG_SUFFIX = "|big"
         private const val WARM_UP = "using System;\n\nnamespace Demo\n{\n    public class Program\n    {\n        public static void Main()\n        {\n            Console.Wri"
 
         fun getInstance(): CSharpMlModels = service()
-
-        private fun nnKey(modelDirectory: String, big: Boolean) = modelDirectory.trim() + if (big) BIG_SUFFIX else ""
 
         private fun resource(name: String) = CSharpMlModels::class.java.classLoader.getResource("$RESOURCE_DIR/$name")
         /** True when the build carries the ranker pair. */
@@ -326,18 +321,16 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
 
         /** True when the build carries the grey-text network. */
         val isNnBundled: Boolean by lazy { resource(NN_MODEL) != null && resource(NN_VOCAB) != null }
-        /** True when the build carries the big network too. */
-        val isBigBundled: Boolean by lazy { resource(NN_BIG_MODEL) != null }
         /** True in a build that carries any of the models (and therefore shows the ML completion settings page). */
         val isBundled: Boolean by lazy { isRankerBundled || isNnBundled }
 
         /**
-         * Builds and warms up the network from [dir] (null: bundled): [NN_BIG_MODEL] when [big] and it exists, else [NN_MODEL], with
+         * Builds and warms up the network from [dir] (null: bundled): [NN_MODEL] with
          * [NN_VOCAB]. A directory without the network files falls back to the bundled network. Null when there is none at all. Blocking (a second).
          */
-        fun loadNn(dir: File?, big: Boolean = false, options: NnCompletion.Options = NnCompletion.Options()): Nn? {
+        fun loadNn(dir: File?, options: NnCompletion.Options = NnCompletion.Options()): Nn? {
             val started = System.currentTimeMillis()
-            val (modelFile, vocab) = dir?.let { directoryNn(it, big) } ?: bundledNn(big) ?: return null
+            val (modelFile, vocab) = dir?.let { directoryNn(it) } ?: bundledNn() ?: return null
             val model = NnModel(NnFormat.read(modelFile), nThreads = minOf(8, Runtime.getRuntime().availableProcessors()))
             val nn = try {
                 Nn(NnCompletion(model, vocab, options), model, modelFile.name.removeSuffix(".cml"))
@@ -349,16 +342,16 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
             return nn
         }
 
-        private fun directoryNn(dir: File, big: Boolean): Pair<File, BpeTokenizer>? {
-            val model = (if (big) File(dir, NN_BIG_MODEL).takeIf { it.isFile } else null) ?: File(dir, NN_MODEL).takeIf { it.isFile } ?: return null
+        private fun directoryNn(dir: File): Pair<File, BpeTokenizer>? {
+            val model = File(dir, NN_MODEL).takeIf { it.isFile } ?: return null
             val vocab = File(dir, NN_VOCAB).takeIf { it.isFile } ?: return null
             return model to BpeTokenizer.load(vocab.toPath())
         }
 
-        private fun bundledNn(big: Boolean): Pair<File, BpeTokenizer>? {
+        private fun bundledNn(): Pair<File, BpeTokenizer>? {
             val cl = CSharpMlModels::class.java.classLoader
             val vocab = cl.getResourceAsStream("$RESOURCE_DIR/$NN_VOCAB")?.use { BpeTokenizer.load(it) } ?: return null
-            val model = (if (big) extract("$RESOURCE_DIR/$NN_BIG_MODEL") else null) ?: extract("$RESOURCE_DIR/$NN_MODEL") ?: return null
+            val model = extract("$RESOURCE_DIR/$NN_MODEL") ?: return null
             return model to vocab
         }
 

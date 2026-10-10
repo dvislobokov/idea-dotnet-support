@@ -26,8 +26,6 @@ class CSharpMlSettings : SimplePersistentStateComponent<CSharpMlSettings.Options
         var modelDirectory by string("")
         /** Grey text to the end of the line from the transformer; off (the default): the network is not even loaded. */
         var inlineEnabled by property(false)
-        /** The big network (`cs50m-e3-lr2e3.cml`, +1.4 p.p. exact lines for 1.7× the latency) when the build or the directory has it. */
-        var bigModel by property(false)
         /** `confProd` a suggestion needs to be shown (0.7: 14 % of positions, 94 % exact lines; 0.8: 10 % / 97 %). */
         var inlineThreshold by property(0.7f)
         /** The gate right after `.`, `?.`, `::`, `->` (0.5: 30 % of such positions, 96 % exact) and for a `;` that ends the statement: the model is as right there but less sure. */
@@ -69,10 +67,6 @@ class CSharpMlSettings : SimplePersistentStateComponent<CSharpMlSettings.Options
     var inlineEnabled: Boolean
         get() = state.inlineEnabled
         set(value) { state.inlineEnabled = value }
-
-    var bigModel: Boolean
-        get() = state.bigModel
-        set(value) { state.bigModel = value }
 
     var inlineThreshold: Double
         get() = state.inlineThreshold.toString().toDouble()

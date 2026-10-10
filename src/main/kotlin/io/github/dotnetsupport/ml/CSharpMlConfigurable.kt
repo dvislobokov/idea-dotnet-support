@@ -32,7 +32,6 @@ class CSharpMlConfigurable : BoundConfigurable(DotNetBundle.message("page.ml")) 
         }
         group(DotNetBundle.message("ml.inline.group")) {
             row { checkBox(DotNetBundle.message("ml.inline.enabled")).bindSelected(settings::inlineEnabled).comment(DotNetBundle.message("ml.inline.enabled.comment")) }
-            row { checkBox(DotNetBundle.message("ml.inline.bigModel")).bindSelected(settings::bigModel).comment(DotNetBundle.message("ml.inline.bigModel.comment")) }
             row(DotNetBundle.message("ml.inline.threshold")) {
                 spinner(0.5..0.99, 0.05).bindValue(settings::inlineThreshold).comment(DotNetBundle.message("ml.inline.threshold.comment"))
             }
@@ -69,7 +68,7 @@ class CSharpMlConfigurable : BoundConfigurable(DotNetBundle.message("page.ml")) 
     }
 
     /** What a change of makes the loaded models stale (the gates and the closers are read per call). */
-    private fun snapshot() = listOf(settings.modelDirectory, settings.rankerEnabled, settings.inlineEnabled, settings.bigModel)
+    private fun snapshot() = listOf(settings.modelDirectory, settings.rankerEnabled, settings.inlineEnabled)
 
     private fun refreshStatus() {
         val models = CSharpMlModels.getInstance()

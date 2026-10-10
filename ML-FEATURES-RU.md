@@ -7,8 +7,8 @@
 ## Сборки
 - Обычная сборка (`bash gradlew buildPlugin`, ~10 МБ): только PSI-функции — маппинг, память выбора, выбор `using` по статистике
   (последний работает, если рядом есть `ml-models/csharp/cs-imports-e20.cml` или задан каталог моделей).
-- ML-сборка (`bash gradlew buildPlugin -PmlEnabled=true [-Pml.big=true]` → `build/distributions/idea-dotnet-support-<версия>-ml.zip`,
-  ~70 МБ, с 50 M — 120 МБ): плюс серый текст от нашей сети (31 M, с `-Pml.big` ещё 50 M), ранкер списка (n-gram e15-a + GBDT e19)
+- ML-сборка (`bash gradlew buildPlugin -PmlEnabled=true` → `build/distributions/idea-dotnet-support-<версия>-ml.zip`,
+  ~90 МБ): плюс серый текст от нашей сети (50 M, `cs50m-caret-ft5e5`, с 0.1.159), ранкер списка (n-gram e15-a + GBDT e19)
   и статистика импортов в jar; нативные ядра для Linux/Windows/macOS внутри `lib/ml-core.jar`. Собирается и на сервере.
 
 ## Где настройки

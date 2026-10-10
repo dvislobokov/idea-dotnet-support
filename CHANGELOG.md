@@ -3,6 +3,17 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.159
+
+- ML grey text: a new network, `cs50m-caret-ft5e5.cml` (`CSharpMlModels.NN_MODEL`), is the one network of the ML build: the 31 M default
+  (`cs31m-e2-lr2e3.cml`), the big model `cs50m-e3-lr2e3.cml`, `-Pml.big=true` and the setting "Use the big model" are gone. The new network
+  has the 50 M architecture and vocabulary of the old big one (about 1.6× the latency of the 31 M network), trained from scratch on a
+  larger corpus (6.47 G tokens, 27 948 repositories) and fine-tuned on 1.05 M caret positions in the plugin's prompt format, loss on the
+  rest of the line and the stop token only (csharp-dataset-prepare `docs/experiments/README-RU.md`). On 12 000 positions of repositories
+  no model has seen: rest of the line exact 43.8 % (old 50 M: 32.7 %), shown at the gate 28.9 % of positions (15.4 %), 89.6 % of the
+  shown lines exact (81.3 %). A fluent chain is now often completed on one line with its brackets closed instead of going on below an
+  open bracket (`CSharpNnModelTest.aFluentChainIsContinuedWithItsBracketsClosed` accepts both). The old files stay in `ml-models/csharp`.
+
 ## 0.1.158
 
 - A C# file of a project that the loaded solution does not have (another solution of the folder, e.g. `ShopApi/` next to the root
