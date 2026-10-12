@@ -78,6 +78,8 @@
 
         <lang.parserDefinition language="C#"
                                implementationClass="io.github.dotnetsupport.lang.CSharpParserDefinition"/>
+        <!-- fork 7A: the refactorings of the platform for C# (Change Signature, Ctrl+F6) -->
+        <lang.refactoringSupport language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpRefactoringSupport"/>
         <!-- string literals of the native tree are hosts of injected languages (RegExp in dotnet-regexp.xml): CSharpStringLiteralHost.kt -->
         <lang.ast.factory language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpAstFactory"/>
         <lang.elementManipulator forClass="io.github.dotnetsupport.lang.CSharpStringLiteralLeaf"
@@ -196,6 +198,8 @@
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpCheckParameterForNullIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpAddArgumentNamesIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpRemoveArgumentNamesIntention</className><category>C#</category></intentionAction>
+        <!-- fork 7A: Change Signature (0.1.174, NativeCSharpChangeSignature.kt) -->
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpChangeSignatureIntention</className><category>C#</category></intentionAction>
         <!-- docs, types, inline (0.1.173) -->
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpAddExceptionDocumentationIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpImportStaticMembersIntention</className><category>C#</category></intentionAction>
@@ -803,6 +807,8 @@
         <action id="IntroduceField" class="io.github.dotnetsupport.lang.CSharpIntroduceFieldAction" overrides="true"/>
         <action id="IntroduceParameter" class="io.github.dotnetsupport.lang.CSharpIntroduceParameterAction" overrides="true"/>
         <action id="Generate" class="io.github.dotnetsupport.lang.CSharpGenerateAction" overrides="true"/>
+        <!-- Safe Delete (Alt+Delete, Refactor This): the native one in a C# editor, the platform's elsewhere (0.1.174, NativeCSharpSafeDelete) -->
+        <action id="SafeDelete" class="io.github.dotnetsupport.lang.CSharpSafeDeleteAction" overrides="true"/>
         <!-- Rider's ReSharperNavigateTo: Ctrl+Shift+G in its default keymap -->
         <action id="DotNet.NavigateTo" class="io.github.dotnetsupport.lang.CSharpNavigateToAction" text="Navigate To..."
                 description="Where the symbol at the caret leads: declaration, implementation, base symbols, usages, related files, type, tests, IL">

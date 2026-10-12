@@ -1,0 +1,3 @@
+void Save(<spot>bool force, Order order</spot>) { }
+
+Save(<spot>true, order</spot>);

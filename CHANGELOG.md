@@ -3,6 +3,24 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.174
+
+Stage 7 of the fixes found comparing with Rider on Jellyfin (`docs/compare/jellyfin-2026-10-12.md`, section 9): the large refactorings.
+- Change Signature (Alt+Enter "Change signature…", Refactor This, Ctrl+F6): a dialog with the name, the return type and the parameters
+  (modifier, type, name, default value, value at call sites), a preview; the declaration and its whole hierarchy and every call across the
+  solution updated (arguments reordered, named ones kept by name, removed ones dropped, added ones with the value at call sites, `new`,
+  `this(…)`, `base(…)`, local functions); conflicts (method groups, a removed parameter used in the body…) shown before the change, one undo.
+- Safe Delete (Alt+Delete, Refactor This): types (all partial parts, the file when it holds only the type), members with their doc
+  comments, enum members, field declarators, parameters (in the whole hierarchy, with the arguments of every call and the `<param>` line),
+  locals (a value with side effects kept), local functions, type parameters (with `where`, `<typeparam>` and the type arguments of the
+  uses); remaining usages shown as conflicts, as in Rider.
+- Extract Interface / Extract Superclass / Extract Class (Refactor This, a dialog of members): signatures with doc comments and type
+  parameters; moved or abstract members, private helpers made protected, the old base passed on; a field of the new class for Extract
+  Class (the simple case).
+- Pull Members Up / Push Members Down (direct bases and derived types: moved members, abstract declarations, accessibility, `using`s,
+  conflicts) and Use Base Type Where Possible (parameters, locals and fields used only through a base's members).
+- Tests `CSharpChangeSignatureTest`, `CSharpSafeDeleteTest`, `CSharpExtractTypeTest`, `CSharpHierarchyRefactoringsTest`.
+
 ## 0.1.173
 
 Stage 6 of the fixes found comparing with Rider on Jellyfin (`docs/compare/jellyfin-2026-10-12.md`, section 9): the actions of medium

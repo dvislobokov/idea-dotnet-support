@@ -162,6 +162,13 @@
   members, Inline Method, Create derived type, Copy type, Cover (`NativeCSharpTypeActions.kt`). Ограничения: To factory method и
   Encapsulate field — в пределах файла; Move to namespace не переписывает полные имена; Generate type patterns и Copy type без диалога
   Rider; имя производного типа (`IFoo` → `Foo`, `FooImpl`) — догадка. Вживую не проверено
+- [x] 0.1.174 — этап 7, крупные рефакторинги (четыре агента): Change Signature с диалогом, иерархией и вызовами по solution, Ctrl+F6
+  (`NativeCSharpChangeSignature.kt`, `lang.refactoringSupport`); Safe Delete своим действием поверх платформенного (`NativeCSharpSafeDelete.kt`);
+  Extract Interface / Superclass / Class (`NativeCSharpExtractTypeRefactorings.kt`); Pull Members Up / Push Members Down, Use Base Type Where
+  Possible (`NativeCSharpHierarchyRefactorings.kt`). Ограничения: вызовы индексаторов и делегатов Change Signature не обновляет; Safe Delete не
+  удаляет иерархию вместе и параметры лямбд / индексаторов; Extract Class — простой случай; Pull / Push — только прямые базы и наследники.
+  С этим этапом закрыт план сравнения с Rider (разделы 8–9 отчёта), кроме № 12 (на обсуждение), № 60 (прочие редкие рефакторинги) и № 78
+  (замер открытия и индексации). Вживую не проверено
   Вживую не проверено
 - [x] 0.1.159 — сеть серого текста `cs50m-caret-ft5e5.cml` — единственная в ML-сборке (31 M, `-Pml.big` и настройка «большая модель»
   убраны): обучение с нуля на 6,47 млрд токенов и дообучение на 1,05 млн позиций каретки в формате промпта плагина; на 12 000 позиций

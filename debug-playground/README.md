@@ -1100,3 +1100,9 @@ Settings | .NET | Language Server, группа Analysis: «Compiler diagnostics
 - [ ] `TYPE:switch-expression-to-if`, `switch-to-conditional`, `switch-condition-component`, `switch-type-patterns`; `TYPE:param-overload`, `param-chop`
 - [ ] `TYPE:ext-block-all`, `ext-block-one` (`MultiTarget`, TFM .NET 10.0 в тулбаре): Convert to extension block
 - [ ] `TYPE:type-exception-doc`, `type-import-static`, `type-inline-call`, `type-inline-all`, `type-derived`, `type-derived-class`, `type-copy`; `TYPE:type-cover` (`Tests/PricingTests.cs`)
+
+### Исправления по сравнению с Rider, этап 7 (0.1.174) — `Console/Editor/ChangeSignature.cs`, `SafeDelete.cs`, `ExtractType.cs`, `HierarchyRefactorings.cs`
+- [ ] `TYPE:sig-hierarchy`, `sig-add`, `sig-remove-rename`, `sig-method-group`: Change Signature (Ctrl+F6 / Alt+Enter / Refactor This) — диалог, иерархия, вызовы, конфликты
+- [ ] `TYPE:del-method`, `del-used`, `del-parameter`, `del-local`, `del-enum`, `del-type-parameter`: Safe Delete (Alt+Delete) — удаление, аргументы, конфликты
+- [ ] `TYPE:extract-interface`, `extract-superclass`, `extract-class`: Extract Interface / Superclass / Class из Refactor This
+- [ ] `TYPE:hier-pull-up`, `hier-pull-conflict`, `hier-pull-abstract`, `hier-pull-interface`, `hier-push-down`, `hier-use-base`: Pull / Push, Use Base Type

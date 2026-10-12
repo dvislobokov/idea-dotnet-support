@@ -145,8 +145,18 @@ object CSharpRiderPopups {
                 // Rider's moves of a type and Extract Members to Partial (Jellyfin № 54, № 57): rows of Refactor This only
                 NativeCSharpMoveToNamespaceRow() to null, NativeCSharpMoveToAnotherFileRow() to null, NativeCSharpMoveToFolderRow() to null,
                 NativeCSharpExtractToPartialRow() to null,
+                // Rider's Extract Interface / Superclass / Class (Jellyfin № 52, 0.1.174)
+                NativeCSharpExtractInterfaceRow() to null,
+                NativeCSharpExtractSuperclassRow() to null,
+                NativeCSharpExtractClassRow() to null,
                 // 0.1.173: Rider's Refactor This rows of the same names
                 NativeCSharpInlineMethodIntention() to "Inline Method", NativeCSharpInlineMethodAllIntention() to "Inline Method", NativeCSharpCopyTypeIntention() to "Copy Type",
+                // fork 7A: Change Signature (Jellyfin № 51)
+                NativeCSharpChangeSignatureIntention() to "Change Signature",
+                // Rider's hierarchy refactorings (Jellyfin № 53, № 55)
+                NativeCSharpPullMembersUpRow() to null,
+                NativeCSharpPushMembersDownRow() to null,
+                NativeCSharpUseBaseTypeRow() to null,
             )
             CSharpPopupKind.GENERATE -> listOf(CreateTestIntention() to "Unit Test", AddPartialPartIntention() to "Partial Part")
         }
