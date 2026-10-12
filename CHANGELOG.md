@@ -3,6 +3,20 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.170
+
+Stage 3 of the fixes found comparing with Rider on Jellyfin (`docs/compare/jellyfin-2026-10-12.md`, section 9): Refactor This and
+Alt+Enter where Rider has them.
+- Refactor This lists Introduce Field / Introduce Parameter only where they apply (an expression in a body), not on every header.
+- Introduce Variable where Rider offers it: an `await` without a result (`var publish = Publish(); await publish;`), the caret on a
+  receiver (`user.ProfileImage`), on the type of a cast (the whole cast), a switch expression of collections (the type of the target),
+  the expression body of a lambda (the lambda gets a block).
+- "Sort 'using' directives" on any block of two or more directives, honouring `dotnet_sort_system_directives_first`; "Add argument
+  name 'pattern'" with the caret in a string literal of an attribute argument; new navigation rows in Alt+Enter on a member header:
+  "Incoming Calls", "Outgoing Calls", "Implements … / Overrides …".
+- Tests `CSharpRefactorThisTest`, `CSharpContextActionsTest`, `CSharpUsingsTest`, `CSharpParameterActionsTest`,
+  `CSharpNavigationIntentionsTest`; scenario `Console/Editor/RefactorThis.cs`.
+
 ## 0.1.169
 
 Stage 2 of the fixes found comparing with Rider on Jellyfin (`docs/compare/jellyfin-2026-10-12.md`, section 9): typing and the list.

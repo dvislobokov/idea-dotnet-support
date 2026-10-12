@@ -1076,3 +1076,9 @@ Settings | .NET | Language Server, группа Analysis: «Compiler diagnostics
 - [ ] `TYPE:analogy-foreach-type`: `foreach (var preference in |` → серым коллекция с элементами `Preference`
 - [ ] `TYPE:postfix-foreach-char`: `.foreach` по `char[]` → элемент `c`, тип — остановка с выбором; `TYPE:ctor-blank-line`: `ctor` под членом → пустая строка над ним
 - [ ] `TYPE:ranking-condition-new`, `TYPE:ranking-argument`, `TYPE:ranking-throw`: `new` не вторым; в аргументе значения нужного типа, `default`, `nameof`, `null` сверху; `Thro` → `throw` вторым
+
+### Исправления по сравнению с Rider, этап 3 (0.1.170) — `Console/Editor/RefactorThis.cs`, `ContextActions.cs`, `Usings.cs`
+- [ ] `TYPE:refactor-header`: Refactor This на заголовке типа / метода — без Introduce Field / Parameter; `TYPE:refactor-introduce` — с ними
+- [ ] `TYPE:refactor-await`, `TYPE:refactor-receiver`, `TYPE:refactor-cast`, `TYPE:refactor-switch`, `TYPE:refactor-lambda`: Introduce Variable предлагается и делает как в EXPECT
+- [ ] `TYPE:using-sort`: Sort 'using' directives на отсортированном блоке; `TYPE:arg-name-literal`: «Add argument name 'pattern'» с кареткой в строке
+- [ ] `TYPE:nav-calls`: Alt+Enter на заголовке метода — Incoming / Outgoing Calls, Overrides … — открывают иерархию / переходят

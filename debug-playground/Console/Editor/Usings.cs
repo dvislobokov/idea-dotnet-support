@@ -4,7 +4,7 @@
 // `using System.`, `static` after `using static `. Ctrl+Z.
 
 // TYPE:using-sort — Alt+Enter on any of the three directives below: "Sort 'using' directives". EXPECT: the directives of System, System.IO,
-// System.Text in that order. NOT offered once they are sorted. Ctrl+Z.
+// System.Text in that order. Once they are sorted it is still offered (as in Rider, 0.1.170) and changes nothing. Ctrl+Z.
 // TYPE:using-global — Alt+Enter on the directive of System.Text: "Convert to 'global using'". EXPECT: the line leaves this file and
 // `Console/GlobalUsings.cs` appears with the `global using` of System.Text (the project has no file of global usings yet). Ctrl+Z; delete
 // GlobalUsings.cs if it stays.

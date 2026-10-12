@@ -88,14 +88,30 @@ object CSharpRiderPopups {
         }
     }
 
-    /** The static part of Refactor This; [dynamic] (the plugin's and the server's) goes after Rider's first four. */
-    fun refactorGroup(dynamic: List<AnAction>): DefaultActionGroup = DefaultActionGroup().apply {
+    /**
+     * The static part of Refactor This; [dynamic] (the plugin's and the server's) goes after Rider's first four. [unavailable]: the ids of
+     * [REFACTOR_EXTRACT] that have nothing to take at the caret ([unavailableRefactorings]) — left out, as Rider lists them only where they apply.
+     */
+    fun refactorGroup(dynamic: List<AnAction>, unavailable: Set<String> = emptySet()): DefaultActionGroup = DefaultActionGroup().apply {
         REFACTOR_FIRST.forEach { id -> named(id, null)?.let(::add) }
         if (dynamic.isNotEmpty()) { addSeparator(); addAll(dynamic) }
         addSeparator()
-        REFACTOR_EXTRACT.forEach { id -> named(id, REFACTOR_NAMES[id])?.let(::add) }
+        REFACTOR_EXTRACT.filter { it !in unavailable }.forEach { id -> named(id, REFACTOR_NAMES[id])?.let(::add) }
         addSeparator()
         REFACTOR_MOVE.forEach { id -> named(id, null)?.let(::add) }
+    }
+
+    /**
+     * The native refactorings of [REFACTOR_EXTRACT] that cannot run at [offset] / [selection] of [file] (0.1.170): Introduce Field needs an
+     * expression of a known type in a member's body, Introduce Parameter one in a method or a constructor. Their actions stay enabled in
+     * the Refactor menu (a hint says why when chosen), but Refactor This lists only what applies, as Rider does. Under a read action.
+     */
+    fun unavailableRefactorings(file: CSharpFile, selection: com.intellij.openapi.util.TextRange?, offset: Int): Set<String> {
+        if (file.compilationUnit == null || DumbService.isDumb(file.project)) return emptySet()
+        val result = HashSet<String>()
+        if (runCatching { NativeCSharpIntroduceField.analyze(file, selection, offset) !is NativeCSharpIntroduceField.Result.Ok }.getOrDefault(true)) result += "IntroduceField"
+        if (runCatching { NativeCSharpIntroduceParameter.analyze(file, selection, offset) !is NativeCSharpIntroduceParameter.Result.Ok }.getOrDefault(true)) result += "IntroduceParameter"
+        return result
     }
 
     /** Generate: the generators first, in Rider's order, then the rest of the platform's Generate group (Insert New GUID...). */
@@ -243,7 +259,12 @@ class CSharpRefactorThisAction : AnAction(), DumbAware {
         val file = e.getData(CommonDataKeys.PSI_FILE)
         if (project == null || editor == null || file !is CSharpFile) return platform.actionPerformed(e)
         val dynamic = CSharpRiderPopups.dynamicActions(CSharpPopupKind.REFACTOR, project, editor, file)
-        CSharpRiderPopups.show(e, "Refactor This", CSharpRiderPopups.refactorGroup(dynamic), "No refactorings available at the caret")
+        val selection = editor.selectionModel.takeIf { it.hasSelection() }?.let { com.intellij.openapi.util.TextRange(it.selectionStart, it.selectionEnd) }
+        val offset = editor.caretModel.offset
+        val unavailable = ProgressManager.getInstance().runProcessWithProgressSynchronously<Set<String>, RuntimeException>({
+            ReadAction.compute<Set<String>, RuntimeException> { if (project.isDisposed) emptySet() else CSharpRiderPopups.unavailableRefactorings(file, selection, offset) }
+        }, "Looking for Refactorings", true, project)
+        CSharpRiderPopups.show(e, "Refactor This", CSharpRiderPopups.refactorGroup(dynamic, unavailable), "No refactorings available at the caret")
     }
 
     companion object {

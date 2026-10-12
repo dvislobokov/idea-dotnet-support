@@ -307,7 +307,9 @@ class CSharpUsingsTest : BasePlatformTestCase() {
             "namespace N\n{\n    using System;\n    using Acme;\n}",
             apply("namespace N\n{\n    using Acme;\n    using <caret>System;\n}", "Sort 'using' directives"),
         )
-        assertFalse("sorted already", available("using System;\nusing <caret>Acme;", "Sort 'using' directives"))
+        // offered on directives in order too, as Rider offers it (Jellyfin p13, 0.1.170): the text stays as it is
+        assertEquals("using System;\nusing Acme;", apply("using System;\nusing <caret>Acme;", "Sort 'using' directives"))
+        assertFalse("one directive", available("using <caret>Acme;\n\nclass A { }", "Sort 'using' directives"))
         assertFalse("a comment between", available("using Zeta;\n// why\nusing <caret>Acme;", "Sort 'using' directives"))
         assertFalse("broken: no semicolon", available("using Zeta\nusing <caret>Acme;", "Sort 'using' directives"))
     }

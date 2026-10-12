@@ -466,8 +466,12 @@ object NativeCSharpContextEdits {
 
     // ---- introduce variable
 
-    /** What "Introduce variable" takes out: [expression] before [statement]; [whole]: the expression is all the statement does (`Foo();`). */
-    class Extraction(val expression: CSharpExpression, val statement: CSharpStatement, val whole: Boolean, val name: String)
+    /**
+     * What "Introduce variable" takes out: [expression] before [statement]; [whole]: the expression is all the statement does (`Foo();`).
+     * [lambda]: the expression is in the expression body of this lambda, which gets a block body with the variable (0.1.170, as Rider);
+     * [statement] is then the statement around the lambda, for the names already taken.
+     */
+    class Extraction(val expression: CSharpExpression, val statement: CSharpStatement, val whole: Boolean, val name: String, val lambda: CSharpAnonymousFunctionExpression? = null)
 
     /**
      * The expression to put into a variable: the selected one, or the one at the caret — a call or a member access with its receiver, an
@@ -476,15 +480,46 @@ object NativeCSharpContextEdits {
      * an assignment, `ref` / `out`, a constant place; its type must be known (`var` needs one).
      */
     fun extractionAt(file: CSharpFile, selection: TextRange?, offset: Int, resolver: CSharpNameResolver): Extraction? {
-        val expression = (if (selection != null && !selection.isEmpty) selected(file, selection) else atCaret(file, offset)) ?: return null
-        val statement = enclosingStatement(expression) ?: return null
+        var expression = (if (selection != null && !selection.isEmpty) selected(file, selection) else atCaret(file, offset)) ?: return null
+        var type = typeOf(expression, resolver)
+        // `await PublishAsync(e).ConfigureAwait(false);`: nothing comes of the await, what it awaits is the value (0.1.170, as Rider)
+        if (expression is CSharpAwaitExpression && (type == null || isVoid(type))) {
+            expression = unwrap(expression.expression) ?: return null
+            type = typeOf(expression, resolver)
+        }
+        type ?: return null
+        if (isVoid(type)) return null
+        val written = CSharpTypeFacts.written(resolver, type, expression)
+        val statement = enclosingStatement(expression)
+        if (statement == null) {
+            // the expression body of a lambda: the lambda gets a block, the variable its first statement
+            val lambda = expressionBodied(expression) ?: return null
+            if (!movable(expression, lambda)) return null
+            val outer = PsiTreeUtil.getParentOfType(lambda, CSharpStatement::class.java)?.takeIf { it.parent is CSharpBlock } ?: return null
+            return Extraction(expression, outer, false, nameFor(expression, written, lambda), lambda)
+        }
         if (!movable(expression, statement)) return null
-        val type = resolver.typeOf(expression) ?: return null
-        if ((type as? io.github.dotnetsupport.lang.semantic.SemanticType.Library)?.type?.fullName == "System.Void") return null
         val whole = statement is CSharpExpressionStatement && statement.expression == expression
         if (whole && expression is CSharpAssignmentExpression) return null
-        val written = CSharpTypeFacts.written(resolver, type, expression)
         return Extraction(expression, statement, whole, nameFor(expression, written, statement))
+    }
+
+    /** The type of [expression], or the one its place gives a target-typed expression (`x switch { … => [..] }`, `?:` of collection expressions). */
+    private fun typeOf(expression: CSharpExpression, resolver: CSharpNameResolver): io.github.dotnetsupport.lang.semantic.SemanticType? =
+        resolver.typeOf(expression) ?: if (expression is CSharpSwitchExpression || expression is CSharpConditionalExpression) runCatching { resolver.expressions.target(expression) }.getOrNull() else null
+
+    private fun isVoid(type: io.github.dotnetsupport.lang.semantic.SemanticType): Boolean =
+        (type as? io.github.dotnetsupport.lang.semantic.SemanticType.Library)?.type?.fullName == "System.Void"
+
+    /** The lambda whose expression body holds [expression] (not inside a nested lambda); null for a block body or none. */
+    private fun expressionBodied(expression: CSharpExpression): CSharpAnonymousFunctionExpression? {
+        var at: PsiElement = expression
+        while (true) {
+            val parent = at.parent ?: return null
+            if (parent is CSharpStatement || parent is CSharpMemberDeclaration || parent is PsiFile) return null
+            if (parent is CSharpAnonymousFunctionExpression) return parent.takeIf { lambda -> lambda.expressionBody?.let { PsiTreeUtil.isAncestor(it, expression, false) } == true }
+            at = parent
+        }
     }
 
     /** The selected expression, or the one at the caret as "Introduce variable" takes it (a call with its receiver, an operator...). */
@@ -526,6 +561,12 @@ object NativeCSharpContextEdits {
                     parent is CSharpObjectCreationExpression && parent.type == expression -> parent
                     parent is CSharpGenericName || parent is CSharpQualifiedName || parent is CSharpTypeArgumentList -> parent as? CSharpExpression ?: return null
                     parent is CSharpAwaitExpression -> parent
+                    // `user.ProfileImage is null` with the caret on `user`: the member it reads, not the local alone (0.1.170, as Rider)
+                    parent is CSharpMemberAccessExpression && parent.expression == expression && expression is CSharpSimpleName -> parent
+                    // `((Folder)item)` with the caret on the type: the cast
+                    parent is CSharpCastExpression && parent.type == expression -> parent
+                    // `((Folder)item).Children`: the parentheses are the cast's, they go with it
+                    parent is CSharpParenthesizedExpression && expression is CSharpCastExpression -> parent
                     else -> break
                 }
             }
@@ -546,7 +587,8 @@ object NativeCSharpContextEdits {
         }
     }
 
-    private fun movable(expression: CSharpExpression, statement: CSharpStatement): Boolean {
+    /** [expression] may go into a variable declared before [statement] (or first in the block body [statement] — a lambda — gets). */
+    private fun movable(expression: CSharpExpression, statement: PsiElement): Boolean {
         if (expression is CSharpSimpleName && NativeCSharpTypePositions.isType(expression)) return false
         if (expression is CSharpInitializerExpression || expression is CSharpDeclarationExpression || expression is CSharpThrowExpression) return false
         if (expression is CSharpAnonymousFunctionExpression || expression is CSharpImplicitObjectCreationExpression || expression is CSharpCollectionExpression) return false
@@ -654,11 +696,11 @@ object NativeCSharpContextEdits {
         var cursor: Int
         val rest: List<CSharpExpression>
         if (anchor is CSharpExpressionStatement && anchor.expression == first) {
-            parts += " = ${first.text}"
+            parts += " = ${valueText(first)}"
             cursor = first.textRange.endOffset
             rest = occurrences.drop(1)
         } else {
-            parts += " = ${first.text};\n${indentOf(text, start)}"
+            parts += " = ${valueText(first)};\n${indentOf(text, start)}"
             cursor = start
             rest = occurrences
         }
@@ -679,21 +721,45 @@ object NativeCSharpContextEdits {
      * The text of [extraction] over [range]: `var ` + name + [middle] + name (no second name when the expression was the whole statement:
      * `var name = Foo()` before its `;`).
      */
-    class ExtractText(val range: TextRange, val middle: String, val use: Boolean)
+    class ExtractText(val range: TextRange, val middle: String, val use: Boolean, val prefix: String = "", val suffix: String = "")
 
-    fun extractText(extraction: Extraction, text: CharSequence): ExtractText {
+    fun extractText(extraction: Extraction, text: CharSequence, unit: String = "    "): ExtractText {
+        extraction.lambda?.let { lambda -> return lambdaText(extraction, lambda, text, unit) }
         val start = extraction.statement.textRange.startOffset
         val expression = extraction.expression
         val range = TextRange(start, expression.textRange.endOffset)
-        if (extraction.whole) return ExtractText(range, " = ${expression.text}", use = false)
+        if (extraction.whole) return ExtractText(range, " = ${valueText(expression)}", use = false)
         val indent = indentOf(text, start)
-        return ExtractText(range, " = ${expression.text};\n$indent${text.subSequence(start, expression.textRange.startOffset)}", use = true)
+        return ExtractText(range, " = ${valueText(expression)};\n$indent${text.subSequence(start, expression.textRange.startOffset)}", use = true)
     }
 
+    /**
+     * `x => x.Id == id` → `x =>` + a block: `var name = x.Id;` and `return name == id;` (no `return` when the body has no value), indented
+     * one [unit] past the line of the lambda.
+     */
+    private fun lambdaText(extraction: Extraction, lambda: CSharpAnonymousFunctionExpression, text: CharSequence, unit: String): ExtractText {
+        val body = lambda.expressionBody!!
+        val expression = extraction.expression
+        val lineStart = lineStartOf(text, lambda.textRange.startOffset)
+        val indent = text.subSequence(lineStart, lambda.textRange.startOffset).takeWhile { it == ' ' || it == '\t' }.toString()
+        val inner = indent + unit
+        val returns = runCatching { CSharpSemanticSession(lambda.project).resolver(lambda.containingFile as CSharpFile).typeOf(body) }.getOrNull()?.let { !isVoid(it) } ?: true
+        val before = text.subSequence(body.textRange.startOffset, expression.textRange.startOffset).toString()
+        val after = text.subSequence(expression.textRange.endOffset, body.textRange.endOffset).toString()
+        val start = "{\n$inner"
+        val middle = " = ${valueText(expression)};\n$inner" + (if (returns) "return " else "") + before
+        return ExtractText(body.textRange, middle, true, start, "$after;\n$indent}")
+    }
+
+    /** The text a variable takes [expression] with: `(Folder)item` for `((Folder)item)`, the parentheses were only the place's. */
+    private fun valueText(expression: CSharpExpression): String = (if (expression is CSharpParenthesizedExpression) unwrap(expression) else null)?.text ?: expression.text
+
+    private fun lineStartOf(text: CharSequence, offset: Int): Int = if (offset == 0) 0 else text.lastIndexOf('\n', offset - 1) + 1
+
     /** The edit of [extraction] with [name]: `var name = expression;` before the statement, the expression replaced by the name. */
-    fun extract(extraction: Extraction, text: CharSequence, name: String = extraction.name): CSharpTextEdit {
-        val parts = extractText(extraction, text)
-        return CSharpTextEdit(parts.range, "var " + name + parts.middle + if (parts.use) name else "", 4)
+    fun extract(extraction: Extraction, text: CharSequence, name: String = extraction.name, unit: String = "    "): CSharpTextEdit {
+        val parts = extractText(extraction, text, unit)
+        return CSharpTextEdit(parts.range, parts.prefix + "var " + name + parts.middle + (if (parts.use) name else "") + parts.suffix, parts.prefix.length + 4)
     }
 
     // ---- inline variable
@@ -880,7 +946,8 @@ class NativeCSharpUseVarIntention : NativeCSharpContextAction("Use 'var'", serve
  * its statement and the name in its place, the name then edited in both places at once (Rider: "Introduce variable").
  */
 class NativeCSharpIntroduceVariableIntention : NativeCSharpContextAction("Introduce variable", serverHasIt = true, needsTypes = true) {
-    override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? = extraction(file, editor)?.let { NativeCSharpContextEdits.extract(it, editor.document.charsSequence) }
+    override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
+        extraction(file, editor)?.let { NativeCSharpContextEdits.extract(it, editor.document.charsSequence, unit = NativeCSharpContextEdits.unit(file)) }
 
     private fun extraction(file: CSharpFile, editor: Editor): NativeCSharpContextEdits.Extraction? {
         val selection = editor.selectionModel.takeIf { it.hasSelection() }?.let { TextRange(it.selectionStart, it.selectionEnd) }
@@ -901,11 +968,11 @@ class NativeCSharpIntroduceVariableIntention : NativeCSharpContextAction("Introd
         PsiDocumentManager.getInstance(project).commitDocument(editor.document)
         val extraction = extraction(file, editor) ?: return
         if (IntentionPreviewUtils.isIntentionPreviewActive()) {
-            val edit = NativeCSharpContextEdits.extract(extraction, editor.document.charsSequence)
+            val edit = NativeCSharpContextEdits.extract(extraction, editor.document.charsSequence, unit = NativeCSharpContextEdits.unit(file))
             editor.document.replaceString(edit.range.startOffset, edit.range.endOffset, edit.text)
             return
         }
-        val occurrences = NativeCSharpContextEdits.occurrences(extraction)
+        val occurrences = if (extraction.lambda != null) emptyList() else NativeCSharpContextEdits.occurrences(extraction)
         if (occurrences.size < 2) return introduce(project, editor, file, extraction, emptyList())
         if (com.intellij.openapi.application.ApplicationManager.getApplication().isUnitTestMode) {
             return introduce(project, editor, file, extraction, if (allOccurrencesForTests) occurrences else emptyList())
@@ -925,8 +992,8 @@ class NativeCSharpIntroduceVariableIntention : NativeCSharpContextAction("Introd
             if (!extraction.expression.isValid || all.any { !it.isValid }) return@run
             val text = editor.document.charsSequence
             val (range, parts) = if (all.size >= 2) NativeCSharpContextEdits.extractAllParts(extraction, all, text) else {
-                val single = NativeCSharpContextEdits.extractText(extraction, text)
-                single.range to (listOf("var ", null, single.middle) + if (single.use) listOf(null) else emptyList())
+                val single = NativeCSharpContextEdits.extractText(extraction, text, NativeCSharpContextEdits.unit(file))
+                single.range to (listOf(single.prefix + "var ", null, single.middle) + (if (single.use) listOf(null) else emptyList()) + listOf(single.suffix).filter { it.isNotEmpty() })
             }
             editor.selectionModel.removeSelection()
             // the name in a template at each place: typing a new one changes the declaration and the uses together

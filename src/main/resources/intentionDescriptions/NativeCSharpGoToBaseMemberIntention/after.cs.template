@@ -1,0 +1,1 @@
+public Task <spot>RenameUser</spot>(Guid id, string name)

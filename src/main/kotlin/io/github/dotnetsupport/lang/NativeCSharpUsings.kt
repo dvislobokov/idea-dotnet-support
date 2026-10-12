@@ -456,8 +456,12 @@ object NativeCSharpUsingEdits {
 
     // ---- sort
 
-    /** The directives of the place of [directive] (the compilation unit or a namespace) in Rider's order, when they are not in it yet. */
-    fun sort(directive: CSharpUsingDirective, text: CharSequence, systemFirst: Boolean = true): CSharpTextEdit? {
+    /**
+     * The directives of the place of [directive] (the compilation unit or a namespace) in Rider's order, when they are not in it yet; with
+     * [always] also when they are (the edit then writes them as they are): Rider offers "Sort 'using' directives" on every block of two or
+     * more (Jellyfin p13, 0.1.170).
+     */
+    fun sort(directive: CSharpUsingDirective, text: CharSequence, systemFirst: Boolean = true, always: Boolean = false): CSharpTextEdit? {
         val usings = when (val owner = directive.parent) {
             is CSharpCompilationUnit -> owner.usings
             is CSharpBaseNamespaceDeclaration -> owner.usings
@@ -467,7 +471,7 @@ object NativeCSharpUsingEdits {
         // only whitespace between them: a comment or `#if` there belongs to its neighbor, and moving them apart would lose it
         for (i in 1 until usings.size) if (text.subSequence(usings[i - 1].textRange.endOffset, usings[i].textRange.startOffset).isNotBlank()) return null
         val sorted = usings.sortedWith(order(systemFirst))
-        if (sorted == usings) return null
+        if (sorted == usings && !always) return null
         val indent = indentOf(text, usings.first().textRange.startOffset) ?: ""
         val joined = sorted.joinToString("\n$indent") { CSharpStubsText.collapse(it.text) }
         return CSharpTextEdit(TextRange(usings.first().textRange.startOffset, usings.last().textRange.endOffset), joined)
@@ -578,7 +582,11 @@ class NativeCSharpWrapInUsingIntention : NativeCSharpUsingIntention("Wrap in 'us
 /** Alt+Enter on a `using` directive: the directives of its place sorted as Rider does (global first, `System` first, then the alphabet). */
 class NativeCSharpSortUsingsIntention : NativeCSharpUsingIntention("Sort 'using' directives", serverHasIt = false) {
     override fun edit(file: CSharpFile, offset: Int, text: CharSequence): CSharpTextEdit? =
-        NativeCSharpGlobalUsings.directiveAt(file, offset)?.let { NativeCSharpUsingEdits.sort(it, text) }
+        NativeCSharpGlobalUsings.directiveAt(file, offset)?.let { directive ->
+            // `dotnet_sort_system_directives_first` of `.editorconfig`, as Optimize Imports reads it
+            val systemFirst = CSharpEditorConfig.of(file.originalFile.virtualFile)["dotnet_sort_system_directives_first"]?.substringBefore(':')?.trim() != "false"
+            NativeCSharpUsingEdits.sort(directive, text, systemFirst, always = true)
+        }
 }
 
 /**

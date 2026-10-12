@@ -270,10 +270,35 @@ class CSharpContextActionsTest : BasePlatformTestCase() {
         assertEquals("int M(int a, int b)\n{\n    var value = a * b;\n    return value + 2;\n}", unwrap(myFixture.editor.document.text, USINGS))
     }
 
+    /** The places of the Jellyfin comparison where Rider offers Introduce Variable and the plugin did not (0.1.170). */
+    fun testIntroduceVariableAtRidersPlaces() {
+        // `await` of a task with no result: what it awaits
+        assertEquals(
+            "async System.Threading.Tasks.Task Publish() { }\nasync System.Threading.Tasks.Task M()\n{\n    var publish = Publish();\n    await publish;\n}",
+            apply("async System.Threading.Tasks.Task Publish() { }\nasync System.Threading.Tasks.Task M()\n{\n    aw<caret>ait Publish();\n}", "Introduce variable"),
+        )
+        // the caret on the receiver: the member it reads
+        assertEquals(
+            "void M(List<int> numbers)\n{\n    var count = numbers.Count;\n    if (count > 0) { }\n}",
+            apply("void M(List<int> numbers)\n{\n    if (num<caret>bers.Count > 0) { }\n}", "Introduce variable"),
+        )
+        // the caret on the type of a cast: the cast
+        assertEquals(
+            "class Folder { public int Size; }\nvoid M(object item)\n{\n    var folder = (Folder)item;\n    Console.WriteLine(folder.Size);\n}",
+            apply("class Folder { public int Size; }\nvoid M(object item)\n{\n    Console.WriteLine(((Fol<caret>der)item).Size);\n}", "Introduce variable"),
+        )
+        // a switch expression of collection expressions: the type its place gives
+        assertTrue(available("int[] M(bool b)\n{\n    int[] all;\n    all = b sw<caret>itch { true => [1], false => [2] };\n    return all;\n}", "Introduce variable"))
+        // the expression body of a lambda: the lambda gets a block
+        assertEquals(
+            "int Get() => 1;\nvoid M()\n{\n    Func<int> f = () => {\n        var get = Get();\n        return get + 1;\n    };\n}",
+            apply("int Get() => 1;\nvoid M()\n{\n    Func<int> f = () => Ge<caret>t() + 1;\n}", "Introduce variable"),
+        )
+    }
+
     fun testIntroduceVariableIsNotOffered() {
         assertFalse("evaluated only sometimes", available("bool Check() => true;\nbool M(bool a)\n{\n    return a && Che<caret>ck();\n}", "Introduce variable"))
         assertFalse("a loop's condition", available("bool Check() => true;\nvoid M()\n{\n    while (Che<caret>ck()) { }\n}", "Introduce variable"))
-        assertFalse("in a lambda", available("int Get() => 1;\nvoid M()\n{\n    Func<int> f = () => Ge<caret>t();\n}", "Introduce variable"))
         assertFalse("void", available("void Run() { }\nvoid M()\n{\n    Ru<caret>n();\n}", "Introduce variable"))
         assertFalse("a local already", available("void M(int a)\n{\n    Console.WriteLine(<caret>a);\n}", "Introduce variable"))
     }

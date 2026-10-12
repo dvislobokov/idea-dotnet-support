@@ -107,6 +107,24 @@ class CSharpParameterActionsTest : BasePlatformTestCase() {
         )
     }
 
+    /** The caret in a string literal of an attribute's argument (Jellyfin p22, `[GeneratedRegex(@"…")]`): one name, in the title as Rider has it (0.1.170). */
+    fun testAddArgumentNameInAnAttributeLiteral() {
+        assertEquals(
+            "class RxAttribute : Attribute { public RxAttribute(string pattern, int options = 0) { } }\n[Rx(pattern: @\"^ab$\")]\nvoid M() { }",
+            apply("class RxAttribute : Attribute { public RxAttribute(string pattern, int options = 0) { } }\n[Rx(@\"^a<caret>b$\")]\nvoid M() { }", "Add argument name 'pattern'"),
+        )
+        // two positional arguments from the caret: the plain title, both named
+        assertEquals(
+            "class RxAttribute : Attribute { public RxAttribute(string pattern, int options = 0) { } }\n[Rx(pattern: \"a\", options: 1)]\nvoid M() { }",
+            apply("class RxAttribute : Attribute { public RxAttribute(string pattern, int options = 0) { } }\n[Rx(\"<caret>a\", 1)]\nvoid M() { }", "Add argument name"),
+        )
+        // in a call too, the caret inside the literal
+        assertEquals(
+            "void Save(string name) { }\nvoid M()\n{\n    Save(name: \"abc\");\n}",
+            apply("void Save(string name) { }\nvoid M()\n{\n    Save(\"a<caret>bc\");\n}", "Add argument name 'name'"),
+        )
+    }
+
     fun testAddArgumentNamesIsNotOffered() {
         // one positional argument (the one-argument action covers it), several values of a `params` parameter, named already
         assertFalse(available("void Save(string name) { }\nvoid M()\n{\n    Save(<caret>\"a\");\n}", "Add argument names"))

@@ -203,7 +203,7 @@ object NativeCSharpParameterInfo {
         return constructors.map { Row(text.parameters(it, false).orEmpty(), it == chosen) }
     }
 
-    private fun constructorsOf(type: SemanticType): List<CSharpSymbol> {
+    internal fun constructorsOf(type: SemanticType): List<CSharpSymbol> {
         return when (type) {
             is SemanticType.Library -> type.type.members.filter { it.kind == IndexedMemberKind.CONSTRUCTOR && !it.isStatic && !it.isHidden }.map { CSharpSymbol.LibraryMember(it, type.arguments) }
             is SemanticType.Source -> type.info.parts.mapNotNull { it.element() as? CSharpTypeDeclaration }.flatMap { declaration ->

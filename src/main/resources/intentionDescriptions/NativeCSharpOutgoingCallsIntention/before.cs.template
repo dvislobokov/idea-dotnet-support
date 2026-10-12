@@ -1,0 +1,4 @@
+public void <spot>Save</spot>(Order order)
+{
+    Validate(order);
+}

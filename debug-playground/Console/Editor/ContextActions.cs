@@ -180,4 +180,17 @@ public class ContextActions
         changed++;
         return sum * 2 + Math.Abs(sum) + changed;
     }
+
+    // TYPE:nav-calls — Alt+Enter on the name `Inline` of the method above (its header, not its body): EXPECT low in the list "Incoming Calls"
+    // and "Outgoing Calls" (0.1.170); each opens the Call Hierarchy in that view (callers / callees of `Inline`). In the body of the
+    // method: neither. On `ToString` of `Overriding` below: EXPECT also "Overrides method from 'Object' class", it goes to `object.ToString`.
+    private sealed class Overriding
+    {
+        public override string ToString() => "overriding";
+    }
+
+    // TYPE:arg-name-literal — Alt+Enter with the caret inside the string literal of `Obsolete("…")` below: EXPECT "Add argument name
+    // 'message'" → `[Obsolete(message: "use Inline")]` (0.1.170: the caret in a literal of an attribute's argument). Ctrl+Z.
+    [Obsolete("use Inline")]
+    public int OldInline(int a, int b) => Inline(a, b);
 }

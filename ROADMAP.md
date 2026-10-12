@@ -140,6 +140,10 @@
   `new` не поднимается в условии и аргументе, статики импортированных типов ниже ключевых слов, в аргументе значения типа параметра и
   `default` / `nameof` / `null` первыми (`CSharpCompletionOrderTest`). Check parameter for null с первого раза в тестах воспроизвести не
   удалось — вероятно тайминг робота. Вживую не проверено
+- [x] 0.1.170 — этап 3 (два агента): Refactor This без неприменимых Introduce Field / Parameter (`CSharpRiderPopups.unavailableRefactorings`),
+  Introduce Variable в `await`, на получателе, приведении, switch-выражении, теле лямбды; Sort usings на любом блоке, имя аргумента в литерале
+  атрибута, Incoming / Outgoing Calls и Implements / Overrides в Alt+Enter (`NativeCSharpNavigationIntentions.kt`). Rename в Refactor This
+  совпал с Rider по дампам — без правок. Вживую не проверено
   Вживую не проверено
 - [x] 0.1.159 — сеть серого текста `cs50m-caret-ft5e5.cml` — единственная в ML-сборке (31 M, `-Pml.big` и настройка «большая модель»
   убраны): обучение с нуля на 6,47 млрд токенов и дообучение на 1,05 млн позиций каретки в формате промпта плагина; на 12 000 позиций

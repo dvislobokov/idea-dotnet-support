@@ -181,6 +181,10 @@
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpCheckParameterForNullIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpAddArgumentNamesIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpRemoveArgumentNamesIntention</className><category>C#</category></intentionAction>
+        <!-- navigation in Alt+Enter, as Rider lists it (0.1.170, NativeCSharpNavigationIntentions.kt) -->
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpIncomingCallsIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpOutgoingCallsIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpGoToBaseMemberIntention</className><category>C#</category></intentionAction>
         <!-- fields (0.1.168) -->
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpInitializeFieldFromConstructorIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpInitializeMembersFromConstructorIntention</className><category>C#</category></intentionAction>

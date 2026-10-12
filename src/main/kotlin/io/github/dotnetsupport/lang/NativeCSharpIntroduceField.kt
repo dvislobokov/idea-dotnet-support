@@ -42,6 +42,8 @@ object NativeCSharpIntroduceField {
         if (file.compilationUnit == null) return Result.Error("Introduce Field needs the native C# tree")
         val semantic = CSharpSemanticSession(file.project).resolver(file)
         val extraction = NativeCSharpContextEdits.extractionAt(file, selection, offset, semantic) ?: return Result.Error("Select an expression of a known type inside a body")
+        // a lambda's expression body (Introduce Variable gives it a block): the value of each call of the lambda is no field's
+        if (extraction.lambda != null) return Result.Error("Introduce Field does not take an expression of a lambda")
         val expression = extraction.expression
         var member: PsiElement? = extraction.statement.parent
         while (member != null && !(member is CSharpMemberDeclaration && member.parent is CSharpTypeDeclaration)) member = member.parent

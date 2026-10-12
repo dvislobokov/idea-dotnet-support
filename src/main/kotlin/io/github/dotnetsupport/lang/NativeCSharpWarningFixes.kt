@@ -87,11 +87,62 @@ object NativeCSharpWarningFixes {
         override fun edit(file: CSharpFile, offset: Int): CSharpTextEdit? = addAwait(file, offset)
     }
 
+    /** How many positional arguments get a name from the one at [offset] on (itself and the positional ones after it). */
+    fun positionalTail(file: CSharpFile, offset: Int): Int {
+        val leaf = file.findElementAt(offset) ?: return 0
+        PsiTreeUtil.getParentOfType(leaf, CSharpArgument::class.java, CSharpAttributeArgument::class.java)?.let { argument ->
+            return when (val list = argument.parent) {
+                is CSharpArgumentList -> list.arguments.drop(list.arguments.indexOf(argument)).takeWhile { it.nameColon == null }.size
+                is CSharpAttributeArgumentList -> list.arguments.drop(list.arguments.indexOf(argument)).takeWhile { it.nameColon == null && it.nameEquals == null }.size
+                else -> 0
+            }
+        }
+        return 0
+    }
+
+    /**
+     * `name:` before the positional argument of an attribute at [offset] and the positional ones after it (`[GeneratedRegex(pattern: @"…")]`):
+     * by the constructors of the attribute's type that take that many positional arguments, when they all name the parameters alike.
+     */
+    private fun attributeArgumentNames(file: CSharpFile, offset: Int, resolver: CSharpNameResolver): CSharpTextEdit? {
+        val argument = PsiTreeUtil.getParentOfType(file.findElementAt(offset), CSharpAttributeArgument::class.java) ?: return null
+        val list = argument.parent as? CSharpAttributeArgumentList ?: return null
+        val attribute = list.parent as? CSharpAttribute ?: return null
+        val arguments = list.arguments
+        val index = arguments.indexOf(argument)
+        if (arguments.take(index + 1).any { it.nameColon != null || it.nameEquals != null }) return null
+        val positional = arguments.takeWhile { it.nameColon == null && it.nameEquals == null }
+        val name = attribute.nameElement ?: return null
+        val leaf = PsiTreeUtil.getDeepestLast(name).takeIf { CSharpLeaves.isIdentifier(it) } ?: return null
+        val type = when (val symbol = resolver.resolve(leaf)?.symbols?.firstOrNull()) {
+            is CSharpSymbol.SourceType -> resolver.selfType(symbol.info)
+            is CSharpSymbol.LibraryType -> io.github.dotnetsupport.lang.semantic.SemanticType.Library(symbol.type, emptyList())
+            else -> return null
+        }
+        val lists = NativeCSharpParameterInfo.constructorsOf(type).mapNotNull { resolver.parameterNames(it, false) }
+            .filter { parameters -> parameters.size >= positional.size && parameters.take(positional.size).none { it.second } }
+        val names = lists.map { parameters -> parameters.take(positional.size).map { it.first } }.distinct().singleOrNull() ?: return null
+        if (names.any { it.isEmpty() }) return null
+        val tail = positional.drop(index)
+        if (tail.isEmpty()) return null
+        val text = file.text
+        val start = tail.first().textRange.startOffset
+        val builder = StringBuilder()
+        var at = start
+        for ((i, a) in tail.withIndex()) {
+            builder.append(text, at, a.textRange.startOffset).append(names[index + i]).append(": ")
+            at = a.textRange.startOffset
+        }
+        builder.append(text, at, tail.last().textRange.endOffset)
+        return CSharpTextEdit(TextRange(start, tail.last().textRange.endOffset), builder.toString(), names[index].length + 2)
+    }
+
     /**
      * Rider's "Add argument name": `name:` before the positional argument at [offset] and the positional ones after it, for a call the
      * resolver ties to one method. Not inside a `params` tail, nor after a named argument.
      */
     fun addArgumentNames(file: CSharpFile, offset: Int, resolver: CSharpNameResolver): CSharpTextEdit? {
+        attributeArgumentNames(file, offset, resolver)?.let { return it }
         val argument = PsiTreeUtil.getParentOfType(file.findElementAt(offset), CSharpArgument::class.java) ?: return null
         val list = argument.parent as? CSharpArgumentList ?: return null
         val call = list.parent as? CSharpInvocationExpression ?: return null
@@ -125,7 +176,19 @@ object NativeCSharpWarningFixes {
     }
 }
 
-/** Alt+Enter on a positional argument: its parameter's name before it, and before the positional arguments after it (Rider: "Add argument name"). */
+/**
+ * Alt+Enter on a positional argument: its parameter's name before it, and before the positional arguments after it (Rider: "Add argument
+ * name"). The caret may be anywhere in the argument, a string literal included, and the argument may be one of an attribute
+ * (`[GeneratedRegex(@"…")]`, Jellyfin p22, 0.1.170). One name to add is in the title, as Rider's "Add argument name 'pattern'".
+ */
 class NativeCSharpAddArgumentNameIntention : NativeCSharpContextAction("Add argument name", serverHasIt = true, needsTypes = true) {
-    override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? = NativeCSharpWarningFixes.addArgumentNames(file, editor.caretModel.offset, resolver(file))
+    @Volatile private var title = "Add argument name"
+
+    override fun getText(): String = title
+
+    override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
+        NativeCSharpWarningFixes.addArgumentNames(file, editor.caretModel.offset, resolver(file))?.also { edit ->
+            val names = NativeCSharpWarningFixes.positionalTail(file, editor.caretModel.offset)
+            title = if (names == 1) "Add argument name '${edit.text.substringBefore(':')}'" else "Add argument name"
+        }
 }
