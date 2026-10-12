@@ -1,0 +1,88 @@
+
+===== huge =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 21296, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>\\t\\App\\Atypical.cs"}, "line": 175, "column": 9, "endLine": 175, "endColumn": 119}}
+   ~ stopped {"reason": "breakpoint", "threadId": 12728, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   STOP #1 breakpoint  | DebugTarget.Atypical.Huge() @ Atypical.cs:175:9
+   stack: DebugTarget.Atypical.Huge():175 <- Program.<Main>$():26 <- [External Code]:0  total=3
+   Locals.million = Count = 1000000  : System.Collections.Generic.List<int>  ref=5 indexedVariables=1000000
+   Locals.bigDict = Count = 100000  : System.Collections.Generic.Dictionary<string, int>  ref=6 indexedVariables=100000
+   Locals.hugeString = <error: startIndex ('0') must be less than or equal to '-9995904'. (Parameter 'startIndex')
+Actual value was ...(113)  : None  ref=0
+   Locals.bytes = {byte[5000000]}  : byte[]  ref=7 indexedVariables=5000000
+   Locals.cycle = {DebugTarget.Node}  : DebugTarget.Node  ref=8
+   Locals.chain = {DebugTarget.Node}  : DebugTarget.Node  ref=9
+   eval[watch] million.Count                                  -> 1000000 : int  (46ms)
+   eval[watch] million[999999]                                -> 999999 : int  (8ms)
+   eval[watch] hugeString.Length                              -> 10000000 : int  (10ms)
+   eval[watch] hugeString                                     -> <error: startIndex ('0') must be less than or equal to '-9995904'. (Parameter 'startIndex')
+Actual value was 0.> : None  (8ms)
+   eval[watch] bigDict["key99999"]                            -> 99999 : int  (13ms)
+   eval[watch] cycle.Next.Next.Next.Name                      -> "node" : string  (2ms)
+   million {'filter': 'indexed', 'start': 0, 'count': 100} -> 100 items in 11ms  first=[0]
+   million {'filter': 'indexed', 'start': 999900, 'count': 100} -> 100 items in 7ms  first=[999900]
+   million (no paging) -> 1000001 items in 72577ms  first=[0]
+   bigDict {'filter': 'indexed', 'start': 0, 'count': 100} -> 100 items in 199ms  first=["key0"]
+   bigDict {'filter': 'indexed', 'start': 999900, 'count': 100} -> 0 items in 38490ms  first=null
+   bigDict (no paging) -> 100001 items in 58121ms  first=["key0"]
+   bytes {'filter': 'indexed', 'start': 0, 'count': 100} -> 100 items in 21ms  first=[0]
+   bytes {'filter': 'indexed', 'start': 999900, 'count': 100} -> 100 items in 9ms  first=[999900]
+   bytes (no paging) -> 0 items in 120259ms FAILED TIMEOUT after 120s first=null
+   hugeString value chars in locals: 113, type=None
+   children of cycle (0, 60027ms) FAILED TIMEOUT after 60s: 
+   end: exited=None terminated=False
+   ! adapter still alive 5s after disconnect; killing
+   adapter exit code: None
+
+===== evil =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 30296, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>\\t\\App\\Atypical.cs"}, "line": 186, "column": 9, "endLine": 186, "endColumn": 87}}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 2, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>\\t\\App\\Atypical.cs"}, "line": 187, "column": 9, "endLine": 187, "endColumn": 44}}
+   ~ stopped {"reason": "breakpoint", "threadId": 30260, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   STOP #1 breakpoint  | DebugTarget.Atypical.Evil() @ Atypical.cs:186:9
+   stack: DebugTarget.Atypical.Evil():186 <- Program.<Main>$():27 <- [External Code]:0  total=3
+   Locals.throwing = {DebugTarget.ThrowingToString}  : DebugTarget.ThrowingToString  ref=5
+   Locals.hanging = {DebugTarget.HangingToString}  : DebugTarget.HangingToString  ref=6
+   Locals.evil = {DebugTarget.EvilProperties}  : DebugTarget.EvilProperties  ref=7
+   Locals.holder = {System.Threading.Thread}  : System.Threading.Thread  ref=8
+   locals display throwing = {DebugTarget.ThrowingToString}
+   locals display hanging = {DebugTarget.HangingToString}
+   locals display evil = {DebugTarget.EvilProperties}
+   children of evil (5, 5568ms): Fine=1; Hangs=<Evaluation timed out.>; Deadlocks=<not evaluated>; Slow=<not evaluated>; Static members=
+   expanding 'evil' took 5.6s
+   eval[watch] evil.Fine                                      -> 1 : int  (141ms)
+   eval[watch] evil.Slow                                      -> 4 : int  (3009ms)
+   eval[watch] evil.Hangs                                     -> ERROR Evaluation timed out.  (5551ms)
+   eval[watch] evil.Fine                                      -> 1 : int  (2ms)
+   eval[watch] evil.Deadlocks                                 -> ERROR Evaluation timed out. The evaluated code could not be interrupted and is still running on its thread.  (8026ms)
+   eval[watch] evil.Fine                                      -> ERROR Evaluation not possible: Error HRESULT CORDBG_E_FUNC_EVAL_BAD_START_POINT has been returned from a call to a COM component.  (3ms)
+   eval[watch] hanging.ToString()                             -> ERROR Evaluation not possible: Error HRESULT CORDBG_E_FUNC_EVAL_BAD_START_POINT has been returned from a call to a COM component.  (4ms)
+   eval[watch] throwing.ToString()                            -> ERROR Evaluation not possible: Error HRESULT CORDBG_E_FUNC_EVAL_BAD_START_POINT has been returned from a call to a COM component.  (1ms)
+   eval[watch] hanging.Value                                  -> 2 : int  (0ms)
+   threads after evals: [".NET Thread", "lock-holder", ".NET Thread", ".NET Thread", "Main Thread"]
+   ! NO stopped event within 40s (expected None)
+   end: exited=None terminated=False
+   adapter exit code: 0
+
+===== unicode =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 22832, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>\\t\\App\\Atypical.cs"}, "line": 196, "column": 9, "endLine": 196, "endColumn": 63}}
+   ~ stopped {"reason": "breakpoint", "threadId": 27724, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   STOP #1 breakpoint  | DebugTarget.Atypical.Unicode() @ Atypical.cs:196:9
+   stack: DebugTarget.Atypical.Unicode():196 <- Program.<Main>$():28 <- [External Code]:0  total=3
+   Locals.переменная = 1  : int  ref=0
+   Locals.class = "keyword"  : string  ref=0
+   Locals.変数 = 2  : int  ref=0
+   Locals.ünïcödé = "diacritics"  : string  ref=0
+   eval[watch] переменная + 1                                 -> 2 : int  (65ms)
+   eval[watch] @class                                         -> "keyword" : string  (1ms)
+   eval[watch] class                                          -> ERROR Invalid expression: Invalid expression term 'class'  (19ms)
+   eval[watch] 変数                                             -> 2 : int  (1ms)
+   eval[watch] ünïcödé.Length                                 -> 10 : int  (2ms)
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0

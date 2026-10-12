@@ -1,0 +1,15 @@
+<!-- ML completion (ML_INLINE_TASK.md, ML_RANKER_EXPORT_TASK.md): the grey text of our transformer and the ML ranking of the completion list.
+     Part of the plugin only when it is built with -PmlEnabled=true (or MLENABLED=true in the environment): the build copies this file and
+     the models ml/csharp/{cs31m-e2-lr2e3.cml,cs-16384.bpe,e15-a.cml,e18-rank.cml[,cs50m-e3-lr2e3.cml]} into the resources; plugin.xml
+     includes it with an xi:fallback, so a build without it has no ranker, no grey text and no settings page. -->
+<idea-plugin>
+  <extensions defaultExtensionNs="com.intellij">
+    <applicationConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.ml" key="page.ml" bundle="messages.DotNetBundle"
+                             instance="io.github.dotnetsupport.ml.CSharpMlConfigurable"/>
+    <!-- first: it asks the next enabled provider (a host's own grey text) before the network, see CSharpNnInlineCompletionProvider -->
+    <inline.completion.provider order="first" implementation="io.github.dotnetsupport.ml.CSharpNnInlineCompletionProvider"/>
+    <editorFactoryListener implementation="io.github.dotnetsupport.ml.CSharpNnEditorListener"/>
+    <postStartupActivity implementation="io.github.dotnetsupport.ml.CSharpMlLogBridge"/>
+    <postStartupActivity implementation="io.github.dotnetsupport.ml.CSharpMlPreloadActivity"/>
+  </extensions>
+</idea-plugin>

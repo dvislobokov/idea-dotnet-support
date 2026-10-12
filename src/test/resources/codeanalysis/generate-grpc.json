@@ -1,0 +1,12 @@
+{
+ "project": "C:\\repo\\debug-playground\\Grpc\\Grpc.csproj",
+ "framework": "net9.0",
+ "files": [],
+ "buildFiles": [
+  "C:\\repo\\debug-playground\\Grpc\\obj\\Debug\\net9.0\\Protos\\Greet.cs",
+  "C:\\repo\\debug-playground\\Grpc\\obj\\Debug\\net9.0\\Protos\\GreetGrpc.cs"
+ ],
+ "errors": [],
+ "milliseconds": 2793,
+ "workingSet": 156381184
+}

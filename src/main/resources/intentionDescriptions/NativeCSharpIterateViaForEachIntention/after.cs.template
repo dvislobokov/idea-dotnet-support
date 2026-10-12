@@ -1,0 +1,3 @@
+<spot>foreach (var item in items)</spot>
+{
+}

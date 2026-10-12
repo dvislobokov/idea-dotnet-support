@@ -1,0 +1,29 @@
+{
+ "properties": {
+  "DefineConstants": "TRACE",
+  "LangVersion": "",
+  "Nullable": "",
+  "ImplicitUsings": "",
+  "RootNamespace": "Multi",
+  "TargetFramework": "",
+  "MaxSupportedLangVersion": "",
+  "TargetFrameworkIdentifier": "",
+  "TargetFrameworkVersion": "",
+  "TargetPlatformIdentifier": "",
+  "Configuration": "Debug",
+  "Platform": "AnyCPU",
+  "UsingMicrosoftNETSdk": "true"
+ },
+ "items": {
+  "Compile": [],
+  "Using": []
+ },
+ "imports": [],
+ "targetFrameworks": [
+  "net10.0",
+  "net48"
+ ],
+ "warning": null,
+ "milliseconds": 0,
+ "reused": false
+}

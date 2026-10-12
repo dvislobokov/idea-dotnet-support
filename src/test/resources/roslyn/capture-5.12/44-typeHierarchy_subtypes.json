@@ -1,0 +1,107 @@
+{
+ "method": "typeHierarchy/subtypes",
+ "params": {
+  "item": {
+   "name": "CaptureShapeBase",
+   "kind": 5,
+   "detail": "Playground",
+   "uri": "file:///c:/playground/Console/Scenarios.cs",
+   "range": {
+    "start": {
+     "line": 244,
+     "character": 0
+    },
+    "end": {
+     "line": 244,
+     "character": 89
+    }
+   },
+   "selectionRange": {
+    "start": {
+     "line": 244,
+     "character": 22
+    },
+    "end": {
+     "line": 244,
+     "character": 38
+    }
+   },
+   "data": {
+    "SymbolKeyData": "7 \"C#\" (D (N \"Playground\" 0 (N \"\" 1 (U (S \"Playground.Console\" 4) 3) 2) 1) \"CaptureShapeBase\" 0 ! ! 0 0 0 (% 0) 0)",
+    "ProjectGuid": "d057ca81-2e3c-4f19-bac1-7b300e036374",
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  }
+ },
+ "ms": 3.9,
+ "result": [
+  {
+   "name": "CaptureSquare",
+   "kind": 5,
+   "detail": "Playground",
+   "uri": "file:///c:/playground/Console/Scenarios.cs",
+   "range": {
+    "start": {
+     "line": 245,
+     "character": 0
+    },
+    "end": {
+     "line": 245,
+     "character": 108
+    }
+   },
+   "selectionRange": {
+    "start": {
+     "line": 245,
+     "character": 13
+    },
+    "end": {
+     "line": 245,
+     "character": 26
+    }
+   },
+   "data": {
+    "SymbolKeyData": "7 \"C#\" (D (N \"Playground\" 0 (N \"\" 1 (U (S \"Playground.Console\" 4) 3) 2) 1) \"CaptureSquare\" 0 ! ! 0 0 0 (% 0) 0)",
+    "ProjectGuid": "d057ca81-2e3c-4f19-bac1-7b300e036374",
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  {
+   "name": "CaptureCircle",
+   "kind": 5,
+   "detail": "Playground",
+   "uri": "file:///c:/playground/Console/Scenarios.cs",
+   "range": {
+    "start": {
+     "line": 246,
+     "character": 0
+    },
+    "end": {
+     "line": 246,
+     "character": 121
+    }
+   },
+   "selectionRange": {
+    "start": {
+     "line": 246,
+     "character": 13
+    },
+    "end": {
+     "line": 246,
+     "character": 26
+    }
+   },
+   "data": {
+    "SymbolKeyData": "7 \"C#\" (D (N \"Playground\" 0 (N \"\" 1 (U (S \"Playground.Console\" 4) 3) 2) 1) \"CaptureCircle\" 0 ! ! 0 0 0 (% 0) 0)",
+    "ProjectGuid": "d057ca81-2e3c-4f19-bac1-7b300e036374",
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  }
+ ]
+}

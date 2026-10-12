@@ -1,0 +1,23 @@
+{
+ "method": "textDocument/prepareRename",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  },
+  "position": {
+   "line": 26,
+   "character": 18
+  }
+ },
+ "ms": 7.9,
+ "result": {
+  "start": {
+   "line": 26,
+   "character": 17
+  },
+  "end": {
+   "line": 26,
+   "character": 22
+  }
+ }
+}

@@ -1,0 +1,40 @@
+
+===== crash-threadcrash =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 1327, "isLocalProcess": true, "startMethod": "launch"}
+   ~ exited {"exitCode": 134}
+   ~ terminated null
+   ! NO stopped event within 25s (expected crash stop or exit)
+   end: exited={'exitCode': 134} terminated=True
+   stderr head: 'Unhandled exception. System.InvalidOperationException: worker crashed\n   at DebugTarget.Atypical.<>c.<ThreadCrash>b__20_0() in /probe/t/App/Atypical.cs:line 310\n   at System.Threading.Thread.StartCall'
+   adapter exit code: 0
+
+===== crash-stackoverflow =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 1364, "isLocalProcess": true, "startMethod": "launch"}
+   ~ exited {"exitCode": 134}
+   ~ terminated null
+   ! NO stopped event within 25s (expected crash stop or exit)
+   end: exited={'exitCode': 134} terminated=True
+   stderr head: 'Stack overflow.\nRepeated 261728 times:\n--------------------------------\n   at DebugTarget.Atypical.Overflow(Int32)\n--------------------------------\n   at Program+<<Main>$>d__0.MoveNext()\n   at System.'
+   adapter exit code: 0
+
+===== crash-failfast =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 1400, "isLocalProcess": true, "startMethod": "launch"}
+   ~ exited {"exitCode": 134}
+   ~ terminated null
+   ! NO stopped event within 25s (expected crash stop or exit)
+   end: exited={'exitCode': 134} terminated=True
+   stderr head: 'Process terminated.\nfail fast requested\n   at System.Environment.FailFast(System.Runtime.CompilerServices.StackCrawlMarkHandle, System.String, System.Runtime.CompilerServices.ObjectHandleOnStack, Syst'
+   adapter exit code: 0
+
+===== crash-envexit =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 1435, "isLocalProcess": true, "startMethod": "launch"}
+   ~ exited {"exitCode": 7}
+   ~ terminated null
+   ! NO stopped event within 25s (expected crash stop or exit)
+   end: exited={'exitCode': 7} terminated=True
+   stderr head: ''
+   adapter exit code: 0

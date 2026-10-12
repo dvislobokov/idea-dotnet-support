@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The C# the build makes of a .proto (0.1.82): Grpc.Tools runs protoc in the target Protobuf_Compile, the files go to obj/ — no source
+    generator, so the plugin takes them from the design-time build of its helper (or obj/ after a build). Scenarios: Greeter.cs (TYPE:grpc-*).
+    A library: nothing is hosted, it only has to build (offline, from the NuGet cache).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Playground.Grpc</RootNamespace>
+    <AssemblyName>Playground.Grpc</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Protobuf Include="Protos\greet.proto" GrpcServices="Both" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" Version="2.83.0" />
+  </ItemGroup>
+</Project>

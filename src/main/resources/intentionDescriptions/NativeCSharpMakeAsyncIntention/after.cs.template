@@ -1,0 +1,5 @@
+async Task<int> Count()
+{
+    await Task.Delay(10);
+    return 1;
+}

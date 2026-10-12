@@ -1,0 +1,65 @@
+{
+ "method": "textDocument/selectionRange",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  },
+  "positions": [
+   {
+    "line": 24,
+    "character": 30
+   }
+  ]
+ },
+ "ms": 5.3,
+ "result": [
+  {
+   "range": {
+    "start": {
+     "line": 24,
+     "character": 27
+    },
+    "end": {
+     "line": 24,
+     "character": 39
+    }
+   },
+   "parent": {
+    "range": {
+     "start": {
+      "line": 24,
+      "character": 27
+     },
+     "end": {
+      "line": 24,
+      "character": 43
+     }
+    },
+    "parent": {
+     "range": {
+      "start": {
+       "line": 24,
+       "character": 24
+      },
+      "end": {
+       "line": 24,
+       "character": 43
+      }
+     },
+     "parent": {
+      "range": {
+       "start": {
+        "line": 24,
+        "character": 4
+       },
+       "end": {
+        "line": 24,
+        "character": 44
+       }
+      }
+     }
+    }
+   }
+  }
+ ]
+}

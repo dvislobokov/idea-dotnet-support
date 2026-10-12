@@ -1,0 +1,112 @@
+[
+ {
+  "name": "Fixture.Box`1",
+  "kind": "class",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.Box`1+Inner`1",
+  "kind": "class",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.Circle",
+  "kind": "class",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.Color",
+  "kind": "enum",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.Concealed",
+  "kind": "class",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.Cursor",
+  "kind": "struct",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.Handler",
+  "kind": "delegate",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.IHolder`1",
+  "kind": "interface",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.INamed",
+  "kind": "interface",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.IShape`2",
+  "kind": "interface",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.Money",
+  "kind": "struct",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.NotSeen",
+  "kind": "class",
+  "isPublic": false
+ },
+ {
+  "name": "Fixture.Old",
+  "kind": "class",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.Outer",
+  "kind": "class",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.Outer+Internal",
+  "kind": "class",
+  "isPublic": false
+ },
+ {
+  "name": "Fixture.Outer+Private",
+  "kind": "class",
+  "isPublic": false
+ },
+ {
+  "name": "Fixture.Outer+Secret",
+  "kind": "class",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.Point",
+  "kind": "class",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.Shape",
+  "kind": "class",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.ShapeExtensions",
+  "kind": "class",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.StringBox",
+  "kind": "class",
+  "isPublic": true
+ },
+ {
+  "name": "Fixture.StringBuilderLike",
+  "kind": "class",
+  "isPublic": true
+ }
+]

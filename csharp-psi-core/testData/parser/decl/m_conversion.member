@@ -1,0 +1,1 @@
+public static implicit operator int(C c) => 0;

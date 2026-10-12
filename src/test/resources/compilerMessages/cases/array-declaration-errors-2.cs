@@ -1,0 +1,15 @@
+// docs: array-declaration-errors.md #2; codes: CS0022 CS0178 CS0248 CS0251 CS0270 CS0611 CS0623 CS0650 CS0719 CS0747 CS0820 CS0826 CS0846 CS1062 CS1063 CS1064 CS1552 CS1586 CS1920 CS1921 CS1922 CS1925 CS1950 CS1954 CS3007 CS3016 CS8346 CS8353 CS8381 CS9174 CS9176 CS9185 CS9186 CS9187 CS9188 CS9203 CS9208 CS9209 CS9210 CS9212 CS9213 CS9214 CS9215 CS9221 CS9222 CS9332 CS9354 CS9355 CS9356 CS9357 CS9358 CS9359
+unsafe class Example
+{
+    private static int* field = stackalloc int[3];
+
+    public static void Main()
+    {
+        Span<int> wrongElementType = stackalloc short[3];
+        double scalar = stackalloc int[3];
+        Span<int> explicitCast = (Span<int>)stackalloc short[3];
+        Span<int> pointerCastToSpan = (int*)stackalloc int[3];
+        int* pointerCastToPointer = (int*)stackalloc int[3];
+        var pointerCastWithVar = (int*)stackalloc int[3];
+    }
+}

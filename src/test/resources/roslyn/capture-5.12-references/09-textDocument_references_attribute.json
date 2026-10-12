@@ -1,0 +1,57 @@
+{
+ "method": "textDocument/references",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Editor/FindUsages.cs"
+  },
+  "position": {
+   "line": 79,
+   "character": 20
+  },
+  "context": {
+   "includeDeclaration": true
+  }
+ },
+ "ms": 504.1,
+ "result": [
+  {
+   "uri": "file:///c:/playground/Console/Editor/FindUsages.cs",
+   "range": {
+    "start": {
+     "line": 79,
+     "character": 20
+    },
+    "end": {
+     "line": 79,
+     "character": 38
+    }
+   }
+  },
+  {
+   "uri": "file:///c:/playground/Console/Editor/FindUsages.cs",
+   "range": {
+    "start": {
+     "line": 79,
+     "character": 20
+    },
+    "end": {
+     "line": 79,
+     "character": 38
+    }
+   }
+  },
+  {
+   "uri": "file:///c:/playground/Console/Editor/FindUsages.cs",
+   "range": {
+    "start": {
+     "line": 11,
+     "character": 1
+    },
+    "end": {
+     "line": 11,
+     "character": 10
+    }
+   }
+  }
+ ]
+}

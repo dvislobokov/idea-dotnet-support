@@ -1,0 +1,22 @@
+{
+ "title": "Await ReadAllTextAsync instead",
+ "edits": [
+  {
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Analyzers.cs",
+   "startLine": 22,
+   "startColumn": 15,
+   "endLine": 22,
+   "endColumn": 15,
+   "text": "await "
+  },
+  {
+   "path": "C:\\repo\\debug-playground\\Console\\Editor\\Analyzers.cs",
+   "startLine": 22,
+   "startColumn": 31,
+   "endLine": 22,
+   "endColumn": 31,
+   "text": "Async"
+  }
+ ],
+ "created": []
+}

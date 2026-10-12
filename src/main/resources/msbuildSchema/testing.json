@@ -1,0 +1,32 @@
+{
+  "id": "testing",
+  "title": "Tests and coverage",
+  "packages": ["Microsoft.NET.Test.Sdk", "coverlet.msbuild", "coverlet.collector", "xunit", "xunit.v3", "NUnit", "MSTest", "MSTest.TestFramework", "TUnit", "Microsoft.Testing.Platform"],
+  "url": "https://github.com/coverlet-coverage/coverlet/blob/master/Documentation/MSBuildIntegration.md",
+  "properties": [
+    { "name": "CollectCoverage", "doc": "coverlet.msbuild: collect coverage during dotnet test.", "values": "bool" },
+    { "name": "CoverletOutputFormat", "doc": "coverlet.msbuild: comma-separated report formats.", "open": true, "values": ["cobertura", "opencover", "lcov", "json", "teamcity"] },
+    { "name": "CoverletOutput", "doc": "coverlet.msbuild: the report file, or a folder when it ends with a slash." },
+    { "name": "Threshold", "doc": "coverlet.msbuild: the coverage percent below which the build fails." },
+    { "name": "ThresholdType", "doc": "coverlet.msbuild: what the threshold is about; comma-separated.", "open": true, "values": ["line", "branch", "method"] },
+    { "name": "ThresholdStat", "doc": "coverlet.msbuild: the threshold is for every module, for the total or for the average.", "values": ["minimum", "total", "average"] },
+    { "name": "Exclude", "doc": "coverlet.msbuild: filters of what is not measured: [Assembly]Namespace.Type." },
+    { "name": "Include", "doc": "coverlet.msbuild: filters of what is measured." },
+    { "name": "ExcludeByFile", "doc": "coverlet.msbuild: globs of source files that are not measured." },
+    { "name": "ExcludeByAttribute", "doc": "coverlet.msbuild: attributes whose targets are not measured, e.g. GeneratedCodeAttribute." },
+    { "name": "MergeWith", "doc": "coverlet.msbuild: a coverage.json of another run to merge with." },
+    { "name": "SkipAutoProps", "doc": "coverlet.msbuild: do not measure auto-implemented properties.", "values": "bool" },
+    { "name": "UseSourceLink", "doc": "coverlet.msbuild: report SourceLink URLs instead of local paths.", "values": "bool" },
+    { "name": "DeterministicReport", "doc": "coverlet.msbuild: paths of a deterministic build in the report.", "values": "bool" },
+    { "name": "RunSettingsFilePath", "doc": "The .runsettings dotnet test uses." },
+    { "name": "VSTestLogger", "doc": "The loggers of dotnet test, e.g. trx;LogFileName=results.trx." },
+    { "name": "VSTestResultsDirectory", "doc": "Where dotnet test writes the results." },
+    { "name": "UseMicrosoftTestingPlatformRunner", "doc": "xunit.v3: run the tests by Microsoft.Testing.Platform.", "values": "bool" },
+    { "name": "TestingPlatformDotnetTestSupport", "doc": "dotnet test runs the project through Microsoft.Testing.Platform.", "values": "bool" },
+    { "name": "EnableMSTestRunner", "doc": "MSTest: the project is its own runner (Microsoft.Testing.Platform).", "values": "bool" },
+    { "name": "EnableNUnitRunner", "doc": "NUnit: the project is its own runner (Microsoft.Testing.Platform).", "values": "bool" },
+    { "name": "TestingPlatformCaptureOutput", "doc": "false: show the output of the test process in dotnet test.", "values": "bool" },
+    { "name": "TestingPlatformShowTestsFailure", "doc": "Print the failed tests of a Microsoft.Testing.Platform run.", "values": "bool" },
+    { "name": "GenerateTestingPlatformEntryPoint", "doc": "false: the project has its own Main.", "values": "bool" }
+  ]
+}

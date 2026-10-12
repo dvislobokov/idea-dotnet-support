@@ -1,0 +1,38 @@
+{
+  "parent": {
+    "address": "29ee0400028",
+    "type": "System.Object[]",
+    "size": 8184,
+    "retained": 71408560,
+    "children": 58,
+    "root": "StrongHandle"
+  },
+  "children": [
+    {
+      "address": "29ee280c0f8",
+      "type": "System.Collections.Generic.Dictionary<System.Int32, Playground.CachedOrder>",
+      "size": 80,
+      "retained": 71297096,
+      "children": 2,
+      "root": null
+    },
+    {
+      "address": "29ee8c92bf0",
+      "type": "System.EventHandler<System.Decimal>",
+      "size": 64,
+      "retained": 56424,
+      "children": 1,
+      "root": null
+    },
+    {
+      "address": "29ee2c00208",
+      "type": "System.Collections.Generic.Dictionary<System.String, System.Object>",
+      "size": 80,
+      "retained": 33128,
+      "children": 2,
+      "root": null
+    }
+  ],
+  "omitted": 55,
+  "omittedRetained": 13728
+}

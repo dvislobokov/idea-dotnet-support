@@ -1,0 +1,7 @@
+{
+  "CSharpParserBenchmark.bodyReparse": {"medianMs": 17.00, "unit": "ms", "value": 17.00},
+  "CSharpParserBenchmark.lexer.roslynParser": {"medianMs": 10.39, "unit": "ms/MB", "value": 8.14},
+  "CSharpParserBenchmark.lexer.runtimeSample": {"medianMs": 10.14, "unit": "ms/MB", "value": 9.25},
+  "CSharpParserBenchmark.parse.roslynParser": {"medianMs": 128.41, "unit": "ms/MB", "value": 100.64},
+  "CSharpParserBenchmark.parse.runtimeSample": {"medianMs": 118.36, "unit": "ms/MB", "value": 107.88}
+}

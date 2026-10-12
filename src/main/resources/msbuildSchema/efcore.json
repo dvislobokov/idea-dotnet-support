@@ -1,0 +1,12 @@
+{
+  "id": "efcore",
+  "title": "EF Core",
+  "packages": ["Microsoft.EntityFrameworkCore", "Microsoft.EntityFrameworkCore.Design", "Microsoft.EntityFrameworkCore.Tools", "Microsoft.EntityFrameworkCore.Tasks"],
+  "url": "https://learn.microsoft.com/ef/core/cli/msbuild",
+  "properties": [
+    { "name": "EFOptimizeContext", "doc": "Microsoft.EntityFrameworkCore.Tasks: generate the compiled model during the build or publish.", "values": "bool" },
+    { "name": "EFScaffoldModelStage", "doc": "Microsoft.EntityFrameworkCore.Tasks: when the compiled model is generated.", "values": ["publish", "build", "none"] },
+    { "name": "EFPrecompileQueriesStage", "doc": "Microsoft.EntityFrameworkCore.Tasks: when the precompiled queries are generated.", "values": ["publish", "build", "none"] },
+    { "name": "GenerateRuntimeConfigurationFiles", "doc": "A class library with the DbContext needs it to be started by dotnet ef on its own.", "values": "bool" }
+  ]
+}

@@ -1,0 +1,8 @@
+if (ready)
+{
+    Start();
+}
+else
+{
+    Wait();
+}

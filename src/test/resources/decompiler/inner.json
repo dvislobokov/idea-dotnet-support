@@ -1,0 +1,87 @@
+{
+ "assembly": "C:\\work\\fixture\\IndexFixture.dll",
+ "assemblyName": "IndexFixture",
+ "assemblyVersion": "1.0.0.0",
+ "assemblyModified": 1791172632132,
+ "typeName": "Fixture.Box`1+Inner`1",
+ "text": "// Decompiled with ICSharpCode.Decompiler 11.1.0.9782\n// Type: Fixture.Box`1+Inner`1\n// Assembly: IndexFixture, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null\n// MVID: 1E592C35-0B03-4B16-AC33-EF7A8569D4BB\n// Assembly location: C:\\work\\fixture\\IndexFixture.dll\n\nusing System;\nusing System.Collections;\nusing System.Collections.Generic;\nusing System.Linq;\n\nnamespace Fixture;\n\n/// <summary>A box of a <typeparamref name=\"T\" />.</summary>\n/// <typeparam name=\"T\">What is in the box.</typeparam>\npublic class Box<T> : IComparable<Box<T>>, IEnumerable<T>, IEnumerable, IHolder<T>, INamed where T : class, new()\n{\n    public class Inner<U> where U : struct\n    {\n        public (T First, U? second, int) Pair;\n\n        public (int A, int B, int C, int D, int E, int F, int G, int H, (string Nested, int) I) Long;\n    }\n\n    public List<T?> Items = new List<T>();\n\n    public T Held => Value;\n\n    public string Title => \"\";\n\n    public T Value { get; protected set; } = new T();\n\n    public int CompareTo(Box<T>? other)\n    {\n        return 0;\n    }\n\n    public TResult Map<TResult>(Func<T, TResult> map) where TResult : notnull\n    {\n        return map(Value);\n    }\n\n    public virtual Dictionary<string, List<T>> Group(params T[] values)\n    {\n        return new Dictionary<string, List<T>>();\n    }\n\n    public IEnumerator<T> GetEnumerator()\n    {\n        return (from item in Items\n            where item != null\n            select (item)).GetEnumerator();\n    }\n\n    IEnumerator IEnumerable.GetEnumerator()\n    {\n        return GetEnumerator();\n    }\n}\n",
+ "members": [
+  {
+   "id": "T:Fixture.Box`1",
+   "offset": 512,
+   "line": 15
+  },
+  {
+   "id": "T:Fixture.Box`1.Inner`1",
+   "offset": 632,
+   "line": 17
+  },
+  {
+   "id": "F:Fixture.Box`1.Inner`1.Pair",
+   "offset": 705,
+   "line": 19
+  },
+  {
+   "id": "F:Fixture.Box`1.Inner`1.Long",
+   "offset": 808,
+   "line": 21
+  },
+  {
+   "id": "F:Fixture.Box`1.Items",
+   "offset": 841,
+   "line": 24
+  },
+  {
+   "id": "P:Fixture.Box`1.Held",
+   "offset": 878,
+   "line": 26
+  },
+  {
+   "id": "P:Fixture.Box`1.Title",
+   "offset": 912,
+   "line": 28
+  },
+  {
+   "id": "P:Fixture.Box`1.Value",
+   "offset": 939,
+   "line": 30
+  },
+  {
+   "id": "M:Fixture.Box`1.get_Value",
+   "offset": 947,
+   "line": 30
+  },
+  {
+   "id": "M:Fixture.Box`1.set_Value(`0)",
+   "offset": 952,
+   "line": 30
+  },
+  {
+   "id": "M:Fixture.Box`1.CompareTo(Fixture.Box{`0})",
+   "offset": 996,
+   "line": 32
+  },
+  {
+   "id": "M:Fixture.Box`1.Map``1(System.Func{`0,``0})",
+   "offset": 1071,
+   "line": 37
+  },
+  {
+   "id": "M:Fixture.Box`1.Group(`0[])",
+   "offset": 1217,
+   "line": 42
+  },
+  {
+   "id": "M:Fixture.Box`1.GetEnumerator",
+   "offset": 1331,
+   "line": 47
+  },
+  {
+   "id": "M:Fixture.Box`1.System#Collections#IEnumerable#GetEnumerator",
+   "offset": 1498,
+   "line": 54
+  }
+ ],
+ "warning": null,
+ "elapsedMs": 82
+}

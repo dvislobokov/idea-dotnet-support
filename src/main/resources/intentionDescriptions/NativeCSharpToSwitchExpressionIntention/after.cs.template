@@ -1,0 +1,5 @@
+return kind <spot>switch</spot>
+{
+    Kind.A => "a",
+    _ => "b"
+};

@@ -1,0 +1,2 @@
+# Goldens carry offsets: LF on every checkout, as in ../csharp-psi where they come from.
+* text=auto eol=lf

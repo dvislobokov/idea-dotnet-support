@@ -1,0 +1,8 @@
+if (<spot>!ready</spot>)
+{
+    Wait();
+}
+else
+{
+    Start();
+}

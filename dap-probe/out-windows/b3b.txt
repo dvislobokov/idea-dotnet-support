@@ -1,0 +1,177 @@
+
+===== restart =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 27476, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>\\t\\App\\Rest.cs"}, "line": 160, "column": 13, "endLine": 160, "endColumn": 47}}
+   ~ stopped {"reason": "breakpoint", "threadId": 14568, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   ~ process {"name": "App.dll", "systemProcessId": 9812, "isLocalProcess": true, "startMethod": "launch"}
+-> restart {"arguments": {"program": "<dap>\\t\\App\\bin\\Debug\\net10.0\\App.dll", "args": ["sleeper"]}} | 8ms ok=True null
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>\\t\\App\\Rest.cs"}, "line": 160, "column": 13, "endLine": 160, "endColumn": 47}}
+   ~ stopped {"reason": "breakpoint", "threadId": 30580, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   after restart stop={"reason": "breakpoint", "threadId": 30580, "allThreadsStopped": true, "hitBreakpointIds": [1]}, process events=2
+   adapter exit code: 0
+
+===== detach-launch =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 26372, "isLocalProcess": true, "startMethod": "launch"}
+   adapter exit code: 0
+   debuggee pid 26372 after disconnect(terminateDebuggee=false): ALIVE
+
+===== external-kill =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 22344, "isLocalProcess": true, "startMethod": "launch"}
+   ~ exited {"exitCode": 1}
+   ~ terminated null
+   end: exited={'exitCode': 1} terminated=True
+   adapter exit code: 0
+
+===== adapter-killed =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 28056, "isLocalProcess": true, "startMethod": "launch"}
+   debuggee pid 28056 after the adapter was killed: gone
+
+===== attach =====
+   ~ initialized null
+   initialized event: True
+   ~ process {"name": "13396", "systemProcessId": 13396, "isLocalProcess": true, "startMethod": "attach"}
+-> setBreakpoints {"source": {"path": "<dap>\\t\\App\\Rest.cs"}, "breakpoints": [{"line": 160}]} | 16ms ok=True {"breakpoints": [{"id": 1, "verified": false, "message": "No loaded module with symbols contains code for this location.", "source": {"name": "Rest.cs", "path": "<dap>\\t\\App\\Rest.cs"}, "line": 160}]}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>\\t\\App\\Rest.cs"}, "line": 160, "column": 13, "endLine": 160, "endColumn": 47}}
+   ~ stopped {"reason": "breakpoint", "threadId": 30020, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   attach response: {"success": false, "message": "TIMEOUT after 30s"}
+   stack: DebugTarget.Output.Sleeper():160 <- Program.<Main>$():18 <- [External Code]:0  total=3
+   Locals.i = 11  : int  ref=0
+
+===== attach-second =====
+   ~ initialized null
+   ~ process {"name": "13396", "systemProcessId": 13396, "isLocalProcess": true, "startMethod": "attach"}
+   ~ exited {"exitCode": -1}
+   ~ terminated null
+   second attach response: {"success": false, "message": "TIMEOUT after 20s"}
+   adapter exit code: 0
+   ~ exited {"exitCode": -1}
+   ~ terminated null
+   adapter exit code: 0
+   target after detach: exited 4294967295
+
+===== attach-nonexistent =====
+   ~ initialized null
+   response: {"success": false, "message": "TIMEOUT after 20s"}
+   adapter exit code: 0
+
+===== attach-native =====
+   ~ initialized null
+   ~ process {"name": "15648", "systemProcessId": 15648, "isLocalProcess": true, "startMethod": "attach"}
+   response: {"success": false, "message": "TIMEOUT after 20s"}
+   adapter exit code: 0
+
+===== attach-string-pid =====
+   ~ initialized null
+   response: {"success": false, "message": "TIMEOUT after 20s"}
+   adapter exit code: 0
+
+===== attach-no-pid =====
+   ~ initialized null
+   response: {"success": false, "message": "TIMEOUT after 20s"}
+   adapter exit code: 0
+
+===== launch-missing-program =====
+   ~ initialized null
+   launch ok=False Program '<dap>\t\nope\missing.dll' does not exist.
+   end: exited=None terminated=False
+   output: 
+   adapter exit code: 0
+
+===== launch-no-program =====
+   ~ initialized null
+   launch ok=False Either 'program' or 'project' is required for launch.
+   end: exited=None terminated=False
+   output: 
+   adapter exit code: 0
+
+===== launch-exe-apphost =====
+   ~ initialized null
+   ~ process {"name": "App.exe", "systemProcessId": 26056, "isLocalProcess": true, "startMethod": "launch"}
+   launch ok=True null
+   ~ exited {"exitCode": 3}
+   ~ terminated null
+   end: exited={'exitCode': 3} terminated=True
+   output: scenario exitcode
+
+   adapter exit code: 0
+
+===== launch-native-exe =====
+   ~ initialized null
+   ~ process {"name": "whoami.exe", "systemProcessId": 29492, "isLocalProcess": true, "startMethod": "launch"}
+   launch ok=True null
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   end: exited={'exitCode': 0} terminated=True
+   output: desktop-puveqgk\dvislobokov
+
+   adapter exit code: 0
+
+===== launch-bad-cwd =====
+   ~ initialized null
+   launch ok=False Failed to start '"C:\Program Files\dotnet\dotnet.exe" <dap>\t\App\bin\Debug\net10.0\App.dll exitcode': Неверно задано имя папки.
+   end: exited=None terminated=False
+   output: 
+   adapter exit code: 0
+
+===== launch-stop-at-entry =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 23628, "isLocalProcess": true, "startMethod": "launch"}
+   launch ok=True null
+   ~ stopped {"reason": "entry", "threadId": 16512, "allThreadsStopped": true}
+   entry stop: {"reason": "entry", "threadId": 16512, "allThreadsStopped": true} | [External Code] @ ?:0:0
+   ~ exited {"exitCode": 3}
+   ~ terminated null
+   end: exited={'exitCode': 3} terminated=True
+   output: scenario exitcode
+
+   adapter exit code: 0
+
+===== launch-project-build =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 16092, "isLocalProcess": true, "startMethod": "launch"}
+   launch ok=True null
+   ~ exited {"exitCode": 3}
+   ~ terminated null
+   end: exited={'exitCode': 3} terminated=True
+   output: scenario exitcode
+
+   adapter exit code: 0
+
+===== launch-project-file =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 21812, "isLocalProcess": true, "startMethod": "launch"}
+   launch ok=True null
+   ~ exited {"exitCode": 3}
+   ~ terminated null
+   end: exited={'exitCode': 3} terminated=True
+   output: scenario exitcode
+
+   adapter exit code: 0
+
+===== launch-integrated-terminal-unsupported =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 18352, "isLocalProcess": true, "startMethod": "launch"}
+   launch ok=True null
+   ~ exited {"exitCode": 3}
+   ~ terminated null
+   end: exited={'exitCode': 3} terminated=True
+   output: scenario exitcode
+
+   adapter exit code: 0
+
+===== launch-bad-types =====
+   ~ initialized null
+   launch ok=False The JSON value could not be converted to System.String[]. Path: $.args | LineNumber: 0 | BytePositionInLine: 223.
+   end: exited=None terminated=False
+   output: 
+   adapter exit code: 0
+
+===== launch-run-in-terminal =====
+   ~ initialized null
+   <- reverse request runInTerminal {"kind": "integrated", "title": "App", "cwd": "<dap>\\t\\App\\bin\\Debug\\net10.0", "args": ["<dap>\\tools\\dotnet-debugger.exe", "--run-in-terminal", "57041", "2b1a52b277024096b43f9008cd4dbdd0", "--", "<dap>\\t\\App\\bin\\Debug\\net10.0\\App.dll", "exitcode"]}
+   reverse requests: [{"seq": 4, "type": "request", "command": "runInTerminal", "arguments": {"kind": "integrated", "title": "App", "cwd": "<dap>\\t\\App\\bin\\Debug\\net10.0", "args": ["<dap>\\tools\\dotnet-debugger.exe", "--run-in-terminal", "57041", "2b1a52b277024096b43f9008cd4dbdd0", "--", "<dap>\\t\\App\\bin\\Debug\\net10.0\\App.dll", "exitcode"]}}]
+   adapter exit code: 0

@@ -1,0 +1,9 @@
+switch (kind)
+{
+    case Kind.A:
+        break;
+    <spot>case Kind.B:
+        break;
+    default:
+        break;</spot>
+}

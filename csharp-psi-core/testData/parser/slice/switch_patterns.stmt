@@ -1,0 +1,1 @@
+switch (o) { case string { Length: > 0 } s: break; case (1, 2): break; case > 5 and < 10: break; case null: break; case var v: break; }

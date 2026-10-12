@@ -1,0 +1,28 @@
+{
+ "method": "textDocument/definition",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  },
+  "position": {
+   "line": 3,
+   "character": 3
+  }
+ },
+ "ms": 210.8,
+ "result": [
+  {
+   "uri": "file:///c:/users/me/AppData/Local/Temp/MetadataAsSource/fb37e567d198438fb57e50d22bfdb65f/DecompilationMetadataAsSourceFileProvider/88f3aff5ac7340f9bbcc8218aa56f91c/PageTitle.cs",
+   "range": {
+    "start": {
+     "line": 10,
+     "character": 20
+    },
+    "end": {
+     "line": 10,
+     "character": 29
+    }
+   }
+  }
+ ]
+}

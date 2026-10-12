@@ -1,0 +1,123 @@
+## declarations
+usings 1:1-2:34
+namespace Synthetic.Generics  name 4:11-4:29  range 4:1-37:2 body 5:1-37:2
+  class Map [public sealed]  name 6:25-6:28  range 6:5-24:6 body 7:5-24:6
+    field _cache: Dictionary<string, List<int>> [private readonly]  name 8:56-8:62  range 8:9-8:71
+    field _first: int [private]  name 9:21-9:27  range 9:9-9:27
+    field _second: int [private]  name 9:29-9:36  range 9:29-9:37
+    field _factory: Func<int, Dictionary<string, int>> [private]  name 10:52-10:60  range 10:9-10:110
+    method Get(TKey key, Func<TValue, TResult> map): TValue [public]  name 12:23-12:26  range 12:9-15:10 body 13:9-15:10
+    method Pairs(): IEnumerable<KeyValuePair<TKey, TValue>> [public]  name 17:56-17:61  range 17:9-17:103
+    method Tuple(): (int Count, string Name) [public]  name 19:41-19:46  range 19:9-19:61
+    property Tuples: List<(int, string)> [public]  name 21:36-21:42  range 21:9-21:60 body 21:43-21:51
+    method Dispose(): void  name 23:26-23:33  range 23:9-23:39 body 23:36-23:39
+  interface IConverter [public]  name 26:22-26:32  range 26:5-29:6 body 27:5-29:6
+    method Convert(TIn value): TOut  name 28:14-28:21  range 28:9-28:33
+  delegate Transformer(T input): TResult [public]  name 31:29-31:40  range 31:5-31:78
+  struct Pair [public]  name 33:19-33:23  range 33:5-36:6 body 34:5-36:6
+    field Left: T [public]  name 35:18-35:22  range 35:9-35:22
+    field Right: T [public]  name 35:24-35:29  range 35:24-35:30
+
+## structure view
+Synthetic.Generics
+  Map
+    _cache: Dictionary<string, List<int>>
+    _first: int
+    _second: int
+    _factory: Func<int, Dictionary<string, int>>
+    Get(TKey key, Func<TValue, TResult> map): TValue
+    Pairs(): IEnumerable<KeyValuePair<TKey, TValue>>
+    Tuple(): (int Count, string Name)
+    Tuples: List<(int, string)>
+    Dispose(): void
+  IConverter
+    Convert(TIn value): TOut
+  Transformer(T input): TResult
+  Pair
+    Left: T
+    Right: T
+
+## folding
+1:7-2:34  ... (collapsed)  | System;
+5:1-37:2  {...}  | {
+7:5-24:6  {...}  | {
+13:9-15:10  {...}  | {
+27:5-29:6  {...}  | {
+34:5-36:6  {...}  | {
+
+## breadcrumbs
+1: 
+4: Synthetic.Generics
+6: Synthetic.Generics > Map
+8: Synthetic.Generics > Map > _cache
+9: Synthetic.Generics > Map
+10: Synthetic.Generics > Map > _factory
+12: Synthetic.Generics > Map > Get()
+17: Synthetic.Generics > Map > Pairs()
+19: Synthetic.Generics > Map > Tuple()
+21: Synthetic.Generics > Map > Tuples
+23: Synthetic.Generics > Map > Dispose()
+24: Synthetic.Generics > Map
+26: Synthetic.Generics > IConverter
+28: Synthetic.Generics > IConverter > Convert()
+29: Synthetic.Generics > IConverter
+31: Synthetic.Generics > Transformer
+33: Synthetic.Generics > Pair
+37: Synthetic.Generics
+
+## IL Viewer: type / member at the line
+1: - / -
+6: Synthetic.Generics.Map`2 / -
+8: Synthetic.Generics.Map`2 / _cache
+9: Synthetic.Generics.Map`2 / _first
+10: Synthetic.Generics.Map`2 / _factory
+12: Synthetic.Generics.Map`2 / Get
+17: Synthetic.Generics.Map`2 / Pairs
+19: Synthetic.Generics.Map`2 / Tuple
+21: Synthetic.Generics.Map`2 / Tuples
+23: Synthetic.Generics.Map`2 / Dispose
+24: Synthetic.Generics.Map`2 / -
+26: Synthetic.Generics.IConverter`2 / -
+28: Synthetic.Generics.IConverter`2 / Convert
+29: Synthetic.Generics.IConverter`2 / -
+31: Synthetic.Generics.Transformer`2 / -
+33: Synthetic.Generics.Pair`1 / -
+35: Synthetic.Generics.Pair`1 / Left
+36: Synthetic.Generics.Pair`1 / -
+37: - / -
+
+## Go to Base: member at the line
+1: -
+12: Map.Get(TKey key, Func<TValue, TResult> map)
+14: Map.Get(TKey key, Func<TValue, TResult> map) (in body)
+17: Map.Pairs()
+19: Map.Tuple()
+21: Map.Tuples
+23: Map.Dispose()
+24: -
+28: IConverter.Convert(TIn value)
+29: -
+
+## breakpoint lines
+8, 10, 13-15, 17, 19, 21, 23
+
+## run gutter
+
+## Go to Class / Symbol
+M:Convert -> 28:14 Convert(TIn value) (IConverter)
+M:Dispose -> 23:26 Dispose() (Map)
+M:Get -> 12:23 Get(TKey key, Func<TValue, TResult> map) (Map)
+M:Left -> 35:18 Left (Pair)
+M:Pairs -> 17:56 Pairs() (Map)
+M:Right -> 35:24 Right (Pair)
+M:Tuple -> 19:41 Tuple() (Map)
+M:Tuples -> 21:36 Tuples (Map)
+M:_cache -> 8:56 _cache (Map)
+M:_factory -> 10:52 _factory (Map)
+M:_first -> 9:21 _first (Map)
+M:_second -> 9:29 _second (Map)
+T:IConverter -> 26:22 IConverter (Synthetic.Generics)
+T:Map -> 6:25 Map (Synthetic.Generics)
+T:Pair -> 33:19 Pair (Synthetic.Generics)
+T:Transformer -> 31:29 Transformer(T input) (Synthetic.Generics)
+

@@ -1,0 +1,173 @@
+
+===== variables =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 25, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Variables.cs", "path": "<dap>/t/App/Variables.cs"}, "line": 51, "column": 9, "endLine": 51, "endColumn": 46}}
+   ~ stopped {"reason": "breakpoint", "threadId": 25, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   stack: DebugTarget.Variables.Run():51 <- Program.<Main>$():7 <- [External Code]:0  total=3
+   Locals.i = 42  : int  ref=0
+   Locals.big = 9223372036854775807  : long  ref=0
+   Locals.d = 3.5  : double  ref=0
+   Locals.f = 1.25  : float  ref=0
+   Locals.m = 12.34  : decimal  ref=0
+   Locals.flag = true  : bool  ref=0
+   Locals.c = 'x'  : char  ref=0
+   Locals.b = 255  : byte  ref=0
+   Locals.s = "hello \"quoted\"\n\tПривет"  : string  ref=0
+   Locals.nothing = null  : string  ref=0
+   Locals.empty = ""  : string  ref=0
+   Locals.longText = <error: startIndex ('0') must be less than or equal to '-904'. (Parameter 'startIndex')
+Actual value was 0.>  : None  ref=0
+   Locals.maybe = 5  : System.Nullable<int>  ref=0
+   Locals.none = null  : System.Nullable<int>  ref=0
+   Locals.perm = Read | Write  : DebugTarget.Perm  ref=0
+   Locals.day = {System.DayOfWeek}  : System.DayOfWeek  ref=5
+   Locals.point = {(1,2)}  : DebugTarget.Point  ref=6
+   Locals.tuple = (1, "t")  : System.ValueTuple<int, string>  ref=7
+   Locals.person = {Person { Name = Ann, Age = 30 }}  : DebugTarget.Person  ref=8
+   Locals.anon = \<error: Invalid expression: Unexpected token '{'>, B = "two" }  : <>f__AnonymousType0<int, string>  ref=9
+   Locals.numbers = {int[250]}  : int[]  ref=10 indexedVariables=250
+   Locals.grid = {int[2, 3]}  : int[,]  ref=11 indexedVariables=6
+   Locals.jagged = {int[2][]}  : int[][]  ref=12 indexedVariables=2
+   Locals.list = Count = 3  : System.Collections.Generic.List<string>  ref=13 indexedVariables=3
+   Locals.dict = Count = 2  : System.Collections.Generic.Dictionary<string, int>  ref=14 indexedVariables=2
+   Locals.set = Count = 3  : System.Collections.Generic.HashSet<int>  ref=15 indexedVariables=3
+   Locals.date = {2024-05-01 10:00:00 UTC}  : System.DateTime  ref=16
+   Locals.guid = {6f9619ff-8b86-d011-b42d-00c04fc964ff}  : System.Guid  ref=17
+   Locals.span = {01:30:00}  : System.TimeSpan  ref=18
+   Locals.boxed = 5  : int  ref=0
+   Locals.dyn = "dynamic string"  : string  ref=0
+   Locals.asBase = {DebugTarget.Derived}  : DebugTarget.Derived  ref=19
+   Locals.derived = {DebugTarget.Derived}  : DebugTarget.Derived  ref=20
+   Locals.lazy = {System.Linq.Enumerable.ArrayWhereIterator<int>}  : System.Linq.Enumerable.ArrayWhereIterator<int>  ref=21
+   Locals.twice = {System.Func<int, int>}  : System.Func<int, int>  ref=22
+   Locals.task = Id = 1, Status = {System.Threading.Tasks.TaskStatus}, Method = "{null}", Result = "9"  : System.Threading.Tasks.Task<int>  ref=23
+   Locals.ex = {System.ArgumentException: bad}  : System.ArgumentException  ref=24
+   scopes: [('Locals', 'locals', False)]
+   children of numbers (250, 12ms): [0]=0; [1]=1; [2]=2; [3]=3; [4]=4; [5]=5; [6]=6; [7]=7; [8]=8; [9]=9; [10]=10; [11]=11; [12]=12; [13]=13 ...
+   children of grid (6, 1ms): [0, 0]=1; [0, 1]=2; [0, 2]=3; [1, 0]=4; [1, 1]=5; [1, 2]=6
+   children of jagged (2, 1ms): [0]={int[1]}; [1]={int[2]}
+   children of list (4, 5ms): [0]="a"; [1]="b"; [2]="c"; Raw View=
+   children of dict (3, 4ms): ["one"]=1; ["two"]=2; Raw View=
+   children of set (4, 3ms): [0]=1; [1]=2; [2]=3; Raw View=
+   children of point (2, 5ms): X=1; Y=2
+   children of tuple (2, 2ms): Item1=1; Item2="t"
+   children of person (2, 2ms): Name="Ann"; Age=30
+   children of anon (2, 5ms): A=1; B="two"
+   children of date (19, 67ms): _dateData=5250187562427387904; UTicks=638501544000000000; InternalKind=4611686018427387904; Date={2024-05-01 00:00:00 UTC}; Day=1; DayOfWeek={System.DayOfWeek}; DayOfYear=122; Hour=10; Kind={System.DateTimeKind}; Millisecond=0; Microsecond=0; Nanosecond=0; Minute=0; Month=5 ...
+   children of asBase (7, 17ms): Own=1; _secret="s3cret"; baseField=7; Kind="derived"; Throws=<System.InvalidOperationException: getter failed>; SideEffect=43; Static members=
+   children of derived (7, 13ms): Own=1; _secret="s3cret"; baseField=7; Kind="derived"; Throws=<System.InvalidOperationException: getter failed>; SideEffect=44; Static members=
+   children of lazy (7, 21ms): _source={int[250]}; _predicate={System.Func<int, bool>}; _threadId=1; _state=0; _current=0; Current=0; Results View=
+   children of twice (9, 16ms): _invocationList=null; _invocationCount=0x0; _target={DebugTarget.Variables.<>c}; _methodBase=null; _methodPtr=0x7A95D7990840; _methodPtrAux=0x0; HasSingleTarget=true; Target={DebugTarget.Variables.<>c}; Method={Int32 <Run>b__0_1(Int32)}
+   children of task (8, 22ms): Result=9; AsyncState=null; CreationOptions={System.Threading.Tasks.TaskCreationOptions}; Exception=null; Id=1; CancellationPending=false; Status={System.Threading.Tasks.TaskStatus}; Raw View=
+   children of ex (28, 23ms): _paramName="param"; _exceptionMethod=null; _message="bad"; _data=null; _innerException=null; _helpURL=null; _stackTrace=null; _watsonBuckets=null; _stackTraceString=null; _remoteStackTraceString=null; _source=null; _ipForWatsonBuckets=0x0; _xptrs=0x0; _xcode=-532462766 ...
+   children of numbers (5, 1ms): [100]=100; [101]=101; [102]=102; [103]=103; [104]=104
+   children of numbers (5, 0ms): [245]=245; [246]=246; [247]=247; [248]=248; [249]=249
+   longText value length reported: 108
+   eval[watch] i + 1                                          -> 43 : int  (60ms)
+   eval[watch] i / 0                                          -> ERROR DivideByZeroException: Attempted to divide by zero.  (3ms)
+   eval[watch] d * 2                                          -> 7 : double  (8ms)
+   eval[watch] m + 1.5m                                       -> 13.84 : decimal  (6ms)
+   eval[watch] s.Length                                       -> 22 : int  (2ms)
+   eval[watch] s.ToUpper()                                    -> "HELLO \"QUOTED\"\n\tПРИВЕТ" : string  (13ms)
+   eval[watch] s[0]                                           -> 'h' : char  (7ms)
+   eval[watch] nothing?.Length                                -> null : None  (2ms)
+   eval[watch] nothing ?? "fallback"                          -> "fallback" : string  (2ms)
+   eval[watch] nothing.Length                                 -> ERROR NullReferenceException: the value is null.  (1ms)
+   eval[watch] flag ? 1 : 2                                   -> 1 : int  (2ms)
+   eval[watch] perm                                           -> Read | Write : DebugTarget.Perm  (1ms)
+   eval[watch] perm.HasFlag(Perm.Write)                       -> ERROR No method or extension method 'HasFlag' takes 1 argument(s) of these types.  (14ms)
+   eval[watch] (int)perm                                      -> 3 : int  (4ms)
+   eval[watch] day                                            -> {System.DayOfWeek} : System.DayOfWeek ref=49  (1ms)
+   eval[watch] point.X + point.Y                              -> 3 : int  (1ms)
+   eval[watch] point                                          -> {(1,2)} : DebugTarget.Point ref=50  (3ms)
+   eval[watch] tuple.Name                                     -> ERROR 'Name' is not a member of the value.  (3ms)
+   eval[watch] person.Name                                    -> "Ann" : string  (1ms)
+   eval[watch] person                                         -> {Person { Name = Ann, Age = 30 }} : DebugTarget.Person ref=51  (2ms)
+   eval[watch] numbers[10]                                    -> 10 : int  (5ms)
+   eval[watch] numbers.Length                                 -> 250 : int  (1ms)
+   eval[watch] numbers[999]                                   -> ERROR IndexOutOfRangeException: Index was outside the bounds of the array.  (1ms)
+   eval[watch] grid[1,2]                                      -> 6 : int  (2ms)
+   eval[watch] jagged[1][0]                                   -> 2 : int  (1ms)
+   eval[watch] list[1]                                        -> "b" : string  (4ms)
+   eval[watch] list.Count                                     -> 3 : int  (4ms)
+   eval[watch] dict["two"]                                    -> 2 : int  (9ms)
+   eval[watch] dict["missing"]                                -> ERROR System.Collections.Generic.KeyNotFoundException: The given key 'missing' was not present in the dictionary.  (16ms)
+   eval[watch] set.Contains(2)                                -> true : bool  (5ms)
+   eval[watch] date.Year                                      -> 2024 : int  (4ms)
+   eval[watch] date.AddDays(1)                                -> {2024-05-02 10:00:00 UTC} : System.DateTime ref=52  (5ms)
+   eval[watch] guid                                           -> {6f9619ff-8b86-d011-b42d-00c04fc964ff} : System.Guid ref=53  (6ms)
+   eval[watch] span.TotalMinutes                              -> 90 : double  (2ms)
+   eval[watch] (int)boxed + 1                                 -> 6 : int  (3ms)
+   eval[watch] boxed is int                                   -> true : bool  (4ms)
+   eval[watch] asBase as Derived                              -> {DebugTarget.Derived} : DebugTarget.Derived ref=54  (2ms)
+   eval[watch] asBase.Kind                                    -> "derived" : string  (2ms)
+   eval[watch] ((Derived)asBase).Own                          -> 1 : int  (4ms)
+   eval[watch] derived.Greet("bob")                           -> ERROR No method or extension method 'Greet' takes 1 argument(s) of these types.  (1ms)
+   eval[watch] derived.Greet("bob", 2)                        -> "hi bob;hi bob;" : string  (20ms)
+   eval[watch] derived[3]                                     -> 30 : int  (5ms)
+   eval[watch] Derived.Twice(21)                              -> 42 : int  (4ms)
+   eval[watch] Derived.Counter                                -> 44 : int  (3ms)
+   eval[watch] derived.SideEffect                             -> 45 : int  (2ms)
+   eval[watch] Derived.Counter                                -> 45 : int  (3ms)
+   eval[watch] derived.Throws                                 -> ERROR System.InvalidOperationException: getter failed  (11ms)
+   eval[watch] derived._secret                                -> "s3cret" : string  (3ms)
+   eval[watch] derived.baseField                              -> 7 : int  (1ms)
+   eval[watch] Math.Max(i, 100)                               -> 100 : int  (5ms)
+   eval[watch] string.Join(",", list)                         -> "a,b,c" : string  (9ms)
+   eval[watch] System.IO.Path.Combine("a", "b")               -> "a/b" : string  (6ms)
+   eval[watch] new System.Text.StringBuilder("x").Append(1).ToString() -> "x1" : string  (14ms)
+   eval[watch] new Person("Zed", 1)                           -> {Person { Name = Zed, Age = 1 }} : DebugTarget.Person ref=55  (6ms)
+   eval[watch] typeof(Derived)                                -> {DebugTarget.Derived} : System.RuntimeType ref=56  (13ms)
+   eval[watch] typeof(Derived).Name                           -> "Derived" : string  (6ms)
+   eval[watch] nameof(derived)                                -> "derived" : string  (1ms)
+   eval[watch] $"{i}-{s.Length}"                              -> "42-22" : string  (9ms)
+   eval[watch] i == 42 && flag                                -> true : bool  (2ms)
+   eval[watch] i > 10 || nothing == null                      -> true : bool  (1ms)
+   eval[watch] twice(4)                                       -> ERROR The name 'twice' does not exist in the current context.  (1ms)
+   eval[watch] task.Result                                    -> 9 : int  (2ms)
+   eval[watch] lazy.Count()                                   -> 125 : int  (7ms)
+   eval[watch] numbers.Sum()                                  -> 31125 : int  (8ms)
+   eval[watch] list.Select(x => x + "!").First()              -> ERROR Expressions of kind 'SimpleLambdaExpression' are not supported.  (2ms)
+   eval[watch] ex.Message                                     -> "bad (Parameter 'param')" : string  (4ms)
+   eval[watch] dyn                                            -> "dynamic string" : string  (3ms)
+   eval[watch] dyn.Length                                     -> 14 : int  (1ms)
+   eval[watch] c + 1                                          -> 121 : int  (1ms)
+   eval[watch] b + 1                                          -> 256 : int  (1ms)
+   eval[watch] big + 1                                        -> -9223372036854775808 : long  (1ms)
+   eval[watch] f * 2                                          -> 2.5 : float  (2ms)
+   eval[watch] undefinedName                                  -> ERROR The name 'undefinedName' does not exist in the current context.  (1ms)
+   eval[watch] i +                                            -> ERROR Invalid expression: Expected expression  (1ms)
+   eval[watch]                                                -> ERROR Invalid expression: Expected expression  (0ms)
+   eval[watch] i = 100                                        -> 100 : int  (2ms)
+   eval[watch] i                                              -> 100 : int  (0ms)
+   eval[watch] s = "changed"                                  -> "changed" : string  (5ms)
+   eval[watch] s                                              -> "changed" : string  (1ms)
+   eval[watch] default(int)                                   -> 0 : int  (1ms)
+   eval[watch] sizeof(int)                                    -> 4 : int  (1ms)
+   eval[watch] checked(big + 1)                               -> ERROR Expressions of kind 'CheckedExpression' are not supported.  (1ms)
+   eval[watch] this                                           -> ERROR Keyword 'this' is not available in the current context.  (1ms)
+   eval[hover] s                                              -> "changed" : string  (0ms)
+   eval[repl] s                                              -> "changed" : string  (0ms)
+   eval[clipboard] s                                              -> "changed" : string  (1ms)
+   eval[clipboard] longText                                       -> <error: startIndex ('0') must be less than or equal to '-904...(108) : None  (0ms)
+   eval[watch] s,nq                                           -> changed : string  (1ms)
+   eval[watch] i,h                                            -> 0x00000064 : int  (0ms)
+   eval[watch] numbers,5                                      -> ERROR Invalid expression: Unexpected token ','  (1ms)
+   setVariable i := 7 -> {"value": "7", "type": "int", "variablesReference": 0}
+   setVariable i := i * 2 -> {"value": "14", "type": "int", "variablesReference": 0}
+   setVariable s := "new text" -> {"value": "\"new text\"", "type": "string", "variablesReference": 0}
+   setVariable flag := false -> {"value": "false", "type": "bool", "variablesReference": 0}
+   setVariable d := not a number -> ERROR Invalid expression: Unexpected token 'a'
+   setVariable maybe := null -> ERROR Cannot assign null to a value type.
+   setVariable perm := Perm.Exec -> {"value": "Exec", "type": "DebugTarget.Perm", "variablesReference": 0}
+   setVariable point := new Point(9, 9) -> ERROR The value cannot be converted to the type of the variable.
+   setVariable nothing := "now set" -> {"value": "\"now set\"", "type": "string", "variablesReference": 0}
+   setExpression derived.Own := 55 -> {"value": "55", "type": "int", "variablesReference": 0}
+   eval[watch] derived.Own                                    -> 55 : int  (1ms)
+   ~ stopped {"reason": "step", "threadId": 25, "allThreadsStopped": true}
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   end: exited={'exitCode': 0} terminated=True
+   program output tail: 'scenario variables\nvariables ready\n14 8 55 45 250 3\ndone\n'
+   adapter exit code: 0

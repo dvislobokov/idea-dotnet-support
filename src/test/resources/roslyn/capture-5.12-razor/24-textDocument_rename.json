@@ -1,0 +1,52 @@
+{
+ "method": "textDocument/rename",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  },
+  "position": {
+   "line": 26,
+   "character": 18
+  },
+  "newName": "ResetCount"
+ },
+ "ms": 120.0,
+ "result": {
+  "documentChanges": [
+   {
+    "textDocument": {
+     "version": null,
+     "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+    },
+    "edits": [
+     {
+      "range": {
+       "start": {
+        "line": 26,
+        "character": 22
+       },
+       "end": {
+        "line": 26,
+        "character": 22
+       }
+      },
+      "newText": "Count"
+     },
+     {
+      "range": {
+       "start": {
+        "line": 21,
+        "character": 23
+       },
+       "end": {
+        "line": 21,
+        "character": 23
+       }
+      },
+      "newText": "Count"
+     }
+    ]
+   }
+  ]
+ }
+}

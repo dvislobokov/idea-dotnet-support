@@ -1,0 +1,67 @@
+## declarations
+namespace Playground.Lib  name 1:11-1:25  range 1:1-24:2
+  class Pricing [public static]  name 4:21-4:28  range 4:1-17:2 body 5:1-17:2
+    method Total(IEnumerable<OrderLine> lines, decimal discountPercent): decimal [public static]  name 6:27-6:32  range 6:5-14:6 body 7:5-14:6
+    method Apply(decimal sum, decimal discountPercent): decimal [private static]  name 16:28-16:33  range 16:5-16:109
+  record OrderLine(string Name, decimal Price, int Quantity) [public]  name 19:15-19:24  range 19:1-19:67
+  class ShopException(string message, int code) [public]  name 21:14-21:27  range 21:1-24:2 body 22:1-24:2
+    property Code: int [public]  name 23:16-23:20  range 23:5-23:37 body 23:21-23:29
+
+## structure view
+Playground.Lib
+  Pricing
+    Total(IEnumerable<OrderLine> lines, decimal discountPercent): decimal
+    Apply(decimal sum, decimal discountPercent): decimal
+  OrderLine(string Name, decimal Price, int Quantity)
+  ShopException(string message, int code)
+    Code: int
+
+## folding
+5:1-17:2  {...}  | {
+7:5-14:6  {...}  | {
+22:1-24:2  {...}  | {
+
+## breadcrumbs
+1: Playground.Lib
+4: Playground.Lib > Pricing
+6: Playground.Lib > Pricing > Total()
+16: Playground.Lib > Pricing > Apply()
+17: Playground.Lib > Pricing
+19: Playground.Lib > OrderLine
+21: Playground.Lib > ShopException
+23: Playground.Lib > ShopException > Code
+24: Playground.Lib > ShopException
+
+## IL Viewer: type / member at the line
+1: - / -
+4: Playground.Lib.Pricing / -
+6: Playground.Lib.Pricing / Total
+16: Playground.Lib.Pricing / Apply
+17: Playground.Lib.Pricing / -
+19: Playground.Lib.OrderLine / -
+21: Playground.Lib.ShopException / -
+23: Playground.Lib.ShopException / Code
+24: Playground.Lib.ShopException / -
+
+## Go to Base: member at the line
+1: -
+6: Pricing.Total(IEnumerable<OrderLine> lines, decimal discountPercent)
+8: Pricing.Total(IEnumerable<OrderLine> lines, decimal discountPercent) (in body)
+16: Pricing.Apply(decimal sum, decimal discountPercent)
+17: -
+23: ShopException.Code
+24: -
+
+## breakpoint lines
+7-14, 16, 23
+
+## run gutter
+
+## Go to Class / Symbol
+M:Apply -> 16:28 Apply(decimal sum, decimal discountPercent) (Pricing)
+M:Code -> 23:16 Code (ShopException)
+M:Total -> 6:27 Total(IEnumerable<OrderLine> lines, decimal discountPercent) (Pricing)
+T:OrderLine -> 19:15 OrderLine(string Name, decimal Price, int Quantity) (Playground.Lib)
+T:Pricing -> 4:21 Pricing (Playground.Lib)
+T:ShopException -> 21:14 ShopException(string message, int code) (Playground.Lib)
+

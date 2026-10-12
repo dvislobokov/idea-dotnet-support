@@ -1,0 +1,343 @@
+######## ShowIntentionActions at «class Circle» (Console/Editor/RiderAnalysis.cs)
+caret line 101: public class Circle : ShapeBase
+
+== window HeavyWeightWindow 362x499
+  list MyList rows 17
+    Implement missing members |      
+    Make class 'Circle' abstract |      
+    Delegate implementation of 'ShapeBase' to new field |      
+    To internal |      
+    Move to 'Circle.cs' |      
+    Create derived type |      
+    Add <inheritdoc /> |      
+    Default constructor |      
+    Make partial |      
+    Create unit test |      
+    Copy type…
+    Class 'Circle' has base types |      Alt+Home
+    Type Hierarchy |      Ctrl+E, H
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+
+######## ShowIntentionActions at «string.Format(» (Console/Editor/RiderAnalysis.cs)
+caret line 60: var formatted = string.Format("{0} has {1:N2} items", order.Customer, order.Total);
+
+== window HeavyWeightWindow 380x289
+  list MyList rows 9
+    Use string interpolation |      
+    Add exception documentation |      
+    Convert 'String.Format' to concatenation |      
+    Import static members |      
+    Rider inspection: 'Use string interpolation expression' |      
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 526x197
+  texts: (preview) [ Loading&#8230; ] | [ body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;} a { color:#71a1fe;} ul {list-style:disc; margin-left:15px;} Use st
+######## ShowIntentionActions at «string title» (Console/Editor/RiderAnalysis.cs)
+caret line 44: public AnalysisSamples(string title, int count)
+
+== window HeavyWeightWindow 414x484
+  list MyList rows 16
+    Introduce read-only field '_title' |      
+    Introduce get-only auto-property 'Title' |      
+    Remove parameter (and update usages) |      
+    Check parameter for null |      
+    Create overload without parameter |      
+    Named arguments |      
+    Transform parameters…
+    To factory method |      
+    Rider inspection: 'Unused parameter (private accessibility)' |      
+    Chop parameters list |      
+    Value Destination
+    Value Origin
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 477x288
+  texts: (preview) [ Loading&#8230; ] | [ body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;} a { color:#71a1fe;} ul {list-style:disc; margin-left:15px;} Parame
+######## ShowIntentionActions at «var unused» (Console/Editor/RiderAnalysis.cs)
+caret line 55: var unused = 42;
+
+== window HeavyWeightWindow 408x289
+  list MyList rows 9
+    Remove not accessed local variable |      
+    Use discard assignment |      
+    Split variable declaration and initialization |      
+    Compiler warning: 'CS0219: Non-accessed local variable' |      
+    Rider inspection: 'Use discard assignment' |      
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 498x176
+  texts: (preview) [ Loading&#8230; ] | [ body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;} a { color:#71a1fe;} ul {list-style:disc; margin-left:15px;} Local 
+######## ShowIntentionActions at «nullable.Length» (Console/Editor/RiderAnalysis.cs)
+caret line 68: var length = nullable.Length;
+
+== window HeavyWeightWindow 474x256
+  list MyList rows 8
+    Check expression for null |      
+    Assert expression is not null |      
+    Suppress nullable warning with '!' |      
+    Compiler warning: 'CS8602: Dereference of a possibly null reference.' |      
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 432x323
+  texts: (preview) [ Loading&#8230; ] | [ body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;} a { color:#71a1fe;} ul {list-style:disc; margin-left:15px;} Derefe
+######## ShowIntentionActions at «(string)boxed» (Console/Editor/RiderAnalysis.cs)
+caret line 71: var str = (string)boxed;
+
+== window HeavyWeightWindow 237x175
+  list MyList rows 5
+    To safe cast |      
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 416x169
+  texts: (preview) [ Loading&#8230; ] | [ body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;} a { color:#71a1fe;} ul {list-style:disc; margin-left:15px;} Previe
+######## ShowIntentionActions at «foreach» (Console/Editor/RiderAnalysis.cs)
+anchor not found
+
+== window HeavyWeightWindow 343x475
+  list MyList rows 16
+    Remove unused directives in file
+    Sort 'using' directives… |      
+    Convert to 'global using'
+    Rider inspection: 'Redundant using directive' |      
+    Using directives from 'Console.GlobalUsings.g.cs' |      
+    System |      
+    System.Collections.Generic |      
+    System.IO |      
+    System.Linq |      
+    System.Net.Http |      
+    System.Threading |      
+    System.Threading.Tasks |      
+    Disable implicit usings |      
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+== window HeavyWeightWindow 435x106
+  texts: (preview) [ Loading&#8230; ] | [ body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;} a { color:#71a1fe;} ul {list-style:disc; margin-left:15px;} Using 
+######## ShowIntentionActions at «$"Order {» (Console/Editor/RiderAnalysis.cs)
+caret line 59: var text = $"Order {order.Id,5:D} for {order.Customer} at {DateTime.Now:yyyy-MM-dd}\t\n";
+
+== window HeavyWeightWindow 329x400
+  list MyList rows 14
+    Capture class name |      
+    Split string |      
+    To verbatim interpolation |      
+    To raw interpolation |      
+    Convert to unicode escape sequences ('\u') |      
+    Convert to 'string.Format' |      
+    Convert to 'StringBuilder' |      
+    Convert interpolation to concatenation |      
+    Mark as Route template
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+    Inject language or reference
+== window HeavyWeightWindow 577x197
+  texts: (preview) [ Loading&#8230; ] | [ body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;} a { color:#71a1fe;} ul {list-style:disc; margin-left:15px;} Previe
+######## ShowIntentionActions at «if (order.Status ==» (Console/Editor/RiderAnalysis.cs)
+caret line 66: if (order.Status == OrderStatus.Paid) return text + formatted + regex + blank + query.Count();
+
+== window HeavyWeightWindow 335x232
+  list MyList rows 7
+    Invert 'if' |      
+    Convert to 'switch' statement… |      
+    Add braces |      
+    Rider inspection: 'Use preferred braces style' |      
+    Navigate To…
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 571x386
+  texts: (preview) [ Loading&#8230; ] | [ body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;} a { color:#71a1fe;} ul {list-style:disc; margin-left:15px;} Previe
+######## ShowIntentionActions at «from o in» (Console/Editor/RiderAnalysis.cs)
+caret line 63: var query = from o in _orders where o.Total > 10 orderby o.Id select o.Customer;
+
+== window HeavyWeightWindow 237x175
+  list MyList rows 5
+    Convert LINQ to method chain |      
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 669x197
+  texts: (preview) [ Loading&#8230; ] | [ body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;} a { color:#71a1fe;} ul {list-style:disc; margin-left:15px;} Previe
+######## ShowIntentionActions at «public string Customer» (Console/Editor/RiderAnalysis.cs)
+caret line 25: public string Customer { get; set; } = "";
+
+== window HeavyWeightWindow 310x361
+  list MyList rows 12
+    To property with backing field |      
+    To computed property (evaluate each read) |      
+    To private |      
+    To abstract |      
+    Make property 'Customer' partial |      
+    Change signature… |      Ctrl+R, V
+    Value Destination
+    Value Origin
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 442x337
+  texts: (preview) [ Loading&#8230; ] | [ body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;} a { color:#71a1fe;} ul {list-style:disc; margin-left:15px;} Previe
+######## ShowIntentionActions at «public void Place» (Console/Editor/RiderAnalysis.cs)
+caret line 50: public void Place(int quantity, string customer, bool express = false, OrderStatus status = OrderStatus.New) { }
+
+== window HeavyWeightWindow 542x427
+  list MyList rows 14
+    Make 'Place' static |      
+    Сделать статическим |      
+    To private |      
+    To virtual |      
+    Make method 'Place' partial |      
+    Change signature… |      Ctrl+R, V
+    Rider inspection: 'Member can be made static (shared) (non-private accessibility)' |      
+    Roslyn analyzer: 'CA1822: Пометьте члены как статические' |      
+    Incoming Calls
+    Outgoing Calls
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+
+######## Generate at «public int Id» (Console/Editor/RiderAnalysis.cs)
+caret line 24: public int Id { get; set; }
+
+== window HeavyWeightWindow 228x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## Refactorings.QuickListPopupAction at «public void Place» (Console/Editor/RiderAnalysis.cs)
+caret line 50: public void Place(int quantity, string customer, bool express = false, OrderStatus status = OrderStatus.New) { }
+
+== window HeavyWeightWindow 197x360
+  list MyList rows 12
+    Change Signature |      Ctrl+R, V
+    Inline Method
+    Rename |      Ctrl+R, R
+    Safe Delete |      Ctrl+R, D
+    Extract Interface |      Ctrl+R, I
+    Extract Superclass
+    Extract Class
+    Extract Members to Partial
+    Push Members Down
+    Convert method to indexer
+    Make Static
+    Transform Parameters
+
+######## ReSharperNavigateTo at «Order order)» (Console/Editor/RiderAnalysis.cs)
+caret line 53: public async Task<string> Highlights(string input, int index, Order order)
+
+== window HeavyWeightWindow 213x408
+  list MyList rows 14
+    Declaration |      F12
+    Implementation
+    Base Symbols |      Alt+Home
+    Find Usages |      Shift+F12
+    Related Files |      Ctrl+Alt+F7
+    Type of Symbol |      Ctrl+Shift+F11
+    Derived Symbols |      Alt+End
+    Extension Methods
+    Related Tests
+    Show Usages |      Alt+Shift+F12
+    Consuming APIs
+    Exposing APIs
+    Windows Explorer |      
+    Referenced Code |      
+
+######## ReSharperNavigateTo at «public abstract class ShapeBase» (Console/Editor/RiderAnalysis.cs)
+caret line 15: public abstract class ShapeBase : IShape
+
+== window HeavyWeightWindow 213x408
+  list MyList rows 14
+    Declaration |      F12
+    Implementation
+    Base Symbols |      Alt+Home
+    Find Usages |      Shift+F12
+    Related Files |      Ctrl+Alt+F7
+    Type of Symbol |      Ctrl+Shift+F11
+    Derived Symbols |      Alt+End
+    Extension Methods
+    Related Tests
+    Show Usages |      Alt+Shift+F12
+    Consuming APIs
+    Exposing APIs
+    Windows Explorer |      
+    Referenced Code |      
+
+######## Generate at «public interface IShape» (Console/Editor/RiderAnalysis.cs)
+caret line 9: public interface IShape
+
+== window HeavyWeightWindow 228x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## EditorPopupMenu at «public void Place» (Console/Editor/RiderAnalysis.cs)
+caret line 50: public void Place(int quantity, string customer, bool express = false, OrderStatus status = OrderStatus.New) { }
+
+== window HeavyWeightWindow 379x696
+  list MyList rows 23
+    Show Context Actions |      Alt+Enter
+    Cut |      Ctrl+X
+    Copy |      Ctrl+C
+    Paste |      Ctrl+V
+    Copy / Paste Special
+    Column Selection Mode |      Alt+Shift+Insert
+    Find Usages |      Shift+F12
+    Find Usages Advanced… |      Ctrl+Alt+Shift+F12
+    Go To
+    Folding
+    Inspect
+    Edit as Table...
+    Rename… |      Ctrl+R, R
+    Refactor
+    Generate Code… |      Alt+Insert
+    Start Debugging and Run to Cursor |      Ctrl+F10
+    Start Debugging and Run to Cursor Non-Stop |      Ctrl+Alt+F9
+    Open In
+    Local History
+    Quick Definition |      Alt+F12
+    Compare with Clipboard
+    Evaluate JSONPath Expression…
+    Create Gist…
+

@@ -1,0 +1,80 @@
+MSTest Test Project (C#)
+Author: Microsoft
+Description: A project that contains MSTest tests that can run on .NET on Windows, Linux and MacOS.
+
+Usage:
+  dotnet new mstest [options] [template options]
+
+Options:
+  -n, --name <name>       The name for the output being created. If no name is specified, the name of the output directory is used.
+  -o, --output <output>   Location to place the generated output.
+  --dry-run               Displays a summary of what would happen if the given command line were run if it would result in a template creation. [default: False]
+  --force                 Forces content to be generated even if it would change existing files. [default: False]
+  --no-update-check       Disables checking for the template package updates when instantiating a template. [default: False]
+  --project <project>     The project that should be used for context evaluation.
+  -lang, --language <C#>  Specifies the template language to instantiate.
+  --type <project>        Specifies the template type to instantiate.
+
+Template options:
+  -f, --framework <net10.0|net10.0-windows|net462|net47|net471|net472|net48|net481|net6.0|net6.0-windows|net7.0|net7.0-windows|net8.0|net8.0-windows|net9.0|net9.0-windows|netcoreapp3.1>  The target framework for the project.
+                                                                                                                                                                                           Type: choice
+                                                                                                                                                                                             net10.0          .NET 10
+                                                                                                                                                                                             net10.0-windows  .NET 10 (Windows only)
+                                                                                                                                                                                             net9.0           .NET 9
+                                                                                                                                                                                             net9.0-windows   .NET 9 (Windows only)
+                                                                                                                                                                                             net8.0           .NET 8
+                                                                                                                                                                                             net8.0-windows   .NET 8 (Windows only)
+                                                                                                                                                                                             net481           .NET Framework 4.8.1
+                                                                                                                                                                                             net48            .NET Framework 4.8
+                                                                                                                                                                                             net472           .NET Framework 4.7.2
+                                                                                                                                                                                             net471           .NET Framework 4.7.1
+                                                                                                                                                                                             net47            .NET Framework 4.7
+                                                                                                                                                                                             net462           .NET Framework 4.6.2
+                                                                                                                                                                                             net7.0           .NET 7
+                                                                                                                                                                                             net7.0-windows   .NET 7 (Windows only)
+                                                                                                                                                                                             net6.0           .NET 6
+                                                                                                                                                                                             net6.0-windows   .NET 6 (Windows only)
+                                                                                                                                                                                             netcoreapp3.1    .NET Core 3.1
+                                                                                                                                                                                           Default: net10.0
+  --no-restore                                                                                                                                                                             If specified, skips the automatic restore of the project on create.
+                                                                                                                                                                                           Type: bool
+                                                                                                                                                                                           Default: false
+  -p:l, --langVersion <langVersion>                                                                                                                                                        Sets the LangVersion property in the created project file
+                                                                                                                                                                                           Type: text
+                                                                                                                                                                                           Default: latest
+  --sdk                                                                                                                                                                                    Use MSTest.Sdk project style. More information at https://aka.ms/mstest/sdk
+                                                                                                                                                                                           Type: bool
+                                                                                                                                                                                           Default: False
+  --test-runner <Microsoft.Testing.Platform|MSTest|VSTest>                                                                                                                                 Select the runner/platform.
+                                                                                                                                                                                           Type: choice
+                                                                                                                                                                                             Microsoft.Testing.Platform  Use Microsoft.Testing.Platform. See https://aka.ms/mtp-overview for more information.
+                                                                                                                                                                                             VSTest                      Use VSTest platform
+                                                                                                                                                                                             MSTest                      Use MSTest Runner (Microsoft.Testing.Platform)
+                                                                                                                                                                                           Default: VSTest
+  --coverage-tool <coverlet|Microsoft.CodeCoverage>                                                                                                                                        The coverage tool to use for the project.
+                                                                                                                                                                                           Type: choice
+                                                                                                                                                                                             Microsoft.CodeCoverage  Microsoft Code Coverage
+                                                                                                                                                                                             coverlet                coverlet
+                                                                                                                                                                                           Default: Microsoft.CodeCoverage
+  --extensions-profile <AllMicrosoft|Default|None>                                                                                                                                         Select the SDK extensions profile when using Microsoft.Testing.Platform. More information at https://aka.ms/mstest/sdk/extensions-profile
+                                                                                                                                                                                           Enabled if: UseMSTestSdk && (TestRunner == Microsoft.Testing.Platform)
+                                                                                                                                                                                           Type: choice
+                                                                                                                                                                                             Default       Default extensions profile (recommended)
+                                                                                                                                                                                             None          No extensions are enabled
+                                                                                                                                                                                             AllMicrosoft  Enable all extensions shipped by Microsoft (including extensions with a restrictive license)
+                                                                                                                                                                                           Default: Default
+  --fixture <AssemblyCleanup|AssemblyInitialize|ClassCleanup|ClassInitialize|None|TestCleanup|TestInitialize>                                                                              Select the fixture kinds to include in the project.
+                                                                                                                                                                                           Type: choice
+                                                                                                                                                                                             None                No fixture methods
+                                                                                                                                                                                             AssemblyInitialize  AssemblyInitialize fixture method
+                                                                                                                                                                                             AssemblyCleanup     AssemblyCleanup fixture method
+                                                                                                                                                                                             ClassInitialize     ClassInitialize fixture method
+                                                                                                                                                                                             ClassCleanup        ClassCleanup fixture method
+                                                                                                                                                                                             TestInitialize      TestInitialize fixture method
+                                                                                                                                                                                             TestCleanup         TestCleanup fixture method
+                                                                                                                                                                                           Multiple values are allowed: True
+                                                                                                                                                                                           Default: None
+
+To see help for other template languages (F#, VB), use --language option:
+   dotnet new mstest -h --language F#
+

@@ -1,0 +1,52 @@
+
+===== garbage =====
+   ~ initialized null
+   RESULT body is not JSON                             adapter alive; next request: ADAPTER EXITED (code 1); stderr: []
+
+===== garbage =====
+   ~ initialized null
+   RESULT invalid JSON                                 adapter alive; next request: ADAPTER EXITED (code 1); stderr: []
+
+===== garbage =====
+   ~ initialized null
+   RESULT header without Content-Length                adapter alive; next request: ok; stderr: []
+
+===== garbage =====
+   ~ initialized null
+   RESULT request without command                      adapter alive; next request: ok; stderr: []
+
+===== garbage =====
+   ~ initialized null
+   RESULT stray response                               adapter alive; next request: ok; stderr: []
+
+===== garbage =====
+   ~ initialized null
+   RESULT unknown message type                         adapter alive; next request: ok; stderr: []
+
+===== garbage =====
+   ~ initialized null
+   RESULT seq is a string                              adapter alive; next request: ADAPTER EXITED (code 1); stderr: []
+
+===== garbage =====
+   ~ initialized null
+   RESULT arguments is an array                        adapter alive; next request: ok; stderr: []
+
+===== garbage =====
+   ~ initialized null
+   RESULT JSON array instead of object                 adapter alive; next request: ADAPTER EXITED (code 1); stderr: []
+
+===== garbage =====
+   ~ initialized null
+   RESULT negative Content-Length                      adapter alive; next request: ok; stderr: []
+
+===== garbage =====
+   ~ initialized null
+   RESULT huge Content-Length then EOF-less silence    adapter alive; next request: TIMEOUT after 5s; stderr: []
+
+===== garbage =====
+   ~ initialized null
+   RESULT lowercase header                             adapter alive; next request: ok; stderr: []
+
+===== garbage =====
+   ~ initialized null
+   RESULT LF only line endings                         adapter alive; next request: ok; stderr: []

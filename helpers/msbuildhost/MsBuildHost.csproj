@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Evaluation of MSBuild projects for the plugin (msbuild/MsBuildEvaluation): conditions, properties, imports and globs as the SDK
+    sees them, which the static reading of a project file cannot do. A helper that stays running (helpers/README.md).
+
+    Microsoft.Build is not carried: the packages give the API to compile against (ExcludeAssets="runtime"), MSBuildLocator loads the
+    MSBuild of the SDK `dotnet` resolves in the working directory (global.json respected). The API of 17.11 is the one of the SDK 8
+    as well; the SDKs 9 and 10 bring newer MSBuilds with the same API.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework Condition="'$(HelperFramework)' != ''">$(HelperFramework)</TargetFramework>
+    <RollForward>LatestMajor</RollForward>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>MsBuildHost</AssemblyName>
+    <RootNamespace>DotNetSupport.Helpers.MsBuildHost</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <DebugType>none</DebugType>
+    <UseAppHost>false</UseAppHost>
+    <!-- the newest Microsoft.Build packages say they are for newer frameworks than the ones they compile fine against -->
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../protocol/Protocol.cs" Condition="!Exists('Protocol.cs')" Link="Protocol.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build.Locator" Version="1.10.2" />
+    <PackageReference Include="Microsoft.Build" Version="17.11.48" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="17.11.48" ExcludeAssets="runtime" />
+    <!-- MSBuild brings its own; a copy of an older one next to the helper would be loaded instead of the one of the SDK -->
+    <PackageReference Include="Microsoft.NET.StringTools" Version="17.11.48" ExcludeAssets="runtime" />
+  </ItemGroup>
+</Project>

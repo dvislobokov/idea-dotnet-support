@@ -1,0 +1,4 @@
+if (a <spot>&amp;&amp;</spot> b)
+{
+    Run();
+}

@@ -1,0 +1,23 @@
+## declarations
+
+## structure view
+
+## folding
+1:1-3:117  // Does not compile on purpose, and is NOT a part of the solution (it would break B...  | // Does not compile on purpose, and is NOT a part of the solution (it would break Build Solution).
+
+## breadcrumbs
+1: 
+
+## IL Viewer: type / member at the line
+1: - / -
+
+## Go to Base: member at the line
+1: -
+
+## breakpoint lines
+4-5
+
+## run gutter
+
+## Go to Class / Symbol
+

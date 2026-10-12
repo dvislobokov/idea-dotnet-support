@@ -1,0 +1,77 @@
+<!-- A content module of the plugin: the client of roslyn-language-server on the LSP client of the platform (com.intellij.modules.lsp).
+     Where the platform has no LSP only this part is switched off and the rest of the plugin loads. Classes: io.github.dotnetsupport.roslyn
+     (not ...lsp: that package holds the settings page of the server, which belongs to the main part). -->
+<idea-plugin package="io.github.dotnetsupport.roslyn">
+    <dependencies>
+        <module name="intellij.platform.lsp.impl"/>
+    </dependencies>
+
+    <extensions defaultExtensionNs="io.github.dotnetsupport">
+        <namespaceAdjuster implementation="io.github.dotnetsupport.roslyn.RoslynNamespaceAdjuster"/>
+        <!-- the server's generators and refactorings as rows of Rider's Generate and Refactor This (CSharpRiderPopups) -->
+        <csharpPopupContributor implementation="io.github.dotnetsupport.roslyn.RoslynPopupContributor"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <platform.lsp.integrationProvider implementation="io.github.dotnetsupport.roslyn.RoslynLspIntegrationProvider"/>
+        <!-- the server starts with the project, not with the first opened .cs: the problems of the whole solution need it -->
+        <postStartupActivity implementation="io.github.dotnetsupport.roslyn.RoslynStartupActivity"/>
+        <!-- Ctrl + hover: the platform resolves LSP references only during Go to Declaration; last, so a click still goes its way -->
+        <psi.implicitReferenceProvider order="last" implementation="io.github.dotnetsupport.roslyn.RoslynCtrlHoverReferenceProvider"/>
+        <!-- what Roslyn decompiles for Go to Declaration into the framework or a package: read-only, and it says where it comes from -->
+        <writingAccessProvider implementation="io.github.dotnetsupport.roslyn.RoslynDecompiledWritingAccess"/>
+        <editorTabTitleProvider implementation="io.github.dotnetsupport.roslyn.RoslynDecompiledTabTitle"/>
+        <editorNotificationProvider implementation="io.github.dotnetsupport.roslyn.RoslynDecompiledBanner"/>
+        <!-- several solutions in the folder and none chosen: the file is analyzed by nobody until one is -->
+        <editorNotificationProvider implementation="io.github.dotnetsupport.roslyn.RoslynSolutionBanner"/>
+        <!-- a file of a project of another solution of the folder than the loaded one: the server does not know it, the banner says so -->
+        <editorNotificationProvider implementation="io.github.dotnetsupport.roslyn.RoslynUnloadedSolutionBanner"/>
+        <!-- adds no items: makes the first letter after a space start the popup again, see the class -->
+        <completion.contributor language="C#" order="first, after dotnetCaseInsensitive" implementationClass="io.github.dotnetsupport.roslyn.RoslynCompletionRestart"/>
+        <!-- a lambda first in the list where a delegate is expected, see the class -->
+        <completion.contributor language="C#" order="first, after dotnetCaseInsensitive" implementationClass="io.github.dotnetsupport.roslyn.RoslynLambdaCompletion"/>
+        <!-- the same lambda as gray text after `(` and `,`, accepted with Tab -->
+        <inline.completion.provider implementation="io.github.dotnetsupport.roslyn.RoslynLambdaGhost"/>
+        <!-- Ctrl+P: every overload as a row, as in Rider; the handler of the platform for LSP shows the active signature only -->
+        <codeInsight.parameterInfo language="C#" implementationClass="io.github.dotnetsupport.roslyn.RoslynParameterInfoHandler"/>
+        <!-- the server in the status bar for as long as its process lives, with its CPU and memory behind a click -->
+        <statusBarWidgetFactory id="DotNet.Roslyn.Status" implementation="io.github.dotnetsupport.roslyn.RoslynStatusWidgetFactory"/>
+        <!-- Type Hierarchy (Ctrl+H), Call Hierarchy (Ctrl+Alt+H), Go to Super (Ctrl+U): the platform draws, the server answers -->
+        <typeHierarchyProvider language="C#" implementationClass="io.github.dotnetsupport.roslyn.RoslynTypeHierarchyProvider"/>
+        <callHierarchyProvider language="C#" implementationClass="io.github.dotnetsupport.roslyn.RoslynCallHierarchyProvider"/>
+        <codeInsight.gotoSuper language="C#" implementationClass="io.github.dotnetsupport.roslyn.RoslynGotoSuperHandler"/>
+    </extensions>
+
+    <applicationListeners>
+        <listener class="io.github.dotnetsupport.roslyn.RoslynSettingsListener" topic="io.github.dotnetsupport.lsp.RoslynLanguageServerSettings$Listener"/>
+    </applicationListeners>
+
+    <actions>
+        <!-- the action of the platform with its id, shortcut and texts; only C# files with a loaded server go to the server -->
+        <action id="GotoImplementation" class="io.github.dotnetsupport.roslyn.RoslynGotoImplementationAction" overrides="true"/>
+        <action id="DotNet.Roslyn.SelectSolution" class="io.github.dotnetsupport.roslyn.SelectRoslynSolutionAction" text="Select Solution for Language Server..."
+                description="Choose which of the solutions of the opened folder the C# language server loads">
+            <add-to-group group-id="DotNet.MainMenu" anchor="last"/>
+        </action>
+        <action id="DotNet.Roslyn.Restart" class="io.github.dotnetsupport.roslyn.RestartRoslynServerAction" text="Restart C# Language Server"
+                description="Start the C# language server anew and load the solution again">
+            <add-to-group group-id="DotNet.MainMenu" anchor="last"/>
+        </action>
+        <action id="DotNet.Roslyn.Timings" class="io.github.dotnetsupport.roslyn.ShowRoslynTimingsAction" text="Language Server Timings"
+                description="How long the requests to the C# language server have taken since it started: first call, median, slowest, answers from the cache">
+            <add-to-group group-id="DotNet.MainMenu" anchor="last"/>
+        </action>
+        <action id="DotNet.Roslyn.ShowLog" class="io.github.dotnetsupport.roslyn.ShowRoslynServerLogAction" text="Show Language Server Log"
+                description="Open the directory with the logs of the C# language server">
+            <add-to-group group-id="DotNet.MainMenu" anchor="last"/>
+        </action>
+    </actions>
+    <projectListeners>
+        <!-- Reload Solution / Reload Project: the server reloads with the Solution view -->
+        <listener class="io.github.dotnetsupport.roslyn.RoslynReloadListener" topic="io.github.dotnetsupport.actions.SolutionReloadListener"/>
+        <!-- the file watching the server asks the client for (workspace/didChangeWatchedFiles) and the platform does not do -->
+        <listener class="io.github.dotnetsupport.roslyn.RoslynFileWatcher" topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+        <!-- the server's colors and errors are made again when indexing makes the plugin give way to the server or take over again -->
+        <listener class="io.github.dotnetsupport.roslyn.RoslynDumbModeListener" topic="com.intellij.openapi.project.DumbService$DumbModeListener"/>
+    </projectListeners>
+</idea-plugin>

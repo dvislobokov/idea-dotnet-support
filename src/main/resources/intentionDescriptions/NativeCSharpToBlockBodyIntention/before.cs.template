@@ -1,0 +1,1 @@
+public int <spot>Twice</spot>(int value) => value * 2;

@@ -1,0 +1,6 @@
+var name = kind switch
+{
+    Kind.A => "a",
+    <spot>Kind.B => throw new NotImplementedException(),
+    _ => throw new ArgumentOutOfRangeException()</spot>
+};

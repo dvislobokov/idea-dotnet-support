@@ -1,0 +1,67 @@
+{
+ "assembly": "C:\\work\\fixture\\IndexFixture.dll",
+ "assemblyName": "IndexFixture",
+ "assemblyVersion": "1.0.0.0",
+ "assemblyModified": 1791172632132,
+ "typeName": "Fixture.Circle",
+ "text": "// Decompiled with ICSharpCode.Decompiler 11.1.0.9782\n// Type: Fixture.Circle\n// Assembly: IndexFixture, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null\n// MVID: 1E592C35-0B03-4B16-AC33-EF7A8569D4BB\n// Assembly location: C:\\work\\fixture\\IndexFixture.dll\n\nusing System;\n\nnamespace Fixture;\n\npublic sealed class Circle : Shape\n{\n    public double Radius { get; init; }\n\n    public required string Name { get; set; }\n\n    public override double Area => Radius * Radius * Math.PI;\n\n    /// <summary>A part of the circle.</summary>\n    public int this[int index, string? key = null] => index;\n\n    public Circle(double radius)\n    {\n        Radius = radius;\n    }\n\n    public override string Describe(string? prefix = null, int digits = 2)\n    {\n        return \"\";\n    }\n}\n",
+ "members": [
+  {
+   "id": "T:Fixture.Circle",
+   "offset": 316,
+   "line": 10
+  },
+  {
+   "id": "P:Fixture.Circle.Radius",
+   "offset": 351,
+   "line": 12
+  },
+  {
+   "id": "M:Fixture.Circle.get_Radius",
+   "offset": 360,
+   "line": 12
+  },
+  {
+   "id": "M:Fixture.Circle.set_Radius(System.Double)",
+   "offset": 365,
+   "line": 12
+  },
+  {
+   "id": "P:Fixture.Circle.Name",
+   "offset": 401,
+   "line": 14
+  },
+  {
+   "id": "M:Fixture.Circle.get_Name",
+   "offset": 408,
+   "line": 14
+  },
+  {
+   "id": "M:Fixture.Circle.set_Name(System.String)",
+   "offset": 413,
+   "line": 14
+  },
+  {
+   "id": "P:Fixture.Circle.Area",
+   "offset": 448,
+   "line": 16
+  },
+  {
+   "id": "P:Fixture.Circle.Item(System.Int32,System.String)",
+   "offset": 548,
+   "line": 19
+  },
+  {
+   "id": "M:Fixture.Circle.#ctor(System.Double)",
+   "offset": 606,
+   "line": 21
+  },
+  {
+   "id": "M:Fixture.Circle.Describe(System.String,System.Int32)",
+   "offset": 693,
+   "line": 26
+  }
+ ],
+ "warning": null,
+ "elapsedMs": 555
+}

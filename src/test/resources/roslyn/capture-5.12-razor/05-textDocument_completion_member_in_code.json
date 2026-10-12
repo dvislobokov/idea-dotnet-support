@@ -1,0 +1,149 @@
+{
+ "method": "textDocument/completion",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  },
+  "position": {
+   "line": 31,
+   "character": 46
+  },
+  "context": {
+   "triggerKind": 2,
+   "triggerCharacter": "."
+  }
+ },
+ "ms": 191.9,
+ "result": {
+  "items": [
+   {
+    "label": "CompareTo",
+    "kind": 2,
+    "sortText": "0000",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Equals",
+    "kind": 2,
+    "sortText": "0001",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "GetHashCode",
+    "kind": 2,
+    "sortText": "0002",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "GetType",
+    "kind": 2,
+    "sortText": "0003",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "GetTypeCode",
+    "kind": 2,
+    "sortText": "0004",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ToString",
+    "kind": 2,
+    "sortText": "0005",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "TryFormat",
+    "kind": 2,
+    "sortText": "0006",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "(byte)",
+    "kind": 24,
+    "sortText": "0007�001_byte",
+    "filterText": "byte",
+    "insertTextFormat": 1,
+    "textEditText": ""
+   },
+   {
+    "label": "(char)",
+    "kind": 24,
+    "sortText": "0008�001_char",
+    "filterText": "char",
+    "insertTextFormat": 1,
+    "textEditText": ""
+   },
+   {
+    "label": "(sbyte)",
+    "kind": 24,
+    "sortText": "0009�001_sbyte",
+    "filterText": "sbyte",
+    "insertTextFormat": 1,
+    "textEditText": ""
+   },
+   {
+    "label": "(short)",
+    "kind": 24,
+    "sortText": "0010�001_short",
+    "filterText": "short",
+    "insertTextFormat": 1,
+    "textEditText": ""
+   },
+   {
+    "label": "(uint)",
+    "kind": 24,
+    "sortText": "0011�001_uint",
+    "filterText": "uint",
+    "insertTextFormat": 1,
+    "textEditText": ""
+   },
+   {
+    "label": "(ulong)",
+    "kind": 24,
+    "sortText": "0012�001_ulong",
+    "filterText": "ulong",
+    "insertTextFormat": 1,
+    "textEditText": ""
+   },
+   {
+    "label": "(ushort)",
+    "kind": 24,
+    "sortText": "0013�001_ushort",
+    "filterText": "ushort",
+    "insertTextFormat": 1,
+    "textEditText": ""
+   }
+  ],
+  "isIncomplete": true,
+  "itemDefaults": {
+   "commitCharacters": [],
+   "editRange": {
+    "start": {
+     "line": 31,
+     "character": 46
+    },
+    "end": {
+     "line": 31,
+     "character": 46
+    }
+   },
+   "data": {
+    "data": {
+     "Data1": {
+      "_resultId": 0
+     },
+     "Data2": {
+      "ResultId": 0,
+      "TextDocument": {
+       "uri": "roslyn-source-generated://d365b113-2b44-4129-9edf-4ace6c2937ce/Components%2FPages%2FCounter_razor.decl.g.cs?documentId=492836ff-70db-c7b5-415c-47bea489f097&hintName=Components%2FPages%2FCounter_razor.decl.g.cs&assemblyName=Microsoft.CodeAnalysis.Razor.Compiler&assemblyVersion=11.1.0.0&typeName=Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator&assemblyPath=c%3A%5Cusers%5Cme%5C.dotnet%5Ctools%5C.store%5Croslyn-language-server%5C5.12.0-1.26426.8%5Croslyn-language-server.win-x64%5C5.12.0-1.26426.8%5Ctools%5Cnet10.0%5Cwin-x64%5CMicrosoft.CodeAnalysis.Razor.Compiler.dll"
+      }
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+    }
+   }
+  }
+ }
+}

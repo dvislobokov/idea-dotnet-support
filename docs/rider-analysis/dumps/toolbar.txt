@@ -1,0 +1,385 @@
+##### MainToolbarLeft
+[+] Left  {MainToolbarLeft}  
+  [+] Navigation  {MainToolBarNavigation}  
+    Back  {Back}  Ctrl+Minus
+    Forward  {Forward}  Ctrl+Shift+Minus [disabled]
+  DebugPlayground  {main.toolbar.Project}  
+  Dev Container Dashboard  {devcontainer.ui.dashboard.DevcontainerDashboardAction}   [hidden]
+  [+] VCS Group  {MainToolbarVCSGroup}  
+    Version Control  {main.toolbar.git.Branches}  
+    VCS Merge/Rebase Widget  {main.toolbar.git.MergeRebase}  
+  [+] <no text>  {MainToolbarPerforceVCSGroup}  
+    Perforce  {Perforce.Toolbar.PerforceToolbarWidgetAction}   [hidden] [disabled]
+  [+] General Actions  {MainToolbarGeneralActionsGroup}  
+    -----
+
+##### MainToolbarCenter
+[+] Center  {MainToolbarCenter}  
+  File Name Widget (when editor tabs are hidden or “Always show full path” is enabled)  {main.toolbar.Filename}   [hidden] [disabled]
+  [+] Unity Toolbar Actions Base  {NewUI_UnityToolbarActions}   [hidden]
+    Play/Edit  {TriggerPlayInUnity}  
+    Pause/Resume  {TriggerPauseInUnityEditor}  
+    Step  {TriggerStepInUnityEditor}  
+    [+] Important Unity Related Actions  {UnityShowImportantAction}  
+      Unity Editor Connection Status  {UnityProtocolStatusAction}  
+      Start Unity  {StartUnityAction}  
+      Attach to Unity Editor  {AttachToUnityEditorAction}  
+      Attach to Unity Process…  {AttachToUnityProcessAction}  
+      Unity Settings…  {ShowUnitySettingsInRider}  
+      Unity Log Window…  {ShowUnityLogInRiderAction}  
+      -----
+      Show Unity Play/Pause Actions  {HideUnityPlayActions}  
+      Show Non-Unity Applicable UI  {SwitchUIModeAction}  
+    [+] Important Unity Related Actions  {UnityDllShowImportantAction}  
+      Start Unity  {StartUnityAction}  
+      Attach to Unity Process…  {AttachToUnityProcessAction}  
+      Unity Settings…  {ShowUnitySettingsInRider}  
+
+##### MainToolbarRight
+[+] Right  {MainToolbarRight}  
+  [+] <no text>  {UnrealInteractionToolbar}  
+    Refresh Solution  {RiderLink.RefreshProjects}   [hidden] [disabled]
+    -----
+    Start Play-in-Editor Session  {RiderLink.StartUnreal}   [hidden] [disabled]
+    Resume Play-in-Editor Session  {RiderLink.ResumeUnreal}   [hidden] [disabled]
+    Pause Play-in-Editor Session  {RiderLink.PauseUnreal}   [hidden] [disabled]
+    Step Single Frame  {RiderLink.SingleStepUnreal}   [hidden] [disabled]
+    Stop Play-in-Editor Session  {RiderLink.StopUnreal}   [hidden] [disabled]
+    [+] <no text>  {RiderLink.UnrealPlaySettings}   [hidden] [disabled]
+      <no text>  {RiderLink.ProtocolStatus}  
+      -----
+      Attach to Unreal Editor  {RiderLink.AttachToConnectedEditor}  
+      RiderLink Installation Settings…  {RiderLink.OpenRiderLinkSettings}  
+      UnrealLink Settings…  {RiderLink.OpenUnrealLinkSettings}  
+      -----
+      Show Editor Play Actions  {RiderLink.HidePlayActions}  
+      -----
+      [+] Number of Players  {RiderLink.NumberOfPlayers}  
+        1  {RiderLink.OnePlayer}  
+        2  {RiderLink.TwoPlayers}  
+        3  {RiderLink.ThreePlayers}  
+        4  {RiderLink.FourPlayers}  
+      [+] Spawn Player at…  {RiderLink.SpawnPlayerAt}  
+        Current Camera Location  {RiderLink.CurrentCamLoc}  
+        Default Player Start  {RiderLink.DefaultPlayerStart}  
+      [+] Mode  {RiderLink.Modes}  
+        Selected Viewport  {RiderLink.SelectedViewport}  
+        Mobile Preview  {RiderLink.MobilePreview}  
+        New Editor Window  {RiderLink.NewEditorWindow}  
+        VR Preview  {RiderLink.VRPreview}  
+        Standalone Game  {RiderLink.StandaloneGame}  
+        Simulate  {RiderLink.Simulate}  
+        Vulkan Preview  {RiderLink.VulkanPreview}  
+      Run Dedicated Server  {RiderLink.DedicatedServer}  
+      Compile Before Play  {RiderLink.CompileBeforeRun}  
+    -----
+  [+] Godot  {GodotActionsToolbar}   [hidden]
+    Start Godot Editor  {StartGodotEditorAction}  
+  [+] <no text>  {ExecutionTargetsToolbarGroup}  
+    Targets  {ExecutionTargets}   [hidden] [disabled]
+  [+] Build bar  {BuildSolutionBar}  
+  [+] <no text>  {ActiveDeviceGroup}  
+    Active Device  {ActiveDevice}   [hidden] [disabled]
+  Run Widget  {NewUiRunWidget}  
+  Share Feedback  {EAPFeedbackToolbarAction}   [hidden] [disabled]
+  [+] CodeWithMe  {CodeWithMeToolbarGroupNewUi}  
+    [+] Code With Me Call Actions  {CWMToolbarCallActions}  
+      Audio and Calls  {CWMCallSplitButtonAction}   [hidden] [disabled]
+      Join Call  {JoinCallAction}   [hidden] [disabled]
+    <no text>  {CodeWithMeUsersActionOldUi}   [hidden] [disabled]
+    User Avatars  {CodeWithMeUsersAction}   [hidden] [disabled]
+    [+] Code With Me Popup  {CWMShowPopupActionGroup}  
+      Code With Me  {CWMHostShowPopupAction}  Ctrl+Shift+Y [hidden] [disabled]
+  JetBrains AI  {AIAssistantHubPopupAction}  
+  Search Everywhere  {SearchEverywhere}  Ctrl+T
+  [+] IDE and Project Settings  {SettingsEntryPoint}  
+    Update Aspire Plugin…  {}
+    Install Git 0.0.0  {UpdateAction} [hidden] [disabled]
+    [+] <no text>  {UpdateEntryPointGroup}  
+    -----
+    [+] <no text>  {SettingsEntryPointGroup}  
+      Run Anything  {RunAnything}  
+      -----
+      <no text>  {ShowSettings}  Ctrl+Alt+S
+      Plugins…  {ShowPlugins}  
+      <no text>  {SettingsSyncSeparator}  
+      Backup and Sync  {SettingsSyncStatusAction}  
+      -----
+      Theme  {ChangeLaf}  
+      Keymap  {ChangeKeymap}  
+      View Mode  {ChangeView}  
+    -----
+    [+] Customize Main Toolbar  {CustomizeMainToolbarGroup}  
+      Customize Toolbar…  {CustomizeMainToolbarAction}  
+      ----- Add Action to Main Toolbar
+      [+] <no text>  {MainToolbarQuickActionsRaw}  
+        [+] <no text>  {RiderMainToolbarQuickActions}  
+          ----- Debug
+        [+] <no text>  {MainToolbarQuickActions.General}  
+        [+] <no text>  {GitMainToolbarQuickActions}  
+          [+] <no text>  {MainToolbarQuickActions.VCS}  
+        [+] <no text>  {MainToolbarQuickActions.Run}  
+        [+] <no text>  {MainToolbarQuickActions.GeneralLast}  
+
+##### MainToolbarNewUI
+[+] <no text>  {MainToolbarNewUI}  
+  [+] Left  {MainToolbarLeft}  
+    [+] Navigation  {MainToolBarNavigation}  
+      Back  {Back}  Ctrl+Minus
+      Forward  {Forward}  Ctrl+Shift+Minus [disabled]
+    DebugPlayground  {main.toolbar.Project}  
+    Dev Container Dashboard  {devcontainer.ui.dashboard.DevcontainerDashboardAction}   [hidden]
+    [+] VCS Group  {MainToolbarVCSGroup}  
+      Version Control  {main.toolbar.git.Branches}  
+      VCS Merge/Rebase Widget  {main.toolbar.git.MergeRebase}  
+    [+] <no text>  {MainToolbarPerforceVCSGroup}  
+      Perforce  {Perforce.Toolbar.PerforceToolbarWidgetAction}   [hidden] [disabled]
+    [+] General Actions  {MainToolbarGeneralActionsGroup}  
+      -----
+  [+] Center  {MainToolbarCenter}  
+    File Name Widget (when editor tabs are hidden or “Always show full path” is enabled)  {main.toolbar.Filename}   [hidden] [disabled]
+    [+] Unity Toolbar Actions Base  {NewUI_UnityToolbarActions}   [hidden]
+      Play/Edit  {TriggerPlayInUnity}  
+      Pause/Resume  {TriggerPauseInUnityEditor}  
+      Step  {TriggerStepInUnityEditor}  
+      [+] Important Unity Related Actions  {UnityShowImportantAction}  
+        Unity Editor Connection Status  {UnityProtocolStatusAction}  
+        Start Unity  {StartUnityAction}  
+        Attach to Unity Editor  {AttachToUnityEditorAction}  
+        Attach to Unity Process…  {AttachToUnityProcessAction}  
+        Unity Settings…  {ShowUnitySettingsInRider}  
+        Unity Log Window…  {ShowUnityLogInRiderAction}  
+        -----
+        Show Unity Play/Pause Actions  {HideUnityPlayActions}  
+        Show Non-Unity Applicable UI  {SwitchUIModeAction}  
+      [+] Important Unity Related Actions  {UnityDllShowImportantAction}  
+        Start Unity  {StartUnityAction}  
+        Attach to Unity Process…  {AttachToUnityProcessAction}  
+        Unity Settings…  {ShowUnitySettingsInRider}  
+  [+] Right  {MainToolbarRight}  
+    [+] <no text>  {UnrealInteractionToolbar}  
+      Refresh Solution  {RiderLink.RefreshProjects}   [hidden] [disabled]
+      -----
+      Start Play-in-Editor Session  {RiderLink.StartUnreal}   [hidden] [disabled]
+      Resume Play-in-Editor Session  {RiderLink.ResumeUnreal}   [hidden] [disabled]
+      Pause Play-in-Editor Session  {RiderLink.PauseUnreal}   [hidden] [disabled]
+      Step Single Frame  {RiderLink.SingleStepUnreal}   [hidden] [disabled]
+      Stop Play-in-Editor Session  {RiderLink.StopUnreal}   [hidden] [disabled]
+      [+] <no text>  {RiderLink.UnrealPlaySettings}   [hidden] [disabled]
+        <no text>  {RiderLink.ProtocolStatus}  
+        -----
+        Attach to Unreal Editor  {RiderLink.AttachToConnectedEditor}  
+        RiderLink Installation Settings…  {RiderLink.OpenRiderLinkSettings}  
+        UnrealLink Settings…  {RiderLink.OpenUnrealLinkSettings}  
+        -----
+        Show Editor Play Actions  {RiderLink.HidePlayActions}  
+        -----
+        [+] Number of Players  {RiderLink.NumberOfPlayers}  
+          1  {RiderLink.OnePlayer}  
+          2  {RiderLink.TwoPlayers}  
+          3  {RiderLink.ThreePlayers}  
+          4  {RiderLink.FourPlayers}  
+        [+] Spawn Player at…  {RiderLink.SpawnPlayerAt}  
+          Current Camera Location  {RiderLink.CurrentCamLoc}  
+          Default Player Start  {RiderLink.DefaultPlayerStart}  
+        [+] Mode  {RiderLink.Modes}  
+          Selected Viewport  {RiderLink.SelectedViewport}  
+          Mobile Preview  {RiderLink.MobilePreview}  
+          New Editor Window  {RiderLink.NewEditorWindow}  
+          VR Preview  {RiderLink.VRPreview}  
+          Standalone Game  {RiderLink.StandaloneGame}  
+          Simulate  {RiderLink.Simulate}  
+          Vulkan Preview  {RiderLink.VulkanPreview}  
+        Run Dedicated Server  {RiderLink.DedicatedServer}  
+        Compile Before Play  {RiderLink.CompileBeforeRun}  
+      -----
+    [+] Godot  {GodotActionsToolbar}   [hidden]
+      Start Godot Editor  {StartGodotEditorAction}  
+    [+] <no text>  {ExecutionTargetsToolbarGroup}  
+      Targets  {ExecutionTargets}   [hidden] [disabled]
+    [+] Build bar  {BuildSolutionBar}  
+    [+] <no text>  {ActiveDeviceGroup}  
+      Active Device  {ActiveDevice}   [hidden] [disabled]
+    Run Widget  {NewUiRunWidget}  
+    Share Feedback  {EAPFeedbackToolbarAction}   [hidden] [disabled]
+    [+] CodeWithMe  {CodeWithMeToolbarGroupNewUi}  
+      [+] Code With Me Call Actions  {CWMToolbarCallActions}  
+        Audio and Calls  {CWMCallSplitButtonAction}   [hidden] [disabled]
+        Join Call  {JoinCallAction}   [hidden] [disabled]
+      <no text>  {CodeWithMeUsersActionOldUi}   [hidden] [disabled]
+      User Avatars  {CodeWithMeUsersAction}   [hidden] [disabled]
+      [+] Code With Me Popup  {CWMShowPopupActionGroup}  
+        Code With Me  {CWMHostShowPopupAction}  Ctrl+Shift+Y [hidden] [disabled]
+    JetBrains AI  {AIAssistantHubPopupAction}  
+    Search Everywhere  {SearchEverywhere}  Ctrl+T
+    [+] IDE and Project Settings  {SettingsEntryPoint}  
+      Update Aspire Plugin…  {}
+      Install Git 0.0.0  {UpdateAction} [hidden] [disabled]
+      [+] <no text>  {UpdateEntryPointGroup}  
+      -----
+      [+] <no text>  {SettingsEntryPointGroup}  
+        Run Anything  {RunAnything}  
+        -----
+        <no text>  {ShowSettings}  Ctrl+Alt+S
+        Plugins…  {ShowPlugins}  
+        <no text>  {SettingsSyncSeparator}  
+        Backup and Sync  {SettingsSyncStatusAction}  
+        -----
+        Theme  {ChangeLaf}  
+        Keymap  {ChangeKeymap}  
+        View Mode  {ChangeView}  
+      -----
+      [+] Customize Main Toolbar  {CustomizeMainToolbarGroup}  
+        Customize Toolbar…  {CustomizeMainToolbarAction}  
+        ----- Add Action to Main Toolbar
+        [+] <no text>  {MainToolbarQuickActionsRaw}  
+          [+] <no text>  {RiderMainToolbarQuickActions}  
+            ----- Debug
+          [+] <no text>  {MainToolbarQuickActions.General}  
+          [+] <no text>  {GitMainToolbarQuickActions}  
+            [+] <no text>  {MainToolbarQuickActions.VCS}  
+          [+] <no text>  {MainToolbarQuickActions.Run}  
+          [+] <no text>  {MainToolbarQuickActions.GeneralLast}  
+
+##### RunToolbarMainActionGroup
+[+] <no text>  {RunToolbarMainActionGroup}  
+  Web: http  {RedesignedRunConfigurationSelector}  
+  Build 'Web: http'  {CidrBuildRunToolbar}   [hidden] [disabled]
+  [+] <no text>  {compositeResumeGroup}  
+    Pause 'Web: http'  {ConfigurationXDebuggerResumeAction}   [hidden] [disabled]
+  [+] <no text>  {RunToolbarTopLevelExecutorActionGroup}  
+    Run 'Web: http'  {Run}  Ctrl+F5
+    Debug 'Web: http'  {Debug}  Alt+F5
+  Stop  {Stop}  Shift+F5 [disabled]
+  More Actions  {MoreRunToolbarActions}  
+  <no text>  {InactiveStopActionPlaceholder}   [disabled]
+
+##### RiderMainToolbarQuickActions
+[+] <no text>  {RiderMainToolbarQuickActions}  
+  ----- Debug
+
+##### MainToolbarQuickActions
+[+] Add Action to Main Toolbar  {MainToolbarQuickActions}  
+  [+] <no text>  {MainToolbarQuickActionsRaw}  
+    [+] <no text>  {RiderMainToolbarQuickActions}  
+      ----- Debug
+    [+] <no text>  {MainToolbarQuickActions.General}  
+    [+] <no text>  {GitMainToolbarQuickActions}  
+      [+] <no text>  {MainToolbarQuickActions.VCS}  
+    [+] <no text>  {MainToolbarQuickActions.Run}  
+    [+] <no text>  {MainToolbarQuickActions.GeneralLast}  
+
+##### NavBarToolBar
+[+] <no text>  {NavBarToolBar}  
+  [+] <no text>  {CodeWithMeNavbarGroup}  
+    [+] <no text>  {CWMTelephonyGroup}  
+      -----
+      <no text>  {CallLabelAction}  
+      Microphone  {EnableMicrophoneAction}  
+      Camera  {EnableCameraAction}  
+      Screen Sharing  {EnableScreenSharingAction}  
+      -----
+    <no text>  {CodeWithMeUsersActionOldUi}  
+    User Avatars  {CodeWithMeUsersAction}  
+    [+] Code With Me Popup  {CWMShowPopupActionGroup}  
+      Code With Me  {CWMHostShowPopupAction}  Ctrl+Shift+Y [hidden] [disabled]
+    -----
+  [+] <no text>  {UnrealInteractionToolbar}  
+    Refresh Solution  {RiderLink.RefreshProjects}   [hidden] [disabled]
+    -----
+    Start Play-in-Editor Session  {RiderLink.StartUnreal}   [hidden] [disabled]
+    Resume Play-in-Editor Session  {RiderLink.ResumeUnreal}   [hidden] [disabled]
+    Pause Play-in-Editor Session  {RiderLink.PauseUnreal}   [hidden] [disabled]
+    Step Single Frame  {RiderLink.SingleStepUnreal}   [hidden] [disabled]
+    Stop Play-in-Editor Session  {RiderLink.StopUnreal}   [hidden] [disabled]
+    [+] <no text>  {RiderLink.UnrealPlaySettings}   [hidden] [disabled]
+      <no text>  {RiderLink.ProtocolStatus}  
+      -----
+      Attach to Unreal Editor  {RiderLink.AttachToConnectedEditor}  
+      RiderLink Installation Settings…  {RiderLink.OpenRiderLinkSettings}  
+      UnrealLink Settings…  {RiderLink.OpenUnrealLinkSettings}  
+      -----
+      Show Editor Play Actions  {RiderLink.HidePlayActions}  
+      -----
+      [+] Number of Players  {RiderLink.NumberOfPlayers}  
+        1  {RiderLink.OnePlayer}  
+        2  {RiderLink.TwoPlayers}  
+        3  {RiderLink.ThreePlayers}  
+        4  {RiderLink.FourPlayers}  
+      [+] Spawn Player at…  {RiderLink.SpawnPlayerAt}  
+        Current Camera Location  {RiderLink.CurrentCamLoc}  
+        Default Player Start  {RiderLink.DefaultPlayerStart}  
+      [+] Mode  {RiderLink.Modes}  
+        Selected Viewport  {RiderLink.SelectedViewport}  
+        Mobile Preview  {RiderLink.MobilePreview}  
+        New Editor Window  {RiderLink.NewEditorWindow}  
+        VR Preview  {RiderLink.VRPreview}  
+        Standalone Game  {RiderLink.StandaloneGame}  
+        Simulate  {RiderLink.Simulate}  
+        Vulkan Preview  {RiderLink.VulkanPreview}  
+      Run Dedicated Server  {RiderLink.DedicatedServer}  
+      Compile Before Play  {RiderLink.CompileBeforeRun}  
+    -----
+  [+] Toolbar Run Actions  {ToolbarRunGroup}  
+    [+] <no text>  {ActiveRuntimeGroup}  
+      -----
+      [+] Build bar  {BuildSolutionBar}  
+      [+] Unity Toolbar Actions  {UnityToolbarActions}  
+        -----
+        Unity:  {UnityToolbarLabel}  
+        [+] Unity Toolbar Actions Base  {NewUI_UnityToolbarActions}  
+          Play/Edit  {TriggerPlayInUnity}  
+          Pause/Resume  {TriggerPauseInUnityEditor}  
+          Step  {TriggerStepInUnityEditor}  
+          [+] Important Unity Related Actions  {UnityShowImportantAction}  
+            Unity Editor Connection Status  {UnityProtocolStatusAction}  
+            Start Unity  {StartUnityAction}  
+            Attach to Unity Editor  {AttachToUnityEditorAction}  
+            Attach to Unity Process…  {AttachToUnityProcessAction}  
+            Unity Settings…  {ShowUnitySettingsInRider}  
+            Unity Log Window…  {ShowUnityLogInRiderAction}  
+            -----
+            Show Unity Play/Pause Actions  {HideUnityPlayActions}  
+            Show Non-Unity Applicable UI  {SwitchUIModeAction}  
+          [+] Important Unity Related Actions  {UnityDllShowImportantAction}  
+            Start Unity  {StartUnityAction}  
+            Attach to Unity Process…  {AttachToUnityProcessAction}  
+            Unity Settings…  {ShowUnitySettingsInRider}  
+      Active Configuration  {ActiveConfiguration}  
+    <no text>  {Build}  F7
+    Select Run/Debug Configuration  {RunConfiguration}  
+    [+] <no text>  {ActiveDeviceGroup}  
+      Active Device  {ActiveDevice}   [hidden] [disabled]
+    [+] Run/Debug  {RunnerActions}  
+      Run 'Web: http'  {Run}  Ctrl+F5
+      Debug 'Web: http'  {Debug}  Alt+F5
+      [+] Run with Profiler  {Profiler}  
+      Run 'Web: http' with Profiling  {dotTrace Profiler}   [hidden]
+      Run 'Web: http' with Memory Profiling  {dotMemory}   [hidden]
+    Stop  {Stop}  Shift+F5
+    [+] <no text>  {DotNetProfiler.RunGroup}  
+      -----
+      <no text>  {Profiling.Run}  
+      <no text>  {Profiling.Attach}  
+      -----
+  -----
+  [+] <no text>  {NavBarVcsGroup}  
+    [+] <no text>  {VcsNavBarToolbarActions}  
+      VCS Label  {VcsToolbarLabelAction}  
+      Update Project  {Vcs.UpdateProject}  Ctrl+Alt+W
+      Commit…  {CheckinProject}  
+      Commit…  {Git.Commit.Stage}  
+      Toggle Commit UI…  {ChangesView.ToggleCommitUi}  
+      Push…  {Vcs.Push}  Ctrl+Shift+K
+      Show History  {Vcs.ShowTabbedFileHistory}  
+      Rollback…  {ChangesView.Revert}  Ctrl+Alt+Z
+      -----
+  -----
+  [+] <no text>  {NavBarToolBarOthers}  
+  -----
+  <no text>  {AIAssistantHubPopupAction}  
+  Search Everywhere  {SearchEverywhere}  Ctrl+T
+  [+] IDE and Project Settings  {SettingsEntryPoint}  
+
+actions dumped: 322
+

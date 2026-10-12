@@ -1,0 +1,21 @@
+<!-- Test-only descriptor so that csharp-psi-core tests see the core extensions without the host plugin. The file type and the parser
+     definition are the host's in the plugin (it switches between its heuristic tree and this one); the module's tests register the
+     native ones directly. -->
+<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
+  <id>io.github.dotnetsupport.csharp.core.test</id>
+  <name>C# PSI Core (tests)</name>
+  <vendor>dvislobokov</vendor>
+  <depends>com.intellij.modules.platform</depends>
+
+  <xi:include href="/META-INF/csharp-psi-core.xml" xpointer="xpointer(/idea-plugin/*)"/>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <fileType name="C#"
+              language="C#"
+              extensions="cs"
+              implementationClass="io.github.dotnetsupport.csharp.lang.CSharpFileType"
+              fieldName="INSTANCE"/>
+    <lang.parserDefinition language="C#"
+                           implementationClass="io.github.dotnetsupport.csharp.lang.CSharpParserDefinition"/>
+  </extensions>
+</idea-plugin>

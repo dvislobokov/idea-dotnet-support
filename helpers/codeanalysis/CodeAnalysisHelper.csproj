@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Source generators and Roslyn analyzers of the projects of a solution, for the plugin without the language server (CSHARP_PSI_MIGRATION.md,
+    D3 and D4): the generated files go to the caches of the IDE, the diagnostics of the analyzers and their code fixes to the editor.
+    A helper that stays running (helpers/README.md), one per solution.
+
+    Roslyn is not a package: the compiler, Workspaces and System.Composition are referenced from the dotnet-format of the SDK that builds the
+    helper (every SDK since 6 carries it), so the first build needs no network, and the helper has the Roslyn of the newest SDK of the
+    machine: the generators and analyzers that SDK brings (regex, JSON, logging, the CA and IDE rules) are built against it or an older one.
+    The build goes to a folder per SDK version (cli/DotNetHelper, perSdk): a new SDK gets a helper with its own Roslyn.
+    Without the property (a build in the repository): the framework of the SDK `dotnet` resolves, which its dotnet-format is built for.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net$(BundledNETCoreAppTargetFrameworkVersion)</TargetFramework>
+    <TargetFramework Condition="'$(HelperFramework)' != ''">$(HelperFramework)</TargetFramework>
+    <RollForward>LatestMajor</RollForward>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>CodeAnalysisHelper</AssemblyName>
+    <RootNamespace>DotNetSupport.Helpers.CodeAnalysis</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <DebugType>none</DebugType>
+    <UseAppHost>false</UseAppHost>
+    <!-- one solution, one user: a workstation GC keeps the helper small -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <TieredPGO>false</TieredPGO>
+    <SdkRoslyn>$(MSBuildBinPath)/DotnetTools/dotnet-format/</SdkRoslyn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../protocol/Protocol.cs" Condition="!Exists('Protocol.cs')" Link="Protocol.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- the SDK the helper was built with: its analyzers of code style (IDE*) and of .NET (CA*) are offered to every project -->
+    <AssemblyMetadata Include="SdkDirectory" Value="$(MSBuildBinPath)" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.CodeAnalysis" HintPath="$(SdkRoslyn)Microsoft.CodeAnalysis.dll" Private="true" />
+    <Reference Include="Microsoft.CodeAnalysis.CSharp" HintPath="$(SdkRoslyn)Microsoft.CodeAnalysis.CSharp.dll" Private="true" />
+    <Reference Include="Microsoft.CodeAnalysis.Workspaces" HintPath="$(SdkRoslyn)Microsoft.CodeAnalysis.Workspaces.dll" Private="true" />
+    <Reference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" HintPath="$(SdkRoslyn)Microsoft.CodeAnalysis.CSharp.Workspaces.dll" Private="true" />
+    <Reference Include="System.Composition.AttributedModel" HintPath="$(SdkRoslyn)System.Composition.AttributedModel.dll" Private="true" />
+    <Reference Include="System.Composition.Convention" HintPath="$(SdkRoslyn)System.Composition.Convention.dll" Private="true" />
+    <Reference Include="System.Composition.Hosting" HintPath="$(SdkRoslyn)System.Composition.Hosting.dll" Private="true" />
+    <Reference Include="System.Composition.Runtime" HintPath="$(SdkRoslyn)System.Composition.Runtime.dll" Private="true" />
+    <Reference Include="System.Composition.TypedParts" HintPath="$(SdkRoslyn)System.Composition.TypedParts.dll" Private="true" />
+    <Reference Include="Humanizer" HintPath="$(SdkRoslyn)Humanizer.dll" Private="true" Condition="Exists('$(SdkRoslyn)Humanizer.dll')" />
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces" HintPath="$(SdkRoslyn)Microsoft.Bcl.AsyncInterfaces.dll" Private="true" Condition="Exists('$(SdkRoslyn)Microsoft.Bcl.AsyncInterfaces.dll')" />
+  </ItemGroup>
+</Project>

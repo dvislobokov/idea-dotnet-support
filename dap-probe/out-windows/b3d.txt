@@ -1,0 +1,43 @@
+
+===== weird-path =====
+   ~ initialized null
+-> setBreakpoints {"source": {"path": "<dap>\\t\\Путь с пробелом #1 & (x)\\App\\Rest.cs"}, "breakpoints": [{"line": 160}]} | 8ms ok=True {"breakpoints": [{"id": 1, "verified": false, "message": "No loaded module with symbols contains code for this location.", "source": {"name": "Rest.cs", "path": "<dap>\\t\\Путь с пробелом #1 & (x)\\Ap...(228)
+   ~ process {"name": "App.dll", "systemProcessId": 4348, "isLocalProcess": true, "startMethod": "launch"}
+   launch: {"seq": 6, "type": "response", "command": "launch", "request_seq": 2, "success": true}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>\\t\\Путь с пробелом #1 & (x)\\App\\Rest.cs"}, "line": 160, "column": 13, "endLine": 160, "endColumn": 47}}
+   ~ stopped {"reason": "breakpoint", "threadId": 30356, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   hit at DebugTarget.Output.Sleeper() @ Rest.cs:160:13
+   adapter exit code: 0
+
+===== release-jmc-True =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 26912, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Variables.cs", "path": "<dap>\\t\\App\\Variables.cs"}, "line": 51, "column": 9, "endLine": 51, "endColumn": 46}}
+   ~ stopped {"reason": "breakpoint", "threadId": 27080, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   stack: DebugTarget.Variables.Run():51 <- Program.<Main>$():7 <- [External Code]:0  total=3
+   locals in optimized frame: 5; sample: {"i": "42", "s": "\"hello \\\"quoted\\\"\\n\\tПривет\"", "numbers": "{int[250]}", "list": "Count = 3", "derived": "{DebugTarget.Derived}"}
+   adapter exit code: 0
+
+===== release-jmc-False =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 17992, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Variables.cs", "path": "<dap>\\t\\App\\Variables.cs"}, "line": 51, "column": 9, "endLine": 51, "endColumn": 46}}
+   ~ stopped {"reason": "breakpoint", "threadId": 8156, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   stack: DebugTarget.Variables.Run():51 <- Program.<Main>$():7 <- System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start<Program.<<Main>$>d__0>():0  total=6
+   locals in optimized frame: 5; sample: {"i": "42", "s": "\"hello \\\"quoted\\\"\\n\\tПривет\"", "numbers": "{int[250]}", "list": "Count = 3", "derived": "{DebugTarget.Derived}"}
+   adapter exit code: 0
+
+===== stale-source =====
+   ~ initialized null
+-> setBreakpoints {"source": {"path": "<dap>\\t\\Путь с пробелом #1 & (x)\\App\\Rest.cs"}, "breakpoints": [{"line": 162}]} | 6ms ok=True {"breakpoints": [{"id": 1, "verified": false, "message": "No loaded module with symbols contains code for this location.", "source": {"name": "Rest.cs", "path": "<dap>\\t\\Путь с пробелом #1 & (x)\\App\\Rest.cs"}, "line": 162}]}
+   ~ process {"name": "App.dll", "systemProcessId": 25360, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "message": "The source file differs from the one the module was built with; the breakpoint may be on a different line.", "source": {"name": "Rest.cs", "path": "<dap>\\t\\Путь с пробелом #1 & (x)\\...(335)
+   ~ stopped {"reason": "breakpoint", "threadId": 16316, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   hit at DebugTarget.Output.Sleeper() @ Rest.cs:162:9 (file has 2 extra lines; breakpoint asked for line 162)
+   breakpoint event: {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "message": "The source file differs from the one the module was built with; the breakpoint may be on a different line.", "source": {"name": "Rest.cs", "path": "<dap>\\t\\Путь с пробелом #1 & (x)\\App\\Rest.cs"}, "line": 162, "column": 9, "endLine": 162, "endColumn": 10}}
+   adapter exit code: 0
+   first client: 24 bytes, starts b'Content-Length: 1493\r\n\r\n'
+   second client: ConnectionRefusedError(10061, 'Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение', None, 10061, None)
+   adapter after the client left: still running
+   new client after the first left: ConnectionRefusedError(10061, 'Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение', None, 10061, None)
+   listening on: []

@@ -1,0 +1,40 @@
+{
+ "method": "textDocument/signatureHelp",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "position": {
+   "line": 259,
+   "character": 40
+  },
+  "context": {
+   "triggerKind": 2,
+   "triggerCharacter": "(",
+   "isRetrigger": false
+  }
+ },
+ "ms": 31.1,
+ "result": {
+  "signatures": [
+   {
+    "label": "int LspCapture.Target(int value)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Doc of LspCapture.Target(int)."
+    },
+    "parameters": [
+     {
+      "label": "value",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The value."
+      }
+     }
+    ]
+   }
+  ],
+  "activeSignature": 0,
+  "activeParameter": 0
+ }
+}

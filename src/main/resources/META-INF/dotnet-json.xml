@@ -1,0 +1,6 @@
+<!-- JSON in C# strings (CSharpJsonInjection.kt): loaded where the IDE has the JSON plugin. -->
+<idea-plugin>
+  <extensions defaultExtensionNs="com.intellij">
+    <multiHostInjector implementation="io.github.dotnetsupport.lang.CSharpJsonInjector"/>
+  </extensions>
+</idea-plugin>

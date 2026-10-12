@@ -1,0 +1,7 @@
+switch (kind)
+{
+    case Kind.A:
+        return "a";
+    default:
+        return "b";
+}

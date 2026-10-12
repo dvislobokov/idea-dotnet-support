@@ -1,0 +1,81 @@
+
+===== stepping =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 25004, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Stepping.cs", "path": "<dap>\\t\\App\\Stepping.cs"}, "line": 13, "column": 9, "endLine": 13, "endColumn": 34}}
+   ~ stopped {"reason": "breakpoint", "threadId": 11348, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   at DebugTarget.Stepping.Run() @ Stepping.cs:13:9
+   ~ stopped {"reason": "step", "threadId": 11348, "allThreadsStopped": true}
+   stepIn   -> step      Lib.Calculator.Add() @ Calculator.cs:8:5
+   ~ stopped {"reason": "step", "threadId": 11348, "allThreadsStopped": true}
+   next     -> step      Lib.Calculator.Add() @ Calculator.cs:9:9
+   ~ stopped {"reason": "step", "threadId": 11348, "allThreadsStopped": true}
+   next     -> step      Lib.Calculator.Add() @ Calculator.cs:10:9
+   ~ stopped {"reason": "step", "threadId": 11348, "allThreadsStopped": true}
+   stepOut  -> step      DebugTarget.Stepping.Run() @ Stepping.cs:13:9
+   ~ stopped {"reason": "step", "threadId": 11348, "allThreadsStopped": true}
+   next     -> step      DebugTarget.Stepping.Run() @ Stepping.cs:14:9
+   ~ stopped {"reason": "step", "threadId": 11348, "allThreadsStopped": true}
+   stepIn   -> step      DebugTarget.Stepping.Run() @ Stepping.cs:15:9
+   ~ stopped {"reason": "step", "threadId": 11348, "allThreadsStopped": true}
+   stepOut  -> step      DebugTarget.Stepping.Run() @ Stepping.cs:25:9
+   ~ stopped {"reason": "step", "threadId": 11348, "allThreadsStopped": true}
+   next     -> step      DebugTarget.Stepping.Run() @ Stepping.cs:26:9
+   ~ stopped {"reason": "step", "threadId": 11348, "allThreadsStopped": true}
+   stepIn   -> step      DebugTarget.Stepping.Run() @ Stepping.cs:27:13
+   ~ stopped {"reason": "step", "threadId": 11348, "allThreadsStopped": true}
+   stepOut  -> step      Program.<Main>$() @ Program.cs:8:22
+   ~ stopped {"reason": "step", "threadId": 11348, "allThreadsStopped": true}
+   next     -> step      Program.<Main>$() @ Program.cs:8:38
+   ~ stopped {"reason": "step", "threadId": 11348, "allThreadsStopped": true}
+   stepIn   -> step      Program.<Main>$() @ Program.cs:46:1
+   ~ stopped {"reason": "step", "threadId": 11348, "allThreadsStopped": true}
+   next     -> step      Program.<Main>$() @ Program.cs:47:1
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 15s (expected next)
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
+
+===== stepping-nojmc =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 22768, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Stepping.cs", "path": "<dap>\\t\\App\\Stepping.cs"}, "line": 16, "column": 9, "endLine": 16, "endColumn": 69}}
+   ~ stopped {"reason": "breakpoint", "threadId": 30620, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   ~ stopped {"reason": "step", "threadId": 30620, "allThreadsStopped": true}
+   stepIn   -> step      System.RuntimeFieldHandle.GetLoaderAllocator() @ ?:0:0
+   ~ stopped {"reason": "step", "threadId": 30620, "allThreadsStopped": true}
+   stepIn   -> step      System.RuntimeFieldHandle.GetLoaderAllocator() @ ?:0:0
+   ~ stopped {"reason": "step", "threadId": 30620, "allThreadsStopped": true}
+   stepOut  -> step      System.RuntimeFieldInfoStub.FromPtr() @ ?:0:0
+   ~ stopped {"reason": "step", "threadId": 30620, "allThreadsStopped": true}
+   stepOut  -> step      DebugTarget.Stepping.Run() @ Stepping.cs:16:9
+   stack: DebugTarget.Stepping.Run():16 <- Program.<Main>$():8 <- System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start<Program.<<Main>$>d__0>():0 <- System.Runtime.CompilerServices.AsyncTaskMethodBuilder<int>.Start<Program.<<Main>$>d__0>():0 <- Program.<Main>$():0  total=6
+   adapter exit code: 0
+
+===== async =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 26648, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>\\t\\App\\Rest.cs"}, "line": 7, "column": 9, "endLine": 7, "endColumn": 38}}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 2, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>\\t\\App\\Rest.cs"}, "line": 16, "column": 9, "endLine": 16, "endColumn": 29}}
+   ~ stopped {"reason": "breakpoint", "threadId": 26212, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   stack: DebugTarget.AsyncCode.Run():7 <- [External Code]:0 <- Program.<Main>$():9 <- [External Code]:0  total=4
+   ~ stopped {"reason": "breakpoint", "threadId": 23876, "allThreadsStopped": true, "hitBreakpointIds": [2]}
+   next -> breakpoint DebugTarget.AsyncCode.Compute() @ Rest.cs:16:9 (thread 23876)
+   ~ stopped {"reason": "step", "threadId": 23876, "allThreadsStopped": true}
+   next -> step DebugTarget.AsyncCode.Compute() @ Rest.cs:17:9 (thread 23876)
+   ~ stopped {"reason": "breakpoint", "threadId": 18732, "allThreadsStopped": true, "hitBreakpointIds": [2]}
+   stack: DebugTarget.AsyncCode.Compute():16 <- [External Code]:0 <- [Async Call Stack]:0 <- DebugTarget.AsyncCode.Run():8 <- Program.<Main>$():9  total=5
+   ~ stopped {"reason": "breakpoint", "threadId": 18732, "allThreadsStopped": true, "hitBreakpointIds": [2]}
+   stack: DebugTarget.AsyncCode.Compute():16 <- [External Code]:0  total=2
+   Locals.x = 3  : int  ref=0
+   Locals.doubled = 0  : int  ref=0
+   ~ stopped {"reason": "breakpoint", "threadId": 23876, "allThreadsStopped": true, "hitBreakpointIds": [2]}
+   stepOut of async -> breakpoint DebugTarget.AsyncCode.Compute() @ Rest.cs:16:9
+   ~ stopped {"reason": "breakpoint", "threadId": 27928, "allThreadsStopped": true, "hitBreakpointIds": [2]}
+   stack: DebugTarget.AsyncCode.Compute():16 <- [External Code]:0  total=2
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 8s (expected next breakpoint or end)
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0

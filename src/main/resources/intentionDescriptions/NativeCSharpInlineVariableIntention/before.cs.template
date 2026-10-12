@@ -1,0 +1,2 @@
+var <spot>total</spot> = order.GetTotal();
+Console.WriteLine(total * 2);

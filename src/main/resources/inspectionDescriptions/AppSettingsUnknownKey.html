@@ -1,0 +1,8 @@
+<html>
+<body>
+Reports a key in <code>appsettings*.json</code> inside a section bound to a C# class (<code>Configure&lt;T&gt;</code>,
+<code>GetSection(...).Get&lt;T&gt;()</code>, <code>AddOptions&lt;T&gt;().Bind(...)</code>) that the class has no property for: a typo,
+or a value nothing reads. Keys are compared ignoring case, as the configuration binder does.
+<p>Weak: the configuration of a program is more than its classes, and a key may be read by another library or by hand.</p>
+</body>
+</html>

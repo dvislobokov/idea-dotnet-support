@@ -1,0 +1,7 @@
+switch (count)
+{
+    case 1:
+        break;
+    <spot>default:
+        break;</spot>
+}

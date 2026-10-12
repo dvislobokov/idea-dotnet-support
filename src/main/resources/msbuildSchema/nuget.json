@@ -1,0 +1,34 @@
+{
+  "id": "nuget",
+  "title": "NuGet",
+  "url": "https://learn.microsoft.com/nuget/consume-packages/central-package-management",
+  "properties": [
+    { "name": "ManagePackageVersionsCentrally", "doc": "Versions come from PackageVersion items of Directory.Packages.props; PackageReference has none.", "values": "bool" },
+    { "name": "CentralPackageTransitivePinningEnabled", "doc": "A PackageVersion also pins the package when it comes transitively.", "values": "bool" },
+    { "name": "CentralPackageVersionOverrideEnabled", "doc": "Allow VersionOverride on a PackageReference.", "values": "bool" },
+    { "name": "RestorePackagesWithLockFile", "doc": "Write packages.lock.json with the resolved versions.", "values": "bool" },
+    { "name": "RestoreLockedMode", "doc": "Fail the restore when it would change packages.lock.json: for CI.", "values": "bool" },
+    { "name": "NuGetLockFilePath", "doc": "The path of the lock file." },
+    { "name": "RestoreSources", "doc": "Feeds to restore from instead of the ones of nuget.config." },
+    { "name": "RestoreAdditionalProjectSources", "doc": "Feeds to restore from besides the ones of nuget.config." },
+    { "name": "RestoreUseStaticGraphEvaluation", "doc": "Evaluate the projects of a big solution in one pass: a faster restore.", "values": "bool" },
+    { "name": "NuGetAudit", "doc": "Check the packages for known vulnerabilities during restore.", "values": "bool" },
+    { "name": "NuGetAuditMode", "doc": "Audit the packages the project references itself, or the transitive ones too.", "values": ["direct", "all"] },
+    { "name": "NuGetAuditLevel", "doc": "The lowest severity that is reported.", "values": ["low", "moderate", "high", "critical"] },
+    { "name": "DisableImplicitNuGetFallbackFolder", "doc": "Do not use the fallback folder of the SDK: every package goes to the global packages folder.", "values": "bool" }
+  ],
+  "items": [
+    { "name": "PackageVersion", "doc": "The version of a package for the whole repository (central package management).", "metadata": [
+      { "name": "Version", "doc": "The version or a range." }
+    ] },
+    { "name": "GlobalPackageReference", "doc": "A package every project gets: analyzers, SourceLink, versioning tools.", "metadata": [
+      { "name": "Version", "doc": "The version of the package." },
+      { "name": "PrivateAssets", "doc": "all by default.", "open": true, "values": ["all", "none"] },
+      { "name": "IncludeAssets", "doc": "What of the package is used.", "open": true, "values": ["runtime; build; native; contentfiles; analyzers", "all"] }
+    ] },
+    { "name": "PackageDownload", "doc": "Download a package without referencing it; the version is exact: [1.2.3].", "metadata": [
+      { "name": "Version", "doc": "An exact version in brackets: [1.2.3]." }
+    ] },
+    { "name": "NuGetAuditSuppress", "doc": "An advisory URL the audit does not report." }
+  ]
+}

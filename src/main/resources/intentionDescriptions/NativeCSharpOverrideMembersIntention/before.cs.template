@@ -1,0 +1,4 @@
+class GreeterService : Greeter.GreeterBase
+{
+    <spot></spot>
+}

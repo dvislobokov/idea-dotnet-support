@@ -1,0 +1,34 @@
+{
+  "id": "versioning",
+  "title": "Versioning and SourceLink",
+  "packages": ["MinVer", "GitVersion.MsBuild", "Nerdbank.GitVersioning", "Microsoft.SourceLink.GitHub", "Microsoft.SourceLink.GitLab", "Microsoft.SourceLink.AzureRepos.Git", "Microsoft.SourceLink.Bitbucket.Git", "DotNet.ReproducibleBuilds"],
+  "url": "https://github.com/adamralph/minver#options",
+  "properties": [
+    { "name": "MinVerTagPrefix", "doc": "MinVer: the prefix of the version tags, e.g. v." },
+    { "name": "MinVerMinimumMajorMinor", "doc": "MinVer: the lowest major.minor, for the first release of a new line." },
+    { "name": "MinVerDefaultPreReleaseIdentifiers", "doc": "MinVer: the prerelease identifiers of a commit after a release tag, alpha.0 by default." },
+    { "name": "MinVerAutoIncrement", "doc": "MinVer: which part grows after a release tag.", "values": ["major", "minor", "patch"] },
+    { "name": "MinVerBuildMetadata", "doc": "MinVer: build metadata appended to the version." },
+    { "name": "MinVerIgnoreHeight", "doc": "MinVer: do not add the number of commits since the tag.", "values": "bool" },
+    { "name": "MinVerSkip", "doc": "MinVer: do not compute the version (e.g. in Debug).", "values": "bool" },
+    { "name": "MinVerVerbosity", "doc": "MinVer: how much it logs.", "values": ["quiet", "normal", "diagnostic"] },
+    { "name": "MinVerVersionOverride", "doc": "MinVer: use this version instead of the computed one." },
+    { "name": "GenerateGitVersionInformation", "doc": "GitVersion: generate the GitVersionInformation class.", "values": "bool" },
+    { "name": "UpdateAssemblyInfo", "doc": "GitVersion: write the version attributes.", "values": "bool" },
+    { "name": "UpdateVersionProperties", "doc": "GitVersion: set Version, PackageVersion and the rest.", "values": "bool" },
+    { "name": "DisableGitVersionTask", "doc": "GitVersion: do not run at all.", "values": "bool" },
+    { "name": "PublishRepositoryUrl", "doc": "SourceLink: put the repository URL into the package.", "values": "bool" },
+    { "name": "EmbedUntrackedSources", "doc": "SourceLink: embed the sources git does not track (generated files) into the PDB.", "values": "bool" },
+    { "name": "EmbedAllSources", "doc": "Embed every source file into the PDB.", "values": "bool" },
+    { "name": "ContinuousIntegrationBuild", "doc": "A deterministic build with normalized paths; set on the CI only: it breaks local debugging.", "values": "bool" },
+    { "name": "DeterministicSourcePaths", "doc": "Map the source paths to /_/; implied by ContinuousIntegrationBuild.", "values": "bool" },
+    { "name": "EnableSourceLink", "doc": "false: no SourceLink (it is built into SDK 8+).", "values": "bool" },
+    { "name": "EnableSourceControlManagerQueries", "doc": "false: do not ask git for the repository information.", "values": "bool" }
+  ],
+  "items": [
+    { "name": "SourceRoot", "doc": "A root of the sources for deterministic paths and SourceLink; Include ends with a slash.", "metadata": [
+      { "name": "SourceLinkUrl", "doc": "The URL the files under the root are downloaded from, with * for the path." }
+    ] },
+    { "name": "EmbeddedFiles", "files": true, "doc": "Source files embedded into the PDB." }
+  ]
+}

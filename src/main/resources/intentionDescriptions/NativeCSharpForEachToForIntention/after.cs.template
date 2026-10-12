@@ -1,0 +1,5 @@
+<spot>for (var i = 0; i < items.Count; i++)</spot>
+{
+    var item = items[i];
+    Use(item);
+}

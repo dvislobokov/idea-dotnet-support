@@ -1,0 +1,29 @@
+{
+ "method": "textDocument/hover",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "position": {
+   "line": 259,
+   "character": 17
+  }
+ },
+ "ms": 7.6,
+ "result": {
+  "contents": {
+   "kind": "markdown",
+   "value": "```csharp\r\nclass System.Console\r\n```\r\n  \r\nRepresents the standard input, output, and error streams for console applications\\. This class cannot be inherited\\.  \r\n"
+  },
+  "range": {
+   "start": {
+    "line": 259,
+    "character": 15
+   },
+   "end": {
+    "line": 259,
+    "character": 22
+   }
+  }
+ }
+}

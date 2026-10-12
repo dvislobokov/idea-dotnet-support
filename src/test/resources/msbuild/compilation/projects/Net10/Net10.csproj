@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Acme.App</RootNamespace>
+    <DefineConstants>$(DefineConstants);FEATURE_X</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Excluded/**" />
+    <Compile Include="../Shared/Linked.cs" Link="Shared/Linked.cs" />
+    <Using Include="System.Text.Json" />
+    <Using Include="System.Math" Static="true" />
+    <Using Include="System.Console" Alias="Con" />
+    <Using Remove="System.Net.Http" />
+  </ItemGroup>
+</Project>

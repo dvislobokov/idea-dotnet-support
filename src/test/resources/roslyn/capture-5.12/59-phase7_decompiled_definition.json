@@ -1,0 +1,28 @@
+{
+ "method": "textDocument/definition",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/home/AppData/Local/Temp/MetadataAsSource/76f4b3c900d648f88ff8e8f43f85fe11/DecompilationMetadataAsSourceFileProvider/02179b9e171b45a3bd18b90a47be11bc/Console.cs"
+  },
+  "position": {
+   "line": 328,
+   "character": 24
+  }
+ },
+ "ms": 107.4,
+ "result": [
+  {
+   "uri": "file:///c:/home/AppData/Local/Temp/MetadataAsSource/76f4b3c900d648f88ff8e8f43f85fe11/DecompilationMetadataAsSourceFileProvider/d711fc9e961642509fc17dba0a486c0e/TextWriter.cs",
+   "range": {
+    "start": {
+     "line": 17,
+     "character": 26
+    },
+    "end": {
+     "line": 17,
+     "character": 36
+    }
+   }
+  }
+ ]
+}

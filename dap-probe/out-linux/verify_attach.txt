@@ -1,0 +1,50 @@
+
+===== v-attach-detach =====
+   ~ initialized null
+   ~ process {"name": "2619", "systemProcessId": 2619, "isLocalProcess": true, "startMethod": "attach"}
+   attach response: {"seq": 4, "type": "response", "command": "attach", "request_seq": 2, "success": true}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 160, "column": 13, "endLine": 160, "endColumn": 47}}
+   ~ stopped {"reason": "breakpoint", "threadId": 2619, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   stopped: {"reason": "breakpoint", "threadId": 2619, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   adapter exit code: 0
+   RESULT target after attach + disconnect(terminateDebuggee=false): ALIVE
+
+===== v-attach-detach-running =====
+   ~ initialized null
+   ~ process {"name": "2647", "systemProcessId": 2647, "isLocalProcess": true, "startMethod": "attach"}
+   adapter exit code: 0
+   RESULT target after attach + detach while running: ALIVE
+
+===== v-attach-default-disconnect =====
+   ~ initialized null
+   ~ process {"name": "2675", "systemProcessId": 2675, "isLocalProcess": true, "startMethod": "attach"}
+   RESULT target after attach + disconnect{}: ALIVE
+
+===== v-attach-first =====
+   ~ initialized null
+   ~ process {"name": "2699", "systemProcessId": 2699, "isLocalProcess": true, "startMethod": "attach"}
+
+===== v-attach-second =====
+   ~ initialized null
+   second attach response: {"seq": 3, "type": "response", "command": "attach", "request_seq": 2, "success": false, "message": "Error HRESULT 0x800700B7 has been returned from a call to a COM component.", "body": {"error": {"id": 1, "format": "Error HRESULT 0x800700B7 has been returned from a call to a COM component."}}}
+   RESULT target while two debuggers tried: ALIVE
+   adapter exit code: 0
+   RESULT target after the second adapter left: ALIVE
+   adapter exit code: 0
+
+===== v-attach-nonexistent =====
+   ~ initialized null
+   ~ process {"name": "999999", "systemProcessId": 999999, "isLocalProcess": true, "startMethod": "attach"}
+   response: {"seq": 4, "type": "response", "command": "attach", "request_seq": 2, "success": true}
+   adapter exit code: 0
+
+===== v-attach-native =====
+   ~ initialized null
+   ~ process {"name": "2618", "systemProcessId": 2618, "isLocalProcess": true, "startMethod": "attach"}
+   response: {"seq": 4, "type": "response", "command": "attach", "request_seq": 2, "success": true}
+   adapter exit code: 0
+
+===== v-attach-string =====
+   ~ initialized null
+   response: {"seq": 3, "type": "response", "command": "attach", "request_seq": 2, "success": false, "message": "The input string 'abc' was not in a correct format.", "body": {"error": {"id": 1, "format": "The input string 'abc' was not in a correct format."}}}
+   adapter exit code: 0

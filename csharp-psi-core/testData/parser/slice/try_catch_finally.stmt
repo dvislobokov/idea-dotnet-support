@@ -1,0 +1,1 @@
+try { a(); } catch (IOException e) when (e.HResult == 1) { b(); } catch (Exception) { } catch { } finally { c(); }

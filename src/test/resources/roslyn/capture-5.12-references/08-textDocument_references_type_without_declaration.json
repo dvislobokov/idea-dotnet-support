@@ -1,0 +1,109 @@
+{
+ "method": "textDocument/references",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Editor/FindUsages.cs"
+  },
+  "position": {
+   "line": 12,
+   "character": 13
+  },
+  "context": {
+   "includeDeclaration": false
+  }
+ },
+ "ms": 519.3,
+ "result": [
+  {
+   "uri": "file:///c:/playground/Console/Editor/FindUsages.cs",
+   "range": {
+    "start": {
+     "line": 65,
+     "character": 23
+    },
+    "end": {
+     "line": 65,
+     "character": 34
+    }
+   }
+  },
+  {
+   "uri": "file:///c:/playground/Console/Editor/FindUsages.cs",
+   "range": {
+    "start": {
+     "line": 11,
+     "character": 18
+    },
+    "end": {
+     "line": 11,
+     "character": 29
+    }
+   }
+  },
+  {
+   "uri": "file:///c:/playground/Console/Editor/FindUsages.cs",
+   "range": {
+    "start": {
+     "line": 59,
+     "character": 29
+    },
+    "end": {
+     "line": 59,
+     "character": 40
+    }
+   }
+  },
+  {
+   "uri": "file:///c:/playground/Console/Editor/FindUsages.cs",
+   "range": {
+    "start": {
+     "line": 63,
+     "character": 23
+    },
+    "end": {
+     "line": 63,
+     "character": 34
+    }
+   }
+  },
+  {
+   "uri": "file:///c:/playground/Console/Editor/FindUsages.cs",
+   "range": {
+    "start": {
+     "line": 61,
+     "character": 26
+    },
+    "end": {
+     "line": 61,
+     "character": 37
+    }
+   }
+  },
+  {
+   "uri": "file:///c:/playground/Console/Editor/FindUsages.cs",
+   "range": {
+    "start": {
+     "line": 68,
+     "character": 56
+    },
+    "end": {
+     "line": 68,
+     "character": 67
+    }
+   }
+  },
+  {
+   "uri": "file:///c:/playground/Console/Editor/FindUsages.cs",
+   "range": {
+    "start": {
+     "line": 67,
+     "character": 33
+    },
+    "end": {
+     "line": 67,
+     "character": 44
+    }
+   }
+  }
+ ]
+}

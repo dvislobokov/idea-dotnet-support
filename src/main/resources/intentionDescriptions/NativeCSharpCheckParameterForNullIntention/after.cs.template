@@ -1,0 +1,5 @@
+public Order(string name)
+{
+    <spot>ArgumentNullException.ThrowIfNull(name);</spot>
+    Name = name;
+}

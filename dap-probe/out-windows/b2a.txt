@@ -1,0 +1,161 @@
+
+===== async-stepping =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 27152, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>\\t\\App\\Rest.cs"}, "line": 7, "column": 9, "endLine": 7, "endColumn": 38}}
+   ~ stopped {"reason": "breakpoint", "threadId": 21284, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   at DebugTarget.AsyncCode.Run() @ Rest.cs:7:9 (thread 21284)
+   ~ stopped {"reason": "step", "threadId": 5360, "allThreadsStopped": true}
+   next     -> step      DebugTarget.AsyncCode.Run() @ Rest.cs:8:9 (thread 5360)
+   ~ stopped {"reason": "step", "threadId": 5360, "allThreadsStopped": true}
+   stepIn   -> step      DebugTarget.AsyncCode.Run() @ Rest.cs:8:9 (thread 5360)
+   ~ stopped {"reason": "step", "threadId": 9068, "allThreadsStopped": true}
+   next     -> step      DebugTarget.AsyncCode.Run() @ Rest.cs:9:9 (thread 9068)
+   ~ stopped {"reason": "step", "threadId": 28480, "allThreadsStopped": true}
+   next     -> step      DebugTarget.AsyncCode.Run() @ Rest.cs:10:9 (thread 28480)
+   ~ stopped {"reason": "step", "threadId": 28480, "allThreadsStopped": true}
+   next     -> step      DebugTarget.AsyncCode.Run() @ Rest.cs:11:5 (thread 28480)
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 15s (expected next)
+   stack:   total=None
+   adapter exit code: 0
+
+===== spans =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 20384, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>\\t\\App\\Atypical.cs"}, "line": 128, "column": 9, "endLine": 128, "endColumn": 109}}
+   ~ stopped {"reason": "breakpoint", "threadId": 4648, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   STOP #1 breakpoint  | DebugTarget.Atypical.Spans() @ Atypical.cs:128:9
+   stack: DebugTarget.Atypical.Spans():128 <- Program.<Main>$():22 <- [External Code]:0  total=3
+   Locals.stack = {System.Span<int>[4]}  : System.Span<int>  ref=5 indexedVariables=4
+   Locals.chars = "text"  : System.ReadOnlySpan<char>  ref=6 indexedVariables=4
+   Locals.second = 21  : int  ref=0
+   Locals.window = {DebugTarget.Window}  : DebugTarget.Window  ref=7
+   Locals.local = 5  : int  ref=0
+   Locals.pointer = 0x19F8B7E4D4  : int*  ref=0
+   Locals.native = 0x7B  : nint  ref=0
+   Locals.memory = Count = 3  : System.Memory<byte>  ref=8 indexedVariables=3
+   children of stack (5, 1ms): [0]=10; [1]=21; [2]=30; [3]=40; Raw View=
+   children of chars (5, 1ms): [0]='t'; [1]='e'; [2]='x'; [3]='t'; Raw View=
+   children of window (2, 11ms): Data={System.Span<int>[2]}; Length=2
+   children of memory (4, 3ms): [0]=1; [1]=2; [2]=3; Raw View=
+   eval[watch] stack[1]                                       -> 21 : int  (41ms)
+   eval[watch] stack.Length                                   -> 4 : int  (2ms)
+   eval[watch] chars.Length                                   -> 4 : int  (0ms)
+   eval[watch] chars.ToString()                               -> "text" : string  (6ms)
+   eval[watch] second                                         -> 21 : int  (1ms)
+   eval[watch] window.Length                                  -> 2 : int  (1ms)
+   eval[watch] *pointer                                       -> ERROR The operation is only supported for primitive values and strings.  (3ms)
+   eval[watch] pointer                                        -> 0x19F8B7E4D4 : int*  (0ms)
+   eval[watch] native + 1                                     -> 0x7C : nint  (28ms)
+   eval[watch] memory.Length                                  -> 3 : int  (2ms)
+   eval[watch] memory.Span[0]                                 -> 1 : byte  (3ms)
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 15s (expected None)
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
+
+===== debugattrs =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 30532, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>\\t\\App\\Atypical.cs"}, "line": 138, "column": 9, "endLine": 138, "endColumn": 72}}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 2, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>\\t\\App\\Atypical.cs"}, "line": 146, "column": 9, "endLine": 146, "endColumn": 23}}
+   ~ stopped {"reason": "breakpoint", "threadId": 25552, "allThreadsStopped": true, "hitBreakpointIds": [2]}
+   STOP #1 breakpoint  | DebugTarget.Atypical.Visible() @ Atypical.cs:146:9
+   stack: DebugTarget.Atypical.Visible():146 <- [External Code]:0 <- DebugTarget.Atypical.DebugAttributes():135 <- Program.<Main>$():23 <- [External Code]:0  total=5
+   Locals.x = 1  : int  ref=0
+   eval[watch] order                                          -> ERROR The name 'order' does not exist in the current context.  (44ms)
+   eval[watch] bag                                            -> ERROR The name 'bag' does not exist in the current context.  (1ms)
+   eval[watch] order.Hidden                                   -> ERROR The name 'order.Hidden' does not exist in the current context.  (3ms)
+   ~ stopped {"reason": "breakpoint", "threadId": 25552, "allThreadsStopped": true, "hitBreakpointIds": [2]}
+   STOP #2 breakpoint  | DebugTarget.Atypical.Visible() @ Atypical.cs:146:9
+   stack: DebugTarget.Atypical.Visible():146 <- [External Code]:0 <- DebugTarget.Atypical.DebugAttributes():136 <- Program.<Main>$():23 <- [External Code]:0  total=5
+   Locals.x = 2  : int  ref=0
+   eval[watch] order                                          -> ERROR The name 'order' does not exist in the current context.  (0ms)
+   eval[watch] bag                                            -> ERROR The name 'bag' does not exist in the current context.  (0ms)
+   eval[watch] order.Hidden                                   -> ERROR The name 'order.Hidden' does not exist in the current context.  (0ms)
+   ~ stopped {"reason": "breakpoint", "threadId": 25552, "allThreadsStopped": true, "hitBreakpointIds": [2]}
+   STOP #3 breakpoint  | DebugTarget.Atypical.Visible() @ Atypical.cs:146:9
+   stack: DebugTarget.Atypical.Visible():146 <- [External Code]:0 <- DebugTarget.Atypical.DebugAttributes():137 <- Program.<Main>$():23 <- [External Code]:0  total=5
+   Locals.x = 3  : int  ref=0
+   eval[watch] order                                          -> ERROR The name 'order' does not exist in the current context.  (0ms)
+   eval[watch] bag                                            -> ERROR The name 'bag' does not exist in the current context.  (0ms)
+   eval[watch] order.Hidden                                   -> ERROR The name 'order.Hidden' does not exist in the current context.  (0ms)
+   ~ stopped {"reason": "breakpoint", "threadId": 25552, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   STOP #4 breakpoint  | DebugTarget.Atypical.DebugAttributes() @ Atypical.cs:138:9
+   stack: DebugTarget.Atypical.DebugAttributes():138 <- Program.<Main>$():23 <- [External Code]:0  total=3
+   Locals.order = Order 7 (99.5)  : DebugTarget.Order  ref=23
+   Locals.bag = {DebugTarget.Bag}  : DebugTarget.Bag  ref=24
+   Locals.first = 11  : int  ref=0
+   Locals.second = 22  : int  ref=0
+   Locals.third = 33  : int  ref=0
+   children of order (5, 7ms): Id=7; Total=99.5; [0]=1; [1]=2; [2]=3
+   children of bag (2, 10ms): Pretty="proxy of raw-state"; Raw View=
+   eval[watch] order                                          -> Order 7 (99.5) : DebugTarget.Order ref=26  (3ms)
+   eval[watch] bag                                            -> {DebugTarget.Bag} : DebugTarget.Bag ref=27  (1ms)
+   eval[watch] order.Hidden                                   -> "must not be listed" : string  (1ms)
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 15s (expected None)
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
+
+===== debugattrs-step =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 17500, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>\\t\\App\\Atypical.cs"}, "line": 135, "column": 9, "endLine": 135, "endColumn": 37}}
+   ~ stopped {"reason": "breakpoint", "threadId": 26144, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   ~ stopped {"reason": "step", "threadId": 26144, "allThreadsStopped": true}
+   stepIn   -> step      DebugTarget.Atypical.Visible() @ Atypical.cs:145:5
+   stack: DebugTarget.Atypical.Visible():145 <- [External Code]:0 <- DebugTarget.Atypical.DebugAttributes():135 <- Program.<Main>$():23  total=5
+   ~ stopped {"reason": "step", "threadId": 26144, "allThreadsStopped": true}
+   stepOut  -> step      DebugTarget.Atypical.DebugAttributes() @ Atypical.cs:135:9
+   stack: DebugTarget.Atypical.DebugAttributes():135 <- Program.<Main>$():23 <- [External Code]:0  total=3
+   ~ stopped {"reason": "step", "threadId": 26144, "allThreadsStopped": true}
+   stepIn   -> step      DebugTarget.Atypical.DebugAttributes() @ Atypical.cs:136:9
+   stack: DebugTarget.Atypical.DebugAttributes():136 <- Program.<Main>$():23 <- [External Code]:0  total=3
+   ~ stopped {"reason": "step", "threadId": 26144, "allThreadsStopped": true}
+   stepOut  -> step      Program.<Main>$() @ Program.cs:23:24
+   stack: Program.<Main>$():23 <- [External Code]:0  total=2
+   ~ stopped {"reason": "step", "threadId": 26144, "allThreadsStopped": true}
+   stepIn   -> step      Program.<Main>$() @ Program.cs:23:52
+   stack: Program.<Main>$():23 <- [External Code]:0  total=2
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 15s (expected stepOut)
+   adapter exit code: 0
+
+===== break =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 13716, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>\\t\\App\\Atypical.cs"}, "line": 153, "column": 9, "endLine": 153, "endColumn": 42}}
+   ~ stopped {"reason": "pause", "description": "Debugger.Break", "threadId": 17412, "allThreadsStopped": true}
+   STOP #1 pause Debugger.Break | DebugTarget.Atypical.Break() @ Atypical.cs:152:9
+   stack: DebugTarget.Atypical.Break():152 <- Program.<Main>$():24 <- [External Code]:0  total=3
+   ~ stopped {"reason": "breakpoint", "threadId": 17412, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   STOP #2 breakpoint  | DebugTarget.Atypical.Break() @ Atypical.cs:153:9
+   stack: DebugTarget.Atypical.Break():153 <- Program.<Main>$():24 <- [External Code]:0  total=3
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 15s (expected None)
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
+
+===== deep =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 29968, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>\\t\\App\\Atypical.cs"}, "line": 160, "column": 13, "endLine": 160, "endColumn": 41}}
+   ~ stopped {"reason": "breakpoint", "threadId": 15336, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   STOP #1 breakpoint  | DebugTarget.Atypical.Deep() @ Atypical.cs:160:13
+   stack: DebugTarget.Atypical.Deep():160 <- DebugTarget.Atypical.Deep():163 <- DebugTarget.Atypical.Deep():163 <- DebugTarget.Atypical.Deep():163 <- DebugTarget.Atypical.Deep():163  total=3003
+   Locals.depth = 0  : int  ref=0
+   stackTrace start=0 levels=20 -> 20 frames, total=3003, 1ms 
+   stackTrace start=2990 levels=20 -> 13 frames, total=3003, 1ms 
+   stackTrace start=0 levels=0 -> 3003 frames, total=3003, 19ms 
+   stackTrace start=5000 levels=10 -> 0 frames, total=3003, 1ms 
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0

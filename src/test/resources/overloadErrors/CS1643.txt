@@ -1,0 +1,8 @@
+7:50-52 CS1643: Not all code paths return a value in lambda expression of type 'Func<int, int>'
+11:45-47 CS1643: Not all code paths return a value in lambda expression of type 'Func<int, int>'
+16:33-35 CS1643: Not all code paths return a value in lambda expression of type 'Func<int, int>'
+18:36-38 CS1643: Not all code paths return a value in lambda expression of type 'Func<int, string>'
+33:32-34 CS1643: Not all code paths return a value in lambda expression of type 'Func<int>'
+36:15-17 CS1643: Not all code paths return a value in lambda expression of type 'Func<int, int>'
+38:42-44 CS1643: Not all code paths return a value in lambda expression of type 'Func<Task<int>>'
+40:36-44 CS1643: Not all code paths return a value in anonymous method of type 'Func<int, int>'

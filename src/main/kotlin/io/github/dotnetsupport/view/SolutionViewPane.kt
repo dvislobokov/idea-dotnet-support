@@ -1,0 +1,222 @@
+package io.github.dotnetsupport.view
+
+import com.intellij.ide.SelectInTarget
+import com.intellij.ide.impl.ProjectViewSelectInTarget
+import com.intellij.ide.projectView.ProjectView
+import com.intellij.ide.projectView.ProjectViewNode
+import com.intellij.ide.projectView.ViewSettings
+import com.intellij.ide.projectView.impl.AbstractProjectViewPaneWithAsyncSupport
+import com.intellij.ide.projectView.impl.ProjectAbstractTreeStructureBase
+import com.intellij.ide.projectView.impl.ProjectTreeStructure
+import com.intellij.ide.projectView.impl.ProjectViewTree
+import com.intellij.ide.util.treeView.AbstractTreeNode
+import com.intellij.openapi.actionSystem.DataSink
+import com.intellij.openapi.actionSystem.PlatformDataKeys
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.project.Project
+import com.intellij.openapi.project.guessProjectDir
+import com.intellij.openapi.vfs.newvfs.BulkFileListener
+import com.intellij.openapi.vfs.newvfs.events.VFileCopyEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileCreateEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileDeleteEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileEvent
+import com.intellij.openapi.vfs.newvfs.events.VFileMoveEvent
+import com.intellij.psi.PsiDirectory
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiManager
+import io.github.dotnetsupport.DotNetIcons
+import io.github.dotnetsupport.msbuild.DotNetProjects
+import io.github.dotnetsupport.msbuild.MSBUILD_EXTENSIONS
+import io.github.dotnetsupport.run.DotNetRunConfigurationGenerator
+import io.github.dotnetsupport.solution.SOLUTION_EXTENSIONS
+import io.github.dotnetsupport.solution.SOLUTION_FILTER_EXTENSION
+import io.github.dotnetsupport.solution.SolutionService
+import javax.swing.Icon
+import javax.swing.tree.DefaultTreeModel
+
+/** Rider-like "Solution" pane of the Project tool window. */
+class SolutionViewPane(project: Project) : AbstractProjectViewPaneWithAsyncSupport(project) {
+    override fun getTitle(): String = "Solution"
+    override fun getIcon(): Icon = DotNetIcons.Solution
+    override fun getId(): String = ID
+    override fun getWeight(): Int = WEIGHT
+
+    /**
+     * The pane the platform selects when the project has no saved one (its first open): a folder with a solution in its root opens in the
+     * Solution view at once, as in Rider, with no switch to race against. Asked on EDT while the tool window is built, so only the root is
+     * looked at; solutions deeper down are handled by [SolutionViewActivator], which walks the folder off EDT.
+     */
+    override fun isDefaultPane(project: Project): Boolean =
+        io.github.dotnetsupport.settings.DotNetSettings.getInstance().switchToSolutionView &&
+            project.guessProjectDir()?.children?.any { !it.isDirectory && it.extension?.lowercase() in SOLUTION_EXTENSIONS } == true
+
+    override fun createSelectInTarget(): SelectInTarget = object : ProjectViewSelectInTarget(myProject) {
+        override fun toString(): String = title
+        override fun getMinorViewId(): String = ID
+        override fun getWeight(): Float = WEIGHT.toFloat()
+    }
+
+    override fun createStructure(): ProjectAbstractTreeStructureBase = SolutionTreeStructure(myProject)
+    override fun createTree(treeModel: DefaultTreeModel): ProjectViewTree = object : ProjectViewTree(treeModel) {
+        override fun toString(): String = "$title ${super.toString()}"
+    }
+
+    /** Solution and project nodes are not directories, but "New" on them means "in the directory of the solution / project". */
+    override fun getSelectedDirectoriesInAmbiguousCase(userObject: Any?): Array<PsiDirectory> {
+        val file = (userObject as? ProjectViewNode<*>)?.virtualFile
+        val directory = file?.takeIf { it.isValid }?.let { if (it.isDirectory) it else it.parent }
+        val psiDirectory = directory?.let { PsiManager.getInstance(myProject).findDirectory(it) }
+        return if (psiDirectory != null) arrayOf(psiDirectory) else super.getSelectedDirectoriesInAmbiguousCase(userObject)
+    }
+
+    /**
+     * A project or solution node dragged into the editor opens its file, as in Rider. The drag source of the platform takes
+     * the PSI of the selection, and the values of these nodes are keys. Only for a drag: as PSI for everything else the
+     * node would hand its file to Delete, Rename and Move, which mean something different for a project.
+     */
+    override fun getElementsFromNode(node: Any?): List<PsiElement> {
+        val elements = super.getElementsFromNode(node)
+        if (elements.isNotEmpty()) return elements
+        val file = when (val value = getValueFromNode(node)) {
+            is SolutionKey -> value.solutionFile
+            is ProjectKey -> value.project.resolveFile(value.solutionFile)
+            else -> null
+        } ?: return elements
+        if (!file.isValid || !isCalledByDragSource()) return elements
+        return listOfNotNull(PsiManager.getInstance(myProject).findFile(file))
+    }
+
+    /**
+     * Projects dragged onto a solution folder or the solution move there, as in Rider; everything else goes to the drop target of the
+     * platform. Its move handler asked for a data context off EDT for a project node ("AsyncPromise: Access is allowed from EDT only")
+     * and could not move a project anyway: the folder is in the solution file, not on disk. The target is a client property of the tree,
+     * so registering ours replaces the platform's, which stays the delegate.
+     */
+    override fun enableDnD() {
+        super.enableDnD()
+        val tree = myTree ?: return
+        if (com.intellij.openapi.application.ApplicationManager.getApplication().isHeadlessEnvironment) return
+        val platform = tree.getClientProperty(DND_TARGET_KEY) as? com.intellij.ide.dnd.DnDTarget
+        com.intellij.ide.dnd.DnDManager.getInstance().registerTarget(SolutionDropTarget(tree, myProject, platform), tree, this)
+    }
+
+    /** Delete on the node of a project is Remove from Solution; anything else keeps the delete provider of the platform. */
+    override fun uiDataSnapshot(sink: DataSink) {
+        super.uiDataSnapshot(sink)
+        if (selectedUserObjects.singleOrNull()?.let { (it as? AbstractTreeNode<*>)?.value ?: it } is ProjectKey) sink[PlatformDataKeys.DELETE_ELEMENT_PROVIDER] = ProjectNodeDeleteProvider()
+    }
+
+    /** The drag source is a private class of the platform with no hook of its own; when it is renamed, the drag just stops working. */
+    private fun isCalledByDragSource(): Boolean =
+        StackWalker.getInstance().walk { frames -> frames.limit(DRAG_SOURCE_DEPTH).anyMatch { "DragSource" in it.className } }
+
+    companion object {
+        // the selection is walked through iterables: a few dozen frames between the drag source and the node
+        private const val DRAG_SOURCE_DEPTH = 40L
+
+        const val ID = "DotNetSolutionView"
+
+        /** The client property `DnDManagerImpl.registerTarget` keeps the target of a component in. */
+        private const val DND_TARGET_KEY = "DnD Target"
+
+        // Must be unique among all panes; the platform ones use small numbers.
+        private const val WEIGHT = 42
+    }
+}
+
+/** The structure applies the tree structure providers of the platform (file nesting among them) to the children of our nodes too. */
+class SolutionTreeStructure(project: Project) : ProjectTreeStructure(project, SolutionViewPane.ID) {
+    override fun createRoot(project: Project, settings: ViewSettings): AbstractTreeNode<*> = SolutionRootNode(project, settings)
+}
+
+/** Rebuilds the Solution pane when a solution or MSBuild file changes on disk, or the content of a project root changes. */
+class SolutionFilesListener(private val project: Project) : BulkFileListener {
+    override fun after(events: List<VFileEvent>) {
+        // A solution came or went, possibly with its directory: the list of solutions is walked again on the next question.
+        if (events.any { isSolutionFile(it.path) || it.file?.isDirectory == true }) SolutionService.getInstance(project).solutionFilesChanged()
+        // New projects and launch profiles get their run configurations.
+        if (events.any { affectsSolutionStructure(it.path) || it.path.endsWith("/launchSettings.json") }) {
+            DotNetRunConfigurationGenerator.getInstance(project).schedule()
+        }
+        // restore has changed what the projects are compiled against; or a project file, the references of the old format are in it
+        if (events.any { affectsSolutionStructure(it.path) }) io.github.dotnetsupport.index.AssemblyIndexService.getInstance(project).schedule()
+        if (events.none { affectsSolutionStructure(it.path) || changesProjectRoot(it) }) return
+        ApplicationManager.getApplication().invokeLater({
+            ProjectView.getInstance(project).getProjectViewPaneById(SolutionViewPane.ID)?.updateFromRoot(true)
+        }, project.disposed)
+    }
+
+    /** Something appeared in or disappeared from a project directory, whose node is not a regular directory node. */
+    private fun changesProjectRoot(event: VFileEvent): Boolean {
+        if (event !is VFileCreateEvent && event !is VFileDeleteEvent && event !is VFileMoveEvent && event !is VFileCopyEvent) return false
+        val parents = when (event) {
+            is VFileCreateEvent -> listOf(event.parent)
+            is VFileCopyEvent -> listOf(event.newParent)
+            is VFileMoveEvent -> listOf(event.oldParent, event.newParent)
+            else -> listOfNotNull(event.file?.parent)
+        }
+        return parents.any { parent -> parent.isValid && parent.children.any(DotNetProjects::isProjectFile) }
+    }
+
+    private fun affectsSolutionStructure(path: String): Boolean {
+        val extension = path.substringAfterLast('.', "").lowercase()
+        // project.assets.json: a restore has changed what the Dependencies nodes show
+        return isSolutionFile(path) || extension in MSBUILD_EXTENSIONS || path.endsWith("/obj/project.assets.json")
+    }
+
+    private fun isSolutionFile(path: String): Boolean =
+        path.substringAfterLast('.', "").lowercase().let { it in SOLUTION_EXTENSIONS || it == SOLUTION_FILTER_EXTENSION }
+}
+
+/** See [SolutionViewPane.enableDnD]. */
+private class SolutionDropTarget(private val tree: javax.swing.JTree, private val project: Project, private val platform: com.intellij.ide.dnd.DnDTarget?) :
+    com.intellij.ide.dnd.DnDNativeTarget {
+
+    private fun valueOf(path: javax.swing.tree.TreePath?): Any? = com.intellij.util.ui.tree.TreeUtil.getLastUserObject(path)
+        ?.let { (it as? AbstractTreeNode<*>)?.value ?: it }
+
+    private fun sources(event: com.intellij.ide.dnd.DnDEvent): List<Any?>? =
+        (event.attachedObject as? com.intellij.ide.dnd.TransferableWrapper)?.treePaths?.map(::valueOf)
+
+    private fun targetPath(event: com.intellij.ide.dnd.DnDEvent): javax.swing.tree.TreePath? {
+        val point = event.point ?: return null
+        val path = tree.getClosestPathForLocation(point.x, point.y) ?: return null
+        return path.takeIf { tree.getPathBounds(it)?.contains(point) == true }
+    }
+
+    /** Ours: projects of a solution dragged anywhere in the tree; a drop on anything but a folder or the solution is just not possible. */
+    private fun isOurs(sources: List<Any?>?): Boolean = !sources.isNullOrEmpty() && sources.all { it is ProjectKey }
+
+    override fun update(event: com.intellij.ide.dnd.DnDEvent): Boolean {
+        val sources = sources(event)
+        if (!isOurs(sources)) {
+            // a file dragged onto a solution folder: a folder of the solution file has no directory to take it
+            if (valueOf(targetPath(event)) is SolutionFolderKey) { event.isDropPossible = false; return false }
+            return platform?.update(event) ?: false.also { event.isDropPossible = false }
+        }
+        val path = targetPath(event)
+        val drop = io.github.dotnetsupport.actions.SolutionFolderMove.dropOf(sources!!, valueOf(path))
+        if (drop == null || path == null) { event.isDropPossible = false; return false }
+        tree.getPathBounds(path)?.let { event.setHighlighting(com.intellij.ui.awt.RelativeRectangle(tree, it), com.intellij.ide.dnd.DnDEvent.DropTargetHighlightingType.RECTANGLE) }
+        event.setDropPossible(true, "Move to ${if (drop.second == null) "the solution root" else "the folder"}")
+        return false
+    }
+
+    override fun drop(event: com.intellij.ide.dnd.DnDEvent) {
+        val sources = sources(event)
+        if (!isOurs(sources)) {
+            if (valueOf(targetPath(event)) !is SolutionFolderKey) platform?.drop(event)
+            return
+        }
+        val (projects, folderId) = io.github.dotnetsupport.actions.SolutionFolderMove.dropOf(sources!!, valueOf(targetPath(event))) ?: return
+        io.github.dotnetsupport.actions.SolutionFolderMove.move(project, projects.first().solutionFile, projects.map { it.project }, folderId)
+    }
+
+    override fun cleanUpOnLeave() {
+        platform?.cleanUpOnLeave()
+    }
+
+    override fun updateDraggedImage(image: java.awt.Image?, dropPoint: java.awt.Point?, imageOffset: java.awt.Point?) {
+        platform?.updateDraggedImage(image, dropPoint, imageOffset)
+    }
+}

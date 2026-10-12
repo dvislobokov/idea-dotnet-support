@@ -1,0 +1,102 @@
+{
+ "assembly": "C:\\work\\fixture\\IndexFixture.dll",
+ "assemblyName": "IndexFixture",
+ "assemblyVersion": "1.0.0.0",
+ "assemblyModified": 1791172632132,
+ "typeName": "Fixture.Shape",
+ "text": "// Decompiled with ICSharpCode.Decompiler 11.1.0.9782\n// Type: Fixture.Shape\n// Assembly: IndexFixture, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null\n// MVID: 1E592C35-0B03-4B16-AC33-EF7A8569D4BB\n// Assembly location: C:\\work\\fixture\\IndexFixture.dll\n\nusing System;\n\nnamespace Fixture;\n\n/// <summary>A shape of the plane.</summary>\n/// <remarks>Abstract: <see cref=\"T:Fixture.Circle\" /> is one.</remarks>\npublic abstract class Shape\n{\n    public const string Kind = \"shape\\n\";\n\n    public const double Ratio = 1.5;\n\n    public const long Big = -9000000000L;\n\n    protected int Counter;\n\n    public readonly int Created;\n\n    public static int Count;\n\n    /// <summary>The area of the shape.</summary>\n    /// <value>Square units.</value>\n    public abstract double Area { get; }\n\n    public string? Label { get; protected set; }\n\n    public event EventHandler? Changed;\n\n    /// <summary>Says what the shape is.</summary>\n    /// <param name=\"prefix\">What goes first.</param>\n    /// <param name=\"digits\">How many digits of the area.</param>\n    /// <returns>The text.</returns>\n    public virtual string Describe(string? prefix = null, int digits = 2)\n    {\n        return \"\";\n    }\n\n    public static Shape operator +(Shape a, Shape b)\n    {\n        return a;\n    }\n\n    public static implicit operator double(Shape shape)\n    {\n        return shape.Area;\n    }\n\n    private void Hidden()\n    {\n    }\n\n    private protected void Narrow()\n    {\n    }\n}\n",
+ "members": [
+  {
+   "id": "T:Fixture.Shape",
+   "offset": 435,
+   "line": 12
+  },
+  {
+   "id": "F:Fixture.Shape.Kind",
+   "offset": 467,
+   "line": 14
+  },
+  {
+   "id": "F:Fixture.Shape.Ratio",
+   "offset": 510,
+   "line": 16
+  },
+  {
+   "id": "F:Fixture.Shape.Big",
+   "offset": 546,
+   "line": 18
+  },
+  {
+   "id": "F:Fixture.Shape.Counter",
+   "offset": 585,
+   "line": 20
+  },
+  {
+   "id": "F:Fixture.Shape.Created",
+   "offset": 619,
+   "line": 22
+  },
+  {
+   "id": "F:Fixture.Shape.Count",
+   "offset": 651,
+   "line": 24
+  },
+  {
+   "id": "P:Fixture.Shape.Area",
+   "offset": 773,
+   "line": 28
+  },
+  {
+   "id": "M:Fixture.Shape.get_Area",
+   "offset": 780,
+   "line": 28
+  },
+  {
+   "id": "P:Fixture.Shape.Label",
+   "offset": 807,
+   "line": 30
+  },
+  {
+   "id": "M:Fixture.Shape.get_Label",
+   "offset": 815,
+   "line": 30
+  },
+  {
+   "id": "M:Fixture.Shape.set_Label(System.String)",
+   "offset": 820,
+   "line": 30
+  },
+  {
+   "id": "E:Fixture.Shape.Changed",
+   "offset": 869,
+   "line": 32
+  },
+  {
+   "id": "M:Fixture.Shape.Describe(System.String,System.Int32)",
+   "offset": 1113,
+   "line": 38
+  },
+  {
+   "id": "M:Fixture.Shape.op_Addition(Fixture.Shape,Fixture.Shape)",
+   "offset": 1217,
+   "line": 43
+  },
+  {
+   "id": "M:Fixture.Shape.op_Implicit(Fixture.Shape)~System.Double",
+   "offset": 1304,
+   "line": 48
+  },
+  {
+   "id": "M:Fixture.Shape.Hidden",
+   "offset": 1390,
+   "line": 53
+  },
+  {
+   "id": "M:Fixture.Shape.Narrow",
+   "offset": 1439,
+   "line": 57
+  }
+ ],
+ "warning": null,
+ "elapsedMs": 55
+}

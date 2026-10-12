@@ -1,0 +1,4 @@
+<spot>foreach (var item in items)</spot>
+{
+    Use(item);
+}

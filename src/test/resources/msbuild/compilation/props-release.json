@@ -1,0 +1,35 @@
+{
+ "properties": {
+  "DefineConstants": ";FROM_PROPS;SHIPPING;TRACE;RELEASE;NET;NET8_0;NETCOREAPP;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NETCOREAPP1_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER",
+  "LangVersion": "11.0",
+  "Nullable": "",
+  "ImplicitUsings": "",
+  "RootNamespace": "WithProps",
+  "TargetFramework": "net8.0",
+  "MaxSupportedLangVersion": "12.0",
+  "TargetFrameworkIdentifier": ".NETCoreApp",
+  "TargetFrameworkVersion": "v8.0",
+  "TargetPlatformIdentifier": "",
+  "Configuration": "Release",
+  "Platform": "AnyCPU",
+  "UsingMicrosoftNETSdk": "true"
+ },
+ "items": {
+  "Compile": [
+   {
+    "include": "C:\\src\\Props\\WithProps\\Lib.cs",
+    "metadata": {}
+   }
+  ],
+  "Using": []
+ },
+ "imports": [
+  "C:\\src\\Props\\Directory.Build.props"
+ ],
+ "targetFrameworks": [
+  "net8.0"
+ ],
+ "warning": null,
+ "milliseconds": 0,
+ "reused": false
+}

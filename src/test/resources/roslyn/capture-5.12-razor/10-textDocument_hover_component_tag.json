@@ -1,0 +1,29 @@
+{
+ "method": "textDocument/hover",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  },
+  "position": {
+   "line": 3,
+   "character": 3
+  }
+ },
+ "ms": 12.3,
+ "result": {
+  "contents": {
+   "kind": "markdown",
+   "value": "```csharp\r\nclass Microsoft.AspNetCore.Components.Web.PageTitle\r\n```\r\n  \r\nEnables rendering an HTML&nbsp;`<title>`&nbsp;to a&nbsp;HeadOutlet&nbsp;component\\.  \r\n"
+  },
+  "range": {
+   "start": {
+    "line": 3,
+    "character": 1
+   },
+   "end": {
+    "line": 3,
+    "character": 10
+   }
+  }
+ }
+}

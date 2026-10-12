@@ -1,0 +1,18 @@
+{
+ "method": "textDocument/completion",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "position": {
+   "line": 250,
+   "character": 11
+  },
+  "context": {
+   "triggerKind": 2,
+   "triggerCharacter": " "
+  }
+ },
+ "ms": 27.1,
+ "result": null
+}

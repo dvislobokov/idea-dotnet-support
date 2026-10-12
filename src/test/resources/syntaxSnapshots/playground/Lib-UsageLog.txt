@@ -1,0 +1,54 @@
+## declarations
+namespace Playground.Lib  name 1:11-1:25  range 1:1-18:2
+  class UsageLog [public static]  name 7:21-7:29  range 7:1-18:2 body 8:1-18:2
+    property Count: int [public static]  name 9:23-9:28  range 9:5-9:50 body 9:29-9:50
+    method Record(string what): void [public static]  name 11:24-11:30  range 11:5-11:55
+    method RecordTwice(string what): void [public static]  name 13:24-13:35  range 13:5-17:6 body 14:5-17:6
+
+## structure view
+Playground.Lib
+  UsageLog
+    Count: int
+    Record(string what): void
+    RecordTwice(string what): void
+
+## folding
+3:1-6:15  /// The other project of the Find Usages scenario (Console/Editor/FindUsages.cs): i...  | /// <summary>
+8:1-18:2  {...}  | {
+14:5-17:6  {...}  | {
+
+## breadcrumbs
+1: Playground.Lib
+7: Playground.Lib > UsageLog
+9: Playground.Lib > UsageLog > Count
+11: Playground.Lib > UsageLog > Record()
+13: Playground.Lib > UsageLog > RecordTwice()
+18: Playground.Lib > UsageLog
+
+## IL Viewer: type / member at the line
+1: - / -
+7: Playground.Lib.UsageLog / -
+9: Playground.Lib.UsageLog / Count
+11: Playground.Lib.UsageLog / Record
+13: Playground.Lib.UsageLog / RecordTwice
+18: Playground.Lib.UsageLog / -
+
+## Go to Base: member at the line
+1: -
+9: UsageLog.Count
+11: UsageLog.Record(string what)
+13: UsageLog.RecordTwice(string what)
+15: UsageLog.RecordTwice(string what) (in body)
+18: -
+
+## breakpoint lines
+9, 11, 14-17
+
+## run gutter
+
+## Go to Class / Symbol
+M:Count -> 9:23 Count (UsageLog)
+M:Record -> 11:24 Record(string what) (UsageLog)
+M:RecordTwice -> 13:24 RecordTwice(string what) (UsageLog)
+T:UsageLog -> 7:21 UsageLog (Playground.Lib)
+

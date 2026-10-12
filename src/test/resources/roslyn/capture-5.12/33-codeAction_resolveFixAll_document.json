@@ -1,0 +1,95 @@
+{
+ "method": "codeAction/resolveFixAll",
+ "params": {
+  "title": "Fix All: Remove redundant assignment",
+  "data": {
+   "UniqueIdentifier": "Fix All: Remove redundant assignment",
+   "CustomTags": [
+    "RemoveUnusedValues"
+   ],
+   "Range": {
+    "start": {
+     "line": 257,
+     "character": 12
+    },
+    "end": {
+     "line": 257,
+     "character": 22
+    }
+   },
+   "TextDocument": {
+    "uri": "file:///c:/playground/Console/Scenarios.cs"
+   },
+   "CodeActionPath": [
+    "Remove redundant assignment"
+   ],
+   "FixAllFlavors": [
+    "Document",
+    "Project",
+    "Solution",
+    "ContainingMember",
+    "ContainingType"
+   ]
+  },
+  "scope": "Document"
+ },
+ "ms": 295.3,
+ "result": {
+  "scope": "Document",
+  "title": "Fix All: Remove redundant assignment",
+  "edit": {
+   "documentChanges": [
+    {
+     "textDocument": {
+      "version": null,
+      "uri": "file:///c:/playground/Console/Scenarios.cs"
+     },
+     "edits": [
+      {
+       "range": {
+        "start": {
+         "line": 256,
+         "character": 43
+        },
+        "end": {
+         "line": 257,
+         "character": 23
+        }
+       },
+       "newText": "\r"
+      }
+     ]
+    }
+   ]
+  },
+  "data": {
+   "UniqueIdentifier": "Fix All: Remove redundant assignment",
+   "CustomTags": [
+    "RemoveUnusedValues"
+   ],
+   "Range": {
+    "start": {
+     "line": 257,
+     "character": 12
+    },
+    "end": {
+     "line": 257,
+     "character": 22
+    }
+   },
+   "TextDocument": {
+    "uri": "file:///c:/playground/Console/Scenarios.cs"
+   },
+   "CodeActionPath": [
+    "Remove redundant assignment"
+   ],
+   "FixAllFlavors": [
+    "Document",
+    "Project",
+    "Solution",
+    "ContainingMember",
+    "ContainingType"
+   ]
+  }
+ }
+}

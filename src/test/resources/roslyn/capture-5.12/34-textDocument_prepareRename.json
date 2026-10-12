@@ -1,0 +1,23 @@
+{
+ "method": "textDocument/prepareRename",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "position": {
+   "line": 257,
+   "character": 14
+  }
+ },
+ "ms": 6.6,
+ "result": {
+  "start": {
+   "line": 257,
+   "character": 12
+  },
+  "end": {
+   "line": 257,
+   "character": 18
+  }
+ }
+}

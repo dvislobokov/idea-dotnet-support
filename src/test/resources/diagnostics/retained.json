@@ -1,0 +1,87 @@
+{
+  "objects": 184415,
+  "bytes": 71410174,
+  "unreachableObjects": 102,
+  "unreachableBytes": 11430,
+  "types": [
+    {
+      "name": "System.Object[]",
+      "methodTable": "7ffdfdd82170",
+      "count": 2,
+      "shallow": 12304,
+      "retained": 71408560
+    },
+    {
+      "name": "System.Collections.Generic.Dictionary<System.Int32, Playground.CachedOrder>",
+      "methodTable": "7ffdfdefdb98",
+      "count": 1,
+      "shallow": 80,
+      "retained": 71297096
+    },
+    {
+      "name": "System.Collections.Generic.Dictionary<System.Int32, Playground.CachedOrder>+Entry[]",
+      "methodTable": "7ffdfdefecc8",
+      "count": 1,
+      "shallow": 1810368,
+      "retained": 70995268
+    },
+    {
+      "name": "Playground.CachedOrder",
+      "methodTable": "7ffdfdeef7e0",
+      "count": 61000,
+      "shallow": 2440000,
+      "retained": 69184900
+    },
+    {
+      "name": "System.Byte[]",
+      "methodTable": "7ffdfdea9280",
+      "count": 61003,
+      "shallow": 63928672,
+      "retained": 63928672
+    },
+    {
+      "name": "System.String",
+      "methodTable": "7ffdfdddbf40",
+      "count": 61375,
+      "shallow": 2864738,
+      "retained": 2864738
+    }
+  ],
+  "dominators": [
+    {
+      "address": "29ee0400028",
+      "type": "System.Object[]",
+      "size": 8184,
+      "retained": 71408560,
+      "children": 58,
+      "root": "StrongHandle"
+    },
+    {
+      "address": "29ee2800118",
+      "type": "System.StackOverflowException",
+      "size": 120,
+      "retained": 120,
+      "children": 0,
+      "root": "StrongHandle"
+    },
+    {
+      "address": "29ee28000a0",
+      "type": "System.OutOfMemoryException",
+      "size": 120,
+      "retained": 120,
+      "children": 0,
+      "root": "StrongHandle"
+    },
+    {
+      "address": "29ee2800190",
+      "type": "System.ExecutionEngineException",
+      "size": 120,
+      "retained": 120,
+      "children": 0,
+      "root": "StrongHandle"
+    }
+  ],
+  "omittedDominators": 16,
+  "elapsedMs": 1611,
+  "peakWorkingSet": 142938112
+}

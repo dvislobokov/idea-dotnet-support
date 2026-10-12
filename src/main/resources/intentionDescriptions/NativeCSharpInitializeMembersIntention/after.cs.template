@@ -1,0 +1,7 @@
+var line = new OrderLine
+{
+    Sku = "A-1",
+    Title = ,
+    Price = ,
+    Quantity = 
+};

@@ -1,0 +1,8 @@
+{"event":"testStart","id":"91a5f4d4-e06f-25d1-3b04-19a67517bc75","fqn":"NUnitLive.LiveTests.Doubles(1,2)","displayName":"Doubles(1,2)","line":0,"source":"C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll"}
+{"event":"testStart","id":"d5d71f15-95d9-8a87-6bb7-1e097554d2cc","fqn":"NUnitLive.LiveTests.Doubles(2,4)","displayName":"Doubles(2,4)","line":0,"source":"C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll"}
+{"event":"testStart","id":"ffe48fd9-5740-96cb-8a8c-d8e80b6fa29d","fqn":"NUnitLive.LiveTests.Fails","displayName":"Fails","line":0,"source":"C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll"}
+{"event":"testStart","id":"bb93bdb5-af65-5f69-4c62-9751ebf00502","fqn":"NUnitLive.LiveTests.Skipped","displayName":"Skipped","line":0,"source":"C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll"}
+{"event":"testStart","id":"514246dd-77ae-2440-a71c-4848e0fcb878","fqn":"NUnitLive.LiveTests.Slow1","displayName":"Slow1","line":0,"source":"C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll"}
+{"event":"testStart","id":"ec0da6d6-1cdd-bcb1-17af-db1f659e95f1","fqn":"NUnitLive.LiveTests.Slow2","displayName":"Slow2","line":0,"source":"C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll"}
+{"event":"testStart","id":"ecc5c276-3f39-3a54-5103-1581718463e4","fqn":"NUnitLive.LiveTests.WritesOutput","displayName":"WritesOutput","line":0,"source":"C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll"}
+{"event":"testStart","id":"34e0239d-e94d-8a65-ca74-7e7f840983c0","fqn":"NUnitLive.LiveTests+Nested.Inner","displayName":"Inner","line":0,"source":"C:\\tmp\\fw\\nunit\\bin\\Debug\\net10.0\\NUnitLive.dll"}

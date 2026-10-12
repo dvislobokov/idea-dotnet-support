@@ -1,0 +1,43 @@
+{
+ "method": "textDocument/diagnostic",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Pages/Pages/Index.cshtml"
+  }
+ },
+ "ms": 166.1,
+ "result": {
+  "kind": "full",
+  "resultId": "0ee08ee1-ea72-49ab-b937-74ddfa2a8c60",
+  "items": [
+   {
+    "_vs_projects": [
+     {
+      "_vs_projectName": "PagesApp (net10.0)",
+      "_vs_projectIdentifier": "c:/playground/Pages/obj/Debug/net10.0/"
+     }
+    ],
+    "range": {
+     "start": {
+      "line": 11,
+      "character": 10
+     },
+     "end": {
+      "line": 11,
+      "character": 17
+     }
+    },
+    "severity": 1,
+    "code": "CS1061",
+    "codeDescription": {
+     "href": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS1061)"
+    },
+    "message": "'IndexModel' does not contain a definition for 'Missing' and no accessible extension method 'Missing' accepting a first argument of type 'IndexModel' could be found (are you missing a using directive or an assembly reference?)",
+    "tags": [
+     2147483642,
+     2147483645
+    ]
+   }
+  ]
+ }
+}

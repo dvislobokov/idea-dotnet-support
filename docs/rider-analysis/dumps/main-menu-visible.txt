@@ -1,0 +1,327 @@
+######## menu File {FileMenu}
+== popup menu 259x508
+  New Solution…   
+  [>] Open
+  Close Solution   
+  -----
+  Remote Development…   
+  -----
+  Save All   Ctrl+Shift+S
+  Reload All from Disk   Ctrl+Alt+Y
+  -----
+  [>] Export
+  Print…   Ctrl+P
+  File Encoding   
+  [>] Line Separators
+  Make file read-only   
+  -----
+  Settings…   Ctrl+Alt+S
+  [>] New Projects Setup
+  [>] Manage IDE Settings
+  -----
+  Power Save Mode   
+  -----
+  Invalidate Caches…   
+  Exit   
+
+######## menu Edit {EditMenu}
+== popup menu 361x829
+  Undo Undefined   Ctrl+Z
+  Redo   Ctrl+Y  (disabled)
+  -----
+  Cut   Ctrl+X
+  Copy   Ctrl+C
+  Copy Path/Reference…   
+  [>] Paste
+  Delete…   Delete
+  -----
+  Search In Selection     (disabled)
+  [>] Find
+  [>] Find Usages
+  -----
+  Column Selection Mode   Alt+Shift+Insert
+  Select All   Ctrl+A
+  Add Carets to Ends of Selected Lines   Alt+Shift+G
+  Extend Selection   Alt+Shift+=
+  Shrink Selection   Alt+Shift+Minus
+  -----
+  Toggle Case   Ctrl+Shift+U
+  Join Lines   Ctrl+Shift+J
+  Duplicate Line   Ctrl+D
+  Fill Paragraph     (disabled)
+  Sort Lines   
+  Reverse Lines   
+  Transpose   
+  -----
+  Indent Selection   Tab  (disabled)
+  Unindent Line or Selection   Shift+Tab
+  [>] Convert Indents
+  -----
+  [>] Macros
+  [>] Bookmarks
+  -----
+  Encode XML/HTML Special Characters     (disabled)
+  Edit as Table...   
+
+######## menu View {ViewMenu}
+== popup menu 373x534
+  [>] Tool Windows
+  [>] Appearance
+  -----
+  Quick Definition   Alt+F12
+  Quick Type Definition   
+  Parameter Information   Ctrl+Shift+Space
+  Context Info   Alt+Q
+  -----
+  Recent Locations   Ctrl+Shift+E
+  Recent Files   
+  Recently Changed Files   
+  Recent Changes   
+  -----
+  Compare With…   Ctrl+D
+  Compare with Clipboard   
+  -----
+  Quick Switch Scheme…   
+  [>] Active Editor
+  -----
+  Increase Font Size in All Editors   Ctrl+Shift+.
+  Decrease Font Size in All Editors   Ctrl+Shift+Comma
+  Reset Font Size in All Editors   
+  -----
+  [>] Bidi Text Base Direction
+
+######## menu Navigate {GoToMenu}
+== popup menu 313x639
+  Back   Ctrl+Minus
+  Forward   Ctrl+Shift+Minus  (disabled)
+  -----
+  Search Everywhere   Ctrl+T
+  -----
+  Class...   
+  File…   Ctrl+Shift+T
+  Symbol…   Ctrl+Alt+Shift+T
+  Text…   Ctrl+Alt+Shift+E
+  Line:Column…   Ctrl+G
+  Endpoint…   Ctrl+Shift+\
+  -----
+  Next Highlighted Error   Alt+Page Down
+  Previous Highlighted Error   Alt+Page Up
+  -----
+  Last Edit Location   Ctrl+Shift+Backspace
+  Next Edit Location     (disabled)
+  -----
+  [>] Navigate in File
+  -----
+  Select In…   Alt+F1
+  Jump to Navigation Bar   Ctrl+F2
+  -----
+  Declaration or Usages   F12
+  Related Files   Ctrl+Alt+F7
+  -----
+  File Member   Alt+\
+  File Path   
+  -----
+  Navigate To…   Alt+`
+
+######## menu Code {CodeMenu}
+== popup menu 333x725
+  Override Members   
+  Implement Missing Members   Ctrl+Shift+I
+  Generate Code…   Alt+Insert
+  -----
+  [>] Code Completion
+  -----
+  Inspect Code…   Alt+F11
+  [>] Analyze Code
+  -----
+  Insert Live Template…   Ctrl+K, X
+  Save as Live Template…     (disabled)
+  -----
+  Surround with Template…   
+  Unwrap/Remove…   Ctrl+Shift+Delete  (disabled)
+  -----
+  [>] Folding
+  -----
+  Comment with Line Comment   Ctrl+Alt+/
+  Comment with Block Comment   Ctrl+Shift+/
+  Reformat Code   Ctrl+Alt+Enter
+  Reformat and Cleanup…   Ctrl+E, C
+  Silent Reformat and Cleanup   Ctrl+E, F
+  Auto-Indent Lines   
+  Optimize Imports   Ctrl+R, G
+  Rearrange Code   
+  -----
+  Move Statement Down   Ctrl+Alt+Shift+Down
+  Move Statement Up   Ctrl+Alt+Shift+Up
+  Move Left   Ctrl+Alt+Shift+Left
+  Move Right   Ctrl+Alt+Shift+Right
+  Move Line Down   Alt+Down
+  Move Line Up   Alt+Up
+
+######## menu Refactor {RefactoringMenu}
+== popup menu 117x38
+  Nothing here   
+
+######## menu Build {BuildMenu}
+== popup menu 117x38
+  Nothing here   
+
+######## menu Run {RunMenu}
+== popup menu 345x750
+  Run 'Web: http'   Ctrl+F5
+  Debug 'Web: http'   Alt+F5
+  [>] Run with Profiler  (disabled)
+  Profile 'Web: http' with Timeline   
+  -----
+  Run…   Ctrl+Alt+Shift+R
+  Debug…   Alt+Shift+F9
+  Attach to Process…   Ctrl+Alt+P
+  Reattach to Process…   Alt+Shift+P  (disabled)
+  Attach to Remote Process…   
+  Attach to Unity Process…   
+  Attach to an Unstarted Process…   
+  Debug Core Dump…   
+  Open Core Dump…   
+  Profile Running Process…   
+  Edit Configurations…   
+  [>] Switch Profiling Configuration
+  -----
+  Stop   Shift+F5  (disabled)
+  Stop Background Processes…   Ctrl+Shift+F2  (disabled)
+  Show Running List     (disabled)
+  -----
+  [>] Debugging Actions
+  [>] Toggle Breakpoint
+  View Breakpoints and Exceptions…   Ctrl+Alt+B
+  Remove All Line Breakpoints   Ctrl+Shift+F9
+  Stop On Exception…   
+  -----
+  [>] Test History  (disabled)
+  Import Tests from File…   
+  Manage Coverage Reports…   Ctrl+Alt+F6
+
+######## menu Tests {Rider.UnitTesting.MainMenu}
+== popup menu 303x803
+  Unit Testing Quick List…   Alt+Shift+U
+  -----
+  Run Unit Test   Ctrl+U, R  (disabled)
+  Debug Unit Test   Ctrl+U, D  (disabled)
+  Cover Unit Test     (disabled)
+  Profile Unit Test     (disabled)
+  -----
+  Run Current Session   Ctrl+U, Y  (disabled)
+  Cover Current Session     (disabled)
+  Profile Current Session     (disabled)
+  -----
+  Run All Tests from Solution   Ctrl+U, L
+  Cover All Tests from Solution   Ctrl+U, K
+  Profile All Tests From Solution   
+  -----
+  Repeat Previous Run   Ctrl+U, U  (disabled)
+  Rerun Failed Tests   Ctrl+U, F  (disabled)
+  Run Unit Tests Until Fail   Ctrl+U, W  (disabled)
+  Debug Unit Tests Until Fail     (disabled)
+  Stop Execution   Ctrl+U, S  (disabled)
+  -----
+  Append Tests to Session   Ctrl+U, A
+  Create New Session   Ctrl+U, N
+  Create Unit Test   Ctrl+U, C
+  Append Contained Tests     (disabled)
+  Remove Selected Test     (disabled)
+  Clear Test Result     (disabled)
+  -----
+  [>] Navigation
+  Refresh Unit Test Tree   
+  Unit Testing Settings…   
+  -----
+  [>] Unit Tests Tool Window Actions
+  [>] Session Options  (disabled)
+  [>] Help
+
+######## menu Tools {ToolsMenu}
+== popup menu 385x611
+  [>] NuGet
+  -----
+  Create Command Line Launcher…   
+  -----
+  [>] Services
+  [>] Markdown
+  [>] XML Actions
+  [>] Vagrant
+  Start SSH Session…   
+  [>] HTTP Client
+  [>] Qodana
+  Localization Manager   
+  [>] Architecture
+  IL Viewer   Ctrl+Alt+D
+  Assembly Explorer   
+  Open Roslyn Visualizer   
+  [>] C# Interactive
+  Generate GUID…   
+  [>] iOS
+  Connect to Database…   
+  Schema Compare...   
+  [>] F# Interactive
+  [>] Entity Framework Core
+  -----
+  Analyze Stack Trace or Thread Dump…   Ctrl+E, Ctrl+T
+
+######## menu VCS {VcsGroups}
+== popup menu 263x256
+  Enable Version Control Integration…   
+  -----
+  VCS Operations Popup…   
+  -----
+  Apply Patch from Clipboard…     (disabled)
+  -----
+  Get from Version Control…   
+  [>] Browse VCS Repository
+  -----
+  Create Git Repository…   
+  Share Project on GitLab   
+  Share Project on GitHub   
+
+######## menu Window {WindowMenu}
+== popup menu 289x247
+  [>] Layout Settings
+  -----
+  [>] Active Tool Window
+  [>] Editor Tabs
+  [>] Notifications
+  [>] Processes
+  -----
+  Next Solution Window   Ctrl+Alt+]  (disabled)
+  Previous Solution Window   Ctrl+Alt+[  (disabled)
+  -----
+  DebugPlayground   
+
+######## menu Help {HelpMenu}
+== popup menu 247x578
+  Find Action…   Ctrl+Q
+  -----
+  Help   Ctrl+F1
+  -----
+  What's New in JetBrains Rider   
+  -----
+  JetBrains Rider on YouTube   
+  Keyboard Shortcuts PDF   
+  -----
+  Contact Support…   
+  Submit Feedback…   
+  -----
+  Collect Logs and Diagnostic Data   
+  Start CPU Usage Profiling   
+  Report a Bug…   
+  -----
+  Capture Memory Snapshot   
+  -----
+  [>] Diagnostic Tools
+  Change Memory Settings   
+  Edit Custom Properties…   
+  Edit Custom VM Options…   
+  Delete Leftover IDE Directories…   
+  -----
+  Manage Licenses   
+  Check for Updates…   
+  About   
+

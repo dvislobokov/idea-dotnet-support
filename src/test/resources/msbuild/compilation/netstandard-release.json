@@ -1,0 +1,33 @@
+{
+ "properties": {
+  "DefineConstants": "TRACE;RELEASE;NETSTANDARD;NETSTANDARD2_0;NETSTANDARD1_0_OR_GREATER;NETSTANDARD1_1_OR_GREATER;NETSTANDARD1_2_OR_GREATER;NETSTANDARD1_3_OR_GREATER;NETSTANDARD1_4_OR_GREATER;NETSTANDARD1_5_OR_GREATER;NETSTANDARD1_6_OR_GREATER;NETSTANDARD2_0_OR_GREATER",
+  "LangVersion": "7.3",
+  "Nullable": "",
+  "ImplicitUsings": "",
+  "RootNamespace": "Std",
+  "TargetFramework": "netstandard2.0",
+  "MaxSupportedLangVersion": "7.3",
+  "TargetFrameworkIdentifier": ".NETStandard",
+  "TargetFrameworkVersion": "v2.0",
+  "TargetPlatformIdentifier": "Windows",
+  "Configuration": "Release",
+  "Platform": "AnyCPU",
+  "UsingMicrosoftNETSdk": "true"
+ },
+ "items": {
+  "Compile": [
+   {
+    "include": "C:\\src\\Std\\Lib.cs",
+    "metadata": {}
+   }
+  ],
+  "Using": []
+ },
+ "imports": [],
+ "targetFrameworks": [
+  "netstandard2.0"
+ ],
+ "warning": null,
+ "milliseconds": 0,
+ "reused": false
+}

@@ -1,0 +1,24 @@
+# C# models of the ML completion engine (trained 2026-10-07 on the server, see idea-ml-completion CHANGELOG e15 / e18)
+
+| file | what | size | sha256 (prefix) | use |
+|---|---|---|---|---|
+| `cs50m-caret-ft5e5.cml` | **the network of the ML build since 0.1.159** (`CSharpMlModels.NN_MODEL`; `-Pml.modelSize=50`, the default, since 0.1.164): the cs50m architecture (d640 × 10, 49.8 M params, int8) and vocabulary, trained from scratch on 6.47 G tokens (27 948 repositories, 2026-10-10) and fine-tuned on 1.05 M caret positions in the plugin's prompt (lr 5e-5); 12 000 positions of unseen repositories: rest of line exact 43.8 % (`cs50m-e3-lr2e3`: 32.7 %), shown at the gate 28.9 % (15.4 %), shown lines exact 89.6 % (81.3 %) | 50.1 MB | `0bd524bb6edf900a` | **inline (grey-text) completion**; training and reports: csharp-dataset-prepare `docs/experiments/` |
+| `cs102m-caret-ft5e5.cml` | **the network of `-Pml.modelSize=100`** (0.1.164, `CSharpMlModels.NN_MODEL_100`, the zip gets `-ml-100m`) — the 100 M network: engine preset go102m (d768 × 12, 12 heads, 4 KV heads, FFN 2560; 102.3 M params, int8), the same vocabulary, data and recipe as `cs50m-caret-ft5e5` (from scratch on 6.47 G tokens, fine-tuned on 1.05 M caret positions, lr 5e-5). 12 000 positions of unseen repositories: rest of line exact 46.1 % (`cs50m-caret-ft5e5`: 43.8 %, +2.4 p.p., 95 % CI +1.7…+3.0), shown at the gate 31.6 % (28.9 %), shown lines exact 89.7 % (89.6 %). About 2× the latency and memory of the 50 M network; a models directory of the settings may hold it under its own name (the plugin knows both names, the bigger wins when both are there) | 102.8 MB | `77ea33f06bb6d568` | candidate; reports: csharp-dataset-prepare `docs/experiments/` (experiment 06) |
+| `cs-16384.bpe` | the BPE vocabulary of that model (`tokenizerSha256` in the .cml meta must match: `bc9b48da…`) | 137 KB | `bc9b48daedd84612` | loaded with the model |
+| `e15-a.cml` | n-gram LM, order 5, MKN, 24-bit fingerprints (ppl 5.3 on the test fold) | 32.7 MB | `5c8b6e466bea6124` | ranker feature `lm_logprob`, per-file cache; optional |
+| `e18-rank.cml` | **ranker on real plugin lists** (127 rank-fold repos, 22 k lists exported by `mlDataset` 0.1.130; 224 weights = 13 common + 19 language features × context kinds) | 2 KB | — | the C# ranker to ship: MRR 0.711 / top-1 0.588 vs the plugin's rule order 0.526 / 0.367 (test split by repository, 4 670 lists); needs the weigher `CSharpMlCompletionRanker` on the same `CSharpMlFeatures` + a parity test with the export |
+| `e19-rank-gbdt.cml` | **GBDT ranker on the same real lists** (engine e19: 200 trees, 100 KB; 26 held-out repos MRR 0.759 / top-1 0.651 vs linear e18 0.713 / 0.589, plugin rules 0.530 / 0.370; 0.3 ms per list of 50 on one core). The ranker of the ML build (`CSharpMlModels.RANKER`), loaded through `Rankers.read`. |
+| `e15-a-rank.cml` | **proxy** ranker (linear, trained on synthetic candidate lists from the corpus) | 1.7 KB | `4313a6c148c35858` | pipeline debugging only — NOT for users: on Go the same kind of proxy ranker scored below the plugin's own ordering on real lists (MRR 0.518 vs 0.527); a real C# ranker needs lists exported from this plugin (e18) |
+
+Removed from the repository on 2026-10-12 (the history was squashed): `cs31m-e2-lr2e3.cml` (the 31 M network of the ML build
+before 0.1.159) and `cs50m-e3-lr2e3.cml` (the big network of `-Pml.big`); the training server keeps them.
+
+Measured quality of `cs31m-e2-lr2e3` (the removed 31 M network) (3 000 test positions, SPM prompt, token healing, repetition guard — the behaviour
+`NnCompletion.complete()` implements): rest of line exact 50.2 % of all positions, 62.6 % when ≤ 8 tokens remain; at
+`confProd ≥ 0.8` 20 % of positions get a suggestion and 97 % of those lines are exactly right. Repositories created
+after 2026-05 (never seen by anything): 40.9 %.
+
+Latency with the native kernels (8 threads, x86 AVX-512 / Apple M1): cold 1 500-token prefill ≈ 150 ms, incremental line
+while typing ≈ 25 ms; scalar Kotlin fallback ≈ 3.3× slower. Memory: ~100 MB per loaded model (weights + packed q8 + KV cache).
+
+Source of truth and training: https://github.com/dvislobokov/idea-ml-completion (`csharp/models/` on the training server).

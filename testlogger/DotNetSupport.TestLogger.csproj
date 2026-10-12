@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The live events of `dotnet test` (VSTest) for the test tree of the plugin: a logger (results as they come) and a data collector
+    (the start of every test), both writing JSON lines into files the plugin reads while the tests run (testing/LiveTestEvents.kt).
+
+    The plugin carries this file and TestLogger.cs as they are and builds them on the machine of the user (cli/DotNetHelper); the
+    library is netstandard2.0 whatever SDK builds it (HelperFramework is ignored), because it is loaded by the vstest.console and the
+    datacollector of whatever SDK runs the tests. VSTest finds it through the test adapter path: loggers are looked for in files
+    ending with `Logger.dll`, collectors in files ending with `Collector.dll`, so the build makes a second assembly of the same source.
+    The object model is only compiled against: the test platform brings its own (assembly version 15.0.0.0 in every release).
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <AssemblyName>DotNetSupport.TestLogger</AssemblyName>
+    <RootNamespace>DotNetSupport.TestLogger</RootNamespace>
+    <DebugType>none</DebugType>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.TestPlatform.ObjectModel" Version="17.12.0" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+  <!-- the same source once more as the collector assembly: a copy of the dll under another file name is not found by the datacollector -->
+  <Target Name="BuildCollector" AfterTargets="Build" Condition="'$(AssemblyName)' == 'DotNetSupport.TestLogger'">
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Build" Properties="AssemblyName=DotNetSupport.TestEventsCollector;IntermediateOutputPath=$(BaseIntermediateOutputPath)collector\;OutDir=$(OutDir)" />
+  </Target>
+</Project>

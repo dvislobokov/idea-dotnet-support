@@ -1,0 +1,1 @@
+{ int x = 0; while (x < 3) x++; do x--; while (x > 0); for (;;) break; foreach (var y in z) continue; }

@@ -1,0 +1,64 @@
+
+===== protocol-before-initialize =====
+-> threads  | 97ms ok=True {"threads": []}
+   ~ process {"name": "App.dll", "systemProcessId": 2391, "isLocalProcess": true, "startMethod": "launch"}
+-> launch {"program": "<dap>/t/App/bin/Debug/net10.0/App.dll"} | 36ms ok=True null
+-> evaluate {"expression": "1+1"} | 2ms ok=False The debuggee is not running.
+-> noSuchCommand {"x": 1} | 2ms ok=False Unsupported request 'noSuchCommand'.
+   adapter exit code: 0
+
+===== protocol-garbage =====
+   ~ initialized null
+-> threads  | 1415ms ok=False ADAPTER EXITED (code 1)
+   adapter alive after garbage: False (exit code 1)
+   adapter exit code: 1
+
+===== protocol-wrong-state =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 2424, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 160, "column": 13, "endLine": 160, "endColumn": 47}}
+   ~ stopped {"reason": "breakpoint", "threadId": 2424, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   stack: DebugTarget.Output.Sleeper():160 <- Program.<Main>$():18  total=3
+   -- while running:
+-> stackTrace {"threadId": 2424} | 2ms ok=False The debuggee is running.
+-> scopes {"frameId": 1} | 0ms ok=False The debuggee is running.
+-> variables {"variablesReference": 4} | 0ms ok=False The debuggee is running.
+-> evaluate {"expression": "i", "frameId": 1} | 1ms ok=False The debuggee is running.
+-> evaluate {"expression": "1 + 1"} | 0ms ok=False The debuggee is running.
+-> next {"threadId": 2424} | 1ms ok=False The debuggee is running.
+-> continue {"threadId": 2424} | 0ms ok=True {"allThreadsContinued": true}
+   ~ stopped {"reason": "pause", "threadId": 2424, "allThreadsStopped": true}
+-> pause {"threadId": 123456} | 6ms ok=True null
+   -- while stopped again ({"reason": "pause", "threadId": 2424, "allThreadsStopped": true}):
+-> variables {"variablesReference": 4} | 1ms ok=False Unknown variables reference 4.
+-> variables {"variablesReference": 987654} | 0ms ok=False Unknown variables reference 987654.
+-> scopes {"frameId": 987654} | 0ms ok=False Unknown frame 987654.
+-> stackTrace {"threadId": 987654} | 5ms ok=False Error HRESULT ERROR_INVALID_PARAMETER has been returned from a call to a COM component.
+-> stackTrace  | 1ms ok=False Error HRESULT ERROR_INVALID_PARAMETER has been returned from a call to a COM component.
+-> evaluate {"frameId": 1} | 0ms ok=False Unknown frame 1.
+-> continue {"threadId": 987654} | 0ms ok=True {"allThreadsContinued": true}
+   ! NO stopped event within 3s (expected (should NOT resume on a wrong thread id?))
+-> source {"sourceReference": 0, "source": {"path": "<dap>/t/App/Rest.cs"}} | 3ms ok=False Unknown source reference 0.
+-> source {"sourceReference": 42} | 0ms ok=False Unknown source reference 42.
+-> completions {"text": "Conso", "column": 6} | 0ms ok=False Unsupported request 'completions'.
+-> stepInTargets {"frameId": 1} | 0ms ok=False Unsupported request 'stepInTargets'.
+-> dataBreakpointInfo {"name": "i"} | 0ms ok=False Unsupported request 'dataBreakpointInfo'.
+-> readMemory {"memoryReference": "0x0", "count": 8} | 0ms ok=False Unsupported request 'readMemory'.
+-> disassemble {"memoryReference": "0x0", "instructionCount": 4} | 0ms ok=False Unsupported request 'disassemble'.
+-> configurationDone  | 0ms ok=True null
+-> launch {"program": "<dap>/t/App/bin/Debug/net10.0/App.dll"} | 1ms ok=False A debuggee is already running.
+-> initialize {"adapterID": "again"} | 0ms ok=True {"supportsConfigurationDoneRequest": true, "supportsTerminateRequest": true, "su...(1476)
+   ~ initialized null
+   adapter exit code: 0
+
+===== protocol-spam =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 2458, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Rest.cs", "path": "<dap>/t/App/Rest.cs"}, "line": 160, "column": 13, "endLine": 160, "endColumn": 47}}
+   ~ stopped {"reason": "breakpoint", "threadId": 2458, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   10 x next without waiting: ok=1 failed=9 first failure=The debuggee is running.
+   ~ stopped {"reason": "step", "threadId": 2458, "allThreadsStopped": true}
+   stopped events seen: 2
+-> cancel {"requestId": 1} | 4ms ok=True null
+-> cancel {"requestId": 99999} | 0ms ok=True null
+   adapter exit code: 0

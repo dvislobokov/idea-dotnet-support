@@ -1,0 +1,12 @@
+root = true
+
+[*.cs]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+csharp_new_line_before_open_brace = none
+csharp_new_line_before_else = false
+csharp_indent_switch_labels = false
+csharp_space_after_keywords_in_control_flow_statements = false
+csharp_space_between_method_call_name_and_opening_parenthesis = true
+csharp_space_between_parentheses = expressions

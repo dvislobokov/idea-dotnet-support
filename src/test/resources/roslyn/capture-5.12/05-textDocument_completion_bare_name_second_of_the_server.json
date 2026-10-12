@@ -1,0 +1,197 @@
+{
+ "method": "textDocument/completion",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "position": {
+   "line": 260,
+   "character": 8
+  },
+  "context": {
+   "triggerKind": 1
+  }
+ },
+ "ms": 11.0,
+ "result": {
+  "isIncomplete": true,
+  "itemDefaults": {
+   "commitCharacters": [],
+   "editRange": {
+    "start": {
+     "line": 260,
+     "character": 8
+    },
+    "end": {
+     "line": 260,
+     "character": 8
+    }
+   },
+   "data": {
+    "ResultId": 1,
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    }
+   }
+  },
+  "items": [
+   {
+    "label": "AbandonedMutexException",
+    "kind": 7,
+    "sortText": "0000",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Access",
+    "kind": 13,
+    "sortText": "0001",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "AccessViolationException",
+    "kind": 7,
+    "sortText": "0002",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Action",
+    "kind": 7,
+    "sortText": "0003",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Action<>",
+    "kind": 7,
+    "sortText": "0004Action",
+    "filterText": "Action",
+    "insertTextFormat": 1,
+    "textEditText": "Action"
+   },
+   {
+    "label": "Activator",
+    "kind": 7,
+    "sortText": "0005",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "Activity",
+    "kind": 7,
+    "sortText": "0006",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ActivityChangedEventArgs",
+    "kind": 22,
+    "sortText": "0007",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ActivityContext",
+    "kind": 22,
+    "sortText": "0008",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ActivityCreationOptions<>",
+    "kind": 22,
+    "sortText": "0009ActivityCreationOptions",
+    "filterText": "ActivityCreationOptions",
+    "insertTextFormat": 1,
+    "textEditText": "ActivityCreationOptions"
+   },
+   {
+    "label": "ActivityEvent",
+    "kind": 22,
+    "sortText": "0010",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ActivityIdFormat",
+    "kind": 13,
+    "sortText": "0011",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ActivityKind",
+    "kind": 13,
+    "sortText": "0012",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ActivityLink",
+    "kind": 22,
+    "sortText": "0013",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ActivityListener",
+    "kind": 7,
+    "sortText": "0014",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ActivitySamplingResult",
+    "kind": 13,
+    "sortText": "0015",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ActivitySource",
+    "kind": 7,
+    "sortText": "0016",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ActivitySpanId",
+    "kind": 22,
+    "sortText": "0017",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ActivityStatusCode",
+    "kind": 13,
+    "sortText": "0018",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ActivityTagsCollection",
+    "kind": 7,
+    "sortText": "0019",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ActivityTraceFlags",
+    "kind": 13,
+    "sortText": "0020",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ActivityTraceId",
+    "kind": 22,
+    "sortText": "0021",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "AggregateException",
+    "kind": 7,
+    "sortText": "0022",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "ApartmentState",
+    "kind": 13,
+    "sortText": "0023",
+    "insertTextFormat": 1
+   },
+   {
+    "label": "AppContext",
+    "kind": 7,
+    "sortText": "0024",
+    "insertTextFormat": 1
+   },
+   {
+    "_truncated": 611
+   }
+  ]
+ }
+}

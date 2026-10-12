@@ -1,0 +1,103 @@
+{
+ "method": "textDocument/rangeFormatting",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "range": {
+   "start": {
+    "line": 263,
+    "character": 8
+   },
+   "end": {
+    "line": 263,
+    "character": 34
+   }
+  },
+  "options": {
+   "tabSize": 4,
+   "insertSpaces": true
+  }
+ },
+ "ms": 2.9,
+ "result": [
+  {
+   "range": {
+    "start": {
+     "line": 263,
+     "character": 12
+    },
+    "end": {
+     "line": 263,
+     "character": 14
+    }
+   },
+   "newText": ""
+  },
+  {
+   "range": {
+    "start": {
+     "line": 263,
+     "character": 19
+    },
+    "end": {
+     "line": 263,
+     "character": 19
+    }
+   },
+   "newText": " "
+  },
+  {
+   "range": {
+    "start": {
+     "line": 263,
+     "character": 20
+    },
+    "end": {
+     "line": 263,
+     "character": 20
+    }
+   },
+   "newText": " "
+  },
+  {
+   "range": {
+    "start": {
+     "line": 263,
+     "character": 27
+    },
+    "end": {
+     "line": 263,
+     "character": 28
+    }
+   },
+   "newText": ""
+  },
+  {
+   "range": {
+    "start": {
+     "line": 263,
+     "character": 29
+    },
+    "end": {
+     "line": 263,
+     "character": 30
+    }
+   },
+   "newText": ""
+  },
+  {
+   "range": {
+    "start": {
+     "line": 263,
+     "character": 31
+    },
+    "end": {
+     "line": 263,
+     "character": 33
+    }
+   },
+   "newText": ""
+  }
+ ]
+}

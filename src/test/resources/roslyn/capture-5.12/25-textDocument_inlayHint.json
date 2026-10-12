@@ -1,0 +1,20 @@
+{
+ "method": "textDocument/inlayHint",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "range": {
+   "start": {
+    "line": 243,
+    "character": 0
+   },
+   "end": {
+    "line": 266,
+    "character": 0
+   }
+  }
+ },
+ "ms": 11.0,
+ "result": []
+}

@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Code metrics of C# projects, as Analyze | Calculate Code Metrics of Visual Studio: maintainability index, cyclomatic complexity,
+    depth of inheritance, class coupling, lines of code. Reads a JSON description of the projects (sources, references, defines - the
+    plugin asks MSBuild for them) and prints the metrics of every type and member as JSON.
+
+    The plugin carries this file and Program.cs as they are and builds them on the machine of the user (cli/DotNetHelper), for the
+    framework of the SDK that is there: `-p:HelperFramework=net10.0` with the SDK 10. It needs Roslyn from NuGet, so its first build
+    needs the feed (or the package in the cache of the machine). Without the property (a build in the repository): net8.0.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework Condition="'$(HelperFramework)' != ''">$(HelperFramework)</TargetFramework>
+    <RollForward>LatestMajor</RollForward>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>CodeMetrics</AssemblyName>
+    <RootNamespace>DotNetSupport.CodeMetrics</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <DebugType>none</DebugType>
+    <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+  </ItemGroup>
+</Project>

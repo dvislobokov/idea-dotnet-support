@@ -1,0 +1,8 @@
+<spot>if</spot> (kind == Kind.A)
+{
+    Run();
+}
+else
+{
+    Stop();
+}

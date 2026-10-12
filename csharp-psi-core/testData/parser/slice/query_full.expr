@@ -1,0 +1,1 @@
+from int x in xs join y in ys on x equals y into g let z = x * 2 where z > 1 orderby z descending, x ascending, y select new { x, z }

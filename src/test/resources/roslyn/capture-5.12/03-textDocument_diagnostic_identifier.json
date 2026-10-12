@@ -1,0 +1,60 @@
+{
+ "method": "textDocument/diagnostic",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "identifier": "DocumentCompilerSemantic"
+ },
+ "ms": 49.0,
+ "result": {
+  "kind": "full",
+  "resultId": "PublicDocumentPullDiagnosticsHandler(category: DocumentCompilerSemantic):1",
+  "items": [
+   {
+    "range": {
+     "start": {
+      "line": 258,
+      "character": 21
+     },
+     "end": {
+      "line": 258,
+      "character": 32
+     }
+    },
+    "severity": 1,
+    "code": "CS0103",
+    "codeDescription": {
+     "href": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS0103)"
+    },
+    "message": "The name 'MissingType' does not exist in the current context",
+    "tags": [
+     2147483642,
+     2147483645
+    ]
+   },
+   {
+    "range": {
+     "start": {
+      "line": 257,
+      "character": 12
+     },
+     "end": {
+      "line": 257,
+      "character": 18
+     }
+    },
+    "severity": 2,
+    "code": "CS0219",
+    "codeDescription": {
+     "href": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS0219)"
+    },
+    "message": "The variable 'unused' is assigned but its value is never used",
+    "tags": [
+     2147483642,
+     2147483645
+    ]
+   }
+  ]
+ }
+}

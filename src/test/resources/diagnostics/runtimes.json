@@ -1,0 +1,24 @@
+{
+  "75844": {
+    "flavor": "core",
+    "version": "9.0.6",
+    "bitness": 64
+  },
+  "31936": {
+    "flavor": "desktop",
+    "version": "4.8.9345.0",
+    "bitness": 64
+  },
+  "73936": {
+    "flavor": "desktop",
+    "version": "4.8.9345.0",
+    "bitness": 32
+  },
+  "37532": {
+    "flavor": null,
+    "version": null,
+    "bitness": 64
+  },
+  "4": null,
+  "999999": null
+}

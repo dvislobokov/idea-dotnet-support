@@ -1,0 +1,2968 @@
+{
+ "method": "textDocument/codeAction",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "range": {
+   "start": {
+    "line": 257,
+    "character": 12
+   },
+   "end": {
+    "line": 257,
+    "character": 22
+   }
+  },
+  "context": {
+   "diagnostics": [
+    {
+     "range": {
+      "start": {
+       "line": 257,
+       "character": 12
+      },
+      "end": {
+       "line": 257,
+       "character": 18
+      }
+     },
+     "severity": 3,
+     "code": "IDE0059",
+     "codeDescription": {
+      "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0059"
+     },
+     "message": "Unnecessary assignment of a value to 'unused'",
+     "tags": [
+      2147483642,
+      2147483645,
+      1
+     ]
+    },
+    {
+     "range": {
+      "start": {
+       "line": 257,
+       "character": 12
+      },
+      "end": {
+       "line": 257,
+       "character": 18
+      }
+     },
+     "severity": 2,
+     "code": "CS0219",
+     "codeDescription": {
+      "href": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS0219)"
+     },
+     "message": "The variable 'unused' is assigned but its value is never used",
+     "tags": [
+      2147483642,
+      2147483645
+     ]
+    }
+   ],
+   "triggerKind": 1
+  }
+ },
+ "ms": 152.3,
+ "result": [
+  {
+   "title": "Introduce constant",
+   "kind": "refactor",
+   "command": {
+    "title": "Introduce constant",
+    "command": "roslyn.client.nestedCodeAction",
+    "arguments": [
+     {
+      "UniqueIdentifier": "Introduce constant",
+      "CustomTags": [
+       "Introduce Variable Code Action Provider"
+      ],
+      "Range": {
+       "start": {
+        "line": 257,
+        "character": 12
+       },
+       "end": {
+        "line": 257,
+        "character": 22
+       }
+      },
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      },
+      "CodeActionPath": [
+       "Introduce constant"
+      ],
+      "NestedCodeActions": [
+       {
+        "title": "Introduce constant for '1'",
+        "kind": "refactor",
+        "data": {
+         "UniqueIdentifier": "Introduce constant for '1'",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Introduce constant",
+          "Introduce constant for '1'"
+         ]
+        }
+       },
+       {
+        "title": "Introduce constant for all occurrences of '1'",
+        "kind": "refactor",
+        "data": {
+         "UniqueIdentifier": "Introduce constant for all occurrences of '1'",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Introduce constant",
+          "Introduce constant for all occurrences of '1'"
+         ]
+        }
+       },
+       {
+        "title": "Introduce local constant for '1'",
+        "kind": "refactor",
+        "data": {
+         "UniqueIdentifier": "Introduce local constant for '1'",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Introduce constant",
+          "Introduce local constant for '1'"
+         ]
+        }
+       },
+       {
+        "title": "Introduce local constant for all occurrences of '1'",
+        "kind": "refactor",
+        "data": {
+         "UniqueIdentifier": "Introduce local constant for all occurrences of '1'",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Introduce constant",
+          "Introduce local constant for all occurrences of '1'"
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "data": {
+    "UniqueIdentifier": "Introduce constant",
+    "CustomTags": [
+     "Introduce Variable Code Action Provider"
+    ],
+    "Range": {
+     "start": {
+      "line": 257,
+      "character": 12
+     },
+     "end": {
+      "line": 257,
+      "character": 22
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    },
+    "CodeActionPath": [
+     "Introduce constant"
+    ],
+    "NestedCodeActions": [
+     {
+      "title": "Introduce constant for '1'",
+      "kind": "refactor",
+      "data": {
+       "UniqueIdentifier": "Introduce constant for '1'",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Introduce constant",
+        "Introduce constant for '1'"
+       ]
+      }
+     },
+     {
+      "title": "Introduce constant for all occurrences of '1'",
+      "kind": "refactor",
+      "data": {
+       "UniqueIdentifier": "Introduce constant for all occurrences of '1'",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Introduce constant",
+        "Introduce constant for all occurrences of '1'"
+       ]
+      }
+     },
+     {
+      "title": "Introduce local constant for '1'",
+      "kind": "refactor",
+      "data": {
+       "UniqueIdentifier": "Introduce local constant for '1'",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Introduce constant",
+        "Introduce local constant for '1'"
+       ]
+      }
+     },
+     {
+      "title": "Introduce local constant for all occurrences of '1'",
+      "kind": "refactor",
+      "data": {
+       "UniqueIdentifier": "Introduce local constant for all occurrences of '1'",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Introduce constant",
+        "Introduce local constant for all occurrences of '1'"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "title": "Convert number",
+   "kind": "refactor",
+   "command": {
+    "title": "Convert number",
+    "command": "roslyn.client.nestedCodeAction",
+    "arguments": [
+     {
+      "UniqueIdentifier": "Convert number",
+      "CustomTags": [
+       "ConvertNumericLiteral"
+      ],
+      "Range": {
+       "start": {
+        "line": 257,
+        "character": 12
+       },
+       "end": {
+        "line": 257,
+        "character": 22
+       }
+      },
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      },
+      "CodeActionPath": [
+       "Convert number"
+      ],
+      "NestedCodeActions": [
+       {
+        "title": "Convert to binary",
+        "kind": "refactor",
+        "data": {
+         "UniqueIdentifier": "Convert to binary",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Convert number",
+          "Convert to binary"
+         ]
+        }
+       },
+       {
+        "title": "Convert to hex",
+        "kind": "refactor",
+        "data": {
+         "UniqueIdentifier": "Convert to hex",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Convert number",
+          "Convert to hex"
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "data": {
+    "UniqueIdentifier": "Convert number",
+    "CustomTags": [
+     "ConvertNumericLiteral"
+    ],
+    "Range": {
+     "start": {
+      "line": 257,
+      "character": 12
+     },
+     "end": {
+      "line": 257,
+      "character": 22
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    },
+    "CodeActionPath": [
+     "Convert number"
+    ],
+    "NestedCodeActions": [
+     {
+      "title": "Convert to binary",
+      "kind": "refactor",
+      "data": {
+       "UniqueIdentifier": "Convert to binary",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Convert number",
+        "Convert to binary"
+       ]
+      }
+     },
+     {
+      "title": "Convert to hex",
+      "kind": "refactor",
+      "data": {
+       "UniqueIdentifier": "Convert to hex",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Convert number",
+        "Convert to hex"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "title": "Use implicit type",
+   "kind": "refactor",
+   "data": {
+    "UniqueIdentifier": "Use implicit type",
+    "CustomTags": [
+     "Use Implicit Type Code Action Provider"
+    ],
+    "Range": {
+     "start": {
+      "line": 257,
+      "character": 12
+     },
+     "end": {
+      "line": 257,
+      "character": 22
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    },
+    "CodeActionPath": [
+     "Use implicit type"
+    ],
+    "NestedCodeActions": []
+   }
+  },
+  {
+   "title": "Extract method",
+   "kind": "refactor.extract",
+   "data": {
+    "UniqueIdentifier": "Extract method",
+    "CustomTags": [
+     "Extract Method Code Action Provider"
+    ],
+    "Range": {
+     "start": {
+      "line": 257,
+      "character": 12
+     },
+     "end": {
+      "line": 257,
+      "character": 22
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    },
+    "CodeActionPath": [
+     "Extract method"
+    ],
+    "NestedCodeActions": []
+   }
+  },
+  {
+   "title": "Extract local function",
+   "kind": "refactor.extract",
+   "data": {
+    "UniqueIdentifier": "Extract local function",
+    "CustomTags": [
+     "Extract Method Code Action Provider"
+    ],
+    "Range": {
+     "start": {
+      "line": 257,
+      "character": 12
+     },
+     "end": {
+      "line": 257,
+      "character": 22
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    },
+    "CodeActionPath": [
+     "Extract local function"
+    ],
+    "NestedCodeActions": []
+   }
+  },
+  {
+   "title": "Remove redundant assignment",
+   "kind": "quickfix",
+   "diagnostics": [
+    {
+     "range": {
+      "start": {
+       "line": 257,
+       "character": 12
+      },
+      "end": {
+       "line": 257,
+       "character": 18
+      }
+     },
+     "severity": 3,
+     "code": "IDE0059",
+     "codeDescription": {
+      "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0059"
+     },
+     "message": "Unnecessary assignment of a value to 'unused'",
+     "tags": [
+      2147483642,
+      2147483645,
+      1
+     ]
+    }
+   ],
+   "data": {
+    "UniqueIdentifier": "Remove redundant assignment",
+    "CustomTags": [
+     "RemoveUnusedValues"
+    ],
+    "Range": {
+     "start": {
+      "line": 257,
+      "character": 12
+     },
+     "end": {
+      "line": 257,
+      "character": 22
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    },
+    "CodeActionPath": [
+     "Remove redundant assignment"
+    ],
+    "NestedCodeActions": []
+   }
+  },
+  {
+   "title": "Fix All: Remove redundant assignment",
+   "kind": "quickfix",
+   "diagnostics": [
+    {
+     "range": {
+      "start": {
+       "line": 257,
+       "character": 12
+      },
+      "end": {
+       "line": 257,
+       "character": 18
+      }
+     },
+     "severity": 3,
+     "code": "IDE0059",
+     "codeDescription": {
+      "href": "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/style-rules/ide0059"
+     },
+     "message": "Unnecessary assignment of a value to 'unused'",
+     "tags": [
+      2147483642,
+      2147483645,
+      1
+     ]
+    }
+   ],
+   "command": {
+    "title": "Fix All: Remove redundant assignment",
+    "command": "roslyn.client.fixAllCodeAction",
+    "arguments": [
+     {
+      "UniqueIdentifier": "Fix All: Remove redundant assignment",
+      "CustomTags": [
+       "RemoveUnusedValues"
+      ],
+      "Range": {
+       "start": {
+        "line": 257,
+        "character": 12
+       },
+       "end": {
+        "line": 257,
+        "character": 22
+       }
+      },
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      },
+      "CodeActionPath": [
+       "Remove redundant assignment"
+      ],
+      "FixAllFlavors": [
+       "Document",
+       "Project",
+       "Solution",
+       "ContainingMember",
+       "ContainingType"
+      ]
+     }
+    ]
+   },
+   "data": {
+    "UniqueIdentifier": "Fix All: Remove redundant assignment",
+    "CustomTags": [
+     "RemoveUnusedValues"
+    ],
+    "Range": {
+     "start": {
+      "line": 257,
+      "character": 12
+     },
+     "end": {
+      "line": 257,
+      "character": 22
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    },
+    "CodeActionPath": [
+     "Remove redundant assignment"
+    ],
+    "FixAllFlavors": [
+     "Document",
+     "Project",
+     "Solution",
+     "ContainingMember",
+     "ContainingType"
+    ]
+   }
+  },
+  {
+   "title": "Remove unused variable",
+   "kind": "quickfix",
+   "diagnostics": [
+    {
+     "range": {
+      "start": {
+       "line": 257,
+       "character": 12
+      },
+      "end": {
+       "line": 257,
+       "character": 18
+      }
+     },
+     "severity": 2,
+     "code": "CS0219",
+     "codeDescription": {
+      "href": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS0219)"
+     },
+     "message": "The variable 'unused' is assigned but its value is never used",
+     "tags": [
+      2147483642,
+      2147483645
+     ]
+    }
+   ],
+   "data": {
+    "UniqueIdentifier": "Remove unused variable",
+    "CustomTags": [
+     "RemoveUnusedVariable"
+    ],
+    "Range": {
+     "start": {
+      "line": 257,
+      "character": 12
+     },
+     "end": {
+      "line": 257,
+      "character": 22
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    },
+    "CodeActionPath": [
+     "Remove unused variable"
+    ],
+    "NestedCodeActions": []
+   }
+  },
+  {
+   "title": "Fix All: Remove unused variable",
+   "kind": "quickfix",
+   "diagnostics": [
+    {
+     "range": {
+      "start": {
+       "line": 257,
+       "character": 12
+      },
+      "end": {
+       "line": 257,
+       "character": 18
+      }
+     },
+     "severity": 2,
+     "code": "CS0219",
+     "codeDescription": {
+      "href": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS0219)"
+     },
+     "message": "The variable 'unused' is assigned but its value is never used",
+     "tags": [
+      2147483642,
+      2147483645
+     ]
+    }
+   ],
+   "command": {
+    "title": "Fix All: Remove unused variable",
+    "command": "roslyn.client.fixAllCodeAction",
+    "arguments": [
+     {
+      "UniqueIdentifier": "Fix All: Remove unused variable",
+      "CustomTags": [
+       "RemoveUnusedVariable"
+      ],
+      "Range": {
+       "start": {
+        "line": 257,
+        "character": 12
+       },
+       "end": {
+        "line": 257,
+        "character": 22
+       }
+      },
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      },
+      "CodeActionPath": [
+       "Remove unused variable"
+      ],
+      "FixAllFlavors": [
+       "Document",
+       "Project",
+       "Solution",
+       "ContainingMember",
+       "ContainingType"
+      ]
+     }
+    ]
+   },
+   "data": {
+    "UniqueIdentifier": "Fix All: Remove unused variable",
+    "CustomTags": [
+     "RemoveUnusedVariable"
+    ],
+    "Range": {
+     "start": {
+      "line": 257,
+      "character": 12
+     },
+     "end": {
+      "line": 257,
+      "character": 22
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    },
+    "CodeActionPath": [
+     "Remove unused variable"
+    ],
+    "FixAllFlavors": [
+     "Document",
+     "Project",
+     "Solution",
+     "ContainingMember",
+     "ContainingType"
+    ]
+   }
+  },
+  {
+   "title": "Introduce parameter for '1'",
+   "kind": "refactor",
+   "command": {
+    "title": "Introduce parameter for '1'",
+    "command": "roslyn.client.nestedCodeAction",
+    "arguments": [
+     {
+      "UniqueIdentifier": "Introduce parameter for '1'",
+      "CustomTags": [
+       "IntroduceParameter"
+      ],
+      "Range": {
+       "start": {
+        "line": 257,
+        "character": 12
+       },
+       "end": {
+        "line": 257,
+        "character": 22
+       }
+      },
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      },
+      "CodeActionPath": [
+       "Introduce parameter for '1'"
+      ],
+      "NestedCodeActions": [
+       {
+        "title": "and update call sites directly",
+        "kind": "refactor",
+        "data": {
+         "UniqueIdentifier": "and update call sites directly",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Introduce parameter for '1'",
+          "and update call sites directly"
+         ]
+        }
+       },
+       {
+        "title": "into extracted method to invoke at call sites",
+        "kind": "refactor",
+        "data": {
+         "UniqueIdentifier": "into extracted method to invoke at call sites",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Introduce parameter for '1'",
+          "into extracted method to invoke at call sites"
+         ]
+        }
+       },
+       {
+        "title": "into new overload",
+        "kind": "refactor",
+        "data": {
+         "UniqueIdentifier": "into new overload",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Introduce parameter for '1'",
+          "into new overload"
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "data": {
+    "UniqueIdentifier": "Introduce parameter for '1'",
+    "CustomTags": [
+     "IntroduceParameter"
+    ],
+    "Range": {
+     "start": {
+      "line": 257,
+      "character": 12
+     },
+     "end": {
+      "line": 257,
+      "character": 22
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    },
+    "CodeActionPath": [
+     "Introduce parameter for '1'"
+    ],
+    "NestedCodeActions": [
+     {
+      "title": "and update call sites directly",
+      "kind": "refactor",
+      "data": {
+       "UniqueIdentifier": "and update call sites directly",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Introduce parameter for '1'",
+        "and update call sites directly"
+       ]
+      }
+     },
+     {
+      "title": "into extracted method to invoke at call sites",
+      "kind": "refactor",
+      "data": {
+       "UniqueIdentifier": "into extracted method to invoke at call sites",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Introduce parameter for '1'",
+        "into extracted method to invoke at call sites"
+       ]
+      }
+     },
+     {
+      "title": "into new overload",
+      "kind": "refactor",
+      "data": {
+       "UniqueIdentifier": "into new overload",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Introduce parameter for '1'",
+        "into new overload"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "title": "Introduce parameter for all occurrences of '1'",
+   "kind": "refactor",
+   "command": {
+    "title": "Introduce parameter for all occurrences of '1'",
+    "command": "roslyn.client.nestedCodeAction",
+    "arguments": [
+     {
+      "UniqueIdentifier": "Introduce parameter for all occurrences of '1'",
+      "CustomTags": [
+       "IntroduceParameter"
+      ],
+      "Range": {
+       "start": {
+        "line": 257,
+        "character": 12
+       },
+       "end": {
+        "line": 257,
+        "character": 22
+       }
+      },
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      },
+      "CodeActionPath": [
+       "Introduce parameter for all occurrences of '1'"
+      ],
+      "NestedCodeActions": [
+       {
+        "title": "and update call sites directly",
+        "kind": "refactor",
+        "data": {
+         "UniqueIdentifier": "and update call sites directly",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Introduce parameter for all occurrences of '1'",
+          "and update call sites directly"
+         ]
+        }
+       },
+       {
+        "title": "into extracted method to invoke at call sites",
+        "kind": "refactor",
+        "data": {
+         "UniqueIdentifier": "into extracted method to invoke at call sites",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Introduce parameter for all occurrences of '1'",
+          "into extracted method to invoke at call sites"
+         ]
+        }
+       },
+       {
+        "title": "into new overload",
+        "kind": "refactor",
+        "data": {
+         "UniqueIdentifier": "into new overload",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Introduce parameter for all occurrences of '1'",
+          "into new overload"
+         ]
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "data": {
+    "UniqueIdentifier": "Introduce parameter for all occurrences of '1'",
+    "CustomTags": [
+     "IntroduceParameter"
+    ],
+    "Range": {
+     "start": {
+      "line": 257,
+      "character": 12
+     },
+     "end": {
+      "line": 257,
+      "character": 22
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    },
+    "CodeActionPath": [
+     "Introduce parameter for all occurrences of '1'"
+    ],
+    "NestedCodeActions": [
+     {
+      "title": "and update call sites directly",
+      "kind": "refactor",
+      "data": {
+       "UniqueIdentifier": "and update call sites directly",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Introduce parameter for all occurrences of '1'",
+        "and update call sites directly"
+       ]
+      }
+     },
+     {
+      "title": "into extracted method to invoke at call sites",
+      "kind": "refactor",
+      "data": {
+       "UniqueIdentifier": "into extracted method to invoke at call sites",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Introduce parameter for all occurrences of '1'",
+        "into extracted method to invoke at call sites"
+       ]
+      }
+     },
+     {
+      "title": "into new overload",
+      "kind": "refactor",
+      "data": {
+       "UniqueIdentifier": "into new overload",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Introduce parameter for all occurrences of '1'",
+        "into new overload"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "title": "Suppress or configure issues",
+   "kind": "quickfix",
+   "command": {
+    "title": "Suppress or configure issues",
+    "command": "roslyn.client.nestedCodeAction",
+    "arguments": [
+     {
+      "UniqueIdentifier": "Suppress or configure issues",
+      "CustomTags": [],
+      "Range": {
+       "start": {
+        "line": 257,
+        "character": 12
+       },
+       "end": {
+        "line": 257,
+        "character": 22
+       }
+      },
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      },
+      "CodeActionPath": [
+       "Suppress or configure issues"
+      ],
+      "NestedCodeActions": [
+       {
+        "title": "in Source",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "in Source",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Suppress CS0219",
+          "in Source"
+         ]
+        }
+       },
+       {
+        "title": "Fix All: in Source",
+        "kind": "quickfix",
+        "command": {
+         "title": "Fix All: in Source",
+         "command": "roslyn.client.fixAllCodeAction",
+         "arguments": [
+          {
+           "UniqueIdentifier": "Fix All: in Source",
+           "CustomTags": [],
+           "Range": {
+            "start": {
+             "line": 257,
+             "character": 12
+            },
+            "end": {
+             "line": 257,
+             "character": 22
+            }
+           },
+           "TextDocument": {
+            "uri": "file:///c:/playground/Console/Scenarios.cs"
+           },
+           "CodeActionPath": [
+            "Suppress or configure issues",
+            "Suppress CS0219",
+            "in Source"
+           ],
+           "FixAllFlavors": [
+            "Document",
+            "Project",
+            "Solution",
+            "ContainingMember",
+            "ContainingType"
+           ]
+          }
+         ]
+        },
+        "data": {
+         "UniqueIdentifier": "Fix All: in Source",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Suppress CS0219",
+          "in Source"
+         ],
+         "FixAllFlavors": [
+          "Document",
+          "Project",
+          "Solution",
+          "ContainingMember",
+          "ContainingType"
+         ]
+        }
+       },
+       {
+        "title": "None",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "None",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Configure CS0219 severity",
+          "None"
+         ]
+        }
+       },
+       {
+        "title": "Silent",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Silent",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Configure CS0219 severity",
+          "Silent"
+         ]
+        }
+       },
+       {
+        "title": "Suggestion",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Suggestion",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Configure CS0219 severity",
+          "Suggestion"
+         ]
+        }
+       },
+       {
+        "title": "Warning",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Warning",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Configure CS0219 severity",
+          "Warning"
+         ]
+        }
+       },
+       {
+        "title": "Error",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Error",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Configure CS0219 severity",
+          "Error"
+         ]
+        }
+       },
+       {
+        "title": "in Source",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "in Source",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Suppress IDE0059",
+          "in Source"
+         ]
+        }
+       },
+       {
+        "title": "Fix All: in Source",
+        "kind": "quickfix",
+        "command": {
+         "title": "Fix All: in Source",
+         "command": "roslyn.client.fixAllCodeAction",
+         "arguments": [
+          {
+           "UniqueIdentifier": "Fix All: in Source",
+           "CustomTags": [],
+           "Range": {
+            "start": {
+             "line": 257,
+             "character": 12
+            },
+            "end": {
+             "line": 257,
+             "character": 22
+            }
+           },
+           "TextDocument": {
+            "uri": "file:///c:/playground/Console/Scenarios.cs"
+           },
+           "CodeActionPath": [
+            "Suppress or configure issues",
+            "Suppress IDE0059",
+            "in Source"
+           ],
+           "FixAllFlavors": [
+            "Document",
+            "Project",
+            "Solution",
+            "ContainingMember",
+            "ContainingType"
+           ]
+          }
+         ]
+        },
+        "data": {
+         "UniqueIdentifier": "Fix All: in Source",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Suppress IDE0059",
+          "in Source"
+         ],
+         "FixAllFlavors": [
+          "Document",
+          "Project",
+          "Solution",
+          "ContainingMember",
+          "ContainingType"
+         ]
+        }
+       },
+       {
+        "title": "in Suppression File",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "in Suppression File",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Suppress IDE0059",
+          "in Suppression File"
+         ]
+        }
+       },
+       {
+        "title": "Fix All: in Suppression File",
+        "kind": "quickfix",
+        "command": {
+         "title": "Fix All: in Suppression File",
+         "command": "roslyn.client.fixAllCodeAction",
+         "arguments": [
+          {
+           "UniqueIdentifier": "Fix All: in Suppression File",
+           "CustomTags": [],
+           "Range": {
+            "start": {
+             "line": 257,
+             "character": 12
+            },
+            "end": {
+             "line": 257,
+             "character": 22
+            }
+           },
+           "TextDocument": {
+            "uri": "file:///c:/playground/Console/Scenarios.cs"
+           },
+           "CodeActionPath": [
+            "Suppress or configure issues",
+            "Suppress IDE0059",
+            "in Suppression File"
+           ],
+           "FixAllFlavors": [
+            "Document",
+            "Project",
+            "Solution",
+            "ContainingMember",
+            "ContainingType"
+           ]
+          }
+         ]
+        },
+        "data": {
+         "UniqueIdentifier": "Fix All: in Suppression File",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Suppress IDE0059",
+          "in Suppression File"
+         ],
+         "FixAllFlavors": [
+          "Document",
+          "Project",
+          "Solution",
+          "ContainingMember",
+          "ContainingType"
+         ]
+        }
+       },
+       {
+        "title": "in Source (attribute)",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "in Source (attribute)",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Suppress IDE0059",
+          "in Source (attribute)"
+         ]
+        }
+       },
+       {
+        "title": "Fix All: in Source (attribute)",
+        "kind": "quickfix",
+        "command": {
+         "title": "Fix All: in Source (attribute)",
+         "command": "roslyn.client.fixAllCodeAction",
+         "arguments": [
+          {
+           "UniqueIdentifier": "Fix All: in Source (attribute)",
+           "CustomTags": [],
+           "Range": {
+            "start": {
+             "line": 257,
+             "character": 12
+            },
+            "end": {
+             "line": 257,
+             "character": 22
+            }
+           },
+           "TextDocument": {
+            "uri": "file:///c:/playground/Console/Scenarios.cs"
+           },
+           "CodeActionPath": [
+            "Suppress or configure issues",
+            "Suppress IDE0059",
+            "in Source (attribute)"
+           ],
+           "FixAllFlavors": [
+            "Document",
+            "Project",
+            "Solution",
+            "ContainingMember",
+            "ContainingType"
+           ]
+          }
+         ]
+        },
+        "data": {
+         "UniqueIdentifier": "Fix All: in Source (attribute)",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Suppress IDE0059",
+          "in Source (attribute)"
+         ],
+         "FixAllFlavors": [
+          "Document",
+          "Project",
+          "Solution",
+          "ContainingMember",
+          "ContainingType"
+         ]
+        }
+       },
+       {
+        "title": "unused_local_variable",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "unused_local_variable",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Configure IDE0059 code style",
+          "unused_local_variable"
+         ]
+        }
+       },
+       {
+        "title": "discard_variable",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "discard_variable",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Configure IDE0059 code style",
+          "discard_variable"
+         ]
+        }
+       },
+       {
+        "title": "None",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "None",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Configure IDE0059 severity",
+          "None"
+         ]
+        }
+       },
+       {
+        "title": "Silent",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Silent",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Configure IDE0059 severity",
+          "Silent"
+         ]
+        }
+       },
+       {
+        "title": "Suggestion",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Suggestion",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Configure IDE0059 severity",
+          "Suggestion"
+         ]
+        }
+       },
+       {
+        "title": "Warning",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Warning",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Configure IDE0059 severity",
+          "Warning"
+         ]
+        }
+       },
+       {
+        "title": "Error",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Error",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Configure IDE0059 severity",
+          "Error"
+         ]
+        }
+       },
+       {
+        "title": "None",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "None",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Configure severity for all 'Style' analyzers",
+          "None"
+         ]
+        }
+       },
+       {
+        "title": "Silent",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Silent",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Configure severity for all 'Style' analyzers",
+          "Silent"
+         ]
+        }
+       },
+       {
+        "title": "Suggestion",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Suggestion",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Configure severity for all 'Style' analyzers",
+          "Suggestion"
+         ]
+        }
+       },
+       {
+        "title": "Warning",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Warning",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Configure severity for all 'Style' analyzers",
+          "Warning"
+         ]
+        }
+       },
+       {
+        "title": "Error",
+        "kind": "quickfix",
+        "data": {
+         "UniqueIdentifier": "Error",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Configure severity for all 'Style' analyzers",
+          "Error"
+         ]
+        }
+       },
+       {
+        "_truncated": 5
+       }
+      ]
+     }
+    ]
+   },
+   "data": {
+    "UniqueIdentifier": "Suppress or configure issues",
+    "CustomTags": [],
+    "Range": {
+     "start": {
+      "line": 257,
+      "character": 12
+     },
+     "end": {
+      "line": 257,
+      "character": 22
+     }
+    },
+    "TextDocument": {
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    },
+    "CodeActionPath": [
+     "Suppress or configure issues"
+    ],
+    "NestedCodeActions": [
+     {
+      "title": "in Source",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "in Source",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Suppress CS0219",
+        "in Source"
+       ]
+      }
+     },
+     {
+      "title": "Fix All: in Source",
+      "kind": "quickfix",
+      "command": {
+       "title": "Fix All: in Source",
+       "command": "roslyn.client.fixAllCodeAction",
+       "arguments": [
+        {
+         "UniqueIdentifier": "Fix All: in Source",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Suppress CS0219",
+          "in Source"
+         ],
+         "FixAllFlavors": [
+          "Document",
+          "Project",
+          "Solution",
+          "ContainingMember",
+          "ContainingType"
+         ]
+        }
+       ]
+      },
+      "data": {
+       "UniqueIdentifier": "Fix All: in Source",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Suppress CS0219",
+        "in Source"
+       ],
+       "FixAllFlavors": [
+        "Document",
+        "Project",
+        "Solution",
+        "ContainingMember",
+        "ContainingType"
+       ]
+      }
+     },
+     {
+      "title": "None",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "None",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Configure CS0219 severity",
+        "None"
+       ]
+      }
+     },
+     {
+      "title": "Silent",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Silent",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Configure CS0219 severity",
+        "Silent"
+       ]
+      }
+     },
+     {
+      "title": "Suggestion",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Suggestion",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Configure CS0219 severity",
+        "Suggestion"
+       ]
+      }
+     },
+     {
+      "title": "Warning",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Warning",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Configure CS0219 severity",
+        "Warning"
+       ]
+      }
+     },
+     {
+      "title": "Error",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Error",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Configure CS0219 severity",
+        "Error"
+       ]
+      }
+     },
+     {
+      "title": "in Source",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "in Source",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Suppress IDE0059",
+        "in Source"
+       ]
+      }
+     },
+     {
+      "title": "Fix All: in Source",
+      "kind": "quickfix",
+      "command": {
+       "title": "Fix All: in Source",
+       "command": "roslyn.client.fixAllCodeAction",
+       "arguments": [
+        {
+         "UniqueIdentifier": "Fix All: in Source",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Suppress IDE0059",
+          "in Source"
+         ],
+         "FixAllFlavors": [
+          "Document",
+          "Project",
+          "Solution",
+          "ContainingMember",
+          "ContainingType"
+         ]
+        }
+       ]
+      },
+      "data": {
+       "UniqueIdentifier": "Fix All: in Source",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Suppress IDE0059",
+        "in Source"
+       ],
+       "FixAllFlavors": [
+        "Document",
+        "Project",
+        "Solution",
+        "ContainingMember",
+        "ContainingType"
+       ]
+      }
+     },
+     {
+      "title": "in Suppression File",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "in Suppression File",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Suppress IDE0059",
+        "in Suppression File"
+       ]
+      }
+     },
+     {
+      "title": "Fix All: in Suppression File",
+      "kind": "quickfix",
+      "command": {
+       "title": "Fix All: in Suppression File",
+       "command": "roslyn.client.fixAllCodeAction",
+       "arguments": [
+        {
+         "UniqueIdentifier": "Fix All: in Suppression File",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Suppress IDE0059",
+          "in Suppression File"
+         ],
+         "FixAllFlavors": [
+          "Document",
+          "Project",
+          "Solution",
+          "ContainingMember",
+          "ContainingType"
+         ]
+        }
+       ]
+      },
+      "data": {
+       "UniqueIdentifier": "Fix All: in Suppression File",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Suppress IDE0059",
+        "in Suppression File"
+       ],
+       "FixAllFlavors": [
+        "Document",
+        "Project",
+        "Solution",
+        "ContainingMember",
+        "ContainingType"
+       ]
+      }
+     },
+     {
+      "title": "in Source (attribute)",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "in Source (attribute)",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Suppress IDE0059",
+        "in Source (attribute)"
+       ]
+      }
+     },
+     {
+      "title": "Fix All: in Source (attribute)",
+      "kind": "quickfix",
+      "command": {
+       "title": "Fix All: in Source (attribute)",
+       "command": "roslyn.client.fixAllCodeAction",
+       "arguments": [
+        {
+         "UniqueIdentifier": "Fix All: in Source (attribute)",
+         "CustomTags": [],
+         "Range": {
+          "start": {
+           "line": 257,
+           "character": 12
+          },
+          "end": {
+           "line": 257,
+           "character": 22
+          }
+         },
+         "TextDocument": {
+          "uri": "file:///c:/playground/Console/Scenarios.cs"
+         },
+         "CodeActionPath": [
+          "Suppress or configure issues",
+          "Suppress IDE0059",
+          "in Source (attribute)"
+         ],
+         "FixAllFlavors": [
+          "Document",
+          "Project",
+          "Solution",
+          "ContainingMember",
+          "ContainingType"
+         ]
+        }
+       ]
+      },
+      "data": {
+       "UniqueIdentifier": "Fix All: in Source (attribute)",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Suppress IDE0059",
+        "in Source (attribute)"
+       ],
+       "FixAllFlavors": [
+        "Document",
+        "Project",
+        "Solution",
+        "ContainingMember",
+        "ContainingType"
+       ]
+      }
+     },
+     {
+      "title": "unused_local_variable",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "unused_local_variable",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Configure IDE0059 code style",
+        "unused_local_variable"
+       ]
+      }
+     },
+     {
+      "title": "discard_variable",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "discard_variable",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Configure IDE0059 code style",
+        "discard_variable"
+       ]
+      }
+     },
+     {
+      "title": "None",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "None",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Configure IDE0059 severity",
+        "None"
+       ]
+      }
+     },
+     {
+      "title": "Silent",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Silent",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Configure IDE0059 severity",
+        "Silent"
+       ]
+      }
+     },
+     {
+      "title": "Suggestion",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Suggestion",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Configure IDE0059 severity",
+        "Suggestion"
+       ]
+      }
+     },
+     {
+      "title": "Warning",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Warning",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Configure IDE0059 severity",
+        "Warning"
+       ]
+      }
+     },
+     {
+      "title": "Error",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Error",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Configure IDE0059 severity",
+        "Error"
+       ]
+      }
+     },
+     {
+      "title": "None",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "None",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Configure severity for all 'Style' analyzers",
+        "None"
+       ]
+      }
+     },
+     {
+      "title": "Silent",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Silent",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Configure severity for all 'Style' analyzers",
+        "Silent"
+       ]
+      }
+     },
+     {
+      "title": "Suggestion",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Suggestion",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Configure severity for all 'Style' analyzers",
+        "Suggestion"
+       ]
+      }
+     },
+     {
+      "title": "Warning",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Warning",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Configure severity for all 'Style' analyzers",
+        "Warning"
+       ]
+      }
+     },
+     {
+      "title": "Error",
+      "kind": "quickfix",
+      "data": {
+       "UniqueIdentifier": "Error",
+       "CustomTags": [],
+       "Range": {
+        "start": {
+         "line": 257,
+         "character": 12
+        },
+        "end": {
+         "line": 257,
+         "character": 22
+        }
+       },
+       "TextDocument": {
+        "uri": "file:///c:/playground/Console/Scenarios.cs"
+       },
+       "CodeActionPath": [
+        "Suppress or configure issues",
+        "Configure severity for all 'Style' analyzers",
+        "Error"
+       ]
+      }
+     },
+     {
+      "_truncated": 5
+     }
+    ]
+   }
+  }
+ ]
+}

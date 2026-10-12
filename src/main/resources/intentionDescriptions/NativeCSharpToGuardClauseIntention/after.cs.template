@@ -1,0 +1,6 @@
+void Save()
+{
+    <spot>if (!ready) return;</spot>
+    Write();
+    Flush();
+}

@@ -1,0 +1,106 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="64e10188-20c6-4f8d-a718-f4cd56e3582a" name="dvislobokov@DESKTOP-PUVEQGK 2026-10-03 21:48:45" runUser="DESKTOP-PUVEQGK\dvislobokov" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-03T21:48:45.4084425+03:00" queuing="2026-10-03T21:48:45.4084426+03:00" start="2026-10-03T21:48:43.4328379+03:00" finish="2026-10-03T21:48:46.4217040+03:00" />
+  <TestSettings name="default" id="fe6845e1-6ec4-4960-9191-88353b3a00e5">
+    <Deployment runDeploymentRoot="dvislobokov_DESKTOP-PUVEQGK_2026-10-03_21_48_45" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="ceeb729b-7854-4159-9a64-2fa75848c261" testId="bb93bdb5-af65-5f69-4c62-9751ebf00502" testName="Skipped" computerName="DESKTOP-PUVEQGK" duration="00:00:00.0001660" startTime="2026-10-03T21:48:44.3486621+03:00" endTime="2026-10-03T21:48:44.3488279+03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="NotExecuted" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ceeb729b-7854-4159-9a64-2fa75848c261">
+      <Output>
+        <StdOut>Shows the reason</StdOut>
+        <ErrorInfo>
+          <Message>Shows the reason</Message>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="d0a9f092-da32-4c16-b2db-7e9c734cfe8b" testId="34e0239d-e94d-8a65-ca74-7e7f840983c0" testName="Inner" computerName="DESKTOP-PUVEQGK" duration="00:00:00.0000410" startTime="2026-10-03T21:48:46.3579124+03:00" endTime="2026-10-03T21:48:46.3579538+03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d0a9f092-da32-4c16-b2db-7e9c734cfe8b" />
+    <UnitTestResult executionId="9f1a3c49-63dc-4430-9a15-d3d99da4db60" testId="ffe48fd9-5740-96cb-8a8c-d8e80b6fa29d" testName="Fails" computerName="DESKTOP-PUVEQGK" duration="00:00:00.3211730" startTime="2026-10-03T21:48:44.0274091+03:00" endTime="2026-10-03T21:48:44.3485681+03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9f1a3c49-63dc-4430-9a15-d3d99da4db60">
+      <Output>
+        <ErrorInfo>
+          <Message>  Assert.That(1 + 2, Is.EqualTo(2))&#xD;
+  Expected: 2&#xD;
+  But was:  3&#xD;
+</Message>
+          <StackTrace>   at NUnitLive.LiveTests.Fails() in C:\tmp\fw\nunit\LiveTests.cs:line 7&#xD;
+
+1)    at NUnitLive.LiveTests.Fails() in C:\tmp\fw\nunit\LiveTests.cs:line 7&#xD;
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="31692a90-547f-4f2f-93a9-6d0b0ed6b7d9" testId="d5d71f15-95d9-8a87-6bb7-1e097554d2cc" testName="Doubles(2,4)" computerName="DESKTOP-PUVEQGK" duration="00:00:00.0002480" startTime="2026-10-03T21:48:44.0261710+03:00" endTime="2026-10-03T21:48:44.0264192+03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="31692a90-547f-4f2f-93a9-6d0b0ed6b7d9" />
+    <UnitTestResult executionId="7eef6280-e89e-471c-a0d7-3daf89951e2e" testId="ec0da6d6-1cdd-bcb1-17af-db1f659e95f1" testName="Slow2" computerName="DESKTOP-PUVEQGK" duration="00:00:01.0036690" startTime="2026-10-03T21:48:45.3527981+03:00" endTime="2026-10-03T21:48:46.3564236+03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7eef6280-e89e-471c-a0d7-3daf89951e2e" />
+    <UnitTestResult executionId="e77df91b-101b-4395-a57f-567d52da21fa" testId="ecc5c276-3f39-3a54-5103-1581718463e4" testName="WritesOutput" computerName="DESKTOP-PUVEQGK" duration="00:00:00.0004830" startTime="2026-10-03T21:48:46.3565945+03:00" endTime="2026-10-03T21:48:46.3570781+03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e77df91b-101b-4395-a57f-567d52da21fa">
+      <Output>
+        <StdOut>first line of the test output&#xD;
+second line</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="b6554a5c-70c1-42e5-b4e0-2160c5e11ea1" testId="91a5f4d4-e06f-25d1-3b04-19a67517bc75" testName="Doubles(1,2)" computerName="DESKTOP-PUVEQGK" duration="00:00:00.0043080" startTime="2026-10-03T21:48:44.0208834+03:00" endTime="2026-10-03T21:48:44.0251409+03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b6554a5c-70c1-42e5-b4e0-2160c5e11ea1" />
+    <UnitTestResult executionId="391efddd-9337-4d81-8c20-74217d253118" testId="514246dd-77ae-2440-a71c-4848e0fcb878" testName="Slow1" computerName="DESKTOP-PUVEQGK" duration="00:00:01.0038640" startTime="2026-10-03T21:48:44.3488438+03:00" endTime="2026-10-03T21:48:45.3526645+03:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="391efddd-9337-4d81-8c20-74217d253118" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="Fails" storage="c:\tmp\fw\nunit\bin\debug\net10.0\nunitlive.dll" id="ffe48fd9-5740-96cb-8a8c-d8e80b6fa29d">
+      <Execution id="9f1a3c49-63dc-4430-9a15-d3d99da4db60" />
+      <TestMethod codeBase="C:\tmp\fw\nunit\bin\Debug\net10.0\NUnitLive.dll" adapterTypeName="executor://nunit3testexecutor/" className="NUnitLive.LiveTests" name="Fails" />
+    </UnitTest>
+    <UnitTest name="Slow2" storage="c:\tmp\fw\nunit\bin\debug\net10.0\nunitlive.dll" id="ec0da6d6-1cdd-bcb1-17af-db1f659e95f1">
+      <Execution id="7eef6280-e89e-471c-a0d7-3daf89951e2e" />
+      <TestMethod codeBase="C:\tmp\fw\nunit\bin\Debug\net10.0\NUnitLive.dll" adapterTypeName="executor://nunit3testexecutor/" className="NUnitLive.LiveTests" name="Slow2" />
+    </UnitTest>
+    <UnitTest name="Skipped" storage="c:\tmp\fw\nunit\bin\debug\net10.0\nunitlive.dll" id="bb93bdb5-af65-5f69-4c62-9751ebf00502">
+      <Execution id="ceeb729b-7854-4159-9a64-2fa75848c261" />
+      <TestMethod codeBase="C:\tmp\fw\nunit\bin\Debug\net10.0\NUnitLive.dll" adapterTypeName="executor://nunit3testexecutor/" className="NUnitLive.LiveTests" name="Skipped" />
+    </UnitTest>
+    <UnitTest name="WritesOutput" storage="c:\tmp\fw\nunit\bin\debug\net10.0\nunitlive.dll" id="ecc5c276-3f39-3a54-5103-1581718463e4">
+      <Execution id="e77df91b-101b-4395-a57f-567d52da21fa" />
+      <TestMethod codeBase="C:\tmp\fw\nunit\bin\Debug\net10.0\NUnitLive.dll" adapterTypeName="executor://nunit3testexecutor/" className="NUnitLive.LiveTests" name="WritesOutput" />
+    </UnitTest>
+    <UnitTest name="Doubles(2,4)" storage="c:\tmp\fw\nunit\bin\debug\net10.0\nunitlive.dll" id="d5d71f15-95d9-8a87-6bb7-1e097554d2cc">
+      <Execution id="31692a90-547f-4f2f-93a9-6d0b0ed6b7d9" />
+      <TestMethod codeBase="C:\tmp\fw\nunit\bin\Debug\net10.0\NUnitLive.dll" adapterTypeName="executor://nunit3testexecutor/" className="NUnitLive.LiveTests" name="Doubles(2,4)" />
+    </UnitTest>
+    <UnitTest name="Doubles(1,2)" storage="c:\tmp\fw\nunit\bin\debug\net10.0\nunitlive.dll" id="91a5f4d4-e06f-25d1-3b04-19a67517bc75">
+      <Execution id="b6554a5c-70c1-42e5-b4e0-2160c5e11ea1" />
+      <TestMethod codeBase="C:\tmp\fw\nunit\bin\Debug\net10.0\NUnitLive.dll" adapterTypeName="executor://nunit3testexecutor/" className="NUnitLive.LiveTests" name="Doubles(1,2)" />
+    </UnitTest>
+    <UnitTest name="Inner" storage="c:\tmp\fw\nunit\bin\debug\net10.0\nunitlive.dll" id="34e0239d-e94d-8a65-ca74-7e7f840983c0">
+      <Execution id="d0a9f092-da32-4c16-b2db-7e9c734cfe8b" />
+      <TestMethod codeBase="C:\tmp\fw\nunit\bin\Debug\net10.0\NUnitLive.dll" adapterTypeName="executor://nunit3testexecutor/" className="NUnitLive.LiveTests+Nested" name="Inner" />
+    </UnitTest>
+    <UnitTest name="Slow1" storage="c:\tmp\fw\nunit\bin\debug\net10.0\nunitlive.dll" id="514246dd-77ae-2440-a71c-4848e0fcb878">
+      <Execution id="391efddd-9337-4d81-8c20-74217d253118" />
+      <TestMethod codeBase="C:\tmp\fw\nunit\bin\Debug\net10.0\NUnitLive.dll" adapterTypeName="executor://nunit3testexecutor/" className="NUnitLive.LiveTests" name="Slow1" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="bb93bdb5-af65-5f69-4c62-9751ebf00502" executionId="ceeb729b-7854-4159-9a64-2fa75848c261" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="34e0239d-e94d-8a65-ca74-7e7f840983c0" executionId="d0a9f092-da32-4c16-b2db-7e9c734cfe8b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ffe48fd9-5740-96cb-8a8c-d8e80b6fa29d" executionId="9f1a3c49-63dc-4430-9a15-d3d99da4db60" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d5d71f15-95d9-8a87-6bb7-1e097554d2cc" executionId="31692a90-547f-4f2f-93a9-6d0b0ed6b7d9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ec0da6d6-1cdd-bcb1-17af-db1f659e95f1" executionId="7eef6280-e89e-471c-a0d7-3daf89951e2e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ecc5c276-3f39-3a54-5103-1581718463e4" executionId="e77df91b-101b-4395-a57f-567d52da21fa" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="91a5f4d4-e06f-25d1-3b04-19a67517bc75" executionId="b6554a5c-70c1-42e5-b4e0-2160c5e11ea1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="514246dd-77ae-2440-a71c-4848e0fcb878" executionId="391efddd-9337-4d81-8c20-74217d253118" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="8" executed="7" passed="6" failed="1" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 5.0.0.0: Test execution started&#xD;
+Running all tests in C:\tmp\fw\nunit\bin\Debug\net10.0\NUnitLive.dll&#xD;
+   NUnit3TestExecutor discovered 8 of 8 NUnit test cases using Current Discovery mode, Non-Explicit run&#xD;
+Skipped: Shows the reason&#xD;
+Test 'Skipped' was skipped in the test run.&#xD;
+first line of the test output&#xD;
+second line&#xD;
+&#xD;
+NUnit Adapter 5.0.0.0: Test execution complete&#xD;
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

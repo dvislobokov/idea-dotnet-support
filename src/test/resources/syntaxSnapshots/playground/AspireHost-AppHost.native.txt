@@ -1,0 +1,23 @@
+## declarations
+
+## structure view
+
+## folding
+1:1-2:126  // Aspire, step 1 of the plugin: Debug of this AppHost attaches the debugger to the...  | // Aspire, step 1 of the plugin: Debug of this AppHost attaches the debugger to the services DCP starts (here: Web).
+
+## breadcrumbs
+1: 
+
+## IL Viewer: type / member at the line
+1: - / -
+
+## Go to Base: member at the line
+1: -
+
+## breakpoint lines
+3, 5, 7
+
+## run gutter
+
+## Go to Class / Symbol
+

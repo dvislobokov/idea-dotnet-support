@@ -1,0 +1,134 @@
+## declarations
+namespace Playground.Editor  name 1:11-1:28  range 1:1-79:2
+  class IlViewer [public]  name 8:14-8:22  range 8:1-71:2 body 9:1-71:2
+    field _count: int [private]  name 13:17-13:23  range 13:5-13:24
+    method Add(int a, int b): int [public]  name 18:16-18:19  range 18:5-23:6 body 19:5-23:6
+    method Scale(int value): int [public]  name 27:16-27:21  range 27:5-27:46
+    method Scale(int value, int factor): int [public]  name 29:16-29:21  range 29:5-29:63
+    method LoadAsync(): Task<int> [public async]  name 34:28-34:37  range 34:5-38:6 body 35:5-38:6
+    method Squares(int count): IEnumerable<int> [public]  name 42:29-42:36  range 42:5-46:6 body 43:5-46:6
+    method Filter(int[] values, int limit): int[] [public]  name 51:18-51:24  range 51:5-54:6 body 52:5-54:6
+    method Compute(int n): int [public]  name 58:16-58:23  range 58:5-66:6 body 59:5-66:6
+  class IlViewerHeader [public]  name 76:14-76:28  range 76:1-79:2 body 77:1-79:2
+    method ToString(): string [public override]  name 78:28-78:36  range 78:5-78:65
+
+## structure view
+Playground.Editor
+  IlViewer
+    _count: int
+    Add(int a, int b): int
+    Scale(int value): int
+    Scale(int value, int factor): int
+    LoadAsync(): Task<int>
+    Squares(int count): IEnumerable<int>
+    Filter(int[] values, int limit): int[]
+    Compute(int n): int
+  IlViewerHeader
+    ToString(): string
+
+## folding
+3:1-7:15  /// Live check of the IL Viewer (menu .NET → IL Viewer, the tool window on the right...  | /// <summary>
+9:1-71:2  {...}  | {
+10:5-12:107  // IL:il-field — caret on `_count` below. EXPECT: the declaration of the field (`.f...  | // IL:il-field — caret on `_count` below. EXPECT: the declaration of the field (`.field private int32 _count`), one item `IlViewer._count`
+15:5-17:90  // IL:il-simple — caret on the line `var sum = a + b;`. EXPECT: the list at the top...  | // IL:il-simple — caret on the line `var sum = a + b;`. EXPECT: the list at the top shows `...IlViewer::Add` (method); in the IL the lines
+19:5-23:6  {...}  | {
+25:5-26:120  // IL:il-overloads — caret in the body of the second `Scale` (two parameters). EXPE...  | // IL:il-overloads — caret in the body of the second `Scale` (two parameters). EXPECT: the IL of `Scale(int32, int32)` with `mul`, not of
+31:5-33:126  // IL:il-async — caret on the line `await Task.Delay(10);`. EXPECT: the list has th...  | // IL:il-async — caret on the line `await Task.Delay(10);`. EXPECT: the list has the state machine `<LoadAsync>d__…::MoveNext` (state machine)
+35:5-38:6  {...}  | {
+40:5-41:108  // IL:il-iterator — caret on the line `yield return i * i;`. EXPECT: the `MoveNext`...  | // IL:il-iterator — caret on the line `yield return i * i;`. EXPECT: the `MoveNext` of `<Squares>d__…` (state machine) at the top of the
+43:5-46:6  {...}  | {
+48:5-50:69  // IL:il-lambda — caret inside the lambda `x => x > limit` (on `x > limit`). EXPECT...  | // IL:il-lambda — caret inside the lambda `x => x > limit` (on `x > limit`). EXPECT: the lambda `<>c__DisplayClass…::<Filter>b__…` (lambda)
+52:5-54:6  {...}  | {
+56:5-57:84  // IL:il-local-function — caret on the line `return n g__Factorial|…` (local functi...  | // IL:il-local-function — caret on the line `return n <= 1 ? 1 : n * Factorial(n - 1);`. EXPECT: `<Compute>g__Factorial|…` (local function)
+59:5-66:6  {...}  | {
+68:5-70:137  // IL:il-stale — caret in `Add`, then type a space after `a + b` (do not save). EXP...  | // IL:il-stale — caret in `Add`, then type a space after `a + b` (do not save). EXPECT: the yellow banner «Source changed after the last build»
+73:1-75:86  // IL:il-type-header — caret on the name `IlViewerHeader` below (the header, not in...  | // IL:il-type-header — caret on the name `IlViewerHeader` below (the header, not inside a member). EXPECT: the IL of the class: `.class public
+77:1-79:2  {...}  | {
+81:1-85:60  // IL:il-states — (1) open `README.md` of the playground: «Open a C# file to see th...  | // IL:il-states — (1) open `README.md` of the playground: «Open a C# file to see the IL of the code at the caret»; (2) Clean Solution and
+
+## breadcrumbs
+1: Playground.Editor
+8: Playground.Editor > IlViewer
+13: Playground.Editor > IlViewer > _count
+15: Playground.Editor > IlViewer
+18: Playground.Editor > IlViewer > Add()
+25: Playground.Editor > IlViewer
+27: Playground.Editor > IlViewer > Scale()
+31: Playground.Editor > IlViewer
+34: Playground.Editor > IlViewer > LoadAsync()
+40: Playground.Editor > IlViewer
+42: Playground.Editor > IlViewer > Squares()
+48: Playground.Editor > IlViewer
+51: Playground.Editor > IlViewer > Filter()
+56: Playground.Editor > IlViewer
+58: Playground.Editor > IlViewer > Compute()
+68: Playground.Editor > IlViewer
+73: Playground.Editor
+76: Playground.Editor > IlViewerHeader
+78: Playground.Editor > IlViewerHeader > ToString()
+79: Playground.Editor > IlViewerHeader
+81: 
+
+## IL Viewer: type / member at the line
+1: - / -
+8: Playground.Editor.IlViewer / -
+13: Playground.Editor.IlViewer / _count
+15: Playground.Editor.IlViewer / -
+18: Playground.Editor.IlViewer / Add
+25: Playground.Editor.IlViewer / -
+27: Playground.Editor.IlViewer / Scale
+31: Playground.Editor.IlViewer / -
+34: Playground.Editor.IlViewer / LoadAsync
+40: Playground.Editor.IlViewer / -
+42: Playground.Editor.IlViewer / Squares
+48: Playground.Editor.IlViewer / -
+51: Playground.Editor.IlViewer / Filter
+56: Playground.Editor.IlViewer / -
+58: Playground.Editor.IlViewer / Compute
+68: Playground.Editor.IlViewer / -
+73: - / -
+76: Playground.Editor.IlViewerHeader / -
+78: Playground.Editor.IlViewerHeader / ToString
+79: Playground.Editor.IlViewerHeader / -
+81: - / -
+
+## Go to Base: member at the line
+1: -
+18: IlViewer.Add(int a, int b)
+20: IlViewer.Add(int a, int b) (in body)
+25: -
+27: IlViewer.Scale(int value)
+29: IlViewer.Scale(int value, int factor)
+31: -
+34: IlViewer.LoadAsync()
+36: IlViewer.LoadAsync() (in body)
+40: -
+42: IlViewer.Squares(int count)
+44: IlViewer.Squares(int count) (in body)
+48: -
+51: IlViewer.Filter(int[] values, int limit)
+53: IlViewer.Filter(int[] values, int limit) (in body)
+56: -
+58: IlViewer.Compute(int n)
+60: IlViewer.Compute(int n) (in body)
+68: -
+78: IlViewerHeader.ToString()
+79: -
+
+## breakpoint lines
+19-23, 27, 29, 35-38, 43-46, 52-54, 59-60, 62-66, 78
+
+## run gutter
+
+## Go to Class / Symbol
+M:Add -> 18:16 Add(int a, int b) (IlViewer)
+M:Compute -> 58:16 Compute(int n) (IlViewer)
+M:Filter -> 51:18 Filter(int[] values, int limit) (IlViewer)
+M:LoadAsync -> 34:28 LoadAsync() (IlViewer)
+M:Scale -> 27:16 Scale(int value) (IlViewer); 29:16 Scale(int value, int factor) (IlViewer)
+M:Squares -> 42:29 Squares(int count) (IlViewer)
+M:ToString -> 78:28 ToString() (IlViewerHeader)
+M:_count -> 13:17 _count (IlViewer)
+T:IlViewer -> 8:14 IlViewer (Playground.Editor)
+T:IlViewerHeader -> 76:14 IlViewerHeader (Playground.Editor)
+

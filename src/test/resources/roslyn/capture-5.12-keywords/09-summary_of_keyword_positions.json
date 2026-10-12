@@ -1,0 +1,7842 @@
+{
+ "method": "(summary)",
+ "result": [
+  {
+   "marker": 1,
+   "prefix": "pub",
+   "isIncomplete": true,
+   "items": 1000,
+   "matching": 2,
+   "rows": [
+    {
+     "rank": 0,
+     "label": "public",
+     "kind": 14,
+     "sortText": "0000",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 3,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 1,
+     "label": "PublicKey",
+     "kind": 7,
+     "sortText": "0001~PublicKey  System.Security.Cryptography.X509Certificates",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Cryptography.X509Certificates"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 3,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "marker": 2,
+   "prefix": "s",
+   "isIncomplete": true,
+   "items": 1000,
+   "matching": 359,
+   "rows": [
+    {
+     "rank": 0,
+     "label": "sbyte",
+     "kind": 14,
+     "sortText": "0000",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 1,
+     "label": "sealed",
+     "kind": 14,
+     "sortText": "0001",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 2,
+     "label": "short",
+     "kind": 14,
+     "sortText": "0002",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 3,
+     "label": "static",
+     "kind": 14,
+     "sortText": "0003",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 4,
+     "label": "string",
+     "kind": 14,
+     "sortText": "0004",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 5,
+     "label": "struct",
+     "kind": 14,
+     "sortText": "0005",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 6,
+     "label": "SampleActivity<>",
+     "kind": 7,
+     "sortText": "0006SampleActivity",
+     "filterText": "SampleActivity",
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": "SampleActivity",
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 7,
+     "label": "SByte",
+     "kind": 22,
+     "sortText": "0007",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 8,
+     "label": "Scenarios",
+     "kind": 7,
+     "sortText": "0008",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 9,
+     "label": "SearchOption",
+     "kind": 13,
+     "sortText": "0009",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 10,
+     "label": "SeekOrigin",
+     "kind": 13,
+     "sortText": "0010",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 11,
+     "label": "Semaphore",
+     "kind": 7,
+     "sortText": "0011",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 12,
+     "label": "SemaphoreFullException",
+     "kind": 7,
+     "sortText": "0012",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 13,
+     "label": "SemaphoreSlim",
+     "kind": 7,
+     "sortText": "0013",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 14,
+     "label": "SendOrPostCallback",
+     "kind": 7,
+     "sortText": "0014",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 15,
+     "label": "SequencePosition",
+     "kind": 22,
+     "sortText": "0015",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 16,
+     "label": "ShopException",
+     "kind": 7,
+     "sortText": "0016",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 17,
+     "label": "Single",
+     "kind": 22,
+     "sortText": "0017",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 18,
+     "label": "SlowToString",
+     "kind": 7,
+     "sortText": "0018",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 19,
+     "label": "SocketsHttpConnectionContext",
+     "kind": 7,
+     "sortText": "0019",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 20,
+     "label": "SocketsHttpHandler",
+     "kind": 7,
+     "sortText": "0020",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 21,
+     "label": "SocketsHttpPlaintextStreamFilterContext",
+     "kind": 7,
+     "sortText": "0021",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 22,
+     "label": "SortedDictionary<>",
+     "kind": 7,
+     "sortText": "0022SortedDictionary",
+     "filterText": "SortedDictionary",
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": "SortedDictionary",
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 23,
+     "label": "SortedList<>",
+     "kind": 7,
+     "sortText": "0023SortedList",
+     "filterText": "SortedList",
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": "SortedList",
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 24,
+     "label": "SortedSet<>",
+     "kind": 7,
+     "sortText": "0024SortedSet",
+     "filterText": "SortedSet",
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": "SortedSet",
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 39,
+     "label": "Stream",
+     "kind": 7,
+     "sortText": "0039",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 43,
+     "label": "String",
+     "kind": 7,
+     "sortText": "0043",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 44,
+     "label": "StringComparer",
+     "kind": 7,
+     "sortText": "0044",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 58,
+     "label": "SafeAccessTokenHandle",
+     "kind": 7,
+     "sortText": "0058~SafeAccessTokenHandle Microsoft.Win32.SafeHandles",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Win32.SafeHandles"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 59,
+     "label": "SafeArrayRankMismatchException",
+     "kind": 7,
+     "sortText": "0059~SafeArrayRankMismatchException  System.Runtime.InteropServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 60,
+     "label": "SafeArrayTypeMismatchException",
+     "kind": 7,
+     "sortText": "0060~SafeArrayTypeMismatchException  System.Runtime.InteropServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 61,
+     "label": "SafeBuffer",
+     "kind": 7,
+     "sortText": "0061~SafeBuffer  System.Runtime.InteropServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 62,
+     "label": "SafeEvpPKeyHandle",
+     "kind": 7,
+     "sortText": "0062~SafeEvpPKeyHandle  System.Security.Cryptography",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Cryptography"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 63,
+     "label": "SafeFileHandle",
+     "kind": 7,
+     "sortText": "0063~SafeFileHandle Microsoft.Win32.SafeHandles",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Win32.SafeHandles"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 64,
+     "label": "SafeHandle",
+     "kind": 7,
+     "sortText": "0064~SafeHandle  System.Runtime.InteropServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 65,
+     "label": "SafeHandleMarshaller<>",
+     "kind": 7,
+     "sortText": "0065~SafeHandleMarshaller  System.Runtime.InteropServices.Marshalling",
+     "filterText": "SafeHandleMarshaller",
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices.Marshalling"
+     },
+     "insertText": null,
+     "textEditText": "SafeHandleMarshaller",
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 66,
+     "label": "SafeHandleMinusOneIsInvalid",
+     "kind": 7,
+     "sortText": "0066~SafeHandleMinusOneIsInvalid Microsoft.Win32.SafeHandles",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Win32.SafeHandles"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 67,
+     "label": "SafeHandleZeroOrMinusOneIsInvalid",
+     "kind": 7,
+     "sortText": "0067~SafeHandleZeroOrMinusOneIsInvalid Microsoft.Win32.SafeHandles",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Win32.SafeHandles"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 68,
+     "label": "SafeMemoryMappedFileHandle",
+     "kind": 7,
+     "sortText": "0068~SafeMemoryMappedFileHandle Microsoft.Win32.SafeHandles",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Win32.SafeHandles"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 69,
+     "label": "SafeMemoryMappedViewHandle",
+     "kind": 7,
+     "sortText": "0069~SafeMemoryMappedViewHandle Microsoft.Win32.SafeHandles",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Win32.SafeHandles"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 70,
+     "label": "SafeNCryptHandle",
+     "kind": 7,
+     "sortText": "0070~SafeNCryptHandle Microsoft.Win32.SafeHandles",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Win32.SafeHandles"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 71,
+     "label": "SafeNCryptKeyHandle",
+     "kind": 7,
+     "sortText": "0071~SafeNCryptKeyHandle Microsoft.Win32.SafeHandles",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Win32.SafeHandles"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 72,
+     "label": "SafeNCryptProviderHandle",
+     "kind": 7,
+     "sortText": "0072~SafeNCryptProviderHandle Microsoft.Win32.SafeHandles",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Win32.SafeHandles"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 73,
+     "label": "SafeNCryptSecretHandle",
+     "kind": 7,
+     "sortText": "0073~SafeNCryptSecretHandle Microsoft.Win32.SafeHandles",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Win32.SafeHandles"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 74,
+     "label": "SafePipeHandle",
+     "kind": 7,
+     "sortText": "0074~SafePipeHandle Microsoft.Win32.SafeHandles",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Win32.SafeHandles"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 75,
+     "label": "SafeProcessHandle",
+     "kind": 7,
+     "sortText": "0075~SafeProcessHandle Microsoft.Win32.SafeHandles",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Win32.SafeHandles"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 76,
+     "label": "SafeRegistryHandle",
+     "kind": 7,
+     "sortText": "0076~SafeRegistryHandle Microsoft.Win32.SafeHandles",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Win32.SafeHandles"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 77,
+     "label": "SafeSerializationEventArgs",
+     "kind": 7,
+     "sortText": "0077~SafeSerializationEventArgs  System.Runtime.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 78,
+     "label": "SafeSocketHandle",
+     "kind": 7,
+     "sortText": "0078~SafeSocketHandle  System.Net.Sockets",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Sockets"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 79,
+     "label": "SafeWaitHandle",
+     "kind": 7,
+     "sortText": "0079~SafeWaitHandle Microsoft.Win32.SafeHandles",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Win32.SafeHandles"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 80,
+     "label": "SafeX509ChainHandle",
+     "kind": 7,
+     "sortText": "0080~SafeX509ChainHandle Microsoft.Win32.SafeHandles",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Win32.SafeHandles"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 81,
+     "label": "SaveOptions",
+     "kind": 13,
+     "sortText": "0081~SaveOptions  System.Xml.Linq",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Xml.Linq"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 82,
+     "label": "SByteConverter",
+     "kind": 7,
+     "sortText": "0082~SByteConverter  System.ComponentModel",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.ComponentModel"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 83,
+     "label": "ScaffoldColumnAttribute",
+     "kind": 7,
+     "sortText": "0083~ScaffoldColumnAttribute  System.ComponentModel.DataAnnotations",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.ComponentModel.DataAnnotations"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 84,
+     "label": "ScalarEncoder",
+     "kind": 22,
+     "sortText": "0084~ScalarEncoder  System.Reflection.Metadata.Ecma335",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata.Ecma335"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 85,
+     "label": "SchemaImporter",
+     "kind": 7,
+     "sortText": "0085~SchemaImporter  System.Xml.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Xml.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 86,
+     "label": "SchemaSerializationMode",
+     "kind": 13,
+     "sortText": "0086~SchemaSerializationMode  System.Data",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 87,
+     "label": "SchemaTableColumn",
+     "kind": 7,
+     "sortText": "0087~SchemaTableColumn  System.Data.Common",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.Common"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 88,
+     "label": "SchemaTableOptionalColumn",
+     "kind": 7,
+     "sortText": "0088~SchemaTableOptionalColumn  System.Data.Common",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.Common"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 89,
+     "label": "SchemaType",
+     "kind": 13,
+     "sortText": "0089~SchemaType  System.Data",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 90,
+     "label": "ScopelessEnumAttribute",
+     "kind": 7,
+     "sortText": "0090~ScopelessEnumAttribute  System.Runtime.CompilerServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.CompilerServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 91,
+     "label": "ScopeLevel",
+     "kind": 13,
+     "sortText": "0091~ScopeLevel  System.Net.NetworkInformation",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.NetworkInformation"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 92,
+     "label": "SearchOption",
+     "kind": 13,
+     "sortText": "0092~SearchOption Microsoft.VisualBasic.FileIO",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.VisualBasic.FileIO"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 93,
+     "label": "SearchValues",
+     "kind": 7,
+     "sortText": "0093~SearchValues  System.Buffers",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Buffers"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 94,
+     "label": "SearchValues<>",
+     "kind": 7,
+     "sortText": "0094~SearchValues  System.Buffers",
+     "filterText": "SearchValues",
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Buffers"
+     },
+     "insertText": null,
+     "textEditText": "SearchValues",
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 95,
+     "label": "SectionCharacteristics",
+     "kind": 13,
+     "sortText": "0095~SectionCharacteristics  System.Reflection.PortableExecutable",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.PortableExecutable"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 96,
+     "label": "SectionHeader",
+     "kind": 22,
+     "sortText": "0096~SectionHeader  System.Reflection.PortableExecutable",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.PortableExecutable"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 97,
+     "label": "SectionLocation",
+     "kind": 22,
+     "sortText": "0097~SectionLocation  System.Reflection.PortableExecutable",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.PortableExecutable"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 98,
+     "label": "SecureString",
+     "kind": 7,
+     "sortText": "0098~SecureString  System.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 99,
+     "label": "SecureStringMarshal",
+     "kind": 7,
+     "sortText": "0099~SecureStringMarshal  System.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 100,
+     "label": "SecurityAction",
+     "kind": 13,
+     "sortText": "0100~SecurityAction  System.Security.Permissions",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Permissions"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 101,
+     "label": "SecurityAttribute",
+     "kind": 7,
+     "sortText": "0101~SecurityAttribute  System.Security.Permissions",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Permissions"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 102,
+     "label": "SecurityCriticalAttribute",
+     "kind": 7,
+     "sortText": "0102~SecurityCriticalAttribute  System.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 103,
+     "label": "SecurityCriticalScope",
+     "kind": 13,
+     "sortText": "0103~SecurityCriticalScope  System.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 104,
+     "label": "SecurityElement",
+     "kind": 7,
+     "sortText": "0104~SecurityElement  System.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 105,
+     "label": "SecurityException",
+     "kind": 7,
+     "sortText": "0105~SecurityException  System.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 106,
+     "label": "SecurityIdentifier",
+     "kind": 7,
+     "sortText": "0106~SecurityIdentifier  System.Security.Principal",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Principal"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 107,
+     "label": "SecurityInfos",
+     "kind": 13,
+     "sortText": "0107~SecurityInfos  System.Security.AccessControl",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.AccessControl"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 108,
+     "label": "SecurityPermissionAttribute",
+     "kind": 7,
+     "sortText": "0108~SecurityPermissionAttribute  System.Security.Permissions",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Permissions"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 109,
+     "label": "SecurityPermissionFlag",
+     "kind": 13,
+     "sortText": "0109~SecurityPermissionFlag  System.Security.Permissions",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Permissions"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 110,
+     "label": "SecurityProtocolType",
+     "kind": 13,
+     "sortText": "0110~SecurityProtocolType  System.Net",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 111,
+     "label": "SecurityRulesAttribute",
+     "kind": 7,
+     "sortText": "0111~SecurityRulesAttribute  System.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 112,
+     "label": "SecurityRuleSet",
+     "kind": 13,
+     "sortText": "0112~SecurityRuleSet  System.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 113,
+     "label": "SecuritySafeCriticalAttribute",
+     "kind": 7,
+     "sortText": "0113~SecuritySafeCriticalAttribute  System.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 114,
+     "label": "SecurityTransparentAttribute",
+     "kind": 7,
+     "sortText": "0114~SecurityTransparentAttribute  System.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 115,
+     "label": "SecurityTreatAsSafeAttribute",
+     "kind": 7,
+     "sortText": "0115~SecurityTreatAsSafeAttribute  System.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 116,
+     "label": "SEHException",
+     "kind": 7,
+     "sortText": "0116~SEHException  System.Runtime.InteropServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 117,
+     "label": "SelectionTypes",
+     "kind": 13,
+     "sortText": "0117~SelectionTypes  System.ComponentModel.Design",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.ComponentModel.Design"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 118,
+     "label": "SelectMode",
+     "kind": 13,
+     "sortText": "0118~SelectMode  System.Net.Sockets",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Sockets"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 119,
+     "label": "SendCompletedEventHandler",
+     "kind": 7,
+     "sortText": "0119~SendCompletedEventHandler  System.Net.Mail",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Mail"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 120,
+     "label": "SendPacketsElement",
+     "kind": 7,
+     "sortText": "0120~SendPacketsElement  System.Net.Sockets",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Sockets"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 121,
+     "label": "SequenceMarshal",
+     "kind": 7,
+     "sortText": "0121~SequenceMarshal  System.Runtime.InteropServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 122,
+     "label": "SequencePoint",
+     "kind": 22,
+     "sortText": "0122~SequencePoint  System.Reflection.Metadata",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 123,
+     "label": "SequencePointCollection",
+     "kind": 22,
+     "sortText": "0123~SequencePointCollection  System.Reflection.Metadata",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 124,
+     "label": "SequenceReader<>",
+     "kind": 22,
+     "sortText": "0124~SequenceReader  System.Buffers",
+     "filterText": "SequenceReader",
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Buffers"
+     },
+     "insertText": null,
+     "textEditText": "SequenceReader",
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 125,
+     "label": "SequenceReaderExtensions",
+     "kind": 7,
+     "sortText": "0125~SequenceReaderExtensions  System.Buffers",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Buffers"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 126,
+     "label": "SerializationBinder",
+     "kind": 7,
+     "sortText": "0126~SerializationBinder  System.Runtime.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 127,
+     "label": "SerializationEntry",
+     "kind": 22,
+     "sortText": "0127~SerializationEntry  System.Runtime.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 128,
+     "label": "SerializationException",
+     "kind": 7,
+     "sortText": "0128~SerializationException  System.Runtime.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 129,
+     "label": "SerializationFormat",
+     "kind": 13,
+     "sortText": "0129~SerializationFormat  System.Data",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 130,
+     "label": "SerializationInfo",
+     "kind": 7,
+     "sortText": "0130~SerializationInfo  System.Runtime.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 131,
+     "label": "SerializationInfoEnumerator",
+     "kind": 7,
+     "sortText": "0131~SerializationInfoEnumerator  System.Runtime.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 132,
+     "label": "SerializationObjectManager",
+     "kind": 7,
+     "sortText": "0132~SerializationObjectManager  System.Runtime.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 133,
+     "label": "SerializationStore",
+     "kind": 7,
+     "sortText": "0133~SerializationStore  System.ComponentModel.Design.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.ComponentModel.Design.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 134,
+     "label": "SerializationTypeCode",
+     "kind": 13,
+     "sortText": "0134~SerializationTypeCode  System.Reflection.Metadata",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 135,
+     "label": "ServerCertificateSelectionCallback",
+     "kind": 7,
+     "sortText": "0135~ServerCertificateSelectionCallback  System.Net.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 136,
+     "label": "ServerOptionsSelectionCallback",
+     "kind": 7,
+     "sortText": "0136~ServerOptionsSelectionCallback  System.Net.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 137,
+     "label": "ServiceCollection",
+     "kind": 7,
+     "sortText": "0137~ServiceCollection Microsoft.Extensions.DependencyInjection",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.DependencyInjection"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 138,
+     "label": "ServiceCollectionContainerBuilderExtensions",
+     "kind": 7,
+     "sortText": "0138~ServiceCollectionContainerBuilderExtensions Microsoft.Extensions.DependencyInjection",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.DependencyInjection"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 139,
+     "label": "ServiceCollectionDescriptorExtensions",
+     "kind": 7,
+     "sortText": "0139~ServiceCollectionDescriptorExtensions Microsoft.Extensions.DependencyInjection.Extensions",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.DependencyInjection.Extensions"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 140,
+     "label": "ServiceCollectionHostedServiceExtensions",
+     "kind": 7,
+     "sortText": "0140~ServiceCollectionHostedServiceExtensions Microsoft.Extensions.DependencyInjection",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.DependencyInjection"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 141,
+     "label": "ServiceCollectionServiceExtensions",
+     "kind": 7,
+     "sortText": "0141~ServiceCollectionServiceExtensions Microsoft.Extensions.DependencyInjection",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.DependencyInjection"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 142,
+     "label": "ServiceContainer",
+     "kind": 7,
+     "sortText": "0142~ServiceContainer  System.ComponentModel.Design",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.ComponentModel.Design"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 143,
+     "label": "ServiceCreatorCallback",
+     "kind": 7,
+     "sortText": "0143~ServiceCreatorCallback  System.ComponentModel.Design",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.ComponentModel.Design"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 144,
+     "label": "ServiceDescriptor",
+     "kind": 7,
+     "sortText": "0144~ServiceDescriptor Microsoft.Extensions.DependencyInjection",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.DependencyInjection"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 145,
+     "label": "ServiceKeyAttribute",
+     "kind": 7,
+     "sortText": "0145~ServiceKeyAttribute Microsoft.Extensions.DependencyInjection",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.DependencyInjection"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 146,
+     "label": "ServiceLifetime",
+     "kind": 13,
+     "sortText": "0146~ServiceLifetime Microsoft.Extensions.DependencyInjection",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.DependencyInjection"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 147,
+     "label": "ServiceNameCollection",
+     "kind": 7,
+     "sortText": "0147~ServiceNameCollection  System.Security.Authentication.ExtendedProtection",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Authentication.ExtendedProtection"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 148,
+     "label": "ServicePoint",
+     "kind": 7,
+     "sortText": "0148~ServicePoint  System.Net",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 149,
+     "label": "ServicePointManager",
+     "kind": 7,
+     "sortText": "0149~ServicePointManager  System.Net",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 150,
+     "label": "ServiceProvider",
+     "kind": 7,
+     "sortText": "0150~ServiceProvider Microsoft.Extensions.DependencyInjection",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.DependencyInjection"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 151,
+     "label": "ServiceProviderKeyedServiceExtensions",
+     "kind": 7,
+     "sortText": "0151~ServiceProviderKeyedServiceExtensions Microsoft.Extensions.DependencyInjection",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.DependencyInjection"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 152,
+     "label": "ServiceProviderOptions",
+     "kind": 7,
+     "sortText": "0152~ServiceProviderOptions Microsoft.Extensions.DependencyInjection",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.DependencyInjection"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 153,
+     "label": "ServiceProviderServiceExtensions",
+     "kind": 7,
+     "sortText": "0153~ServiceProviderServiceExtensions Microsoft.Extensions.DependencyInjection",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.DependencyInjection"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 154,
+     "label": "SessionAuthentication",
+     "kind": 13,
+     "sortText": "0154~SessionAuthentication  System.Diagnostics.Eventing.Reader",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Diagnostics.Eventing.Reader"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 155,
+     "label": "SetIndexBinder",
+     "kind": 7,
+     "sortText": "0155~SetIndexBinder  System.Dynamic",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Dynamic"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 156,
+     "label": "SetMemberBinder",
+     "kind": 7,
+     "sortText": "0156~SetMemberBinder  System.Dynamic",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Dynamic"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 157,
+     "label": "SetsRequiredMembersAttribute",
+     "kind": 7,
+     "sortText": "0157~SetsRequiredMembersAttribute  System.Diagnostics.CodeAnalysis",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Diagnostics.CodeAnalysis"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 158,
+     "label": "SettingsBindableAttribute",
+     "kind": 7,
+     "sortText": "0158~SettingsBindableAttribute  System.ComponentModel",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.ComponentModel"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 159,
+     "label": "Sha1",
+     "kind": 7,
+     "sortText": "0159~Sha1  System.Runtime.Intrinsics.Arm",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Intrinsics.Arm"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 160,
+     "label": "SHA1",
+     "kind": 7,
+     "sortText": "0160~SHA1  System.Security.Cryptography",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Cryptography"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 161,
+     "label": "Sha256",
+     "kind": 7,
+     "sortText": "0161~Sha256  System.Runtime.Intrinsics.Arm",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Intrinsics.Arm"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 162,
+     "label": "SHA256",
+     "kind": 7,
+     "sortText": "0162~SHA256  System.Security.Cryptography",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Cryptography"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 163,
+     "label": "SHA384",
+     "kind": 7,
+     "sortText": "0163~SHA384  System.Security.Cryptography",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Cryptography"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 164,
+     "label": "SHA3_256",
+     "kind": 7,
+     "sortText": "0164~SHA3_256  System.Security.Cryptography",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Cryptography"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 165,
+     "label": "SHA3_384",
+     "kind": 7,
+     "sortText": "0165~SHA3_384  System.Security.Cryptography",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Cryptography"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 166,
+     "label": "SHA3_512",
+     "kind": 7,
+     "sortText": "0166~SHA3_512  System.Security.Cryptography",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Cryptography"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 167,
+     "label": "SHA512",
+     "kind": 7,
+     "sortText": "0167~SHA512  System.Security.Cryptography",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Cryptography"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 168,
+     "label": "Shake128",
+     "kind": 7,
+     "sortText": "0168~Shake128  System.Security.Cryptography",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Cryptography"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 169,
+     "label": "Shake256",
+     "kind": 7,
+     "sortText": "0169~Shake256  System.Security.Cryptography",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Cryptography"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 170,
+     "label": "ShippingMode",
+     "kind": 13,
+     "sortText": "0170~ShippingMode Playground.Editor",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Playground.Editor"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 171,
+     "label": "Shop",
+     "kind": 7,
+     "sortText": "0171~Shop Playground.Editor",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Playground.Editor"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 172,
+     "label": "ShopOptions",
+     "kind": 7,
+     "sortText": "0172~ShopOptions Playground.Editor",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Playground.Editor"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 173,
+     "label": "ShopOwner",
+     "kind": 7,
+     "sortText": "0173~ShopOwner Playground.Editor",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Playground.Editor"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 174,
+     "label": "SignatureAttributes",
+     "kind": 13,
+     "sortText": "0174~SignatureAttributes  System.Reflection.Metadata",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 175,
+     "label": "SignatureCallingConvention",
+     "kind": 13,
+     "sortText": "0175~SignatureCallingConvention  System.Reflection.Metadata",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 176,
+     "label": "SignatureDecoder<>",
+     "kind": 22,
+     "sortText": "0176~SignatureDecoder  System.Reflection.Metadata.Ecma335",
+     "filterText": "SignatureDecoder",
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata.Ecma335"
+     },
+     "insertText": null,
+     "textEditText": "SignatureDecoder",
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 177,
+     "label": "SignatureDescription",
+     "kind": 7,
+     "sortText": "0177~SignatureDescription  System.Security.Cryptography",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Cryptography"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 178,
+     "label": "SignatureHeader",
+     "kind": 22,
+     "sortText": "0178~SignatureHeader  System.Reflection.Metadata",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 179,
+     "label": "SignatureHelper",
+     "kind": 7,
+     "sortText": "0179~SignatureHelper  System.Reflection.Emit",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Emit"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 180,
+     "label": "SignatureKind",
+     "kind": 13,
+     "sortText": "0180~SignatureKind  System.Reflection.Metadata",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 181,
+     "label": "SignatureTypeCode",
+     "kind": 13,
+     "sortText": "0181~SignatureTypeCode  System.Reflection.Metadata",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 182,
+     "label": "SignatureTypeEncoder",
+     "kind": 22,
+     "sortText": "0182~SignatureTypeEncoder  System.Reflection.Metadata.Ecma335",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata.Ecma335"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 183,
+     "label": "SignatureTypeKind",
+     "kind": 13,
+     "sortText": "0183~SignatureTypeKind  System.Reflection.Metadata",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 184,
+     "label": "SimpleConsoleFormatterOptions",
+     "kind": 7,
+     "sortText": "0184~SimpleConsoleFormatterOptions Microsoft.Extensions.Logging.Console",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.Logging.Console"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 185,
+     "label": "SingleConverter",
+     "kind": 7,
+     "sortText": "0185~SingleConverter  System.ComponentModel",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.ComponentModel"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 186,
+     "label": "SinglePhaseEnlistment",
+     "kind": 7,
+     "sortText": "0186~SinglePhaseEnlistment  System.Transactions",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Transactions"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 187,
+     "label": "Size",
+     "kind": 22,
+     "sortText": "0187~Size  System.Drawing",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Drawing"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 188,
+     "label": "SizeConverter",
+     "kind": 7,
+     "sortText": "0188~SizeConverter  System.Drawing",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Drawing"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 189,
+     "label": "SizeF",
+     "kind": 22,
+     "sortText": "0189~SizeF  System.Drawing",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Drawing"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 190,
+     "label": "SizeFConverter",
+     "kind": 7,
+     "sortText": "0190~SizeFConverter  System.Drawing",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Drawing"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 191,
+     "label": "SkipLocalsInitAttribute",
+     "kind": 7,
+     "sortText": "0191~SkipLocalsInitAttribute  System.Runtime.CompilerServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.CompilerServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 192,
+     "label": "SmtpClient",
+     "kind": 7,
+     "sortText": "0192~SmtpClient  System.Net.Mail",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Mail"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 193,
+     "label": "SmtpDeliveryFormat",
+     "kind": 13,
+     "sortText": "0193~SmtpDeliveryFormat  System.Net.Mail",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Mail"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 194,
+     "label": "SmtpDeliveryMethod",
+     "kind": 13,
+     "sortText": "0194~SmtpDeliveryMethod  System.Net.Mail",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Mail"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 195,
+     "label": "SmtpException",
+     "kind": 7,
+     "sortText": "0195~SmtpException  System.Net.Mail",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Mail"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 196,
+     "label": "SmtpFailedRecipientException",
+     "kind": 7,
+     "sortText": "0196~SmtpFailedRecipientException  System.Net.Mail",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Mail"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 197,
+     "label": "SmtpFailedRecipientsException",
+     "kind": 7,
+     "sortText": "0197~SmtpFailedRecipientsException  System.Net.Mail",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Mail"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 198,
+     "label": "SmtpStatusCode",
+     "kind": 13,
+     "sortText": "0198~SmtpStatusCode  System.Net.Mail",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Mail"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 199,
+     "label": "SoapAttributeAttribute",
+     "kind": 7,
+     "sortText": "0199~SoapAttributeAttribute  System.Xml.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Xml.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 200,
+     "label": "SoapAttributeOverrides",
+     "kind": 7,
+     "sortText": "0200~SoapAttributeOverrides  System.Xml.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Xml.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 201,
+     "label": "SoapAttributes",
+     "kind": 7,
+     "sortText": "0201~SoapAttributes  System.Xml.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Xml.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 202,
+     "label": "SoapElementAttribute",
+     "kind": 7,
+     "sortText": "0202~SoapElementAttribute  System.Xml.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Xml.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 203,
+     "label": "SoapEnumAttribute",
+     "kind": 7,
+     "sortText": "0203~SoapEnumAttribute  System.Xml.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Xml.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 204,
+     "label": "SoapIgnoreAttribute",
+     "kind": 7,
+     "sortText": "0204~SoapIgnoreAttribute  System.Xml.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Xml.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 205,
+     "label": "SoapIncludeAttribute",
+     "kind": 7,
+     "sortText": "0205~SoapIncludeAttribute  System.Xml.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Xml.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 206,
+     "label": "SoapReflectionImporter",
+     "kind": 7,
+     "sortText": "0206~SoapReflectionImporter  System.Xml.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Xml.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 207,
+     "label": "SoapSchemaMember",
+     "kind": 7,
+     "sortText": "0207~SoapSchemaMember  System.Xml.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Xml.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 208,
+     "label": "SoapTypeAttribute",
+     "kind": 7,
+     "sortText": "0208~SoapTypeAttribute  System.Xml.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Xml.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 209,
+     "label": "Socket",
+     "kind": 7,
+     "sortText": "0209~Socket  System.Net.Sockets",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Sockets"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 210,
+     "label": "SocketAddress",
+     "kind": 7,
+     "sortText": "0210~SocketAddress  System.Net",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 211,
+     "label": "SocketAsyncEventArgs",
+     "kind": 7,
+     "sortText": "0211~SocketAsyncEventArgs  System.Net.Sockets",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Sockets"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 212,
+     "label": "SocketAsyncOperation",
+     "kind": 13,
+     "sortText": "0212~SocketAsyncOperation  System.Net.Sockets",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Sockets"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 213,
+     "label": "SocketError",
+     "kind": 13,
+     "sortText": "0213~SocketError  System.Net.Sockets",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Sockets"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 214,
+     "label": "SocketException",
+     "kind": 7,
+     "sortText": "0214~SocketException  System.Net.Sockets",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Sockets"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 215,
+     "label": "SocketFlags",
+     "kind": 13,
+     "sortText": "0215~SocketFlags  System.Net.Sockets",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Sockets"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 216,
+     "label": "SocketInformation",
+     "kind": 22,
+     "sortText": "0216~SocketInformation  System.Net.Sockets",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Sockets"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 217,
+     "label": "SocketInformationOptions",
+     "kind": 13,
+     "sortText": "0217~SocketInformationOptions  System.Net.Sockets",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Sockets"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 218,
+     "label": "SocketOptionLevel",
+     "kind": 13,
+     "sortText": "0218~SocketOptionLevel  System.Net.Sockets",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Sockets"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 219,
+     "label": "SocketOptionName",
+     "kind": 13,
+     "sortText": "0219~SocketOptionName  System.Net.Sockets",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Sockets"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 220,
+     "label": "SocketReceiveFromResult",
+     "kind": 22,
+     "sortText": "0220~SocketReceiveFromResult  System.Net.Sockets",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Sockets"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 221,
+     "label": "SocketReceiveMessageFromResult",
+     "kind": 22,
+     "sortText": "0221~SocketReceiveMessageFromResult  System.Net.Sockets",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Sockets"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 222,
+     "label": "SocketShutdown",
+     "kind": 13,
+     "sortText": "0222~SocketShutdown  System.Net.Sockets",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Sockets"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 223,
+     "label": "SocketType",
+     "kind": 13,
+     "sortText": "0223~SocketType  System.Net.Sockets",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Sockets"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 224,
+     "label": "SortedList",
+     "kind": 7,
+     "sortText": "0224~SortedList  System.Collections",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Collections"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 225,
+     "label": "SortKey",
+     "kind": 7,
+     "sortText": "0225~SortKey  System.Globalization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Globalization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 226,
+     "label": "SortVersion",
+     "kind": 7,
+     "sortText": "0226~SortVersion  System.Globalization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Globalization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 227,
+     "label": "SP800108HmacCounterKdf",
+     "kind": 7,
+     "sortText": "0227~SP800108HmacCounterKdf  System.Security.Cryptography",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Cryptography"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 228,
+     "label": "SpanAction<>",
+     "kind": 7,
+     "sortText": "0228~SpanAction  System.Buffers",
+     "filterText": "SpanAction",
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Buffers"
+     },
+     "insertText": null,
+     "textEditText": "SpanAction",
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 229,
+     "label": "SpanLineEnumerator",
+     "kind": 22,
+     "sortText": "0229~SpanLineEnumerator  System.Text",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Text"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 230,
+     "label": "SpanMarshaller<>",
+     "kind": 7,
+     "sortText": "0230~SpanMarshaller  System.Runtime.InteropServices.Marshalling",
+     "filterText": "SpanMarshaller",
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices.Marshalling"
+     },
+     "insertText": null,
+     "textEditText": "SpanMarshaller",
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 231,
+     "label": "SpanRuneEnumerator",
+     "kind": 22,
+     "sortText": "0231~SpanRuneEnumerator  System.Text",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Text"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 232,
+     "label": "SpecialDirectories",
+     "kind": 7,
+     "sortText": "0232~SpecialDirectories Microsoft.VisualBasic.FileIO",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.VisualBasic.FileIO"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 233,
+     "label": "SpecialNameAttribute",
+     "kind": 7,
+     "sortText": "0233~SpecialNameAttribute  System.Runtime.CompilerServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.CompilerServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 234,
+     "label": "SqlAlreadyFilledException",
+     "kind": 7,
+     "sortText": "0234~SqlAlreadyFilledException  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 235,
+     "label": "SqlBinary",
+     "kind": 22,
+     "sortText": "0235~SqlBinary  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 236,
+     "label": "SqlBoolean",
+     "kind": 22,
+     "sortText": "0236~SqlBoolean  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 237,
+     "label": "SqlByte",
+     "kind": 22,
+     "sortText": "0237~SqlByte  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 238,
+     "label": "SqlBytes",
+     "kind": 7,
+     "sortText": "0238~SqlBytes  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 239,
+     "label": "SqlChars",
+     "kind": 7,
+     "sortText": "0239~SqlChars  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 240,
+     "label": "SqlCompareOptions",
+     "kind": 13,
+     "sortText": "0240~SqlCompareOptions  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 241,
+     "label": "SqlDateTime",
+     "kind": 22,
+     "sortText": "0241~SqlDateTime  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 242,
+     "label": "SqlDbType",
+     "kind": 13,
+     "sortText": "0242~SqlDbType  System.Data",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 243,
+     "label": "SqlDecimal",
+     "kind": 22,
+     "sortText": "0243~SqlDecimal  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 244,
+     "label": "SqlDouble",
+     "kind": 22,
+     "sortText": "0244~SqlDouble  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 245,
+     "label": "SqlGuid",
+     "kind": 22,
+     "sortText": "0245~SqlGuid  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 246,
+     "label": "SqlInt16",
+     "kind": 22,
+     "sortText": "0246~SqlInt16  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 247,
+     "label": "SqlInt32",
+     "kind": 22,
+     "sortText": "0247~SqlInt32  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 248,
+     "label": "SqlInt64",
+     "kind": 22,
+     "sortText": "0248~SqlInt64  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 249,
+     "label": "SqlMoney",
+     "kind": 22,
+     "sortText": "0249~SqlMoney  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 250,
+     "label": "SqlNotFilledException",
+     "kind": 7,
+     "sortText": "0250~SqlNotFilledException  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 251,
+     "label": "SqlNullValueException",
+     "kind": 7,
+     "sortText": "0251~SqlNullValueException  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 252,
+     "label": "SqlSingle",
+     "kind": 22,
+     "sortText": "0252~SqlSingle  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 253,
+     "label": "SqlString",
+     "kind": 22,
+     "sortText": "0253~SqlString  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 254,
+     "label": "SqlTruncateException",
+     "kind": 7,
+     "sortText": "0254~SqlTruncateException  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 255,
+     "label": "SqlTypeException",
+     "kind": 7,
+     "sortText": "0255~SqlTypeException  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 256,
+     "label": "SqlXml",
+     "kind": 7,
+     "sortText": "0256~SqlXml  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 257,
+     "label": "Sse",
+     "kind": 7,
+     "sortText": "0257~Sse  System.Runtime.Intrinsics.X86",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Intrinsics.X86"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 258,
+     "label": "Sse2",
+     "kind": 7,
+     "sortText": "0258~Sse2  System.Runtime.Intrinsics.X86",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Intrinsics.X86"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 259,
+     "label": "Sse3",
+     "kind": 7,
+     "sortText": "0259~Sse3  System.Runtime.Intrinsics.X86",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Intrinsics.X86"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 260,
+     "label": "Sse41",
+     "kind": 7,
+     "sortText": "0260~Sse41  System.Runtime.Intrinsics.X86",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Intrinsics.X86"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 261,
+     "label": "Sse42",
+     "kind": 7,
+     "sortText": "0261~Sse42  System.Runtime.Intrinsics.X86",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Intrinsics.X86"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 262,
+     "label": "SslApplicationProtocol",
+     "kind": 22,
+     "sortText": "0262~SslApplicationProtocol  System.Net.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 263,
+     "label": "SslCertificateTrust",
+     "kind": 7,
+     "sortText": "0263~SslCertificateTrust  System.Net.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 264,
+     "label": "SslClientAuthenticationOptions",
+     "kind": 7,
+     "sortText": "0264~SslClientAuthenticationOptions  System.Net.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 265,
+     "label": "SslClientHelloInfo",
+     "kind": 22,
+     "sortText": "0265~SslClientHelloInfo  System.Net.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 266,
+     "label": "SslPolicyErrors",
+     "kind": 13,
+     "sortText": "0266~SslPolicyErrors  System.Net.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 267,
+     "label": "SslProtocols",
+     "kind": 13,
+     "sortText": "0267~SslProtocols  System.Security.Authentication",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Authentication"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 268,
+     "label": "SslServerAuthenticationOptions",
+     "kind": 7,
+     "sortText": "0268~SslServerAuthenticationOptions  System.Net.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 269,
+     "label": "SslStream",
+     "kind": 7,
+     "sortText": "0269~SslStream  System.Net.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 270,
+     "label": "SslStreamCertificateContext",
+     "kind": 7,
+     "sortText": "0270~SslStreamCertificateContext  System.Net.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 271,
+     "label": "Ssse3",
+     "kind": 7,
+     "sortText": "0271~Ssse3  System.Runtime.Intrinsics.X86",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Intrinsics.X86"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 272,
+     "label": "Stack",
+     "kind": 7,
+     "sortText": "0272~Stack  System.Collections",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Collections"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 273,
+     "label": "StackBehaviour",
+     "kind": 13,
+     "sortText": "0273~StackBehaviour  System.Reflection.Emit",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Emit"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 274,
+     "label": "StandaloneSignature",
+     "kind": 22,
+     "sortText": "0274~StandaloneSignature  System.Reflection.Metadata",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 275,
+     "label": "StandaloneSignatureHandle",
+     "kind": 22,
+     "sortText": "0275~StandaloneSignatureHandle  System.Reflection.Metadata",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 276,
+     "label": "StandaloneSignatureKind",
+     "kind": 13,
+     "sortText": "0276~StandaloneSignatureKind  System.Reflection.Metadata",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 277,
+     "label": "StandardCommands",
+     "kind": 7,
+     "sortText": "0277~StandardCommands  System.ComponentModel.Design",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.ComponentModel.Design"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 278,
+     "label": "StandardEventKeywords",
+     "kind": 13,
+     "sortText": "0278~StandardEventKeywords  System.Diagnostics.Eventing.Reader",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Diagnostics.Eventing.Reader"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 279,
+     "label": "StandardEventLevel",
+     "kind": 13,
+     "sortText": "0279~StandardEventLevel  System.Diagnostics.Eventing.Reader",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Diagnostics.Eventing.Reader"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 280,
+     "label": "StandardEventOpcode",
+     "kind": 13,
+     "sortText": "0280~StandardEventOpcode  System.Diagnostics.Eventing.Reader",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Diagnostics.Eventing.Reader"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 281,
+     "label": "StandardEventTask",
+     "kind": 13,
+     "sortText": "0281~StandardEventTask  System.Diagnostics.Eventing.Reader",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Diagnostics.Eventing.Reader"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 282,
+     "label": "StandardFormat",
+     "kind": 22,
+     "sortText": "0282~StandardFormat  System.Buffers",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Buffers"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 283,
+     "label": "StandardOleMarshalObject",
+     "kind": 7,
+     "sortText": "0283~StandardOleMarshalObject  System.Runtime.InteropServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 284,
+     "label": "StandardToolWindows",
+     "kind": 7,
+     "sortText": "0284~StandardToolWindows  System.ComponentModel.Design",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.ComponentModel.Design"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 285,
+     "label": "StateChangeEventArgs",
+     "kind": 7,
+     "sortText": "0285~StateChangeEventArgs  System.Data",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 286,
+     "label": "StateChangeEventHandler",
+     "kind": 7,
+     "sortText": "0286~StateChangeEventHandler  System.Data",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 287,
+     "label": "StateMachineAttribute",
+     "kind": 7,
+     "sortText": "0287~StateMachineAttribute  System.Runtime.CompilerServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.CompilerServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 288,
+     "label": "StatementCompletedEventArgs",
+     "kind": 7,
+     "sortText": "0288~StatementCompletedEventArgs  System.Data",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 289,
+     "label": "StatementCompletedEventHandler",
+     "kind": 7,
+     "sortText": "0289~StatementCompletedEventHandler  System.Data",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 290,
+     "label": "StatementType",
+     "kind": 13,
+     "sortText": "0290~StatementType  System.Data",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 291,
+     "label": "StorageState",
+     "kind": 13,
+     "sortText": "0291~StorageState  System.Data.SqlTypes",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.SqlTypes"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 292,
+     "label": "StoreLocation",
+     "kind": 13,
+     "sortText": "0292~StoreLocation  System.Security.Cryptography.X509Certificates",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Cryptography.X509Certificates"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 293,
+     "label": "StoreName",
+     "kind": 13,
+     "sortText": "0293~StoreName  System.Security.Cryptography.X509Certificates",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Cryptography.X509Certificates"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 294,
+     "label": "StrategyBasedComWrappers",
+     "kind": 7,
+     "sortText": "0294~StrategyBasedComWrappers  System.Runtime.InteropServices.Marshalling",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices.Marshalling"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 295,
+     "label": "StreamConfigurationProvider",
+     "kind": 7,
+     "sortText": "0295~StreamConfigurationProvider Microsoft.Extensions.Configuration",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.Configuration"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 296,
+     "label": "StreamConfigurationSource",
+     "kind": 7,
+     "sortText": "0296~StreamConfigurationSource Microsoft.Extensions.Configuration",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.Configuration"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 297,
+     "label": "StreamingContext",
+     "kind": 22,
+     "sortText": "0297~StreamingContext  System.Runtime.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 298,
+     "label": "StreamingContextStates",
+     "kind": 13,
+     "sortText": "0298~StreamingContextStates  System.Runtime.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 299,
+     "label": "StreamPipeExtensions",
+     "kind": 7,
+     "sortText": "0299~StreamPipeExtensions  System.IO.Pipelines",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.IO.Pipelines"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 300,
+     "label": "StreamPipeReaderOptions",
+     "kind": 7,
+     "sortText": "0300~StreamPipeReaderOptions  System.IO.Pipelines",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.IO.Pipelines"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 301,
+     "label": "StreamPipeWriterOptions",
+     "kind": 7,
+     "sortText": "0301~StreamPipeWriterOptions  System.IO.Pipelines",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.IO.Pipelines"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 302,
+     "label": "StringBuilder",
+     "kind": 7,
+     "sortText": "0302~StringBuilder  System.Text",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Text"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 303,
+     "label": "StringCollection",
+     "kind": 7,
+     "sortText": "0303~StringCollection  System.Collections.Specialized",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Collections.Specialized"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 304,
+     "label": "StringConverter",
+     "kind": 7,
+     "sortText": "0304~StringConverter  System.ComponentModel",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.ComponentModel"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 305,
+     "label": "StringDictionary",
+     "kind": 7,
+     "sortText": "0305~StringDictionary  System.Collections.Specialized",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Collections.Specialized"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 306,
+     "label": "StringEnumerator",
+     "kind": 7,
+     "sortText": "0306~StringEnumerator  System.Collections.Specialized",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Collections.Specialized"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 307,
+     "label": "StringFreezingAttribute",
+     "kind": 7,
+     "sortText": "0307~StringFreezingAttribute  System.Runtime.CompilerServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.CompilerServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 308,
+     "label": "StringHandle",
+     "kind": 22,
+     "sortText": "0308~StringHandle  System.Reflection.Metadata",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 309,
+     "label": "StringInfo",
+     "kind": 7,
+     "sortText": "0309~StringInfo  System.Globalization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Globalization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 310,
+     "label": "StringLengthAttribute",
+     "kind": 7,
+     "sortText": "0310~StringLengthAttribute  System.ComponentModel.DataAnnotations",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.ComponentModel.DataAnnotations"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 311,
+     "label": "StringMarshalling",
+     "kind": 13,
+     "sortText": "0311~StringMarshalling  System.Runtime.InteropServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 312,
+     "label": "StringRuneEnumerator",
+     "kind": 22,
+     "sortText": "0312~StringRuneEnumerator  System.Text",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Text"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 313,
+     "label": "Strings",
+     "kind": 7,
+     "sortText": "0313~Strings Microsoft.VisualBasic",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.VisualBasic"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 314,
+     "label": "StringSegment",
+     "kind": 22,
+     "sortText": "0314~StringSegment Microsoft.Extensions.Primitives",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.Primitives"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 315,
+     "label": "StringSegmentComparer",
+     "kind": 7,
+     "sortText": "0315~StringSegmentComparer Microsoft.Extensions.Primitives",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.Primitives"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 316,
+     "label": "StringSyntaxAttribute",
+     "kind": 7,
+     "sortText": "0316~StringSyntaxAttribute  System.Diagnostics.CodeAnalysis",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Diagnostics.CodeAnalysis"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 317,
+     "label": "StringTokenizer",
+     "kind": 22,
+     "sortText": "0317~StringTokenizer Microsoft.Extensions.Primitives",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.Primitives"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 318,
+     "label": "StringValues",
+     "kind": 22,
+     "sortText": "0318~StringValues Microsoft.Extensions.Primitives",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.Primitives"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 319,
+     "label": "StringWithQualityHeaderValue",
+     "kind": 7,
+     "sortText": "0319~StringWithQualityHeaderValue  System.Net.Http.Headers",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Http.Headers"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 320,
+     "label": "StrongBox<>",
+     "kind": 7,
+     "sortText": "0320~StrongBox  System.Runtime.CompilerServices",
+     "filterText": "StrongBox",
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.CompilerServices"
+     },
+     "insertText": null,
+     "textEditText": "StrongBox",
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 321,
+     "label": "StrongNameKeyPair",
+     "kind": 7,
+     "sortText": "0321~StrongNameKeyPair  System.Reflection",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 322,
+     "label": "StrongTypingException",
+     "kind": 7,
+     "sortText": "0322~StrongTypingException  System.Data",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 323,
+     "label": "StructLayoutAttribute",
+     "kind": 7,
+     "sortText": "0323~StructLayoutAttribute  System.Runtime.InteropServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 324,
+     "label": "StructuralComparisons",
+     "kind": 7,
+     "sortText": "0324~StructuralComparisons  System.Collections",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Collections"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 325,
+     "label": "SubjectAlternativeNameBuilder",
+     "kind": 7,
+     "sortText": "0325~SubjectAlternativeNameBuilder  System.Security.Cryptography.X509Certificates",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Cryptography.X509Certificates"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 326,
+     "label": "SubordinateTransaction",
+     "kind": 7,
+     "sortText": "0326~SubordinateTransaction  System.Transactions",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Transactions"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 327,
+     "label": "Subsystem",
+     "kind": 13,
+     "sortText": "0327~Subsystem  System.Reflection.PortableExecutable",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.PortableExecutable"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 328,
+     "label": "SuffixOrigin",
+     "kind": 13,
+     "sortText": "0328~SuffixOrigin  System.Net.NetworkInformation",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.NetworkInformation"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 329,
+     "label": "SupportedJoinOperators",
+     "kind": 13,
+     "sortText": "0329~SupportedJoinOperators  System.Data.Common",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data.Common"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 330,
+     "label": "SupportedOSPlatformAttribute",
+     "kind": 7,
+     "sortText": "0330~SupportedOSPlatformAttribute  System.Runtime.Versioning",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Versioning"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 331,
+     "label": "SupportedOSPlatformGuardAttribute",
+     "kind": 7,
+     "sortText": "0331~SupportedOSPlatformGuardAttribute  System.Runtime.Versioning",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Versioning"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 332,
+     "label": "SuppressGCTransitionAttribute",
+     "kind": 7,
+     "sortText": "0332~SuppressGCTransitionAttribute  System.Runtime.InteropServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 333,
+     "label": "SuppressIldasmAttribute",
+     "kind": 7,
+     "sortText": "0333~SuppressIldasmAttribute  System.Runtime.CompilerServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.CompilerServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 334,
+     "label": "SuppressMessageAttribute",
+     "kind": 7,
+     "sortText": "0334~SuppressMessageAttribute  System.Diagnostics.CodeAnalysis",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Diagnostics.CodeAnalysis"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 335,
+     "label": "SuppressUnmanagedCodeSecurityAttribute",
+     "kind": 7,
+     "sortText": "0335~SuppressUnmanagedCodeSecurityAttribute  System.Security",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 336,
+     "label": "SurrogateSelector",
+     "kind": 7,
+     "sortText": "0336~SurrogateSelector  System.Runtime.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 337,
+     "label": "Sve",
+     "kind": 7,
+     "sortText": "0337~Sve  System.Runtime.Intrinsics.Arm",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Intrinsics.Arm"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 338,
+     "label": "SveMaskPattern",
+     "kind": 13,
+     "sortText": "0338~SveMaskPattern  System.Runtime.Intrinsics.Arm",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Intrinsics.Arm"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 339,
+     "label": "SvePrefetchType",
+     "kind": 13,
+     "sortText": "0339~SvePrefetchType  System.Runtime.Intrinsics.Arm",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Intrinsics.Arm"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 340,
+     "label": "SwiftError",
+     "kind": 22,
+     "sortText": "0340~SwiftError  System.Runtime.InteropServices.Swift",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices.Swift"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 341,
+     "label": "SwiftIndirectResult",
+     "kind": 22,
+     "sortText": "0341~SwiftIndirectResult  System.Runtime.InteropServices.Swift",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices.Swift"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 342,
+     "label": "SwiftSelf",
+     "kind": 22,
+     "sortText": "0342~SwiftSelf  System.Runtime.InteropServices.Swift",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices.Swift"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 343,
+     "label": "SwiftSelf<>",
+     "kind": 22,
+     "sortText": "0343~SwiftSelf  System.Runtime.InteropServices.Swift",
+     "filterText": "SwiftSelf",
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices.Swift"
+     },
+     "insertText": null,
+     "textEditText": "SwiftSelf",
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 344,
+     "label": "SwitchCase",
+     "kind": 7,
+     "sortText": "0344~SwitchCase  System.Linq.Expressions",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Linq.Expressions"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 345,
+     "label": "SwitchExpression",
+     "kind": 7,
+     "sortText": "0345~SwitchExpression  System.Linq.Expressions",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Linq.Expressions"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 346,
+     "label": "SwitchExpressionException",
+     "kind": 7,
+     "sortText": "0346~SwitchExpressionException  System.Runtime.CompilerServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.CompilerServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 347,
+     "label": "SwitchInstructionEncoder",
+     "kind": 22,
+     "sortText": "0347~SwitchInstructionEncoder  System.Reflection.Metadata.Ecma335",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata.Ecma335"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 348,
+     "label": "SymAddressKind",
+     "kind": 13,
+     "sortText": "0348~SymAddressKind  System.Diagnostics.SymbolStore",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Diagnostics.SymbolStore"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 349,
+     "label": "SymbolDocumentInfo",
+     "kind": 7,
+     "sortText": "0349~SymbolDocumentInfo  System.Linq.Expressions",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Linq.Expressions"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 350,
+     "label": "SymbolToken",
+     "kind": 22,
+     "sortText": "0350~SymbolToken  System.Diagnostics.SymbolStore",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Diagnostics.SymbolStore"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 351,
+     "label": "SymDocumentType",
+     "kind": 7,
+     "sortText": "0351~SymDocumentType  System.Diagnostics.SymbolStore",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Diagnostics.SymbolStore"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 352,
+     "label": "SymLanguageType",
+     "kind": 7,
+     "sortText": "0352~SymLanguageType  System.Diagnostics.SymbolStore",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Diagnostics.SymbolStore"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 353,
+     "label": "SymLanguageVendor",
+     "kind": 7,
+     "sortText": "0353~SymLanguageVendor  System.Diagnostics.SymbolStore",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Diagnostics.SymbolStore"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 354,
+     "label": "SymmetricAlgorithm",
+     "kind": 7,
+     "sortText": "0354~SymmetricAlgorithm  System.Security.Cryptography",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.Cryptography"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 355,
+     "label": "SyntaxCheck",
+     "kind": 7,
+     "sortText": "0355~SyntaxCheck  System.ComponentModel",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.ComponentModel"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 356,
+     "label": "SyntaxErrorException",
+     "kind": 7,
+     "sortText": "0356~SyntaxErrorException  System.Data",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 357,
+     "label": "SystemAcl",
+     "kind": 7,
+     "sortText": "0357~SystemAcl  System.Security.AccessControl",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Security.AccessControl"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 358,
+     "label": "SystemColors",
+     "kind": 7,
+     "sortText": "0358~SystemColors  System.Drawing",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Drawing"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 4,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "marker": 3,
+   "prefix": "str",
+   "isIncomplete": true,
+   "items": 1000,
+   "matching": 45,
+   "rows": [
+    {
+     "rank": 0,
+     "label": "string",
+     "kind": 14,
+     "sortText": "0000",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 1,
+     "label": "struct",
+     "kind": 14,
+     "sortText": "0001",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 2,
+     "label": "Stream",
+     "kind": 7,
+     "sortText": "0002",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 3,
+     "label": "StreamContent",
+     "kind": 7,
+     "sortText": "0003",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 4,
+     "label": "StreamReader",
+     "kind": 7,
+     "sortText": "0004",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 5,
+     "label": "StreamWriter",
+     "kind": 7,
+     "sortText": "0005",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 6,
+     "label": "String",
+     "kind": 7,
+     "sortText": "0006",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 7,
+     "label": "StringComparer",
+     "kind": 7,
+     "sortText": "0007",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 8,
+     "label": "StringComparison",
+     "kind": 13,
+     "sortText": "0008",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 9,
+     "label": "StringContent",
+     "kind": 7,
+     "sortText": "0009",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 10,
+     "label": "StringNormalizationExtensions",
+     "kind": 7,
+     "sortText": "0010",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 11,
+     "label": "StringReader",
+     "kind": 7,
+     "sortText": "0011",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 12,
+     "label": "StringSplitOptions",
+     "kind": 13,
+     "sortText": "0012",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 13,
+     "label": "StringWriter",
+     "kind": 7,
+     "sortText": "0013",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": null,
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 14,
+     "label": "StrategyBasedComWrappers",
+     "kind": 7,
+     "sortText": "0014~StrategyBasedComWrappers  System.Runtime.InteropServices.Marshalling",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices.Marshalling"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 15,
+     "label": "StreamConfigurationProvider",
+     "kind": 7,
+     "sortText": "0015~StreamConfigurationProvider Microsoft.Extensions.Configuration",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.Configuration"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 16,
+     "label": "StreamConfigurationSource",
+     "kind": 7,
+     "sortText": "0016~StreamConfigurationSource Microsoft.Extensions.Configuration",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.Configuration"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 17,
+     "label": "StreamingContext",
+     "kind": 22,
+     "sortText": "0017~StreamingContext  System.Runtime.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 18,
+     "label": "StreamingContextStates",
+     "kind": 13,
+     "sortText": "0018~StreamingContextStates  System.Runtime.Serialization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.Serialization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 19,
+     "label": "StreamPipeExtensions",
+     "kind": 7,
+     "sortText": "0019~StreamPipeExtensions  System.IO.Pipelines",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.IO.Pipelines"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 20,
+     "label": "StreamPipeReaderOptions",
+     "kind": 7,
+     "sortText": "0020~StreamPipeReaderOptions  System.IO.Pipelines",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.IO.Pipelines"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 21,
+     "label": "StreamPipeWriterOptions",
+     "kind": 7,
+     "sortText": "0021~StreamPipeWriterOptions  System.IO.Pipelines",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.IO.Pipelines"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 22,
+     "label": "StringBuilder",
+     "kind": 7,
+     "sortText": "0022~StringBuilder  System.Text",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Text"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 23,
+     "label": "StringCollection",
+     "kind": 7,
+     "sortText": "0023~StringCollection  System.Collections.Specialized",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Collections.Specialized"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 24,
+     "label": "StringConverter",
+     "kind": 7,
+     "sortText": "0024~StringConverter  System.ComponentModel",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.ComponentModel"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 25,
+     "label": "StringDictionary",
+     "kind": 7,
+     "sortText": "0025~StringDictionary  System.Collections.Specialized",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Collections.Specialized"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 26,
+     "label": "StringEnumerator",
+     "kind": 7,
+     "sortText": "0026~StringEnumerator  System.Collections.Specialized",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Collections.Specialized"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 27,
+     "label": "StringFreezingAttribute",
+     "kind": 7,
+     "sortText": "0027~StringFreezingAttribute  System.Runtime.CompilerServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.CompilerServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 28,
+     "label": "StringHandle",
+     "kind": 22,
+     "sortText": "0028~StringHandle  System.Reflection.Metadata",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection.Metadata"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 29,
+     "label": "StringInfo",
+     "kind": 7,
+     "sortText": "0029~StringInfo  System.Globalization",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Globalization"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 30,
+     "label": "StringLengthAttribute",
+     "kind": 7,
+     "sortText": "0030~StringLengthAttribute  System.ComponentModel.DataAnnotations",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.ComponentModel.DataAnnotations"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 31,
+     "label": "StringMarshalling",
+     "kind": 13,
+     "sortText": "0031~StringMarshalling  System.Runtime.InteropServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 32,
+     "label": "StringRuneEnumerator",
+     "kind": 22,
+     "sortText": "0032~StringRuneEnumerator  System.Text",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Text"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 33,
+     "label": "Strings",
+     "kind": 7,
+     "sortText": "0033~Strings Microsoft.VisualBasic",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.VisualBasic"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 34,
+     "label": "StringSegment",
+     "kind": 22,
+     "sortText": "0034~StringSegment Microsoft.Extensions.Primitives",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.Primitives"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 35,
+     "label": "StringSegmentComparer",
+     "kind": 7,
+     "sortText": "0035~StringSegmentComparer Microsoft.Extensions.Primitives",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.Primitives"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 36,
+     "label": "StringSyntaxAttribute",
+     "kind": 7,
+     "sortText": "0036~StringSyntaxAttribute  System.Diagnostics.CodeAnalysis",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Diagnostics.CodeAnalysis"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 37,
+     "label": "StringTokenizer",
+     "kind": 22,
+     "sortText": "0037~StringTokenizer Microsoft.Extensions.Primitives",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.Primitives"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 38,
+     "label": "StringValues",
+     "kind": 22,
+     "sortText": "0038~StringValues Microsoft.Extensions.Primitives",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "Microsoft.Extensions.Primitives"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 39,
+     "label": "StringWithQualityHeaderValue",
+     "kind": 7,
+     "sortText": "0039~StringWithQualityHeaderValue  System.Net.Http.Headers",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Net.Http.Headers"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 40,
+     "label": "StrongBox<>",
+     "kind": 7,
+     "sortText": "0040~StrongBox  System.Runtime.CompilerServices",
+     "filterText": "StrongBox",
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.CompilerServices"
+     },
+     "insertText": null,
+     "textEditText": "StrongBox",
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 41,
+     "label": "StrongNameKeyPair",
+     "kind": 7,
+     "sortText": "0041~StrongNameKeyPair  System.Reflection",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Reflection"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 42,
+     "label": "StrongTypingException",
+     "kind": 7,
+     "sortText": "0042~StrongTypingException  System.Data",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Data"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 43,
+     "label": "StructLayoutAttribute",
+     "kind": 7,
+     "sortText": "0043~StructLayoutAttribute  System.Runtime.InteropServices",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Runtime.InteropServices"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    },
+    {
+     "rank": 44,
+     "label": "StructuralComparisons",
+     "kind": 7,
+     "sortText": "0044~StructuralComparisons  System.Collections",
+     "filterText": null,
+     "preselect": null,
+     "labelDetails": {
+      "description": "System.Collections"
+     },
+     "insertText": null,
+     "textEditText": null,
+     "commitCharacters": false,
+     "tags": null,
+     "data": {
+      "ResultId": 5,
+      "TextDocument": {
+       "uri": "file:///c:/playground/Console/Scenarios.cs"
+      }
+     }
+    }
+   ]
+  }
+ ]
+}

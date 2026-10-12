@@ -1,0 +1,14 @@
+{
+ "method": "completionItem/resolve",
+ "params": {
+  "label": "Age",
+  "kind": 10,
+  "sortText": "0000",
+  "insertTextFormat": 1
+ },
+ "ms": 7.6,
+ "error": {
+  "code": -32800,
+  "message": "Задача отменена."
+ }
+}

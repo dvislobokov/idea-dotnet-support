@@ -1,0 +1,7 @@
+class GreeterService : Greeter.GreeterBase
+{
+    public override Task<HelloReply> SayHello(HelloRequest request, ServerCallContext context)
+    {
+        return base.SayHello(request, context);
+    }
+}

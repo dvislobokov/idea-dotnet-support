@@ -1,0 +1,8 @@
+void Save()
+{
+    if (ready)
+    {
+        Write();
+        Flush();
+    }
+}

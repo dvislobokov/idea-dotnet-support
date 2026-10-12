@@ -1,0 +1,84 @@
+package io.github.dotnetsupport.testing
+
+import com.intellij.execution.DefaultExecutionResult
+import com.intellij.execution.ExecutionResult
+import com.intellij.execution.Executor
+import com.intellij.execution.configurations.CommandLineState
+import com.intellij.execution.process.KillableColoredProcessHandler
+import com.intellij.execution.process.ProcessEvent
+import com.intellij.execution.process.ProcessHandler
+import com.intellij.execution.process.ProcessListener
+import com.intellij.execution.process.ProcessTerminatedListener
+import com.intellij.execution.runners.ExecutionEnvironment
+import com.intellij.execution.runners.ProgramRunner
+import com.intellij.execution.testframework.autotest.ToggleAutoTestAction
+import com.intellij.execution.testframework.sm.SMTestRunnerConnectionUtil
+import com.intellij.execution.testframework.sm.runner.ui.SMTRunnerConsoleView
+import com.intellij.openapi.util.io.FileUtil
+import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.coverage.DotNetCoverageService
+import io.github.dotnetsupport.run.DotNetProcessAttacher
+import io.github.dotnetsupport.run.DotNetRunConfiguration
+import io.github.dotnetsupport.run.TestHostDebug
+import java.io.File
+
+/** `dotnet test` with the test tree instead of a plain console. */
+class DotNetTestRunState(private val configuration: DotNetRunConfiguration, environment: ExecutionEnvironment, private val debug: Boolean = false) :
+    CommandLineState(environment) {
+    // TRX report and coverage files of this run
+    private val resultsDirectory = FileUtil.createTempDirectory("dotnet-test", null, true)
+    // the files of the live test logger, when it is there (VSTest only)
+    private var eventsDirectory: File? = null
+
+    override fun startProcess(): ProcessHandler {
+        val commandLine = configuration.buildCommandLine(resultsDirectory)
+        val vsTest = configuration.testMode() == TestMode.VSTEST
+        val adapterDirectory = if (vsTest) LiveTestLogger.adapterDirectory(configuration.project) else null
+        if (adapterDirectory != null) {
+            val events = FileUtil.createTempDirectory("dotnet-test-events", null, true).also { eventsDirectory = it }
+            val arguments = LiveTestLogger.insert(commandLine.parametersList.list, LiveTestLogger.options(adapterDirectory))
+            commandLine.parametersList.clearAll()
+            commandLine.addParameters(arguments)
+            commandLine.withEnvironment(LiveTestLogger.DIRECTORY_VARIABLE, events.path)
+        }
+        // The test host prints its process id and waits for a debugger. In English: the line is found by its words first.
+        if (debug && vsTest) commandLine.withEnvironment(TestHostDebug.VARIABLE, "1").withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en").withEnvironment("VSTEST_UI_LANGUAGE", "en")
+        val handler = KillableColoredProcessHandler(commandLine)
+        if (debug && vsTest) attachDebuggerToTestHosts(handler)
+        // the platform has no host that waits for a debugger: the tests run, and the debugger is for Attach to Process (or the run of the executable under it)
+        if (debug && !vsTest) DotNetCli.notifyInfo(configuration.project, "Tests on Microsoft.Testing.Platform run without the debugger", "The test project is an executable: debug it as a .NET Project with the arguments of the platform, or attach to the process. The results are below.")
+        ProcessTerminatedListener.attach(handler)
+        return handler
+    }
+
+    /** A run may start several hosts (projects, target frameworks): each one is attached to, once. */
+    private fun attachDebuggerToTestHosts(handler: ProcessHandler) {
+        val attacher = DotNetProcessAttacher.find() ?: return
+        val attached = HashSet<Long>()
+        handler.addProcessListener(object : ProcessListener {
+            override fun onTextAvailable(event: ProcessEvent, outputType: com.intellij.openapi.util.Key<*>) {
+                val processId = TestHostDebug.processId(event.text) ?: return
+                if (attached.add(processId)) attacher.attach(configuration.project, processId, "Tests of ${configuration.name}", skipInitialBreak = true)
+            }
+        })
+    }
+
+    override fun execute(executor: Executor, runner: ProgramRunner<*>): ExecutionResult {
+        val handler = startProcess()
+        val properties = DotNetTestConsoleProperties(configuration, executor, resultsDirectory, eventsDirectory)
+        val console = SMTestRunnerConnectionUtil.createAndAttachConsole(TEST_FRAMEWORK_NAME, handler, properties)
+
+        if (configuration.options.collectCoverage) {
+            handler.addProcessListener(object : ProcessListener {
+                override fun processTerminated(event: ProcessEvent) =
+                    DotNetCoverageService.getInstance(configuration.project).loadResults(resultsDirectory, configuration.name)
+            })
+        }
+
+        val rerunFailed = properties.createRerunFailedTestsAction(console)
+        rerunFailed.setModelProvider { (console as SMTRunnerConsoleView).resultsViewer }
+        return DefaultExecutionResult(console, handler, *createActions(console, handler, executor)).apply {
+            setRestartActions(rerunFailed, ToggleAutoTestAction())
+        }
+    }
+}

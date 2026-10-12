@@ -1,0 +1,73 @@
+{
+ "method": "textDocument/rename",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "position": {
+   "line": 8,
+   "character": 20
+  },
+  "newName": "Playbook"
+ },
+ "ms": 27.6,
+ "result": {
+  "documentChanges": [
+   {
+    "textDocument": {
+     "version": null,
+     "uri": "file:///c:/playground/Console/Program.cs"
+    },
+    "edits": [
+     {
+      "range": {
+       "start": {
+        "line": 5,
+        "character": 37
+       },
+       "end": {
+        "line": 5,
+        "character": 46
+       }
+      },
+      "newText": "Playbook"
+     },
+     {
+      "range": {
+       "start": {
+        "line": 11,
+        "character": 10
+       },
+       "end": {
+        "line": 11,
+        "character": 19
+       }
+      },
+      "newText": "Playbook"
+     }
+    ]
+   },
+   {
+    "textDocument": {
+     "version": null,
+     "uri": "file:///c:/playground/Console/Scenarios.cs"
+    },
+    "edits": [
+     {
+      "range": {
+       "start": {
+        "line": 8,
+        "character": 20
+       },
+       "end": {
+        "line": 8,
+        "character": 29
+       }
+      },
+      "newText": "Playbook"
+     }
+    ]
+   }
+  ]
+ }
+}

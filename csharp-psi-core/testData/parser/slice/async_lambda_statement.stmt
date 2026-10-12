@@ -1,0 +1,1 @@
+var f = async () => { await Task.Yield(); };

@@ -1,0 +1,1 @@
+for (scoped Span<int> s = default; ; ) { }

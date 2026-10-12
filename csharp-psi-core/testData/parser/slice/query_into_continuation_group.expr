@@ -1,0 +1,1 @@
+from x in xs group x by x into g orderby g.Key select g

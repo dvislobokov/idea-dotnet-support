@@ -1,0 +1,29 @@
+{
+  "id": "grpc",
+  "title": "gRPC / Protobuf",
+  "packages": ["Grpc.Tools", "Grpc.AspNetCore", "Grpc.AspNetCore.Server", "Grpc.Net.Client", "Google.Protobuf"],
+  "url": "https://github.com/grpc/grpc/blob/master/src/csharp/BUILD-INTEGRATION.md",
+  "properties": [
+    { "name": "Protobuf_ToolsOs", "doc": "The OS of the protoc that is run; detected unless set.", "values": ["linux", "macosx", "windows"] },
+    { "name": "Protobuf_ToolsCpu", "doc": "The CPU of the protoc that is run; detected unless set.", "values": ["x86", "x64", "arm64"] },
+    { "name": "Protobuf_ProtocFullPath", "doc": "A protoc to use instead of the one from Grpc.Tools, e.g. on musl or on an unsupported CPU." },
+    { "name": "gRPC_PluginFullPath", "doc": "A grpc_csharp_plugin to use instead of the one from Grpc.Tools." },
+    { "name": "Protobuf_NoWarnMissingExpected", "doc": "Do not warn when protoc has not produced an expected file (a .proto without services).", "values": "bool" },
+    { "name": "Protobuf_TouchMissingExpected", "doc": "Create the missing expected files empty, so that incremental builds stay incremental.", "values": "bool" },
+    { "name": "DisableProtobufDesignTimeBuild", "doc": "Do not generate code during the design-time build of an IDE.", "values": "bool" },
+    { "name": "IncludeHttpRuleProtos", "doc": "Add google/api/http.proto and annotations.proto for gRPC JSON transcoding.", "values": "bool" }
+  ],
+  "items": [
+    { "name": "Protobuf", "files": true, "doc": "A .proto file compiled to C# by Grpc.Tools during the build.", "metadata": [
+      { "name": "GrpcServices", "doc": "Which gRPC stubs are generated besides the messages.", "values": ["Both", "Server", "Client", "None"] },
+      { "name": "Access", "doc": "The accessibility of the generated types.", "values": ["Public", "Internal"] },
+      { "name": "ProtoRoot", "doc": "The folder import paths inside the .proto files are relative to." },
+      { "name": "AdditionalImportDirs", "doc": "Semicolon-separated folders to look for imported .proto files in." },
+      { "name": "ProtoCompile", "doc": "false: the file is only there to be imported by others.", "values": "bool" },
+      { "name": "CompileOutputs", "doc": "false: generate the files, but do not compile them into this project.", "values": "bool" },
+      { "name": "OutputDir", "doc": "Where the message classes are generated; obj by default." },
+      { "name": "GrpcOutputDir", "doc": "Where the service stubs are generated; OutputDir by default." },
+      { "name": "AdditionalProtocArguments", "doc": "Extra arguments of protoc." }
+    ] }
+  ]
+}

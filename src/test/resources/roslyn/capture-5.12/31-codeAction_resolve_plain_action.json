@@ -1,0 +1,83 @@
+{
+ "method": "codeAction/resolve",
+ "params": {
+  "title": "Use implicit type",
+  "kind": "refactor",
+  "data": {
+   "UniqueIdentifier": "Use implicit type",
+   "CustomTags": [
+    "Use Implicit Type Code Action Provider"
+   ],
+   "Range": {
+    "start": {
+     "line": 257,
+     "character": 12
+    },
+    "end": {
+     "line": 257,
+     "character": 22
+    }
+   },
+   "TextDocument": {
+    "uri": "file:///c:/playground/Console/Scenarios.cs"
+   },
+   "CodeActionPath": [
+    "Use implicit type"
+   ],
+   "NestedCodeActions": []
+  }
+ },
+ "ms": 177.8,
+ "result": {
+  "title": "Use implicit type",
+  "kind": "refactor",
+  "edit": {
+   "documentChanges": [
+    {
+     "textDocument": {
+      "version": null,
+      "uri": "file:///c:/playground/Console/Scenarios.cs"
+     },
+     "edits": [
+      {
+       "range": {
+        "start": {
+         "line": 257,
+         "character": 8
+        },
+        "end": {
+         "line": 257,
+         "character": 11
+        }
+       },
+       "newText": "var"
+      }
+     ]
+    }
+   ]
+  },
+  "data": {
+   "UniqueIdentifier": "Use implicit type",
+   "CustomTags": [
+    "Use Implicit Type Code Action Provider"
+   ],
+   "Range": {
+    "start": {
+     "line": 257,
+     "character": 12
+    },
+    "end": {
+     "line": 257,
+     "character": 22
+    }
+   },
+   "TextDocument": {
+    "uri": "file:///c:/playground/Console/Scenarios.cs"
+   },
+   "CodeActionPath": [
+    "Use implicit type"
+   ],
+   "NestedCodeActions": []
+  }
+ }
+}

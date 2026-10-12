@@ -1,0 +1,17 @@
+11:55-57 CS1593: Delegate 'Func<int, int>' does not take 2 arguments
+23:50-52 CS1593: Delegate 'Func<int, int>' does not take 2 arguments
+24:45-47 CS1593: Delegate 'Func<int, int>' does not take 2 arguments
+29:39-41 CS1593: Delegate 'Func<int, int>' does not take 2 arguments
+31:32-34 CS1593: Delegate 'Func<int>' does not take 1 arguments
+32:25-27 CS1593: Delegate 'Action' does not take 1 arguments
+34:25-27 CS1593: Delegate 'Combine' does not take 1 arguments
+36:24-26 CS1593: Delegate 'Func<int, int>' does not take 2 arguments
+39:24-26 CS1593: Delegate 'Func<int, int, int>' does not take 3 arguments
+41:24-26 CS1593: Delegate 'Func<int, int>' does not take 3 arguments
+42:24-26 CS1593: Delegate 'Func<int, int>' does not take 3 arguments
+42:30-33 CS1503: Argument 2: cannot convert from 'double' to 'string'
+44:24-26 CS1593: Delegate 'Func<int, int>' does not take 2 arguments
+46:9-33 CS1593: Delegate 'Action<int>' does not take 2 arguments
+48:27-29 CS1593: Delegate 'Action<int>' does not take 2 arguments
+50:48-50 CS1593: Delegate 'Func<int, bool>' does not take 3 arguments
+52:36-44 CS1593: Delegate 'Func<int, int>' does not take 0 arguments

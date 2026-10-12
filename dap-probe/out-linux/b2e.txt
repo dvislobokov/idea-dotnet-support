@@ -1,0 +1,230 @@
+
+===== dynamic =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 1477, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 352, "column": 9, "endLine": 352, "endColumn": 22}}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 2, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 347, "column": 9, "endLine": 347, "endColumn": 71}}
+   ~ stopped {"reason": "breakpoint", "threadId": 1477, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   STOP #1 breakpoint  | DebugTarget.Atypical.Reflected() @ Atypical.cs:352:9
+   stack: DebugTarget.Atypical.Reflected():352 <- [External Code]:0 <- DebugTarget.Atypical.DynamicCode():334 <- Program.<Main>$():39 <- [External Code]:0  total=5
+   Locals.x = 4  : int  ref=0
+   eval[watch] expando                                        -> ERROR The name 'expando' does not exist in the current context.  (66ms)
+   eval[watch] expando.Name                                   -> ERROR The name 'expando.Name' does not exist in the current context.  (4ms)
+   eval[watch] expando.Count + 1                              -> ERROR The name 'expando.Count' does not exist in the current context.  (4ms)
+   eval[watch] number + 1                                     -> ERROR The name 'number' does not exist in the current context.  (1ms)
+   eval[watch] compiled(2)                                    -> ERROR The name 'compiled' does not exist in the current context.  (7ms)
+   eval[watch] tree                                           -> ERROR The name 'tree' does not exist in the current context.  (1ms)
+   eval[watch] emitted                                        -> ERROR The name 'emitted' does not exist in the current context.  (1ms)
+   eval[watch] fromIl                                         -> ERROR The name 'fromIl' does not exist in the current context.  (0ms)
+   eval[watch] x                                              -> 4 : int  (1ms)
+   ~ stopped {"reason": "breakpoint", "threadId": 1477, "allThreadsStopped": true, "hitBreakpointIds": [2]}
+   STOP #2 breakpoint  | DebugTarget.Atypical.DynamicCode() @ Atypical.cs:347:9
+   stack: DebugTarget.Atypical.DynamicCode():347 <- Program.<Main>$():39 <- [External Code]:0  total=3
+   Locals.expando = {System.Dynamic.ExpandoObject}  : System.Dynamic.ExpandoObject  ref=11
+   Locals.number = 5  : int  ref=0
+   Locals.viaDynamic = 8  : int  ref=0
+   Locals.method = {Int32 Reflected(Int32)}  : System.Reflection.RuntimeMethodInfo  ref=12
+   Locals.reflected = 5  : int  ref=0
+   Locals.tree = {x => (x * 3)}  : System.Linq.Expressions.Expression1<System.Func<int, int>>  ref=13
+   Locals.compiled = {System.Func<int, int>}  : System.Func<int, int>  ref=14
+   Locals.fromTree = 15  : int  ref=0
+   Locals.emitted = {Int32 Emitted(Int32)}  : System.Reflection.Emit.DynamicMethod  ref=15
+   Locals.il = {System.Reflection.Emit.DynamicILGenerator}  : System.Reflection.Emit.DynamicILGenerator  ref=16
+   Locals.fromIl = 101  : int  ref=0
+   children of expando (7, 10ms): LockObject={System.Object}; _data={System.Dynamic.ExpandoObject.ExpandoData}; _count=2; _propertyChanged=null; Class={System.Dynamic.ExpandoClass}; Results View=; Static members=
+   eval[watch] expando                                        -> {System.Dynamic.ExpandoObject} : System.Dynamic.ExpandoObject ref=22  (3ms)
+   eval[watch] expando.Name                                   -> ERROR 'Name' is not a member of the value.  (2ms)
+   eval[watch] expando.Count + 1                              -> ERROR 'Count' is not a member of the value.  (1ms)
+   eval[watch] number + 1                                     -> 6 : int  (31ms)
+   eval[watch] compiled(2)                                    -> ERROR The name 'compiled' does not exist in the current context.  (1ms)
+   eval[watch] tree                                           -> {x => (x * 3)} : System.Linq.Expressions.Expression1<System.Func<int, int>> ref=23  (3ms)
+   eval[watch] emitted                                        -> {Int32 Emitted(Int32)} : System.Reflection.Emit.DynamicMethod ref=24  (5ms)
+   eval[watch] fromIl                                         -> 101 : int  (2ms)
+   eval[watch] x                                              -> ERROR The name 'x' does not exist in the current context.  (0ms)
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 15s (expected None)
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
+
+===== dynamic-stepin =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 1512, "isLocalProcess": true, "startMethod": "launch"}
+   adapter exit code: 0
+
+===== multiline =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 1535, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 357, "column": 9, "endLine": 357, "endColumn": 19}}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 2, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 358, "column": 9, "endLine": 358, "endColumn": 95}}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 3, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 359, "column": 14, "endLine": 359, "endColumn": 23}}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 4, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 360, "column": 9, "endLine": 361, "endColumn": 32}}
+   ~ stopped {"reason": "breakpoint", "threadId": 1535, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   stop: breakpoint | DebugTarget.Atypical.MultiLine() @ Atypical.cs:357:9
+   ~ stopped {"reason": "step", "threadId": 1535, "allThreadsStopped": true}
+      next -> DebugTarget.Atypical.MultiLine() @ Atypical.cs:357:20
+   ~ stopped {"reason": "breakpoint", "threadId": 1535, "allThreadsStopped": true, "hitBreakpointIds": [2]}
+   stop: breakpoint | DebugTarget.Atypical.MultiLine() @ Atypical.cs:358:9
+   ~ stopped {"reason": "breakpoint", "threadId": 1535, "allThreadsStopped": true, "hitBreakpointIds": [3]}
+      next -> DebugTarget.Atypical.MultiLine() @ Atypical.cs:359:14
+   ~ stopped {"reason": "step", "threadId": 1535, "allThreadsStopped": true}
+   stop: step | DebugTarget.Atypical.MultiLine() @ Atypical.cs:359:14
+   ~ stopped {"reason": "step", "threadId": 1535, "allThreadsStopped": true}
+      next -> DebugTarget.Atypical.MultiLine() @ Atypical.cs:359:25
+   ~ stopped {"reason": "breakpoint", "threadId": 1535, "allThreadsStopped": true, "hitBreakpointIds": [4]}
+   stop: breakpoint | DebugTarget.Atypical.MultiLine() @ Atypical.cs:360:9
+   ~ stopped {"reason": "step", "threadId": 1535, "allThreadsStopped": true}
+      next -> DebugTarget.Atypical.MultiLine() @ Atypical.cs:362:5
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 10s (expected None)
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
+
+===== column-breakpoints =====
+   ~ initialized null
+-> setBreakpoints {"source": {"path": "<dap>/t/App/Atypical.cs"}, "breakpoints": [{"line": 358, "column": 53}, {"line": 358, "column": 77}]} | 9ms ok=True {"breakpoints": [{"id": 1, "verified": false, "message": "No loaded module with symbols contains code for this location.", "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 358, "column": 53}, {"id": 2, "verified": false, "message": "No loaded module with symbols contains code for this location.", "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 358, "column": 77}]}
+-> breakpointLocations {"source": {"path": "<dap>/t/App/Atypical.cs"}, "line": 358} | 3ms ok=False Unsupported request 'breakpointLocations'.
+   ~ process {"name": "App.dll", "systemProcessId": 1570, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 358, "column": 53, "endLine": 358, "endColumn": 63}}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 2, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 358, "column": 77, "endLine": 358, "endColumn": 83}}
+   ~ stopped {"reason": "breakpoint", "threadId": 1570, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   column bp stop: [1] | DebugTarget.Atypical.MultiLine.AnonymousMethod__25_0() @ Atypical.cs:358:53
+   ~ stopped {"reason": "breakpoint", "threadId": 1570, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   column bp stop: [1] | DebugTarget.Atypical.MultiLine.AnonymousMethod__25_0() @ Atypical.cs:358:53
+   ~ stopped {"reason": "breakpoint", "threadId": 1570, "allThreadsStopped": true, "hitBreakpointIds": [2]}
+   column bp stop: [2] | DebugTarget.Atypical.MultiLine.AnonymousMethod__25_1() @ Atypical.cs:358:77
+   ~ stopped {"reason": "breakpoint", "threadId": 1570, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   column bp stop: [1] | DebugTarget.Atypical.MultiLine.AnonymousMethod__25_0() @ Atypical.cs:358:53
+   ~ stopped {"reason": "breakpoint", "threadId": 1570, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   column bp stop: [1] | DebugTarget.Atypical.MultiLine.AnonymousMethod__25_0() @ Atypical.cs:358:53
+   ~ stopped {"reason": "breakpoint", "threadId": 1570, "allThreadsStopped": true, "hitBreakpointIds": [2]}
+   column bp stop: [2] | DebugTarget.Atypical.MultiLine.AnonymousMethod__25_1() @ Atypical.cs:358:77
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 8s (expected None)
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
+
+===== generics2 =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 1605, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 88, "column": 37, "endLine": 88, "endColumn": 74}}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 2, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 373, "column": 60, "endLine": 373, "endColumn": 88}}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 3, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 377, "column": 9, "endLine": 377, "endColumn": 22}}
+   ~ stopped {"reason": "breakpoint", "threadId": 1605, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   STOP #1 breakpoint  | DebugTarget.Outer<int>.Inner<string>.Describe() @ Atypical.cs:88:37
+   stack: DebugTarget.Outer<int>.Inner<string>.Describe():88 <- DebugTarget.Atypical.Generics():367 <- Program.<Main>$():41 <- [External Code]:0  total=4
+   Locals.this = {DebugTarget.Outer<int>.Inner<string>}  : DebugTarget.Outer<int>.Inner<string>  ref=6
+   eval[watch] this                                           -> {DebugTarget.Outer<int>.Inner<string>} : DebugTarget.Outer<int>.Inner<string> ref=7  (39ms)
+   eval[watch] First                                          -> 1 : int  (7ms)
+   eval[watch] Second                                         -> "two" : string  (2ms)
+   eval[watch] value                                          -> ERROR The name 'value' does not exist in the current context.  (10ms)
+   eval[watch] typeof(T)                                      -> ERROR Type 'T' not found.  (4ms)
+   eval[watch] shape.Area()                                   -> ERROR The name 'shape' does not exist in the current context.  (6ms)
+   eval[watch] T.Title                                        -> ERROR The name 'T.Title' does not exist in the current context.  (1ms)
+   ~ stopped {"reason": "breakpoint", "threadId": 1605, "allThreadsStopped": true, "hitBreakpointIds": [2]}
+   STOP #2 breakpoint  | DebugTarget.Atypical.Describe<DebugTarget.Square>() @ Atypical.cs:373:60
+   stack: DebugTarget.Atypical.Describe<DebugTarget.Square>():373 <- DebugTarget.Atypical.Generics():368 <- Program.<Main>$():41 <- [External Code]:0  total=4
+   Locals.shape = {DebugTarget.Square}  : DebugTarget.Square  ref=13
+   eval[watch] this                                           -> ERROR Keyword 'this' is not available in the current context.  (1ms)
+   eval[watch] First                                          -> ERROR The name 'First' does not exist in the current context.  (0ms)
+   eval[watch] Second                                         -> ERROR The name 'Second' does not exist in the current context.  (0ms)
+   eval[watch] value                                          -> ERROR The name 'value' does not exist in the current context.  (0ms)
+   eval[watch] typeof(T)                                      -> ERROR Type 'T' not found.  (0ms)
+   eval[watch] shape.Area()                                   -> 4 : double  (10ms)
+   eval[watch] T.Title                                        -> ERROR The name 'T.Title' does not exist in the current context.  (3ms)
+   ~ stopped {"reason": "breakpoint", "threadId": 1605, "allThreadsStopped": true, "hitBreakpointIds": [3]}
+   STOP #3 breakpoint  | DebugTarget.Atypical.Identity<int>() @ Atypical.cs:377:9
+   stack: DebugTarget.Atypical.Identity<int>():377 <- DebugTarget.Atypical.Generics():369 <- Program.<Main>$():41 <- [External Code]:0  total=4
+   Locals.value = 5  : int  ref=0
+   eval[watch] this                                           -> ERROR Keyword 'this' is not available in the current context.  (0ms)
+   eval[watch] First                                          -> ERROR The name 'First' does not exist in the current context.  (0ms)
+   eval[watch] Second                                         -> ERROR The name 'Second' does not exist in the current context.  (0ms)
+   eval[watch] value                                          -> 5 : int  (0ms)
+   eval[watch] typeof(T)                                      -> ERROR Type 'T' not found.  (0ms)
+   eval[watch] shape.Area()                                   -> ERROR The name 'shape' does not exist in the current context.  (0ms)
+   eval[watch] T.Title                                        -> ERROR The name 'T.Title' does not exist in the current context.  (0ms)
+   ~ stopped {"reason": "breakpoint", "threadId": 1605, "allThreadsStopped": true, "hitBreakpointIds": [3]}
+   STOP #4 breakpoint  | DebugTarget.Atypical.Identity<string>() @ Atypical.cs:377:9
+   stack: DebugTarget.Atypical.Identity<string>():377 <- DebugTarget.Atypical.Generics():370 <- Program.<Main>$():41 <- [External Code]:0  total=4
+   Locals.value = "five"  : string  ref=0
+   eval[watch] this                                           -> ERROR Keyword 'this' is not available in the current context.  (0ms)
+   eval[watch] First                                          -> ERROR The name 'First' does not exist in the current context.  (0ms)
+   eval[watch] Second                                         -> ERROR The name 'Second' does not exist in the current context.  (0ms)
+   eval[watch] value                                          -> "five" : string  (0ms)
+   eval[watch] typeof(T)                                      -> ERROR Type 'T' not found.  (0ms)
+   eval[watch] shape.Area()                                   -> ERROR The name 'shape' does not exist in the current context.  (0ms)
+   eval[watch] T.Title                                        -> ERROR The name 'T.Title' does not exist in the current context.  (0ms)
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 15s (expected None)
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
+
+===== finalizer =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 1640, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 111, "column": 9, "endLine": 111, "endColumn": 45}}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 2, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 385, "column": 9, "endLine": 385, "endColumn": 40}}
+   ~ stopped {"reason": "breakpoint", "threadId": 1656, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   STOP #1 breakpoint  | DebugTarget.Finalizable.Finalize() @ Atypical.cs:111:9
+   stack: DebugTarget.Finalizable.Finalize():111 <- [External Code]:0  total=2
+   Locals.this = {DebugTarget.Finalizable}  : DebugTarget.Finalizable  ref=4
+   eval[watch] this                                           -> {DebugTarget.Finalizable} : DebugTarget.Finalizable ref=5  (37ms)
+   ~ stopped {"reason": "breakpoint", "threadId": 1640, "allThreadsStopped": true, "hitBreakpointIds": [2]}
+   STOP #2 breakpoint  | DebugTarget.Atypical.Finalizer() @ Atypical.cs:385:9
+   stack: DebugTarget.Atypical.Finalizer():385 <- Program.<Main>$():42 <- [External Code]:0  total=3
+   eval[watch] this                                           -> ERROR Keyword 'this' is not available in the current context.  (1ms)
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   ! NO stopped event within 15s (expected None)
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
+
+===== childproc =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 1675, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 395, "column": 9, "endLine": 395, "endColumn": 59}}
+   ~ stopped {"reason": "breakpoint", "threadId": 1675, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   STOP #1 breakpoint  | DebugTarget.Atypical.ChildProcess() @ Atypical.cs:395:9
+   stack: DebugTarget.Atypical.ChildProcess():395 <- Program.<Main>$():43 <- [External Code]:0  total=3
+   Locals.child = {System.Diagnostics.Process}  : System.Diagnostics.Process  ref=5
+   Locals.version = "10.0.401\n"  : string  ref=0
+   eval[watch] version                                        -> "10.0.401\n" : string  (70ms)
+   eval[watch] child.Id                                       -> 1694 : int  (11ms)
+   eval[watch] child.HasExited                                -> true : bool  (6ms)
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0
+
+===== refparams =====
+   ~ initialized null
+   ~ process {"name": "App.dll", "systemProcessId": 1718, "isLocalProcess": true, "startMethod": "launch"}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 1, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 409, "column": 9, "endLine": 409, "endColumn": 32}}
+   ~ breakpoint {"reason": "changed", "breakpoint": {"id": 2, "verified": true, "source": {"name": "Atypical.cs", "path": "<dap>/t/App/Atypical.cs"}, "line": 403, "column": 9, "endLine": 403, "endColumn": 52}}
+   ~ stopped {"reason": "breakpoint", "threadId": 1718, "allThreadsStopped": true, "hitBreakpointIds": [1]}
+   STOP #1 breakpoint  | DebugTarget.Atypical.Mutate() @ Atypical.cs:409:9
+   stack: DebugTarget.Atypical.Mutate():409 <- DebugTarget.Atypical.RefParams():402 <- Program.<Main>$():44 <- [External Code]:0  total=4
+   Locals.value = 11  : int  ref=0
+   Locals.produced = 0  : int  ref=0
+   Locals.text = "in"  : string  ref=0
+   eval[watch] value                                          -> 11 : int  (44ms)
+   eval[watch] produced                                       -> 0 : int  (1ms)
+   eval[watch] text                                           -> "in" : string  (0ms)
+   eval[watch] value + produced                               -> 11 : int  (68ms)
+   ~ stopped {"reason": "breakpoint", "threadId": 1718, "allThreadsStopped": true, "hitBreakpointIds": [2]}
+   STOP #2 breakpoint  | DebugTarget.Atypical.RefParams() @ Atypical.cs:403:9
+   stack: DebugTarget.Atypical.RefParams():403 <- Program.<Main>$():44 <- [External Code]:0  total=3
+   Locals.value = 11  : int  ref=0
+   Locals.text = "in"  : string  ref=0
+   Locals.produced = 2  : int  ref=0
+   eval[watch] value                                          -> 11 : int  (1ms)
+   eval[watch] produced                                       -> 2 : int  (0ms)
+   eval[watch] text                                           -> "in" : string  (0ms)
+   eval[watch] value + produced                               -> 13 : int  (0ms)
+   ~ exited {"exitCode": 0}
+   ~ terminated null
+   end: exited={'exitCode': 0} terminated=True
+   adapter exit code: 0

@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The helper of diagnostics that stays running (helpers/README.md): which CLR a process has loaded, retained sizes and dominators of a
+    heap dump. On ClrMD (Microsoft.Diagnostics.Runtime), so its first build needs the feed (or the package in the cache of the machine).
+
+    The plugin carries this file, Program.cs and Protocol.cs and builds them on the machine of the user (cli/DotNetHelper) for the framework
+    of the SDK that is there: `-p:HelperFramework=net10.0` with the SDK 10. Without the property (a build in the repository): net8.0.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework Condition="'$(HelperFramework)' != ''">$(HelperFramework)</TargetFramework>
+    <RollForward>LatestMajor</RollForward>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>DiagnosticsHelper</AssemblyName>
+    <RootNamespace>DotNetSupport.Helpers</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <DebugType>none</DebugType>
+    <UseAppHost>false</UseAppHost>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../protocol/Protocol.cs" Condition="!Exists('Protocol.cs')" Link="Protocol.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="3.1.512801" />
+  </ItemGroup>
+</Project>

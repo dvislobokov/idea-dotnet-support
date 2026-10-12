@@ -1,0 +1,21 @@
+{
+ "method": "textDocument/completion",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  },
+  "position": {
+   "line": 21,
+   "character": 1
+  },
+  "context": {
+   "triggerKind": 2,
+   "triggerCharacter": "<"
+  }
+ },
+ "ms": 26.1,
+ "result": {
+  "items": [],
+  "isIncomplete": true
+ }
+}

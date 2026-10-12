@@ -1,0 +1,70 @@
+{
+ "method": "textDocument/references",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Console/Scenarios.cs"
+  },
+  "position": {
+   "line": 259,
+   "character": 35
+  },
+  "context": {
+   "includeDeclaration": true
+  }
+ },
+ "ms": 546.9,
+ "result": [
+  {
+   "uri": "file:///c:/playground/Console/Scenarios.cs",
+   "range": {
+    "start": {
+     "line": 252,
+     "character": 15
+    },
+    "end": {
+     "line": 252,
+     "character": 21
+    }
+   }
+  },
+  {
+   "uri": "file:///c:/playground/Console/Scenarios.cs",
+   "range": {
+    "start": {
+     "line": 250,
+     "character": 35
+    },
+    "end": {
+     "line": 250,
+     "character": 41
+    }
+   }
+  },
+  {
+   "uri": "file:///c:/playground/Console/Scenarios.cs",
+   "range": {
+    "start": {
+     "line": 259,
+     "character": 33
+    },
+    "end": {
+     "line": 259,
+     "character": 39
+    }
+   }
+  },
+  {
+   "uri": "file:///c:/playground/Console/Scenarios.cs",
+   "range": {
+    "start": {
+     "line": 263,
+     "character": 20
+    },
+    "end": {
+     "line": 263,
+     "character": 26
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,34 @@
+{
+  "id": "containers",
+  "title": "SDK containers",
+  "packages": ["Microsoft.NET.Build.Containers"],
+  "sdks": ["Microsoft.NET.Sdk.Web", "Microsoft.NET.Sdk.Worker"],
+  "url": "https://learn.microsoft.com/dotnet/core/containers/publish-configuration",
+  "properties": [
+    { "name": "EnableSdkContainerSupport", "doc": "dotnet publish /t:PublishContainer for a project that is not a web one.", "values": "bool" },
+    { "name": "ContainerBaseImage", "doc": "The base image; by default the runtime or aspnet image of the target framework." },
+    { "name": "ContainerFamily", "doc": "The flavor of the default base image.", "open": true, "values": ["alpine", "noble", "noble-chiseled", "noble-chiseled-extra", "jammy", "jammy-chiseled", "azurelinux3.0-distroless"] },
+    { "name": "ContainerRegistry", "doc": "The registry the image is pushed to; the local daemon when empty." },
+    { "name": "ContainerRepository", "doc": "The name of the image; the assembly name by default." },
+    { "name": "ContainerImageTag", "doc": "The tag of the image; latest by default." },
+    { "name": "ContainerImageTags", "doc": "Semicolon-separated tags of the image." },
+    { "name": "ContainerRuntimeIdentifier", "doc": "The platform of the image, linux-x64 by default." },
+    { "name": "ContainerRuntimeIdentifiers", "doc": "Semicolon-separated platforms of a multi-architecture image." },
+    { "name": "ContainerWorkingDirectory", "doc": "The working directory of the container, /app by default." },
+    { "name": "ContainerUser", "doc": "The user the application runs as; app (non-root) in the images of .NET 8+." },
+    { "name": "ContainerImageFormat", "doc": "The format of the image manifest.", "values": ["Docker", "OCI"] },
+    { "name": "ContainerArchiveOutputPath", "doc": "Write the image as a tar.gz instead of pushing it." },
+    { "name": "LocalRegistry", "doc": "The local tool the image is loaded into.", "values": ["docker", "podman"] },
+    { "name": "DockerDefaultTargetOS", "doc": "The OS of the Dockerfile of the Visual Studio container tools.", "values": ["Linux", "Windows"] },
+    { "name": "DockerfileContext", "doc": "The build context of the Dockerfile, relative to the project." },
+    { "name": "DockerfileFile", "doc": "The Dockerfile of the project." }
+  ],
+  "items": [
+    { "name": "ContainerPort", "doc": "A port the container exposes; Include is the number.", "metadata": [{ "name": "Type", "doc": "The protocol of the port.", "values": ["tcp", "udp"] }] },
+    { "name": "ContainerEnvironmentVariable", "doc": "An environment variable of the container; Include is the name.", "metadata": [{ "name": "Value", "doc": "The value of the variable." }] },
+    { "name": "ContainerLabel", "doc": "A label of the image; Include is the name.", "metadata": [{ "name": "Value", "doc": "The value of the label." }] },
+    { "name": "ContainerAppCommand", "doc": "The entry point of the container instead of the application." },
+    { "name": "ContainerAppCommandArgs", "doc": "Arguments that always go with the entry point." },
+    { "name": "ContainerDefaultArgs", "doc": "Arguments a docker run without arguments gets." }
+  ]
+}

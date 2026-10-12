@@ -1,0 +1,406 @@
+{
+ "method": "textDocument/signatureHelp",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  },
+  "position": {
+   "line": 31,
+   "character": 33
+  },
+  "context": {
+   "triggerKind": 2,
+   "triggerCharacter": "(",
+   "isRetrigger": false
+  }
+ },
+ "ms": 47.5,
+ "result": {
+  "signatures": [
+   {
+    "label": "void Console.WriteLine()",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the current line terminator to the standard output stream."
+    },
+    "parameters": []
+   },
+   {
+    "label": "void Console.WriteLine(bool value)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the text representation of the specified Boolean value, followed by the current line terminator, to the standard output stream."
+    },
+    "parameters": [
+     {
+      "label": "value",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The value to write."
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(char value)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the specified Unicode character, followed by the current line terminator, value to the standard output stream."
+    },
+    "parameters": [
+     {
+      "label": "value",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The value to write."
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(char[]? buffer)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the specified array of Unicode characters, followed by the current line terminator, to the standard output stream."
+    },
+    "parameters": [
+     {
+      "label": "buffer",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "A Unicode character array."
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(decimal value)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the text representation of the specified decimal value, followed by the current line terminator, to the standard output stream."
+    },
+    "parameters": [
+     {
+      "label": "value",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The value to write."
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(double value)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the text representation of the specified double-precision floating-point value, followed by the current line terminator, to the standard output stream."
+    },
+    "parameters": [
+     {
+      "label": "value",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The value to write."
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(float value)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the text representation of the specified single-precision floating-point value, followed by the current line terminator, to the standard output stream."
+    },
+    "parameters": [
+     {
+      "label": "value",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The value to write."
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(int value)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the text representation of the specified 32-bit signed integer value, followed by the current line terminator, to the standard output stream."
+    },
+    "parameters": [
+     {
+      "label": "value",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The value to write."
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(long value)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the text representation of the specified 64-bit signed integer value, followed by the current line terminator, to the standard output stream."
+    },
+    "parameters": [
+     {
+      "label": "value",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The value to write."
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(object? value)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the text representation of the specified object, followed by the current line terminator, to the standard output stream."
+    },
+    "parameters": [
+     {
+      "label": "value",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The value to write."
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(string? value)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the specified string value, followed by the current line terminator, to the standard output stream."
+    },
+    "parameters": [
+     {
+      "label": "value",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The value to write."
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(uint value)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the text representation of the specified 32-bit unsigned integer value, followed by the current line terminator, to the standard output stream."
+    },
+    "parameters": [
+     {
+      "label": "value",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The value to write."
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(ulong value)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the text representation of the specified 64-bit unsigned integer value, followed by the current line terminator, to the standard output stream."
+    },
+    "parameters": [
+     {
+      "label": "value",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The value to write."
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(ReadOnlySpan<char> value)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": ""
+    },
+    "parameters": [
+     {
+      "label": "value",
+      "documentation": {
+       "kind": "plaintext",
+       "value": ""
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(string format, object? arg0)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the text representation of the specified object, followed by the current line terminator, to the standard output stream using the specified format information."
+    },
+    "parameters": [
+     {
+      "label": "format",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "A composite format string."
+      }
+     },
+     {
+      "label": "arg0",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "An object to write using format."
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(string format, params object?[]? arg)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the text representation of the specified array of objects, followed by the current line terminator, to the standard output stream using the specified format information."
+    },
+    "parameters": [
+     {
+      "label": "format",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "A composite format string."
+      }
+     },
+     {
+      "label": "arg",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "An array of objects to write using format."
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(string format, params ReadOnlySpan<object?> arg)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the text representation of the specified span of objects, followed by the current line terminator, to the standard output stream using the specified format information."
+    },
+    "parameters": [
+     {
+      "label": "format",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "A composite format string."
+      }
+     },
+     {
+      "label": "arg",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "A span of objects to write using format."
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(char[] buffer, int index, int count)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the specified subarray of Unicode characters, followed by the current line terminator, to the standard output stream."
+    },
+    "parameters": [
+     {
+      "label": "buffer",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "An array of Unicode characters."
+      }
+     },
+     {
+      "label": "index",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The starting position in buffer."
+      }
+     },
+     {
+      "label": "count",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The number of characters to write."
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(string format, object? arg0, object? arg1)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the text representation of the specified objects, followed by the current line terminator, to the standard output stream using the specified format information."
+    },
+    "parameters": [
+     {
+      "label": "format",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "A composite format string."
+      }
+     },
+     {
+      "label": "arg0",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The first object to write using format."
+      }
+     },
+     {
+      "label": "arg1",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The second object to write using format."
+      }
+     }
+    ]
+   },
+   {
+    "label": "void Console.WriteLine(string format, object? arg0, object? arg1, object? arg2)",
+    "documentation": {
+     "kind": "plaintext",
+     "value": "Writes the text representation of the specified objects, followed by the current line terminator, to the standard output stream using the specified format information."
+    },
+    "parameters": [
+     {
+      "label": "format",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "A composite format string."
+      }
+     },
+     {
+      "label": "arg0",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The first object to write using format."
+      }
+     },
+     {
+      "label": "arg1",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The second object to write using format."
+      }
+     },
+     {
+      "label": "arg2",
+      "documentation": {
+       "kind": "plaintext",
+       "value": "The third object to write using format."
+      }
+     }
+    ]
+   }
+  ],
+  "activeSignature": 10,
+  "activeParameter": 0
+ }
+}

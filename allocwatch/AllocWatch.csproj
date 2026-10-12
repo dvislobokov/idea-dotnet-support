@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The watcher of allocations: attaches to a running .NET process over EventPipe and prints, once a second, which line of the source
+    allocates how much (a line of JSON). The plugin shows it in the editor.
+
+    The plugin carries this file and Program.cs as they are and builds them on the machine of the user (cli/DotNetHelper), for the
+    framework of the SDK that is there: `-p:HelperFramework=net10.0` with the SDK 10. Unlike the indexer of assemblies it needs two
+    packages of NuGet, so its first build needs the feed (or the packages in the cache of the machine).
+    Without the property (a build in the repository): net8.0.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework Condition="'$(HelperFramework)' != ''">$(HelperFramework)</TargetFramework>
+    <RollForward>LatestMajor</RollForward>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>AllocWatch</AssemblyName>
+    <RootNamespace>DotNetSupport.AllocWatch</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <DebugType>none</DebugType>
+    <UseAppHost>false</UseAppHost>
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.661903" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.2.4" />
+  </ItemGroup>
+</Project>

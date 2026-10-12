@@ -1,0 +1,1 @@
+public int this[int i] { get => i; }

@@ -1,0 +1,49 @@
+{
+  "id": "desktop",
+  "title": "WPF, WinForms, MAUI",
+  "packages": ["Microsoft.Maui.Controls", "CommunityToolkit.Maui", "Avalonia"],
+  "sdks": ["Microsoft.NET.Sdk.WindowsDesktop", "Microsoft.NET.Sdk.Maui"],
+  "url": "https://learn.microsoft.com/dotnet/core/project-sdk/msbuild-props-desktop",
+  "properties": [
+    { "name": "UseWPF", "doc": "Reference WPF and compile XAML.", "values": "bool" },
+    { "name": "UseWindowsForms", "doc": "Reference Windows Forms.", "values": "bool" },
+    { "name": "ApplicationHighDpiMode", "doc": "WinForms: the DPI awareness of the application.", "values": ["SystemAware", "PerMonitorV2", "PerMonitor", "DpiUnaware", "DpiUnawareGdiScaled"] },
+    { "name": "ApplicationVisualStyles", "doc": "WinForms: enable the visual styles.", "values": "bool" },
+    { "name": "ApplicationUseCompatibleTextRendering", "doc": "WinForms: GDI+ text rendering by default.", "values": "bool" },
+    { "name": "ApplicationDefaultFont", "doc": "WinForms: the default font, e.g. Segoe UI, 9pt." },
+    { "name": "UseMaui", "doc": "A .NET MAUI project.", "values": "bool" },
+    { "name": "SingleProject", "doc": "MAUI: one project for every platform.", "values": "bool" },
+    { "name": "ApplicationTitle", "doc": "MAUI: the display name of the application." },
+    { "name": "ApplicationId", "doc": "MAUI: the bundle / package identifier, e.g. com.company.app." },
+    { "name": "ApplicationDisplayVersion", "doc": "MAUI: the version users see." },
+    { "name": "ApplicationVersion", "doc": "MAUI: the integer build number of the stores." },
+    { "name": "SupportedOSPlatformVersion", "doc": "The lowest OS version of the platform the target framework names." },
+    { "name": "TargetPlatformMinVersion", "doc": "Windows: the lowest OS version the application runs on." },
+    { "name": "WindowsPackageType", "doc": "MAUI / WinUI: None for an unpackaged application.", "open": true, "values": ["None", "MSIX"] },
+    { "name": "AvaloniaUseCompiledBindingsByDefault", "doc": "Avalonia: bindings are compiled unless said otherwise.", "values": "bool" }
+  ],
+  "items": [
+    { "name": "MauiIcon", "files": true, "doc": "The icon of the application.", "metadata": [
+      { "name": "ForegroundFile", "doc": "The foreground layer of the icon." },
+      { "name": "Color", "doc": "The background color." },
+      { "name": "BaseSize", "doc": "The size the vector image is designed at: 128,128." }
+    ] },
+    { "name": "MauiSplashScreen", "files": true, "doc": "The splash screen.", "metadata": [
+      { "name": "Color", "doc": "The background color." },
+      { "name": "BaseSize", "doc": "The size the vector image is designed at." }
+    ] },
+    { "name": "MauiImage", "files": true, "doc": "Images, resized for every platform.", "metadata": [
+      { "name": "BaseSize", "doc": "The size the vector image is designed at." },
+      { "name": "Resize", "doc": "false: use the image as it is.", "values": "bool" },
+      { "name": "TintColor", "doc": "A color to tint the image with." }
+    ] },
+    { "name": "MauiFont", "files": true, "doc": "Font files of the application." },
+    { "name": "MauiAsset", "files": true, "doc": "Raw assets deployed with the application.", "metadata": [
+      { "name": "LogicalName", "doc": "The path of the asset in the package: %(RecursiveDir)%(Filename)%(Extension)." }
+    ] },
+    { "name": "AvaloniaResource", "files": true, "doc": "Avalonia: files available by avares:// URIs." },
+    { "name": "ApplicationDefinition", "files": true, "doc": "WPF: App.xaml." },
+    { "name": "Page", "files": true, "doc": "WPF: XAML compiled to BAML." },
+    { "name": "Resource", "files": true, "doc": "WPF: files available by pack:// URIs." }
+  ]
+}

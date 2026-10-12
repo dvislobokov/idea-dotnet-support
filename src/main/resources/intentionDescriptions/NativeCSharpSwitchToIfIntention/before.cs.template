@@ -1,0 +1,9 @@
+switch (kind)
+{
+    case Kind.A:
+        Run();
+        break;
+    default:
+        Stop();
+        break;
+}

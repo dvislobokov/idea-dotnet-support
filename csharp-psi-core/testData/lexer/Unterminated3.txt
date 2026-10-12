@@ -1,0 +1,6 @@
+SingleLineRawStringLiteralToken ('""" raw')
+EndOfLineTrivia ('\n')
+IdentifierToken ('x')
+WhitespaceTrivia (' ')
+InterpolatedMultiLineRawStringStartToken ('$"""\n')
+InterpolatedStringTextToken ('  not closed\n')

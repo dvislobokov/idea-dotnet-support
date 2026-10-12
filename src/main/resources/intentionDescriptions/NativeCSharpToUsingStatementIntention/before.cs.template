@@ -1,0 +1,2 @@
+<spot>using</spot> var reader = new StreamReader(path);
+Console.WriteLine(reader.ReadLine());

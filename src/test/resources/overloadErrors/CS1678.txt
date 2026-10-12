@@ -1,0 +1,4 @@
+12:20-24 CS1678: Parameter 2 is declared as type 'object' but should be 'string'
+12:26-28 CS1661: Cannot convert lambda expression to type 'Func<Invoice, string, int>' because the parameter types do not match the delegate parameter types
+15:35-40 CS1678: Parameter 1 is declared as type 'long' but should be 'int'
+16:15-17 CS1661: Cannot convert lambda expression to type 'Action<int>' because the parameter types do not match the delegate parameter types

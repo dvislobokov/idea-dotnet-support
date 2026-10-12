@@ -1,0 +1,71 @@
+{
+ "method": "textDocument/diagnostic",
+ "params": {
+  "textDocument": {
+   "uri": "file:///c:/playground/Blazor/Components/Pages/Counter.razor"
+  }
+ },
+ "ms": 190.9,
+ "result": {
+  "kind": "full",
+  "resultId": "5149ec0e-54e8-468b-9db7-1274d5bb3240",
+  "items": [
+   {
+    "_vs_projects": [
+     {
+      "_vs_projectName": "BlazorApp (net10.0)",
+      "_vs_projectIdentifier": "c:/playground/Blazor/obj/Debug/net10.0/"
+     }
+    ],
+    "range": {
+     "start": {
+      "line": 29,
+      "character": 12
+     },
+     "end": {
+      "line": 29,
+      "character": 18
+     }
+    },
+    "severity": 2,
+    "code": "CS0219",
+    "codeDescription": {
+     "href": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS0219)"
+    },
+    "message": "The variable 'unused' is assigned but its value is never used",
+    "tags": [
+     2147483642,
+     2147483645
+    ]
+   },
+   {
+    "_vs_projects": [
+     {
+      "_vs_projectName": "BlazorApp (net10.0)",
+      "_vs_projectIdentifier": "c:/playground/Blazor/obj/Debug/net10.0/"
+     }
+    ],
+    "range": {
+     "start": {
+      "line": 30,
+      "character": 12
+     },
+     "end": {
+      "line": 30,
+      "character": 20
+     }
+    },
+    "severity": 2,
+    "code": "CS0219",
+    "codeDescription": {
+     "href": "https://msdn.microsoft.com/query/roslyn.query?appId=roslyn&k=k(CS0219)"
+    },
+    "message": "The variable 'fixedNow' is assigned but its value is never used",
+    "tags": [
+     2147483642,
+     2147483645
+    ]
+   }
+  ]
+ }
+}
