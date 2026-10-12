@@ -1,0 +1,2 @@
+<spot>int count;</spot>
+count = items.Count;

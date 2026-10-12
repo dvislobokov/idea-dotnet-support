@@ -141,4 +141,30 @@ public class IfActions
     private static void A() { }
     private static void B() { }
     private static void C() { }
+
+    // TYPE:if-invert-middle — Alt+Enter on `if` of InvertMiddle: "Invert 'if'". EXPECT (0.1.171, as Rider): `if (!a.Equals(b))` with
+    // `var length = a.Length;` / `Console.WriteLine(length);` inside it and `else { throw new ArgumentException("same"); }` after; NOT offered
+    // on the `if` of KeepsTheRest (its body does not leave the block). Ctrl+Z.
+    public void InvertMiddle(string a, string b)
+    {
+        if (a.Equals(b))
+        {
+            throw new ArgumentException("same");
+        }
+
+        var length = a.Length;
+        Console.WriteLine(length);
+    }
+
+    public void KeepsTheRest(bool ok)
+    {
+        if (ok)
+        {
+            A();
+        }
+        B();
+    }
+
+    // TYPE:if-invert-condition — Alt+Enter on `?` of Pick: "Invert condition". EXPECT: `!ok ? "no" : "yes"`. Ctrl+Z.
+    public string Pick(bool ok) => ok ? "yes" : "no";
 }

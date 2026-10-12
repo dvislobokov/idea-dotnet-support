@@ -91,6 +91,97 @@ object NativeCSharpParameterEdits {
         return CSharpTextEdit(TextRange(open.textRange.endOffset, close.textRange.startOffset), "\n$inner$statement\n$outer", caret = 1 + inner.length + statement.length)
     }
 
+    // ---- Check variable / expression for null, Assert expression is not null (0.1.171, as Rider)
+
+    /** [type] may hold null: a reference type (not a type parameter) or `T?` of a value type. */
+    fun mayBeNull(type: SemanticType?, resolver: CSharpNameResolver): Boolean {
+        type ?: return false
+        if (type is SemanticType.Parameter) return false
+        if (resolver.unwrapNullable(type) != type) return true
+        if (type is SemanticType.ArrayOf) return true
+        return !resolver.isValueType(type) && resolver.definitionName(type) != "System.Void"
+    }
+
+    /** The local declared at [offset] (on its type or name) with its value, alone in its statement of a block: `var incoming = …;`. */
+    fun localAt(file: PsiFile, offset: Int): Pair<CSharpLocalDeclarationStatement, CSharpVariableDeclarator>? {
+        val site = NativeCSharpContextEdits.typeSiteAt(file, offset) ?: return null
+        if (site.foreach != null || site.constant || site.value == null) return null
+        val declaration = site.type.parent as? CSharpVariableDeclaration ?: return null
+        val statement = declaration.parent as? CSharpLocalDeclarationStatement ?: return null
+        if (statement.parent !is CSharpBlock || present(statement.usingKeyword)) return null
+        val variable = declaration.variables.singleOrNull() ?: return null
+        return statement to variable
+    }
+
+    /** The check of the local [variable] right after its declaration [statement] (Rider: "Check variable for null"), the pattern of the parameters'. */
+    fun checkVariable(statement: CSharpLocalDeclarationStatement, variable: CSharpVariableDeclarator, throwIfNull: Boolean, text: CharSequence): CSharpTextEdit? {
+        val name = variable.identifier?.text ?: return null
+        val block = statement.parent as? CSharpBlock ?: return null
+        val next = block.statements.getOrNull(block.statements.indexOf(statement) + 1)
+        val word = Regex("""\b${Regex.escape(name)}\b""")
+        if (next != null && next.text.contains("null", ignoreCase = true) && word.containsMatchIn(next.text) && (next is CSharpIfStatement || next.text.contains("ThrowIfNull"))) return null
+        val check = if (throwIfNull) "ArgumentNullException.ThrowIfNull($name);" else "if ($name == null) throw new ArgumentNullException(nameof($name));"
+        val end = statement.textRange.endOffset
+        val indent = lineIndent(text, statement.textRange.startOffset)
+        return CSharpTextEdit(TextRange(end, end), "\n$indent$check", caret = 1 + indent.length + check.length)
+    }
+
+    /**
+     * The value at [offset] a null check can be about: a name, a member access, a call, an element access, an `await` — as Introduce
+     * Variable takes it (the receiver with its member, the call with its name) — in a statement of a block, not a declaration's name, a
+     * type, the target of an assignment, `this`, a literal or a creation (never null).
+     */
+    fun expressionAt(file: PsiFile, offset: Int): Pair<CSharpExpression, CSharpStatement>? {
+        for (leaf in leafAt(file, offset)) {
+            if (leaf.text.isBlank() || leaf.text == ";") continue
+            var expression = PsiTreeUtil.getParentOfType(leaf, CSharpExpression::class.java, false) ?: continue
+            while (true) {
+                val parent = expression.parent
+                expression = when {
+                    parent is CSharpMemberAccessExpression && parent.nameElement == expression -> parent
+                    parent is CSharpMemberAccessExpression && parent.expression == expression && expression is CSharpSimpleName -> parent
+                    parent is CSharpInvocationExpression && parent.expression == expression -> parent
+                    parent is CSharpAwaitExpression -> parent
+                    else -> break
+                }
+            }
+            if (expression is CSharpSimpleName && NativeCSharpTypePositions.isType(expression)) return null
+            if (expression is CSharpThisExpression || expression is CSharpLiteralExpression || expression is CSharpBaseObjectCreationExpression ||
+                expression is CSharpAnonymousFunctionExpression || expression is CSharpTypeOfExpression) return null
+            if (expression !is CSharpSimpleName && expression !is CSharpMemberAccessExpression && expression !is CSharpInvocationExpression &&
+                expression !is CSharpElementAccessExpression && expression !is CSharpAwaitExpression) return null
+            val assigned = expression.parent as? CSharpAssignmentExpression
+            if (assigned != null && assigned.left == expression) return null
+            var at: PsiElement = expression
+            while (true) {
+                val parent = at.parent ?: return null
+                if (parent is CSharpAnonymousFunctionExpression || parent is CSharpLocalFunctionStatement || parent is CSharpMemberDeclaration || parent is PsiFile) return null
+                if (parent is CSharpStatement && parent.parent is CSharpBlock) return expression to parent
+                at = parent
+            }
+        }
+        return null
+    }
+
+    /** [statement] under `if (expression != null) { … }` (Rider: "Check expression for null"). */
+    fun checkExpression(expression: CSharpExpression, statement: CSharpStatement, text: CharSequence, unit: String): CSharpTextEdit {
+        val indent = lineIndent(text, statement.textRange.startOffset)
+        val body = statement.text.lines().mapIndexed { i, line -> if (i == 0) indent + unit + line else if (line.isBlank()) "" else unit + line }.joinToString("\n")
+        return CSharpTextEdit(statement.textRange, "if (${expression.text} != null)\n$indent{\n$body\n$indent}")
+    }
+
+    /** `Debug.Assert(expression != null, …);` before [statement] (Rider: "Assert expression is not null"), qualified unless `System.Diagnostics` is imported. */
+    fun assertNotNull(expression: CSharpExpression, statement: CSharpStatement, text: CharSequence, file: PsiFile): CSharpTextEdit {
+        val imported = Regex("""(?m)^\s*(global\s+)?using\s+System\.Diagnostics\s*;""").containsMatchIn(file.text)
+        val debug = if (imported) "Debug" else "System.Diagnostics.Debug"
+        val shown = expression.text
+        val message = if (expression is CSharpSimpleName) "nameof($shown) + \" != null\"" else "\"" + shown.replace("\\", "\\\\").replace("\"", "\\\"") + " != null\""
+        val line = "$debug.Assert($shown != null, $message);"
+        val start = lineStart(text, statement.textRange.startOffset)
+        val indent = lineIndent(text, statement.textRange.startOffset)
+        return CSharpTextEdit(TextRange(start, start), "$indent$line\n", caret = indent.length + line.length)
+    }
+
     // ---- Add / Remove argument names
 
     /** The argument list of a call or creation whose parentheses hold [offset] (an argument of it or the parentheses themselves). */
@@ -175,6 +266,40 @@ class NativeCSharpCheckParameterForNullIntention : NativeCSharpContextAction("Ch
         val resolver = resolver(file)
         if (!NativeCSharpParameterEdits.isReferenceParameter(parameter, resolver)) return null
         return NativeCSharpParameterEdits.checkForNull(parameter, NativeCSharpParameterEdits.hasThrowIfNull(resolver), editor.document.charsSequence, NativeCSharpContextEdits.unit(file))
+    }
+}
+
+/** Alt+Enter on a local of a type that may be null: its check right after the declaration (Rider: "Check variable for null"). */
+class NativeCSharpCheckVariableForNullIntention : NativeCSharpContextAction("Check variable for null", serverHasIt = true, needsTypes = true) {
+    override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
+        val (statement, variable) = NativeCSharpParameterEdits.localAt(file, editor.caretModel.offset) ?: return null
+        val resolver = resolver(file)
+        val value = variable.initializer?.value ?: return null
+        val declared = (statement.declaration?.type)?.takeIf { !(it is CSharpIdentifierName && it.identifier?.text == "var") }?.let(resolver::resolveType)
+        if (!NativeCSharpParameterEdits.mayBeNull(declared ?: resolver.typeOf(value), resolver)) return null
+        return NativeCSharpParameterEdits.checkVariable(statement, variable, NativeCSharpParameterEdits.hasThrowIfNull(resolver), editor.document.charsSequence)
+    }
+}
+
+/** Alt+Enter on a value that may be null: its statement under `if (value != null)` (Rider: "Check expression for null"). */
+class NativeCSharpCheckExpressionForNullIntention : NativeCSharpContextAction("Check expression for null", serverHasIt = true, needsTypes = true) {
+    override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
+        if (NativeCSharpParameterEdits.localAt(file, editor.caretModel.offset) != null) return null
+        val (expression, statement) = NativeCSharpParameterEdits.expressionAt(file, editor.caretModel.offset) ?: return null
+        val resolver = resolver(file)
+        if (!NativeCSharpParameterEdits.mayBeNull(resolver.typeOf(expression), resolver)) return null
+        return NativeCSharpParameterEdits.checkExpression(expression, statement, editor.document.charsSequence, NativeCSharpContextEdits.unit(file))
+    }
+}
+
+/** Alt+Enter on a value that may be null: `Debug.Assert(value != null, …);` before its statement (Rider: "Assert expression is not null"). */
+class NativeCSharpAssertNotNullIntention : NativeCSharpContextAction("Assert expression is not null", serverHasIt = true, needsTypes = true) {
+    override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
+        if (NativeCSharpParameterEdits.localAt(file, editor.caretModel.offset) != null) return null
+        val (expression, statement) = NativeCSharpParameterEdits.expressionAt(file, editor.caretModel.offset) ?: return null
+        val resolver = resolver(file)
+        if (!NativeCSharpParameterEdits.mayBeNull(resolver.typeOf(expression), resolver)) return null
+        return NativeCSharpParameterEdits.assertNotNull(expression, statement, editor.document.charsSequence, file)
     }
 }
 

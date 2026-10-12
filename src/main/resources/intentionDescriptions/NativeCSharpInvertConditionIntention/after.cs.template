@@ -1,0 +1,1 @@
+var text = <spot>!ready</spot> ? "wait" : "go";

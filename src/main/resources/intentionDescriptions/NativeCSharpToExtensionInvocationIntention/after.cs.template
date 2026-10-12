@@ -1,0 +1,1 @@
+var ids = <spot>users.Select(user => user.Id)</spot>;

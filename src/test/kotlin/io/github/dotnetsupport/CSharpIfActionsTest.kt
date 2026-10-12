@@ -138,6 +138,56 @@ class CSharpIfActionsTest : BasePlatformTestCase() {
         )
     }
 
+    /** № 22 (Jellyfin `RenameUser`): in the middle of a block, a body that throws — the rest of the block goes under the inverted `if`, the body to `else`. */
+    fun testInvertInTheMiddleOfABodyMovesTheRestUnderIt() {
+        assertEquals(
+            """
+            void M(string a, string b)
+            {
+                Check(b);
+
+                if (!a.Equals(b))
+                {
+                    var user = Load(); // never null here
+                    Save(user);
+                }
+                else
+                {
+                    throw new ArgumentException("same");
+                }
+            }
+            """.trimIndent(),
+            apply("""
+                void M(string a, string b)
+                {
+                    Check(b);
+
+                    <caret>if (a.Equals(b))
+                    {
+                        throw new ArgumentException("same");
+                    }
+
+                    var user = Load(); // never null here
+                    Save(user);
+                }
+            """, "Invert 'if'"),
+        )
+        // a body that does not leave the block: the rest would run after it too
+        assertFalse(available("void M(bool ok)\n{\n    <caret>if (ok)\n    {\n        A();\n    }\n    B();\n}", "Invert 'if'"))
+    }
+
+    /** № 29: `?:` — the condition negated, the branches swapped, the layout kept. */
+    fun testInvertConditionOfAConditional() {
+        assertEquals("int M(bool ok) => !ok ? 2 : 1;", apply("int M(bool ok) => ok <caret>? 1 : 2;", "Invert condition"))
+        assertEquals(
+            "string M(int count) => count <= 0\n    ? \"none\"\n    : \"some\";",
+            apply("string M(int count) => count > 0\n    <caret>? \"some\"\n    : \"none\";", "Invert condition"),
+        )
+        assertEquals("bool M(string s) => s is not null ? false : true;",
+            apply("bool M(string s) => s is null ? tr<caret>ue : false;", "Invert condition"))
+        assertFalse(available("int M(bool ok)\n{\n    return 1<caret>;\n}", "Invert condition"))
+    }
+
     fun testInvertIsNotOffered() {
         // an `else if` chain; not the last statement without `else`; a method that returns a value; the caret in the body
         assertFalse(available("void M(int n)\n{\n    <caret>if (n == 0) A(); else if (n == 1) B(); else C();\n}", "Invert 'if'"))

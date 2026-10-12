@@ -53,4 +53,17 @@ public class ParameterActions
         Save(name: "b", count: 2, label: "l");
         Save(count: 3, name: "c", label: null);
     }
+
+    // TYPE:param-check-variable — Alt+Enter on `names` in Locals: "Check variable for null". EXPECT: right after the declaration
+    // `ArgumentNullException.ThrowIfNull(names);`. NOT offered on `count`. Ctrl+Z.
+    // TYPE:param-check-expression — Alt+Enter on `Message` in Locals: "Check expression for null" → `Console.WriteLine(error.Message)`
+    // under `if (error.Message != null) { … }`; "Assert expression is not null" → `System.Diagnostics.Debug.Assert(error.Message != null,
+    // "error.Message != null");` before it. Ctrl+Z.
+    public void Locals(Exception error)
+    {
+        var names = new List<string>();
+        var count = names.Count;
+        Console.WriteLine(error.Message);
+        Console.WriteLine(count);
+    }
 }

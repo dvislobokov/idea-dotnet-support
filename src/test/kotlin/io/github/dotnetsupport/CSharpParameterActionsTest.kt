@@ -84,6 +84,31 @@ class CSharpParameterActionsTest : BasePlatformTestCase() {
         assertTrue(text, text.contains("{\n    ${check("oldName")}\n    ThrowIfInvalid(newName);"))
     }
 
+    /** № 26: a local of a reference type — its check right after the declaration (Rider: "Check variable for null"). */
+    fun testCheckVariableForNull() {
+        val text = apply("void M()\n{\n    var inco<caret>ming = new List<int>();\n    incoming.Add(1);\n}", "Check variable for null")
+        assertEquals("void M()\n{\n    var incoming = new List<int>();\n    ${check("incoming")}\n    incoming.Add(1);\n}", text)
+        assertFalse(available("void M()\n{\n    var co<caret>unt = 1;\n}", "Check variable for null"))
+        assertFalse(available("void M()\n{\n    var inco<caret>ming = new List<int>();\n    ArgumentNullException.ThrowIfNull(incoming);\n}", "Check variable for null"))
+    }
+
+    /** № 26: a value that may be null — its statement under `if (… != null)`, or `Debug.Assert` before it. */
+    fun testCheckExpressionForNullAndAssert() {
+        val members = "class User { public string Name { get; set; } public int Age { get; set; } }\nvoid Use(string s) { }\nvoid M(User user)\n{\n    Use(user.Na<caret>me);\n}"
+        assertEquals(
+            "class User { public string Name { get; set; } public int Age { get; set; } }\nvoid Use(string s) { }\nvoid M(User user)\n{\n    if (user.Name != null)\n    {\n        Use(user.Name);\n    }\n}",
+            apply(members, "Check expression for null"),
+        )
+        assertEquals(
+            "class User { public string Name { get; set; } public int Age { get; set; } }\nvoid Use(string s) { }\nvoid M(User user)\n{\n    System.Diagnostics.Debug.Assert(user.Name != null, \"user.Name != null\");\n    Use(user.Name);\n}",
+            apply(members, "Assert expression is not null"),
+        )
+        // a value type, a literal, a creation, the target of an assignment: never null or no value read
+        assertFalse(available("class User { public int Age { get; set; } }\nvoid M(User user)\n{\n    var a = user.A<caret>ge;\n}", "Check expression for null"))
+        assertFalse(available("void M()\n{\n    var s = \"a<caret>b\";\n}", "Check expression for null"))
+        assertFalse(available("void M()\n{\n    var l = new List<<caret>int>();\n}", "Assert expression is not null"))
+    }
+
     fun testCheckParameterForNullIsNotOffered() {
         // a value type, a nullable-annotated type, an expression body, a check there already
         assertFalse(available("void M(int co<caret>unt) { }", "Check parameter for null"))

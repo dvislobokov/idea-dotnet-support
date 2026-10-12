@@ -187,7 +187,8 @@ object NativeCSharpIfEdits {
 
     /**
      * `if (!c) else-branch else then-branch` (Rider: "Invert 'if'"); without `else`, the trailing `if` of a body becomes a guard: `if (!c)
-     * return;` (`continue;` in a loop) and the old body after it. Not for an `else if` chain, nor an `if` without `else` elsewhere.
+     * return;` (`continue;` in a loop) and the old body after it; in the middle of a block, when the body leaves it, the statements after
+     * the `if` become its branch and the old body the `else` ([invertInTheMiddle]). Not for an `else if` chain.
      */
     fun invert(statement: CSharpIfStatement, text: CharSequence, unit: String): CSharpTextEdit? {
         val condition = statement.condition ?: return null
@@ -206,10 +207,69 @@ object NativeCSharpIfEdits {
                 whole.substring(at(other.textRange.endOffset))
             return CSharpTextEdit(range, result)
         }
-        val jump = guardJump(statement) ?: return null
+        val jump = guardJump(statement) ?: return invertInTheMiddle(statement, condition, then, text, unit)
         val indent = ownIndent(text, statement)
         val body = unwrapped(then, text, indent)
         return CSharpTextEdit(range, "if (${negated(condition)}) $jump" + if (body.isBlank()) "" else "\n" + body)
+    }
+
+    /** The body leaves the block where it ends: `return`, `throw`, `continue`, `break`, `goto` last. */
+    private fun exits(statement: CSharpStatement): Boolean = when (val last = if (statement is CSharpBlock) statement.statements.lastOrNull() else statement) {
+        is CSharpReturnStatement, is CSharpThrowStatement, is CSharpContinueStatement, is CSharpBreakStatement, is CSharpGotoStatement -> true
+        else -> false
+    }
+
+    /**
+     * `if (c) { …; throw …; } rest` in the middle of a block, no `else` (0.1.171, as Rider on Jellyfin's `RenameUser`): `if (!c) { rest }
+     * else { …; throw …; }` — the statements after the `if` go into its new then-branch. Only when the old body leaves the block (else
+     * `rest` would run after it too). A comment ending the line of the last statement goes with it.
+     */
+    private fun invertInTheMiddle(statement: CSharpIfStatement, condition: CSharpExpression, then: CSharpStatement, text: CharSequence, unit: String): CSharpTextEdit? {
+        val block = statement.parent as? CSharpBlock ?: return null
+        val index = block.statements.indexOf(statement)
+        val rest = block.statements.drop(index + 1)
+        if (index < 0 || rest.isEmpty() || !exits(then)) return null
+        val indent = ownIndent(text, statement)
+        val inner = indent + unit
+        val from = rest.first().textRange.startOffset
+        var to = rest.last().textRange.endOffset
+        val lineEnd = text.indexOf('\n', to).let { if (it < 0) text.length else it }
+        if (text.subSequence(to, lineEnd).trimStart().startsWith("//")) to = text.subSequence(to, lineEnd).trimEnd().length + to
+        val old = lineIndent(text, from)
+        val restText = (old + text.subSequence(from, to)).lines().joinToString("\n") { line ->
+            when {
+                line.isBlank() -> ""
+                line.startsWith(old) -> inner + line.substring(old.length)
+                else -> line.trimStart().let { if (it.startsWith("#")) it else inner + it }
+            }
+        }
+        val thenText = if (then is CSharpBlock) statementsText(then, text, inner) else inner + then.text
+        val result = "if (${negated(condition)})\n$indent{\n$restText\n$indent}\n${indent}else\n$indent{\n$thenText\n$indent}"
+        return CSharpTextEdit(TextRange(statement.textRange.startOffset, to), result)
+    }
+
+    // ---- Invert condition of `?:`
+
+    /** The `?:` whose text holds [offset], the nearest one. */
+    fun conditionalAt(file: PsiFile, offset: Int): CSharpConditionalExpression? {
+        for (leaf in leafAt(file, offset)) {
+            val conditional = PsiTreeUtil.getParentOfType(leaf, CSharpConditionalExpression::class.java, false) ?: continue
+            if (conditional.condition != null && conditional.whenTrue != null && conditional.whenFalse != null) return conditional
+        }
+        return null
+    }
+
+    /** `c ? a : b` → `!c ? b : a`, the layout between the parts kept (Rider: "Invert condition"). */
+    fun invertCondition(conditional: CSharpConditionalExpression, text: CharSequence): CSharpTextEdit? {
+        val condition = conditional.condition ?: return null
+        val whenTrue = conditional.whenTrue ?: return null
+        val whenFalse = conditional.whenFalse ?: return null
+        if (!present(conditional.questionToken) || !present(conditional.colonToken)) return null
+        val head = text.subSequence(condition.textRange.endOffset, whenTrue.textRange.startOffset)
+        val middle = text.subSequence(whenTrue.textRange.endOffset, whenFalse.textRange.startOffset)
+        // `?:` binds weaker than every operator `negated` writes: no parentheses needed around the negation
+        val written = negated(condition)
+        return CSharpTextEdit(conditional.textRange, written + head + whenFalse.text + middle + whenTrue.text)
     }
 
     // ---- Convert to guard clause
@@ -297,6 +357,12 @@ object NativeCSharpIfEdits {
 class NativeCSharpInvertIfIntention : NativeCSharpContextAction("Invert 'if'", serverHasIt = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpIfEdits.ifAt(file, editor.caretModel.offset)?.let { NativeCSharpIfEdits.invert(it, editor.document.charsSequence, NativeCSharpContextEdits.unit(file)) }
+}
+
+/** Alt+Enter on a `?:`: the condition negated and the branches swapped (Rider: "Invert condition"). */
+class NativeCSharpInvertConditionIntention : NativeCSharpContextAction("Invert condition", serverHasIt = true) {
+    override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
+        NativeCSharpIfEdits.conditionalAt(file, editor.caretModel.offset)?.let { NativeCSharpIfEdits.invertCondition(it, editor.document.charsSequence) }
 }
 
 /** Alt+Enter on an `if` whose only statement is another `if`: one `if` with `&&` (Rider: "Merge nested 'if' statements"). */

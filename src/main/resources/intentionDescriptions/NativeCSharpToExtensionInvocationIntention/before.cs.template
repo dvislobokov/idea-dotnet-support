@@ -1,0 +1,1 @@
+var ids = Enumerable.Select(users, user => user.Id);

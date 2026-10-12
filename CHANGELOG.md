@@ -3,6 +3,20 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.171
+
+Stage 4 of the fixes found comparing with Rider on Jellyfin (`docs/compare/jellyfin-2026-10-12.md`, section 9): new context actions
+as Rider names and writes them.
+- Modifiers: "To private" / "To internal" / "To public" with the other legal accessibilities in a submenu (none on overrides, explicit
+  implementations, interface members), "To virtual", "To abstract" (in an abstract class: the body goes), "Make partial".
+- `if` and null: "Invert 'if'" in the middle of a body (the rest of the block becomes the new branch when the old one exits), "Invert
+  condition" on `?:`, "Check variable for null", "Check expression for null", "Assert expression is not null", "Split variable
+  declaration and initialization".
+- Expressions: "To safe cast", "To regular / verbatim / raw string" (only where exact), "To static method invocation" and back,
+  "Generate try-catch block", "Convert initializer to assignment".
+- Tests `CSharpModifierActionsTest`, `CSharpIfActionsTest`, `CSharpParameterActionsTest`, `CSharpContextActionsTest`,
+  `CSharpExpressionActionsTest`; scenarios `Console/Editor/ModifierActions.cs`, `ExpressionActions.cs`.
+
 ## 0.1.170
 
 Stage 3 of the fixes found comparing with Rider on Jellyfin (`docs/compare/jellyfin-2026-10-12.md`, section 9): Refactor This and

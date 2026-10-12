@@ -1,0 +1,1 @@
+var ids = <spot>Enumerable.Select(users, user => user.Id)</spot>;

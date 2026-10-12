@@ -1082,3 +1082,9 @@ Settings | .NET | Language Server, группа Analysis: «Compiler diagnostics
 - [ ] `TYPE:refactor-await`, `TYPE:refactor-receiver`, `TYPE:refactor-cast`, `TYPE:refactor-switch`, `TYPE:refactor-lambda`: Introduce Variable предлагается и делает как в EXPECT
 - [ ] `TYPE:using-sort`: Sort 'using' directives на отсортированном блоке; `TYPE:arg-name-literal`: «Add argument name 'pattern'» с кареткой в строке
 - [ ] `TYPE:nav-calls`: Alt+Enter на заголовке метода — Incoming / Outgoing Calls, Overrides … — открывают иерархию / переходят
+
+### Исправления по сравнению с Rider, этап 4 (0.1.171) — `Console/Editor/ModifierActions.cs`, `ExpressionActions.cs`, `IfActions.cs`, `ParameterActions.cs`, `ContextActions.cs`
+- [ ] `TYPE:mod-to-private`, `mod-to-public`, `mod-to-internal`, `mod-to-virtual`, `mod-to-abstract`, `mod-override`, `mod-struct`, `mod-interface-member`: видимость (подменю), virtual / abstract, где не предлагается
+- [ ] `TYPE:if-invert-middle`, `TYPE:if-invert-condition`: Invert 'if' в середине тела, Invert condition на `?:`
+- [ ] `TYPE:param-check-variable`, `TYPE:param-check-expression`: Check variable / expression for null, Assert expression is not null; `TYPE:ctx-split`: Split declaration
+- [ ] `TYPE:expr-safe-cast`, `expr-strings`, `expr-static-call`, `expr-try-catch`, `expr-initializer`: To safe cast, строки, статический вызов, try-catch, инициализатор → присваивания

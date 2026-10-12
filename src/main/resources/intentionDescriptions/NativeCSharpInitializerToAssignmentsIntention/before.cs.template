@@ -1,0 +1,1 @@
+var user = new User { Name = name, Age = age };

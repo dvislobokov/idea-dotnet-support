@@ -1,0 +1,1 @@
+public <spot>abstract</spot> void Save();

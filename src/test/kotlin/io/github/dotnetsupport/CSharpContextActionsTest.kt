@@ -61,6 +61,21 @@ class CSharpContextActionsTest : BasePlatformTestCase() {
     private fun unwrap(text: String, usings: String): String =
         text.removePrefix(usings).removePrefix("class Sample\n{\n").removeSuffix("\n}\n").lines().joinToString("\n") { it.removePrefix("    ") }
 
+    // ---- Split variable declaration and initialization (№ 27)
+
+    fun testSplitDeclarationAndInitialization() {
+        assertEquals(
+            "void M()\n{\n    Dictionary<string, bool> incoming;\n    incoming = new Dictionary<string, bool>();\n}",
+            apply("void M()\n{\n    var inco<caret>ming = new Dictionary<string, bool>();\n}", "Split variable declaration and initialization"),
+        )
+        assertEquals("void M()\n{\n    int count;\n    count = 1 + 2;\n}", apply("void M()\n{\n    int cou<caret>nt = 1 + 2;\n}", "Split variable declaration and initialization"))
+        // const, an array initializer, an anonymous type, no value
+        assertFalse(available("void M()\n{\n    const int c<caret>ount = 1;\n}", "Split variable declaration and initialization"))
+        assertFalse(available("void M()\n{\n    int[] it<caret>ems = { 1, 2 };\n}", "Split variable declaration and initialization"))
+        assertFalse(available("void M()\n{\n    var p<caret>oint = new { X = 1 };\n}", "Split variable declaration and initialization"))
+        assertFalse(available("void M()\n{\n    int co<caret>unt;\n}", "Split variable declaration and initialization"))
+    }
+
     // ---- if ↔ ?:
 
     fun testIfWithReturnsBecomesConditional() {

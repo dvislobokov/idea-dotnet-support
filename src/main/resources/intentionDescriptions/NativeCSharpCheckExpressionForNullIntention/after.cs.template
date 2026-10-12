@@ -1,0 +1,4 @@
+<spot>if (user.Profile != null)</spot>
+{
+    Save(user.Profile);
+}

@@ -173,6 +173,12 @@
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToGuardClauseIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpAddBracesIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpRemoveBracesIntention</className><category>C#</category></intentionAction>
+        <!-- if, null checks, split (0.1.171) -->
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpInvertConditionIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpCheckVariableForNullIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpCheckExpressionForNullIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpAssertNotNullIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpSplitDeclarationIntention</className><category>C#</category></intentionAction>
         <!-- loops and parameters (0.1.163) -->
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpForEachToForIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpForToForEachIntention</className><category>C#</category></intentionAction>
@@ -181,10 +187,24 @@
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpCheckParameterForNullIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpAddArgumentNamesIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpRemoveArgumentNamesIntention</className><category>C#</category></intentionAction>
+        <!-- expressions (0.1.171) -->
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToSafeCastIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToRegularStringIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToVerbatimStringIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToRawStringIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToStaticInvocationIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToExtensionInvocationIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpGenerateTryCatchIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpInitializerToAssignmentsIntention</className><category>C#</category></intentionAction>
         <!-- navigation in Alt+Enter, as Rider lists it (0.1.170, NativeCSharpNavigationIntentions.kt) -->
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpIncomingCallsIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpOutgoingCallsIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpGoToBaseMemberIntention</className><category>C#</category></intentionAction>
+        <!-- modifiers (0.1.171) -->
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpChangeAccessibilityIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToVirtualIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToAbstractIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpMakePartialIntention</className><category>C#</category></intentionAction>
         <!-- fields (0.1.168) -->
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpInitializeFieldFromConstructorIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpInitializeMembersFromConstructorIntention</className><category>C#</category></intentionAction>

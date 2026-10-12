@@ -193,4 +193,13 @@ public class ContextActions
     // 'message'" → `[Obsolete(message: "use Inline")]` (0.1.170: the caret in a literal of an attribute's argument). Ctrl+Z.
     [Obsolete("use Inline")]
     public int OldInline(int a, int b) => Inline(a, b);
+
+    // TYPE:ctx-split — Alt+Enter on `table` in Split: "Split variable declaration and initialization". EXPECT: `Dictionary<string, int> table;`
+    // and `table = new Dictionary<string, int>();` on the next line. NOT offered on `const int Limit`. Ctrl+Z.
+    public int Split()
+    {
+        const int Limit = 3;
+        var table = new Dictionary<string, int>();
+        return table.Count + Limit;
+    }
 }

@@ -464,6 +464,32 @@ object NativeCSharpContextEdits {
         return CSharpTextEdit(type.textRange, "var")
     }
 
+    // ---- split declaration and initialization
+
+    /**
+     * `var x = value;` → `Type x;` and `x = value;` on the next line (Rider: "Split variable declaration and initialization", 0.1.171):
+     * `var` becomes the type it stands for; not for `const`, `using`, `ref` / `scoped` locals, an array initializer `{ … }`, a `stackalloc`,
+     * several declarators, or a value whose type cannot be written (anonymous).
+     */
+    fun splitDeclaration(site: TypeSite, resolver: CSharpNameResolver, text: CharSequence): CSharpTextEdit? {
+        if (site.foreach != null || site.constant) return null
+        val value = site.value ?: return null
+        val declaration = site.type.parent as? CSharpVariableDeclaration ?: return null
+        val statement = declaration.parent as? CSharpLocalDeclarationStatement ?: return null
+        if (statement.parent !is CSharpBlock || present(statement.usingKeyword) || statement.modifiers.isNotEmpty()) return null
+        if (site.type is CSharpRefType || site.type is CSharpScopedType) return null
+        val variable = declaration.variables.singleOrNull() ?: return null
+        val name = variable.identifier?.text ?: return null
+        val bare = unwrap(value)
+        if (bare is CSharpInitializerExpression || bare is CSharpStackAllocArrayCreationExpression) return null
+        val type = if (isVar(site.type)) {
+            val resolved = resolver.expressionType(site.type) ?: return null
+            CSharpTypeFacts.written(resolver, resolved, site.type)?.takeIf { it != "var" && it != "void" } ?: return null
+        } else site.type.text
+        val indent = indentOf(text, statement.textRange.startOffset)
+        return CSharpTextEdit(statement.textRange, "$type $name;\n$indent$name = ${value.text};")
+    }
+
     // ---- introduce variable
 
     /**
@@ -936,6 +962,12 @@ class NativeCSharpUseExplicitTypeIntention : NativeCSharpContextAction("Use expl
 }
 
 /** Alt+Enter on the explicit type of a local whose value has that very type: `var` (Rider: "Use 'var'"). */
+/** Alt+Enter on a local with its value: the declaration and the assignment apart (Rider: "Split variable declaration and initialization"). */
+class NativeCSharpSplitDeclarationIntention : NativeCSharpContextAction("Split variable declaration and initialization", serverHasIt = true, needsTypes = true) {
+    override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
+        NativeCSharpContextEdits.typeSiteAt(file, editor.caretModel.offset)?.let { NativeCSharpContextEdits.splitDeclaration(it, resolver(file), editor.document.charsSequence) }
+}
+
 class NativeCSharpUseVarIntention : NativeCSharpContextAction("Use 'var'", serverHasIt = true, needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpContextEdits.typeSiteAt(file, editor.caretModel.offset)?.let { NativeCSharpContextEdits.useVar(it, resolver(file)) }

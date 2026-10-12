@@ -1,0 +1,3 @@
+var user = FindUser(id);
+<spot>ArgumentNullException.ThrowIfNull(user);</spot>
+Use(user);

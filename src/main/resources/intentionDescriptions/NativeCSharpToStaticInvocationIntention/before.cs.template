@@ -1,0 +1,1 @@
+var ids = users.Select(user => user.Id);

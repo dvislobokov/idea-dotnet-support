@@ -1,0 +1,2 @@
+var user = FindUser(id);
+Use(user);

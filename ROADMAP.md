@@ -144,6 +144,11 @@
   Introduce Variable в `await`, на получателе, приведении, switch-выражении, теле лямбды; Sort usings на любом блоке, имя аргумента в литерале
   атрибута, Incoming / Outgoing Calls и Implements / Overrides в Alt+Enter (`NativeCSharpNavigationIntentions.kt`). Rename в Refactor This
   совпал с Rider по дампам — без правок. Вживую не проверено
+- [x] 0.1.171 — этап 4 (три агента): видимость с подменю, virtual / abstract / partial (`NativeCSharpModifierActions.kt`); Invert 'if' в
+  середине тела, Invert condition на `?:`, Check variable / expression for null, Assert not null, Split declaration; To safe cast, строки
+  regular / verbatim / raw, To static / extension invocation, Generate try-catch, Convert initializer to assignment
+  (`NativeCSharpExpressionActions.kt`). Не сделано: «To abstract» в неабстрактном классе (по дампу не видно, что Rider делает с классом),
+  «Make method partial» (в дампе нет). Вживую не проверено
   Вживую не проверено
 - [x] 0.1.159 — сеть серого текста `cs50m-caret-ft5e5.cml` — единственная в ML-сборке (31 M, `-Pml.big` и настройка «большая модель»
   убраны): обучение с нуля на 6,47 млрд токенов и дообучение на 1,05 млн позиций каретки в формате промпта плагина; на 12 000 позиций

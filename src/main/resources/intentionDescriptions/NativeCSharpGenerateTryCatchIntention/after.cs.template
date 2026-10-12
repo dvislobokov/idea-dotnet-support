@@ -1,0 +1,9 @@
+try
+{
+    Save(order);
+}
+catch (<spot>Exception</spot> e)
+{
+    Console.WriteLine(e);
+    throw;
+}

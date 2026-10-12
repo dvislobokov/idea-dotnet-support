@@ -1,0 +1,2 @@
+<spot>Debug.Assert(user.Profile != null, "user.Profile != null");</spot>
+Save(user.Profile);
