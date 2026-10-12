@@ -71,13 +71,22 @@ internal object AnalogyGhostSupport {
     fun isEnumerable(r: CSharpNameResolver, type: SemanticType): Boolean =
         type is SemanticType.ArrayOf || (!isString(r, type) && r.expressions.instanceOf(type, "System.Collections.IEnumerable") != null)
 
-    /** The one collection in scope ([isEnumerable]) other than [except]; with several, the one named as the plural of [element]. */
+    /**
+     * The one collection in scope ([isEnumerable]) other than [except]; with several, the one named as the plural of [element], else the
+     * one whose elements are of the type the element is named after (`preference` → `ICollection<Preference> source`, 0.1.169, Jellyfin № 6).
+     */
     fun collection(r: CSharpNameResolver, site: PsiElement, except: String?, element: String?): Named? {
         val collections = namesInScope(r, site).filter { it.name != except && isEnumerable(r, it.type) }
         collections.singleOrNull()?.let { return it }
         if (element == null) return null
-        return collections.filter { CSharpExpressionNames.singular(it.name).equals(element, ignoreCase = true) || it.name.equals(element + "s", ignoreCase = true) }
-            .takeIf { it.size == 1 }?.single()
+        collections.filter { CSharpExpressionNames.singular(it.name).equals(element, ignoreCase = true) || it.name.equals(element + "s", ignoreCase = true) }
+            .singleOrNull()?.let { return it }
+        val word = element.trimStart('_').replaceFirstChar { it.uppercase() }
+        if (word.isEmpty()) return null
+        return collections.filter { named ->
+            val typeName = r.elementType(named.type)?.let(r::definitionName)?.substringAfterLast('.')?.substringBefore('`') ?: return@filter false
+            typeName.equals(word, ignoreCase = true) || typeName.endsWith(word) && typeName.length > word.length && typeName[typeName.length - word.length].isUpperCase()
+        }.singleOrNull()
     }
 
     fun hasValueMember(r: CSharpNameResolver, type: SemanticType, name: String): Boolean = r.membersNamed(type, name, 0).any { !r.isMethod(it) }

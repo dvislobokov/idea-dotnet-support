@@ -86,6 +86,15 @@ class PostfixAndSurroundTest : BasePlatformTestCase() {
         assertEquals("class A { void M() { var x = ((<caret>T)value); } }", expand(t.getValue(".cast"), "class A { void M() { var x = value<caret>; } }"))
     }
 
+    /** Jellyfin № 7: the element of a collection of a predefined type is named by its letter, as Rider (`char` → `c`). */
+    fun testTheElementOfAPredefinedTypeByItsLetter() {
+        assertEquals(listOf("c", "item"), io.github.dotnetsupport.lang.CSharpExpressionNames.forElement("newName.ToCharArray()", "char"))
+        assertEquals("s", io.github.dotnetsupport.lang.CSharpExpressionNames.forElement("Split()", "string").first())
+        // the collection's own plural first, the type's names first of all
+        assertEquals("name", io.github.dotnetsupport.lang.CSharpExpressionNames.forElement("names", "string").first())
+        assertEquals("order", io.github.dotnetsupport.lang.CSharpExpressionNames.forElement("items", "Order").first())
+    }
+
     fun testStatementTemplatesApplyOnlyWhereAStatementStarts() {
         val t = templates()
         myFixture.configureByText("B.cs", "class B { void M() { var x = ready<caret>; } }")

@@ -112,6 +112,14 @@ public class GuardGhost
         }
     }
 
+    public void Rename(Member member, string name)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        // TYPE:guard-after-check — on the empty line below type `member.null` + Tab. EXPECT: `if (member == null) { | }` and, without another
+        // key, gray `throw new ArgumentNullException(nameof(member));` (the check above is an argument check too; 0.1.169, Jellyfin № 4, 5)
+
+    }
+
     // TYPE:guard-parameter-type — put the caret between the parentheses of `Draft()` below and type `OperationT`. EXPECT: gray
     // `ype operationType`; with `Oper` typed instead — nothing (`OperatingSystem` of System begins so too); with `TimeSp` — `an timeSpan`
     private static void Draft() { }

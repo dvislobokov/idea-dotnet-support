@@ -85,6 +85,27 @@ $body
         assertEquals(throws, gray(code("void Save(User user)", "        if (user == null) {\n            <caret>\n        }")))
     }
 
+    /** Jellyfin № 5: behind calls that check arguments the guard of a parameter still throws, as Rider writes it. */
+    fun testThrowBehindCallsThatCheckArguments() {
+        val throws = "throw new ArgumentNullException(nameof(user));"
+        assertEquals(throws, gray(code("void Save(User user, string name)", guard("user == null", "        ThrowIfInvalidName(name);\n"), "    void ThrowIfInvalidName(string n) { }")))
+        assertEquals(throws, gray(code("void Save(User user, string name)", guard("user == null", "        ArgumentException.ThrowIfNullOrEmpty(name);\n"))))
+        assertEquals(throws, gray(code("void Save(User user, string name)", guard("user == null", "        Validate(name);\n"), "    void Validate(string n) { }")))
+        // any other call before it is work: the result decides
+        assertEquals("return;", gray(code("void Save(User user)", guard("user == null", "        Console.WriteLine();\n"))))
+    }
+
+    /** Jellyfin № 4: `.null` leaves the caret in the new block — the guard's gray text is there (the plugin asks for it after the template). */
+    fun testTheGuardAfterTheNullPostfix() {
+        myFixture.configureByText("Guard${counter++}.cs", code("void Save(User user)", "        user<caret>"))
+        val template = io.github.dotnetsupport.lang.CSharpPostfixTemplateProvider().templates.single { it.key == ".null" }
+        val context = myFixture.file.findElementAt(myFixture.caretOffset - 1)!!
+        com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(project) { template.expand(context, myFixture.editor) }
+        com.intellij.psi.PsiDocumentManager.getInstance(project).commitAllDocuments()
+        val ghost = NativeCSharpTypingGhost.suggestion(myFixture.file as CSharpFile, myFixture.editor.document.charsSequence, myFixture.caretOffset)
+        assertEquals("throw new ArgumentNullException(nameof(user));", ghost?.text)
+    }
+
     fun testReturnByTheResultAfterOtherStatements() {
         val late = "        var count = 0;\n"
         assertEquals("return;", gray(code("void Save(User user)", guard("user == null", late))))

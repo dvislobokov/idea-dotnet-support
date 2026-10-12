@@ -80,8 +80,8 @@ object NativeCSharpImportCompletion {
      */
     fun types(
         place: NativeCSharpCompletionPlace, file: CSharpFile, matcher: PrefixMatcher, taken: Set<String>, syntax: NativeCSharpResolver = NativeCSharpResolver(file),
-        bonus: (String) -> Double = { 0.0 },
-    ): List<LookupElement> = Collector(place, file, matcher, taken, syntax, bonus, attributes = false).collect().filterNot(CSharpCompletionExclusions::excludes)
+        bonus: (String) -> Double = { 0.0 }, mlBonus: (String) -> Double = bonus,
+    ): List<LookupElement> = Collector(place, file, matcher, taken, syntax, bonus, attributes = false, mlBonus).collect().filterNot(CSharpCompletionExclusions::excludes)
 
     /** The attributes at `[`: of the assemblies the place sees, then the ones not imported, by the name without `Attribute`. */
     fun attributes(place: NativeCSharpCompletionPlace, file: CSharpFile, matcher: PrefixMatcher, taken: Set<String>, syntax: NativeCSharpResolver = NativeCSharpResolver(file)): List<LookupElement> =
@@ -89,7 +89,7 @@ object NativeCSharpImportCompletion {
 
     private class Collector(
         val place: NativeCSharpCompletionPlace, val file: CSharpFile, val matcher: PrefixMatcher, val taken: Set<String>, val syntax: NativeCSharpResolver,
-        val bonus: (String) -> Double, val attributes: Boolean,
+        val bonus: (String) -> Double, val attributes: Boolean, val mlBonus: (String) -> Double = bonus,
     ) {
         val at: PsiElement = place.name ?: place.leaf
         val semantic: CSharpNameResolver = CSharpSemanticSession(file.project).resolver(file)
@@ -225,13 +225,15 @@ object NativeCSharpImportCompletion {
                 builder = builder.withInsertHandler(typeHandler)
             }
             builder.putUserData(NativeCSharpCompletion.NATIVE, true)
-            val priority = (if (imported) NativeCSharpCompletion.TYPE else UNIMPORTED) + bonus(name)
+            val base = if (imported) NativeCSharpCompletion.TYPE else UNIMPORTED
+            val priority = base + bonus(name)
             val row = PrioritizedLookupElement.withPriority(builder, priority).also {
                 it.putUserData(NativeCSharpCompletion.NATIVE, true)
                 if (!imported) it.putUserData(NOT_IMPORTED, namespace)
             }
             val shape = NativeCSharpMlInfo.Shape(CSharpMlCandidateKind.TYPE, if (imported) CSharpMlScope.IMPORTED else CSharpMlScope.UNIMPORTED, needsUsing = !imported)
-            return NativeCSharpMlInfo.attach(row, shape, priority)
+            // the ranker keeps the feature it was trained on (the bonus of the name before 0.1.169)
+            return NativeCSharpMlInfo.attach(row, shape, base + mlBonus(name))
         }
     }
 

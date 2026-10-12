@@ -161,7 +161,11 @@ object NativeCSharpNullGuardGhost : NativeCSharpGhostRule {
 
     private fun identifier(e: CSharpExpression?): String? = (e as? CSharpIdentifierName)?.identifier?.text
 
-    /** [guard] is a statement of the body of [function] and everything before it is a guard `if` too. */
+    /**
+     * [guard] is a statement of the body of [function] and everything before it checks arguments too: a guard `if`, or a call that checks
+     * (`ArgumentNullException.ThrowIfNull(x)`, `ThrowIfInvalidUsername(name)`, `Guard.NotNull(x)`; 0.1.169, Jellyfin № 5 — Rider writes
+     * the `throw` there as well).
+     */
     private fun isFirstGuard(guard: CSharpIfStatement, function: PsiElement): Boolean {
         val body = when (function) {
             is CSharpBaseMethodDeclaration -> function.body
@@ -170,7 +174,23 @@ object NativeCSharpNullGuardGhost : NativeCSharpGhostRule {
             else -> null
         } ?: return false
         if (guard.parent != body) return false
-        return body.statements.takeWhile { it != guard }.all { it is CSharpIfStatement && it.`else` == null }
+        return body.statements.takeWhile { it != guard }.all { it is CSharpIfStatement && it.`else` == null || isArgumentCheck(it) }
+    }
+
+    private val CHECK_TYPES = setOf("ArgumentNullException", "ArgumentException", "ArgumentOutOfRangeException", "ObjectDisposedException", "Guard", "Ensure", "Check")
+    private val CHECK_METHOD = Regex("^(?:Throw|Ensure|Guard|Validate|Check|Assert|Require|Verify)(?:[A-Z]\\w*)?$")
+
+    /** `Type.ThrowIfNull(x);`, `ThrowIfInvalid(x);`, `Guard.Against(x);`: a call statement whose method or type says it checks. */
+    private fun isArgumentCheck(statement: CSharpStatement): Boolean {
+        val call = (statement as? CSharpExpressionStatement)?.expression as? CSharpInvocationExpression ?: return false
+        val callee = call.expression ?: return false
+        val (qualifier, method) = when (callee) {
+            is CSharpMemberAccessExpression -> callee.expression?.text?.trim()?.substringAfterLast('.') to (callee.nameElement as? CSharpSimpleName)?.identifier?.text
+            is CSharpSimpleName -> null to callee.identifier?.text
+            else -> return false
+        }
+        if (method == null) return false
+        return qualifier in CHECK_TYPES || CHECK_METHOD.matches(method)
     }
 
     private fun inLoop(guard: PsiElement, function: PsiElement): Boolean {

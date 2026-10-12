@@ -121,4 +121,20 @@ public class PostfixCtor
 
     public override string ToString() => $"{_id} {name} {Total}";
 
+    // TYPE:postfix-foreach-char — on the empty line in Letters type `word.ToCharArray().foreach` + Tab. EXPECT: `foreach (var c in
+    // word.ToCharArray())` with `var` selected first (Tab offers `char` too), then the name `c` — not `item` (0.1.169, Jellyfin № 7)
+    public void Letters(string word)
+    {
+        Console.WriteLine(word);
+
+    }
+
+    // TYPE:ctor-blank-line — under the last field of PostfixSpacing type `ctor` + Tab. EXPECT: an empty line between the field and
+    // `public PostfixSpacing()` (as Rider); typed right under `{` no empty line (0.1.169, Jellyfin № 10)
+    public class PostfixSpacing
+    {
+        private readonly int _count = 0;
+
+        public override string ToString() => _count.ToString();
+    }
 }

@@ -72,6 +72,18 @@ class CSharpParameterActionsTest : BasePlatformTestCase() {
         assertEquals("class Order { }\nSample(Order order) {\n    ${check("order")}\n}", empty)
     }
 
+    /** Jellyfin № 65: an `async Task` method whose body starts with a call — applied by the first run, and its preview is computed. */
+    fun testCheckParameterForNullOnceAndItsPreview() {
+        val members = "void ThrowIfInvalid(string s) { }\nasync System.Threading.Tasks.Task Rename(int id, string old<caret>Name, string newName)\n{\n    ThrowIfInvalid(newName);\n}"
+        myFixture.configureByText("Param${files++}.cs", wrap(members))
+        val action = myFixture.findSingleIntention("Check parameter for null")
+        val preview = myFixture.getIntentionPreviewText(action)
+        assertTrue(preview.toString(), preview != null && preview.contains("oldName") && preview.contains("ThrowIf") || preview?.contains("== null") == true)
+        myFixture.launchAction(action)
+        val text = unwrap(myFixture.editor.document.text)
+        assertTrue(text, text.contains("{\n    ${check("oldName")}\n    ThrowIfInvalid(newName);"))
+    }
+
     fun testCheckParameterForNullIsNotOffered() {
         // a value type, a nullable-annotated type, an expression body, a check there already
         assertFalse(available("void M(int co<caret>unt) { }", "Check parameter for null"))

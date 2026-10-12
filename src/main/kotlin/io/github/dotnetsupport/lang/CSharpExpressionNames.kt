@@ -59,9 +59,19 @@ object CSharpExpressionNames {
             else -> IDENTIFIER.findAll(text).lastOrNull()?.value?.removePrefix("@")?.removePrefix("_")
         }
         word?.let(::camel)?.let { name -> singular(name).takeIf { it != name }?.let { names += it } }
+        // `char` → `c`, `string` → `s`, `int` → `i`: Rider's name of an element of a predefined type (0.1.169, Jellyfin № 7)
+        type?.trim()?.removeSuffix("?")?.let(::predefined)?.let { names += it.first().toString() }
         names += "item"
         return finish(names, taken)
     }
+
+    private val PREDEFINED_NAMES = mapOf(
+        "System.Char" to "char", "System.String" to "string", "System.Int32" to "int", "System.Int64" to "long", "System.Boolean" to "bool",
+        "System.Byte" to "byte", "System.Double" to "double", "System.Decimal" to "decimal", "System.Single" to "float", "System.Object" to "object",
+    )
+
+    /** [type] as a keyword when it is a predefined type (`char`, `System.Char`); null otherwise. */
+    private fun predefined(type: String): String? = (PREDEFINED_NAMES[type.removePrefix("global::")] ?: type).takeIf { it in NativeCSharpCompletionPlace.PREDEFINED_TYPES }
 
     /** `orders` → `order`, `categories` → `category`, `boxes` → `box`, `people` → `person`; the word itself when it is not a plural. */
     fun singular(word: String): String {

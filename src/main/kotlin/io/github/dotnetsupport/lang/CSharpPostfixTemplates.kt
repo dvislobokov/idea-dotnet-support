@@ -136,6 +136,9 @@ class CSharpPostfixTemplate(
         } else {
             editor.caretModel.moveToOffset(start + expansion.caret)
             expansion.select?.let { editor.selectionModel.setSelection(start + it.first, start + it.last + 1) }
+            // `.null` / `.notnull` / `.if`: the caret on the empty line of a new block, nothing typed there — the gray text of the guard
+            // (`throw new ArgumentNullException(nameof(x));`) is asked for by the plugin itself (0.1.169, Jellyfin № 4)
+            if (expansion.select == null) NativeCSharpTypingGhostProvider.offer(editor)
         }
         if (awaits) {
             val psi = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return
@@ -285,8 +288,11 @@ object CSharpPostfixTemplates {
                 block("for (var i = 0; i < ${bound(it)}; i++)", it.indent, it.unit)
             },
             t("foreach", "Iterates over enumerable collection", "foreach (var x in expr)", s, fits = { it.isEnumerable != false }) {
-                val names = CSharpExpressionNames.forElement(it.expression, it.facts?.elementType, it.taken)
-                blockTemplate(it.indent, it.unit, "foreach (var ", Expansion.Stop("NAME", names), " in ${it.expression})")
+                val element = it.facts?.elementType
+                val names = CSharpExpressionNames.forElement(it.expression, element, it.taken)
+                // Rider: `var` first, the element's type to choose (`foreach (char c in …)`, 0.1.169)
+                val type: Any = if (element != null && element != "var" && element != "object") Expansion.Stop("TYPE", listOf("var", element)) else "var"
+                blockTemplate(it.indent, it.unit, "foreach (", type, " ", Expansion.Stop("NAME", names), " in ${it.expression})")
             },
             t("forr", "Iterates over collection in reverse with index", "for (var i = xs.Length-1; i >= 0; i--)", s, fits = ::fitsFor) {
                 block("for (var i = ${bound(it)} - 1; i >= 0; i--)", it.indent, it.unit)

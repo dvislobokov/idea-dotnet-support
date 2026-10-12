@@ -3,6 +3,20 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.169
+
+Stage 2 of the fixes found comparing with Rider on Jellyfin (`docs/compare/jellyfin-2026-10-12.md`, section 9): typing and the list.
+- Gray text: after postfix `.null` / `.notnull` the guard body (`throw new ArgumentNullException(nameof(x));`) comes by itself; the
+  guard throws for a parameter behind calls that check arguments (`ThrowIf…`, `ArgumentNullException.ThrowIfNull`); `foreach (var
+  preference in |` takes the one collection whose elements are of the type the element is named after.
+- Postfix `.foreach`: the element named by its type when the collection's name gives none (`char` → `c`), the type a stop of its own
+  (`var` / the element type). A member template inserted under a member (`ctor`, `prop`…) gets an empty line above it.
+- The order of the list as Rider has it: `new` no longer lifted second in a condition or an argument (`newName`), the statics of
+  imported types below the keywords (`Thro` → `throw` second), in an argument the values of the parameter's type first, then `default`,
+  `nameof`, `null` where they fit, a type (`String`) no longer lifted by its name.
+- Tests `GuardGhostTest`, `AnalogyGhostTest`, `PostfixAndSurroundTest`, `CSharpLiveTemplatesTest`, `CSharpParameterActionsTest`,
+  `CSharpCompletionOrderTest`.
+
 ## 0.1.168
 
 Stage 1 of the fixes found comparing with Rider on Jellyfin (`docs/compare/jellyfin-2026-10-12.md`, section 9): what broke code or

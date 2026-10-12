@@ -144,6 +144,14 @@ $body
         assertNull(gray(code(lines("foreach (var order in <caret>"), "int count")))
     }
 
+    /** Jellyfin № 6: several collections, none named as the element — the one whose elements are of the element's type. */
+    fun testForeachPicksTheCollectionOfTheElementsType() {
+        val body = lines("var incoming = new Dictionary<int, string>();", "foreach (var order in <caret>")
+        assertEquals("source)", gray(code(body, "ICollection<Order> source")))
+        // a suffix of the type names the element too (`provider` of `IAuthProvider`); two of that type: silent
+        assertNull(gray(code(lines("foreach (var order in <caret>"), "ICollection<Order> source, List<Order> other")))
+    }
+
     // ---- 3. the bound of a for
 
     fun testForBoundOfTheOneCollection() {

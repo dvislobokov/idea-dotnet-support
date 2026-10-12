@@ -18,7 +18,7 @@ class CSharpLiveTemplatesTest : BasePlatformTestCase() {
     private fun expand(key: String, text: String): String {
         myFixture.configureByText("Live${files++}.cs", text.replace("<caret>", "$key<caret>"))
         myFixture.type('\t')
-        TemplateManagerImpl.getTemplateState(myFixture.editor)?.gotoEnd(false)
+        com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(project) { TemplateManagerImpl.getTemplateState(myFixture.editor)?.gotoEnd(false) }
         return myFixture.editor.document.text
     }
 
@@ -85,6 +85,16 @@ class CSharpLiveTemplatesTest : BasePlatformTestCase() {
         assertTrue(items.toString(), "operation" in items && "count" in items)
         runCatching { myFixture.lookup?.hideLookup(true) }
         com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(project) { TemplateManagerImpl.getTemplateState(myFixture.editor)?.gotoEnd(false) }
+    }
+
+    /** Jellyfin № 10: a member written right under another one gets an empty line above it, as Rider; not under `{` or in a body. */
+    fun testAMemberTemplateUnderAMemberGetsAnEmptyLine() {
+        val under = expand("ctor", "class Order\n{\n    private int _id;\n    <caret>\n}\n")
+        assertTrue(under, under.contains("    private int _id;\n\n    public Order()"))
+        val first = expand("ctor", "class Order\n{\n    <caret>\n}\n")
+        assertTrue(first, first.startsWith("class Order\n{\n    public Order()"))
+        val statement = expand("if", "class A { void M() {\n    M();\n    <caret>\n} }")
+        assertTrue(statement, statement.contains("    M();\n    if ("))
     }
 
     fun testNamesByType() {

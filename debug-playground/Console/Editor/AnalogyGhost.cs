@@ -63,6 +63,10 @@ public class AnalogyGhost
         // the `)`): the one collection in scope; with `foreach (var x in ` the same, there is one collection
         var total = 0;
 
+        // TYPE:analogy-foreach-type — type `foreach (var item in `. EXPECT: no gray (two collections, none named so); with
+        // `foreach (var amount in ` gray `amounts)` — the collection named as the plural, else the one whose element type names the element
+        // (`foreach (var order in ` over `ICollection<Order> source` → `source)`; 0.1.169, Jellyfin № 6)
+
         // TYPE:analogy-for — type `for (var i = 0; i < `. EXPECT: gray `amounts.Count; i++)`; with an array parameter it would be `.Length`
 
         // TYPE:analogy-string — type `if (string.IsNullOrEmpty(`. EXPECT: gray `title)` (the one string in scope)

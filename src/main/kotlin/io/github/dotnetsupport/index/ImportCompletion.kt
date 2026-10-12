@@ -307,8 +307,13 @@ object ImportCompletion {
     const val MAX_ITEMS = 40
     /** Of a type that is not imported: under the keywords, as the items of unimported namespaces of the server (`RoslynCompletionPolicy.UNIMPORTED`). */
     const val PRIORITY = -5.0
-    /** Its namespace is imported after all: 8 as before 0.1.44, above the keywords. */
-    const val PRIORITY_IMPORTED = 13.0
+    /**
+     * Its namespace is imported after all: above the members of unimported namespaces, under the keywords (0.1.169: `Thro` listed
+     * `ObjectDisposedException.ThrowIf` and ten more over `throw`; Rider has `throw` second). It was 13 (8 in all, above the keywords).
+     */
+    const val PRIORITY_IMPORTED = 4.0
+    /** What the ML ranker was trained on for these rows (the priority of 0.1.44–0.1.168): its feature stays where it was. */
+    const val ML_PRIORITY_IMPORTED = 13.0
     const val PRIORITY_TYPE = 25.0
 
     private val OFFERED = setOf(IndexedMemberKind.METHOD, IndexedMemberKind.PROPERTY, IndexedMemberKind.FIELD, IndexedMemberKind.CONSTANT)
@@ -436,11 +441,20 @@ class ImportCompletionContributor : CompletionContributor() {
         val expected = CSharpExpectations.at(text, start)
         for (item in ImportCompletion.items(indexes, prefix, visible, CSharpUsings.importedStatically(text))) {
             var priority = ImportCompletion.PRIORITY
-            if (visible(item.type.namespace)) priority += ImportCompletion.PRIORITY_IMPORTED
+            var mlPriority = ImportCompletion.PRIORITY
+            if (visible(item.type.namespace)) {
+                priority += ImportCompletion.PRIORITY_IMPORTED
+                mlPriority += ImportCompletion.ML_PRIORITY_IMPORTED
+            }
             // the server's "items from unimported namespaces" off: only the static members of the types a `using` sees
             else if (!NativeCSharpImportCompletion.unimportedEnabled) continue
-            if (CSharpTypeNames.matches(expected?.type, item.first.returnType)) priority += ImportCompletion.PRIORITY_TYPE
-            result.addElement(PrioritizedLookupElement.withPriority(element(item, everywhere), priority))
+            if (CSharpTypeNames.matches(expected?.type, item.first.returnType)) {
+                priority += ImportCompletion.PRIORITY_TYPE
+                mlPriority += ImportCompletion.PRIORITY_TYPE
+            }
+            // the info the ranker reads is the one it had without it (OTHER at its priority), the priority as it was before 0.1.169
+            val row = PrioritizedLookupElement.withPriority(element(item, everywhere), priority)
+            result.addElement(io.github.dotnetsupport.lang.NativeCSharpMlInfo.attach(row, io.github.dotnetsupport.lang.NativeCSharpMlInfo.OTHER, mlPriority))
         }
     }
 

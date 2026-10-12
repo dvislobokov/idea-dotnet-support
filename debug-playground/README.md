@@ -1070,3 +1070,9 @@ Settings | .NET | Language Server, группа Analysis: «Compiler diagnostics
 - [ ] `TYPE:switch-add-arms`: при `_`-ветке «Add missing arms» не предлагается; `TYPE:ctx-inline`: `new` при двух использованиях не инлайнится
 - [ ] `TYPE:using-wrap`: «Wrap in 'using'» на строке не предлагается; Add partial part / Create test — только на заголовке типа
 - [ ] `TYPE:postfix-whole-condition`: `x.Length > 0.if` + Tab → `if (x.Length > 0)`; `.return` в `void`-методе не предлагается
+
+### Исправления по сравнению с Rider, этап 2 (0.1.169) — `Console/Editor/GuardGhost.cs`, `AnalogyGhost.cs`, `Postfix.cs`, `CompletionRanking.cs`
+- [ ] `TYPE:guard-after-check`: guard за вызовом-проверкой → серым `throw new ArgumentNullException(nameof(x));`; после `.null` + Tab серое появляется само
+- [ ] `TYPE:analogy-foreach-type`: `foreach (var preference in |` → серым коллекция с элементами `Preference`
+- [ ] `TYPE:postfix-foreach-char`: `.foreach` по `char[]` → элемент `c`, тип — остановка с выбором; `TYPE:ctor-blank-line`: `ctor` под членом → пустая строка над ним
+- [ ] `TYPE:ranking-condition-new`, `TYPE:ranking-argument`, `TYPE:ranking-throw`: `new` не вторым; в аргументе значения нужного типа, `default`, `nameof`, `null` сверху; `Thro` → `throw` вторым

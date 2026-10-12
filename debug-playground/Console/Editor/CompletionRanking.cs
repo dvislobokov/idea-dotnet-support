@@ -44,6 +44,15 @@ public class CompletionRanking
 
 
 
+        // TYPE:ranking-condition-new — `if (` and Ctrl+Space (or let the list open). EXPECT: `count`, `customerName`, `text`, `order` and the members
+        // above the keyword `new`; `new` is NOT second (the platform lifted it over a name it begins, 0.1.169)
+
+        // TYPE:ranking-argument — `Send(` and Ctrl+Space. EXPECT: the strings first (`customerName`, `text`, `_title`, `Name`), then `nameof`,
+        // `null`, `default` above the members of other types (`count`, `order`); the type `String` low, not among the first rows
+
+        // TYPE:ranking-throw — `Thro` on an empty line. EXPECT: the keyword `throw` among the first rows, above `ObjectDisposedException.ThrowIf`,
+        // `ArgumentNullException.ThrowIfNull` and the other statics of the assemblies (Rider: `throw` second)
+
         // TYPE:expected-type — `int amount = `. EXPECT: gray `count;` at once, Tab takes it. With Ctrl+Space instead: `count` first, then `Count`;
         // `customerName`, `text`, `_title` and the keywords are below; `amount` itself is NOT in the list (the server offers it, the plugin drops it)
 

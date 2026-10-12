@@ -69,7 +69,7 @@ class NativeCSharpCompletionContributor : CompletionContributor() {
         if (file.compilationUnit == null) return
         val place = NativeCSharpCompletionPlace.of(parameters.position) ?: return
         // `catch (|`: what derives from Exception is the first group, whatever the platform lifts (0.1.92)
-        val result = if (place.kind == NativeCompletionKind.TYPE && NativeCSharpExpectedCompletion.Analysis(place, file).typeRole == NativeCSharpExpectedCompletion.TypeRole.EXCEPTION_FIRST)
+        var result = if (place.kind == NativeCompletionKind.TYPE && NativeCSharpExpectedCompletion.Analysis(place, file).typeRole == NativeCSharpExpectedCompletion.TypeRole.EXCEPTION_FIRST)
             NativeCSharpExpectedCompletion.exceptionsFirst(parameters, given) else given
         if (!NativeCSharpCompletion.opensByItself(parameters, result.prefixMatcher.prefix, place.kind, place.modifiers)) return
         // Ctrl+Shift+Space: only what fits the expected type (0.1.88); where it is not known, the usual list
@@ -87,6 +87,8 @@ class NativeCSharpCompletionContributor : CompletionContributor() {
             result.restartCompletionOnPrefixChange(com.intellij.patterns.StandardPatterns.string().withLength(NativeCSharpImportCompletion.MIN_PREFIX))
         }
         val items = NativeCSharpCompletion.items(place, file, result.prefixMatcher, excluded)
+        // `if (|`, `Save(id, |`: `new` came second, lifted by the platform over `newName` it begins (0.1.169, Rider lists the names first)
+        if (result === given) NativeCSharpCompletion.unliftedKeywords(parameters, result, place, items)?.let { result = it }
         // the ML ranker (CSharpMlCompletionRanker, ML build) needs the whole list for its list-relative features: with it active the items
         // are held back and added scored once the other contributors have answered; without it they go in as they are
         val ml = CSharpMlCompletionRanker.batch(parameters, result)
@@ -154,6 +156,32 @@ object NativeCSharpCompletion {
     const val KEYWORD = 0.0
     /** A keyword that begins a statement, at a statement's start: over the keywords of values that begin alike (`try` / `true`). */
     const val STATEMENT_KEYWORD = 0.5
+    /**
+     * A keyword that is a value of the expected type (`nameof(…)` for a string, `null` for a reference, `default`): under the parameters,
+     * over the members of other types, as Rider lists `ChangePassword(userId, |`: `newName`, `ToString`, `oldName`, `userId`, `nameof`, `null`.
+     */
+    const val EXPECTED_KEYWORD = PARAMETER - 1
+
+    /**
+     * Nothing typed at a value or a statement: the platform lifts a shorter row over a longer one it begins, so the keyword `new` stood right
+     * after the parameter `newName` (the comparison with Rider on Jellyfin, № 8). A keyword at its own priority that begins another name of
+     * [items] is weighed after the rest before that lift; once a letter is typed the platform's order is kept. Null: nothing to hold back.
+     */
+    fun unliftedKeywords(parameters: CompletionParameters, result: CompletionResultSet, place: NativeCSharpCompletionPlace, items: List<LookupElement>): CompletionResultSet? {
+        if (result.prefixMatcher.prefix.isNotEmpty()) return null
+        if (place.kind != NativeCompletionKind.EXPRESSION && place.kind != NativeCompletionKind.STATEMENT) return null
+        val names = items.filter { !isPlainKeyword(it) }.map { it.lookupString }
+        val held = items.filter(::isPlainKeyword).map { it.lookupString }.filter { keyword -> names.any { it.length > keyword.length && it.startsWith(keyword) } }.toSet()
+        if (held.isEmpty()) return null
+        val weigher = object : com.intellij.codeInsight.lookup.LookupElementWeigher("dotnetUnliftedKeywords") {
+            override fun weigh(element: LookupElement): Comparable<*> = if (element.lookupString in held && isPlainKeyword(element)) 1 else 0
+        }
+        return result.withRelevanceSorter(com.intellij.codeInsight.completion.CompletionSorter.defaultSorter(parameters, result.prefixMatcher).weighBefore("liftShorter", weigher))
+    }
+
+    /** A keyword row of the native list at the plain keyword priority (not lifted for a statement start or as a value of the expected type). */
+    private fun isPlainKeyword(element: LookupElement): Boolean =
+        element.getUserData(NATIVE) == true && NativeCSharpMlInfo.infoOf(element)?.kind == CSharpMlCandidateKind.KEYWORD && NativeCSharpMlInfo.priorityOf(element) == KEYWORD
     const val DECLARATION = 50.0
     const val COMMON_CALL = 300.0
     private const val MAX_INITIALIZER_ROWS = 8
@@ -290,6 +318,8 @@ object NativeCSharpCompletion {
                         val values = NativeCSharpKeywords.expression(place).toSet()
                         keywords(keywords.filter { it !in values }, priority = STATEMENT_KEYWORD)
                     }
+                    // `nameof` / `null` / `default` where they are values of the expected type: over the members of other types (0.1.169)
+                    if (place.kind == NativeCompletionKind.EXPRESSION) keywords(expectedKeywords(keywords + place.keywords), priority = EXPECTED_KEYWORD)
                     keywords(keywords + place.keywords)
                     keywords(NativeCSharpCompletionPlace.PREDEFINED_TYPES, kind = CSharpMlCandidateKind.TYPE)
                 }
@@ -413,7 +443,9 @@ object NativeCSharpCompletion {
         }
 
         /** The types of the assemblies the place sees and the ones it does not import ([NativeCSharpImportCompletion]). */
-        private fun importedTypes() = imports(NativeCSharpImportCompletion.types(place, file, matcher, added, resolver) { bonus(it, it) })
+        // a type is no value of the type it names (`String` in an argument of a string, 0.1.169): the bonus of its name only where a type is written
+        private fun importedTypes() = imports(NativeCSharpImportCompletion.types(place, file, matcher, added, resolver,
+            bonus = { if (place.kind == NativeCompletionKind.TYPE) bonus(it, it) else 0.0 }, mlBonus = { bonus(it, it) }))
 
         /** Rows of [NativeCSharpImportCompletion]: several of one name may stand (one per namespace), none of a name the list has. */
         private fun imports(elements: List<LookupElement>) {
@@ -453,9 +485,12 @@ object NativeCSharpCompletion {
             val namespace = info.qualifiedName.substringBeforeLast('.', "")
             val fits = if (verdict == NativeCSharpExpectedCompletion.Verdict.FITS) EXPECTED_TYPE else 0.0
             val tail = if (namespace.isEmpty()) null else " ($namespace)"
-            val priority = TYPE + maxOf(bonus(name, name), fits)
+            val trained = TYPE + maxOf(bonus(name, name), fits)
+            // a type is no value of the type it names: `String` in `ChangePassword(userId, |` came sixth (0.1.169, Rider has it low); the
+            // bonus by the name stays where a type is written (`Order o = new |`); the ranker keeps the feature it was trained on
+            val priority = if (place.kind == NativeCompletionKind.TYPE) trained else TYPE + fits
             val shape = NativeCSharpMlInfo.Shape(CSharpMlCandidateKind.TYPE, scope, info.kind == TypeKind.STATIC_CLASS) { info.targets().firstOrNull() }
-            val row = element(name, icon, presentable, tail, null, priority, handler, shape, fits > 0 || fitsExpected(name))
+            val row = element(name, icon, presentable, tail, null, priority, handler, shape, fits > 0 || fitsExpected(name), mlPriority = trained)
             if (fits > 0 && analysis.typeRole == NativeCSharpExpectedCompletion.TypeRole.EXCEPTION_FIRST) NativeCSharpExpectedCompletion.markException(row)
             if (!added.contains(name)) initializerRow(name, info, icon, tail, priority)
             add(row)
@@ -525,9 +560,34 @@ object NativeCSharpCompletion {
                 NativeCSharpKeywords.template(keyword, place)?.description?.takeIf { it.isNotBlank() }?.let { element = element.withTailText("  $it", true) }
                 element.putUserData(NATIVE, true)
                 val row = PrioritizedLookupElement.withPriority(element, priority).also { it.putUserData(NATIVE, true) }
-                // the ranker was trained on keywords at KEYWORD: the lift of a statement keyword orders the list, not the feature
-                items += NativeCSharpMlInfo.attach(row, NativeCSharpMlInfo.Shape(kind, CSharpMlScope.LOCAL), if (priority == STATEMENT_KEYWORD) KEYWORD else priority)
+                // the ranker was trained on keywords at KEYWORD: the lift of a statement keyword (or of a value of the expected type) orders the
+                // list, not the feature
+                items += NativeCSharpMlInfo.attach(row, NativeCSharpMlInfo.Shape(kind, CSharpMlScope.LOCAL), if (priority == STATEMENT_KEYWORD || priority == EXPECTED_KEYWORD) KEYWORD else priority)
             }
+        }
+
+        /**
+         * Of [keywords], those that are a value of the expected type: `nameof` for a string, `null` for a reference type or a nullable value,
+         * `default` for any known type, `true` / `false` for a `bool`. Nothing where the type is not known.
+         */
+        private fun expectedKeywords(keywords: List<String>): List<String> {
+            val wanted = analysis.expected ?: return emptyList()
+            val name = analysis.resolver.definitionName(wanted)
+            val result = ArrayList<String>()
+            if ("nameof" in keywords && name == "System.String") result += "nameof"
+            if ("null" in keywords && (analysis.resolver.isNullable(wanted) || isReference(wanted))) result += "null"
+            if ("true" in keywords && name == "System.Boolean") { result += "true"; result += "false" }
+            if ("default" in keywords) result += "default"
+            return result
+        }
+
+        private fun isReference(type: io.github.dotnetsupport.lang.semantic.SemanticType): Boolean = when (type) {
+            is io.github.dotnetsupport.lang.semantic.SemanticType.Library -> type.type.kind == io.github.dotnetsupport.index.IndexedTypeKind.CLASS ||
+                type.type.kind == io.github.dotnetsupport.index.IndexedTypeKind.INTERFACE || type.type.kind == io.github.dotnetsupport.index.IndexedTypeKind.DELEGATE
+            is io.github.dotnetsupport.lang.semantic.SemanticType.Source -> type.info.kind == TypeKind.CLASS || type.info.kind == TypeKind.RECORD ||
+                type.info.kind == TypeKind.INTERFACE || type.info.kind == TypeKind.DELEGATE || type.info.kind == TypeKind.STATIC_CLASS
+            is io.github.dotnetsupport.lang.semantic.SemanticType.ArrayOf -> true
+            else -> false
         }
 
         private fun name(
@@ -540,7 +600,7 @@ object NativeCSharpCompletion {
 
         private fun element(
             lookup: String, icon: Icon, presentable: String, tail: String?, type: String?, priority: Double, handler: InsertHandler<LookupElement>?,
-            shape: NativeCSharpMlInfo.Shape = NativeCSharpMlInfo.OTHER, fits: Boolean = false,
+            shape: NativeCSharpMlInfo.Shape = NativeCSharpMlInfo.OTHER, fits: Boolean = false, mlPriority: Double = priority,
         ): LookupElement {
             var builder = LookupElementBuilder.create(lookup).withIcon(icon).withPresentableText(presentable)
             if (tail != null) builder = builder.withTailText(tail, tail.startsWith(" "))
@@ -548,7 +608,7 @@ object NativeCSharpCompletion {
             if (handler != null) builder = builder.withInsertHandler(handler)
             builder.putUserData(NATIVE, true)
             val row = PrioritizedLookupElement.withPriority(builder, priority).also { it.putUserData(NATIVE, true) }
-            return NativeCSharpMlInfo.attach(row, shape, priority, if (fits) 2 else 0, file)
+            return NativeCSharpMlInfo.attach(row, shape, mlPriority, if (fits) 2 else 0, file)
         }
 
         private fun bonus(name: String, type: String?): Double {

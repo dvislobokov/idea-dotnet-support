@@ -208,6 +208,7 @@
         <editorNotificationProvider implementation="io.github.dotnetsupport.codeanalysis.GeneratedFileNotificationProvider"/>
         <editorFactoryDocumentListener implementation="io.github.dotnetsupport.codeanalysis.CodeAnalysisDocumentListener"/>
         <defaultLiveTemplates file="/liveTemplates/CSharp.xml"/>
+        <liveTemplatePreprocessor implementation="io.github.dotnetsupport.lang.CSharpMemberTemplateSpacing"/>
         <liveTemplateContext contextId="CSHARP" implementation="io.github.dotnetsupport.lang.CSharpTemplateContext"/>
         <liveTemplateMacro implementation="io.github.dotnetsupport.lang.CSharpTypeNameMacro"/>
         <liveTemplateMacro implementation="io.github.dotnetsupport.lang.CSharpSuggestVariableNameMacro"/>
