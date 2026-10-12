@@ -287,7 +287,9 @@ object NativeCSharpLanguageCompletion {
         if (matcher.prefixMatches("[]")) indexerTail(value, resolver)?.let { tail ->
             val builder = LookupElementBuilder.create("[]").withIcon(AllIcons.Nodes.Property).withTailText(" $tail", true).withInsertHandler(INDEXER_HANDLER)
             builder.putUserData(NativeCSharpCompletion.NATIVE, true)
-            result += PrioritizedLookupElement.withPriority(builder, NativeCSharpCompletion.METHOD - 5).also { it.putUserData(NativeCSharpCompletion.NATIVE, true) }
+            // first, as Rider lists it (`[]`, `Count`, `Length`…; 0.1.172, the comparison with Rider, № 15): it stood under the methods
+            val row = PrioritizedLookupElement.withPriority(builder, NativeCSharpCompletion.VALUE_MEMBER + 5).also { it.putUserData(NativeCSharpCompletion.NATIVE, true) }
+            result += NativeCSharpMlInfo.attach(row, NativeCSharpMlInfo.Shape(io.github.dotnetsupport.ml.CSharpMlCandidateKind.PROPERTY, io.github.dotnetsupport.ml.CSharpMlScope.RECEIVER), NativeCSharpCompletion.METHOD - 5)
         }
         return result.ifEmpty { null }
     }

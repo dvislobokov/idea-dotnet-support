@@ -122,9 +122,28 @@ object NativeCSharpMemberCompletion {
         return !(declaration != null && declaration.type == top && declaration.parent is CSharpLocalDeclarationStatement)
     }
 
+    /** Members that tell the size of a value, under the indexer as Rider lists them: `[]`, `Count`, `Length` (0.1.172, the comparison with Rider, № 15). */
+    private val SIZE_MEMBERS = setOf("Count", "Length")
+
+    /** One rank for both, a property or an extension method: `Count`, `Length` in the order of the alphabet, as Rider shows them. */
+    private const val SIZE = NativeCSharpCompletion.VALUE_MEMBER + 3
+
     private fun element(entry: CSharpMemberLookup.Entry, text: CSharpSymbolText, resolver: CSharpNameResolver, reduced: Boolean, receiver: SemanticType?, file: CSharpFile): LookupElement? {
-        val element = row(entry, text, resolver, reduced, receiver)?.let { NativeCSharpMlInfo.attach(it, shape(entry.first), NativeCSharpMlInfo.priorityOf(it), 0, file) } ?: return null
+        val row = row(entry, text, resolver, reduced, receiver) ?: return null
+        // the ranker keeps the priority it was trained on; the list shows the size of a value right under its indexer
+        val trained = NativeCSharpMlInfo.priorityOf(row)
+        val size = receiver != null && entry.name in SIZE_MEMBERS && entry.first !is CSharpSymbol.SourceType && entry.first !is CSharpSymbol.LibraryType
+        val element = NativeCSharpMlInfo.attach(if (size) lifted(row, SIZE) else row, shape(entry.first), trained, 0, file)
         return if (entry.inaccessible) NativeCSharpDoubleCompletion.inaccessible(element) else element
+    }
+
+    /** [row] with [priority] in place of its own, the marks of the plugin kept. */
+    private fun lifted(row: LookupElement, priority: Double): LookupElement {
+        val inner = (row as? PrioritizedLookupElement<*>)?.delegate ?: row
+        return PrioritizedLookupElement.withPriority(inner, priority).also { lifted ->
+            lifted.putUserData(NativeCSharpCompletion.NATIVE, true)
+            row.getUserData(NativeCSharpCompletion.ROW_KEY)?.let { lifted.putUserData(NativeCSharpCompletion.ROW_KEY, it) }
+        }
     }
 
     private fun row(entry: CSharpMemberLookup.Entry, text: CSharpSymbolText, resolver: CSharpNameResolver, reduced: Boolean, receiver: SemanticType?): LookupElement? {

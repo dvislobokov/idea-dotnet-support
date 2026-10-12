@@ -1,4 +1,4 @@
-package io.github.dotnetsupport
+﻿package io.github.dotnetsupport
 
 import com.intellij.codeInsight.CodeInsightSettings
 import com.intellij.codeInsight.completion.CompletionContributor
@@ -229,7 +229,7 @@ class CSharpCompletionNativeTest : BasePlatformTestCase() {
         myFixture.addFileToProject("Util/Maths.cs", "namespace Util; public static class Maths { public static int Twice(int x) => x * 2; public const int Max = 3; }")
         myFixture.addFileToProject("Other/Hidden.cs", "namespace Other; public class Hidden { }")
         val list = native("using static Util.Maths;\nusing Util;\nclass A { void M() { <caret> } }")
-        assertTrue(list.containsAll(listOf("Twice", "Max", "Maths")))
+        assertTrue(list.toString(), list.containsAll(listOf("Twice", "Max", "Maths")))
         assertFalse("a type of a namespace the file does not import: $list", list.contains("Hidden"))
     }
 
@@ -458,7 +458,7 @@ class CSharpCompletionNativeTest : BasePlatformTestCase() {
     }
 
     /**
-     * A digit typed into the open list of the expected type (`int x = ` → `1`) closes it, as in Rider: a number is no name, and Enter
+     * A digit typed into the open list of the expected type (`int x = ` â†’ `1`) closes it, as in Rider: a number is no name, and Enter
      * after it is a line break, not the first item (robot 0.1.63: `int x = 1_resized`). Nor is a list made at or after a number.
      */
     /** The items of a list that opens by itself after [typed] is typed at `<caret>` (the auto-popup of a trigger character of the server). */

@@ -191,6 +191,9 @@ object NativeCSharpCompletion {
     const val NAME_EXACT = 30.0
     const val NAME_PARTIAL = 12.0
 
+    /** A type of the solution over an assembly's of the same lift (the name the variable gives, the expected type), [type]. */
+    const val SOURCE_TYPE = 0.5
+
     /** The name of an item as the lists compare them: `Equals(object? obj)` → `Equals`, `List<>` → `List`, `@event` → `event`. */
     fun nameOf(lookupString: String): String = lookupString.removePrefix("@").substringBefore('(').substringBefore('<').trim()
 
@@ -488,7 +491,10 @@ object NativeCSharpCompletion {
             val trained = TYPE + maxOf(bonus(name, name), fits)
             // a type is no value of the type it names: `String` in `ChangePassword(userId, |` came sixth (0.1.169, Rider has it low); the
             // bonus by the name stays where a type is written (`Order o = new |`); the ranker keeps the feature it was trained on
-            val priority = if (place.kind == NativeCompletionKind.TYPE) trained else TYPE + fits
+            val lifted = if (place.kind == NativeCompletionKind.TYPE) trained else TYPE + fits
+            // the types of the solution before the assemblies' among the lifted ones: `var policy = new |` put `LockRecursionPolicy` over
+            // `UserPolicy` (0.1.172, the comparison with Rider, № 9); the rest of the list stays alphabetical, as Rider's
+            val priority = if (lifted > TYPE) lifted + SOURCE_TYPE else lifted
             val shape = NativeCSharpMlInfo.Shape(CSharpMlCandidateKind.TYPE, scope, info.kind == TypeKind.STATIC_CLASS) { info.targets().firstOrNull() }
             val row = element(name, icon, presentable, tail, null, priority, handler, shape, fits > 0 || fitsExpected(name), mlPriority = trained)
             if (fits > 0 && analysis.typeRole == NativeCSharpExpectedCompletion.TypeRole.EXCEPTION_FIRST) NativeCSharpExpectedCompletion.markException(row)
@@ -853,8 +859,6 @@ object NativeCSharpTypeNames {
             val name = CSharpDeclarationNames.nameElement(declaration)?.text ?: continue
             if (matcher == null || matcher.prefixMatches(name)) result.getOrPut(name) { HashSet() } += TypePart.typeParameters(declaration)
         }
-        val project = file.project
-        val index = StubIndex.getInstance()
         snapshotOf(file.originalFile.viewProvider.virtualFile)?.let { snapshot ->
             var taken = 0
             for ((name, arities) in snapshot.names) {
@@ -864,20 +868,19 @@ object NativeCSharpTypeNames {
             }
             return result
         }
-        val keys = index.getAllKeys(CSharpStubIndexKeys.TYPE_NAMES, project).filter { matcher == null || matcher.prefixMatches(it) }.take(MAX_NAMES)
-        val scope = io.github.dotnetsupport.codeanalysis.CSharpSourceScope.of(project)
-        for (key in keys) {
-            index.processElements(CSharpStubIndexKeys.TYPE_NAMES, key, project, scope, CSharpElement::class.java) { element ->
-                val stub = (element as? CSharpStubElementImpl)?.greenStub
-                val arity = when (element) {
-                    is CSharpTypeDeclaration -> stub?.arity ?: element.typeParameterList?.parameters?.size ?: 0
-                    is CSharpDelegateDeclaration -> stub?.arity ?: element.typeParameterList?.parameters?.size ?: 0
-                    is CSharpBaseTypeDeclaration -> 0
-                    else -> null
-                }
-                if (arity != null) result.getOrPut(key) { HashSet() } += arity
-                true
-            }
+        // one read of the index per name and request (0.1.172): the parts the resolver keeps tell the arities, and the list asks the
+        // resolver for the same parts of every name right after (`visibleTypes`, the import rows); before, each name was read two or
+        // three times — a third of the time of `new |` on Jellyfin. The types of this file are its PSI's (above), not its stale stubs.
+        // the cap counts the names of this project: `getAllKeys` has the keys of every project of the index too (another solution open,
+        // the shared project of the tests), and a cap over them dropped names of this one when there were many
+        var taken = 0
+        for (key in resolver.allTypeNames) {
+            if (matcher != null && !matcher.prefixMatches(key)) continue
+            com.intellij.openapi.progress.ProgressManager.checkCanceled()
+            val parts = resolver.solutionTypeParts(key)
+            if (parts.isEmpty()) continue
+            result.getOrPut(key) { HashSet() } += parts.map { it.arity }
+            if (++taken >= MAX_NAMES) break
         }
         return result
     }

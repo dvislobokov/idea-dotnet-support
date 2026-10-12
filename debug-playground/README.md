@@ -1088,3 +1088,8 @@ Settings | .NET | Language Server, группа Analysis: «Compiler diagnostics
 - [ ] `TYPE:if-invert-middle`, `TYPE:if-invert-condition`: Invert 'if' в середине тела, Invert condition на `?:`
 - [ ] `TYPE:param-check-variable`, `TYPE:param-check-expression`: Check variable / expression for null, Assert expression is not null; `TYPE:ctx-split`: Split declaration
 - [ ] `TYPE:expr-safe-cast`, `expr-strings`, `expr-static-call`, `expr-try-catch`, `expr-initializer`: To safe cast, строки, статический вызов, try-catch, инициализатор → присваивания
+
+### Исправления по сравнению с Rider, этап 5 (0.1.172) — `Console/Editor/CompletionRanking.cs`
+- [ ] `TYPE:ranking-new-policy`: `var policy = new ` → свой тип `…Policy` выше типов сборок
+- [ ] `TYPE:ranking-indexer`: `text.` → `[]`, `Count` / `Length` первыми; `[]` пишет `text[|]`
+- [ ] Скорость: список после `new ` и в аргументе на большом solution — заметно быстрее 0.1.171 (замерить на Jellyfin, `tools/ui-robot/compare/complete_timed.js`)

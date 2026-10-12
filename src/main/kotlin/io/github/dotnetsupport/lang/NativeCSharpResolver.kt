@@ -178,11 +178,23 @@ class NativeCSharpResolver(val file: CSharpFile) {
 
     private fun stubTypes(name: String): List<TypePart> = stubsByName.getOrPut(name) {
         NativeCSharpTypeNames.snapshotOf(file.originalFile.viewProvider.virtualFile)?.let { return@getOrPut it.stubs[name].orEmpty() }
-        stubParts(project, virtualFile, name)
+        stubParts(project, virtualFile, name, scope = sourceScope)
     }
+
+    /** The scope of the stub index, made once: completion reads thousands of names through it (0.1.172). */
+    private val sourceScope by lazy { io.github.dotnetsupport.codeanalysis.CSharpSourceScope.of(project) }
 
     /** Every declaration of a type named [name] (any arity, any namespace, nested ones too) of this file and of the solution's other files. */
     fun typeParts(name: String): List<TypePart> = fileTypesByName[name].orEmpty() + stubTypes(name)
+
+    /** The declarations of [name] in the solution's other files, read from the stub index once per resolver ([NativeCSharpTypeNames.candidates]). */
+    internal fun solutionTypeParts(name: String): List<TypePart> = stubTypes(name)
+
+    /**
+     * Every type name of the stub index, read once per resolver: a completion asks for it twice (the names the list has and the import rows),
+     * and on a solution of thousands of types `getAllKeys` alone is a few dozen milliseconds (0.1.172).
+     */
+    internal val allTypeNames: Collection<String> by lazy { StubIndex.getInstance().getAllKeys(CSharpStubIndexKeys.TYPE_NAMES, project) }
 
     /** The type a nested-type [member] of [membersOf] stands for. */
     fun nestedTypeOf(member: Member): TypeInfo? = member.nestedType()
@@ -219,8 +231,19 @@ class NativeCSharpResolver(val file: CSharpFile) {
         return parts.filter { it.arity == arity && it.namespace != null && it.namespace in visible }.map { it.qualifiedName }.distinct().mapNotNull { typeInfo(it, arity) }
     }
 
-    /** `A.B.C` around [at] gives `""`, `A`, `A.B`, `A.B.C`; and the namespaces of the `using` directives of the file and of those namespaces. */
+    private var visibleAt: PsiElement? = null
+    private var visibleAtNamespaces: Set<String> = emptySet()
+
+    /**
+     * `A.B.C` around [at] gives `""`, `A`, `A.B`, `A.B.C`; and the namespaces of the `using` directives of the file and of those namespaces.
+     * The last answer is kept: completion asks it for every type name of the solution at the same place (0.1.172).
+     */
     private fun visibleNamespaces(at: PsiElement): Set<String> {
+        if (visibleAt === at) return visibleAtNamespaces
+        return computeVisibleNamespaces(at).also { visibleAt = at; visibleAtNamespaces = it }
+    }
+
+    private fun computeVisibleNamespaces(at: PsiElement): Set<String> {
         val visible = HashSet<String>()
         visible += ""
         val namespaces = generateSequence(at.parent) { if (it is CSharpFile) null else it.parent }.filterIsInstance<CSharpBaseNamespaceDeclaration>().toList()
@@ -319,9 +342,12 @@ class NativeCSharpResolver(val file: CSharpFile) {
          * The parts of the types named [name] in the files of the solution other than [virtualFile] (null: all): from the stubs; from the PSI
          * where the AST is loaded anyway. [files] collects the files of every declaration of that name, the ones of [virtualFile] included.
          */
-        fun stubParts(project: Project, virtualFile: VirtualFile?, name: String, files: MutableCollection<VirtualFile>? = null): List<TypePart> {
+        fun stubParts(
+            project: Project, virtualFile: VirtualFile?, name: String, files: MutableCollection<VirtualFile>? = null,
+            scope: com.intellij.psi.search.GlobalSearchScope = io.github.dotnetsupport.codeanalysis.CSharpSourceScope.of(project),
+        ): List<TypePart> {
             val parts = ArrayList<TypePart>()
-            StubIndex.getInstance().processElements(CSharpStubIndexKeys.TYPE_NAMES, name, project, io.github.dotnetsupport.codeanalysis.CSharpSourceScope.of(project), CSharpElement::class.java) { element ->
+            StubIndex.getInstance().processElements(CSharpStubIndexKeys.TYPE_NAMES, name, project, scope, CSharpElement::class.java) { element ->
                 val file = element.containingFile?.viewProvider?.virtualFile
                 if (files != null && file != null) files += file
                 if (file != virtualFile && (element is CSharpBaseTypeDeclaration || element is CSharpDelegateDeclaration)) {

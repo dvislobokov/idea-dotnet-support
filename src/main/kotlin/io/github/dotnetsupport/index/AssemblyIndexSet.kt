@@ -27,13 +27,23 @@ class AssemblyIndexSet(val indexes: List<AssemblyIndex>, val assemblyName: Strin
         override fun toString(): String = member.toString()
     }
 
+    /**
+     * The answers of [findType] by name: a miss binary-searches every index of the set twice (hundreds of them in a big solution), and the
+     * conversions of SMART completion ask the same names for every candidate type (0.1.172, the Jellyfin comparison: a third of its time).
+     * The set does not change once made, so the answers do not either.
+     */
+    private val byFullName = java.util.concurrent.ConcurrentHashMap<String, Any>()
+    private val byPath = java.util.concurrent.ConcurrentHashMap<String, Any>()
+
     /** By the metadata name, as a signature names it: an internal type of the assembly too (a base, an interface a signature names). */
-    fun findType(fullName: String): IndexedType? =
-        indexes.firstNotNullOfOrNull { it.findType(fullName) } ?: indexes.firstNotNullOfOrNull { index -> index.findHiddenType(fullName)?.takeIf { !it.isPrivate } }
+    fun findType(fullName: String): IndexedType? = byFullName.getOrPut(fullName) {
+        indexes.firstNotNullOfOrNull { it.findType(fullName) } ?: indexes.firstNotNullOfOrNull { index -> index.findHiddenType(fullName)?.takeIf { !it.isPrivate } } ?: NONE
+    } as? IndexedType
 
     /** By the name C# code writes: a type it may name, an internal one of an assembly that [grants] it among them. */
-    fun findType(namespace: String, path: String): IndexedType? =
-        indexes.firstNotNullOfOrNull { it.findType(namespace, path) } ?: indexes.firstNotNullOfOrNull { index -> index.findHiddenType(namespace, path)?.takeIf(::isAccessible) }
+    fun findType(namespace: String, path: String): IndexedType? = byPath.getOrPut("$namespace\u0000$path") {
+        indexes.firstNotNullOfOrNull { it.findType(namespace, path) } ?: indexes.firstNotNullOfOrNull { index -> index.findHiddenType(namespace, path)?.takeIf(::isAccessible) } ?: NONE
+    } as? IndexedType
 
     /** A type of that name the code cannot reach (internal of an assembly that does not [grants] it, private nested): CS0122 rather than CS0246. */
     fun findInaccessibleType(namespace: String, path: String): IndexedType? =
@@ -174,5 +184,7 @@ class AssemblyIndexSet(val indexes: List<AssemblyIndex>, val assemblyName: Strin
         const val GENERIC_RECEIVER = "!"
         const val ARRAY_RECEIVER = "[]"
         private const val MAX_DEPTH = 64
+        /** A miss in the caches of [findType]: a map holds no null. */
+        private val NONE = Any()
     }
 }

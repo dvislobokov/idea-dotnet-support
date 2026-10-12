@@ -53,6 +53,13 @@ public class CompletionRanking
         // TYPE:ranking-throw — `Thro` on an empty line. EXPECT: the keyword `throw` among the first rows, above `ObjectDisposedException.ThrowIf`,
         // `ArgumentNullException.ThrowIfNull` and the other statics of the assemblies (Rider: `throw` second)
 
+        // TYPE:ranking-new-policy (0.1.172) — `var exception = new ` and let the list open. EXPECT: `Exception` first, then the types of the
+        // solution the name suggests (`RankingException` below) BEFORE `ArgumentException`, `AggregateException` and the other assemblies' ones;
+        // the rest alphabetical, as Rider
+
+        // TYPE:ranking-indexer (0.1.172) — `var c = customerName.` (Ctrl+Space if the list does not open). EXPECT: `[]` first, then `Count`,
+        // `Length`, then the other members; Enter on `[]` gives `customerName[|]` with the caret inside the brackets
+
         // TYPE:expected-type — `int amount = `. EXPECT: gray `count;` at once, Tab takes it. With Ctrl+Space instead: `count` first, then `Count`;
         // `customerName`, `text`, `_title` and the keywords are below; `amount` itself is NOT in the list (the server offers it, the plugin drops it)
 
@@ -109,3 +116,5 @@ public class RankedOrder
     public decimal Price { get; set; }
     public string Customer { get; set; } = "";
 }
+
+public class RankingException : Exception { }

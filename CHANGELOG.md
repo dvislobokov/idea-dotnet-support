@@ -3,6 +3,20 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.172
+
+Stage 5 of the fixes found comparing with Rider on Jellyfin (`docs/compare/jellyfin-2026-10-12.md`, section 9): the list, its order
+and its speed.
+- After `new ` the solution's types the variable's name or the expected type suggest go above the assemblies' (`UserPolicy` before
+  `LockRecursionPolicy`); after a dot on a string, a list or an array `[]`, `Count`, `Length` come first, as in Rider, and `[]` writes
+  `text[|]`.
+- Faster completion: the stub index of type names is read once per name and request (it was read two or three times), the conversions
+  of SMART completion look types up in a per-set cache, the visible namespaces are computed once per place. On a harness with the
+  real assembly indexes of Jellyfin and ~4300 solution types: `new ` 230 → 130 ms, SMART `new ` 200 → 85 ms, an argument 160 → 90 ms.
+  The cap of 2000 type names now counts the names of the file's project only (before, other projects' keys could push the project's
+  own types out of the list).
+- Tests `CSharpCompletionOrderTest`, `CompletionLatencyHarnessTest` (run with `LATENCY_HARNESS` set).
+
 ## 0.1.171
 
 Stage 4 of the fixes found comparing with Rider on Jellyfin (`docs/compare/jellyfin-2026-10-12.md`, section 9): new context actions

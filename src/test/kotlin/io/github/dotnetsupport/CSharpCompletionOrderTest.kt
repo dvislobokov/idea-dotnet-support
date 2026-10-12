@@ -99,6 +99,85 @@ class CSharpCompletionOrderTest : BasePlatformTestCase() {
         assertEquals(list.take(6).toString(), "throw", list[1])
     }
 
+    /** The rows at `<caret>` of [text], a whole file. */
+    private fun rowsIn(text: String): List<String> {
+        myFixture.configureByText("Order${counter++}.cs", text.trimIndent())
+        myFixture.completeBasic()
+        return myFixture.lookupElements?.map { it.lookupString }.orEmpty()
+    }
+
+    /** `var exception = new |` (№ 9): the type the variable names first, then the solution's types it names before the assemblies' ones. */
+    fun testTheSolutionsTypesFirstAmongTheTypesTheNameSuggests() {
+        val list = rowsIn("""
+            using System;
+
+            namespace Shop;
+
+            public class OrderException : Exception { }
+
+            public class Orders
+            {
+                public void M()
+                {
+                    var exception = new <caret>
+                }
+            }
+        """)
+        assertEquals(list.take(8).toString(), "Exception", list[0])
+        assertTrue(list.take(8).toString(), index(list, "OrderException") < index(list, "ArgumentException"))
+        assertTrue(list.take(8).toString(), index(list, "OrderException") < index(list, "AggregateException"))
+    }
+
+    /** `text.` / `items.` (№ 15): the indexer `[]` first, then `Count` and `Length`, as Rider lists them. */
+    fun testTheIndexerAndTheSizeFirstAfterADot() {
+        val text = """
+            using System;
+            using System.Linq;
+            using System.Collections.Generic;
+
+            namespace Shop;
+
+            public class Orders
+            {
+                public void M(string text, List<int> items, int[] numbers)
+                {
+                    __EXPR__.<caret>
+                }
+            }
+        """
+        val string = rowsIn(text.replace("__EXPR__", "text"))
+        assertEquals(string.take(6).toString(), listOf("[]", "Count", "Length"), string.take(3))
+        val list = rowsIn(text.replace("__EXPR__", "items"))
+        assertEquals(list.take(6).toString(), "[]", list[0])
+        assertEquals(list.take(6).toString(), "Count", list[1])
+        val array = rowsIn(text.replace("__EXPR__", "numbers"))
+        assertEquals(array.take(6).toString(), "[]", array[0])
+        // no indexer on a type or a value without one
+        val none = rowsIn(text.replace("__EXPR__", "Console"))
+        assertFalse(none.take(6).toString(), "[]" in none)
+    }
+
+    /** Choosing `[]` writes the indexer access with the caret inside: `text.` + `[]` → `text[|]`. */
+    fun testTheIndexerRowWritesTheBrackets() {
+        rowsIn("""
+            namespace Shop;
+
+            public class Orders
+            {
+                public void M(string text)
+                {
+                    var c = text.<caret>
+                }
+            }
+        """)
+        val row = myFixture.lookupElements!!.first { it.lookupString == "[]" }
+        myFixture.lookup.currentItem = row
+        myFixture.finishLookup(com.intellij.codeInsight.lookup.Lookup.NORMAL_SELECT_CHAR)
+        val document = myFixture.editor.document.text
+        val caret = myFixture.editor.caretModel.offset
+        assertEquals("var c = text[|]", (document.substring(0, caret) + "|" + document.substring(caret)).lines().first { "var c" in it }.trim())
+    }
+
     companion object {
         private var counter = 0
         private fun bytes(name: String): ByteArray? = CSharpCompletionOrderTest::class.java.getResourceAsStream("/index/$name")?.use { it.readBytes() }
