@@ -150,6 +150,8 @@ class CSharpSolutionRenameTest : BasePlatformTestCase() {
             e.messages.toList()
         }
         assertTrue(messages.toString(), messages.any { it.contains("already has a member named 'Name'") })
+        // the stub index is read under a progress, not on the EDT (docs/compare/jellyfin-2026-10-12.md № 66)
+        assertEquals(false, NativeCSharpSolutionRename.conflictsOnEdtForTests)
     }
 
     fun testATypeOfTheSameNameIsAConflict() {

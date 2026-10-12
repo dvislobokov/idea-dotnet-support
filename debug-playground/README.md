@@ -1063,3 +1063,10 @@ Settings | .NET | Language Server, группа Analysis: «Compiler diagnostics
 - [ ] `TYPE:analogy-section`, `TYPE:analogy-call`, `TYPE:analogy-arm`: под `case OperationType.Delete:` после двух одинаковых секций → `return "Delete";` / вызов с `Delete`; в switch-выражении → `"Delete",`
 - [ ] `TYPE:analogy-foreach`, `TYPE:analogy-for`: `foreach (var order in |` → `orders)`; `for (var i = 0; i < |` → `orders.Count; i++)`
 - [ ] `TYPE:analogy-string`, `TYPE:analogy-nameof-one`, `TYPE:analogy-nameof`: `string.IsNullOrEmpty(|` → единственная строка; `nameof(|` → единственный параметр или тот, что проверяет `if`
+
+### Исправления по сравнению с Rider, этап 1 (0.1.168) — `Console/Editor/CompletionInsertion.cs`, `FieldActions.cs`, `SwitchActions.cs`, `ContextActions.cs`, `Usings.cs`, `Postfix.cs`
+- [ ] `TYPE:insertion-var-space`: `foreach (var ` — пробел оставляет `var`, **не** `ValidUsernameRegex`; `TYPE:insertion-tr-try`: `tr` + Tab → блок `try`
+- [ ] `TYPE:field-one`, `TYPE:field-chained`, `TYPE:field-none`, `TYPE:field-primary`, `TYPE:field-many`: Alt+Enter на поле → «Initialize field from constructor» / «Initialize members from constructor»
+- [ ] `TYPE:switch-add-arms`: при `_`-ветке «Add missing arms» не предлагается; `TYPE:ctx-inline`: `new` при двух использованиях не инлайнится
+- [ ] `TYPE:using-wrap`: «Wrap in 'using'» на строке не предлагается; Add partial part / Create test — только на заголовке типа
+- [ ] `TYPE:postfix-whole-condition`: `x.Length > 0.if` + Tab → `if (x.Length > 0)`; `.return` в `void`-методе не предлагается

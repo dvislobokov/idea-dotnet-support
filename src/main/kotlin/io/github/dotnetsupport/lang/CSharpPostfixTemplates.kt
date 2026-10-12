@@ -88,6 +88,8 @@ class CSharpPostfixTemplate(
     private val fits: (CSharpPostfixFacts) -> Boolean = { true },
     /** Whether the expression's text fits (`.inject` of a type name). */
     private val fitsText: (String) -> Boolean = { true },
+    /** Whether the place fits, by the tree at the expression (`.return` in a function that returns nothing). */
+    private val fitsPlace: (PsiElement) -> Boolean = { true },
     private val render: (PostfixSite) -> Expansion?,
 ) : PostfixTemplate("csharp.$id", key.removePrefix("."), key, example, provider) {
 
@@ -101,7 +103,7 @@ class CSharpPostfixTemplate(
             PostfixPlace.STATEMENT -> site.startsStatement && !site.memberLevel
             PostfixPlace.MEMBER -> site.startsStatement && site.memberLevel
         }
-        if (!placed || !fitsText(site.expression)) return false
+        if (!placed || !fitsText(site.expression) || !fitsPlace(context)) return false
         when (site.namedType) {
             NamedType.ENUM -> return false
             NamedType.TYPE -> if (key !in CSharpPostfixTemplates.OF_TYPES) return false
@@ -115,7 +117,7 @@ class CSharpPostfixTemplate(
         val document = editor.document
         PsiDocumentManager.getInstance(project).commitDocument(document)
         val text = document.immutableCharSequence
-        val range = CSharpExpressions.before(text, editor.caretModel.offset) ?: return
+        val range = CSharpExpressions.postfixRange(text, editor.caretModel.offset) ?: return
         val file = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: context.containingFile
         val facts = CSharpPostfixFacts.of(file, range)
         val site = PostfixSite(text.substring(range.startOffset, range.endOffset), CSharpExpressions.indentAt(text, range.startOffset), unitOf(file), facts, text, range)
@@ -167,7 +169,7 @@ object CSharpPostfixTemplates {
     fun site(file: PsiFile, document: Document, offset: Int): Site? {
         cached?.let { if (it.document === document && it.stamp == document.modificationStamp && it.offset == offset) return it.site }
         val text = document.immutableCharSequence
-        val site = CSharpExpressions.before(text, offset)?.let { range ->
+        val site = CSharpExpressions.postfixRange(text, offset)?.let { range ->
             Site(
                 text.substring(range.startOffset, range.endOffset), CSharpExpressions.startsStatement(text, range.startOffset),
                 CSharpPostfixMembers.atMemberLevel(text, range.startOffset),
@@ -270,8 +272,8 @@ object CSharpPostfixTemplates {
         val e = PostfixPlace.EXPRESSION
         val s = PostfixPlace.STATEMENT
         fun t(id: String, description: String, example: String, place: PostfixPlace, awaits: Boolean = false, fits: (CSharpPostfixFacts) -> Boolean = { true },
-              fitsText: (String) -> Boolean = { true }, render: (PostfixSite) -> Expansion?) =
-            CSharpPostfixTemplate(id, ".$id", description, example, provider, place, awaits, fits, fitsText, render)
+              fitsText: (String) -> Boolean = { true }, fitsPlace: (PsiElement) -> Boolean = { true }, render: (PostfixSite) -> Expansion?) =
+            CSharpPostfixTemplate(id, ".$id", description, example, provider, place, awaits, fits, fitsText, fitsPlace, render)
         // Rider's list, in its order, then the plugin's own
         return linkedSetOf(
             t("arg", "Surrounds expression with invocation", "Method(expr)", e) { Expansion.template(Expansion.Stop("METHOD", emptyList(), complete = true), "(${it.expression})", Expansion.End) },
@@ -304,7 +306,10 @@ object CSharpPostfixTemplates {
                 Expansion.template(Expansion.Stop("TYPE", PARSED), ".Parse(${it.expression})", Expansion.End)
             },
             t("prop", "Introduces property for expression", "Property = expr;", s) { field(it, property = true) },
-            t("return", "Returns expression from current function", "return expr;", s) { line("return ${it.expression};") },
+            // not where the function returns nothing (`void`, `async Task`): `return value;` there is CS0127 / CS1997 (Jellyfin № 11)
+            t("return", "Returns expression from current function", "return expr;", s, fitsPlace = { at -> NativeCSharpCommonCalls.function(at)?.let(NativeCSharpCommonCalls::returnsNothing) != true }) {
+                line("return ${it.expression};")
+            },
             t("sel", "Selects expression in editor", "|selected + expression|", e) { line(it.expression, it.expression.length, it.expression.indices) },
             t("switch", "Produces switch statement", "switch (expr)", s) { block("switch (${it.expression})", it.indent, it.unit) },
             t("throw", "Throws expression of 'Exception' type", "throw expr;", s, fits = { it.isException != false }) { line("throw ${it.expression};") },

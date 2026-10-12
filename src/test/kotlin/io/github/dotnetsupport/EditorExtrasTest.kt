@@ -58,6 +58,27 @@ class EditorExtrasTest : BasePlatformTestCase() {
         assertNull("one type: nothing to move", CSharpFileLayout.split("class A { }", 3))
     }
 
+    /** «Add a partial part» only on the header of the type, not in every body (Jellyfin № 21, as Rider). */
+    fun testPartialPartOnlyOnTheHeaderOfTheType() {
+        io.github.dotnetsupport.lang.CSharpSyntaxTrees.forceNativeTreeForTests(true)
+        try {
+            val text = "namespace App;\n\n[Serializable]\npublic class Order : Base\n{\n    public int Id { get; set; }\n    public void Save()\n    {\n        var x = 1;\n    }\n}\n"
+            myFixture.configureByText("Header.cs", text)
+            fun at(anchor: String): Boolean {
+                myFixture.editor.caretModel.moveToOffset(text.indexOf(anchor) + 1)
+                return AddPartialPartIntention().isAvailable(project, myFixture.editor, myFixture.file)
+            }
+            assertTrue("the name", at("Order"))
+            assertTrue("the modifiers", at("public class"))
+            assertTrue("the base list", at("Base"))
+            assertFalse("a property", at("Id {"))
+            assertFalse("a method header", at("Save()"))
+            assertFalse("a body", at("var x"))
+        } finally {
+            io.github.dotnetsupport.lang.CSharpSyntaxTrees.forceNativeTreeForTests(null)
+        }
+    }
+
     fun testFileIntentionsAvailability() {
         myFixture.addFileToProject("it/App/App.csproj", """<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><RootNamespace>App</RootNamespace></PropertyGroup></Project>""")
         myFixture.configureFromExistingVirtualFile(myFixture.addFileToProject("it/App/Models/Order.cs", "namespace App;\n\npublic class Or<caret>der { }\npublic class Line { }\n").virtualFile)

@@ -1,0 +1,105 @@
+== Emby.Server.Implementations/Library/LibraryManager.cs
+open=91 firstHighlights=158 stableAt=3011 highlighters=12060
+errors=0
+
+
+== src/Jellyfin.Database/Jellyfin.Database.Implementations/Entities/User.cs
+open=81 firstHighlights=139 stableAt=902 highlighters=914
+errors=4
+E 20 [Id] GRAMMAR_ERROR Possible spelling mistake found.
+E 21 [Id] GRAMMAR_ERROR Possible spelling mistake found.
+E 59 [Id] GRAMMAR_ERROR Possible spelling mistake found.
+E 237 [auto-play] GRAMMAR_ERROR This word is normally spelled as one.
+
+== Jellyfin.Api/Controllers/ItemsController.cs
+open=66 firstHighlights=126 stableAt=4673 highlighters=4648
+errors=56
+E 32 [items] GRAMMAR_ERROR An apostrophe may be missing.
+E 95 [comma delimited] GRAMMAR_ERROR This word is normally spelled with a hyphen.
+E 96 [comma delimited] GRAMMAR_ERROR This word is normally spelled with a hyphen.
+E 101 [premiere] GRAMMAR_ERROR This French-borrowed phrase usually has diacritics
+E 104 [premiere] GRAMMAR_ERROR This French-borrowed phrase usually has diacritics
+E 109 [tv] GRAMMAR_ERROR Did you mean television?
+E 110 [tv] GRAMMAR_ERROR Did you mean television?
+E 111 [tv] GRAMMAR_ERROR Did you mean television?
+E 112 [tv] GRAMMAR_ERROR Did you mean television?
+E 113 [tv] GRAMMAR_ERROR Did you mean television?
+
+== MediaBrowser.Model/Dto/BaseItemDto.cs
+open=60 firstHighlights=82 stableAt=1733 highlighters=2938
+errors=10
+E 106 [premiere] GRAMMAR_ERROR This French-borrowed phrase usually has diacritics
+E 108 [premiere] GRAMMAR_ERROR This French-borrowed phrase usually has diacritics
+E 214 [place holder] GRAMMAR_ERROR This noun is normally spelled as one word.
+E 216 [place holder] GRAMMAR_ERROR This noun is normally spelled as one word.
+E 216 [place holder] GRAMMAR_ERROR This noun is normally spelled as one word.
+E 296 [Id] GRAMMAR_ERROR Possible spelling mistake found.
+E 302 [Id] GRAMMAR_ERROR Possible spelling mistake found.
+E 508 [Id] GRAMMAR_ERROR Possible spelling mistake found.
+E 775 [premiere] GRAMMAR_ERROR This French-borrowed phrase usually has diacritics
+E 777 [premiere] GRAMMAR_ERROR This French-borrowed phrase usually has diacritics
+
+== tests/Jellyfin.Controller.Tests/Entities/BaseItemTests.cs
+open=48 firstHighlights=92 stableAt=1962 highlighters=3353
+errors=0
+
+
+== src/Jellyfin.Extensions/StringExtensions.cs
+open=47 firstHighlights=101 stableAt=899 highlighters=752
+errors=3
+E 31 [unicode] GRAMMAR_ERROR The standard spelling is 'Unicode'
+E 131 [an] GRAMMAR_ERROR Use 'a' instead of 'an' if the following word doesn't start with a vowel sound, e.g. 'a sentence', 'a university'.
+E 133 [enumerable] GRAMMAR_ERROR The phrase 'The enumerable of' is not correct. Use a noun, not an adjective, between 'The' and 'of'.
+
+== MediaBrowser.Controller/Library/ILibraryManager.cs
+open=40 firstHighlights=78 stableAt=1848 highlighters=4189
+errors=3
+E 250 [Director's Cut] GRAMMAR_ERROR The standard spelling is 'director’s cut'
+E 625 [any more] GRAMMAR_ERROR Did you mean the adverb 'anymore'?
+E 868 [the the] GRAMMAR_ERROR Possible typo: you repeated a word.
+
+== Jellyfin.Server.Implementations/Users/UserManager.cs
+open=14 firstHighlights=21 stableAt=210 highlighters=4162
+errors=6
+E 116 [unicode] GRAMMAR_ERROR The standard spelling is 'Unicode'
+E 118 [unicode] GRAMMAR_ERROR The standard spelling is 'Unicode'
+E 178 [afterwards] GRAMMAR_ERROR In American English, 'afterward' is the preferred variant. 'Afterwards' is more commonly used in British English and other dialects.
+E 666 [Otherwise] GRAMMAR_ERROR A comma may be missing after the conjunctive/linking adverb 'Otherwise'.
+E 829 [ and] GRAMMAR_ERROR Use a comma before 'and' if it connects two independent clauses (unless they are closely connected and short).
+E 862 [god forsaken] GRAMMAR_ERROR This word is normally spelled as one.
+
+== Emby.Server.Implementations/IO/LibraryMonitor.cs
+open=47 firstHighlights=109 stableAt=2373 highlighters=1498
+errors=0
+
+
+== tests/Jellyfin.LiveTv.Tests/HdHomerunHostTests.cs
+open=37 firstHighlights=82 stableAt=655 highlighters=622
+errors=0
+
+
+== MediaBrowser.Controller/MediaEncoding/JobLogger.cs
+open=38 firstHighlights=85 stableAt=2093 highlighters=554
+errors=0
+
+
+== Jellyfin.Server/ServerSetupApp/SetupServer.cs
+open=40 firstHighlights=79 stableAt=1490 highlighters=1136
+errors=0
+
+
+== Emby.Server.Implementations/Library/SimilarItems/LiveTvProgramSimilarItemsProvider.cs
+open=54 firstHighlights=110 stableAt=1879 highlighters=274
+errors=0
+
+
+== Jellyfin.Server.Implementations/Item/ItemPersistenceService.cs
+open=39 firstHighlights=85 stableAt=3050 highlighters=3366
+errors=0
+
+
+== tests/Jellyfin.Api.Tests/Helpers/MediaInfoHelperTests.cs
+open=39 firstHighlights=109 stableAt=1320 highlighters=1849
+errors=1
+E 290 [a] GRAMMAR_ERROR Use 'an' instead of 'a' if the following word starts with a vowel sound, e.g. 'an article', 'an hour'.
+

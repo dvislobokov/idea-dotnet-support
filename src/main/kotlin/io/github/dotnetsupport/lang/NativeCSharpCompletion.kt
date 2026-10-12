@@ -152,6 +152,8 @@ object NativeCSharpCompletion {
     const val TYPE_PARAMETER = 22.0
     const val TYPE = 20.0
     const val KEYWORD = 0.0
+    /** A keyword that begins a statement, at a statement's start: over the keywords of values that begin alike (`try` / `true`). */
+    const val STATEMENT_KEYWORD = 0.5
     const val DECLARATION = 50.0
     const val COMMON_CALL = 300.0
     private const val MAX_INITIALIZER_ROWS = 8
@@ -283,6 +285,11 @@ object NativeCSharpCompletion {
                     solutionTypes()
                     if (analysis.typeRole.keywords) importedTypes()   // the filtered places of 0.1.88 (throw new, base list, event, constraint) keep to their own types
                     val keywords = if (place.kind == NativeCompletionKind.STATEMENT) NativeCSharpKeywords.statement(place) else NativeCSharpKeywords.expression(place)
+                    // `tr|` at a statement's start: `try` over `true`, `ret|`: `return` first (0.1.168, the Jellyfin probe t08)
+                    if (place.kind == NativeCompletionKind.STATEMENT) {
+                        val values = NativeCSharpKeywords.expression(place).toSet()
+                        keywords(keywords.filter { it !in values }, priority = STATEMENT_KEYWORD)
+                    }
                     keywords(keywords + place.keywords)
                     keywords(NativeCSharpCompletionPlace.PREDEFINED_TYPES, kind = CSharpMlCandidateKind.TYPE)
                 }
@@ -518,7 +525,8 @@ object NativeCSharpCompletion {
                 NativeCSharpKeywords.template(keyword, place)?.description?.takeIf { it.isNotBlank() }?.let { element = element.withTailText("  $it", true) }
                 element.putUserData(NATIVE, true)
                 val row = PrioritizedLookupElement.withPriority(element, priority).also { it.putUserData(NATIVE, true) }
-                items += NativeCSharpMlInfo.attach(row, NativeCSharpMlInfo.Shape(kind, CSharpMlScope.LOCAL), priority)
+                // the ranker was trained on keywords at KEYWORD: the lift of a statement keyword orders the list, not the feature
+                items += NativeCSharpMlInfo.attach(row, NativeCSharpMlInfo.Shape(kind, CSharpMlScope.LOCAL), if (priority == STATEMENT_KEYWORD) KEYWORD else priority)
             }
         }
 

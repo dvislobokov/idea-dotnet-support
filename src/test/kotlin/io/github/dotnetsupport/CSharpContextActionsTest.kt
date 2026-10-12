@@ -233,6 +233,11 @@ class CSharpContextActionsTest : BasePlatformTestCase() {
         assertEquals("void M()\n{\n    var list = new List<int>();\n}", apply("void M()\n{\n    List<int> <caret>list = new List<int>();\n}", "Use 'var'"))
         assertFalse("another type", available("void M()\n{\n    <caret>long n = 1;\n}", "Use 'var'"))
         assertFalse("an interface", available("void M()\n{\n    <caret>IList<int> list = new List<int>();\n}", "Use 'var'"))
+        // a value that does something, used twice: inlined it would do it twice (two objects, two calls) — Jellyfin № 19
+        assertFalse("a creation used twice", available("object M()\n{\n    var <caret>args = new List<int>();\n    Console.WriteLine(args);\n    return args;\n}", "Inline variable"))
+        assertFalse("a call used twice", available("int M(List<int> list)\n{\n    var <caret>n = list.IndexOf(1);\n    return n + n;\n}", "Inline variable"))
+        // used once the meaning stays
+        assertTrue("a creation used once", available("object M()\n{\n    var <caret>args = new List<int>();\n    return args;\n}", "Inline variable"))
         assertFalse("target-typed", available("void M()\n{\n    <caret>List<int> list = new();\n}", "Use 'var'"))
         assertFalse("null", available("void M()\n{\n    <caret>string s = null;\n}", "Use 'var'"))
         assertFalse("const", available("void M()\n{\n    const <caret>int n = 1;\n}", "Use 'var'"))

@@ -1,0 +1,103 @@
+######## member run 1 «newName.» BASIC
+first=135 stable=135
+######## member run 2 «newName.» BASIC
+first=162 stable=162
+######## member run 3 «newName.» BASIC
+first=132 stable=132
+items: 156
+  Length  : int
+  Clone()  : object
+  CompareTo(object? value) (+ 1)  : int
+  Contains(char value) (+ 3)  : bool
+  CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) (+ 1)  : void
+  EndsWith(char value) (+ 3)  : bool
+  EnumerateRunes()  : StringRuneEnumerator
+  Equals(object? obj) (+ 2)  : bool
+  GetEnumerator()  : CharEnumerator
+  GetHashCode() (+ 1)  : int
+  GetType()  : Type
+  GetTypeCode()  : TypeCode
+######## prefix run 1 «Thro» BASIC
+first=289 stable=289
+######## prefix run 2 «Thro» BASIC
+first=269 stable=269
+######## prefix run 3 «Thro» BASIC
+first=279 stable=279
+items: 25
+  ThrowIfInvalidUsername()  : void
+  ObjectDisposedException.ThrowIf (bool condition, object instance)  +1 overload  (System)  : void
+  Expression.Throw (Expression value)  +1 overload  (System.Linq.Expressions)  : UnaryExpression
+  OpCodes.Throw (System.Reflection.Emit)  : OpCode
+  ExceptionDispatchInfo.Throw (Exception source)  (System.Runtime.ExceptionServices)  : void
+  ArgumentException.ThrowIfNullOrEmpty (string argument, string paramName)  (System)  : void
+  ArgumentNullException.ThrowIfNull (object argument, string paramName)  +1 overload  (System)  : void
+  ArgumentException.ThrowIfNullOrWhiteSpace (string argument, string paramName)  (System)  : void
+  ArgumentOutOfRangeException.ThrowIfEqual<> (T value, T other, string paramName)  (System)  : void
+  ArgumentOutOfRangeException.ThrowIfGreaterThan<> (T value, T other, string paramName)  (System)  : void
+  ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual<> (T value, T other, string paramName)  (System)  : void
+  ArgumentOutOfRangeException.ThrowIfLessThan<> (T value, T other, string paramName)  (System)  : void
+######## new run 1 «var policy = new » BASIC
+first=554 stable=554
+######## new run 2 «var policy = new » BASIC
+first=569 stable=569
+######## new run 3 «var policy = new » BASIC
+first=546 stable=546
+items: 789
+  LockRecursionPolicy (System.Threading)
+  Lock (System.Threading)
+  UserPolicy (MediaBrowser.Model.Users)
+  ConsoleColor (System)
+  Console (System)
+  *string
+  UserDto (MediaBrowser.Model.Dto)
+  ILogger (Microsoft.Extensions.Logging)
+  ILogger<> (Microsoft.Extensions.Logging)
+  ILookup<,> (System.Linq)
+  ValueType (System)
+  AbandonedMutexException (System.Threading)
+######## smart-new run 1 «UserPolicy policy = new » SMART
+first=788 stable=788
+######## smart-new run 2 «UserPolicy policy = new » SMART
+first=878 stable=878
+######## smart-new run 3 «UserPolicy policy = new » SMART
+first=963 stable=963
+items: 2
+  UserPolicy()
+  UserPolicy { … }  : initializer
+######## argument run 1 «ChangePassword(userId, » BASIC
+first=613 stable=613
+######## argument run 2 «ChangePassword(userId, » BASIC
+first=682 stable=682
+######## argument run 3 «ChangePassword(userId, » BASIC
+first=639 stable=639
+items: 870
+  newName  : string
+  *new
+  oldName  : string
+  userId  : Guid
+  String (System)
+  _appHost  : IApplicationHost
+  _authenticationProviders  : IReadOnlyCollection<IAuthenticationProvider>
+  _dbProvider  : IDbContextFactory<JellyfinDbContext>
+  _defaultAuthenticationProvider  : DefaultAuthenticationProvider
+  _defaultPasswordResetProvider  : DefaultPasswordResetProvider
+  _eventManager  : IEventManager
+  _imageProcessor  : IImageProcessor
+######## argument-smart run 1 «ChangePassword(userId, » SMART
+first=99 stable=99
+######## argument-smart run 2 «ChangePassword(userId, » SMART
+first=139 stable=139
+######## argument-smart run 3 «ChangePassword(userId, » SMART
+first=156 stable=156
+items: 11
+  newName  : string
+  oldName  : string
+  String.Concat()  : string
+  String.Create()  : string
+  String.Empty  : string
+  String.Format()  : string
+  String.Intern()  : string
+  String.IsInterned()  : string
+  String.Join()  : string
+  *null
+  *default

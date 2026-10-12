@@ -557,7 +557,22 @@ class NativeCSharpToUsingStatementIntention : NativeCSharpUsingIntention("Conver
 /** Alt+Enter on `var x = new T(…);`: the rest of the block in `using (var x = new T(…)) { }`. */
 class NativeCSharpWrapInUsingIntention : NativeCSharpUsingIntention("Wrap in 'using' statement", serverHasIt = false) {
     override fun edit(file: CSharpFile, offset: Int, text: CharSequence): CSharpTextEdit? =
-        NativeCSharpUsingEdits.declarationAt(file, offset)?.let { NativeCSharpUsingEdits.wrapInUsing(it, text, unit(file)) }
+        NativeCSharpUsingEdits.declarationAt(file, offset)?.takeIf { disposable(file, it) }?.let { NativeCSharpUsingEdits.wrapInUsing(it, text, unit(file)) }
+
+    /**
+     * The local is `IDisposable` / `IAsyncDisposable` (Jellyfin № 20: offered on a `string`, a list, a DTO): as Rider, only what a `using`
+     * can take; silent while the IDE indexes or when the type is not known.
+     */
+    private fun disposable(file: CSharpFile, statement: CSharpLocalDeclarationStatement): Boolean {
+        if (com.intellij.openapi.project.DumbService.isDumb(file.project)) return false
+        return runCatching {
+            val r = io.github.dotnetsupport.lang.semantic.CSharpSemanticSession(file.project).resolver(file)
+            val declaration = statement.declaration ?: return false
+            val declared = declaration.type?.takeUnless { it is CSharpIdentifierName && it.identifier?.text == "var" }?.let(r::resolveType)
+            val type = declared ?: declaration.variables.singleOrNull()?.initializer?.value?.let(r::typeOf) ?: return false
+            r.expressions.instanceOf(type, "System.IDisposable") != null || r.expressions.instanceOf(type, "System.IAsyncDisposable") != null
+        }.getOrElse { if (it is com.intellij.openapi.progress.ProcessCanceledException) throw it else false }
+    }
 }
 
 /** Alt+Enter on a `using` directive: the directives of its place sorted as Rider does (global first, `System` first, then the alphabet). */

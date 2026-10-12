@@ -1,0 +1,318 @@
+######## r01 — Invert 'if' — ShowIntentionActions «invert»
+caret line 173: if (oldName.Equals(newName, StringComparison.Ordinal))
+selected: Invert &#39;if&#39; |      
+ .../Users/UserManager.cs                           | 62 +++++++++++-----------
+ 1 file changed, 32 insertions(+), 30 deletions(-)
+diff --git a/Jellyfin.Server.Implementations/Users/UserManager.cs b/Jellyfin.Server.Implementations/Users/UserManager.cs
+index b15f6b9..ad27497 100644
+--- a/Jellyfin.Server.Implementations/Users/UserManager.cs
++++ b/Jellyfin.Server.Implementations/Users/UserManager.cs
+@@ -171,41 +171,43 @@ namespace Jellyfin.Server.Implementations.Users
+             ThrowIfInvalidUsername(newName);
+ 
+-            if (oldName.Equals(newName, StringComparison.Ordinal))
++            if (!oldName.Equals(newName, StringComparison.Ordinal))
+             {
+-                throw new ArgumentException("The new and old names must be different.");
+-            }
+-
+-            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+-            using (await _userLock.LockAsync(userId).ConfigureAwait(false))
+-            {
+-                var dbContext = await _dbProvider.CreateDbContextAsync().ConfigureAwait(false);
+-                await using (dbContext.ConfigureAwait(false))
++                User user = null!; // user is never actually null where its used afterwards so we can just ignore.
++                using (await _userLock.LockAsync(userId).ConfigureAwait(false))
+                 {
+-#pragma warning disable CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
+-                    if (await dbContext.Users
+-                            .AnyAsync(u => u.NormalizedUsername == newName.ToUpperInvariant() && u.Id != userId)
+-                            .ConfigureAwait(false))
++                    var dbContext = await _dbProvider.CreateDbContextAsync().ConfigureAwait(false);
++                    await using (dbContext.ConfigureAwait(false))
+                     {
+-                        throw new ArgumentException(string.Format(
+-                            CultureInfo.InvariantCulture,
+-                            "A user with the name '{0}' already exists.",
+-                            newName));
+-                    }
++#pragma warning disable CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
++                        if (await dbContext.Users
++                                .AnyAsync(u => u.NormalizedUsername == newName.ToUpperInvariant() && u.Id != userId)
++                                .ConfigureAwait(false))
++                        {
++                            throw new ArgumentException(string.Format(
++                                CultureInfo.InvariantCulture,
++                                "A user with the name '{0}' already exists.",
++                                newName));
++                        }
+ #pragma warning restore CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
+ 
+-                    user = await UserQuery(dbContext)
+-                        .AsTracking()
+-                        .FirstOrDefaultAsync(u => u.Id == userId)
+-                        .ConfigureAwait(false)
+-                        ?? throw new ResourceNotFoundException(nameof(userId));
+-                    user.Username = newName;
+-                    user.NormalizedUsername = newName.ToUpperInvariant();
+-                    await UpdateUserInternalAsync(dbContext, user).ConfigureAwait(false);
++                        user = await UserQuery(dbContext)
++                                   .AsTracking()
++                                   .FirstOrDefaultAsync(u => u.Id == userId)
++                                   .ConfigureAwait(false)
++                               ?? throw new ResourceNotFoundException(nameof(userId));
++                        user.Username = newName;
++                        user.NormalizedUsername = newName.ToUpperInvariant();
++                        await UpdateUserInternalAsync(dbContext, user).ConfigureAwait(false);
++                    }
+                 }
+-            }
+ 
+-            var eventArgs = new UserUpdatedEventArgs(user);
+-            await _eventManager.PublishAsync(eventArgs).ConfigureAwait(false);
+-            OnUserUpdated?.Invoke(this, eventArgs);
++                var eventArgs = new UserUpdatedEventArgs(user);
++                await _eventManager.PublishAsync(eventArgs).ConfigureAwait(false);
++                OnUserUpdated?.Invoke(this, eventArgs);
++            }
++            else
++            {
++                throw new ArgumentException("The new and old names must be different.");
++            }
+         }
+ 
+######## r02 — To 'switch' expression — ShowIntentionActions «switch' expression»
+caret line 175: switch (item)
+no row
+  open after: == window HeavyWeightWindow 239x199
+  open after:   list MyList rows 6
+  open after:     To &#39;if&#39; statements |      
+  open after:     Generate type patterns… |      
+  open after:     Add condition component |      
+  open after:     Navigate To…
+  open after:     Inspect This… |      Ctrl+Alt+Shift+A
+  open after:     Generate Code… |      Alt+Insert
+  open after: == window HeavyWeightWindow 626x799
+  open after:   texts: [<html>
+  open after:   <head>
+  open after:     
+######## r03 — To 'if' statements — ShowIntentionActions «'if' statement»
+caret line 175: switch (item)
+no row
+  open after: == window HeavyWeightWindow 239x199
+  open after:   list MyList rows 6
+  open after:     To &#39;if&#39; statements |      
+  open after:     Generate type patterns… |      
+  open after:     Add condition component |      
+  open after:     Navigate To…
+  open after:     Inspect This… |      Ctrl+Alt+Shift+A
+  open after:     Generate Code… |      Alt+Insert
+  open after: == window HeavyWeightWindow 626x799
+  open after:   texts: [<html>
+  open after:   <head>
+  open after:     
+######## r04 — Add missing arms (switch expression) — ShowIntentionActions «missing arms»
+caret line 328: includeItemTypes = collectionType switch
+no row
+  open after: == window HeavyWeightWindow 239x247
+  open after:   list MyList rows 8
+  open after:     To &#39;switch&#39; statement |      
+  open after:     To &#39;if&#39; statements |      
+  open after:     To ?: expression |      
+  open after:     Add condition component |      
+  open after:     Navigate To…
+  open after:     Refactor This… |      Ctrl+Shift+R
+  open after:     Inspect This… |      Ctrl+Alt+Shift+A
+  open after:     Generate Code… |      Alt+Insert
+  open after: == window HeavyWeightWindow 691x414
+  open after:   texts: [<html>
+######## r05 — foreach to for — ShowIntentionActions «'for'»
+caret line 232: foreach (var accessSchedule in user.AccessSchedules)
+no row
+  open after: == window HeavyWeightWindow 341x151
+  open after:   list MyList rows 4
+  open after:     Rider inspection: &#39;Use preferred braces style&#39; |      
+  open after:     Navigate To…
+  open after:     Inspect This… |      Ctrl+Alt+Shift+A
+  open after:     Generate Code… |      Alt+Insert
+######## r06 — Introduce variable — ShowIntentionActions «introduce variable»
+caret line 320: var max = await dbContext.Users.AsQueryable().AnyAsync().ConfigureAwait(false)
+no row
+  open after: == window HeavyWeightWindow 246x199
+  open after:   list MyList rows 6
+  open after:     Check expression for null |      
+  open after:     Assert expression is not null |      
+  open after:     Navigate To…
+  open after:     Refactor This… |      Ctrl+Shift+R
+  open after:     Inspect This… |      Ctrl+Alt+Shift+A
+  open after:     Generate Code… |      Alt+Insert
+  open after: == window HeavyWeightWindow 950x183
+  open after:   texts: [<html>
+  open after:   <head>
+  open after:     
+######## r07 — Inline variable — ShowIntentionActions «inline»
+caret line 207: var eventArgs = new UserUpdatedEventArgs(user);
+no row
+  open after: == window HeavyWeightWindow 303x199
+  open after:   list MyList rows 6
+  open after:     Check variable for null |      
+  open after:     Split variable declaration and initialization |      
+  open after:     Navigate To…
+  open after:     Refactor This… |      Ctrl+Shift+R
+  open after:     Inspect This… |      Ctrl+Alt+Shift+A
+  open after:     Generate Code… |      Alt+Insert
+  open after: == window HeavyWeightWindow 699x246
+  open after:   texts: [<html>
+  open after:   <head>
+  open after:     
+######## r08 — To expression body — ShowIntentionActions «expression body»
+caret line 419: public Task ResetPassword(Guid userId)
+selected: To expression body |      
+ Jellyfin.Server.Implementations/Users/UserManager.cs | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+diff --git a/Jellyfin.Server.Implementations/Users/UserManager.cs b/Jellyfin.Server.Implementations/Users/UserManager.cs
+index b15f6b9..91fb5d6 100644
+--- a/Jellyfin.Server.Implementations/Users/UserManager.cs
++++ b/Jellyfin.Server.Implementations/Users/UserManager.cs
+@@ -417,8 +417,5 @@ namespace Jellyfin.Server.Implementations.Users
+ 
+         /// <inheritdoc/>
+-        public Task ResetPassword(Guid userId)
+-        {
+-            return ChangePassword(userId, string.Empty);
+-        }
++        public Task ResetPassword(Guid userId) => ChangePassword(userId, string.Empty);
+ 
+         /// <inheritdoc/>
+######## r09 — Use explicit type — ShowIntentionActions «explicit»
+caret line 207: var eventArgs = new UserUpdatedEventArgs(user);
+selected: Specify type explicitly |      
+ Jellyfin.Server.Implementations/Users/UserManager.cs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+diff --git a/Jellyfin.Server.Implementations/Users/UserManager.cs b/Jellyfin.Server.Implementations/Users/UserManager.cs
+index b15f6b9..d177590 100644
+--- a/Jellyfin.Server.Implementations/Users/UserManager.cs
++++ b/Jellyfin.Server.Implementations/Users/UserManager.cs
+@@ -205,5 +205,5 @@ namespace Jellyfin.Server.Implementations.Users
+             }
+ 
+-            var eventArgs = new UserUpdatedEventArgs(user);
++            UserUpdatedEventArgs eventArgs = new UserUpdatedEventArgs(user);
+             await _eventManager.PublishAsync(eventArgs).ConfigureAwait(false);
+             OnUserUpdated?.Invoke(this, eventArgs);
+######## r10 — Check parameter for null — ShowIntentionActions «null»
+caret line 169: public async Task RenameUser(Guid userId, string oldName, string newName)
+selected: Check parameter for null |      
+ Jellyfin.Server.Implementations/Users/UserManager.cs | 5 +++++
+ 1 file changed, 5 insertions(+)
+diff --git a/Jellyfin.Server.Implementations/Users/UserManager.cs b/Jellyfin.Server.Implementations/Users/UserManager.cs
+index b15f6b9..6d42352 100644
+--- a/Jellyfin.Server.Implementations/Users/UserManager.cs
++++ b/Jellyfin.Server.Implementations/Users/UserManager.cs
+@@ -169,4 +169,9 @@ namespace Jellyfin.Server.Implementations.Users
+         public async Task RenameUser(Guid userId, string oldName, string newName)
+         {
++            if (oldName == null)
++            {
++                throw new ArgumentNullException(nameof(oldName));
++            }
++
+             ThrowIfInvalidUsername(newName);
+ 
+######## r11 — Add argument names — ShowIntentionActions «argument name»
+caret line 324: var user = new User(
+no row
+  open after: == window HeavyWeightWindow 271x199
+  open after:   list MyList rows 6
+  open after:     Convert initializer to assignment |      
+  open after:     Initialize other members |      
+  open after:     Navigate To…
+  open after:     Refactor This… |      Ctrl+Shift+R
+  open after:     Inspect This… |      Ctrl+Alt+Shift+A
+  open after:     Generate Code… |      Alt+Insert
+  open after: == window HeavyWeightWindow 618x267
+  open after:   texts: [<html>
+  open after:   <head>
+  open after:     
+######## r12 — Convert string.Format to interpolation — ShowIntentionActions «interpolat»
+caret line 189: throw new ArgumentException(string.Format(
+no row
+  open after: == window HeavyWeightWindow 240x199
+  open after:   list MyList rows 6
+  open after:     Add exception documentation |      
+  open after:     Import static members |      
+  open after:     Navigate To…
+  open after:     Refactor This… |      Ctrl+Shift+R
+  open after:     Inspect This… |      Ctrl+Alt+Shift+A
+  open after:     Generate Code… |      Alt+Insert
+  open after: == window HeavyWeightWindow 721x183
+  open after:   texts: [<html>
+  open after:   <head>
+  open after:     
+######## r13 — Rename an interface member used in other files — RenameElement «»
+caret line 848: public async Task UpdatePolicyAsync(Guid userId, UserPolicy policy)
+  open after: == window MyDialog 638x234
+  open after:   texts: Rename | Give a new name to the method 'UpdatePolicyAsync' | Name: | [UpdatePolicyAsync]
+ Jellyfin.Server.Implementations/Users/UserManager.cs | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+diff --git a/Jellyfin.Server.Implementations/Users/UserManager.cs b/Jellyfin.Server.Implementations/Users/UserManager.cs
+index b15f6b9..3465d17 100644
+--- a/Jellyfin.Server.Implementations/Users/UserManager.cs
++++ b/Jellyfin.Server.Implementations/Users/UserManager.cs
+@@ -846,5 +846,7 @@ namespace Jellyfin.Server.Implementations.Users
+ 
+         /// <inheritdoc/>
+-        public async Task UpdatePolicyAsync(Guid userId, UserPolicy policy)
++        public async Task UpUpdateUserPolicyAsync
++
++        datePolicyAsync(Guid userId, UserPolicy policy)
+         {
+             User user;
+######## r14 — Move type to file — ShowIntentionActions «move»
+caret line 10: public enum KeepUntil
+selected: Move to &#39;KeepUntil.cs&#39; |      
+  open after: Traceback (most recent call last):
+  open after:   File "C:\Users\dvislobokov\idea-dotnet-support\tools\ui-robot\robot.py", line 243, in <module>
+  open after:     COMMANDS[sys.argv[1]](sys.argv[2:])
+  open after:     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  open after:   File "C:\Users\dvislobokov\idea-dotnet-support\tools\ui-robot\robot.py", line 225, in command_js
+  open after:     print(js(open(args[0], encoding="utf-8").read(), edt="--edt" in args))
+  open after:           ~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  open after:   File "C:\Users\dvislobokov\idea-dotnet-support\tools\ui-robot\robot.py", line 77, in js
+  open after:     result = call("/js/retrieveAny", script_body(script, edt), timeout)
+  open after:   File "C:\Users\dvislobokov\idea-dotnet-support\tools\ui-robot\robot.py", line 42, in call
+  open after:     result = json.loads(request(path, body, timeout))
+  open after:                         ~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+ MediaBrowser.Model/LiveTv/SeriesTimerInfoDto.cs | 8 --------
+ 1 file changed, 8 deletions(-)
+diff --git a/MediaBrowser.Model/LiveTv/SeriesTimerInfoDto.cs b/MediaBrowser.Model/LiveTv/SeriesTimerInfoDto.cs
+index 1e8add9..757423d 100644
+--- a/MediaBrowser.Model/LiveTv/SeriesTimerInfoDto.cs
++++ b/MediaBrowser.Model/LiveTv/SeriesTimerInfoDto.cs
+@@ -8,12 +8,4 @@ using MediaBrowser.Model.Entities;
+ namespace MediaBrowser.Model.LiveTv
+ {
+-    public enum KeepUntil
+-    {
+-        UntilDeleted,
+-        UntilSpaceNeeded,
+-        UntilWatched,
+-        UntilDate
+-    }
+-
+     /// <summary>
+     /// Class SeriesTimerInfoDto.
+######## r15 — Remove / Add braces — ShowIntentionActions «braces»
+caret line 173: if (oldName.Equals(newName, StringComparison.Ordinal))
+selected: Rider inspection: 'Use preferred braces style' |      
+  open after: == window HeavyWeightWindow 341x184
+  open after:   list MyList rows 5
+  open after:     Invert &#39;if&#39; |      
+  open after:     Rider inspection: &#39;Use preferred braces style&#39; |      
+  open after:     Navigate To…
+  open after:     Inspect This… |      Ctrl+Alt+Shift+A
+  open after:     Generate Code… |      Alt+Insert
+  open after: == window HeavyWeightWindow 254x64
+  open after:   list MyList rows 2
+  open after:     Configure inspection severity |      
+  open after:     Why is Rider suggesting this? |      

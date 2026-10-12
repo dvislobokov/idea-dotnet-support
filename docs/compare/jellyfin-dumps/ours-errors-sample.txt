@@ -1,0 +1,40 @@
+== Emby.Server.Implementations/IO/LibraryMonitor.cs
+t�open=39 daemonFinished=40 stableAt=925
+errors=2 warnings=0
+E 151 [path] CS1503: Argument 2: cannot convert from 'string' to 'System.ReadOnlySpan<char>'
+E 383 [path] CS1503: Argument 1: cannot convert from 'string' to 'System.ReadOnlySpan<char>'
+== Emby.Server.Implementations/Library/SimilarItems/LiveTvProgramSimilarItemsProvider.cs
+topen=38 daemonFinished=44 stableAt=777
+errors=1 warnings=0
+E 18 [ILocalSimilarItemsProvider<LiveTvProgram>] CS0535: 'Emby.Server.Implementations.Library.SimilarItems.LiveTvProgramSimilarItemsProvider' does not implement interface member 'MediaBrowser.Controller.Librar
+== Jellyfin.Server.Implementations/Item/ItemPersistenceService.cs
+t open=39 daemonFinished=40 stableAt=1401
+errors=1 warnings=0
+E 330 [(item, ancestorIds, topParent, userdataKey, inheritedTags)] CS1503: Argument 1: cannot convert from '(MediaBrowser.Controller.Entities.BaseItem item, System.Collections.Generic.List<System.Guid> ancestorIds, MediaBrowser
+== Jellyfin.Server/ServerSetupApp/SetupServer.cs
+t�open=68 daemonFinished=70 stableAt=1011
+errors=1 warnings=0
+E 135 ["/health"] CS1503: Argument 2: cannot convert from 'string' to 'Microsoft.AspNetCore.Http.PathString'
+== MediaBrowser.Controller/MediaEncoding/JobLogger.cs
+t�open=40 daemonFinished=42 stableAt=665
+errors=1 warnings=0
+E 43 [bytes] CS1503: Argument 1: cannot convert from 'byte[]' to 'System.ReadOnlyMemory<byte>'
+== MediaBrowser.Providers/Plugins/ListenBrainz/ListenBrainzSimilarArtistProvider.cs
+topen=31 daemonFinished=32 stableAt=573
+errors=1 warnings=0
+E 18 [IRemoteSimilarItemsProvider<MusicArtist>] CS0535: 'MediaBrowser.Providers.Plugins.ListenBrainz.ListenBrainzSimilarArtistProvider' does not implement interface member 'MediaBrowser.Controller.Library.IRe
+== tests/Jellyfin.Api.Tests/Helpers/MediaInfoHelperTests.cs
+t�open=30 daemonFinished=31 stableAt=772
+errors=1 warnings=0
+E 498 [GetPublishedLiveStreamPath] CS0117: 'MediaInfoHelper' does not contain a definition for 'GetPublishedLiveStreamPath'
+== tests/Jellyfin.LiveTv.Tests/HdHomerunHostTests.cs
+t�open=36 daemonFinished=37 stableAt=662
+errors=8 warnings=0
+E 36 [IHttpClientFactory] CS0246: The type or namespace name 'IHttpClientFactory' could not be found (are you missing a using directive or an assembly reference?)
+E 55 [GetModelInfo] CS1061: 'HdHomerunHost' does not contain a definition for 'GetModelInfo' and no accessible extension method 'GetModelInfo' accepting a first argument of type 'H
+E 75 [GetModelInfo] CS1061: 'HdHomerunHost' does not contain a definition for 'GetModelInfo' and no accessible extension method 'GetModelInfo' accepting a first argument of type 'H
+E 95 [GetModelInfo] CS1061: 'HdHomerunHost' does not contain a definition for 'GetModelInfo' and no accessible extension method 'GetModelInfo' accepting a first argument of type 'H
+E 106 [GetLineup] CS1061: 'HdHomerunHost' does not contain a definition for 'GetLineup' and no accessible extension method 'GetLineup' accepting a first argument of type 'HdHomer
+E 124 [GetLineup] CS1061: 'HdHomerunHost' does not contain a definition for 'GetLineup' and no accessible extension method 'GetLineup' accepting a first argument of type 'HdHomer
+E 136 [GetLineup] CS1061: 'HdHomerunHost' does not contain a definition for 'GetLineup' and no accessible extension method 'GetLineup' accepting a first argument of type 'HdHomer
+E 148 [TryGetTunerHostInfo] CS1061: 'HdHomerunHost' does not contain a definition for 'TryGetTunerHostInfo' and no accessible extension method 'TryGetTunerHostInfo' accepting a first argum

@@ -1,0 +1,340 @@
+######## r01 — Invert 'if' — ShowIntentionActions «invert»
+caret line 173: if (oldName.Equals(newName, StringComparison.Ordinal))
+no row
+  open after: == window HeavyWeightWindow 275x106
+  open after:   list MyList rows 3
+  open after:     Remove braces
+  open after:     Add a partial part of 'UserManager'
+  open after:     Create test 'UserManagerTests'
+  open after: == window HeavyWeightWindow 702x72
+  open after:   texts: [<html>
+  open after:   <head>
+  open after:     
+  open after:   </head>
+  open after:   <body>
+  open after:     Loading&#8230;
+######## r02 — To 'switch' expression — ShowIntentionActions «switch' expression»
+caret line 175: switch (item)
+no row
+  open after: == window HeavyWeightWindow 297x150
+  open after:   list MyList rows 5
+  open after:     Add 'default' section
+  open after:     Add section braces
+  open after:     To 'if' statements
+  open after:     Add a partial part of 'SearchController'
+  open after:     Create test 'SearchControllerTests'
+  open after: == window HeavyWeightWindow 300x50
+  open after:   texts: [<html>
+  open after:   <head>
+  open after:     
+  open after:   </head>
+######## r03 — To 'if' statements — ShowIntentionActions «'if' statement»
+caret line 175: switch (item)
+selected: To 'if' statements
+ Jellyfin.Api/Controllers/SearchController.cs | 66 ++++++++++++++--------------
+ 1 file changed, 33 insertions(+), 33 deletions(-)
+diff --git a/Jellyfin.Api/Controllers/SearchController.cs b/Jellyfin.Api/Controllers/SearchController.cs
+index b03cb88..be18c04 100644
+--- a/Jellyfin.Api/Controllers/SearchController.cs
++++ b/Jellyfin.Api/Controllers/SearchController.cs
+@@ -173,40 +173,40 @@ public class SearchController : BaseJellyfinApiController
+         SetBackdropImageInfo(result, item);
+ 
+-        switch (item)
++        if (item is IHasSeries hasSeries)
+         {
+-            case IHasSeries hasSeries:
+-                result.Series = hasSeries.SeriesName;
+-                break;
+-            case LiveTvProgram program:
+-                result.StartDate = program.StartDate;
+-                break;
+-            case Series series:
+-                if (series.Status.HasValue)
+-                {
+-                    result.Status = series.Status.Value.ToString();
+-                }
+-
+-                break;
+-            case MusicAlbum album:
+-                result.Artists = album.Artists;
+-                result.AlbumArtist = album.AlbumArtist;
+-                break;
+-            case Audio song:
+-                result.AlbumArtist = song.AlbumArtists?.FirstOrDefault();
+-                result.Artists = song.Artists;
+-
+-                MusicAlbum musicAlbum = song.AlbumEntity;
++            result.Series = hasSeries.SeriesName;
++        }
++        else if (item is LiveTvProgram program)
++        {
++            result.StartDate = program.StartDate;
++        }
++        else if (item is Series series)
++        {
++            if (series.Status.HasValue)
++            {
++                result.Status = series.Status.Value.ToString();
++            }
++        }
++        else if (item is MusicAlbum album)
++        {
++            result.Artists = album.Artists;
++            result.AlbumArtist = album.AlbumArtist;
++        }
++        else if (item is Audio song)
++        {
++            result.AlbumArtist = song.AlbumArtists?.FirstOrDefault();
++            result.Artists = song.Artists;
+ 
+-                if (musicAlbum is not null)
+-                {
+-                    result.Album = musicAlbum.Name;
+-                    result.AlbumId = musicAlbum.Id;
+-                }
+-                else
+-                {
+-                    result.Album = song.Album;
+-                }
++            MusicAlbum musicAlbum = song.AlbumEntity;
+ 
+-                break;
++            if (musicAlbum is not null)
++            {
++                result.Album = musicAlbum.Name;
++                result.AlbumId = musicAlbum.Id;
++            }
++            else
++            {
++                result.Album = song.Album;
++            }
+         }
+ 
+######## r04 — Add missing arms (switch expression) — ShowIntentionActions «missing arms»
+caret line 328: includeItemTypes = collectionType switch
+selected: Add missing arms
+ Jellyfin.Api/Controllers/ItemsController.cs | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
+diff --git a/Jellyfin.Api/Controllers/ItemsController.cs b/Jellyfin.Api/Controllers/ItemsController.cs
+index 385795e..f2a1b4a 100644
+--- a/Jellyfin.Api/Controllers/ItemsController.cs
++++ b/Jellyfin.Api/Controllers/ItemsController.cs
+@@ -329,4 +329,31 @@ public class ItemsController : BaseJellyfinApiController
+             {
+                 CollectionType.boxsets => [BaseItemKind.BoxSet],
++                CollectionType.unknown => throw new NotImplementedException(),
++                CollectionType.movies => throw new NotImplementedException(),
++                CollectionType.tvshows => throw new NotImplementedException(),
++                CollectionType.music => throw new NotImplementedException(),
++                CollectionType.musicvideos => throw new NotImplementedException(),
++                CollectionType.trailers => throw new NotImplementedException(),
++                CollectionType.homevideos => throw new NotImplementedException(),
++                CollectionType.books => throw new NotImplementedException(),
++                CollectionType.photos => throw new NotImplementedException(),
++                CollectionType.livetv => throw new NotImplementedException(),
++                CollectionType.playlists => throw new NotImplementedException(),
++                CollectionType.folders => throw new NotImplementedException(),
++                CollectionType.tvshowseries => throw new NotImplementedException(),
++                CollectionType.tvgenres => throw new NotImplementedException(),
++                CollectionType.tvgenre => throw new NotImplementedException(),
++                CollectionType.tvlatest => throw new NotImplementedException(),
++                CollectionType.tvnextup => throw new NotImplementedException(),
++                CollectionType.tvresume => throw new NotImplementedException(),
++                CollectionType.tvfavoriteseries => throw new NotImplementedException(),
++                CollectionType.tvfavoriteepisodes => throw new NotImplementedException(),
++                CollectionType.movielatest => throw new NotImplementedException(),
++                CollectionType.movieresume => throw new NotImplementedException(),
++                CollectionType.moviemovies => throw new NotImplementedException(),
++                CollectionType.moviecollection => throw new NotImplementedException(),
++                CollectionType.moviefavorites => throw new NotImplementedException(),
++                CollectionType.moviegenres => throw new NotImplementedException(),
++                CollectionType.moviegenre => throw new NotImplementedException(),
+                 _ => []
+             };
+######## r05 — foreach to for — ShowIntentionActions «'for'»
+caret line 232: foreach (var accessSchedule in user.AccessSchedules)
+no row
+  open after: == window HeavyWeightWindow 275x128
+  open after:   list MyList rows 4
+  open after:     Remove braces
+  open after:     Add a partial part of 'UserManager'
+  open after:     Create test 'UserManagerTests'
+  open after:     Disable 'Types' Inlay Hints
+  open after: == window HeavyWeightWindow 953x94
+  open after:   texts: [<html>
+  open after:   <head>
+  open after:     
+  open after:   </head>
+  open after:   <body>
+######## r06 — Introduce variable — ShowIntentionActions «introduce variable»
+caret line 186: .AnyAsync(u => u.NormalizedUsername == newName.ToUpperInvariant() && u.Id != userId)
+no row
+ Jellyfin.Server.Implementations/Users/UserManager.cs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+diff --git a/Jellyfin.Server.Implementations/Users/UserManager.cs b/Jellyfin.Server.Implementations/Users/UserManager.cs
+index b15f6b9..0419d33 100644
+--- a/Jellyfin.Server.Implementations/Users/UserManager.cs
++++ b/Jellyfin.Server.Implementations/Users/UserManager.cs
+@@ -184,5 +184,5 @@ namespace Jellyfin.Server.Implementations.Users
+ #pragma warning disable CA1862 // Use the 'StringComparison' method overloads to perform case-insensitive string comparisons
+                     if (await dbContext.Users
+-                            .AnyAsync(u => u.NormalizedUsername == newName.ToUpperInvariant() && u.Id != userId)
++                            .AnyAsync(predicate: u => u.NormalizedUsername == newName.ToUpperInvariant() && u.Id != userId)
+                             .ConfigureAwait(false))
+                     {
+######## r07 — Inline variable — ShowIntentionActions «inline»
+caret line 207: var eventArgs = new UserUpdatedEventArgs(user);
+selected: Inline variable
+ Jellyfin.Server.Implementations/Users/UserManager.cs | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+diff --git a/Jellyfin.Server.Implementations/Users/UserManager.cs b/Jellyfin.Server.Implementations/Users/UserManager.cs
+index b15f6b9..5ce64dc 100644
+--- a/Jellyfin.Server.Implementations/Users/UserManager.cs
++++ b/Jellyfin.Server.Implementations/Users/UserManager.cs
+@@ -205,7 +205,6 @@ namespace Jellyfin.Server.Implementations.Users
+             }
+ 
+-            var eventArgs = new UserUpdatedEventArgs(user);
+-            await _eventManager.PublishAsync(eventArgs).ConfigureAwait(false);
+-            OnUserUpdated?.Invoke(this, eventArgs);
++            await _eventManager.PublishAsync(new UserUpdatedEventArgs(user)).ConfigureAwait(false);
++            OnUserUpdated?.Invoke(this, new UserUpdatedEventArgs(user));
+         }
+ 
+######## r08 — To expression body — ShowIntentionActions «expression body»
+caret line 419: public Task ResetPassword(Guid userId)
+selected: To expression body
+ Jellyfin.Server.Implementations/Users/UserManager.cs | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+diff --git a/Jellyfin.Server.Implementations/Users/UserManager.cs b/Jellyfin.Server.Implementations/Users/UserManager.cs
+index b15f6b9..91fb5d6 100644
+--- a/Jellyfin.Server.Implementations/Users/UserManager.cs
++++ b/Jellyfin.Server.Implementations/Users/UserManager.cs
+@@ -417,8 +417,5 @@ namespace Jellyfin.Server.Implementations.Users
+ 
+         /// <inheritdoc/>
+-        public Task ResetPassword(Guid userId)
+-        {
+-            return ChangePassword(userId, string.Empty);
+-        }
++        public Task ResetPassword(Guid userId) => ChangePassword(userId, string.Empty);
+ 
+         /// <inheritdoc/>
+######## r09 — Use explicit type — ShowIntentionActions «explicit»
+caret line 207: var eventArgs = new UserUpdatedEventArgs(user);
+selected: Use explicit type
+ Jellyfin.Server.Implementations/Users/UserManager.cs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+diff --git a/Jellyfin.Server.Implementations/Users/UserManager.cs b/Jellyfin.Server.Implementations/Users/UserManager.cs
+index b15f6b9..d177590 100644
+--- a/Jellyfin.Server.Implementations/Users/UserManager.cs
++++ b/Jellyfin.Server.Implementations/Users/UserManager.cs
+@@ -205,5 +205,5 @@ namespace Jellyfin.Server.Implementations.Users
+             }
+ 
+-            var eventArgs = new UserUpdatedEventArgs(user);
++            UserUpdatedEventArgs eventArgs = new UserUpdatedEventArgs(user);
+             await _eventManager.PublishAsync(eventArgs).ConfigureAwait(false);
+             OnUserUpdated?.Invoke(this, eventArgs);
+######## r10 — Check parameter for null — ShowIntentionActions «null»
+caret line 169: public async Task RenameUser(Guid userId, string oldName, string newName)
+selected: Check parameter for null
+  open after: == window HeavyWeightWindow 275x106
+  open after:   list MyList rows 3
+  open after:     Check parameter for null
+  open after:     Add a partial part of 'UserManager'
+  open after:     Create test 'UserManagerTests'
+  open after: == window HeavyWeightWindow 438x28
+  open after:   texts: [<html>
+  open after:   <head>
+  open after:     
+  open after:   </head>
+  open after:   <body>
+  open after:     Loading&#8230;
+######## r11 — Add argument names — ShowIntentionActions «argument name»
+caret line 324: var user = new User(
+no row
+  open after: == window HeavyWeightWindow 275x150
+  open after:   list MyList rows 5
+  open after:     Initialize members
+  open after:     Introduce variable
+  open after:     Wrap in 'using' statement
+  open after:     Add a partial part of 'UserManager'
+  open after:     Create test 'UserManagerTests'
+  open after: == window HeavyWeightWindow 335x300
+  open after:   texts: [<html>
+  open after:   <head>
+  open after:     
+  open after:   </head>
+######## r12 — Convert string.Format to interpolation — ShowIntentionActions «interpolat»
+caret line 189: throw new ArgumentException(string.Format(
+no row
+######## r13 — Rename an interface member used in other files — RenameElement «»
+caret line 848: public async Task UpdatePolicyAsync(Guid userId, UserPolicy policy)
+######## r14 — Move type to file — ShowIntentionActions «move»
+caret line 10: public enum KeepUntil
+selected: Move 'KeepUntil' to KeepUntil.cs
+ MediaBrowser.Model/LiveTv/KeepUntil.cs          | 18 ++++++++++++++++++
+ MediaBrowser.Model/LiveTv/SeriesTimerInfoDto.cs |  9 +--------
+ 2 files changed, 19 insertions(+), 8 deletions(-)
+diff --git a/MediaBrowser.Model/LiveTv/KeepUntil.cs b/MediaBrowser.Model/LiveTv/KeepUntil.cs
+new file mode 100644
+index 0000000..adb302d
+--- /dev/null
++++ b/MediaBrowser.Model/LiveTv/KeepUntil.cs
+@@ -0,0 +1,18 @@
++#nullable disable
++#pragma warning disable CS1591
++
++using System;
++using System.Collections.Generic;
++using MediaBrowser.Model.Entities;
++
++namespace MediaBrowser.Model.LiveTv
++{
++
++    public enum KeepUntil
++    {
++        UntilDeleted,
++        UntilSpaceNeeded,
++        UntilWatched,
++        UntilDate
++    }
++}
+diff --git a/MediaBrowser.Model/LiveTv/SeriesTimerInfoDto.cs b/MediaBrowser.Model/LiveTv/SeriesTimerInfoDto.cs
+index 1e8add9..b8b395f 100644
+--- a/MediaBrowser.Model/LiveTv/SeriesTimerInfoDto.cs
++++ b/MediaBrowser.Model/LiveTv/SeriesTimerInfoDto.cs
+@@ -8,13 +8,6 @@ using MediaBrowser.Model.Entities;
+ namespace MediaBrowser.Model.LiveTv
+ {
+-    public enum KeepUntil
+-    {
+-        UntilDeleted,
+-        UntilSpaceNeeded,
+-        UntilWatched,
+-        UntilDate
+-    }
+ 
+-    /// <summary>
++/// <summary>
+     /// Class SeriesTimerInfoDto.
+     /// </summary>
+######## r15 — Remove / Add braces — ShowIntentionActions «braces»
+caret line 173: if (oldName.Equals(newName, StringComparison.Ordinal))
+selected: Remove braces
+ Jellyfin.Server.Implementations/Users/UserManager.cs | 2 --
+ 1 file changed, 2 deletions(-)
+diff --git a/Jellyfin.Server.Implementations/Users/UserManager.cs b/Jellyfin.Server.Implementations/Users/UserManager.cs
+index b15f6b9..eb5a2d8 100644
+--- a/Jellyfin.Server.Implementations/Users/UserManager.cs
++++ b/Jellyfin.Server.Implementations/Users/UserManager.cs
+@@ -172,7 +172,5 @@ namespace Jellyfin.Server.Implementations.Users
+ 
+             if (oldName.Equals(newName, StringComparison.Ordinal))
+-            {
+                 throw new ArgumentException("The new and old names must be different.");
+-            }
+ 
+             User user = null!; // user is never actually null where its used afterwards so we can just ignore.

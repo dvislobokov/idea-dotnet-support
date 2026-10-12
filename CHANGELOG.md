@@ -3,6 +3,25 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.168
+
+Stage 1 of the fixes found comparing with Rider on Jellyfin (`docs/compare/jellyfin-2026-10-12.md`, section 9): what broke code or
+showed everywhere.
+- Typing: a space after a keyword typed in full (`foreach (var `) no longer commits a row matched by humps (`ValidUsernameRegex`);
+  at a statement start the statement keywords go above the value keywords, so `tr` + Tab is the `try` block, not `true`.
+- "Add missing arms" is not offered when the switch expression has an unconditional `_` arm (it made the members that went to `_`
+  throw). "Inline variable" is not offered for a value with side effects (`new`, a call, `await`…) used more than once (it made two
+  objects). "Wrap in 'using'" only for `IDisposable` / `IAsyncDisposable`. "Add a partial part" and "Create test" only on the header of
+  a type (and of a member for the test), not anywhere in it.
+- Postfix: `.if` after a number (`x.Length > 0.if`) takes the whole condition; `.return` is not offered in a function returning nothing.
+- New context actions as in Rider: "Initialize field from constructor" on a field no constructor assigns (a parameter and the
+  assignment in each constructor, a new constructor when there is none, the primary constructor's parameter), "Initialize members from
+  constructor" for all of them. Scenario `Console/Editor/FieldActions.cs`.
+- Stability: the semantic colors no longer depend on which other files happen to be parsed in memory (the same file got 6308 or 6316
+  colored names); the conflicts of a rename across the solution are computed in the background, not on the EDT.
+- Tests `CSharpCompletionInsertionTest`, `CSharpSwitchActionsTest`, `CSharpContextActionsTest`, `CSharpUsingsTest`, `EditorExtrasTest`,
+  `PostfixAndSurroundTest`, `PostfixByTypeTest`, `CSharpFieldActionsTest`, `CSharpSemanticColorsIdempotenceTest`, `CSharpSolutionRenameTest`.
+
 ## 0.1.167
 
 - Grey text that ends on the name of a method gets its call, as the row of the list writes it: `.Sel` + the network's `ect` + Tab is

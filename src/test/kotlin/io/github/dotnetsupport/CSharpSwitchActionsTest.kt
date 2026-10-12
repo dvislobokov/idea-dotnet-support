@@ -135,12 +135,8 @@ class CSharpSwitchActionsTest : BasePlatformTestCase() {
                 "        OperationType.Delete => throw new NotImplementedException(),\n        _ => throw new ArgumentOutOfRangeException()\n    };\n}",
             apply("string M(OperationType t)\n{\n    return t swi<caret>tch\n    {\n        OperationType.Insert => \"i\"\n    };\n}", "Add missing arms"),
         )
-        // the arms go before the `_` arm, which stays last
-        assertEquals(
-            "string M(OperationType t)\n{\n    return t switch\n    {\n        OperationType.Insert => \"i\",\n        OperationType.Update => throw new NotImplementedException(),\n" +
-                "        OperationType.Delete => throw new NotImplementedException(),\n        _ => \"?\",\n    };\n}",
-            apply("string M(OperationType t)\n{\n    return t <caret>switch\n    {\n        OperationType.Insert => \"i\",\n        _ => \"?\",\n    };\n}", "Add missing arms"),
-        )
+        // an unconditional `_` takes the other members already: throwing arms would change what they do (Jellyfin № 18, as Rider)
+        assertFalse(available("string M(OperationType t)\n{\n    return t <caret>switch\n    {\n        OperationType.Insert => \"i\",\n        _ => \"?\",\n    };\n}", "Add missing arms"))
         assertFalse(available("string M(OperationType t)\n{\n    return t <caret>switch\n    {\n        OperationType.Insert => \"i\",\n        OperationType.Update => \"u\",\n        OperationType.Delete => \"d\",\n        _ => \"?\"\n    };\n}", "Add missing arms"))
         assertFalse(available("string M(int n)\n{\n    return n <caret>switch\n    {\n        1 => \"i\",\n    };\n}", "Add missing arms"))
     }

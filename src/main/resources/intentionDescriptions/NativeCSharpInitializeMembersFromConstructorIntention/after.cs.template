@@ -1,0 +1,8 @@
+private readonly ILogger _logger;
+private readonly IClock _clock;
+
+<spot>public OrderService(ILogger logger, IClock clock)
+{
+    _logger = logger;
+    _clock = clock;
+}</spot>

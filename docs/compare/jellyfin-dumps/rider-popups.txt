@@ -1,0 +1,2795 @@
+######## p01 ShowIntentionActions — method header — «public async Task RenameUser(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 169: public async Task RenameUser(Guid userId, string oldName, string newName)
+== window HeavyWeightWindow 409x346
+  list MyList rows 11
+    To explicit implementation |      
+    To virtual |      
+    Make method 'RenameUser' partial |      
+    Change signature… |      Ctrl+R, V
+    Implements method from 'IUserManager' interface |      Alt+Home
+    Incoming Calls
+    Outgoing Calls
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 765x183
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [#pragma warning disable RS0030 // Do not use banned APIs
+
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using AsyncKeyedLock;
+using Jellyfin.Data;
+using Jellyfin.Data.Enums;
+using Jellyfin.Data.Events;
+using Jellyfin.Data.Events.Users;
+using Jellyfin.Database.Implementations;
+using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Common;
+using MediaBrowser.Common.Extensions;
+using MediaBrowser.Common.Net;
+using MediaBrowser.Controller.Authentication;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Drawing;
+using MediaBrowser.Controller.Events;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
+using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Users;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace Jellyfin.Server.Implementations.Users
+{
+    /// <summary>
+    /// Manages the creation and retrieval of <see cref="User"/> instances.
+    /// </summary>
+    public partial class UserManager : IUserManager, IDisposable
+    {
+        private readonly IDbContextFactory<JellyfinDbContext> _dbProvider;
+        private readonly IEventManager _eventManager;
+        private readonly INetworkManager _networkManager;
+        private readonly IApplicationHost _appHost;
+        private readonly IImageProcessor _imageProcessor;
+        private readonly ILogger<UserManager> _logger;
+        private readonly IReadOnlyCollection<IPasswordResetProvider> _passwordResetProviders;
+        private readonly IReadOnlyCollection<IAuthenticationProvider> _authenticationProviders;
+        private readonly InvalidAuthProvider _invalidAuthProvider;
+        private readonly DefaultAuthenticationProvider _defaultAuthenticationProvider;
+        private readonly DefaultPasswordResetProvider _defaultPasswordResetProvider;
+        private readonly IServerConfigurationManager _serverConfigurationManager;
+
+        private readonly LockHelper _userLock = new();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserManager"/> class.
+        /// </summary>
+        /// <param name="dbProvider">The database provider.</param>
+        /// <param name="eventManager">The event manager.</param>
+        /// <param name="networkManager">The network manager.</param>
+        /// <param name="appHost">The application host.</param>
+        /// <param name="imageProcessor">The image processor.</param>
+        /// <param name="logger">The logger.</
+
+######## p01 Refactorings.QuickListPopupAction — method header — «public async Task RenameUser(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 169: public async Task RenameUser(Guid userId, string oldName, string newName)
+== window HeavyWeightWindow 200x351
+  list MyList rows 12
+    Change Signature |      Ctrl+R, V
+    Inline Method
+    Move Instance Method
+    Rename |      Ctrl+R, R
+    Safe Delete |      Ctrl+R, D
+    Extract Interface |      Ctrl+R, I
+    Extract Superclass
+    Extract Class
+    Extract Members to Partial
+    Pull Members Up
+    Push Members Down
+    Transform Parameters
+
+######## p01 Generate — method header — «public async Task RenameUser(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 169: public async Task RenameUser(Guid userId, string oldName, string newName)
+== window HeavyWeightWindow 232x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## p02 ShowIntentionActions — parameter — «Guid userId, string oldName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 169: public async Task RenameUser(Guid userId, string oldName, string newName)
+== window HeavyWeightWindow 409x298
+  list MyList rows 9
+    Check parameter for null |      
+    Create overload without parameter |      
+    Transform parameters…
+    Chop parameters list |      
+    Implements method from 'IUserManager' interface |      Alt+Home
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 735x246
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [#pragma warning disable RS0030 // Do not use banned APIs
+
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using AsyncKeyedLock;
+using Jellyfin.Data;
+using Jellyfin.Data.Enums;
+using Jellyfin.Data.Events;
+using Jellyfin.Data.Events.Users;
+using Jellyfin.Database.Implementations;
+using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Common;
+using MediaBrowser.Common.Extensions;
+using MediaBrowser.Common.Net;
+using MediaBrowser.Controller.Authentication;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Drawing;
+using MediaBrowser.Controller.Events;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
+using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Users;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace Jellyfin.Server.Implementations.Users
+{
+    /// <summary>
+    /// Manages the creation and retrieval of <see cref="User"/> instances.
+    /// </summary>
+    public partial class UserManager : IUserManager, IDisposable
+    {
+        private readonly IDbContextFactory<JellyfinDbContext> _dbProvider;
+        private readonly IEventManager _eventManager;
+        private readonly INetworkManager _networkManager;
+        private readonly IApplicationHost _appHost;
+        private readonly IImageProcessor _imageProcessor;
+        private readonly ILogger<UserManager> _logger;
+        private readonly IReadOnlyCollection<IPasswordResetProvider> _passwordResetProviders;
+        private readonly IReadOnlyCollection<IAuthenticationProvider> _authenticationProviders;
+        private readonly InvalidAuthProvider _invalidAuthProvider;
+        private readonly DefaultAuthenticationProvider _defaultAuthenticationProvider;
+        private readonly DefaultPasswordResetProvider _defaultPasswordResetProvider;
+        private readonly IServerConfigurationManager _serverConfigurationManager;
+
+        private readonly LockHelper _userLock = new();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserManager"/> class.
+        /// </summary>
+        /// <param name="dbProvider">The database provider.</param>
+        /// <param name="eventManager">The event manager.</param>
+        /// <param name="networkManager">The network manager.</param>
+        /// <param name="appHost">The application host.</param>
+        /// <param name="imageProcessor">The image processor.</param>
+        /// <param name="logger">The logger.</
+
+######## p02 Refactorings.QuickListPopupAction — parameter — «Guid userId, string oldName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 169: public async Task RenameUser(Guid userId, string oldName, string newName)
+== window HeavyWeightWindow 205x126
+  list MyList rows 3
+    Change Signature |      Ctrl+R, V
+    Use Base Type Where Possible
+    Transform Parameters
+
+######## p02 Generate — parameter — «Guid userId, string oldName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 169: public async Task RenameUser(Guid userId, string oldName, string newName)
+== window HeavyWeightWindow 232x381
+  list MyList rows 14
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+
+######## p03 ShowIntentionActions — if statement — «if (oldName.Equals(newName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 173: if (oldName.Equals(newName, StringComparison.Ordinal))
+== window HeavyWeightWindow 341x184
+  list MyList rows 5
+    Invert 'if' |      
+    Rider inspection: 'Use preferred braces style' |      
+    Navigate To…
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 950x477
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [#pragma warning disable RS0030 // Do not use banned APIs
+
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using AsyncKeyedLock;
+using Jellyfin.Data;
+using Jellyfin.Data.Enums;
+using Jellyfin.Data.Events;
+using Jellyfin.Data.Events.Users;
+using Jellyfin.Database.Implementations;
+using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Common;
+using MediaBrowser.Common.Extensions;
+using MediaBrowser.Common.Net;
+using MediaBrowser.Controller.Authentication;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Drawing;
+using MediaBrowser.Controller.Events;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
+using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Users;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace Jellyfin.Server.Implementations.Users
+{
+    /// <summary>
+    /// Manages the creation and retrieval of <see cref="User"/> instances.
+    /// </summary>
+    public partial class UserManager : IUserManager, IDisposable
+    {
+        private readonly IDbContextFactory<JellyfinDbContext> _dbProvider;
+        private readonly IEventManager _eventManager;
+        private readonly INetworkManager _networkManager;
+        private readonly IApplicationHost _appHost;
+        private readonly IImageProcessor _imageProcessor;
+        private readonly ILogger<UserManager> _logger;
+        private readonly IReadOnlyCollection<IPasswordResetProvider> _passwordResetProviders;
+        private readonly IReadOnlyCollection<IAuthenticationProvider> _authenticationProviders;
+        private readonly InvalidAuthProvider _invalidAuthProvider;
+        private readonly DefaultAuthenticationProvider _defaultAuthenticationProvider;
+        private readonly DefaultPasswordResetProvider _defaultPasswordResetProvider;
+        private readonly IServerConfigurationManager _serverConfigurationManager;
+
+        private readonly LockHelper _userLock = new();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserManager"/> class.
+        /// </summary>
+        /// <param name="dbProvider">The database provider.</param>
+        /// <param name="eventManager">The event manager.</param>
+        /// <param name="networkManager">The network manager.</param>
+        /// <param name="appHost">The application host.</param>
+        /// <param name="imageProcessor">The image processor.</param>
+        /// <param name="logger">The logger.</
+
+######## p03 Refactorings.QuickListPopupAction — if statement — «if (oldName.Equals(newName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 173: if (oldName.Equals(newName, StringComparison.Ordinal))
+
+######## p03 Generate — if statement — «if (oldName.Equals(newName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 173: if (oldName.Equals(newName, StringComparison.Ordinal))
+== window HeavyWeightWindow 232x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## p04 ShowIntentionActions — foreach — «foreach (var accessSchedule in user.AccessSchedules)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 232: foreach (var accessSchedule in user.AccessSchedules)
+== window HeavyWeightWindow 341x151
+  list MyList rows 4
+    Rider inspection: 'Use preferred braces style' |      
+    Navigate To…
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+
+######## p04 Refactorings.QuickListPopupAction — foreach — «foreach (var accessSchedule in user.AccessSchedules)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 232: foreach (var accessSchedule in user.AccessSchedules)
+
+######## p04 Generate — foreach — «foreach (var accessSchedule in user.AccessSchedules)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 232: foreach (var accessSchedule in user.AccessSchedules)
+== window HeavyWeightWindow 232x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## p05 ShowIntentionActions — string.Format — «throw new ArgumentException(string.Format(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 189: throw new ArgumentException(string.Format(
+== window HeavyWeightWindow 240x199
+  list MyList rows 6
+    Add exception documentation |      
+    Import static members |      
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 721x183
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [#pragma warning disable RS0030 // Do not use banned APIs
+
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using AsyncKeyedLock;
+using Jellyfin.Data;
+using Jellyfin.Data.Enums;
+using Jellyfin.Data.Events;
+using Jellyfin.Data.Events.Users;
+using Jellyfin.Database.Implementations;
+using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Common;
+using MediaBrowser.Common.Extensions;
+using MediaBrowser.Common.Net;
+using MediaBrowser.Controller.Authentication;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Drawing;
+using MediaBrowser.Controller.Events;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
+using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Users;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace Jellyfin.Server.Implementations.Users
+{
+    /// <summary>
+    /// Manages the creation and retrieval of <see cref="User"/> instances.
+    /// </summary>
+    public partial class UserManager : IUserManager, IDisposable
+    {
+        private readonly IDbContextFactory<JellyfinDbContext> _dbProvider;
+        private readonly IEventManager _eventManager;
+        private readonly INetworkManager _networkManager;
+        private readonly IApplicationHost _appHost;
+        private readonly IImageProcessor _imageProcessor;
+        private readonly ILogger<UserManager> _logger;
+        private readonly IReadOnlyCollection<IPasswordResetProvider> _passwordResetProviders;
+        private readonly IReadOnlyCollection<IAuthenticationProvider> _authenticationProviders;
+        private readonly InvalidAuthProvider _invalidAuthProvider;
+        private readonly DefaultAuthenticationProvider _defaultAuthenticationProvider;
+        private readonly DefaultPasswordResetProvider _defaultPasswordResetProvider;
+        private readonly IServerConfigurationManager _serverConfigurationManager;
+
+        private readonly LockHelper _userLock = new();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserManager"/> class.
+        /// </summary>
+        /// <param name="dbProvider">The database provider.</param>
+        /// <param name="eventManager">The event manager.</param>
+        /// <param name="networkManager">The network manager.</param>
+        /// <param name="appHost">The application host.</param>
+        /// <param name="imageProcessor">The image processor.</param>
+        /// <param name="logger">The logger.</
+
+######## p05 Refactorings.QuickListPopupAction — string.Format — «throw new ArgumentException(string.Format(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 189: throw new ArgumentException(string.Format(
+== window HeavyWeightWindow 215x150
+  list MyList rows 4
+    Introduce Field |      Ctrl+R, F
+    Introduce Variable
+    Introduce Parameter |      Ctrl+R, P
+    Use Base Type Where Possible
+
+######## p05 Generate — string.Format — «throw new ArgumentException(string.Format(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 189: throw new ArgumentException(string.Format(
+== window HeavyWeightWindow 232x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## p06 ShowIntentionActions — var — «var eventArgs = new UserUpdatedEventArgs» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 207: var eventArgs = new UserUpdatedEventArgs(user);
+== window HeavyWeightWindow 303x199
+  list MyList rows 6
+    Specify type explicitly |      
+    Split variable declaration and initialization |      
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 699x183
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [#pragma warning disable RS0030 // Do not use banned APIs
+
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using AsyncKeyedLock;
+using Jellyfin.Data;
+using Jellyfin.Data.Enums;
+using Jellyfin.Data.Events;
+using Jellyfin.Data.Events.Users;
+using Jellyfin.Database.Implementations;
+using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Common;
+using MediaBrowser.Common.Extensions;
+using MediaBrowser.Common.Net;
+using MediaBrowser.Controller.Authentication;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Drawing;
+using MediaBrowser.Controller.Events;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
+using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Users;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace Jellyfin.Server.Implementations.Users
+{
+    /// <summary>
+    /// Manages the creation and retrieval of <see cref="User"/> instances.
+    /// </summary>
+    public partial class UserManager : IUserManager, IDisposable
+    {
+        private readonly IDbContextFactory<JellyfinDbContext> _dbProvider;
+        private readonly IEventManager _eventManager;
+        private readonly INetworkManager _networkManager;
+        private readonly IApplicationHost _appHost;
+        private readonly IImageProcessor _imageProcessor;
+        private readonly ILogger<UserManager> _logger;
+        private readonly IReadOnlyCollection<IPasswordResetProvider> _passwordResetProviders;
+        private readonly IReadOnlyCollection<IAuthenticationProvider> _authenticationProviders;
+        private readonly InvalidAuthProvider _invalidAuthProvider;
+        private readonly DefaultAuthenticationProvider _defaultAuthenticationProvider;
+        private readonly DefaultPasswordResetProvider _defaultPasswordResetProvider;
+        private readonly IServerConfigurationManager _serverConfigurationManager;
+
+        private readonly LockHelper _userLock = new();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserManager"/> class.
+        /// </summary>
+        /// <param name="dbProvider">The database provider.</param>
+        /// <param name="eventManager">The event manager.</param>
+        /// <param name="networkManager">The network manager.</param>
+        /// <param name="appHost">The application host.</param>
+        /// <param name="imageProcessor">The image processor.</param>
+        /// <param name="logger">The logger.</
+
+######## p06 Refactorings.QuickListPopupAction — var — «var eventArgs = new UserUpdatedEventArgs» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 207: var eventArgs = new UserUpdatedEventArgs(user);
+== window HeavyWeightWindow 230x351
+  list MyList rows 12
+    Move Type to Another Namespace
+    Move to Another File
+    Move to Folder
+    Rename |      Ctrl+R, R
+    Safe Delete |      Ctrl+R, D
+    Extract Interface |      Ctrl+R, I
+    Extract Superclass
+    Extract Class
+    Pull Members Up
+    Push Members Down
+    Use Base Type Where Possible
+    Copy Type
+
+######## p06 Generate — var — «var eventArgs = new UserUpdatedEventArgs» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 207: var eventArgs = new UserUpdatedEventArgs(user);
+== window HeavyWeightWindow 232x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## p07 ShowIntentionActions — LINQ method chain — «.Select(user => user.Id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 112: .Select(user => user.Id)
+== window HeavyWeightWindow 248x199
+  list MyList rows 6
+    Add exception documentation |      
+    To static method invocation |      
+    Generate try-catch block… |      
+    Navigate To…
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 596x162
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [#pragma warning disable RS0030 // Do not use banned APIs
+
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using AsyncKeyedLock;
+using Jellyfin.Data;
+using Jellyfin.Data.Enums;
+using Jellyfin.Data.Events;
+using Jellyfin.Data.Events.Users;
+using Jellyfin.Database.Implementations;
+using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Common;
+using MediaBrowser.Common.Extensions;
+using MediaBrowser.Common.Net;
+using MediaBrowser.Controller.Authentication;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Drawing;
+using MediaBrowser.Controller.Events;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
+using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Users;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace Jellyfin.Server.Implementations.Users
+{
+    /// <summary>
+    /// Manages the creation and retrieval of <see cref="User"/> instances.
+    /// </summary>
+    public partial class UserManager : IUserManager, IDisposable
+    {
+        private readonly IDbContextFactory<JellyfinDbContext> _dbProvider;
+        private readonly IEventManager _eventManager;
+        private readonly INetworkManager _networkManager;
+        private readonly IApplicationHost _appHost;
+        private readonly IImageProcessor _imageProcessor;
+        private readonly ILogger<UserManager> _logger;
+        private readonly IReadOnlyCollection<IPasswordResetProvider> _passwordResetProviders;
+        private readonly IReadOnlyCollection<IAuthenticationProvider> _authenticationProviders;
+        private readonly InvalidAuthProvider _invalidAuthProvider;
+        private readonly DefaultAuthenticationProvider _defaultAuthenticationProvider;
+        private readonly DefaultPasswordResetProvider _defaultPasswordResetProvider;
+        private readonly IServerConfigurationManager _serverConfigurationManager;
+
+        private readonly LockHelper _userLock = new();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserManager"/> class.
+        /// </summary>
+        /// <param name="dbProvider">The database provider.</param>
+        /// <param name="eventManager">The event manager.</param>
+        /// <param name="networkManager">The network manager.</param>
+        /// <param name="appHost">The application host.</param>
+        /// <param name="imageProcessor">The image processor.</param>
+        /// <param name="logger">The logger.</
+
+######## p07 Refactorings.QuickListPopupAction — LINQ method chain — «.Select(user => user.Id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 112: .Select(user => user.Id)
+
+######## p07 Generate — LINQ method chain — «.Select(user => user.Id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 112: .Select(user => user.Id)
+
+######## p08 ShowIntentionActions — await — «await _eventManager.PublishAsync(eventArgs)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 208: await _eventManager.PublishAsync(eventArgs).ConfigureAwait(false);
+== window HeavyWeightWindow 239x175
+  list MyList rows 5
+    'ConfigureAwait' analysis: |      
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+
+######## p08 Refactorings.QuickListPopupAction — await — «await _eventManager.PublishAsync(eventArgs)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 208: await _eventManager.PublishAsync(eventArgs).ConfigureAwait(false);
+== window HeavyWeightWindow 141x69
+  list MyList rows 1
+    Introduce Variable
+
+######## p08 Generate — await — «await _eventManager.PublishAsync(eventArgs)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 208: await _eventManager.PublishAsync(eventArgs).ConfigureAwait(false);
+== window HeavyWeightWindow 232x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## p09 ShowIntentionActions — null check — «if (user.ProfileImage is null)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 237: if (user.ProfileImage is null)
+== window HeavyWeightWindow 246x199
+  list MyList rows 6
+    Check expression for null |      
+    Assert expression is not null |      
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 611x183
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [#pragma warning disable RS0030 // Do not use banned APIs
+
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using AsyncKeyedLock;
+using Jellyfin.Data;
+using Jellyfin.Data.Enums;
+using Jellyfin.Data.Events;
+using Jellyfin.Data.Events.Users;
+using Jellyfin.Database.Implementations;
+using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Common;
+using MediaBrowser.Common.Extensions;
+using MediaBrowser.Common.Net;
+using MediaBrowser.Controller.Authentication;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Drawing;
+using MediaBrowser.Controller.Events;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
+using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Users;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace Jellyfin.Server.Implementations.Users
+{
+    /// <summary>
+    /// Manages the creation and retrieval of <see cref="User"/> instances.
+    /// </summary>
+    public partial class UserManager : IUserManager, IDisposable
+    {
+        private readonly IDbContextFactory<JellyfinDbContext> _dbProvider;
+        private readonly IEventManager _eventManager;
+        private readonly INetworkManager _networkManager;
+        private readonly IApplicationHost _appHost;
+        private readonly IImageProcessor _imageProcessor;
+        private readonly ILogger<UserManager> _logger;
+        private readonly IReadOnlyCollection<IPasswordResetProvider> _passwordResetProviders;
+        private readonly IReadOnlyCollection<IAuthenticationProvider> _authenticationProviders;
+        private readonly InvalidAuthProvider _invalidAuthProvider;
+        private readonly DefaultAuthenticationProvider _defaultAuthenticationProvider;
+        private readonly DefaultPasswordResetProvider _defaultPasswordResetProvider;
+        private readonly IServerConfigurationManager _serverConfigurationManager;
+
+        private readonly LockHelper _userLock = new();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserManager"/> class.
+        /// </summary>
+        /// <param name="dbProvider">The database provider.</param>
+        /// <param name="eventManager">The event manager.</param>
+        /// <param name="networkManager">The network manager.</param>
+        /// <param name="appHost">The application host.</param>
+        /// <param name="imageProcessor">The image processor.</param>
+        /// <param name="logger">The logger.</
+
+######## p09 Refactorings.QuickListPopupAction — null check — «if (user.ProfileImage is null)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 237: if (user.ProfileImage is null)
+== window HeavyWeightWindow 215x174
+  list MyList rows 5
+    Rename |      Ctrl+R, R
+    Safe Delete |      Ctrl+R, D
+    Introduce Field |      Ctrl+R, F
+    Introduce Variable
+    Introduce Parameter |      Ctrl+R, P
+
+######## p09 Generate — null check — «if (user.ProfileImage is null)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 237: if (user.ProfileImage is null)
+== window HeavyWeightWindow 232x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## p10 ShowIntentionActions — conditional ?: — «? await dbContext.Users.AsQueryable()» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 321: ? await dbContext.Users.AsQueryable().Select(u => u.InternalId).MaxAsync().ConfigureAwait(false)
+== window HeavyWeightWindow 239x175
+  list MyList rows 5
+    Invert condition |      
+    Convert to 'if' statement |      
+    Navigate To…
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 950x267
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [#pragma warning disable RS0030 // Do not use banned APIs
+
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using AsyncKeyedLock;
+using Jellyfin.Data;
+using Jellyfin.Data.Enums;
+using Jellyfin.Data.Events;
+using Jellyfin.Data.Events.Users;
+using Jellyfin.Database.Implementations;
+using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Common;
+using MediaBrowser.Common.Extensions;
+using MediaBrowser.Common.Net;
+using MediaBrowser.Controller.Authentication;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Drawing;
+using MediaBrowser.Controller.Events;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
+using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Users;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace Jellyfin.Server.Implementations.Users
+{
+    /// <summary>
+    /// Manages the creation and retrieval of <see cref="User"/> instances.
+    /// </summary>
+    public partial class UserManager : IUserManager, IDisposable
+    {
+        private readonly IDbContextFactory<JellyfinDbContext> _dbProvider;
+        private readonly IEventManager _eventManager;
+        private readonly INetworkManager _networkManager;
+        private readonly IApplicationHost _appHost;
+        private readonly IImageProcessor _imageProcessor;
+        private readonly ILogger<UserManager> _logger;
+        private readonly IReadOnlyCollection<IPasswordResetProvider> _passwordResetProviders;
+        private readonly IReadOnlyCollection<IAuthenticationProvider> _authenticationProviders;
+        private readonly InvalidAuthProvider _invalidAuthProvider;
+        private readonly DefaultAuthenticationProvider _defaultAuthenticationProvider;
+        private readonly DefaultPasswordResetProvider _defaultPasswordResetProvider;
+        private readonly IServerConfigurationManager _serverConfigurationManager;
+
+        private readonly LockHelper _userLock = new();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserManager"/> class.
+        /// </summary>
+        /// <param name="dbProvider">The database provider.</param>
+        /// <param name="eventManager">The event manager.</param>
+        /// <param name="networkManager">The network manager.</param>
+        /// <param name="appHost">The application host.</param>
+        /// <param name="imageProcessor">The image processor.</param>
+        /// <param name="logger">The logger.</
+
+######## p10 Refactorings.QuickListPopupAction — conditional ?: — «? await dbContext.Users.AsQueryable()» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 321: ? await dbContext.Users.AsQueryable().Select(u => u.InternalId).MaxAsync().ConfigureAwait(false)
+
+######## p10 Generate — conditional ?: — «? await dbContext.Users.AsQueryable()» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 321: ? await dbContext.Users.AsQueryable().Select(u => u.InternalId).MaxAsync().ConfigureAwait(false)
+== window HeavyWeightWindow 232x381
+  list MyList rows 14
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+
+######## p11 ShowIntentionActions — local with new — «var incoming = new Dictionary<PermissionKind, bool>();» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 265: var incoming = new Dictionary<PermissionKind, bool>();
+== window HeavyWeightWindow 303x199
+  list MyList rows 6
+    Check variable for null |      
+    Split variable declaration and initialization |      
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 611x246
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [#pragma warning disable RS0030 // Do not use banned APIs
+
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using AsyncKeyedLock;
+using Jellyfin.Data;
+using Jellyfin.Data.Enums;
+using Jellyfin.Data.Events;
+using Jellyfin.Data.Events.Users;
+using Jellyfin.Database.Implementations;
+using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Common;
+using MediaBrowser.Common.Extensions;
+using MediaBrowser.Common.Net;
+using MediaBrowser.Controller.Authentication;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Drawing;
+using MediaBrowser.Controller.Events;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
+using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Users;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace Jellyfin.Server.Implementations.Users
+{
+    /// <summary>
+    /// Manages the creation and retrieval of <see cref="User"/> instances.
+    /// </summary>
+    public partial class UserManager : IUserManager, IDisposable
+    {
+        private readonly IDbContextFactory<JellyfinDbContext> _dbProvider;
+        private readonly IEventManager _eventManager;
+        private readonly INetworkManager _networkManager;
+        private readonly IApplicationHost _appHost;
+        private readonly IImageProcessor _imageProcessor;
+        private readonly ILogger<UserManager> _logger;
+        private readonly IReadOnlyCollection<IPasswordResetProvider> _passwordResetProviders;
+        private readonly IReadOnlyCollection<IAuthenticationProvider> _authenticationProviders;
+        private readonly InvalidAuthProvider _invalidAuthProvider;
+        private readonly DefaultAuthenticationProvider _defaultAuthenticationProvider;
+        private readonly DefaultPasswordResetProvider _defaultPasswordResetProvider;
+        private readonly IServerConfigurationManager _serverConfigurationManager;
+
+        private readonly LockHelper _userLock = new();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserManager"/> class.
+        /// </summary>
+        /// <param name="dbProvider">The database provider.</param>
+        /// <param name="eventManager">The event manager.</param>
+        /// <param name="networkManager">The network manager.</param>
+        /// <param name="appHost">The application host.</param>
+        /// <param name="imageProcessor">The image processor.</param>
+        /// <param name="logger">The logger.</
+
+######## p11 Refactorings.QuickListPopupAction — local with new — «var incoming = new Dictionary<PermissionKind, bool>();» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 265: var incoming = new Dictionary<PermissionKind, bool>();
+== window HeavyWeightWindow 215x150
+  list MyList rows 4
+    Inline Variable
+    Rename |      Ctrl+R, R
+    Introduce Field |      Ctrl+R, F
+    Introduce Parameter |      Ctrl+R, P
+
+######## p11 Generate — local with new — «var incoming = new Dictionary<PermissionKind, bool>();» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 265: var incoming = new Dictionary<PermissionKind, bool>();
+== window HeavyWeightWindow 232x381
+  list MyList rows 14
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+
+######## p12 ShowIntentionActions — class header — «public partial class UserManager» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 39: public partial class UserManager : IUserManager, IDisposable
+
+######## p12 Refactorings.QuickListPopupAction — class header — «public partial class UserManager» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 39: public partial class UserManager : IUserManager, IDisposable
+== window HeavyWeightWindow 230x375
+  list MyList rows 13
+    Move Type to Another Namespace
+    Move to Another File
+    Move to Folder
+    Rename |      Ctrl+R, R
+    Safe Delete |      Ctrl+R, D
+    Extract Interface |      Ctrl+R, I
+    Extract Superclass
+    Extract Class
+    Extract Members to Partial
+    Pull Members Up
+    Push Members Down
+    Use Base Type Where Possible
+    Copy Type
+
+######## p12 Generate — class header — «public partial class UserManager» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 39: public partial class UserManager : IUserManager, IDisposable
+== window HeavyWeightWindow 232x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## p13 ShowIntentionActions — using directive — «using System.Linq;» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 6: using System.Linq;
+== window HeavyWeightWindow 239x184
+  list MyList rows 5
+    Sort 'using' directives… |      
+    Convert to 'global using'
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+
+######## p13 Refactorings.QuickListPopupAction — using directive — «using System.Linq;» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 6: using System.Linq;
+== window HeavyWeightWindow 167x69
+  list MyList rows 1
+    Convert to Global Using
+
+######## p13 Generate — using directive — «using System.Linq;» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 6: using System.Linq;
+
+######## p14 ShowIntentionActions — lambda — «.FirstOrDefault(user => user.Id == id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 132: .FirstOrDefault(user => user.Id == id);
+== window HeavyWeightWindow 447x208
+  list MyList rows 6
+    Check expression for null |      
+    Roslyn analyzer: 'RS0030: Не использовать запрещенные API' |      
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 647x183
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [#pragma warning disable RS0030 // Do not use banned APIs
+
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using AsyncKeyedLock;
+using Jellyfin.Data;
+using Jellyfin.Data.Enums;
+using Jellyfin.Data.Events;
+using Jellyfin.Data.Events.Users;
+using Jellyfin.Database.Implementations;
+using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Common;
+using MediaBrowser.Common.Extensions;
+using MediaBrowser.Common.Net;
+using MediaBrowser.Controller.Authentication;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Drawing;
+using MediaBrowser.Controller.Events;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
+using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Users;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace Jellyfin.Server.Implementations.Users
+{
+    /// <summary>
+    /// Manages the creation and retrieval of <see cref="User"/> instances.
+    /// </summary>
+    public partial class UserManager : IUserManager, IDisposable
+    {
+        private readonly IDbContextFactory<JellyfinDbContext> _dbProvider;
+        private readonly IEventManager _eventManager;
+        private readonly INetworkManager _networkManager;
+        private readonly IApplicationHost _appHost;
+        private readonly IImageProcessor _imageProcessor;
+        private readonly ILogger<UserManager> _logger;
+        private readonly IReadOnlyCollection<IPasswordResetProvider> _passwordResetProviders;
+        private readonly IReadOnlyCollection<IAuthenticationProvider> _authenticationProviders;
+        private readonly InvalidAuthProvider _invalidAuthProvider;
+        private readonly DefaultAuthenticationProvider _defaultAuthenticationProvider;
+        private readonly DefaultPasswordResetProvider _defaultPasswordResetProvider;
+        private readonly IServerConfigurationManager _serverConfigurationManager;
+
+        private readonly LockHelper _userLock = new();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserManager"/> class.
+        /// </summary>
+        /// <param name="dbProvider">The database provider.</param>
+        /// <param name="eventManager">The event manager.</param>
+        /// <param name="networkManager">The network manager.</param>
+        /// <param name="appHost">The application host.</param>
+        /// <param name="imageProcessor">The image processor.</param>
+        /// <param name="logger">The logger.</
+
+######## p14 Refactorings.QuickListPopupAction — lambda — «.FirstOrDefault(user => user.Id == id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 132: .FirstOrDefault(user => user.Id == id);
+== window HeavyWeightWindow 215x150
+  list MyList rows 4
+    Rename |      Ctrl+R, R
+    Introduce Field |      Ctrl+R, F
+    Introduce Variable
+    Introduce Parameter |      Ctrl+R, P
+
+######## p14 Generate — lambda — «.FirstOrDefault(user => user.Id == id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 132: .FirstOrDefault(user => user.Id == id);
+== window HeavyWeightWindow 232x381
+  list MyList rows 14
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+
+######## p15 ShowIntentionActions — constructor call with arguments — «var user = new User(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 324: var user = new User(
+== window HeavyWeightWindow 271x199
+  list MyList rows 6
+    Convert initializer to assignment |      
+    Initialize other members |      
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 618x267
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [#pragma warning disable RS0030 // Do not use banned APIs
+
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using AsyncKeyedLock;
+using Jellyfin.Data;
+using Jellyfin.Data.Enums;
+using Jellyfin.Data.Events;
+using Jellyfin.Data.Events.Users;
+using Jellyfin.Database.Implementations;
+using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Common;
+using MediaBrowser.Common.Extensions;
+using MediaBrowser.Common.Net;
+using MediaBrowser.Controller.Authentication;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Drawing;
+using MediaBrowser.Controller.Events;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
+using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Users;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace Jellyfin.Server.Implementations.Users
+{
+    /// <summary>
+    /// Manages the creation and retrieval of <see cref="User"/> instances.
+    /// </summary>
+    public partial class UserManager : IUserManager, IDisposable
+    {
+        private readonly IDbContextFactory<JellyfinDbContext> _dbProvider;
+        private readonly IEventManager _eventManager;
+        private readonly INetworkManager _networkManager;
+        private readonly IApplicationHost _appHost;
+        private readonly IImageProcessor _imageProcessor;
+        private readonly ILogger<UserManager> _logger;
+        private readonly IReadOnlyCollection<IPasswordResetProvider> _passwordResetProviders;
+        private readonly IReadOnlyCollection<IAuthenticationProvider> _authenticationProviders;
+        private readonly InvalidAuthProvider _invalidAuthProvider;
+        private readonly DefaultAuthenticationProvider _defaultAuthenticationProvider;
+        private readonly DefaultPasswordResetProvider _defaultPasswordResetProvider;
+        private readonly IServerConfigurationManager _serverConfigurationManager;
+
+        private readonly LockHelper _userLock = new();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserManager"/> class.
+        /// </summary>
+        /// <param name="dbProvider">The database provider.</param>
+        /// <param name="eventManager">The event manager.</param>
+        /// <param name="networkManager">The network manager.</param>
+        /// <param name="appHost">The application host.</param>
+        /// <param name="imageProcessor">The image processor.</param>
+        /// <param name="logger">The logger.</
+
+######## p15 Refactorings.QuickListPopupAction — constructor call with arguments — «var user = new User(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 324: var user = new User(
+== window HeavyWeightWindow 230x456
+  list MyList rows 16
+    Change Signature |      Ctrl+R, V
+    Move Type to Another Namespace
+    Move to Another File
+    Move to Folder
+    Rename |      Ctrl+R, R
+    Safe Delete |      Ctrl+R, D
+    Introduce Field |      Ctrl+R, F
+    Introduce Variable
+    Introduce Parameter |      Ctrl+R, P
+    Extract Interface |      Ctrl+R, I
+    Extract Superclass
+    Extract Class
+    Pull Members Up
+    Push Members Down
+    Use Base Type Where Possible
+    Copy Type
+
+######## p15 Generate — constructor call with arguments — «var user = new User(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 324: var user = new User(
+== window HeavyWeightWindow 232x381
+  list MyList rows 14
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+
+######## p16 ShowIntentionActions — constructor — «public LibraryManager(» (Emby.Server.Implementations/Library/LibraryManager.cs)
+caret line 138: public LibraryManager(
+== window HeavyWeightWindow 306x313
+  list MyList rows 10
+    To private |      
+    Make constructor 'LibraryManager' partial |      
+    Change signature… |      Ctrl+R, V
+    To factory method |      
+    Incoming Calls
+    Outgoing Calls
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 950x183
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [#pragma warning disable CS1591
+#pragma warning disable CA5394
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using BitFaster.Caching.Lru;
+using Emby.Naming.Common;
+using Emby.Naming.TV;
+using Emby.Naming.Video;
+using Emby.Server.Implementations.Library.Resolvers;
+using Emby.Server.Implementations.Playlists;
+using Emby.Server.Implementations.ScheduledTasks.Tasks;
+using Emby.Server.Implementations.Sorting;
+using Jellyfin.Data;
+using Jellyfin.Data.Enums;
+using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Common.Extensions;
+using MediaBrowser.Controller;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Drawing;
+using MediaBrowser.Controller.Dto;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Audio;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.IO;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.LiveTv;
+using MediaBrowser.Controller.Persistence;
+using MediaBrowser.Controller.Playlists;
+using MediaBrowser.Controller.Providers;
+using MediaBrowser.Controller.Resolvers;
+using MediaBrowser.Controller.Sorting;
+using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Drawing;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Globalization;
+using MediaBrowser.Model.IO;
+using MediaBrowser.Model.Library;
+using MediaBrowser.Model.Querying;
+using MediaBrowser.Model.Tasks;
+using Microsoft.Extensions.Logging;
+using Episode = MediaBrowser.Controller.Entities.TV.Episode;
+using EpisodeInfo = Emby.Naming.TV.EpisodeInfo;
+using Genre = MediaBrowser.Controller.Entities.Genre;
+using Person = MediaBrowser.Controller.Entities.Person;
+using VideoResolver = Emby.Naming.Video.VideoResolver;
+
+namespace Emby.Server.Implementations.Library
+{
+    /// <summary>
+    /// Class LibraryManager.
+    /// </summary>
+    public class LibraryManager : ILibraryManager
+    {
+        private const string ShortcutFileExtension = ".mblink";
+
+        private readonly ILogger<LibraryManager> _logger;
+        private readonly ITaskManager _taskManager;
+        private readonly IUserManager _userManager;
+        private readonly IUserDataManager _userDataManager;
+        private readonly IServerConfigurationManager _configurationManager;
+        private readonly Lazy<ILibraryMonitor> _libraryMonitorFactory;
+        private readonly Lazy<IProviderManager> _providerManagerFactory;
+        private 
+
+######## p16 Refactorings.QuickListPopupAction — constructor — «public LibraryManager(» (Emby.Server.Implementations/Library/LibraryManager.cs)
+caret line 138: public LibraryManager(
+== window HeavyWeightWindow 271x336
+  list MyList rows 11
+    Change Signature |      Ctrl+R, V
+    Rename |      Ctrl+R, R
+    Safe Delete |      Ctrl+R, D
+    Extract Interface |      Ctrl+R, I
+    Extract Superclass
+    Extract Class
+    Extract Members to Partial
+    Pull Members Up
+    Push Members Down
+    Replace Constructor with Factory Method
+    Transform Parameters
+
+######## p16 Generate — constructor — «public LibraryManager(» (Emby.Server.Implementations/Library/LibraryManager.cs)
+caret line 138: public LibraryManager(
+== window HeavyWeightWindow 232x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## p17 ShowIntentionActions — field — «private readonly ILogger<LibraryManager> _logger;» (Emby.Server.Implementations/Library/LibraryManager.cs)
+caret line 68: private readonly ILogger<LibraryManager> _logger;
+== window HeavyWeightWindow 239x208
+  list MyList rows 6
+    Encapsulate field |      Ctrl+R, E
+    Type Hierarchy |      Ctrl+E, H
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 950x799
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [#pragma warning disable CS1591
+#pragma warning disable CA5394
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using BitFaster.Caching.Lru;
+using Emby.Naming.Common;
+using Emby.Naming.TV;
+using Emby.Naming.Video;
+using Emby.Server.Implementations.Library.Resolvers;
+using Emby.Server.Implementations.Playlists;
+using Emby.Server.Implementations.ScheduledTasks.Tasks;
+using Emby.Server.Implementations.Sorting;
+using Jellyfin.Data;
+using Jellyfin.Data.Enums;
+using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Common.Extensions;
+using MediaBrowser.Controller;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Drawing;
+using MediaBrowser.Controller.Dto;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Audio;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.IO;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.LiveTv;
+using MediaBrowser.Controller.Persistence;
+using MediaBrowser.Controller.Playlists;
+using MediaBrowser.Controller.Providers;
+using MediaBrowser.Controller.Resolvers;
+using MediaBrowser.Controller.Sorting;
+using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Drawing;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Globalization;
+using MediaBrowser.Model.IO;
+using MediaBrowser.Model.Library;
+using MediaBrowser.Model.Querying;
+using MediaBrowser.Model.Tasks;
+using Microsoft.Extensions.Logging;
+using Episode = MediaBrowser.Controller.Entities.TV.Episode;
+using EpisodeInfo = Emby.Naming.TV.EpisodeInfo;
+using Genre = MediaBrowser.Controller.Entities.Genre;
+using Person = MediaBrowser.Controller.Entities.Person;
+using VideoResolver = Emby.Naming.Video.VideoResolver;
+
+namespace Emby.Server.Implementations.Library
+{
+    /// <summary>
+    /// Class LibraryManager.
+    /// </summary>
+    public class LibraryManager : ILibraryManager
+    {
+        private const string ShortcutFileExtension = ".mblink";
+
+        private readonly ILogger<LibraryManager> _logger;
+        public ILogger<LibraryManager> Logger1 { get; }
+        private readonly ITaskManager _taskManager;
+        private readonly IUserManager _userManager;
+        private readonly IUserDataManager _userDataManager;
+        private readonly IServerConfigurationManager _configurationManager;
+        private readonly Lazy<ILibraryMonitor> _libraryMonitorFactory;
+        private readonly Lazy<IPr
+
+######## p17 Refactorings.QuickListPopupAction — field — «private readonly ILogger<LibraryManager> _logger;» (Emby.Server.Implementations/Library/LibraryManager.cs)
+caret line 68: private readonly ILogger<LibraryManager> _logger;
+== window HeavyWeightWindow 230x375
+  list MyList rows 13
+    Move Type to Another Namespace
+    Move to Another File
+    Move to Folder
+    Rename |      Ctrl+R, R
+    Safe Delete |      Ctrl+R, D
+    Extract Interface |      Ctrl+R, I
+    Extract Superclass
+    Extract Class
+    Extract Members to Partial
+    Pull Members Up
+    Push Members Down
+    Use Base Type Where Possible
+    Copy Type
+
+######## p17 Generate — field — «private readonly ILogger<LibraryManager> _logger;» (Emby.Server.Implementations/Library/LibraryManager.cs)
+caret line 68: private readonly ILogger<LibraryManager> _logger;
+== window HeavyWeightWindow 232x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## p18 ShowIntentionActions — auto-property — «public string Name { get; set; }» (MediaBrowser.Model/Dto/BaseItemDto.cs)
+caret line 27: public string Name { get; set; }
+== window HeavyWeightWindow 269x409
+  list MyList rows 14
+    To property with 'field' keyword |      
+    Initialize property from constructor |      
+    To property with backing field |      
+    To computed property |      
+    To private |      
+    To abstract |      
+    Make property 'Name' partial |      
+    Change signature… |      Ctrl+R, V
+    Value Destination
+    Value Origin
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 479x267
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [#nullable disable
+#pragma warning disable CS1591
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using Jellyfin.Data.Enums;
+using Jellyfin.Database.Implementations.Entities;
+using MediaBrowser.Model.Drawing;
+using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Library;
+using MediaBrowser.Model.LiveTv;
+using MediaBrowser.Model.Providers;
+
+namespace MediaBrowser.Model.Dto
+{
+    /// <summary>
+    /// This is strictly used as a data transfer object from the api layer.
+    /// This holds information about a BaseItem in a format that is convenient for the client.
+    /// </summary>
+    public class BaseItemDto : IHasProviderIds, IItemDto, IHasServerId
+    {
+        /// <summary>
+        /// Gets or sets the name.
+        /// </summary>
+        /// <value>The name.</value>
+        public string Name { get; set; }
+        public string Name
+        {
+            get => field;
+            set => field = value;
+        }
+
+        public string OriginalTitle { get; set; }
+
+        /// <summary>
+        /// Gets or sets the server identifier.
+        /// </summary>
+        /// <value>The server identifier.</value>
+        public string ServerId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the id.
+        /// </summary>
+        /// <value>The id.</value>
+        public Guid Id { get; set; }
+
+        /// <summary>
+        /// Gets or sets the etag.
+        /// </summary>
+        /// <value>The etag.</value>
+        public string Etag { get; set; }
+
+        /// <summary>
+        /// Gets or sets the type of the source.
+        /// </summary>
+        /// <value>The type of the source.</value>
+        public string SourceType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the playlist item identifier.
+        /// </summary>
+        /// <value>The playlist item identifier.</value>
+        public string PlaylistItemId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the date created.
+        /// </summary>
+        /// <value>The date created.</value>
+        public DateTime? DateCreated { get; set; }
+
+        public DateTime? DateLastMediaAdded { get; set; }
+
+        public ExtraType? ExtraType { get; set; }
+
+        public int? AirsBeforeSeasonNumber { get; set; }
+
+        public int? AirsAfterSeasonNumber { get; set; }
+
+        public int? AirsBeforeEpisodeNumber { get; set; }
+
+        public bool? CanDelete { get; set; }
+
+        public bool? CanDownload { get; set; }
+
+        public bool? HasLyrics { get; set; }
+
+        public bool? HasSubtitles { get; set; }
+
+        public string PreferredMetadataLanguage { get; set; }
+
+        public string PreferredMetadataCountryCode { get; set; }
+
+        public s
+
+######## p18 Refactorings.QuickListPopupAction — auto-property — «public string Name { get; set; }» (MediaBrowser.Model/Dto/BaseItemDto.cs)
+caret line 27: public string Name { get; set; }
+== window HeavyWeightWindow 209x360
+  list MyList rows 12
+    Change Signature |      Ctrl+R, V
+    Rename |      Ctrl+R, R
+    Safe Delete |      Ctrl+R, D
+    Extract Interface |      Ctrl+R, I
+    Extract Superclass
+    Extract Class
+    Extract Members to Partial
+    Pull Members Up
+    Push Members Down
+    Convert Property to Method(s)
+    Make Static
+    Transform Parameters
+
+######## p18 Generate — auto-property — «public string Name { get; set; }» (MediaBrowser.Model/Dto/BaseItemDto.cs)
+caret line 27: public string Name { get; set; }
+== window HeavyWeightWindow 232x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## p19 ShowIntentionActions — controller action — «public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItems(» (Jellyfin.Api/Controllers/ItemsController.cs)
+caret line 173: public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItems(
+== window HeavyWeightWindow 248x313
+  list MyList rows 10
+    To private |      
+    To virtual |      
+    Make method 'GetItems' partial |      
+    Change signature… |      Ctrl+R, V
+    Incoming Calls
+    Outgoing Calls
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 655x183
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
+using Jellyfin.Api.Extensions;
+using Jellyfin.Api.Helpers;
+using Jellyfin.Api.ModelBinders;
+using Jellyfin.Data;
+using Jellyfin.Data.Enums;
+using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Common.Extensions;
+using MediaBrowser.Controller.Dto;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Playlists;
+using MediaBrowser.Controller.Session;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Globalization;
+using MediaBrowser.Model.Querying;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+
+namespace Jellyfin.Api.Controllers;
+
+/// <summary>
+/// The items controller.
+/// </summary>
+[Route("")]
+[Authorize]
+[Tags("Library")]
+public class ItemsController : BaseJellyfinApiController
+{
+    private readonly IUserManager _userManager;
+    private readonly ILibraryManager _libraryManager;
+    private readonly ILocalizationManager _localization;
+    private readonly IDtoService _dtoService;
+    private readonly ILogger<ItemsController> _logger;
+    private readonly ISessionManager _sessionManager;
+    private readonly IUserDataManager _userDataRepository;
+    private readonly ISearchManager _searchManager;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ItemsController"/> class.
+    /// </summary>
+    /// <param name="userManager">Instance of the <see cref="IUserManager"/> interface.</param>
+    /// <param name="libraryManager">Instance of the <see cref="ILibraryManager"/> interface.</param>
+    /// <param name="localization">Instance of the <see cref="ILocalizationManager"/> interface.</param>
+    /// <param name="dtoService">Instance of the <see cref="IDtoService"/> interface.</param>
+    /// <param name="logger">Instance of the <see cref="ILogger"/> interface.</param>
+    /// <param name="sessionManager">Instance of the <see cref="ISessionManager"/> interface.</param>
+    /// <param name="userDataRepository">Instance of the <see cref="IUserDataManager"/> interface.</param>
+    /// <param name="searchManager">Instance of the <see cref="ISearchManager"/> interface.</param>
+    public ItemsController(
+        IUserManager userManager,
+        ILibraryManager libraryManager,
+        ILocalizationManager localization,
+        IDtoService dtoService,
+        ILogger<ItemsController> logger,
+        ISessionManager sessionManager,
+        IUserD
+
+######## p19 Refactorings.QuickListPopupAction — controller action — «public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItems(» (Jellyfin.Api/Controllers/ItemsController.cs)
+caret line 173: public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItems(
+== window HeavyWeightWindow 200x360
+  list MyList rows 12
+    Change Signature |      Ctrl+R, V
+    Inline Method
+    Rename |      Ctrl+R, R
+    Safe Delete |      Ctrl+R, D
+    Extract Interface |      Ctrl+R, I
+    Extract Superclass
+    Extract Class
+    Extract Members to Partial
+    Pull Members Up
+    Push Members Down
+    Make Static
+    Transform Parameters
+
+######## p19 Generate — controller action — «public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItems(» (Jellyfin.Api/Controllers/ItemsController.cs)
+caret line 173: public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItems(
+== window HeavyWeightWindow 232x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## p20 ShowIntentionActions — switch statement — «switch (» (Jellyfin.Api/Controllers/SearchController.cs)
+caret line 175: switch (item)
+== window HeavyWeightWindow 239x199
+  list MyList rows 6
+    To 'if' statements |      
+    Generate type patterns… |      
+    Add condition component |      
+    Navigate To…
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 626x799
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [using System;
+using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
+using System.Globalization;
+using System.Linq;
+using System.Threading.Tasks;
+using Jellyfin.Api.Helpers;
+using Jellyfin.Api.ModelBinders;
+using Jellyfin.Data.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Controller.Drawing;
+using MediaBrowser.Controller.Dto;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Audio;
+using MediaBrowser.Controller.Entities.TV;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.LiveTv;
+using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Search;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Jellyfin.Api.Controllers;
+
+/// <summary>
+/// Search controller.
+/// </summary>
+[Route("Search/Hints")]
+[Authorize]
+public class SearchController : BaseJellyfinApiController
+{
+    private readonly ISearchManager _searchManager;
+    private readonly ILibraryManager _libraryManager;
+    private readonly IDtoService _dtoService;
+    private readonly IImageProcessor _imageProcessor;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SearchController"/> class.
+    /// </summary>
+    /// <param name="searchManager">Instance of <see cref="ISearchManager"/> interface.</param>
+    /// <param name="libraryManager">Instance of <see cref="ILibraryManager"/> interface.</param>
+    /// <param name="dtoService">Instance of <see cref="IDtoService"/> interface.</param>
+    /// <param name="imageProcessor">Instance of <see cref="IImageProcessor"/> interface.</param>
+    public SearchController(
+        ISearchManager searchManager,
+        ILibraryManager libraryManager,
+        IDtoService dtoService,
+        IImageProcessor imageProcessor)
+    {
+        _searchManager = searchManager;
+        _libraryManager = libraryManager;
+        _dtoService = dtoService;
+        _imageProcessor = imageProcessor;
+    }
+
+    /// <summary>
+    /// Gets the search hint result.
+    /// </summary>
+    /// <param name="startIndex">Optional. The record index to start at. All items with a lower index will be dropped from the results.</param>
+    /// <param name="limit">Optional. The maximum number of records to return.</param>
+    /// <param name="userId">Optional. Supply a user id to search within a user's library or omit to search all.</param>
+    /// <param name="searchTerm">The search term to filter on.</param>
+    /// <param name="includeItemTypes">If specified, only results with the specified item types are returned. This allows multiple, comma delimited.</param>
+    /// <param name="excludeItemTypes">If specified, results with these item types are 
+
+######## p20 Refactorings.QuickListPopupAction — switch statement — «switch (» (Jellyfin.Api/Controllers/SearchController.cs)
+caret line 175: switch (item)
+
+######## p20 Generate — switch statement — «switch (» (Jellyfin.Api/Controllers/SearchController.cs)
+caret line 175: switch (item)
+== window HeavyWeightWindow 232x381
+  list MyList rows 14
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+
+######## p20b ShowIntentionActions — switch expression — «collectionType switch» (Jellyfin.Api/Controllers/ItemsController.cs)
+caret line 328: includeItemTypes = collectionType switch
+== window HeavyWeightWindow 239x247
+  list MyList rows 8
+    To 'switch' statement |      
+    To 'if' statements |      
+    To ?: expression |      
+    Add condition component |      
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 691x414
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
+using Jellyfin.Api.Extensions;
+using Jellyfin.Api.Helpers;
+using Jellyfin.Api.ModelBinders;
+using Jellyfin.Data;
+using Jellyfin.Data.Enums;
+using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Common.Extensions;
+using MediaBrowser.Controller.Dto;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Playlists;
+using MediaBrowser.Controller.Session;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Globalization;
+using MediaBrowser.Model.Querying;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+
+namespace Jellyfin.Api.Controllers;
+
+/// <summary>
+/// The items controller.
+/// </summary>
+[Route("")]
+[Authorize]
+[Tags("Library")]
+public class ItemsController : BaseJellyfinApiController
+{
+    private readonly IUserManager _userManager;
+    private readonly ILibraryManager _libraryManager;
+    private readonly ILocalizationManager _localization;
+    private readonly IDtoService _dtoService;
+    private readonly ILogger<ItemsController> _logger;
+    private readonly ISessionManager _sessionManager;
+    private readonly IUserDataManager _userDataRepository;
+    private readonly ISearchManager _searchManager;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ItemsController"/> class.
+    /// </summary>
+    /// <param name="userManager">Instance of the <see cref="IUserManager"/> interface.</param>
+    /// <param name="libraryManager">Instance of the <see cref="ILibraryManager"/> interface.</param>
+    /// <param name="localization">Instance of the <see cref="ILocalizationManager"/> interface.</param>
+    /// <param name="dtoService">Instance of the <see cref="IDtoService"/> interface.</param>
+    /// <param name="logger">Instance of the <see cref="ILogger"/> interface.</param>
+    /// <param name="sessionManager">Instance of the <see cref="ISessionManager"/> interface.</param>
+    /// <param name="userDataRepository">Instance of the <see cref="IUserDataManager"/> interface.</param>
+    /// <param name="searchManager">Instance of the <see cref="ISearchManager"/> interface.</param>
+    public ItemsController(
+        IUserManager userManager,
+        ILibraryManager libraryManager,
+        ILocalizationManager localization,
+        IDtoService dtoService,
+        ILogger<ItemsController> logger,
+        ISessionManager sessionManager,
+        IUserD
+
+######## p20b Refactorings.QuickListPopupAction — switch expression — «collectionType switch» (Jellyfin.Api/Controllers/ItemsController.cs)
+caret line 328: includeItemTypes = collectionType switch
+== window HeavyWeightWindow 215x117
+  list MyList rows 3
+    Introduce Field |      Ctrl+R, F
+    Introduce Variable
+    Introduce Parameter |      Ctrl+R, P
+
+######## p20b Generate — switch expression — «collectionType switch» (Jellyfin.Api/Controllers/ItemsController.cs)
+caret line 328: includeItemTypes = collectionType switch
+== window HeavyWeightWindow 232x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## p21 ShowIntentionActions — extension method — «public static ReadOnlySpan<char> LeftPart(» (src/Jellyfin.Extensions/StringExtensions.cs)
+caret line 82: public static ReadOnlySpan<char> LeftPart(this ReadOnlySpan<char> haystack, char needle)
+== window HeavyWeightWindow 457x403
+  list MyList rows 13
+    Convert to extension block (3 methods) |      
+    To private |      
+    To virtual |      
+    Make method 'LeftPart' partial |      
+    Convert this method to extension block |      
+    Change signature… |      Ctrl+R, V
+    Rider inspection: 'Convert extension methods to extension block' |      
+    Incoming Calls
+    Outgoing Calls
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 831x799
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Convert to extension block</body></html>] | [using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using ICU4N.Text;
+
+namespace Jellyfin.Extensions
+{
+    /// <summary>
+    /// Provides extensions methods for <see cref="string" />.
+    /// </summary>
+    public static partial class StringExtensions
+    {
+        private static readonly Lazy<string> _transliteratorId = new(() =>
+            Environment.GetEnvironmentVariable("JELLYFIN_TRANSLITERATOR_ID")
+            ?? "Any-Latin; Latin-Ascii; Lower; NFD; [:Nonspacing Mark:] Remove; [:Punctuation:] Remove;");
+
+        private static readonly Lazy<Transliterator?> _transliterator = new(() =>
+        {
+            try
+            {
+                return Transliterator.GetInstance(_transliteratorId.Value);
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+        });
+
+        // Matches non-conforming unicode chars
+        // https://mnaoumov.wordpress.com/2014/06/14/stripping-invalid-characters-from-utf-16-strings/
+
+        [GeneratedRegex("([\ud800-\udbff](?![\udc00-\udfff]))|((?<![\ud800-\udbff])[\udc00-\udfff])|(�)")]
+        private static partial Regex NonConformingUnicodeRegex();
+
+        /// <summary>
+        /// Removes the diacritics character from the strings.
+        /// </summary>
+        /// <param name="text">The string to act on.</param>
+        /// <returns>The string without diacritics character.</returns>
+        public static string RemoveDiacritics(this string text)
+            => Diacritics.Extensions.StringExtensions.RemoveDiacritics(
+                NonConformingUnicodeRegex().Replace(text, string.Empty));
+
+        /// <summary>
+        /// Checks whether or not the specified string has diacritics in it.
+        /// </summary>
+        /// <param name="text">The string to check.</param>
+        /// <returns>True if the string has diacritics, false otherwise.</returns>
+        public static bool HasDiacritics(this string text)
+            => Diacritics.Extensions.StringExtensions.HasDiacritics(text)
+                || NonConformingUnicodeRegex().IsMatch(text);
+
+        /// <param name="value">The haystack to search in.</param>
+        extension(ReadOnlySpan<char> value)
+        {
+            /// <summary>
+            /// Counts the number of occurrences of [needle] in the string.
+            /// </summary>
+        /// <param name="value">The haystack to search in.</param>
+            /// <param name="needle">The character to search for.</param>
+            /// <returns>The number of occurrences of the [needle] character.</returns>
+        public static int Count(this ReadOnlySpan<char> value, char nee
+
+######## p21 Refactorings.QuickListPopupAction — extension method — «public static ReadOnlySpan<char> LeftPart(» (src/Jellyfin.Extensions/StringExtensions.cs)
+caret line 82: public static ReadOnlySpan<char> LeftPart(this ReadOnlySpan<char> haystack, char needle)
+== window HeavyWeightWindow 217x288
+  list MyList rows 9
+    Change Signature |      Ctrl+R, V
+    Inline Method
+    Move to Another Type
+    Rename |      Ctrl+R, R
+    Safe Delete |      Ctrl+R, D
+    Extract Class
+    Extract Members to Partial
+    Extension Method to Plain Static
+    Transform Parameters
+
+######## p21 Generate — extension method — «public static ReadOnlySpan<char> LeftPart(» (src/Jellyfin.Extensions/StringExtensions.cs)
+caret line 82: public static ReadOnlySpan<char> LeftPart(this ReadOnlySpan<char> haystack, char needle)
+== window HeavyWeightWindow 232x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## p22 ShowIntentionActions — interpolated string — «$"» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 119: [GeneratedRegex(@"^(?!\s)[\w\ \-'._@+]+(?<!\s)$")]
+== window HeavyWeightWindow 254x256
+  list MyList rows 8
+    To string interpolation |      
+    To regular string |      
+    To raw string |      
+    Add argument name 'pattern' |      
+    Configure Inlay Hints |      
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+== window HeavyWeightWindow 950x183
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [#pragma warning disable RS0030 // Do not use banned APIs
+
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
+using AsyncKeyedLock;
+using Jellyfin.Data;
+using Jellyfin.Data.Enums;
+using Jellyfin.Data.Events;
+using Jellyfin.Data.Events.Users;
+using Jellyfin.Database.Implementations;
+using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Common;
+using MediaBrowser.Common.Extensions;
+using MediaBrowser.Common.Net;
+using MediaBrowser.Controller.Authentication;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Drawing;
+using MediaBrowser.Controller.Events;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Net;
+using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Users;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+
+namespace Jellyfin.Server.Implementations.Users
+{
+    /// <summary>
+    /// Manages the creation and retrieval of <see cref="User"/> instances.
+    /// </summary>
+    public partial class UserManager : IUserManager, IDisposable
+    {
+        private readonly IDbContextFactory<JellyfinDbContext> _dbProvider;
+        private readonly IEventManager _eventManager;
+        private readonly INetworkManager _networkManager;
+        private readonly IApplicationHost _appHost;
+        private readonly IImageProcessor _imageProcessor;
+        private readonly ILogger<UserManager> _logger;
+        private readonly IReadOnlyCollection<IPasswordResetProvider> _passwordResetProviders;
+        private readonly IReadOnlyCollection<IAuthenticationProvider> _authenticationProviders;
+        private readonly InvalidAuthProvider _invalidAuthProvider;
+        private readonly DefaultAuthenticationProvider _defaultAuthenticationProvider;
+        private readonly DefaultPasswordResetProvider _defaultPasswordResetProvider;
+        private readonly IServerConfigurationManager _serverConfigurationManager;
+
+        private readonly LockHelper _userLock = new();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UserManager"/> class.
+        /// </summary>
+        /// <param name="dbProvider">The database provider.</param>
+        /// <param name="eventManager">The event manager.</param>
+        /// <param name="networkManager">The network manager.</param>
+        /// <param name="appHost">The application host.</param>
+        /// <param name="imageProcessor">The image processor.</param>
+        /// <param name="logger">The logger.</
+
+######## p22 Refactorings.QuickListPopupAction — interpolated string — «$"» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 119: [GeneratedRegex(@"^(?!\s)[\w\ \-'._@+]+(?<!\s)$")]
+== window HeavyWeightWindow 215x93
+  list MyList rows 2
+    Introduce Field |      Ctrl+R, F
+    Introduce Parameter |      Ctrl+R, P
+
+######## p22 Generate — interpolated string — «$"» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 119: [GeneratedRegex(@"^(?!\s)[\w\ \-'._@+]+(?<!\s)$")]
+
+######## p23 ShowIntentionActions — interface header — «public interface ILibraryManager» (MediaBrowser.Controller/Library/ILibraryManager.cs)
+caret line 31: public interface ILibraryManager
+== window HeavyWeightWindow 354x346
+  list MyList rows 11
+    To internal |      
+    Create derived type |      
+    Make partial |      
+    Create unit test |      
+    Copy type…
+    Interface 'ILibraryManager' is implemented |      Alt+End
+    Type Hierarchy |      Ctrl+E, H
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 424x169
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [#pragma warning disable CA1002, CS1591
+
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Jellyfin.Data.Enums;
+using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Database.Implementations.Enums;
+using MediaBrowser.Controller.Dto;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Audio;
+using MediaBrowser.Controller.Providers;
+using MediaBrowser.Controller.Resolvers;
+using MediaBrowser.Controller.Sorting;
+using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.IO;
+using MediaBrowser.Model.Querying;
+using Episode = MediaBrowser.Controller.Entities.TV.Episode;
+using Genre = MediaBrowser.Controller.Entities.Genre;
+using LinkedChildType = MediaBrowser.Controller.Entities.LinkedChildType;
+using Person = MediaBrowser.Controller.Entities.Person;
+
+namespace MediaBrowser.Controller.Library
+{
+    /// <summary>
+    /// Interface ILibraryManager.
+    /// </summary>
+    public interface ILibraryManager
+    internal interface ILibraryManager
+    {
+        /// <summary>
+        /// Occurs when [item added].
+        /// </summary>
+        event EventHandler<ItemChangeEventArgs>? ItemAdded;
+
+        /// <summary>
+        /// Occurs when [item updated].
+        /// </summary>
+        event EventHandler<ItemChangeEventArgs>? ItemUpdated;
+
+        /// <summary>
+        /// Occurs when [item removed].
+        /// </summary>
+        event EventHandler<ItemChangeEventArgs>? ItemRemoved;
+
+        /// <summary>
+        /// Gets the root folder.
+        /// </summary>
+        /// <value>The root folder.</value>
+        AggregateFolder RootFolder { get; }
+
+        bool IsScanRunning { get; }
+
+        /// <summary>
+        /// Resolves the path.
+        /// </summary>
+        /// <param name="fileInfo">The file information.</param>
+        /// <param name="parent">The parent.</param>
+        /// <param name="directoryService">An instance of <see cref="IDirectoryService"/>.</param>
+        /// <param name="collectionType">The collection type of the library containing this item.</param>
+        /// <returns>BaseItem.</returns>
+        BaseItem? ResolvePath(
+            FileSystemMetadata fileInfo,
+            Folder? parent = null,
+            IDirectoryService? directoryService = null,
+            CollectionType? collectionType = null);
+
+        /// <summary>
+        /// Resolves a video file as an alternate version of a primary video, ensuring the result
+        /// has the same concrete type as the primary (e.g. Movie instead of generic Video).
+        /// Also cleans up any existing item with the wrong type from a previous sc
+
+######## p23 Refactorings.QuickListPopupAction — interface header — «public interface ILibraryManager» (MediaBrowser.Controller/Library/ILibraryManager.cs)
+caret line 31: public interface ILibraryManager
+== window HeavyWeightWindow 233x336
+  list MyList rows 11
+    Move Type to Another Namespace
+    Move to Another File
+    Move to Folder
+    Rename |      Ctrl+R, R
+    Safe Delete |      Ctrl+R, D
+    Extract Interface |      Ctrl+R, I
+    Extract Members to Partial
+    Push Members Down
+    Convert Interface to Abstract Class
+    Use Base Type Where Possible
+    Copy Type
+
+######## p23 Generate — interface header — «public interface ILibraryManager» (MediaBrowser.Controller/Library/ILibraryManager.cs)
+caret line 31: public interface ILibraryManager
+== window HeavyWeightWindow 232x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## p24 ShowIntentionActions — test method — «public void BaseItem_ModifySortChunks_Valid(» (tests/Jellyfin.Controller.Tests/Entities/BaseItemTests.cs)
+caret line 152: public void BaseItem_ModifySortChunks_Valid(string input, string expected)
+== window HeavyWeightWindow 391x475
+  list MyList rows 16
+    Run |      
+    Debug |      
+    Cover |      
+    Profile |      
+    Create New Session |      
+    To private |      
+    To virtual |      
+    To statement body |      
+    Make method 'BaseItem_ModifySortChunks_Valid' partial |      
+    Change signature… |      Ctrl+R, V
+    Incoming Calls
+    Outgoing Calls
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+
+######## p24 Refactorings.QuickListPopupAction — test method — «public void BaseItem_ModifySortChunks_Valid(» (tests/Jellyfin.Controller.Tests/Entities/BaseItemTests.cs)
+caret line 152: public void BaseItem_ModifySortChunks_Valid(string input, string expected)
+== window HeavyWeightWindow 200x360
+  list MyList rows 12
+    Change Signature |      Ctrl+R, V
+    Inline Method
+    Rename |      Ctrl+R, R
+    Safe Delete |      Ctrl+R, D
+    Extract Interface |      Ctrl+R, I
+    Extract Superclass
+    Extract Class
+    Extract Members to Partial
+    Push Members Down
+    Convert method to indexer
+    Make Static
+    Transform Parameters
+
+######## p24 Generate — test method — «public void BaseItem_ModifySortChunks_Valid(» (tests/Jellyfin.Controller.Tests/Entities/BaseItemTests.cs)
+caret line 152: public void BaseItem_ModifySortChunks_Valid(string input, string expected)
+== window HeavyWeightWindow 232x405
+  list MyList rows 15
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+
+######## p25 ShowIntentionActions — cast — «((Folder)item)» (Emby.Server.Implementations/Library/LibraryManager.cs)
+@caret line 555: ? ((Folder)item).GetRecursiveChildren(false)
+== window HeavyWeightWindow 239x175
+  list MyList rows 5
+    To safe cast |      
+    Navigate To…
+    Refactor This… |      Ctrl+Shift+R
+    Inspect This… |      Ctrl+Alt+Shift+A
+    Generate Code… |      Alt+Insert
+== window HeavyWeightWindow 581x183
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html><head><style>
+body, div, td, p {font-family:'Inter'; font-size:12pt; color:#d1d3d9;}
+a { color:#71a1fe;}
+
+ul {list-style:disc; margin-left:15px;}
+</style></head><body>Preview</body></html>] | [#pragma warning disable CS1591
+#pragma warning disable CA5394
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using BitFaster.Caching.Lru;
+using Emby.Naming.Common;
+using Emby.Naming.TV;
+using Emby.Naming.Video;
+using Emby.Server.Implementations.Library.Resolvers;
+using Emby.Server.Implementations.Playlists;
+using Emby.Server.Implementations.ScheduledTasks.Tasks;
+using Emby.Server.Implementations.Sorting;
+using Jellyfin.Data;
+using Jellyfin.Data.Enums;
+using Jellyfin.Database.Implementations.Entities;
+using Jellyfin.Database.Implementations.Enums;
+using Jellyfin.Extensions;
+using MediaBrowser.Common.Extensions;
+using MediaBrowser.Controller;
+using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Controller.Drawing;
+using MediaBrowser.Controller.Dto;
+using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Audio;
+using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.IO;
+using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.LiveTv;
+using MediaBrowser.Controller.Persistence;
+using MediaBrowser.Controller.Playlists;
+using MediaBrowser.Controller.Providers;
+using MediaBrowser.Controller.Resolvers;
+using MediaBrowser.Controller.Sorting;
+using MediaBrowser.Model.Configuration;
+using MediaBrowser.Model.Drawing;
+using MediaBrowser.Model.Dto;
+using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Globalization;
+using MediaBrowser.Model.IO;
+using MediaBrowser.Model.Library;
+using MediaBrowser.Model.Querying;
+using MediaBrowser.Model.Tasks;
+using Microsoft.Extensions.Logging;
+using Episode = MediaBrowser.Controller.Entities.TV.Episode;
+using EpisodeInfo = Emby.Naming.TV.EpisodeInfo;
+using Genre = MediaBrowser.Controller.Entities.Genre;
+using Person = MediaBrowser.Controller.Entities.Person;
+using VideoResolver = Emby.Naming.Video.VideoResolver;
+
+namespace Emby.Server.Implementations.Library
+{
+    /// <summary>
+    /// Class LibraryManager.
+    /// </summary>
+    public class LibraryManager : ILibraryManager
+    {
+        private const string ShortcutFileExtension = ".mblink";
+
+        private readonly ILogger<LibraryManager> _logger;
+        private readonly ITaskManager _taskManager;
+        private readonly IUserManager _userManager;
+        private readonly IUserDataManager _userDataManager;
+        private readonly IServerConfigurationManager _configurationManager;
+        private readonly Lazy<ILibraryMonitor> _libraryMonitorFactory;
+        private readonly Lazy<IProviderManager> _providerManagerFactory;
+        private 
+
+######## p25 Refactorings.QuickListPopupAction — cast — «((Folder)item)» (Emby.Server.Implementations/Library/LibraryManager.cs)
+@caret line 555: ? ((Folder)item).GetRecursiveChildren(false)
+== window HeavyWeightWindow 271x465
+  list MyList rows 16
+    Move Type to Another Namespace
+    Move to Another File
+    Move to Folder
+    Rename |      Ctrl+R, R
+    Safe Delete |      Ctrl+R, D
+    Introduce Field |      Ctrl+R, F
+    Introduce Variable
+    Introduce Parameter |      Ctrl+R, P
+    Extract Interface |      Ctrl+R, I
+    Extract Superclass
+    Extract Class
+    Pull Members Up
+    Push Members Down
+    Replace Constructor with Factory Method
+    Use Base Type Where Possible
+    Copy Type
+
+######## p25 Generate — cast — «((Folder)item)» (Emby.Server.Implementations/Library/LibraryManager.cs)
+@caret line 555: ? ((Folder)item).GetRecursiveChildren(false)
+== window HeavyWeightWindow 232x381
+  list MyList rows 14
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+Shift+I
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+

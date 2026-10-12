@@ -123,6 +123,34 @@ class CSharpCompletionInsertionTest : BasePlatformTestCase() {
         assertTrue(text, text.contains("        return;\n"))
     }
 
+    // ---- 0b. the Jellyfin probes t15 / t08 (0.1.168): a keyword typed in full stays, `try` before `true`
+
+    fun testASpaceAfterAKeywordTypedInFullKeepsTheKeyword() {
+        val lookup = autoPopup("using System.Collections.Generic;\nusing System.Text.RegularExpressions;\nclass Users\n{\n    private static Regex ValidUsernameRegex = null!;\n    void M(List<string> source)\n    {\n        foreach (var<caret>\n    }\n}\n")
+        assertNotNull("a list after var", lookup)
+        myFixture.type(' ')
+        val text = myFixture.editor.document.text
+        assertTrue(text, text.contains("foreach (var "))
+        assertFalse(text, text.contains("foreach (ValidUsernameRegex"))
+    }
+
+    fun testStatementKeywordsBeforeValueKeywordsAtAStatementStart() {
+        val names = native("class C\n{\n    void M()\n    {\n        tr<caret>\n    }\n}\n")
+        assertTrue(names.toString(), names.indexOf("try") in 0 until names.indexOf("true"))
+        val returnNames = native("class C\n{\n    void M()\n    {\n        re<caret>\n    }\n}\n")
+        assertEquals(returnNames.toString(), "return", returnNames.firstOrNull { it == "return" || it == "ref" })
+    }
+
+    fun testTrAndTabIsTheTryBlock() {
+        val lookup = autoPopup("class C\n{\n    void M()\n    {\n        tr<caret>\n    }\n}\n")
+        assertNotNull(lookup)
+        assertEquals("try", lookup!!.currentItem?.lookupString)
+        myFixture.finishLookup(com.intellij.codeInsight.lookup.Lookup.REPLACE_SELECT_CHAR)
+        com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(project) { TemplateManagerImpl.getTemplateState(myFixture.editor)?.gotoEnd(false) }
+        val text = myFixture.editor.document.text
+        assertTrue(text, text.contains("try\n        {") && text.contains("catch"))
+    }
+
     // ---- 1. parentheses by a commit character and by auto-insert
 
     fun testDotAfterAMethodWritesTheCall() {

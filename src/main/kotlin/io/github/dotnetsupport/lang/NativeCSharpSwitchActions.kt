@@ -141,7 +141,9 @@ object NativeCSharpSwitchEdits {
         val covered = constants.mapNotNull(::memberName).toSet()
         val missing = NativeCSharpExpectedCompletion.enumMembers(type).map { it.first }.filter { it !in covered }
         val discard = discardArm(expression)
-        if (missing.isEmpty() && discard != null) return null
+        // an unconditional `_` already takes the other members: arms that throw would change what they do (Rider offers nothing there)
+        if (discard != null) return null
+        if (missing.isEmpty()) return null
         val qualifier = qualifier(constants, type)
         val armIndent = expression.arms.firstOrNull()?.let { lineIndent(text, it.textRange.startOffset) } ?: (ownIndent(text, expression) + unit)
         val newArms = missing.map { "$qualifier.$it => throw new NotImplementedException()" }

@@ -1,0 +1,27 @@
+# id|file (relative to the project)|anchor text (first occurrence)|caret offset in the anchor|what it covers
+p01|Jellyfin.Server.Implementations/Users/UserManager.cs|public async Task RenameUser(|18|method header
+p02|Jellyfin.Server.Implementations/Users/UserManager.cs|Guid userId, string oldName|17|parameter
+p03|Jellyfin.Server.Implementations/Users/UserManager.cs|if (oldName.Equals(newName|1|if statement
+p04|Jellyfin.Server.Implementations/Users/UserManager.cs|foreach (var accessSchedule in user.AccessSchedules)|2|foreach
+p05|Jellyfin.Server.Implementations/Users/UserManager.cs|throw new ArgumentException(string.Format(|34|string.Format
+p06|Jellyfin.Server.Implementations/Users/UserManager.cs|var eventArgs = new UserUpdatedEventArgs|1|var
+p07|Jellyfin.Server.Implementations/Users/UserManager.cs|.Select(user => user.Id)|2|LINQ method chain
+p08|Jellyfin.Server.Implementations/Users/UserManager.cs|await _eventManager.PublishAsync(eventArgs)|2|await
+p09|Jellyfin.Server.Implementations/Users/UserManager.cs|if (user.ProfileImage is null)|5|null check
+p10|Jellyfin.Server.Implementations/Users/UserManager.cs|? await dbContext.Users.AsQueryable()|0|conditional ?:
+p11|Jellyfin.Server.Implementations/Users/UserManager.cs|var incoming = new Dictionary<PermissionKind, bool>();|5|local with new
+p12|Jellyfin.Server.Implementations/Users/UserManager.cs|public partial class UserManager|22|class header
+p13|Jellyfin.Server.Implementations/Users/UserManager.cs|using System.Linq;|2|using directive
+p14|Jellyfin.Server.Implementations/Users/UserManager.cs|.FirstOrDefault(user => user.Id == id)|26|lambda
+p15|Jellyfin.Server.Implementations/Users/UserManager.cs|var user = new User(|16|constructor call with arguments
+p16|Emby.Server.Implementations/Library/LibraryManager.cs|public LibraryManager(|9|constructor
+p17|Emby.Server.Implementations/Library/LibraryManager.cs|private readonly ILogger<LibraryManager> _logger;|30|field
+p18|MediaBrowser.Model/Dto/BaseItemDto.cs|public string Name { get; set; }|16|auto-property
+p19|Jellyfin.Api/Controllers/ItemsController.cs|public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItems(|62|controller action
+p20|Jellyfin.Api/Controllers/SearchController.cs|switch (|1|switch statement
+p20b|Jellyfin.Api/Controllers/ItemsController.cs|collectionType switch|17|switch expression
+p21|src/Jellyfin.Extensions/StringExtensions.cs|public static ReadOnlySpan<char> LeftPart(|35|extension method
+p22|Jellyfin.Server.Implementations/Users/UserManager.cs|$"|1|interpolated string
+p23|MediaBrowser.Controller/Library/ILibraryManager.cs|public interface ILibraryManager|18|interface header
+p24|tests/Jellyfin.Controller.Tests/Entities/BaseItemTests.cs|public void BaseItem_ModifySortChunks_Valid(|14|test method
+p25|Emby.Server.Implementations/Library/LibraryManager.cs|((Folder)item)|2|cast

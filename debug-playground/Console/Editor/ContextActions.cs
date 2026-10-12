@@ -164,7 +164,15 @@ public class ContextActions
     private bool Ready() => true;
 
     // TYPE:ctx-inline — Alt+Enter on `sum` in Inline: "Inline variable". EXPECT: the declaration gone and `return (a + b) * 2 + Math.Abs(a +
-    // b);` (in parentheses where needed). The same on `var` of sum (0.1.72). NOT offered on `changed` (written again).
+    // b);` (in parentheses where needed). The same on `var` of sum (0.1.72). NOT offered on `changed` (written again), nor on `list` in
+    // InlineCreation (a `new` used twice would make two lists — 0.1.168, Jellyfin № 19).
+    public int InlineCreation()
+    {
+        var list = new List<int>();
+        list.Add(1);
+        return list.Count;
+    }
+
     public int Inline(int a, int b)
     {
         var sum = a + b;

@@ -69,7 +69,7 @@ class PostfixAndSurroundTest : BasePlatformTestCase() {
             "class A { void M() {\n        if (ready)\n        {\n            <caret>\n        }\n    } }",
             expand(t.getValue(".if"), "class A { void M() {\n        ready<caret>\n    } }"),
         )
-        assertEquals("class A { void M() { return Make(1)<caret>; } }".replace("<caret>;", ";<caret>"), expand(t.getValue(".return"), "class A { void M() { Make(1)<caret> } }"))
+        assertEquals("class A { int M() { return Make(1)<caret>; } }".replace("<caret>;", ";<caret>"), expand(t.getValue(".return"), "class A { int M() { Make(1)<caret> } }"))
         assertEquals("class A { void M() { var load = Load();<caret> } }", expand(t.getValue(".var"), "class A { void M() { Load()<caret> } }"))
         assertEquals("class A { void M() { var x = !ready<caret>; } }", expand(t.getValue(".not"), "class A { void M() { var x = ready<caret>; } }"))
         // as choosing `await` in completion, the method becomes async
@@ -102,6 +102,41 @@ class PostfixAndSurroundTest : BasePlatformTestCase() {
         myFixture.configureByText("D.cs", "class D { void M() {\n    ready.if<caret>\n} }")
         myFixture.type('\t')
         assertEquals("class D { void M() {\n    if (ready)\n    {\n        \n    }\n} }", myFixture.editor.document.text)
+    }
+
+    /** `oldName.Length > 0.if`: the whole expression of the statement, as Rider (Jellyfin № 3; the number's `0.` hid the postfix). */
+    fun testStatementTemplatesTakeTheWholeExpressionOfTheStatement() {
+        fun whole(text: String): String? {
+            val offset = text.indexOf('|')
+            val clean = text.replace("|", "")
+            return CSharpExpressions.postfixRange(clean, offset)?.let { clean.substring(it.startOffset, it.endOffset) }
+        }
+        assertEquals("oldName.Length > 0", whole("{ oldName.Length > 0| }"))
+        assertEquals("a && b.IsReady", whole("{ a && b.IsReady| }"))
+        // mid-statement the operand chain stays: `var x = a > b` takes `b`
+        assertEquals("b", whole("{ var x = a > b| }"))
+        myFixture.configureByText("E.cs", "class E { void M(string oldName) {\n    oldName.Length > 0.if<caret>\n} }")
+        myFixture.type('\t')
+        assertEquals("class E { void M(string oldName) {\n    if (oldName.Length > 0)\n    {\n        \n    }\n} }", myFixture.editor.document.text)
+    }
+
+    /** `.return` not where the function returns nothing (`void`, `async Task`): it would be CS0127 / CS1997 (Jellyfin № 11). */
+    fun testReturnOnlyWhereAValueIsReturned() {
+        io.github.dotnetsupport.lang.CSharpSyntaxTrees.forceNativeTreeForTests(true)
+        try {
+            val t = templates()
+            fun applicable(text: String): Boolean {
+                myFixture.configureByText("R.cs", text)
+                val context = myFixture.file.findElementAt(myFixture.caretOffset - 1)!!
+                return t.getValue(".return").isApplicable(context, myFixture.editor.document, myFixture.caretOffset)
+            }
+            assertFalse(applicable("class R { async System.Threading.Tasks.Task M(string s) { s.Trim()<caret> } }"))
+            assertFalse(applicable("class R { void M(string s) { s.Trim()<caret> } }"))
+            assertTrue(applicable("class R { string M(string s) { s.Trim()<caret> } }"))
+            assertTrue(applicable("class R { async System.Threading.Tasks.Task<string> M(string s) { s.Trim()<caret> } }"))
+        } finally {
+            io.github.dotnetsupport.lang.CSharpSyntaxTrees.forceNativeTreeForTests(null)
+        }
     }
 
     private fun surround(description: String, before: String): String {

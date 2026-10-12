@@ -1,0 +1,473 @@
+######## t01 — live template switch + Tab — keys: t:switch;;w:1200;;k:{TAB};;w:1500
+        public async Task RenameUser(Guid userId, string oldName, string newName)
+        {
+            ThrowIfInvalidUsername(newName);
+            switch (<caret>)
+            {
+                case :
+                    
+                    break;
+                default:
+                    break;
+            }
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+template running, stop 0
+list (867): newName, new, oldName, userId, _appHost, _authenticationProviders, _dbProvider, _defaultAuthenticationProvider  selected=newName
+
+######## t02 — live template if + Tab — keys: t:if;;w:1200;;k:{TAB};;w:1500
+        public async Task RenameUser(Guid userId, string oldName, string newName)
+        {
+            ThrowIfInvalidUsername(newName);
+            if (<caret>)
+            {
+                
+            }
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+template running, stop 0
+list (867): newName, new, oldName, userId, _appHost, _authenticationProviders, _dbProvider, _defaultAuthenticationProvider  selected=newName
+
+######## t03 — live template foreach + Tab — keys: t:foreach;;w:1200;;k:{TAB};;w:1500
+        public async Task RenameUser(Guid userId, string oldName, string newName)
+        {
+            ThrowIfInvalidUsername(newName);
+            foreach (var item in <caret>)
+            {
+                
+            }
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+template running, stop 0
+list (867): newName, new, oldName, userId, _appHost, _authenticationProviders, _dbProvider, _defaultAuthenticationProvider  selected=newName
+
+######## t04 — live template for + Tab — keys: t:for;;w:1200;;k:{TAB};;w:1500
+        public async Task RenameUser(Guid userId, string oldName, string newName)
+        {
+            ThrowIfInvalidUsername(newName);
+            for (var i<caret> = 0; i < length; i++)
+            {
+                
+            }
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+selection: [i]
+template running, stop 0
+
+######## t05 — live template try + Tab — keys: t:try;;w:1200;;k:{TAB};;w:1500
+            {
+                
+            }
+            catch (Exception<caret> e)
+            {
+                throw;
+            }
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+selection: [Exception]
+template running, stop 0
+
+######## t06 — live template prop + Tab — keys: t:prop;;w:1200;;k:{TAB};;w:1500
+        private readonly IDbContextFactory<JellyfinDbContext> _dbProvider;
+        private readonly IEventManager _eventManager;
+        private readonly INetworkManager _networkManager;
+        public int<caret> MyProperty { get; set; }
+        private readonly IApplicationHost _appHost;
+        private readonly IImageProcessor _imageProcessor;
+        private readonly ILogger<UserManager> _logger;
+        private readonly IReadOnlyCollection<IPasswordResetProvider> _passwordResetProviders;
+        private readonly IReadOnlyCollection<IAuthenticationProvider> _authenticationProviders;
+        private readonly InvalidAuthProvider _invalidAuthProvider;
+        private readonly DefaultAuthenticationProvider _defaultAuthenticationProvider;
+        private readonly DefaultPasswordResetProvider _defaultPasswordResetProvider;
+        private readonly IServerConfigurationManager _serverConfigurationManager;
+
+selection: [int]
+template running, stop 0
+
+######## t07 — live template ctor + Tab — keys: t:ctor;;w:1200;;k:{TAB};;w:1500
+        private readonly IDbContextFactory<JellyfinDbContext> _dbProvider;
+        private readonly IEventManager _eventManager;
+        private readonly INetworkManager _networkManager;
+        public UserManager(<caret>)
+        {
+            
+        }
+        private readonly IApplicationHost _appHost;
+        private readonly IImageProcessor _imageProcessor;
+        private readonly ILogger<UserManager> _logger;
+        private readonly IReadOnlyCollection<IPasswordResetProvider> _passwordResetProviders;
+        private readonly IReadOnlyCollection<IAuthenticationProvider> _authenticationProviders;
+        private readonly InvalidAuthProvider _invalidAuthProvider;
+        private readonly DefaultAuthenticationProvider _defaultAuthenticationProvider;
+template running, stop 1
+
+######## t08 — keyword try from the list with Tab — keys: t:tr;;w:1500;;k:{TAB};;w:1500
+        public async Task RenameUser(Guid userId, string oldName, string newName)
+        {
+            ThrowIfInvalidUsername(newName);
+            true<caret>
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+            using (await _userLock.LockAsync(userId).ConfigureAwait(false))
+            {
+                var dbContext = await _dbProvider.CreateDbContextAsync().ConfigureAwait(false);
+
+######## t09 — keyword switch from the list with Tab — keys: t:sw;;w:1500;;k:{TAB};;w:1500
+        public async Task RenameUser(Guid userId, string oldName, string newName)
+        {
+            ThrowIfInvalidUsername(newName);
+            switch (<caret>)
+            {
+                case :
+                    
+                    break;
+                default:
+                    break;
+            }
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+template running, stop 0
+list (867): newName, new, oldName, userId, _appHost, _authenticationProviders, _dbProvider, _defaultAuthenticationProvider  selected=newName
+
+######## t10 — keyword return from the list with Tab — keys: t:ret;;w:1500;;k:{TAB};;w:1500
+        public async Task RenameUser(Guid userId, string oldName, string newName)
+        {
+            ThrowIfInvalidUsername(newName);
+            ret<caret>
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+            using (await _userLock.LockAsync(userId).ConfigureAwait(false))
+            {
+                var dbContext = await _dbProvider.CreateDbContextAsync().ConfigureAwait(false);
+
+######## t11 — gray: first case of a switch over an enum — keys: t:switch (kind);;k:{ENTER};;t:{;;k:{ENTER};;w:2500
+            foreach (var (kind, value) in incoming)
+            {
+                dbUser.Permissions.Add(new Permission(kind, value));
+                switch (kind){<caret>}
+            }
+        }
+
+        private static void SyncPreferences(User dbUser, ICollection<Preference> source)
+        {
+            var incoming = new Dictionary<PreferenceKind, string>();
+            foreach (var preference in source)
+            {
+                incoming[preference.Kind] = preference.Value;
+            }
+
+######## t12 — gray: case accepted with Tab, then Enter (break?) — keys: t:switch (kind);;k:{ENTER};;t:{;;k:{ENTER};;w:2500;;k:{TAB};;w:500;;k:{ENTER};;w:2500
+            foreach (var (kind, value) in incoming)
+            {
+                dbUser.Permissions.Add(new Permission(kind, value));
+                switch (kind){<caret>}
+            }
+        }
+
+        private static void SyncPreferences(User dbUser, ICollection<Preference> source)
+        {
+            var incoming = new Dictionary<PreferenceKind, string>();
+            foreach (var preference in source)
+            {
+                incoming[preference.Kind] = preference.Value;
+            }
+
+######## t13 — gray: null-guard body — keys: t:if (oldName == null);;k:{ENTER};;t:{;;k:{ENTER};;w:2500
+            ThrowIfInvalidUsername(newName);
+            if (oldName == null)
+            {
+                <caret>
+            }
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+            using (await _userLock.LockAsync(userId).ConfigureAwait(false))
+            {
+gray: [return;]
+
+-- after Tab on the gray text:
+            ThrowIfInvalidUsername(newName);
+            if (oldName == null)
+            {
+                return;<caret>
+            }
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+            using (await _userLock.LockAsync(userId).ConfigureAwait(false))
+            {
+
+######## t14 — gray: catch body — keys: t:try;;k:{ENTER};;t:{;;k:{ENTER};;k:{DOWN};;k:{END};;k:{ENTER};;t:catch (Exception e);;k:{ESC};;k:{ENTER};;t:{;;k:{ENTER};;w:2500
+            }
+            catch (Exception e)
+            {
+                <caret>
+            }
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+            using (await _userLock.LockAsync(userId).ConfigureAwait(false))
+            {
+gray: [_logger.LogError(e, "RenameUser failed");]
+
+-- after Tab on the gray text:
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "RenameUser failed");<caret>
+            }
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+            using (await _userLock.LockAsync(userId).ConfigureAwait(false))
+            {
+
+######## t15 — gray: foreach collection — keys: t:foreach (var preference in ;;w:2500
+        private static void SyncPreferences(User dbUser, ICollection<Preference> source)
+        {
+            var incoming = new Dictionary<PreferenceKind, string>();
+            foreach (ValidUsernameRegex preference in <caret>)
+            foreach (var preference in source)
+            {
+                incoming[preference.Kind] = preference.Value;
+            }
+
+            foreach (var existing in dbUser.Preferences)
+            {
+                if (incoming.Remove(existing.Kind, out var value))
+                {
+                    existing.Value = value;
+
+######## t16 — gray: argument list — keys: t:await UpdatePolicyAsync(;;w:2500
+        public async Task RenameUser(Guid userId, string oldName, string newName)
+        {
+            ThrowIfInvalidUsername(newName);
+            await UpdatePolicyAsync(<caret>)
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+            using (await _userLock.LockAsync(userId).ConfigureAwait(false))
+            {
+                var dbContext = await _dbProvider.CreateDbContextAsync().ConfigureAwait(false);
+gray: [userId]
+
+-- after Tab on the gray text:
+        public async Task RenameUser(Guid userId, string oldName, string newName)
+        {
+            ThrowIfInvalidUsername(newName);
+            await UpdatePolicyAsync(userId<caret>)
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+            using (await _userLock.LockAsync(userId).ConfigureAwait(false))
+            {
+                var dbContext = await _dbProvider.CreateDbContextAsync().ConfigureAwait(false);
+
+######## t17 — gray: after new — keys: t:var policy = new ;;w:2500
+        public async Task RenameUser(Guid userId, string oldName, string newName)
+        {
+            ThrowIfInvalidUsername(newName);
+            var policy = new <caret>
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+            using (await _userLock.LockAsync(userId).ConfigureAwait(false))
+            {
+                var dbContext = await _dbProvider.CreateDbContextAsync().ConfigureAwait(false);
+list (789): LockRecursionPolicy, Lock, UserPolicy, ConsoleColor, Console, string, UserDto, ILogger  selected=LockRecursionPolicy
+
+######## t18 — gray/list: override — keys: t:public override ;;w:2500
+        private readonly IDbContextFactory<JellyfinDbContext> _dbProvider;
+        private readonly IEventManager _eventManager;
+        private readonly INetworkManager _networkManager;
+        public override <caret>
+        private readonly IApplicationHost _appHost;
+        private readonly IImageProcessor _imageProcessor;
+        private readonly ILogger<UserManager> _logger;
+        private readonly IReadOnlyCollection<IPasswordResetProvider> _passwordResetProviders;
+        private readonly IReadOnlyCollection<IAuthenticationProvider> _authenticationProviders;
+        private readonly InvalidAuthProvider _invalidAuthProvider;
+        private readonly DefaultAuthenticationProvider _defaultAuthenticationProvider;
+        private readonly DefaultPasswordResetProvider _defaultPasswordResetProvider;
+        private readonly IServerConfigurationManager _serverConfigurationManager;
+
+
+######## t19 — postfix .if — keys: t:oldName.Length > 0.if;;w:1200;;k:{TAB};;w:1500
+        public async Task RenameUser(Guid userId, string oldName, string newName)
+        {
+            ThrowIfInvalidUsername(newName);
+            oldName.Length > 0.if (<caret>)
+            {
+                
+            }
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+template running, stop 0
+list (867): newName, new, oldName, userId, _appHost, _authenticationProviders, _dbProvider, _defaultAuthenticationProvider  selected=newName
+
+######## t20 — postfix .foreach — keys: t:newName.ToCharArray().foreach;;w:1200;;k:{TAB};;w:1500
+        public async Task RenameUser(Guid userId, string oldName, string newName)
+        {
+            ThrowIfInvalidUsername(newName);
+            foreach (var item<caret> in newName.ToCharArray())
+            {
+                
+            }
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+selection: [item]
+template running, stop 0
+
+######## t21 — postfix .var — keys: t:newName.ToUpperInvariant().var;;w:1200;;k:{TAB};;w:1500
+        public async Task RenameUser(Guid userId, string oldName, string newName)
+        {
+            ThrowIfInvalidUsername(newName);
+            var toUpperInvariant<caret> = newName.ToUpperInvariant();
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+            using (await _userLock.LockAsync(userId).ConfigureAwait(false))
+            {
+                var dbContext = await _dbProvider.CreateDbContextAsync().ConfigureAwait(false);
+selection: [toUpperInvariant]
+template running, stop 0
+
+######## t22 — postfix .null — keys: t:oldName.null;;w:1200;;k:{TAB};;w:1500
+            ThrowIfInvalidUsername(newName);
+            if (oldName == null)
+            {
+                <caret>
+            }
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+            using (await _userLock.LockAsync(userId).ConfigureAwait(false))
+            {
+
+######## t23 — postfix .notnull — keys: t:oldName.notnull;;w:1200;;k:{TAB};;w:1500
+            ThrowIfInvalidUsername(newName);
+            if (oldName != null)
+            {
+                <caret>
+            }
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+            using (await _userLock.LockAsync(userId).ConfigureAwait(false))
+            {
+
+######## t24 — postfix .await — keys: t:_dbProvider.CreateDbContextAsync().await;;w:1200;;k:{TAB};;w:1500
+        public async Task RenameUser(Guid userId, string oldName, string newName)
+        {
+            ThrowIfInvalidUsername(newName);
+            await _dbProvider.CreateDbContextAsync()<caret>
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+            using (await _userLock.LockAsync(userId).ConfigureAwait(false))
+            {
+                var dbContext = await _dbProvider.CreateDbContextAsync().ConfigureAwait(false);
+
+######## t25 — postfix .return (in a Task method) — keys: t:newName.Trim().return;;w:1200;;k:{TAB};;w:1500
+        public async Task RenameUser(Guid userId, string oldName, string newName)
+        {
+            ThrowIfInvalidUsername(newName);
+            return newName.Trim();<caret>
+
+            if (oldName.Equals(newName, StringComparison.Ordinal))
+            {
+                throw new ArgumentException("The new and old names must be different.");
+            }
+
+            User user = null!; // user is never actually null where its used afterwards so we can just ignore.
+            using (await _userLock.LockAsync(userId).ConfigureAwait(false))
+            {
+                var dbContext = await _dbProvider.CreateDbContextAsync().ConfigureAwait(false);
+

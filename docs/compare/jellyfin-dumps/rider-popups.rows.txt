@@ -1,0 +1,785 @@
+p01 ShowIntentionActions — method header — «public async Task RenameUser(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    To explicit implementation
+    To virtual
+    Make method 'RenameUser' partial
+    Change signature…
+    Implements method from 'IUserManager' interface
+    Incoming Calls
+    Outgoing Calls
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p01 Refactorings.QuickListPopupAction — method header — «public async Task RenameUser(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Change Signature
+    Inline Method
+    Move Instance Method
+    Rename
+    Safe Delete
+    Extract Interface
+    Extract Superclass
+    Extract Class
+    Extract Members to Partial
+    Pull Members Up
+    Push Members Down
+    Transform Parameters
+p01 Generate — method header — «public async Task RenameUser(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+p02 ShowIntentionActions — parameter — «Guid userId, string oldName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Check parameter for null
+    Create overload without parameter
+    Transform parameters…
+    Chop parameters list
+    Implements method from 'IUserManager' interface
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p02 Refactorings.QuickListPopupAction — parameter — «Guid userId, string oldName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Change Signature
+    Use Base Type Where Possible
+    Transform Parameters
+p02 Generate — parameter — «Guid userId, string oldName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+p03 ShowIntentionActions — if statement — «if (oldName.Equals(newName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Invert 'if'
+    Rider inspection: 'Use preferred braces style'
+    Navigate To…
+    Inspect This…
+    Generate Code…
+p03 Refactorings.QuickListPopupAction — if statement — «if (oldName.Equals(newName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+p03 Generate — if statement — «if (oldName.Equals(newName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+p04 ShowIntentionActions — foreach — «foreach (var accessSchedule in user.AccessSchedules)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Rider inspection: 'Use preferred braces style'
+    Navigate To…
+    Inspect This…
+    Generate Code…
+p04 Refactorings.QuickListPopupAction — foreach — «foreach (var accessSchedule in user.AccessSchedules)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+p04 Generate — foreach — «foreach (var accessSchedule in user.AccessSchedules)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+p05 ShowIntentionActions — string.Format — «throw new ArgumentException(string.Format(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Add exception documentation
+    Import static members
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p05 Refactorings.QuickListPopupAction — string.Format — «throw new ArgumentException(string.Format(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Introduce Field
+    Introduce Variable
+    Introduce Parameter
+    Use Base Type Where Possible
+p05 Generate — string.Format — «throw new ArgumentException(string.Format(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+p06 ShowIntentionActions — var — «var eventArgs = new UserUpdatedEventArgs» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Specify type explicitly
+    Split variable declaration and initialization
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p06 Refactorings.QuickListPopupAction — var — «var eventArgs = new UserUpdatedEventArgs» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Move Type to Another Namespace
+    Move to Another File
+    Move to Folder
+    Rename
+    Safe Delete
+    Extract Interface
+    Extract Superclass
+    Extract Class
+    Pull Members Up
+    Push Members Down
+    Use Base Type Where Possible
+    Copy Type
+p06 Generate — var — «var eventArgs = new UserUpdatedEventArgs» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+p07 ShowIntentionActions — LINQ method chain — «.Select(user => user.Id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Add exception documentation
+    To static method invocation
+    Generate try-catch block…
+    Navigate To…
+    Inspect This…
+    Generate Code…
+p07 Refactorings.QuickListPopupAction — LINQ method chain — «.Select(user => user.Id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+p07 Generate — LINQ method chain — «.Select(user => user.Id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+p08 ShowIntentionActions — await — «await _eventManager.PublishAsync(eventArgs)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    'ConfigureAwait' analysis:
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p08 Refactorings.QuickListPopupAction — await — «await _eventManager.PublishAsync(eventArgs)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Introduce Variable
+p08 Generate — await — «await _eventManager.PublishAsync(eventArgs)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+p09 ShowIntentionActions — null check — «if (user.ProfileImage is null)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Check expression for null
+    Assert expression is not null
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p09 Refactorings.QuickListPopupAction — null check — «if (user.ProfileImage is null)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Rename
+    Safe Delete
+    Introduce Field
+    Introduce Variable
+    Introduce Parameter
+p09 Generate — null check — «if (user.ProfileImage is null)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+p10 ShowIntentionActions — conditional ?: — «? await dbContext.Users.AsQueryable()» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Invert condition
+    Convert to 'if' statement
+    Navigate To…
+    Inspect This…
+    Generate Code…
+p10 Refactorings.QuickListPopupAction — conditional ?: — «? await dbContext.Users.AsQueryable()» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+p10 Generate — conditional ?: — «? await dbContext.Users.AsQueryable()» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+p11 ShowIntentionActions — local with new — «var incoming = new Dictionary<PermissionKind, bool>();» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Check variable for null
+    Split variable declaration and initialization
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p11 Refactorings.QuickListPopupAction — local with new — «var incoming = new Dictionary<PermissionKind, bool>();» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Inline Variable
+    Rename
+    Introduce Field
+    Introduce Parameter
+p11 Generate — local with new — «var incoming = new Dictionary<PermissionKind, bool>();» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+p12 ShowIntentionActions — class header — «public partial class UserManager» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+p12 Refactorings.QuickListPopupAction — class header — «public partial class UserManager» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Move Type to Another Namespace
+    Move to Another File
+    Move to Folder
+    Rename
+    Safe Delete
+    Extract Interface
+    Extract Superclass
+    Extract Class
+    Extract Members to Partial
+    Pull Members Up
+    Push Members Down
+    Use Base Type Where Possible
+    Copy Type
+p12 Generate — class header — «public partial class UserManager» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+p13 ShowIntentionActions — using directive — «using System.Linq;» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Sort 'using' directives…
+    Convert to 'global using'
+    Navigate To…
+    Refactor This…
+    Inspect This…
+p13 Refactorings.QuickListPopupAction — using directive — «using System.Linq;» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Convert to Global Using
+p13 Generate — using directive — «using System.Linq;» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+p14 ShowIntentionActions — lambda — «.FirstOrDefault(user => user.Id == id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Check expression for null
+    Roslyn analyzer: 'RS0030: Не использовать запрещенные API'
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p14 Refactorings.QuickListPopupAction — lambda — «.FirstOrDefault(user => user.Id == id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Rename
+    Introduce Field
+    Introduce Variable
+    Introduce Parameter
+p14 Generate — lambda — «.FirstOrDefault(user => user.Id == id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+p15 ShowIntentionActions — constructor call with arguments — «var user = new User(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Convert initializer to assignment
+    Initialize other members
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p15 Refactorings.QuickListPopupAction — constructor call with arguments — «var user = new User(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Change Signature
+    Move Type to Another Namespace
+    Move to Another File
+    Move to Folder
+    Rename
+    Safe Delete
+    Introduce Field
+    Introduce Variable
+    Introduce Parameter
+    Extract Interface
+    Extract Superclass
+    Extract Class
+    Pull Members Up
+    Push Members Down
+    Use Base Type Where Possible
+    Copy Type
+p15 Generate — constructor call with arguments — «var user = new User(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+p16 ShowIntentionActions — constructor — «public LibraryManager(» (Emby.Server.Implementations/Library/LibraryManager.cs)
+    To private
+    Make constructor 'LibraryManager' partial
+    Change signature…
+    To factory method
+    Incoming Calls
+    Outgoing Calls
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p16 Refactorings.QuickListPopupAction — constructor — «public LibraryManager(» (Emby.Server.Implementations/Library/LibraryManager.cs)
+    Change Signature
+    Rename
+    Safe Delete
+    Extract Interface
+    Extract Superclass
+    Extract Class
+    Extract Members to Partial
+    Pull Members Up
+    Push Members Down
+    Replace Constructor with Factory Method
+    Transform Parameters
+p16 Generate — constructor — «public LibraryManager(» (Emby.Server.Implementations/Library/LibraryManager.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+p17 ShowIntentionActions — field — «private readonly ILogger<LibraryManager> _logger;» (Emby.Server.Implementations/Library/LibraryManager.cs)
+    Encapsulate field
+    Type Hierarchy
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p17 Refactorings.QuickListPopupAction — field — «private readonly ILogger<LibraryManager> _logger;» (Emby.Server.Implementations/Library/LibraryManager.cs)
+    Move Type to Another Namespace
+    Move to Another File
+    Move to Folder
+    Rename
+    Safe Delete
+    Extract Interface
+    Extract Superclass
+    Extract Class
+    Extract Members to Partial
+    Pull Members Up
+    Push Members Down
+    Use Base Type Where Possible
+    Copy Type
+p17 Generate — field — «private readonly ILogger<LibraryManager> _logger;» (Emby.Server.Implementations/Library/LibraryManager.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+p18 ShowIntentionActions — auto-property — «public string Name { get; set; }» (MediaBrowser.Model/Dto/BaseItemDto.cs)
+    To property with 'field' keyword
+    Initialize property from constructor
+    To property with backing field
+    To computed property
+    To private
+    To abstract
+    Make property 'Name' partial
+    Change signature…
+    Value Destination
+    Value Origin
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p18 Refactorings.QuickListPopupAction — auto-property — «public string Name { get; set; }» (MediaBrowser.Model/Dto/BaseItemDto.cs)
+    Change Signature
+    Rename
+    Safe Delete
+    Extract Interface
+    Extract Superclass
+    Extract Class
+    Extract Members to Partial
+    Pull Members Up
+    Push Members Down
+    Convert Property to Method(s)
+    Make Static
+    Transform Parameters
+p18 Generate — auto-property — «public string Name { get; set; }» (MediaBrowser.Model/Dto/BaseItemDto.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+p19 ShowIntentionActions — controller action — «public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItems(» (Jellyfin.Api/Controllers/ItemsController.cs)
+    To private
+    To virtual
+    Make method 'GetItems' partial
+    Change signature…
+    Incoming Calls
+    Outgoing Calls
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p19 Refactorings.QuickListPopupAction — controller action — «public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItems(» (Jellyfin.Api/Controllers/ItemsController.cs)
+    Change Signature
+    Inline Method
+    Rename
+    Safe Delete
+    Extract Interface
+    Extract Superclass
+    Extract Class
+    Extract Members to Partial
+    Pull Members Up
+    Push Members Down
+    Make Static
+    Transform Parameters
+p19 Generate — controller action — «public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItems(» (Jellyfin.Api/Controllers/ItemsController.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+p20 ShowIntentionActions — switch statement — «switch (» (Jellyfin.Api/Controllers/SearchController.cs)
+    To 'if' statements
+    Generate type patterns…
+    Add condition component
+    Navigate To…
+    Inspect This…
+    Generate Code…
+p20 Refactorings.QuickListPopupAction — switch statement — «switch (» (Jellyfin.Api/Controllers/SearchController.cs)
+p20 Generate — switch statement — «switch (» (Jellyfin.Api/Controllers/SearchController.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+p20b ShowIntentionActions — switch expression — «collectionType switch» (Jellyfin.Api/Controllers/ItemsController.cs)
+    To 'switch' statement
+    To 'if' statements
+    To ?: expression
+    Add condition component
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p20b Refactorings.QuickListPopupAction — switch expression — «collectionType switch» (Jellyfin.Api/Controllers/ItemsController.cs)
+    Introduce Field
+    Introduce Variable
+    Introduce Parameter
+p20b Generate — switch expression — «collectionType switch» (Jellyfin.Api/Controllers/ItemsController.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+p21 ShowIntentionActions — extension method — «public static ReadOnlySpan<char> LeftPart(» (src/Jellyfin.Extensions/StringExtensions.cs)
+    Convert to extension block (3 methods)
+    To private
+    To virtual
+    Make method 'LeftPart' partial
+    Convert this method to extension block
+    Change signature…
+    Rider inspection: 'Convert extension methods to extension block'
+    Incoming Calls
+    Outgoing Calls
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p21 Refactorings.QuickListPopupAction — extension method — «public static ReadOnlySpan<char> LeftPart(» (src/Jellyfin.Extensions/StringExtensions.cs)
+    Change Signature
+    Inline Method
+    Move to Another Type
+    Rename
+    Safe Delete
+    Extract Class
+    Extract Members to Partial
+    Extension Method to Plain Static
+    Transform Parameters
+p21 Generate — extension method — «public static ReadOnlySpan<char> LeftPart(» (src/Jellyfin.Extensions/StringExtensions.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+p22 ShowIntentionActions — interpolated string — «$"» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    To string interpolation
+    To regular string
+    To raw string
+    Add argument name 'pattern'
+    Configure Inlay Hints
+    Navigate To…
+    Refactor This…
+    Inspect This…
+p22 Refactorings.QuickListPopupAction — interpolated string — «$"» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+    Introduce Field
+    Introduce Parameter
+p22 Generate — interpolated string — «$"» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+p23 ShowIntentionActions — interface header — «public interface ILibraryManager» (MediaBrowser.Controller/Library/ILibraryManager.cs)
+    To internal
+    Create derived type
+    Make partial
+    Create unit test
+    Copy type…
+    Interface 'ILibraryManager' is implemented
+    Type Hierarchy
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p23 Refactorings.QuickListPopupAction — interface header — «public interface ILibraryManager» (MediaBrowser.Controller/Library/ILibraryManager.cs)
+    Move Type to Another Namespace
+    Move to Another File
+    Move to Folder
+    Rename
+    Safe Delete
+    Extract Interface
+    Extract Members to Partial
+    Push Members Down
+    Convert Interface to Abstract Class
+    Use Base Type Where Possible
+    Copy Type
+p23 Generate — interface header — «public interface ILibraryManager» (MediaBrowser.Controller/Library/ILibraryManager.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+p24 ShowIntentionActions — test method — «public void BaseItem_ModifySortChunks_Valid(» (tests/Jellyfin.Controller.Tests/Entities/BaseItemTests.cs)
+    Run
+    Debug
+    Cover
+    Profile
+    Create New Session
+    To private
+    To virtual
+    To statement body
+    Make method 'BaseItem_ModifySortChunks_Valid' partial
+    Change signature…
+    Incoming Calls
+    Outgoing Calls
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p24 Refactorings.QuickListPopupAction — test method — «public void BaseItem_ModifySortChunks_Valid(» (tests/Jellyfin.Controller.Tests/Entities/BaseItemTests.cs)
+    Change Signature
+    Inline Method
+    Rename
+    Safe Delete
+    Extract Interface
+    Extract Superclass
+    Extract Class
+    Extract Members to Partial
+    Push Members Down
+    Convert method to indexer
+    Make Static
+    Transform Parameters
+p24 Generate — test method — «public void BaseItem_ModifySortChunks_Valid(» (tests/Jellyfin.Controller.Tests/Entities/BaseItemTests.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+p25 ShowIntentionActions — cast — «((Folder)item)» (Emby.Server.Implementations/Library/LibraryManager.cs)
+    To safe cast
+    Navigate To…
+    Refactor This…
+    Inspect This…
+    Generate Code…
+p25 Refactorings.QuickListPopupAction — cast — «((Folder)item)» (Emby.Server.Implementations/Library/LibraryManager.cs)
+    Move Type to Another Namespace
+    Move to Another File
+    Move to Folder
+    Rename
+    Safe Delete
+    Introduce Field
+    Introduce Variable
+    Introduce Parameter
+    Extract Interface
+    Extract Superclass
+    Extract Class
+    Pull Members Up
+    Push Members Down
+    Replace Constructor with Factory Method
+    Use Base Type Where Possible
+    Copy Type
+p25 Generate — cast — «((Folder)item)» (Emby.Server.Implementations/Library/LibraryManager.cs)
+    Constructor
+    Read-only properties
+    Properties
+    Missing members
+    Overriding members
+    Delegating members
+    Partial members
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern

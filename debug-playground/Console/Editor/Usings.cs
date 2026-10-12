@@ -75,7 +75,7 @@ public class Usings
     }
 
     // TYPE:using-wrap — Alt+Enter on `wrapped` in Wrap: "Wrap in 'using' statement". EXPECT: `using (var wrapped = …) { … }` around the rest
-    // of the method. NOT offered on `var text = wrapped.ReadLine();` (a call: whether it is disposable needs the types). Ctrl+Z.
+    // of the method. NOT offered on `var text = wrapped.ReadLine();` (a string, not disposable — 0.1.168, Jellyfin № 20). Ctrl+Z.
     public void Wrap()
     {
         var wrapped = new StringReader("wrap");

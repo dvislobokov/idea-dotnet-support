@@ -266,13 +266,28 @@ class CSharpUsingsTest : BasePlatformTestCase() {
         assertFalse("broken: no semicolon", available("class A { void M() { using var <caret>r = Open()\n } }", "Convert to 'using' statement"))
     }
 
-    fun testWrapInUsing() {
-        val before = "class A\n{\n    void M(string path)\n    {\n        var <caret>reader = new StreamReader(path);\n        Use(reader);\n    }\n}"
-        val after = "class A\n{\n    void M(string path)\n    {\n        using (var reader = new StreamReader(path))\n        {\n            Use(reader);\n        }\n    }\n}"
+    /** [block] with the index fixtures of the assemblies (`IDisposable`, `StringReader` of System.Runtime): whether a local is disposable is for the semantics. */
+    private fun withAssemblies(block: () -> Unit) {
+        io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment.setAssembliesForTests {
+            io.github.dotnetsupport.index.AssemblyIndexSet(listOf("System.Runtime", "System.Collections").map { name ->
+                val bytes = { n: String -> CSharpUsingsTest::class.java.getResourceAsStream("/index/$n")?.use { it.readBytes() } }
+                AssemblyIndex.read(bytes("$name.dnix")!!, bytes("$name.dnxd")?.let(io.github.dotnetsupport.index.AssemblyDocs::read))
+            })
+        }
+        try { block() } finally { io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment.setAssembliesForTests(null) }
+    }
+
+    fun testWrapInUsing() = withAssemblies {
+        val before = "using System.IO;\nclass A\n{\n    void M(string path)\n    {\n        var <caret>reader = new StringReader(path);\n        Use(reader);\n    }\n}"
+        val after = "using System.IO;\nclass A\n{\n    void M(string path)\n    {\n        using (var reader = new StringReader(path))\n        {\n            Use(reader);\n        }\n    }\n}"
         assertEquals(after, apply(before, "Wrap in 'using' statement"))
-        assertFalse("not a value of a call: whether it is disposable is for the semantics", available("class A { void M() { var <caret>r = Open(); } }", "Wrap in 'using' statement"))
-        assertFalse("not two variables", available("class A { void M() { StreamReader <caret>a = new(p), b = new(p); } }", "Wrap in 'using' statement"))
-        assertFalse("not a using declaration", available("class A { void M() { using var <caret>r = new R(); } }", "Wrap in 'using' statement"))
+        val head = "using System.IO;\nclass Dto { }\n"
+        // only what `using` can take (Jellyfin № 20): not a string, not a plain class, not a type nobody knows
+        assertFalse("a string", available(head + "class A { void M() { var <caret>s = \"x\"; } }", "Wrap in 'using' statement"))
+        assertFalse("not disposable", available(head + "class A { void M() { var <caret>d = new Dto(); } }", "Wrap in 'using' statement"))
+        assertFalse("unknown type", available("class A { void M() { var <caret>r = Open(); } }", "Wrap in 'using' statement"))
+        assertFalse("not two variables", available(head + "class A { void M(string p) { StringReader <caret>a = new(p), b = new(p); } }", "Wrap in 'using' statement"))
+        assertFalse("not a using declaration", available(head + "class A { void M(string p) { using var <caret>r = new StringReader(p); } }", "Wrap in 'using' statement"))
         assertFalse("not a const", available("class A { void M() { const string <caret>s = \"\"; } }", "Wrap in 'using' statement"))
     }
 
@@ -383,7 +398,7 @@ class CSharpUsingsTest : BasePlatformTestCase() {
     // ---- the playground
 
     /** `debug-playground/Console/Editor/Usings.cs`: every marker's place offers what its EXPECT says. */
-    fun testThePlaygroundScenario() {
+    fun testThePlaygroundScenario() = withAssemblies {
         val text = java.io.File("debug-playground/Console/Editor/Usings.cs").readText().replace("\r\n", "\n")
         for (marker in listOf("TYPE:using-var", "TYPE:using-await", "TYPE:using-directive", "TYPE:using-postfix", "TYPE:using-to-declaration",
             "TYPE:using-to-statement", "TYPE:using-wrap", "TYPE:using-sort", "TYPE:using-global")) assertTrue(marker, text.contains(marker))

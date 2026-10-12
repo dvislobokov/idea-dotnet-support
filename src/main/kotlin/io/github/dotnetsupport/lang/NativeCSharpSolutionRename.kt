@@ -45,6 +45,12 @@ object NativeCSharpSolutionRename {
         hierarchyAnswerForTests = answer
     }
 
+    /** Whether the last search for conflicts ran on the EDT (for the tests: it must not, the stub index is a slow operation there). */
+    @Volatile
+    @get:TestOnly
+    var conflictsOnEdtForTests: Boolean? = null
+        private set
+
     /** The other members of [target]'s hierarchy: those it overrides or implements (of the solution), and everything that overrides those. */
     fun family(project: Project, target: CSharpSearchTarget): List<CSharpSearchTarget> {
         val whole = CSharpSolutionSearch.withHierarchy(project, target, CSharpSemanticSession(project))
@@ -169,7 +175,11 @@ object NativeCSharpSolutionRename {
         }
         val written = NativeCSharpRename.written(name)
         if (written.removePrefix("@") == plan.oldName) return false
-        val conflicts = ReadAction.compute<List<String>, RuntimeException> { conflicts(project, plan, written) }
+        // under a progress, as the hierarchy and the plan: the stub index on the EDT is a slow operation the platform reports (docs/compare № 66)
+        val conflicts = ProgressManager.getInstance().runProcessWithProgressSynchronously<List<String>, RuntimeException>({
+            conflictsOnEdtForTests = ApplicationManager.getApplication().isDispatchThread
+            ReadAction.compute<List<String>, RuntimeException> { conflicts(project, plan, written) }
+        }, "Checking Conflicts of ${plan.oldName}", true, project)
         if (conflicts.isNotEmpty() && !confirm(project, plan, conflicts)) return false
         val documents = PsiDocumentManager.getInstance(project)
         val files = plan.ranges.keys.toList()

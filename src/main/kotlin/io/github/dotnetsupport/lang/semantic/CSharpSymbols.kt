@@ -180,10 +180,18 @@ class CSharpSemanticSession @JvmOverloads constructor(val project: Project, priv
 
     /**
      * The resolver of a file a declaration is in, to type that declaration; null when that would load the AST of a file nobody has open and
-     * the session must not ([loadsOtherFiles] false: a pass of colors, which reads other files through stubs only).
+     * the session must not ([loadsOtherFiles] false: a pass of colors, which reads other files through stubs only). A file open in an
+     * editor is read: what decides is whether it is open, not whether its AST happens to be in memory — that changed with the GC and with
+     * what other features had read, and two runs of the colors of one file gave a different number of names (6308 != 6316 on Jellyfin,
+     * the platform's idempotence check, docs/compare/jellyfin-2026-10-12.md № 79).
      */
     fun reachable(file: CSharpFile): CSharpNameResolver? =
-        if (loadsOtherFiles || file in resolvers || (file as? com.intellij.psi.impl.source.PsiFileImpl)?.treeElement != null) resolver(file) else null
+        if (loadsOtherFiles || file in resolvers || isOpen(file)) resolver(file) else null
+
+    private fun isOpen(file: CSharpFile): Boolean {
+        val virtualFile = file.virtualFile ?: return false
+        return com.intellij.openapi.fileEditor.FileEditorManager.getInstance(project).isFileOpen(virtualFile)
+    }
 
     internal fun globalUsings(file: CSharpFile): List<GlobalUsing> =
         globalUsings.getOrPut(CSharpSemanticEnvironment.projectOf(file)?.path.orEmpty()) { CSharpSemanticEnvironment.globalUsings(file) }

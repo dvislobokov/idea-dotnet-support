@@ -67,7 +67,15 @@ public class CompletionInsertion
         // TYPE:insertion-keyword-template — `tr` + Tab on the row `try  try catch`. EXPECT: the whole `try { } catch (Exception e) { throw; }`
         // block, `Exception` selected — the same as `try` typed in full + Tab; NOT a bare `try`. Likewise `sw` + Tab → `switch (value) { case … }`,
         // `fore` + Tab → the `foreach` block; `ret` + Tab → `return;` (no template of that name)
+
+        // TYPE:insertion-var-space — type `foreach (var` and a space, the list open by itself (the field `ValidUsernameRegex` below matches
+        // `var` by its humps). EXPECT: `foreach (var ` — the keyword stays; NOT `foreach (ValidUsernameRegex ` (Jellyfin probe t15, 0.1.168)
+
+        // TYPE:insertion-tr-try — type `tr` and look at the list. EXPECT: `try` above `true`; Tab right away → the `try { } catch` block,
+        // NOT `true` (Jellyfin probe t08, 0.1.168)
     }
+
+    private static readonly System.Text.RegularExpressions.Regex ValidUsernameRegex = new("^[a-z]+$");
 }
 
 public class InsertionOrder

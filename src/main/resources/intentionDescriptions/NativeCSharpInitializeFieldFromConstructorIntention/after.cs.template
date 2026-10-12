@@ -1,0 +1,6 @@
+private readonly ILogger _logger;
+
+public OrderService(<spot>ILogger logger</spot>)
+{
+    <spot>_logger = logger;</spot>
+}

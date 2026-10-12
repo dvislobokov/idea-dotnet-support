@@ -125,7 +125,8 @@ private class Colorer(private val file: CSharpFile) {
         return out.sortedBy { it.first.startOffset }.distinctBy { it.first }
     }
 
-    // other files through stubs only: their AST is not loaded for a pass of colors
+    // other files through stubs only: their AST is not loaded for a pass of colors (files open in an editor excepted, see
+    // CSharpSemanticSession.reachable)
     private val names by lazy { CSharpSemanticSession(file.project, loadsOtherFiles = false).resolver(file) }
 
     private fun bound(name: CSharpSimpleName): TextAttributesKey? =

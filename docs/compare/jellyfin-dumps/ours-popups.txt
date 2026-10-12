@@ -1,0 +1,1468 @@
+######## p01 ShowIntentionActions — method header — «public async Task RenameUser(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 169: public async Task RenameUser(Guid userId, string oldName, string newName)
+== window HeavyWeightWindow 275x84
+  list MyList rows 2
+    Add a partial part of 'UserManager'
+    Create test 'UserManagerTests'
+== window HeavyWeightWindow 345x71
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      The type becomes partial (when it is not yet) and a second file 
+      Type.Part.cs with another part of it is created in the same namespace.
+    </p>
+  </body>
+</html>
+]
+
+######## p01 Refactorings.QuickListPopupAction — method header — «public async Task RenameUser(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 169: public async Task RenameUser(Guid userId, string oldName, string newName)
+== window HeavyWeightWindow 247x169
+  list MyList rows 5
+    Rename… |      Shift+F6
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p01 Generate — method header — «public async Task RenameUser(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 169: public async Task RenameUser(Guid userId, string oldName, string newName)
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p02 ShowIntentionActions — parameter — «Guid userId, string oldName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 169: public async Task RenameUser(Guid userId, string oldName, string newName)
+== window HeavyWeightWindow 275x106
+  list MyList rows 3
+    Check parameter for null
+    Add a partial part of 'UserManager'
+    Create test 'UserManagerTests'
+== window HeavyWeightWindow 438x28
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [ArgumentNullException.ThrowIfNull(oldName);]
+
+######## p02 Refactorings.QuickListPopupAction — parameter — «Guid userId, string oldName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 169: public async Task RenameUser(Guid userId, string oldName, string newName)
+== window HeavyWeightWindow 247x138
+  list MyList rows 4
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p02 Generate — parameter — «Guid userId, string oldName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 169: public async Task RenameUser(Guid userId, string oldName, string newName)
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p03 ShowIntentionActions — if statement — «if (oldName.Equals(newName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 173: if (oldName.Equals(newName, StringComparison.Ordinal))
+== window HeavyWeightWindow 275x106
+  list MyList rows 3
+    Remove braces
+    Add a partial part of 'UserManager'
+    Create test 'UserManagerTests'
+== window HeavyWeightWindow 702x72
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [{
+    throw new ArgumentException("The new and old names must be different.");
+}]
+
+######## p03 Refactorings.QuickListPopupAction — if statement — «if (oldName.Equals(newName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 173: if (oldName.Equals(newName, StringComparison.Ordinal))
+== window HeavyWeightWindow 247x138
+  list MyList rows 4
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p03 Generate — if statement — «if (oldName.Equals(newName» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 173: if (oldName.Equals(newName, StringComparison.Ordinal))
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p04 ShowIntentionActions — foreach — «foreach (var accessSchedule in user.AccessSchedules)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 232: foreach (var accessSchedule in user.AccessSchedules)
+== window HeavyWeightWindow 275x128
+  list MyList rows 4
+    Remove braces
+    Add a partial part of 'UserManager'
+    Create test 'UserManagerTests'
+    Disable 'Types' Inlay Hints
+== window HeavyWeightWindow 953x94
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [{
+    dbUser.AccessSchedules.Add(new AccessSchedule(accessSchedule.DayOfWeek, accessSchedule.StartHour, accessSchedule.EndHour, dbUser.Id));
+}]
+
+######## p04 Refactorings.QuickListPopupAction — foreach — «foreach (var accessSchedule in user.AccessSchedules)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 232: foreach (var accessSchedule in user.AccessSchedules)
+== window HeavyWeightWindow 247x138
+  list MyList rows 4
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p04 Generate — foreach — «foreach (var accessSchedule in user.AccessSchedules)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 232: foreach (var accessSchedule in user.AccessSchedules)
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p05 ShowIntentionActions — string.Format — «throw new ArgumentException(string.Format(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 189: throw new ArgumentException(string.Format(
+== window HeavyWeightWindow 275x106
+  list MyList rows 3
+    Introduce variable
+    Add a partial part of 'UserManager'
+    Create test 'UserManagerTests'
+== window HeavyWeightWindow 382x79
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [var format = string.Format(] | [    newName);
+throw new ArgumentException(format);]
+
+######## p05 Refactorings.QuickListPopupAction — string.Format — «throw new ArgumentException(string.Format(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 189: throw new ArgumentException(string.Format(
+== window HeavyWeightWindow 247x169
+  list MyList rows 5
+    Introduce Variable
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p05 Generate — string.Format — «throw new ArgumentException(string.Format(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 189: throw new ArgumentException(string.Format(
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p06 ShowIntentionActions — var — «var eventArgs = new UserUpdatedEventArgs» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 207: var eventArgs = new UserUpdatedEventArgs(user);
+== window HeavyWeightWindow 275x150
+  list MyList rows 5
+    Inline variable
+    Use explicit type
+    Wrap in 'using' statement
+    Add a partial part of 'UserManager'
+    Create test 'UserManagerTests'
+== window HeavyWeightWindow 790x50
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [await _eventManager.PublishAsync(new UserUpdatedEventArgs(user)).ConfigureAwait(false);
+OnUserUpdated?.Invoke(this, new UserUpdatedEventArgs(user));]
+
+######## p06 Refactorings.QuickListPopupAction — var — «var eventArgs = new UserUpdatedEventArgs» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 207: var eventArgs = new UserUpdatedEventArgs(user);
+== window HeavyWeightWindow 247x200
+  list MyList rows 6
+    Rename… |      Shift+F6
+    Inline Variable
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p06 Generate — var — «var eventArgs = new UserUpdatedEventArgs» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 207: var eventArgs = new UserUpdatedEventArgs(user);
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p07 ShowIntentionActions — LINQ method chain — «.Select(user => user.Id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 112: .Select(user => user.Id)
+== window HeavyWeightWindow 275x106
+  list MyList rows 3
+    Introduce variable
+    Add a partial part of 'UserManager'
+    Create test 'UserManagerTests'
+== window HeavyWeightWindow 345x71
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      Puts the selected expression (or the call, member access or operator at 
+      the caret) into a new local declared before the statement, and lets you 
+      name it.
+    </p>
+  </body>
+</html>
+]
+
+######## p07 Refactorings.QuickListPopupAction — LINQ method chain — «.Select(user => user.Id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 112: .Select(user => user.Id)
+== window HeavyWeightWindow 247x200
+  list MyList rows 6
+    Rename… |      Shift+F6
+    Introduce Variable
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p07 Generate — LINQ method chain — «.Select(user => user.Id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 112: .Select(user => user.Id)
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p08 ShowIntentionActions — await — «await _eventManager.PublishAsync(eventArgs)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 208: await _eventManager.PublishAsync(eventArgs).ConfigureAwait(false);
+== window HeavyWeightWindow 275x84
+  list MyList rows 2
+    Add a partial part of 'UserManager'
+    Create test 'UserManagerTests'
+== window HeavyWeightWindow 345x71
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      The type becomes partial (when it is not yet) and a second file 
+      Type.Part.cs with another part of it is created in the same namespace.
+    </p>
+  </body>
+</html>
+]
+
+######## p08 Refactorings.QuickListPopupAction — await — «await _eventManager.PublishAsync(eventArgs)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 208: await _eventManager.PublishAsync(eventArgs).ConfigureAwait(false);
+== window HeavyWeightWindow 247x138
+  list MyList rows 4
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p08 Generate — await — «await _eventManager.PublishAsync(eventArgs)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 208: await _eventManager.PublishAsync(eventArgs).ConfigureAwait(false);
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p09 ShowIntentionActions — null check — «if (user.ProfileImage is null)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 237: if (user.ProfileImage is null)
+== window HeavyWeightWindow 275x84
+  list MyList rows 2
+    Add a partial part of 'UserManager'
+    Create test 'UserManagerTests'
+== window HeavyWeightWindow 345x71
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      The type becomes partial (when it is not yet) and a second file 
+      Type.Part.cs with another part of it is created in the same namespace.
+    </p>
+  </body>
+</html>
+]
+
+######## p09 Refactorings.QuickListPopupAction — null check — «if (user.ProfileImage is null)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 237: if (user.ProfileImage is null)
+== window HeavyWeightWindow 247x169
+  list MyList rows 5
+    Rename… |      Shift+F6
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p09 Generate — null check — «if (user.ProfileImage is null)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 237: if (user.ProfileImage is null)
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p10 ShowIntentionActions — conditional ?: — «? await dbContext.Users.AsQueryable()» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 321: ? await dbContext.Users.AsQueryable().Select(u => u.InternalId).MaxAsync().ConfigureAwait(false)
+== window HeavyWeightWindow 275x150
+  list MyList rows 5
+    Convert '?:' to 'if' statement
+    Introduce variable
+    Add a partial part of 'UserManager'
+    Create test 'UserManagerTests'
+    Disable 'Types' Inlay Hints
+== window HeavyWeightWindow 934x204
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [long max;
+if (await dbContext.Users.AsQueryable().AnyAsync().ConfigureAwait(false))
+{
+    max = await dbContext.Users.AsQueryable().Select(u => u.InternalId).MaxAsync().ConfigureAwait(false);
+}
+else
+{
+    max = 0;
+}]
+
+######## p10 Refactorings.QuickListPopupAction — conditional ?: — «? await dbContext.Users.AsQueryable()» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 321: ? await dbContext.Users.AsQueryable().Select(u => u.InternalId).MaxAsync().ConfigureAwait(false)
+== window HeavyWeightWindow 247x169
+  list MyList rows 5
+    Introduce Variable
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p10 Generate — conditional ?: — «? await dbContext.Users.AsQueryable()» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 321: ? await dbContext.Users.AsQueryable().Select(u => u.InternalId).MaxAsync().ConfigureAwait(false)
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p11 ShowIntentionActions — local with new — «var incoming = new Dictionary<PermissionKind, bool>();» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 265: var incoming = new Dictionary<PermissionKind, bool>();
+== window HeavyWeightWindow 275x150
+  list MyList rows 5
+    Inline variable
+    Use explicit type
+    Wrap in 'using' statement
+    Add a partial part of 'UserManager'
+    Create test 'UserManagerTests'
+== window HeavyWeightWindow 734x115
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [var incoming = new Dictionary<PermissionKind, bool>();] | [new Dictionary<PermissionKind, bool>()[permission.Kind] = permission.Value;] | [if (new Dictionary<PermissionKind, bool>().Remove(existing.Kind, out var value))] | [foreach (var (kind, value) in new Dictionary<PermissionKind, bool>())]
+
+######## p11 Refactorings.QuickListPopupAction — local with new — «var incoming = new Dictionary<PermissionKind, bool>();» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 265: var incoming = new Dictionary<PermissionKind, bool>();
+== window HeavyWeightWindow 247x200
+  list MyList rows 6
+    Rename… |      Shift+F6
+    Inline Variable
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p11 Generate — local with new — «var incoming = new Dictionary<PermissionKind, bool>();» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 265: var incoming = new Dictionary<PermissionKind, bool>();
+
+######## p12 ShowIntentionActions — class header — «public partial class UserManager» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 39: public partial class UserManager : IUserManager, IDisposable
+== window HeavyWeightWindow 275x84
+  list MyList rows 2
+    Add a partial part of 'UserManager'
+    Create test 'UserManagerTests'
+== window HeavyWeightWindow 345x71
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      The type becomes partial (when it is not yet) and a second file 
+      Type.Part.cs with another part of it is created in the same namespace.
+    </p>
+  </body>
+</html>
+]
+
+######## p12 Refactorings.QuickListPopupAction — class header — «public partial class UserManager» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 39: public partial class UserManager : IUserManager, IDisposable
+== window HeavyWeightWindow 247x169
+  list MyList rows 5
+    Rename… |      Shift+F6
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p12 Generate — class header — «public partial class UserManager» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 39: public partial class UserManager : IUserManager, IDisposable
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p13 ShowIntentionActions — using directive — «using System.Linq;» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 6: using System.Linq;
+== window HeavyWeightWindow 275x106
+  list MyList rows 3
+    Convert to 'global using'
+    Add a partial part of 'UserManager'
+    Create test 'UserManagerTests'
+== window HeavyWeightWindow 345x91
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      Moves the directive to the file of global usings of the project (<code>GlobalUsings.cs</code>, 
+      made in the project folder when there is none) as <code>global using</code>.
+    </p>
+  </body>
+</html>
+]
+
+######## p13 Refactorings.QuickListPopupAction — using directive — «using System.Linq;» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 6: using System.Linq;
+== window HeavyWeightWindow 247x138
+  list MyList rows 4
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p13 Generate — using directive — «using System.Linq;» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 6: using System.Linq;
+== window HeavyWeightWindow 132x116
+  list MyList rows 3
+    Partial Part
+    Unit Test
+    Insert New GUID
+
+######## p14 ShowIntentionActions — lambda — «.FirstOrDefault(user => user.Id == id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 132: .FirstOrDefault(user => user.Id == id);
+== window HeavyWeightWindow 275x106
+  list MyList rows 3
+    Add argument name
+    Add a partial part of 'UserManager'
+    Create test 'UserManagerTests'
+== window HeavyWeightWindow 494x28
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [.FirstOrDefault(predicate: user => user.Id == id);]
+
+######## p14 Refactorings.QuickListPopupAction — lambda — «.FirstOrDefault(user => user.Id == id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 132: .FirstOrDefault(user => user.Id == id);
+== window HeavyWeightWindow 247x169
+  list MyList rows 5
+    Rename… |      Shift+F6
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p14 Generate — lambda — «.FirstOrDefault(user => user.Id == id)» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 132: .FirstOrDefault(user => user.Id == id);
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p15 ShowIntentionActions — constructor call with arguments — «var user = new User(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 324: var user = new User(
+== window HeavyWeightWindow 275x150
+  list MyList rows 5
+    Initialize members
+    Introduce variable
+    Wrap in 'using' statement
+    Add a partial part of 'UserManager'
+    Create test 'UserManagerTests'
+== window HeavyWeightWindow 335x300
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [InternalId = max + 1,
+Id = ,
+Username = ,
+NormalizedUsername = ,
+Password = ,
+MustUpdatePassword = ,
+AudioLanguagePreference = ,
+AuthenticationProviderId = ,
+PasswordResetProviderId = ,
+InvalidLoginAttemptCount = ,
+LastActivityDate = ,
+LastLoginDate = ,
+LoginAttemptsBeforeLockout = ,
+MaxActiveSessions = ,
+SubtitleMode = ,
+PlayDefaultAudioTrack = ,
+SubtitleLanguagePreference = ,
+DisplayMissingEpisodes = ,
+DisplayCollectionsView = ,
+EnableLocalPassword = ,
+HidePlayedInLatest = ,
+RememberAudioSelections = ,
+RememberSubtitleSelections = ,
+EnableNextEpisodeAutoPlay = ,
+EnableAutoLogin = ,
+EnableUserPreferenceAccess = ,
+MaxParentalRatingScore = ,
+MaxParentalRatingSubScore = ,
+RemoteClientBitrateLimit = ,
+ProfileImage = ,
+SyncPlayAccess = ,
+CastReceiverId = ]
+
+######## p15 Refactorings.QuickListPopupAction — constructor call with arguments — «var user = new User(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 324: var user = new User(
+== window HeavyWeightWindow 247x200
+  list MyList rows 6
+    Rename… |      Shift+F6
+    Introduce Variable
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p15 Generate — constructor call with arguments — «var user = new User(» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 324: var user = new User(
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p16 ShowIntentionActions — constructor — «public LibraryManager(» (Emby.Server.Implementations/Library/LibraryManager.cs)
+caret line 138: public LibraryManager(
+== window HeavyWeightWindow 290x84
+  list MyList rows 2
+    Add a partial part of 'LibraryManager'
+    Create test 'LibraryManagerTests'
+== window HeavyWeightWindow 345x71
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      The type becomes partial (when it is not yet) and a second file 
+      Type.Part.cs with another part of it is created in the same namespace.
+    </p>
+  </body>
+</html>
+]
+
+######## p16 Refactorings.QuickListPopupAction — constructor — «public LibraryManager(» (Emby.Server.Implementations/Library/LibraryManager.cs)
+caret line 138: public LibraryManager(
+== window HeavyWeightWindow 247x169
+  list MyList rows 5
+    Rename… |      Shift+F6
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p16 Generate — constructor — «public LibraryManager(» (Emby.Server.Implementations/Library/LibraryManager.cs)
+caret line 138: public LibraryManager(
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p17 ShowIntentionActions — field — «private readonly ILogger<LibraryManager> _logger;» (Emby.Server.Implementations/Library/LibraryManager.cs)
+caret line 68: private readonly ILogger<LibraryManager> _logger;
+== window HeavyWeightWindow 290x84
+  list MyList rows 2
+    Add a partial part of 'LibraryManager'
+    Create test 'LibraryManagerTests'
+== window HeavyWeightWindow 345x71
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      The type becomes partial (when it is not yet) and a second file 
+      Type.Part.cs with another part of it is created in the same namespace.
+    </p>
+  </body>
+</html>
+]
+
+######## p17 Refactorings.QuickListPopupAction — field — «private readonly ILogger<LibraryManager> _logger;» (Emby.Server.Implementations/Library/LibraryManager.cs)
+caret line 68: private readonly ILogger<LibraryManager> _logger;
+== window HeavyWeightWindow 247x169
+  list MyList rows 5
+    Rename… |      Shift+F6
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p17 Generate — field — «private readonly ILogger<LibraryManager> _logger;» (Emby.Server.Implementations/Library/LibraryManager.cs)
+caret line 68: private readonly ILogger<LibraryManager> _logger;
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p18 ShowIntentionActions — auto-property — «public string Name { get; set; }» (MediaBrowser.Model/Dto/BaseItemDto.cs)
+caret line 27: public string Name { get; set; }
+== window HeavyWeightWindow 273x84
+  list MyList rows 2
+    Add a partial part of 'BaseItemDto'
+    Create test 'BaseItemDtoTests'
+== window HeavyWeightWindow 345x71
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      The type becomes partial (when it is not yet) and a second file 
+      Type.Part.cs with another part of it is created in the same namespace.
+    </p>
+  </body>
+</html>
+]
+
+######## p18 Refactorings.QuickListPopupAction — auto-property — «public string Name { get; set; }» (MediaBrowser.Model/Dto/BaseItemDto.cs)
+caret line 27: public string Name { get; set; }
+== window HeavyWeightWindow 247x169
+  list MyList rows 5
+    Rename… |      Shift+F6
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p18 Generate — auto-property — «public string Name { get; set; }» (MediaBrowser.Model/Dto/BaseItemDto.cs)
+caret line 27: public string Name { get; set; }
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p19 ShowIntentionActions — controller action — «public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItems(» (Jellyfin.Api/Controllers/ItemsController.cs)
+caret line 173: public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItems(
+== window HeavyWeightWindow 288x84
+  list MyList rows 2
+    Add a partial part of 'ItemsController'
+    Create test 'ItemsControllerTests'
+== window HeavyWeightWindow 345x71
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      The type becomes partial (when it is not yet) and a second file 
+      Type.Part.cs with another part of it is created in the same namespace.
+    </p>
+  </body>
+</html>
+]
+
+######## p19 Refactorings.QuickListPopupAction — controller action — «public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItems(» (Jellyfin.Api/Controllers/ItemsController.cs)
+caret line 173: public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItems(
+== window HeavyWeightWindow 247x169
+  list MyList rows 5
+    Rename… |      Shift+F6
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p19 Generate — controller action — «public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItems(» (Jellyfin.Api/Controllers/ItemsController.cs)
+caret line 173: public async Task<ActionResult<QueryResult<BaseItemDto>>> GetItems(
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p20 ShowIntentionActions — switch statement — «switch (» (Jellyfin.Api/Controllers/SearchController.cs)
+caret line 175: switch (item)
+== window HeavyWeightWindow 297x150
+  list MyList rows 5
+    Add 'default' section
+    Add section braces
+    To 'if' statements
+    Add a partial part of 'SearchController'
+    Create test 'SearchControllerTests'
+== window HeavyWeightWindow 300x50
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [    break;
+default:]
+
+######## p20 Refactorings.QuickListPopupAction — switch statement — «switch (» (Jellyfin.Api/Controllers/SearchController.cs)
+caret line 175: switch (item)
+== window HeavyWeightWindow 247x138
+  list MyList rows 4
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p20 Generate — switch statement — «switch (» (Jellyfin.Api/Controllers/SearchController.cs)
+caret line 175: switch (item)
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p20b ShowIntentionActions — switch expression — «collectionType switch» (Jellyfin.Api/Controllers/ItemsController.cs)
+caret line 328: includeItemTypes = collectionType switch
+== window HeavyWeightWindow 288x128
+  list MyList rows 4
+    Add missing arms
+    To 'switch' statement
+    Add a partial part of 'ItemsController'
+    Create test 'ItemsControllerTests'
+== window HeavyWeightWindow 679x300
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [CollectionType.unknown => throw new NotImplementedException(),
+CollectionType.movies => throw new NotImplementedException(),
+CollectionType.tvshows => throw new NotImplementedException(),
+CollectionType.music => throw new NotImplementedException(),
+CollectionType.musicvideos => throw new NotImplementedException(),
+CollectionType.trailers => throw new NotImplementedException(),
+CollectionType.homevideos => throw new NotImplementedException(),
+CollectionType.books => throw new NotImplementedException(),
+CollectionType.photos => throw new NotImplementedException(),
+CollectionType.livetv => throw new NotImplementedException(),
+CollectionType.playlists => throw new NotImplementedException(),
+CollectionType.folders => throw new NotImplementedException(),
+CollectionType.tvshowseries => throw new NotImplementedException(),
+CollectionType.tvgenres => throw new NotImplementedException(),
+CollectionType.tvgenre => throw new NotImplementedException(),
+CollectionType.tvlatest => throw new NotImplementedException(),
+CollectionType.tvnextup => throw new NotImplementedException(),
+CollectionType.tvresume => throw new NotImplementedException(),
+CollectionType.tvfavoriteseries => throw new NotImplementedException(),
+CollectionType.tvfavoriteepisodes => throw new NotImplementedException(),
+CollectionType.movielatest => throw new NotImplementedException(),
+CollectionType.movieresume => throw new NotImplementedException(),
+CollectionType.moviemovies => throw new NotImplementedException(),
+CollectionType.moviecollection => throw new NotImplementedException(),
+CollectionType.moviefavorites => throw new NotImplementedException(),
+CollectionType.moviegenres => throw new NotImplementedException(),
+CollectionType.moviegenre => throw new NotImplementedException(),]
+
+######## p20b Refactorings.QuickListPopupAction — switch expression — «collectionType switch» (Jellyfin.Api/Controllers/ItemsController.cs)
+caret line 328: includeItemTypes = collectionType switch
+== window HeavyWeightWindow 247x138
+  list MyList rows 4
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p20b Generate — switch expression — «collectionType switch» (Jellyfin.Api/Controllers/ItemsController.cs)
+caret line 328: includeItemTypes = collectionType switch
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p21 ShowIntentionActions — extension method — «public static ReadOnlySpan<char> LeftPart(» (src/Jellyfin.Extensions/StringExtensions.cs)
+caret line 82: public static ReadOnlySpan<char> LeftPart(this ReadOnlySpan<char> haystack, char needle)
+== window HeavyWeightWindow 297x84
+  list MyList rows 2
+    Add a partial part of 'StringExtensions'
+    Create test 'StringExtensionsTests'
+== window HeavyWeightWindow 345x71
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      The type becomes partial (when it is not yet) and a second file 
+      Type.Part.cs with another part of it is created in the same namespace.
+    </p>
+  </body>
+</html>
+]
+
+######## p21 Refactorings.QuickListPopupAction — extension method — «public static ReadOnlySpan<char> LeftPart(» (src/Jellyfin.Extensions/StringExtensions.cs)
+caret line 82: public static ReadOnlySpan<char> LeftPart(this ReadOnlySpan<char> haystack, char needle)
+== window HeavyWeightWindow 247x169
+  list MyList rows 5
+    Rename… |      Shift+F6
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p21 Generate — extension method — «public static ReadOnlySpan<char> LeftPart(» (src/Jellyfin.Extensions/StringExtensions.cs)
+caret line 82: public static ReadOnlySpan<char> LeftPart(this ReadOnlySpan<char> haystack, char needle)
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p22 ShowIntentionActions — interpolated string — «$"» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 119: [GeneratedRegex(@"^(?!\s)[\w\ \-'._@+]+(?<!\s)$")]
+== window HeavyWeightWindow 295x128
+  list MyList rows 4
+    Add a partial part of 'UserManager'
+    Check RegExp
+    Create test 'UserManagerTests'
+    Edit RegExp Fragment
+== window HeavyWeightWindow 345x71
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      The type becomes partial (when it is not yet) and a second file 
+      Type.Part.cs with another part of it is created in the same namespace.
+    </p>
+  </body>
+</html>
+]
+
+######## p22 Refactorings.QuickListPopupAction — interpolated string — «$"» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 119: [GeneratedRegex(@"^(?!\s)[\w\ \-'._@+]+(?<!\s)$")]
+== window HeavyWeightWindow 247x138
+  list MyList rows 4
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p22 Generate — interpolated string — «$"» (Jellyfin.Server.Implementations/Users/UserManager.cs)
+caret line 119: [GeneratedRegex(@"^(?!\s)[\w\ \-'._@+]+(?<!\s)$")]
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+
+######## p23 ShowIntentionActions — interface header — «public interface ILibraryManager» (MediaBrowser.Controller/Library/ILibraryManager.cs)
+caret line 31: public interface ILibraryManager
+== window HeavyWeightWindow 273x62
+  list MyList rows 1
+    Create test 'ILibraryManagerTests'
+== window HeavyWeightWindow 345x88
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      A test class for the type of the file is created in the test project of 
+      the solution, in the mirrored folder, with the framework the test 
+      project uses (xUnit, NUnit or MSTest).
+    </p>
+  </body>
+</html>
+]
+
+######## p23 Refactorings.QuickListPopupAction — interface header — «public interface ILibraryManager» (MediaBrowser.Controller/Library/ILibraryManager.cs)
+caret line 31: public interface ILibraryManager
+== window HeavyWeightWindow 247x169
+  list MyList rows 5
+    Rename… |      Shift+F6
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p23 Generate — interface header — «public interface ILibraryManager» (MediaBrowser.Controller/Library/ILibraryManager.cs)
+caret line 31: public interface ILibraryManager
+== window HeavyWeightWindow 132x94
+  list MyList rows 2
+    Unit Test
+    Insert New GUID
+
+######## p24 ShowIntentionActions — test method — «public void BaseItem_ModifySortChunks_Valid(» (tests/Jellyfin.Controller.Tests/Entities/BaseItemTests.cs)
+caret line 152: public void BaseItem_ModifySortChunks_Valid(string input, string expected)
+== window HeavyWeightWindow 331x159
+  list MyList rows 5
+    Run 'BaseItemTests.BaseIt...' |      Ctrl+Shift+F10
+    Debug 'BaseItemTests.BaseIt...'
+    Modify Run Configuration…
+    To block body
+    Add a partial part of 'BaseItemTests'
+
+######## p24 Refactorings.QuickListPopupAction — test method — «public void BaseItem_ModifySortChunks_Valid(» (tests/Jellyfin.Controller.Tests/Entities/BaseItemTests.cs)
+caret line 152: public void BaseItem_ModifySortChunks_Valid(string input, string expected)
+== window HeavyWeightWindow 247x169
+  list MyList rows 5
+    Rename… |      Shift+F6
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p24 Generate — test method — «public void BaseItem_ModifySortChunks_Valid(» (tests/Jellyfin.Controller.Tests/Entities/BaseItemTests.cs)
+caret line 152: public void BaseItem_ModifySortChunks_Valid(string input, string expected)
+== window HeavyWeightWindow 233x402
+  list MyList rows 16
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Insert New GUID
+
+######## p25 ShowIntentionActions — cast — «((Folder)item)» (Emby.Server.Implementations/Library/LibraryManager.cs)
+caret line 555: ? ((Folder)item).GetRecursiveChildren(false)
+== window HeavyWeightWindow 290x84
+  list MyList rows 2
+    Add a partial part of 'LibraryManager'
+    Create test 'LibraryManagerTests'
+== window HeavyWeightWindow 345x71
+  texts: [<html>
+  <head>
+    
+  </head>
+  <body>
+    Loading&#8230;
+  </body>
+</html>
+] | [<html>
+  <head>
+    
+  </head>
+  <body>
+    <p>
+      The type becomes partial (when it is not yet) and a second file 
+      Type.Part.cs with another part of it is created in the same namespace.
+    </p>
+  </body>
+</html>
+]
+
+######## p25 Refactorings.QuickListPopupAction — cast — «((Folder)item)» (Emby.Server.Implementations/Library/LibraryManager.cs)
+caret line 555: ? ((Folder)item).GetRecursiveChildren(false)
+== window HeavyWeightWindow 247x169
+  list MyList rows 5
+    Rename… |      Shift+F6
+    Introduce Field... |      Ctrl+Alt+F
+    Introduce Parameter... |      Ctrl+Alt+P
+    Move File… |      F6
+    Copy File… |      F5
+
+######## p25 Generate — cast — «((Folder)item)» (Emby.Server.Implementations/Library/LibraryManager.cs)
+caret line 555: ? ((Folder)item).GetRecursiveChildren(false)
+== window HeavyWeightWindow 233x424
+  list MyList rows 17
+    Constructor
+    Read-only properties
+    Properties
+    Missing members |      Ctrl+I
+    Overriding members |      Ctrl+O
+    Delegating members
+    Partial members
+    Partial Part
+    Deconstructor
+    Equality members
+    Equality comparer
+    Relational members
+    Relational comparer
+    Formatting members
+    Dispose pattern
+    Unit Test
+    Insert New GUID
+

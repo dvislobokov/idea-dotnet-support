@@ -1,0 +1,18 @@
+# id|file|anchor|caret offset in the anchor|action id|text of the row to choose (part, case-insensitive)|extra keys after Enter (keys.ps1)|what
+r01|Jellyfin.Server.Implementations/Users/UserManager.cs|if (oldName.Equals(newName|1|ShowIntentionActions|invert||Invert 'if'
+r02|Jellyfin.Api/Controllers/SearchController.cs|switch (item)|1|ShowIntentionActions|switch' expression||To 'switch' expression
+r03|Jellyfin.Api/Controllers/SearchController.cs|switch (item)|1|ShowIntentionActions|'if' statement||To 'if' statements
+r04|Jellyfin.Api/Controllers/ItemsController.cs|collectionType switch|17|ShowIntentionActions|missing arms||Add missing arms (switch expression)
+r05|Jellyfin.Server.Implementations/Users/UserManager.cs|foreach (var accessSchedule in user.AccessSchedules)|2|ShowIntentionActions|'for'||foreach to for
+r06|Jellyfin.Server.Implementations/Users/UserManager.cs|var max = await dbContext.Users.AsQueryable().AnyAsync()|30|ShowIntentionActions|introduce variable||Introduce variable
+r07|Jellyfin.Server.Implementations/Users/UserManager.cs|var eventArgs = new UserUpdatedEventArgs|5|ShowIntentionActions|inline||Inline variable
+r08|Jellyfin.Server.Implementations/Users/UserManager.cs|public Task ResetPassword(|20|ShowIntentionActions|expression body||To expression body
+r09|Jellyfin.Server.Implementations/Users/UserManager.cs|var eventArgs = new UserUpdatedEventArgs|1|ShowIntentionActions|explicit||Use explicit type
+r10|Jellyfin.Server.Implementations/Users/UserManager.cs|Guid userId, string oldName|17|ShowIntentionActions|null||Check parameter for null
+r11|Jellyfin.Server.Implementations/Users/UserManager.cs|var user = new User(|16|ShowIntentionActions|argument name||Add argument names
+r12|Jellyfin.Server.Implementations/Users/UserManager.cs|throw new ArgumentException(string.Format(|34|ShowIntentionActions|interpolat||Convert string.Format to interpolation
+r13|Jellyfin.Server.Implementations/Users/UserManager.cs|public async Task UpdatePolicyAsync(|20|RenameElement||w:1500;;t:UpdateUserPolicyAsync;;w:500;;k:{ENTER};;w:4000;;k:{ENTER};;w:3000|Rename an interface member used in other files
+r14|MediaBrowser.Model/LiveTv/SeriesTimerInfoDto.cs|public enum KeepUntil|13|ShowIntentionActions|move||Move type to file
+r15|Jellyfin.Server.Implementations/Users/UserManager.cs|if (oldName.Equals(newName|1|ShowIntentionActions|braces||Remove / Add braces
+r06b|Jellyfin.Server.Implementations/Users/UserManager.cs|var max = await dbContext.Users.AsQueryable().AnyAsync()|30|Refactorings.QuickListPopupAction|introduce variable||Introduce variable from Refactor This
+r07b|Jellyfin.Server.Implementations/Users/UserManager.cs|var eventArgs = new UserUpdatedEventArgs|5|Refactorings.QuickListPopupAction|inline variable||Inline variable from Refactor This

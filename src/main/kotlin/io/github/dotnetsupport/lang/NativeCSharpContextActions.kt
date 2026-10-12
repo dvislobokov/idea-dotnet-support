@@ -721,9 +721,21 @@ object NativeCSharpContextEdits {
         val references = resolver.references(symbol)
         if (references.isEmpty()) return null
         if (references.any { NativeCSharpUsageKinds.kindOfLeaf(it) == CSharpUsageKind.NAMEOF || it.parent !is CSharpSimpleName }) return null
+        // a value that does something (creates an object, calls, awaits, assigns) would do it once per use: `new Args(user)` twice is two
+        // objects (Jellyfin № 18/19, the event raised with another instance than the one kept); one use keeps the meaning
+        if (references.size > 1 && !sideEffectFree(value)) return null
         if (losesComment(statement, listOf(value))) return null
         return Inlining(statement, value, references)
     }
+
+    /** No part of [value] creates, calls, awaits, assigns, increments or indexes: evaluating it twice gives the same and changes nothing. */
+    private fun sideEffectFree(value: CSharpExpression): Boolean =
+        PsiTreeUtil.findChildrenOfType(value, CSharpExpression::class.java).plus(value).none { e ->
+            e is CSharpInvocationExpression || e is CSharpAwaitExpression || e is CSharpAssignmentExpression || e is CSharpElementAccessExpression ||
+                e is CSharpBaseObjectCreationExpression || e is CSharpAnonymousObjectCreationExpression || e is CSharpArrayCreationExpression ||
+                e is CSharpImplicitArrayCreationExpression || e is CSharpWithExpression ||
+                (e is CSharpPrefixUnaryExpression || e is CSharpPostfixUnaryExpression) && e.text.let { "++" in it || "--" in it }
+        }
 
     /** The caret on the type of a local declaration of one variable (`var` of `var x = …`): its name, as the server offers it there too (robot, E-78). */
     private fun declaredByTypeAt(file: CSharpFile, offset: Int): PsiElement? {

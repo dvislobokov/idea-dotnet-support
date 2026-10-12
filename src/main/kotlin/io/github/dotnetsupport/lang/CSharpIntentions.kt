@@ -30,6 +30,44 @@ abstract class CSharpIntention : IntentionAction, PriorityAction, DumbAware {
     protected fun source(file: PsiFile?): CSharpFile? = file as? CSharpFile
 
     protected fun text(file: PsiFile): CharSequence = file.viewProvider.document?.immutableCharSequence ?: file.text
+
+    /**
+     * The caret is on the header of a type (attributes, modifiers, name, base list — before its `{`), or with [members] also of a method
+     * or property (before its body): Rider offers the actions of the type only there, not in every body (Jellyfin № 21: «Add a partial
+     * part» and «Create test» showed at all 25 places). On the heuristic tree, which has no such nodes, the line of the caret decides.
+     */
+    protected fun onHeader(editor: Editor?, file: PsiFile, members: Boolean = false): Boolean {
+        editor ?: return true
+        val offset = editor.caretModel.offset
+        val leaf = file.findElementAt(offset) ?: (if (offset > 0) file.findElementAt(offset - 1) else null) ?: return false
+        var current: com.intellij.psi.PsiElement? = leaf
+        while (current != null && current !is PsiFile) {
+            when (current) {
+                is io.github.dotnetsupport.csharp.lang.psi.CSharpBaseTypeDeclaration ->
+                    return current.openBraceToken?.takeIf { it.textLength > 0 }?.let { offset <= it.textRange.startOffset } ?: true
+                is io.github.dotnetsupport.csharp.lang.psi.CSharpBaseMethodDeclaration -> {
+                    val body = current.body ?: current.expressionBody
+                    return members && (body == null || offset <= body.textRange.startOffset)
+                }
+                is io.github.dotnetsupport.csharp.lang.psi.CSharpBasePropertyDeclaration -> {
+                    val body = current.accessorList ?: (current as? io.github.dotnetsupport.csharp.lang.psi.CSharpPropertyDeclaration)?.expressionBody
+                    return members && (body == null || offset <= body.textRange.startOffset)
+                }
+                is io.github.dotnetsupport.csharp.lang.psi.CSharpMemberDeclaration -> return false
+                is io.github.dotnetsupport.csharp.lang.psi.CSharpCompilationUnit -> break
+            }
+            current = current.parent
+        }
+        // the heuristic tree: a line that declares a type
+        val text = text(file)
+        val start = text.lastIndexOf('\n', (offset - 1).coerceAtLeast(0)) + 1
+        val end = text.indexOf('\n', offset).let { if (it < 0) text.length else it }
+        return TYPE_LINE.containsMatchIn(text.subSequence(start, end))
+    }
+
+    private companion object {
+        val TYPE_LINE = Regex("""\b(class|struct|record|interface)\s+[A-Za-z_]""")
+    }
 }
 
 /** `namespace Shop;` in `Shop/Models/Order.cs` -> "Change namespace to 'Shop.Models'", with the usages when the server is loaded. */
@@ -114,6 +152,7 @@ class AddPartialPartIntention : CSharpIntention() {
 
     override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean {
         val source = source(file) ?: return false
+        if (!onHeader(editor, source)) return false
         val type = TypeDeclarationScanner.firstType(text(source)) ?: return false
         if (type.kind == "interface") return false
         typeName = type.name
@@ -137,6 +176,7 @@ class CreateTestIntention : CSharpIntention() {
 
     override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean {
         val source = source(file) ?: return false
+        if (!onHeader(editor, source, members = true)) return false
         val virtualFile = source.virtualFile ?: return false
         val type = TypeDeclarationScanner.firstType(text(source)) ?: return false
         if (type.name.endsWith("Tests") || type.name.endsWith("Test")) return false

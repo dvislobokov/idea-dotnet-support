@@ -89,7 +89,9 @@ class PostfixByTypeTest : BasePlatformTestCase() {
 
     fun testABoolGetsTheConditionsAndNotTheLoops() {
         val keys = offered("ready<caret>")
-        assertTrue(keys.toString(), keys.containsAll(listOf("if", "else", "while", "not", "var", "return")))
+        assertTrue(keys.toString(), keys.containsAll(listOf("if", "else", "while", "not", "var")))
+        // the method around is `void`: `return value;` would not compile (Jellyfin № 11)
+        assertFalse(keys.toString(), "return" in keys)
         assertFalse(keys.toString(), keys.any { it in setOf("foreach", "for", "forr", "await", "using", "null", "notnull", "lock", "parse") })
     }
 

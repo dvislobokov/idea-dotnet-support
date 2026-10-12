@@ -1,0 +1,29 @@
+# id|file|anchor: a new line goes after the line holding it|extra indent|steps (keys.ps1: t:text ;; k:{KEY} ;; w:ms)|what
+# RenameUser(Guid userId, string oldName, string newName) — statement level after `ThrowIfInvalidUsername(newName);`
+t01|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:switch;;w:1200;;k:{TAB};;w:1500|live template switch + Tab
+t02|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:if;;w:1200;;k:{TAB};;w:1500|live template if + Tab
+t03|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:foreach;;w:1200;;k:{TAB};;w:1500|live template foreach + Tab
+t04|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:for;;w:1200;;k:{TAB};;w:1500|live template for + Tab
+t05|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:try;;w:1200;;k:{TAB};;w:1500|live template try + Tab
+t06|Jellyfin.Server.Implementations/Users/UserManager.cs|private readonly INetworkManager _networkManager;|0|t:prop;;w:1200;;k:{TAB};;w:1500|live template prop + Tab
+t07|Jellyfin.Server.Implementations/Users/UserManager.cs|private readonly INetworkManager _networkManager;|0|t:ctor;;w:1200;;k:{TAB};;w:1500|live template ctor + Tab
+t08|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:tr;;w:1500;;k:{TAB};;w:1500|keyword try from the list with Tab
+t09|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:sw;;w:1500;;k:{TAB};;w:1500|keyword switch from the list with Tab
+t10|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:ret;;w:1500;;k:{TAB};;w:1500|keyword return from the list with Tab
+# gray text: what shows after the typing (no Tab) and then after Tab
+t11|Jellyfin.Server.Implementations/Users/UserManager.cs|dbUser.Permissions.Add(new Permission(kind, value));|0|t:switch (kind);;w:600;;k:{ESC};;k:{ENTER};;t:{;;k:{ENTER};;w:2500|gray: first case of a switch over an enum
+t12|Jellyfin.Server.Implementations/Users/UserManager.cs|dbUser.Permissions.Add(new Permission(kind, value));|0|t:switch (kind);;w:600;;k:{ESC};;k:{ENTER};;t:{;;k:{ENTER};;w:2500;;k:{TAB};;w:500;;k:{ENTER};;w:2500|gray: case accepted with Tab, then Enter (break?)
+t13|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:if (oldName == null);;k:{ENTER};;t:{;;k:{ENTER};;w:2500|gray: null-guard body
+t14|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:try;;k:{ENTER};;t:{;;k:{ENTER};;k:{DOWN};;k:{END};;k:{ENTER};;t:catch (Exception e);;k:{ESC};;k:{ENTER};;t:{;;k:{ENTER};;w:2500|gray: catch body
+t15|Jellyfin.Server.Implementations/Users/UserManager.cs|var incoming = new Dictionary<PreferenceKind, string>();|0|t:foreach (var preference in ;;w:2500|gray: foreach collection
+t16|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:await UpdatePolicyAsync(;;w:2500|gray: argument list
+t17|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:var policy = new ;;w:2500|gray: after new
+t18|Jellyfin.Server.Implementations/Users/UserManager.cs|private readonly INetworkManager _networkManager;|0|t:public override ;;w:2500|gray/list: override
+# postfix templates on a real expression
+t19|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:oldName.Length > 0.if;;w:1200;;k:{TAB};;w:1500|postfix .if
+t20|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:newName.ToCharArray().foreach;;w:1200;;k:{TAB};;w:1500|postfix .foreach
+t21|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:newName.ToUpperInvariant().var;;w:1200;;k:{TAB};;w:1500|postfix .var
+t22|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:oldName.null;;w:1200;;k:{TAB};;w:1500|postfix .null
+t23|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:oldName.notnull;;w:1200;;k:{TAB};;w:1500|postfix .notnull
+t24|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:_dbProvider.CreateDbContextAsync().await;;w:1200;;k:{TAB};;w:1500|postfix .await
+t25|Jellyfin.Server.Implementations/Users/UserManager.cs|ThrowIfInvalidUsername(newName);|0|t:newName.Trim().return;;w:1200;;k:{TAB};;w:1500|postfix .return (in a Task method)

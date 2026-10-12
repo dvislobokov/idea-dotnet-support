@@ -107,6 +107,37 @@ object CSharpExpressions {
     }
 
     /** True when the expression at [start] is the beginning of a statement: after `;`, `{`, `}`, `=>` or the start of the file. */
+    /** Binary operators a postfix template may reach over to the start of a statement ([postfixRange]). */
+    private val BINARY = setOf(">", "<", ">=", "<=", "==", "!=", "&&", "||", "+", "-", "*", "/", "%", "??", "&", "|", "^", "<<", ">>")
+
+    /**
+     * The expression a postfix template takes at [offset]: the operand chain [before] gives, or — when that does not start a statement but
+     * the operands and binary operators to its left do — the whole of them, as Rider takes `oldName.Length > 0` for `.if` (Jellyfin № 3:
+     * `oldName.Length > 0.if` was no postfix at all, the live template `if` came instead).
+     */
+    private fun symbol(token: Token): Boolean = !token.isIdentifier && !token.isLiteral && token.type != CSharpTokenTypes.KEYWORD && token.text.all { it in "<>=!&|+-*/%?^" }
+
+    fun postfixRange(text: CharSequence, offset: Int): TextRange? {
+        val range = before(text, offset) ?: return null
+        if (startsStatement(text, range.startOffset)) return range
+        var start = range.startOffset
+        val tokens = tokenize(text.subSequence(0, start))
+        var i = tokens.size - 1
+        while (i >= 0) {
+            // an operator may come in pieces (`&&` as two `&`): the adjacent symbol tokens together
+            var j = i
+            while (j > 0 && tokens[j - 1].end == tokens[j].start && symbol(tokens[j - 1]) && symbol(tokens[j])) j--
+            val op = (j..i).joinToString("") { tokens[it].text }
+            val binary = symbol(tokens[i]) && op in BINARY || tokens[i].isKeyword("is", "as") && j == i
+            if (!binary) break
+            val left = before(text, tokens.getOrNull(j - 1)?.end ?: break) ?: break
+            start = left.startOffset
+            if (startsStatement(text, start)) return TextRange(start, range.endOffset)
+            i = tokens.indexOfLast { it.end <= start }
+        }
+        return range
+    }
+
     fun startsStatement(text: CharSequence, start: Int): Boolean {
         val before = tokenize(text.subSequence(0, start)).lastOrNull() ?: return true
         return isBoundary(before) || before.isOperator(">") && text.subSequence(0, before.end).endsWith("=>")

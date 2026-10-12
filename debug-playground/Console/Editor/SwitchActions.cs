@@ -130,9 +130,9 @@ public class SwitchActions
         }
     }
 
-    // TYPE:switch-add-arms — Alt+Enter on `switch` of Arms: "Add missing arms". EXPECT: `OperationType.Delete => throw new
-    // NotImplementedException(),` and `OperationType.Read => throw new NotImplementedException(),` before the `_` arm. On `switch` of
-    // Short (no `_` arm): the missing arms after the last one and `_ => throw new ArgumentOutOfRangeException()` last.
+    // TYPE:switch-add-arms — Alt+Enter on `switch` of Short (no `_` arm): "Add missing arms". EXPECT: the missing arms after the last
+    // one and `_ => throw new ArgumentOutOfRangeException()` last. On `switch` of Arms (an unconditional `_`): NOT offered — the `_` takes
+    // Delete and Read already, throwing arms would change what they do (0.1.168, Jellyfin № 18).
     public static string Arms(OperationType operationType)
     {
         return operationType switch

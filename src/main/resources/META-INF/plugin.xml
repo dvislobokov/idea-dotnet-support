@@ -181,6 +181,9 @@
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpCheckParameterForNullIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpAddArgumentNamesIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpRemoveArgumentNamesIntention</className><category>C#</category></intentionAction>
+        <!-- fields (0.1.168) -->
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpInitializeFieldFromConstructorIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpInitializeMembersFromConstructorIntention</className><category>C#</category></intentionAction>
         <lang.foldingBuilder language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpFoldingBuilder"/>
         <!-- TODO / FIXME in the comments of C#: the TODO tool window and the highlighting -->
         <todoIndexer filetype="C#" implementationClass="io.github.dotnetsupport.lang.CSharpTodoIndexer"/>

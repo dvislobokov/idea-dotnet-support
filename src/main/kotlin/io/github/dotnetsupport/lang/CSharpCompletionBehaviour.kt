@@ -260,7 +260,11 @@ class CSharpCommitCharFilter : CharFilter() {
             if (NativeCSharpOverrides.rowOf(item) != null) return Result.HIDE_LOOKUP
             if (!impl.itemMatcher(item).isStartMatch(item)) return Result.HIDE_LOOKUP
             // what is typed is the item already: the character is just typed
-            if (item.lookupString == impl.itemPattern(item)) return null
+            val typed = impl.itemPattern(item)
+            if (item.lookupString == typed) return null
+            // `foreach (var` + space: a keyword typed in full is what is meant, never a row it matches by humps (`ValidUsernameRegex`,
+            // the user's Jellyfin probe, 0.1.168); nor another row when one of the list is exactly what is typed
+            if (typed in NativeCSharpCompletionPlace.ALL_KEYWORDS || impl.items.any { it !== item && it.lookupString == typed }) return Result.HIDE_LOOKUP
         }
         if (impl.lookupFocusDegree == LookupFocusDegree.SEMI_FOCUSED) impl.lookupFocusDegree = LookupFocusDegree.FOCUSED
         // `Where(` chosen by `(`: the list of the argument opens where a lambda may go, as after a typed `(`

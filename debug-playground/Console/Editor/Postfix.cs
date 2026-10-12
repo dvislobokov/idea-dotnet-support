@@ -20,10 +20,23 @@ public class PostfixScenarios
 
     }
 
-    // TYPE:postfix-by-type — type `ready.` and look at the list: EXPECT `if`, `else`, `while`, `not`, `var`, `return`; NOT `foreach`, `for`,
+    // TYPE:postfix-by-type — type `ready.` and look at the list: EXPECT `if`, `else`, `while`, `not`, `var` (no `return`: void); NOT `foreach`, `for`,
     // `await`, `null`, `notnull`, `lock`, `using`. Then `orders.` — `foreach`, `for`, `forr`, `notnull`, NOT `if` / `await`; `task.` — `await`,
     // NOT `foreach`; `count.` — `for`, NOT `null` / `foreach`; `name.` — `parse`, `tryparse`, `foreach`. An unknown name (`missing.`) offers all.
     public void ByType(bool ready, int count, string name, List<PostfixOrder> orders, Task<int> task, IEnumerable<int> sequence)
+    {
+
+    }
+
+    // TYPE:postfix-whole-condition — on the empty line in WholeCondition type `name.Length > 0.if` + Tab. EXPECT: `if (name.Length > 0)`
+    // with a block, the caret inside — NOT `name.Length > 0.if ()` (0.1.168, Jellyfin № 3). Then in Nothing (`void`) type `name.Trim().`:
+    // the list has no `return` (the method returns nothing, 0.1.168, № 11). Ctrl+Z.
+    public void WholeCondition(string name)
+    {
+
+    }
+
+    public void Nothing(string name)
     {
 
     }
