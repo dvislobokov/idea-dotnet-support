@@ -1093,3 +1093,10 @@ Settings | .NET | Language Server, группа Analysis: «Compiler diagnostics
 - [ ] `TYPE:ranking-new-policy`: `var policy = new ` → свой тип `…Policy` выше типов сборок
 - [ ] `TYPE:ranking-indexer`: `text.` → `[]`, `Count` / `Length` первыми; `[]` пишет `text[|]`
 - [ ] Скорость: список после `new ` и в аргументе на большом solution — заметно быстрее 0.1.171 (замерить на Jellyfin, `tools/ui-robot/compare/complete_timed.js`)
+
+### Исправления по сравнению с Rider, этап 6 (0.1.173) — `Console/Editor/RefactorMoves.cs`, `MemberActions.cs`, `TypeActions.cs`, `SwitchActions.cs`, `ParameterActions.cs`, `MultiTarget/ExtensionBlock.cs`
+- [ ] `TYPE:moves-occurrences`, `moves-extract-partial`, `moves-type-rows`: Introduce Variable на все вхождения, Extract Members to Partial, строки Move в Refactor This
+- [ ] `TYPE:member-backing-field`, `member-auto`, `member-encapsulate`, `member-explicit`, `member-factory`: действия над свойствами и членами
+- [ ] `TYPE:switch-expression-to-if`, `switch-to-conditional`, `switch-condition-component`, `switch-type-patterns`; `TYPE:param-overload`, `param-chop`
+- [ ] `TYPE:ext-block-all`, `ext-block-one` (`MultiTarget`, TFM .NET 10.0 в тулбаре): Convert to extension block
+- [ ] `TYPE:type-exception-doc`, `type-import-static`, `type-inline-call`, `type-inline-all`, `type-derived`, `type-derived-class`, `type-copy`; `TYPE:type-cover` (`Tests/PricingTests.cs`)

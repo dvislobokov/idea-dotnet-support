@@ -1,0 +1,1 @@
+var name = <spot>kind == Kind.A ? "a" : "other"</spot>;

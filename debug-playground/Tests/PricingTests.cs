@@ -6,6 +6,8 @@ namespace Playground.Tests;
 /// <summary>Stage 5: Debug of a test stops here. The test host waits for the debugger, the plugin attaches to it.</summary>
 public class PricingTests
 {
+    // TYPE:type-cover — Alt+Enter on the name `TotalAppliesTheDiscount` below. EXPECT: "Cover" among the rows; it runs the test with coverage
+    // (a temporary configuration "PricingTests.TotalAppliesTheDiscount with Coverage", the .NET Coverage window fills); NOT offered in the body
     [Fact]
     public void TotalAppliesTheDiscount()
     {

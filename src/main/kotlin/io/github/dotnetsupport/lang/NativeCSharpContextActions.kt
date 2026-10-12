@@ -671,25 +671,32 @@ object NativeCSharpContextEdits {
     }
 
     /**
-     * The same expression (the same tokens) elsewhere in the block of [extraction]'s statement, with the one of [extraction], in order: what
-     * "Replace all N occurrences" puts the variable in, as Rider's chooser offers. Empty when there is no other one or one variable cannot
+     * The same expression (the same tokens) elsewhere in the body of [extraction]'s statement, with the one of [extraction], in order: what
+     * "Replace all N occurrences" puts the variable in, as Rider's chooser offers. The variable goes before the first of them, in the
+     * innermost block that holds them all ([commonBlock]; Jellyfin № 63: before, only the caret's own block was searched). Not an
+     * occurrence in another lambda or local function (it runs at another time), and none at all when something the expression reads is
+     * assigned between the first and the last of them (the value would differ). Empty when there is no other one or one variable cannot
      * serve them all (a local of the expression declared after the first of them, or in a nested block).
      */
     fun occurrences(extraction: Extraction): List<CSharpExpression> {
-        val block = extraction.statement.parent as? CSharpBlock ?: return emptyList()
+        if (extraction.statement.parent !is CSharpBlock) return emptyList()
+        val body = bodyBlock(extraction.statement) ?: return emptyList()
         val expression = extraction.expression
         val key = tokens(expression)
-        val found = SyntaxTraverser.psiTraverser(block).filter(CSharpExpression::class.java).filter { candidate ->
+        val ownFunction = functionOf(expression)
+        val found = SyntaxTraverser.psiTraverser(body).filter(CSharpExpression::class.java).filter { candidate ->
             candidate.javaClass == expression.javaClass && candidate.textLength >= 1 && tokens(candidate) == key
         }.toList().filter { candidate ->
             if (candidate == expression) return@filter true
+            if (functionOf(candidate) != ownFunction) return@filter false
             val statement = enclosingStatement(candidate) ?: return@filter false
-            PsiTreeUtil.isAncestor(block, statement, true) && movable(candidate, statement) &&
+            statement.parent is CSharpBlock && PsiTreeUtil.isAncestor(body, statement, false) && movable(candidate, statement) &&
                 // `Foo();` alone elsewhere would become a bare name
                 !(statement is CSharpExpressionStatement && statement.expression == candidate)
         }
         val outermost = found.filter { c -> found.none { other -> other != c && PsiTreeUtil.isAncestor(other, c, true) } }.sortedBy { it.textRange.startOffset }
         if (outermost.size < 2) return emptyList()
+        val block = commonBlock(outermost) ?: return emptyList()
         // the declaration goes before the first one: what the expression reads must be visible there
         val first = outermost.first()
         val anchor = block.statements.firstOrNull { it.textRange.contains(first.textRange) } ?: return emptyList()
@@ -701,7 +708,63 @@ object NativeCSharpContextEdits {
         }
         // an occurrence that is the whole statement can only be the first (`var x = Foo();` takes its place)
         if (outermost.drop(1).any { (it.parent as? CSharpExpressionStatement)?.expression == it }) return emptyList()
+        if (assignedBetween(expression, block, anchor.textRange.startOffset, outermost.last().textRange.endOffset)) return emptyList()
         return outermost
+    }
+
+    /** The block of the body of the member, local function or lambda around [statement]: where its occurrences are looked for. */
+    private fun bodyBlock(statement: CSharpStatement): CSharpBlock? {
+        var block = statement.parent as? CSharpBlock ?: return null
+        while (true) {
+            val outer = PsiTreeUtil.getParentOfType(block, CSharpBlock::class.java, true, CSharpMemberDeclaration::class.java,
+                CSharpAnonymousFunctionExpression::class.java, CSharpLocalFunctionStatement::class.java) ?: return block
+            block = outer
+        }
+    }
+
+    /** The lambda or local function [element] is in (null: the member's own body). */
+    private fun functionOf(element: PsiElement): PsiElement? =
+        PsiTreeUtil.getParentOfType(element, CSharpAnonymousFunctionExpression::class.java, CSharpLocalFunctionStatement::class.java, CSharpMemberDeclaration::class.java)
+            ?.takeIf { it !is CSharpMemberDeclaration }
+
+    /** The innermost block whose statements hold all of [occurrences]. */
+    fun commonBlock(occurrences: List<CSharpExpression>): CSharpBlock? {
+        var block = PsiTreeUtil.getParentOfType(occurrences.first(), CSharpBlock::class.java) ?: return null
+        while (occurrences.any { !PsiTreeUtil.isAncestor(block, it, true) }) block = PsiTreeUtil.getParentOfType(block, CSharpBlock::class.java, true) ?: return null
+        return block
+    }
+
+    /**
+     * Something [expression] reads (a name of it) is assigned, incremented or passed `ref` / `out` in [block] between [from] and [to]: the
+     * occurrences after it may stand for another value.
+     */
+    private fun assignedBetween(expression: CSharpExpression, block: CSharpBlock, from: Int, to: Int): Boolean {
+        val names = SyntaxTraverser.psiTraverser(expression).filter(CSharpIdentifierName::class.java).mapNotNull { it.identifier?.text }.toSet()
+        if (names.isEmpty()) return false
+        fun target(e: CSharpExpression?): Boolean {
+            var core = e ?: return false
+            while (true) core = when (core) {
+                is CSharpMemberAccessExpression -> core.expression ?: return false
+                is CSharpElementAccessExpression -> core.expression ?: return false
+                is CSharpParenthesizedExpression -> core.expression ?: return false
+                else -> break
+            }
+            val name = (core as? CSharpIdentifierName)?.identifier?.text ?: return (core is CSharpThisExpression && e is CSharpMemberAccessExpression &&
+                (e.nameElement as? CSharpIdentifierName)?.identifier?.text in names)
+            // `this.x = …` / `x = …` / `numbers = …`: the root of the target, or its last member when the root is `this`
+            return name in names
+        }
+        for (element in SyntaxTraverser.psiTraverser(block)) {
+            val range = element.textRange
+            if (range.startOffset < from || range.endOffset > to) continue
+            when (element) {
+                is CSharpAssignmentExpression -> if (target(element.left)) return true
+                is CSharpPrefixUnaryExpression -> if (element.operatorToken?.text.let { it == "++" || it == "--" } && target(element.operand)) return true
+                is CSharpPostfixUnaryExpression -> if (element.operatorToken?.text.let { it == "++" || it == "--" } && target(element.operand)) return true
+                is CSharpArgument -> if (element.refKindKeyword?.text.let { it == "ref" || it == "out" } && target(element.expression)) return true
+            }
+        }
+        return false
     }
 
     private fun tokens(element: PsiElement): List<String> =
@@ -713,7 +776,7 @@ object NativeCSharpContextEdits {
      */
     fun extractAllParts(extraction: Extraction, occurrences: List<CSharpExpression>, text: CharSequence): Pair<TextRange, List<String?>> {
         val first = occurrences.first()
-        val block = extraction.statement.parent as CSharpBlock
+        val block = commonBlock(occurrences) ?: extraction.statement.parent as CSharpBlock
         val anchor = block.statements.first { it.textRange.contains(first.textRange) }
         val start = anchor.textRange.startOffset
         val parts = ArrayList<String?>()

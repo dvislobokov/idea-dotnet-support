@@ -1,0 +1,7 @@
+<spot>private string _name;</spot>
+
+public string Name
+{
+    get => _name;
+    set => _name = value;
+}

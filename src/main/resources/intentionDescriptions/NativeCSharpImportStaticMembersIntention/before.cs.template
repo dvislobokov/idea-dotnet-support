@@ -1,0 +1,2 @@
+var max = Math.Max(a, b);
+var min = Math.Min(a, b);

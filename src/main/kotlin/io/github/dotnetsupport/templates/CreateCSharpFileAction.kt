@@ -98,6 +98,20 @@ object CSharpNamespaces {
         return frameworks.none(::isLegacyFramework)
     }
 
+    /** `csharp_style_namespace_declarations` of the `.editorconfig` files above [directory] (up to `root = true`); null when none sets it. */
+    fun explicitNamespaceStyle(directory: VirtualFile?): Boolean? {
+        var current: VirtualFile? = directory
+        while (current != null) {
+            val text = current.findChild(".editorconfig")?.let { runCatching { String(it.contentsToByteArray(), it.charset) }.getOrNull() }
+            if (text != null) {
+                namespaceStyle(text)?.let { return it }
+                if (ROOT.containsMatchIn(text)) return null
+            }
+            current = current.parent
+        }
+        return null
+    }
+
     /** True for `file_scoped`, false for `block_scoped`, null when the option is not set. */
     fun namespaceStyle(editorConfig: String): Boolean? =
         NAMESPACE_STYLE.findAll(editorConfig).lastOrNull()?.groupValues?.get(1)?.let { it.equals("file_scoped", ignoreCase = true) }

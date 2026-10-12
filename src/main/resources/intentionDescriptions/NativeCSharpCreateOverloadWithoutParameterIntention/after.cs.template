@@ -1,0 +1,5 @@
+public void Save(Order order, bool force)
+{
+}
+
+<spot>public void Save(Order order) => Save(order, default);</spot>

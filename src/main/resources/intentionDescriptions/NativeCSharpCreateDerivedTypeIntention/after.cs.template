@@ -1,0 +1,12 @@
+public interface IGreeter
+{
+    string Greet(string name);
+}
+
+<spot>public class Greeter : IGreeter
+{
+    public string Greet(string name)
+    {
+        throw new NotImplementedException();
+    }
+}</spot>

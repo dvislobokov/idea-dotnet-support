@@ -1,0 +1,6 @@
+/// <summary>Saves the order.</summary>
+<spot>/// <exception cref="ArgumentNullException"></exception></spot>
+public void Save(Order order)
+{
+    if (order == null) throw new ArgumentNullException(nameof(order));
+}

@@ -1,0 +1,5 @@
+/// <summary>Saves the order.</summary>
+public void Save(Order order)
+{
+    if (order == null) throw new ArgumentNullException(nameof(order));
+}

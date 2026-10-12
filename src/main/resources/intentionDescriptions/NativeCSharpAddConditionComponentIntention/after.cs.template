@@ -1,0 +1,5 @@
+switch (kind, <spot>other</spot>)
+{
+    case (Kind.A, _):
+        break;
+}

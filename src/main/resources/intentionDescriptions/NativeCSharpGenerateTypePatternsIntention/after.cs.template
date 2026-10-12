@@ -1,0 +1,9 @@
+switch (shape)
+{
+    <spot>case Circle circle:
+        break;
+    case Square square:
+        break;</spot>
+    default:
+        break;
+}

@@ -3,6 +3,24 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.173
+
+Stage 6 of the fixes found comparing with Rider on Jellyfin (`docs/compare/jellyfin-2026-10-12.md`, section 9): the actions of medium
+size, named as Rider names them.
+- Introduce Variable replaces all occurrences across the member (the variable in the innermost block holding them; not when something
+  the expression reads changes between them). Move type to file leaves both files clean (no unused `using`s, the namespace style of
+  `.editorconfig`, the doc comment with the type, no blank line left behind). Refactor This: "Move to Another File", "Move Type to
+  Another Namespace", "Move to Folder", "Extract Members to Partial", "Inline Method", "Copy Type".
+- Members: "To property with backing field", "To property with 'field' keyword" (C# 14), "To computed property", "To auto-property",
+  "Encapsulate field", "To factory method" (calls in the file), "To explicit / implicit implementation".
+- Switch and parameters: on a switch expression "To 'if' statements" and "To ?: expression", "Add condition component", "Generate type
+  patterns" (the direct subtypes of the solution), "Create overload without parameter", "Chop parameters list" / "Put parameters on one
+  line"; C# 14 "Convert to extension block".
+- Types and docs: "Add exception documentation", "Import static members", "Inline Method" (a call, or all calls and the method),
+  "Create derived type", "Copy type", "Cover" on a test.
+- Tests `CSharpContextActionsTest`, `EditorExtrasTest`, `CSharpMoveTypeTest`, `CSharpMemberActionsTest`, `CSharpSwitchActionsTest`,
+  `CSharpParameterActionsTest`, `CSharpExtensionBlockActionsTest`, `CSharpTypeActionsTest`.
+
 ## 0.1.172
 
 Stage 5 of the fixes found comparing with Rider on Jellyfin (`docs/compare/jellyfin-2026-10-12.md`, section 9): the list, its order

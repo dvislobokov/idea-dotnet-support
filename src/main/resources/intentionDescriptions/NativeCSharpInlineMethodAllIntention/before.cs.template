@@ -1,0 +1,3 @@
+var total = Sum(price, count);
+
+private int Sum(int a, int b) => a * b;

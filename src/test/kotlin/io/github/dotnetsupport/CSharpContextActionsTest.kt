@@ -176,6 +176,30 @@ class CSharpContextActionsTest : BasePlatformTestCase() {
         )
     }
 
+    /** Jellyfin № 63: the occurrences of the body, not of the caret's block alone — the variable goes before the first one, in the block that holds them all. */
+    fun testIntroduceVariableForOccurrencesInOuterAndNestedBlocks() {
+        NativeCSharpIntroduceVariableIntention.allOccurrencesForTests = true
+        try {
+            assertEquals("void M(List<int> numbers, bool flag)\n{\n    var count = numbers.Count;\n    Console.WriteLine(count);\n    if (flag)\n    {\n        Console.WriteLine(count + 1);\n    }\n}", apply("void M(List<int> numbers, bool flag)\n{\n    Console.WriteLine(numbers.Count);\n    if (flag)\n    {\n        Console.WriteLine(numbers.Cou<caret>nt + 1);\n    }\n}", "Introduce variable"))
+        } finally {
+            NativeCSharpIntroduceVariableIntention.allOccurrencesForTests = false
+        }
+    }
+
+    /** An occurrence in a lambda runs at another time, and one after an assignment of what the expression reads is another value: not replaced. */
+    fun testOccurrencesNotAcrossALambdaOrAnAssignment() {
+        fun count(code: String): Int {
+            myFixture.configureByText("Context${files++}.cs", wrap(code, USINGS))
+            val file = myFixture.file as io.github.dotnetsupport.lang.CSharpFile
+            val extraction = io.github.dotnetsupport.lang.NativeCSharpContextEdits.extractionAt(file, null, myFixture.editor.caretModel.offset,
+                io.github.dotnetsupport.lang.semantic.CSharpSemanticSession(project).resolver(file))!!
+            return io.github.dotnetsupport.lang.NativeCSharpContextEdits.occurrences(extraction).size
+        }
+        // the one in the lambda is left alone, the two others are replaced
+        assertEquals(2, count("void M(List<int> numbers)\n{\n    Console.WriteLine(numbers.Cou<caret>nt);\n    Action a = () => Console.WriteLine(numbers.Count);\n    Console.WriteLine(numbers.Count + 1);\n}"))
+        assertEquals(0, count("void M(List<int> numbers, List<int> other)\n{\n    Console.WriteLine(numbers.Cou<caret>nt);\n    numbers = other;\n    Console.WriteLine(numbers.Count);\n}"))
+    }
+
     fun testOccurrencesOneVariableCannotServe() {
         myFixture.configureByText("Context${files++}.cs", wrap("void M(List<int> numbers)\n{\n    Console.WriteLine(numbers.Count);\n    {\n        var other = numbers;\n        Console.WriteLine(other.Cou<caret>nt);\n        Console.WriteLine(other.Count);\n    }\n}", USINGS))
         val file = myFixture.file as io.github.dotnetsupport.lang.CSharpFile

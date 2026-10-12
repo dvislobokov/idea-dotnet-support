@@ -167,8 +167,41 @@ class CSharpParameterActionsTest : BasePlatformTestCase() {
         assertFalse(available("void Save(string name, bool force) { }\nvoid M()\n{\n    Save(\"a\", <caret>force: true);\n}", "Remove argument names"))
     }
 
+    // ---- Create overload without parameter, Chop parameters list, Put parameters on one line (0.1.173)
+
+    fun testCreateOverloadWithoutParameter() {
+        assertEquals(
+            "public async Task<int> Save(string name, bool fo<caret>rce)\n{\n    return 1;\n}\n\npublic Task<int> Save(string name) => Save(name, default);".replace("<caret>", ""),
+            apply("public async Task<int> Save(string name, bool fo<caret>rce)\n{\n    return 1;\n}", "Create overload without parameter")
+                .replace("using System.Threading.Tasks;", ""),
+        )
+        // the default value of an optional parameter is passed on; `ref` arguments keep their kind
+        assertEquals(
+            "private static void Copy(ref int a, int retries = 3) { }\n\nprivate static void Copy(ref int a) => Copy(ref a, 3);",
+            apply("private static void Copy(ref int a, int <caret>retries = 3) { }", "Create overload without parameter"),
+        )
+        // an overload of that signature exists, the receiver of an extension method, a generic method
+        assertFalse(available("void Save(string name, bool <caret>force) { }\nvoid Save(string name) { }", "Create overload without parameter"))
+        assertFalse(available("void Save<T>(T value, bool <caret>force) { }", "Create overload without parameter"))
+    }
+
+    fun testChopAndJoinParameters() {
+        assertEquals(
+            "void Save(string name,\n          bool force,\n          int retries) { }",
+            apply("void Save(string <caret>name, bool force, int retries) { }", "Chop parameters list"),
+        )
+        assertEquals(
+            "void Save(string name, bool force) { }",
+            apply("void Save(string <caret>name,\n          bool force) { }", "Put parameters on one line"),
+        )
+        // one parameter; already one per line; already on one line
+        assertFalse(available("void Save(string <caret>name) { }", "Chop parameters list"))
+        assertFalse(available("void Save(string <caret>name,\n          bool force) { }", "Chop parameters list"))
+        assertFalse(available("void Save(string <caret>name, bool force) { }", "Put parameters on one line"))
+    }
+
     private companion object {
-        const val HEAD = "using System;\nusing System.Collections.Generic;\n\nnamespace Demo;\n\nclass Sample\n{\n"
+        const val HEAD ="using System;\nusing System.Collections.Generic;\n\nnamespace Demo;\n\nclass Sample\n{\n"
 
         private fun bytes(name: String): ByteArray? = CSharpParameterActionsTest::class.java.getResourceAsStream("/index/$name")?.use { it.readBytes() }
         private fun fixture(name: String): AssemblyIndex = AssemblyIndex.read(bytes("$name.dnix")!!, bytes("$name.dnxd")?.let(AssemblyDocs::read))

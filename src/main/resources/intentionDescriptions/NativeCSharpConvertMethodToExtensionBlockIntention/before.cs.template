@@ -1,0 +1,4 @@
+static class Strings
+{
+    public static int Words(this string text) => 0;
+}

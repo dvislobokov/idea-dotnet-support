@@ -343,6 +343,294 @@ object NativeCSharpSwitchEdits {
         }
         return CSharpTextEdit(statement.textRange, out.toString())
     }
+
+    // ---- To 'if' statements / To ?: expression on a switch expression (0.1.173)
+
+    /** `x == A` / `x is P` / `x is P && (c)` for the pattern of [arm]; null for the discard arm without `when`. */
+    private fun armCondition(arm: CSharpSwitchExpressionArm, subject: String): String? {
+        val pattern = arm.pattern ?: return null
+        if (pattern is CSharpDiscardPattern && arm.whenClause == null) return null
+        val base = when (pattern) {
+            is CSharpConstantPattern -> "$subject == ${pattern.text}"
+            is CSharpDiscardPattern -> "true"
+            else -> "$subject is ${pattern.text}"
+        }
+        val condition = arm.whenClause?.condition?.text ?: return base
+        return if (pattern is CSharpDiscardPattern) condition else "$base && ($condition)"
+    }
+
+    /**
+     * The `if` / `else if` / `else` chain of a `switch` expression that is returned or assigned (Rider: "To 'if' statements"): each arm's
+     * value returned or assigned in its branch, a throwing arm thrown; without a discard arm the last `else` throws
+     * `ArgumentOutOfRangeException`, as the `switch` expression would have thrown.
+     */
+    fun expressionToIfStatements(expression: CSharpSwitchExpression, text: CharSequence, unit: String): CSharpTextEdit? {
+        val owner = ownerStatement(expression) ?: return null
+        val governing = expression.governingExpression ?: return null
+        if (!present(expression.closeBraceToken) || expression.arms.isEmpty()) return null
+        val target = ((owner as? CSharpExpressionStatement)?.expression as? CSharpAssignmentExpression)?.left?.text
+        val subject = if (simple(governing)) governing.text else "(${governing.text})"
+        val indent = ownIndent(text, owner)
+        val inner = indent + unit
+        fun body(value: CSharpExpression): String = when {
+            value is CSharpThrowExpression -> "${inner}throw ${value.expression?.text};"
+            target == null -> "${inner}return ${value.text};"
+            else -> "$inner$target = ${value.text};"
+        }
+        val out = StringBuilder()
+        var open = false
+        var closed = false
+        for (arm in expression.arms) {
+            val value = NativeCSharpContextEdits.unwrap(arm.expression) ?: return null
+            if (value is CSharpThrowExpression && value.expression == null) return null
+            val condition = armCondition(arm, subject)
+            if (condition == null) {
+                if (!open) return null
+                out.append("\n${indent}else\n$indent{\n").append(body(value)).append('\n').append(indent).append('}')
+                closed = true
+                break
+            }
+            out.append(if (!open) "if (" else "\n${indent}else if (").append(condition).append(")\n").append(indent).append("{\n")
+                .append(body(value)).append('\n').append(indent).append('}')
+            open = true
+        }
+        if (!open) return null
+        if (!closed) {
+            val name = (NativeCSharpContextEdits.unwrap(governing) as? CSharpIdentifierName)?.identifier?.text
+            out.append("\n${indent}else\n$indent{\n${inner}throw new ArgumentOutOfRangeException(")
+                .append(if (name != null) "nameof($name), $name, null" else "").append(");\n").append(indent).append('}')
+        }
+        return CSharpTextEdit(owner.textRange, out.toString())
+    }
+
+    /** A value of a branch of `?:` that needs parentheses there: a conditional, an assignment, a lambda, a `switch` expression. */
+    private fun branch(value: CSharpExpression): String = when (value) {
+        is CSharpConditionalExpression, is CSharpAssignmentExpression, is CSharpAnonymousFunctionExpression, is CSharpSwitchExpression -> "(${value.text})"
+        else -> value.text
+    }
+
+    /**
+     * `x == A ? a : b` for a `switch` expression of one arm and a discard arm (Rider: "To ?: expression"); `x is P ? a : b` for a pattern.
+     * Parenthesized where it is an operand of something tighter than `?:`.
+     */
+    fun toConditional(expression: CSharpSwitchExpression): CSharpTextEdit? {
+        val governing = expression.governingExpression ?: return null
+        val arms = expression.arms
+        if (arms.size != 2 || !present(expression.closeBraceToken)) return null
+        val last = arms[1]
+        if (last.pattern !is CSharpDiscardPattern || last.whenClause != null) return null
+        val first = arms[0]
+        val subject = if (simple(governing)) governing.text else "(${governing.text})"
+        val condition = armCondition(first, subject) ?: return null
+        val whenTrue = NativeCSharpContextEdits.unwrap(first.expression) ?: return null
+        val whenFalse = NativeCSharpContextEdits.unwrap(last.expression) ?: return null
+        val conditional = "$condition ? ${branch(whenTrue)} : ${branch(whenFalse)}"
+        val bare = when (val parent = expression.parent) {
+            is CSharpReturnStatement, is CSharpEqualsValueClause, is CSharpArgument, is CSharpArrowExpressionClause, is CSharpParenthesizedExpression,
+            is CSharpExpressionStatement, is CSharpInterpolation -> true
+            is CSharpAssignmentExpression -> parent.right == expression
+            else -> false
+        }
+        return CSharpTextEdit(expression.textRange, if (bare) conditional else "($conditional)")
+    }
+
+    // ---- Add condition component (0.1.173)
+
+    /** The tuple a governing expression is (`switch (a, b)` / `(a, b) switch`), else null. */
+    private fun tupleOf(governing: CSharpExpression?): CSharpTupleExpression? = NativeCSharpContextEdits.unwrap(governing) as? CSharpTupleExpression ?: governing as? CSharpTupleExpression
+
+    /** [pattern] with one more component `_`: a positional pattern of a tuple gets `, _`, anything else becomes `(pattern, _)`. */
+    private fun widened(pattern: CSharpPattern, tuple: Boolean): String? {
+        if (tuple) {
+            val positional = (pattern as? CSharpRecursivePattern)?.takeIf { it.type == null && it.propertyPatternClause == null }?.positionalPatternClause ?: return null
+            val close = positional.closeParenToken?.takeIf(::present) ?: return null
+            val text = pattern.text
+            val at = close.textRange.startOffset - pattern.textRange.startOffset
+            return text.substring(0, at) + ", _" + text.substring(at)
+        }
+        return "(${pattern.text}, _)"
+    }
+
+    /**
+     * One more component of the value a `switch` matches (Rider: "Add condition component"): `switch (x)` becomes `switch (x, |)` with the
+     * caret on the new component, every label's pattern `(P, _)` (`, _` added to the positional patterns of a tuple), `default` / `_` as
+     * they are. The new component is left for the user to write, as Rider's does.
+     */
+    fun addConditionComponent(statement: CSharpSwitchStatement): CSharpTextEdit? {
+        val governing = statement.expression ?: return null
+        val close = statement.closeParenToken?.takeIf(::present) ?: return null
+        val tuple = tupleOf(governing)
+        val edits = ArrayList<Triple<Int, Int, String>>()
+        for (section in statement.sections) for (label in section.labels) {
+            when (label) {
+                is CSharpCaseSwitchLabel -> {
+                    val value = label.value ?: return null
+                    if (tuple != null) return null
+                    edits += Triple(value.textRange.startOffset, value.textRange.endOffset, "(${value.text}, _)")
+                }
+                is CSharpCasePatternSwitchLabel -> {
+                    val pattern = label.pattern ?: return null
+                    if (pattern is CSharpDiscardPattern) continue
+                    edits += Triple(pattern.textRange.startOffset, pattern.textRange.endOffset, widened(pattern, tuple != null) ?: return null)
+                }
+            }
+        }
+        val at = (tuple?.closeParenToken?.takeIf(::present) ?: if (tuple != null) return null else close).textRange.startOffset
+        edits += Triple(at, at, ", $CARET")
+        return applied(statement, edits)
+    }
+
+    /** The same for a `switch` expression: `x switch` becomes `(x, |) switch`, every arm's pattern `(P, _)`, the discard arm as it is. */
+    fun addConditionComponent(expression: CSharpSwitchExpression): CSharpTextEdit? {
+        val governing = expression.governingExpression ?: return null
+        if (!present(expression.closeBraceToken)) return null
+        val tuple = tupleOf(governing)
+        val edits = ArrayList<Triple<Int, Int, String>>()
+        for (arm in expression.arms) {
+            val pattern = arm.pattern ?: return null
+            if (pattern is CSharpDiscardPattern) continue
+            edits += Triple(pattern.textRange.startOffset, pattern.textRange.endOffset, widened(pattern, tuple != null) ?: return null)
+        }
+        if (tuple != null) {
+            val at = tuple.closeParenToken?.takeIf(::present)?.textRange?.startOffset ?: return null
+            edits += Triple(at, at, ", $CARET")
+        } else {
+            val g = governing.textRange
+            edits += Triple(g.startOffset, g.endOffset, "(${governing.text}, $CARET)")
+        }
+        return applied(expression, edits)
+    }
+
+    /** Where the caret goes in a replacement text: cut out by [applied]. */
+    private const val CARET = "\u0000caret\u0000"
+
+    /** [edits] (absolute ranges inside [element], none overlapping) applied to its text; the caret where [CARET] was. */
+    private fun applied(element: PsiElement, edits: List<Triple<Int, Int, String>>): CSharpTextEdit {
+        val base = element.textRange.startOffset
+        val builder = StringBuilder(element.text)
+        for ((from, to, replacement) in edits.sortedByDescending { it.first }) builder.replace(from - base, to - base, replacement)
+        val caret = builder.indexOf(CARET)
+        if (caret >= 0) builder.delete(caret, caret + CARET.length)
+        return CSharpTextEdit(element.textRange, builder.toString(), caret.coerceAtLeast(0))
+    }
+
+    // ---- Generate type patterns (0.1.173)
+
+    private val NOT_MATCHED = setOf("System.Object", "System.ValueType", "System.Enum", "System.String")
+
+    /** The type a type pattern of [label] / an arm tests (`case Series series:` → `Series`), as written. */
+    private fun testedType(pattern: CSharpPattern?): String? = when (pattern) {
+        is CSharpDeclarationPattern -> pattern.type?.text
+        is CSharpTypePattern -> pattern.type?.text
+        is CSharpRecursivePattern -> pattern.type?.text
+        is CSharpConstantPattern -> pattern.expression?.text
+        else -> null
+    }
+
+    private fun testedTypes(statement: CSharpSwitchStatement): Set<String> = statement.sections.flatMap { it.labels }.mapNotNull { label ->
+        when (label) {
+            is CSharpCasePatternSwitchLabel -> testedType(label.pattern)
+            is CSharpCaseSwitchLabel -> label.value?.text
+            else -> null
+        }
+    }.map { it.substringAfterLast('.') }.toSet()
+
+    /** A subtype to match: its name as the place can write it, and the name of its variable. */
+    class Subtype(val name: String, val variable: String)
+
+    /**
+     * The direct subtypes of the type [governing] is of, from the solution's types (the base lists the supertype index names): what Rider's
+     * "Generate type patterns" lists; the generic, static and already matched ones left out. Empty for a sealed or value type and for
+     * `object`.
+     */
+    fun subtypes(governing: CSharpExpression, resolver: CSharpNameResolver, taken: Set<String>, matched: Set<String>): List<Subtype> {
+        val type = resolver.typeOf(governing)?.let(resolver::unwrapNullable) ?: return emptyList()
+        if (resolver.definitionName(type) in NOT_MATCHED || resolver.isValueType(type)) return emptyList()
+        val project = governing.project
+        val target = when (type) {
+            is SemanticType.Source -> {
+                if (type.info.kind == TypeKind.ENUM || type.info.parts.any { "sealed" in it.modifiers || "static" in it.modifiers }) return emptyList()
+                type.info.parts.firstNotNullOfOrNull { it.element() }?.let(io.github.dotnetsupport.lang.semantic.CSharpSolutionSearch::targetOf)
+            }
+            is SemanticType.Library -> {
+                if (type.type.isSealed || type.type.isStatic || type.type.kind == IndexedTypeKind.ENUM) return emptyList()
+                io.github.dotnetsupport.lang.semantic.CSharpSolutionSearch.targetOf(io.github.dotnetsupport.lang.semantic.CSharpSymbol.LibraryType(type.type))
+            }
+            else -> null
+        } ?: return emptyList()
+        val session = io.github.dotnetsupport.lang.semantic.CSharpSemanticSession(project)
+        val names = HashSet(taken)
+        val found = ArrayList<Subtype>()
+        for (declaration in io.github.dotnetsupport.lang.semantic.CSharpSolutionSearch.directSubtypes(project, target, session)) {
+            val typeDeclaration = declaration as? CSharpTypeDeclaration ?: continue
+            if (typeDeclaration.typeParameterList != null || typeDeclaration.modifiers.any { it.text == "static" }) continue
+            val simpleName = typeDeclaration.identifier?.text ?: continue
+            if (simpleName in matched) continue
+            val info = (typeDeclaration.containingFile as? CSharpFile)?.let { session.resolver(it).syntax.declaredType(typeDeclaration) } ?: continue
+            val visible = resolver.typeOrNamespace(governing, simpleName, 0).any { (it as? io.github.dotnetsupport.lang.semantic.CSharpSymbol.SourceType)?.info?.key == info.key }
+            val written = if (visible) simpleName else info.qualifiedName
+            var variable = CSharpVariableNames.forType(simpleName).firstOrNull() ?: simpleName.replaceFirstChar { it.lowercase() }
+            if (variable in NativeCSharpCompletionPlace.ALL_KEYWORDS) variable = "@$variable"
+            var unique = variable
+            var n = 1
+            while (!names.add(unique)) unique = variable + n++
+            found += Subtype(written, unique)
+        }
+        return found
+    }
+
+    /** The names declared in the member around [element]: what a pattern variable must not repeat. */
+    fun takenNames(element: PsiElement): Set<String> {
+        val owner = PsiTreeUtil.getParentOfType(element, CSharpMemberDeclaration::class.java) ?: return emptySet()
+        val names = HashSet<String>()
+        PsiTreeUtil.processElements(owner) { e ->
+            when (e) {
+                is CSharpVariableDeclarator -> e.identifier?.text?.let(names::add)
+                is CSharpParameter -> e.identifier?.text?.let(names::add)
+                is CSharpSingleVariableDesignation -> e.identifier?.text?.let(names::add)
+            }
+            true
+        }
+        return names
+    }
+
+    /** `case Series series:` + `break;` for each subtype, after the last section that is not `default` (Rider: "Generate type patterns"). */
+    fun addTypePatterns(statement: CSharpSwitchStatement, subtypes: List<Subtype>, text: CharSequence, unit: String): CSharpTextEdit? {
+        if (subtypes.isEmpty()) return null
+        val indent = sectionIndent(statement, text, unit)
+        val lines = subtypes.flatMap { listOf("${indent}case ${it.name} ${it.variable}:", "$indent${unit}break;") }
+        val defaultSection = statement.sections.firstOrNull { s -> s.labels.any { it is CSharpDefaultSwitchLabel } }
+        if (defaultSection != null) {
+            val at = lineStart(text, defaultSection.textRange.startOffset)
+            return CSharpTextEdit(TextRange(at, at), lines.joinToString("") { "$it\n" })
+        }
+        return insertBeforeClose(statement, text, lines)
+    }
+
+    /** The same arms for a `switch` expression: `Series series => throw new NotImplementedException(),` before the discard arm or at the end. */
+    fun addTypePatternArms(expression: CSharpSwitchExpression, subtypes: List<Subtype>, text: CharSequence, unit: String): CSharpTextEdit? {
+        if (subtypes.isEmpty()) return null
+        val open = expression.openBraceToken?.takeIf(::present) ?: return null
+        val close = expression.closeBraceToken?.takeIf(::present) ?: return null
+        val armIndent = expression.arms.firstOrNull()?.let { lineIndent(text, it.textRange.startOffset) } ?: (ownIndent(text, expression) + unit)
+        val arms = subtypes.map { "${it.name} ${it.variable} => throw new NotImplementedException()" }
+        val discard = discardArm(expression)
+        if (discard != null) {
+            val at = discard.textRange.startOffset
+            return CSharpTextEdit(TextRange(at, at), arms.joinToString("") { "$it,\n$armIndent" })
+        }
+        val last = expression.arms.lastOrNull()
+        if (last == null) {
+            return CSharpTextEdit(TextRange(open.textRange.endOffset, close.textRange.startOffset), arms.joinToString(",\n", prefix = "\n", postfix = "\n" + ownIndent(text, expression)) { armIndent + it })
+        }
+        val separated = expression.armsSeparators.size >= expression.arms.size
+        val at = last.textRange.endOffset
+        return CSharpTextEdit(TextRange(at, at), arms.joinToString("", prefix = if (separated) "" else ",") { "\n$armIndent$it," }.removeSuffix(","))
+    }
+
+    fun testedTypesOf(expression: CSharpSwitchExpression): Set<String> = expression.arms.mapNotNull { testedType(it.pattern) }.map { it.substringAfterLast('.') }.toSet()
+
+    fun testedTypesOf(statement: CSharpSwitchStatement): Set<String> = testedTypes(statement)
 }
 
 /** Alt+Enter on `switch (enum)`: the sections of the members no label covers, and `default` (Rider: "Add 'switch' sections"). */
@@ -383,12 +671,51 @@ class NativeCSharpToSwitchExpressionIntention : NativeCSharpContextAction("To 's
 
 /** Alt+Enter on a `switch` statement: the `if` / `else if` / `else` chain of its sections (Rider: "To 'if' statements"). */
 class NativeCSharpSwitchToIfIntention : NativeCSharpContextAction("To 'if' statements", serverHasIt = true) {
-    override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
-        NativeCSharpSwitchEdits.switchAt(file, editor.caretModel.offset)?.let { NativeCSharpSwitchEdits.toIfStatements(it, editor.document.charsSequence, NativeCSharpContextEdits.unit(file)) }
+    override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
+        val text = editor.document.charsSequence
+        val unit = NativeCSharpContextEdits.unit(file)
+        NativeCSharpSwitchEdits.switchAt(file, editor.caretModel.offset)?.let { return NativeCSharpSwitchEdits.toIfStatements(it, text, unit) }
+        // a `switch` expression that is returned or assigned: the `if` chain returning / assigning each arm's value (0.1.173)
+        return NativeCSharpSwitchEdits.switchExpressionAt(file, editor.caretModel.offset)?.let { NativeCSharpSwitchEdits.expressionToIfStatements(it, text, unit) }
+    }
 }
 
 /** Alt+Enter on a `switch` expression that is returned or assigned: the `switch` statement (Rider: "To 'switch' statement"). */
 class NativeCSharpToSwitchStatementIntention : NativeCSharpContextAction("To 'switch' statement", serverHasIt = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpSwitchEdits.switchExpressionAt(file, editor.caretModel.offset)?.let { NativeCSharpSwitchEdits.toSwitchStatement(it, editor.document.charsSequence, NativeCSharpContextEdits.unit(file)) }
+}
+
+/** Alt+Enter on a `switch` expression of one arm and `_`: the `?:` it stands for (Rider: "To ?: expression"). */
+class NativeCSharpSwitchToConditionalIntention : NativeCSharpContextAction("To ?: expression", serverHasIt = true) {
+    override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
+        NativeCSharpSwitchEdits.switchExpressionAt(file, editor.caretModel.offset)?.let(NativeCSharpSwitchEdits::toConditional)
+}
+
+/** Alt+Enter on a `switch`: one more component of the value it matches, every pattern widened with `_` (Rider: "Add condition component"). */
+class NativeCSharpAddConditionComponentIntention : NativeCSharpContextAction("Add condition component", serverHasIt = true) {
+    override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
+        NativeCSharpSwitchEdits.switchAt(file, editor.caretModel.offset)?.let { return NativeCSharpSwitchEdits.addConditionComponent(it) }
+        return NativeCSharpSwitchEdits.switchExpressionAt(file, editor.caretModel.offset)?.let { NativeCSharpSwitchEdits.addConditionComponent(it) }
+    }
+}
+
+/**
+ * Alt+Enter on a `switch` over a class or an interface: a section (an arm) for each direct subtype of the solution no pattern tests yet,
+ * `case Series series:` + `break;` (Rider: "Generate type patterns…", without its dialog: every subtype).
+ */
+class NativeCSharpGenerateTypePatternsIntention : NativeCSharpContextAction("Generate type patterns", serverHasIt = true, needsTypes = true) {
+    override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
+        val text = editor.document.charsSequence
+        val unit = NativeCSharpContextEdits.unit(file)
+        NativeCSharpSwitchEdits.switchAt(file, editor.caretModel.offset)?.let { statement ->
+            val governing = statement.expression ?: return null
+            val subtypes = NativeCSharpSwitchEdits.subtypes(governing, resolver(file), NativeCSharpSwitchEdits.takenNames(statement), NativeCSharpSwitchEdits.testedTypesOf(statement))
+            return NativeCSharpSwitchEdits.addTypePatterns(statement, subtypes, text, unit)
+        }
+        val expression = NativeCSharpSwitchEdits.switchExpressionAt(file, editor.caretModel.offset) ?: return null
+        val governing = expression.governingExpression ?: return null
+        val subtypes = NativeCSharpSwitchEdits.subtypes(governing, resolver(file), NativeCSharpSwitchEdits.takenNames(expression), NativeCSharpSwitchEdits.testedTypesOf(expression))
+        return NativeCSharpSwitchEdits.addTypePatternArms(expression, subtypes, text, unit)
+    }
 }

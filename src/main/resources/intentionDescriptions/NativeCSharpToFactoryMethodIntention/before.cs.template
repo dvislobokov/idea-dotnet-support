@@ -1,0 +1,4 @@
+public Order(int id)
+{
+    Id = id;
+}

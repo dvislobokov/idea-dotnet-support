@@ -154,6 +154,14 @@
   видимые namespace один раз на место (стенд `CompletionLatencyHarnessTest` с индексами Jellyfin: `new ` 230 → 130 мс, SMART 200 → 85,
   аргумент 160 → 90); потолок 2000 имён — только имена своего проекта. Живую задержку Jellyfin (546–569 мс) стенд не воспроизвёл, вживую
   не перемерено. Не сделано: обход по видимым namespace через namespace-индекс (меняет порядок обхода); № 78 — замер открытия и индексации
+- [x] 0.1.173 — этап 6 (четыре агента): Introduce Variable на все вхождения члена, чистый Move type to file, строки Refactor This (Move to
+  Another File / Namespace / Folder, Extract Members to Partial, Inline Method, Copy Type; `NativeCSharpMoveTypeActions.kt`); свойства
+  (backing field, `field`, computed, auto), Encapsulate field, To factory method, explicit / implicit implementation
+  (`NativeCSharpMemberActions.kt`); switch-выражение → if / ?:, Add condition component, Generate type patterns, Create overload without
+  parameter, Chop / one line, extension block C# 14 (`NativeCSharpExtensionBlockActions.kt`); Add exception documentation, Import static
+  members, Inline Method, Create derived type, Copy type, Cover (`NativeCSharpTypeActions.kt`). Ограничения: To factory method и
+  Encapsulate field — в пределах файла; Move to namespace не переписывает полные имена; Generate type patterns и Copy type без диалога
+  Rider; имя производного типа (`IFoo` → `Foo`, `FooImpl`) — догадка. Вживую не проверено
   Вживую не проверено
 - [x] 0.1.159 — сеть серого текста `cs50m-caret-ft5e5.cml` — единственная в ML-сборке (31 M, `-Pml.big` и настройка «большая модель»
   убраны): обучение с нуля на 6,47 млрд токенов и дообучение на 1,05 млн позиций каретки в формате промпта плагина; на 12 000 позиций

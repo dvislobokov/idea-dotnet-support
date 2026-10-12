@@ -166,6 +166,15 @@
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToSwitchExpressionIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpSwitchToIfIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToSwitchStatementIntention</className><category>C#</category></intentionAction>
+        <!-- switch expressions, type patterns, parameters, extension blocks (0.1.173) -->
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpSwitchToConditionalIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpAddConditionComponentIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpGenerateTypePatternsIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpCreateOverloadWithoutParameterIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpChopParametersIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpParametersOnOneLineIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpConvertToExtensionBlockIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpConvertMethodToExtensionBlockIntention</className><category>C#</category></intentionAction>
         <!-- if (0.1.163, NativeCSharpIfActions.kt): invert, merge nested, split, guard clause, add / remove braces -->
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpInvertIfIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpMergeNestedIfIntention</className><category>C#</category></intentionAction>
@@ -187,6 +196,14 @@
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpCheckParameterForNullIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpAddArgumentNamesIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpRemoveArgumentNamesIntention</className><category>C#</category></intentionAction>
+        <!-- docs, types, inline (0.1.173) -->
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpAddExceptionDocumentationIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpImportStaticMembersIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpInlineMethodIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpInlineMethodAllIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpCreateDerivedTypeIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpCopyTypeIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpCoverTestIntention</className><category>C#</category></intentionAction>
         <!-- expressions (0.1.171) -->
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToSafeCastIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToRegularStringIntention</className><category>C#</category></intentionAction>
@@ -205,6 +222,15 @@
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToVirtualIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToAbstractIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpMakePartialIntention</className><category>C#</category></intentionAction>
+        <!-- members (0.1.173) -->
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToBackingFieldIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToFieldKeywordIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToComputedPropertyIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToAutoPropertyIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpEncapsulateFieldIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToFactoryMethodIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToExplicitImplementationIntention</className><category>C#</category></intentionAction>
+        <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpToImplicitImplementationIntention</className><category>C#</category></intentionAction>
         <!-- fields (0.1.168) -->
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpInitializeFieldFromConstructorIntention</className><category>C#</category></intentionAction>
         <intentionAction><language>C#</language><className>io.github.dotnetsupport.lang.NativeCSharpInitializeMembersFromConstructorIntention</className><category>C#</category></intentionAction>

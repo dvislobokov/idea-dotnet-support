@@ -1,0 +1,4 @@
+<spot>using static System.Math;</spot>
+
+var max = <spot>Max</spot>(a, b);
+var min = <spot>Min</spot>(a, b);

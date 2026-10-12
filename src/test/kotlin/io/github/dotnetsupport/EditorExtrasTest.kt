@@ -45,17 +45,33 @@ class EditorExtrasTest : BasePlatformTestCase() {
         }
     }
 
+    /** The new file and the old one clean, as Rider's (Jellyfin № 64): no blank line after `{`, the indentation of what follows kept. */
     fun testMoveTypeToFileSplitsTheFile() {
         val text = "using System;\n\nnamespace Shop;\n\npublic class Order\n{\n    public int Id;\n}\n\npublic class OrderLine\n{\n}\n"
         val split = CSharpFileLayout.split(text, text.indexOf("OrderLine"))!!
         assertEquals("OrderLine", split.typeName)
         assertEquals("using System;\n\nnamespace Shop;\n\npublic class OrderLine\n{\n}\n", split.newFileText)
-        assertEquals("using System;\n\nnamespace Shop;\n\npublic class Order\n{\n    public int Id;\n}\n\n", split.remainingText)
+        assertEquals("using System;\n\nnamespace Shop;\n\npublic class Order\n{\n    public int Id;\n}\n", split.remainingText)
 
         val block = "namespace Shop\n{\n    class A { }\n    class B { }\n}\n"
         val blockSplit = CSharpFileLayout.split(block, block.indexOf("class B"))!!
-        assertEquals("namespace Shop\n{\n\n    class B { }\n}\n", blockSplit.newFileText)
+        assertEquals("namespace Shop\n{\n    class B { }\n}\n", blockSplit.newFileText)
+        assertEquals("namespace Shop\n{\n    class A { }\n}\n", blockSplit.remainingText)
         assertNull("one type: nothing to move", CSharpFileLayout.split("class A { }", 3))
+
+        // Jellyfin SeriesTimerInfoDto.cs: the first type of a block namespace, the doc comment of the next one keeps its indentation
+        val jellyfin = "#nullable disable\n#pragma warning disable CS1591\n\nusing System;\nusing System.Collections.Generic;\n\nnamespace MediaBrowser.Model.LiveTv\n{\n    public enum KeepUntil\n    {\n        UntilDeleted,\n        UntilDate\n    }\n\n    /// <summary>\n    /// Class SeriesTimerInfoDto.\n    /// </summary>\n    public class SeriesTimerInfoDto\n    {\n    }\n}\n"
+        val keep = CSharpFileLayout.split(jellyfin, jellyfin.indexOf("KeepUntil"))!!
+        assertEquals("#nullable disable\n#pragma warning disable CS1591\n\nusing System;\nusing System.Collections.Generic;\n\nnamespace MediaBrowser.Model.LiveTv\n{\n    public enum KeepUntil\n    {\n        UntilDeleted,\n        UntilDate\n    }\n}\n", keep.newFileText)
+        assertEquals("#nullable disable\n#pragma warning disable CS1591\n\nusing System;\nusing System.Collections.Generic;\n\nnamespace MediaBrowser.Model.LiveTv\n{\n    /// <summary>\n    /// Class SeriesTimerInfoDto.\n    /// </summary>\n    public class SeriesTimerInfoDto\n    {\n    }\n}\n", keep.remainingText)
+        // `csharp_style_namespace_declarations = file_scoped`: the new file file-scoped, the type one level left
+        assertEquals("#nullable disable\n#pragma warning disable CS1591\n\nusing System;\nusing System.Collections.Generic;\n\nnamespace MediaBrowser.Model.LiveTv;\n\npublic enum KeepUntil\n{\n    UntilDeleted,\n    UntilDate\n}\n", CSharpFileLayout.split(jellyfin, jellyfin.indexOf("KeepUntil"), fileScoped = true)!!.newFileText)
+
+        // the doc comment and the attributes go with the type
+        val documented = "namespace Shop;\n\npublic class A { }\n\n/// <summary>The line.</summary>\n[Serializable]\npublic class B { }\n"
+        val doc = CSharpFileLayout.split(documented, documented.indexOf("class B"))!!
+        assertEquals("namespace Shop;\n\n/// <summary>The line.</summary>\n[Serializable]\npublic class B { }\n", doc.newFileText)
+        assertEquals("namespace Shop;\n\npublic class A { }\n", doc.remainingText)
     }
 
     /** «Add a partial part» only on the header of the type, not in every body (Jellyfin № 21, as Rider). */

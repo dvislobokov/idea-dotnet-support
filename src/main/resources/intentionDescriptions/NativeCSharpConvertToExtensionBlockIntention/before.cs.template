@@ -1,0 +1,5 @@
+static class Strings
+{
+    public static int Words(this string text) => 0;
+    public static bool Empty(this string text) => text.Length == 0;
+}

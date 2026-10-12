@@ -1,0 +1,6 @@
+<spot>private</spot> Order(int id)
+{
+    Id = id;
+}
+
+<spot>public static Order Create(int id) => new Order(id);</spot>

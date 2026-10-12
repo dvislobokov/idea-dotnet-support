@@ -1,0 +1,9 @@
+static class Strings
+{
+    <spot>extension(string text)</spot>
+    {
+        public int Words() => 0;
+
+        public bool Empty() => text.Length == 0;
+    }
+}

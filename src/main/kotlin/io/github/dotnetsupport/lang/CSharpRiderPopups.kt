@@ -142,6 +142,11 @@ object CSharpRiderPopups {
             CSharpPopupKind.REFACTOR -> listOf(
                 NativeCSharpIntroduceVariableIntention() to "Introduce Variable", NativeCSharpInlineVariableIntention() to "Inline Variable",
                 MoveTypeToFileIntention() to null, RenameFileToTypeIntention() to null, AdjustNamespaceIntention() to null,
+                // Rider's moves of a type and Extract Members to Partial (Jellyfin № 54, № 57): rows of Refactor This only
+                NativeCSharpMoveToNamespaceRow() to null, NativeCSharpMoveToAnotherFileRow() to null, NativeCSharpMoveToFolderRow() to null,
+                NativeCSharpExtractToPartialRow() to null,
+                // 0.1.173: Rider's Refactor This rows of the same names
+                NativeCSharpInlineMethodIntention() to "Inline Method", NativeCSharpInlineMethodAllIntention() to "Inline Method", NativeCSharpCopyTypeIntention() to "Copy Type",
             )
             CSharpPopupKind.GENERATE -> listOf(CreateTestIntention() to "Unit Test", AddPartialPartIntention() to "Partial Part")
         }

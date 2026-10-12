@@ -1,0 +1,5 @@
+var name = kind switch
+{
+    Kind.A => "a",
+    _ => "other"
+};

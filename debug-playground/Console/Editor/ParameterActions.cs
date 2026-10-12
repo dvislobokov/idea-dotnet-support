@@ -66,4 +66,13 @@ public class ParameterActions
         Console.WriteLine(error.Message);
         Console.WriteLine(count);
     }
+
+    // TYPE:param-overload — Alt+Enter on `force` in Store: "Create overload without parameter". EXPECT: right after Store
+    // `public void Store(string name, int retries) => Store(name, default, retries);`. Ctrl+Z.
+    // TYPE:param-chop — Alt+Enter on `name` in Store: "Chop parameters list". EXPECT: each parameter on its line, aligned under `string name`.
+    // Then Alt+Enter again: "Put parameters on one line" puts them back. Ctrl+Z.
+    public void Store(string name, bool force, int retries)
+    {
+        Console.WriteLine($"{name} {force} {retries}");
+    }
 }

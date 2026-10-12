@@ -251,6 +251,95 @@ object NativeCSharpParameterEdits {
         }
     }
 
+    // ---- Create overload without parameter (0.1.173)
+
+    /** Modifiers an overload that only forwards keeps: accessibility, `static`, `unsafe`, `new` dropped with the rest. */
+    private val KEPT_MODIFIERS = setOf("public", "protected", "internal", "private", "static", "unsafe")
+
+    /**
+     * An overload of the method of [parameter] without it, forwarding to the method with the parameter's default value or `default` (Rider:
+     * "Create overload without parameter"), right after the method: `public void Save(Order order) => Save(order, default);`. Not for the
+     * receiver of an extension method, `params`, a generic method, a method of an interface, or when an overload of that signature exists.
+     */
+    fun overloadWithout(parameter: CSharpParameter, text: CharSequence): CSharpTextEdit? {
+        val list = parameter.parent as? CSharpParameterList ?: return null
+        val method = list.parent as? CSharpMethodDeclaration ?: return null
+        if (method.typeParameterList != null || method.explicitInterfaceSpecifier != null) return null
+        if (method.parent is CSharpInterfaceDeclaration) return null
+        if (parameter.modifiers.any { it.text == "this" || it.text == "params" }) return null
+        val name = method.identifier?.text ?: return null
+        val returnType = method.returnType?.text ?: return null
+        val others = list.parameters.filter { it != parameter }
+        val signature = others.map { it.type?.text?.replace(" ", "") }
+        val owner = method.parent as? CSharpTypeDeclaration ?: return null
+        val clash = owner.members.filterIsInstance<CSharpMethodDeclaration>().any { m ->
+            m != method && m.identifier?.text == name && m.parameterList?.parameters.orEmpty().map { it.type?.text?.replace(" ", "") } == signature
+        }
+        if (clash) return null
+        val modifiers = method.modifiers.map { it.text }.filter { it in KEPT_MODIFIERS }
+        val arguments = list.parameters.map { p ->
+            if (p == parameter) p.default?.value?.text ?: "default"
+            else {
+                val kind = p.modifiers.map { it.text }.firstOrNull { it == "ref" || it == "out" || it == "in" }
+                (if (kind != null) "$kind " else "") + p.identifier?.text
+            }
+        }
+        val header = (modifiers + returnType).joinToString(" ") + " " + name + "(" + others.joinToString(", ") { it.text } + ")"
+        val indent = lineIndent(text, method.textRange.startOffset)
+        val end = method.textRange.endOffset
+        return CSharpTextEdit(TextRange(end, end), "\n\n$indent$header => $name(${arguments.joinToString(", ")});")
+    }
+
+    // ---- Chop parameters list / Put parameters on one line (0.1.173)
+
+    /** The parameter list of a method, constructor, local function, delegate or primary constructor holding [offset]. */
+    fun parameterListAt(file: PsiFile, offset: Int): CSharpParameterList? {
+        for (leaf in leafAt(file, offset)) {
+            val list = PsiTreeUtil.getParentOfType(leaf, CSharpParameterList::class.java, false) ?: continue
+            if (list.parent is CSharpAnonymousFunctionExpression) continue
+            return list
+        }
+        return null
+    }
+
+    private fun separatorsText(list: CSharpParameterList): List<Pair<Int, Int>> {
+        val parameters = list.parameters
+        return (0 until parameters.size - 1).map { i -> parameters[i].textRange.endOffset to parameters[i + 1].textRange.startOffset }
+    }
+
+    /**
+     * Each parameter on its line, aligned under the first (Rider: "Chop parameters list", the default "align multiline parameters"):
+     * `M(int a,\n  int b)`. Only for two or more parameters not each on its own line yet.
+     */
+    fun chop(list: CSharpParameterList, text: CharSequence): CSharpTextEdit? {
+        val parameters = list.parameters
+        if (parameters.size < 2) return null
+        val gaps = separatorsText(list)
+        if (gaps.all { (from, to) -> text.subSequence(from, to).contains('\n') }) return null
+        val first = parameters.first().textRange.startOffset
+        val column = " ".repeat(first - lineStart(text, first))
+        val range = TextRange(first, parameters.last().textRange.endOffset)
+        val out = StringBuilder()
+        for ((i, p) in parameters.withIndex()) {
+            if (i > 0) out.append(",\n").append(column)
+            out.append(p.text)
+        }
+        return CSharpTextEdit(range, out.toString())
+    }
+
+    /** All the parameters on one line, `, ` between them (Rider: "Put parameters on one line"); only when the list spans lines. */
+    fun putOnOneLine(list: CSharpParameterList, text: CharSequence): CSharpTextEdit? {
+        val parameters = list.parameters
+        if (parameters.isEmpty()) return null
+        val open = list.openParenToken?.takeIf(::present) ?: return null
+        val close = list.closeParenToken?.takeIf(::present) ?: return null
+        val range = TextRange(open.textRange.endOffset, close.textRange.startOffset)
+        if (!text.subSequence(range.startOffset, range.endOffset).contains('\n')) return null
+        // a comment between the parameters would swallow the rest of the line
+        if (PsiTreeUtil.findChildOfType(list, com.intellij.psi.PsiComment::class.java) != null) return null
+        return CSharpTextEdit(range, parameters.joinToString(", ") { it.text.lines().joinToString(" ") { l -> l.trim() } })
+    }
+
     private fun rewrite(list: CSharpArgumentList, text: CharSequence, edit: (StringBuilder, Int) -> Unit): CSharpTextEdit {
         val range = list.textRange
         val builder = StringBuilder(text.subSequence(range.startOffset, range.endOffset))
@@ -320,4 +409,22 @@ class NativeCSharpRemoveArgumentNamesIntention : NativeCSharpContextAction("Remo
         val parameters = NativeCSharpParameterEdits.parametersOf(list, resolver(file)) ?: return null
         return NativeCSharpParameterEdits.removeNames(list, parameters, editor.document.charsSequence)
     }
+}
+
+/** Alt+Enter on a parameter: an overload without it, forwarding its default value (Rider: "Create overload without parameter"). */
+class NativeCSharpCreateOverloadWithoutParameterIntention : NativeCSharpContextAction("Create overload without parameter", serverHasIt = true) {
+    override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
+        NativeCSharpParameterEdits.parameterAt(file, editor.caretModel.offset)?.let { NativeCSharpParameterEdits.overloadWithout(it, editor.document.charsSequence) }
+}
+
+/** Alt+Enter in a parameter list on one line: each parameter on its own line, aligned (Rider: "Chop parameters list"). */
+class NativeCSharpChopParametersIntention : NativeCSharpContextAction("Chop parameters list", serverHasIt = true) {
+    override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
+        NativeCSharpParameterEdits.parameterListAt(file, editor.caretModel.offset)?.let { NativeCSharpParameterEdits.chop(it, editor.document.charsSequence) }
+}
+
+/** Alt+Enter in a parameter list over several lines: the parameters on one line (Rider: "Put parameters on one line"). */
+class NativeCSharpParametersOnOneLineIntention : NativeCSharpContextAction("Put parameters on one line", serverHasIt = true) {
+    override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
+        NativeCSharpParameterEdits.parameterListAt(file, editor.caretModel.offset)?.let { NativeCSharpParameterEdits.putOnOneLine(it, editor.document.charsSequence) }
 }

@@ -176,4 +176,37 @@ public class SwitchActions
     {
         Console.WriteLine(count switch { 1 => "one", _ => "?" });
     }
+
+    // TYPE:switch-expression-to-if — Alt+Enter on `switch` of ExpressionToIf: "To 'if' statements". EXPECT: `if (kind == OperationType.Insert)`
+    // { return "Insert"; } `else if (kind == OperationType.Update)` { return "Update"; } `else` { `throw new ArgumentOutOfRangeException();` }.
+    // TYPE:switch-to-conditional — Alt+Enter on `switch` of TwoArms: "To ?: expression". EXPECT: `kind == OperationType.Insert ? "i" : "other"`;
+    // NOT offered on `switch` of ExpressionToIf (three arms).
+    // TYPE:switch-condition-component — Alt+Enter on `switch` of TwoArms: "Add condition component". EXPECT: `(kind, |) switch` with the caret
+    // after the comma, `(OperationType.Insert, _) => "i"`, `_ => "other"` as it was.
+    public static string ExpressionToIf(OperationType kind)
+    {
+        return kind switch
+        {
+            OperationType.Insert => "Insert",
+            OperationType.Update => "Update",
+            _ => throw new ArgumentOutOfRangeException(),
+        };
+    }
+
+    public static string TwoArms(OperationType kind) => kind switch { OperationType.Insert => "i", _ => "other" };
+
+    public abstract class SampleShape { }
+    public class SampleCircle : SampleShape { }
+    public class SampleSquare : SampleShape { }
+
+    // TYPE:switch-type-patterns — Alt+Enter on `switch (shape)` below: "Generate type patterns". EXPECT: `case SampleCircle circle:` /
+    // `break;` and `case SampleSquare square:` / `break;` before `default:`. NOT offered on `switch (count)` of Assigned.
+    public static void TypePatterns(SampleShape shape)
+    {
+        switch (shape)
+        {
+            default:
+                break;
+        }
+    }
 }

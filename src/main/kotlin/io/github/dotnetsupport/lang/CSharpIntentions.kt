@@ -110,7 +110,8 @@ class MoveTypeToFileIntention : CSharpIntention() {
         val source = source(file) ?: return
         val virtualFile = source.virtualFile ?: return
         val document = FileDocumentManager.getInstance().getDocument(virtualFile) ?: return
-        val split = CSharpFileLayout.split(document.immutableCharSequence, editor?.caretModel?.offset ?: return) ?: return
+        val fileScoped = io.github.dotnetsupport.templates.CSharpNamespaces.explicitNamespaceStyle(virtualFile.parent) == true
+        val split = CSharpFileLayout.split(document.immutableCharSequence, editor?.caretModel?.offset ?: return, fileScoped) ?: return
         val created = WriteCommandAction.writeCommandAction(project).withName("Move ${split.typeName} to ${split.typeName}.cs").compute<VirtualFile, IncorrectOperationException> {
             val target = virtualFile.parent.createChildData(this, "${split.typeName}.cs")
             VfsUtil.saveText(target, split.newFileText)
@@ -118,7 +119,33 @@ class MoveTypeToFileIntention : CSharpIntention() {
             FileDocumentManager.getInstance().saveDocument(document)
             target
         }
+        removeUnusedUsings(project, created)
         OpenFileDescriptor(project, created).navigate(true)
+    }
+
+    companion object {
+        /**
+         * The `using` directives of the moved type's new file nothing in it needs, as Rider leaves only those (Jellyfin № 64): by the native
+         * check of unused directives (CS8019), so not while the IDE indexes or with the semantic diagnostics on the server; a blank line
+         * left at the top goes too.
+         */
+        fun removeUnusedUsings(project: Project, file: VirtualFile) {
+            if (com.intellij.openapi.project.DumbService.isDumb(project)) return
+            val psi = com.intellij.psi.PsiManager.getInstance(project).findFile(file) as? CSharpFile ?: return
+            if (!CSharpFeatures.native(CSharpFeature.DIAGNOSTICS, psi)) return
+            val document = FileDocumentManager.getInstance().getDocument(file) ?: return
+            val ranges = runCatching { CSharpRemoveUnusedUsingsFix.unusedLines(psi, document.charsSequence) }.getOrNull() ?: return
+            if (ranges.isEmpty()) return
+            WriteCommandAction.runWriteCommandAction(project, "Remove Unused Usings", null, {
+                for (range in ranges) document.deleteString(range.startOffset, range.endOffset)
+                val text = document.charsSequence
+                // a header left with blank lines in a row, or starting with one
+                val collapsed = text.toString().replace(Regex("\n{3,}"), "\n\n").trimStart('\n')
+                if (collapsed != text.toString()) document.replaceString(0, document.textLength, collapsed)
+                com.intellij.psi.PsiDocumentManager.getInstance(project).commitDocument(document)
+                FileDocumentManager.getInstance().saveDocument(document)
+            })
+        }
     }
 }
 
@@ -205,29 +232,69 @@ object CSharpFileLayout {
     fun typeAt(text: CharSequence, offset: Int): CSharpDeclarationInfo? = topLevelTypes(text).firstOrNull { it.range.containsOffset(offset) }
 
     /**
-     * The new file: everything before the first type (usings, the namespace line or its opening brace), the type, and the closing
-     * brace of a block namespace; the old file without the type and with one blank line where it was.
+     * The new file: everything before the first type (usings, `#nullable` / `#pragma` lines, the namespace line or its opening brace), the
+     * type with its doc comment, and the closing brace of a block namespace, with no blank line after the brace; with [fileScoped] a block
+     * namespace becomes `namespace N;` and the type moves one level left. The old file without the type, its doc comment and the blank
+     * lines around it, the indentation of what follows kept (Jellyfin № 64: Rider's files are clean; ours had a blank line after `{` and
+     * the `/// <summary>` of the next type moved to column 0). The `using` directives the type does not need go afterwards
+     * ([MoveTypeToFileIntention.removeUnusedUsings]).
      */
-    fun split(text: CharSequence, offset: Int): Split? {
+    fun split(text: CharSequence, offset: Int, fileScoped: Boolean = false): Split? {
         val type = typeAt(text, offset) ?: return null
         val types = topLevelTypes(text)
         if (types.size < 2) return null
         val namespace = CSharpSyntaxModel.current.declarations(text).declarations.singleOrNull { it.kind == DeclarationKind.NAMESPACE }
-        val firstTypeStart = types.minOf { it.range.startOffset }
-        val header = text.subSequence(0, firstTypeStart).toString().trimEnd()
         val blockNamespace = namespace?.body != null
-        // with the indentation of its first line: inside a block namespace the type is indented
-        val typeText = CSharpExpressions.indentAt(text, type.range.startOffset) + text.subSequence(type.range.startOffset, type.range.endOffset)
-        val newFile = buildString {
-            append(header); append("\n\n"); append(typeText); append("\n")
+        val typeStart = leadingComments(text, lineStart(text, type.range.startOffset))
+        val firstTypeStart = types.minOf { leadingComments(text, lineStart(text, it.range.startOffset)) }
+        val header = text.subSequence(0, firstTypeStart).toString().trimEnd()
+        val indent = CSharpExpressions.indentAt(text, type.range.startOffset)
+        val typeText = text.subSequence(typeStart, type.range.endOffset).toString()
+        val newFile = if (blockNamespace && fileScoped && namespace != null) {
+            val beforeNamespace = text.subSequence(0, lineStart(text, namespace.range.startOffset)).toString().trimEnd()
+            val dedented = typeText.lines().joinToString("\n") { it.removePrefix(indent) }
+            buildString {
+                if (beforeNamespace.isNotEmpty()) { append(beforeNamespace); append("\n\n") }
+                append("namespace ").append(namespace.name).append(";\n\n").append(dedented).append("\n")
+            }
+        } else buildString {
+            append(header); append(if (blockNamespace) "\n" else "\n\n"); append(typeText); append("\n")
             if (blockNamespace) append("}\n")
         }
-        var start = type.range.startOffset
-        while (start > 0 && text[start - 1] == ' ') start--
+        // the old file: the type's lines out, with the blank lines after it; with nothing but `}` (or the end) after, the blank lines
+        // before it go too
+        var start = typeStart
         var end = type.range.endOffset
-        while (end < text.length && (text[end] == ' ' || text[end] == '\r' || text[end] == '\n')) end++
-        while (start > 0 && (text[start - 1] == '\n' || text[start - 1] == '\r')) start--
-        val remaining = (text.substring(0, start) + "\n\n" + text.substring(end)).replace(Regex("\n{3,}"), "\n\n")
+        while (end < text.length && (text[end] == ' ' || text[end] == '\t' || text[end] == '\r')) end++
+        if (end < text.length && text[end] == '\n') end++
+        while (true) {
+            val lineEnd = text.indexOf('\n', end).let { if (it < 0) text.length else it }
+            if (end >= text.length || text.subSequence(end, lineEnd).isNotBlank()) break
+            end = if (lineEnd < text.length) lineEnd + 1 else lineEnd
+        }
+        val rest = text.subSequence(end, text.length).trimStart()
+        if (rest.isEmpty() || rest.startsWith("}")) {
+            while (start > 0) {
+                val previousStart = lineStart(text, start - 1)
+                if (text.subSequence(previousStart, start).isNotBlank()) break
+                start = previousStart
+            }
+        }
+        val remaining = text.substring(0, start) + text.substring(end)
         return Split(type.name, newFile, remaining)
+    }
+
+    private fun lineStart(text: CharSequence, offset: Int): Int = if (offset <= 0) 0 else text.lastIndexOf('\n', offset - 1) + 1
+
+    /** [start] (a line start) moved up over the `///` comments and attribute lines right above it. */
+    private fun leadingComments(text: CharSequence, start: Int): Int {
+        var current = start
+        while (current > 0) {
+            val previous = lineStart(text, current - 1)
+            val line = text.subSequence(previous, current).trim()
+            if (!(line.startsWith("///") || line.startsWith("["))) break
+            current = previous
+        }
+        return current
     }
 }

@@ -1,0 +1,5 @@
+// Order1.cs
+<spot>public class Order1
+{
+    public Order1() { }
+}</spot>
