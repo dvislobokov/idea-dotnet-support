@@ -65,10 +65,10 @@ class CSharpLiveTemplatesTest : BasePlatformTestCase() {
         assertTrue(expand("ctx", "class A { object M() => <caret>; }").contains("HttpContext."))
     }
 
-    /** `switch` + Tab: `switch (|)` with the names in scope listed at the variable (Rider's completeSmart()), then `case |:` (0.1.162). */
+    /** `switch` + Tab: `switch (|)` with the names in scope listed at the variable (Rider's completeSmart()), then the empty body (0.1.175). */
     fun testStatementTemplatesListTheNamesAtTheirVariable() {
         val templates = TemplateSettings.getInstance().templates.filter { it.groupName == "C#" }.associateBy { it.key }
-        for ((key, variable) in listOf("switch" to "VALUE", "switch" to "CASE", "if" to "CONDITION", "while" to "CONDITION", "foreach" to "COLLECTION", "lock" to "LOCK", "using" to "RESOURCE")) {
+        for ((key, variable) in listOf("switch" to "VALUE", "if" to "CONDITION", "while" to "CONDITION", "foreach" to "COLLECTION", "lock" to "LOCK", "using" to "RESOURCE")) {
             val template = templates.getValue(key)
             val index = (0 until template.variableCount).first { template.getVariableNameAt(it) == variable }
             assertEquals("$key.$variable", "complete()", template.getExpressionStringAt(index))
@@ -78,6 +78,8 @@ class CSharpLiveTemplatesTest : BasePlatformTestCase() {
         com.intellij.util.ui.UIUtil.dispatchAllInvocationEvents()
         val text = myFixture.editor.document.text
         assertTrue(text, text.contains("switch ()") && myFixture.editor.caretModel.offset == text.indexOf("switch (") + 8)
+        // the body is empty, as in Rider: the sections come from the gray `case …:` and "Add 'switch' sections" (0.1.175)
+        assertTrue(text, text.contains("switch ()\n    {\n        \n    }") && "case" !in text && "break" !in text)
         // the list the macro opens at the variable: the names in scope
         runCatching { myFixture.lookup?.hideLookup(true) }
         myFixture.completeBasic()

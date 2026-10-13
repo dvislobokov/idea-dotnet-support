@@ -1033,7 +1033,7 @@ Settings | .NET | Language Server, группа Analysis: «Compiler diagnostics
 
 ### `switch` как в Rider: шаблоны, серый текст, действия (0.1.162) — `Console/Editor/SwitchCompletion.cs`, `Console/Editor/SwitchActions.cs`
 «Completion» и «Context actions» = Built-in (по умолчанию при выключенном сервере). Набрать под маркером, сверить с `EXPECT`, Ctrl+Z.
-- [ ] `TYPE:switch-template`: `switch` + Tab → `switch (|)`, список имён открылся сам (`operation`, `count`); выбрать `operation`, Tab → `case |:` со списком `OperationType.Insert`… и значениями; **не** `switch (value)`
+- [ ] `TYPE:switch-template`: `switch` + Tab → `switch (|)`, список имён открылся сам (`operation`, `count`); выбрать `operation`, Tab → курсор в пустом теле `{ | }` и сразу серым `case OperationType.Insert:` (0.1.175: без скелета `case : … default:`, как в Rider); **не** `switch (value)`
 - [ ] `TYPE:switch-next-case`: пустая строка под `break;` на отступе `case` → серым `case OperationType.Update:`; Tab, Enter → `break;` серым как раньше
 - [ ] `TYPE:switch-typed-case`: `case` → серым ` OperationType.Delete:`; пробел → список членов сам; `OperationType.R` → серым `ead:`
 - [ ] `TYPE:switch-default`: все члены покрыты → серым `default:`; `def` → `ault:`

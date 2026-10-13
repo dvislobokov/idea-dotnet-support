@@ -3,6 +3,14 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.175
+
+- The `switch` live template writes an empty body, as Rider's (`docs/compare/jellyfin-2026-10-12.md`, № 12): `switch (|)` with the
+  list of names, then the caret in `{ }` — no more `case :` / `break;` / `default:` skeleton to fill or delete. The sections come
+  from the gray `case OperationType.Insert:` that now shows in the body as soon as the template ends (Tab one by one), or all at once
+  from Alt+Enter "Add 'switch' sections". Tests `CSharpLiveTemplatesTest`, `CSharpCompletionInsertionTest`, scenario
+  `TYPE:switch-template` in `Console/Editor/SwitchCompletion.cs`.
+
 ## 0.1.174
 
 Stage 7 of the fixes found comparing with Rider on Jellyfin (`docs/compare/jellyfin-2026-10-12.md`, section 9): the large refactorings.

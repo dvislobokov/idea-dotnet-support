@@ -839,6 +839,9 @@
     </actions>
 
     <projectListeners>
+        <!-- 0.1.175: the `switch` template ends in its empty body; the gray `case …:` comes there at once -->
+        <listener class="io.github.dotnetsupport.lang.CSharpSwitchTemplateGhost"
+                  topic="com.intellij.codeInsight.template.TemplateManagerListener"/>
         <!-- what is chosen in the completion list of a C# file and where it stood: the statistics of suggestions -->
         <listener class="io.github.dotnetsupport.suggest.CompletionAcceptListener"
                   topic="com.intellij.codeInsight.lookup.LookupManagerListener"/>

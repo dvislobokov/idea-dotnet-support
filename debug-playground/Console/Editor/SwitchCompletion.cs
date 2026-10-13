@@ -13,8 +13,9 @@ public class SwitchCompletion
     public void Use(OperationType operation, int count)
     {
         // TYPE:switch-template — type `switch` and press Tab. EXPECT: `switch (|)` with the caret between the parentheses and a list
-        // that opens by itself with `operation` and `count` in it; choose `operation`, Tab → the caret at `case |:` and the list of
-        // `OperationType.Insert`… with the values; choose one, Tab → the body. NOT `switch (value)`.
+        // that opens by itself with `operation` and `count` in it; choose `operation`, Tab → the caret in the empty body `{ | }`, as
+        // in Rider, and gray `case OperationType.Insert:` there at once (Tab takes it). NOT `switch (value)`, NOT a `case :` / `break;` /
+        // `default:` skeleton (0.1.175).
 
         // TYPE:switch-next-case — on the empty line under `break;` below (the caret at the indent of `case`). EXPECT: gray
         // `case OperationType.Update:`; Tab takes it, Enter, and `break;` is offered gray on the next line as before

@@ -162,6 +162,8 @@
   members, Inline Method, Create derived type, Copy type, Cover (`NativeCSharpTypeActions.kt`). Ограничения: To factory method и
   Encapsulate field — в пределах файла; Move to namespace не переписывает полные имена; Generate type patterns и Copy type без диалога
   Rider; имя производного типа (`IFoo` → `Foo`, `FooImpl`) — догадка. Вживую не проверено
+- [x] 0.1.175 — шаблон `switch` как в Rider: пустое тело вместо скелета `case : … default:` (сравнение с Jellyfin, № 12); после
+  шаблона в теле сразу серая подсказка `case …:` (`lang/CSharpSwitchTemplateGhost.kt`). Сценарий — `Console/Editor/SwitchCompletion.cs`, `TYPE:switch-template`.
 - [x] 0.1.174 — этап 7, крупные рефакторинги (четыре агента): Change Signature с диалогом, иерархией и вызовами по solution, Ctrl+F6
   (`NativeCSharpChangeSignature.kt`, `lang.refactoringSupport`); Safe Delete своим действием поверх платформенного (`NativeCSharpSafeDelete.kt`);
   Extract Interface / Superclass / Class (`NativeCSharpExtractTypeRefactorings.kt`); Pull Members Up / Push Members Down, Use Base Type Where

@@ -109,7 +109,8 @@ class CSharpCompletionInsertionTest : BasePlatformTestCase() {
     fun testSwitchChosenFromTheListIsTheSwitchStatement() {
         val text = chooseByTab("class C\n{\n    void M(int value)\n    {\n        sw<caret>\n    }\n}\n", "switch")
         // the variables of the template open the list instead of writing a placeholder (0.1.162)
-        assertTrue(text, text.contains("switch ()") && text.contains("case :") && text.contains("default:"))
+        // the body is empty, as in Rider (0.1.175)
+        assertTrue(text, text.contains("switch ()\n        {\n") && !text.contains("case") && !text.contains("break"))
     }
 
     fun testTheKeywordRowNamesItsTemplate() {
