@@ -3,6 +3,17 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.176
+
+- Errors the editor did not show, only the build (the user's `WeatherForecastController`): CS0029 for a condition of `if` / `while` /
+  `do` / `for` / `?:` that is not a `bool` (an enum, a struct, a class without `operator true`); CS0029 in an object initializer
+  (`new Forecast { Date = DateTime.Now }`, its members were not checked at all); CS0029 between structs that declare no conversion
+  operator (`DateTime` → `DateOnly`); CS0029 for an interpolated string given to a number, `char` or `bool` (`TemperatureC = $"123"`).
+- Warning CS8618 on a field or auto-property of a type with no constructor written (`public static readonly ILogger<T> _logger;`):
+  before, only written constructors were checked.
+- Corpus case `weather-controller` in `debug-playground/Broken/RiderComparison.cs` (all five errors of Roslyn matched, nothing extra),
+  nullable cases in `nullableFlow/Cases.cs`.
+
 ## 0.1.175
 
 - The `switch` live template writes an empty body, as Rider's (`docs/compare/jellyfin-2026-10-12.md`, № 12): `switch (|)` with the

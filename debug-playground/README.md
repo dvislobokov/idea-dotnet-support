@@ -1106,3 +1106,8 @@ Settings | .NET | Language Server, группа Analysis: «Compiler diagnostics
 - [ ] `TYPE:del-method`, `del-used`, `del-parameter`, `del-local`, `del-enum`, `del-type-parameter`: Safe Delete (Alt+Delete) — удаление, аргументы, конфликты
 - [ ] `TYPE:extract-interface`, `extract-superclass`, `extract-class`: Extract Interface / Superclass / Class из Refactor This
 - [ ] `TYPE:hier-pull-up`, `hier-pull-conflict`, `hier-pull-abstract`, `hier-pull-interface`, `hier-push-down`, `hier-use-base`: Pull / Push, Use Base Type
+
+### Ошибки, видные только после сборки (0.1.176) — `Broken/RiderComparison.cs`
+- [ ] `CASE:weather-controller`: без сборки, сразу в редакторе — красным CS0029 на `ttype` в `if (ttype)`, на `System.DateTime.Now` и
+  `System.DateTime.UtcNow` (и в лямбде), на `$"123"`; CS1729 на `RcOk`; жёлтым CS8618 на `_rcLogger`. На последнем `return` ничего.
+  Проверить и на настоящем контроллере ASP.NET (`new Ok(…)` из `Microsoft.AspNetCore.Http.HttpResults`) — CS1729 на типе ASP.NET тестами не проверен.

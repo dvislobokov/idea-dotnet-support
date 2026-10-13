@@ -192,3 +192,25 @@ class Members
         Console.WriteLine(name.Length);
     }
 }
+
+// no constructor written: the implicit ones set nothing, the warning stands on each member (the user's report, 2026-10-13)
+class NoConstructor
+{
+    public string Name;
+    public string Title { get; set; }
+    public static readonly string Shared;
+    public string? Optional;
+    public string Set = "";
+}
+
+static class Registry
+{
+    public static readonly string Logger;
+}
+
+class OnlyStaticConstructor
+{
+    static OnlyStaticConstructor() { }
+    public static string Ready;
+    public string Field;
+}

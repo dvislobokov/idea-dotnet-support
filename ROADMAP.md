@@ -162,6 +162,9 @@
   members, Inline Method, Create derived type, Copy type, Cover (`NativeCSharpTypeActions.kt`). Ограничения: To factory method и
   Encapsulate field — в пределах файла; Move to namespace не переписывает полные имена; Generate type patterns и Copy type без диалога
   Rider; имя производного типа (`IFoo` → `Foo`, `FooImpl`) — догадка. Вживую не проверено
+- [x] 0.1.176 — ошибки, которые были видны только после сборки (контроллер пользователя): CS0029 на условии не-`bool` (`if (kind)`),
+  в инициализаторе объекта, между структурами без операторов преобразования (`DateTime` → `DateOnly`), для `$"…"` в число; CS8618 на
+  членах типа без написанного конструктора. Сценарий — `Broken/RiderComparison.cs`, `CASE:weather-controller`.
 - [x] 0.1.175 — шаблон `switch` как в Rider: пустое тело вместо скелета `case : … default:` (сравнение с Jellyfin, № 12); после
   шаблона в теле сразу серая подсказка `case …:` (`lang/CSharpSwitchTemplateGhost.kt`). Сценарий — `Console/Editor/SwitchCompletion.cs`, `TYPE:switch-template`.
 - [x] 0.1.174 — этап 7, крупные рефакторинги (четыре агента): Change Signature с диалогом, иерархией и вызовами по solution, Ctrl+F6

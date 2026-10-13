@@ -166,6 +166,7 @@ internal class CSharpNullableFlow(
             when (element) {
                 is CSharpGlobalStatement -> element.statement?.let(globals::add)
                 is CSharpConstructorDeclaration -> analyze(element) { constructor(element, it) }
+                is CSharpTypeDeclaration -> implicitConstructors(element)
                 is CSharpMethodDeclaration -> analyze(element, returnsNotNull(element.returnType, element.modifiers, element, element.attributeLists)) { body(element.body, element.expressionBody, it) }
                 is CSharpOperatorDeclaration -> analyze(element, returnsNotNull(element.returnType, element.modifiers, element, element.attributeLists)) { body(element.body, element.expressionBody, it) }
                 is CSharpConversionOperatorDeclaration -> analyze(element, returnsNotNull(element.type, element.modifiers, element, element.attributeLists)) { body(element.body, element.expressionBody, it) }
@@ -267,6 +268,27 @@ internal class CSharpNullableFlow(
             if (read(exit, Slot(root, listOf(Step(member.key, member.name) { N.MAYBE }))) != N.MAYBE) continue
             warn("CS8618", "Non-nullable ${member.kind} '${member.name}' must contain a non-null value when exiting constructor. " +
                 "Consider adding the 'required' modifier or declaring the ${member.kind} as nullable.", name)
+        }
+    }
+
+    /**
+     * No constructor written (instance or static): the implicit one sets nothing, and Roslyn puts CS8618 on each member it leaves null
+     * itself (`public static readonly ILogger<T> _logger;`, the user's report 2026-10-13). A partial type may have its constructor elsewhere.
+     */
+    private fun implicitConstructors(type: CSharpTypeDeclaration) {
+        if (type.modifiers.any { it.text == "partial" }) return
+        val constructors = type.members.filterIsInstance<CSharpConstructorDeclaration>()
+        for (static in listOf(false, true)) {
+            if (constructors.any { ctor -> ctor.modifiers.any { it.text == "static" } == static }) continue
+            for (member in uninitialized(type, static, setsRequired = false)) {
+                val at = when (val element = member.key) {
+                    is CSharpVariableDeclarator -> element.identifier
+                    is CSharpPropertyDeclaration -> element.identifier
+                    else -> null
+                } ?: continue
+                warn("CS8618", "Non-nullable ${member.kind} '${member.name}' must contain a non-null value when exiting constructor. " +
+                    "Consider adding the 'required' modifier or declaring the ${member.kind} as nullable.", at)
+            }
         }
     }
 

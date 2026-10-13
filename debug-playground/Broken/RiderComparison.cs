@@ -261,6 +261,49 @@ public class RiderComparison
         System.Console.WriteLine(ok);
     }
 
+    // CASE:weather-controller — EXPECT (Roslyn/Rider): the user's WeatherForecastController (2026-10-13), errors the plugin showed only
+    // after a build. «CS0029: Cannot implicitly convert type 'RcOperandType' to 'bool'» on `ttype` of `if (ttype)`;
+    // «CS1729: 'RcOk' does not contain a constructor that takes 1 arguments» on `RcOk` of `new RcOk(…)`; in the object initializers
+    // «CS0029 … 'System.DateTime' to 'System.DateOnly'» on `System.DateTime.Now` and on `System.DateTime.UtcNow` (inside the lambda too),
+    // «CS0029 … 'string' to 'int'» on `$"123"`. Nothing on the last `return` (its lambda has an error). Warning CS8618 on `_rcLogger`
+    // (a static readonly field nobody assigns).
+    public interface RcActionResult { }
+    public class RcOk { }
+    public enum RcOperandType { InlineBrTarget, InlineField, InlineI }
+    public class RcForecast { public System.DateOnly Date { get; set; } public int TemperatureC { get; set; } public string? Summary { get; set; } }
+    public static readonly System.IO.TextWriter _rcLogger;
+
+    public async System.Threading.Tasks.Task<RcActionResult> WeatherController()
+    {
+        var ttype = RcOperandType.InlineField;
+        switch (ttype)
+        {
+            case RcOperandType.InlineBrTarget:
+                break;
+            case RcOperandType.InlineField:
+                break;
+            default:
+                throw new System.ArgumentException($"Invalid argument exception");
+        }
+
+        if (ttype)
+        {
+            return new RcOk(new RcForecast(){
+                Date = System.DateTime.Now,
+                TemperatureC = $"123",
+                Summary = "123",
+            });
+        }
+
+        // `Select` as a static call: the corpus copy of this file compiles without implicit usings
+        return System.Linq.Enumerable.Select(System.Linq.Enumerable.Range(0, 5), x => new RcForecast
+            {
+                Date = System.DateTime.UtcNow,
+                TemperatureC = System.Random.Shared.Next(-20, 55),
+                Summary = $"WeatherForecast for {x}",
+            });
+    }
+
     // CASE:unterminated-comment — EXPECT (Roslyn/Rider): line 1 «CS1061 … 'nope'» on `nope`, red (the body is bound although its `}` is
     // gone). «CS1035: End-of-file found, '*/' expected» on the `/*` (verify the span in Rider: the two characters or the whole rest of the
     // file). The comment swallows the closing braces of the method and of the class: «CS1513: } expected» at the end of the file (verify

@@ -87,6 +87,11 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
                     is CSharpVariableDeclaration -> checkDeclaration(element)
                     is CSharpAssignmentExpression -> checkAssignment(element)
                     is CSharpReturnStatement -> checkReturn(element)
+                    is CSharpIfStatement -> checkCondition(element.condition)
+                    is CSharpWhileStatement -> checkCondition(element.condition)
+                    is CSharpDoStatement -> checkCondition(element.condition)
+                    is CSharpForStatement -> checkCondition(element.condition)
+                    is CSharpConditionalExpression -> checkCondition(element.condition)
                     is CSharpArrowExpressionClause -> checkArrow(element)
                     is CSharpMethodDeclaration -> checkPaths(element)
                     is CSharpAccessorDeclaration -> checkPaths(element)
@@ -709,7 +714,9 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         if (assignment.operatorToken?.text != "=") return
         val left = assignment.left ?: return
         val right = assignment.right ?: return
-        if (left is CSharpTupleExpression || left is CSharpDeclarationExpression || NativeCSharpScopes.isObjectInitializer(assignment.parent)) return
+        if (left is CSharpTupleExpression || left is CSharpDeclarationExpression) return
+        // `new Forecast { Date = DateTime.Now }`: a member of the created type (the user's report, 2026-10-13); `Items = { 1 }` adds, not assigns
+        if (NativeCSharpScopes.isObjectInitializer(assignment.parent) && (left !is CSharpIdentifierName || right is CSharpInitializerExpression)) return
         // only what is surely a variable of a written type: a local, a parameter, a field or a property of a type of the solution or an assembly
         val name = when (left) {
             is CSharpIdentifierName -> left
@@ -807,6 +814,12 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         // target-typed: a switch expression converts arm by arm; `?:` with a natural type (both branches of one type) converts by it, as Roslyn
         if (value is CSharpSwitchExpression) return value.arms.forEach { arm -> arm.expression?.let { checkConversion(it, target) } }
         if (value is CSharpConditionalExpression) return checkConditional(value, target)
+        // `$"…"` converts to `string`, `IFormattable`, `FormattableString` and handler types only: to a number, `char` or `bool` it is a `string`
+        if (value is CSharpInterpolatedStringExpression) {
+            if ((target as? SemanticType.Library)?.let(::special).let { it == null || it == STRING }) return
+            val to = CSharpTypeDisplay.display(target) ?: return
+            return report("CS0029", "Cannot implicitly convert type 'string' to '$to'", expression.textRange)
+        }
         if (isTargetTyped(value)) return
         val source = resolver.typeOf(value) ?: return
         val code = conversionError(source, target, value) ?: return
@@ -927,6 +940,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         e.elementType == SyntaxKind.Utf8StringLiteralExpression
 
     internal fun conversionError(source: SemanticType, target: SemanticType, value: CSharpExpression): String? {
+        toPlainStructOrBool(source, target)?.let { return it }
         val sourceLibrary = source as? SemanticType.Library ?: return if (target.isString() && isPlainNonString(source)) "CS0029" else null
         val targetLibrary = target as? SemanticType.Library ?: return null
         val s = special(sourceLibrary)
@@ -952,11 +966,45 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         return "CS0029"
     }
 
+    /**
+     * CS0029 to a struct of an assembly that declares no conversion operator (`DateTime` → `DateOnly`, the user's report 2026-10-13) or to
+     * `bool` (an enum in `if (kind)`): no implicit conversion goes there but identity and a user-defined one of the source, which a
+     * plain source ([isPlainNonString]) has none of. The special types between themselves are left to the numeric rules below.
+     */
+    private fun toPlainStructOrBool(source: SemanticType, target: SemanticType): String? {
+        val targetLibrary = target as? SemanticType.Library ?: return null
+        // `void M() => Work();`: the expression body of a void member is a statement, `System.Void` no target
+        if (targetLibrary.type.fullName == "System.Void" || resolver.isNullable(targetLibrary) || !isPlainNonString(source)) return null
+        if (source is SemanticType.Library && (special(source) != null || source.type.fullName == targetLibrary.type.fullName)) return null
+        return if (targetLibrary.type.fullName == BOOL) "CS0029".takeIf { !hasTrueOperator(source) }
+        else "CS0029".takeIf { special(targetLibrary) == null && targetLibrary.type.kind == IndexedTypeKind.STRUCT && isKnown(target) && !hasConversions(target) }
+    }
+
+    /** `operator true` makes a type a condition (`if (x)`) without a conversion to `bool`. */
+    private fun hasTrueOperator(type: SemanticType, depth: Int = 0): Boolean {
+        if (depth > MAX_DEPTH) return true
+        return when (type) {
+            is SemanticType.Library -> (listOf(type.type) + session.baseTypes(resolver.assemblies, type.type).map { it.type }).any { t -> t.members.any { it.name == "op_True" } }
+            is SemanticType.Source -> type.info.kind != TypeKind.ENUM && type.info.parts.any { part ->
+                (part.element() as? CSharpTypeDeclaration)?.members?.any { it is CSharpOperatorDeclaration && it.operatorToken?.text == "true" } != false
+            } || resolver.baseTypes(type).any { hasTrueOperator(it, depth + 1) }
+            is SemanticType.ArrayOf -> false
+            else -> true
+        }
+    }
+
+    /** The condition of `if`, `while`, `do`, `for` and `?:` is a `bool` (CS0029 for an enum, a struct, a class without `operator true`). */
+    private fun checkCondition(condition: CSharpExpression?) {
+        val expression = condition ?: return
+        checkConversion(expression, resolver.libraryType(BOOL) ?: return)
+    }
+
     /** A type no `string` comes of but by a user-defined conversion: a class or struct of the solution or an assembly that declares none, arrays, enums. */
     private fun isPlainNonString(type: SemanticType): Boolean = when (type) {
         is SemanticType.ArrayOf -> true
-        is SemanticType.Source -> type.info.kind in listOf(TypeKind.CLASS, TypeKind.STRUCT, TypeKind.RECORD, TypeKind.RECORD_STRUCT, TypeKind.ENUM) && !isPartial(type.info) && isKnown(type) &&
-            !hasConversions(type)
+        // an enum declares no operators (its declaration is not a CSharpTypeDeclaration, [hasConversions] would say "maybe")
+        is SemanticType.Source -> type.info.kind == TypeKind.ENUM && isKnown(type) ||
+            type.info.kind in listOf(TypeKind.CLASS, TypeKind.STRUCT, TypeKind.RECORD, TypeKind.RECORD_STRUCT) && !isPartial(type.info) && isKnown(type) && !hasConversions(type)
         is SemanticType.Library -> type.type.kind != IndexedTypeKind.INTERFACE && type.type.kind != IndexedTypeKind.DELEGATE && type.type.fullName != OBJECT &&
             type.type.fullName != "System.ValueType" && type.type.fullName != "System.Enum" && type.type.fullName != STRING && !resolver.isNullable(type) && isKnown(type) && !hasConversions(type)
         is SemanticType.Parameter -> false
@@ -1144,7 +1192,8 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
 
         private val NUMERIC = setOf("System.SByte", "System.Byte", "System.Int16", "System.UInt16", "System.Int32", "System.UInt32", "System.Int64", "System.UInt64",
             "System.Single", "System.Double", "System.Decimal")
-        private val SPECIAL = NUMERIC + setOf(CHAR, "System.Boolean", STRING)
+        private const val BOOL = "System.Boolean"
+        private val SPECIAL = NUMERIC + setOf(CHAR, BOOL, STRING)
 
         /** C# §10.2.3, the implicit numeric conversions (and from `char`). */
         private val IMPLICIT_NUMERIC: Map<String, Set<String>> = run {
