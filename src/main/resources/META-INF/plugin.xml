@@ -264,6 +264,11 @@
         <defaultLiveTemplates file="/liveTemplates/CSharp.xml"/>
         <liveTemplatePreprocessor implementation="io.github.dotnetsupport.lang.CSharpMemberTemplateSpacing"/>
         <liveTemplateContext contextId="CSHARP" implementation="io.github.dotnetsupport.lang.CSharpTemplateContext"/>
+        <liveTemplateContext contextId="CSHARP_STATEMENT" baseContextId="CSHARP" implementation="io.github.dotnetsupport.lang.CSharpStatementTemplateContext"/>
+        <liveTemplateContext contextId="CSHARP_EXPRESSION" baseContextId="CSHARP" implementation="io.github.dotnetsupport.lang.CSharpExpressionTemplateContext"/>
+        <liveTemplateContext contextId="CSHARP_MEMBER" baseContextId="CSHARP" implementation="io.github.dotnetsupport.lang.CSharpMemberTemplateContext"/>
+        <liveTemplateContext contextId="CSHARP_TYPE" baseContextId="CSHARP" implementation="io.github.dotnetsupport.lang.CSharpTypeTemplateContext"/>
+        <liveTemplateContext contextId="CSHARP_NAMESPACE" baseContextId="CSHARP" implementation="io.github.dotnetsupport.lang.CSharpNamespaceTemplateContext"/>
         <liveTemplateMacro implementation="io.github.dotnetsupport.lang.CSharpTypeNameMacro"/>
         <liveTemplateMacro implementation="io.github.dotnetsupport.lang.CSharpSuggestVariableNameMacro"/>
         <liveTemplateMacro implementation="io.github.dotnetsupport.lang.CSharpSuggestElementNameMacro"/>

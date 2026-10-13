@@ -261,7 +261,10 @@ object NativeCSharpCompletion {
                 return
             }
             when (place.kind) {
-                NativeCompletionKind.KEYWORDS_ONLY -> keywords(place.keywords)
+                NativeCompletionKind.KEYWORDS_ONLY -> {
+                    keywords(place.keywords)
+                    for (parameter in place.typeParameterNames) add(name(parameter, AllIcons.Nodes.Type, null, TYPE_PARAMETER))
+                }
                 NativeCompletionKind.LABEL -> {
                     labels()
                     if (PsiTreeUtil.getParentOfType(place.leaf, CSharpSwitchStatement::class.java) != null) keywords(listOf("case", "default"))
@@ -290,10 +293,13 @@ object NativeCSharpCompletion {
                 NativeCompletionKind.USING_DIRECTIVE -> NativeCSharpUsingCompletion.directiveItems(place, file, matcher).forEach(::add)
                 NativeCompletionKind.TYPE -> {
                     NativeCSharpExpectedCompletion.typeItems(analysis).forEach(::add)
-                    typeParameters()
+                    // `class Box<T> : T` is CS0689
+                    val role = analysis.typeRole
+                    if (role != NativeCSharpExpectedCompletion.TypeRole.BASE_CLASS_LIST && role != NativeCSharpExpectedCompletion.TypeRole.BASE_INTERFACE_LIST) typeParameters()
                     nestedTypes()
                     solutionTypes()
-                    if (analysis.typeRole.keywords) importedTypes()   // the filtered places of 0.1.88 (throw new, base list, event, constraint) keep to their own types
+                    // a base list and a constraint take the assemblies' types too, by the same filter as the solution's (`ControllerBase`)
+                    if (role != NativeCSharpExpectedCompletion.TypeRole.EXCEPTION_ONLY) importedTypes()
                     if (analysis.typeRole.keywords) {
                         keywords(NativeCSharpCompletionPlace.PREDEFINED_TYPES, priority = TYPE, kind = CSharpMlCandidateKind.TYPE)
                         keywords(place.keywords + NativeCSharpKeywords.TYPE)
@@ -448,7 +454,9 @@ object NativeCSharpCompletion {
         /** The types of the assemblies the place sees and the ones it does not import ([NativeCSharpImportCompletion]). */
         // a type is no value of the type it names (`String` in an argument of a string, 0.1.169): the bonus of its name only where a type is written
         private fun importedTypes() = imports(NativeCSharpImportCompletion.types(place, file, matcher, added, resolver,
-            bonus = { if (place.kind == NativeCompletionKind.TYPE) bonus(it, it) else 0.0 }, mlBonus = { bonus(it, it) }))
+            bonus = { if (place.kind == NativeCompletionKind.TYPE) bonus(it, it) else 0.0 }, mlBonus = { bonus(it, it) },
+            accepts = { place.kind != NativeCompletionKind.TYPE || analysis.accepts(it) },
+            acceptsSource = { place.kind != NativeCompletionKind.TYPE || analysis.verdict(it) != NativeCSharpExpectedCompletion.Verdict.REJECT }))
 
         /** Rows of [NativeCSharpImportCompletion]: several of one name may stand (one per namespace), none of a name the list has. */
         private fun imports(elements: List<LookupElement>) {

@@ -81,7 +81,8 @@ object NativeCSharpImportCompletion {
     fun types(
         place: NativeCSharpCompletionPlace, file: CSharpFile, matcher: PrefixMatcher, taken: Set<String>, syntax: NativeCSharpResolver = NativeCSharpResolver(file),
         bonus: (String) -> Double = { 0.0 }, mlBonus: (String) -> Double = bonus,
-    ): List<LookupElement> = Collector(place, file, matcher, taken, syntax, bonus, attributes = false, mlBonus).collect().filterNot(CSharpCompletionExclusions::excludes)
+        accepts: (IndexedType) -> Boolean = { true }, acceptsSource: (TypeInfo) -> Boolean = { true },
+    ): List<LookupElement> = Collector(place, file, matcher, taken, syntax, bonus, attributes = false, mlBonus, accepts, acceptsSource).collect().filterNot(CSharpCompletionExclusions::excludes)
 
     /** The attributes at `[`: of the assemblies the place sees, then the ones not imported, by the name without `Attribute`. */
     fun attributes(place: NativeCSharpCompletionPlace, file: CSharpFile, matcher: PrefixMatcher, taken: Set<String>, syntax: NativeCSharpResolver = NativeCSharpResolver(file)): List<LookupElement> =
@@ -90,6 +91,8 @@ object NativeCSharpImportCompletion {
     private class Collector(
         val place: NativeCSharpCompletionPlace, val file: CSharpFile, val matcher: PrefixMatcher, val taken: Set<String>, val syntax: NativeCSharpResolver,
         val bonus: (String) -> Double, val attributes: Boolean, val mlBonus: (String) -> Double = bonus,
+        /** What the place takes: a base list wants no struct, a constraint no sealed class. */
+        val accepts: (IndexedType) -> Boolean = { true }, val acceptsSource: (TypeInfo) -> Boolean = { true },
     ) {
         val at: PsiElement = place.name ?: place.leaf
         val semantic: CSharpNameResolver = CSharpSemanticSession(file.project).resolver(file)
@@ -111,7 +114,7 @@ object NativeCSharpImportCompletion {
                 ProgressManager.checkCanceled()
                 // the syntactic list has what the file's own `using`s import; this adds what the global usings do
                 if (name in taken || !seen.add(key(part.qualifiedName, part.arity))) continue
-                val info = syntax.typeInfo(part.qualifiedName, part.arity) ?: continue
+                val info = syntax.typeInfo(part.qualifiedName, part.arity)?.takeIf(acceptsSource) ?: continue
                 result += sourceElement(name, info, part.namespace!!, imported = true)
             }
             if (prefix.length < MIN_PREFIX || !unimportedEnabled) return result
@@ -120,7 +123,7 @@ object NativeCSharpImportCompletion {
                 val namespace = part.namespace ?: continue
                 if (namespace in visible || !seen.add(key(part.qualifiedName, part.arity))) continue
                 val info = syntax.typeInfo(part.qualifiedName, part.arity) ?: continue
-                if (!accessible(info)) continue
+                if (!accessible(info) || !acceptsSource(info)) continue
                 unimported += namespace to { sourceElement(name, info, namespace, imported = false) }
             }
             unimportedLibrary(assemblies, prefix, unimported)
@@ -138,7 +141,7 @@ object NativeCSharpImportCompletion {
                     val name = shortName(type.simpleName) ?: continue
                     visibleNames.getOrPut(name) { HashSet() } += type.qualifiedName
                     if (name in taken || !matcher.prefixMatches(name) && !(attributes && matcher.prefixMatches(type.simpleName))) continue
-                    if (!seen.add(key(type.qualifiedName, type.arity))) continue
+                    if (!accepts(type) || !seen.add(key(type.qualifiedName, type.arity))) continue
                     result += libraryElement(name, type, imported = true)
                 }
             }
@@ -151,7 +154,7 @@ object NativeCSharpImportCompletion {
                     if (type.namespace in visible || !offered(type)) continue
                     val name = shortName(type.simpleName) ?: continue
                     if (!matcher.prefixMatches(name) && !(attributes && matcher.prefixMatches(type.simpleName))) continue
-                    if (!seen.add(key(type.qualifiedName, type.arity))) continue
+                    if (!accepts(type) || !seen.add(key(type.qualifiedName, type.arity))) continue
                     into += type.namespace to { libraryElement(name, type, imported = false) }
                 }
             }

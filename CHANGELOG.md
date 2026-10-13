@@ -3,6 +3,16 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.178
+
+The header of a type, as in Rider.
+- The base list (`class X : |`) and a constraint (`where T : |`) offer the types of the assemblies too (`ControllerBase`, `Exception`,
+  `IDisposable`), imported or with their namespace, by the same filter as the solution's types: a base class first and only then
+  interfaces, nothing sealed, static or a struct; a struct, an interface and a record struct take interfaces; no own type parameter.
+- `where` past a base list or a constraint of a generic declaration; after `where` the type parameters not constrained yet.
+- Live templates have Rider's scopes: statement, expression, type member, type declaration, namespace. `class X : wh` offers no
+  `while` template any more, a member place no `if`, a body no `prop`; `#region`, `#if` and `nguid` go everywhere as before.
+
 ## 0.1.177
 
 The errors of a broken Jellyfin compared with `dotnet build` (`docs/compare/jellyfin-broken-2026-10-13.md`): 35 of Roslyn's 45 before,

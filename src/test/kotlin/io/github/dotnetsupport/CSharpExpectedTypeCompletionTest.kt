@@ -305,6 +305,40 @@ class CSharpExpectedTypeCompletionTest : BasePlatformTestCase() {
         assertFalse(constraint.toString(), "Square" in constraint || "int" in constraint)
     }
 
+    /** `class X : Contr|` offered no `ControllerBase` (0.1.178): the base list and the constraint take the assemblies' types by the same filter. */
+    fun testBaseListOffersTheTypesOfTheAssemblies() {
+        val interfaces = native("using System;\nclass Resource : IDisp<caret>\n{\n}\n")
+        assertTrue(interfaces.toString(), "IDisposable" in interfaces)
+        val classes = native("using System;\nclass Failure : Excep<caret>\n{\n}\n")
+        assertTrue(classes.toString(), "Exception" in classes && "ArgumentException" in classes)
+        // the base class goes first: past it only interfaces
+        val later = native("using System;\nclass Failure : Exception, I<caret>\n{\n}\n")
+        assertTrue(later.toString(), "IDisposable" in later && "Exception" !in later && "ArgumentException" !in later)
+        // a struct takes only interfaces; nothing sealed, static or a struct is a base class
+        val struct = native("using System;\nstruct Point : <caret>\n{\n}\n")
+        assertTrue(struct.toString(), "IDisposable" in struct && struct.none { it in setOf("Exception", "String", "Int32", "Console", "Math") })
+        val base = native("using System;\nclass Box : <caret>\n{\n}\n")
+        assertTrue(base.toString(), "Exception" in base && "IDisposable" in base && base.none { it in setOf("String", "Int32", "Console", "Math", "Enum", "ValueType") })
+        // not imported: with the namespace written
+        val unimported = native("class Resource : IDispos<caret>\n{\n}\n")
+        assertTrue(unimported.toString(), "IDisposable" in unimported)
+        val constraint = native("using System;\nclass Box<T> where T : IDisp<caret>\n{\n}\n")
+        assertTrue(constraint.toString(), "IDisposable" in constraint)
+    }
+
+    /** `where` past a base list or a constraint of a generic declaration, the type parameters not constrained yet after `where` (0.1.178). */
+    fun testWhereAndTheTypeParametersAfterIt() {
+        assertEquals(listOf("where"), native("public class Shape { }\nclass Box<T> : Shape <caret>\n{\n}\n"))
+        assertEquals(listOf("where"), native("public class Shape { }\nclass Box<T> : Shape wh<caret>\n{\n}\n"))
+        assertEquals(listOf("where"), native("class Box<T, U> where T : class <caret>\n{\n}\n"))
+        assertEquals(emptyList<String>(), native("public class Shape { }\nclass Circle : Shape wh<caret>\n{\n}\n"))
+        assertEquals(listOf("T", "U"), native("class Box<T, U> where <caret>\n{\n}\n").sorted())
+        assertEquals(listOf("U"), native("class Box<T, U> where T : class\n    where <caret>\n{\n}\n"))
+        assertEquals(listOf("T"), native("class Box\n{\n    void Put<T>(T item) where <caret>\n    {\n    }\n}\n"))
+        // `class Box<T> : T` is CS0689
+        assertFalse("T" in native("class Box<T> : <caret>\n{\n}\n"))
+    }
+
     // ---- smart completion
 
     fun testSmartCompletionKeepsWhatFits() {

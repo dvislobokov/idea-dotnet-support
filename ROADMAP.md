@@ -162,6 +162,9 @@
   members, Inline Method, Create derived type, Copy type, Cover (`NativeCSharpTypeActions.kt`). Ограничения: To factory method и
   Encapsulate field — в пределах файла; Move to namespace не переписывает полные имена; Generate type patterns и Copy type без диалога
   Rider; имя производного типа (`IFoo` → `Foo`, `FooImpl`) — догадка. Вживую не проверено
+- [x] 0.1.178 — заголовок типа как в Rider: в списке баз и в ограничении — типы сборок (`ControllerBase`, `Exception`, `IDisposable`, с
+  импортом), базовый класс только первым; `where` после списка баз и ограничения, параметры типа после `where`; живые шаблоны по
+  областям Rider (оператор, выражение, член, тип, пространство имён) — нет `while` в `class X : wh`. Сценарий — `Console/Editor/BaseListCompletion.cs`.
 - [x] 0.1.177 — поломанный Jellyfin против `dotnet build` (`docs/compare/jellyfin-broken-2026-10-13.md`): было 35 из 45 ошибок Roslyn,
   стало 45; без лишних ошибок после повторного объявления, `break` вне цикла и в лямбде с несколькими `return`; CS0029 через
   преобразования разрешения перегрузок, CS7036 с типами параметров по `using` файла метода, `new(…)`, CS0311 при одноимённом

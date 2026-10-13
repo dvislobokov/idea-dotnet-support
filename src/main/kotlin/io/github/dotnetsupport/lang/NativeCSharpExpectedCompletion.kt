@@ -57,6 +57,10 @@ object NativeCSharpExpectedCompletion {
 
     enum class Verdict { REJECT, NEUTRAL, FITS }
 
+    /** Classes nothing derives from by a base list (CS0644) and that constrain nothing (CS0702). */
+    private val NOT_BASES = setOf("System.Array", "System.Delegate", "System.MulticastDelegate", "System.Enum", "System.ValueType")
+    private val NOT_CONSTRAINTS = setOf("System.Object", "System.Array", "System.ValueType")
+
     /** The semantics of one completion: computed when first asked, once. */
     class Analysis(val place: NativeCSharpCompletionPlace, val file: CSharpFile) {
         val resolver: CSharpNameResolver by lazy { CSharpSemanticSession(file.project).resolver(file) }
@@ -177,6 +181,7 @@ object NativeCSharpExpectedCompletion {
                 TypeRole.BASE_CLASS_LIST -> when {
                     own?.key == info.key -> Verdict.REJECT
                     kind == TypeKind.INTERFACE -> Verdict.NEUTRAL
+                    laterBase -> Verdict.REJECT
                     (kind == TypeKind.CLASS || kind == TypeKind.RECORD) && "sealed" !in modifiers -> Verdict.NEUTRAL
                     else -> Verdict.REJECT
                 }
@@ -193,6 +198,27 @@ object NativeCSharpExpectedCompletion {
                     }
                 }
             }
+        }
+
+        /** What [TypeRole] wants of a type of the assemblies, as [verdict] of one of the solution (`ControllerBase` after `class X : `). */
+        fun accepts(type: IndexedType): Boolean {
+            val kind = type.kind
+            val derivable = kind == IndexedTypeKind.CLASS && !type.isSealed && !type.isStatic
+            return when (typeRole) {
+                TypeRole.BASE_CLASS_LIST -> kind == IndexedTypeKind.INTERFACE || !laterBase && derivable && type.fullName !in NOT_BASES
+                TypeRole.BASE_INTERFACE_LIST -> kind == IndexedTypeKind.INTERFACE
+                TypeRole.CONSTRAINT -> kind == IndexedTypeKind.INTERFACE || derivable && type.fullName !in NOT_CONSTRAINTS
+                TypeRole.EVENT -> kind == IndexedTypeKind.DELEGATE
+                TypeRole.EXCEPTION_ONLY -> false
+                else -> true
+            }
+        }
+
+        /** Past the first entry of a base list only interfaces go: the base class is written first (CS1722). */
+        private val laterBase: Boolean by lazy {
+            val base = PsiTreeUtil.getParentOfType(at, CSharpBaseType::class.java)
+            val list = base?.parent as? CSharpBaseList
+            list != null && list.types.firstOrNull() != base
         }
 
         /** The type a type place wants: of the value created, `Exception` after `throw new` and in `catch (`. */

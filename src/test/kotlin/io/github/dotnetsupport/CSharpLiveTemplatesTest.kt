@@ -99,6 +99,27 @@ class CSharpLiveTemplatesTest : BasePlatformTestCase() {
         assertTrue(statement, statement.contains("    M();\n    if ("))
     }
 
+    /** Rider's scopes (0.1.178): `class X : wh|` offered the `while` template; a statement, a member, a type, a namespace each have their own. */
+    fun testTemplatesGoWhereTheirScopeIs() {
+        fun keys(text: String): Set<String> {
+            myFixture.configureByText("Live${files++}.cs", text)
+            val context = com.intellij.codeInsight.template.TemplateActionContext.expanding(myFixture.file, myFixture.caretOffset)
+            return TemplateManagerImpl.listApplicableTemplates(context).filter { it.groupName == "C#" }.mapTo(HashSet()) { it.key }
+        }
+        val header = keys("class WeatherForecastController : wh<caret>\n{\n}\n")
+        assertTrue(header.toString(), header.none { it in setOf("while", "for", "if", "prop", "ctor", "class", "cw", "from") })
+        val statement = keys("class A { void M() {\n    wh<caret>\n} }")
+        assertTrue(statement.toString(), statement.containsAll(listOf("while", "if", "cw", "from", "#region")) && "prop" !in statement && "class" !in statement)
+        val member = keys("class A\n{\n    pr<caret>\n}\n")
+        assertTrue(member.toString(), member.containsAll(listOf("prop", "ctor", "class", "#region")) && "while" !in member && "namespace" !in member)
+        val expression = keys("class A { object M() => ct<caret>; }")
+        assertTrue(expression.toString(), "ctx" in expression && "while" !in expression && "prop" !in expression)
+        val top = keys("namespace Shop;\npublic cl<caret>\n")
+        assertTrue(top.toString(), top.containsAll(listOf("class", "namespace")) && "while" !in top && "prop" !in top)
+        val script = keys("wh<caret>\n")
+        assertTrue(script.toString(), script.containsAll(listOf("while", "class", "namespace")) && "prop" !in script)
+    }
+
     fun testNamesByType() {
         assertEquals(listOf("builder", "stringBuilder"), CSharpVariableNames.forType("StringBuilder"))
         assertEquals("name", CSharpConstructorMembers.Member("_name", "string").parameter)

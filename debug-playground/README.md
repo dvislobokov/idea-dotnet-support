@@ -1117,3 +1117,12 @@ Settings | .NET | Language Server, группа Analysis: «Compiler diagnostics
   серого CS0168); CS0139 на `break;`, строка под ним не серая; CS1503 только на `name` в `OneBadArgument`; CS0029 на `name` (→ `DateTime?`),
   `System.DateOnly.MinValue`, `name` (→ `Guid`), `users`, `name` в `map[name] = name`, `name.Length`; CS7036 на `Clean`, CS0311 на
   `Find<string>`, CS1729 на `new(1)`.
+
+### Заголовок типа: список баз, `where`, области шаблонов (0.1.178) — `Console/Editor/BaseListCompletion.cs`
+«Completion» = Built-in. Набрать под маркером, сверить с `EXPECT`, Ctrl+Z.
+- [ ] `TYPE:base-list-library` — `IDisposable`, `Exception` из сборок; шаблонов `while` / `for` / `prop` в заголовке нет; в контроллере `: Contr` → `ControllerBase`.
+- [ ] `TYPE:base-list-after-first` — после первой базы только интерфейсы.
+- [ ] `TYPE:base-list-struct` — у структуры только интерфейсы.
+- [ ] `TYPE:where-after-base` — `where` у обобщённого типа, у обычного ничего.
+- [ ] `TYPE:where-type-parameter` — после `where` только `TKey`.
+- [ ] `TYPE:template-scopes` — в теле метода `while`, без `prop`; среди членов `prop` / `ctor` / `class`, без `while`.

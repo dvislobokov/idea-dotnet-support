@@ -241,10 +241,11 @@ $body
             myFixture.completeBasic()
             val items = myFixture.lookupElementStrings.orEmpty()
             assertEquals(items.toString(), 1, items.count { it == "class" })
-            // where no keyword `class` stands, the template is there
-            myFixture.configureByText("Once${counter++}.cs", "namespace Shop;\n\npublic class Order\n{\n    void M()\n    {\n        cla<caret>\n    }\n}\n")
+            // a body is a statement's scope (0.1.178): its templates, no `class` one
+            myFixture.configureByText("Once${counter++}.cs", "namespace Shop;\n\npublic class Order\n{\n    void M()\n    {\n        c<caret>\n    }\n}\n")
             myFixture.completeBasic()
-            assertTrue(myFixture.lookupElementStrings.toString(), myFixture.lookupElements.orEmpty().any { it.lookupString == "class" && it.javaClass.name.contains("LiveTemplate") })
+            val templates = myFixture.lookupElements.orEmpty().filter { it.javaClass.name.contains("LiveTemplate") }.map { it.lookupString }
+            assertTrue(templates.toString(), "cw" in templates && "class" !in templates)
         } finally {
             settings.AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
         }

@@ -77,6 +77,8 @@ class NativeCSharpCompletionPlace(
     val usingFirst: Boolean = false,
     /** MEMBER_START after `override T |`: the return type typed before the name — the members to override of that type, written over it. */
     val overrideType: PsiElement? = null,
+    /** KEYWORDS_ONLY after `where`: the type parameters of the declaration not constrained yet. */
+    val typeParameterNames: List<String> = emptyList(),
 ) {
     enum class NameStyle { LOCAL, PRIVATE_FIELD, PUBLIC_MEMBER }
 
@@ -118,6 +120,7 @@ class NativeCSharpCompletionPlace(
                 }
                 holder is CSharpAliasQualifiedName -> return null
                 holder is CSharpNameColon || holder is CSharpNameEquals -> return null
+                holder is CSharpTypeParameterConstraintClause && holder.nameElement == name -> return constrainedName(leaf, name, prev, holder)
                 holder is CSharpGotoStatement -> return if (holder.caseOrDefaultKeyword == null) NativeCSharpCompletionPlace(NativeCompletionKind.LABEL, leaf, name, prev) else null
                 holder is CSharpAttribute && holder.nameElement == name -> return NativeCSharpCompletionPlace(NativeCompletionKind.ATTRIBUTE, leaf, name, prev)
             }
@@ -162,7 +165,43 @@ class NativeCSharpCompletionPlace(
                 prev.text == ")" && parent is CSharpParameterList && (parent.parent as? CSharpMethodDeclaration)?.typeParameterList != null &&
                     (parent.parent as CSharpMethodDeclaration).body.let { it == null || it.textRange.startOffset > leaf.textRange.startOffset } -> return only("where")
             }
+            afterBaseOrConstraint(leaf, prev)?.let { generic -> return if (generic) only("where") else only() }
             return query(leaf, prev)
+        }
+
+        /**
+         * `class Box<T> : Shape |`, `where T : class |`: past an entry of a base list or a constraint, before the body. True when a
+         * constraint clause may follow (the declaration has type parameters), false when nothing goes there; null elsewhere.
+         */
+        private fun afterBaseOrConstraint(leaf: PsiElement, prev: PsiElement): Boolean? {
+            val entry = PsiTreeUtil.getParentOfType(prev, CSharpBaseType::class.java, CSharpTypeParameterConstraint::class.java) ?: return null
+            if (entry.textRange.endOffset != prev.textRange.endOffset || PsiTreeUtil.isAncestor(entry, leaf, false)) return null
+            val owner = PsiTreeUtil.getParentOfType(
+                entry, CSharpBaseTypeDeclaration::class.java, CSharpMethodDeclaration::class.java, CSharpLocalFunctionStatement::class.java, CSharpDelegateDeclaration::class.java,
+            )
+            val (parameters, body) = when (owner) {
+                is CSharpTypeDeclaration -> owner.typeParameterList to owner.openBraceToken
+                is CSharpMethodDeclaration -> owner.typeParameterList to (owner.body ?: owner.expressionBody)
+                is CSharpLocalFunctionStatement -> owner.typeParameterList to (owner.body ?: owner.expressionBody)
+                is CSharpDelegateDeclaration -> owner.typeParameterList to null
+                else -> return null   // an enum's underlying type
+            }
+            if (body != null && body.textLength > 0 && body.textRange.startOffset < leaf.textRange.startOffset) return null
+            return parameters?.parameters?.isNotEmpty() == true
+        }
+
+        /** `where |`: the type parameters of the declaration that no other clause constrains. */
+        private fun constrainedName(leaf: PsiElement, name: CSharpSimpleName, prev: PsiElement?, clause: CSharpTypeParameterConstraintClause): NativeCSharpCompletionPlace? {
+            val (parameters, clauses) = when (val owner = clause.parent) {
+                is CSharpTypeDeclaration -> owner.typeParameterList to owner.constraintClauses
+                is CSharpMethodDeclaration -> owner.typeParameterList to owner.constraintClauses
+                is CSharpLocalFunctionStatement -> owner.typeParameterList to owner.constraintClauses
+                is CSharpDelegateDeclaration -> owner.typeParameterList to owner.constraintClauses
+                else -> return null
+            }
+            val taken = clauses.filter { it != clause }.mapNotNullTo(HashSet()) { it.nameElement?.text }
+            val names = parameters?.parameters.orEmpty().mapNotNull { it.identifier?.text }.filter { it !in taken }
+            return NativeCSharpCompletionPlace(NativeCompletionKind.KEYWORDS_ONLY, leaf, name, prev, typeParameterNames = names)
         }
 
         /**
