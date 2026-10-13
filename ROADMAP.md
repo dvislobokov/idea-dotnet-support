@@ -162,6 +162,10 @@
   members, Inline Method, Create derived type, Copy type, Cover (`NativeCSharpTypeActions.kt`). Ограничения: To factory method и
   Encapsulate field — в пределах файла; Move to namespace не переписывает полные имена; Generate type patterns и Copy type без диалога
   Rider; имя производного типа (`IFoo` → `Foo`, `FooImpl`) — догадка. Вживую не проверено
+- [x] 0.1.177 — поломанный Jellyfin против `dotnet build` (`docs/compare/jellyfin-broken-2026-10-13.md`): было 35 из 45 ошибок Roslyn,
+  стало 45; без лишних ошибок после повторного объявления, `break` вне цикла и в лямбде с несколькими `return`; CS0029 через
+  преобразования разрешения перегрузок, CS7036 с типами параметров по `using` файла метода, `new(…)`, CS0311 при одноимённом
+  расширении. Стенд на настоящих исходниках и индексах — `JellyfinDiagnosticsHarnessTest`. Сценарий — `Broken/RiderComparison.cs`, `CASE:jellyfin-broken`.
 - [x] 0.1.176 — ошибки, которые были видны только после сборки (контроллер пользователя): CS0029 на условии не-`bool` (`if (kind)`),
   в инициализаторе объекта, между структурами без операторов преобразования (`DateTime` → `DateOnly`), для `$"…"` в число; CS8618 на
   членах типа без написанного конструктора. Сценарий — `Broken/RiderComparison.cs`, `CASE:weather-controller`.

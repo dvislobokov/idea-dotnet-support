@@ -409,4 +409,32 @@ class CSharpSemanticWarningsTest : BasePlatformTestCase() {
         val shown = infos.sortedBy { it.startOffset }.map { "${it.description.substringBefore(':')} ${it.severity.name} ${text.substring(it.startOffset, it.endOffset)}" }
         assertEquals(listOf("CS0162 WARNING Console.WriteLine(x);", "CS0219 WARNING unused"), shown)
     }
+
+    /** A broken Jellyfin (0.1.177): the uses of a name declared twice bind to the first declaration, a `break` with no loop ends no path. */
+    fun testWhatFollowsAnErrorOfTheBrokenJellyfin() {
+        val code = """
+            class User { }
+            class C
+            {
+                static void Use(User user, string name) { }
+                User Create(string name)
+                {
+                    User created;
+                    string created = name;
+                    created = new User();
+                    Use(created, name);
+                    return created;
+                }
+                void Retry(int attempts)
+                {
+                    if (attempts > 3)
+                    {
+                        break;
+                        attempts = 0;
+                    }
+                }
+            }
+        """
+        assertEquals(listOf("CS0128 created", "CS0139 break;"), problems(code, "CS0128", "CS0139", "CS0168", "CS0162", "CS0029", "CS1503"))
+    }
 }

@@ -657,4 +657,64 @@ class CSharpSemanticErrorsTest : BasePlatformTestCase() {
         assertTrue(myFixture.editor.document.text, myFixture.editor.document.text.contains("public void Dispose()"))
         assertTrue(highlight(myFixture.editor.document.text).none { it.description?.startsWith("CS0535") == true })
     }
+
+    /** Conversions found missing on a broken Jellyfin (docs/compare/jellyfin-broken-2026-10-13.md), 0.1.177. */
+    fun testConversionsOfTheBrokenJellyfin() {
+        val members = """
+            public class User { }
+            public class Dates { public DateTime? End { get; set; } public DateTime? Last { get; set; } }
+            void Use(string name, IEnumerable<User> users, Dictionary<string, User> map)
+            {
+                var dates = new Dates { End = name };
+                dates = new Dates { Last = DateOnly.MinValue };
+                Guid id = name;
+                int count = users;
+                map[name] = name;
+            }
+        """.trimIndent()
+        assertEquals(listOf("name CS0029", "DateOnly.MinValue CS0029", "name CS0029", "users CS0029", "name CS0029"), codes(wrap("", members)))
+    }
+
+    /** CS7036 / CS1729 found missing on a broken Jellyfin: a static method in a `return`, `new` with a method group inside, `new(1)` (0.1.177). */
+    fun testCallsOfTheBrokenJellyfin() {
+        val members = """
+            public class Result { public Result(string name) { } }
+            public static class Parser { public static Result Clean(string name, IReadOnlyList<Pattern> patterns) => new Result(name); }
+            public class Hints { public Hints(IReadOnlyList<string> hints, int total) { } }
+            public class Caps { public Caps() { } }
+            public sealed class Pattern { }
+            static string Show(int item) => item.ToString();
+            Result A(string name) { return Parser.Clean(name); }
+            Hints B(List<int> items) { return new Hints(items.ConvertAll(Show).ToArray()); }
+            Caps C() { return new(1); }
+        """.trimIndent()
+        assertEquals(listOf("Clean CS7036", "Hints CS7036", "new(1) CS1729"), codes(wrap("", members)))
+    }
+
+    /** A lambda of several `return`s has their best common type, not the first one's (Jellyfin's DynamicImageProvider, 0.1.177). */
+    fun testTheReturnsOfALambdaHaveTheirCommonType() {
+        val members = """
+            public class Item { }
+            public class Series : Item { }
+            public class Season : Item { }
+            List<Item> Pick(List<Item> items) => items.Select(i =>
+            {
+                if (i is Season season) return season;
+                if (i is Series series) return series;
+                return i;
+            }).ToList();
+        """.trimIndent()
+        assertEquals(emptyList<String>(), codes(wrap("", members).replace("using System;", "using System;\nusing System.Linq;")))
+    }
+
+    /** `GetItemById<string>()` with a non-generic extension `GetItemById(this ILibrary, string)` around: CS0311 all the same (Jellyfin, 0.1.177). */
+    fun testAConstraintDespiteAnExtensionOfAnotherArity() {
+        val members = """
+            public class Item { }
+            public interface ILibrary { T? GetItemById<T>(Guid id) where T : Item; }
+            Item? Find(ILibrary library) => library.GetItemById<string>(Guid.Empty) == null ? null : null;
+        """.trimIndent()
+        val text = wrap("", members) + "\npublic static class LibraryExtensions { public static object? GetItemById(this Probe.Inner.Errors.ILibrary library, string id) => null; }\n"
+        assertEquals(listOf("GetItemById<string> CS0311"), codes(text))
+    }
 }

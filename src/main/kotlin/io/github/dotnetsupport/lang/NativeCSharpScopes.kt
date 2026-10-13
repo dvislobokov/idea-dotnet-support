@@ -122,7 +122,8 @@ class NativeCSharpScopes private constructor(
             val symbol = LocalSymbol(identifier.text, kind, identifier, into?.element ?: if (kind == LocalSymbolKind.LABEL) function else scope.element, isMember)
             symbols += symbol
             byLeaf[identifier] = symbol
-            into?.names?.put(symbol.name, symbol)
+            // a name declared twice in one scope (CS0128): the uses bind to the first declaration, as Roslyn (Jellyfin, 2026-10-13)
+            into?.names?.putIfAbsent(symbol.name, symbol)
             return symbol
         }
 

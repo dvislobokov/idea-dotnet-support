@@ -1,0 +1,61 @@
+roslyn=51 plugin=45 ok=41 missing=10 extra=4
+roslyn errors=45 ok=35 missing=10
+plugin errors extra=2 warnings extra=2
+## OK
+Emby.Naming/Video/VideoResolver.cs:56 CS0029 error | Не удается неявно преобразовать тип "int" в "bool".
+Emby.Naming/Video/VideoResolver.cs:85 CS0029 error | Не удается неявно преобразовать тип "string" в "int?".
+Emby.Naming/Video/VideoResolver.cs:91 CS1061 error | "CleanDateTimeResult" не содержит определения "Yeer", и не удалось найти доступный метод расширения "Yeer", принимающий тип "CleanDateTimeResult" в качестве первого аргум
+Emby.Naming/Video/VideoResolver.cs:134 CS0162 warning | Обнаружен недостижимый код
+Emby.Naming/Video/VideoResolver.cs:147 CS0026 error | Ключевое слово "this" не может использоваться в инициализаторах статических свойств, методов или полей.
+Emby.Server.Implementations/Library/UserViewManager.cs:93 CS1503 error | Аргумент 1: не удается преобразовать из "string" в "MediaBrowser.Controller.Entities.Folder".
+Emby.Server.Implementations/Library/UserViewManager.cs:97 CS0103 error | Имя "CollectionTyp" не существует в текущем контексте.
+Emby.Server.Implementations/Library/UserViewManager.cs:102 CS0029 error | Не удается неявно преобразовать тип "int" в "bool".
+Emby.Server.Implementations/Library/UserViewManager.cs:177 CS1026 error | Требуется ")"
+Emby.Server.Implementations/Library/UserViewManager.cs:191 CS1503 error | Аргумент 1: не удается преобразовать из "string" в "Jellyfin.Database.Implementations.Entities.User".
+Jellyfin.Api/Controllers/SearchController.cs:106 CS0029 error | Не удается неявно преобразовать тип "string" в "int?".
+Jellyfin.Api/Controllers/SearchController.cs:120 CS0103 error | Имя "isKidz" не существует в текущем контексте.
+Jellyfin.Api/Controllers/SearchController.cs:159 CS0029 error | Не удается неявно преобразовать тип "Jellyfin.Data.Enums.MediaType" в "bool".
+Jellyfin.Api/Controllers/SearchController.cs:178 CS1061 error | "IHasSeries" не содержит определения "SeriesNam", и не удалось найти доступный метод расширения "SeriesNam", принимающий тип "IHasSeries" в качестве первого аргумента (во
+Jellyfin.Api/Controllers/SearchController.cs:216 CS1061 error | "string" не содержит определения "Name", и не удалось найти доступный метод расширения "Name", принимающий тип "string" в качестве первого аргумента (возможно, пропущена 
+Jellyfin.Api/Controllers/SearchController.cs:239 CS1002 error | Требуется ";".
+Jellyfin.Api/Controllers/UserController.cs:98 CS7036 error | Отсутствует аргумент, соответствующий требуемому параметру "filterByNetwork" из "UserController.Get(bool?, bool?, bool, bool)".
+Jellyfin.Api/Controllers/UserController.cs:111 CS0122 error | "SearchController.GetSearchHintResult(SearchHintInfo)" недоступен из-за его уровня защиты.
+Jellyfin.Api/Controllers/UserController.cs:161 CS0103 error | Имя "NotFond" не существует в текущем контексте.
+Jellyfin.Api/Controllers/UserController.cs:201 CS1026 error | Требуется ")"
+Jellyfin.Server.Implementations/Devices/DeviceManager.cs:88 CS0029 error | Не удается неявно преобразовать тип "int" в "string".
+Jellyfin.Server.Implementations/Devices/DeviceManager.cs:88 CS8602 warning | Разыменование вероятной пустой ссылки.
+Jellyfin.Server.Implementations/Devices/DeviceManager.cs:98 CS0161 error | "DeviceManager.CreateDevice(Device)": не все пути к коду возвращают значение.
+Jellyfin.Server.Implementations/Devices/DeviceManager.cs:138 CS4032 error | Оператор await можно использовать только в методах с модификатором async. Consider marking this method with the 'async' modifier and changing its return type to 'Task<Dev
+Jellyfin.Server.Implementations/Devices/DeviceManager.cs:139 CS8602 warning | Разыменование вероятной пустой ссылки.
+Jellyfin.Server.Implementations/Devices/DeviceManager.cs:177 CS1503 error | Аргумент 2: не удается преобразовать из "int" в "Jellyfin.Database.Implementations.Entities.Security.DeviceOptions?".
+Jellyfin.Server.Implementations/Devices/DeviceManager.cs:242 CS0029 error | Не удается неявно преобразовать тип "Jellyfin.Database.Implementations.Enums.PermissionKind" в "bool".
+Jellyfin.Server.Implementations/Devices/DeviceManager.cs:274 CS0029 error | Не удается неявно преобразовать тип "string" в "int".
+Jellyfin.Server.Implementations/Users/UserManager.cs:156 CS1501 error | Ни одна из перегрузок метода "IsNullOrWhiteSpace" не принимает 2 аргументов.
+Jellyfin.Server.Implementations/Users/UserManager.cs:201 CS0029 error | Не удается неявно преобразовать тип "System.Guid" в "string".
+Jellyfin.Server.Implementations/Users/UserManager.cs:344 CS0128 error | Локальная переменная или функция с именем "newUser" уже определена в этой области.
+Jellyfin.Server.Implementations/Users/UserManager.cs:422 CS0139 error | Отсутствует внешний цикл для прерывания или продолжения.
+Jellyfin.Server.Implementations/Users/UserManager.cs:431 CS0165 error | Использование локальной переменной "attempts", которой не присвоено значение.
+Jellyfin.Server.Implementations/Users/UserManager.cs:459 CS0191 error | Полю, которое доступно только для чтения, не может быть присвоено значение (значение может быть присвоено только в конструкторе типа, в методе задания значения, вызываемо
+MediaBrowser.Model/Dlna/StreamInfo.cs:616 CS0266 error | Не удается неявно преобразовать тип "long" в "int". Существует явное преобразование (возможно, пропущено приведение типов).
+MediaBrowser.Model/Dlna/StreamInfo.cs:639 CS0103 error | Имя "TargetVideoStreem" не существует в текущем контексте.
+MediaBrowser.Model/Dlna/StreamInfo.cs:659 CS1061 error | "bool" не содержит определения "Value", и не удалось найти доступный метод расширения "Value", принимающий тип "bool" в качестве первого аргумента (возможно, пропущена ди
+MediaBrowser.Model/Dlna/StreamInfo.cs:683 CS0029 error | Не удается неявно преобразовать тип "string" в "bool?".
+MediaBrowser.Model/Dto/UpdateUserItemDataDto.cs:16 CS8618 warning | свойство "Comment", не допускающий значения NULL, должен содержать значение, отличное от NULL, при выходе из конструктора. Рассмотрите возможность добавления модификатора
+MediaBrowser.Model/Dto/UpdateUserItemDataDto.cs:18 CS8618 warning | поле "DefaultKey", не допускающий значения NULL, должен содержать значение, отличное от NULL, при выходе из конструктора. Рассмотрите возможность добавления модификатора 
+MediaBrowser.Model/Search/SearchHint.cs:18 CS8618 warning | свойство "BrokenLabel", не допускающий значения NULL, должен содержать значение, отличное от NULL, при выходе из конструктора. Рассмотрите возможность добавления модифика
+## MISSING
+Emby.Naming/Video/VideoResolver.cs:158 CS7036 error | Отсутствует аргумент, соответствующий требуемому параметру "cleanDateTimeRegexes" из "CleanDateTimeParser.Clean(string, IReadOnlyList<Regex>)".
+Emby.Server.Implementations/Library/UserViewManager.cs:189 CS0029 error | Не удается неявно преобразовать тип "string" в "System.Guid".
+Jellyfin.Api/Controllers/SearchController.cs:127 CS7036 error | Отсутствует аргумент, соответствующий требуемому параметру "totalRecordCount" из "SearchHintResult.SearchHintResult(IReadOnlyList<SearchHint>, int)".
+Jellyfin.Api/Controllers/SearchController.cs:151 CS0029 error | Не удается неявно преобразовать тип "string" в "System.DateTime?".
+Jellyfin.Api/Controllers/SearchController.cs:215 CS0311 error | Тип "string" не может быть использован как параметр типа "T" в универсальном типе или методе "ILibraryManager.GetItemById<T>(Guid)". Нет преобразования неявной ссылки из 
+Jellyfin.Api/Controllers/UserController.cs:142 CS0029 error | Не удается неявно преобразовать тип "int" в "Microsoft.AspNetCore.Mvc.ActionResult<MediaBrowser.Model.Dto.UserDto>".
+Jellyfin.Server.Implementations/Devices/DeviceManager.cs:71 CS0029 error | Не удается неявно преобразовать тип "string" в "MediaBrowser.Model.Session.ClientCapabilities".
+Jellyfin.Server.Implementations/Devices/DeviceManager.cs:125 CS1729 error | "ClientCapabilities" не содержит конструктор, который принимает аргументы 1.
+Jellyfin.Server.Implementations/Devices/DeviceManager.cs:154 CS0029 error | Не удается неявно преобразовать тип "System.Collections.Generic.IEnumerable<Jellyfin.Database.Implementations.Entities.Security.Device>" в "int".
+Jellyfin.Server.Implementations/Devices/DeviceManager.cs:264 CS0029 error | Не удается неявно преобразовать тип "System.DateOnly" в "System.DateTime?".
+## EXTRA
+Jellyfin.Server.Implementations/Users/UserManager.cs:343 CS0168 warning | The variable 'newUser' is declared but never used
+Jellyfin.Server.Implementations/Users/UserManager.cs:360 CS0029 error | Cannot implicitly convert type 'Jellyfin.Database.Implementations.Entities.User' to 'string'
+Jellyfin.Server.Implementations/Users/UserManager.cs:362 CS1503 error | Argument 1: cannot convert from 'string' to 'Jellyfin.Database.Implementations.Entities.User'
+Jellyfin.Server.Implementations/Users/UserManager.cs:423 CS0162 warning | Unreachable code detected

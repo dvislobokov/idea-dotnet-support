@@ -148,7 +148,7 @@ internal class CSharpGenericChecks(private val checks: CSharpSemanticChecks, pri
      * non-generic one, to name in the message); else the constraints of the one method of that arity the arguments can call.
      */
     private fun checkMethod(name: CSharpSimpleName, leaf: PsiElement, written: List<CSharpType>, call: CSharpInvocationExpression) {
-        val all = checks.overloads(name, leaf.text, null) ?: return
+        val all = checks.overloads(name, leaf.text, null, extensionArity = written.size) ?: return
         if (all.isEmpty()) return
         val arity = written.size
         val same = all.filter { r.expressions.methodArity(it) == arity }

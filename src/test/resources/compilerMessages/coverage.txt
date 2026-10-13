@@ -1,4 +1,4 @@
-# 255 examples, Roslyn errors 417, matched 323, missing 94, extra 0
+# 255 examples, Roslyn errors 429, matched 336, missing 93, extra 0
 array-declaration-errors-1.cs	CS1922@6	missing
 array-declaration-errors-2.cs	CS0246@10	ok
 array-declaration-errors-2.cs	CS0246@11	ok
@@ -15,7 +15,7 @@ cs0019-1.cs	CS0019@5	ok
 cs0019-2.cs	CS0019@8	missing
 cs0029-1.cs	CS0266@4	ok
 cs0029-2.cs	CS0266@4	ok
-cs0029-5.cs	CS0029@18	missing
+cs0029-5.cs	CS0029@18	ok
 cs0038-1.cs	CS0120@16	missing
 cs0039-1.cs	CS0039@22	missing
 cs0050-1.cs	CS0050@11	ok
@@ -299,6 +299,12 @@ rider-comparison.cs	CS0029@290	ok
 rider-comparison.cs	CS0029@293	ok
 rider-comparison.cs	CS0029@294	ok
 rider-comparison.cs	CS0029@302	ok
+rider-comparison.cs	CS0029@354	ok
+rider-comparison.cs	CS0029@355	ok
+rider-comparison.cs	CS0029@356	ok
+rider-comparison.cs	CS0029@357	ok
+rider-comparison.cs	CS0029@358	ok
+rider-comparison.cs	CS0029@359	ok
 rider-comparison.cs	CS0103@105	ok
 rider-comparison.cs	CS0103@114	ok
 rider-comparison.cs	CS0103@115	ok
@@ -320,6 +326,8 @@ rider-comparison.cs	CS0119@217	ok
 rider-comparison.cs	CS0119@218	ok
 rider-comparison.cs	CS0119@219	ok
 rider-comparison.cs	CS0119@220	ok
+rider-comparison.cs	CS0128@335	ok
+rider-comparison.cs	CS0139@345	ok
 rider-comparison.cs	CS0161@83	ok
 rider-comparison.cs	CS0234@17	ok
 rider-comparison.cs	CS0246@104	ok
@@ -327,6 +335,7 @@ rider-comparison.cs	CS0246@16	ok
 rider-comparison.cs	CS0246@28	ok
 rider-comparison.cs	CS0246@45	ok
 rider-comparison.cs	CS0246@83	ok
+rider-comparison.cs	CS0311@365	ok
 rider-comparison.cs	CS1001@154	ok
 rider-comparison.cs	CS1002@133	ok
 rider-comparison.cs	CS1002@201	ok
@@ -345,24 +354,27 @@ rider-comparison.cs	CS1026@192	ok
 rider-comparison.cs	CS1026@201	ok
 rider-comparison.cs	CS1026@59	ok
 rider-comparison.cs	CS1026@67	ok
-rider-comparison.cs	CS1035@316	ok
+rider-comparison.cs	CS1035@377	ok
 rider-comparison.cs	CS1061@134	ok
 rider-comparison.cs	CS1061@146	ok
 rider-comparison.cs	CS1061@155	ok
 rider-comparison.cs	CS1061@175	ok
 rider-comparison.cs	CS1061@184	ok
-rider-comparison.cs	CS1061@315	ok
+rider-comparison.cs	CS1061@376	ok
 rider-comparison.cs	CS1061@38	ok
 rider-comparison.cs	CS1061@59	ok
 rider-comparison.cs	CS1061@85	ok
 rider-comparison.cs	CS1061@95	ok
 rider-comparison.cs	CS1503@193	ok
-rider-comparison.cs	CS1513@315	ok
+rider-comparison.cs	CS1503@350	ok
+rider-comparison.cs	CS1513@376	ok
 rider-comparison.cs	CS1525@123	ok
 rider-comparison.cs	CS1525@144	ok
 rider-comparison.cs	CS1525@161	ok
 rider-comparison.cs	CS1729@292	ok
+rider-comparison.cs	CS1729@366	ok
 rider-comparison.cs	CS4033@94	ok
+rider-comparison.cs	CS7036@364	ok
 using-statement-declaration-errors-1.cs	CS0116@12	missing
 using-statement-declaration-errors-1.cs	CS0260@4	missing
 using-statement-declaration-errors-1.cs	CS1022@13	ok

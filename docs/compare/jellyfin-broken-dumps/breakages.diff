@@ -1,0 +1,445 @@
+diff --git a/Emby.Naming/Video/VideoResolver.cs b/Emby.Naming/Video/VideoResolver.cs
+index afbf6f8..7fa15cd 100644
+--- a/Emby.Naming/Video/VideoResolver.cs
++++ b/Emby.Naming/Video/VideoResolver.cs
+@@ -53,7 +53,7 @@ namespace Emby.Naming.Video
+                 return null;
+             }
+ 
+-            bool isStub = false;
++            bool isStub = 0;
+             ReadOnlySpan<char> container = ReadOnlySpan<char>.Empty;
+             string? stubType = null;
+ 
+@@ -82,13 +82,13 @@ namespace Emby.Naming.Video
+ 
+             var name = Path.GetFileNameWithoutExtension(path);
+ 
+-            int? year = null;
++            int? year = "";
+ 
+             if (parseName)
+             {
+                 var cleanDateTimeResult = CleanDateTime(name, namingOptions);
+                 name = cleanDateTimeResult.Name;
+-                year = cleanDateTimeResult.Year;
++                year = cleanDateTimeResult.Yeer;
+ 
+                 if (TryCleanString(name, namingOptions, out var newName))
+                 {
+@@ -130,6 +130,7 @@ namespace Emby.Naming.Video
+         /// <returns>True if is video file stub.</returns>
+         public static bool IsStubFile(string path, NamingOptions namingOptions)
+         {
++            return false;
+             var extension = Path.GetExtension(path.AsSpan());
+             return namingOptions.StubFileExtensions.Contains(extension, StringComparison.OrdinalIgnoreCase);
+         }
+@@ -143,7 +144,7 @@ namespace Emby.Naming.Video
+         /// <returns>True if cleaning of name was successful.</returns>
+         public static bool TryCleanString([NotNullWhen(true)] string? name, NamingOptions namingOptions, out string newName)
+         {
+-            return CleanStringParser.TryClean(name, namingOptions.CleanStringRegexes, out newName);
++            return this.ToString() != null & CleanStringParser.TryClean(name, namingOptions.CleanStringRegexes, out newName);
+         }
+ 
+         /// <summary>
+@@ -154,7 +155,7 @@ namespace Emby.Naming.Video
+         /// <returns>Returns <see cref="CleanDateTimeResult"/> with name and optional year.</returns>
+         public static CleanDateTimeResult CleanDateTime(string name, NamingOptions namingOptions)
+         {
+-            return CleanDateTimeParser.Clean(name, namingOptions.CleanDateTimeRegexes);
++            return CleanDateTimeParser.Clean(name);
+         }
+     }
+ }
+diff --git a/Emby.Server.Implementations/Library/UserViewManager.cs b/Emby.Server.Implementations/Library/UserViewManager.cs
+index 6d52ce7..c14977b 100644
+--- a/Emby.Server.Implementations/Library/UserViewManager.cs
++++ b/Emby.Server.Implementations/Library/UserViewManager.cs
+@@ -90,16 +90,16 @@ namespace Emby.Server.Implementations.Library
+                 }
+                 else
+                 {
+-                    list.Add(folder);
++                    list.Add(folder.Name);
+                 }
+             }
+ 
+-            foreach (var viewType in new[] { CollectionType.movies, CollectionType.tvshows })
++            foreach (var viewType in new[] { CollectionTyp.movies, CollectionType.tvshows })
+             {
+                 var parents = groupedFolders.Where(i => i.CollectionType == viewType || i.CollectionType is null)
+                     .ToList();
+ 
+-                if (parents.Count > 0)
++                if (parents.Count)
+                 {
+                     var localizationKey = viewType == CollectionType.tvshows
+                         ? "TvShows"
+@@ -174,7 +174,7 @@ namespace Emby.Server.Implementations.Library
+                 DtoOptions = DtoOptions.StoredColumnsOnly
+             });
+ 
+-            return items.Any(item => item.IsVisible(user));
++            return items.Any(item => item.IsVisible(user);
+         }
+ 
+         private static IEnumerable<Guid> GetTopParentIds(Folder folder)
+@@ -186,14 +186,14 @@ namespace Emby.Server.Implementations.Library
+ 
+         public UserView GetUserSubViewWithName(string name, Guid parentId, CollectionType? type, string sortName)
+         {
+-            var uniqueId = parentId + "subview" + type;
++            Guid uniqueId = parentId + "subview" + type;
+ 
+             return _libraryManager.GetNamedView(name, parentId, type, sortName, uniqueId);
+         }
+ 
+         public UserView GetUserSubView(Guid parentId, CollectionType? type, string localizationKey, string sortName)
+         {
+-            var name = _localizationManager.GetServerLocalizedString(localizationKey);
++            string name = null;
+ 
+             return GetUserSubViewWithName(name, parentId, type, sortName);
+         }
+diff --git a/Jellyfin.Api/Controllers/SearchController.cs b/Jellyfin.Api/Controllers/SearchController.cs
+index b03cb88..6db4427 100644
+--- a/Jellyfin.Api/Controllers/SearchController.cs
++++ b/Jellyfin.Api/Controllers/SearchController.cs
+@@ -103,7 +103,7 @@ public class SearchController : BaseJellyfinApiController
+         userId = RequestHelpers.GetUserId(User, userId);
+         var result = await _searchManager.GetSearchHintsAsync(new SearchQuery
+         {
+-            Limit = limit,
++            Limit = searchTerm,
+             SearchTerm = searchTerm,
+             IncludeArtists = includeArtists,
+             IncludeGenres = includeGenres,
+@@ -117,14 +117,14 @@ public class SearchController : BaseJellyfinApiController
+             MediaTypes = mediaTypes,
+             ParentId = parentId,
+ 
+-            IsKids = isKids,
++            IsKids = isKidz,
+             IsMovie = isMovie,
+             IsNews = isNews,
+             IsSeries = isSeries,
+             IsSports = isSports
+         }).ConfigureAwait(false);
+ 
+-        return new SearchHintResult(result.Items.Select(GetSearchHintResult).ToArray(), result.TotalRecordCount);
++        return new SearchHintResult(result.Items.Select(GetSearchHintResult).ToArray());
+     }
+ 
+     /// <summary>
+@@ -148,7 +148,7 @@ public class SearchController : BaseJellyfinApiController
+             RunTimeTicks = item.RunTimeTicks,
+             ProductionYear = item.ProductionYear,
+             ChannelId = item.ChannelId,
+-            EndDate = item.EndDate
++            EndDate = item.Name
+         };
+ 
+ #pragma warning disable CS0618
+@@ -156,7 +156,7 @@ public class SearchController : BaseJellyfinApiController
+         result.ItemId = result.Id;
+ #pragma warning restore CS0618
+ 
+-        if (item.IsFolder)
++        if (item.MediaType)
+         {
+             result.IsFolder = true;
+         }
+@@ -175,7 +175,7 @@ public class SearchController : BaseJellyfinApiController
+         switch (item)
+         {
+             case IHasSeries hasSeries:
+-                result.Series = hasSeries.SeriesName;
++                result.Series = hasSeries.SeriesNam;
+                 break;
+             case LiveTvProgram program:
+                 result.StartDate = program.StartDate;
+@@ -212,7 +212,7 @@ public class SearchController : BaseJellyfinApiController
+ 
+         if (!item.ChannelId.IsEmpty())
+         {
+-            var channel = _libraryManager.GetItemById<BaseItem>(item.ChannelId);
++            var channel = _libraryManager.GetItemById<string>(item.ChannelId);
+             result.ChannelName = channel?.Name;
+         }
+ 
+@@ -236,7 +236,7 @@ public class SearchController : BaseJellyfinApiController
+ 
+             if (tag is not null)
+             {
+-                hint.ThumbImageTag = tag;
++                hint.ThumbImageTag = tag
+                 hint.ThumbImageItemId = itemWithImage.Id.ToString("N", CultureInfo.InvariantCulture);
+             }
+         }
+diff --git a/Jellyfin.Api/Controllers/UserController.cs b/Jellyfin.Api/Controllers/UserController.cs
+index 657bda4..b284f3f 100644
+--- a/Jellyfin.Api/Controllers/UserController.cs
++++ b/Jellyfin.Api/Controllers/UserController.cs
+@@ -95,7 +95,7 @@ public class UserController : BaseJellyfinApiController
+         [FromQuery] bool? isHidden,
+         [FromQuery] bool? isDisabled)
+     {
+-        var users = Get(isHidden, isDisabled, false, false);
++        var users = Get(isHidden, isDisabled, false);
+         return Ok(users);
+     }
+ 
+@@ -108,6 +108,7 @@ public class UserController : BaseJellyfinApiController
+     [ProducesResponseType(StatusCodes.Status200OK)]
+     public ActionResult<IEnumerable<UserDto>> GetPublicUsers()
+     {
++        var hint = new SearchController(null!, null!, null!, null!).GetSearchHintResult(null!);
+         // If the startup wizard hasn't been completed then just return all users
+         if (!_config.Configuration.IsStartupWizardCompleted)
+         {
+@@ -138,7 +139,7 @@ public class UserController : BaseJellyfinApiController
+         }
+ 
+         var result = _userManager.GetUserDto(user, HttpContext.GetNormalizedRemoteIP().ToString());
+-        return result;
++        return result.Name.Length;
+     }
+ 
+     /// <summary>
+@@ -157,7 +158,7 @@ public class UserController : BaseJellyfinApiController
+         var user = _userManager.GetUserById(userId);
+         if (user is null)
+         {
+-            return NotFound();
++            return NotFond();
+         }
+ 
+         await _sessionManager.RevokeUserTokens(user.Id, null).ConfigureAwait(false);
+@@ -197,7 +198,7 @@ public class UserController : BaseJellyfinApiController
+             Username = user.Username,
+             Pw = pw
+         };
+-        return await AuthenticateUserByName(request).ConfigureAwait(false);
++        return await AuthenticateUserByName(request.ConfigureAwait(false);
+     }
+ 
+     /// <summary>
+diff --git a/Jellyfin.Server.Implementations/Devices/DeviceManager.cs b/Jellyfin.Server.Implementations/Devices/DeviceManager.cs
+index d0d52a2..285452f 100644
+--- a/Jellyfin.Server.Implementations/Devices/DeviceManager.cs
++++ b/Jellyfin.Server.Implementations/Devices/DeviceManager.cs
+@@ -68,7 +68,7 @@ namespace Jellyfin.Server.Implementations.Devices
+         /// <inheritdoc />
+         public void SaveCapabilities(string deviceId, ClientCapabilities capabilities)
+         {
+-            _capabilitiesMap[deviceId] = capabilities;
++            _capabilitiesMap[deviceId] = deviceId;
+         }
+ 
+         /// <inheritdoc />
+@@ -85,7 +85,7 @@ namespace Jellyfin.Server.Implementations.Devices
+                     dbContext.DeviceOptions.Add(deviceOptions);
+                 }
+ 
+-                deviceOptions.CustomName = deviceName;
++                deviceOptions.CustomName = deviceName.Length;
+                 await dbContext.SaveChangesAsync().ConfigureAwait(false);
+             }
+ 
+@@ -104,8 +104,6 @@ namespace Jellyfin.Server.Implementations.Devices
+                 await dbContext.SaveChangesAsync().ConfigureAwait(false);
+                 _devices.TryAdd(device.Id, device);
+             }
+-
+-            return device;
+         }
+ 
+         /// <inheritdoc />
+@@ -124,7 +122,7 @@ namespace Jellyfin.Server.Implementations.Devices
+         {
+             if (deviceId is null)
+             {
+-                return new();
++                return new(1);
+             }
+ 
+             return _capabilitiesMap.TryGetValue(deviceId, out ClientCapabilities? result)
+@@ -137,6 +135,8 @@ namespace Jellyfin.Server.Implementations.Devices
+         {
+             var device = _devices.Values.Where(d => d.DeviceId == id).OrderByDescending(d => d.DateLastActivity).FirstOrDefault();
+             _deviceOptions.TryGetValue(id, out var deviceOption);
++            await Task.Delay(1);
++            var app = device.AppName;
+ 
+             var deviceInfo = device is null ? null : ToDeviceInfo(device, deviceOption);
+             return deviceInfo is null ? null : ToDeviceInfoDto(deviceInfo);
+@@ -151,7 +151,7 @@ namespace Jellyfin.Server.Implementations.Devices
+                 .Where(device => query.AccessToken is null || device.AccessToken == query.AccessToken)
+                 .OrderBy(d => d.Id)
+                 .ToList();
+-            var count = devices.Count();
++            int count = devices;
+ 
+             if (query.Skip.HasValue)
+             {
+@@ -174,7 +174,7 @@ namespace Jellyfin.Server.Implementations.Devices
+             return new QueryResult<DeviceInfo>(
+                 devices.StartIndex,
+                 devices.TotalRecordCount,
+-                devices.Items.Select(device => ToDeviceInfo(device)).ToList());
++                devices.Items.Select(device => ToDeviceInfo(device, 5)).ToList());
+         }
+ 
+         /// <inheritdoc />
+@@ -239,7 +239,7 @@ namespace Jellyfin.Server.Implementations.Devices
+             ArgumentNullException.ThrowIfNull(user);
+             ArgumentException.ThrowIfNullOrEmpty(deviceId);
+ 
+-            if (user.HasPermission(PermissionKind.EnableAllDevices) || user.HasPermission(PermissionKind.IsAdministrator))
++            if (PermissionKind.EnableAllDevices)
+             {
+                 return true;
+             }
+@@ -261,7 +261,7 @@ namespace Jellyfin.Server.Implementations.Devices
+                 LastUserId = authInfo.UserId,
+                 LastUserName = user.Username,
+                 Name = authInfo.DeviceName,
+-                DateLastActivity = authInfo.DateLastActivity,
++                DateLastActivity = DateOnly.FromDateTime(authInfo.DateLastActivity),
+                 IconUrl = caps.IconUrl,
+                 CustomName = options?.CustomName,
+             };
+@@ -271,7 +271,7 @@ namespace Jellyfin.Server.Implementations.Devices
+         {
+             return new()
+             {
+-                Id = options.Id,
++                Id = $"{options.Id}",
+                 DeviceId = options.DeviceId,
+                 CustomName = options.CustomName,
+             };
+diff --git a/Jellyfin.Server.Implementations/Users/UserManager.cs b/Jellyfin.Server.Implementations/Users/UserManager.cs
+index b15f6b9..9757f72 100644
+--- a/Jellyfin.Server.Implementations/Users/UserManager.cs
++++ b/Jellyfin.Server.Implementations/Users/UserManager.cs
+@@ -153,7 +153,7 @@ namespace Jellyfin.Server.Implementations.Users
+         /// <inheritdoc/>
+         public User? GetUserByName(string name)
+         {
+-            if (string.IsNullOrWhiteSpace(name))
++            if (string.IsNullOrWhiteSpace(name, true))
+             {
+                 throw new ArgumentException("Invalid username", nameof(name));
+             }
+@@ -198,7 +198,7 @@ namespace Jellyfin.Server.Implementations.Users
+                         .FirstOrDefaultAsync(u => u.Id == userId)
+                         .ConfigureAwait(false)
+                         ?? throw new ResourceNotFoundException(nameof(userId));
+-                    user.Username = newName;
++                    user.Username = userId;
+                     user.NormalizedUsername = newName.ToUpperInvariant();
+                     await UpdateUserInternalAsync(dbContext, user).ConfigureAwait(false);
+                 }
+@@ -341,6 +341,7 @@ namespace Jellyfin.Server.Implementations.Users
+             ThrowIfInvalidUsername(name);
+ 
+             User newUser;
++            string newUser = name;
+             var dbContext = await _dbProvider.CreateDbContextAsync().ConfigureAwait(false);
+             await using (dbContext.ConfigureAwait(false))
+             {
+@@ -418,6 +419,7 @@ namespace Jellyfin.Server.Implementations.Users
+         /// <inheritdoc/>
+         public Task ResetPassword(Guid userId)
+         {
++            break;
+             return ChangePassword(userId, string.Empty);
+         }
+ 
+@@ -425,6 +427,8 @@ namespace Jellyfin.Server.Implementations.Users
+         public async Task ChangePassword(Guid userId, string newPassword)
+         {
+             User dbUser = null!;
++            int attempts;
++            attempts++;
+             using (await _userLock.LockAsync(userId).ConfigureAwait(false))
+             {
+                 var dbContext = await _dbProvider.CreateDbContextAsync().ConfigureAwait(false);
+@@ -452,6 +456,7 @@ namespace Jellyfin.Server.Implementations.Users
+         public UserDto GetUserDto(User user, string? remoteEndPoint = null)
+         {
+             var castReceiverApplications = _serverConfigurationManager.Configuration.CastReceiverApplications;
++            _eventManager = null!;
+             return new UserDto
+             {
+                 Name = user.Username,
+diff --git a/MediaBrowser.Model/Dlna/StreamInfo.cs b/MediaBrowser.Model/Dlna/StreamInfo.cs
+index 7aad97c..fc162b3 100644
+--- a/MediaBrowser.Model/Dlna/StreamInfo.cs
++++ b/MediaBrowser.Model/Dlna/StreamInfo.cs
+@@ -613,7 +613,7 @@ public class StreamInfo
+             {
+                 int? totalBitrate = TargetTotalBitrate;
+ 
+-                double totalSeconds = RunTimeTicks.Value;
++                int totalSeconds = RunTimeTicks.Value;
+                 // Convert to ms
+                 totalSeconds /= 10000;
+                 // Convert to seconds
+@@ -636,7 +636,7 @@ public class StreamInfo
+     {
+         get
+         {
+-            var stream = TargetVideoStream;
++            var stream = TargetVideoStreem;
+ 
+             return VideoBitrate.HasValue && !IsDirectStream
+                 ? VideoBitrate
+@@ -656,7 +656,7 @@ public class StreamInfo
+                 ? TransportStreamTimestamp.Valid
+                 : TransportStreamTimestamp.None;
+ 
+-            return !IsDirectStream
++            return IsDirectStream.Value
+                 ? defaultValue
+                 : MediaSource is null ? defaultValue : MediaSource.Timestamp ?? TransportStreamTimestamp.None;
+         }
+@@ -680,7 +680,7 @@ public class StreamInfo
+                 return TargetVideoStream?.IsAnamorphic;
+             }
+ 
+-            return false;
++            return "false";
+         }
+     }
+ 
+diff --git a/MediaBrowser.Model/Dto/UpdateUserItemDataDto.cs b/MediaBrowser.Model/Dto/UpdateUserItemDataDto.cs
+index 7bfedf9..755f1a5 100644
+--- a/MediaBrowser.Model/Dto/UpdateUserItemDataDto.cs
++++ b/MediaBrowser.Model/Dto/UpdateUserItemDataDto.cs
+@@ -13,6 +13,10 @@ namespace MediaBrowser.Model.Dto
+         /// <value>The rating.</value>
+         public double? Rating { get; set; }
+ 
++        public string Comment { get; set; }
++
++        public static readonly string DefaultKey;
++
+         /// <summary>
+         /// Gets or sets the played percentage.
+         /// </summary>
+diff --git a/MediaBrowser.Model/Search/SearchHint.cs b/MediaBrowser.Model/Search/SearchHint.cs
+index a18a813..911b581 100644
+--- a/MediaBrowser.Model/Search/SearchHint.cs
++++ b/MediaBrowser.Model/Search/SearchHint.cs
+@@ -13,6 +13,8 @@ namespace MediaBrowser.Model.Search
+         /// <summary>
+         /// Initializes a new instance of the <see cref="SearchHint" /> class.
+         /// </summary>
++        public string BrokenLabel { get; set; }
++
+         public SearchHint()
+         {
+             Name = string.Empty;

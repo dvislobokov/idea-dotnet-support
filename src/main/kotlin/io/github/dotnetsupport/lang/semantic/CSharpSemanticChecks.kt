@@ -388,10 +388,11 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
      * [site] sees (extension methods, and what C# 14 extension blocks compile to), any extension method of the solution of that name. An
      * extension method of a type parameter whose constraints [receiver] does not satisfy is no excuse (`day.AddEndpointFilter`).
      */
-    private fun extensionNamed(text: String, site: PsiElement, receiver: SemanticType): Boolean {
-        if (session.sourceExtensions(text).isNotEmpty()) return true
+    private fun extensionNamed(text: String, site: PsiElement, receiver: SemanticType, arity: Int? = null): Boolean {
+        // with type arguments written only an extension method of as many type parameters is a candidate
+        if (session.sourceExtensions(text).any { e -> arity == null || ((e as? CSharpMethodDeclaration)?.typeParameterList?.parameters?.size ?: 0) == arity }) return true
         val visible = resolver.visibleNamespaces(site)
-        val all = resolver.assemblies.membersNamed(text) + resolver.assemblies.membersNamed("get_$text")
+        val all = (resolver.assemblies.membersNamed(text) + resolver.assemblies.membersNamed("get_$text")).filter { arity == null || it.arity == arity || it.name.startsWith("get_") }
         // extension methods, and the accessors of C# 14 extension properties (static methods of a static class, `get_X`)
         return all.any {
             it.type.isStatic && it.type.namespace in visible && (it.kind == IndexedMemberKind.EXTENSION_METHOD && resolver.receiverFits(CSharpSymbol.LibraryMember(it), receiver) ||
@@ -468,7 +469,8 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
      * record given one argument (its copy constructor).
      */
     private fun checkConstructorArguments(creation: CSharpBaseObjectCreationExpression) {
-        if (creation !is CSharpObjectCreationExpression) return
+        // `new(1)`: the type is the target's (Jellyfin, 2026-10-13); Roslyn marks the whole expression
+        if (creation !is CSharpObjectCreationExpression && creation !is CSharpImplicitObjectCreationExpression) return
         val arguments = creation.argumentList?.arguments ?: return
         if (arguments.any { it.nameColon != null || it.expression?.text == "__arglist" }) return
         val type = resolver.typeOf(creation) as? SemanticType.Source ?: return
@@ -486,7 +488,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         val lists = constructors.map { c -> ((c as? CSharpConstructorDeclaration)?.parameterList ?: (c as CSharpTypeDeclaration).parameterList)?.parameters.orEmpty() }
         fun required(list: List<CSharpParameter>) = list.count { p -> p.default == null && p.modifiers.none { it.text == "params" } }
         if (lists.any { list -> count >= required(list) && (count <= list.size || list.lastOrNull()?.modifiers?.any { it.text == "params" } == true) }) return
-        val at = creation.type?.textRange ?: return
+        val at = (creation as? CSharpObjectCreationExpression)?.let { it.type?.textRange ?: return } ?: creation.textRange
         val single = constructors.singleOrNull()
         val list = lists.singleOrNull()
         if (single != null && list != null && count < required(list)) {
@@ -503,8 +505,10 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
     private fun constructorDisplay(constructor: PsiElement, parameters: List<CSharpParameter>): String? {
         val owner = constructor as? CSharpTypeDeclaration ?: PsiTreeUtil.getParentOfType(constructor, CSharpBaseTypeDeclaration::class.java) ?: return null
         val typeName = declaringName(owner) ?: return null
+        // by the usings of the constructor's own file, as [methodDisplay]
+        val own = (constructor.containingFile as? CSharpFile)?.let(session::reachable) ?: return null
         val shown = parameters.map { p ->
-            val type = p.type?.let(resolver::resolveType)?.let { CSharpTypeDisplay.display(it, qualified = false) } ?: return null
+            val type = p.type?.let(own::resolveType)?.let { CSharpTypeDisplay.display(it, qualified = false) } ?: return null
             (p.modifiers.map { it.text } + type).joinToString(" ")
         }
         return "$typeName.${owner.identifier?.text}(${shown.joinToString(", ")})"
@@ -595,7 +599,8 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
      * when none of the nearest fits. Null when that set is not surely complete: a member of another kind, an unknown or partial type,
      * extension methods of that name, a local function or a delegate.
      */
-    internal fun overloads(callee: CSharpSimpleName, text: String, explicitArity: Int?, extensions: Boolean = true): List<CSharpSymbol>? {
+    /** [extensionArity]: the type arguments written, so an extension method of another arity is no candidate (CS0311 of `GetItemById<string>`). */
+    internal fun overloads(callee: CSharpSimpleName, text: String, explicitArity: Int?, extensions: Boolean = true, extensionArity: Int? = explicitArity): List<CSharpSymbol>? {
         val parent = callee.parent
         var static = false
         val type: SemanticType = when {
@@ -613,7 +618,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         }
         // extension methods are looked up for `x.M(...)` only, never for a simple name (C# §12.8.10.3)
         val reduced = parent is CSharpMemberAccessExpression || parent is CSharpMemberBindingExpression
-        if (!checkable(type) || extensions && reduced && !static && extensionNamed(text, callee, type)) return null
+        if (!checkable(type) || extensions && reduced && !static && extensionNamed(text, callee, type, extensionArity)) return null
         val found = ArrayList<CSharpSymbol>()
         return if (collect(type, text, found, 0, explicitArity)) found else null
     }
@@ -667,8 +672,10 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
             val method = symbol.element as? CSharpMethodDeclaration
             val owner = method?.let { PsiTreeUtil.getParentOfType(it, CSharpBaseTypeDeclaration::class.java) }
             val typeName = owner?.let { declaringName(it) }
-            val parameters = method?.parameterList?.parameters?.map { p ->
-                val type = p.type?.let(resolver::resolveType)?.let { CSharpTypeDisplay.display(it, qualified = false) } ?: return null
+            // the types of the parameters by the usings of the method's own file (`Regex` there, not imported here: Jellyfin, 2026-10-13)
+            val own = (method?.containingFile as? CSharpFile)?.let(session::reachable) ?: return null
+            val parameters = method.parameterList?.parameters?.map { p ->
+                val type = p.type?.let(own::resolveType)?.let { CSharpTypeDisplay.display(it, qualified = false) } ?: return null
                 (p.modifiers.map { it.text } + type).joinToString(" ")
             }
             val typeParameters = method?.typeParameterList?.parameters?.map { it.text.trim() }?.joinToString(", ", "<", ">").orEmpty()
@@ -717,6 +724,8 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         if (left is CSharpTupleExpression || left is CSharpDeclarationExpression) return
         // `new Forecast { Date = DateTime.Now }`: a member of the created type (the user's report, 2026-10-13); `Items = { 1 }` adds, not assigns
         if (NativeCSharpScopes.isObjectInitializer(assignment.parent) && (left !is CSharpIdentifierName || right is CSharpInitializerExpression)) return
+        // `map[key] = value`, `items[i] = value`: the element type of the indexer (Jellyfin, 2026-10-13)
+        if (left is CSharpElementAccessExpression) return resolver.typeOf(left)?.let { checkConversion(right, it) } ?: Unit
         // only what is surely a variable of a written type: a local, a parameter, a field or a property of a type of the solution or an assembly
         val name = when (left) {
             is CSharpIdentifierName -> left
@@ -822,7 +831,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         }
         if (isTargetTyped(value)) return
         val source = resolver.typeOf(value) ?: return
-        val code = conversionError(source, target, value) ?: return
+        val code = conversionError(source, target, value) ?: "CS0029".takeIf { noConversion(value, source, target) } ?: return
         val from = CSharpTypeDisplay.display(source) ?: return
         val to = CSharpTypeDisplay.display(target) ?: return
         if (from == to) return
@@ -978,6 +987,66 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         if (source is SemanticType.Library && (special(source) != null || source.type.fullName == targetLibrary.type.fullName)) return null
         return if (targetLibrary.type.fullName == BOOL) "CS0029".takeIf { !hasTrueOperator(source) }
         else "CS0029".takeIf { special(targetLibrary) == null && targetLibrary.type.kind == IndexedTypeKind.STRUCT && isKnown(target) && !hasConversions(target) }
+    }
+
+    /**
+     * The conversions of overload resolution ([CSharpNameResolver.conversion]: base types, interfaces, variance, nullable, user-defined
+     * operators matched by their operand) surely find none from [source] to [target], and no explicit one may exist either (that would be
+     * CS0266): `string` → `DateTime?` / `Guid` / a class, `IEnumerable<T>` → `int`, `int` → `ActionResult<T>` whose operators take `T` and
+     * `ActionResult` (Jellyfin, 2026-10-13). Not between the special types (the rules above), for enums, `object`, type parameters,
+     * an `explicit` operator on either side, a conversion back the other way, an interface against an unsealed class, two interfaces.
+     */
+    private fun noConversion(value: CSharpExpression, source: SemanticType, target: SemanticType): Boolean {
+        if (mentionsTypeParameter(source) || mentionsTypeParameter(target)) return false
+        val sourceName = resolver.definitionName(source)
+        val targetName = resolver.definitionName(target)
+        // `return 1;` in a void method is CS0127 / CS1997 of its own
+        if (sourceName == OBJECT || targetName == OBJECT || targetName == "System.Void" || sourceName == "System.Void") return false
+        val plain = { t: SemanticType -> (t as? SemanticType.Library)?.let(::special) }
+        if (plain(source) != null && plain(target) != null) return false
+        if (isEnum(source) || isEnum(target) || isEnum(underlying(target))) return false
+        if (resolver.overloads.argument(value, source, target) != CSharpNameResolver.Conversion.NONE) return false
+        if (resolver.conversion(target, source) != CSharpNameResolver.Conversion.NONE) return false
+        // of `T?` its `T`: `Nullable<T>` declares `explicit operator T(T?)`, which says nothing of other sources
+        if (hasExplicitOperator(underlying(source)) || hasExplicitOperator(underlying(target))) return false
+        val overloads = resolver.overloads
+        val sourceInterface = overloads.isInterface(source)
+        val targetInterface = overloads.isInterface(target)
+        if (sourceInterface && targetInterface) return false
+        if (sourceInterface && !sealedOrStruct(underlying(target))) return false
+        if (targetInterface && !sealedOrStruct(source)) return false
+        return true
+    }
+
+    private fun underlying(type: SemanticType): SemanticType =
+        (type as? SemanticType.Library)?.takeIf { resolver.isNullable(it) }?.arguments?.singleOrNull() ?: type
+
+    private fun isEnum(type: SemanticType): Boolean = when (type) {
+        is SemanticType.Library -> type.type.kind == IndexedTypeKind.ENUM
+        is SemanticType.Source -> type.info.kind == TypeKind.ENUM
+        else -> false
+    }
+
+    /** No subtype of [type] can implement an interface it does not: a struct, a sealed class, an array, `string`. */
+    private fun sealedOrStruct(type: SemanticType): Boolean = when (type) {
+        is SemanticType.Library -> type.type.kind == IndexedTypeKind.STRUCT || type.type.isSealed
+        is SemanticType.Source -> type.info.kind == TypeKind.STRUCT || type.info.kind == TypeKind.RECORD_STRUCT ||
+            type.info.parts.all { "sealed" in it.modifiers || "static" in it.modifiers }
+        is SemanticType.ArrayOf -> false
+        is SemanticType.Parameter -> false
+    }
+
+    /** An `explicit` operator of [type] or a base: a cast may convert, CS0266 rather than CS0029 — say nothing. Unknown parts count as one. */
+    private fun hasExplicitOperator(type: SemanticType, depth: Int = 0): Boolean {
+        if (depth > MAX_DEPTH) return true
+        return when (type) {
+            is SemanticType.Library -> (listOf(type.type) + session.baseTypes(resolver.assemblies, type.type).map { it.type }).any { t -> t.members.any { it.name == "op_Explicit" } }
+            is SemanticType.Source -> type.info.kind != TypeKind.ENUM && type.info.parts.any { part ->
+                (part.element() as? CSharpTypeDeclaration)?.members?.any { it is CSharpConversionOperatorDeclaration && it.implicitOrExplicitKeyword?.text == "explicit" } != false
+            } || resolver.baseTypes(type).any { hasExplicitOperator(it, depth + 1) }
+            is SemanticType.ArrayOf -> false
+            is SemanticType.Parameter -> true
+        }
     }
 
     /** `operator true` makes a type a condition (`if (x)`) without a conversion to `bool`. */

@@ -1,0 +1,106 @@
+== Jellyfin.Api/Controllers/SearchController.cs
+申open=13 daemonFinished=15 stableAt=579
+errors=6 warnings=0
+E 106 [searchTerm] CS0029: Cannot implicitly convert type 'string' to 'int?'
+E 120 [isKidz] CS0103: The name 'isKidz' does not exist in the current context
+E 159 [item.MediaType] CS0029: Cannot implicitly convert type 'Jellyfin.Data.Enums.MediaType' to 'bool'
+E 178 [SeriesNam] CS1061: 'IHasSeries' does not contain a definition for 'SeriesNam' and no accessible extension method 'SeriesNam' accepting a first argument of type 'IHasSeries
+E 216 [Name] CS1061: 'string' does not contain a definition for 'Name' and no accessible extension method 'Name' accepting a first argument of type 'string' could be found (
+E 239 [] CS1002: ; expected
+
+
+== Jellyfin.Api/Controllers/UserController.cs
+open=13 daemonFinished=14 stableAt=3202
+errors=5 warnings=0
+E 98 [Get] CS7036: There is no argument given that corresponds to the required parameter 'filterByNetwork' of 'UserController.Get(bool?, bool?, bool, bool)'
+E 111 [GetSearchHintResult] CS0122: 'SearchController.GetSearchHintResult(SearchHintInfo)' is inaccessible due to its protection level
+E 161 [NotFond] CS0103: The name 'NotFond' does not exist in the current context
+E 201 [AuthenticateUserByName(request.ConfigureAwait(false)] CA2007: Consider calling ConfigureAwait on the awaited task
+E 201 [;] CS1026: ) expected
+
+
+== Jellyfin.Server.Implementations/Devices/DeviceManager.cs
+申open=8 daemonFinished=9 stableAt=869
+errors=7 warnings=2
+E 88 [deviceName.Length] CS0029: Cannot implicitly convert type 'int' to 'string'
+W 88 [deviceName] CS8602: Dereference of a possibly null reference.
+E 98 [CreateDevice] CS0161: 'DeviceManager.CreateDevice(Device)': not all code paths return a value
+E 138 [await] CS4032: The 'await' operator can only be used within an async method. Consider marking this method with the 'async' modifier and changing its return type to 'Ta
+E 138 [Task.Delay(1)] CA2007: Consider calling ConfigureAwait on the awaited task
+W 139 [device] CS8602: Dereference of a possibly null reference.
+E 177 [5] CS1503: Argument 2: cannot convert from 'int' to 'Jellyfin.Database.Implementations.Entities.Security.DeviceOptions'
+E 242 [PermissionKind.EnableAllDevices] CS0029: Cannot implicitly convert type 'Jellyfin.Database.Implementations.Enums.PermissionKind' to 'bool'
+E 274 [$"{options.Id}"] CS0029: Cannot implicitly convert type 'string' to 'int'
+
+
+== Jellyfin.Server.Implementations/Users/UserManager.cs
+申open=9 daemonFinished=10 stableAt=795
+errors=8 warnings=3
+W 119 [\ ] Redundant character escape '\ ' in RegExp
+E 156 [IsNullOrWhiteSpace] CS1501: No overload for method 'IsNullOrWhiteSpace' takes 2 arguments
+E 201 [userId] CS0029: Cannot implicitly convert type 'System.Guid' to 'string'
+W 343 [newUser] CS0168: The variable 'newUser' is declared but never used
+E 344 [newUser] CS0128: A local variable or function named 'newUser' is already defined in this scope
+E 360 [await CreateUserInternalAsync(name, dbContext).ConfigureAwai] CS0029: Cannot implicitly convert type 'Jellyfin.Database.Implementations.Entities.User' to 'string'
+E 362 [newUser] CS1503: Argument 1: cannot convert from 'string' to 'Jellyfin.Database.Implementations.Entities.User'
+E 422 [break;] CS0139: No enclosing loop out of which to break or continue
+W 423 [return ChangePassword(userId, string.Empty);] CS0162: Unreachable code detected
+E 431 [attempts] CS0165: Use of unassigned local variable 'attempts'
+E 459 [_eventManager] CS0191: A readonly field cannot be assigned to (except in a constructor or init-only setter of the type in which the field is defined or a variable initializer)
+
+
+== Emby.Naming/Video/VideoResolver.cs
+open=13 daemonFinished=15 stableAt=753
+errors=5 warnings=1
+E 56 [0] CS0029: Cannot implicitly convert type 'int' to 'bool'
+E 85 [""] CS0029: Cannot implicitly convert type 'string' to 'int?'
+E 85 [""] SA1122: Use string.Empty for empty strings
+E 91 [Yeer] CS1061: 'CleanDateTimeResult' does not contain a definition for 'Yeer' and no accessible extension method 'Yeer' accepting a first argument of type 'CleanDateTi
+W 134 [var extension = Path.GetExtension(path.AsSpan());           ] CS0162: Unreachable code detected
+E 147 [this] CS0026: Keyword 'this' is not valid in a static property, static method, or static field initializer
+
+
+== Emby.Server.Implementations/Library/UserViewManager.cs
+open=9 daemonFinished=10 stableAt=650
+errors=9 warnings=0
+E 93 [folder.Name] CS1503: Argument 1: cannot convert from 'string' to 'MediaBrowser.Controller.Entities.Folder'
+E 97 [CollectionTyp] CS0103: The name 'CollectionTyp' does not exist in the current context
+E 102 [parents.Count] CS0029: Cannot implicitly convert type 'int' to 'bool'
+E 177 [;] CS1026: ) expected
+E 191 [name] CS1503: Argument 1: cannot convert from 'string' to 'Jellyfin.Database.Implementations.Entities.User'
+E 191 [parentId] CS1503: Argument 2: cannot convert from 'System.Guid' to 'string'
+E 191 [type] CS1503: Argument 3: cannot convert from 'Jellyfin.Data.Enums.CollectionType?' to 'System.Guid'
+E 191 [sortName] CS1503: Argument 4: cannot convert from 'string' to 'Jellyfin.Data.Enums.CollectionType?'
+E 191 [uniqueId] CS1503: Argument 5: cannot convert from 'System.Guid' to 'string'
+
+
+== MediaBrowser.Model/Dlna/StreamInfo.cs
+申open=8 daemonFinished=9 stableAt=959
+errors=4 warnings=5
+W 316 [TargetAudioBitDepth] CA1721: The property name 'TargetAudioBitDepth' is confusing given the existence of method 'GetTargetAudioBitDepth'. Rename or remove one of these members.
+W 340 [TargetVideoBitDepth] CA1721: The property name 'TargetVideoBitDepth' is confusing given the existence of method 'GetTargetVideoBitDepth'. Rename or remove one of these members.
+W 364 [TargetRefFrames] CA1721: The property name 'TargetRefFrames' is confusing given the existence of method 'GetTargetRefFrames'. Rename or remove one of these members.
+W 403 [TargetVideoLevel] CA1721: The property name 'TargetVideoLevel' is confusing given the existence of method 'GetTargetVideoLevel'. Rename or remove one of these members.
+W 521 [TargetAudioChannels] CA1721: The property name 'TargetAudioChannels' is confusing given the existence of method 'GetTargetAudioChannels'. Rename or remove one of these members.
+E 616 [RunTimeTicks.Value] CS0266: Cannot implicitly convert type 'long' to 'int'. An explicit conversion exists (are you missing a cast?)
+E 639 [TargetVideoStreem] CS0103: The name 'TargetVideoStreem' does not exist in the current context
+E 659 [Value] CS1061: 'bool' does not contain a definition for 'Value' and no accessible extension method 'Value' accepting a first argument of type 'bool' could be found (ar
+E 683 ["false"] CS0029: Cannot implicitly convert type 'string' to 'bool?'
+
+
+== MediaBrowser.Model/Search/SearchHint.cs
+申open=8 daemonFinished=9 stableAt=742
+errors=2 warnings=1
+E 16 [BrokenLabel] SA1623: The property's documentation summary text should begin with: 'Gets or sets'
+E 18 [SearchHint] SA1201: A constructor should not follow a property
+W 18 [SearchHint] CS8618: Non-nullable property 'BrokenLabel' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the pro
+
+
+== MediaBrowser.Model/Dto/UpdateUserItemDataDto.cs
+申open=9 daemonFinished=11 stableAt=756
+errors=1 warnings=2
+W 16 [Comment] CS8618: Non-nullable property 'Comment' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the propert
+E 18 [DefaultKey] SA1201: A field should not follow a property
+W 18 [DefaultKey] CS8618: Non-nullable field 'DefaultKey' must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring the field a
+
+

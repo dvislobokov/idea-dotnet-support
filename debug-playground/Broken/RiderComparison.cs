@@ -304,6 +304,67 @@ public class RiderComparison
             });
     }
 
+    // CASE:jellyfin-broken — EXPECT (Roslyn): the breakages of Jellyfin the plugin got wrong (docs/compare/jellyfin-broken-2026-10-13.md).
+    // DuplicateLocal: only «CS0128: A local variable or function named 'created' is already defined in this scope» on the second
+    // `created`; the uses bind to the FIRST declaration (`RcUser`), so nothing on the assignment and the call below it, no CS0168.
+    // BreakOutsideLoop: «CS0139: No enclosing loop out of which to break or continue» on `break`, NO CS0162 on the next line.
+    // OneBadArgument: «CS1503: Argument 1: cannot convert from 'string' to 'RcUser'» on `name` only, not on the other arguments.
+    // Conversions: CS0029 on `name` (string → System.DateTime?), on `System.DateOnly.MinValue` (→ System.DateTime?), on `name`
+    // (string → System.Guid), on `users` (IEnumerable<RcUser> → int), on `name` of the indexer assignment (string → RcUser), on
+    // `name.Length` (int → RcResult<RcUser>: its operators take RcUser and RcActionBase, not int).
+    // Calls: «CS7036: There is no argument given that corresponds to the required parameter 'patterns' of 'RcParser.Clean(string,
+    // System.Collections.Generic.IReadOnlyList<string>)'» on `Clean`; «CS1729: 'RcUser' does not contain a constructor that takes 1
+    // arguments» on `new(1)`; «CS0311: The type 'string' cannot be used as type parameter 'T' in the generic type or method
+    // 'RcCatalog.Find<T>()'. There is no implicit reference conversion from 'string' to 'RcUser'.» on `Find<string>`.
+    public class RcUser { public string Name { get; set; } = ""; }
+    public class RcActionBase { }
+    public class RcResult<T>
+    {
+        public static implicit operator RcResult<T>(T value) => new();
+        public static implicit operator RcResult<T>(RcActionBase result) => new();
+    }
+    public static class RcParser { public static string Clean(string name, System.Collections.Generic.IReadOnlyList<string> patterns) => name; }
+    public static class RcCatalog { public static T? Find<T>() where T : RcUser => null; }
+    public class RcDates { public System.DateTime? End { get; set; } public System.DateTime? Last { get; set; } }
+    private static void RcView(RcUser user, string name, string type, string sort, System.Guid id) { }
+
+    public RcUser DuplicateLocal(string name)
+    {
+        RcUser created;
+        string created = name;
+        created = new RcUser();
+        RcView(created, name, name, name, System.Guid.Empty);
+        return created;
+    }
+
+    public void BreakOutsideLoop(int attempts)
+    {
+        if (attempts > 3)
+        {
+            break;
+            attempts = 0;
+        }
+    }
+
+    public void OneBadArgument(string name, System.Guid id) => RcView(name, name, name, name, id);
+
+    public RcResult<RcUser> Conversions(string name, System.Collections.Generic.IEnumerable<RcUser> users, System.Collections.Generic.Dictionary<string, RcUser> map)
+    {
+        var dates = new RcDates { End = name };
+        dates = new RcDates { Last = System.DateOnly.MinValue };
+        System.Guid id = name;
+        int count = users;
+        map[name] = name;
+        return name.Length;
+    }
+
+    public RcUser Calls(string name)
+    {
+        var clean = RcParser.Clean(name);
+        var found = RcCatalog.Find<string>();
+        return new(1);
+    }
+
     // CASE:unterminated-comment — EXPECT (Roslyn/Rider): line 1 «CS1061 … 'nope'» on `nope`, red (the body is bound although its `}` is
     // gone). «CS1035: End-of-file found, '*/' expected» on the `/*` (verify the span in Rider: the two characters or the whole rest of the
     // file). The comment swallows the closing braces of the method and of the class: «CS1513: } expected» at the end of the file (verify

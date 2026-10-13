@@ -3,6 +3,24 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.177
+
+The errors of a broken Jellyfin compared with `dotnet build` (`docs/compare/jellyfin-broken-2026-10-13.md`): 35 of Roslyn's 45 before,
+all 45 now on the same code at the same place.
+- No more errors after an error: a name declared twice in one scope (CS0128) binds to the first declaration, as Roslyn, so its uses get
+  no CS0029 / CS1503 / CS0168 of the second one; a `break` / `continue` with no loop around it (CS0139) ends no path, so no CS0162
+  after it; a lambda of several `return`s has their best common type (`return series;` / `return i;` give `BaseItem`), not the first.
+- CS0029 where no conversion goes, found by the conversions of overload resolution (base types, interfaces, nullable, user-defined
+  operators by their operand): `string` → `DateTime?` / `Guid` / a class, `DateOnly` → `DateTime?`, `IEnumerable<T>` → `int`,
+  `int` → `ActionResult<T>`; also an assignment through an indexer (`map[key] = value`). Not where an explicit conversion may exist
+  (that is CS0266).
+- CS7036 / CS1503 of a method or constructor whose parameter types the calling file does not import (`IReadOnlyList<Regex>`): the
+  types are now read with the usings of the method's own file. CS1729 / CS7036 for a target-typed `new(…)`. CS0311 when an extension
+  method of the same name but another number of type parameters is around (`GetItemById<string>`).
+- Corpus case `jellyfin-broken` in `debug-playground/Broken/RiderComparison.cs`, tests `CSharpSemanticErrorsTest`,
+  `CSharpSemanticWarningsTest`; the harness `JellyfinDiagnosticsHarnessTest` runs the checks on real Jellyfin sources with the real
+  assembly indexes (only with `JELLYFIN_HARNESS` and `LATENCY_HARNESS` set).
+
 ## 0.1.176
 
 - Errors the editor did not show, only the build (the user's `WeatherForecastController`): CS0029 for a condition of `if` / `while` /

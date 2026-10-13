@@ -636,10 +636,33 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
 
     /** The type a lambda's body gives: its expression, or the first `return` with a value of its block; `Task<T>` of an `async` one. */
     fun lambdaReturnType(lambda: CSharpAnonymousFunctionExpression): SemanticType? {
-        val body = lambda.expressionBody?.let(r::typeOf) ?: lambda.block?.let(::firstReturn)?.let(r::typeOf)
+        // a block: the best common type of its `return`s (C# §12.6.3.15, the one all others convert to; `return series;` / `return season;`
+        // / `return i;` give `BaseItem`, Jellyfin 2026-10-13), not the first one's
+        val body = lambda.expressionBody?.let(r::typeOf) ?: lambda.block?.let(::commonReturnType)
         if (!isAsync(lambda.modifiers)) return body
         val task = r.libraryType(if (body == null) "System.Threading.Tasks.Task" else "System.Threading.Tasks.Task`1") ?: return null
         return if (body == null) task else SemanticType.Library(task.type, listOf(body))
+    }
+
+    private fun commonReturnType(block: PsiElement): SemanticType? {
+        val returns = ArrayList<CSharpExpression>()
+        allReturns(block, returns)
+        // `return null;` / `return default;` take the type of the others
+        val typed = returns.filter { it.elementType != SyntaxKind.NullLiteralExpression && it.elementType != SyntaxKind.DefaultLiteralExpression }
+        if (typed.isEmpty()) return returns.firstOrNull()?.let(r::typeOf)
+        val types = typed.map { r.typeOf(it) ?: return null }
+        if (types.map { CSharpTypeDisplay.display(it) }.distinct().size == 1) return types.first()
+        val ok = { c: CSharpNameResolver.Conversion -> c == CSharpNameResolver.Conversion.IDENTITY || c == CSharpNameResolver.Conversion.IMPLICIT }
+        return types.firstOrNull { candidate -> types.all { ok(r.conversion(it, candidate)) } }
+    }
+
+    private fun allReturns(element: PsiElement, into: MutableList<CSharpExpression>) {
+        var child = element.firstChild
+        while (child != null) {
+            if (child is CSharpReturnStatement) child.expression?.let(into::add)
+            else if (child !is CSharpAnonymousFunctionExpression && child !is CSharpLocalFunctionStatement) allReturns(child, into)
+            child = child.nextSibling
+        }
     }
 
     private fun firstReturn(element: PsiElement): CSharpExpression? {

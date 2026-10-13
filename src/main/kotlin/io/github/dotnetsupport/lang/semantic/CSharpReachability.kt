@@ -23,7 +23,9 @@ class CSharpReachability(private val resolver: CSharpNameResolver) {
         is CSharpBlock -> sequence(statement.statements)
         is CSharpExpressionStatement, is CSharpLocalDeclarationStatement, is CSharpEmptyStatement, is CSharpLocalFunctionStatement,
         is CSharpCommonForEachStatement -> Reach.YES
-        is CSharpReturnStatement, is CSharpThrowStatement, is CSharpBreakStatement, is CSharpContinueStatement -> Reach.NO
+        is CSharpReturnStatement, is CSharpThrowStatement -> Reach.NO
+        // `break` / `continue` with no loop (or switch) around it is CS0139 and jumps nowhere: Roslyn goes on past it (Jellyfin, 2026-10-13)
+        is CSharpBreakStatement, is CSharpContinueStatement -> if (hasJumpTarget(statement)) Reach.NO else Reach.YES
         is CSharpIfStatement -> {
             val then = endOf(statement.statement)
             val otherwise = statement.`else`?.let { endOf(it.statement) } ?: Reach.YES
@@ -102,6 +104,19 @@ class CSharpReachability(private val resolver: CSharpNameResolver) {
     }
 
     /** A `break` that leaves [target]: in it, not in a nested loop, switch or function. */
+    private fun hasJumpTarget(jump: CSharpStatement): Boolean {
+        var at: PsiElement? = jump.parent
+        while (at != null && at !is com.intellij.psi.PsiFile) {
+            when (at) {
+                is CSharpWhileStatement, is CSharpDoStatement, is CSharpForStatement, is CSharpCommonForEachStatement -> return true
+                is CSharpSwitchSection -> if (jump is CSharpBreakStatement) return true
+                is CSharpAnonymousFunctionExpression, is CSharpLocalFunctionStatement, is CSharpMemberDeclaration -> return false
+            }
+            at = at.parent
+        }
+        return false
+    }
+
     private fun breaks(target: CSharpStatement): Boolean = jumps(target, CSharpBreakStatement::class.java, stopAtSwitch = true)
 
     private fun continues(target: CSharpStatement): Boolean = jumps(target, CSharpContinueStatement::class.java, stopAtSwitch = false)

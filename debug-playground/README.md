@@ -1111,3 +1111,9 @@ Settings | .NET | Language Server, группа Analysis: «Compiler diagnostics
 - [ ] `CASE:weather-controller`: без сборки, сразу в редакторе — красным CS0029 на `ttype` в `if (ttype)`, на `System.DateTime.Now` и
   `System.DateTime.UtcNow` (и в лямбде), на `$"123"`; CS1729 на `RcOk`; жёлтым CS8618 на `_rcLogger`. На последнем `return` ничего.
   Проверить и на настоящем контроллере ASP.NET (`new Ok(…)` из `Microsoft.AspNetCore.Http.HttpResults`) — CS1729 на типе ASP.NET тестами не проверен.
+
+### Поломанный Jellyfin против `dotnet build` (0.1.177) — `Broken/RiderComparison.cs`
+- [ ] `CASE:jellyfin-broken`: без сборки — только CS0128 на втором `created` (на присваивании и вызове ниже ничего, у первого нет
+  серого CS0168); CS0139 на `break;`, строка под ним не серая; CS1503 только на `name` в `OneBadArgument`; CS0029 на `name` (→ `DateTime?`),
+  `System.DateOnly.MinValue`, `name` (→ `Guid`), `users`, `name` в `map[name] = name`, `name.Length`; CS7036 на `Clean`, CS0311 на
+  `Find<string>`, CS1729 на `new(1)`.
