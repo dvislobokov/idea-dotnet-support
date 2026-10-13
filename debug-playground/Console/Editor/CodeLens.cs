@@ -56,7 +56,6 @@ public class LensRing : LensCircle
     public LensRing(double radius) : base(radius) { }
     // TYPE:lens-override-only — EXPECT: "1 usage", the same `circle.Describe()` as the virtual's: Find Usages cascades over the hierarchy
 
-    public override str
 }
 
 // TYPE:lens-enum — EXPECT: one lens line with three entries "1 usage | 1 usage | no usages": LensKind, Round, Square in the order of the line; a click on each shows its own usages
