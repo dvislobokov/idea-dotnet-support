@@ -34,7 +34,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
             }
             is CSharpSimpleName -> simpleName(e)
             is CSharpType -> null
-            is CSharpMemberAccessExpression -> e.nameElement?.let { name -> r.resolveName(name)?.single?.let(r::valueType) ?: tupleElement(name) }
+            is CSharpMemberAccessExpression -> e.nameElement?.let { name -> r.resolveName(name)?.single?.let { r.valueTypeAt(it, e) } ?: tupleElement(name) }
             is CSharpMemberBindingExpression -> e.nameElement?.let { name -> r.resolveName(name)?.single?.let(r::valueType) ?: tupleElement(name) }
             is CSharpConditionalAccessExpression -> e.whenNotNull?.let(r::typeOf)?.let(::liftNullable)
             is CSharpElementBindingExpression -> {
@@ -96,7 +96,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
             return r.libraryType("System.String")?.let { SemanticType.ArrayOf(it) }
         }
         if (symbol == null) return tupleElement(e)
-        return symbol.single?.let(r::valueType)
+        return symbol.single?.let { r.valueTypeAt(it, e) }
     }
 
     /**
@@ -1052,8 +1052,8 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         val l = r.definitionName(left)!!
         val rn = r.definitionName(right)!!
         if (l == rn) return if (l in SMALL) r.libraryType(INT) else left
-        if (isIntConstant(rightExpression) && l in WIDE) return left
-        if (isIntConstant(leftExpression) && rn in WIDE) return right
+        if (l in WIDE && intConstantFits(rightExpression, l)) return left
+        if (rn in WIDE && intConstantFits(leftExpression, rn)) return right
         val names = setOf(l, rn)
         fun has(name: String) = name in names
         // `nint` / `nuint`: with what converts to them implicitly they stay; `long` / `ulong` win over them
@@ -1075,6 +1075,19 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
             has("System.UInt32") -> if (names.any { it in SIGNED }) r.libraryType(LONG) else r.libraryType("System.UInt32")
             else -> r.libraryType(INT)
         }
+    }
+
+    private val constants by lazy { CSharpConstantValues(r) }
+
+    /**
+     * An `int` constant that converts to [wide] implicitly (§10.2.11): a literal, or a constant expression whose value fits — not negative for
+     * `uint` / `ulong` / `nuint` (`handle & ~(0xff << 24)` is `uint & uint`, CS0266 for `long` in a live project, 0.1.185).
+     */
+    private fun intConstantFits(e: CSharpExpression, wide: String): Boolean {
+        if (isIntConstant(e)) return true
+        val value = runCatching { constants.of(e) }.getOrNull()?.takeIf { it.kind == CSharpConstantValues.Kind.INT } ?: return false
+        val number = value.number ?: return false
+        return wide !in UNSIGNED_WIDE || number.signum() >= 0
     }
 
     private fun isIntConstant(e: CSharpExpression): Boolean {
@@ -1164,6 +1177,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         private val OK = setOf(CSharpNameResolver.Conversion.IDENTITY, CSharpNameResolver.Conversion.IMPLICIT)
         // the types an `int` constant converts to without the operation widening them
         private val WIDE = setOf("System.UInt32", "System.UInt64", "System.Int64", "System.IntPtr", "System.UIntPtr")
+        private val UNSIGNED_WIDE = setOf("System.UInt32", "System.UInt64", "System.UIntPtr")
         private val NUMERIC_CONVERSIONS_TO_NATIVE = mapOf(
             "System.IntPtr" to setOf("System.SByte", "System.Byte", "System.Int16", "System.UInt16", "System.Char", "System.Int32"),
             "System.UIntPtr" to setOf("System.Byte", "System.UInt16", "System.Char", "System.UInt32"),

@@ -1,4 +1,4 @@
-# 257 examples, Roslyn errors 436, matched 343, missing 93, extra 0
+# 258 examples, Roslyn errors 439, matched 346, missing 93, extra 0
 array-declaration-errors-1.cs	CS1922@6	missing
 array-declaration-errors-2.cs	CS0246@10	ok
 array-declaration-errors-2.cs	CS0246@11	ok
@@ -214,6 +214,9 @@ dynamic-type-and-binding-errors-1.cs	CS0103@2	ok
 dynamic-type-and-binding-errors-1.cs	CS0246@8	ok
 dynamic-type-and-binding-errors-2.cs	CS0103@3	ok
 dynamic-type-and-binding-errors-2.cs	CS0103@9	ok
+enum-initializers-and-inherited-conversions.cs	CS0019@66	ok
+enum-initializers-and-inherited-conversions.cs	CS0266@65	ok
+enum-initializers-and-inherited-conversions.cs	CS1503@67	ok
 explicit-impl-probe.cs	CS0121@32	ok
 lambda-probe.cs	CS1643@17	ok
 lambda-probe.cs	CS8917@21	ok

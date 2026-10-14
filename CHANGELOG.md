@@ -3,6 +3,16 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.185
+
+The last false errors of a live solution of libraries (SberEmp.MSR.TSS, a TPM library): none of its 350 files has an error now.
+- In an initializer of an enum member a member of any enum is of its underlying type, as the compiler binds it:
+  `Bytes = (Bits + 7) / 8`, `Half = Other.Bytes / 2`, `Last = First + Other.Count - 1` are no CS0019.
+- A conversion operator of a base class of the solution converts the derived class too (`implicit operator TpmHandle(SessionBase s)` for an
+  `AuthSession : SessionBase`): no CS1503 on `ContainsKey(session)`.
+- An `int` constant that fits goes with `uint` without widening both to `long`: `uint i = handle & ~(0xff << 24);` is no CS0266.
+- The parts of a partial class that each write the same base class: its methods are found once, no CS0121 against themselves.
+
 ## 0.1.184
 
 False errors of a live solution of libraries (EFCore.BulkExtensions, Microsoft.Extensions.Options), checked on all its 350 files.

@@ -162,6 +162,10 @@
   members, Inline Method, Create derived type, Copy type, Cover (`NativeCSharpTypeActions.kt`). Ограничения: To factory method и
   Encapsulate field — в пределах файла; Move to namespace не переписывает полные имена; Generate type patterns и Copy type без диалога
   Rider; имя производного типа (`IFoo` → `Foo`, `FooImpl`) — догадка. Вживую не проверено
+- [x] 0.1.185 — последние ложные ошибки SberEmp.Shared (MSR.TSS): члены любого enum в инициализаторе члена enum — тип-основа (CS0019),
+  оператор преобразования базового класса из solution (CS1503), константа `int` с `uint` без расширения до `long` (CS0266), одна и та же
+  база в частях partial-класса — один раз (CS0121). Пример — корпус `compilerMessages/cases/enum-initializers-and-inherited-conversions.cs`;
+  песочница на solution: 0 ошибок в 350 файлах
 - [x] 0.1.184 — ложные ошибки живого solution (SberEmp.Shared, 350 файлов, стенд `SolutionDiagnosticsHarnessTest` против `dotnet build`):
   члены `object` у enum / struct / делегата сборки (`DbType.Binary.ToString()` — CS1061), `System.Enum` — класс (не CS0029), enum с
   типом-основой (`: ushort`) наследует `Enum` (`HasFlag`), параметры лямбды обобщённого метода обобщённого получателя внутри обобщённого

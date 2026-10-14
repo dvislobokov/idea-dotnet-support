@@ -278,7 +278,11 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
     }
 
     /** The implicit operators declared by [type] and its base types (operand, result); null when they cannot be known. */
-    private fun operators(type: SemanticType): List<Pair<SemanticType?, SemanticType?>>? = when (type) {
+    /**
+     * The implicit operators of [type] and of its base classes (§10.5.4): `implicit operator TpmHandle(SessionBase s)` converts an `AuthSession :
+     * SessionBase` too (CS1503 on `ContainsKey(session)` of a live project, 0.1.185); [depth] stops a cycle of bases the compiler reports.
+     */
+    private fun operators(type: SemanticType, depth: Int = 0): List<Pair<SemanticType?, SemanticType?>>? = if (depth > 16) null else when (type) {
         is SemanticType.Library -> r.membersNamed(type, "op_Implicit", 0).mapNotNull { symbol ->
             // the index marks operators OPERATOR, not METHOD: `isMethod` alone dropped every library conversion (`string` →
             // `ReadOnlySpan<char>`, `T[]` → `ReadOnlyMemory<T>`, `string` → `PathString`) and CS1503 followed (Jellyfin, 0.1.166)
@@ -297,7 +301,8 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
                     found += r.substitute(operand, type) to r.substitute(op.type?.let(resolver::resolveType), type)
                 }
             }
-            for (base in r.libraryBases(type)) found += operators(base) ?: return null
+            for (base in r.libraryBases(type)) found += operators(base, depth + 1) ?: return null
+            for (base in r.baseTypes(type)) if (base is SemanticType.Source && !isInterface(base) && base.info.key != type.info.key) found += operators(base, depth + 1) ?: return null
             found
         }
         is SemanticType.ArrayOf -> emptyList()

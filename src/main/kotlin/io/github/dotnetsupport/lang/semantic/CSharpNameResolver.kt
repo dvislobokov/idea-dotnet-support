@@ -485,7 +485,8 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
             val resolver = session.reachable(owner) ?: continue
             for (base in declaration.baseList?.types.orEmpty()) {
                 val resolved = base.type?.let(resolver::resolveType) ?: continue
-                substitute(resolved, type)?.let { found += it }
+                // the parts of a partial type may each write the same base: once (`CreateCopy<T>()` of it was CS0121 against itself, 0.1.185)
+                substitute(resolved, type)?.let { t -> if (found.none { it.display != null && it.display == t.display }) found += t }
             }
         }
         if (found.none { it is SemanticType.Library && it.type.kind != IndexedTypeKind.INTERFACE || it is SemanticType.Source }) {
@@ -1052,6 +1053,30 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         val qualifier = (at?.parent as? CSharpQualifiedName)?.takeIf { it.right == at }?.left ?: (at?.parent as? CSharpMemberAccessExpression)?.takeIf { it.nameElement == at }?.expression
         val written = (qualifier as? CSharpGenericName)?.typeArgumentList?.arguments?.map(::resolveType)
         return written?.takeIf { it.size == outer.arity } ?: List(outer.arity) { null }
+    }
+
+    /**
+     * [valueType] where [site] uses it: in an initializer of a member of an enum, a member of any enum is of its underlying type (§19.4, as
+     * Roslyn binds it): `Bytes = (Bits + 7) / 8`, `Half = Other.Bytes / 2` are arithmetic of `uint`, not of the enums (CS0019 on the members
+     * of a live project's enums, 0.1.185).
+     */
+    fun valueTypeAt(symbol: CSharpSymbol, site: PsiElement): SemanticType? {
+        val inInitializer = com.intellij.psi.util.PsiTreeUtil.getParentOfType(site, CSharpEnumMemberDeclaration::class.java) != null
+        if (!inInitializer) return valueType(symbol)
+        val underlying = when (symbol) {
+            is CSharpSymbol.SourceMember -> ((symbol.element as? CSharpEnumMemberDeclaration)?.parent as? CSharpEnumDeclaration)?.let(::underlyingType)
+            is CSharpSymbol.LibraryMember -> symbol.member.takeIf { it.kind == IndexedMemberKind.ENUM_MEMBER }?.type
+                ?.let { enum -> enum.enumUnderlyingType?.let { fromRef(it, emptyList()) } ?: libraryType("System.Int32") }
+            else -> null
+        }
+        return underlying ?: valueType(symbol)
+    }
+
+    /** The underlying type of an enum of the solution: the type after its colon, `int` without one. */
+    fun underlyingType(enum: CSharpEnumDeclaration): SemanticType? {
+        val written = enum.baseList?.types?.firstOrNull()?.type ?: return libraryType("System.Int32")
+        val resolver = (enum.containingFile as? CSharpFile)?.let(session::reachable) ?: return null
+        return resolver.resolveType(written)
     }
 
     /** The type of the value [symbol] is: a local, a parameter, a field, a property, an event, an enum member; what a method returns. */
