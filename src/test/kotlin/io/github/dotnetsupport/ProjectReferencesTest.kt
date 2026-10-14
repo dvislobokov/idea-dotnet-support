@@ -269,6 +269,15 @@ class ProjectReferencesTest {
         """.trimIndent()
         val found21 = ProjectAssemblies.references(ProjectAssemblies.Request(standard21, File(root, "App"), File(root, "dotnet"), null))
         assertEquals(listOf("/dotnet/packs/NETStandard.Library.Ref/2.1.0/ref/netstandard2.1/netstandard.dll"), relative(found21.assemblies))
+
+        // the `dotnet` the IDE found is a shim with nothing next to it: the SDK that restored says where the packs are
+        file("shim/dotnet")
+        file("usr/share/dotnet/packs/NETStandard.Library.Ref/2.1.0/ref/netstandard2.1/netstandard.dll")
+        val graph = File(root, "usr/share/dotnet/sdk/8.0.100/RuntimeIdentifierGraph.json").path.replace("\\", "\\\\")
+        val restoredBy = standard21.replace("\"frameworkReferences\"", "\"runtimeIdentifierGraphPath\": \"$graph\", \"frameworkReferences\"")
+        val fromShim = ProjectAssemblies.references(ProjectAssemblies.Request(restoredBy, File(root, "App"), File(root, "shim"), null))
+        assertEquals(listOf("/usr/share/dotnet/packs/NETStandard.Library.Ref/2.1.0/ref/netstandard2.1/netstandard.dll"), relative(fromShim.assemblies))
+        assertEquals(listOf("FRAMEWORK NETStandard.Library.Ref 2.1.0"), fromShim.libraries.map { "${it.kind} ${it.presentableName}" })
     }
 
     /** `ResolvePackageFileConflicts`: of one assembly the highest version stays, a framework's on a tie; the order is kept. */
@@ -285,6 +294,27 @@ class ProjectReferencesTest {
             kept.map { "${it.first} ${it.second} ${it.third}" })
         assertTrue(ProjectAssemblies.compareVersions("4.0.11.0", "4.0.10.0") > 0)
         assertTrue(ProjectAssemblies.compareVersions("4.1", "4.1.0.0") == 0)
+    }
+
+    /** The diagnostic of the references: the targets, the frameworks and the entries of the framework packages, nothing of the others. */
+    @Test
+    fun `the summary of an assets file`() {
+        val summary = io.github.dotnetsupport.index.CopyCompilationReferencesAction.assetsSummary("""
+            {
+              "targets": { "netstandard2.0": {
+                "NETStandard.Library/2.0.3": { "type": "package", "build": { "build/netstandard2.0/NETStandard.Library.targets": {} } },
+                "Confluent.Kafka/2.5.0": { "type": "package" }
+              } },
+              "packageFolders": { "/home/u/.nuget/packages/": {} },
+              "project": { "frameworks": { "netstandard2.0": { "dependencies": {} } } }
+            }
+        """.trimIndent())
+        assertTrue(summary, "targets: [netstandard2.0]" in summary)
+        assertTrue(summary, "packageFolders: [/home/u/.nuget/packages/]" in summary)
+        assertTrue(summary, "target netstandard2.0: 2 entries" in summary)
+        assertTrue(summary, "NETStandard.Library/2.0.3" in summary && "NETStandard.Library.targets" in summary)
+        assertTrue(summary, "Confluent.Kafka" !in summary)
+        assertEquals("  not JSON", io.github.dotnetsupport.index.CopyCompilationReferencesAction.assetsSummary("{"))
     }
 
     @Test

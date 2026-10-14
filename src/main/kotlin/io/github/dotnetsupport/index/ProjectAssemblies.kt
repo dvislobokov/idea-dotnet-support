@@ -121,9 +121,14 @@ object ProjectAssemblies {
         // the frameworks the project declares (`Microsoft.NET.Sdk.Web` adds `Microsoft.AspNetCore.App` itself; restore writes it here) and the ones
         // its packages require, which restore does not repeat under the project: without them the types of ASP.NET Core resolved only in a Web project
         val frameworkReferences = LinkedHashSet(declaredFramework?.obj("frameworkReferences")?.keySet().orEmpty()) + transitiveFrameworks
+        // the SDK that restored (`<root>/sdk/8.0.100/RuntimeIdentifierGraph.json`) before the folder of the `dotnet` the IDE found: that one may be
+        // a shim (snap, mise, a wrapper script) with no `packs` next to it — netstandard2.1 then had no pack at all, no `List` (CS0246), 0.1.182
+        val restoringRoot = declaredFramework?.get("runtimeIdentifierGraphPath")?.takeIf { it.isJsonPrimitive }?.asString
+            ?.let { File(it).parentFile?.parentFile?.parentFile }?.takeIf { File(it, "packs").isDirectory }
+        val roots = listOfNotNull(restoringRoot, request.dotnetRoot).distinct()
         for (reference in frameworkReferences) {
             // a pack the SDK has, else the one restore has downloaded for a framework the SDK has no pack of
-            val pack = referencePack(request.dotnetRoot, reference, target).ifEmpty { downloadedPack(folders, declaredFramework, reference, target) }
+            val pack = roots.firstNotNullOfOrNull { root -> referencePack(root, reference, target).ifEmpty { null } } ?: downloadedPack(folders, declaredFramework, reference, target)
             assemblies += pack
             // `<pack>/10.0.12/ref/net10.0/System.Runtime.dll`: the version is the folder above `ref`
             if (pack.isNotEmpty()) found += Library("$reference.Ref", pack.first().parentFile?.parentFile?.parentFile?.name, LibraryKind.FRAMEWORK, pack)

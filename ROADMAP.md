@@ -162,6 +162,12 @@
   members, Inline Method, Create derived type, Copy type, Cover (`NativeCSharpTypeActions.kt`). Ограничения: To factory method и
   Encapsulate field — в пределах файла; Move to namespace не переписывает полные имена; Generate type patterns и Copy type без диалога
   Rider; имя производного типа (`IFoo` → `Foo`, `FooImpl`) — догадка. Вживую не проверено
+- [x] 0.1.182 — паки фреймворков ищутся в SDK, который делал restore (`runtimeIdentifierGraphPath` из `project.assets.json`), а потом
+  рядом с найденным `dotnet`: тот бывает shim-ом без `packs` (snap, mise, скрипт-обёртка) — у `netstandard2.1` не было пака вовсе
+  (CS0246 на `List`, CS1061 на `Type.GetMethod` в живом solution). Вживую не проверено
+- [x] 0.1.181 — диагностика: меню .NET → Copy Compilation References of Current File — проект файла, target `project.assets.json`,
+  библиотеки и сборки, что осталось в наборе индексов, откуда `System.Type` / `List` / `Enumerable` (на ложные CS0246 / CS1061 живого
+  solution, где 0.1.179 не помогла). Вживую не проверено
 - [x] 0.1.180 — окно NuGet: у установленного пакета в списке версий снова все версии фида (их ответ выбрасывал запрос nuspec, шедший
   следом по тому же счётчику: оставались установленная и последняя). Вживую не проверено
 - [x] 0.1.179 — ссылки проекта как у SDK (ложные ошибки живого solution библиотек): одна сборка из фреймворка и из старого пакета

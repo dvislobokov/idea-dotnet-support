@@ -3,6 +3,18 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.182
+
+- The reference packs are looked for in the SDK that restored the project (`runtimeIdentifierGraphPath` of `project.assets.json`) before the
+  folder of the `dotnet` the IDE found: that one may be a shim (snap, mise, a wrapper script) with no `packs` next to it. A library for
+  .NET Standard 2.1 then had no `List`, no `System.Linq`, and `Type` came from an old contract without `GetMethod` (CS0246, CS0234, CS1061).
+
+## 0.1.181
+
+- .NET → Copy Compilation References of Current File: what the plugin compiles the C# file in the editor against — its project, the target
+  of `project.assets.json`, the packages and assemblies, which of them are kept, where `System.Type`, `List` and `Enumerable` come from —
+  copied as text, to send along when a name the compiler sees is red.
+
 ## 0.1.180
 
 - NuGet window: the version list of an installed package shows every version of the feed again. The list was loaded, but the request for
