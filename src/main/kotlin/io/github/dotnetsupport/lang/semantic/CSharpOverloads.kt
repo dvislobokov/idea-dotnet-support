@@ -159,8 +159,8 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
                 false -> {}
             }
             val fits = when {
-                p.isCovariant -> isReference(a) == true && ok(classify(a, b, false, depth + 1))
-                p.isContravariant -> isReference(b) == true && ok(classify(b, a, false, depth + 1))
+                p.isCovariant -> when (variantReference(a)) { true -> ok(classify(a, b, false, depth + 1)); false -> false; null -> return Conversion.UNKNOWN }
+                p.isContravariant -> when (variantReference(b)) { true -> ok(classify(b, a, false, depth + 1)); false -> false; null -> return Conversion.UNKNOWN }
                 else -> false
             }
             if (!fits) return null
@@ -316,6 +316,30 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         is SemanticType.Library -> type.type.kind != IndexedTypeKind.STRUCT && type.type.kind != IndexedTypeKind.ENUM
         is SemanticType.Source -> type.info.kind?.let { it != TypeKind.STRUCT && it != TypeKind.RECORD_STRUCT && it != TypeKind.ENUM }
         is SemanticType.Parameter -> if (r.isValueType(type)) false else null
+    }
+
+    /**
+     * Whether a type argument may vary (§18.2.3.3: a reference type only). A type parameter is one by `class` or a class among its constraints
+     * (`IList<T>` to `IEnumerable<object>` with `where T : class`, EFCore.BulkExtensions — CS1503 was ours alone, 0.1.179); one whose
+     * constraints all resolve and say neither is not (Roslyn's CS1503 for an unconstrained `T`); else not known. Through another type
+     * parameter only its constraint types count, not its `class` (`where T : U where U : class` is CS1503 to Roslyn).
+     */
+    private fun variantReference(type: SemanticType, depth: Int = 0, byClass: Boolean = true): Boolean? {
+        if (type !is SemanticType.Parameter) return isReference(type)
+        if (r.isValueType(type)) return false
+        if (byClass && r.hasClassConstraint(type)) return true
+        if (type.owner == null || !constraintsKnown(type) || depth > 8) return null
+        for (constraint in r.constraintsOf(type)) {
+            val reference = when (constraint) {
+                is SemanticType.Parameter -> variantReference(constraint, depth + 1, byClass = false) ?: return null
+                // `where T : Enum` / `ValueType`: an enum or a struct may come, not a reference type yet
+                is SemanticType.Library -> constraint.type.kind == IndexedTypeKind.CLASS && constraint.type.fullName != VALUE_TYPE && constraint.type.fullName != "System.Enum"
+                is SemanticType.Source -> constraint.info.kind == TypeKind.CLASS || constraint.info.kind == TypeKind.RECORD
+                is SemanticType.ArrayOf -> false
+            }
+            if (reference) return true
+        }
+        return false
     }
 
     /** A type whose base types and interfaces all resolve, all the way up: what it does not convert to, it surely does not. */

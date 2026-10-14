@@ -228,6 +228,65 @@ class ProjectReferencesTest {
             ProjectAssemblies.references(ProjectAssemblies.Request(null, File(root, "App"), null, null, MsBuildProject.parse("<Project Sdk=\"Microsoft.NET.Sdk\" />"))).assemblies)
     }
 
+    /**
+     * A library for .NET Standard: 2.0 is compiled against `build/netstandard2.0/ref` of `NETStandard.Library` (its `compile` is `_._`), 2.1
+     * against the pack `NETStandard.Library.Ref`. As restore writes them; a live project had no `List`, no `System.Linq` there (0.1.179).
+     */
+    @Test
+    fun `a library for dotnet Standard`() {
+        file("packages/netstandard.library/2.0.3/build/netstandard2.0/ref/netstandard.dll")
+        file("packages/netstandard.library/2.0.3/build/netstandard2.0/ref/System.Linq.dll")
+        file("packages/system.runtime/4.3.0/ref/netstandard1.5/System.Runtime.dll")
+        file("dotnet/packs/NETStandard.Library.Ref/2.1.0/ref/netstandard2.1/netstandard.dll")
+        val standard20 = """
+            {
+              "targets": { "netstandard2.0": {
+                "NETStandard.Library/2.0.3": { "type": "package", "compile": { "lib/netstandard1.0/_._": {} }, "build": { "build/netstandard2.0/NETStandard.Library.targets": {} } },
+                "System.Runtime/4.3.0": { "type": "package", "compile": { "ref/netstandard1.5/System.Runtime.dll": { "related": ".xml" } } }
+              } },
+              "libraries": {
+                "NETStandard.Library/2.0.3": { "type": "package", "path": "netstandard.library/2.0.3" },
+                "System.Runtime/4.3.0": { "type": "package", "path": "system.runtime/4.3.0" }
+              },
+              "packageFolders": { "$folder": {} },
+              "project": { "frameworks": { "netstandard2.0": { "dependencies": { "NETStandard.Library": { "target": "Package", "version": "[2.0.3, )", "autoReferenced": true } } } } }
+            }
+        """.trimIndent()
+        val found20 = ProjectAssemblies.references(ProjectAssemblies.Request(standard20, File(root, "App"), File(root, "dotnet"), null))
+        assertEquals(listOf(
+            "/packages/netstandard.library/2.0.3/build/netstandard2.0/ref/System.Linq.dll",
+            "/packages/netstandard.library/2.0.3/build/netstandard2.0/ref/netstandard.dll",
+            "/packages/system.runtime/4.3.0/ref/netstandard1.5/System.Runtime.dll",
+        ), relative(found20.assemblies).sorted())
+        assertEquals(listOf("FRAMEWORK NETStandard.Library 2.0.3", "PACKAGE System.Runtime 4.3.0"), found20.libraries.map { "${it.kind} ${it.presentableName}" }.sorted())
+
+        val standard21 = """
+            {
+              "targets": { "netstandard2.1": {} },
+              "packageFolders": { "$folder": {} },
+              "project": { "frameworks": { "netstandard2.1": { "frameworkReferences": { "NETStandard.Library": { "privateAssets": "all" } } } } }
+            }
+        """.trimIndent()
+        val found21 = ProjectAssemblies.references(ProjectAssemblies.Request(standard21, File(root, "App"), File(root, "dotnet"), null))
+        assertEquals(listOf("/dotnet/packs/NETStandard.Library.Ref/2.1.0/ref/netstandard2.1/netstandard.dll"), relative(found21.assemblies))
+    }
+
+    /** `ResolvePackageFileConflicts`: of one assembly the highest version stays, a framework's on a tie; the order is kept. */
+    @Test
+    fun `one assembly from a framework and from a package`() {
+        // name, assembly version, from a framework
+        val references = listOf(
+            Triple("System.Runtime", "4.1.0.0", false), Triple("Newtonsoft.Json", "13.0.0.0", false), Triple("System.Text.Json", "9.0.0.0", false),
+            Triple("System.Runtime", "8.0.0.0", true), Triple("System.Text.Json", "8.0.0.0", true), Triple("system.collections", "8.0.0.0", false),
+            Triple("System.Collections", "8.0.0.0", true),
+        )
+        val kept = ProjectAssemblies.withoutConflicts(references, { it.first }, { it.second }, { it.third })
+        assertEquals(listOf("Newtonsoft.Json 13.0.0.0 false", "System.Text.Json 9.0.0.0 false", "System.Runtime 8.0.0.0 true", "System.Collections 8.0.0.0 true"),
+            kept.map { "${it.first} ${it.second} ${it.third}" })
+        assertTrue(ProjectAssemblies.compareVersions("4.0.11.0", "4.0.10.0") > 0)
+        assertTrue(ProjectAssemblies.compareVersions("4.1", "4.1.0.0") == 0)
+    }
+
     @Test
     fun `versions of dotnet Framework`() {
         assertEquals("v4.7.2", ProjectAssemblies.netFrameworkVersion("net472"))

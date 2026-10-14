@@ -1,4 +1,4 @@
-# 255 examples, Roslyn errors 429, matched 336, missing 93, extra 0
+# 256 examples, Roslyn errors 434, matched 341, missing 93, extra 0
 array-declaration-errors-1.cs	CS1922@6	missing
 array-declaration-errors-2.cs	CS0246@10	ok
 array-declaration-errors-2.cs	CS0246@11	ok
@@ -384,6 +384,11 @@ using-statement-declaration-errors-1.cs	CS1513@9	ok
 using-statement-declaration-errors-1.cs	CS1519@9	missing
 using-statement-declaration-errors-1.cs	CS8803@9	missing
 using-statement-declaration-errors-2.cs	CS0246@2	ok
+variance-of-type-parameters.cs	CS1503@18	ok
+variance-of-type-parameters.cs	CS1503@21	ok
+variance-of-type-parameters.cs	CS1503@22	ok
+variance-of-type-parameters.cs	CS1503@23	ok
+variance-of-type-parameters.cs	CS1503@24	ok
 warning-waves-1.cs	CS0103@2	ok
 warning-waves-10.cs	CS0177@10	ok
 warning-waves-10.cs	CS0246@10	ok

@@ -93,6 +93,14 @@ object ProjectAssemblies {
                     if (id.substringBefore('/').startsWith(NET_FRAMEWORK_PACKAGE, ignoreCase = true)) {
                         netFrameworkPack = folders.map { File(File(it, path), "build/.NETFramework") }.firstOrNull { it.isDirectory }
                     }
+                    // `NETStandard.Library` 2.0.x: `netstandard2.0` is compiled against `build/netstandard2.0/ref` its targets add, its `compile` is `_._`;
+                    // without it a library for .NET Standard 2.0 had no `List`, no `System.Linq` (CS0246, CS0234)
+                    if (id.substringBefore('/').equals("NETStandard.Library", ignoreCase = true)) {
+                        val targets = library.obj("build")?.keySet().orEmpty().firstOrNull { it.endsWith("/NETStandard.Library.targets", ignoreCase = true) }
+                        val standard = targets?.let { relative -> folders.map { dlls(File(File(it, path), relative.substringBeforeLast('/') + "/ref")) }.firstOrNull { it.isNotEmpty() } }.orEmpty()
+                        assemblies += standard
+                        if (standard.isNotEmpty()) found += Library("NETStandard.Library", id.substringAfter('/', "").ifEmpty { null }, LibraryKind.FRAMEWORK, standard)
+                    }
                 }
                 "project" -> {
                     // a referenced project passes its shared frameworks on too (`MediaBrowser.Model` → `Microsoft.AspNetCore.App`): Jellyfin's
@@ -207,11 +215,21 @@ object ProjectAssemblies {
      * version. A project for a framework whose pack is not installed gets nothing here: restore has downloaded it ([downloadedPack]).
      */
     fun referencePack(dotnetRoot: File?, reference: String, target: String): List<File> {
-        val version = Regex("""^net(\d+\.\d+)""").find(target.lowercase())?.groupValues?.get(1) ?: return emptyList()
+        val (version, folder) = packFramework(target) ?: return emptyList()
         val packs = File(dotnetRoot ?: return emptyList(), "packs/$reference.Ref")
         val newest = packs.listFiles { file -> file.isDirectory && (file.name == version || file.name.startsWith("$version.")) }
             ?.maxWithOrNull(compareBy<File> { patch(it.name) }.thenBy { it.name }) ?: return emptyList()
-        return dlls(File(newest, "ref/net$version"))
+        return dlls(File(newest, "ref/$folder"))
+    }
+
+    /**
+     * The version of the pack and the folder under its `ref`: `net8.0-windows` -> `8.0`, `net8.0`; `netstandard2.1` -> `2.1`, `netstandard2.1`
+     * (`NETStandard.Library.Ref`); `netcoreapp3.1` -> `3.1`, `netcoreapp3.1`. Null for .NET Framework and what has no pack.
+     */
+    private fun packFramework(target: String): Pair<String, String>? {
+        val match = Regex("""^(net|netcoreapp|netstandard)(\d+\.\d+)""").find(target.lowercase()) ?: return null
+        val (kind, version) = match.destructured
+        return version to "$kind$version"
     }
 
     /**
@@ -219,11 +237,39 @@ object ProjectAssemblies {
      * `Microsoft.NETCore.App.Ref` `[8.0.11]` for `net8.0` built with the SDK 10, which has no pack of 8.0).
      */
     private fun downloadedPack(folders: List<File>, framework: JsonObject?, reference: String, target: String): List<File> {
-        val version = Regex("""^net(\d+\.\d+)""").find(target.lowercase())?.groupValues?.get(1) ?: return emptyList()
+        val (_, folder) = packFramework(target) ?: return emptyList()
         val dependency = framework?.get("downloadDependencies")?.takeIf { it.isJsonArray }?.asJsonArray
             ?.mapNotNull { it as? JsonObject }?.firstOrNull { it.get("name")?.asString.equals("$reference.Ref", ignoreCase = true) } ?: return emptyList()
         val packVersion = dependency.get("version")?.asString?.trim('[', ']', ' ')?.substringBefore(',') ?: return emptyList()
-        return folders.map { dlls(File(it, "${reference.lowercase()}.ref/$packVersion/ref/net$version")) }.firstOrNull { it.isNotEmpty() }.orEmpty()
+        return folders.map { dlls(File(it, "${reference.lowercase()}.ref/$packVersion/ref/$folder")) }.firstOrNull { it.isNotEmpty() }.orEmpty()
+    }
+
+    /**
+     * What the compiler is given when several references are one assembly (`System.Runtime` of a framework pack and of the package
+     * `System.Runtime` 4.3.0 a dependency still brings): the one of the highest assembly version, a framework's when the versions are equal
+     * — `ResolvePackageFileConflicts` of the SDK. The first that had a type won here before: the contracts of `netstandard1.x` hid
+     * `Type.IsEnum`, `Task.Dispose`, `string.Split(string, StringSplitOptions)` (CS1061, CS1503 in a live project, 0.1.179). The order stays.
+     */
+    fun <T> withoutConflicts(references: List<T>, name: (T) -> String, version: (T) -> String, isFramework: (T) -> Boolean): List<T> {
+        val winners = HashMap<String, T>()
+        for (reference in references) {
+            val key = name(reference).lowercase()
+            val current = winners[key]
+            val order = if (current == null) 1 else compareVersions(version(reference), version(current))
+            if (current == null || order > 0 || order == 0 && isFramework(reference) && !isFramework(current)) winners[key] = reference
+        }
+        return references.filter { winners[name(it).lowercase()] === it }
+    }
+
+    /** `4.1.0.0` against `8.0.0.0`, part by part; what is not a number counts as 0. */
+    fun compareVersions(a: String, b: String): Int {
+        val left = a.split('.').map { it.toIntOrNull() ?: 0 }
+        val right = b.split('.').map { it.toIntOrNull() ?: 0 }
+        for (i in 0 until maxOf(left.size, right.size)) {
+            val order = left.getOrElse(i) { 0 }.compareTo(right.getOrElse(i) { 0 })
+            if (order != 0) return order
+        }
+        return 0
     }
 
     private fun dlls(directory: File): List<File> =

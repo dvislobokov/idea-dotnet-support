@@ -162,6 +162,12 @@
   members, Inline Method, Create derived type, Copy type, Cover (`NativeCSharpTypeActions.kt`). Ограничения: To factory method и
   Encapsulate field — в пределах файла; Move to namespace не переписывает полные имена; Generate type patterns и Copy type без диалога
   Rider; имя производного типа (`IFoo` → `Foo`, `FooImpl`) — догадка. Вживую не проверено
+- [x] 0.1.179 — ссылки проекта как у SDK (ложные ошибки живого solution библиотек): одна сборка из фреймворка и из старого пакета
+  (`System.Runtime` 4.3.0 транзитивно) — берётся старшая версия, при равных — фреймворк (`ResolvePackageFileConflicts`), контракты
+  `netstandard1.x` больше не прячут `Type.Assembly`, `Task.Dispose`, `Split(string, …)`; `netstandard2.0` компилируется против
+  `build/netstandard2.0/ref` пакета `NETStandard.Library` (были CS0246 на `List`, CS0234 на `System.Linq`), паки `netstandard2.1` и
+  `netcoreapp3.x`; вариантность через параметр типа с `where T : class` (`IList<T>` → `IEnumerable<object>`). Пример — корпус
+  `compilerMessages/cases/variance-of-type-parameters.cs`; на живом проекте не проверено
 - [x] 0.1.178 — заголовок типа как в Rider: в списке баз и в ограничении — типы сборок (`ControllerBase`, `Exception`, `IDisposable`, с
   импортом), базовый класс только первым; `where` после списка баз и ограничения, параметры типа после `where`; живые шаблоны по
   областям Rider (оператор, выражение, член, тип, пространство имён) — нет `while` в `class X : wh`. Сценарий — `Console/Editor/BaseListCompletion.cs`.

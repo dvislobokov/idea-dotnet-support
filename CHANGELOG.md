@@ -3,6 +3,18 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.179
+
+What a project is compiled against, as the SDK resolves it (false errors in a live solution of libraries).
+- One assembly from a framework and from an old package (`System.Runtime`, `System.Threading.Tasks`, `System.Linq` 4.3.0 a dependency
+  still brings): the one of the higher assembly version is used, the framework's on a tie, as `ResolvePackageFileConflicts` does. The
+  contracts of `netstandard1.x` no longer hide `Type.Assembly`, `Type.IsEnum`, `Task.Dispose`, `Task.WaitAsync`, `Assembly.GetCallingAssembly`,
+  `string.Split(string, StringSplitOptions)`, `ToLower(CultureInfo)` (CS1061, CS1503, CS1501).
+- A library for .NET Standard 2.0 is compiled against the reference assemblies of `NETStandard.Library` (`build/netstandard2.0/ref`):
+  `List`, `Dictionary`, `IServiceProvider`, `System.Linq`, `System.Collections.Concurrent` resolve there (CS0246, CS0234). .NET Standard 2.1
+  and .NET Core 3.x find their reference packs too.
+- `IList<T>` converts to `IEnumerable<object>` when `T` is a reference type by its constraints (`where T : class`, a base class): no CS1503.
+
 ## 0.1.178
 
 The header of a type, as in Rider.

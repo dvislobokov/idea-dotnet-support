@@ -860,6 +860,10 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         else -> false
     }
 
+    /** `where T : class` / `class?`: a reference type, whatever comes. */
+    internal fun hasClassConstraint(type: SemanticType.Parameter): Boolean =
+        constraintClause(type)?.constraints.orEmpty().any { c -> c is CSharpClassOrStructConstraint && c.text.startsWith("class") }
+
     private fun constraintClause(parameter: SemanticType.Parameter): CSharpTypeParameterConstraintClause? {
         val clauses = when (val owner = parameter.owner) {
             is CSharpTypeDeclaration -> owner.constraintClauses

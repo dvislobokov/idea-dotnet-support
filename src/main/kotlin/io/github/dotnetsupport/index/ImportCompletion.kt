@@ -231,7 +231,10 @@ class AssemblyIndexService(private val project: Project) : Disposable {
         val indexed = lastRun.get(IndexRunMemo.key(all, dotnetRoot, framework)) { ran = true; IndexerTool.getInstance().index(all, IndexerTool.indexDirectory()) }
         if (indexed.isEmpty()) return
         for ((path, assemblies) in lists) {
-            byProject[path] = assemblies.mapNotNull { assembly -> indexed[assembly]?.let(::open)?.also { assemblyFiles[it.mvid] = assembly } }
+            val frameworks = references[path]?.libraries.orEmpty().filter { it.kind == ProjectAssemblies.LibraryKind.FRAMEWORK }.flatMapTo(HashSet()) { it.assemblies }
+            val opened = assemblies.mapNotNull { assembly -> indexed[assembly]?.let(::open)?.also { assemblyFiles[it.mvid] = assembly }?.let { assembly to it } }
+            // one assembly from a framework pack and from an old package: the compiler gets one of them (System.Runtime 4.3.0 hid Type.IsEnum)
+            byProject[path] = ProjectAssemblies.withoutConflicts(opened, { it.second.assemblyName.ifEmpty { it.first.path } }, { it.second.assemblyVersion }, { it.first in frameworks }).map { it.second }
             complete[path] = references[path]?.assemblies?.all { assembly -> indexed[assembly]?.let(::open) != null } == true
         }
         modificationTracker.incModificationCount()

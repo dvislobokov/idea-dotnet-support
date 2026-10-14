@@ -490,6 +490,13 @@ using-statement-declaration-errors-1.cs	399	405	CS0116	error
 using-statement-declaration-errors-1.cs	454	455	CS1022	error
 using-statement-declaration-errors-1.cs	456	457	CS1022	error
 using-statement-declaration-errors-2.cs	153	161	CS0246	error
+variance-of-type-parameters.cs	530	538	CS8620	warning
+variance-of-type-parameters.cs	897	905	CS1503	error
+variance-of-type-parameters.cs	982	1006	CS8604	warning
+variance-of-type-parameters.cs	1072	1080	CS1503	error
+variance-of-type-parameters.cs	1165	1173	CS1503	error
+variance-of-type-parameters.cs	1250	1258	CS1503	error
+variance-of-type-parameters.cs	1331	1339	CS1503	error
 warning-waves-1.cs	177	184	CS0103	error
 warning-waves-10.cs	262	268	CS0246	error
 warning-waves-10.cs	321	327	CS0246	error
