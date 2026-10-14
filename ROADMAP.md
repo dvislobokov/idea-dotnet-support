@@ -162,6 +162,9 @@
   members, Inline Method, Create derived type, Copy type, Cover (`NativeCSharpTypeActions.kt`). Ограничения: To factory method и
   Encapsulate field — в пределах файла; Move to namespace не переписывает полные имена; Generate type patterns и Copy type без диалога
   Rider; имя производного типа (`IFoo` → `Foo`, `FooImpl`) — догадка. Вживую не проверено
+- [x] 0.1.183 — target в `project.assets.json` длинным именем (`.NETStandard,Version=v2.1`): пак ищется по короткому (`netstandard2.1`);
+  раньше у `netstandard2.1` пака не было — нет `List`, `System.Linq`, `Type` без `GetMethod` (отчёт Copy Compilation References с
+  живого solution). Вживую не проверено
 - [x] 0.1.182 — паки фреймворков ищутся в SDK, который делал restore (`runtimeIdentifierGraphPath` из `project.assets.json`), а потом
   рядом с найденным `dotnet`: тот бывает shim-ом без `packs` (snap, mise, скрипт-обёртка) — у `netstandard2.1` не было пака вовсе
   (CS0246 на `List`, CS1061 на `Type.GetMethod` в живом solution). Вживую не проверено

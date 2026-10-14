@@ -270,6 +270,18 @@ class ProjectReferencesTest {
         val found21 = ProjectAssemblies.references(ProjectAssemblies.Request(standard21, File(root, "App"), File(root, "dotnet"), null))
         assertEquals(listOf("/dotnet/packs/NETStandard.Library.Ref/2.1.0/ref/netstandard2.1/netstandard.dll"), relative(found21.assemblies))
 
+        // a target by the long name of its framework, as the restore of a live project wrote it (the frameworks of the project stay short)
+        val longName = standard21.replaceFirst("\"targets\": { \"netstandard2.1\"", "\"targets\": { \".NETStandard,Version=v2.1\"")
+        val fromLong = ProjectAssemblies.references(ProjectAssemblies.Request(longName, File(root, "App"), File(root, "dotnet"), null))
+        assertEquals("netstandard2.1", fromLong.framework)
+        assertEquals(listOf("/dotnet/packs/NETStandard.Library.Ref/2.1.0/ref/netstandard2.1/netstandard.dll"), relative(fromLong.assemblies))
+        assertEquals("netstandard2.1", io.github.dotnetsupport.msbuild.TargetFrameworks.shortName(".NETStandard,Version=v2.1"))
+        assertEquals("net8.0", io.github.dotnetsupport.msbuild.TargetFrameworks.shortName(".NETCoreApp,Version=v8.0"))
+        assertEquals("netcoreapp3.1", io.github.dotnetsupport.msbuild.TargetFrameworks.shortName(".NETCoreApp,Version=v3.1"))
+        assertEquals("net472", io.github.dotnetsupport.msbuild.TargetFrameworks.shortName(".NETFramework,Version=v4.7.2"))
+        assertEquals("net48", io.github.dotnetsupport.msbuild.TargetFrameworks.shortName(".NETFramework,Version=v4.8"))
+        assertEquals("net10.0", io.github.dotnetsupport.msbuild.TargetFrameworks.shortName("net10.0"))
+
         // the `dotnet` the IDE found is a shim with nothing next to it: the SDK that restored says where the packs are
         file("shim/dotnet")
         file("usr/share/dotnet/packs/NETStandard.Library.Ref/2.1.0/ref/netstandard2.1/netstandard.dll")

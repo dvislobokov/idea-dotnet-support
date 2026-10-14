@@ -5,6 +5,7 @@ import com.google.gson.JsonParser
 import com.intellij.openapi.util.SystemInfo
 import io.github.dotnetsupport.cli.LocalPaths
 import io.github.dotnetsupport.msbuild.MsBuildProject
+import io.github.dotnetsupport.msbuild.TargetFrameworks
 import java.io.File
 
 /**
@@ -67,7 +68,10 @@ object ProjectAssemblies {
         val targets = root.obj("targets") ?: return unrestored(request)
         // `net9.0` and not `net9.0/win-x64`: the target of a runtime has the same assemblies to compile against
         val names = targets.keySet().filter { '/' !in it }
-        val target = names.firstOrNull { it.equals(request.framework, ignoreCase = true) } ?: names.firstOrNull() ?: return References.NONE
+        // `.NETStandard,Version=v2.1` rather than `netstandard2.1` in an assets file some restores write: the packs, the folders of the builds
+        // and the frameworks of the project are by the short name — with the long one netstandard2.1 had no pack, no `List` (CS0246), 0.1.183
+        val key = names.firstOrNull { request.framework != null && TargetFrameworks.sameFramework(it, request.framework) } ?: names.firstOrNull() ?: return References.NONE
+        val target = TargetFrameworks.shortName(key)
         val libraries = root.obj("libraries")
         // never a network folder a cloned assets file names (LocalPaths)
         val folders = root.obj("packageFolders")?.keySet().orEmpty().filter(LocalPaths::isReadablePackagesFolder).map(::File)
@@ -79,7 +83,7 @@ object ProjectAssemblies {
         // the shared frameworks a package brings along (`Grpc.AspNetCore` -> `Microsoft.AspNetCore.App`): `frameworkReferences` of the package in the target
         val transitiveFrameworks = LinkedHashSet<String>()
 
-        for ((id, value) in targets.obj(target)?.entrySet().orEmpty()) {
+        for ((id, value) in targets.obj(key)?.entrySet().orEmpty()) {
             val library = value as? JsonObject ?: continue
             val compiled = library.obj("compile")?.keySet().orEmpty().filter { it.endsWith(".dll", ignoreCase = true) }
             when (library.get("type")?.asString) {
@@ -116,7 +120,7 @@ object ProjectAssemblies {
         }
 
         val frameworks = root.obj("project")?.obj("frameworks")
-        val declared = frameworks?.keySet()?.firstOrNull { it.equals(target, ignoreCase = true) } ?: frameworks?.keySet()?.firstOrNull()
+        val declared = frameworks?.keySet()?.firstOrNull { TargetFrameworks.sameFramework(it, target) } ?: frameworks?.keySet()?.firstOrNull()
         val declaredFramework = declared?.let { frameworks?.obj(it) }
         // the frameworks the project declares (`Microsoft.NET.Sdk.Web` adds `Microsoft.AspNetCore.App` itself; restore writes it here) and the ones
         // its packages require, which restore does not repeat under the project: without them the types of ASP.NET Core resolved only in a Web project

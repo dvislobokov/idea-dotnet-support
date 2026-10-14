@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.183
+
+- An assets file whose target is written by the long name of its framework (`.NETStandard,Version=v2.1`, as some restores write it) gets
+  its reference pack: before, a library for .NET Standard 2.1 had no `List`, `Dictionary`, `System.Linq`, `IServiceProvider`, and `Type`,
+  `Task` came from old contracts without `GetMethod`, `Dispose` (CS0246, CS0234, CS1061 in a live solution).
+
 ## 0.1.182
 
 - The reference packs are looked for in the SDK that restored the project (`runtimeIdentifierGraphPath` of `project.assets.json`) before the

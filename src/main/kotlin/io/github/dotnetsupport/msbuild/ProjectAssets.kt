@@ -126,6 +126,20 @@ object TargetFrameworks {
         }
     }
 
+    /**
+     * The short name of a framework as an assets file may write a target (`.NETStandard,Version=v2.1` -> `netstandard2.1`, `.NETCoreApp,Version=v8.0`
+     * -> `net8.0`, `.NETCoreApp,Version=v3.1` -> `netcoreapp3.1`, `.NETFramework,Version=v4.7.2` -> `net472`); a short one stays as it is.
+     */
+    fun shortName(framework: String): String {
+        val match = LONG.find(framework.trim()) ?: return framework
+        val version = match.groupValues[2].split('.').let { parts -> if (parts.size == 1) parts + "0" else parts }
+        return when (match.groupValues[1].lowercase()) {
+            "netstandard" -> "netstandard${version[0]}.${version[1]}"
+            "netframework" -> "net" + version.joinToString("").trimEnd('0').padEnd(2, '0')
+            else -> if (version[0].toInt() >= 5) "net${version[0]}.${version[1]}" else "netcoreapp${version[0]}.${version[1]}"
+        }
+    }
+
     fun sameFramework(first: String, second: String): Boolean =
         first.equals(second, ignoreCase = true) || displayName(first) == displayName(second)
 
