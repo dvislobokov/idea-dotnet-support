@@ -477,6 +477,8 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
     /** The base class and interfaces of a type of the solution as its parts write them, resolved where they are written, substituted. */
     fun baseTypes(type: SemanticType.Source): List<SemanticType> {
         val found = ArrayList<SemanticType>()
+        // `enum Mode : ushort` names the underlying type, not a base: the base of an enum is `Enum` (`mode.HasFlag` was CS1061, 0.1.184)
+        if (type.info.kind == io.github.dotnetsupport.lang.TypeKind.ENUM) return listOfNotNull(libraryType("System.Enum"))
         for (part in type.info.parts) {
             val declaration = part.element() as? CSharpBaseTypeDeclaration ?: continue
             val owner = declaration.containingFile as? CSharpFile ?: continue

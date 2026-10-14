@@ -787,6 +787,9 @@
             <action id="DotNet.CopyCompilationReferences" class="io.github.dotnetsupport.index.CopyCompilationReferencesAction"
                     text="Copy Compilation References of Current File"
                     description="Copy what the plugin compiles the C# file in the editor against: its project, the target of project.assets.json, the packages and assemblies, where System.Type and List come from"/>
+            <!-- the same for the whole solution at once: every project, every error with its line, the journal — a file to read or to send -->
+            <action id="DotNet.FullDiagnostics" class="io.github.dotnetsupport.diagnostics.FullDiagnosticsAction" text="Collect Full Diagnostics..."
+                    description="Write into a file everything the plugin knows about the solution: the IDE and dotnet, what every project is compiled against, every error and warning of every C# file with the line under it, the journal of the plugin"/>
             <add-to-group group-id="MainMenu" anchor="after" relative-to-action="ToolsMenu"/>
         </group>
 

@@ -88,15 +88,32 @@ class AssemblyIndexSet(val indexes: List<AssemblyIndex>, val assemblyName: Strin
     fun baseTypes(type: IndexedType): List<Supertype> {
         val found = ArrayList<Supertype>()
         var current = type
-        var reference = type.baseType ?: return found
+        var reference = type.baseType ?: implicitBase(type) ?: return found
         while (found.size < MAX_DEPTH) {
             val base = resolve(reference) ?: break
             found += Supertype(base, reference)
             current = base
-            val next = current.baseType ?: break
+            val next = current.baseType ?: implicitBase(current) ?: break
             reference = next.substitute((reference as? IndexedTypeRef.Generic)?.arguments.orEmpty())
         }
         return found
+    }
+
+    /**
+     * The base the index does not write (it keeps the one of a class only): `System.Enum` of an enum, `System.ValueType` of a struct,
+     * `System.MulticastDelegate` of a delegate — the way to the members of `object`: `DbType.Binary.ToString()` was CS1061 (0.1.184).
+     */
+    private fun implicitBase(type: IndexedType): IndexedTypeRef? = when (type.kind) {
+        IndexedTypeKind.ENUM -> IndexedTypeRef.Named("System.Enum", false)
+        IndexedTypeKind.STRUCT -> IndexedTypeRef.Named("System.ValueType", false)
+        IndexedTypeKind.DELEGATE -> IndexedTypeRef.Named("System.MulticastDelegate", false)
+        // the two classes the indexer took for a struct and a delegate: their bases are not written either
+        IndexedTypeKind.CLASS -> when (type.fullName) {
+            "System.Enum" -> IndexedTypeRef.Named("System.ValueType", false)
+            "System.MulticastDelegate" -> IndexedTypeRef.Named("System.Delegate", false)
+            else -> null
+        }
+        else -> null
     }
 
     /** Every interface [type] implements, its own, the ones of its bases and of its interfaces, each once. */

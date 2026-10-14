@@ -288,6 +288,8 @@ local-function-errors-1.cs	283	287	CS8422	error
 local-function-errors-1.cs	334	341	CS8422	error
 local-function-errors-1.cs	399	407	CS8422	error
 lock-semantics-1.cs	86	113	CS9216	warning
+members-of-object-on-library-value-types.cs	957	961	CS1061	error
+members-of-object-on-library-value-types.cs	979	987	CS0029	error
 nullable-warnings-1.cs	496	498	CS0219	warning
 nullable-warnings-1.cs	521	523	CS0219	warning
 nullable-warnings-10.cs	510	523	CS0103	error

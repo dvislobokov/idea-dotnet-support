@@ -548,7 +548,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
             val parameters = r.signature(symbol, false) ?: return@mapNotNull null
             var type = parameterFor(parameters, arguments, i, if (reduced) 1 else 0)?.type?.invoke() ?: return@mapNotNull null
             val methodArguments = typeArguments(symbol, call, callee)
-            if (methodArguments.isNotEmpty()) type = substituteMethod(type, methodArguments) ?: return@mapNotNull null
+            if (methodArguments.isNotEmpty()) type = substituteMethod(type, methodArguments, symbol) ?: return@mapNotNull null
             if (lambdaParameters != null) {
                 val count = unwrapExpression(type)?.let(::delegateSignature)?.first?.size
                 if (count != null && count != lambdaParameters) return@mapNotNull null
@@ -572,12 +572,24 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
             var type = parameter.type() ?: return@map null
             if (parameter.isParams && type is SemanticType.ArrayOf) type = type.element ?: return@map null
             val methodArguments = if (call is CSharpInvocationExpression && callee != null) typeArguments(symbol, call, callee) else emptyList()
-            if (methodArguments.isEmpty()) type else substituteMethod(type, methodArguments)
+            if (methodArguments.isEmpty()) type else substituteMethod(type, methodArguments, symbol)
         }
     }
 
-    internal fun substituteMethod(type: SemanticType, arguments: List<SemanticType?>): SemanticType? =
-        r.replace(type) { p -> if (p.ofMethod) arguments.getOrNull(p.index) ?: p else p }
+    /**
+     * [type] with the type parameters of the method [symbol] replaced by [arguments]; not those of the method around the call, which the
+     * arguments of a generic receiver bring in (`OptionsBuilder<TPolicy>.Configure<IConfiguration>(...)` in `M<TPolicy>`: the `TPolicy` of
+     * the lambda's first parameter became `IConfiguration`, CS1061 on `policy.Name`, 0.1.184). A library method's own have no owner.
+     */
+    internal fun substituteMethod(type: SemanticType, arguments: List<SemanticType?>, symbol: CSharpSymbol? = null): SemanticType? {
+        val owner: PsiElement? = when (symbol) {
+            is CSharpSymbol.SourceMember -> symbol.element
+            is CSharpSymbol.Local -> symbol.symbol.declaration
+            else -> null
+        }
+        val own = { p: SemanticType.Parameter -> symbol == null || p.owner == null || owner != null && p.owner == owner }
+        return r.replace(type) { p -> if (p.ofMethod && own(p)) arguments.getOrNull(p.index) ?: p else p }
+    }
 
     private fun declaredTarget(clause: CSharpEqualsValueClause): SemanticType? = when (val owner = clause.parent) {
         is CSharpVariableDeclarator -> (owner.parent as? CSharpVariableDeclaration)?.type?.takeIf { !r.isVar(it) }?.let(r::resolveType)

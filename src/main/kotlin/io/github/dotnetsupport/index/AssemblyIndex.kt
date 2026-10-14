@@ -59,7 +59,12 @@ class IndexedType internal constructor(val index: AssemblyIndex, val row: Int) {
     /** `Dictionary`2+Enumerator`: the name within the namespace as the metadata has it. */
     val path: String = index.string(index.typeInt(row, 1))
     private val packed = index.typeInt(row, 2)
+    /**
+     * `System.Enum` and `System.MulticastDelegate` are classes, though the indexer takes them for a struct and a delegate by their bases
+     * (`ValueType`, `Delegate`): `Enum e = DayOfWeek.Monday` was CS0029 as a conversion to a struct (0.1.184).
+     */
     val kind: IndexedTypeKind = IndexedTypeKind.of(packed and 0xFF)
+        .let { raw -> if (raw != IndexedTypeKind.CLASS && namespace == "System" && (path == "Enum" || path == "MulticastDelegate")) IndexedTypeKind.CLASS else raw }
     private val flags = packed ushr 8
 
     /** `Dictionary.Enumerator` for a nested one: how C# names it, but for the type arguments. */

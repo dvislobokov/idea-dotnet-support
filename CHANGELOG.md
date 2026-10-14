@@ -3,6 +3,20 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.184
+
+False errors of a live solution of libraries (EFCore.BulkExtensions, Microsoft.Extensions.Options), checked on all its 350 files.
+- The members of `object` on an enum, a struct or a delegate of an assembly: `DbType.Binary.ToString()`, `day.GetType()`,
+  `action.GetInvocationList()` were CS1061 (the index writes no base of them). `System.Enum` and `System.MulticastDelegate` are classes:
+  `Enum e = DayOfWeek.Monday` is no CS0029.
+- An enum of the solution with an underlying type (`enum Mode : ushort`) derives from `Enum`, not from `ushort`: `mode.HasFlag(...)` resolves.
+- The parameters of a lambda passed to a generic method of a generic receiver inside a generic method
+  (`OptionsBuilder<TPolicy>.Configure<IConfiguration>((policy, configuration) => policy.Name = ...)`): `policy` is `TPolicy` again, not
+  `IConfiguration`.
+- .NET → Collect Full Diagnostics...: everything the plugin knows about the solution in one file — the IDE and `dotnet`, who reports errors,
+  what every project is compiled against, every error and warning of every C# file with its line, the analyzers' diagnostics, the
+  journal of the plugin. It opens in the editor; the file is in `~/idea-dotnet-logs/diagnostics`.
+
 ## 0.1.183
 
 - An assets file whose target is written by the long name of its framework (`.NETStandard,Version=v2.1`, as some restores write it) gets

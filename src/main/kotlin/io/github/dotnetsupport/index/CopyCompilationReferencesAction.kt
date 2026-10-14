@@ -58,48 +58,53 @@ class CopyCompilationReferencesAction : AnAction(), DumbAware {
         val projectFile = ReadAction.compute<VirtualFile?, RuntimeException> { model.projectOf(file) }
         appendLine("project: ${projectFile?.path ?: "none (a loose file)"}")
         projectFile ?: return@buildString
-        val msbuild = SolutionService.getInstance(project).msBuildProject(projectFile)
-        appendLine("target frameworks in the project file: ${msbuild.targetFrameworks}; old format: ${msbuild.isLegacy}; toolbar: ${DotNetBuildSettings.getInstance(project).framework}")
-        val dotnet = DotNetCli.findExecutable()?.let { runCatching { File(it).canonicalFile }.getOrDefault(File(it)) }
-        appendLine("dotnet: ${dotnet?.path}; packs next to it: ${dotnet?.parentFile?.let { File(it, "packs").list()?.sorted() } ?: "NONE"}")
-        val assets = File(projectFile.parent.path, "obj/project.assets.json")
-        appendLine("assets: ${assets.path} ${if (assets.isFile) "(${assets.length()} bytes)" else "MISSING"}")
-        if (assets.isFile) appendLine(assetsSummary(assets.readText()))
-
-        val service = AssemblyIndexService.getInstance(project)
-        val references = service.references(projectFile)
-        appendLine()
-        appendLine("references: ${if (references == null) "none computed" else "target ${references.framework}, ${references.assemblies.size} assemblies, ${references.projects.size} projects, ${references.projectOutputs.size} project outputs"}")
-        for (library in references?.libraries.orEmpty()) {
-            appendLine("  ${library.kind} ${library.presentableName}: ${library.assemblies.size} dll, ${library.assemblies.firstOrNull()?.parent}")
-        }
-        for (p in references?.projects.orEmpty()) appendLine("  PROJECT $p")
-        for (o in references?.projectOutputs.orEmpty()) appendLine("  OUTPUT $o")
-
-        val indexes = service.indexes(projectFile)
-        val kept = indexes.mapNotNullTo(HashSet()) { service.assemblyFile(it.mvid)?.path }
-        appendLine()
-        appendLine("indexes in the set: ${indexes.size}; complete: ${service.isComplete(projectFile)}")
-        val dropped = references?.forIndex.orEmpty().filter { it.path !in kept }
-        if (dropped.isNotEmpty()) {
-            appendLine("not in the set (a conflict lost, or not indexed): ${dropped.size}")
-            for (d in dropped) appendLine("  $d")
-        }
-        for (index in indexes) appendLine("  ${index.assemblyName} ${index.assemblyVersion} ${service.assemblyFile(index.mvid)}")
-
-        val set = service.symbols(projectFile)
-        appendLine()
-        appendLine("types:")
-        for ((name, member) in PROBES) {
-            val type = set.findType(name)
-            if (type == null) { appendLine("  $name: NOT FOUND"); continue }
-            val members = set.ownMembers(type)
-            appendLine("  $name: ${type.index.assemblyName} ${type.index.assemblyVersion} ${service.assemblyFile(type.index.mvid)}, ${members.size} members" +
-                (member?.let { m -> ", $m: ${if (members.any { it.name == m }) "yes" else "NO"}" } ?: ""))
-        }
+        append(projectReport(project, projectFile))
     }
 
     companion object {
+        /** What the plugin compiles [projectFile] against: frameworks, the assets file, libraries, the set of indexes, where the basic types come from. */
+        fun projectReport(project: Project, projectFile: VirtualFile): String = buildString {
+            val msbuild = SolutionService.getInstance(project).msBuildProject(projectFile)
+            appendLine("target frameworks in the project file: ${msbuild.targetFrameworks}; old format: ${msbuild.isLegacy}; toolbar: ${DotNetBuildSettings.getInstance(project).framework}")
+            val dotnet = DotNetCli.findExecutable()?.let { runCatching { File(it).canonicalFile }.getOrDefault(File(it)) }
+            appendLine("dotnet: ${dotnet?.path}; packs next to it: ${dotnet?.parentFile?.let { File(it, "packs").list()?.sorted() } ?: "NONE"}")
+            val assets = File(projectFile.parent.path, "obj/project.assets.json")
+            appendLine("assets: ${assets.path} ${if (assets.isFile) "(${assets.length()} bytes)" else "MISSING"}")
+            if (assets.isFile) appendLine(assetsSummary(assets.readText()))
+
+            val service = AssemblyIndexService.getInstance(project)
+            val references = service.references(projectFile)
+            appendLine()
+            appendLine("references: ${if (references == null) "none computed" else "target ${references.framework}, ${references.assemblies.size} assemblies, ${references.projects.size} projects, ${references.projectOutputs.size} project outputs"}")
+            for (library in references?.libraries.orEmpty()) {
+                appendLine("  ${library.kind} ${library.presentableName}: ${library.assemblies.size} dll, ${library.assemblies.firstOrNull()?.parent}")
+            }
+            for (p in references?.projects.orEmpty()) appendLine("  PROJECT $p")
+            for (o in references?.projectOutputs.orEmpty()) appendLine("  OUTPUT $o")
+
+            val indexes = service.indexes(projectFile)
+            val kept = indexes.mapNotNullTo(HashSet()) { service.assemblyFile(it.mvid)?.path }
+            appendLine()
+            appendLine("indexes in the set: ${indexes.size}; complete: ${service.isComplete(projectFile)}")
+            val dropped = references?.forIndex.orEmpty().filter { it.path !in kept }
+            if (dropped.isNotEmpty()) {
+                appendLine("not in the set (a conflict lost, or not indexed): ${dropped.size}")
+                for (d in dropped) appendLine("  $d")
+            }
+            for (index in indexes) appendLine("  ${index.assemblyName} ${index.assemblyVersion} ${service.assemblyFile(index.mvid)}")
+
+            val set = service.symbols(projectFile)
+            appendLine()
+            appendLine("types:")
+            for ((name, member) in PROBES) {
+                val type = set.findType(name)
+                if (type == null) { appendLine("  $name: NOT FOUND"); continue }
+                val members = set.ownMembers(type)
+                appendLine("  $name: ${type.index.assemblyName} ${type.index.assemblyVersion} ${service.assemblyFile(type.index.mvid)}, ${members.size} members" +
+                    (member?.let { m -> ", $m: ${if (members.any { it.name == m }) "yes" else "NO"}" } ?: ""))
+            }
+        }
+
         private val PROBES = listOf(
             "System.Object" to "ToString", "System.Enum" to "ToString", "System.Type" to "GetMethod", "System.Threading.Tasks.Task" to "Dispose",
             "System.Collections.Generic.List`1" to null, "System.Collections.Generic.Dictionary`2" to null, "System.Linq.Enumerable" to "ToArray",

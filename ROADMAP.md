@@ -162,6 +162,11 @@
   members, Inline Method, Create derived type, Copy type, Cover (`NativeCSharpTypeActions.kt`). Ограничения: To factory method и
   Encapsulate field — в пределах файла; Move to namespace не переписывает полные имена; Generate type patterns и Copy type без диалога
   Rider; имя производного типа (`IFoo` → `Foo`, `FooImpl`) — догадка. Вживую не проверено
+- [x] 0.1.184 — ложные ошибки живого solution (SberEmp.Shared, 350 файлов, стенд `SolutionDiagnosticsHarnessTest` против `dotnet build`):
+  члены `object` у enum / struct / делегата сборки (`DbType.Binary.ToString()` — CS1061), `System.Enum` — класс (не CS0029), enum с
+  типом-основой (`: ushort`) наследует `Enum` (`HasFlag`), параметры лямбды обобщённого метода обобщённого получателя внутри обобщённого
+  метода (`OptionsBuilder<TPolicy>.Configure<IConfiguration>`); меню .NET → Collect Full Diagnostics... — всё о solution в один файл
+  (проекты и их сборки, все ошибки с текстом строки, анализаторы, журнал). Вживую — песочница на этом solution
 - [x] 0.1.183 — target в `project.assets.json` длинным именем (`.NETStandard,Version=v2.1`): пак ищется по короткому (`netstandard2.1`);
   раньше у `netstandard2.1` пака не было — нет `List`, `System.Linq`, `Type` без `GetMethod` (отчёт Copy Compilation References с
   живого solution). Вживую не проверено

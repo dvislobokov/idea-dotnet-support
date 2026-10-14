@@ -65,7 +65,7 @@ private val LOG = logger<NativeCSharpSolutionProblems>()
 @Service(Service.Level.PROJECT)
 class NativeCSharpSolutionProblems(override val project: Project) : Disposable, ProblemsProvider {
     /** One diagnostic of a file, as the Problems view shows it (the same presentation as the server's rows). */
-    class Problem(override val provider: ProblemsProvider, override val file: VirtualFile, override val line: Int, override val column: Int, override val text: String, private val code: String?, private val error: Boolean) : FileProblem {
+    class Problem(override val provider: ProblemsProvider, override val file: VirtualFile, override val line: Int, override val column: Int, override val text: String, val code: String?, val error: Boolean) : FileProblem {
         override val description: String? get() = code
         override val group: String? get() = code
         override val icon: Icon get() = if (error) AllIcons.General.Error else AllIcons.General.Warning
@@ -217,7 +217,7 @@ class NativeCSharpSolutionProblems(override val project: Project) : Disposable, 
     }
 
     /** The checks of the editor annotator on [file]'s tree, errors and warnings only: the gray of unused `using` directives is for the editor. */
-    private fun check(file: VirtualFile): List<Problem> {
+    fun check(file: VirtualFile): List<Problem> {
         val psi = PsiManager.getInstance(project).findFile(file) as? CSharpFile ?: return emptyList()
         if (!NativeCSharpDiagnostics.serves(psi)) return emptyList()
         val text = psi.viewProvider.contents
