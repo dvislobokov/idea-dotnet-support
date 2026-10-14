@@ -140,6 +140,11 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
     private val warningRequests = AtomicInteger()
     private val whyRequests = AtomicInteger()
     private val detailsRequests = AtomicInteger()
+    /**
+     * Not [detailsRequests]: the nuspec asked for right after the versions made their answer a stale one, and an installed package kept the
+     * versions it was shown with — the installed one and the latest (0.1.180, a corporate feed with 249 versions of a package).
+     */
+    private val versionRequests = AtomicInteger()
     /** Vulnerable and deprecated packages of the solution, by lowercased id; filled in the background, read by the list and the card. */
     @Volatile private var warningsByPackage: Map<String, List<PackageWarning>> = emptyMap()
     @Volatile private var sources: List<String> = listOf(NuGetService.NUGET_ORG)
@@ -453,7 +458,7 @@ private class NuGetPanel(private val project: Project, toolWindow: ToolWindow) :
             val loaded = allVersions?.takeIf { it.first.equals(row.id, ignoreCase = true) }?.second
             setVersions(row, loaded ?: knownVersions)
             // the search result lists only the latest versions, an installed package none at all
-            if (loaded == null) background(detailsRequests, { service.client.versions(row.id, sources) }) { all ->
+            if (loaded == null) background(versionRequests, { service.client.versions(row.id, sources) }) { all ->
                 if (selectedPackage()?.id == row.id && all.isNotEmpty()) { allVersions = row.id to all; setVersions(row, all); renderCard(row) }
             }
         }

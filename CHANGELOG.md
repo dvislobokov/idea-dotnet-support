@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.180
+
+- NuGet window: the version list of an installed package shows every version of the feed again. The list was loaded, but the request for
+  the package's description made right after it threw the answer away, and the card kept the installed version and the latest only.
+
 ## 0.1.179
 
 What a project is compiled against, as the SDK resolves it (false errors in a live solution of libraries).
