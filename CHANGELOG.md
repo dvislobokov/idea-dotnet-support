@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.188
+
+- The type of a generic call is inferred as the C# compiler does (Roslyn's method type inference, ported): the best type of all the
+  arguments, not the first one's — `Pick(1, 2L)` is `long`; lambdas, method groups, tuples and interfaces of the arguments take part.
+  What the type of a call decides — completion after it, the type of `var`, the errors of what it is given to — follows.
+- Where that inference does not succeed, the previous one answers, as before.
+
 ## 0.1.187
 
 False errors of C# found on large Razor and Blazor solutions (MudBlazor, nopCommerce, eShop) — they were in any project, Razor only

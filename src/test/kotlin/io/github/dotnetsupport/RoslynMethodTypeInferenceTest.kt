@@ -92,6 +92,20 @@ class RoslynMethodTypeInferenceTest : BasePlatformTestCase() {
         """))
     }
 
+    /** The type of a call (the lenient inference of expressions, D6b): the best of the bounds, not the first argument's type. */
+    fun testTheTypeOfACallIsTheBestOfTheBounds() {
+        val found = errors("""
+            class C
+            {
+                static T Pick<T>(T a, T b) => a;
+                int M() => Pick(1, 2L);
+            }
+        """)
+        // T is long (int converts to it), not int of the first argument: long to int is CS0266 as Roslyn reports it
+        assertEquals(found.toString(), 1, found.size)
+        assertTrue(found.single(), "CS0266" in found.single() && "'long'" in found.single())
+    }
+
     fun testSureFailureIsStillCS0411() {
         val found = errors("""
             class C

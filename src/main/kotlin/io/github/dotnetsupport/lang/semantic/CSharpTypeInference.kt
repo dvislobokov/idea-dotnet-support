@@ -26,10 +26,12 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
     /**
      * The type arguments of the generic method [symbol] for a call whose [i]-th argument goes to a parameter of the declared type
      * [targets]`[i]` (the element type for the expanded `params`), [receiver] the receiver and the `this` parameter of a reduced call.
+     * [lenient] (the types of expressions, [CSharpExpressionTypes.typeArguments]): an argument of no known type gives no inference, as an
+     * error type in Roslyn, instead of making the whole answer unknown; [onFixed] hears each type parameter as it is fixed.
      */
     fun infer(
         symbol: CSharpSymbol, targets: List<SemanticType?>, arguments: List<CSharpArgument>, receiver: Pair<SemanticType, SemanticType?>?, call: CSharpInvocationExpression?,
-        site: CSharpSimpleName?,
+        site: CSharpSimpleName?, lenient: Boolean = false, onFixed: ((Int, SemanticType) -> Unit)? = null,
     ): Inferred {
         val owner = (symbol as? CSharpSymbol.SourceMember)?.element
         val names = r.typeParameterNames(owner)
@@ -66,9 +68,9 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
                 formal += target
                 byReference += kind == "ref" || kind == "out" || kind == "in"
                 // an argument whose parameter mentions no type parameter of the method gives no inference: its type need not be known
-                inferenceArguments += if (!mentions(target)) InferenceArgument.Opaque else argument(argument.expression ?: return Inferred.Unknown)
+                inferenceArguments += if (!mentions(target)) InferenceArgument.Opaque else argument(argument.expression ?: return Inferred.Unknown, lenient)
             }
-            when (val result = RoslynMethodTypeInferrer(RoslynTypes(r), arity, ordinalOf, formal, byReference, inferenceArguments).infer()) {
+            when (val result = RoslynMethodTypeInferrer(RoslynTypes(r), arity, ordinalOf, formal, byReference, inferenceArguments, onFixed = onFixed).infer()) {
                 is RoslynMethodTypeInferrer.Result.Known -> Inferred.Known(result.types)
                 RoslynMethodTypeInferrer.Result.Failed -> Inferred.Failed
                 RoslynMethodTypeInferrer.Result.Unknown -> Inferred.Unknown
@@ -79,19 +81,20 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
     }
 
     /** An argument as Roslyn's inference sees it (the kind of its `BoundExpression`). */
-    private fun argument(expression: CSharpExpression): InferenceArgument {
+    private fun argument(expression: CSharpExpression, lenient: Boolean): InferenceArgument {
         val value = overloads.unparenthesized(expression)
+        val unknownType = { if (lenient) InferenceArgument.Typed(null) else throw RoslynMethodTypeInferrer.Unknown() }
         return when {
             value is CSharpAnonymousFunctionExpression -> lambda(value)
             isMethodGroup(value) -> InferenceArgument.MethodGroup { parameters -> methodGroupReturnType(value, parameters) }
             value.elementType == SyntaxKind.NullLiteralExpression || value.elementType == SyntaxKind.DefaultLiteralExpression -> InferenceArgument.Typed(null)
             // `out T x` has its type; `out var x` has none yet
             value is CSharpDeclarationExpression -> InferenceArgument.Typed(value.type?.takeIf { !r.isVar(it) }?.let { r.resolveType(it) ?: throw RoslynMethodTypeInferrer.Unknown() })
-            value is CSharpTupleExpression -> InferenceArgument.Tuple(r.typeOf(value), value.arguments.map { a -> a.expression?.let(::argument) ?: InferenceArgument.Opaque })
+            value is CSharpTupleExpression -> InferenceArgument.Tuple(r.typeOf(value), value.arguments.map { a -> a.expression?.let { argument(it, lenient) } ?: InferenceArgument.Opaque })
             value is CSharpCollectionExpression || value is CSharpImplicitObjectCreationExpression || value is CSharpThrowExpression -> InferenceArgument.Opaque
             // a conditional without a natural type is target-typed: not modeled
             value is CSharpConditionalExpression -> r.typeOf(value)?.let { InferenceArgument.Typed(it) } ?: InferenceArgument.Opaque
-            else -> InferenceArgument.Typed(r.typeOf(value) ?: throw RoslynMethodTypeInferrer.Unknown())
+            else -> r.typeOf(value)?.let { InferenceArgument.Typed(it) } ?: unknownType()
         }
     }
 

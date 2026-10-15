@@ -52,6 +52,11 @@ internal class RoslynMethodTypeInferrer(
     private val arguments: List<InferenceArgument>,
     /** `IsFeatureFirstClassSpanEnabled`: C# 14 — the inferences between arrays and spans. */
     private val firstClassSpan: Boolean = true,
+    /**
+     * Told each type parameter as it is fixed: a lambda's body is typed by the resolver, whose types of the lambda's parameters come from
+     * what is fixed of its call so far (`CSharpExpressionTypes.typeArguments`, the call in progress).
+     */
+    private val onFixed: ((Int, SemanticType) -> Unit)? = null,
 ) {
     sealed class Result {
         class Known(val types: List<SemanticType>) : Result()
@@ -702,6 +707,7 @@ internal class RoslynMethodTypeInferrer(
     private fun fix(iParam: Int): Boolean {
         val best = fix(exactBounds[iParam], lowerBounds[iParam], upperBounds[iParam]) ?: return false
         fixedResults[iParam] = best
+        onFixed?.invoke(iParam, best)
         updateDependenciesAfterFix(iParam)
         return true
     }

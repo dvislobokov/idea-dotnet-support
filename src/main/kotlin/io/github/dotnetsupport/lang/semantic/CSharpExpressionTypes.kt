@@ -22,6 +22,8 @@ import io.github.dotnetsupport.lang.NativeCSharpTypePositions
 internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
     private val inferred = HashMap<Pair<PsiElement, CSharpSymbol>, List<SemanticType?>>()
     private val inferring = HashMap<Pair<PsiElement, CSharpSymbol>, Array<SemanticType?>>()
+    // the calls Roslyn's inference runs for: typing a lambda of one asks for the inference of its other overloads, each typing the lambda again
+    private val roslynInferring = HashSet<PsiElement>()
     internal val queries = CSharpQueryTranslation(r)
 
     fun compute(e: CSharpExpression): SemanticType? {
@@ -285,6 +287,12 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
                 if (parameter.isParams && type is SemanticType.ArrayOf && argumentType !is SemanticType.ArrayOf) type = type.element ?: continue
                 unify(type, argumentType, fixed, owner)
             }
+            // Roslyn's inference (CSHARP_PSI_MIGRATION.md, D6b): the bounds of all arguments and the best type of them, the lambdas typed as
+            // their input types get fixed — what it fixes goes into [fixed] as it goes, which a lambda's parameters read meanwhile
+            if (withLambdas) roslynTypeArguments(symbol, call, callee, reduced, parameters, arguments, fixed)?.let { known ->
+                for (i in known.indices) fixed[i] = known[i]
+                return fixed.toList().also { if (r.cycleCount == cycles) inferred[key] = it }
+            }
             for ((lambda, parameter) in lambdas) {
                 if (!withLambdas) break
                 val delegate = parameter.type()?.let(::unwrapExpression) ?: continue
@@ -298,6 +306,43 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         } finally {
             inferring.remove(key)
         }
+    }
+
+    private val inference by lazy { CSharpTypeInference(r) }
+
+    /**
+     * The type arguments of [symbol] for [call] by Roslyn's method type inference, lenient (an argument of no known type gives nothing); null
+     * when it does not succeed — the simple inference of [typeArguments] answers then, as before.
+     */
+    private fun roslynTypeArguments(
+        symbol: CSharpSymbol, call: CSharpInvocationExpression, callee: CSharpSimpleName, reduced: Boolean, parameters: List<CSharpNameResolver.Parameter>,
+        arguments: List<CSharpArgument>, fixed: Array<SemanticType?>,
+    ): List<SemanticType>? {
+        // asked again from inside its own run (exponential in the overloads of nested lambdas): the simple inference answers
+        if (!roslynInferring.add(call)) return null
+        try {
+            return roslynTypeArgumentsOnce(symbol, call, callee, reduced, parameters, arguments, fixed)
+        } finally {
+            roslynInferring.remove(call)
+        }
+    }
+
+    private fun roslynTypeArgumentsOnce(
+        symbol: CSharpSymbol, call: CSharpInvocationExpression, callee: CSharpSimpleName, reduced: Boolean, parameters: List<CSharpNameResolver.Parameter>,
+        arguments: List<CSharpArgument>, fixed: Array<SemanticType?>,
+    ): List<SemanticType>? {
+        val targets = ArrayList<SemanticType?>()
+        for ((i, argument) in arguments.withIndex()) {
+            val parameter = parameterFor(parameters, arguments, i, if (reduced) 1 else 0) ?: return null
+            var type = parameter.type() ?: return null
+            val expression = argument.expression ?: return null
+            // the expanded `params` form: an argument that is not itself the array goes to its element
+            if (parameter.isParams && type is SemanticType.ArrayOf && expression !is CSharpAnonymousFunctionExpression && r.typeOf(expression) !is SemanticType.ArrayOf) type = type.element ?: return null
+            targets += type
+        }
+        val self = if (reduced) (receiver(callee) ?: return null) to parameters.firstOrNull()?.type?.invoke() else null
+        val result = inference.infer(symbol, targets, arguments, self, call, callee, lenient = true) { i, type -> if (i in fixed.indices) fixed[i] = type }
+        return (result as? CSharpTypeInference.Inferred.Known)?.types
     }
 
     /**
