@@ -10,6 +10,8 @@ import io.github.dotnetsupport.index.IndexedTypeKind
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.TypeKind
 import io.github.dotnetsupport.lang.semantic.CSharpNameResolver.Conversion
+import io.github.dotnetsupport.lang.semantic.roslyn.RoslynConversions
+import io.github.dotnetsupport.lang.semantic.roslyn.RoslynTypes
 import java.util.IdentityHashMap
 
 /**
@@ -26,6 +28,7 @@ import java.util.IdentityHashMap
  */
 internal class CSharpOverloads(private val r: CSharpNameResolver) {
     private val known = IdentityHashMap<Any, Boolean>()
+    private val roslynConversions by lazy { RoslynConversions(RoslynTypes(r)) { operators(it, withBases = false) } }
 
     // ---- identity
 
@@ -86,6 +89,9 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
     /** The implicit conversion from [from] to [to] (§10.2); [userDefined] false: the standard ones only (the operand of a user-defined one). */
     fun classify(from: SemanticType, to: SemanticType, userDefined: Boolean = true, depth: Int = 0): Conversion {
         if (depth > 8) return Conversion.UNKNOWN
+        // Roslyn's classification, ported (CSHARP_PSI_MIGRATION.md, D6d), proves a conversion; what it does not prove, the rules below decide
+        val proved = if (userDefined) roslynConversions.classifyImplicitConversionFromType(from, to) else roslynConversions.classifyStandardImplicitConversion(from, to)
+        if (proved != null) return if (proved == RoslynConversions.Kind.IDENTITY) Conversion.IDENTITY else Conversion.IMPLICIT
         when (same(from, to)) {
             true -> return Conversion.IDENTITY
             null -> if (from !is SemanticType.Parameter && to !is SemanticType.Parameter && r.definitionName(from) == r.definitionName(to)) return Conversion.IDENTITY
@@ -301,7 +307,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
      * The implicit operators of [type] and of its base classes (§10.5.4): `implicit operator TpmHandle(SessionBase s)` converts an `AuthSession :
      * SessionBase` too (CS1503 on `ContainsKey(session)` of a live project, 0.1.185); [depth] stops a cycle of bases the compiler reports.
      */
-    private fun operators(type: SemanticType, depth: Int = 0): List<Pair<SemanticType?, SemanticType?>>? = if (depth > 16) null else when (type) {
+    internal fun operators(type: SemanticType, depth: Int = 0, withBases: Boolean = true): List<Pair<SemanticType?, SemanticType?>>? = if (depth > 16) null else when (type) {
         is SemanticType.Library -> r.membersNamed(type, "op_Implicit", 0).mapNotNull { symbol ->
             // the index marks operators OPERATOR, not METHOD: `isMethod` alone dropped every library conversion (`string` →
             // `ReadOnlySpan<char>`, `T[]` → `ReadOnlyMemory<T>`, `string` → `PathString`) and CS1503 followed (Jellyfin, 0.1.166)
@@ -320,8 +326,8 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
                     found += r.substitute(operand, type) to r.substitute(op.type?.let(resolver::resolveType), type)
                 }
             }
-            for (base in r.libraryBases(type)) found += operators(base, depth + 1) ?: return null
-            for (base in r.baseTypes(type)) if (base is SemanticType.Source && !isInterface(base) && base.info.key != type.info.key) found += operators(base, depth + 1) ?: return null
+            if (withBases) for (base in r.libraryBases(type)) found += operators(base, depth + 1) ?: return null
+            if (withBases) for (base in r.baseTypes(type)) if (base is SemanticType.Source && !isInterface(base) && base.info.key != type.info.key) found += operators(base, depth + 1) ?: return null
             found
         }
         is SemanticType.ArrayOf -> emptyList()
@@ -1500,7 +1506,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         )
 
         /** C# §10.2.3, the implicit numeric conversions (`nint` / `nuint` included). */
-        private val NUMERIC: Map<String, Set<String>> = run {
+        internal val NUMERIC: Map<String, Set<String>> = run {
             fun s(vararg names: String) = names.map { "System.$it" }.toSet()
             mapOf(
                 "System.SByte" to s("Int16", "Int32", "Int64", "Single", "Double", "Decimal", "IntPtr"),

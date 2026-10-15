@@ -177,6 +177,9 @@ internal class RoslynTypes(private val r: CSharpNameResolver) {
         return found
     }
 
+    /** The type constraints of a type parameter (`ConstraintTypes`), as resolved; may miss one that does not resolve. */
+    fun constraintTypes(type: SemanticType.Parameter): List<SemanticType> = r.constraintsOf(type)
+
     /** Whether every base type and interface of [type] resolves, all the way up: what it does not derive from, it surely does not. */
     fun isClosed(type: SemanticType): Boolean = r.overloads.closed(type)
 

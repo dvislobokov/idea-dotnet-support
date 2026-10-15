@@ -341,8 +341,13 @@
   Сначала заменяет строгий `CSharpTypeInference.infer`, затем мягкий `typeArguments`. Гейт: `semanticGate` не хуже, харнесс корпуса
   Razor, `RazorCorpusFalseErrorsTest`, `CompilerMessagesCoverageTest` — без новых `extra`.
 - [ ] D6c. `OverloadResolution.cs` (better function member, better conversion from expression, tie-breaks) — эвристики выбора уходят.
-- [ ] D6d. `ConversionsBase.cs` + `UserDefinedImplicitConversions.cs` — классификация преобразований (`T` → `T?`, пользовательские
-  преобразования generic-структур).
+- [x] D6d (0.1.189; тест `RoslynConversionsTest`). `ConversionsBase.cs` + `UserDefinedImplicitConversions.cs` → `RoslynConversions`:
+  неявные преобразования из типа (тождество, числовые, nullable, ссылочные с вариантностью, массивы, делегаты, параметры типа,
+  упаковка, кортежи, span) и пользовательские (множество D, применимые и lifted-операторы, самые подходящие исходный и целевой типы,
+  самый подходящий оператор). Только доказывает: `CSharpOverloads.classify` спрашивает его первым, при «не доказано» решают прежние
+  правила — так недостающий факт о типе не даёт ложной ошибки. Старый `classify`, увидев параметр типа, сразу уходил в свою ветку и не
+  смотрел ни nullable, ни операторы: MudBlazor 17 → 7. Не перенесено: nullability, `dynamic`, указатели, function types,
+  `allows ref struct`, union-преобразования, преобразования из выражений.
 
 **Сквозное:** шаг 0 — исходные замеры (время до первой подсказки, память) сейчас и после каждой вехи, `tools/ui-robot/baseline.py`.
 

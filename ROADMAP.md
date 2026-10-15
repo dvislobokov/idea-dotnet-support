@@ -703,7 +703,8 @@
   - [ ] R0b — ложные ошибки ядра, найденные на корпусе Razor; первая часть вышла в 0.1.187 (группа методов из локальной функции, `@` в
     именах, `using static` вложенных типов, `join … into`, nullable-преобразования, срез по `Range`, база partial-типа из другой части,
     `a?.M()` в void-лямбде, `Func<Task<T>>`, тип собранного проекта = тип его исходников; вывод типов Roslyn для ошибок — D6a / D6b
-    `CSHARP_PSI_MIGRATION.md`); 0.1.188 — тип generic-вызова по выводу Roslyn (D6b, вторая половина). Тесты `RazorCorpusFalseErrorsTest`, `RoslynTypesTest`, `RoslynMethodTypeInferenceTest`
+    `CSHARP_PSI_MIGRATION.md`); 0.1.188 — тип generic-вызова по выводу Roslyn (D6b, вторая половина); 0.1.189 — неявные
+    преобразования по классификации Roslyn (D6d, MudBlazor 17 → 7) Тесты `RazorCorpusFalseErrorsTest`, `RoslynTypesTest`, `RoslynMethodTypeInferenceTest`
   - [x] F0 (2026-10-15, без версии: пользователю не видно) — фреймворки модулями рядом с ядром C#: точка расширения `csharpCodeGenerators`, модули `frameworks.razor` / `xaml` / `avalonia` / `grpc` вместо списков в `mayGenerateTypes`; тесты `CSharpCodeGeneratorsTest` (старая формула против новой), `FrameworkBoundaryTest`
 
 ### Помощники на .NET, работающие постоянно (план 2026-10-03)

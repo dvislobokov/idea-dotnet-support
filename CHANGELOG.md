@@ -3,6 +3,14 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.189
+
+- Implicit conversions are classified as the C# compiler does (Roslyn's conversions, ported): no false "cannot convert" where a type
+  parameter goes to its `Nullable` (`T` to `T?` with `where T : struct`), to a type with a user-defined `implicit operator`
+  (`T` to `NullableObject<T>`, `double?` to `ChartData<double>`), or from such a type to a type parameter. On MudBlazor the errors in
+  `.cs` went from 17 to 7.
+- What this classification does not prove, the previous rules decide: a real error stays an error.
+
 ## 0.1.188
 
 - The type of a generic call is inferred as the C# compiler does (Roslyn's method type inference, ported): the best type of all the
