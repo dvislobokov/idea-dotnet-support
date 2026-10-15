@@ -109,6 +109,27 @@ class RoslynConversionsTest : BasePlatformTestCase() {
         """))
     }
 
+    /** A type parameter constrained by `class` is a reference type: `List<T>` goes to `IEnumerable<object>` by variance; without the constraint it does not (CS1503). */
+    fun testAClassConstrainedTypeParameterIsAReferenceType() {
+        assertEmpty(errors("""
+            using System.Collections.Generic;
+            class C
+            {
+                static void Take(IEnumerable<object> items) { }
+                static void M<T>(List<T> items) where T : class => Take(items);
+            }
+        """))
+        val found = errors("""
+            using System.Collections.Generic;
+            class Unconstrained
+            {
+                static void Take(IEnumerable<object> items) { }
+                static void M<T>(List<T> items) => Take(items);
+            }
+        """)
+        assertEquals(found.toString(), listOf("CS1503"), found.map { it.substringAfter(" -> ").substringBefore(':') })
+    }
+
     fun testNoConversionIsStillAnError() {
         val found = errors("""
             class ChartData<T> where T : struct

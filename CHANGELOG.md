@@ -3,6 +3,14 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.194
+
+- The rules that decided implicit conversions before the ported Roslyn ones are gone (213 lines): the port proves every conversion between
+  known types; what is left answers only "not known" (an open type parameter of the method being resolved, a type whose arguments are
+  not known) or "none" (both types fully known). The debug log of the analysis showed those rules deciding nothing else. A type
+  parameter constrained by `class` or by a class is a reference type to the port: `List<T>` to `IEnumerable<object>` with
+  `where T : class` converts.
+
 ## 0.1.193
 
 - A type declared in the sources of a project this project does not reference (directly or through another) is not seen, as the compiler

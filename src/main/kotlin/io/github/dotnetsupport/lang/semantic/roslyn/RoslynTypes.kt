@@ -39,8 +39,17 @@ internal class RoslynTypes(private val r: CSharpNameResolver) {
         }
     }
 
-    /** `IsReferenceType`; null for a type parameter whose constraints do not say. */
-    fun isReferenceType(type: SemanticType): Boolean? = r.overloads.isReference(type)
+    /** `IsReferenceType`: a type parameter by `class` or a class among its constraints; null for one whose constraints do not say. */
+    fun isReferenceType(type: SemanticType): Boolean? = when (type) {
+        is SemanticType.Parameter -> when {
+            r.isValueType(type) -> false
+            r.hasClassConstraint(type) -> true
+            // `ValueType` and `Enum` are classes a struct or an enum satisfies: they say nothing
+            r.constraintsOf(type).any { isClassType(it) && definitionName(it) != VALUE_TYPE && definitionName(it) != ENUM } -> true
+            else -> null
+        }
+        else -> r.overloads.isReference(type)
+    }
 
     /** `IsValueType`; null for a type parameter whose constraints do not say. */
     fun isValueType(type: SemanticType): Boolean? = when (type) {
@@ -209,6 +218,7 @@ internal class RoslynTypes(private val r: CSharpNameResolver) {
     companion object {
         const val OBJECT = "System.Object"
         const val VALUE_TYPE = "System.ValueType"
+        const val ENUM = "System.Enum"
         const val ARRAY = "System.Array"
         const val VOID = "System.Void"
         const val VALUE_TUPLE = "System.ValueTuple`"

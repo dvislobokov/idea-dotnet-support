@@ -92,7 +92,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         // Roslyn's classification, ported (CSHARP_PSI_MIGRATION.md, D6d), proves a conversion; what it does not prove, the rules below decide
         val proved = if (userDefined) roslynConversions.classifyImplicitConversionFromType(from, to) else roslynConversions.classifyStandardImplicitConversion(from, to)
         if (proved != null) return if (proved == RoslynConversions.Kind.IDENTITY) Conversion.IDENTITY else Conversion.IMPLICIT
-        val answer = classifyUnproved(from, to, userDefined, depth)
+        val answer = classifyUnproved(from, to)
         // the log of the analysis: a conversion the port left to the old rules and they found (the port's gap, D6e3) or could not tell; NONE
         // is a decision both agree on (no conversion) — not logged
         if (depth == 0 && answer != Conversion.NONE && SemanticTrace.enabled && tracedConversions.add(Triple(from.toString(), to.toString(), userDefined))) {
@@ -103,58 +103,33 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
 
     private val tracedConversions = HashSet<Triple<String, String, Boolean>>()
 
-    /** The rules before the port ([RoslynConversions]): what they still decide the port does not prove yet. */
-    private fun classifyUnproved(from: SemanticType, to: SemanticType, userDefined: Boolean, depth: Int): Conversion {
+    /**
+     * What the port ([RoslynConversions]) does not prove (D6e3: the rules that proved conversions are gone, the port proves them — the log
+     * showed them deciding only questions with an open type parameter, which Roslyn never asks). An open type parameter of a method being
+     * resolved: not known (the old pickers ask before inference); two instances of one definition whose arguments are not all known:
+     * identity, leniently; a type parameter of the enclosing code: by its constraints, NONE only where they all resolve; else NONE only
+     * where both types are fully known.
+     */
+    private fun classifyUnproved(from: SemanticType, to: SemanticType): Conversion {
         when (same(from, to)) {
             true -> return Conversion.IDENTITY
             null -> if (from !is SemanticType.Parameter && to !is SemanticType.Parameter && r.definitionName(from) == r.definitionName(to)) return Conversion.IDENTITY
             false -> {}
         }
-        if (from is SemanticType.Parameter || to is SemanticType.Parameter) return parameter(from, to, depth)
-        val fn = r.definitionName(from)
-        val tn = r.definitionName(to)
-        if (tn == OBJECT) return Conversion.IMPLICIT
-        if (fn != null && fn == tn && fn.startsWith(VALUE_TUPLE)) tuple(from, to, userDefined, depth)?.let { return it }
-        // `int?` to `decimal?` is the conversion of what they hold (§10.6.1), not one of the same generic definition
-        if (fn != null && fn == tn && fn != NULLABLE) return sameDefinition(from, to, depth)
-        if (tn == NULLABLE) {
-            val inner = (to as SemanticType.Library).arguments.firstOrNull() ?: return Conversion.UNKNOWN
-            val core = if (fn == NULLABLE) (from as SemanticType.Library).arguments.firstOrNull() ?: return Conversion.UNKNOWN else from
-            return when (classify(core, inner, userDefined, depth + 1)) {
-                Conversion.IDENTITY, Conversion.IMPLICIT -> Conversion.IMPLICIT
-                Conversion.NONE -> Conversion.NONE
-                Conversion.UNKNOWN -> Conversion.UNKNOWN
-            }
+        if (to is SemanticType.Parameter) {
+            if (to.ofMethod && (to.owner == null || isCandidateParameter(to))) return Conversion.UNKNOWN
+            // nothing converts to a type parameter but itself and what depends on it (`where T : U`), which the port proves
+            if (from is SemanticType.Parameter) return if (constraintsKnown(from)) Conversion.NONE else Conversion.UNKNOWN
+            return if (to.owner != null && closed(from)) Conversion.NONE else Conversion.UNKNOWN
         }
-        if (fn == NULLABLE) {
-            val core = (from as SemanticType.Library).arguments.firstOrNull() ?: return Conversion.UNKNOWN
-            if (tn == VALUE_TYPE) return Conversion.IMPLICIT
-            if (isInterface(to)) return classify(core, to, false, depth + 1).let { if (it == Conversion.IDENTITY) Conversion.IMPLICIT else it }
-            return if (closed(core) && closed(to)) Conversion.NONE else Conversion.UNKNOWN
-        }
-        if (fn != null && tn != null) NUMERIC[fn]?.let { if (tn in it) return Conversion.IMPLICIT }
-        supertype(from, to, depth)?.let { return it }
-        if (fn in PRIMITIVES && tn in PRIMITIVES) return Conversion.NONE
-        if (userDefined) when (userConversion(from, to, depth)) {
-            true -> return Conversion.IMPLICIT
-            null -> return Conversion.UNKNOWN
-            false -> {}
+        if (from is SemanticType.Parameter) {
+            if (from.ofMethod && (from.owner == null || isCandidateParameter(from))) return Conversion.UNKNOWN
+            return if (from.owner != null && constraintsKnown(from) && closed(to)) Conversion.NONE else Conversion.UNKNOWN
         }
         return if (closed(from) && closed(to)) Conversion.NONE else Conversion.UNKNOWN
     }
 
     private fun ok(c: Conversion) = c == Conversion.IDENTITY || c == Conversion.IMPLICIT
-
-    /**
-     * An implicit tuple conversion (§10.2.13): one tuple type to another of the same arity, element by element (`(Item, List<string>)` to
-     * `(Item It, IEnumerable<string> Keys)`); the names of the elements do not matter. Null when [from] or [to] is no tuple instance.
-     */
-    private fun tuple(from: SemanticType, to: SemanticType, userDefined: Boolean, depth: Int): Conversion? {
-        val a = (from as? SemanticType.Library)?.arguments ?: return null
-        val b = (to as? SemanticType.Library)?.arguments ?: return null
-        if (a.size != b.size) return null
-        return combine(a.indices.map { i -> classify(a[i] ?: return Conversion.UNKNOWN, b[i] ?: return Conversion.UNKNOWN, userDefined, depth + 1) })
-    }
 
     /** The conversion of a tuple from those of its elements: NONE if any is none, UNKNOWN if any is not known, IDENTITY if all are. */
     private fun combine(elements: List<Conversion>): Conversion = when {
@@ -162,128 +137,6 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         elements.any { it == Conversion.UNKNOWN } -> Conversion.UNKNOWN
         elements.all { it == Conversion.IDENTITY } -> Conversion.IDENTITY
         else -> Conversion.IMPLICIT
-    }
-
-    /** Two instances of one generic definition (or two arrays): identity, variance, array covariance. */
-    private fun sameDefinition(from: SemanticType, to: SemanticType, depth: Int): Conversion {
-        if (from is SemanticType.ArrayOf && to is SemanticType.ArrayOf) {
-            if (from.rank != to.rank) return Conversion.NONE
-            val a = from.element ?: return Conversion.IDENTITY
-            val b = to.element ?: return Conversion.IDENTITY
-            if (same(a, b) == true) return Conversion.IDENTITY
-            return when (isReference(a)) {
-                true -> classify(a, b, false, depth + 1).let { if (ok(it)) Conversion.IMPLICIT else it }
-                false -> if (closed(a) && closed(b)) Conversion.NONE else Conversion.UNKNOWN
-                null -> Conversion.UNKNOWN
-            }
-        }
-        if (same(from, to) == null) return Conversion.IDENTITY
-        return variance(from, to, depth) ?: Conversion.NONE
-    }
-
-    /** `IEnumerable<string>` to `IEnumerable<object>`: the variant type parameters of a library interface or delegate. */
-    private fun variance(from: SemanticType, to: SemanticType, depth: Int): Conversion? {
-        if (from !is SemanticType.Library || to !is SemanticType.Library || from.type.fullName != to.type.fullName) return null
-        val parameters = to.type.typeParameters
-        if (parameters.size != to.arguments.size || from.arguments.size != to.arguments.size) return null
-        for ((i, p) in parameters.withIndex()) {
-            val a = from.arguments[i] ?: return Conversion.UNKNOWN
-            val b = to.arguments[i] ?: return Conversion.UNKNOWN
-            when (same(a, b)) {
-                true -> continue
-                null -> return Conversion.UNKNOWN
-                false -> {}
-            }
-            val fits = when {
-                p.isCovariant -> when (variantReference(a)) { true -> ok(classify(a, b, false, depth + 1)); false -> false; null -> return Conversion.UNKNOWN }
-                p.isContravariant -> when (variantReference(b)) { true -> ok(classify(b, a, false, depth + 1)); false -> false; null -> return Conversion.UNKNOWN }
-                else -> false
-            }
-            if (!fits) return null
-        }
-        return Conversion.IMPLICIT
-    }
-
-    /** A reference or boxing conversion: [to] among the base types and interfaces of [from]; null when it is not there. */
-    private fun supertype(from: SemanticType, to: SemanticType, depth: Int): Conversion? {
-        if (to is SemanticType.Library && to.arguments.isNotEmpty()) {
-            // every instance of the definition among the supertypes: `string` is `IEnumerable<char>`, not `IEnumerable<string>`
-            val instances = instances(from, to.type.fullName, 0) ?: return null
-            if (instances.isEmpty()) return null
-            var unknown = false
-            for (instance in instances) {
-                when (same(instance, to)) {
-                    true -> return Conversion.IMPLICIT
-                    null -> unknown = true
-                    false -> when (variance(instance, to, depth)) {
-                        Conversion.IMPLICIT -> return Conversion.IMPLICIT
-                        Conversion.UNKNOWN -> unknown = true
-                        else -> {}
-                    }
-                }
-            }
-            return if (unknown || !closed(from)) Conversion.UNKNOWN else Conversion.NONE
-        }
-        val instance: SemanticType = when (to) {
-            is SemanticType.Library -> r.expressions.instanceOf(from, to.type.fullName)
-            // a type of the built project derives from its own built base ([builtFrom])
-            is SemanticType.Source -> sourceInstance(from, to.info.key, 0)
-                ?: (from as? SemanticType.Library)?.let { r.expressions.instanceOf(it, to.info.qualifiedName + if (to.info.arity > 0) "`${to.info.arity}" else "") }
-            else -> null
-        } ?: return null
-        val arguments = (to as? SemanticType.Library)?.arguments ?: (to as SemanticType.Source).arguments
-        if (arguments.isEmpty()) return Conversion.IMPLICIT
-        return when (same(instance, to)) {
-            true, null -> Conversion.IMPLICIT
-            // a type may implement an interface twice, with other arguments: only variance says yes here
-            false -> variance(instance, to, depth)?.takeIf { it == Conversion.IMPLICIT } ?: Conversion.UNKNOWN
-        }
-    }
-
-    /** The instances of the generic library type [definition] that [type] is or derives from; null when they cannot be listed. */
-    private fun instances(type: SemanticType, definition: String, depth: Int): List<SemanticType.Library>? {
-        if (depth > 16) return null
-        return when (type) {
-            is SemanticType.Library -> {
-                if (type.type.fullName == definition) return listOf(type)
-                val assemblies = r.assemblies
-                (r.session.baseTypes(assemblies, type.type) + r.session.interfaces(assemblies, type.type)).filter { it.type.fullName == definition }
-                    .map { SemanticType.Library(it.type, it.arguments.map { a -> r.fromRef(a, type.arguments) }) }
-            }
-            is SemanticType.Source -> r.baseTypes(type).flatMap { instances(it, definition, depth + 1) ?: return null }.distinctBy { it.toString() }
-            is SemanticType.ArrayOf -> listOfNotNull(r.expressions.instanceOf(type, definition))
-            is SemanticType.Parameter -> r.constraintsOf(type).flatMap { instances(it, definition, depth + 1) ?: return null }
-        }
-    }
-
-    private fun sourceInstance(type: SemanticType, key: String, depth: Int): SemanticType.Source? {
-        if (depth > 16) return null
-        return when (type) {
-            is SemanticType.Source -> if (type.info.key == key) type else r.baseTypes(type).firstNotNullOfOrNull { sourceInstance(it, key, depth + 1) }
-            is SemanticType.Parameter -> r.constraintsOf(type).firstNotNullOfOrNull { sourceInstance(it, key, depth + 1) }
-            else -> null
-        }
-    }
-
-    /** Conversions where a type parameter is involved: by its constraints; NONE only when they are all known. */
-    private fun parameter(from: SemanticType, to: SemanticType, depth: Int): Conversion {
-        if (to is SemanticType.Parameter) {
-            if (to.ofMethod && (to.owner == null || isCandidateParameter(to))) return Conversion.UNKNOWN
-            if (from is SemanticType.Parameter) {
-                // `where T : U`: T converts to U
-                for (constraint in r.constraintsOf(from)) if (ok(classify(constraint, to, false, depth + 1))) return Conversion.IMPLICIT
-                return if (constraintsKnown(from)) Conversion.NONE else Conversion.UNKNOWN
-            }
-            // nothing converts to a type parameter but itself (and `null` / `default`, which are expressions)
-            return if (to.owner != null && closed(from)) Conversion.NONE else Conversion.UNKNOWN
-        }
-        val p = from as SemanticType.Parameter
-        if (p.ofMethod && (p.owner == null || isCandidateParameter(p))) return Conversion.UNKNOWN
-        val tn = r.definitionName(to)
-        if (tn == OBJECT) return Conversion.IMPLICIT
-        if (tn == VALUE_TYPE && r.isValueType(p)) return Conversion.IMPLICIT
-        for (constraint in r.constraintsOf(p)) if (ok(classify(constraint, to, false, depth + 1))) return Conversion.IMPLICIT
-        return if (p.owner != null && constraintsKnown(p) && closed(to)) Conversion.NONE else Conversion.UNKNOWN
     }
 
     /** Whether every constraint of [parameter] written as a type resolves. */
@@ -300,22 +153,6 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         return clause.constraints.filterIsInstance<CSharpTypeConstraint>().size == r.constraintsOf(parameter).size
     }
 
-    /** A user-defined implicit operator of [from] or [to] whose operand takes [from] and whose result goes to [to]; null when not known. */
-    private fun userConversion(from: SemanticType, to: SemanticType, depth: Int): Boolean? {
-        val operators = (operators(from) ?: return null) + (operators(to) ?: return null) +
-            ((to as? SemanticType.Library)?.takeIf { it.type.fullName == NULLABLE }?.arguments?.firstOrNull()?.let { operators(it) ?: return null }.orEmpty())
-        var unknown = false
-        for ((operand, result) in operators) {
-            if (operand == null || result == null) { unknown = true; continue }
-            val into = classify(from, operand, false, depth + 1)
-            val out = classify(result, to, false, depth + 1)
-            if (ok(into) && ok(out)) return true
-            if (into == Conversion.UNKNOWN && out != Conversion.NONE || out == Conversion.UNKNOWN && into != Conversion.NONE) unknown = true
-        }
-        return if (unknown) null else false
-    }
-
-    /** The implicit operators declared by [type] and its base types (operand, result); null when they cannot be known. */
     /**
      * The implicit operators of [type] and of its base classes (§10.5.4): `implicit operator TpmHandle(SessionBase s)` converts an `AuthSession :
      * SessionBase` too (CS1503 on `ContainsKey(session)` of a live project, 0.1.185); [depth] stops a cycle of bases the compiler reports.
@@ -359,30 +196,6 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         is SemanticType.Library -> type.type.kind != IndexedTypeKind.STRUCT && type.type.kind != IndexedTypeKind.ENUM
         is SemanticType.Source -> type.info.kind?.let { it != TypeKind.STRUCT && it != TypeKind.RECORD_STRUCT && it != TypeKind.ENUM }
         is SemanticType.Parameter -> if (r.isValueType(type)) false else null
-    }
-
-    /**
-     * Whether a type argument may vary (§18.2.3.3: a reference type only). A type parameter is one by `class` or a class among its constraints
-     * (`IList<T>` to `IEnumerable<object>` with `where T : class`, EFCore.BulkExtensions — CS1503 was ours alone, 0.1.179); one whose
-     * constraints all resolve and say neither is not (Roslyn's CS1503 for an unconstrained `T`); else not known. Through another type
-     * parameter only its constraint types count, not its `class` (`where T : U where U : class` is CS1503 to Roslyn).
-     */
-    private fun variantReference(type: SemanticType, depth: Int = 0, byClass: Boolean = true): Boolean? {
-        if (type !is SemanticType.Parameter) return isReference(type)
-        if (r.isValueType(type)) return false
-        if (byClass && r.hasClassConstraint(type)) return true
-        if (type.owner == null || !constraintsKnown(type) || depth > 8) return null
-        for (constraint in r.constraintsOf(type)) {
-            val reference = when (constraint) {
-                is SemanticType.Parameter -> variantReference(constraint, depth + 1, byClass = false) ?: return null
-                // `where T : Enum` / `ValueType`: an enum or a struct may come, not a reference type yet
-                is SemanticType.Library -> constraint.type.kind == IndexedTypeKind.CLASS && constraint.type.fullName != VALUE_TYPE && constraint.type.fullName != "System.Enum"
-                is SemanticType.Source -> constraint.info.kind == TypeKind.CLASS || constraint.info.kind == TypeKind.RECORD
-                is SemanticType.ArrayOf -> false
-            }
-            if (reference) return true
-        }
-        return false
     }
 
     /** A type whose base types and interfaces all resolve, all the way up: what it does not convert to, it surely does not. */
@@ -1080,8 +893,6 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
             strict = wasStrict
         }
     }
-
-    internal fun instancesOf(type: SemanticType, definition: String): List<SemanticType.Library>? = instances(type, definition, 0)
 
     /**
      * The one candidate of [candidates] a call with [arguments] calls, or null when that cannot be told surely. [reduced]: extension methods
