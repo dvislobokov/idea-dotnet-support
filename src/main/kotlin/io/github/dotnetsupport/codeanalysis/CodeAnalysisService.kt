@@ -207,7 +207,7 @@ class CodeAnalysisService(private val project: Project) : Disposable {
         val files = if (fromHelper.isNotEmpty()) fromHelper.map { BuildGeneratedSources.classify(it, inputs) } else {
             val options = ReadAction.compute<io.github.dotnetsupport.msbuild.CompilationOptions, RuntimeException> { CompilationModel.getInstance(project).options(projectFile) }
             val objFiles = ArrayList<String>()
-            directory.findChild("obj")?.let { obj ->
+            io.github.dotnetsupport.msbuild.ProjectLayout.intermediate(projectFile)?.let { obj ->
                 com.intellij.openapi.vfs.VfsUtilCore.visitChildrenRecursively(obj, object : com.intellij.openapi.vfs.VirtualFileVisitor<Unit>(com.intellij.openapi.vfs.VirtualFileVisitor.limit(5)) {
                     override fun visitFile(file: VirtualFile): Boolean {
                         if (!file.isDirectory && file.extension.equals("cs", ignoreCase = true)) objFiles += file.path
@@ -255,17 +255,28 @@ class CodeAnalysisService(private val project: Project) : Disposable {
         val projectPath = if (file.fileType != CSharpFileType) projectOfGeneratorInput(file.path)?.path ?: return
             else projectOfFile.getOrPut(key(file.path)) { CompilationModel.getInstance(project).projectOf(file)?.path.orEmpty() }
         if (projectPath.isEmpty()) return
+        val state = generated[key(projectPath)]
+        // a C# edit changes nothing of what generators reading the additional files only made (Razor): still fresh, errors go on
+        if (file.fileType == CSharpFileType && state != null && !generatorsReadCSharp(state)) return
         lastEdit[key(projectPath)] = System.nanoTime()
-        generated[key(projectPath)]?.let { if (!it.stale) { it.stale = true; modificationTracker.incModificationCount() } }
+        state?.let { if (!it.stale) { it.stale = true; modificationTracker.incModificationCount() } }
+    }
+
+    /** Whether an edit of a C# file of the project may change what its generators made: some generator of the last run reads the C#. */
+    private fun generatorsReadCSharp(state: GeneratedState): Boolean {
+        val modules = io.github.dotnetsupport.lang.semantic.CSharpCodeGenerators.EP_NAME.extensionList
+        return state.run.generators.any { name -> modules.none { it.readsOnlyAdditionalFiles(name) } }
     }
 
     /** Whether [projectFile] has a C# document edited after [since] (nanoTime) or not saved: then the files just made may not fit it. */
     private fun editedSince(projectFile: VirtualFile, since: Long): Boolean {
         if ((lastEdit[key(projectFile.path)] ?: Long.MIN_VALUE) > since) return true
         val unsaved = FileDocumentManager.getInstance().unsavedDocuments.mapNotNull { FileDocumentManager.getInstance().getFile(it) }
-        val inputs = generated[key(projectFile.path)]?.inputs.orEmpty()
+        val state = generated[key(projectFile.path)]
+        val inputs = state?.inputs.orEmpty()
+        val csharpCounts = state == null || generatorsReadCSharp(state)
         return unsaved.any { file ->
-            if (file.fileType == CSharpFileType) projectOfFile[key(file.path)]?.equals(projectFile.path, ignoreCase = true) == true else key(file.path) in inputs
+            if (file.fileType == CSharpFileType) csharpCounts && projectOfFile[key(file.path)]?.equals(projectFile.path, ignoreCase = true) == true else key(file.path) in inputs
         }
     }
 

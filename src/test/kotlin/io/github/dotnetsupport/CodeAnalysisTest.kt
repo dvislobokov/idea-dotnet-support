@@ -128,9 +128,21 @@ class CodeAnalysisTest : BasePlatformTestCase() {
             assertNull(service.projectOfGeneratorInput(projectFile.path))
             assertEquals(setOf("Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator"), service.generators(projectFile))
             assertFalse(service.generatedState(projectFile)!!.stale)
+            // typing in a .cs of the project: Razor's generator reads no C#, what it made stays fresh and the errors go on (0.1.198)
+            val codeBehindIo = java.io.File(folder, "Pages/Counter.razor.cs").apply { writeText("partial class Counter { }") }
+            val codeBehind = lfs.refreshAndFindFileByIoFile(codeBehindIo)!!
+            service.documentChanged(codeBehind)
+            assertFalse("a C# edit with Razor's generator only", service.generatedState(projectFile)!!.stale)
+            assertTrue(service.isGeneratedFresh(projectFile))
             service.documentChanged(razor)
             assertTrue("typing in the .razor: what the generators made of it is stale until the next save", service.generatedState(projectFile)!!.stale)
             assertFalse(service.isGeneratedFresh(projectFile))
+            // a generator that reads the C# (the JSON one) beside Razor's: a C# edit makes what they made stale
+            service.putGeneratedForTests(projectFile.path, run.copy(files = listOf(made), additionalFiles = listOf(razor.path),
+                generators = run.generators + "System.Text.Json.SourceGeneration.JsonSourceGenerator"))
+            assertFalse(service.generatedState(projectFile)!!.stale)
+            service.documentChanged(codeBehind)
+            assertTrue("a C# edit with a generator reading the C#", service.generatedState(projectFile)!!.stale)
         } finally {
             service.putGeneratedForTests(projectFile.path, null)
         }

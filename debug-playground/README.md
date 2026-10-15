@@ -173,9 +173,12 @@ Solution для живой проверки плагина: отладчика (
       `Step`, `CountChanged`
 - [ ] `TYPE:razor-edit-regenerates`: в `Counter.razor` добавить `[Parameter] public int Max { get; set; }`, Ctrl+S → через пару секунд
       `nameof(Counter.` предлагает `Max`, Ctrl+B ведёт в `Counter_razor.g.cs`
-- [ ] `TYPE:razor-errors-after-generation` (0.1.196, R0b): после того как генератор отработал, `nameof(Counter.Nope)` — красный CS0117,
-      `UndefinedThing();` — красный CS0103, как в Console; сразу после открытия решения (до генератора) — не красные. В журнале анализа
-      (.NET → Plugin Logs, категория `semantic`) строк по ним нет — это решения, не отказы
+- [ ] `TYPE:razor-errors-after-generation` (0.1.196, R0b; свежесть при наборе — 0.1.198): после того как генератор отработал (дерево:
+      Dependencies → .NET 9.0 → Analyzers → Microsoft.CodeAnalysis.Razor.Compiler → RazorSourceGenerator), набрать
+      `public static object Probe = Counter.Nope + UndefinedThing();` — без сохранения `Nope` красный CS0117, `UndefinedThing` красный CS0103,
+      как та же строка в `Lib/Pricing.cs`; сразу после открытия решения (до генератора) — не красные. В журнале анализа (.NET → Plugin
+      Logs, категория `semantic`) строк по ним нет — это решения, не отказы. Робот в WSL на 0.1.196: генератор за 4 с, дерево и Ctrl+B
+      работают, ошибок не было — несохранённая правка `.cs` делала проект «несвежим» (исправлено в 0.1.198)
 
 ## Solution view
 

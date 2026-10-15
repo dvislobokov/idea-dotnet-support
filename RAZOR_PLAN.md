@@ -126,8 +126,13 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
   свежий (как XAML в 0.1.82). Гейт: `SolutionDiagnosticsHarnessTest` на MudBlazor, nopCommerce, eShop — 0 ошибок в `.cs` (все три
   собираются). Польза сама по себе: правильные ошибки и completion в `.cs` веб-проектов, ещё без редактора Razor.
 - [x] **R0b (0.1.187–0.1.195; `errorsAfterGeneration = true` — 0.1.196, ошибки Razor-проектов включены). Ложные ошибки ядра, найденные на
-  корпусе Razor** — на корпусе осталась одна (MudBlazor, явный член интерфейса по умолчанию `INumber<T>` — индексатор); вживую в IDE
-  включение не проверено (пункт 5). Это правки ядра C# (`lang/semantic`),
+  корпусе Razor** — на корпусе осталась одна (MudBlazor, явный член интерфейса по умолчанию `INumber<T>` — индексатор). Вживую (робот в
+  WSL, 0.1.196): генератор отрабатывает за 4 с после открытия файла, дерево и Ctrl+B работают, но ошибок не было — любая несохранённая
+  правка `.cs` делала проект «несвежим» (`CodeAnalysisService.documentChanged`/`editedSince`), и семантика молчала всё время набора.
+  Исправлено в 0.1.198: `CSharpCodeGenerators.readsOnlyAdditionalFiles` — генератор Razor читает только `.razor`/`.cshtml`, правка `.cs`
+  свежести не меняет (что он берёт из C# — `[Parameter]` code-behind для разметки другого компонента — подтянется при следующем
+  сохранении `.razor` или сборке). Заодно пробел ядра: `nameof(X.Missing)` в инициализаторе поля не даёт CS0117 (Roslyn даёт) — в корпус
+  `compiler-messages`. Это правки ядра C# (`lang/semantic`),
   по одному классу ошибок с примером в корпусе `CompilerMessagesCoverageTest`. Найдено (харнесс, 2026-10-15):
   - группа методов как делегат: `Inject(..., InjectTraceContextIntoBasicProperties)` (локальная функция, параметр `IBasicProperties` к
     `Action<BasicProperties, …>`), `TrackingAction` / `Invoke` → `Func<Task>` — CS1503 «cannot convert from 'Task' / 'void'» (больше 100);

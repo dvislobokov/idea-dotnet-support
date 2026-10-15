@@ -14,6 +14,13 @@ class RazorCodeGenerators : CSharpCodeGenerators {
         !(errorsAfterGeneration && project.ranGenerator(GENERATOR)) &&
             (project.sdkContains("Razor") || project.sdkContains("Blazor") || project.hasFiles("razor") || project.hasFiles("cshtml"))
 
+    /**
+     * Razor's generator makes its classes of the `.razor` / `.cshtml` files: an edit of a `.cs` does not change them, so the project keeps
+     * reporting errors while one is typed (the live check of 0.1.196 found it silent). What it takes from the C# — a `[Parameter]` of a
+     * code-behind for the markup of another component — follows at the next save of a `.razor` or a build.
+     */
+    override fun readsOnlyAdditionalFiles(generatorTypeName: String): Boolean = generatorTypeName == GENERATOR
+
     companion object {
         /** In `Sdks/Microsoft.NET.Sdk.Razor/source-generators/Microsoft.CodeAnalysis.Razor.Compiler.dll` of every SDK since 6. */
         const val GENERATOR = "Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator"

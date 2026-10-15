@@ -10,6 +10,13 @@ import com.intellij.openapi.extensions.ExtensionPointName
 interface CSharpCodeGenerators {
     fun mayGenerateTypes(project: CSharpProjectFacts): Boolean
 
+    /**
+     * Whether the source generator [generatorTypeName] reads only the additional files of the project (`.razor`), not its C#: an edit of
+     * a C# file then leaves what it made fresh, and the project is not silent about missing names while one is typed (0.1.198). False
+     * for a generator the module does not know (the JSON one reads the C#).
+     */
+    fun readsOnlyAdditionalFiles(generatorTypeName: String): Boolean = false
+
     companion object {
         val EP_NAME: ExtensionPointName<CSharpCodeGenerators> = ExtensionPointName.create("io.github.dotnetsupport.csharpCodeGenerators")
     }

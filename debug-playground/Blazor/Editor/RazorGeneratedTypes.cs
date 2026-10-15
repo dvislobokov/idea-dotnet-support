@@ -15,12 +15,15 @@ public static class RazorGeneratedTypes
     // Ctrl+Z.
     public static Type Component = typeof(Counter);
 
-    // TYPE:razor-errors-after-generation — once the generator ran (the list of *_razor.g.cs above is there), on the empty line below type
-    // `public static string Missing = nameof(Counter.Nope);` EXPECT: `Nope` is red, CS0117 "'Counter' does not contain a definition for
-    // 'Nope'" — the same as in Console. Then type `UndefinedThing();` on the next line EXPECT: red CS0103. Before the generator ran (right
-    // after opening the solution, no *_razor.g.cs listed yet) neither is red: the project stays quiet until it knows its generated types.
-    // The debug log of the analysis (Settings | .NET, on by default; .NET → Plugin Logs, category `semantic`) shows no line for them —
-    // these are decisions, not refusals. Ctrl+Z twice.
+    // TYPE:razor-errors-after-generation — once the generator ran (Solution view: Blazor → Dependencies → .NET 9.0 → Analyzers →
+    // Microsoft.CodeAnalysis.Razor.Compiler → RazorSourceGenerator lists the *_razor.g.cs; about 4 s after the file opens), on the empty
+    // line below type `public static object Probe = Counter.Nope + UndefinedThing();` EXPECT, without saving: `Nope` red, CS0117 "'Counter'
+    // does not contain a definition for 'Nope'", and `UndefinedThing` red, CS0103 — the same as the line gives in Lib/Pricing.cs. Before the
+    // generator ran (right after opening the solution, nothing listed yet) neither is red: the project stays quiet until it knows its
+    // generated types. The debug log of the analysis (Settings | .NET, on by default; .NET → Plugin Logs, category `semantic`) shows no line
+    // for them — these are decisions, not refusals. Ctrl+Z.
+    // (Checked by the UI robot in WSL on 0.1.196: the generator, the tree and Ctrl+B worked; the errors did not show because an unsaved
+    // edit of a .cs made the project "stale" — fixed in 0.1.198 for generators that read no C#.)
     public static Type Root = typeof(App);
     public static string Parameter = nameof(Counter.Step);
 
