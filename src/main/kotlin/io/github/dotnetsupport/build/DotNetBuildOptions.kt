@@ -113,8 +113,7 @@ object SmartRestore {
 
     fun isUpToDate(projectFile: File): Boolean {
         val directory = projectFile.parentFile ?: return false
-        val assets = File(directory, "obj/project.assets.json")
-        if (!assets.isFile) return false
+        val assets = io.github.dotnetsupport.msbuild.ProjectLayout.assets(projectFile) ?: return false
         val inputs = listOf(projectFile, File(directory, "packages.lock.json")) +
             generateSequence(directory) { it.parentFile }.flatMap { dir -> INPUTS_UP_THE_TREE.map { File(dir, it) } }
         return isUpToDate(assets.lastModified(), inputs.filter { it.isFile }.map { it.lastModified() })

@@ -3,6 +3,14 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.200
+
+- The index of assemblies keeps the explicit implementations of interface members (private in metadata, named by the interface:
+  `System.IUtf8SpanFormattable.TryFormat`) — methods, properties, events. The analysis then knows an interface is implemented already:
+  by default in another interface (`INumberBase<T>` implements `IUtf8SpanFormattable`, so a `struct T : INumber<T>` owes nothing for
+  `TryFormat` — CS0535 was ours alone, the last false error of the Razor corpus) or by a base class of a library. The index format is 6:
+  the indexes are made again on the first start, as on an update of the SDK.
+
 ## 0.1.199
 
 - Projects built with `UseArtifactsOutput` (the .NET 8 SDK layout of the Aspire templates and eShop: `artifacts/obj/<project>/` and

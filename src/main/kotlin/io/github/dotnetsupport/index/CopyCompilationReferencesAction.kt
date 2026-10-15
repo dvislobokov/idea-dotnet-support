@@ -68,7 +68,7 @@ class CopyCompilationReferencesAction : AnAction(), DumbAware {
             appendLine("target frameworks in the project file: ${msbuild.targetFrameworks}; old format: ${msbuild.isLegacy}; toolbar: ${DotNetBuildSettings.getInstance(project).framework}")
             val dotnet = DotNetCli.findExecutable()?.let { runCatching { File(it).canonicalFile }.getOrDefault(File(it)) }
             appendLine("dotnet: ${dotnet?.path}; packs next to it: ${dotnet?.parentFile?.let { File(it, "packs").list()?.sorted() } ?: "NONE"}")
-            val assets = File(projectFile.parent.path, "obj/project.assets.json")
+            val assets = io.github.dotnetsupport.msbuild.ProjectLayout.assets(File(projectFile.path)) ?: File(projectFile.parent.path, "obj/project.assets.json")
             appendLine("assets: ${assets.path} ${if (assets.isFile) "(${assets.length()} bytes)" else "MISSING"}")
             if (assets.isFile) appendLine(assetsSummary(assets.readText()))
 

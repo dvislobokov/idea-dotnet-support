@@ -83,7 +83,13 @@ object BuildGeneratedSources {
     fun scan(projectDirectory: String, objFiles: Collection<String>, inputs: Collection<String>, configuration: String, framework: String?): List<BuildGeneratedFile> {
         val obj = projectDirectory.trimEnd('/') + "/obj/"
         val found = objFiles.filter { path ->
-            if (!path.startsWith(obj, ignoreCase = true) || !path.endsWith(".cs", ignoreCase = true)) return@filter false
+            if (!path.endsWith(".cs", ignoreCase = true)) return@filter false
+            // artifacts/obj/<project>/<pivot>/… with UseArtifactsOutput: the pivot is the configuration and the framework at once
+            io.github.dotnetsupport.msbuild.ProjectLayout.underArtifactsIntermediate(path)?.let { under ->
+                val pivot = under.substringBefore('/')
+                return@filter under.contains('/') && io.github.dotnetsupport.msbuild.ProjectLayout.pivotMatches(pivot, configuration, framework)
+            }
+            if (!path.startsWith(obj, ignoreCase = true)) return@filter false
             val segments = path.substring(obj.length).split('/')
             if (segments.size < 2 || !segments[0].equals(configuration, ignoreCase = true)) return@filter false
             // obj/Debug/net9.0/… of an SDK project: another framework's outputs are not of this compilation

@@ -171,7 +171,7 @@ object ProjectAssemblies {
         found += hinted.map(::assemblyLibrary)
         val projects = msbuild.projectReferences.filter { '$' !in it }.map { File(request.projectDirectory, it).normalize() }
         val outputs = if (framework == null) emptyList() else projects.mapNotNull { project ->
-            built(project.parentFile ?: return@mapNotNull null, project.nameWithoutExtension + ".dll", framework) ?: builtLegacy(project.parentFile, project.nameWithoutExtension + ".dll")
+            builtFor(project, project.nameWithoutExtension + ".dll", framework) ?: builtLegacy(project.parentFile ?: return@mapNotNull null, project.nameWithoutExtension + ".dll")
         }
         return References(framework, assemblies.toList(), projects, outputs, found)
     }
@@ -292,6 +292,27 @@ object ProjectAssemblies {
         for ((folder, inner) in listOf("obj" to "ref/", "bin" to "")) {
             for (configuration in File(projectDirectory, folder).listFiles { file -> file.isDirectory }.orEmpty()) {
                 File(configuration, "$target/$inner$assembly").takeIf { it.isFile }?.let(candidates::add)
+            }
+            if (candidates.isNotEmpty()) break
+        }
+        return candidates.maxByOrNull { it.lastModified() }
+    }
+
+    /**
+     * As [built], for a project file in either layout: with `UseArtifactsOutput` the build leaves `artifacts/obj/<project>/<pivot>/ref/Lib.dll`
+     * and `artifacts/bin/<project>/<pivot>/Lib.dll`, the pivot `debug` or `debug_<tfm>` ([io.github.dotnetsupport.msbuild.ProjectLayout]).
+     */
+    fun builtFor(projectFile: File, assembly: String, target: String, configuration: String = "Debug"): File? {
+        val directory = projectFile.parentFile ?: return null
+        built(directory, assembly, target)?.let { return it }
+        val layout = io.github.dotnetsupport.msbuild.ProjectLayout
+        val candidates = ArrayList<File>()
+        for ((folder, inner) in listOf(layout.intermediate(projectFile) to "ref/", layout.output(projectFile) to "")) {
+            // the artifacts layout only: the classic one was looked at above
+            if (folder == null || !folder.path.replace('\\', '/').contains("/${layout.ARTIFACTS}/")) continue
+            for (pivot in folder.listFiles { file -> file.isDirectory }.orEmpty()) {
+                if (!layout.pivotMatches(pivot.name, configuration, target) && !layout.pivotMatches(pivot.name, "Release", target)) continue
+                File(pivot, "$inner$assembly").takeIf { it.isFile }?.let(candidates::add)
             }
             if (candidates.isNotEmpty()) break
         }

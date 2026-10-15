@@ -216,7 +216,7 @@ class AssemblyIndexService(private val project: Project) : Disposable {
             val directory = File(projectFile.path).parentFile ?: continue
             val msbuild = solutions.msBuildProject(projectFile)
             // a project of the old format has no assets file: its references are its Reference items
-            val assets = File(directory, "obj/project.assets.json").takeIf { it.isFile }?.readText()
+            val assets = io.github.dotnetsupport.msbuild.ProjectLayout.assets(File(projectFile.path))?.readText()
             if (assets == null && !msbuild.isLegacy && msbuild.hintPaths.isEmpty()) continue
             val found = ProjectAssemblies.references(ProjectAssemblies.Request(assets, directory, dotnetRoot, framework, msbuild))
             references[projectFile.path] = found
@@ -412,7 +412,8 @@ object ImportCompletion {
         val found = LinkedHashSet(CSharpUsings.implicit(msbuild.sdk, msbuild.implicitUsings))
         val directory = File(projectFile.path).parentFile ?: return found
         // what the build has generated says exactly what the implicit ones are, `<Using Include>` of the project among them
-        val generated = File(directory, "obj").walkTopDown().maxDepth(3).filter { it.isFile && it.name.endsWith(".GlobalUsings.g.cs") }
+        val generated = (io.github.dotnetsupport.msbuild.ProjectLayout.intermediate(File(projectFile.path)) ?: File(directory, "obj")).walkTopDown().maxDepth(3)
+            .filter { it.isFile && it.name.endsWith(".GlobalUsings.g.cs") }
         val written = directory.listFiles { file -> file.isFile && file.name.contains("Using", ignoreCase = true) && file.extension == "cs" }.orEmpty().asSequence()
         for (file in generated + written) runCatching { found += CSharpUsings.global(file.readText()) }
         return found

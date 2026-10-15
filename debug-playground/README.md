@@ -168,7 +168,7 @@ Solution для живой проверки плагина: отладчика (
 
 Проект `Blazor` (Blazor Web App, `Components/Pages/Counter.razor` с `[Parameter] Step`). Помощник плагина гоняет генератор Razor вместе с
 остальными генераторами; ошибки проекта с Razor пока молчат (до R0b).
-- [ ] `TYPE:razor-component-types`: Ctrl+B на `Counter` → `Counter_razor.g.cs` (только чтение), на `Step` → свойство там; Solution view:
+- [x] (робот в WSL, 0.1.196: генератор за 4 с, дерево, Ctrl+B на `Counter` и `Step`, файл только для чтения) `TYPE:razor-component-types`: Ctrl+B на `Counter` → `Counter_razor.g.cs` (только чтение), на `Step` → свойство там; Solution view:
       Blazor → Dependencies → Analyzers → Microsoft.CodeAnalysis.Razor.Compiler со списком `*_razor.g.cs`; `nameof(Counter.` → в completion
       `Step`, `CountChanged`
 - [ ] `TYPE:razor-edit-regenerates`: в `Counter.razor` добавить `[Parameter] public int Max { get; set; }`, Ctrl+S → через пару секунд

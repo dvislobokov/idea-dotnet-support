@@ -42,7 +42,7 @@ object DependencyAssemblies {
     /** Reads the assets file: not for the EDT. */
     fun of(project: Project, key: DependencyKey): List<File> {
         val directory = File(key.projectFile.path).parentFile ?: return emptyList()
-        val assets = File(directory, "obj/project.assets.json").takeIf { it.isFile }?.readText()
+        val assets = io.github.dotnetsupport.msbuild.ProjectLayout.assets(File(key.projectFile.path))?.readText()
         val msbuild = SolutionService.getInstance(project).msBuildProject(key.projectFile)
         val references = ProjectAssemblies.references(ProjectAssemblies.Request(assets, directory, DotNetInstallation.root(), key.framework, msbuild))
         return select(references, key)

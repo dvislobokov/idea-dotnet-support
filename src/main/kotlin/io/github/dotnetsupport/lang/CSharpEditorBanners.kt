@@ -81,7 +81,7 @@ class CSharpEditorBanners : EditorNotificationProvider {
                     else "Excluded from ${projectFile.name} by the project file (Compile Remove or DefaultItemExcludes): not compiled.", projectFile)
             }
             // a project of the old format has no project.assets.json (packages.config goes to ..\packages): the banner was there for good
-            if (shown(Kind.NOT_RESTORED) && projectFile.parent?.findFileByRelativePath("obj/project.assets.json") == null &&
+            if (shown(Kind.NOT_RESTORED) && io.github.dotnetsupport.msbuild.ProjectLayout.assets(projectFile) == null &&
                 !SolutionService.getInstance(project).msBuildProject(projectFile).isLegacy) {
                 return Banner(Kind.NOT_RESTORED, "The packages of ${projectFile.name} are not restored: references are unresolved until they are.", projectFile)
             }

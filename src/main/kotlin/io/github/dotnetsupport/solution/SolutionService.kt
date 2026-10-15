@@ -98,7 +98,7 @@ class SolutionService(private val project: Project) {
 
     /** What `dotnet restore` resolved for the project; empty until it is restored. */
     fun assets(projectFile: VirtualFile): ProjectAssets {
-        val file = projectFile.parent?.findFileByRelativePath("obj/project.assets.json") ?: return ProjectAssets.EMPTY
+        val file = io.github.dotnetsupport.msbuild.ProjectLayout.assets(projectFile) ?: return ProjectAssets.EMPTY
         return cached(assetsFiles, file, ProjectAssets::parse)
     }
 
