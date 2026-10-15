@@ -125,7 +125,9 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
   Вывод генератора — в кэш, `CSharpSourceScope`, Dependencies → Analyzers. `mayGenerateTypes`: Razor не повод молчать, когда вывод
   свежий (как XAML в 0.1.82). Гейт: `SolutionDiagnosticsHarnessTest` на MudBlazor, nopCommerce, eShop — 0 ошибок в `.cs` (все три
   собираются). Польза сама по себе: правильные ошибки и completion в `.cs` веб-проектов, ещё без редактора Razor.
-- [ ] **R0b. Ложные ошибки ядра, найденные на корпусе Razor** — потом `errorsAfterGeneration = true`. Это правки ядра C# (`lang/semantic`),
+- [x] **R0b (0.1.187–0.1.195; `errorsAfterGeneration = true` — 0.1.196, ошибки Razor-проектов включены). Ложные ошибки ядра, найденные на
+  корпусе Razor** — на корпусе осталась одна (MudBlazor, явный член интерфейса по умолчанию `INumber<T>` — индексатор); вживую в IDE
+  включение не проверено (пункт 5). Это правки ядра C# (`lang/semantic`),
   по одному классу ошибок с примером в корпусе `CompilerMessagesCoverageTest`. Найдено (харнесс, 2026-10-15):
   - группа методов как делегат: `Inject(..., InjectTraceContextIntoBasicProperties)` (локальная функция, параметр `IBasicProperties` к
     `Action<BasicProperties, …>`), `TrackingAction` / `Invoke` → `Func<Task>` — CS1503 «cannot convert from 'Task' / 'void'» (больше 100);

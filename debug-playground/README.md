@@ -173,6 +173,9 @@ Solution для живой проверки плагина: отладчика (
       `Step`, `CountChanged`
 - [ ] `TYPE:razor-edit-regenerates`: в `Counter.razor` добавить `[Parameter] public int Max { get; set; }`, Ctrl+S → через пару секунд
       `nameof(Counter.` предлагает `Max`, Ctrl+B ведёт в `Counter_razor.g.cs`
+- [ ] `TYPE:razor-errors-after-generation` (0.1.196, R0b): после того как генератор отработал, `nameof(Counter.Nope)` — красный CS0117,
+      `UndefinedThing();` — красный CS0103, как в Console; сразу после открытия решения (до генератора) — не красные. В журнале анализа
+      (.NET → Plugin Logs, категория `semantic`) строк по ним нет — это решения, не отказы
 
 ## Solution view
 

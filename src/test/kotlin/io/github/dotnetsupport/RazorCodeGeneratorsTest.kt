@@ -8,8 +8,8 @@ import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
 
 /**
  * RAZOR_PLAN.md, R0: a project with Razor keeps the semantics silent until the helper has run Razor's generator and what it made is fresh —
- * then its components and pages are in the index like any other type, and a missing name may be an error again. The last part waits for
- * R0b ([RazorCodeGenerators.errorsAfterGeneration]): until then the project stays silent whatever ran.
+ * then its components and pages are in the index like any other type, and a missing name is an error again (on since 0.1.196,
+ * [RazorCodeGenerators.errorsAfterGeneration]; off, the project stays silent whatever ran).
  */
 class RazorCodeGeneratorsTest : BasePlatformTestCase() {
     private fun facts(sdk: String = "Microsoft.NET.Sdk.Razor", ran: Boolean, generators: Set<String>, files: Set<String> = setOf("razor")) =
@@ -17,7 +17,7 @@ class RazorCodeGeneratorsTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         try {
-            RazorCodeGenerators.errorsAfterGeneration = false
+            RazorCodeGenerators.errorsAfterGeneration = true
         } catch (e: Throwable) {
             addSuppressedException(e)
         } finally {
@@ -25,7 +25,8 @@ class RazorCodeGeneratorsTest : BasePlatformTestCase() {
         }
     }
 
-    fun testSilentUntilR0b() {
+    fun testSilentWithErrorsAfterGenerationOff() {
+        RazorCodeGenerators.errorsAfterGeneration = false
         val razor = RazorCodeGenerators()
         assertTrue(razor.mayGenerateTypes(facts(ran = true, generators = setOf(RazorCodeGenerators.GENERATOR))))
         assertFalse("a project without Razor", razor.mayGenerateTypes(facts(sdk = "Microsoft.NET.Sdk", ran = false, generators = emptySet(), files = setOf("cs"))))

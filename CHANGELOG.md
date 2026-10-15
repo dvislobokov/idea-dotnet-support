@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.196
+
+- Projects with Razor and Blazor report the errors of their C# like any other project, once the Razor generator has run in the helper
+  and what it made is fresh (RAZOR_PLAN.md, R0b done: the corpus of MudBlazor, nopCommerce and eShop is at one false error of the core in
+  four solutions). Until the generator has run, or after an edit of a `.razor` file it has not seen yet, a missing name is still no
+  error.
+
 ## 0.1.195
 
 - The visibility of 0.1.193 reaches everything of a project's sources: an extension method of a project this project does not reference
