@@ -248,4 +248,23 @@ class RazorCorpusFalseErrorsTest : BasePlatformTestCase() {
             }
         """))
     }
+
+    /**
+     * MudBlazor's tests: a type of a referenced project comes both from its sources and from its built assembly (the IDE indexes the
+     * outputs of referenced projects too) — `KeyInterceptorService` of an extension method of the built `UnitTests.Shared` to a parameter
+     * written in the sources. A built project is its sources: they are one type. Here the fixture assembly plays the built project.
+     */
+    fun testATypeOfABuiltProjectIsItsSourceType() {
+        assertEmpty(errors("""
+            namespace Fixture
+            {
+                public abstract class Shape { }
+            }
+            class User
+            {
+                static void Take(Fixture.Shape shape) { }
+                void M(Fixture.Circle circle) => Take(circle);
+            }
+        """))
+    }
 }

@@ -40,11 +40,27 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         }
         return when (a) {
             is SemanticType.ArrayOf -> if (b !is SemanticType.ArrayOf || a.rank != b.rank) false else same(a.element, b.element)
-            is SemanticType.Library -> if (b !is SemanticType.Library || a.type.fullName != b.type.fullName) false else sameArguments(a.arguments, b.arguments)
-            is SemanticType.Source -> if (b !is SemanticType.Source || a.info.key != b.info.key) false else sameArguments(a.arguments, b.arguments)
+            is SemanticType.Library -> when (b) {
+                is SemanticType.Library -> if (a.type.fullName != b.type.fullName) false else sameArguments(a.arguments, b.arguments)
+                is SemanticType.Source -> if (builtFrom(a, b)) sameArguments(a.arguments, b.arguments) else false
+                else -> false
+            }
+            is SemanticType.Source -> when (b) {
+                is SemanticType.Source -> if (a.info.key != b.info.key) false else sameArguments(a.arguments, b.arguments)
+                is SemanticType.Library -> if (builtFrom(b, a)) sameArguments(a.arguments, b.arguments) else false
+                else -> false
+            }
             is SemanticType.Parameter -> null
         }
     }
+
+    /**
+     * A built project is its sources: the IDE indexes the outputs of referenced projects too (`ProjectAssemblies.References.forIndex`), so a
+     * type may come from the assembly and from the source alike — MudBlazor's `KeyInterceptorService` of an extension method of the built
+     * `UnitTests.Shared` given to a parameter written in the sources (CS1503 "from 'KeyInterceptorService' to 'KeyInterceptorService'").
+     */
+    private fun builtFrom(library: SemanticType.Library, source: SemanticType.Source): Boolean =
+        library.type.qualifiedName == source.info.qualifiedName && library.type.arity == source.info.arity
 
     private fun sameArguments(a: List<SemanticType?>, b: List<SemanticType?>): Boolean? {
         if (a.size != b.size) return false
@@ -191,7 +207,9 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         }
         val instance: SemanticType = when (to) {
             is SemanticType.Library -> r.expressions.instanceOf(from, to.type.fullName)
+            // a type of the built project derives from its own built base ([builtFrom])
             is SemanticType.Source -> sourceInstance(from, to.info.key, 0)
+                ?: (from as? SemanticType.Library)?.let { r.expressions.instanceOf(it, to.info.qualifiedName + if (to.info.arity > 0) "`${to.info.arity}" else "") }
             else -> null
         } ?: return null
         val arguments = (to as? SemanticType.Library)?.arguments ?: (to as SemanticType.Source).arguments
