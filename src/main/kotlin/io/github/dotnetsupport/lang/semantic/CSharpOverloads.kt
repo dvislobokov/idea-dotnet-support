@@ -1211,6 +1211,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
             }
         }
         var unknown = false
+        var why = ""
         for (expanded in listOf(false, true)) {
             if (expanded && parameters.lastOrNull()?.isParams != true) break
             val map = map(parameters, arguments, expanded) ?: continue
@@ -1226,7 +1227,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
                 declaredTargets += declared
                 targets += target
                 val expression = argument.expression ?: continue
-                if (target == null) { unknown = true; continue }
+                if (target == null) { unknown = true; why = "the type of parameter ${index + 1} is not known"; continue }
                 val written = argument.refKindKeyword?.text
                 val kind = refKind(symbol, index, reduced)
                 // `in` parameters take an argument with `in`, `ref` or nothing; `ref` / `out` only their own keyword
@@ -1237,21 +1238,21 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
                 val conversion = if (expression is CSharpDeclarationExpression && expression.type?.let(r::isVar) != false) Conversion.IDENTITY else argument(expression, types[i], target)
                 when (conversion) {
                     Conversion.NONE -> { fits = false; break }
-                    Conversion.UNKNOWN -> unknown = true
+                    Conversion.UNKNOWN -> { unknown = true; why = "argument ${i + 1} `${SemanticTrace.text(expression)}` of ${SemanticTrace.show(types[i])} to ${SemanticTrace.show(target)}: conversion not known" }
                     Conversion.IMPLICIT -> if (byRef) { fits = false; break }
                     Conversion.IDENTITY -> {}
                 }
             }
             if (!fits) continue
             if (unknown) {
-                SemanticTrace.trace { "applicable ${site?.text} at ${SemanticTrace.at(site)}: ${SemanticTrace.show(symbol)} not known — an argument's conversion or a parameter's type is not known" }
+                SemanticTrace.trace { "applicable ${site?.text} at ${SemanticTrace.at(site)}: ${SemanticTrace.show(symbol)} not known — $why" }
                 return UNKNOWN_FORM
             }
             val defaults = parameters.indices.any { p -> p !in map && !(expanded && p == parameters.size - 1) }
             return Form(symbol, parameters, targets, declaredTargets, expanded, defaults, generic, if (expanded) parameters.last().type() else null, receiverTarget,
                 declaredReceiver = if (reduced) all.first().type() else null)
         }
-        if (unknown) SemanticTrace.trace { "applicable ${site?.text} at ${SemanticTrace.at(site)}: ${SemanticTrace.show(symbol)} not known — an argument's conversion or a parameter's type is not known" }
+        if (unknown) SemanticTrace.trace { "applicable ${site?.text} at ${SemanticTrace.at(site)}: ${SemanticTrace.show(symbol)} not known — $why" }
         return if (unknown) UNKNOWN_FORM else null
     }
 

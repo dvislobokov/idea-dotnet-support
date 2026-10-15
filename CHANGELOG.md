@@ -3,6 +3,15 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.192
+
+- The debug log of the C# analysis says why: an inference that could not finish names the fact it lacked (the type of a lambda body,
+  a parameter type, a type parameter fixed to nothing) instead of "the inferrer answered Unknown"; an overload of unknown applicability
+  names the argument and the conversion it could not decide.
+- The harness over a whole solution (development, `SolutionDiagnosticsHarnessTest`) knows the project of every file as the IDE does, sees
+  the files a project links from outside its folder, and runs on one file in seconds (`SOLUTION_HARNESS_FILE`): eShop 13 → 1, the one
+  left is a real false error (a `static class Extensions` of the global namespace in nine projects, the one of another project is taken).
+
 ## 0.1.191
 
 - The debug log of the C# analysis: every place where the analysis gives up or falls back to a simpler rule — a conversion the ported

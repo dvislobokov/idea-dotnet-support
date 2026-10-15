@@ -87,7 +87,7 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
         return when (val result = RoslynMethodTypeInferrer(RoslynTypes(r), arity, ordinalOf, formal, byReference, inferenceArguments, onFixed = onFixed).infer()) {
             is RoslynMethodTypeInferrer.Result.Known -> Inferred.Known(result.types)
             RoslynMethodTypeInferrer.Result.Failed -> Inferred.Failed
-            RoslynMethodTypeInferrer.Result.Unknown -> throw RoslynMethodTypeInferrer.Unknown("the inferrer answered Unknown")
+            is RoslynMethodTypeInferrer.Result.Unknown -> throw RoslynMethodTypeInferrer.Unknown(result.reason)
         }
     }
 

@@ -63,7 +63,8 @@ internal class RoslynMethodTypeInferrer(
     sealed class Result {
         class Known(val types: List<SemanticType>) : Result()
         object Failed : Result()
-        object Unknown : Result()
+        /** Not known; [reason] — what was not known, or where the inferrer gave up ([RoslynMethodTypeInferrer.Unknown.describe]). */
+        class Unknown(val reason: String) : Result()
     }
 
     /** Thrown where a fact the inference needs is not known: the result is [Result.Unknown]. */
@@ -99,9 +100,9 @@ internal class RoslynMethodTypeInferrer(
         if (formalParameterTypes.isEmpty()) return Result.Failed
         return try {
             inferTypeArgsFirstPhase()
-            if (!inferTypeArgsSecondPhase()) Result.Failed else Result.Known(fixedResults.map { it ?: throw Unknown() })
-        } catch (_: Unknown) {
-            Result.Unknown
+            if (!inferTypeArgsSecondPhase()) Result.Failed else Result.Known(fixedResults.map { it ?: throw Unknown("a type parameter fixed to nothing") })
+        } catch (e: Unknown) {
+            Result.Unknown(e.describe())
         }
     }
 
