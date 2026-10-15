@@ -476,6 +476,16 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         return found
     }
 
+    /**
+     * A base class among [baseTypes], not an interface — of the solution too: a part of a partial class may list only interfaces, the base
+     * class being in another part (MudBlazor's `MudBreakpointProvider : IBrowserViewportObserver`, `@inherits MudComponentBase` in its `.razor`).
+     */
+    fun isBaseClass(type: SemanticType): Boolean = when (type) {
+        is SemanticType.Library -> type.type.kind != IndexedTypeKind.INTERFACE
+        is SemanticType.Source -> type.info.kind != io.github.dotnetsupport.lang.TypeKind.INTERFACE
+        else -> false
+    }
+
     /** The base class and interfaces of a type of the solution as its parts write them, resolved where they are written, substituted. */
     fun baseTypes(type: SemanticType.Source): List<SemanticType> {
         val found = ArrayList<SemanticType>()
@@ -491,7 +501,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                 substitute(resolved, type)?.let { t -> if (found.none { it.display != null && it.display == t.display }) found += t }
             }
         }
-        if (found.none { it is SemanticType.Library && it.type.kind != IndexedTypeKind.INTERFACE || it is SemanticType.Source }) {
+        if (found.none(::isBaseClass)) {
             // a class without a base class derives from `object`, a struct from `ValueType`, an enum from `Enum`
             val implicit = when (type.info.kind) {
                 io.github.dotnetsupport.lang.TypeKind.STRUCT, io.github.dotnetsupport.lang.TypeKind.RECORD_STRUCT -> "System.ValueType"

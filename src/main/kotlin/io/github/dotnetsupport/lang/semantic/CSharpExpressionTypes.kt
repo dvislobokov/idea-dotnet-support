@@ -30,7 +30,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
             is CSharpParenthesizedExpression -> e.expression?.let(r::typeOf)
             is CSharpThisExpression -> r.syntax.enclosingTypes(e).firstOrNull()?.let(r::selfType)
             is CSharpBaseExpression -> r.syntax.enclosingTypes(e).firstOrNull()?.let(r::selfType)?.let { self ->
-                r.baseTypes(self).firstOrNull { it is SemanticType.Source || it is SemanticType.Library && it.type.kind != IndexedTypeKind.INTERFACE }
+                r.baseTypes(self).firstOrNull(r::isBaseClass)
             }
             is CSharpSimpleName -> simpleName(e)
             is CSharpType -> null
@@ -476,11 +476,14 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
                 val lambda = argument.expression as? CSharpAnonymousFunctionExpression ?: continue
                 // the parameter as declared: what the delegate returns decides, inferring the method's type arguments is not needed for it
                 val type = parameterFor(parameters, arguments, i, offset)?.type?.invoke() ?: continue
-                val returns = unwrapExpression(type)?.let(::delegateSignature)?.second
+                val written = unwrapExpression(type)?.let(::delegateSignature)?.second
+                // an async lambda returns what `Task<X>` holds: `Func<Task<T>>` takes it as exactly as `Func<T>` (nopCommerce's cache GetAsync)
+                val returns = if (isAsync(lambda.modifiers) && written is SemanticType.Library && written.type.fullName in TASKS_OF) written.arguments.singleOrNull() else written
                 if (returns is SemanticType.Parameter && returns.ofMethod) { exact++; continue }
                 if (!lambdaFits(lambda, type)) return@mapNotNull null
                 val body = lambda.expressionBody?.let(r::typeOf)
-                if (returns != null && body != null && same(returns, body)) exact++
+                // `Task<T>` with `T` to infer: as exact as `T` for a body of a `Task<…>` — the better member decides then (more specific)
+                if (returns != null && body != null && (same(returns, body) || mentionsMethodParameter(returns) && r.definitionName(returns) == r.definitionName(body))) exact++
             }
             symbol to exact
         }
@@ -489,9 +492,14 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         return scored.filter { it.second == best }.map { it.first }
     }
 
-    private fun isStatementExpression(e: CSharpExpression): Boolean = e is CSharpInvocationExpression || e is CSharpAssignmentExpression ||
+    /**
+     * What may stand as a statement (§13.7), so the body of a lambda for a delegate that returns nothing: a call — `a?.M()` too, which the
+     * Razor generator writes for `@onclick="() => _table?.ExpandAllGroups()"` — an assignment, `await`, `new`, `++` / `--`, `throw`.
+     */
+    internal fun isStatementExpression(e: CSharpExpression): Boolean = e is CSharpInvocationExpression || e is CSharpAssignmentExpression ||
         e is CSharpAwaitExpression || e is CSharpBaseObjectCreationExpression || e is CSharpPostfixUnaryExpression ||
-        (e is CSharpPrefixUnaryExpression && (e.operatorToken?.text == "++" || e.operatorToken?.text == "--")) || e is CSharpThrowExpression
+        (e is CSharpPrefixUnaryExpression && (e.operatorToken?.text == "++" || e.operatorToken?.text == "--")) || e is CSharpThrowExpression ||
+        e is CSharpConditionalAccessExpression && e.whenNotNull?.let(::isStatementExpression) == true
 
     /** A block that ends in `throw` never returns: it converts to any delegate. */
     private fun completesNormally(block: CSharpBlock): Boolean = block.statements.lastOrNull() !is CSharpThrowStatement
@@ -618,6 +626,8 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
     }
 
     internal fun isAsync(modifiers: List<PsiElement>): Boolean = modifiers.any { it.text == "async" }
+
+    private val TASKS_OF = setOf("System.Threading.Tasks.Task`1", "System.Threading.Tasks.ValueTask`1")
 
     private fun awaitedOrNull(type: SemanticType): SemanticType? = (type as? SemanticType.Library)?.takeIf { it.type.fullName in TASKS_OF_T }?.arguments?.firstOrNull()
 
@@ -820,7 +830,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
 
     /** `a[i]`: an array's element, `string`'s `char`, the indexer of the type that fits the arguments. */
     fun indexed(receiver: SemanticType, arguments: List<CSharpArgument>): SemanticType? {
-        val ranged = arguments.size == 1 && arguments.single().expression is CSharpRangeExpression
+        val ranged = isRange(arguments)
         return when (receiver) {
             is SemanticType.ArrayOf -> if (ranged) receiver else receiver.element
             is SemanticType.Library -> {
@@ -836,10 +846,16 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         }
     }
 
+    /** `a[1..]`, or `a[r]` with `r` a `System.Range` (MudBlazor's `queryStr[qr]` in a `foreach` over ranges): a slice, not an element. */
+    private fun isRange(arguments: List<CSharpArgument>): Boolean {
+        val expression = arguments.singleOrNull()?.expression ?: return false
+        return expression is CSharpRangeExpression || expression !is CSharpLiteralExpression && r.typeOf(expression)?.let(r::definitionName) == "System.Range"
+    }
+
     /** The parameters of the indexer `a[i]` goes to (inlay hints name them); null for arrays, strings and where none fits. */
     fun indexerParameters(receiver: SemanticType, arguments: List<CSharpArgument>): List<CSharpNameResolver.Parameter>? = when (receiver) {
         is SemanticType.Library -> {
-            val ranged = arguments.size == 1 && arguments.single().expression is CSharpRangeExpression
+            val ranged = isRange(arguments)
             if (receiver.type.fullName == "System.String") null
             else libraryIndexer(receiver, arguments, ranged)?.let { chosen ->
                 val declaring = r.declaringArguments(receiver, chosen.from)

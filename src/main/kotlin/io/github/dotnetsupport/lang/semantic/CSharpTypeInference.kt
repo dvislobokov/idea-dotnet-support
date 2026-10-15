@@ -131,12 +131,26 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
         }
     }
 
+    /** What the body of [lambda] returns: its expression, the one type of the `return`s of its block; null when it returns no value. */
+    private fun returnedType(lambda: CSharpAnonymousFunctionExpression): SemanticType? {
+        val body = lambda.expressionBody
+        if (body != null) {
+            val type = r.typeOf(body) ?: throw Unknown()
+            return type.takeIf { r.definitionName(it) != VOID }
+        }
+        val block = lambda.block ?: throw Unknown()
+        val returned = PsiTreeUtil.findChildrenOfType(block, CSharpReturnStatement::class.java).filter { inLambda(it, lambda) }.mapNotNull { it.expression }
+        if (returned.isEmpty()) return null
+        val types = returned.map { r.typeOf(it) ?: throw Unknown() }
+        if (types.any { overloads.same(it, types.first()) != true }) throw Unknown()
+        return types.first()
+    }
+
     /** The output type of a lambda or a method group whose input types are [inputs] (§12.6.3.7); null when it gives none. */
     private fun outputType(
         value: CSharpExpression, inputs: List<SemanticType>, symbol: CSharpSymbol, call: CSharpInvocationExpression?, site: CSharpSimpleName?, context: Context,
     ): SemanticType? {
         if (value is CSharpAnonymousFunctionExpression) {
-            if (r.expressions.isAsync(value.modifiers)) throw Unknown()
             val parameters = when (value) {
                 is CSharpSimpleLambdaExpression -> listOfNotNull(value.parameter)
                 is CSharpParenthesizedLambdaExpression -> value.parameterList?.parameters.orEmpty()
@@ -149,17 +163,11 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
                 val lenient = r.expressions.typeArguments(symbol, call, site)
                 if (context.fixedTypes().withIndex().any { (i, t) -> t != null && overloads.same(t, lenient.getOrNull(i)) != true }) throw Unknown()
             }
-            val body = value.expressionBody
-            if (body != null) {
-                val type = r.typeOf(body) ?: throw Unknown()
-                return type.takeIf { r.definitionName(it) != VOID }
-            }
-            val block = value.block ?: throw Unknown()
-            val returned = PsiTreeUtil.findChildrenOfType(block, CSharpReturnStatement::class.java).filter { inLambda(it, value) }.mapNotNull { it.expression }
-            if (returned.isEmpty()) return null
-            val types = returned.map { r.typeOf(it) ?: throw Unknown() }
-            if (types.any { overloads.same(it, types.first()) != true }) throw Unknown()
-            return types.first()
+            val returned = returnedType(value)
+            // an async one gives `Task<X>`, or `Task` without a value (§12.6.3.13): `GetAsync<T>(key, Func<Task<T>>)` infers `T` from it
+            if (!r.expressions.isAsync(value.modifiers)) return returned
+            val task = r.libraryType(if (returned == null) "System.Threading.Tasks.Task" else "System.Threading.Tasks.Task`1") ?: throw Unknown()
+            return if (returned == null) task else SemanticType.Library(task.type, listOf(returned))
         }
         val methods = methodGroup(value) ?: throw Unknown()
         val single = methods.singleOrNull() ?: throw Unknown()

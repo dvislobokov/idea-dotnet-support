@@ -24,7 +24,7 @@ class CSharpRequiredMembers(private val r: CSharpNameResolver) {
             when (current) {
                 is SemanticType.Source -> {
                     chain += own(current)
-                    current = r.baseTypes(current).firstOrNull { it is SemanticType.Source || it is SemanticType.Library && it.type.kind != IndexedTypeKind.INTERFACE }
+                    current = r.baseTypes(current).firstOrNull(r::isBaseClass)
                 }
                 is SemanticType.Library -> {
                     chain += current.type.members.filter { it.isRequired && !it.isStatic && (it.kind == IndexedMemberKind.PROPERTY || it.kind == IndexedMemberKind.FIELD) }

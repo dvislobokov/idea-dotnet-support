@@ -490,14 +490,19 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
                 true -> {}
             }
         }
-        if (unknown || r.expressions.isAsync(lambda.modifiers)) return Conversion.UNKNOWN
+        if (unknown) return Conversion.UNKNOWN
         if (delegate.first.any { it == null || mentionsCandidateParameter(it) }) return Conversion.UNKNOWN
-        val returns = delegate.second ?: return Conversion.UNKNOWN
-        if (mentionsCandidateParameter(returns)) return Conversion.UNKNOWN
+        val written = delegate.second ?: return Conversion.UNKNOWN
+        if (mentionsCandidateParameter(written)) return Conversion.UNKNOWN
+        // an async lambda to a delegate returning `Task<Y>` / `ValueTask<Y>`: what it returns converts to `Y` (§10.7.1) — nopCommerce's
+        // `GetAsync<T>(key, Func<Task<T>>)` and `GetAsync<T>(key, Func<T>)` are then both applicable and the first one is more specific
+        val returns = if (!r.expressions.isAsync(lambda.modifiers)) written
+            else if (r.definitionName(written) in TASKS_OF) (written as? SemanticType.Library)?.arguments?.singleOrNull() ?: return Conversion.UNKNOWN
+            else return Conversion.UNKNOWN
         val void = r.definitionName(returns) == VOID
         val body = lambda.expressionBody
         if (body != null) {
-            if (void) return if (isStatementExpression(unparenthesized(body))) Conversion.IMPLICIT else Conversion.NONE
+            if (void) return if (r.expressions.isStatementExpression(unparenthesized(body))) Conversion.IMPLICIT else Conversion.NONE
             return when (argument(body, r.typeOf(unparenthesized(body)), returns)) {
                 Conversion.IDENTITY, Conversion.IMPLICIT -> Conversion.IMPLICIT
                 Conversion.NONE -> Conversion.NONE
@@ -552,9 +557,6 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         return first.takeIf { types.all { same(it, first) == true } }
     }
 
-    private fun isStatementExpression(e: CSharpExpression): Boolean = e is CSharpInvocationExpression || e is CSharpAssignmentExpression ||
-        e is CSharpAwaitExpression || e is CSharpBaseObjectCreationExpression || e is CSharpPostfixUnaryExpression ||
-        (e is CSharpPrefixUnaryExpression && (e.operatorToken?.text == "++" || e.operatorToken?.text == "--")) || e is CSharpThrowExpression
 
     /** `ref`, `out`, `in` or "" (by value) of a parameter of a lambda; null for `scoped`, `ref readonly` and what else is not modeled. */
     internal fun lambdaRefKind(p: CSharpParameter): String? {
@@ -1459,6 +1461,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         private const val STRING = "System.String"
         private const val VOID = "System.Void"
         private const val NULLABLE = "System.Nullable`1"
+        private val TASKS_OF = setOf("System.Threading.Tasks.Task`1", "System.Threading.Tasks.ValueTask`1")
         private const val VALUE_TUPLE = "System.ValueTuple`"
         private const val VALUE_TYPE = "System.ValueType"
 

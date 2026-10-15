@@ -36,12 +36,13 @@ class RazorCorpusFalseErrorsTest : BasePlatformTestCase() {
         }
     }
 
-    /** The errors of [text] as `text under it -> CSxxxx: message`. */
+    /** The errors of [text] as `line: text under it -> CSxxxx: message`. */
     private fun errors(text: String): List<String> {
         myFixture.configureByText("RazorCorpus${files++}.cs", text.trimIndent())
         val document = myFixture.editor.document.text
         return myFixture.doHighlighting(HighlightSeverity.ERROR).filter { it.severity == HighlightSeverity.ERROR && it.description?.startsWith("CS") == true }
-            .sortedBy(HighlightInfo::getStartOffset).map { document.substring(it.startOffset, it.endOffset) + " -> " + it.description }
+            .sortedBy(HighlightInfo::getStartOffset)
+            .map { "${document.substring(0, it.startOffset).count { c -> c == '\n' } + 1}: " + document.substring(it.startOffset, it.endOffset) + " -> " + it.description }
     }
 
     /** eShop's RabbitMQEventBus: a local function whose parameter is a base of the delegate's (contravariance of a method group). */
@@ -145,6 +146,105 @@ class RazorCorpusFalseErrorsTest : BasePlatformTestCase() {
                     Take(4);
                     return Format(count);
                 }
+            }
+        """))
+    }
+
+    /** MudBlazor's SearchService: a span indexed by a `Range` is a slice of it (§12.8.12.3), not an element. */
+    fun testRangeIndexerOfASpan() {
+        assertEmpty(errors("""
+            using System;
+            class Search
+            {
+                static int Score(ReadOnlySpan<char> query, ReadOnlySpan<Range> ranges)
+                {
+                    var total = 0;
+                    foreach (var r in ranges)
+                    {
+                        var token = query[r];
+                        if (token.IsEmpty) continue;
+                        total += token.Length + query[1..].Length + "text"[..2].Length;
+                    }
+                    return total;
+                }
+            }
+        """))
+    }
+
+    /** MudBlazor: the base class of a partial component is in the part the Razor generator makes (`@inherits`); this part lists interfaces. */
+    fun testBaseClassFromAnotherPart() {
+        assertEmpty(errors("""
+            using System.Threading.Tasks;
+            class ComponentBase { protected virtual Task OnAfterRenderAsync(bool firstRender) => Task.CompletedTask; }
+            interface IObserver { }
+            partial class Provider : IObserver
+            {
+                protected override async Task OnAfterRenderAsync(bool firstRender) => await base.OnAfterRenderAsync(firstRender);
+            }
+            partial class Provider : ComponentBase { }
+        """))
+    }
+
+    /** What the Razor generator writes for `@onclick="(args) => _table?.Expand()"`: the lambda picks the `Action<T>` overload of Create. */
+    fun testEventCallbackFactoryWithALambda() {
+        assertEmpty(errors("""
+            using System;
+            using System.Threading.Tasks;
+            class Table { public void Expand() { } }
+            readonly struct EventCallback { }
+            readonly struct EventCallback<T> { }
+            sealed class EventCallbackFactory
+            {
+                public EventCallback<T> Create<T>(object receiver, EventCallback callback) => default;
+                public EventCallback<T> Create<T>(object receiver, EventCallback<T> callback) => default;
+                public EventCallback<T> Create<T>(object receiver, Action callback) => default;
+                public EventCallback<T> Create<T>(object receiver, Action<T> callback) => default;
+                public EventCallback<T> Create<T>(object receiver, Func<Task> callback) => default;
+                public EventCallback<T> Create<T>(object receiver, Func<T, Task> callback) => default;
+            }
+            sealed class PlainFactory
+            {
+                public EventCallback<int> Create(object receiver, EventCallback callback) => default;
+                public EventCallback<int> Create(object receiver, Action callback) => default;
+                public EventCallback<int> Create(object receiver, Action<int> callback) => default;
+                public EventCallback<int> Create(object receiver, Func<Task> callback) => default;
+                public EventCallback<int> Create(object receiver, Func<int, Task> callback) => default;
+            }
+            class Page
+            {
+                Table? _table;
+                object P(PlainFactory plain) => plain.Create(this, (args) => _table!.Expand());
+                readonly EventCallbackFactory factory = new();
+                object M() => factory.Create<int>(this, (args) => _table?.Expand());
+                object N() => factory.Create<int>(this, (args) => _table!.Expand());
+                object O() => factory.Create<int>(this, () => _table?.Expand());
+            }
+        """))
+    }
+
+    /** nopCommerce's cache: `GetAsync<T>(key, Func<Task<T>>)` over `GetAsync<T>(key, Func<T>)` for an async lambda (more specific, §12.6.4.3). */
+    fun testAsyncLambdaPicksTheTaskOverload() {
+        assertEmpty(errors("""
+            using System;
+            using System.Collections.Generic;
+            using System.Threading.Tasks;
+            interface ICache
+            {
+                Task<T> GetAsync<T>(string key, Func<Task<T>> acquire);
+                Task<T> GetAsync<T>(string key, Func<T> acquire);
+            }
+            class Service
+            {
+                readonly ICache _cache = null!;
+                async Task<Dictionary<int, int>> CountsAsync() => await _cache.GetAsync("k", async () =>
+                {
+                    await Task.Yield();
+                    return new Dictionary<int, int>();
+                });
+                async Task<int[]> IdsAsync() => await _cache.GetAsync("k", async () => await Task.FromResult(new int[0]));
+                async Task<Dictionary<int, int>> DelayAsync() => await _cache.GetAsync("k", async () => { await Task.Delay(1); return new Dictionary<int, int>(); });
+                async Task<Dictionary<int, int>> PlainAsync() => await _cache.GetAsync("k", async () => { return new Dictionary<int, int>(); });
+                async Task<Dictionary<int, int>> NoAwaitAsync() => await _cache.GetAsync("k", () => Task.FromResult(new Dictionary<int, int>()));
             }
         """))
     }
