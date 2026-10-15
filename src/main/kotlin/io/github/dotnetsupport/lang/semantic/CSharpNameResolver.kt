@@ -47,7 +47,13 @@ import java.util.IdentityHashMap
  * One instance per file of a [CSharpSemanticSession]; answers are cached for the life of the session.
  */
 class CSharpNameResolver internal constructor(val file: CSharpFile, internal val session: CSharpSemanticSession) {
-    val syntax: NativeCSharpResolver = NativeCSharpResolver(file)
+    // whether the sources of a file of the solution are seen from this one (its project, or one this project references), by file
+    private val seenFiles = HashMap<com.intellij.openapi.vfs.VirtualFile, Boolean>()
+    private fun sees(other: com.intellij.openapi.vfs.VirtualFile): Boolean = seenFiles.getOrPut(other) { CSharpSemanticEnvironment.sees(file, other) }
+    val syntax: NativeCSharpResolver = NativeCSharpResolver(file, ::sees)
+
+    /** The extension methods of the solution named [text], in the projects this file sees ([CSharpSemanticEnvironment.sees]). */
+    fun sourceExtensions(text: String): List<CSharpElement> = session.sourceExtensions(text).filter { e -> e.containingFile?.viewProvider?.virtualFile?.let(::sees) != false }
     val assemblies: AssemblyIndexSet by lazy { CSharpSemanticEnvironment.assemblies(file) }
     private val names = IdentityHashMap<PsiElement, CSharpResolution?>()
     private val types = IdentityHashMap<PsiElement, SemanticType?>()
@@ -236,21 +242,12 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         return emptyList()
     }
 
-    // whether the sources of a file of the solution are seen from this one (its project, or one this project references), by file
-    private val seenFiles = HashMap<com.intellij.openapi.vfs.VirtualFile, Boolean>()
-
-    /** Whether [part] is declared in a project this file's project sees ([CSharpSemanticEnvironment.sees]); yes when that is not known. */
-    private fun seen(part: TypePart): Boolean {
-        val other = part.element()?.containingFile ?: return true
-        return seenFiles.getOrPut(other.viewProvider.virtualFile) { CSharpSemanticEnvironment.sees(file, other) }
-    }
-
     /**
-     * The types [text] with [arity] declared at the top of [namespace]: of the solution (the projects this one sees), then of the assemblies
-     * (a built project is its sources).
+     * The types [text] with [arity] declared at the top of [namespace]: of the solution (the projects this one sees, [syntax] filters), then
+     * of the assemblies (a built project is its sources).
      */
     fun typesIn(namespace: String, text: String, arity: Int): List<CSharpSymbol> {
-        val source = syntax.typeParts(text).filter { it.namespace == namespace && it.arity == arity && seen(it) }.map { it.qualifiedName }.distinct()
+        val source = syntax.typeParts(text).filter { it.namespace == namespace && it.arity == arity }.map { it.qualifiedName }.distinct()
             .mapNotNull { syntax.typeInfo(it, arity) }.map { CSharpSymbol.SourceType(it) }
         val library = session.findType(assemblies, namespace, path(text, arity))?.takeIf { type -> source.none { it.info.qualifiedName == type.qualifiedName } }
         return if (library == null) source else source + CSharpSymbol.LibraryType(library)
@@ -582,7 +579,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                 if (key != AssemblyIndexSet.GENERIC_RECEIVER || expressions.receiverFits(symbol, receiver)) found += symbol
             }
         }
-        for (element in session.sourceExtensions(text)) sourceExtension(element, arity, imported::contains, names)?.let { found += it }
+        for (element in sourceExtensions(text)) sourceExtension(element, arity, imported::contains, names)?.let { found += it }
         return found
     }
 
@@ -620,7 +617,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         val index = StubIndex.getInstance()
         for (name in index.getAllKeys(CSharpStubIndexKeys.EXTENSION_METHODS, session.project)) {
             if (wanted != null && !wanted(name)) continue
-            for (element in session.sourceExtensions(name)) sourceExtension(element, 0, imported, names)?.let { found += it }
+            for (element in sourceExtensions(name)) sourceExtension(element, 0, imported, names)?.let { found += it }
         }
         return found.filter { expressions.receiverFits(it, receiver) }
     }

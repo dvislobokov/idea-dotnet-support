@@ -397,6 +397,7 @@ class RazorCorpusFalseErrorsTest : BasePlatformTestCase() {
     fun testATypeOfAProjectNotReferencedIsNotSeen() {
         myFixture.addFileToProject("Catalog/Catalog.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>")
         myFixture.addFileToProject("Catalog/Extensions.cs", "public static class Extensions { public static void AddCatalog() { } }")
+        myFixture.addFileToProject("Catalog/Seeding.cs", "namespace Seeding { public interface IDbSeeder { } public static class SeedingExtensions { public static int AddMigration(this string s) => 1; } }")
         myFixture.addFileToProject("Host/Host.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>")
         myFixture.addFileToProject("Host/Extensions.cs", "namespace eShop.Host { internal static class Extensions { public static bool IsFoundryEnabled() => true; } }")
         myFixture.addFileToProject("Referencing/Referencing.csproj",
@@ -409,6 +410,12 @@ class RazorCorpusFalseErrorsTest : BasePlatformTestCase() {
         assertEmpty(errorsIn("Host/AppHost.cs", "using eShop.Host;\nclass P { bool M() => Extensions.IsFoundryEnabled(); }"))
         val found = errorsIn("Referencing/AppHost.cs", "using eShop.Referencing;\nclass P { bool M() => Extensions.IsFoundryEnabled(); }")
         assertEquals(found.toString(), listOf("CS0117"), found)
+        // a type and an extension method of the unreferenced project are not found either (CS0246, CS1061); with the reference they are
+        val unseenType = errorsIn("Host/Seeded.cs", "using Seeding;\nclass Q : IDbSeeder { }")
+        assertEquals(unseenType.toString(), listOf("CS0246"), unseenType)
+        val unseenExtension = errorsIn("Host/Migrated.cs", "using Seeding;\nclass R { int M() => \"x\".AddMigration(); }")
+        assertEquals(unseenExtension.toString(), listOf("CS1061"), unseenExtension)
+        assertEmpty(errorsIn("Referencing/Seeded.cs", "using Seeding;\nclass Q : IDbSeeder { int M() => \"x\".AddMigration(); }"))
     }
 
     /**

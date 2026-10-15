@@ -302,7 +302,7 @@ internal class CSharpOverloadChecks(private val checks: CSharpSemanticChecks, pr
             }
         }
         val module = ModuleUtilCore.findModuleForPsiElement(site)
-        for (element in r.session.sourceExtensions(text)) {
+        for (element in r.sourceExtensions(text)) {
             val method = element as? CSharpMethodDeclaration ?: return null
             if (arity != null && (method.typeParameterList?.parameters?.size ?: 0) != arity) continue
             val namespace = r.namespaceOfMethod(method) ?: return null

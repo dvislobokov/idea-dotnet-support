@@ -711,7 +711,8 @@
     `semantic` журнала плагина, включён по умолчанию; тест `SemanticTraceTest`); 0.1.192 — D6e2: харнесс по одному файлу и модель
     проектов решения в харнессе (eShop 13 → 1, остаток — `Extensions` глобального пространства имён из чужого проекта, ошибка ядра);
     0.1.193 — исходники проекта, на который нет ссылки, не видны (`CSharpSemanticEnvironment.sees`): eShop 1 → 0; 0.1.194 — D6e3,
-    шаг 1: старые правила преобразований удалены (213 строк), порт Roslyn решает всё между известными типами Тесты `RazorCorpusFalseErrorsTest`, `RoslynTypesTest`, `RoslynMethodTypeInferenceTest`
+    шаг 1: старые правила преобразований удалены (213 строк), порт Roslyn решает всё между известными типами; 0.1.195 — видимость по
+    ссылкам для extension-методов и частей типов Тесты `RazorCorpusFalseErrorsTest`, `RoslynTypesTest`, `RoslynMethodTypeInferenceTest`
   - [x] F0 (2026-10-15, без версии: пользователю не видно) — фреймворки модулями рядом с ядром C#: точка расширения `csharpCodeGenerators`, модули `frameworks.razor` / `xaml` / `avalonia` / `grpc` вместо списков в `mayGenerateTypes`; тесты `CSharpCodeGeneratorsTest` (старая формула против новой), `FrameworkBoundaryTest`
 
 ### Помощники на .NET, работающие постоянно (план 2026-10-03)

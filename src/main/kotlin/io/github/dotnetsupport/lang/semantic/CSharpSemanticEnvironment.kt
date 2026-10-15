@@ -147,10 +147,13 @@ object CSharpSemanticEnvironment {
      * eShop's AppHost references no project: the `static class Extensions` of the global namespace of four other projects is not its
      * `eShop.AppHost.Extensions` (CS0117 `IsFoundryEnabled` was ours alone, 0.1.193).
      */
-    fun sees(file: PsiFile, other: PsiFile): Boolean {
-        if (other == file || other.originalFile == file.originalFile) return true
+    fun sees(file: PsiFile, other: PsiFile): Boolean = other == file || other.originalFile == file.originalFile || sees(file, other.viewProvider.virtualFile)
+
+    /** As [sees], for a file of the solution by its [VirtualFile]. */
+    fun sees(file: PsiFile, other: VirtualFile): Boolean {
+        if (other == file.originalFile.viewProvider.virtualFile) return true
         val own = projectOf(file) ?: return true
-        val there = projectOf(other) ?: return true
+        val there = CompilationModel.getInstance(file.project).projectOf(other) ?: return true
         if (own == there) return true
         // the built output of that project among the assemblies of this one says it is referenced, however the reference is written
         if (assemblies(file).indexes.any { it.assemblyName.equals(there.nameWithoutExtension, ignoreCase = true) }) return true

@@ -217,7 +217,7 @@ internal class CSharpGenericChecks(private val checks: CSharpSemanticChecks, pri
      * without their `using` change nothing of `Make.Store<int, int>(1)`. Imports that do not resolve: anything may be there.
      */
     private fun extensionInScope(text: String, site: PsiElement): Boolean {
-        if (r.session.sourceExtensions(text).isNotEmpty() || !r.importsKnown(site)) return true
+        if (r.sourceExtensions(text).isNotEmpty() || !r.importsKnown(site)) return true
         val members = r.assemblies.membersNamed(text).filter { it.kind == IndexedMemberKind.EXTENSION_METHOD }
         if (members.isEmpty()) return false
         val visible = r.visibleNamespaces(site)

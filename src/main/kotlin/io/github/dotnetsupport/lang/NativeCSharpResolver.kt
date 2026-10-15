@@ -29,7 +29,11 @@ import java.util.IdentityHashMap
  * of the solution, named arguments, aliases, members of library types, types of referenced assemblies. Overloads are not told apart (step
  * 11d): every member of the name in the nearest type is a target. One instance per use: its caches are of one moment of the stubs.
  */
-class NativeCSharpResolver(val file: CSharpFile) {
+/**
+ * [visible]: whether a file of the solution is seen from [file] — the semantics gives the projects' references
+ * ([io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment.sees]); null sees every file (colors, navigation).
+ */
+class NativeCSharpResolver(val file: CSharpFile, private val visible: ((VirtualFile) -> Boolean)? = null) {
     private val project = file.project
     val scopes: NativeCSharpScopes = NativeCSharpScopes.of(file)
     private val fileTypesByQualifiedName = LinkedHashMap<String, MutableList<TypePart.Psi>>()
@@ -177,8 +181,15 @@ class NativeCSharpResolver(val file: CSharpFile) {
     // ---- types: of the file, of the solution (stubs)
 
     private fun stubTypes(name: String): List<TypePart> = stubsByName.getOrPut(name) {
-        NativeCSharpTypeNames.snapshotOf(file.originalFile.viewProvider.virtualFile)?.let { return@getOrPut it.stubs[name].orEmpty() }
-        stubParts(project, virtualFile, name, scope = sourceScope)
+        NativeCSharpTypeNames.snapshotOf(file.originalFile.viewProvider.virtualFile)?.let { return@getOrPut it.stubs[name].orEmpty().filter(::visiblePart) }
+        stubParts(project, virtualFile, name, scope = sourceScope).filter(::visiblePart)
+    }
+
+    /** Whether the file [part] is declared in is seen from this one ([visible]); yes when it is not known. */
+    private fun visiblePart(part: TypePart): Boolean {
+        val visible = visible ?: return true
+        val other = part.element()?.containingFile?.viewProvider?.virtualFile ?: return true
+        return visible(other)
     }
 
     /** The scope of the stub index, made once: completion reads thousands of names through it (0.1.172). */

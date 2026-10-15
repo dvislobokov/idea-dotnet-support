@@ -70,7 +70,7 @@ internal class CSharpUnusedUsings(private val resolver: CSharpNameResolver) {
             if (resolver.syntax.symbolAt(leaf) != null) return
             if (accessed) {
                 // an extension method of one of them, or a member nobody resolved
-                if (session.sourceExtensions(text).isNotEmpty()) needed += candidates
+                if (resolver.sourceExtensions(text).isNotEmpty()) needed += candidates
                 for (member in resolver.assemblies.membersNamed(text)) if (member.type.isStatic && member.type.namespace in candidates) needed += member.type.namespace
             } else if (NativeCSharpScopes.isFreeName(name) || parent is CSharpAttribute || name.parent is CSharpTypeCref || (parent as? CSharpQualifiedName)?.left == name) {
                 for (namespace in candidates) if (hasTypeNamed(namespace, text) || hasTypeNamed(namespace, text + "Attribute")) needed += namespace
@@ -87,12 +87,12 @@ internal class CSharpUnusedUsings(private val resolver: CSharpNameResolver) {
                 needed += symbol.member.type.namespace
                 // another extension method of the name may be the one the compiler takes
                 for (member in resolver.assemblies.membersNamed(text)) if (member.kind == IndexedMemberKind.EXTENSION_METHOD && member.type.namespace in candidates) needed += member.type.namespace
-                if (session.sourceExtensions(text).isNotEmpty()) needed += candidates
+                if (resolver.sourceExtensions(text).isNotEmpty()) needed += candidates
             }
             is CSharpSymbol.SourceMember -> if (resolver.isExtension(symbol)) {
                 resolver.namespaceOfMethod(symbol.element)?.let { needed += it } ?: needed.addAll(candidates)
                 for (member in resolver.assemblies.membersNamed(text)) if (member.kind == IndexedMemberKind.EXTENSION_METHOD && member.type.namespace in candidates) needed += member.type.namespace
-                if (session.sourceExtensions(text).size > 1) needed += candidates
+                if (resolver.sourceExtensions(text).size > 1) needed += candidates
             }
             else -> {}
         }
@@ -109,7 +109,7 @@ internal class CSharpUnusedUsings(private val resolver: CSharpNameResolver) {
 
     /** Extension methods the compiler calls without their name in the code: `await`, `foreach`, deconstruction, collection initializers, `using`. */
     private fun hasImplicitExtensions(namespace: String): Boolean {
-        if (IMPLICIT_NAMES.any { name -> session.sourceExtensions(name).isNotEmpty() }) return true
+        if (IMPLICIT_NAMES.any { name -> resolver.sourceExtensions(name).isNotEmpty() }) return true
         return IMPLICIT_NAMES.any { name -> resolver.assemblies.membersNamed(name).any { it.kind == IndexedMemberKind.EXTENSION_METHOD && it.type.namespace == namespace } }
     }
 

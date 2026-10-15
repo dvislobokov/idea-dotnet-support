@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.195
+
+- The visibility of 0.1.193 reaches everything of a project's sources: an extension method of a project this project does not reference
+  is not found (CS1061, as the compiler says), the parts of a type with the same name in several projects are not merged across
+  projects, and the checks that stayed quiet because "some project has an extension method of that name" look at the seen projects
+  only.
+
 ## 0.1.194
 
 - The rules that decided implicit conversions before the ported Roslyn ones are gone (213 lines): the port proves every conversion between

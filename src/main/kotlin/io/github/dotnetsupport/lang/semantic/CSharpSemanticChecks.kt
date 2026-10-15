@@ -390,7 +390,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
      */
     private fun extensionNamed(text: String, site: PsiElement, receiver: SemanticType, arity: Int? = null): Boolean {
         // with type arguments written only an extension method of as many type parameters is a candidate
-        if (session.sourceExtensions(text).any { e -> arity == null || ((e as? CSharpMethodDeclaration)?.typeParameterList?.parameters?.size ?: 0) == arity }) return true
+        if (resolver.sourceExtensions(text).any { e -> arity == null || ((e as? CSharpMethodDeclaration)?.typeParameterList?.parameters?.size ?: 0) == arity }) return true
         val visible = resolver.visibleNamespaces(site)
         val all = (resolver.assemblies.membersNamed(text) + resolver.assemblies.membersNamed("get_$text")).filter { arity == null || it.arity == arity || it.name.startsWith("get_") }
         // extension methods, and the accessors of C# 14 extension properties (static methods of a static class, `get_X`)

@@ -625,7 +625,7 @@ internal class CSharpInheritanceChecks(
         // a method group of static methods only leaves an extension method that takes the value as the one called; a field, property or
         // event found by the lookup is the answer, whatever extensions there are
         val methods = symbols.any { it is CSharpSymbol.SourceMember && it.element is CSharpMethodDeclaration || it is CSharpSymbol.LibraryMember && it.member.kind == IndexedMemberKind.METHOD }
-        if (methods && (session.sourceExtensions(text).isNotEmpty() ||
+        if (methods && (resolver.sourceExtensions(text).isNotEmpty() ||
                 resolver.assemblies.membersNamed(text).any { it.kind == IndexedMemberKind.EXTENSION_METHOD && resolver.receiverFits(CSharpSymbol.LibraryMember(it), receiver) })) return
         if (!allStatic(receiver, text)) return
         val shown = staticMemberDisplay(symbols.first(), text) ?: return

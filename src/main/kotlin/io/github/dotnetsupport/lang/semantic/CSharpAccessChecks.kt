@@ -312,7 +312,7 @@ internal class CSharpAccessChecks(private val resolver: CSharpNameResolver, priv
     }
 
     private fun extensionsNamed(text: String): Boolean =
-        session.sourceExtensions(text).isNotEmpty() || assemblies.membersNamed(text).any { it.kind == IndexedMemberKind.EXTENSION_METHOD }
+        resolver.sourceExtensions(text).isNotEmpty() || assemblies.membersNamed(text).any { it.kind == IndexedMemberKind.EXTENSION_METHOD }
 
     // ---- accessibility, C# §7.5, and what another assembly imports
 

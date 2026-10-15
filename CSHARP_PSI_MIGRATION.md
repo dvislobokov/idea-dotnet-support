@@ -369,8 +369,10 @@
     `.csproj` на Razor SDK глушит CS0103 как IDE. eShop 13 → 1, MudBlazor 2 → 1 (CS0535 `INumber<T>`, индексатор): артефактов не осталось, оставшаяся — настоящая: `static class
     Extensions` в глобальном пространстве имён девяти проектов, резолвер берёт чужой (`AppHost.cs:82 Extensions.IsFoundryEnabled`) —
     исправлено в 0.1.193: `CSharpSemanticEnvironment.sees(file, other)` — исходники другого проекта видны, только если этот проект
-    ссылается на тот (транзитивно по `ProjectReference`); `CSharpNameResolver.typesIn` отбрасывает невидимые части. То же правило ещё
-    не применено к extension-методам и членам (`membersNamed`, поиск расширений) — следующий шаг того же класса. Журнал: причина
+    ссылается на тот (транзитивно по `ProjectReference`). 0.1.195: правило доведено до конца — `NativeCSharpResolver(file, visible)`
+    получает предикат от семантики и фильтрует части типов из стабов (слияние частей `typeInfo`, `resolveType`), а
+    `CSharpNameResolver.sourceExtensions(text)` — расширения; шесть проверок, молчавших «если где-то есть расширение с таким именем»
+    (CS1061, доступ, generic, наследование, перегрузки, неиспользуемые usings), смотрят только видимые проекты. Журнал: причина
     `Result.Unknown` инферера проносится наружу, «applicable … not known» называет аргумент и преобразование.
   - [ ] D6e3. План заката старого мира. Шаг 1 (0.1.194): старые правила `classify` удалены (213 строк: `tuple`, `sameDefinition`,
     `variance`, `supertype`, `instances`, `sourceInstance`, `parameter`, `userConversion`, `variantReference`, мёртвый `instancesOf`) —
