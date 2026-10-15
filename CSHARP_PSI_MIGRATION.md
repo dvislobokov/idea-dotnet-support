@@ -321,6 +321,25 @@
   Не сделано: генераторы MSBuild-задач (gRPC, XAML) по-прежнему глушат ошибки; Razor
 - [ ] D5. Удалить модуль `io.github.dotnetsupport.roslyn`, страницу Language Server, `LSP_PLAN.md` — в историю
 
+**Перенос Binder** (решение пользователя 2026-10-15). Ложные ошибки корпуса Razor (R0b в `RAZOR_PLAN.md`) почти все — расхождения
+нашей семантики с алгоритмом Roslyn, не незнание языка: строгий путь по спецификации говорит «не знаю», эвристики (`refineByLambdas`,
+очки `pickByArguments`, мягкое `CSharpExpressionTypes.typeArguments`) выбирают — и ошибаются (`Func<Task<T>>` против `Func<T>`,
+`EventCallback.Factory.Create`). Поэтому алгоритмические куски Binder переносятся из Roslyn (`roslynCommit`, MIT — уведомление в
+заголовке перенесённого файла), как парсер: метод в метод, имена Roslyn в KDoc, без сообщений об ошибках и bound tree. Исходники —
+`.corpus/roslyn/src/Compilers/CSharp/Portable/Binder` (`tools/csharp-psi/fetch-roslyn.sh`).
+- [x] D6a (2026-10-15, без версии; тест `RoslynTypesTest`). Фасад типов `lang/semantic/roslyn/RoslynTypes`: то, что спрашивает Binder у `TypeSymbol` — вид, база, все интерфейсы,
+  аргументы типа и определение, nullable, массив, ссылочный / значимый, делегат и его `Invoke`, кортеж, параметр типа (метода / типа,
+  порядковый номер), особые типы (`object`, `ValueType`, `Enum`, `Task`…), подстановка, равенство (собранный проект — его исходники) —
+  поверх `SemanticType`, индекса сборок и PSI. Тест фасада на фикстурах.
+- [ ] D6b. `MethodTypeInference.cs` (3534 строки) → `RoslynMethodTypeInferrer`: фазы, фиксация по зависимостям, exact / lower / upper
+  bounds (массивы, nullable, сконструированные, классы, интерфейсы, кортежи, span), вывод из лямбд (явные параметры, выходной тип,
+  async) и групп методов. Аргументы — своя абстракция (тип, лямбда с выводом результата по типам параметров, группа методов, кортеж).
+  Сначала заменяет строгий `CSharpTypeInference.infer`, затем мягкий `typeArguments`. Гейт: `semanticGate` не хуже, харнесс корпуса
+  Razor, `RazorCorpusFalseErrorsTest`, `CompilerMessagesCoverageTest` — без новых `extra`.
+- [ ] D6c. `OverloadResolution.cs` (better function member, better conversion from expression, tie-breaks) — эвристики выбора уходят.
+- [ ] D6d. `ConversionsBase.cs` + `UserDefinedImplicitConversions.cs` — классификация преобразований (`T` → `T?`, пользовательские
+  преобразования generic-структур).
+
 **Сквозное:** шаг 0 — исходные замеры (время до первой подсказки, память) сейчас и после каждой вехи, `tools/ui-robot/baseline.py`.
 
 ## Шаги подробно
