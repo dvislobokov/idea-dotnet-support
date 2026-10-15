@@ -293,6 +293,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
                 for (i in known.indices) fixed[i] = known[i]
                 return fixed.toList().also { if (r.cycleCount == cycles) inferred[key] = it }
             }
+            if (withLambdas) SemanticTrace.trace { "typeArguments ${callee.text} at ${SemanticTrace.at(call)}: Roslyn's inference gave nothing (see `inference` above), the simple one answers; unified so far [${fixed.joinToString { SemanticTrace.show(it) }}]" }
             for ((lambda, parameter) in lambdas) {
                 if (!withLambdas) break
                 val delegate = parameter.type()?.let(::unwrapExpression) ?: continue
@@ -319,7 +320,10 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         arguments: List<CSharpArgument>, fixed: Array<SemanticType?>,
     ): List<SemanticType>? {
         // asked again from inside its own run (exponential in the overloads of nested lambdas): the simple inference answers
-        if (!roslynInferring.add(call)) return null
+        if (!roslynInferring.add(call)) {
+            SemanticTrace.trace { "typeArguments ${callee.text} at ${SemanticTrace.at(call)}: asked again from inside its own Roslyn inference, the simple one answers" }
+            return null
+        }
         try {
             return roslynTypeArgumentsOnce(symbol, call, callee, reduced, parameters, arguments, fixed)
         } finally {

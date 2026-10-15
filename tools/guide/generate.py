@@ -138,6 +138,8 @@ def settings():
                "сопутствующие using по статистике не добавляются."),
         option("settings.behavior.hideObviousHints", ON,
                note("settings.behavior.hideObviousHints.comment") + ". Как «Hide hints for obvious types» в Rider; подсказки параметров и лямбд не затрагивает."),
+        option("settings.behavior.semanticLog", ON,
+               note("settings.behavior.semanticLog.comment") + ". Включён по умолчанию, пока основные проблемы анализа не решены; записи — только отказы и откаты, не «всё хорошо»."),
         option("settings.behavior.rememberChoices", ON,
                note("settings.behavior.rememberChoices.comment") + ". Вид места — после точки, начало оператора, аргумент, тип, справа от <code>=</code>. "
                "Без ML-ранкера выбранное поднимается внутри группы одного приоритета; с ранкером к его оценке прибавляется "

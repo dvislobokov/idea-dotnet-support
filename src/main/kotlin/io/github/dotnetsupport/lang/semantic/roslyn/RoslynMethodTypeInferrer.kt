@@ -3,6 +3,7 @@
 // MIT License (NOTICE.md). Kotlin names are Roslyn's with a lower-case first letter; what is left out and why — CSHARP_PSI_MIGRATION.md, D6b.
 package io.github.dotnetsupport.lang.semantic.roslyn
 
+import io.github.dotnetsupport.lang.semantic.SemanticTrace
 import io.github.dotnetsupport.lang.semantic.SemanticType
 
 /**
@@ -66,7 +67,11 @@ internal class RoslynMethodTypeInferrer(
     }
 
     /** Thrown where a fact the inference needs is not known: the result is [Result.Unknown]. */
-    class Unknown : RuntimeException(null, null, false, false)
+    /** A fact the inference needs is not known; [reason] when the thrower says why, else the stack (kept only with the debug log on) says where. */
+    class Unknown(val reason: String = "") : RuntimeException(reason, null, false, SemanticTrace.enabled) {
+        /** [reason], or the method of the inferrer that gave up (`inferReturnType:782`); `?` without the log. */
+        fun describe(): String = reason.ifEmpty { stackTrace.firstOrNull { !it.className.endsWith("Unknown") }?.let { "${it.methodName}:${it.lineNumber}" } ?: "?" }
+    }
 
     private enum class InferenceResult { INFERENCE_FAILED, MADE_PROGRESS, NO_PROGRESS, SUCCESS }
 

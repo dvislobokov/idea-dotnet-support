@@ -33,6 +33,20 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
         symbol: CSharpSymbol, targets: List<SemanticType?>, arguments: List<CSharpArgument>, receiver: Pair<SemanticType, SemanticType?>?, call: CSharpInvocationExpression?,
         site: CSharpSimpleName?, lenient: Boolean = false, onFixed: ((Int, SemanticType) -> Unit)? = null,
     ): Inferred {
+        val where = { "inference ${site?.text ?: SemanticTrace.show(symbol)}${if (lenient) " (lenient)" else ""} at ${SemanticTrace.at(call ?: site)}" }
+        // Failed is a decision (the candidate does not apply, as in Roslyn), Unknown is a refusal: only the latter goes to the log
+        return try {
+            inferOrThrow(symbol, targets, arguments, receiver, call, site, lenient, onFixed)
+        } catch (e: RoslynMethodTypeInferrer.Unknown) {
+            SemanticTrace.trace { "${where()}: Unknown — ${e.describe()}" }
+            Inferred.Unknown
+        }
+    }
+
+    private fun inferOrThrow(
+        symbol: CSharpSymbol, targets: List<SemanticType?>, arguments: List<CSharpArgument>, receiver: Pair<SemanticType, SemanticType?>?, call: CSharpInvocationExpression?,
+        site: CSharpSimpleName?, lenient: Boolean, onFixed: ((Int, SemanticType) -> Unit)?,
+    ): Inferred {
         val owner = (symbol as? CSharpSymbol.SourceMember)?.element
         val names = r.typeParameterNames(owner)
         val arity = r.expressions.methodArity(symbol)
@@ -52,38 +66,35 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
             is SemanticType.Library -> type.arguments.any(::mentions)
             is SemanticType.Source -> type.arguments.any(::mentions) || mentions(type.outer)
         }
-        return try {
-            val formal = ArrayList<SemanticType?>()
-            val byReference = ArrayList<Boolean>()
-            val inferenceArguments = ArrayList<InferenceArgument>()
-            // the receiver of a reduced extension method is its first argument
-            if (receiver != null) {
-                formal += receiver.second ?: return Inferred.Unknown
-                byReference += false
-                inferenceArguments += InferenceArgument.Typed(receiver.first)
-            }
-            for ((i, argument) in arguments.withIndex()) {
-                val target = targets.getOrNull(i) ?: return Inferred.Unknown
-                val kind = argument.refKindKeyword?.text
-                formal += target
-                byReference += kind == "ref" || kind == "out" || kind == "in"
-                // an argument whose parameter mentions no type parameter of the method gives no inference: its type need not be known
-                inferenceArguments += if (!mentions(target)) InferenceArgument.Opaque else argument(argument.expression ?: return Inferred.Unknown, lenient)
-            }
-            when (val result = RoslynMethodTypeInferrer(RoslynTypes(r), arity, ordinalOf, formal, byReference, inferenceArguments, onFixed = onFixed).infer()) {
-                is RoslynMethodTypeInferrer.Result.Known -> Inferred.Known(result.types)
-                RoslynMethodTypeInferrer.Result.Failed -> Inferred.Failed
-                RoslynMethodTypeInferrer.Result.Unknown -> Inferred.Unknown
-            }
-        } catch (_: RoslynMethodTypeInferrer.Unknown) {
-            Inferred.Unknown
+        val formal = ArrayList<SemanticType?>()
+        val byReference = ArrayList<Boolean>()
+        val inferenceArguments = ArrayList<InferenceArgument>()
+        // the receiver of a reduced extension method is its first argument
+        if (receiver != null) {
+            formal += receiver.second ?: throw RoslynMethodTypeInferrer.Unknown("the type of the `this` parameter is not known")
+            byReference += false
+            inferenceArguments += InferenceArgument.Typed(receiver.first)
+        }
+        for ((i, argument) in arguments.withIndex()) {
+            val target = targets.getOrNull(i) ?: throw RoslynMethodTypeInferrer.Unknown("the type of parameter ${i + 1} is not known")
+            val kind = argument.refKindKeyword?.text
+            formal += target
+            byReference += kind == "ref" || kind == "out" || kind == "in"
+            // an argument whose parameter mentions no type parameter of the method gives no inference: its type need not be known
+            inferenceArguments += if (!mentions(target)) InferenceArgument.Opaque
+            else argument(argument.expression ?: throw RoslynMethodTypeInferrer.Unknown("argument ${i + 1} has no expression"), lenient)
+        }
+        return when (val result = RoslynMethodTypeInferrer(RoslynTypes(r), arity, ordinalOf, formal, byReference, inferenceArguments, onFixed = onFixed).infer()) {
+            is RoslynMethodTypeInferrer.Result.Known -> Inferred.Known(result.types)
+            RoslynMethodTypeInferrer.Result.Failed -> Inferred.Failed
+            RoslynMethodTypeInferrer.Result.Unknown -> throw RoslynMethodTypeInferrer.Unknown("the inferrer answered Unknown")
         }
     }
 
     /** An argument as Roslyn's inference sees it (the kind of its `BoundExpression`). */
     private fun argument(expression: CSharpExpression, lenient: Boolean): InferenceArgument {
         val value = overloads.unparenthesized(expression)
-        val unknownType = { if (lenient) InferenceArgument.Typed(null) else throw RoslynMethodTypeInferrer.Unknown() }
+        val unknownType = { if (lenient) InferenceArgument.Typed(null) else throw RoslynMethodTypeInferrer.Unknown("the type of argument `${SemanticTrace.text(value)}` is not known") }
         return when {
             value is CSharpAnonymousFunctionExpression -> lambda(value)
             isMethodGroup(value) -> InferenceArgument.MethodGroup { parameters -> methodGroupReturnType(value, parameters) }
@@ -113,7 +124,9 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
         return InferenceArgument.Lambda(parameters.size, hasSignature, explicit, explicitReturnType) { delegateParameters, delegateReturnType ->
             // the body is typed by the resolver, which types implicit parameters by its own inference: only where that agrees with this one
             if (explicit == null) for ((i, p) in parameters.withIndex()) {
-                if (overloads.same(r.lambdaParameterType(p), delegateParameters.getOrNull(i)) != true) throw RoslynMethodTypeInferrer.Unknown()
+                if (overloads.same(r.lambdaParameterType(p), delegateParameters.getOrNull(i)) != true) {
+                    throw RoslynMethodTypeInferrer.Unknown("lambda parameter `${p.identifier?.text}` is ${SemanticTrace.show(r.lambdaParameterType(p))} to the resolver, ${SemanticTrace.show(delegateParameters.getOrNull(i))} to the inference")
+                }
             }
             val returned = returnedType(lambda)
             if (!r.expressions.isAsync(lambda.modifiers)) returned else asyncReturnType(returned, delegateReturnType)
@@ -139,14 +152,14 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
     private fun returnedType(lambda: CSharpAnonymousFunctionExpression): SemanticType? {
         val body = lambda.expressionBody
         if (body != null) {
-            val type = r.typeOf(body) ?: throw RoslynMethodTypeInferrer.Unknown()
+            val type = r.typeOf(body) ?: throw RoslynMethodTypeInferrer.Unknown("the type of the lambda body `${SemanticTrace.text(body)}` is not known")
             return type.takeIf { r.definitionName(it) != VOID }
         }
-        val block = lambda.block ?: throw RoslynMethodTypeInferrer.Unknown()
+        val block = lambda.block ?: throw RoslynMethodTypeInferrer.Unknown("the lambda has no body")
         val returned = PsiTreeUtil.findChildrenOfType(block, CSharpReturnStatement::class.java).filter { inLambda(it, lambda) }.mapNotNull { it.expression }
         if (returned.isEmpty()) return null
-        val types = returned.map { r.typeOf(it) ?: throw RoslynMethodTypeInferrer.Unknown() }
-        if (types.any { overloads.same(it, types.first()) != true }) throw RoslynMethodTypeInferrer.Unknown()
+        val types = returned.map { r.typeOf(it) ?: throw RoslynMethodTypeInferrer.Unknown("the type of `return ${SemanticTrace.text(it)}` in the lambda is not known") }
+        if (types.any { overloads.same(it, types.first()) != true }) throw RoslynMethodTypeInferrer.Unknown("the returns of the lambda differ in type: [${types.joinToString { SemanticTrace.show(it) }}]")
         return types.first()
     }
 

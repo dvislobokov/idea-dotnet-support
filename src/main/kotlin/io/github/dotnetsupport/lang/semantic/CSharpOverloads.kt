@@ -92,6 +92,19 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         // Roslyn's classification, ported (CSHARP_PSI_MIGRATION.md, D6d), proves a conversion; what it does not prove, the rules below decide
         val proved = if (userDefined) roslynConversions.classifyImplicitConversionFromType(from, to) else roslynConversions.classifyStandardImplicitConversion(from, to)
         if (proved != null) return if (proved == RoslynConversions.Kind.IDENTITY) Conversion.IDENTITY else Conversion.IMPLICIT
+        val answer = classifyUnproved(from, to, userDefined, depth)
+        // the log of the analysis: a conversion the port left to the old rules and they found (the port's gap, D6e3) or could not tell; NONE
+        // is a decision both agree on (no conversion) — not logged
+        if (depth == 0 && answer != Conversion.NONE && SemanticTrace.enabled && tracedConversions.add(Triple(from.toString(), to.toString(), userDefined))) {
+            SemanticTrace.write("classify ${SemanticTrace.show(from)} -> ${SemanticTrace.show(to)}${if (userDefined) "" else " (standard)"}: port unproved, old rules $answer")
+        }
+        return answer
+    }
+
+    private val tracedConversions = HashSet<Triple<String, String, Boolean>>()
+
+    /** The rules before the port ([RoslynConversions]): what they still decide the port does not prove yet. */
+    private fun classifyUnproved(from: SemanticType, to: SemanticType, userDefined: Boolean, depth: Int): Conversion {
         when (same(from, to)) {
             true -> return Conversion.IDENTITY
             null -> if (from !is SemanticType.Parameter && to !is SemanticType.Parameter && r.definitionName(from) == r.definitionName(to)) return Conversion.IDENTITY
@@ -1088,7 +1101,10 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
                 val isReduced = reduced && r.isExtension(symbol)
                 twins = ownTwins
                 val form = applicable(symbol, isReduced, arguments, types, call, site, lambdas) ?: continue
-                if (form === UNKNOWN_FORM) return null
+                if (form === UNKNOWN_FORM) {
+                    SemanticTrace.trace { "resolve ${site?.text} at ${SemanticTrace.at(site)}: gave up, the applicability of ${SemanticTrace.show(symbol)} is not known" }
+                    return null
+                }
                 applicable += form
             }
             if (applicable.size == 1) return applicable.single().symbol
@@ -1098,10 +1114,15 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
             var best: Form? = null
             for (m in pool) {
                 if (pool.all { n -> n === m || betterMember(m, n, arguments, types, receiver) == true }) {
-                    if (best != null) return null
+                    if (best != null) {
+                        val first = best
+                        SemanticTrace.trace { "resolve ${site?.text} at ${SemanticTrace.at(site)}: gave up, ${SemanticTrace.show(first.symbol)} and ${SemanticTrace.show(m.symbol)} both unbeaten" }
+                        return null
+                    }
                     best = m
                 }
             }
+            if (best == null) SemanticTrace.trace { "resolve ${site?.text} at ${SemanticTrace.at(site)}: gave up, no best of [${pool.joinToString { SemanticTrace.show(it.symbol) }}] (a comparison not known or none better)" }
             return best?.symbol
         } finally {
             openOwners -= owners.toSet()
@@ -1171,6 +1192,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         val parameters = (if (reduced) all.drop(1) else all).let(::withParamsSpan)
         val generic = r.isGeneric(symbol)
         val methodArguments: List<SemanticType?> = if (generic && call != null && site != null) r.expressions.typeArguments(symbol, call, site, withLambdas = lambdas) else emptyList()
+        // a candidate that does not apply is a decision, not a refusal: not logged
         if (generic && !constraintsHold(symbol, methodArguments)) return null
         // a type parameter the lenient inference left open: when Roslyn's inference surely fails, the candidate is not applicable
         // (`Should<TCollection, TKey, TValue>(this TCollection)` of an `IDictionary` infers no TKey — AwesomeAssertions in MudBlazor's tests)
@@ -1221,11 +1243,15 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
                 }
             }
             if (!fits) continue
-            if (unknown) return UNKNOWN_FORM
+            if (unknown) {
+                SemanticTrace.trace { "applicable ${site?.text} at ${SemanticTrace.at(site)}: ${SemanticTrace.show(symbol)} not known — an argument's conversion or a parameter's type is not known" }
+                return UNKNOWN_FORM
+            }
             val defaults = parameters.indices.any { p -> p !in map && !(expanded && p == parameters.size - 1) }
             return Form(symbol, parameters, targets, declaredTargets, expanded, defaults, generic, if (expanded) parameters.last().type() else null, receiverTarget,
                 declaredReceiver = if (reduced) all.first().type() else null)
         }
+        if (unknown) SemanticTrace.trace { "applicable ${site?.text} at ${SemanticTrace.at(site)}: ${SemanticTrace.show(symbol)} not known — an argument's conversion or a parameter's type is not known" }
         return if (unknown) UNKNOWN_FORM else null
     }
 

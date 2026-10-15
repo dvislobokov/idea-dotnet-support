@@ -346,13 +346,22 @@
   переключает три пары `strictLambda`/`lambda`, `strictGroup`/`groupConversion`, `strictReturnType`), «не знаю» без причины (189 выходов в
   `UNKNOWN`/`null` в `CSharpOverloads`, 65 в `CSharpExpressionTypes`, 63 `throw Unknown()` в инферере), четыре защиты от циклов (`inferred`,
   `inferring`, `roslynInferring`, `cycleCount`+`busyTypes`), один проект харнесса — 2–3 минуты, полная проверка — ~25. По отдаче:
-  - [ ] D6e1. Отладочный журнал семантики (решение пользователя 2026-10-15: без отдельного пункта меню — флажок в настройках и журнал
-    плагина). Флажок Settings | .NET «Write the debug log of the C# analysis» (`DotNetSettings.semanticDebugLog`, по образцу
-    `ml.inline.debugLog`); `lang/semantic/SemanticTrace.trace { … }` пишет в `PluginLog` категорию `semantic` (окно .NET → Plugin Logs и
+  - [x] D6e1 (0.1.191; тест `SemanticTraceTest`). Отладочный журнал семантики (решение пользователя 2026-10-15: без отдельного пункта
+    меню — флажок в настройках и журнал плагина). Флажок Settings | .NET «Write the debug log of the C# analysis» (`DotNetSettings.semanticDebugLog`, по образцу
+    `ml.inline.debugLog`; **включён по умолчанию**, пока не решены основные проблемы семантики — решение пользователя 2026-10-15);
+    `lang/semantic/SemanticTrace.trace { … }` пишет в `PluginLog` категорию `semantic` (окно .NET → Plugin Logs и
     `~/idea-dotnet-logs/plugin/`), при выключенном флажке лямбда не вычисляется; в тестах — `SemanticTrace.collectForTests`. Правило — в
     `CLAUDE.md`, «Отладочный журнал семантики»: каждое место, где семантика сдаётся (`UNKNOWN` / `null` / `throw Unknown()`, откат от
     порта к старым правилам, сработавшая защита от циклов), пишет одну строку: что спрашивали, какой путь ответил, почему не смог.
-    Вместо бисекта переменными окружения — включить флажок, воспроизвести, прочитать журнал.
+    Вместо бисекта переменными окружения — включить флажок, воспроизвести, прочитать журнал. Первый прогон на MudBlazor (0.1.191):
+    7910 строк за проход, одна и та же до 10 раз — строгий вывод `inference` зовут много раз за один вызов (след для D6e4: кэш
+    результата вывода по вызову), поэтому одинаковая строка пишется раз за сеанс; `inference Create … Failed — Create<1> has a type
+    parameter with no bound` в сгенерированных `.razor.g.cs` — это известный `EventCallback.Factory.Create<T>` с `(c ? M : null)!`,
+    виден без бисекта. После правила «решение — не отказ» (кандидат не подошёл, преобразования нет — не пишется) и дедупликации: 22 756
+    строк, 3,4 МБ за проход по MudBlazor (~13 на файл), харнесс 162 с против 149 без журнала; в `idea.log` категория не зеркалится.
+    Что журнал показал сразу (материал D6e3): `resolve … gave up` 6,6 тыс., `inference … Unknown` 5,7 тыс. (`Add`/`AddAttribute` из
+    `RenderTreeBuilder`, «the inferrer answered Unknown» — причину внутри `RoslynMethodTypeInferrer.Result.Unknown` ещё надо подписать),
+    `typeArguments` откат к простому выводу 4,8 тыс., циклы `typeOf` 2,3 тыс.
   - [ ] D6e2. Харнесс по одному файлу (`SOLUTION_HARNESS_FILE=…`): ~20 секунд вместо 3 минут на проект.
   - [ ] D6e3. План заката старого мира: каждый порт **заменяет**, а не «сначала, при неудаче». Как только корпус Razor и SberEmp.Shared
     равны — удалить старые правила `classify`, `score`/tie-break'и, `unify`+`refineByLambdas`, флаг `strict`; после D6c — и эвристики

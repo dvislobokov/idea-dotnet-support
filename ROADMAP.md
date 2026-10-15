@@ -707,7 +707,8 @@
     преобразования по классификации Roslyn (D6d, MudBlazor 17 → 7); 0.1.190 — база из своего файла, async-лямбда → `ValueTask<T>`,
     `null` к делегату с результатом, невыводимый generic не кандидат, получатель в «более конкретном», группа методов extension-метода
     (MudBlazor 7 → 1 настоящая: явный член по умолчанию `INumber<T>` — индексатор; nopCommerce 5 → 0). Артефакты харнесса (CS0101 между
-    проектами, `src/Shared` eShop по ссылкам) — D6e2 Тесты `RazorCorpusFalseErrorsTest`, `RoslynTypesTest`, `RoslynMethodTypeInferenceTest`
+    проектами, `src/Shared` eShop по ссылкам) — D6e2. 0.1.191 — отладочный журнал анализа C# (D6e1: флажок Settings | .NET, категория
+    `semantic` журнала плагина, включён по умолчанию; тест `SemanticTraceTest`) Тесты `RazorCorpusFalseErrorsTest`, `RoslynTypesTest`, `RoslynMethodTypeInferenceTest`
   - [x] F0 (2026-10-15, без версии: пользователю не видно) — фреймворки модулями рядом с ядром C#: точка расширения `csharpCodeGenerators`, модули `frameworks.razor` / `xaml` / `avalonia` / `grpc` вместо списков в `mayGenerateTypes`; тесты `CSharpCodeGeneratorsTest` (старая формула против новой), `FrameworkBoundaryTest`
 
 ### Помощники на .NET, работающие постоянно (план 2026-10-03)

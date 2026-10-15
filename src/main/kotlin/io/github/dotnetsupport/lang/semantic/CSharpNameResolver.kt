@@ -1260,6 +1260,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         if (expressionTypes.containsKey(expression)) return expressionTypes[expression]
         if (!busyTypes.add(expression)) {
             cycles++
+            SemanticTrace.trace { "typeOf `${SemanticTrace.text(expression)}` at ${SemanticTrace.at(expression)}: asked while being typed (a cycle), not known" }
             return null
         }
         try {

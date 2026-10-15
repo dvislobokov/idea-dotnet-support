@@ -3,6 +3,14 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.191
+
+- The debug log of the C# analysis: every place where the analysis gives up or falls back to a simpler rule — a conversion the ported
+  Roslyn rules do not prove, a type inference that cannot finish and why, an overload resolution that cannot pick, a candidate dropped,
+  a type asked while being computed — writes one line to the plugin log, category `semantic` (.NET | Plugin Logs, and
+  `~/idea-dotnet-logs/plugin/plugin-<day>.log`). Settings | .NET → "Write the debug log of the C# analysis", on by default for now:
+  attach the lines of the file and the place to a report of a false error. Nothing is written for what went well.
+
 ## 0.1.190
 
 False errors of C# the Razor corpus still showed after 0.1.189. nopCommerce is at none, MudBlazor at one (a default interface member

@@ -72,6 +72,12 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
         var importStatistics by property(true)
         /** No type hint after `var` when the initializer says it (`new T()`, a literal, a cast, an enum member), see [io.github.dotnetsupport.lang.NativeCSharpInlayHints] (0.1.152). */
         var hideObviousTypeHints by property(true)
+        /**
+         * The debug log of the C# analysis: where the semantics gives up or falls back, one line in the plugin log (category `semantic`), see
+         * [io.github.dotnetsupport.lang.semantic.SemanticTrace]. On by default until the main problems of the semantics are solved (user decision
+         * 2026-10-15, CSHARP_PSI_MIGRATION.md D6e1).
+         */
+        var semanticDebugLog by property(true)
 
         /** Of the settings pages: the one of the IDE, or chosen here (there is no Russian language pack for the IDE itself). */
         var language by enum(PluginLanguage.AUTO)
@@ -139,6 +145,18 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
     var hideObviousTypeHints: Boolean
         get() = state.hideObviousTypeHints
         set(value) { state.hideObviousTypeHints = value }
+
+    var semanticDebugLog: Boolean
+        get() = state.semanticDebugLog
+        set(value) {
+            state.semanticDebugLog = value
+            io.github.dotnetsupport.lang.semantic.SemanticTrace.enabled = value
+        }
+
+    override fun loadState(state: Settings) {
+        super.loadState(state)
+        io.github.dotnetsupport.lang.semantic.SemanticTrace.enabled = state.semanticDebugLog
+    }
 
     var completionExclusions: List<String>
         get() = state.completionExclusions.toList()
@@ -347,6 +365,7 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
                 row { checkBox(DotNetBundle.message("settings.behavior.bracketColors")).bindSelected(settings::colorizeBrackets).comment(DotNetBundle.message("settings.behavior.bracketColors.comment"), maxLineLength = COMMENT_WIDTH) }
                 row { checkBox(DotNetBundle.message("settings.behavior.mapping")).bindSelected(settings::mappingCompletion).comment(DotNetBundle.message("settings.behavior.mapping.comment"), maxLineLength = COMMENT_WIDTH) }
                 row { checkBox(DotNetBundle.message("settings.behavior.hideObviousHints")).bindSelected(settings::hideObviousTypeHints).comment(DotNetBundle.message("settings.behavior.hideObviousHints.comment"), maxLineLength = COMMENT_WIDTH) }
+                row { checkBox(DotNetBundle.message("settings.behavior.semanticLog")).bindSelected(settings::semanticDebugLog).comment(DotNetBundle.message("settings.behavior.semanticLog.comment"), maxLineLength = COMMENT_WIDTH) }
                 row { checkBox(DotNetBundle.message("settings.behavior.importStats")).bindSelected(settings::importStatistics).comment(DotNetBundle.message("settings.behavior.importStats.comment"), maxLineLength = COMMENT_WIDTH) }
                 row {
                     checkBox(DotNetBundle.message("settings.behavior.rememberChoices")).bindSelected(settings::rememberChoices).comment(DotNetBundle.message("settings.behavior.rememberChoices.comment"), maxLineLength = COMMENT_WIDTH)

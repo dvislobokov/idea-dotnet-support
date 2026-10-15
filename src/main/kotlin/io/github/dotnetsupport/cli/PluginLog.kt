@@ -37,13 +37,16 @@ object PluginLog {
 
     fun info(category: String, text: String) = log(LogLevel.INFO, category, text)
 
+    /** As [info], to the plugin log only, not to the log of the IDE (the debug log of the C# analysis writes thousands of lines a pass). */
+    fun infoQuiet(category: String, text: String) = log(LogLevel.INFO, category, text, mirror = false)
+
     fun warn(category: String, text: String, cause: Throwable? = null) = log(LogLevel.WARN, category, withCause(text, cause), cause)
 
     fun error(category: String, text: String, cause: Throwable? = null) = log(LogLevel.ERROR, category, withCause(text, cause), cause)
 
     private fun withCause(text: String, cause: Throwable?): String = if (cause == null) text else "$text: ${describe(cause)}"
 
-    private fun log(level: LogLevel, category: String, text: String, cause: Throwable? = null) {
+    private fun log(level: LogLevel, category: String, text: String, cause: Throwable? = null, mirror: Boolean = true) {
         val entry = LogEntry(LocalDateTime.now(), level, category, text.trimEnd())
         synchronized(recent) {
             recent.addLast(entry)
@@ -52,7 +55,7 @@ object PluginLog {
         file.append(entry.format() + "\n")
         // the IDE log keeps the short line too, and the full trace of what the plugin did not expect, for the developer
         val ideText = "[$category] ${entry.text}"
-        when {
+        if (mirror) when {
             level == LogLevel.INFO -> LOG.info(ideText)
             cause != null && !isExpected(cause) -> LOG.warn(ideText, cause)
             else -> LOG.warn(ideText)
