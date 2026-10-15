@@ -110,19 +110,29 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
             parameters.map { p -> p.type?.let(r::resolveType) ?: throw RoslynMethodTypeInferrer.Unknown() }
         } else null
         val explicitReturnType = (lambda as? CSharpParenthesizedLambdaExpression)?.returnType?.let { r.resolveType(it) ?: throw RoslynMethodTypeInferrer.Unknown() }
-        return InferenceArgument.Lambda(parameters.size, hasSignature, explicit, explicitReturnType) { delegateParameters ->
+        return InferenceArgument.Lambda(parameters.size, hasSignature, explicit, explicitReturnType) { delegateParameters, delegateReturnType ->
             // the body is typed by the resolver, which types implicit parameters by its own inference: only where that agrees with this one
             if (explicit == null) for ((i, p) in parameters.withIndex()) {
                 if (overloads.same(r.lambdaParameterType(p), delegateParameters.getOrNull(i)) != true) throw RoslynMethodTypeInferrer.Unknown()
             }
             val returned = returnedType(lambda)
-            // an async one gives `Task<X>`, or `Task` without a value (§12.6.3.13)
-            if (!r.expressions.isAsync(lambda.modifiers)) returned
-            else {
-                val task = r.libraryType(if (returned == null) "System.Threading.Tasks.Task" else "System.Threading.Tasks.Task`1") ?: throw RoslynMethodTypeInferrer.Unknown()
-                if (returned == null) task else SemanticType.Library(task.type, listOf(returned))
-            }
+            if (!r.expressions.isAsync(lambda.modifiers)) returned else asyncReturnType(returned, delegateReturnType)
         }
+    }
+
+    /**
+     * What an async lambda returning [returned] (null: no value) gives (§12.6.3.13): the task-like type the delegate returns, built over it —
+     * `ValueTask<X>` for a `Func<…, ValueTask<TResult>>` (nopCommerce's `AsyncEnumerable.Select(async (x, _) => …)` was CS0411) — else
+     * `Task<X>`, or `Task` without a value.
+     */
+    private fun asyncReturnType(returned: SemanticType?, delegateReturnType: SemanticType?): SemanticType {
+        val taskLike = (delegateReturnType as? SemanticType.Library)?.type?.takeIf { it.fullName in TASK_LIKE }
+        if (taskLike != null) {
+            if (returned != null && taskLike.typeParameters.size == 1) return SemanticType.Library(taskLike, listOf(returned))
+            if (returned == null && taskLike.typeParameters.isEmpty()) return SemanticType.Library(taskLike, emptyList())
+        }
+        val task = r.libraryType(if (returned == null) "System.Threading.Tasks.Task" else "System.Threading.Tasks.Task`1") ?: throw RoslynMethodTypeInferrer.Unknown()
+        return if (returned == null) task else SemanticType.Library(task.type, listOf(returned))
     }
 
     /** What the body of [lambda] returns: its expression, the one type of the `return`s of its block; null when it returns no value. */
@@ -167,5 +177,6 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
 
     companion object {
         private const val VOID = "System.Void"
+        private val TASK_LIKE = setOf("System.Threading.Tasks.Task", "System.Threading.Tasks.Task`1", "System.Threading.Tasks.ValueTask", "System.Threading.Tasks.ValueTask`1")
     }
 }

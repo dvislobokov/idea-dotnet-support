@@ -267,4 +267,153 @@ class RazorCorpusFalseErrorsTest : BasePlatformTestCase() {
             }
         """))
     }
+
+    /** MudBlazor's KeyObserverTests: `KeyUp(null)` takes the delegate returning a value over the `void` one (Roslyn's better conversion target). */
+    fun testNullGoesToTheDelegateReturningAValue() {
+        assertEmpty(errors("""
+            using System;
+            using System.Threading.Tasks;
+            class Args { }
+            static class KeyObserver
+            {
+                public static int KeyUp(Func<Args, Task>? lambda) => 1;
+                public static string KeyUp(Action<Args>? lambda) => "";
+                static int M() => KeyUp(null);
+            }
+        """))
+    }
+
+    /** MudBlazor's tests: AwesomeAssertions' `Should()` of an `IDictionary<K, V>` is the dictionary one, among overloads that cannot apply. */
+    fun testShouldOfADictionary() {
+        assertEmpty(errors("""
+            using System;
+            using System.Collections.Generic;
+            class ObjectAssertions { }
+            class EnumAssertions { }
+            class CollectionAssertions<T> { }
+            class DictionaryAssertions<TKey, TValue> { public void NotBeEmpty() { } }
+            static class AssertionExtensions
+            {
+                public static ObjectAssertions Should(this object actualValue) => new();
+                public static CollectionAssertions<T> Should<T>(this IEnumerable<T> actualValue) => new();
+                public static CollectionAssertions<string> Should(this IEnumerable<string> actualValue) => new();
+                public static DictionaryAssertions<TKey, TValue> Should<TKey, TValue>(this IDictionary<TKey, TValue> actualValue) => new();
+                public static DictionaryAssertions<TKey, TValue> Should<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> actualValue) => new();
+                public static DictionaryAssertions<TKey, TValue> Should<TCollection, TKey, TValue>(this TCollection actualValue)
+                    where TCollection : IEnumerable<KeyValuePair<TKey, TValue>> => new();
+            }
+            static class EnumAssertionsExtensions
+            {
+                public static EnumAssertions Should<TEnum>(this TEnum @enum) where TEnum : struct, Enum => new();
+            }
+            delegate void SizeChanged(IDictionary<string, int> changes);
+            class Tests
+            {
+                event SizeChanged? OnResized;
+                IDictionary<int, string> Observers => new Dictionary<int, string>();
+                void M()
+                {
+                    OnResized += (sizeChanges) => sizeChanges.Should().NotBeEmpty();
+                    Observers.Should().NotBeEmpty();
+                }
+            }
+        """))
+    }
+
+    /** MudBlazor's SearchServiceTests: `Should()` of an `IReadOnlyList<KeyValuePair<K, V>>` is the one of `IEnumerable<KeyValuePair<TKey, TValue>>`. */
+    fun testShouldOfAListOfPairs() {
+        val found = errors("""
+            using System;
+            using System.Collections.Generic;
+            class ObjectAssertions { }
+            class EnumAssertions { }
+            class CollectionAssertions<T> { public void NotBeEmpty() { } }
+            class DictionaryAssertions<TKey, TValue> { public void NotBeEmpty() { } }
+            static class AssertionExtensions
+            {
+                public static ObjectAssertions Should(this object actualValue) => new();
+                public static CollectionAssertions<T> Should<T>(this IEnumerable<T> actualValue) => new();
+                public static CollectionAssertions<string> Should(this IEnumerable<string> actualValue) => new();
+                public static DictionaryAssertions<TKey, TValue> Should<TKey, TValue>(this IDictionary<TKey, TValue> actualValue) => new();
+                public static DictionaryAssertions<TKey, TValue> Should<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> actualValue) => new();
+                public static DictionaryAssertions<TKey, TValue> Should<TCollection, TKey, TValue>(this TCollection actualValue)
+                    where TCollection : IEnumerable<KeyValuePair<TKey, TValue>> => new();
+            }
+            static class EnumAssertionsExtensions
+            {
+                public static EnumAssertions Should<TEnum>(this TEnum @enum) where TEnum : struct, Enum => new();
+            }
+            interface ISearchService { IReadOnlyList<T> Search<T>(IEnumerable<T> items, Func<T, IEnumerable<string>> getKeywords, string query) where T : notnull; }
+            class Tests
+            {
+                static readonly ISearchService Service = null!;
+                static readonly IReadOnlyList<KeyValuePair<string, string>> SyntheticIndex = [new("button", "Button")];
+                void M(string query)
+                {
+                    var results = Service.Search(SyntheticIndex, e => [e.Key], query);
+                    results.Should().NotBeEmpty();
+                    results.Should().Nope();
+                }
+            }
+            // nopCommerce's Nop.Tests: `request.Headers.Should().Contain(h => …)` — a class implementing `IEnumerable<KeyValuePair<K, V>>`
+            class Headers : IEnumerable<KeyValuePair<string, IEnumerable<string>>>
+            {
+                public IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumerator() => null!;
+                System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => null!;
+            }
+            class HeaderTests
+            {
+                void M(Headers headers) => headers.Should().Nope();
+            }
+        """)
+        // the control: the answer is the dictionary assertions, so a member they lack is an error on them
+        assertEquals(found.toString(), 2, found.size)
+        assertTrue(found[0], "CS1061" in found[0] && "'DictionaryAssertions<string, string>'" in found[0])
+        assertTrue(found[1], "CS1061" in found[1] && "'DictionaryAssertions<string, IEnumerable<string>>'" in found[1])
+    }
+
+    /** MudBlazor.Analyzers: an extension method given to a delegate (`_resolve = compilation.GetBestTypeByMetadataName`) is a method group. */
+    fun testExtensionMethodGroupToADelegate() {
+        assertEmpty(errors("""
+            using System;
+            class Compilation { }
+            class Symbol { }
+            static class CompilationExtensions
+            {
+                public static Symbol? GetBestTypeByMetadataName(this Compilation compilation, string name) => null;
+            }
+            class Resolver
+            {
+                private readonly Func<string, Symbol?> _resolve;
+                Resolver(Compilation compilation) { _resolve = compilation.GetBestTypeByMetadataName; }
+            }
+        """))
+    }
+
+    /**
+     * nopCommerce's PayPal plugin: the base `Order` of `GetOrderResponse` is resolved by the usings of the file declaring it — not by those of
+     * the file using it, where `Order` would be the shop's own `Order` (an `int Id`, CS0029 to `string`).
+     */
+    fun testBaseTypeResolvedInItsOwnFile() {
+        myFixture.addFileToProject("Shop/Order.cs", "namespace Shop.Orders { public class Order { public int Id { get; set; } } }")
+        myFixture.addFileToProject("Api/Order.cs", "namespace Api.Models { public class Order { public string Id { get; set; } } }")
+        myFixture.addFileToProject("Api/GetOrderResponse.cs", "using Api.Models;\nnamespace Api.Orders;\npublic class GetOrderResponse : Order;")
+        assertEmpty(errors("""
+            using System;
+            using System.Threading.Tasks;
+            using Shop.Orders;
+            using Api.Orders;
+            class Manager
+            {
+                static Task<T> HandleAsync<T>(Func<Task<T>> function) => function();
+                static Task<TResponse> RequestAsync<TRequest, TResponse>(TRequest request) => Task.FromResult(default(TResponse)!);
+                Task<bool> M() => HandleAsync(async () =>
+                {
+                    var order = await RequestAsync<string, GetOrderResponse>("id");
+                    string id = order.Id;
+                    return true;
+                });
+            }
+        """))
+    }
 }

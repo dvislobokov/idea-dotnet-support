@@ -96,6 +96,8 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
             val path = file.viewProvider.virtualFile.path
             projectOf(path.removePrefix("/src/"))?.let(sets::get) ?: null.also { unmatched += path }
         }
+        // the light project knows no project of the solution: a type declared in two projects (MudBlazor's `ParameterUsageOptions`, copied
+        // into its analyzer) is CS0101 here and not in the IDE, where the projects differ — an artifact of the harness, like eShop's `Extensions`
 
         val files = HashMap<String, CSharpFile>()
         val generatedPaths = HashSet<String>()

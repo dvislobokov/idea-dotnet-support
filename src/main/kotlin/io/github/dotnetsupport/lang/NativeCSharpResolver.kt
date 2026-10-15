@@ -284,6 +284,18 @@ class NativeCSharpResolver(val file: CSharpFile) {
                 if (scope.isEmpty()) break
                 scope = scope.substringBeforeLast('.', "")
             }
+            // then the usings of the part's own file: `GetOrderResponse : Order` with `using Api.Models` there is not the `Order` of a using here
+            // (nopCommerce's PayPal plugin, CS0029 of an `int Id` for a `string` one)
+            // — read only when the name is ambiguous in the solution: a stub keeps no usings, they cost the AST of that file
+            val candidates = (fileTypesByName[name].orEmpty() + stubTypes(name)).filter { it.arity == arity }.map { it.qualifiedName }.distinct()
+            val element = if (candidates.size > 1) part.element() else null
+            val declaringFile = element?.containingFile as? CSharpFile
+            if (element != null && declaringFile != null) {
+                val namespaces = generateSequence(element.parent) { if (it is CSharpFile) null else it.parent }.filterIsInstance<CSharpBaseNamespaceDeclaration>()
+                val usings = namespaces.flatMap { it.usings } + declaringFile.compilationUnit?.usings.orEmpty()
+                val imported = usings.filter { it.alias == null && it.staticKeyword == null }.map { compact(it.namespaceOrType).removePrefix("global::") }.toSet()
+                candidates.singleOrNull { it.substringBeforeLast('.', "") in imported }?.let { qualified -> typeInfo(qualified, arity)?.let { return it } }
+            }
         }
         return resolveType(name, arity)
     }

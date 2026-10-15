@@ -3,6 +3,21 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.190
+
+False errors of C# the Razor corpus still showed after 0.1.189. nopCommerce is at none, MudBlazor at one (a default interface member
+of `INumber<T>`, the index of assemblies does not see it yet); SberEmp.Shared stays at none.
+- The base type of a class declared in another file is resolved by the `using` directives of that file, not of the file that uses it
+  (`GetOrderResponse : Order` with `using …Api.Models` there — the `Order` of the shop was taken, and its `int Id` gave CS0029).
+- An async lambda given to a delegate returning `ValueTask<T>` returns a `ValueTask<T>`, not a `Task<T>`: no CS0411 on
+  `AsyncEnumerable.Select(async (x, _) => …)`.
+- `null` given to overloads taking `Func<T, Task>` and `Action<T>` picks the first, as the compiler does: no CS0121.
+- A generic overload whose type arguments cannot be inferred from the call is not a candidate (`Should<TCollection, TKey, TValue>` of
+  AwesomeAssertions); between `Should<T>(IEnumerable<T>)` and `Should<TKey, TValue>(IEnumerable<KeyValuePair<…>>)` the more specific one
+  wins, the receiver of an extension method counted — `dictionary.Should().NotBeEmpty()` is no CS1061 on `ObjectAssertions`.
+- An extension method given as a method group with its receiver bound (`_resolve = compilation.GetBestTypeByMetadataName`) converts to a
+  delegate taking the remaining parameters.
+
 ## 0.1.189
 
 - Implicit conversions are classified as the C# compiler does (Roslyn's conversions, ported): no false "cannot convert" where a type

@@ -15,11 +15,12 @@ internal sealed class InferenceArgument {
 
     /**
      * `UnboundLambda`. [hasSignature]: a parameter list is written (`x =>`, `(a, b) =>`; not `delegate { }`); [explicitParameterTypes] when
-     * all are typed; [inferReturnType]: `InferReturnType` given the parameter types of the fixed delegate, null for none (`void`, no value).
+     * all are typed; [inferReturnType]: `InferReturnType` given the parameter types of the fixed delegate and its return type (an async lambda
+     * returns the task-like type of the delegate, `ValueTask<X>` for `ValueTask<TResult>`), null for none (`void`, no value).
      */
     class Lambda(
         val parameterCount: Int, val hasSignature: Boolean, val explicitParameterTypes: List<SemanticType>?, val explicitReturnType: SemanticType?,
-        val inferReturnType: (List<SemanticType>) -> SemanticType?,
+        val inferReturnType: (List<SemanticType>, SemanticType?) -> SemanticType?,
     ) : InferenceArgument()
 
     /** `BoundMethodGroup`: [returnType] is the return type of the one method overload resolution picks for those parameter types, else null. */
@@ -772,14 +773,15 @@ internal class RoslynMethodTypeInferrer(
             val originalDelegateParameters = types.delegateInvoke(target)?.first ?: return null
             if (originalDelegateParameters.size != source.parameterCount) return null
         }
-        val fixedDelegateParameters = types.delegateInvoke(getFixedDelegate(target))?.first ?: return null
+        val fixedDelegate = types.delegateInvoke(getFixedDelegate(target)) ?: return null
+        val fixedDelegateParameters = fixedDelegate.first
         // an explicitly typed lambda whose parameter types differ from the fixed delegate's is not applicable: no inference
         source.explicitParameterTypes?.let { written ->
             for (p in 0 until source.parameterCount) {
                 if (!(types.same(written[p], fixedDelegateParameters.getOrNull(p) ?: throw Unknown()) ?: throw Unknown())) return null
             }
         }
-        return source.inferReturnType(fixedDelegateParameters.map { it ?: throw Unknown() })
+        return source.inferReturnType(fixedDelegateParameters.map { it ?: throw Unknown() }, fixedDelegate.second)
     }
 
     /** `GetInterfaceInferenceBound`: the one interface of [interfaces] with the definition of [target]; null for none or several. */

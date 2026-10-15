@@ -340,6 +340,26 @@
   async) и групп методов. Аргументы — своя абстракция (тип, лямбда с выводом результата по типам параметров, группа методов, кортеж).
   Сначала заменяет строгий `CSharpTypeInference.infer`, затем мягкий `typeArguments`. Гейт: `semanticGate` не хуже, харнесс корпуса
   Razor, `RazorCorpusFalseErrorsTest`, `CompilerMessagesCoverageTest` — без новых `extra`.
+- [ ] **D6e. Упрощение — до D6c** (разбор 2026-10-15: два мира в одних файлах мешают оперативно искать и чинить). Сейчас порт и прежние
+  правила склеены «сначала порт, при неудаче — старое» (`classify` → старые правила; `typeArguments`: `unify` → `roslynTypeArguments` →
+  старый цикл по лямбдам; `pickByArguments`: `overloads.resolve` → очки `score` → tie-break'и; флаг `strict` в `CSharpOverloads`
+  переключает три пары `strictLambda`/`lambda`, `strictGroup`/`groupConversion`, `strictReturnType`), «не знаю» без причины (189 выходов в
+  `UNKNOWN`/`null` в `CSharpOverloads`, 65 в `CSharpExpressionTypes`, 63 `throw Unknown()` в инферере), четыре защиты от циклов (`inferred`,
+  `inferring`, `roslynInferring`, `cycleCount`+`busyTypes`), один проект харнесса — 2–3 минуты, полная проверка — ~25. По отдаче:
+  - [ ] D6e1. Отладочный журнал семантики (решение пользователя 2026-10-15: без отдельного пункта меню — флажок в настройках и журнал
+    плагина). Флажок Settings | .NET «Write the debug log of the C# analysis» (`DotNetSettings.semanticDebugLog`, по образцу
+    `ml.inline.debugLog`); `lang/semantic/SemanticTrace.trace { … }` пишет в `PluginLog` категорию `semantic` (окно .NET → Plugin Logs и
+    `~/idea-dotnet-logs/plugin/`), при выключенном флажке лямбда не вычисляется; в тестах — `SemanticTrace.collectForTests`. Правило — в
+    `CLAUDE.md`, «Отладочный журнал семантики»: каждое место, где семантика сдаётся (`UNKNOWN` / `null` / `throw Unknown()`, откат от
+    порта к старым правилам, сработавшая защита от циклов), пишет одну строку: что спрашивали, какой путь ответил, почему не смог.
+    Вместо бисекта переменными окружения — включить флажок, воспроизвести, прочитать журнал.
+  - [ ] D6e2. Харнесс по одному файлу (`SOLUTION_HARNESS_FILE=…`): ~20 секунд вместо 3 минут на проект.
+  - [ ] D6e3. План заката старого мира: каждый порт **заменяет**, а не «сначала, при неудаче». Как только корпус Razor и SberEmp.Shared
+    равны — удалить старые правила `classify`, `score`/tie-break'и, `unify`+`refineByLambdas`, флаг `strict`; после D6c — и эвристики
+    выбора. Новая правка ложной ошибки — в порт, не ручка на старом (сегодняшние `roslynInferring`, `inferenceFails`, `betterUnrelatedTarget`,
+    `withBases` — ручки, уходят вместе со старым миром).
+  - [ ] D6e4. Одна защита от циклов вместо четырёх: один стек «в работе» по выражению в сессии.
+  - [ ] D6e5. Разрезать `CSharpOverloads` (1590 строк): преобразования / применимость / лучший член. Не срочно.
 - [ ] D6c. `OverloadResolution.cs` (better function member, better conversion from expression, tie-breaks) — эвристики выбора уходят.
 - [x] D6d (0.1.189; тест `RoslynConversionsTest`). `ConversionsBase.cs` + `UserDefinedImplicitConversions.cs` → `RoslynConversions`:
   неявные преобразования из типа (тождество, числовые, nullable, ссылочные с вариантностью, массивы, делегаты, параметры типа,

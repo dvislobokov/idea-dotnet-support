@@ -455,7 +455,12 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
                 if (isHandler(to)) return when (constantInterpolation(value)) { false -> Conversion.IMPLICIT; true -> Conversion.NONE; null -> Conversion.UNKNOWN }
             }
         }
-        methodGroup(value)?.let { return if (strict) strictGroup(it, to) else groupConversion(it, to) }
+        methodGroup(value)?.let { group ->
+            // `compilation.GetBestTypeByMetadataName` of an extension method: its receiver is bound, the delegate takes the rest (MudBlazor.Analyzers)
+            val name = (value as? CSharpMemberAccessExpression)?.nameElement
+            val reduced = name != null && group.any { r.expressions.isReduced(it, name) }
+            return if (strict) (if (reduced) Conversion.UNKNOWN else strictGroup(group, to)) else groupConversion(group, to, reduced)
+        }
         val source = type ?: return Conversion.UNKNOWN
         val conversion = classify(source, to)
         if (conversion == Conversion.NONE && constantFits(value, to)) return Conversion.IMPLICIT
@@ -704,7 +709,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         return symbols.takeIf { s -> s.isNotEmpty() && s.all(r::isInMethodGroup) }
     }
 
-    private fun groupConversion(methods: List<CSharpSymbol>, to: SemanticType): Conversion {
+    private fun groupConversion(methods: List<CSharpSymbol>, to: SemanticType, reduced: Boolean = false): Conversion {
         if (to is SemanticType.Parameter) return Conversion.UNKNOWN
         val target = r.expressions.unwrapExpression(to) ?: return Conversion.UNKNOWN
         val delegate = r.expressions.delegateSignature(target)
@@ -714,7 +719,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
             return if (closed(target)) Conversion.NONE else Conversion.UNKNOWN
         }
         val count = delegate.first.size
-        val fitting = methods.filter { m -> r.signature(m, false)?.let { s -> s.size >= count && s.count { !it.optional && !it.isParams } <= count } ?: true }
+        val fitting = methods.filter { m -> r.signature(m, reduced && r.isExtension(m))?.let { s -> s.size >= count && s.count { !it.optional && !it.isParams } <= count } ?: true }
         return if (fitting.isEmpty()) Conversion.NONE else Conversion.IMPLICIT
     }
 
@@ -814,8 +819,33 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         val c21 = classify(t2, t1)
         if (ok(c12) && c21 == Conversion.NONE) return 1
         if (ok(c21) && c12 == Conversion.NONE) return -1
-        if (c12 == Conversion.NONE && c21 == Conversion.NONE) return 0
+        if (c12 == Conversion.NONE && c21 == Conversion.NONE) return betterUnrelatedTarget(t1, t2)
         return null
+    }
+
+    /**
+     * Roslyn's `BetterConversionTargetCore` for two types with no conversion either way: `Task<S1>` against `Task<S2>` by `S1` and `S2`; a
+     * delegate (or `Expression<D>`) returning a value against one returning `void`, else by their return types — for any argument, not only
+     * a lambda: `KeyUp(null)` takes the `Func<KeyboardEventArgs, Task>` overload over the `Action<KeyboardEventArgs>` one (MudBlazor, CS0121).
+     */
+    private fun betterUnrelatedTarget(t1: SemanticType, t2: SemanticType): Int? {
+        val task1 = r.definitionName(t1) in GENERIC_TASKS
+        val task2 = r.definitionName(t2) in GENERIC_TASKS
+        if (task1 || task2) {
+            if (!task1 || !task2) return 0
+            val s1 = (t1 as? SemanticType.Library)?.arguments?.singleOrNull() ?: return null
+            val s2 = (t2 as? SemanticType.Library)?.arguments?.singleOrNull() ?: return null
+            return betterTarget(s1, s2)
+        }
+        val d1 = r.expressions.unwrapExpression(t1)?.let(r.expressions::delegateSignature)
+        val d2 = r.expressions.unwrapExpression(t2)?.let(r.expressions::delegateSignature)
+        if (d1 == null || d2 == null) return 0
+        val r1 = d1.second ?: return null
+        val r2 = d2.second ?: return null
+        val void1 = r.definitionName(r1) == VOID
+        val void2 = r.definitionName(r2) == VOID
+        if (void1 != void2) return if (void2) 1 else -1
+        return if (void1) 0 else betterTarget(r1, r2)
     }
 
     /** A lambda against two delegates taking the same parameters: by what the body returns (§12.6.4.5). */
@@ -877,6 +907,8 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         val refKinds: List<String?> = emptyList(),
         /** The type arguments of a generic method, inferred or written. */
         val methodArguments: List<SemanticType?> = emptyList(),
+        /** The `this` parameter as declared, not substituted: the receiver takes part in "more specific" with the other parameters. */
+        val declaredReceiver: SemanticType? = null,
     )
 
     /**
@@ -982,7 +1014,10 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
                 }
             }
             val defaults = parameters.indices.any { p -> p !in map && !(expanded && p == parameters.size - 1) }
-            val form = Form(symbol, parameters, targets, declaredTargets, expanded, defaults, generic, if (expanded) parameters.last().type() else null, receiverTarget, refKinds, methodArguments)
+            val form = Form(
+                symbol, parameters, targets, declaredTargets, expanded, defaults, generic, if (expanded) parameters.last().type() else null, receiverTarget, refKinds, methodArguments,
+                if (reduced) all.first().type() else null,
+            )
             if (wrong.isNotEmpty()) bad += Outcome.Bad(form, wrong, refMismatch)
             else if (formUnknown) unknown = true
             else return Outcome.Applicable(form)
@@ -1137,6 +1172,9 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         val generic = r.isGeneric(symbol)
         val methodArguments: List<SemanticType?> = if (generic && call != null && site != null) r.expressions.typeArguments(symbol, call, site, withLambdas = lambdas) else emptyList()
         if (generic && !constraintsHold(symbol, methodArguments)) return null
+        // a type parameter the lenient inference left open: when Roslyn's inference surely fails, the candidate is not applicable
+        // (`Should<TCollection, TKey, TValue>(this TCollection)` of an `IDictionary` infers no TKey — AwesomeAssertions in MudBlazor's tests)
+        if (generic && call != null && site != null && methodArguments.any { it == null } && inferenceFails(symbol, all, parameters, arguments, reduced, call, site)) return null
         fun substituted(type: SemanticType?): SemanticType? = if (methodArguments.isEmpty()) type else substitute(type, symbol, methodArguments)
         var receiverTarget: SemanticType? = null
         if (reduced) {
@@ -1185,9 +1223,27 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
             if (!fits) continue
             if (unknown) return UNKNOWN_FORM
             val defaults = parameters.indices.any { p -> p !in map && !(expanded && p == parameters.size - 1) }
-            return Form(symbol, parameters, targets, declaredTargets, expanded, defaults, generic, if (expanded) parameters.last().type() else null, receiverTarget)
+            return Form(symbol, parameters, targets, declaredTargets, expanded, defaults, generic, if (expanded) parameters.last().type() else null, receiverTarget,
+                declaredReceiver = if (reduced) all.first().type() else null)
         }
         return if (unknown) UNKNOWN_FORM else null
+    }
+
+    private val inference by lazy { CSharpTypeInference(r) }
+
+    /**
+     * Whether the strict inference ([CSharpTypeInference], Roslyn's) surely fails for [symbol] in its normal form — a form with `params`
+     * may infer from the expanded one, so it is not asked then. [all]: the declared parameters with the receiver of a reduced call.
+     */
+    private fun inferenceFails(
+        symbol: CSharpSymbol, all: List<CSharpNameResolver.Parameter>, parameters: List<CSharpNameResolver.Parameter>, arguments: List<CSharpArgument>,
+        reduced: Boolean, call: CSharpInvocationExpression, site: CSharpSimpleName,
+    ): Boolean {
+        if (parameters.lastOrNull()?.isParams == true) return false
+        val map = map(parameters, arguments, false) ?: return false
+        val targets = arguments.indices.map { i -> parameters[map[i]].type() }
+        val self = if (reduced) (r.expressions.receiver(site) ?: return false) to all.first().type() else null
+        return inference.infer(symbol, targets, arguments, self, call, site) == CSharpTypeInference.Inferred.Failed
     }
 
     // the `params` arrays of the candidates by (parameter count, name of the last one)
@@ -1425,7 +1481,11 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         }
         if (!m.defaults && n.defaults) return true
         if (m.defaults && !n.defaults) return false
-        return moreSpecific(m.declaredTargets, n.declaredTargets)
+        // the receiver of two extension methods is their first parameter (`this IEnumerable<T>` against `this IEnumerable<KeyValuePair<TKey, TValue>>`
+        // of AwesomeAssertions' `Should`: the second is more specific — CS0121 was ours alone)
+        val mReceiver = if (m.receiverTarget != null && n.receiverTarget != null) listOf(m.declaredReceiver ?: return null) else emptyList()
+        val nReceiver = if (m.receiverTarget != null && n.receiverTarget != null) listOf(n.declaredReceiver ?: return null) else emptyList()
+        return moreSpecific(mReceiver + m.declaredTargets, nReceiver + n.declaredTargets)
     }
 
     /** §12.6.4.3, the more specific parameter types: a type parameter is less specific than any other type, recursively. */
@@ -1506,6 +1566,8 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         )
 
         /** C# §10.2.3, the implicit numeric conversions (`nint` / `nuint` included). */
+        private val GENERIC_TASKS = setOf("System.Threading.Tasks.Task`1", "System.Threading.Tasks.ValueTask`1")
+
         internal val NUMERIC: Map<String, Set<String>> = run {
             fun s(vararg names: String) = names.map { "System.$it" }.toSet()
             mapOf(

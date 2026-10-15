@@ -26,6 +26,22 @@ Rider-подобная работа с .NET **без LSP, Roslyn и (пока) �
 `build/reports/compilerMessages/coverage.txt` и скопировать. Новая семантическая проверка — сначала пример в корпус (или в
 `debug-playground/Broken/RiderComparison.cs`, его копия там же), потом код.
 
+## Отладочный журнал семантики
+
+Решение пользователя (2026-10-15): проблемные места семантики не ищутся бисектом и репро-тестами вслепую — они **пишут в журнал**.
+Флажок Settings | .NET «Write the debug log of the C# analysis» (`DotNetSettings.semanticDebugLog`) включает категорию `semantic`
+журнала плагина (`PluginLog`: окно .NET → Plugin Logs, файл `~/idea-dotnet-logs/plugin/plugin-<день>.log`); точка входа —
+`lang/semantic/SemanticTrace.trace { "…" }`, при выключенном флажке лямбда не вычисляется, в тестах строки собирает
+`SemanticTrace.collectForTests`. Правило для кода `lang/semantic` и `lang/semantic/roslyn`:
+- **каждое место, где семантика сдаётся, пишет одну строку**: ответ `UNKNOWN` / `null` «не знаю», `throw Unknown()` в портах Roslyn,
+  откат от порта к старым правилам, сработавшая защита от циклов, кандидат, отброшенный выбором перегрузки;
+- строка говорит, **что спрашивали, какой путь ответил и почему не смог**: `classify string -> ReadOnlySpan<char>: port unproved,
+  old rules IMPLICIT (user operator)`, `typeArguments Select<TSource,TResult> at Program.cs:12: roslyn Unknown (lambda body type
+  unknown), unify gave [Order, ?]`; имена типов — как в сообщениях компилятора, место — файл и строка выражения;
+- новая ветка «не знаю» или новый откат без строки журнала — не принимается; чиня ложную ошибку, сначала включить флажок, воспроизвести
+  и прочитать журнал, тест на исправление проверяет и путь ответа через `collectForTests`, где это возможно;
+- в журнал не попадают циклы по каждому символу «всё хорошо» (только отказы и откаты), текст строки — английский, как и остальной журнал.
+
 ## Сборка и проверка
 
 Системных JDK и Gradle нет. Wrapper запускать с JBR целевой IDE (Git Bash):
@@ -58,6 +74,10 @@ export JAVA_HOME="C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 202
 - Демонам задана память в `gradle.properties` (`kotlin.daemon.jvmargs`, `org.gradle.jvmargs`): classpath IDEA в разы больше GoLand, с умолчаниями компилятор
   Kotlin падал с `GC overhead limit exceeded` посреди полной компиляции.
 - Упавшие тесты: `build/test-results/test/TEST-*.xml` (grep по `<failure`), отчёт — `build/reports/tests/test/index.html`.
+- **Только свежие результаты** (решение пользователя 2026-10-15): тесты, `semanticGate` и харнесс `SolutionDiagnosticsHarnessTest` делят
+  сборку и тестовую песочницу — два прогона сразу не запускать (второй падает на занятом jar песочницы, а старый XML / `build/solution-harness.txt`
+  потом читается как результат). Перед прогоном старые результаты убрать (`build/test-results/test`, `build/solution-harness.txt`), после —
+  нет свежего файла значит «не запускалось», а не «как раньше».
 - GUI агент может проверить сам через UI-робота: `./gradlew.bat runIdeForUiTests` (в фоне) поднимает песочницу IDE с Remote Robot на
   `127.0.0.1:8583`, `tools/ui-robot/robot.py` открывает проект, ставит точки останова, запускает Debug, кликает и снимает окно IDE (команды и
   оговорки — в `tools/ui-robot/README.md`; снимать только компоненты IDE, не весь экран; после проверки песочницу закрыть). Чего так не видно

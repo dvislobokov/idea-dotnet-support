@@ -106,6 +106,29 @@ class RoslynMethodTypeInferenceTest : BasePlatformTestCase() {
         assertTrue(found.single(), "CS0266" in found.single() && "'long'" in found.single())
     }
 
+    /** nopCommerce's `AsyncEnumerable.Select(async (ProductTag x, CancellationToken _) => …)`: an async lambda gives the delegate's `ValueTask<X>`. */
+    fun testAsyncLambdaReturnsTheTaskLikeTypeOfTheDelegate() {
+        assertEmpty(errors("""
+            using System;
+            using System.Collections.Generic;
+            using System.Threading;
+            using System.Threading.Tasks;
+            static class AsyncEnumerable
+            {
+                public static IAsyncEnumerable<TResult> Select<TSource, TResult>(this IAsyncEnumerable<TSource> source, Func<TSource, TResult> selector) => null!;
+                public static IAsyncEnumerable<TResult> Select<TSource, TResult>(this IAsyncEnumerable<TSource> source, Func<TSource, CancellationToken, ValueTask<TResult>> selector) => null!;
+                public static IAsyncEnumerable<TResult> Select<TSource, TResult>(this IAsyncEnumerable<TSource> source, Func<TSource, int, CancellationToken, ValueTask<TResult>> selector) => null!;
+            }
+            class Tag { public int Id; }
+            class TagModel { public int Id; }
+            class Factory
+            {
+                static Task<int> CountAsync(int id) => Task.FromResult(id);
+                IAsyncEnumerable<TagModel> M(IAsyncEnumerable<Tag> tags) => tags.Select(async (Tag x, CancellationToken _) => new TagModel { Id = await CountAsync(x.Id) });
+            }
+        """))
+    }
+
     fun testSureFailureIsStillCS0411() {
         val found = errors("""
             class C
