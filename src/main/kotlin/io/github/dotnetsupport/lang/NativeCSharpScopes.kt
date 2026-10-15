@@ -119,7 +119,8 @@ class NativeCSharpScopes private constructor(
             if (identifier == null || identifier.node.elementType != SyntaxKind.IdentifierToken) return null
             // declared up front by its block (see [predeclare]): visible before its declaration
             byLeaf[identifier]?.let { return it }
-            val symbol = LocalSymbol(identifier.text, kind, identifier, into?.element ?: if (kind == LocalSymbolKind.LABEL) function else scope.element, isMember)
+            // the value of the identifier, as Roslyn's: `@class` is `class`, `@plain` is `plain`
+            val symbol = LocalSymbol(identifier.text.removePrefix("@"), kind, identifier, into?.element ?: if (kind == LocalSymbolKind.LABEL) function else scope.element, isMember)
             symbols += symbol
             byLeaf[identifier] = symbol
             // a name declared twice in one scope (CS0128): the uses bind to the first declaration, as Roslyn (Jellyfin, 2026-10-13)
@@ -376,7 +377,7 @@ class NativeCSharpScopes private constructor(
                     names += element
                     val identifier = element.identifier
                     if (identifier != null && isFreeName(element)) {
-                        val symbol = lookup(identifier.text)
+                        val symbol = lookup(identifier.text.removePrefix("@"))
                         if (symbol != null && (symbol.kind == LocalSymbolKind.TYPE_PARAMETER || !NativeCSharpTypePositions.isType(element))) reference(symbol, identifier)
                     }
                     visitChildren(element)

@@ -121,7 +121,8 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
     private fun compute(name: CSharpSimpleName): List<CSharpSymbol>? {
         val leaf = name.identifier ?: return null
         syntax.symbolAt(leaf)?.let { return if (it.declaration == leaf) null else listOf(CSharpSymbol.Local(it)) }
-        val text = leaf.text
+        // the value of the identifier, as Roslyn's ValueText: `@Icons` is `Icons` (the Razor generator writes `@Html`, `@Model`)
+        val text = leaf.text.removePrefix("@")
         val arity = NativeCSharpResolver.arity(name)
         var top: PsiElement = name
         while (top.parent is CSharpQualifiedName || top.parent is CSharpAliasQualifiedName) top = top.parent
@@ -219,7 +220,8 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
             val own = inNamespace(level.namespace, text, arity)
             if (own.isNotEmpty()) return own
             if (arity == 0) level.alias(text)?.let { return listOf(it) }
-            val imported = level.imports.flatMap { typesIn(it, text, arity) }.distinct()
+            // `using static Outer;` imports the nested types of Outer beside its members (C# §14.5.4)
+            val imported = (level.imports.flatMap { typesIn(it, text, arity) } + level.statics().flatMap { nestedTypes(it, text, arity) }).distinct()
             if (imported.isNotEmpty()) return imported
         }
         return emptyList()
@@ -730,6 +732,10 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         is CSharpSymbol.LibraryMember -> symbol.member.kind.isCallable
         else -> false
     }
+
+    /** What a method group may hold: a method, or a local function (the scopes give it as a [CSharpSymbol.Local]). */
+    internal fun isInMethodGroup(symbol: CSharpSymbol): Boolean =
+        isMethod(symbol) || symbol is CSharpSymbol.Local && symbol.symbol.kind == io.github.dotnetsupport.lang.LocalSymbolKind.LOCAL_FUNCTION
 
     fun isExtension(symbol: CSharpSymbol): Boolean = when (symbol) {
         is CSharpSymbol.SourceMember -> (symbol.element as? CSharpMethodDeclaration)?.let(TypePart::isExtension) == true

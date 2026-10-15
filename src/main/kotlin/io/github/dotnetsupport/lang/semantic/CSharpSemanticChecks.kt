@@ -583,7 +583,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
             else -> return false
         } ?: return false
         val symbols = name.identifier?.let(resolver::resolve)?.symbols ?: return true
-        return symbols.isEmpty() || symbols.any { resolver.isMethod(it) }
+        return symbols.isEmpty() || symbols.any { resolver.isInMethodGroup(it) }
     }
 
     private fun mentionsTypeParameter(type: SemanticType?): Boolean = when (type) {

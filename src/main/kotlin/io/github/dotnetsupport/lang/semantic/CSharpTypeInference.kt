@@ -181,7 +181,7 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
             else -> null
         } ?: return null
         if (r.invocationOf(name) != null) return null
-        return r.resolveName(name)?.symbols?.takeIf { s -> s.isNotEmpty() && s.all(r::isMethod) }
+        return r.resolveName(name)?.symbols?.takeIf { s -> s.isNotEmpty() && s.all(r::isInMethodGroup) }
     }
 
     /** Fixes [s] (§12.6.3.12): the candidates that every bound allows, the one all others convert to; false when there is none. */

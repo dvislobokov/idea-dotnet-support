@@ -142,7 +142,7 @@ internal class CSharpDeclarationChecks(
     /** A range variable: CS1930 after one of its name in the same query (a continuation starts anew), else CS1931 over a local or parameter around the query. */
     private fun rangeVariableVerdict(symbol: LocalSymbol): Verdict {
         val name = symbol.name
-        if (byScope[symbol.scope].orEmpty().any { it !== symbol && isRangeVariable(it) && it.name == name && offset(it) < offset(symbol) }) return Verdict.CS1930
+        if (byScope[symbol.scope].orEmpty().any { it !== symbol && isRangeVariable(it) && it.name == name && offset(it) < offset(symbol) && !endedBefore(it, symbol) }) return Verdict.CS1930
         var query: PsiElement = symbol.scope
         while (query !is CSharpQueryExpression) query = query.parent ?: return Verdict.SILENT
         var element: PsiElement? = query.parent
@@ -156,6 +156,15 @@ internal class CSharpDeclarationChecks(
             element = element.parent
         }
         return Verdict.NONE
+    }
+
+    /**
+     * `join x in xs on … equals … into g`: `x` is in scope in the join alone, after it only `g` is (C# §12.20.3.6) — a later `from x in g`
+     * declares `x` anew (nopCommerce: `from localizedProperty in localizedProperties.DefaultIfEmpty()`).
+     */
+    private fun endedBefore(earlier: LocalSymbol, later: LocalSymbol): Boolean {
+        val join = earlier.declaration.parent as? CSharpJoinClause ?: return false
+        return join.identifier == earlier.declaration && join.into != null && join.textRange.endOffset <= offset(later)
     }
 
     /** A variable declared in an expression of a query clause (`where int.TryParse(s, out var n)`): the clause is a lambda of its own. */

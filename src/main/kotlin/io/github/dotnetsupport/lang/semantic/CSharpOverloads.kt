@@ -80,7 +80,8 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         val tn = r.definitionName(to)
         if (tn == OBJECT) return Conversion.IMPLICIT
         if (fn != null && fn == tn && fn.startsWith(VALUE_TUPLE)) tuple(from, to, userDefined, depth)?.let { return it }
-        if (fn != null && fn == tn) return sameDefinition(from, to, depth)
+        // `int?` to `decimal?` is the conversion of what they hold (§10.6.1), not one of the same generic definition
+        if (fn != null && fn == tn && fn != NULLABLE) return sameDefinition(from, to, depth)
         if (tn == NULLABLE) {
             val inner = (to as SemanticType.Library).arguments.firstOrNull() ?: return Conversion.UNKNOWN
             val core = if (fn == NULLABLE) (from as SemanticType.Library).arguments.firstOrNull() ?: return Conversion.UNKNOWN else from
@@ -674,7 +675,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         } ?: return null
         if (r.invocationOf(name) != null) return null
         val symbols = r.resolveName(name)?.symbols ?: return null
-        return symbols.takeIf { s -> s.isNotEmpty() && s.all(r::isMethod) }
+        return symbols.takeIf { s -> s.isNotEmpty() && s.all(r::isInMethodGroup) }
     }
 
     private fun groupConversion(methods: List<CSharpSymbol>, to: SemanticType): Conversion {
@@ -694,7 +695,9 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
     /** §10.2.11: a constant `int` converts to `sbyte`, `byte`, `short`, `ushort`, `uint`, `ulong` (and `long` to `ulong`) when it fits. */
     private fun constantFits(e: CSharpExpression, to: SemanticType): Boolean {
         val value = constantValue(e) ?: return false
-        val range = when (r.definitionName(to)) {
+        // `Take(4)` for a `byte?`: the constant converts to `byte`, then to its nullable (§10.6.1)
+        val target = if (r.definitionName(to) == NULLABLE) (to as? SemanticType.Library)?.arguments?.firstOrNull() ?: return false else to
+        val range = when (r.definitionName(target)) {
             "System.SByte" -> -128L..127L
             "System.Byte" -> 0L..255L
             "System.Int16" -> -32768L..32767L
