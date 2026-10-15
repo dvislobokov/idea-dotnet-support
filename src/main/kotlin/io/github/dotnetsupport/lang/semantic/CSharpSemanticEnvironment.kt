@@ -84,34 +84,35 @@ object CSharpSemanticEnvironment {
     @Volatile private var testGenerates: Boolean? = null
 
     /**
-     * Whether the project of [file] may have types and members no file of it declares: source generators of the build that the IDE does not
-     * run — Razor components, XAML, gRPC, generator packages. There a missing name is no proof of an error: the semantics stays silent.
+     * Whether the project of [file] may have types and members no file of it declares: generators of the build that the IDE does not run.
+     * There a missing name is no proof of an error: the semantics stays silent. What generates what is known to the framework modules
+     * ([CSharpCodeGenerators]); the core knows only the source generators of packages, which the helper runs (D4).
      */
     fun mayGenerateTypes(file: PsiFile): Boolean {
         testGenerates?.let { return it }
         val projectFile = projectOf(file) ?: return false
         val project = file.project
         val msbuild = io.github.dotnetsupport.solution.SolutionService.getInstance(project).msBuildProject(projectFile)
-        val sdk = msbuild.sdk.orEmpty()
-        if (sdk.contains("Razor", ignoreCase = true) || sdk.contains("Blazor", ignoreCase = true) || sdk.contains("Maui", ignoreCase = true)) return true
-        // what the targets of the build make of XAML and protobuf (0.1.82): known when it is in obj/ and newer than its sources — from the
-        // design-time build of the helper or the last build — then WPF and gRPC projects get their errors like any other
-        val buildKnown = buildGeneratedKnown(file, projectFile)
-        if (sdk.contains("WindowsDesktop", ignoreCase = true) && !buildKnown) return true
-        // the source generators of the packages ran in the helper (D4) and what they made is indexed: only the code generators of MSBuild
-        // targets (gRPC) stay unknown
-        val generatorsRan = generatedKnown(file)
-        val packages = (if (generatorsRan) MSBUILD_GENERATOR_PACKAGES else GENERATOR_PACKAGES).filter { !buildKnown || it !in BUILD_GENERATOR_PACKAGES }
-        if (msbuild.packages.any { reference -> packages.any { reference.name.contains(it, ignoreCase = true) } }) return true
-        val directory = projectFile.parent ?: return false
-        if (DumbService.isDumb(project)) return true
-        val scope = com.intellij.psi.search.GlobalSearchScopesCore.directoryScope(project, directory, true)
-        return GENERATED_FROM.filter { !buildKnown || it !in BUILD_GENERATED_FROM }.any { extension -> com.intellij.psi.search.FilenameIndex.getAllFilesByExt(project, extension, scope).isNotEmpty() }
+        val directory = projectFile.parent
+        val scope by lazy { com.intellij.psi.search.GlobalSearchScopesCore.directoryScope(project, directory!!, true) }
+        val generators = { file.project.getServiceIfCreated(io.github.dotnetsupport.codeanalysis.CodeAnalysisService::class.java)?.generators(projectFile).orEmpty() }
+        val facts = CSharpProjectFacts(msbuild.sdk.orEmpty(), { msbuild.packages.map { it.name } }, { buildGeneratedKnown(file, projectFile) }, { generatedKnown(file) }, generators) { extension ->
+            // while the IDE indexes nothing is known
+            directory != null && (DumbService.isDumb(project) || com.intellij.psi.search.FilenameIndex.getAllFilesByExt(project, extension, scope).isNotEmpty())
+        }
+        return mayGenerateTypes(facts, CSharpCodeGenerators.EP_NAME.extensionList) || directory != null && DumbService.isDumb(project)
     }
+
+    /** [mayGenerateTypes] of [facts] by [generators] and the source generator packages of the core. */
+    fun mayGenerateTypes(facts: CSharpProjectFacts, generators: List<CSharpCodeGenerators>): Boolean =
+        generators.any { it.mayGenerateTypes(facts) } || !facts.sourceGeneratorsRan && SOURCE_GENERATOR_PACKAGES.any(facts::hasPackage)
+
+    /** Packages known to generate types or members in source generators (`*.SourceGenerator(s)`, `CommunityToolkit.Mvvm`, `Refit`...): until the helper has run them. */
+    private val SOURCE_GENERATOR_PACKAGES = listOf("Generator", "CommunityToolkit.Mvvm", "Refit", "Mapperly", "StronglyTypedId", "Vogen")
 
     @Volatile private var testBuildKnown: Boolean? = null
 
-    /** The C# the build makes of the XAML and protobuf files of the project of [file] is in `obj/` and newer than they are (0.1.82). */
+    /** The C# the targets of the build make of the files of the project of [file] is in `obj/` and newer than they are (0.1.82). */
     fun buildGeneratedKnown(file: PsiFile, projectFile: VirtualFile? = projectOf(file)): Boolean {
         testBuildKnown?.let { return it }
         projectFile ?: return false
@@ -122,19 +123,6 @@ object CSharpSemanticEnvironment {
     fun setBuildGeneratedKnownForTests(known: Boolean?) {
         testBuildKnown = known
     }
-
-    /** Files the build makes C# of: Razor components and pages, XAML, protobuf. */
-    private val GENERATED_FROM = listOf("razor", "cshtml", "xaml", "axaml", "proto")
-
-    /** Of [GENERATED_FROM], what targets of the build make in obj/ (WPF's XAML, Grpc.Tools): known when [buildGeneratedKnown]. */
-    private val BUILD_GENERATED_FROM = setOf("xaml", "proto")
-    private val BUILD_GENERATOR_PACKAGES = setOf("Grpc.Tools")
-
-    /** Packages known to generate types or members (`Grpc.Tools`, `*.SourceGenerator(s)`, `CommunityToolkit.Mvvm`, `Refit`, `Mapperly`...). */
-    private val GENERATOR_PACKAGES = listOf("Generator", "Grpc.Tools", "CommunityToolkit.Mvvm", "Refit", "Mapperly", "StronglyTypedId", "Vogen", "Avalonia", "Uno.")
-
-    /** Packages that generate C# in MSBuild targets, not in source generators: the helper does not run them. */
-    private val MSBUILD_GENERATOR_PACKAGES = listOf("Grpc.Tools", "Avalonia", "Uno.")
 
     @Volatile private var testGeneratedKnown: Boolean? = null
 

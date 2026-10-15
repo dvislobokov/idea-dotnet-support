@@ -164,6 +164,16 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `Console/Editor/LibraryNames.cs`, `TYPE:library-navigation`: Ctrl+click по `Add` / `WriteLine` без сервера — metadata view `List<T>` / `Console` на этом члене (у `WriteLine` — список перегрузок); с готовым сервером — его декомпилированный исходник
 - [ ] вкладку metadata view оставить открытой, перезапустить IDE — вкладка восстановилась (после индексации сборок); Back (Ctrl+Alt+←) из неё возвращает в код
 
+### Типы из `.razor` в C# Blazor-проекта (0.1.186, RAZOR_PLAN.md R0) — `Blazor/Editor/RazorGeneratedTypes.cs`
+
+Проект `Blazor` (Blazor Web App, `Components/Pages/Counter.razor` с `[Parameter] Step`). Помощник плагина гоняет генератор Razor вместе с
+остальными генераторами; ошибки проекта с Razor пока молчат (до R0b).
+- [ ] `TYPE:razor-component-types`: Ctrl+B на `Counter` → `Counter_razor.g.cs` (только чтение), на `Step` → свойство там; Solution view:
+      Blazor → Dependencies → Analyzers → Microsoft.CodeAnalysis.Razor.Compiler со списком `*_razor.g.cs`; `nameof(Counter.` → в completion
+      `Step`, `CountChanged`
+- [ ] `TYPE:razor-edit-regenerates`: в `Counter.razor` добавить `[Parameter] public int Max { get; set; }`, Ctrl+S → через пару секунд
+      `nameof(Counter.` предлагает `Max`, Ctrl+B ведёт в `Counter_razor.g.cs`
+
 ## Solution view
 
 ### Reload Solution / Reload Project

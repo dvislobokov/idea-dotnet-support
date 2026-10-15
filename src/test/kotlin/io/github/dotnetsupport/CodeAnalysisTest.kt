@@ -98,6 +98,42 @@ class CodeAnalysisTest : BasePlatformTestCase() {
         for (output in listOf("C:/s/A/obj/Debug/net9.0/A.AssemblyInfo.cs", "C:/s/A/obj/Debug/net9.0/A.GeneratedMSBuildEditorConfig.editorconfig", "C:/s/A/bin/Debug/x.json", "C:/s/A/appsettings.json")) {
             assertEquals(output, CodeAnalysisEvents.Kind.NONE, CodeAnalysisEvents.kind(output, contentChange = true, fromSave = false))
         }
+        // another file saved by the IDE: a `.razor` the generators read, if the helper says it is one of theirs
+        assertEquals(CodeAnalysisEvents.Kind.SAVED_FILE, CodeAnalysisEvents.kind("C:/s/A/Pages/Counter.razor", contentChange = true, fromSave = true))
+        assertEquals(CodeAnalysisEvents.Kind.NONE, CodeAnalysisEvents.kind("C:/s/A/Pages/Counter.razor", contentChange = true, fromSave = false))
+        assertEquals(CodeAnalysisEvents.Kind.NONE, CodeAnalysisEvents.kind("C:/s/A/obj/Debug/x.razor", contentChange = true, fromSave = true))
+    }
+
+    /** RAZOR_PLAN.md, R0: the helper names the additional files of the generators; editing one of them makes what they made stale. */
+    fun testAdditionalFilesOfTheGenerators() {
+        val answer = JsonParser.parseString("""{"project":"C:\\s\\A\\A.csproj","framework":"net10.0","files":[],"buildFiles":[],
+            "additionalFiles":["C:\\s\\A\\Pages\\Counter.razor"],"generators":["Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator"],"errors":[]}""")
+        val run = CodeAnalysisAnswers.generated(answer)
+        assertEquals(listOf("C:/s/A/Pages/Counter.razor"), run.additionalFiles)
+        assertEquals(listOf("Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator"), run.generators)
+        assertEmpty("an older helper says neither", CodeAnalysisAnswers.generated(JsonParser.parseString("""{"project":"p","files":[],"errors":[]}""")).additionalFiles)
+
+        val folder = com.intellij.openapi.util.io.FileUtil.createTempDirectory("razorInputs", null)
+        val projectIo = java.io.File(folder, "App.csproj").apply { writeText("<Project Sdk=\"Microsoft.NET.Sdk.Razor\"/>") }
+        val razorIo = java.io.File(folder, "Pages/Counter.razor").apply { parentFile.mkdirs(); writeText("<p>@count</p>") }
+        val lfs = com.intellij.openapi.vfs.LocalFileSystem.getInstance()
+        val projectFile = lfs.refreshAndFindFileByIoFile(projectIo)!!
+        val razor = lfs.refreshAndFindFileByIoFile(razorIo)!!
+        val service = CodeAnalysisService.getInstance(project)
+        try {
+            val made = io.github.dotnetsupport.codeanalysis.GeneratedFile("${folder.path}/out/Counter_razor.g.cs", "Microsoft.CodeAnalysis.Razor.Compiler",
+                "Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator", "Pages/Counter_razor.g.cs")
+            service.putGeneratedForTests(projectFile.path, run.copy(files = listOf(made), additionalFiles = listOf(razor.path.uppercase())))
+            assertEquals("the path, whatever its case", projectFile, service.projectOfGeneratorInput(razor.path))
+            assertNull(service.projectOfGeneratorInput(projectFile.path))
+            assertEquals(setOf("Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator"), service.generators(projectFile))
+            assertFalse(service.generatedState(projectFile)!!.stale)
+            service.documentChanged(razor)
+            assertTrue("typing in the .razor: what the generators made of it is stale until the next save", service.generatedState(projectFile)!!.stale)
+            assertFalse(service.isGeneratedFresh(projectFile))
+        } finally {
+            service.putGeneratedForTests(projectFile.path, null)
+        }
     }
 
     /** A diagnostic stays on its line when lines are added above it, and goes when its own line is edited (until the next save). */

@@ -696,7 +696,11 @@
 - [ ] Legacy-модель проекта: явный `<Compile Include>` в дереве, «не в проекте» серым, новые файлы в `.csproj`, тест-проекты на `packages.config` (4–5)
 - [ ] IIS Express: профили `IISExpress` в `launchSettings`, `iisexpress.exe` + `applicationhost.config`, attach отладчика (3–5)
 - [ ] Hot Reload при отладке — после адаптера
-- [ ] Razor / Blazor — ждёт решения: исключён 2026-09-30, в последних коммитах «работа в сторону razor»
+- [ ] Razor / Blazor — в плане с 2026-10-15: `RAZOR_PLAN.md` (шаги R0–R9, корпус `tools/razor/`)
+  - [x] R0 (0.1.186) — генератор Razor в помощнике (вывод байт в байт как у сборки на MudBlazor и Nop.Web), перезапуск генераторов по
+    сохранению любого additional file, модуль `frameworks.razor` знает, когда генератор отработал; ошибки Razor-проектов включаются после
+    R0b. Сценарий — `debug-playground/Blazor/Editor/RazorGeneratedTypes.cs`. Вживую не проверено
+  - [x] F0 (2026-10-15, без версии: пользователю не видно) — фреймворки модулями рядом с ядром C#: точка расширения `csharpCodeGenerators`, модули `frameworks.razor` / `xaml` / `avalonia` / `grpc` вместо списков в `mayGenerateTypes`; тесты `CSharpCodeGeneratorsTest` (старая формула против новой), `FrameworkBoundaryTest`
 
 ### Помощники на .NET, работающие постоянно (план 2026-10-03)
 Библиотеки, которых нет в JVM, через помощников, как `indexer`: исходником в плагине, сборка на машине пользователя, процесс держится
@@ -1585,9 +1589,7 @@
 Полный парсер выражений, разрешение ссылок, типизация, инспекции, completion по типам, рефакторинги, собственный форматтер,
 inlay-подсказки имён параметров. Парсер уровня объявлений (namespace → типы → члены, тела пропускаются) — в рамках, это заход 2.
 
-**Razor / Blazor — вне плана** (решение пользователя 2026-09-30): ни тип файла `.razor` / `.cshtml`, ни Razor через `roslyn-language-server`
-не делаем; из сделанного остаются только шаблоны New → .NET, иконки и nesting `Foo.razor.cs` под `Foo.razor`. Снятые факты о сервере
-(раздел «Razor» в `tools/roslyn-lsp/README.md`, `capture_razor.py`, фикстуры `capture-5.12-razor`) сохранены на случай возврата к теме.
+**Razor / Blazor** — решение 2026-09-30 «вне плана» снято 2026-10-15, план — `RAZOR_PLAN.md`.
 
 Варианты, если понадобится разбирать тела методов: ANTLR4 `grammars-v4/csharp` + `antlr4-intellij-adaptor` (устарела до C# 6–7,
 дописывать самим), tree-sitter-c-sharp (лучшая грамматика, но нативная и без PSI), consulo-csharp (Apache 2.0, ручной парсер и PSI —

@@ -52,6 +52,9 @@ import java.util.concurrent.atomic.AtomicInteger
 /** What the generators of a project made the last time; [stale] while a C# file of the project is edited and not yet generated again. */
 class GeneratedState(val projectPath: String, val run: GeneratedRun, val output: String) {
     @Volatile var stale = false
+
+    /** The keys of [GeneratedRun.additionalFiles]: a saved or edited one of them is a change of what the generators read. */
+    val inputs: Set<String> by lazy { run.additionalFiles.mapTo(HashSet()) { CodeAnalysisAnswers.normalize(it).lowercase() } }
 }
 
 /** The analyzer diagnostics of one file, with the text of each one's line then: the way to find it again after edits (as [io.github.dotnetsupport.build.BuildProblems]). */
@@ -133,6 +136,17 @@ class CodeAnalysisService(private val project: Project) : Disposable {
     }
 
     fun isGenerated(file: VirtualFile): Boolean = projectOfGenerated(file) != null
+
+    /** The project that gives [path] to its generators as an additional file (a `.razor` of a Blazor project); null for any other file. */
+    fun projectOfGeneratorInput(path: String): VirtualFile? {
+        if (generated.isEmpty()) return null
+        val key = key(path)
+        val state = generated.values.firstOrNull { key in it.inputs } ?: return null
+        return LocalFileSystem.getInstance().findFileByPath(state.projectPath)
+    }
+
+    /** The type names of the source generators the helper loaded for [projectFile] at its last run; empty before one. */
+    fun generators(projectFile: VirtualFile): Set<String> = generated[key(projectFile.path)]?.run?.generators?.toSet().orEmpty()
 
     /** Under the folder of the generated files of the solution: what the helper writes there is no change of the project. */
     fun isGeneratedPath(path: String): Boolean = path.startsWith("$root/", ignoreCase = true)
@@ -232,10 +246,14 @@ class CodeAnalysisService(private val project: Project) : Disposable {
     private val projectOfFile = ConcurrentHashMap<String, String>()
     private val lastEdit = ConcurrentHashMap<String, Long>()
 
-    /** A C# document has been edited: what the generators of its project made may not fit it any more until they run again. */
+    /**
+     * A C# document or an additional file of the generators has been edited: what the generators of its project made may not fit it any
+     * more until they run again.
+     */
     fun documentChanged(file: VirtualFile) {
         if (generated.isEmpty() || isGenerated(file)) return
-        val projectPath = projectOfFile.getOrPut(key(file.path)) { CompilationModel.getInstance(project).projectOf(file)?.path.orEmpty() }
+        val projectPath = if (file.fileType != CSharpFileType) projectOfGeneratorInput(file.path)?.path ?: return
+            else projectOfFile.getOrPut(key(file.path)) { CompilationModel.getInstance(project).projectOf(file)?.path.orEmpty() }
         if (projectPath.isEmpty()) return
         lastEdit[key(projectPath)] = System.nanoTime()
         generated[key(projectPath)]?.let { if (!it.stale) { it.stale = true; modificationTracker.incModificationCount() } }
@@ -244,8 +262,11 @@ class CodeAnalysisService(private val project: Project) : Disposable {
     /** Whether [projectFile] has a C# document edited after [since] (nanoTime) or not saved: then the files just made may not fit it. */
     private fun editedSince(projectFile: VirtualFile, since: Long): Boolean {
         if ((lastEdit[key(projectFile.path)] ?: Long.MIN_VALUE) > since) return true
-        val unsaved = FileDocumentManager.getInstance().unsavedDocuments.mapNotNull { FileDocumentManager.getInstance().getFile(it) }.filter { it.fileType == CSharpFileType }
-        return unsaved.any { projectOfFile[key(it.path)]?.equals(projectFile.path, ignoreCase = true) == true }
+        val unsaved = FileDocumentManager.getInstance().unsavedDocuments.mapNotNull { FileDocumentManager.getInstance().getFile(it) }
+        val inputs = generated[key(projectFile.path)]?.inputs.orEmpty()
+        return unsaved.any { file ->
+            if (file.fileType == CSharpFileType) projectOfFile[key(file.path)]?.equals(projectFile.path, ignoreCase = true) == true else key(file.path) in inputs
+        }
     }
 
     val analyzersActive: Boolean get() = !RoslynLanguageServerSettings.getInstance().state.enabled
@@ -258,6 +279,12 @@ class CodeAnalysisService(private val project: Project) : Disposable {
         // `fullSolution`: the whole project again, as the server's background analysis does on a change — a save may change what the other files say
         val whole = analyzesOnSave && analyzerScope == AnalysisScopes.FULL_SOLUTION
         schedule(projectFile, generate = needsGeneration(projectFile), paths = if (analyzesOnSave && !whole) listOf(file.path) else emptyList(), whole = whole)
+    }
+
+    /** An additional file of the generators of a project was saved (a `.razor`): they run again; nothing to analyze, it is no C#. */
+    fun savedGeneratorInput(path: String) {
+        val projectFile = projectOfGeneratorInput(path) ?: return
+        if (DotNetSettings.getInstance().runSourceGenerators) schedule(projectFile, generate = true, paths = emptyList())
     }
 
     /** A C# file was opened: its project generates once, the file is analyzed when it has not been (the whole project under `fullSolution`). */

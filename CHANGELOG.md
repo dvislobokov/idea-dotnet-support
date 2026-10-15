@@ -3,6 +3,16 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.186
+
+Razor and Blazor, the first step: the C# of a web project sees what the Razor compiler makes of `.razor` and `.cshtml` files.
+- The source generators of a project now include Razor's: the classes of components and pages are in Dependencies → Analyzers →
+  Microsoft.CodeAnalysis.Razor.Compiler, byte for byte what the build makes, and completion and Go to Declaration in C# see them
+  (`typeof(Counter)`, `nameof(Counter.Step)`).
+- Saving a `.razor` or `.cshtml` file runs the generators of its project again (any additional file of the generators does).
+- Generators whose assembly name starts with `Microsoft.CodeAnalysis.` but is not Roslyn itself load again (Razor's, the .resx generator).
+- Errors in projects with Razor stay off for now, as before: they come once the false errors this showed are fixed.
+
 ## 0.1.185
 
 The last false errors of a live solution of libraries (SberEmp.MSR.TSS, a TPM library): none of its 350 files has an error now.

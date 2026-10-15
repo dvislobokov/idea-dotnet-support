@@ -67,7 +67,7 @@ Rider/ReSharper (postfix, type-matching, double completion), Microsoft Learn «C
 ## Не делаем
 
 - ML-ранжирование и whole-line completion — отложено пользователем (`ML_COMPLETION_PLAN.md`).
-- Razor/Blazor — вне рамок (решение 2026-09-30).
+- Razor/Blazor — отдельным планом `RAZOR_PLAN.md` (с 2026-10-15; раньше — вне рамок по решению 2026-09-30).
 
 ## Что у нас есть, чего нет в Rider
 

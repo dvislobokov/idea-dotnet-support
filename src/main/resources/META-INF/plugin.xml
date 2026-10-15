@@ -24,6 +24,11 @@
         <module name="io.github.dotnetsupport.roslyn"/>
         <!-- the schema of appsettings*.json, where the JSON plugin is -->
         <module name="io.github.dotnetsupport.jsonschema"/>
+        <!-- frameworks (RAZOR_PLAN.md, "Модульность"): beside the core of C#, which hears from them through io.github.dotnetsupport.csharp* only -->
+        <module name="io.github.dotnetsupport.frameworks.razor"/>
+        <module name="io.github.dotnetsupport.frameworks.xaml"/>
+        <module name="io.github.dotnetsupport.frameworks.avalonia"/>
+        <module name="io.github.dotnetsupport.frameworks.grpc"/>
     </content>
 
     <!-- the native C# PSI (csharp-psi-core, csharp-psi-semantic, csharp-psi-ide; CSHARP_PSI_MIGRATION.md): composed into the main jar;
@@ -45,6 +50,8 @@
         <extensionPoint qualifiedName="io.github.dotnetsupport.namespaceAdjuster" interface="io.github.dotnetsupport.lang.CSharpNamespaceAdjuster" dynamic="true"/>
         <!-- rows of Rider's Refactor This and Generate in C# that come from elsewhere: the code actions of the language server -->
         <extensionPoint qualifiedName="io.github.dotnetsupport.csharpPopupContributor" interface="io.github.dotnetsupport.lang.CSharpPopupContributor" dynamic="true"/>
+        <!-- what a framework module knows of the C# the build makes of a project: the semantics stays silent where types may come from it -->
+        <extensionPoint qualifiedName="io.github.dotnetsupport.csharpCodeGenerators" interface="io.github.dotnetsupport.lang.semantic.CSharpCodeGenerators" dynamic="true"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">

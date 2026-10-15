@@ -1,0 +1,20 @@
+@page "/"
+
+<h1>Counter</h1>
+<p>Current count: @count</p>
+<button @onclick="Increment">Add @Step</button>
+
+@code {
+    private int count;
+
+    /** How much one click adds. */
+    [Parameter] public int Step { get; set; } = 1;
+
+    [Parameter] public EventCallback<int> CountChanged { get; set; }
+
+    private async Task Increment()
+    {
+        count += Step;
+        await CountChanged.InvokeAsync(count);
+    }
+}

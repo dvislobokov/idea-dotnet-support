@@ -10,11 +10,13 @@ data class GeneratedFile(val path: String, val generatorAssembly: String, val ge
 
 /**
  * `generate` of CodeAnalysisHelper: what the generators of [project] made for [framework], what failed; [buildFiles]: the C# the targets of
- * its design-time build made in `obj/` (XAML, Grpc.Tools, resources — [BuildGeneratedSources]).
+ * its design-time build made in `obj/` (XAML, Grpc.Tools, resources — [BuildGeneratedSources]); [additionalFiles]: the inputs of the
+ * generators besides the sources (`.razor`, `.cshtml`, files of analyzers), whose saves run them again; [generators]: the type names of
+ * the generators the helper loaded.
  */
 data class GeneratedRun(
     val project: String, val framework: String?, val files: List<GeneratedFile>, val errors: List<String>, val milliseconds: Long, val workingSet: Long,
-    val buildFiles: List<String> = emptyList(),
+    val buildFiles: List<String> = emptyList(), val additionalFiles: List<String> = emptyList(), val generators: List<String> = emptyList(),
 )
 
 enum class AnalyzerSeverity { ERROR, WARNING, INFO }
@@ -74,6 +76,8 @@ object CodeAnalysisAnswers {
             },
             json.array("errors").mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString }, json.number("milliseconds") ?: 0, json.number("workingSet") ?: 0,
             json.array("buildFiles").mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString?.let(::normalize) },
+            json.array("additionalFiles").mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString?.let(::normalize) },
+            json.array("generators").mapNotNull { it.takeIf { e -> e.isJsonPrimitive }?.asString },
         )
     }
 

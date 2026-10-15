@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- Razor and Blazor in the editor (RAZOR_PLAN.md): components with parameters, the C# that uses what the Razor generator makes of them. -->
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Playground.Blazor</RootNamespace>
+    <AssemblyName>Playground.Blazor</AssemblyName>
+  </PropertyGroup>
+</Project>

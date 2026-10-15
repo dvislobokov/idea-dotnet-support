@@ -6,7 +6,8 @@ Rider-подобная работа с .NET **без LSP, Roslyn и (пока) �
 
 Планы и статус: `ROADMAP.md` (чек-лист фич, ведётся по-русски), **`DAP_PLAN.md`** (отладчик на своём DAP-клиенте, пакет `debugger`: действующий план, справка по адаптеру
 и что осталось), `PLATFORM_DAP_PLAN.md` (история: отладчик на платформенном DAP-клиенте, этапы 0–6 и журнал находок — перенесён на свой клиент 2026-09-22), `LSP_PLAN.md` (C# через `roslyn-language-server`: платформенный LSP-клиент, кэш ответов, свои индексы плагина; действует до вехи 12.1 миграции), **`CSHARP_PSI_MIGRATION.md`** (свой PSI C# вместо сервера: парсер по образцу Roslyn, семантика со сверкой по Roslyn, переключатели `ROSLYN | NATIVE`, вехи отказа от сервера; решение 2026-10-04), **`NET_FRAMEWORK_PLAN.md`** (.NET Framework и проекты
-старого формата: сделанное, порядок дальнейших работ, найденные факты; площадка — `debug-playground/NetFramework`). Анализ платформенных API LSP / DAP —
+старого формата: сделанное, порядок дальнейших работ, найденные факты; площадка — `debug-playground/NetFramework`), **`RAZOR_PLAN.md`** (`.razor` / `.cshtml` на своём парсере и csharp-psi, генератор Razor
+из SDK — оракул; корпус — `tools/razor/`, `.corpus/razor`; решение 2026-10-15). Анализ платформенных API LSP / DAP —
 `docs/platform-lsp-dap.html`, скрипты и дамп — `tools/platform-api/`; зонд и факты о `roslyn-language-server` — `tools/roslyn-lsp/`. Зонд аллокаций по строкам (EventPipe) — `tools/alloc-probe/`; помощник плагина для них — `allocwatch/` (несётся
 исходником и собирается у пользователя, как индексатор; общий сборщик — `cli/DotNetHelper`), сторона плагина — пакет `allocations`. Клиент сервера — content-модуль `io.github.dotnetsupport.roslyn` (фаза 1 сделана). `dap-probe/` — питоновские эксперименты с отладчиком, к сборке плагина не относятся. `debug-playground/` — .NET solution
 для живой проверки плагина пользователем: отладчика (сценарии с маркерами `// BP:`) и редактора (сценарии набора с маркерами `// TYPE:`), чек-лист — в его
@@ -105,6 +106,13 @@ Roslyn главный: свои эвристики (раскраска иден�
 `RoslynServerStatus.isReady(project)` и уступают готовому серверу — новую эвристику, которую сервер тоже умеет, ставить под ту же проверку. В unit-test режиме
 провайдер сервер не запускает (иначе любой тест, открывший `.cs`, поднимает настоящий сервер машины); URI серверу — с обычным двоеточием, не `c%3A`. Проверка вживую — меню .NET → Probe Platform LSP / DAP API.
 Свой PSI C# (`CSHARP_PSI_MIGRATION.md`) — Gradle-подпроекты `csharp-psi-core` / `-semantic` / `-ide` (пакеты `io.github.dotnetsupport.csharp.*`, дескрипторы `META-INF/csharp-psi-*.xml` через `xi:include`): в `-core` лексер, парсер и PSI (тесты, `testData`, корпусные гейты `:csharp-psi-core:corpusTest`; правила и команды — `docs/csharp-psi/`, оракул — `tools/csharp-psi/roslyndump`), `-semantic` / `-ide` пока пустые; тип файла и парсер C# регистрирует хост (`lang/CSharpParserDefinition` переключает деревья), в ядре нет иконок, текстов и настроек; `pluginComposedModule` кладёт их классы в основной jar: модуль `roslyn` их видит, они его — нет. Кто отвечает за фичу — `lang/CSharpFeatures` (`ROSLYN | NATIVE`, выбор в `RoslynLanguageServerSettings`); обработчик модуля `roslyn`, который отвечает за фичу из `CSharpFeature`, сначала спрашивает `RoslynFeatures.serves`.
+
+Фреймворки (Razor, XAML, Avalonia, gRPC; дальше Unity, UWP — `RAZOR_PLAN.md`, «Модульность») — **рядом с ядром C#, не внутри**: content-модуль
+`io.github.dotnetsupport.frameworks.<имя>` (дескриптор `resources/io.github.dotnetsupport.frameworks.<имя>.xml`, строка в `<content>`, классы
+строго в пакете `frameworks/<имя>`). Ядро (`csharp-psi-*`, `lang`, `lang/semantic`, `codeanalysis`, `index`) о них не знает: фреймворк говорит
+с ним через точки расширения `io.github.dotnetsupport.csharp*` (`csharpCodeGenerators` — «у проекта могут быть типы, которых IDE не видела»)
+и точки платформы. Нужно ядру новое знание о фреймворке — новая точка расширения с первой реализацией, а не `if` в семантике;
+`FrameworkBoundaryTest` ловит ссылки ядра на `frameworks` и имена фреймворков в коде `lang/semantic`.
 
 Действия:
 - `DotNet.MainMenu` — меню **.NET** в главной строке меню (после Tools), в нём подменю `DotNet.NuGet`, `DotNet.EfCore`;

@@ -2,8 +2,9 @@
 // server (CSHARP_PSI_MIGRATION.md, D3 / D4). A helper that stays running: `CodeAnalysisHelper --serve`, the protocol is in Protocol.cs.
 //
 //   generate    {projectPath, configuration, targetFramework?, outputRoot}
-//            -> {project, framework, files: [{path, generatorAssembly, generatorType, hintName}], buildFiles: [paths], errors: [..], milliseconds}
-//               runs the generators of the project (Razor's left out) and writes what they make under outputRoot, as
+//            -> {project, framework, files: [{path, generatorAssembly, generatorType, hintName}], buildFiles: [paths], additionalFiles: [paths],
+//                generators: [type names], errors: [..], milliseconds}
+//               runs the generators of the project (Razor's among them) and writes what they make under outputRoot, as
 //               <generator assembly>/<generator type>/<hint name>; files of an earlier run that are not made again are deleted.
 //               buildFiles: the C# the targets of the build made in obj/ for the compiler (XAML, Grpc.Tools, resources) — the design-time
 //               `Compile` runs those targets (MarkupCompilePass1, Protobuf_Compile) before it gives the command line
@@ -145,6 +146,8 @@ internal sealed class LoadedProject(Target target, ProjectId id, CSharpCommandLi
     public ImmutableArray<DiagnosticAnalyzer> Analyzers = [];
     public List<CodeFixProvider> Fixers = [];
     public List<AdditionalText> AdditionalTexts = [];
+    /** The additional files (`.razor`, `.cshtml`, files of analyzers) as last read: a changed one is given to the generators anew. */
+    public readonly Dictionary<string, (DocumentId Id, DateTime Stamp)> Additional = new(StringComparer.OrdinalIgnoreCase);
     public GeneratorDriver? Driver;
     public ImmutableArray<Diagnostic> GeneratorDiagnostics = [];
 
@@ -170,6 +173,10 @@ internal sealed class Projects
             framework = project.Framework,
             files = project.Generated.Keys.Select(path => GeneratedFile(project, path)).ToList(),
             buildFiles = project.BuildFiles,
+            // what a change of which asks the generators to run again, and which generators there are (a framework module of the plugin
+            // trusts what it knows only when its generator ran)
+            additionalFiles = project.AdditionalTexts.Select(t => t.Path).ToList(),
+            generators = project.Generators.Select(g => g.GetGeneratorType().FullName).ToList(),
             errors = project.GeneratorErrors,
             milliseconds = watch.ElapsedMilliseconds,
             workingSet = Environment.WorkingSet,
@@ -369,7 +376,13 @@ internal sealed class Projects
             project.Sources[file.Path] = (documentId, Stamp(file.Path));
         }
         var configs = arguments.AnalyzerConfigPaths.Where(File.Exists).Select(p => Document(DocumentId.CreateNewId(id, p), p)).ToList();
-        var additional = arguments.AdditionalFiles.Where(f => File.Exists(f.Path)).Select(f => Document(DocumentId.CreateNewId(id, f.Path), f.Path)).ToList();
+        var additional = new List<DocumentInfo>();
+        foreach (var file in arguments.AdditionalFiles.Where(f => File.Exists(f.Path)))
+        {
+            var documentId = DocumentId.CreateNewId(id, file.Path);
+            additional.Add(Document(documentId, file.Path));
+            project.Additional[file.Path] = (documentId, Stamp(file.Path));
+        }
         var info = ProjectInfo.Create(id, VersionStamp.Create(), project.Name, Path.GetFileNameWithoutExtension(arguments.OutputFileName ?? project.Name), LanguageNames.CSharp,
                 filePath: target.ProjectPath, outputFilePath: arguments.OutputFileName == null ? null : Path.Combine(arguments.OutputDirectory, arguments.OutputFileName),
                 compilationOptions: arguments.CompilationOptions, parseOptions: arguments.ParseOptions, documents: documents, projectReferences: projectReferences,
@@ -378,14 +391,14 @@ internal sealed class Projects
         if (!workspace.TryApplyChanges(workspace.CurrentSolution.AddProject(info))) throw new HelperException($"{project.Name} could not be added to the workspace");
         project.AdditionalTexts = arguments.AdditionalFiles.Select(f => (AdditionalText)new FileText(f.Path)).ToList();
 
-        // analyzers and generators: those of the command line (packages, the SDK), the code style of the SDK, Razor's generators left out
+        // analyzers and generators: those of the command line (packages, the SDK, Razor's), the code style of the SDK
         var analyzerPaths = arguments.AnalyzerReferences.Select(a => Path.GetFullPath(a.FilePath, directory)).ToList();
         foreach (var codeStyle in Sdk.CodeStyleAnalyzers())
             if (!analyzerPaths.Any(p => Path.GetFileName(p).Equals(Path.GetFileName(codeStyle), StringComparison.OrdinalIgnoreCase))) analyzerPaths.Add(codeStyle);
         var generators = new List<ISourceGenerator>();
         var analyzers = new List<DiagnosticAnalyzer>();
-        // Razor left out entirely: its compiler is built against a newer Roslyn than the SDK's and is about .razor files
-        foreach (var path in analyzerPaths.Where(p => File.Exists(p) && !IsRazor(p)))
+        // Razor's generator of the SDK of the project is built against the Roslyn of that SDK, no newer than the helper's (the newest SDK)
+        foreach (var path in analyzerPaths.Where(File.Exists))
         {
             var reference = new AnalyzerFileReference(path, AnalyzerLoader.Instance);
             reference.AnalyzerLoadFailed += (_, e) => HelperProtocol.Log("warn", $"{project.Name}: {Path.GetFileName(path)}: {e.Message}");
@@ -420,6 +433,20 @@ internal sealed class Projects
             project.Sources[path] = (documentId, now);
             changed = true;
         }
+        // an additional file is the same object to the driver until it is replaced: an incremental generator would keep what it made of it
+        for (var i = 0; i < project.AdditionalTexts.Count; i++)
+        {
+            var text = project.AdditionalTexts[i];
+            if (!project.Additional.TryGetValue(text.Path, out var known)) continue;
+            var now = Stamp(text.Path);
+            if (now == known.Stamp || now == DateTime.MinValue) continue;
+            var fresh = new FileText(text.Path);
+            project.AdditionalTexts[i] = fresh;
+            project.Driver = project.Driver?.ReplaceAdditionalText(text, fresh);
+            if (solution.GetAdditionalDocument(known.Id) != null) solution = solution.WithAdditionalDocumentText(known.Id, Read(text.Path), PreservationMode.PreserveIdentity);
+            project.Additional[text.Path] = (known.Id, now);
+            changed = true;
+        }
         if (changed) workspace.TryApplyChanges(solution);
         foreach (var reference in project.References) SyncSources(reference);
     }
@@ -451,7 +478,8 @@ internal sealed class Projects
             }
             foreach (var source in result.GeneratedSources)
             {
-                var path = source.SyntaxTree.FilePath;
+                // Razor's hint names have folders with `/` (`Components/Alert/MudAlert_razor.g.cs`): one spelling, the one CleanUp sees on disk
+                var path = Path.GetFullPath(source.SyntaxTree.FilePath);
                 made.Add(path);
                 Write(path, source.SourceText);
                 if (project.Generated.TryGetValue(path, out var documentId))
@@ -545,8 +573,6 @@ internal sealed class Projects
     private static bool IsGenerated(LoadedProject project, string path) =>
         path.StartsWith(project.Target.OutputDirectory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
 
-    private static bool IsRazor(string path) => Path.GetFileName(path).Contains("Razor", StringComparison.OrdinalIgnoreCase);
-
     private static object GeneratedFile(LoadedProject project, string path)
     {
         // <output>/<generator assembly>/<generator type>/<hint name>, as the driver names them
@@ -618,8 +644,17 @@ internal sealed class Projects
 internal sealed class FileText(string path) : AdditionalText
 {
     public override string Path { get; } = path;
-    public override SourceText? GetText(CancellationToken cancellationToken = default) =>
-        File.Exists(Path) ? SourceText.From(File.ReadAllText(Path), Encoding.UTF8) : null;
+    private readonly Lazy<SourceText?> text = new(() =>
+    {
+        if (!File.Exists(path)) return null;
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        // with the checksum of the build (SHA-256): Razor's generator writes it into `#pragma checksum` and RazorSourceChecksumAttribute
+        return SourceText.From(stream, Encoding.UTF8, SourceHashAlgorithm.Sha256);
+    });
+
+    // a snapshot, read once: a generator compares the old text with the new one (Razor does), and a file read again would be the new
+    // one both times — a changed file is a new FileText (Projects.SyncSources)
+    public override SourceText? GetText(CancellationToken cancellationToken = default) => text.Value;
 }
 
 /**
@@ -683,9 +718,13 @@ internal sealed class AnalyzerLoader : IAnalyzerAssemblyLoader
             return LoadFromStream(stream);
         }
 
-        /** Roslyn, its Workspaces and what the framework has: one copy for all, the helper's. */
+        /**
+         * Roslyn, its Workspaces and what the framework has: one copy for all, the helper's. Roslyn is what the helper carries next to itself,
+         * not every `Microsoft.CodeAnalysis.*`: Razor's generator (`Microsoft.CodeAnalysis.Razor.Compiler`) and the analyzers of packages
+         * come from their own folders.
+         */
         private static bool Shared(AssemblyName name) =>
-            name.Name != null && (name.Name.StartsWith("Microsoft.CodeAnalysis", StringComparison.Ordinal) && !name.Name.Contains("Analyzers") && !name.Name.Contains("CodeStyle") && !name.Name.Contains("NetAnalyzers")
+            name.Name != null && (name.Name.StartsWith("Microsoft.CodeAnalysis", StringComparison.Ordinal) && File.Exists(Path.Combine(AppContext.BaseDirectory, name.Name + ".dll"))
                 || name.Name.StartsWith("System.Composition", StringComparison.Ordinal) || Default.Assemblies.Any(a => a.GetName().Name == name.Name));
     }
 }

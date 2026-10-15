@@ -27,7 +27,8 @@ import io.github.dotnetsupport.view.resolveFile
 
 /** What a change of files on disk asks of [CodeAnalysisService]: pure, so it is tested without the VFS. */
 object CodeAnalysisEvents {
-    enum class Kind { SAVED_SOURCE, PROJECT_INPUT, SOURCE_SET, GENERATOR_INPUT, NONE }
+    /** [SAVED_FILE]: another file saved by the IDE — an additional file of the generators of a project, if the helper said so. */
+    enum class Kind { SAVED_SOURCE, PROJECT_INPUT, SOURCE_SET, GENERATOR_INPUT, SAVED_FILE, NONE }
 
     private val PROJECT_INPUTS = setOf("csproj", "props", "targets", "editorconfig", "globalconfig", "json")
 
@@ -47,6 +48,7 @@ object CodeAnalysisEvents {
             name.equals(".editorconfig", ignoreCase = true) || extension in PROJECT_INPUTS -> Kind.PROJECT_INPUT
             // what the targets of the build make C# of (XAML, protobuf, resources): their outputs are stale until made again
             extension in BuildGeneratedSources.INPUT_EXTENSIONS -> Kind.GENERATOR_INPUT
+            contentChange && fromSave -> Kind.SAVED_FILE
             else -> Kind.NONE
         }
     }
@@ -60,6 +62,7 @@ class CodeAnalysisFileListener(private val project: Project) : BulkFileListener 
         val saved = ArrayList<VirtualFile>()
         val inputs = ArrayList<String>()
         val generatorInputs = ArrayList<String>()
+        val savedFiles = ArrayList<String>()
         for (event in events) {
             when (CodeAnalysisEvents.kind(event.path, event is VFileContentChangeEvent, event.isFromSave)) {
                 CodeAnalysisEvents.Kind.SAVED_SOURCE -> event.file?.takeIf { !service.isGenerated(it) }?.let { saved += it }
@@ -70,21 +73,26 @@ class CodeAnalysisFileListener(private val project: Project) : BulkFileListener 
                     if (event is VFilePropertyChangeEvent && event.isRename) inputs += event.oldPath
                 }
                 CodeAnalysisEvents.Kind.GENERATOR_INPUT -> generatorInputs += event.path
+                CodeAnalysisEvents.Kind.SAVED_FILE -> savedFiles += event.path
                 CodeAnalysisEvents.Kind.NONE -> Unit
             }
         }
         if (inputs.isNotEmpty()) service.projectFilesChanged(inputs)
         if (generatorInputs.isNotEmpty()) service.generatorInputsChanged(generatorInputs)
+        savedFiles.forEach(service::savedGeneratorInput)
         val own = saved.filter { ProjectLocator.getInstance().guessProjectForFile(it) == project }
         if (own.isNotEmpty()) ApplicationManager.getApplication().executeOnPooledThread { own.forEach(service::saved) }
     }
 }
 
-/** Typing in a C# file: the generated files of its project may not fit it any more until the next save (they stay, the semantics listens). */
+/**
+ * Typing in a C# file or in an additional file of the generators (a `.razor`): the generated files of its project may not fit it any more
+ * until the next save (they stay, the semantics listens).
+ */
 class CodeAnalysisDocumentListener : DocumentListener {
     override fun documentChanged(event: DocumentEvent) {
         val file = FileDocumentManager.getInstance().getFile(event.document) ?: return
-        if (file.fileType != CSharpFileType) return
+        if (!file.isInLocalFileSystem) return
         for (project in com.intellij.openapi.project.ProjectManager.getInstance().openProjects) {
             if (project.isDisposed) continue
             project.getServiceIfCreated(CodeAnalysisService::class.java)?.documentChanged(file)
