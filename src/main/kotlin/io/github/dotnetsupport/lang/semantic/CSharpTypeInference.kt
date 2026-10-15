@@ -33,15 +33,42 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
         symbol: CSharpSymbol, targets: List<SemanticType?>, arguments: List<CSharpArgument>, receiver: Pair<SemanticType, SemanticType?>?, call: CSharpInvocationExpression?,
         site: CSharpSimpleName?, lenient: Boolean = false, onFixed: ((Int, SemanticType) -> Unit)? = null,
     ): Inferred {
+        // the same question comes from the type of the call, the overload checks and the applicability of each candidate (up to ten times a
+        // call, the log showed): answered once per resolver, unless the answer met a cycle (D6e4)
+        val key = Key(symbol, call, site, lenient, targets.map(::fingerprint), receiver?.let { fingerprint(it.first) to fingerprint(it.second) })
+        answers[key]?.let { cached ->
+            if (cached is Inferred.Known && onFixed != null) cached.types.forEachIndexed { i, type -> onFixed(i, type) }
+            return cached
+        }
+        val before = r.cycleCount
         val where = { "inference ${site?.text ?: SemanticTrace.show(symbol)}${if (lenient) " (lenient)" else ""} at ${SemanticTrace.at(call ?: site)}" }
         // Failed is a decision (the candidate does not apply, as in Roslyn), Unknown is a refusal: only the latter goes to the log
-        return try {
+        val result = try {
             inferOrThrow(symbol, targets, arguments, receiver, call, site, lenient, onFixed)
         } catch (e: RoslynMethodTypeInferrer.Unknown) {
             SemanticTrace.trace { "${where()}: Unknown — ${e.describe()}" }
             Inferred.Unknown
         }
+        if (r.cycleCount == before) answers[key] = result
+        return result
     }
+
+    /** A question of [infer], by what it is asked with: the types by their [fingerprint] (they compare by identity, and are made anew per ask). */
+    private data class Key(
+        val symbol: CSharpSymbol, val call: CSharpInvocationExpression?, val site: CSharpSimpleName?, val lenient: Boolean, val targets: List<Any?>,
+        val receiver: Pair<Any?, Any?>?,
+    )
+
+    /** The parts of [type] that make it the type it is, as nested lists (hashed structurally, no text built). */
+    private fun fingerprint(type: SemanticType?): Any? = when (type) {
+        null -> null
+        is SemanticType.Library -> listOf(type.type, type.arguments.map(::fingerprint), type.tupleNames)
+        is SemanticType.Source -> listOf(type.info.key, type.arguments.map(::fingerprint), fingerprint(type.outer))
+        is SemanticType.ArrayOf -> listOf(type.rank, fingerprint(type.element))
+        is SemanticType.Parameter -> listOf(type.name, type.owner, type.index, type.ofMethod)
+    }
+
+    private val answers = HashMap<Key, Inferred>()
 
     private fun inferOrThrow(
         symbol: CSharpSymbol, targets: List<SemanticType?>, arguments: List<CSharpArgument>, receiver: Pair<SemanticType, SemanticType?>?, call: CSharpInvocationExpression?,

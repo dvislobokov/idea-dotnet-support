@@ -61,12 +61,51 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
     private val expressionTypes = IdentityHashMap<PsiElement, SemanticType?>()
     // the types of locals, parameters and range variables by their declaration (a lambda's parameter is typed through the call it is in)
     private val localTypes = IdentityHashMap<PsiElement, SemanticType?>()
-    private val busy = HashSet<PsiElement>()
-    // apart from [busy]: a simple name is also the expression whose type is asked, typeOf(name) resolves the same element
-    private val busyTypes = HashSet<PsiElement>()
+
+    // ---- cycles: one registry of the questions being answered (D6e4), each kind of question apart (a simple name is also the
+    // expression whose type is asked); what a question asked again meanwhile gets (the type arguments fixed so far of a call), or null
+    private val answering = HashMap<Pair<String, Any>, Any?>()
     // how many questions found their own question in progress: an answer that met a cycle is not kept when it is "nothing"
     private var cycles = 0
     internal val cycleCount: Int get() = cycles
+
+    /**
+     * Starts answering the question [kind] of [key]; false when it is being answered already — a cycle, counted unless [counts] is false
+     * (a question another path answers completely when asked again: Roslyn's inference of a call, which the simple one answers then).
+     */
+    internal fun enter(kind: String, key: Any, partial: Any? = null, counts: Boolean = true): Boolean {
+        val id = kind to key
+        if (answering.containsKey(id)) {
+            if (counts) cycles++
+            return false
+        }
+        answering[id] = partial
+        return true
+    }
+
+    internal fun leave(kind: String, key: Any) {
+        answering.remove(kind to key)
+    }
+
+    /** What the question [kind] of [key] in progress has so far ([enter]'s partial). */
+    internal fun partial(kind: String, key: Any): Any? = answering[kind to key]
+
+    /**
+     * The answer of the question [kind] of [key]: from [cache], else [compute]d; [onCycle] when it is being computed already. An answer
+     * that met a cycle is kept only when it is not "nothing" — what the question in progress gave was incomplete.
+     */
+    internal fun <K : Any, V> answer(kind: String, key: K, cache: MutableMap<K, V?>?, onCycle: () -> V?, compute: () -> V?): V? {
+        if (cache != null && cache.containsKey(key)) return cache[key]
+        if (!enter(kind, key)) return onCycle()
+        try {
+            val before = cycles
+            val result = compute()
+            if (cache != null && (result != null || cycles == before)) cache[key] = result
+            return result
+        } finally {
+            leave(kind, key)
+        }
+    }
 
     /** An answer asked for while it is being computed elsewhere (a range variable of a query being translated): what depends on it is not kept. */
     internal fun noteCycle() {
@@ -74,6 +113,8 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
     }
     internal val expressions = CSharpExpressionTypes(this)
     internal val overloads = CSharpOverloads(this)
+    /** Roslyn's method type inference, one per resolver: its answers are cached per call (D6e4), the same for every asker. */
+    internal val inference: CSharpTypeInference by lazy { CSharpTypeInference(this) }
     private val levels = IdentityHashMap<PsiElement, List<Level>>()
     private val projectLevel: Level by lazy { compilationLevel() }
 
@@ -89,19 +130,9 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
     }
 
     fun resolveName(name: CSharpSimpleName): CSharpResolution? {
+        // an answer already given is not post-processed again (the lambdas below ask for this name while being typed)
         if (names.containsKey(name)) return names[name]
-        if (!busy.add(name)) {
-            cycles++
-            return null
-        }
-        var result: CSharpResolution?
-        try {
-            val before = cycles
-            result = compute(name)?.takeIf { it.isNotEmpty() }?.distinct()?.let(::CSharpResolution)
-            if (result != null || cycles == before) names[name] = result
-        } finally {
-            busy.remove(name)
-        }
+        var result = answer("name", name, names, onCycle = { null }) { compute(name)?.takeIf { it.isNotEmpty() }?.distinct()?.let(::CSharpResolution) }
         // overloads a lambda argument tells apart: with the candidates known, the lambdas' parameters are typed, then their bodies
         if (result != null && result.symbols.size > 1) {
             val refined = expressions.refineByLambdas(name, result.symbols)
@@ -1114,20 +1145,12 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
 
     internal fun localType(local: CSharpSymbol.Local): SemanticType? {
         val declaration = local.symbol.declaration
-        if (localTypes.containsKey(declaration)) return localTypes[declaration]
-        val before = cycles
-        val result = computeLocalType(local)
-        if (result != null || cycles == before) localTypes[declaration] = result
-        return result
+        return answer("local", declaration, localTypes, onCycle = { null }) { computeLocalType(local) }
     }
 
     private fun computeLocalType(local: CSharpSymbol.Local): SemanticType? {
         val declaration = local.symbol.declaration
-        if (!busy.add(declaration)) {
-            cycles++
-            return null
-        }
-        try {
+        run {
             val resolver = (declaration.containingFile as? CSharpFile)?.let(session::reachable) ?: return null
             val owner = declaration.parent
             return when (local.symbol.kind) {
@@ -1155,8 +1178,6 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                 LocalSymbolKind.LOCAL_FUNCTION -> (owner as? CSharpLocalFunctionStatement)?.returnType?.let(resolver::resolveType)
                 else -> null
             }
-        } finally {
-            busy.remove(declaration)
         }
     }
 
@@ -1164,10 +1185,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
 
     private fun memberType(symbol: CSharpSymbol.SourceMember): SemanticType? {
         val element = symbol.element
-        if (!busy.add(element)) {
-            cycles++
-            return null
-        }
+        if (!enter("member", element)) return null
         try {
             val resolver = (element.containingFile as? CSharpFile)?.let(session::reachable) ?: return null
             val type: SemanticType? = when (element) {
@@ -1182,7 +1200,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
             val owner = symbol.owner
             return if (owner is SemanticType.Source) substitute(type, owner) else type
         } finally {
-            busy.remove(element)
+            leave("member", element)
         }
     }
 
@@ -1266,20 +1284,10 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
 
     /** The natural type of the expression [expression] (layer 11b, [CSharpExpressionTypes]); a name that stands for a type has none here. */
     fun typeOf(expression: CSharpExpression): SemanticType? {
-        if (expressionTypes.containsKey(expression)) return expressionTypes[expression]
-        if (!busyTypes.add(expression)) {
-            cycles++
+        return answer("type", expression, expressionTypes, onCycle = {
             SemanticTrace.trace { "typeOf `${SemanticTrace.text(expression)}` at ${SemanticTrace.at(expression)}: asked while being typed (a cycle), not known" }
-            return null
-        }
-        try {
-            val before = cycles
-            val result = expressions.compute(expression)
-            if (result != null || cycles == before) expressionTypes[expression] = result
-            return result
-        } finally {
-            busyTypes.remove(expression)
-        }
+            null
+        }) { expressions.compute(expression) }
     }
 
     /**

@@ -1067,7 +1067,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         return if (unknown) UNKNOWN_FORM else null
     }
 
-    private val inference by lazy { CSharpTypeInference(r) }
+    private val inference get() = r.inference
 
     /**
      * Whether the strict inference ([CSharpTypeInference], Roslyn's) surely fails for [symbol] in its normal form — a form with `params`

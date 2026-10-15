@@ -33,7 +33,7 @@ import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Outcome
  */
 internal class CSharpOverloadChecks(private val checks: CSharpSemanticChecks, private val r: CSharpNameResolver) {
     private val overloads = r.overloads
-    private val inference = CSharpTypeInference(r)
+    private val inference get() = r.inference
     private val analyses = HashMap<CSharpInvocationExpression, Analysis?>()
 
     fun visit(element: PsiElement) {

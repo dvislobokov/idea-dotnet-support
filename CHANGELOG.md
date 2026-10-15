@@ -3,6 +3,28 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.199
+
+- Projects built with `UseArtifactsOutput` (the .NET 8 SDK layout of the Aspire templates and eShop: `artifacts/obj/<project>/` and
+  `artifacts/bin/<project>/` at the root of the repository, the pivot `debug` / `debug_net8.0`) are restored to the IDE: the assets, the
+  built outputs of referenced projects, the C# the build makes in the intermediate folder and the "not restored" banner all find the
+  artifacts folder. Before, such a project had no assemblies to the analysis, so a missing name was no error (eShop's Catalog.API, found
+  live in the sandbox).
+
+## 0.1.198
+
+- A project with Razor keeps reporting errors while a C# file is typed: an unsaved edit of a `.cs` no longer makes what the Razor generator
+  made "stale" (it reads the `.razor` / `.cshtml` files only), so a missing name is red at once, as in any other project (the live check of
+  0.1.196 found the project silent until a save). A generator that reads the C# (the JSON one) keeps the old rule until the save runs it.
+- The playground: `TYPE:razor-errors-after-generation` uses a line that gives CS0117 and CS0103.
+
+## 0.1.197
+
+- Inside the analysis of C#: the four separate guards against a question asking itself (the type of an expression, a name, a local, the
+  type arguments of a call, Roslyn's inference of a call) are one registry with one rule of what is kept; the ported type inference is
+  asked once per call per pass instead of up to ten times (the type of the call, the overload checks and the applicability of each
+  candidate asked it again). No change in what is reported.
+
 ## 0.1.196
 
 - Projects with Razor and Blazor report the errors of their C# like any other project, once the Razor generator has run in the helper

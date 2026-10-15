@@ -21,9 +21,10 @@ import io.github.dotnetsupport.lang.NativeCSharpTypePositions
  */
 internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
     private val inferred = HashMap<Pair<PsiElement, CSharpSymbol>, List<SemanticType?>>()
-    private val inferring = HashMap<Pair<PsiElement, CSharpSymbol>, Array<SemanticType?>>()
-    // the calls Roslyn's inference runs for: typing a lambda of one asks for the inference of its other overloads, each typing the lambda again
-    private val roslynInferring = HashSet<PsiElement>()
+    // the questions of this class in the resolver's registry of cycles (D6e4): a call's type arguments (its partial answer is what is fixed
+    // so far), Roslyn's inference of a call (typing a lambda of one asks for the inference of its other overloads, each typing the lambda again)
+    private val TYPE_ARGUMENTS = "typeArguments"
+    private val ROSLYN_INFERENCE = "roslynInference"
     internal val queries = CSharpQueryTranslation(r)
 
     fun compute(e: CSharpExpression): SemanticType? {
@@ -266,9 +267,10 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         (callee as? CSharpGenericName)?.typeArgumentList?.arguments?.takeIf { it.size == arity }?.let { written -> return written.map(r::resolveType) }
         val key: Pair<PsiElement, CSharpSymbol> = call to symbol
         inferred[key]?.let { return it }
-        inferring[key]?.let { return it.toList() }
         val fixed = arrayOfNulls<SemanticType>(arity)
-        inferring[key] = fixed
+        // asked again while being inferred (a lambda's parameter typed through this call): what is fixed so far
+        @Suppress("UNCHECKED_CAST")
+        if (!r.enter(TYPE_ARGUMENTS, key, fixed)) return (r.partial(TYPE_ARGUMENTS, key) as Array<SemanticType?>).toList()
         val cycles = r.cycleCount
         try {
             val reduced = isReduced(symbol, callee)
@@ -305,11 +307,11 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
             // an answer that met a question in progress (a lambda typed while its call is being resolved) is not kept
             return fixed.toList().also { if (withLambdas && r.cycleCount == cycles) inferred[key] = it }
         } finally {
-            inferring.remove(key)
+            r.leave(TYPE_ARGUMENTS, key)
         }
     }
 
-    private val inference by lazy { CSharpTypeInference(r) }
+    private val inference get() = r.inference
 
     /**
      * The type arguments of [symbol] for [call] by Roslyn's method type inference, lenient (an argument of no known type gives nothing); null
@@ -320,14 +322,14 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         arguments: List<CSharpArgument>, fixed: Array<SemanticType?>,
     ): List<SemanticType>? {
         // asked again from inside its own run (exponential in the overloads of nested lambdas): the simple inference answers
-        if (!roslynInferring.add(call)) {
+        if (!r.enter(ROSLYN_INFERENCE, call, counts = false)) {
             SemanticTrace.trace { "typeArguments ${callee.text} at ${SemanticTrace.at(call)}: asked again from inside its own Roslyn inference, the simple one answers" }
             return null
         }
         try {
             return roslynTypeArgumentsOnce(symbol, call, callee, reduced, parameters, arguments, fixed)
         } finally {
-            roslynInferring.remove(call)
+            r.leave(ROSLYN_INFERENCE, call)
         }
     }
 

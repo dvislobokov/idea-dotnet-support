@@ -385,7 +385,15 @@
     равны — удалить старые правила `classify`, `score`/tie-break'и, `unify`+`refineByLambdas`, флаг `strict`; после D6c — и эвристики
     выбора. Новая правка ложной ошибки — в порт, не ручка на старом (сегодняшние `roslynInferring`, `inferenceFails`, `betterUnrelatedTarget`,
     `withBases` — ручки, уходят вместе со старым миром).
-  - [ ] D6e4. Одна защита от циклов вместо четырёх: один стек «в работе» по выражению в сессии.
+  - [x] D6e4 (0.1.197). Одна защита от циклов вместо четырёх: реестр «вопрос в работе» в `CSharpNameResolver` (`enter`/`leave`/`partial`,
+    один счётчик `cycles`, `answer(kind, key, cache, onCycle, compute)` с единым правилом «ответ, встретивший цикл, не хранится, если он
+    «ничего»»); на него переведены `resolveName`, `localType`, `memberType`, `typeOf`, `typeArguments` (частичный ответ — зафиксированное
+    пока), `roslynTypeArguments`. Кэш строгого вывода `CSharpTypeInference.infer` по (метод, вызов, цели, режим) с тем же правилом:
+    журнал показывал до 10 обращений на вызов (тип вызова, проверки перегрузок, применимость каждого кандидата); ключ — «отпечаток»
+    типов (они сравниваются по ссылке и создаются заново на каждый вопрос), один экземпляр `CSharpTypeInference` на резолвер
+    (`CSharpNameResolver.inference`). Две ловушки по пути: `resolveName` после кэша не должен повторять дообработку лямбд (StackOverflow),
+    повторный вход в вывод Roslyn не считается циклом (иначе `typeArguments` не кэшируется, MudBlazor 189 с). Время MudBlazor 162 → ~173 с —
+    в пределах разброса одиночных замеров, перепроверить на тихой машине.
   - [ ] D6e5. Разрезать `CSharpOverloads` (1590 строк): преобразования / применимость / лучший член. Не срочно.
 - [ ] D6c. `OverloadResolution.cs` (better function member, better conversion from expression, tie-breaks) — эвристики выбора уходят.
 - [x] D6d (0.1.189; тест `RoslynConversionsTest`). `ConversionsBase.cs` + `UserDefinedImplicitConversions.cs` → `RoslynConversions`:
