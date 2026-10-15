@@ -700,6 +700,10 @@
   - [x] R0 (0.1.186) — генератор Razor в помощнике (вывод байт в байт как у сборки на MudBlazor и Nop.Web), перезапуск генераторов по
     сохранению любого additional file, модуль `frameworks.razor` знает, когда генератор отработал; ошибки Razor-проектов включаются после
     R0b. Сценарий — `debug-playground/Blazor/Editor/RazorGeneratedTypes.cs`. Вживую не проверено
+  - [ ] R0b — ложные ошибки ядра, найденные на корпусе Razor; первая часть вышла в 0.1.187 (группа методов из локальной функции, `@` в
+    именах, `using static` вложенных типов, `join … into`, nullable-преобразования, срез по `Range`, база partial-типа из другой части,
+    `a?.M()` в void-лямбде, `Func<Task<T>>`, тип собранного проекта = тип его исходников; вывод типов Roslyn для ошибок — D6a / D6b
+    `CSHARP_PSI_MIGRATION.md`). Тесты `RazorCorpusFalseErrorsTest`, `RoslynTypesTest`, `RoslynMethodTypeInferenceTest`
   - [x] F0 (2026-10-15, без версии: пользователю не видно) — фреймворки модулями рядом с ядром C#: точка расширения `csharpCodeGenerators`, модули `frameworks.razor` / `xaml` / `avalonia` / `grpc` вместо списков в `mayGenerateTypes`; тесты `CSharpCodeGeneratorsTest` (старая формула против новой), `FrameworkBoundaryTest`
 
 ### Помощники на .NET, работающие постоянно (план 2026-10-03)

@@ -3,6 +3,24 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.187
+
+False errors of C# found on large Razor and Blazor solutions (MudBlazor, nopCommerce, eShop) — they were in any project, Razor only
+showed them. On MudBlazor the errors in `.cs` went from 241 to 17, on nopCommerce from 88 to 5; SberEmp.Shared stays at none.
+- A local function given where a delegate is expected (`Inject(props, key, SetHeader)`, `Run(TrackingAction)`) is a method group, not a
+  call: no CS1503 "cannot convert from 'void'" or "from 'Task'".
+- A verbatim identifier is its name: `@Icons.Material.Filled`, `@class`, `@event` and, in what the Razor generator writes, `@Html`, `@Model`.
+- `using static Outer;` brings the nested types of `Outer` too (`MyEnum` of a component, `GuidConverter`).
+- After `join x in … into xs` only `xs` is in scope: a later `from x in xs.DefaultIfEmpty()` is no CS1930.
+- `int?` converts to `decimal?`, a constant `4` to `byte?`; `span[range]` with a `Range` variable is a slice, not an element.
+- The base class of a partial class may be written in another part (`@inherits` of a `.razor`): `base.OnAfterRenderAsync` is found.
+- `() => _table?.Expand()` is a valid body for an `Action`; a lambda returning a task picks `Func<Task<T>>` over `Func<T>`
+  (`GetAsync(key, async () => …)` of a cache gives the value, not a task).
+- A type of a referenced project that is built is the same type as in its sources: no CS1503 "from 'KeyInterceptorService' to
+  'KeyInterceptorService'".
+- The type inference behind the errors of generic calls is Roslyn's, ported: upper bounds of contravariant interfaces, `T?` with a
+  lower bound, interfaces a class implements, type parameters that depend on each other.
+
 ## 0.1.186
 
 Razor and Blazor, the first step: the C# of a web project sees what the Razor compiler makes of `.razor` and `.cshtml` files.

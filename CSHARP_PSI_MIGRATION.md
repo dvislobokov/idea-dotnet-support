@@ -331,7 +331,8 @@
   аргументы типа и определение, nullable, массив, ссылочный / значимый, делегат и его `Invoke`, кортеж, параметр типа (метода / типа,
   порядковый номер), особые типы (`object`, `ValueType`, `Enum`, `Task`…), подстановка, равенство (собранный проект — его исходники) —
   поверх `SemanticType`, индекса сборок и PSI. Тест фасада на фикстурах.
-- [ ] D6b. `MethodTypeInference.cs` (3534 строки) → `RoslynMethodTypeInferrer`: фазы, фиксация по зависимостям, exact / lower / upper
+- [ ] D6b. Первая половина — 0.1.187: `RoslynMethodTypeInferrer` под строгим выводом ошибок (`CSharpTypeInference`), тест
+  `RoslynMethodTypeInferenceTest`; вторая — мягкий `typeArguments` выбора перегрузки. `MethodTypeInference.cs` (3534 строки) → `RoslynMethodTypeInferrer`: фазы, фиксация по зависимостям, exact / lower / upper
   bounds (массивы, nullable, сконструированные, классы, интерфейсы, кортежи, span), вывод из лямбд (явные параметры, выходной тип,
   async) и групп методов. Аргументы — своя абстракция (тип, лямбда с выводом результата по типам параметров, группа методов, кортеж).
   Сначала заменяет строгий `CSharpTypeInference.infer`, затем мягкий `typeArguments`. Гейт: `semanticGate` не хуже, харнесс корпуса
