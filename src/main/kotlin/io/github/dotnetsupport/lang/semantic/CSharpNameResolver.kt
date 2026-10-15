@@ -236,9 +236,21 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         return emptyList()
     }
 
-    /** The types [text] with [arity] declared at the top of [namespace]: of the solution, then of the assemblies (a built project is its sources). */
+    // whether the sources of a file of the solution are seen from this one (its project, or one this project references), by file
+    private val seenFiles = HashMap<com.intellij.openapi.vfs.VirtualFile, Boolean>()
+
+    /** Whether [part] is declared in a project this file's project sees ([CSharpSemanticEnvironment.sees]); yes when that is not known. */
+    private fun seen(part: TypePart): Boolean {
+        val other = part.element()?.containingFile ?: return true
+        return seenFiles.getOrPut(other.viewProvider.virtualFile) { CSharpSemanticEnvironment.sees(file, other) }
+    }
+
+    /**
+     * The types [text] with [arity] declared at the top of [namespace]: of the solution (the projects this one sees), then of the assemblies
+     * (a built project is its sources).
+     */
     fun typesIn(namespace: String, text: String, arity: Int): List<CSharpSymbol> {
-        val source = syntax.typeParts(text).filter { it.namespace == namespace && it.arity == arity }.map { it.qualifiedName }.distinct()
+        val source = syntax.typeParts(text).filter { it.namespace == namespace && it.arity == arity && seen(it) }.map { it.qualifiedName }.distinct()
             .mapNotNull { syntax.typeInfo(it, arity) }.map { CSharpSymbol.SourceType(it) }
         val library = session.findType(assemblies, namespace, path(text, arity))?.takeIf { type -> source.none { it.info.qualifiedName == type.qualifiedName } }
         return if (library == null) source else source + CSharpSymbol.LibraryType(library)

@@ -141,6 +141,57 @@ object CSharpSemanticEnvironment {
         return legacy && buildGeneratedKnown(file, projectFile) && io.github.dotnetsupport.codeanalysis.CodeAnalysisService.getInstance(file.project).buildGenerated(projectFile).files.isNotEmpty()
     }
 
+    /**
+     * Whether the sources of the project of [other] are seen from [file]: its own project, or one its project references, directly or
+     * through another (the compiler sees transitive `ProjectReference`s). Yes where a project is not known (a loose file, a test without one).
+     * eShop's AppHost references no project: the `static class Extensions` of the global namespace of four other projects is not its
+     * `eShop.AppHost.Extensions` (CS0117 `IsFoundryEnabled` was ours alone, 0.1.193).
+     */
+    fun sees(file: PsiFile, other: PsiFile): Boolean {
+        if (other == file || other.originalFile == file.originalFile) return true
+        val own = projectOf(file) ?: return true
+        val there = projectOf(other) ?: return true
+        if (own == there) return true
+        // the built output of that project among the assemblies of this one says it is referenced, however the reference is written
+        if (assemblies(file).indexes.any { it.assemblyName.equals(there.nameWithoutExtension, ignoreCase = true) }) return true
+        val referenced = referencedProjects(file.project, own) ?: return true
+        return there.path.lowercase() in referenced
+    }
+
+    /**
+     * The project files [projectFile] references, transitively, by their paths in lower case; null when they cannot be known for sure — a
+     * reference with a property (`$(…)`), one whose file is not found, a `Directory.Build.props` / `.targets` above that adds references.
+     */
+    fun referencedProjects(project: com.intellij.openapi.project.Project, projectFile: VirtualFile): Set<String>? {
+        val found = LinkedHashSet<String>()
+        val queue = ArrayDeque<VirtualFile>()
+        queue.add(projectFile)
+        val solutions = io.github.dotnetsupport.solution.SolutionService.getInstance(project)
+        while (queue.isNotEmpty()) {
+            val current = queue.removeFirst()
+            if (importsAddReferences(current)) return null
+            for (reference in solutions.msBuildProject(current).projectReferences) {
+                if ('$' in reference) return null
+                val target = current.parent?.findFileByRelativePath(reference.replace('\\', '/')) ?: return null
+                if (found.add(target.path.lowercase())) queue.add(target)
+            }
+        }
+        return found
+    }
+
+    /** Whether a `Directory.Build.props` / `.targets` above [projectFile] mentions `ProjectReference`: references the project file does not show. */
+    private fun importsAddReferences(projectFile: VirtualFile): Boolean {
+        var directory = projectFile.parent
+        while (directory != null) {
+            for (name in listOf("Directory.Build.props", "Directory.Build.targets")) {
+                val props = directory.findChild(name) ?: continue
+                if (runCatching { com.intellij.openapi.vfs.VfsUtilCore.loadText(props) }.getOrNull()?.contains("ProjectReference") == true) return true
+            }
+            directory = directory.parent
+        }
+        return false
+    }
+
     @TestOnly
     fun setGeneratedKnownForTests(known: Boolean?) {
         testGeneratedKnown = known

@@ -188,7 +188,9 @@ class CSharpAccessErrorsTest : BasePlatformTestCase() {
             public class Box { internal int Hidden; }
         """.trimIndent())
         val name = assemblyName?.let { "<PropertyGroup><AssemblyName>$it</AssemblyName></PropertyGroup>" }.orEmpty()
-        myFixture.addFileToProject("$root/$project/$project.csproj", """<Project Sdk="Microsoft.NET.Sdk">$name</Project>""")
+        // the using project references the libraries: without a reference their sources are not seen at all (0.1.193)
+        myFixture.addFileToProject("$root/$project/$project.csproj",
+            """<Project Sdk="Microsoft.NET.Sdk">$name<ItemGroup><ProjectReference Include="..\Lib\Lib.csproj" /><ProjectReference Include="..\Lib2\Lib2.csproj" /></ItemGroup></Project>""")
         val file = myFixture.addFileToProject("$root/$project/Use.cs", """
             using $root.Lib;
             using $root.Lib2;
@@ -259,7 +261,8 @@ class CSharpAccessErrorsTest : BasePlatformTestCase() {
                 namespace $root.Lib;
                 public class Host { internal int GetModelInfo() => 1; internal static string? Published(string path) => path; }
             """.trimIndent())
-            myFixture.addFileToProject("$root/Tests/Tests.csproj", """<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><AssemblyName>$assemblyName</AssemblyName></PropertyGroup></Project>""")
+            myFixture.addFileToProject("$root/Tests/Tests.csproj",
+                """<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><AssemblyName>$assemblyName</AssemblyName></PropertyGroup><ItemGroup><ProjectReference Include="..\Lib\Lib.csproj" /></ItemGroup></Project>""")
             val file = myFixture.addFileToProject("$root/Tests/Use.cs", """
                 using $root.Lib;
                 namespace $root.Tests;

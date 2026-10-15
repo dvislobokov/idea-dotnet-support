@@ -3,6 +3,14 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.193
+
+- A type declared in the sources of a project this project does not reference (directly or through another) is not seen, as the compiler
+  does not see it: eShop's AppHost references no project, so the `static class Extensions` of the global namespace of four other projects
+  is no longer taken for its own `eShop.AppHost.Extensions` (CS0117 "does not contain a definition for 'IsFoundryEnabled'" was ours
+  alone). With a reference, the global one wins over the one a `using` brings, as in C#. The Razor corpus is at one false error (MudBlazor,
+  a default interface member the index of assemblies does not see yet).
+
 ## 0.1.192
 
 - The debug log of the C# analysis says why: an inference that could not finish names the fact it lacked (the type of a lambda body,

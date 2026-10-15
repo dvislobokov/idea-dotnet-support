@@ -391,6 +391,27 @@ class RazorCorpusFalseErrorsTest : BasePlatformTestCase() {
     }
 
     /**
+     * eShop's AppHost: a `static class Extensions` of the global namespace in a project this one does not reference is not seen, so
+     * `Extensions` is the one `using eShop.AppHost` brings; with a reference to that project the global one wins, as in C# — CS0117.
+     */
+    fun testATypeOfAProjectNotReferencedIsNotSeen() {
+        myFixture.addFileToProject("Catalog/Catalog.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>")
+        myFixture.addFileToProject("Catalog/Extensions.cs", "public static class Extensions { public static void AddCatalog() { } }")
+        myFixture.addFileToProject("Host/Host.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>")
+        myFixture.addFileToProject("Host/Extensions.cs", "namespace eShop.Host { internal static class Extensions { public static bool IsFoundryEnabled() => true; } }")
+        myFixture.addFileToProject("Referencing/Referencing.csproj",
+            "<Project Sdk=\"Microsoft.NET.Sdk\"><ItemGroup><ProjectReference Include=\"..\\Catalog\\Catalog.csproj\" /></ItemGroup></Project>")
+        myFixture.addFileToProject("Referencing/Extensions.cs", "namespace eShop.Referencing { internal static class Extensions { public static bool IsFoundryEnabled() => true; } }")
+        fun errorsIn(path: String, text: String): List<String> {
+            myFixture.configureFromExistingVirtualFile(myFixture.addFileToProject(path, text).virtualFile)
+            return myFixture.doHighlighting(HighlightSeverity.ERROR).filter { it.description?.startsWith("CS") == true }.map { it.description!!.substringBefore(':') }
+        }
+        assertEmpty(errorsIn("Host/AppHost.cs", "using eShop.Host;\nclass P { bool M() => Extensions.IsFoundryEnabled(); }"))
+        val found = errorsIn("Referencing/AppHost.cs", "using eShop.Referencing;\nclass P { bool M() => Extensions.IsFoundryEnabled(); }")
+        assertEquals(found.toString(), listOf("CS0117"), found)
+    }
+
+    /**
      * nopCommerce's PayPal plugin: the base `Order` of `GetOrderResponse` is resolved by the usings of the file declaring it — not by those of
      * the file using it, where `Order` would be the shop's own `Order` (an `int Id`, CS0029 to `string`).
      */

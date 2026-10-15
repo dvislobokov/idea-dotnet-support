@@ -368,8 +368,10 @@
     проекта по `Link`-пути (`ProjectContent.linkedFiles`); с загруженными сгенерированными файлами `setGeneratesForTests(false)`, иначе
     `.csproj` на Razor SDK глушит CS0103 как IDE. eShop 13 → 1, MudBlazor 2 → 1 (CS0535 `INumber<T>`, индексатор): артефактов не осталось, оставшаяся — настоящая: `static class
     Extensions` в глобальном пространстве имён девяти проектов, резолвер берёт чужой (`AppHost.cs:82 Extensions.IsFoundryEnabled`) —
-    следующая ложная ошибка ядра: тип по простому имени предпочитать из своего проекта. Журнал: причина `Result.Unknown` инферера
-    проносится наружу, «applicable … not known» называет аргумент и преобразование.
+    исправлено в 0.1.193: `CSharpSemanticEnvironment.sees(file, other)` — исходники другого проекта видны, только если этот проект
+    ссылается на тот (транзитивно по `ProjectReference`); `CSharpNameResolver.typesIn` отбрасывает невидимые части. То же правило ещё
+    не применено к extension-методам и членам (`membersNamed`, поиск расширений) — следующий шаг того же класса. Журнал: причина
+    `Result.Unknown` инферера проносится наружу, «applicable … not known» называет аргумент и преобразование.
   - [ ] D6e3. План заката старого мира: каждый порт **заменяет**, а не «сначала, при неудаче». Как только корпус Razor и SberEmp.Shared
     равны — удалить старые правила `classify`, `score`/tie-break'и, `unify`+`refineByLambdas`, флаг `strict`; после D6c — и эвристики
     выбора. Новая правка ложной ошибки — в порт, не ручка на старом (сегодняшние `roslynInferring`, `inferenceFails`, `betterUnrelatedTarget`,
