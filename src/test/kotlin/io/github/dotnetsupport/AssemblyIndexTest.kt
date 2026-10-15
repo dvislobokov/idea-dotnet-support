@@ -33,6 +33,18 @@ class AssemblyIndexTest {
     }
 
     @Test
+    fun `explicit implementations of interface members (format 6)`() {
+        val fixture = AssemblyIndex.read(fixture("IndexFixture"))
+        // private in metadata, named by the interface: a default one in an interface (as IUtf8SpanFormattable.TryFormat of INumberBase<T>)
+        val numberLike = fixture.allTypes.single { it.name == "INumberLike" }.members.map { it.name }
+        assertTrue(numberLike.toString(), "Fixture.IFormattableLike.TryFormat" in numberLike)
+        // a property and an event of a class, explicitly; the private event `Changed` without a dot is not in the index
+        val explicitBase = fixture.allTypes.single { it.name == "ExplicitBase" }.members.map { it.name }
+        assertTrue(explicitBase.toString(), "Fixture.INamed.Title" in explicitBase)
+        assertFalse(explicitBase.toString(), "Changed" in explicitBase)
+    }
+
+    @Test
     fun `nullable attributes and oblivious types (format 3)`() {
         val fixture = AssemblyIndex.read(fixture("IndexFixture"))
         val guards = fixture.allTypes.single { it.name == "Guards" }.members.associateBy { it.name }

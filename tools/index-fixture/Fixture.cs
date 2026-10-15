@@ -110,6 +110,32 @@ public interface IHolder<out T> : INamed
     T Held { get; }
 }
 
+public interface IFormattableLike
+{
+    bool TryFormat(out int written);
+}
+
+/// <summary>
+/// An explicit default implementation of a base interface's member, as INumberBase&lt;T&gt; implements IUtf8SpanFormattable.TryFormat: a type
+/// implementing INumberLike owes nothing for TryFormat (CS0535 was ours alone, format 6).
+/// </summary>
+public interface INumberLike : IFormattableLike
+{
+    bool IFormattableLike.TryFormat(out int written)
+    {
+        written = 0;
+        return true;
+    }
+}
+
+/// <summary>A class implementing an interface explicitly: a derived class owes nothing for Title.</summary>
+public class ExplicitBase : INamed
+{
+    string INamed.Title => "";
+
+    event System.Action? Changed;
+}
+
 public record Point(int X, int Y);
 
 public readonly struct Money

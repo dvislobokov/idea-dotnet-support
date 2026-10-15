@@ -160,7 +160,8 @@ class CSharpSemanticGate : BasePlatformTestCase() {
             check(process.waitFor(10, TimeUnit.MINUTES) && process.exitValue() == 0) { "dotnet build indexer failed:\n$log" }
         }
         val list = File(out, "assemblies.txt").also { it.writeText(paths.joinToString("\n")) }
-        val indexes = File(out, "index")
+        // by the format of the index: a bump of the format left old indexes here and the gate failed to open them (ref7, 2026-10-16)
+        val indexes = File(out, "index/v${AssemblyIndex.FORMAT_VERSION}")
         val process = ProcessBuilder(option("dotnet") ?: "dotnet", dll.path, "--out", indexes.path, "--list", list.path).redirectError(ProcessBuilder.Redirect.DISCARD).start()
         val stdout = process.inputStream.bufferedReader().readText()
         check(process.waitFor(10, TimeUnit.MINUTES) && process.exitValue() == 0) { "the indexer failed:\n$stdout" }

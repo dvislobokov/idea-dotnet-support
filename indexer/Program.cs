@@ -30,7 +30,7 @@ namespace DotNetSupport.Indexer;
 // the second process waits for the first and then finds the indexes made.
 public static class Program
 {
-    public const int FormatVersion = 5;
+    public const int FormatVersion = 6;
 
     public static int Main(string[] args)
     {
@@ -425,8 +425,11 @@ public sealed class MetadataScanner(MetadataReader reader)
         {
             var method = reader.GetMethodDefinition(handle);
             var attributes = method.Attributes;
-            if (AccessBits.Of(attributes) == Access.None) continue;
             var name = reader.GetString(method.Name);
+            // an explicit implementation of an interface member is private in metadata and named by the interface
+            // (`System.IUtf8SpanFormattable.TryFormat`): kept, it satisfies the interface for a type deriving from this one — a default one in an
+            // interface too (CS0535 of a struct implementing INumber<T> was ours alone, format 6)
+            if (AccessBits.Of(attributes) == Access.None && !name.Contains('.')) continue;
             if (name.Contains('<')) continue;
             MemberKind kind;
             if ((attributes & MethodAttributes.RTSpecialName) != 0)
@@ -644,13 +647,14 @@ public sealed class MetadataScanner(MetadataReader reader)
             var setter = accessors.Setter.IsNil ? (MethodDefinition?)null : reader.GetMethodDefinition(accessors.Setter);
             var getterAccess = getter == null ? Access.None : AccessBits.Of(getter.Value.Attributes);
             var setterAccess = setter == null ? Access.None : AccessBits.Of(setter.Value.Attributes);
-            // a private accessor is not imported by the compiler: as if there were none
-            if (getterAccess == Access.None && setterAccess == Access.None) continue;
+            var name = reader.GetString(property.Name);
+            // a private accessor is not imported by the compiler: as if there were none — but an explicit implementation of an interface
+            // property (`INamed.Title`) is kept, as the methods are
+            if (getterAccess == Access.None && setterAccess == Access.None && !name.Contains('.')) continue;
             var getterVisible = IsVisible(getterAccess);
             var setterVisible = IsVisible(setterAccess);
-            var name = reader.GetString(property.Name);
             if (name.Contains('<')) continue;
-            var accessor = getterVisible || !setterVisible && getterAccess != Access.None ? getter!.Value : setter!.Value;
+            var accessor = getterVisible || !setterVisible && getterAccess != Access.None ? getter ?? setter!.Value : setter ?? getter!.Value;
             var custom = property.GetCustomAttributes();
             // the wider of the two accessors says who sees the property
             var flags = MethodFlags(accessor.Attributes, custom, entry.Kind == TypeKind.Interface) & ~(MemberFlags.Protected | MemberFlags.Internal | MemberFlags.PrivateProtected);
@@ -699,8 +703,9 @@ public sealed class MetadataScanner(MetadataReader reader)
             var adder = @event.GetAccessors().Adder;
             if (adder.IsNil) continue;
             var accessor = reader.GetMethodDefinition(adder);
-            if (AccessBits.Of(accessor.Attributes) == Access.None) continue;
             var name = reader.GetString(@event.Name);
+            // an explicit implementation of an interface event is kept, as the methods are
+            if (AccessBits.Of(accessor.Attributes) == Access.None && !name.Contains('.')) continue;
             if (name.Contains('<')) continue;
             var custom = @event.GetCustomAttributes();
             entry.Members.Add(new MemberEntry

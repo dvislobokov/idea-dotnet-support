@@ -173,7 +173,9 @@ class ImportCompletionTest : BasePlatformTestCase() {
         assertNotNull("indexer/Program.cs and the project file are packed by the build", sources)
         assertEquals(setOf("Program.cs", "AssemblyIndexer.csproj"), sources!!.files.keys)
         assertTrue(sources.files.getValue("AssemblyIndexer.csproj").contains("\$(IndexerFramework)"))
-        assertTrue("the format of the writer is the one the reader reads", sources.files.getValue("Program.cs").contains("FormatVersion = ${AssemblyIndex.FORMAT_VERSION};"))
+        val program = sources.files.getValue("Program.cs")
+        assertTrue("the format of the writer is the one the reader reads (${AssemblyIndex.FORMAT_VERSION}): ${program.lines().firstOrNull { "FormatVersion =" in it }?.trim()}",
+            program.contains("FormatVersion = ${AssemblyIndex.FORMAT_VERSION};"))
         assertEquals(12, sources.hash.length)
         assertEquals("the line ends of a checkout do not make another source", IndexerTool.Sources.hash(listOf("a\nb\n")), IndexerTool.Sources.hash(listOf("a\r\nb\r\n")))
         assertFalse(IndexerTool.Sources.hash(listOf("a")) == IndexerTool.Sources.hash(listOf("b")))

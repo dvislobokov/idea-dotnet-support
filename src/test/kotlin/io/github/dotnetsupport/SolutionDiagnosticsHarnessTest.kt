@@ -91,10 +91,15 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
         val folders = projects.associate { it.parentFile.relativeTo(root).invariantSeparatorsPath + "/" to it.parentFile.name }
         fun projectOf(path: String): String? = folders.keys.filter { path.startsWith(it) }.maxByOrNull { it.length }?.let(folders::get)
         val all = references.values.flatMap { it.forIndex }.distinct()
-        val indexed = IndexerTool.getInstance().index(all, File("build/solution-harness-index").absoluteFile)
+        val failedOpens = ArrayList<String>()
+        // the cache by the format of the index: a bump of the format left format-5 indexes here, every open failed quietly and the harness
+        // "found" no error in four solutions (ref7, 2026-10-16)
+        val indexed = IndexerTool.getInstance().index(all, File("build/solution-harness-index/v${AssemblyIndex.FORMAT_VERSION}").absoluteFile)
         val sets = references.mapKeys { it.key.parentFile.name }.mapValues { (name, found) ->
             val frameworks = found.libraries.filter { it.kind == ProjectAssemblies.LibraryKind.FRAMEWORK }.flatMapTo(HashSet()) { it.assemblies }
-            val opened = found.forIndex.mapNotNull { dll -> indexed[dll]?.let { runCatching { AssemblyIndex.open(it.toPath()) }.getOrNull() }?.let { dll to it } }
+            val opened = found.forIndex.mapNotNull { dll ->
+                indexed[dll]?.let { index -> runCatching { AssemblyIndex.open(index.toPath()) }.onFailure { failedOpens += "$dll: ${it.message}" }.getOrNull() }?.let { dll to it }
+            }
             val kept = ProjectAssemblies.withoutConflicts(opened, { it.second.assemblyName.ifEmpty { it.first.path } }, { it.second.assemblyVersion }, { it.first in frameworks })
             AssemblyIndexSet(kept.map { it.second }, name)
         }
@@ -155,7 +160,13 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
         }
         val probe = files[control]!!; report.append("# control: set ${CSharpSemanticEnvironment.assemblies(probe).indexes.size}, complete ${CSharpSemanticEnvironment.referencesComplete(probe)}, all ${CSharpSemanticChecks(CSharpSemanticSession(project).resolver(probe)).run().map { it.code }}\n")
         report.append("# files: ${files.size} (from obj ${generatedPaths.size}, linked ${linkedPaths.size} ${linkedPaths.take(3)}), too large for the IDE: ${tooLarge.size} ${tooLarge.take(3)}, without a set of assemblies: ${unmatched.size} ${unmatched.take(3)}\n")
+        if (failedOpens.isNotEmpty()) report.append("# indexes that did not open: ${failedOpens.size} ${failedOpens.take(2)}\n")
         println(report)
         File("build/solution-harness.txt").writeText(report.toString())
+        // the harness is no result without assemblies: the control file then reports nothing, and "0 errors" would be read as a success
+        val controlCodes = CSharpSemanticChecks(CSharpSemanticSession(project).resolver(probe)).run().map { it.code }
+        assertTrue("the control file must report CS1061 and CS0103 (assemblies: ${CSharpSemanticEnvironment.assemblies(probe).indexes.size}, indexes that did not open: ${failedOpens.size}): $controlCodes",
+            "CS1061" in controlCodes && "CS0103" in controlCodes)
+        assertEmpty("every index of the assemblies must open", failedOpens)
     }
 }

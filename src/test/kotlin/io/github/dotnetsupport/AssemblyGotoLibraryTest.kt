@@ -102,7 +102,7 @@ class AssemblyGotoLibraryTest : BasePlatformTestCase() {
         val file = AssemblyNavigation.file(type(COLLECTIONS, "System.Collections.Generic.List`1+Enumerator"))
         assertEquals("List.cs", file.name)
         assertEquals("System.Collections.Generic.List`1", file.type.fullName)
-        assertTrue(file.url, file.url.startsWith("dotnet-metadata://v${AssemblyIndex.FORMAT_VERSION}/${COLLECTIONS.mvid}/System.Collections.Generic.List`1/List.cs"))
+        assertTrue("${file.url} (the fixture's mvid ${COLLECTIONS.mvid})", file.url.startsWith("dotnet-metadata://v${AssemblyIndex.FORMAT_VERSION}/${COLLECTIONS.mvid}/System.Collections.Generic.List`1/List.cs"))
         assertSame(file, VirtualFileManager.getInstance().findFileByUrl(file.url))
         assertNull(VirtualFileManager.getInstance().findFileByUrl("dotnet-metadata://v${AssemblyIndex.FORMAT_VERSION}/0000/System.Nothing/Nothing.cs"))
         val console = AssemblyNavigation.file(type(CONSOLE, "System.Console")).rendered.text

@@ -477,7 +477,7 @@ class AssemblyIndex private constructor(private val buffer: ByteBuffer, docsFile
     }
 
     companion object {
-        const val FORMAT_VERSION = 5
+        const val FORMAT_VERSION = 6
         const val EXTENSION = "dnix"
         const val DEFAULT_LIMIT = 200
         private const val MAGIC = 0x58494E44 // "DNIX", little-endian

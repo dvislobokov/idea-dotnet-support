@@ -391,6 +391,19 @@ class RazorCorpusFalseErrorsTest : BasePlatformTestCase() {
     }
 
     /**
+     * MudBlazor.Docs' `struct T : INumber<T>`: `IUtf8SpanFormattable.TryFormat` is implemented by default, explicitly, in `INumberBase<T>` —
+     * the index of assemblies keeps such members since format 6 (the fixture's `INumberLike`), so no CS0535; a class deriving from a library
+     * class that implements an interface explicitly owes nothing either.
+     */
+    fun testExplicitDefaultImplementationOfALibraryInterface() {
+        assertEmpty(errors("""
+            using Fixture;
+            struct Number : INumberLike { }
+            class Named : ExplicitBase, INamed { }
+        """))
+    }
+
+    /**
      * eShop's AppHost: a `static class Extensions` of the global namespace in a project this one does not reference is not seen, so
      * `Extensions` is the one `using eShop.AppHost` brings; with a reference to that project the global one wins, as in C# — CS0117.
      */

@@ -257,7 +257,9 @@ object AssemblyMetadataText {
         private fun modifiers(type: IndexedType, member: IndexedMember): String {
             val inInterface = type.kind == IndexedTypeKind.INTERFACE
             val parts = ArrayList<String>()
-            if (member.isProtected) parts += "protected" else if (!inInterface) parts += "public"
+            // an explicit implementation (`IEnumerator IEnumerable.GetEnumerator()`, named by the interface) takes no access modifier; a
+            // constructor is `.ctor`
+            if (member.isProtected) parts += "protected" else if (!inInterface && '.' !in member.name.trimStart('.')) parts += "public"
             if (member.kind == IndexedMemberKind.CONSTANT) return (parts + "const").joinToString(" ")
             if (member.isStatic) parts += "static"
             if (member.kind == IndexedMemberKind.FIELD && member.isReadOnly) parts += "readonly"
