@@ -536,20 +536,28 @@ internal class CSharpNullableFlow(
         fn.targets += target
         var exhaustive = false
         val ends = ArrayList<State>()
+        // what the sections still to come can see: after `case null:` the value is not null
+        var remaining = input
         try {
             for (section in st.sections) {
                 var c = base.copy()
+                var excludesNull = false
                 for (label in section.labels) {
                     when (label) {
                         is CSharpDefaultSwitchLabel -> exhaustive = true
                         is CSharpCasePatternSwitchLabel -> {
-                            label.pattern?.let { declarePattern(it, c, input) }
+                            label.pattern?.let { declarePattern(it, c, remaining) }
                             if (section.labels.size == 1) label.whenClause?.condition?.let { c = condition(it, c).first }
                             if (label.pattern is CSharpDiscardPattern && label.whenClause == null) exhaustive = true
+                            if (label.whenClause == null && label.pattern?.let(::testOf) == Test.NULL) excludesNull = true
                         }
-                        is CSharpCaseSwitchLabel -> eval(label.value, c)
+                        is CSharpCaseSwitchLabel -> {
+                            eval(label.value, c)
+                            if (label.value?.let(::isNullConstant) == true) excludesNull = true
+                        }
                     }
                 }
+                if (excludesNull) remaining = N.NOT
                 for (child in section.statements) {
                     if (c.unreachable) break
                     statement(child, c)
@@ -861,13 +869,17 @@ internal class CSharpNullableFlow(
         slotOf(e.governingExpression)?.let { set(base, it, N.UNKNOWN) }
         val ends = ArrayList<State>()
         var value: N? = null
+        // what the arms still to come can see: after `null => …` the value is not null (`var values => values.Contains(…)` of MudBlazor's
+        // MudSelectContext got CS8604 from us alone)
+        var remaining = input
         for (arm in e.arms) {
             var c = base.copy()
-            arm.pattern?.let { declarePattern(it, c, input) }
+            arm.pattern?.let { declarePattern(it, c, remaining) }
             arm.whenClause?.condition?.let { c = condition(it, c).first }
             val armValue = arm.expression?.let { if (isFunction(it)) N.NOT else eval(it, c) } ?: N.UNKNOWN
             if (!c.unreachable) value = value?.let { max(it, armValue) } ?: armValue
             ends += c
+            if (arm.whenClause == null && arm.pattern?.let(::testOf) == Test.NULL) remaining = N.NOT
         }
         if (ends.isEmpty()) {
             havoc(s)

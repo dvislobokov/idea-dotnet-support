@@ -715,7 +715,9 @@
     ссылкам для extension-методов и частей типов; 0.1.197 — D6e4: один реестр циклов, кэш строгого вывода; 0.1.198 — Razor-проект не
     молчит при наборе `.cs` (`readsOnlyAdditionalFiles`); 0.1.199 — раскладка `UseArtifactsOutput` (`msbuild/ProjectLayout`): eShop в
     песочнице показал, что без неё проект «не restored» и имена не проверяются; 0.1.200 — явные реализации интерфейсов в индексе
-    (формат 6): CS0535 у `INumber<T>` — последняя ложная ошибка корпуса Тесты `RazorCorpusFalseErrorsTest`, `RoslynTypesTest`, `RoslynMethodTypeInferenceTest`
+    (формат 6): CS0535 у `INumber<T>` — последняя ложная ошибка корпуса; 0.1.201 — ветки `switch` после `null` видят non-null (ложное
+    CS8604 в MudBlazor, увидено в песочнице через окно Problems). Открыто: CS8933 «using appeared previously as global using» у нас
+    предупреждение, у Roslyn — скрытая подсказка Тесты `RazorCorpusFalseErrorsTest`, `RoslynTypesTest`, `RoslynMethodTypeInferenceTest`
   - [x] F0 (2026-10-15, без версии: пользователю не видно) — фреймворки модулями рядом с ядром C#: точка расширения `csharpCodeGenerators`, модули `frameworks.razor` / `xaml` / `avalonia` / `grpc` вместо списков в `mayGenerateTypes`; тесты `CSharpCodeGeneratorsTest` (старая формула против новой), `FrameworkBoundaryTest`
 
 ### Помощники на .NET, работающие постоянно (план 2026-10-03)

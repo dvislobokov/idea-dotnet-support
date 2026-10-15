@@ -175,6 +175,50 @@ class CSharpNullableFlowTest : BasePlatformTestCase() {
         )
     }
 
+    /** MudBlazor's MudSelectContext: after `null => …` the arms of a switch expression (and the sections after `case null:`) see the value as not null. */
+    fun testArmsAfterANullArmSeeNotNull() {
+        assertEquals(emptyList<String>(), problems("""
+            #nullable enable
+            using System.Collections.Generic;
+            using System.Linq;
+            class C
+            {
+                IEnumerable<string>? Values() => null;
+                bool M(string v) => Values() switch
+                {
+                    null => false,
+                    HashSet<string> set => set.Contains(v),
+                    var values => values.Contains(v),
+                };
+                bool S(string v)
+                {
+                    switch (Values())
+                    {
+                        case null: return false;
+                        case var values: return values.Contains(v);
+                    }
+                }
+            }
+        """))
+        // without the null arm the value may be null in the `var` arm: CS8604, as Roslyn says
+        val found = problems("""
+            #nullable enable
+            using System.Collections.Generic;
+            using System.Linq;
+            class D
+            {
+                IEnumerable<string>? Values() => null;
+                bool M(string v) => Values() switch
+                {
+                    HashSet<string> set => set.Contains(v),
+                    var values => values.Contains(v),
+                };
+            }
+        """)
+        assertEquals(found.toString(), 1, found.size)
+        assertTrue(found.single(), "CS8604" in found.single())
+    }
+
     fun testObliviousAndUnknownStaySilent() {
         assertEquals(
             emptyList<String>(),
