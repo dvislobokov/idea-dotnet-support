@@ -414,6 +414,13 @@
     построчно как в 0.1.210. Инспекции IDEA (MCP) нашли мёртвый код — `ambiguity`, `strictArgument`, `VALUE_TYPE` — и всегда ложные
     условия в проверке `ref`-аргументов: убрать с первым куском D6c.
 - [ ] D6c. `OverloadResolution.cs` (better function member, better conversion from expression, tie-breaks) — эвристики выбора уходят.
+  Порядок (2026-10-16): ArgsToParameters → преобразования из выражения → применимость → лучший член → удаление старого (`score`,
+  `refineByLambdas`, `unify`, `strict`); каждый кусок — версия, полная проверка и журнал харнесса.
+  - [x] D6c1 (0.1.213; тест `RoslynArgsToParametersTest`). `OverloadResolution_ArgsToParameters.cs` → `roslyn/RoslynArgsToParameters`
+    (чистая функция): соответствие аргументов параметрам в обычной и развёрнутой форме и причина неприменимости в порядке Roslyn
+    (материал CS8323 / CS1739 / CS1744 / CS7036 / CS1740), `CSharpOverloads.map` — через него. Отличие от прежнего `map`: именованный
+    аргумент может стоять за массив `params` в развёрнутой форме (SPEC VIOLATION Roslyn с C# 4). Убран мёртвый код, найденный
+    инспекциями IDEA: `ambiguity`, `strictArgument`, `VALUE_TYPE`, всегда ложные условия проверки `ref`. Ошибки и журнал харнесса — как 0.1.211.
 - [x] D6d (0.1.189; тест `RoslynConversionsTest`). `ConversionsBase.cs` + `UserDefinedImplicitConversions.cs` → `RoslynConversions`:
   неявные преобразования из типа (тождество, числовые, nullable, ссылочные с вариантностью, массивы, делегаты, параметры типа,
   упаковка, кортежи, span) и пользовательские (множество D, применимые и lifted-операторы, самые подходящие исходный и целевой типы,

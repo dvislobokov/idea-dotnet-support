@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.213
+
+- Which parameter each argument of a call goes to is now decided by the port of the compiler's own rules: a named argument may stand for
+  a `params` array, as the compiler allows (`M(x: 1234)` for `M(params int[] x)`). Unused code of the overload resolution removed.
+
 ## 0.1.212
 
 - The C# errors and the analyzer warnings are now looked for in the whole solution by default, not only in the open files: Problems →

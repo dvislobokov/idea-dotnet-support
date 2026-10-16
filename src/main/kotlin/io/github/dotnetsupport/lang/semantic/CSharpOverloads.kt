@@ -1,11 +1,11 @@
 package io.github.dotnetsupport.lang.semantic
 
 import com.intellij.psi.PsiElement
-import com.intellij.psi.util.elementType
 import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.index.IndexedMemberKind
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.semantic.CSharpNameResolver.Conversion
+import io.github.dotnetsupport.lang.semantic.roslyn.RoslynArgsToParameters
 import io.github.dotnetsupport.lang.semantic.roslyn.RoslynConversions
 import io.github.dotnetsupport.lang.semantic.roslyn.RoslynTypes
 import java.util.IdentityHashMap
@@ -141,7 +141,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                 val writtenKind = argument.refKindKeyword?.text
                 val kind = refKinds[i]
                 val handlerByRef = kind == "ref" && writtenKind == null && unparenthesized(expression) is CSharpInterpolatedStringExpression && isHandler(target)
-                if (!(writtenKind == kind || handlerByRef || kind == "in" && (writtenKind == null || writtenKind == "ref") || kind == null && writtenKind == null)) {
+                if (!(writtenKind == kind || handlerByRef || kind == "in" && (writtenKind == null || writtenKind == "ref"))) {
                     wrong += i; refMismatch = true; continue
                 }
                 val byRef = writtenKind == "ref" || writtenKind == "out"
@@ -197,17 +197,6 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         }
     }
 
-    /** The conversion of the argument [e] to [to], strictly ([strict]). */
-    internal fun strictArgument(e: CSharpExpression, to: SemanticType): Conversion {
-        val wasStrict = strict
-        strict = true
-        try {
-            return argument(e, argumentType(e), to)
-        } finally {
-            strict = wasStrict
-        }
-    }
-
     /**
      * The one candidate of [candidates] a call with [arguments] calls, or null when that cannot be told surely. [reduced]: extension methods
      * called on a receiver; [site]: the name called (null for a constructor).
@@ -254,30 +243,6 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                 "resolve ${site?.text} at ${SemanticTrace.at(site)}: gave up, no best of [${pool.joinToString { SemanticTrace.show(it.symbol) }}]; not known: [$unknown]"
             }
             return best?.symbol
-        } finally {
-            openOwners -= owners.toSet()
-        }
-    }
-
-    /**
-     * CS0121: the applicable candidates of a call that no other applicable one beats, when there are two or more of them (none is the best,
-     * §12.6.4.1). Null unless the applicability of every candidate and every comparison between the applicable ones is known.
-     */
-    fun ambiguity(candidates: List<CSharpSymbol>, arguments: List<CSharpArgument>, site: CSharpSimpleName): List<CSharpSymbol>? {
-        if (candidates.size < 2 || candidates.any(::hasPriority)) return null
-        val call = r.invocationOf(site) ?: return null
-        val types = arguments.map { a -> a.expression?.let(::argumentType) }
-        val owners = candidates.mapNotNull { (it as? CSharpSymbol.SourceMember)?.element }
-        openOwners += owners
-        try {
-            twins = paramsTwins(candidates)
-            val applicable = candidates.mapNotNull { symbol -> applicable(symbol, false, arguments, types, call, site, false)?.also { if (it === UNKNOWN_FORM) return null } }
-            if (applicable.size < 2) return null
-            val beaten = HashSet<CSharpSymbol>()
-            for (m in applicable) for (n in applicable) {
-                if (m !== n && (betterMember(m, n, arguments, types) ?: return null)) beaten += n.symbol
-            }
-            return applicable.map { it.symbol }.filter { it !in beaten }.takeIf { it.size >= 2 }
         } finally {
             openOwners -= owners.toSet()
         }
@@ -362,8 +327,8 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                 val kind = refKind(symbol, index, reduced)
                 // `in` parameters take an argument with `in`, `ref` or nothing; `ref` / `out` only their own keyword
                 // a `ref` interpolated string handler (`Debug.Assert(bool, ref AssertInterpolatedStringHandler)`) takes `$"..."` as it is
-                val handlerByRef = kind == "ref" && written == null && unparenthesized(expression) is CSharpInterpolatedStringExpression && target != null && isHandler(target)
-                if (!(written == kind || handlerByRef || kind == "in" && (written == null || written == "ref") || kind == null && written == null)) { fits = false; break }
+                val handlerByRef = kind == "ref" && written == null && unparenthesized(expression) is CSharpInterpolatedStringExpression && isHandler(target)
+                if (!(written == kind || handlerByRef || kind == "in" && (written == null || written == "ref"))) { fits = false; break }
                 val byRef = written == "ref" || written == "out"
                 val conversion = if (expression is CSharpDeclarationExpression && expression.type?.let(r::isVar) != false) Conversion.IDENTITY else argument(expression, types[i], target)
                 when (conversion) {
@@ -450,33 +415,15 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         else -> null
     }
 
-    /** The parameter each argument goes to; null when the arguments do not fit (§12.6.4.2, the corresponding parameters). */
+    /**
+     * The parameter each argument goes to; null when the arguments do not fit (§12.6.2.2, the corresponding parameters): Roslyn's
+     * `AnalyzeArguments` ([RoslynArgsToParameters], D6c) — a named argument may stand for the parameter array in the expanded form, as Roslyn
+     * has allowed since C# 4; why a candidate does not fit is there too, for the errors of D6c.
+     */
     private fun map(parameters: List<CSharpNameResolver.Parameter>, arguments: List<CSharpArgument>, expanded: Boolean): List<Int>? {
-        val result = ArrayList<Int>()
-        val used = HashSet<Int>()
-        var positional = true
-        for ((i, argument) in arguments.withIndex()) {
-            val name = argument.nameColon?.nameElement?.identifier?.text
-            val index: Int
-            if (name != null) {
-                index = parameters.indexOfFirst { it.name == name }.takeIf { it >= 0 } ?: return null
-                // a named argument in its own position lets positional ones follow (C# 7.2); out of position, it must not
-                if (index != i) positional = false
-                if (expanded && index == parameters.size - 1) return null
-            } else {
-                if (!positional) return null
-                index = if (expanded && i >= parameters.size - 1) parameters.size - 1 else i
-                if (index >= parameters.size) return null
-            }
-            if (!(expanded && index == parameters.size - 1) && !used.add(index)) return null
-            result += index
-        }
-        for ((p, parameter) in parameters.withIndex()) {
-            if (p in used) continue
-            if (expanded && p == parameters.size - 1) continue
-            if (!parameter.optional) return null
-        }
-        return result
+        val names = arguments.map { it.nameColon?.nameElement?.identifier?.text }
+        val analyzed = RoslynArgsToParameters.analyze(parameters.map { RoslynArgsToParameters.Parameter(it.name, it.optional) }, names, expanded)
+        return (analyzed as? RoslynArgsToParameters.Result.Applicable)?.argsToParameters
     }
 
     /** The element type of a `params` collection: an array's element, `Span<T>` / `ReadOnlySpan<T>` / the collection interfaces' `T`. */
@@ -598,7 +545,6 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         internal const val NULLABLE = "System.Nullable`1"
         internal val TASKS_OF = setOf("System.Threading.Tasks.Task`1", "System.Threading.Tasks.ValueTask`1")
         internal const val VALUE_TUPLE = "System.ValueTuple`"
-        internal const val VALUE_TYPE = "System.ValueType"
 
         /** The non-delegate types a lambda converts to by its natural type (C# 10) and by nothing else. */
         val NATURAL_TARGETS = setOf(
