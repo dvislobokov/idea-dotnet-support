@@ -496,7 +496,13 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                             }
                             is CSharpTypeConstraint -> {
                                 val type = constraint.type?.let(resolver::resolveType)?.let { substitute(it, symbol, arguments) } ?: return null
-                                if (constraint.text == "notnull" || constraint.text == "unmanaged" || !converts(argument, type)) return null
+                                // `notnull` not met is a warning (CS8714), never an error: it holds here; `unmanaged` — a primitive or an enum surely is
+                                if (constraint.text == "notnull") continue
+                                if (constraint.text == "unmanaged") {
+                                    val enum = (argument as? SemanticType.Library)?.type?.kind == io.github.dotnetsupport.index.IndexedTypeKind.ENUM || (argument as? SemanticType.Source)?.info?.kind == io.github.dotnetsupport.lang.TypeKind.ENUM
+                                    if (r.definitionName(argument) in PRIMITIVES || enum) continue else return null
+                                }
+                                if (!converts(argument, type)) return null
                             }
                             is CSharpConstructorConstraint -> when (newable(argument)) {
                                 false -> return false

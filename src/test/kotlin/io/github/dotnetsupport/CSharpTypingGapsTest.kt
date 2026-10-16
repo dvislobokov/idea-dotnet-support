@@ -208,6 +208,83 @@ class CSharpTypingGapsTest : BasePlatformTestCase() {
         }
     """, "when.Year -> CS0029: Cannot implicitly convert type 'int' to 'string'", "d -> CS0029: Cannot implicitly convert type 'System.DateTime' to 'string'")
 
+    /** The returns of a lambda: their best common type (`IEnumerable<X>` over `List<X>`), `return null` typed by the others (nopCommerce's SelectManyAwait / Select). */
+    fun testTheReturnsOfALambdaTakeTheirBestCommonType() = check("""
+        using System.Collections.Generic;
+        using System.Linq;
+        class C
+        {
+            void M(IEnumerable<int> xs)
+            {
+                int bad = xs.SelectMany(x => { if (x > 0) return Enumerable.Empty<string>(); return new List<string> { "a" }; }).First();
+                int bad2 = xs.Select(x => { if (x > 0) return null; return "a"; }).First();
+            }
+        }
+    """, "xs.SelectMany(x => { if (x > 0) return Enumerable.Empty<string>(); return new List<string> { \"a\" }; }).First() -> CS0029: Cannot implicitly convert type 'string' to 'int'",
+        "xs.Select(x => { if (x > 0) return null; return \"a\"; }).First() -> CS0029: Cannot implicitly convert type 'string' to 'int'")
+
+    /** `b ? [p] : array` and `f ?? (x => …)`: a target-typed operand takes the other's type (nopCommerce's Combine, MudBlazor's drop zone). */
+    fun testATargetTypedOperandOfAConditionalOrCoalesceTakesTheOthersType() = check("""
+        using System;
+        using System.Linq;
+        class C
+        {
+            Func<int, bool>? Selector;
+            void M(string p, bool b)
+            {
+                var parts = b ? [p] : p.Split('/');
+                int bad = parts;
+                var f = Selector ?? (x => x > 0);
+                string bad2 = f;
+            }
+        }
+    """, "parts -> CS0029: Cannot implicitly convert type 'string[]' to 'int'", "f -> CS0029: Cannot implicitly convert type 'System.Func<int, bool>' to 'string'")
+
+    /** The members of `object` through an interface-typed receiver (`c.GetType()` over `IFormComponent`). */
+    fun testObjectMembersOfAnInterfaceReceiver() = check("""
+        using System;
+        class C
+        {
+            void M(IDisposable d, IOwn o) { string bad = d.GetType(); int bad2 = d.ToString(); string bad3 = o.GetType(); }
+        }
+        interface IOwn { }
+    """, "d.GetType() -> CS0029: Cannot implicitly convert type 'System.Type' to 'string'", "d.ToString() -> CS0029: Cannot implicitly convert type 'string' to 'int'",
+        "o.GetType() -> CS0029: Cannot implicitly convert type 'System.Type' to 'string'")
+
+    /** A method group as a value is not what it returns: its function type (C# 10) when it has one, else no type (`Task.FromResult` was a `Task<null>`). */
+    fun testAMethodGroupAsAValueHasItsFunctionType() = check("""
+        using System;
+        using System.Threading.Tasks;
+        class C
+        {
+            int One() => 1;
+            void M()
+            {
+                var f = One;
+                string bad = f;
+                Func<Task<int>> g = () => Task.FromResult(1);
+            }
+        }
+    """, "f -> CS0029: Cannot implicitly convert type 'System.Func<int>' to 'string'")
+
+    /** `Should().Be(default)` — a target-typed argument is not asked for its type while the call is resolved; `return (a, b, null)` gives the inference no type. */
+    fun testTargetTypedArgumentsAndTupleReturnsAreNoRefusal() = check("""
+        using System;
+        using System.Threading.Tasks;
+        class C
+        {
+            static int P(int a, int b) => 1;
+            static int P(string a, int b) => 2;
+            static Task<T> H<T>(Func<Task<T>> f) => f();
+            async Task M()
+            {
+                string bad = P(1, default);
+                var t = await H(async () => { if (bad.Length > 0) return (false, false, null); return (true, true, "a"); });
+                int bad2 = t.Item3;
+            }
+        }
+    """, "P(1, default) -> CS0029: Cannot implicitly convert type 'int' to 'string'", "t.Item3 -> CS0029: Cannot implicitly convert type 'string' to 'int'")
+
     /** A collection expression beside an overload taking a delegate (bUnit's `Add(x => x.Items, […])`): no inference from it there, no refusal. */
     fun testACollectionExpressionGivesNoInferenceToADelegateParameter() = check("""
         using System;

@@ -527,6 +527,8 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                     if (base is SemanticType.Source && base.info.key == type.info.key) continue
                     membersNamed(base, text, arity, depth + 1).takeIf { it.isNotEmpty() }?.let { return it }
                 }
+                // an interface's lookup includes the members of object (§12.5): `c.GetType()` over MudBlazor's IFormComponent
+                if (type.info.kind == io.github.dotnetsupport.lang.TypeKind.INTERFACE) libraryType(OBJECT)?.let { return membersNamed(it, text, arity, depth + 1) }
                 emptyList()
             }
             is SemanticType.Library -> {

@@ -859,6 +859,8 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
             return "CS0029" to "Cannot implicitly convert type 'string' to '$to'"
         }
         if (isTargetTyped(value)) return null
+        // a method group converts by its signature (CS0428 / CS0407 of their own), not by its function type
+        if (resolver.overloads.methodGroup(value) != null) return null
         val source = resolver.typeOf(value) ?: return null
         val code = conversionError(source, target, value) ?: "CS0029".takeIf { noConversion(value, source, target) } ?: return null
         val from = CSharpTypeDisplay.display(source) ?: return null

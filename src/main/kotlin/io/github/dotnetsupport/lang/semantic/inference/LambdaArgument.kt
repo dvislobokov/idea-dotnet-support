@@ -12,6 +12,7 @@ import io.github.dotnetsupport.lang.semantic.unparenthesized
 import io.github.dotnetsupport.lang.semantic.roslyn.InferenceArgument
 import io.github.dotnetsupport.lang.semantic.roslyn.RoslynMethodTypeInferrer
 import io.github.dotnetsupport.lang.semantic.same
+import io.github.dotnetsupport.lang.semantic.targetTyped
 
 /**
  * A lambda or an anonymous method as Roslyn's inference sees it (`UnboundLambda`): its parameters, written or not, and what its body
@@ -76,17 +77,33 @@ internal class LambdaArgument(private val r: CSharpNameResolver) {
         if (body != null) {
             // `() => throw …`, `() => null`, `() => default`: no type of their own, so no inferred return type (Roslyn's `InferReturnType`
             // finds no type among the returns and makes no inference), not a refusal
-            val bare = r.overloads.unparenthesized(body)
-            if (bare is CSharpThrowExpression || bare.elementType == SyntaxKind.NullLiteralExpression || bare.elementType == SyntaxKind.DefaultLiteralExpression) return null
+            if (typeless(body)) return null
             val type = r.typeOf(body) ?: throw RoslynMethodTypeInferrer.Unknown("the type of the lambda body `${SemanticTrace.text(body)}` is not known")
             return type.takeIf { r.definitionName(it) != VOID }
         }
         val block = lambda.block ?: throw RoslynMethodTypeInferrer.Unknown("the lambda has no body")
+        // `return null;` / `return default;` / `return throw…` beside the others take their type; alone they give no type
         val returned = PsiTreeUtil.findChildrenOfType(block, CSharpReturnStatement::class.java).filter { inLambda(it, lambda) }.mapNotNull { it.expression }
+            .map { r.overloads.unparenthesized(it) }.filter { !typeless(it) }
         if (returned.isEmpty()) return null
         val types = returned.map { r.typeOf(it) ?: throw RoslynMethodTypeInferrer.Unknown("the type of `return ${SemanticTrace.text(it)}` in the lambda is not known") }
-        if (types.any { r.overloads.same(it, types.first()) != true }) throw RoslynMethodTypeInferrer.Unknown("the returns of the lambda differ in type: [${types.joinToString { SemanticTrace.show(it) }}]")
-        return types.first()
+        return bestCommonType(types) ?: throw RoslynMethodTypeInferrer.Unknown("the returns of the lambda have no best common type: [${types.joinToString { SemanticTrace.show(it) }}]")
+    }
+
+    /**
+     * The best common type of [types] (§12.6.3.15, as Roslyn's `InferReturnType` takes it): the one among them every other converts to
+     * implicitly — `IEnumerable<X>` over `List<X>` of nopCommerce's `SelectManyAwait(x => { … return Enumerable.Empty<X>(); … return new List<X>(); })`.
+     */
+    private fun bestCommonType(types: List<SemanticType>): SemanticType? {
+        val candidates = types.filter { to -> types.all { from -> r.overloads.same(from, to) == true || r.conversion(from, to).let { it == CSharpNameResolver.Conversion.IMPLICIT || it == CSharpNameResolver.Conversion.IDENTITY } } }
+        val first = candidates.firstOrNull() ?: return null
+        return if (candidates.all { r.overloads.same(it, first) == true }) first else null
+    }
+
+    /** No type of its own: `null`, `default`, `throw`, `new()`, `[…]`, a lambda, a method group — and a tuple with such an element (`return (false, false, null)`). */
+    private fun typeless(e: CSharpExpression): Boolean {
+        val value = r.overloads.unparenthesized(e)
+        return r.overloads.targetTyped(value) || value is CSharpTupleExpression && value.arguments.any { a -> a.expression?.let(::typeless) != false }
     }
 
     private fun inLambda(statement: CSharpReturnStatement, lambda: CSharpAnonymousFunctionExpression): Boolean =

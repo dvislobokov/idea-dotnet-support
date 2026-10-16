@@ -451,6 +451,18 @@
     **лямбды в выводе** ~700 (функциональный тип явной лямбды / группы методов к `T`, тело лямбды); типы, неизвестные выше по цепочке,
     и циклы ~1 150 — не порт. Решение: дальше не по строкам журнала, а по файлам Roslyn — D6c4 целиком, затем лямбды в выводе целиком,
     затем D6c5; эхо из журнала убрать (одна строка на причину).
+  - [x] Закрытие журнала, шаг 5 (0.1.239; тесты в `CSharpTypingGapsTest`). 42 строки `lowerBoundTypeArgumentInference:664` («тип элемента
+    `?` выше по цепочке») — четыре корня: `return`'ы лямбды разных типов (`IEnumerable<X>` и `List<X>`) — лучший общий тип §12.6.3.15
+    (`LambdaArgument.bestCommonType`), `return null` / `default` / кортеж с таким элементом — «нет типа», не отказ (`typeless`);
+    `b ? [p] : parts`, `f ?? (x => …)` — target-typed операнд берёт тип другого (`isTargetTyped` + коллекции и лямбды);
+    `c.GetType()` над интерфейсом solution — члены `object` (`membersNamed`, ветка Source); группа методов как значение — function type,
+    а не возвращаемый тип (`valueOrGroup`; `Task.FromResult` аргументом был `Task<null>`). Попутно: индексатор по виду INDEXER, не по имени
+    `Item` (`[IndexerName("ItemOf")]` у `XmlAttributeCollection`), и всплывшая ложная CS0154 — библиотечное свойство, переопределяющее один
+    аксессор, читает/пишет через аксессор базы (`inheritedAccessorAccess`; теста нет — System.Xml не в тестовых сборках, проверено
+    харнессом); `notnull` выполняется всегда (у Roslyn — предупреждение CS8714), `unmanaged` — для примитивов и enum; `requiredFunctionType`
+    не спрашивает тип `default`/`null`/`new()`; `isNotConstant` знает `?.`, массивы, `typeof`, кортежи, коллекции. nopCommerce в исходниках
+    190 → 80. Остаток nopCommerce: `ToDictionaryAsync` (`IQueryable<out T>` c `isReferenceType` анонимного/параметра — строка 667, 4+6),
+    `GetShoppingCartAsync([a, b])` к enum — порт `collection(to)`, `In<1>` ничья форм, `AppendLine` с `$"…"`-константностью по `?.`.
   - [x] Закрытие журнала, шаг 4 (0.1.238; тесты в `CSharpTypingGapsTest`). Причины 998 строк 0.1.237, закрытые по корню: `file`-типы
     (C# 11) видны только в своём файле (`inFileScope`, по стабам — `OpenApiXmlCommentSupport.generated.cs` в каждом проекте был одним типом с
     двойным `Parse()`); части partial-метода сравниваются по разрешённым типам параметров в файле каждой части (`ILogger` рядом с

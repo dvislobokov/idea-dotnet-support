@@ -3,6 +3,18 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.239
+
+- The returns of a lambda take their best common type (`IEnumerable<X>` over `List<X>`); `return null` / `default` / a tuple
+  with such an element is typed by the others. A method group named as a value has its function type, not what it returns.
+- `b ? [p] : parts` and `f ?? (x => …)`: a target-typed operand takes the other's type. The members of `object` are found
+  through an interface of the solution (`c.GetType()`).
+- An indexer is found by its kind, whatever its `[IndexerName]` (`XmlAttributeCollection`); a library property that
+  overrides one accessor only reads and writes through the other of its base (`XmlAttribute.InnerText`).
+- The `notnull` constraint holds (a warning in Roslyn), `unmanaged` for primitives and enums; overload betterness does not
+  ask the type of a `default` / `null` / `new()` argument (a cycle); an interpolated string with a conditional access, an
+  array, a `typeof`, a tuple or a collection in a hole is not constant.
+
 ## 0.1.238
 
 - A `file` type (C# 11) is seen in its own file only: the same `file static class` written by a source generator into every project is no

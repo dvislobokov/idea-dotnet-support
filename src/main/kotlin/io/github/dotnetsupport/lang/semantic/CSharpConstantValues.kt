@@ -66,7 +66,10 @@ internal class CSharpConstantValues(private val resolver: CSharpNameResolver) {
     fun isNotConstant(expression: CSharpExpression): Boolean {
         val e = unparenthesized(expression)
         if (e is CSharpInvocationExpression || e is CSharpElementAccessExpression || e is CSharpBaseObjectCreationExpression || e is CSharpAnonymousFunctionExpression ||
-            e is CSharpAwaitExpression || e is CSharpThisExpression || e is CSharpInterpolatedStringExpression) return true
+            e is CSharpAwaitExpression || e is CSharpThisExpression || e is CSharpInterpolatedStringExpression || e is CSharpConditionalAccessExpression ||
+            e is CSharpArrayCreationExpression || e is CSharpImplicitArrayCreationExpression || e is CSharpTypeOfExpression || e is CSharpIsPatternExpression ||
+            e is CSharpSwitchExpression || e is CSharpQueryExpression || e is CSharpTupleExpression || e is CSharpCollectionExpression ||
+            e is CSharpAnonymousObjectCreationExpression || e is CSharpWithExpression || e is CSharpStackAllocArrayCreationExpression || e is CSharpAssignmentExpression) return true
         val name = e as? CSharpIdentifierName ?: (e as? CSharpMemberAccessExpression)?.nameElement as? CSharpIdentifierName ?: return false
         val symbol = name.identifier?.let(resolver::resolve)?.single ?: return false
         return when (symbol) {

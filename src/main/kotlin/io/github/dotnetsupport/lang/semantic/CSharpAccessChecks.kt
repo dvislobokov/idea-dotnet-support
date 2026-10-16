@@ -452,6 +452,19 @@ internal class CSharpAccessChecks(private val resolver: CSharpNameResolver, priv
     }
 
     /** An accessor of a property of an assembly, by its own accessibility; [IndexedAccess.NONE] (a private one) is not imported. */
+    /**
+     * The accessor of a library property, the overridden one's when the override lacks it: `XmlAttribute.InnerText` overrides the setter
+     * only and reads through `XmlNode.InnerText`'s getter (C# §15.7.6) — nopCommerce's `node.Attributes["ID"].InnerText` was CS0154.
+     */
+    private fun inheritedAccessorAccess(member: IndexedMember, getter: Boolean, site: PsiElement): Access {
+        val own = accessorAccess(if (getter) member.getterAccess else member.setterAccess, member, site)
+        if (own != Access.MISSING || !member.isOverride) return own
+        val overridden = session.libraryMembers(assemblies, member.type)[member.name].orEmpty().map { it.member }
+            .filter { it !== member && it.kind == member.kind && it.type != member.type && (if (getter) it.hasGetter else it.hasSetter) }
+        val base = overridden.firstOrNull() ?: return Access.UNSURE
+        return accessorAccess(if (getter) base.getterAccess else base.setterAccess, base, site)
+    }
+
     private fun accessorAccess(access: IndexedAccess, member: IndexedMember, site: PsiElement): Access {
         val granted = assemblies.grants(member.type.index)
         return when (access) {
@@ -699,7 +712,7 @@ internal class CSharpAccessChecks(private val resolver: CSharpNameResolver, priv
                 if (member.kind != IndexedMemberKind.PROPERTY || member.typeRef is IndexedTypeRef.ByRef) return
                 if (libraryAccess(member, name) != Access.YES) return
                 val shown = libraryDisplay(symbol) ?: return
-                when (accessorAccess(member.getterAccess, member, name)) {
+                when (inheritedAccessorAccess(member, getter = true, name)) {
                     Access.MISSING -> reportNoGetter(shown, top.textRange)
                     Access.NO -> reportGetter(shown, top.textRange)
                     else -> {}
@@ -827,7 +840,7 @@ internal class CSharpAccessChecks(private val resolver: CSharpNameResolver, priv
                 if (member.typeRef is IndexedTypeRef.ByRef) return
                 val shown = libraryDisplay(symbol) ?: return
                 // the index has every accessor the compiler imports (not the private ones, nor the internal ones without InternalsVisibleTo)
-                val access = accessorAccess(member.setterAccess, member, name)
+                val access = inheritedAccessorAccess(member, getter = false, name)
                 when {
                     access == Access.UNSURE -> {}
                     access == Access.MISSING -> reportReadOnly(shown, range)

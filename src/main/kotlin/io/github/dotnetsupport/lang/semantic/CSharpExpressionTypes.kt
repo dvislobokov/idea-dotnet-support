@@ -37,7 +37,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
             }
             is CSharpSimpleName -> simpleName(e)
             is CSharpType -> null
-            is CSharpMemberAccessExpression -> e.nameElement?.let { name -> r.resolveName(name)?.single?.let { r.valueTypeAt(it, e) } ?: tupleElement(name) }
+            is CSharpMemberAccessExpression -> e.nameElement?.let { name -> r.resolveName(name)?.single?.let { valueOrGroup(it, e) } ?: tupleElement(name) }
             is CSharpMemberBindingExpression -> e.nameElement?.let { name -> r.resolveName(name)?.single?.let(r::valueType) ?: tupleElement(name) }
             is CSharpConditionalAccessExpression -> e.whenNotNull?.let(r::typeOf)?.let(::liftNullable)
             is CSharpElementBindingExpression -> {
@@ -104,7 +104,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         // `value` of a `set` / `init` / `add` / `remove` accessor: the type of the property, indexer or event (no one declares it either)
         if (symbol == null && e.identifier?.text == "value") accessorValueType(e)?.let { return it }
         if (symbol == null) return tupleElement(e)
-        return symbol.single?.let { r.valueTypeAt(it, e) }
+        return symbol.single?.let { valueOrGroup(it, e) }
     }
 
     /**
@@ -851,7 +851,8 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
     }
 
     private fun libraryIndexer(receiver: SemanticType.Library, arguments: List<CSharpArgument>, ranged: Boolean): AssemblyIndexSet.Inherited? {
-        val indexers = r.session.libraryMembers(r.assemblies, receiver.type)["Item"].orEmpty().filter { inherited ->
+        // by kind, not by the name `Item`: `[IndexerName("ItemOf")]` of XmlAttributeCollection (nopCommerce's `node.Attributes["ID"]`)
+        val indexers = r.session.libraryMembers(r.assemblies, receiver.type).values.flatten().filter { '.' !in it.member.name }.filter { inherited ->
             val parameters = r.session.parameters(inherited.member)
             inherited.member.kind == IndexedMemberKind.INDEXER && arguments.size <= parameters.size && parameters.drop(arguments.size).all { it.isOptional || it.hasDefault || it.isParams } &&
                 // `span[1..]` is `Slice`, not the `int` indexer
@@ -913,8 +914,21 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         }
     }
 
-    private fun isTargetTyped(e: CSharpExpression): Boolean =
-        e.elementType == SyntaxKind.DefaultLiteralExpression || e.elementType == SyntaxKind.NullLiteralExpression || e is CSharpImplicitObjectCreationExpression || e is CSharpThrowExpression
+    /**
+     * The type of the value a resolved name stands for; a method named as a value is a method group — its function type (C# 10) when it has
+     * one, else no type: `Task.FromResult` passed as an argument was a `Task<null>` (what it returns) and the conversion not known.
+     */
+    private fun valueOrGroup(symbol: CSharpSymbol, e: CSharpExpression): SemanticType? {
+        if (!r.isMethod(symbol)) return r.valueTypeAt(symbol, e)
+        return try { r.overloads.methodGroupFunctionType(e) } catch (_: io.github.dotnetsupport.lang.semantic.roslyn.RoslynMethodTypeInferrer.Unknown) { null }
+    }
+
+    /** No natural type of its own — typed by the other operand or the target: `null`, `default`, `throw`, `new()`, `[…]`, a lambda (`b ? [p] : parts`, `f ?? (x => …)`). */
+    private fun isTargetTyped(e: CSharpExpression): Boolean {
+        val value = r.overloads.unparenthesized(e)
+        return value.elementType == SyntaxKind.DefaultLiteralExpression || value.elementType == SyntaxKind.NullLiteralExpression || value is CSharpImplicitObjectCreationExpression ||
+            value is CSharpThrowExpression || value is CSharpCollectionExpression || value is CSharpAnonymousFunctionExpression
+    }
 
     private fun declaration(e: CSharpDeclarationExpression): SemanticType? {
         val type = e.type
