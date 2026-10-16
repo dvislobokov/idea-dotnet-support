@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.222
+
+- An interpolated string passed to a method that takes an interpolated string handler (`StringBuilder.Append($"…")`,
+  `AppendLine($"…")`, `Debug.Assert(…, $"…")`) is resolved as the compiler resolves it: a non-constant string goes to the handler
+  overload, a constant one to the `string` overload. The analysis no longer gives up on such calls.
+
 ## 0.1.221
 
 - Show All Files in the Solution tool window also shows the files and folders of the solution's directory that belong to no project —

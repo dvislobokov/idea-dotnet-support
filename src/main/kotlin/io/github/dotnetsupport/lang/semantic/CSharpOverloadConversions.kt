@@ -270,8 +270,10 @@ internal fun CSharpOverloads.argument(e: CSharpExpression, type: SemanticType?, 
             val tn = r.definitionName(to)
             if (tn == STRING) return Conversion.IDENTITY
             if (tn == "System.FormattableString" || tn == "System.IFormattable" || tn == OBJECT) return Conversion.IMPLICIT
-            // a constant interpolated string (`$"{nameof(x)} is null"`) is a string and converts to no handler
-            if (isHandler(to)) return when (constantInterpolation(value)) { false -> Conversion.IMPLICIT; true -> Conversion.NONE; null -> Conversion.UNKNOWN }
+            // every interpolated string converts to a handler type, a constant one too (Roslyn's `GetInterpolatedStringConversion`); being
+            // constant matters to the better conversion only (§12.6.4.5: `string` beats the handler then) — asking it here left 222 calls of
+            // `StringBuilder.AppendLine($"…")` not known (D6c2)
+            if (isHandler(to)) return Conversion.IMPLICIT
         }
     }
     methodGroup(value)?.let { group ->

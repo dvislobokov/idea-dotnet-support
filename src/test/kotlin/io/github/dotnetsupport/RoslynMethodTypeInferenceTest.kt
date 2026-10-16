@@ -186,6 +186,30 @@ class RoslynMethodTypeInferenceTest : BasePlatformTestCase() {
         assertEmpty(log.filter { it.startsWith("inference") })
     }
 
+    /**
+     * An interpolated string converts to a handler type, a constant one too (Roslyn's `GetInterpolatedStringConversion`): the overloads of
+     * `StringBuilder.AppendLine($"…")` were "not known" (222 lines of the four solutions, D6c2); a non-constant one prefers the handler.
+     */
+    fun testAnInterpolatedStringConvertsToAHandler() {
+        val (found, log) = io.github.dotnetsupport.lang.semantic.SemanticTrace.collectForTests {
+            errors("""
+                using System.Text;
+                class C
+                {
+                    string ToS(int x) => "";
+                    void M(StringBuilder sb, int x)
+                    {
+                        sb.AppendLine($"M {ToS(x)} {x}");
+                        sb.Append($"{x}");
+                        int bad = sb.AppendLine($"{x}");
+                    }
+                }
+            """)
+        }
+        assertEquals(listOf("9: sb.AppendLine(\$\"{x}\") -> CS0029: Cannot implicitly convert type 'System.Text.StringBuilder' to 'int'"), found)
+        assertEmpty(log.filter { it.startsWith("applicable Append") || it.startsWith("resolve Append") })
+    }
+
     fun testUpperBoundThroughAContravariantInterface() {
         // IComparer<in T>: IComparer<object> gives T an upper bound object, "s" a lower bound string — T is string
         assertEmpty(errors("""

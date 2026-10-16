@@ -257,6 +257,8 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
             val value = hole.expression?.let(::unparenthesized) ?: return null
             if (value is CSharpLiteralExpression && value.text.let { it.startsWith("\"") || it.startsWith("@\"") }) continue
             if (value is CSharpInvocationExpression && value.expression?.text == "nameof") continue
+            // a call, an element access, a creation is never a constant, whatever it returns (`$"M {ToS(x)}"` of MudBlazor's charts)
+            if (value is CSharpInvocationExpression || value is CSharpElementAccessExpression || value is CSharpBaseObjectCreationExpression) return false
             val type = r.typeOf(value)
             if (type == null) known = false else if (r.definitionName(type) != STRING) return false else known = false
         }

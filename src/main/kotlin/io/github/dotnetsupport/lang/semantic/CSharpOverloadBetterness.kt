@@ -35,10 +35,15 @@ internal fun CSharpOverloads.better(e: CSharpExpression, type: SemanticType?, t1
         return if (targetTyped) betterTarget(t1, t2) else null
     }
     if (value is CSharpInterpolatedStringExpression) {
-        // C# 10: a handler conversion is better than any other
+        // C# 10: a handler conversion is better than any other — for a non-constant interpolated string only (§12.6.4.5); a constant one
+        // is a `string` and goes on to the exact match, where `string` wins
         val h1 = isHandler(t1)
         val h2 = isHandler(t2)
-        if (h1 != h2) return if (h1) 1 else -1
+        if (h1 != h2) when (constantInterpolation(value)) {
+            false -> return if (h1) 1 else -1
+            null -> return null
+            true -> {}
+        }
     }
     val exact1 = same(type, t1)
     val exact2 = same(type, t2)
