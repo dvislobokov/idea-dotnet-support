@@ -180,6 +180,17 @@ Solution для живой проверки плагина: отладчика (
       Logs, категория `semantic`) строк по ним нет — это решения, не отказы. Робот в WSL на 0.1.196: генератор за 4 с, дерево и Ctrl+B
       работают, ошибок не было — несохранённая правка `.cs` делала проект «несвежим» (исправлено в 0.1.198)
 
+### Razor в редакторе (RAZOR_PLAN.md R1) — `Blazor/Editor/RazorHighlighting.razor`, `Blazor/Editor/RazorHighlighting.cshtml`
+
+Маркеры — в комментариях Razor `@* … *@` самих файлов (компонент и представление собираются вместе с проектом `Blazor`).
+- [ ] `TYPE:razor-colors`: `@page`, `@using`, `@inject`, `@code`, каждый `@` — цветом ключевых слов; теги и атрибуты — цветами HTML;
+      `Title`, `clicks`, `DateTime.Now.ToString("t", …)`, `if`, `foreach` — цветами C#; `@@` и `me@example.com` — простой текст;
+      `@bind`, `@bind:event`, `@onclick` — цветом метаданных, `() => clicks++` — C#; ничего красного, нет «Unknown html tag Counter»;
+      Settings | Editor | Color Scheme | Razor — ключи Razor
+- [ ] `TYPE:razor-typing`: набрать `<li>@clicks items</li>` под `<ul>` — цвета появляются по мере набора, ничего не краснеет; Ctrl+Z
+- [ ] `TYPE:razor-cshtml`: представление — `@model`, `@addTagHelper` (аргумент строкой), `@section Scripts`, `@functions`, выражение
+      в атрибуте `class="@(… ? "long" : "short")"`
+
 ## Solution view
 
 ### Reload Solution / Reload Project

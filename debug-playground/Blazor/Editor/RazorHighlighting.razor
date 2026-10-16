@@ -1,0 +1,70 @@
+@page "/editor/highlighting"
+@using System.Globalization
+@using Microsoft.AspNetCore.Components.Web
+@using Playground.Blazor.Components.Pages
+@inject NavigationManager Navigation
+@* RAZOR_PLAN.md, R1: Razor in the editor — HTML for the markup, the plugin's C# colours for the code, Razor's own for the rest.
+
+   TYPE:razor-colors — open this file. EXPECT: `@page`, `@using`, `@inject`, `@code` and every `@` in the keyword colour; the tags and
+   attributes of HTML in HTML's colours (`h3`, `class="title"`); `Title`, `clicks`, `DateTime.Now.ToString(...)` coloured as C# (the string
+   "t" green, `private`, `int`, `if`, `foreach` keywords); this comment grey; `@@` and `me@example.com` plain text, not C#; `@bind`,
+   `@bind:event`, `@onclick` in the colour of metadata, `"oninput"` as a value, `() => clicks++` as C#. Not red anywhere, no "Unknown html tag
+   Counter". Settings | Editor | Color Scheme | Razor lists the keys of Razor.
+
+   TYPE:razor-typing — on the empty line under the `<ul>` below type `<li>@clicks items</li>`. EXPECT: `<li>` HTML-coloured as you type,
+   `@clicks` C#, nothing turns red; the closing `</li>` may be added by HTML. Ctrl+Z.
+
+   TYPE:razor-cshtml — open RazorHighlighting.cshtml next to this file: the same colours in a view, plus `@model`, `@section Scripts`,
+   `@functions` and the string of `@addTagHelper`. *@
+
+<h3 class="title">Highlighting: @Title</h3>
+<p>Now @(DateTime.Now.ToString("t", CultureInfo.InvariantCulture)), escaped @@, mail me@example.com is text.</p>
+<input @bind="Title" @bind:event="oninput" />
+<button @onclick="() => clicks++">Clicked @clicks</button>
+<Counter Step="2" />
+
+@if (clicks > 2)
+{
+    <p>Many clicks</p>
+}
+else
+{
+    @:Few clicks: @clicks
+}
+
+<ul>
+
+    @foreach (var item in items)
+    {
+        <li>@item</li>
+    }
+</ul>
+
+@* TYPE:razor-folding — EXPECT: the gutter folds `@code { … }` below, the `{ … }` of `@if` / `else` / `@foreach` above, the method `Reset`,
+   this comment and the `<ul>` (by HTML). Fold `@code`: `{...}` stays.
+
+   TYPE:razor-braces — put the caret after the `{` of `@code`. EXPECT: it and the last `}` of the file are highlighted as a pair; after the `{`
+   of `Reset` — its own `}`.
+
+   TYPE:razor-comment — caret on the `<h3` line, Ctrl+/. EXPECT: the line wrapped in a Razor comment (an at-star before it, a star-at
+   after it — not the HTML comment), again Ctrl+/ takes it off. Caret on `clicks = 0;` in `Reset`, Ctrl+/. EXPECT: `//` at the start of
+   the line (C#), not a Razor comment. Ctrl+Z.
+
+   TYPE:razor-structure — Alt+7 (Structure) or Ctrl+F12. EXPECT: `@page "/editor/highlighting"`, `@inject NavigationManager Navigation`,
+   `@code` with `clicks: int`, `items: string[]`, `Title: string`, `Bold(string text): RenderFragment`, `Reset(): void`; a click on one goes
+   to it. *@
+
+@code {
+    private int clicks;
+    private readonly string[] items = ["one", "two"];
+
+    [Parameter] public string Title { get; set; } = "Razor";
+
+    private RenderFragment Bold(string text) => @<b>@text</b>;
+
+    private void Reset()
+    {
+        clicks = 0;
+        Navigation.Refresh();
+    }
+}

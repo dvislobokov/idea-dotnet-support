@@ -4,4 +4,18 @@
     <extensions defaultExtensionNs="io.github.dotnetsupport">
         <csharpCodeGenerators implementation="io.github.dotnetsupport.frameworks.razor.RazorCodeGenerators"/>
     </extensions>
+
+    <!-- R1: the language — Razor the base, HTML the template data, the C# coloured by the plugin's C# lexer -->
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType name="Razor" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorFileType" fieldName="INSTANCE"
+                  language="Razor" extensions="razor;cshtml"/>
+        <lang.parserDefinition language="Razor" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorParserDefinition"/>
+        <lang.fileViewProviderFactory language="Razor" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorFileViewProviderFactory"/>
+        <lang.syntaxHighlighterFactory language="Razor" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorSyntaxHighlighterFactory"/>
+        <editorHighlighterProvider filetype="Razor" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorEditorHighlighterProvider"/>
+        <colorSettingsPage implementation="io.github.dotnetsupport.frameworks.razor.RazorColorSettingsPage"/>
+        <highlightErrorFilter implementation="io.github.dotnetsupport.frameworks.razor.RazorErrorFilter"/>
+        <daemon.highlightInfoFilter implementation="io.github.dotnetsupport.frameworks.razor.RazorHtmlStructureFilter"/>
+        <lang.inspectionSuppressor language="HTML" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorHtmlInspectionSuppressor"/>
+    </extensions>
 </idea-plugin>

@@ -739,6 +739,14 @@
     0.1.225 — перегрузка с параметром-указателем не применяется к обычному аргументу (`ThrowIfNull(void*)`; nopCommerce 7 558 → 4 850);
     0.1.226 — член собранного проекта рядом со своим исходником не второй кандидат (журнал MudBlazor 8 967 → 6 775, nopCommerce 4 850 → 2 387); 0.1.227 — группа методов к `Delegate` / `object` по её функциональному типу, первый кусок порта `roslyn/RoslynExpressionConversions` (журнал eShop 193 → 141: `MapGet(…, GetItems)`); 0.1.228 — `null`, `default`, `throw`, `new()`, анонимный объект и интерполированная строка преобразуются только портом, старые ветки удалены. CS8933 «using appeared previously as global using» —
     серым, как CS8019 и IDE0005 (у Roslyn скрытая подсказка, IDE показывают её так же), не ошибка. Тесты `RazorCorpusFalseErrorsTest`, `RoslynTypesTest`, `RoslynMethodTypeInferenceTest`
+  - [x] R1 — язык Razor и его подсветка: тип файла `.razor` / `.cshtml` (модуль `frameworks.razor`), лексер по парсерам компилятора
+    Razor (переходы `@`, `@( )`, `@{ }`, директивы обоих видов файла, `@if` / `@foreach` / `@switch` / `@try` / `@do` / `@using`, `@* *@`,
+    `@@`, email `a@b`, `<text>`, `@:`, шаблоны `@<p>…</p>`, директивные атрибуты компонентов `@onclick` / `@bind-Value:event`), HTML как
+    template data (теги, их цвета и сворачивание — от платформы), C# — цветами C#-подсветки плагина, страница Color Scheme | Razor;
+    ошибки HTML рядом с Razor и «неизвестные» теги компонентов и tag helpers не показываются. Гейт `RazorLexerGateTest`: посимвольно
+    против `.cspans.txt` тестов парсера компилятора — 0.9241 (без `RazorDirectivesTest` с директивами самих тестов — 0.9822), 3305 файлов
+    корпуса без незакрытых блоков и с одинаковыми токенами при перезапуске. Сценарий — `debug-playground/Blazor/Editor/RazorHighlighting.razor`
+    и `.cshtml` (0.1.229). Вживую не проверено
   - [x] F0 (2026-10-15, без версии: пользователю не видно) — фреймворки модулями рядом с ядром C#: точка расширения `csharpCodeGenerators`, модули `frameworks.razor` / `xaml` / `avalonia` / `grpc` вместо списков в `mayGenerateTypes`; тесты `CSharpCodeGeneratorsTest` (старая формула против новой), `FrameworkBoundaryTest`
 
 ### Помощники на .NET, работающие постоянно (план 2026-10-03)

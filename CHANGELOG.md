@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.229
+
+- Razor files (`.razor` components and `.cshtml` views) open as their own language: the Razor transitions, directives and code blocks are
+  coloured, the C# inside them with the colours of C#, the markup as HTML (tags, attributes, HTML folding). The colours are set on
+  Settings | Editor | Color Scheme | Razor. HTML errors caused by the Razor next to them are not shown.
+
 ## 0.1.228
 
 - The conversions of `null`, `default`, `throw`, `new()`, anonymous objects and interpolated strings in overload resolution follow

@@ -1,0 +1,27 @@
+@model IEnumerable<string>
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@* RAZOR_PLAN.md, R1 — TYPE:razor-cshtml: a view (`.cshtml`, the legacy kind of the Razor compiler). EXPECT: `@model`, `@addTagHelper`,
+   `@section`, `@functions`, `@foreach` and each `@` in the keyword colour, `*, Microsoft.AspNetCore.Mvc.TagHelpers` a string; the tags and
+   attributes HTML's; `Model`, `ViewData["Title"]`, `item.ToUpper()` C#; the `"long"` / `"short"` strings of the expression in the attribute
+   green; `someone@example.com` and `@@` plain text. The gutter folds `@{ … }`, `@section Scripts { … }`, `@functions { … }`; Ctrl+F12 lists
+   `@model IEnumerable<string>`, `@section Scripts`, `@functions` with `Title(string s): string`. Nothing red. *@
+@{
+    ViewData["Title"] = "Razor highlighting";
+    var count = Model.Count();
+}
+<h2>@ViewData["Title"] — @count items</h2>
+<ul>
+@foreach (var item in Model)
+{
+    <li class="@(item.Length > 3 ? "long" : "short")">@item.ToUpper()</li>
+}
+</ul>
+<p>Mail me: someone@example.com, a literal @@ sign, @Title("  trimmed  ")</p>
+
+@section Scripts {
+    <script>console.log("@count");</script>
+}
+
+@functions {
+    string Title(string s) => s.Trim();
+}
