@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.207
+
+- The C# analysis no longer gives up on a call whose overloads differ by a non-delegate parameter where a lambda stands
+  (`items.ToDictionary(k => k.Id, v => v)` next to the overload with an `IEqualityComparer<TKey>`): a lambda without written parameter
+  types tells nothing there, as the compiler sees it.
+
 ## 0.1.206
 
 - The C# analysis types a lambda for each overload of its call as the compiler does — with the parameter types that overload gives — so

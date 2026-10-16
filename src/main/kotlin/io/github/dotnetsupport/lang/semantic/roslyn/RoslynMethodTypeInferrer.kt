@@ -170,16 +170,19 @@ internal class RoslynMethodTypeInferrer(
                 explicitParameterTypeInference(argument, target)
                 explicitReturnTypeInference(argument, target)
             } else if (containsAnyMethodTypeParameter(target)) {
-                // the function type of the lambda (C# 10) would be the bound: not modeled
-                throw Unknown()
+                // a lambda with implicitly typed parameters has no type (C# 10 gives a function type to an explicit parameter list only):
+                // no inference from it, as Roslyn (`ToDictionary(k => k.Id, v => v)` against the overload with an `IEqualityComparer<TKey>`
+                // was a refusal — 851 lines of the four solutions); the function type of an explicitly typed one would be the bound: not modeled
+                if (argument.explicitParameterTypes == null && argument.parameterCount > 0) return
+                throw Unknown("the function type of a lambda to ${SemanticTrace.show(target)} is not modeled")
             }
             // a method group to a delegate makes no inference here (no fixed types yet); its function type to a type parameter is not modeled
-            is InferenceArgument.MethodGroup -> if (delegateType(target) == null && containsAnyMethodTypeParameter(target)) throw Unknown()
+            is InferenceArgument.MethodGroup -> if (delegateType(target) == null && containsAnyMethodTypeParameter(target)) throw Unknown("the function type of a method group to ${SemanticTrace.show(target)} is not modeled")
             is InferenceArgument.Tuple -> if (!makeExplicitParameterTypeInferences(argument, target, kind)) {
                 argument.type?.let { exactOrBoundsInference(kind, it, target) } ?: run { if (containsAnyMethodTypeParameter(target)) throw Unknown() }
             }
             is InferenceArgument.Typed -> argument.type?.let { if (isReallyAType(it)) exactOrBoundsInference(kind, it, target) }
-            InferenceArgument.Opaque -> if (containsAnyMethodTypeParameter(target)) throw Unknown()
+            InferenceArgument.Opaque -> if (containsAnyMethodTypeParameter(target)) throw Unknown("an argument the inference does not model (a collection expression, `new()`, `throw`) to ${SemanticTrace.show(target)}")
         }
     }
 

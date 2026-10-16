@@ -108,6 +108,31 @@ class RoslynMethodTypeInferenceTest : BasePlatformTestCase() {
         """))
     }
 
+    /**
+     * eShop's `ToDictionary(k => k.Id, v => v)`: against the overload with an `IEqualityComparer<TKey>` the implicitly typed lambda has no
+     * type and gives no inference, as in Roslyn — the port refused there (851 lines of the four solutions, D6e3).
+     */
+    fun testAnImplicitlyTypedLambdaToANonDelegateGivesNoInference() {
+        val (found, log) = io.github.dotnetsupport.lang.semantic.SemanticTrace.collectForTests {
+            errors("""
+                using System.Collections.Generic;
+                using System.Linq;
+                class Item { public int Id; }
+                class C
+                {
+                    void M(List<Item> items)
+                    {
+                        Dictionary<int, Item> fine = items.ToDictionary(k => k.Id, v => v);
+                        string wrong = items.ToDictionary(k => k.Id, v => v);
+                    }
+                }
+            """)
+        }
+        assertEquals(listOf("9: items.ToDictionary(k => k.Id, v => v) -> CS0029: Cannot implicitly convert type " +
+            "'System.Collections.Generic.Dictionary<int, Item>' to 'string'"), found)
+        assertEmpty(log.filter { it.startsWith("inference ToDictionary") })
+    }
+
     fun testUpperBoundThroughAContravariantInterface() {
         // IComparer<in T>: IComparer<object> gives T an upper bound object, "s" a lower bound string — T is string
         assertEmpty(errors("""
