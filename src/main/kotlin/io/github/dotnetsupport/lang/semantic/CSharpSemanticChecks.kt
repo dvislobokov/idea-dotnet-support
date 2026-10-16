@@ -71,7 +71,8 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         // a file outside the projects of the solution is compiled with nothing we know: its extension methods, partial parts, global usings
         if (!inSources()) return emptyList()
         if (!CSharpSemanticEnvironment.referencesComplete(file) || resolver.libraryType(OBJECT) == null) return emptyList()
-        if (unit.externs.isNotEmpty()) return emptyList()
+        // a file with `extern alias X;` was not checked at all; `X::Name` resolves as a global name now (0.1.238) — an alias telling two
+        // assemblies with one type apart is not modeled: that name finds both and stays unresolved, quiet, never an error
         warnings.generatorsKnown = generatorsKnown
         PsiTreeUtil.processElements(unit) { element ->
             ProgressManager.checkCanceled()

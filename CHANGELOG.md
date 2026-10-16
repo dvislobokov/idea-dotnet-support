@@ -3,6 +3,23 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.238
+
+- A `file` type (C# 11) is seen in its own file only: the same `file static class` written by a source generator into every project is no
+  longer one type with twice its members.
+- The parts of a partial method match by their resolved parameter types, however they are written (`ILogger` beside
+  `global::Microsoft.Extensions.Logging.ILogger` of LoggerMessage, NSwag and OpenAPI generated code).
+- `extern alias X;` — a name written `X::Name` resolves.
+- A lambda returning `throw …`, `null` or `default` gives the inference no type instead of stopping it.
+- An `internal` extension class of another project that does not make this one a friend is no candidate (eShop links
+  `Shared/ActivityExtensions.cs` into every project).
+- Type arguments written on a call close the candidates' type parameters: an overload calling its sibling with its own
+  type parameter (`services.AddMigration<TContext>((_, _) => …)`) resolves.
+- The discard `out _` gives the inference nothing; `x is { } y` over a `T?` types `y` as `T`.
+- Overload betterness no longer asks the type of an `out var x` argument (the call was asking itself).
+- Every place the lambda conversion check gives up writes its reason to the analysis debug log; an async lambda does not
+  convert to a delegate returning a type that is not a task (CS4010 prevents it).
+
 ## 0.1.237
 
 - A lambda written as the body of another lambda (`a => s => …`, Blazor's `RenderFragment<T>` templates in generated code) has its

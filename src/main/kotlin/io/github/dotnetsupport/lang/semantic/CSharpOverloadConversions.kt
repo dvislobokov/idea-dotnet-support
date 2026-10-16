@@ -311,45 +311,52 @@ private fun CSharpOverloads.strictLambda(lambda: CSharpAnonymousFunctionExpressi
         }
         RoslynExpressionConversions.Result.AnonymousFunctionConversion, RoslynExpressionConversions.Result.ByType -> {}
     }
-    val target = r.expressions.unwrapExpression(to) ?: return Conversion.UNKNOWN
-    val delegate = r.expressions.delegateSignature(target) ?: return Conversion.UNKNOWN
+    // every place this check gives up says why (the applicable line of the call says only `conversion not known`)
+    fun unknown(reason: String): Conversion {
+        SemanticTrace.trace { "conversion of the lambda at ${SemanticTrace.at(lambda)} to ${SemanticTrace.show(to)}: not known — $reason" }
+        return Conversion.UNKNOWN
+    }
+    val target = r.expressions.unwrapExpression(to) ?: return unknown("the target is not a delegate or an expression tree")
+    val delegate = r.expressions.delegateSignature(target) ?: return unknown("the signature of the delegate is not known")
     val count = r.expressions.lambdaParameterCount(lambda)
     val parameters = lambdaParameters(lambda)
     if (count != null && count != delegate.first.size) return Conversion.NONE
-    val kinds = delegateRefKinds(target) ?: return Conversion.UNKNOWN
+    val kinds = delegateRefKinds(target) ?: return unknown("the ref kinds of the delegate's parameters are not known")
     var unknown = false
     if (parameters != null) for ((i, p) in parameters.withIndex()) {
-        val written = lambdaRefKind(p) ?: return Conversion.UNKNOWN
-        val expected = kinds.getOrNull(i) ?: return Conversion.UNKNOWN
-        if (written != expected) return if (written == "in" && expected == "ref") Conversion.UNKNOWN else Conversion.NONE
+        val written = lambdaRefKind(p) ?: return unknown("the modifier of the parameter `${p.text}` is not modeled")
+        val expected = kinds.getOrNull(i) ?: return unknown("the delegate has no parameter ${i + 1}")
+        if (written != expected) return if (written == "in" && expected == "ref") unknown("an `in` parameter to a `ref` one of the delegate") else Conversion.NONE
         val syntax = p.type ?: continue
-        val type = r.resolveType(syntax) ?: return Conversion.UNKNOWN
-        val wanted = delegate.first.getOrNull(i) ?: return Conversion.UNKNOWN
-        if (mentionsCandidateParameter(wanted)) return Conversion.UNKNOWN
+        val type = r.resolveType(syntax) ?: return unknown("the parameter type `${syntax.text}` does not resolve")
+        val wanted = delegate.first.getOrNull(i) ?: return unknown("the delegate has no parameter ${i + 1}")
+        if (mentionsCandidateParameter(wanted)) return unknown("parameter ${i + 1} of the delegate, ${SemanticTrace.show(wanted)}, mentions a type parameter of the candidate")
         when (same(type, wanted)) {
             false -> return Conversion.NONE
             null -> unknown = true
             true -> {}
         }
     }
-    if (unknown) return Conversion.UNKNOWN
-    if (delegate.first.any { it == null || mentionsCandidateParameter(it) }) return Conversion.UNKNOWN
-    val written = delegate.second ?: return Conversion.UNKNOWN
-    if (mentionsCandidateParameter(written)) return Conversion.UNKNOWN
+    if (unknown) return unknown("a written parameter type is not surely the delegate's")
+    if (delegate.first.any { it == null || mentionsCandidateParameter(it) }) return unknown("a parameter of the delegate is not known or mentions a type parameter of the candidate")
+    val written = delegate.second ?: return unknown("the return type of the delegate is not known")
+    if (mentionsCandidateParameter(written)) return unknown("the return type of the delegate, ${SemanticTrace.show(written)}, mentions a type parameter of the candidate")
     // an async lambda to a delegate returning `Task<Y>` / `ValueTask<Y>`: what it returns converts to `Y` (§10.7.1) — nopCommerce's
     // `GetAsync<T>(key, Func<Task<T>>)` and `GetAsync<T>(key, Func<T>)` are then both applicable and the first one is more specific
     // an async lambda to a delegate returning `void`, `Task` or `ValueTask` returns no value, as a lambda to a `void` one (§12.21.1) —
     // the `async () => { … }` of the tag helpers of every generated view to `Func<Task>` (5 800 lines of nopCommerce's trace)
     val async = r.expressions.isAsync(lambda.modifiers)
     val returns = if (!async || r.definitionName(written) == VOID || r.definitionName(written) in NO_VALUE_TASKS) written
-        else if (r.definitionName(written) in TASKS_OF) (written as? SemanticType.Library)?.arguments?.singleOrNull() ?: return Conversion.UNKNOWN
-        else return Conversion.UNKNOWN
+        else if (r.definitionName(written) in TASKS_OF) (written as? SemanticType.Library)?.arguments?.singleOrNull() ?: return unknown("the task type ${SemanticTrace.show(written)} has no type argument")
+        // CS4010 in the body (an async lambda returns void or a task-like type only) prevents the delegate conversion: nopCommerce's
+        // `GetAsync(key, async () => query)` is applicable to `Func<Task<T>>` alone, not to `Func<T>`
+        else return Conversion.NONE
     val void = r.definitionName(returns) == VOID || async && r.definitionName(returns) in NO_VALUE_TASKS
     // the body bound for this delegate, as Roslyn's `HasAnonymousFunctionConversion` binds it: implicit parameters take the delegate's types
     // (D6c2) — typed through the call being checked they were a cycle, and `Add(x => x.Severity, …)` of bUnit was not known (3541 lines)
     val implicit = parameters?.takeIf { ps -> ps.isNotEmpty() && ps.all { it.type == null } }
     fun body(compute: () -> Conversion): Conversion = if (implicit == null) compute() else try {
-        r.bindLambda(lambda, implicit, delegate.first.map { it ?: return Conversion.UNKNOWN }, compute)
+        r.bindLambda(lambda, implicit, delegate.first.map { it ?: return unknown("a parameter of the delegate is not known") }, compute)
     } catch (e: io.github.dotnetsupport.lang.semantic.roslyn.RoslynMethodTypeInferrer.Unknown) {
         SemanticTrace.trace { "lambda at ${SemanticTrace.at(lambda)} to ${SemanticTrace.show(to)}: not known — ${e.describe()}" }
         Conversion.UNKNOWN
@@ -358,14 +365,15 @@ private fun CSharpOverloads.strictLambda(lambda: CSharpAnonymousFunctionExpressi
     if (body != null) {
         if (void) return if (r.expressions.isStatementExpression(unparenthesized(body))) Conversion.IMPLICIT else Conversion.NONE
         return body {
-            when (argument(body, r.typeOf(unparenthesized(body)), returns)) {
+            val bodyType = r.typeOf(unparenthesized(body))
+            when (argument(body, bodyType, returns)) {
                 Conversion.IDENTITY, Conversion.IMPLICIT -> Conversion.IMPLICIT
                 Conversion.NONE -> Conversion.NONE
-                Conversion.UNKNOWN -> Conversion.UNKNOWN
+                Conversion.UNKNOWN -> unknown("the body `${SemanticTrace.text(body)}` of ${SemanticTrace.show(bodyType)} to ${SemanticTrace.show(returns)}: conversion not known")
             }
         }
     }
-    val block = lambda.block ?: return Conversion.UNKNOWN
+    val block = lambda.block ?: return unknown("the lambda has no body")
     val returned = returnsOf(block, lambda)
     // the lambda bound for the delegate with an error of its body has no conversion (`PreventsSuccessfulDelegateConversion`): a `return e;`
     // in a `void` one (CS0127), a `return;` or a reachable end of the block in one returning a value (CS0126, CS1643 — `Create(this,
@@ -374,17 +382,18 @@ private fun CSharpOverloads.strictLambda(lambda: CSharpAnonymousFunctionExpressi
     if (returned.any { it.expression == null }) return Conversion.NONE
     when (CSharpReachability(r).endOf(block)) {
         CSharpReachability.Reach.YES -> return Conversion.NONE
-        CSharpReachability.Reach.UNKNOWN -> return Conversion.UNKNOWN
+        CSharpReachability.Reach.UNKNOWN -> return unknown("whether the end of the block is reachable is not known")
         CSharpReachability.Reach.NO -> {}
     }
     if (returned.isEmpty()) return Conversion.IMPLICIT
     return body {
         var result = Conversion.IMPLICIT
         for (statement in returned) {
-            val value = statement.expression ?: return@body Conversion.UNKNOWN
-            when (argument(value, r.typeOf(unparenthesized(value)), returns)) {
+            val value = statement.expression ?: return@body unknown("a `return` without a value")
+            val valueType = r.typeOf(unparenthesized(value))
+            when (argument(value, valueType, returns)) {
                 Conversion.NONE -> return@body Conversion.NONE
-                Conversion.UNKNOWN -> result = Conversion.UNKNOWN
+                Conversion.UNKNOWN -> result = unknown("`return ${SemanticTrace.text(value)}` of ${SemanticTrace.show(valueType)} to ${SemanticTrace.show(returns)}: conversion not known")
                 else -> {}
             }
         }

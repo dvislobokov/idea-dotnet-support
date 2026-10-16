@@ -53,7 +53,44 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
     val syntax: NativeCSharpResolver = NativeCSharpResolver(file, ::sees)
 
     /** The extension methods of the solution named [text], in the projects this file sees ([CSharpSemanticEnvironment.sees]). */
-    fun sourceExtensions(text: String): List<CSharpElement> = session.sourceExtensions(text).filter { e -> e.containingFile?.viewProvider?.virtualFile?.let(::sees) != false }
+    fun sourceExtensions(text: String): List<CSharpElement> =
+        session.sourceExtensions(text).filter { e -> inFileScope(e) && reachableInternals(e) && e.containingFile?.viewProvider?.virtualFile?.let(::sees) != false }
+
+    /**
+     * An extension method of an `internal` static class of another project is no candidate unless that project makes this one a friend
+     * (Roslyn drops inaccessible extension methods from the lookup): eShop links `Shared/ActivityExtensions.cs` into every project, and
+     * the copy of a referenced project beside the own one was two `SetExceptionTags` never better than each other.
+     */
+    private fun reachableInternals(element: PsiElement): Boolean {
+        val type = enclosingTypeModifiers(element).firstOrNull() ?: return true
+        if ("public" in type) return true
+        val other = element.containingFile ?: return true
+        if (other == file) return true
+        val here = CSharpSemanticEnvironment.projectOf(file) ?: return true
+        val there = CSharpSemanticEnvironment.projectOf(other) ?: return true
+        if (here == there) return true
+        return friendly.getOrPut(there.path) {
+            val friends = CSharpFriendAssemblies.friendsOf(file.project, there) ?: return@getOrPut true
+            CSharpFriendAssemblies.isFriend(file.project, here, friends)
+        }
+    }
+    private val friendly = HashMap<String, Boolean>()
+
+    /**
+     * A member of a `file` type (C# 11) is seen in its own file only: the same `file static class JsonNodeExtensions` of the OpenAPI
+     * generator in every project was one type to us, and `Parse()` two candidates never better than each other.
+     */
+    internal fun inFileScope(element: PsiElement): Boolean =
+        enclosingTypeModifiers(element).none { "file" in it } || element.containingFile == file
+
+    /** The modifiers of the type declarations around [element], innermost first — from the stubs when its file is not loaded (a stub-based element). */
+    private fun enclosingTypeModifiers(element: PsiElement): List<List<String>> {
+        val stub = NativeCSharpStubDeclarations.stub(element)
+        if (stub != null) return generateSequence(stub.parentStub as? CSharpStub) { it.parentStub as? CSharpStub }
+            .filter { NativeCSharpStubDeclarations.kind(it)?.isType == true }.map { it.modifiers }.toList()
+        return generateSequence(PsiTreeUtil.getParentOfType(element, CSharpBaseTypeDeclaration::class.java)) { PsiTreeUtil.getParentOfType(it, CSharpBaseTypeDeclaration::class.java) }
+            .map { t -> t.modifiers.map { it.text } }.toList()
+    }
     val assemblies: AssemblyIndexSet by lazy { CSharpSemanticEnvironment.assemblies(file) }
     private val names = IdentityHashMap<PsiElement, CSharpResolution?>()
     private val types = IdentityHashMap<PsiElement, SemanticType?>()
@@ -235,6 +272,9 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
             parent is CSharpAliasQualifiedName && name == parent.nameElement -> {
                 val alias = parent.alias?.identifier?.text ?: return null
                 if (alias == "global") return inNamespace("", text, arity)
+                // an extern alias (`extern alias MudBlazorAnalyzer;` … `MudBlazorAnalyzer::MudBlazor.Analyzers.X`): the assemblies are not told apart
+                // by alias here, the name is looked up as `global::`
+                if (isExternAlias(alias)) return inNamespace("", text, arity)
                 // `using pb = global::Google.Protobuf;` … `pb::IMessage<T>`, as protoc writes: the alias must stand for a namespace
                 val target = levels(name).firstNotNullOfOrNull { level -> if (level.hasAlias(alias)) level.alias(alias) ?: return null else null }
                 return (target as? CSharpSymbol.Namespace)?.let { inNamespace(it.qualifiedName, text, arity) }
@@ -314,8 +354,12 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
             val imported = (level.imports.flatMap { typesIn(it, text, arity) } + level.statics().flatMap { nestedTypes(it, text, arity) }).distinct()
             if (imported.isNotEmpty()) return imported
         }
+        // `extern alias X;` … `X.Namespace.Type` (dotted, as the compiler-messages docs write it): the alias is the global namespace here
+        if (arity == 0 && isExternAlias(text)) return listOf(CSharpSymbol.Namespace(""))
         return emptyList()
     }
+
+    private fun isExternAlias(text: String): Boolean = file.compilationUnit?.externs?.any { it.identifier?.text == text } == true
 
     /** The type or namespace [text] of the namespace [namespace]. */
     private fun inNamespace(namespace: String, text: String, arity: Int): List<CSharpSymbol> {
@@ -471,7 +515,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                     val nested = syntax.nestedTypeOf(member)
                     if (nested != null) return listOf(CSharpSymbol.SourceType(nested))
                     // an explicit implementation (`IEnumerator IEnumerable.GetEnumerator()`) is not found by its name
-                    val found = withoutPartialDeclarations(member.targets().filter { !isExplicitImplementation(it) }).map { CSharpSymbol.SourceMember(it, member, declaringInstance(type, it)) }
+                    val found = withoutPartialDeclarations(member.targets().filter { !isExplicitImplementation(it) && inFileScope(it) }).map { CSharpSymbol.SourceMember(it, member, declaringInstance(type, it)) }
                     if (found.isNotEmpty()) return withObjectMethods(type, found, text, arity, depth)
                     // only explicit implementations here (the map keeps the nearest declarations): the base class has the member
                     val bases = baseTypes(type).sortedBy { overloads.isInterface(it) }
@@ -521,12 +565,18 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
     private fun isPartialDeclaration(method: CSharpMethodDeclaration): Boolean =
         method.body == null && method.expressionBody == null && method.modifiers.any { it.text == "partial" }
 
+    /** The same parameter types, resolved in each part's own file (`ILogger` of the source and `global::Microsoft.Extensions.Logging.ILogger` of the generated part); as written when one does not resolve. */
     private fun sameParametersWritten(a: CSharpMethodDeclaration, b: CSharpMethodDeclaration): Boolean {
         val pa = a.parameterList?.parameters.orEmpty()
         val pb = b.parameterList?.parameters.orEmpty()
         if (pa.size != pb.size) return false
-        fun written(p: CSharpParameter): String = (p.type?.text ?: "").replace("global::", "").replace(" ", "") + "/" + p.modifiers.joinToString(",") { it.text }
-        return pa.indices.all { written(pa[it]) == written(pb[it]) }
+        val ra = (a.containingFile as? CSharpFile)?.let(session::reachable)
+        val rb = (b.containingFile as? CSharpFile)?.let(session::reachable)
+        fun shown(p: CSharpParameter, resolver: CSharpNameResolver?): String {
+            val resolved = resolver?.let { p.type?.let(it::resolveType) }?.display
+            return (resolved ?: (p.type?.text ?: "").replace("global::", "").replace(" ", "")) + "/" + p.modifiers.joinToString(",") { it.text }
+        }
+        return pa.indices.all { shown(pa[it], ra) == shown(pb[it], rb) }
     }
 
     /** `IEnumerator IEnumerable.GetEnumerator()`: no member of its type by its simple name (C# §19.6.2); a file with only stubs answers by its stub. */
@@ -1161,7 +1211,8 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                         is CSharpDeclarationExpression -> holder.type?.takeIf { !isVar(it) }?.let(resolver::resolveType) ?: resolver.expressions.outVariableType(holder) ?: resolver.expressions.deconstructedType(owner)
                         is CSharpParenthesizedVariableDesignation -> resolver.expressions.deconstructedType(owner)
                         is CSharpDeclarationPattern -> holder.type?.let(resolver::resolveType)
-                        is CSharpRecursivePattern -> holder.type?.let(resolver::resolveType) ?: resolver.expressions.patternInputType(holder)
+                        // `x is { } y` over a `T?`: the narrowed type is `T` (the pattern says the value is not null) — eShop's `policy.Date is { } when`
+                        is CSharpRecursivePattern -> holder.type?.let(resolver::resolveType) ?: resolver.expressions.patternInputType(holder)?.let(resolver::unwrapNullable)
                         is CSharpVarPattern -> resolver.expressions.patternInputType(holder)
                         else -> null
                     }

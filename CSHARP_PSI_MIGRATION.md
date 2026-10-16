@@ -451,6 +451,18 @@
     **лямбды в выводе** ~700 (функциональный тип явной лямбды / группы методов к `T`, тело лямбды); типы, неизвестные выше по цепочке,
     и циклы ~1 150 — не порт. Решение: дальше не по строкам журнала, а по файлам Roslyn — D6c4 целиком, затем лямбды в выводе целиком,
     затем D6c5; эхо из журнала убрать (одна строка на причину).
+  - [x] Закрытие журнала, шаг 4 (0.1.238; тесты в `CSharpTypingGapsTest`). Причины 998 строк 0.1.237, закрытые по корню: `file`-типы
+    (C# 11) видны только в своём файле (`inFileScope`, по стабам — `OpenApiXmlCommentSupport.generated.cs` в каждом проекте был одним типом с
+    двойным `Parse()`); части partial-метода сравниваются по разрешённым типам параметров в файле каждой части (`ILogger` рядом с
+    `global::…ILogger` у LoggerMessage/NSwag); `extern alias X;` — `X::Имя` и `X.Имя` как `global::` (молчание файла с `extern alias`
+    снято, cs0433-4 в корпусе: 4 `missing` → `ok`, `extra` 0); `internal`-класс расширений чужого проекта без `InternalsVisibleTo` не
+    кандидат (`reachableInternals`; eShop линкует `Shared/ActivityExtensions.cs` во все проекты); написанные аргументы типа закрывают
+    параметры всех кандидатов (`openOwners` пуст при `written` — перегрузка, зовущая соседку со своим `TContext`, сама кандидат);
+    `out _` для вывода — «нет типа» (`InferenceArguments`); `requiredFunctionType` не спрашивает тип `out var x` (вызов спрашивал сам
+    себя — цикл); тело лямбды `throw`/`null`/`default` — «нет типа», не отказ; `x is { } y` над `T?` — `T`; async-лямбда к делегату с
+    не-task результатом — NONE (CS4010). Каждый отказ `strictLambda` пишет причину (`unknown(reason)`). Итог: eShop 23 → 0, MudBlazor 699 →
+    620, nopCommerce 276 → 206 (826; 238 — в `.g.cs`). Найденный долг: `int x = o;` при `object o` — молчим (`noConversion` исключает
+    `object`), Roslyn — CS0266; сначала пример в корпус.
   - [x] Закрытие журнала, шаг 2 — анонимные типы (0.1.236; тест `CSharpTypingGapsTest.testAnAnonymousTypeHasItsProperties`). Не новый
     подкласс `SemanticType` (137 ветвей в 40 файлах), а `SemanticType.Source` с синтезированной частью `TypePart.Anonymous`
     (`NativeCSharpResolver`): свойства из инициализаторов (`Name = e`, `x.Name`, `Name` — §12.8.17.3) как `Member.property`, баз нет (`object`

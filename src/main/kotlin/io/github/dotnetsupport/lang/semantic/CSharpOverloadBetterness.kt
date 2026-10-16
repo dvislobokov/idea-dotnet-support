@@ -83,6 +83,8 @@ internal class BetternessHost(private val o: CSharpOverloads) : RoslynBetterFunc
             value is CSharpCollectionExpression -> RoslynBetterFunctionMember.COLLECTION_EXPRESSION
             o.methodGroup(value) != null -> if (delegateOf(to) != null) RoslynBetterFunctionMember.METHOD_GROUP else RoslynBetterFunctionMember.FUNCTION_TYPE
             value is CSharpConditionalExpression && r.typeOf(value) == null -> RoslynBetterFunctionMember.CONDITIONAL_EXPRESSION
+            // `out var x` / `out _`: typed by the parameter of the method chosen — asking now is the call asking itself (a cycle); no function type anyway
+            value is CSharpDeclarationExpression || o.isDiscard(value) -> RoslynBetterFunctionMember.OTHER
             else -> {
                 val type = r.typeOf(value) ?: return RoslynBetterFunctionMember.OTHER
                 when {

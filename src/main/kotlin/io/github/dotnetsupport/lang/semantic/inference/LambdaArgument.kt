@@ -1,11 +1,14 @@
 package io.github.dotnetsupport.lang.semantic.inference
 
 import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.psi.util.elementType
 import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.lang.semantic.CSharpNameResolver
 import io.github.dotnetsupport.lang.semantic.SemanticTrace
 import io.github.dotnetsupport.lang.semantic.SemanticType
+import io.github.dotnetsupport.csharp.lang.SyntaxKind
 import io.github.dotnetsupport.lang.semantic.lambdaRefKind
+import io.github.dotnetsupport.lang.semantic.unparenthesized
 import io.github.dotnetsupport.lang.semantic.roslyn.InferenceArgument
 import io.github.dotnetsupport.lang.semantic.roslyn.RoslynMethodTypeInferrer
 import io.github.dotnetsupport.lang.semantic.same
@@ -71,6 +74,10 @@ internal class LambdaArgument(private val r: CSharpNameResolver) {
     private fun returnedType(lambda: CSharpAnonymousFunctionExpression): SemanticType? {
         val body = lambda.expressionBody
         if (body != null) {
+            // `() => throw …`, `() => null`, `() => default`: no type of their own, so no inferred return type (Roslyn's `InferReturnType`
+            // finds no type among the returns and makes no inference), not a refusal
+            val bare = r.overloads.unparenthesized(body)
+            if (bare is CSharpThrowExpression || bare.elementType == SyntaxKind.NullLiteralExpression || bare.elementType == SyntaxKind.DefaultLiteralExpression) return null
             val type = r.typeOf(body) ?: throw RoslynMethodTypeInferrer.Unknown("the type of the lambda body `${SemanticTrace.text(body)}` is not known")
             return type.takeIf { r.definitionName(it) != VOID }
         }

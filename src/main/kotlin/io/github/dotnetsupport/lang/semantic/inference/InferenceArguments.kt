@@ -29,6 +29,8 @@ internal class InferenceArguments(private val r: CSharpNameResolver) {
             value is CSharpAnonymousFunctionExpression -> lambdas.of(value)
             methodGroups.isMethodGroup(value) -> methodGroups.of(value)
             value.elementType == SyntaxKind.NullLiteralExpression || value.elementType == SyntaxKind.DefaultLiteralExpression -> InferenceArgument.Typed(null)
+            // the discard `out _` has no type of its own (Roslyn binds it to the parameter's type once chosen): no inference from it
+            r.overloads.isDiscard(value) -> InferenceArgument.Typed(null)
             // `out T x` has its type; `out var x` has none yet
             value is CSharpDeclarationExpression -> InferenceArgument.Typed(value.type?.takeIf { !r.isVar(it) }?.let { r.resolveType(it) ?: throw RoslynMethodTypeInferrer.Unknown() })
             value is CSharpTupleExpression -> tuples.of(value, lenient)

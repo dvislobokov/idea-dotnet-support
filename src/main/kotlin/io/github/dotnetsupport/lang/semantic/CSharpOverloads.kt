@@ -82,7 +82,9 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         symbol: CSharpSymbol, reduced: Boolean, receiver: SemanticType?, arguments: List<CSharpArgument>, all: List<CSharpSymbol>, written: List<SemanticType?>?,
         site: CSharpSimpleName? = null, infer: (List<SemanticType?>, Pair<SemanticType, SemanticType?>?) -> CSharpTypeInference.Inferred,
     ): Outcome {
-        val owners = all.mapNotNull { (it as? CSharpSymbol.SourceMember)?.element }
+        // type arguments written close every candidate's type parameters: a type parameter left in a target is the caller's own (eShop's
+        // `AddMigration<TContext>(services)` calling `services.AddMigration<TContext>((_, _) => …)` — the caller is a candidate too)
+        val owners = if (written != null) emptyList() else all.mapNotNull { (it as? CSharpSymbol.SourceMember)?.element }
         openOwners += owners
         twins = paramsTwins(all)
         try {
@@ -229,7 +231,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         val types = arguments.map { a -> a.expression?.let(::argumentType) }
         val receiver = if (reduced) site?.let(r.expressions::receiver) else null
         val written = (site as? CSharpGenericName)?.typeArgumentList?.arguments?.map { r.resolveType(it) ?: return null }
-        val owners = candidates.mapNotNull { (it as? CSharpSymbol.SourceMember)?.element }
+        val owners = if (written != null) emptyList() else candidates.mapNotNull { (it as? CSharpSymbol.SourceMember)?.element }
         openOwners += owners
         try {
             // the applicability of each candidate as the compiler errors judge it (D6c3): Roslyn's inference, the port's conversions
@@ -283,7 +285,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
     }
 
     /** `_` where no variable of that name is in scope: a discard (`TryCreate(x, out _)`). */
-    private fun isDiscard(expression: CSharpExpression): Boolean {
+    internal fun isDiscard(expression: CSharpExpression): Boolean {
         val leaf = (unparenthesized(expression) as? CSharpIdentifierName)?.identifier ?: return false
         return leaf.text == "_" && r.syntax.symbolAt(leaf) == null && r.resolve(leaf) == null
     }

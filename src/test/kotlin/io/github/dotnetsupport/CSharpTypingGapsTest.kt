@@ -131,6 +131,83 @@ class CSharpTypingGapsTest : BasePlatformTestCase() {
         }
     """, "Q(1) -> CS0029: Cannot implicitly convert type 'int' to 'string'")
 
+    /** The parts of a partial method may write their parameter types differently (`System.Int32` / `int`, a `global::` of generated code). */
+    fun testThePartsOfAPartialMethodCompareByResolvedParameterTypes() = check("""
+        using System.Collections.Generic;
+        partial class C
+        {
+            static partial int Q(System.Collections.Generic.List<System.Int32> x);
+            static partial int Q(List<int> x) => x.Count;
+            void M() { string bad = Q(new List<int>()); }
+        }
+    """, "Q(new List<int>()) -> CS0029: Cannot implicitly convert type 'int' to 'string'")
+
+    /** A `file` type (C# 11) of another file is another type: its extension method is no candidate here (the OpenAPI generator's `file static class` in every project). */
+    fun testAFileTypeOfAnotherFileIsNotSeen() {
+        myFixture.addFileToProject("OtherGap.cs", "file static class Ext { public static string Parse(this string s) => s; }")
+        check("""
+            file static class Ext { public static int Parse(this string s) => 1; }
+            class C { void M() { string bad = "a".Parse(); } }
+        """, "\"a\".Parse() -> CS0029: Cannot implicitly convert type 'int' to 'string'")
+    }
+
+    /** `extern alias X;` — `X::Name` is looked up as a global name. */
+    fun testAnExternAliasQualifiedNameResolves() = check("""
+        extern alias Lib;
+        class C { void M() { Lib::System.Collections.Generic.List<int> x = new(); string bad = x; } }
+    """, "x -> CS0029: Cannot implicitly convert type 'System.Collections.Generic.List<int>' to 'string'")
+
+    /** `(_, _) => …` — discard parameters (C# 9) are parameters of the lambda; `out _` and `out var x` give the inference nothing and match any out parameter. */
+    fun testDiscardsInLambdasAndOutArgumentsAreNoRefusal() = check("""
+        using System;
+        using System.Collections.Generic;
+        using System.Threading.Tasks;
+        static class E
+        {
+            public static int M<T>(this object services, Func<T, IServiceProviderLike, Task> seeder) where T : class => 1;
+            // an overload calling its sibling with its own type parameter written (eShop's AddMigration): the caller is a candidate too
+            public static int M<T>(this object services) where T : class => services.M<T>((_, _) => Task.CompletedTask);
+            public static int R<K, V>(this IDictionary<K, V> d, K key, out V value) { value = default!; return 1; }
+            public static int P(string s, out bool b) { b = true; return 1; }
+            // a second overload: `out var flag` is compared between the two without asking its type (that asks the call: a cycle)
+            public static int P(ReadOnlySpan<char> s, out bool b) { b = true; return 1; }
+        }
+        interface IServiceProviderLike { }
+        class C
+        {
+            void M(IDictionary<string, int> d)
+            {
+                string bad = E.M<string>(this, (_, _) => Task.CompletedTask);
+                string bad2 = d.R("a", out _);
+                string bad3 = E.P("a", out var flag);
+                string bad4 = flag;
+            }
+            void N(Cfg configuration)
+            {
+                bool.TryParse(configuration["ValidateToken"], out var validateToken);
+                string bad5 = validateToken;
+            }
+        }
+        class Cfg
+        {
+            public string? this[string key] => null;
+        }
+    """, "E.M<string>(this, (_, _) => Task.CompletedTask) -> CS0029: Cannot implicitly convert type 'int' to 'string'",
+        "d.R(\"a\", out _) -> CS0029: Cannot implicitly convert type 'int' to 'string'",
+        "E.P(\"a\", out var flag) -> CS0029: Cannot implicitly convert type 'int' to 'string'",
+        "flag -> CS0029: Cannot implicitly convert type 'bool' to 'string'",
+        "validateToken -> CS0029: Cannot implicitly convert type 'bool' to 'string'")
+
+    /** `x is { } y` over a `DateTime?` narrows to `DateTime` (eShop's `policy.Date is { } when` — a variable named with the contextual keyword too). */
+    fun testAPropertyPatternOverANullableNarrowsToTheUnderlyingType() = check("""
+        using System;
+        class C
+        {
+            DateTime? Date;
+            void M() { if (Date is { } when) { string bad = when.Year; } if (Date is { Year: 1 } d) { string bad2 = d; } }
+        }
+    """, "when.Year -> CS0029: Cannot implicitly convert type 'int' to 'string'", "d -> CS0029: Cannot implicitly convert type 'System.DateTime' to 'string'")
+
     /** A collection expression beside an overload taking a delegate (bUnit's `Add(x => x.Items, […])`): no inference from it there, no refusal. */
     fun testACollectionExpressionGivesNoInferenceToADelegateParameter() = check("""
         using System;

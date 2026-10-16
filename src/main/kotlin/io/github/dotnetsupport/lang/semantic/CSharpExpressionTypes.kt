@@ -311,8 +311,9 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
                     // an answer that met a question in progress (a lambda typed while its call is being resolved) is not kept
                     return fixed.toList().also { if (r.cycleCount == cycles) cache[key] = it }
                 }
-                // the candidate does not infer (several may remain when none applies, or the call is being typed): nothing is guessed
-                CSharpTypeInference.Inferred.Failed -> if (!partial) SemanticTrace.trace { "typeArguments ${callee.text} at ${SemanticTrace.at(call)}: the inference fails for this candidate; fixed so far [${fixed.joinToString { SemanticTrace.show(it) }}]" }
+                // the one method the call resolved to does not infer: a disagreement worth a line; several candidates left when none applies
+                // (each asked for the type of the call) are the refusal already logged for them, not a new one
+                CSharpTypeInference.Inferred.Failed -> if (!partial && r.resolveName(callee)?.symbols?.size == 1) SemanticTrace.trace { "typeArguments ${callee.text} at ${SemanticTrace.at(call)}: the inference fails for the method the call resolved to; fixed so far [${fixed.joinToString { SemanticTrace.show(it) }}]" }
                 // not known: the `inference` line says why; nothing is guessed
                 else -> {}
             }

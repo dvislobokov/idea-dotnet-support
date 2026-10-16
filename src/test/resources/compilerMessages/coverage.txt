@@ -1,4 +1,4 @@
-# 260 examples, Roslyn errors 449, matched 356, missing 93, extra 0
+# 260 examples, Roslyn errors 449, matched 360, missing 89, extra 0
 array-declaration-errors-1.cs	CS1922@6	missing
 array-declaration-errors-2.cs	CS0246@10	ok
 array-declaration-errors-2.cs	CS0246@11	ok
@@ -50,10 +50,10 @@ cs0269-1.cs	CS0269@12	ok
 cs0269-2.cs	CS0269@16	ok
 cs0433-3.cs	CS0246@10	ok
 cs0433-3.cs	CS0246@4	ok
-cs0433-4.cs	CS0234@15	missing
-cs0433-4.cs	CS0234@16	missing
-cs0433-4.cs	CS0246@12	missing
-cs0433-4.cs	CS0246@5	missing
+cs0433-4.cs	CS0234@15	ok
+cs0433-4.cs	CS0234@16	ok
+cs0433-4.cs	CS0246@12	ok
+cs0433-4.cs	CS0246@5	ok
 cs0433-4.cs	CS0430@4	missing
 cs0445-1.cs	CS0445@13	missing
 cs0504-1.cs	CS0504@7	ok
