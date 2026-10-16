@@ -423,11 +423,12 @@ class RazorCorpusFalseErrorsTest : BasePlatformTestCase() {
         assertEmpty(errorsIn("Host/AppHost.cs", "using eShop.Host;\nclass P { bool M() => Extensions.IsFoundryEnabled(); }"))
         val found = errorsIn("Referencing/AppHost.cs", "using eShop.Referencing;\nclass P { bool M() => Extensions.IsFoundryEnabled(); }")
         assertEquals(found.toString(), listOf("CS0117"), found)
-        // a type and an extension method of the unreferenced project are not found either (CS0246, CS1061); with the reference they are
+        // a type and an extension method of the unreferenced project are not found either (CS0246, CS1061); with the reference they are;
+        // the namespace `Seeding` is declared by that project only, so `using Seeding;` is CS0246 as well (0.1.240), as the compiler says
         val unseenType = errorsIn("Host/Seeded.cs", "using Seeding;\nclass Q : IDbSeeder { }")
-        assertEquals(unseenType.toString(), listOf("CS0246"), unseenType)
+        assertEquals(unseenType.toString(), listOf("CS0246", "CS0246"), unseenType)
         val unseenExtension = errorsIn("Host/Migrated.cs", "using Seeding;\nclass R { int M() => \"x\".AddMigration(); }")
-        assertEquals(unseenExtension.toString(), listOf("CS1061"), unseenExtension)
+        assertEquals(unseenExtension.toString(), listOf("CS0246", "CS1061"), unseenExtension)
         assertEmpty(errorsIn("Referencing/Seeded.cs", "using Seeding;\nclass Q : IDbSeeder { int M() => \"x\".AddMigration(); }"))
     }
 

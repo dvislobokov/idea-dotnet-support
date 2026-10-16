@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.241
+
+- `using X;` of a namespace declared only by a project this one does not reference is CS0246, as the compiler says (the test of
+  0.1.240 expected the old silence; nothing else changes).
+
 ## 0.1.240
 
 - Extension methods are looked up level by level, as the compiler does: the innermost namespace (with its usings) that has an
