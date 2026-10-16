@@ -259,6 +259,36 @@ class RoslynMethodTypeInferenceTest : BasePlatformTestCase() {
         assertEmpty(log.filter { it.contains("ThrowIfNull") || it.startsWith("applicable Go") || it.startsWith("resolve Go") })
     }
 
+    /**
+     * A method group goes to `Delegate` by its function type (C# 10, `RoslynExpressionConversions`): eShop's `app.MapGet("/items", GetItems)`
+     * picks the `Delegate` overload when the handler fits no `RequestDelegate` — the port's first piece of D6c2 (the old rules said "not known").
+     */
+    fun testAMethodGroupGoesToDelegateByItsFunctionType() {
+        val (found, log) = io.github.dotnetsupport.lang.semantic.SemanticTrace.collectForTests {
+            errors("""
+                using System;
+                using System.Threading.Tasks;
+                delegate Task RequestDelegate(object context);
+                static class App
+                {
+                    public static int MapGet(string pattern, RequestDelegate handler) => 1;
+                    public static string MapGet(string pattern, Delegate handler) => "";
+                }
+                class C
+                {
+                    static Task<int> GetItems(int page, int size) => Task.FromResult(page);
+                    void M()
+                    {
+                        string fine = App.MapGet("/items", GetItems);
+                        int bad = App.MapGet("/items", GetItems);
+                    }
+                }
+            """)
+        }
+        assertEquals(listOf("15: App.MapGet(\"/items\", GetItems) -> CS0029: Cannot implicitly convert type 'string' to 'int'"), found)
+        assertEmpty(log.filter { it.startsWith("applicable MapGet") || it.startsWith("resolve MapGet") })
+    }
+
     fun testUpperBoundThroughAContravariantInterface() {
         // IComparer<in T>: IComparer<object> gives T an upper bound object, "s" a lower bound string — T is string
         assertEmpty(errors("""

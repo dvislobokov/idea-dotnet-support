@@ -427,6 +427,19 @@
     MudBlazor 15 721 → 9 279, nopCommerce 11 872 → 10 416, ошибки те же. Пример корпуса `plugin-lambda-to-delegate.cs`: Roslyn даёт
     CS0029 + CS1662 на теле с неверным типом — у нас пока `missing` (следующий кусок). Дальше: группы методов, интерполированные строки
     к обработчикам (221), коллекции (78).
+    Порт — `roslyn/RoslynExpressionConversions` (`ClassifyImplicitConversionFromExpression`; решение пользователя 2026-10-16: новое
+    пишется в порт, старые правила только убывают). 0.1.227: группа методов к типу, который не делегат (`Delegate`, `object`…), — по её
+    функциональному типу (`HasImplicitFunctionTypeConversion`, `GetUniqueSignatureFromMethodGroup`; тест
+    `testAMethodGroupGoesToDelegateByItsFunctionType`); группа к делегату и прочие виды выражений — `NotPorted`, решает `argument()`.
+    **Реестр заплаток старого мира** — перенести в порт и удалить, каждая со своим тестом-сторожем (`RoslynMethodTypeInferenceTest`):
+    | Версия | Где сейчас | Что | Куда в порту | Тест |
+    |---|---|---|---|---|
+    | 0.1.205 | `refineByLambdas` | тело-блок лямбды в выводе | вывод типов (`RoslynMethodTypeInferrer`), удаление `refineByLambdas` | `Task.Run` с блоком |
+    | 0.1.218 | `strictLambda` | привязка тела к делегату кандидата | `HasAnonymousFunctionConversion` | лямбда к `Expression<Func<…>>` |
+    | 0.1.222 | `argument()`, `better()` | интерполированная строка → обработчик; константность — только в лучшем преобразовании | `ClassifyImplicitConversionFromExpression` (InterpolatedStringHandler) | `testAnInterpolatedStringConvertsToAHandler` |
+    | 0.1.224 | `argument()` | анонимный объект → `object` | преобразование из типа (класс с базой `object`) | `testAnAnAnonymousObjectGoesToTheObjectOverload` |
+    | 0.1.225 | `applicable`, `evaluateStrict` | параметр-указатель берёт только `null` / `default` / `&x` | указатели в `RoslynConversions` | `testAPointerOverloadDoesNotApplyToAnObject` |
+    | 0.1.226 | `resolve` | член сборки рядом со своим исходником — не второй кандидат | сбор кандидатов (поиск членов), не выбор | харнесс (юнит-тест не различает) |
 - [x] D6d (0.1.189; тест `RoslynConversionsTest`). `ConversionsBase.cs` + `UserDefinedImplicitConversions.cs` → `RoslynConversions`:
   неявные преобразования из типа (тождество, числовые, nullable, ссылочные с вариантностью, массивы, делегаты, параметры типа,
   упаковка, кортежи, span) и пользовательские (множество D, применимые и lifted-операторы, самые подходящие исходный и целевой типы,

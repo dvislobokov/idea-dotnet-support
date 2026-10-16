@@ -19,6 +19,7 @@ import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Companion.TASKS_OF
 import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Companion.VALUE_TUPLE
 import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Companion.VOID
 import io.github.dotnetsupport.lang.semantic.roslyn.RoslynConversions
+import io.github.dotnetsupport.lang.semantic.roslyn.RoslynExpressionConversions
 
 /*
  * The conversions of overload resolution (C# §10.2), as extensions of [CSharpOverloads] (D6e5: one file per concern, so D6c replaces
@@ -288,6 +289,14 @@ internal fun CSharpOverloads.argument(e: CSharpExpression, type: SemanticType?, 
         // `compilation.GetBestTypeByMetadataName` of an extension method: its receiver is bound, the delegate takes the rest (MudBlazor.Analyzers)
         val name = (value as? CSharpMemberAccessExpression)?.nameElement
         val reduced = name != null && group.any { r.expressions.isReduced(it, name) }
+        // the port first (D6c2): a method group to what is no delegate goes by its function type (C# 10) — `MapGet(pattern, GetItems)` to
+        // `Delegate`, eShop's minimal APIs; what it does not port yet (a group to a delegate type) the rules below decide
+        when (val ported = expressionConversions.classifyImplicitConversionFromExpression(methodGroupSource(group, value, reduced), to)) {
+            is RoslynExpressionConversions.Result.Exists -> return Conversion.IMPLICIT
+            RoslynExpressionConversions.Result.None -> return Conversion.NONE
+            is RoslynExpressionConversions.Result.Unknown -> if (!ported.reason.endsWith("not ported"))
+                SemanticTrace.trace { "conversion of the method group `${SemanticTrace.text(value)}` at ${SemanticTrace.at(value)} to ${SemanticTrace.show(to)}: not known — ${ported.reason}" }
+        }
         return if (strict) (if (reduced) Conversion.UNKNOWN else strictGroup(group, to)) else groupConversion(group, to, reduced)
     }
     val source = type ?: return Conversion.UNKNOWN
@@ -563,6 +572,18 @@ private fun CSharpOverloads.groupConversion(methods: List<CSharpSymbol>, to: Sem
     val count = delegate.first.size
     val fitting = methods.filter { m -> r.signature(m, reduced && r.isExtension(m))?.let { s -> s.size >= count && s.count { !it.optional && !it.isParams } <= count } ?: true }
     return if (fitting.isEmpty()) Conversion.NONE else Conversion.IMPLICIT
+}
+
+/** A method group as [RoslynExpressionConversions] sees it (`BoundMethodGroup`): its methods with their signatures, the type arguments written. */
+private fun CSharpOverloads.methodGroupSource(group: List<CSharpSymbol>, value: CSharpExpression, reduced: Boolean): RoslynExpressionConversions.Source {
+    val name = (value as? CSharpMemberAccessExpression)?.nameElement ?: value as? CSharpSimpleName
+    val arity = (name as? CSharpGenericName)?.typeArgumentList?.arguments?.size ?: 0
+    val methods = group.map { method ->
+        val parameters = r.signature(method, false) ?: return RoslynExpressionConversions.Source.NotPorted
+        RoslynExpressionConversions.Method(r.expressions.methodArity(method), parameters.mapIndexed { i, p -> p.type() to (refKind(method, i, false) ?: "") },
+            r.returnType(method, emptyList()))
+    }
+    return RoslynExpressionConversions.Source.MethodGroup(methods, arity, reduced)
 }
 
 /** §10.2.11: a constant `int` converts to `sbyte`, `byte`, `short`, `ushort`, `uint`, `ulong` (and `long` to `ulong`) when it fits. */

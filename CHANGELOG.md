@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.227
+
+- A method group passed where a `Delegate` (or `object`) is expected converts by its function type, as in C# 10: overloads such as
+  `app.MapGet("/items", GetItems)` are picked as the compiler picks them, and the result type of the call is known. This is the first
+  piece of the port of Roslyn's conversions from expressions.
+
 ## 0.1.226
 
 - A method of a project referenced by another one is one candidate, not two: the IDE also reads the built output of the referenced project,

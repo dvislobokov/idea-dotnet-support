@@ -30,6 +30,7 @@ import java.util.IdentityHashMap
  */
 internal class CSharpOverloads(internal val r: CSharpNameResolver) {
     internal val known = IdentityHashMap<Any, Boolean>()
+    internal val expressionConversions by lazy { io.github.dotnetsupport.lang.semantic.roslyn.RoslynExpressionConversions(RoslynTypes(r)) }
     internal val roslynConversions by lazy { RoslynConversions(RoslynTypes(r)) { operators(it, withBases = false) } }
 
     // the method type parameters of the candidates being resolved: a parameter of the caller's own method is a type like any other
@@ -426,7 +427,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
     }
 
     /** `ref`, `out`, `in` (`ref readonly` too) or null: how the [index]-th parameter takes its argument. */
-    private fun refKind(symbol: CSharpSymbol, index: Int, reduced: Boolean): String? {
+    internal fun refKind(symbol: CSharpSymbol, index: Int, reduced: Boolean): String? {
         val at = index + if (reduced) 1 else 0
         return when (symbol) {
             is CSharpSymbol.LibraryMember -> r.session.parameters(symbol.member).getOrNull(at)?.let { p -> if (p.isOut) "out" else if (p.isIn) "in" else if (p.isRef) "ref" else null }
