@@ -495,6 +495,9 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
             is CSharpAssignmentExpression -> if (parent.right == at) parent.left?.let(r::typeOf) else null
             is CSharpEqualsValueClause -> declaredTarget(parent)
             is CSharpReturnStatement, is CSharpArrowExpressionClause -> returnTarget(parent)
+            // the expression body of another lambda: what that one's delegate returns (`(context) => (__builder2) => { … }` of Blazor's
+            // `RenderFragment<T>`, a `RenderFragment`)
+            is CSharpAnonymousFunctionExpression -> if (parent.expressionBody == at) returnTarget(at) else null
             else -> null
         } ?: return null
         return unwrapExpression(type)

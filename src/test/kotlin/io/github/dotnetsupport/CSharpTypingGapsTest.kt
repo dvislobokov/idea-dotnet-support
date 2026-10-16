@@ -107,6 +107,30 @@ class CSharpTypingGapsTest : BasePlatformTestCase() {
     """, "a.Id -> CS0029: Cannot implicitly convert type 'int' to 'string'", "q[0].Twice -> CS0029: Cannot implicitly convert type 'int' to 'string'",
         "r.id -> CS0029: Cannot implicitly convert type 'int' to 'string'")
 
+    /** The parameter of a lambda that is the expression body of another: typed by what the outer delegate returns (Blazor's `RenderFragment<T>`). */
+    fun testTheParameterOfANestedLambdaIsTypedByTheOuterDelegatesReturn() = check("""
+        using System;
+        class C
+        {
+            void M()
+            {
+                Func<int, Func<string, int>> f = a => s => { int bad = s; return a; };
+            }
+        }
+    """, "s -> CS0029: Cannot implicitly convert type 'string' to 'int'")
+
+    /** A partial method's declaration and implementation are one method: the call resolves to it, with its return type. */
+    fun testAPartialMethodIsOneCandidate() = check("""
+        partial class C
+        {
+            static partial int Q(int x);
+            static partial int Q(int x) => x;
+            partial void P(int x);
+            partial void P(int x) { }
+            void M() { P(1); string bad = Q(1); }
+        }
+    """, "Q(1) -> CS0029: Cannot implicitly convert type 'int' to 'string'")
+
     /** A collection expression beside an overload taking a delegate (bUnit's `Add(x => x.Items, […])`): no inference from it there, no refusal. */
     fun testACollectionExpressionGivesNoInferenceToADelegateParameter() = check("""
         using System;

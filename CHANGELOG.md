@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.237
+
+- A lambda written as the body of another lambda (`a => s => …`, Blazor's `RenderFragment<T>` templates in generated code) has its
+  parameters typed by what the outer delegate returns.
+- The declaration and the implementation of a partial method are one method: a call to it resolves and has its return type (generated
+  code of LoggerMessage, NSwag, OpenAPI comments).
+
 ## 0.1.236
 
 - Anonymous types: `new { Id = x.Id, Name }` has a type with these properties — completion and navigation on `a.Id`, the type of a LINQ

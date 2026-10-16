@@ -471,7 +471,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                     val nested = syntax.nestedTypeOf(member)
                     if (nested != null) return listOf(CSharpSymbol.SourceType(nested))
                     // an explicit implementation (`IEnumerator IEnumerable.GetEnumerator()`) is not found by its name
-                    val found = member.targets().filter { !isExplicitImplementation(it) }.map { CSharpSymbol.SourceMember(it, member, declaringInstance(type, it)) }
+                    val found = withoutPartialDeclarations(member.targets().filter { !isExplicitImplementation(it) }).map { CSharpSymbol.SourceMember(it, member, declaringInstance(type, it)) }
                     if (found.isNotEmpty()) return withObjectMethods(type, found, text, arity, depth)
                     // only explicit implementations here (the map keeps the nearest declarations): the base class has the member
                     val bases = baseTypes(type).sortedBy { overloads.isInterface(it) }
@@ -504,6 +504,29 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                 else (found + libraryType(OBJECT)?.let { membersNamed(it, text, arity, depth + 1) }.orEmpty()).distinctBy { it.id ?: it }
             }
         }
+    }
+
+    /**
+     * The two parts of a partial method are one method (§15.6.9): the declaration without a body drops out beside its implementation with
+     * the same parameter types (as written, `global::` and spaces aside) — else `Parse()` of a generated file was two candidates, never
+     * better than each other ("no best", 92 lines of the trace).
+     */
+    private fun withoutPartialDeclarations(targets: List<PsiElement>): List<PsiElement> {
+        if (targets.size < 2 || targets.none { it is CSharpMethodDeclaration && isPartialDeclaration(it) }) return targets
+        return targets.filter { t ->
+            !(t is CSharpMethodDeclaration && isPartialDeclaration(t) && targets.any { o -> o !== t && o is CSharpMethodDeclaration && !isPartialDeclaration(o) && sameParametersWritten(t, o) })
+        }
+    }
+
+    private fun isPartialDeclaration(method: CSharpMethodDeclaration): Boolean =
+        method.body == null && method.expressionBody == null && method.modifiers.any { it.text == "partial" }
+
+    private fun sameParametersWritten(a: CSharpMethodDeclaration, b: CSharpMethodDeclaration): Boolean {
+        val pa = a.parameterList?.parameters.orEmpty()
+        val pb = b.parameterList?.parameters.orEmpty()
+        if (pa.size != pb.size) return false
+        fun written(p: CSharpParameter): String = (p.type?.text ?: "").replace("global::", "").replace(" ", "") + "/" + p.modifiers.joinToString(",") { it.text }
+        return pa.indices.all { written(pa[it]) == written(pb[it]) }
     }
 
     /** `IEnumerator IEnumerable.GetEnumerator()`: no member of its type by its simple name (C# §19.6.2); a file with only stubs answers by its stub. */
