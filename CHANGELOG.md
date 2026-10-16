@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.203
+
+- A project referenced by another one is loaded once by the generators and analyzers, not twice: opening a test file of MudBlazor
+  no longer runs the design-time build of its referenced projects again a few seconds later.
+
 ## 0.1.202
 
 - Closing a project while its source generators or analyzers are still running no longer reports an internal error of the plugin

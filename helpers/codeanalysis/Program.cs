@@ -151,6 +151,9 @@ internal sealed class LoadedProject(Target target, ProjectId id, CSharpCommandLi
     public GeneratorDriver? Driver;
     public ImmutableArray<Diagnostic> GeneratorDiagnostics = [];
 
+    /** The framework a build without one picks: the project is the same under the key without a framework. */
+    public bool DefaultFramework;
+
     public string Name => Path.GetFileNameWithoutExtension(Target.ProjectPath);
 }
 
@@ -159,7 +162,7 @@ internal sealed class Projects
     private readonly AdhocWorkspace workspace = new(MefHostServices.DefaultHost);
     private readonly Dictionary<string, LoadedProject> loaded = new();
 
-    public int Count => loaded.Count;
+    public int Count => loaded.Values.Distinct().Count();
 
     // ---- requests
 
@@ -279,7 +282,7 @@ internal sealed class Projects
     public object Invalidate(List<string> paths)
     {
         var dropped = 0;
-        foreach (var project in loaded.Values.ToList())
+        foreach (var project in loaded.Values.Distinct().ToList())
         {
             var directory = Path.GetDirectoryName(project.Target.ProjectPath)! + Path.DirectorySeparatorChar;
             var touched = paths.Any(p =>
@@ -289,7 +292,7 @@ internal sealed class Projects
                     || full.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) && full.StartsWith(directory, StringComparison.OrdinalIgnoreCase) && !project.Sources.ContainsKey(full)
                     || Path.GetFileName(full).StartsWith("Directory.", StringComparison.OrdinalIgnoreCase);
             });
-            if (!touched) continue;
+            if (!touched || !loaded.ContainsValue(project)) continue;   // already dropped with a project it references
             Drop(project);
             dropped++;
         }
@@ -320,16 +323,21 @@ internal sealed class Projects
         if (!visiting.Add(target.Key)) throw new HelperException($"{Path.GetFileName(target.ProjectPath)} references itself");
         var project = await LoadNewAsync(target, visiting, cancellation);
         loaded[target.Key] = project;
+        // a project referenced without a framework (one target: SetTargetFramework is empty) and asked for by the plugin with the one it
+        // has is the same project: known by both keys it is not loaded twice (MudBlazor.UnitTests.Shared was, seen by the UI robot)
+        if (project.Framework.Length > 0) loaded.TryAdd((target with { Framework = project.Framework }).Key, project);
+        // and the other way: asked for with the framework first, then referenced without one (MudBlazor.Analyzers by its CodeFixes)
+        if (project.DefaultFramework) loaded.TryAdd((target with { Framework = null }).Key, project);
         return project;
     }
 
     private void Drop(LoadedProject project)
     {
-        loaded.Remove(project.Target.Key);
+        foreach (var key in loaded.Where(e => e.Value == project).Select(e => e.Key).ToList()) loaded.Remove(key);
         var solution = workspace.CurrentSolution;
         if (solution.GetProject(project.Id) != null) workspace.TryApplyChanges(solution.RemoveProject(project.Id));
         // who referenced it is loaded again with it
-        foreach (var other in loaded.Values.Where(o => o.References.Contains(project)).ToList()) Drop(other);
+        foreach (var other in loaded.Values.Distinct().Where(o => o.References.Contains(project)).ToList()) Drop(other);
     }
 
     private async Task<LoadedProject> LoadNewAsync(Target target, HashSet<string> visiting, CancellationToken cancellation)
@@ -339,7 +347,7 @@ internal sealed class Projects
         var directory = Path.GetDirectoryName(target.ProjectPath)!;
         var arguments = CSharpCommandLineParser.Default.Parse(design.CommandLine, directory, sdkDirectory: null);
         var id = ProjectId.CreateNewId(target.ProjectPath);
-        var project = new LoadedProject(target, id, arguments, design.Framework ?? target.Framework ?? "");
+        var project = new LoadedProject(target, id, arguments, design.Framework ?? target.Framework ?? "") { DefaultFramework = design.DefaultFramework };
         foreach (var input in design.Inputs.Append(target.ProjectPath)) project.Inputs[Path.GetFullPath(input)] = Stamp(input);
         foreach (var config in arguments.AnalyzerConfigPaths) project.Inputs[config] = Stamp(config);
 
@@ -732,7 +740,7 @@ internal sealed class AnalyzerLoader : IAnalyzerAssemblyLoader
 /** The design-time `Compile` of a project: the command line of its compiler, without running it, and the projects behind its references. */
 internal static class DesignTime
 {
-    public sealed record Result(List<string> CommandLine, string? Framework, Dictionary<string, (string Project, string? Framework)> ProjectOutputs, List<string> Inputs, bool LiveAnalyzers, string? IntermediateDirectory);
+    public sealed record Result(List<string> CommandLine, string? Framework, Dictionary<string, (string Project, string? Framework)> ProjectOutputs, List<string> Inputs, bool LiveAnalyzers, string? IntermediateDirectory, bool DefaultFramework);
 
     public static async Task<Result> CompileAsync(Target target, CancellationToken cancellation)
     {
@@ -747,7 +755,7 @@ internal static class DesignTime
         }
         List<string> args = ["-t:Compile", "-p:SkipCompilerExecution=true", "-p:ProvideCommandLineArgs=true", "-p:DesignTimeBuild=true", "-p:BuildProjectReferences=false",
             "-p:NonExistentFile=__NonExistentSubDir__/__NonExistentFile__", $"-p:Configuration={target.Configuration}", "-getItem:CscCommandLineArgs",
-            "-getItem:ReferencePathWithRefAssemblies", "-getProperty:ProjectAssetsFile", "-getProperty:TargetFramework", "-getProperty:RunAnalyzers", "-getProperty:RunAnalyzersDuringLiveAnalysis", "-getProperty:BaseIntermediateOutputPath"];
+            "-getItem:ReferencePathWithRefAssemblies", "-getProperty:ProjectAssetsFile", "-getProperty:TargetFramework", "-getProperty:TargetFrameworks", "-getProperty:RunAnalyzers", "-getProperty:RunAnalyzersDuringLiveAnalysis", "-getProperty:BaseIntermediateOutputPath"];
         if (!string.IsNullOrEmpty(framework)) args.Add($"-p:TargetFramework={framework}");
         using var json = await MsBuildAsync(target.ProjectPath, args, cancellation);
         var root = json.RootElement;
@@ -774,7 +782,11 @@ internal static class DesignTime
         var live = props.TryGetProperty("RunAnalyzersDuringLiveAnalysis", out var la) ? la.GetString() : null;
         var liveAnalyzers = !(string.Equals(run, "false", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(run) && string.Equals(live, "false", StringComparison.OrdinalIgnoreCase));
         var intermediate = props.TryGetProperty("BaseIntermediateOutputPath", out var bi) && bi.GetString() is { Length: > 0 } obj ? Path.GetFullPath(obj, directory) : null;
-        return new Result(commandLine, string.IsNullOrEmpty(actual) ? framework : actual, outputs, inputs, liveAnalyzers, intermediate);
+        // the framework a build without one picks (the only one, or the first of TargetFrameworks): a reference without a framework means it
+        var frameworks = props.TryGetProperty("TargetFrameworks", out var tfs) ? tfs.GetString()?.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : null;
+        var resolved = string.IsNullOrEmpty(actual) ? framework : actual;
+        var byDefault = frameworks is not { Length: > 0 } || string.Equals(frameworks[0], resolved, StringComparison.OrdinalIgnoreCase);
+        return new Result(commandLine, resolved, outputs, inputs, liveAnalyzers, intermediate, byDefault);
     }
 
     private static async Task<JsonDocument> MsBuildAsync(string project, IEnumerable<string> args, CancellationToken cancellation)
