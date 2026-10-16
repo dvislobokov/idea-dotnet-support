@@ -3,6 +3,15 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.235
+
+- `value` inside a `set`, `init`, `add` or `remove` accessor has the type of its property, indexer or event: completion on it, and an
+  assignment of it to the wrong type is CS0029.
+- A lambda with typed parameters (or none) has its natural type, as in C# 10: `var f = (string s) => s.Length;` is a `Func<string, int>`
+  and `f("a")` an `int`.
+- `out _` fits any `out` parameter when the overload is chosen; a collection expression `[…]` passed beside an overload taking a delegate
+  no longer stops the inference of the call.
+
 ## 0.1.234
 
 - The type arguments of a generic call and the overload a call goes to come from the compiler's rules alone: the older guessing

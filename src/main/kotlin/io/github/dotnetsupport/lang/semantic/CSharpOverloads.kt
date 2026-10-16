@@ -164,7 +164,9 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                     wrong += i; refMismatch = true; continue
                 }
                 val byRef = writtenKind == "ref" || writtenKind == "out"
-                val conversion = if (expression is CSharpDeclarationExpression && expression.type?.let(r::isVar) != false) Conversion.IDENTITY else argument(expression, types[i], target)
+                // `out var x` and the discard `out _` take the parameter's type, whatever it is
+                val conversion = if (expression is CSharpDeclarationExpression && expression.type?.let(r::isVar) != false || writtenKind == "out" && isDiscard(expression)) Conversion.IDENTITY
+                    else argument(expression, types[i], target)
                 when (conversion) {
                     Conversion.NONE -> wrong += i
                     // an argument whose own type is not known is told once, not once for each parameter type it is tried against
@@ -278,6 +280,12 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         } finally {
             openOwners -= owners.toSet()
         }
+    }
+
+    /** `_` where no variable of that name is in scope: a discard (`TryCreate(x, out _)`). */
+    private fun isDiscard(expression: CSharpExpression): Boolean {
+        val leaf = (unparenthesized(expression) as? CSharpIdentifierName)?.identifier ?: return false
+        return leaf.text == "_" && r.syntax.symbolAt(leaf) == null && r.resolve(leaf) == null
     }
 
     /** [argument] is a lambda and [target] a delegate type with as many parameters: the lambda binds to it, with the errors of its body. */

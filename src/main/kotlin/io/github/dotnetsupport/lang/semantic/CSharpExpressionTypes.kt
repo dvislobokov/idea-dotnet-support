@@ -53,6 +53,8 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
                 SemanticType.ArrayOf(element, e.commas.size + 1)
             }
             is CSharpCastExpression -> e.type?.let(r::resolveType)
+            // the natural type of a lambda (C# 10): `var f = (string s) => s.Length;` is a `Func<string, int>`
+            is CSharpAnonymousFunctionExpression -> r.inference.lambdaFunctionType(e)
             is CSharpDefaultExpression -> e.type?.let(r::resolveType)
             is CSharpTypeOfExpression -> r.libraryType("System.Type")
             is CSharpSizeOfExpression -> r.libraryType("System.Int32")
@@ -98,8 +100,18 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         if (symbol == null && e.identifier?.text == "args" && r.file.compilationUnit?.members?.any { it is CSharpGlobalStatement } == true) {
             return r.libraryType("System.String")?.let { SemanticType.ArrayOf(it) }
         }
+        // `value` of a `set` / `init` / `add` / `remove` accessor: the type of the property, indexer or event (no one declares it either)
+        if (symbol == null && e.identifier?.text == "value") accessorValueType(e)?.let { return it }
         if (symbol == null) return tupleElement(e)
         return symbol.single?.let { r.valueTypeAt(it, e) }
+    }
+
+    /** The type of the implicit `value` parameter at [name]: the declared type of the member whose `set` / `init` / `add` / `remove` it is in; null in a getter or outside an accessor. */
+    private fun accessorValueType(name: CSharpSimpleName): SemanticType? {
+        val accessor = PsiTreeUtil.getParentOfType(name, CSharpAccessorDeclaration::class.java, true, CSharpAnonymousFunctionExpression::class.java, CSharpLocalFunctionStatement::class.java) ?: return null
+        if (accessor.keyword?.text !in VALUE_ACCESSORS) return null
+        val member = PsiTreeUtil.getParentOfType(accessor, CSharpBasePropertyDeclaration::class.java) ?: return null
+        return member.type?.let(r::resolveType)
     }
 
     /**
@@ -575,6 +587,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
     internal fun isAsync(modifiers: List<PsiElement>): Boolean = modifiers.any { it.text == "async" }
 
     private val TASKS_OF = setOf("System.Threading.Tasks.Task`1", "System.Threading.Tasks.ValueTask`1")
+    private val VALUE_ACCESSORS = setOf("set", "init", "add", "remove")
 
     private fun awaitedOrNull(type: SemanticType): SemanticType? = (type as? SemanticType.Library)?.takeIf { it.type.fullName in TASKS_OF_T }?.arguments?.firstOrNull()
 

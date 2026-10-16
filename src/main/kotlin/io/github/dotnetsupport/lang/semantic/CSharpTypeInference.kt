@@ -155,4 +155,12 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
     private val readers = InferenceArguments(r)
 
     fun isMethodGroup(e: CSharpExpression): Boolean = readers.methodGroups.isMethodGroup(e)
+
+    /** The natural type of a lambda (C# 10): the delegate of its function type; null when it has none or that is not known. */
+    fun lambdaFunctionType(lambda: CSharpAnonymousFunctionExpression): SemanticType? = try {
+        readers.lambdas.of(lambda).functionType()
+    } catch (e: RoslynMethodTypeInferrer.Unknown) {
+        SemanticTrace.trace { "typeOf the lambda at ${SemanticTrace.at(lambda)}: its function type is not known — ${e.describe()}" }
+        null
+    }
 }

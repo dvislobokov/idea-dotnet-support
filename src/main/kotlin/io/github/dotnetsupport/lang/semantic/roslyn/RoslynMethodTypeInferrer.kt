@@ -234,6 +234,9 @@ internal class RoslynMethodTypeInferrer(
      */
     private fun collectionIterationType(target: SemanticType): SemanticType? {
         if (target is SemanticType.Parameter) return null
+        // a delegate, an expression tree, a primitive is no collection: `TryGetCollectionIterationType` is false, no inference (bUnit's
+        // `Add(x => x.Items, [...])` beside the overload taking a `Func<TValue>` was 448 refusals)
+        if (types.isDelegateType(target) || types.delegateOfExpression(target)?.let(types::isDelegateType) == true || types.definitionName(target) in NO_COLLECTIONS) return null
         return types.collectionIterationType(target) ?: throw Unknown("the element type of ${SemanticTrace.show(target)} for a collection expression is not known")
     }
 
@@ -891,6 +894,12 @@ internal class RoslynMethodTypeInferrer(
     }
 
     private companion object {
+        /** Types a collection expression never converts to: no iteration type, no inference from the elements (`TryGetCollectionIterationType`). */
+        val NO_COLLECTIONS = setOf(
+            "System.Object", "System.Delegate", "System.MulticastDelegate", "System.Boolean", "System.Byte", "System.SByte", "System.Char", "System.Int16",
+            "System.UInt16", "System.Int32", "System.UInt32", "System.Int64", "System.UInt64", "System.Single", "System.Double", "System.Decimal",
+            "System.Threading.Tasks.Task", "System.Threading.Tasks.Task`1", "System.Threading.Tasks.ValueTask", "System.Threading.Tasks.ValueTask`1",
+        )
         const val MAX_DEPTH = 32
         val POSSIBLE_ARRAY_GENERIC_INTERFACES = setOf(
             "System.Collections.Generic.IEnumerable`1", "System.Collections.Generic.ICollection`1", "System.Collections.Generic.IList`1",
