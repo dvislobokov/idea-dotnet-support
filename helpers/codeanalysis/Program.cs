@@ -308,9 +308,75 @@ internal sealed class Projects
     /** [target] loaded (again when its inputs have changed), its sources as they are on disk, its generated files made again. */
     private async Task<LoadedProject> PrepareAsync(Target target, CancellationToken cancellation)
     {
-        var project = await LoadAsync(target, [], cancellation);
-        await GenerateAsync(project, [], cancellation);
-        return project;
+        try
+        {
+            var project = await LoadAsync(target, [], cancellation);
+            await GenerateAsync(project, [], cancellation);
+            return project;
+        }
+        finally
+        {
+            // what was fetched ahead and not taken (a reference that failed before its turn) is not kept for the next request: its
+            // inputs may change meanwhile
+            lock (prefetched) { prefetchGeneration++; prefetched.Clear(); }
+        }
+    }
+
+    // ---- the design-time builds of the references, ahead of their turn
+
+    /**
+     * The design-time builds of the projects a request will load, started as soon as the project referencing them has its own: the
+     * projects are still loaded one after another, references first (the workspace and [loaded] are touched by one flow only), but
+     * their MSBuild processes run side by side (DesignTime.Slots) while the referencing one waits for the first of them or its
+     * generators run. Guarded by its own lock: the tasks that fill it run on the thread pool.
+     */
+    private readonly Dictionary<string, Task<DesignTime.Result>> prefetched = new();
+    private int prefetchGeneration;
+
+    /** The design-time build of [target]: the one fetched ahead when there is one, else now. */
+    private Task<DesignTime.Result> DesignOf(Target target, CancellationToken cancellation)
+    {
+        lock (prefetched)
+        {
+            if (prefetched.Remove(target.Key, out var ahead)) return ahead;
+        }
+        return DesignTime.CompileAsync(target, cancellation);
+    }
+
+    /** The project behind a reference of [target] to [source] (a project of ReferencePath): its target, keyed as LoadAsync keys it. */
+    private static Target ReferenceTarget(Target target, (string Project, string? Framework) source) =>
+        new(source.Project, target.Configuration, source.Framework, Target.OutputOf(Path.GetDirectoryName(target.OutputDirectory)!, Path.GetFullPath(source.Project)));
+
+    /**
+     * Starts the design-time builds of the projects [design] of [target] references, and through them of theirs, but not of those in
+     * [known] (loaded at the start of the request: LoadAsync checks them itself, mostly without MSBuild).
+     */
+    private void Prefetch(Target target, DesignTime.Result design, IReadOnlySet<string> known, CancellationToken cancellation)
+    {
+        int generation;
+        lock (prefetched) generation = prefetchGeneration;
+        Prefetch(target, design, known, generation, cancellation);
+    }
+
+    /** [generation]: of the request that started it — a build that ends after its request starts nothing for the next one. */
+    private void Prefetch(Target target, DesignTime.Result design, IReadOnlySet<string> known, int generation, CancellationToken cancellation)
+    {
+        foreach (var source in design.ProjectOutputs.Values.Distinct())
+        {
+            if (!File.Exists(source.Project)) continue;
+            var reference = ReferenceTarget(target, source);
+            if (known.Contains(reference.Key)) continue;
+            lock (prefetched)
+            {
+                if (generation != prefetchGeneration || prefetched.ContainsKey(reference.Key)) continue;
+                prefetched[reference.Key] = Task.Run(async () =>
+                {
+                    var result = await DesignTime.CompileAsync(reference, cancellation);
+                    Prefetch(reference, result, known, generation, cancellation);
+                    return result;
+                }, cancellation);
+            }
+        }
     }
 
     private async Task<LoadedProject> LoadAsync(Target target, HashSet<string> visiting, CancellationToken cancellation)
@@ -347,7 +413,9 @@ internal sealed class Projects
     private async Task<LoadedProject> LoadNewAsync(Target target, HashSet<string> visiting, CancellationToken cancellation)
     {
         var watch = Stopwatch.StartNew();
-        var design = await DesignTime.CompileAsync(target, cancellation);
+        var design = await DesignOf(target, cancellation);
+        // the references' builds start now, side by side, instead of each one when its turn comes below
+        Prefetch(target, design, new HashSet<string>(loaded.Keys), cancellation);
         var directory = Path.GetDirectoryName(target.ProjectPath)!;
         var arguments = CSharpCommandLineParser.Default.Parse(design.CommandLine, directory, sdkDirectory: null);
         var id = ProjectId.CreateNewId(target.ProjectPath);
@@ -365,7 +433,7 @@ internal sealed class Projects
             {
                 try
                 {
-                    var other = await LoadAsync(new Target(source.Project, target.Configuration, source.Framework, Target.OutputOf(Path.GetDirectoryName(target.OutputDirectory)!, Path.GetFullPath(source.Project))), visiting, cancellation);
+                    var other = await LoadAsync(ReferenceTarget(target, source), visiting, cancellation);
                     await GenerateAsync(other, [], cancellation);
                     project.References.Add(other);
                     projectReferences.Add(new ProjectReference(other.Id, reference.Properties.Aliases));
@@ -891,7 +959,26 @@ internal static class DesignTime
         return (new Result(commandLine, resolved, outputs, inputs, liveAnalyzers, intermediate, byDefault), exitCode);
     }
 
+    /**
+     * How many `dotnet msbuild` run at once (the design-time builds of references fetched ahead, Projects.Prefetch): half the processors,
+     * at least two — each is a process of its own with an evaluation that takes a core, and the IDE and the generators need the rest.
+     */
+    private static readonly SemaphoreSlim Slots = new(Math.Max(2, Environment.ProcessorCount / 2));
+
     private static async Task<(JsonDocument Json, int ExitCode)> MsBuildAsync(string project, IEnumerable<string> args, CancellationToken cancellation)
+    {
+        await Slots.WaitAsync(cancellation);
+        try
+        {
+            return await RunMsBuildAsync(project, args, cancellation);
+        }
+        finally
+        {
+            Slots.Release();
+        }
+    }
+
+    private static async Task<(JsonDocument Json, int ExitCode)> RunMsBuildAsync(string project, IEnumerable<string> args, CancellationToken cancellation)
     {
         // the dotnet that runs the helper: the plugin started it in the folder of the solution, so a global.json there counts
         var info = new ProcessStartInfo(Environment.ProcessPath ?? "dotnet")

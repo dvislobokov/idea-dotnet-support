@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.216
+
+- The design-time builds of the projects a project references run side by side, ahead of their turn (at most half of the
+  processor cores).
+
 ## 0.1.215
 
 - When a solution opens, the generators and analyzers warm up the projects you worked in last time (up to three), so their
