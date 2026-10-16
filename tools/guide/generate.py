@@ -413,7 +413,7 @@ def content():
             ("Run MSBuild Target...", "Запуск произвольной цели MSBuild."),
             ("Convert to .slnx...", "Переводит решение в новый формат <code>.slnx</code>."),
             ("Remove from Solution...", "Убирает проект из решения, файлы остаются на диске."),
-            ("Show All Files", "Показывает в дереве <code>bin</code>, <code>obj</code> и файлы проектов."),
+            ("Show All Files", "Показывает в дереве <code>bin</code>, <code>obj</code>, файлы проектов, исключённые файлы и файлы каталога solution вне проектов (<code>README.md</code>)."),
         ]),
         windows=simple_table("Окно", "Что в нём", [
             ("Solution", "Вид окна Project: проекты решения, их зависимости по целевым платформам, файлы так, как их видит сборка."),

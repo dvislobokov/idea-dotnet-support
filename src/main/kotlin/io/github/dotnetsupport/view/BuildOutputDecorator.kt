@@ -9,19 +9,36 @@ import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.util.ui.UIUtil
 import io.github.dotnetsupport.msbuild.DotNetProjects
+import io.github.dotnetsupport.solution.SolutionService
 
 /**
- * What "Show All Files" brings into the Solution view is not a part of the project: `bin`, `obj` with everything in them, and
- * the project file the node already stands for. Painted the way the IDE paints files ignored by the VCS, so that they read as
- * secondary, as in Rider; it does not depend on a `.gitignore` or on having a VCS at all.
+ * What "Show All Files" brings into the Solution view is not a part of the project: `bin`, `obj` with everything in them,
+ * the project file the node already stands for, and the files of the solution directory beside the projects. Painted the way
+ * the IDE paints files ignored by the VCS, so that they read as secondary, as in Rider; it does not depend on a `.gitignore`
+ * or on having a VCS at all.
  */
 class BuildOutputDecorator : ProjectViewNodeDecorator {
     override fun decorate(node: ProjectViewNode<*>, data: PresentationData) {
         val project = node.project ?: return
-        // the nodes of a project and of a solution are those files too, and they are the project
-        if (node is SolutionFileNode<*> || ProjectView.getInstance(project).currentViewId != SolutionViewPane.ID) return
+        // the nodes of a project and of a solution are those files too, and they are the project; a solution item is a part of the solution
+        if (node is SolutionFileNode<*> || node is SolutionItemNode || ProjectView.getInstance(project).currentViewId != SolutionViewPane.ID) return
         val file = node.virtualFile ?: return
-        if (isOutsideOfProject(file) || isExcludedByProject(project, file)) data.forcedTextForeground = FileStatus.IGNORED.color ?: UIUtil.getInactiveTextColor()
+        if (isOutsideOfProject(file) || isExcludedByProject(project, file) || isBesideProjects(project, file)) {
+            data.forcedTextForeground = FileStatus.IGNORED.color ?: UIUtil.getInactiveTextColor()
+        }
+    }
+
+    /** In the directory of a solution and in no project directory: what "Show All Files" adds beside the projects (`README.md`, `.gitignore`). */
+    private fun isBesideProjects(project: com.intellij.openapi.project.Project, file: VirtualFile): Boolean {
+        val solutionDirectory = SolutionService.getInstance(project).allSolutionFiles().mapNotNull { it.parent }
+            .firstOrNull { VfsUtilCore.isAncestor(it, file, true) } ?: return false
+        var directory: VirtualFile? = if (file.isDirectory) file else file.parent
+        while (directory != null) {
+            if (directory.children.any(DotNetProjects::isProjectFile)) return false
+            if (directory == solutionDirectory) return true
+            directory = directory.parent
+        }
+        return false
     }
 
     /** Taken out of the project by its file (`<Compile Remove>`, `DefaultItemExcludes`); visible with "Show All Files" only. */

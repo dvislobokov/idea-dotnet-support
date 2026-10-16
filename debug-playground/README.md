@@ -191,6 +191,13 @@ Solution для живой проверки плагина: отладчика (
 - [ ] изменить `Console.csproj` внешним редактором (например `Nullable` на `disable`), Reload Project → Properties… показывает новое значение
 - [ ] меню .NET → Reload Solution / Reload Project '<имя>' (проект — по файлу в редакторе); без файла проекта пункт Reload Project выключен
 
+### Show All Files («глаз» в заголовке окна Project)
+- [x] (UI-робот, копия площадки) включить: под узлом `DebugPlayground` рядом с проектами серым появились `README.md`, `.gitignore`,
+      `DebugPlayground.sln.DotSettings.user` и папки `NetFramework`, `ShopApi`; **нет** `.idea` и самого `DebugPlayground.sln`; у проектов — `bin`, `obj`
+      и `.csproj` серым, у `Broken` — исключённые `SemanticErrors.cs`, `SyntaxErrors.cs`; выключить — всё это снова скрыто
+- [ ] создать в папке площадки файл `notes.txt` внешним редактором при включённом «глазе» → появляется под `DebugPlayground` сам, без Reload; удалить
+      (робот: появляется, как только файл увидела VFS IDE; на заблокированном столе — только после её обновления)
+
 ### Лямбда там, где ждут делегат, именованные аргументы — `Console/Editor/LambdaSuggestions.cs`
 С 0.1.86 отвечает своя семантика плагина (Completion и Documentation = Built-in, по умолчанию), сервер не нужен. С сервером проверено роботом 2026-09-30.
 - [ ] `TYPE:lambda-action`: `Each(` → серый `lambdaOrder => ` сразу после скобки; по Ctrl+Space `lambdaOrder => ` первым, блочный вариант вторым

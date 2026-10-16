@@ -101,8 +101,60 @@ internal fun folderChildren(project: Project, settings: ViewSettings?, solutionF
     folder.files
         .mapNotNull { solutionFile.parent?.findFileByRelativePath(it) }
         .mapNotNull { psiManager.findFile(it) }
-        .mapTo(result) { PsiFileNode(project, it, settings) }
+        .mapTo(result) { SolutionItemNode(project, it, settings) }
     return result
+}
+
+/** A file the solution lists in a solution folder: a part of the solution, though it is no project's. */
+class SolutionItemNode(project: Project, file: com.intellij.psi.PsiFile, settings: ViewSettings?) : PsiFileNode(project, file, settings)
+
+/**
+ * "Show All Files" at the level of the solution, as in Rider: what lies in the directory of the solution and belongs to no
+ * project of it (`README.md`, `.gitignore`, `Directory.Build.props`, folders of docs or scripts), beside the projects. The folders
+ * of the projects are the project nodes; a folder with projects deeper inside shows the rest of its content (see [SolutionDirectoryNode]).
+ * Nothing else is hidden (the user's decision, 2026-10-16): the `.sln` itself, `.idea`, `.vs` are files of the directory like any other —
+ * only what is shown elsewhere in the tree (the project folders, the solution items) stays out, not to appear twice.
+ */
+internal fun filesOutsideOfProjects(project: Project, settings: ViewSettings?, solutionFile: VirtualFile, solution: Solution): List<AbstractTreeNode<*>> {
+    val directory = solutionFile.parent?.let { PsiManager.getInstance(project).findDirectory(it) } ?: return emptyList()
+    val projectDirectories = solution.allProjects.mapNotNullTo(HashSet()) { it.resolveFile(solutionFile)?.parent }
+    // a project next to the solution shows all of the directory itself
+    if (directory.virtualFile in projectDirectories) return emptyList()
+    val hidden = HashSet<VirtualFile>(projectDirectories).apply {
+        // solution items are shown in their solution folders already
+        fun items(folder: SlnFolder) {
+            folder.files.mapNotNullTo(this) { solutionFile.parent?.findFileByRelativePath(it) }
+            folder.folders.forEach(::items)
+        }
+        items(solution.root)
+    }
+    return solutionDirectoryChildren(project, directory, settings, hidden)
+}
+
+private fun solutionDirectoryChildren(project: Project, directory: PsiDirectory, settings: ViewSettings?, hidden: Set<VirtualFile>): List<AbstractTreeNode<*>> =
+    ProjectViewDirectoryHelper.getInstance(project).getDirectoryChildren(directory, settings, true).mapNotNull { child ->
+        val file = (child as? ProjectViewNode<*>)?.virtualFile
+        when {
+            file == null -> child
+            file in hidden -> null
+            child is PsiDirectoryNode -> SolutionDirectoryNode(project, child.value, settings, hidden)
+            else -> child
+        }
+    }
+
+/** A folder of the directory of the solution that is no project's; the folders of projects inside it stay out, they are the project nodes. */
+class SolutionDirectoryNode(project: Project, directory: PsiDirectory, settings: ViewSettings?, private val hidden: Set<VirtualFile>) :
+    PsiDirectoryNode(project, directory, settings) {
+
+    override fun getChildrenImpl(): Collection<AbstractTreeNode<*>> = value?.let { solutionDirectoryChildren(project!!, it, settings, hidden) }.orEmpty()
+
+    // as DotNetProjectNode.shortNamed: with the Java plugin around a folder under a node that is no folder would be named as a package
+    override fun updateImpl(data: PresentationData) {
+        super.updateImpl(data)
+        data.clearText()
+        data.presentableText = value.name
+        data.locationString = null
+    }
 }
 
 fun SlnProject.resolveFile(solutionFile: VirtualFile): VirtualFile? =
@@ -133,7 +185,12 @@ class SolutionNode(project: Project, key: SolutionKey, settings: ViewSettings?) 
     private val solution: Solution get() = solutions.solution(value.solutionFile)
     override val file: VirtualFile get() = value.solutionFile
 
-    override fun children(): Collection<AbstractTreeNode<*>> = folderChildren(nodeProject, settings, value.solutionFile, solution.root)
+    override fun children(): Collection<AbstractTreeNode<*>> {
+        val solution = solution
+        val children = folderChildren(nodeProject, settings, value.solutionFile, solution.root)
+        if (!SolutionViewSettings.isShowAllFiles(nodeProject)) return children
+        return children + filesOutsideOfProjects(nodeProject, settings, value.solutionFile, solution)
+    }
 
     override fun contains(file: VirtualFile): Boolean =
         value.solutionFile.parent?.let { VfsUtilCore.isAncestor(it, file, false) } == true ||

@@ -687,7 +687,7 @@
                 text="Analyze .NET Stack Trace..." description="Paste a stack trace and navigate its frames"/>
 
         <action id="DotNet.ShowAllFiles" class="io.github.dotnetsupport.view.ShowAllFilesAction"
-                text="Show All Files" description="Show bin, obj and the project files in the Solution view" icon="AllIcons.Actions.ToggleVisibility">
+                text="Show All Files" description="Show the files the projects do not include in the Solution view: bin, obj, project files, files beside the projects" icon="AllIcons.Actions.ToggleVisibility">
             <add-to-group group-id="ProjectView.ToolWindow.SecondaryActions" anchor="first"/>
             <!-- the eye of Rider in the title of the tool window; the action shows itself for the Solution view only -->
             <add-to-group group-id="ProjectViewToolbar" anchor="first"/>

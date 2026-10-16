@@ -31,6 +31,7 @@ import io.github.dotnetsupport.run.DotNetRunConfigurationGenerator
 import io.github.dotnetsupport.solution.SOLUTION_EXTENSIONS
 import io.github.dotnetsupport.solution.SOLUTION_FILTER_EXTENSION
 import io.github.dotnetsupport.solution.SolutionService
+import io.github.dotnetsupport.solution.isSolutionOrFilterFile
 import javax.swing.Icon
 import javax.swing.tree.DefaultTreeModel
 
@@ -146,7 +147,10 @@ class SolutionFilesListener(private val project: Project) : BulkFileListener {
         }, project.disposed)
     }
 
-    /** Something appeared in or disappeared from a project directory, whose node is not a regular directory node. */
+    /**
+     * Something appeared in or disappeared from a project directory, whose node is not a regular directory node; or from the directory
+     * of a solution, whose files beside the projects the solution node shows with "Show All Files".
+     */
     private fun changesProjectRoot(event: VFileEvent): Boolean {
         if (event !is VFileCreateEvent && event !is VFileDeleteEvent && event !is VFileMoveEvent && event !is VFileCopyEvent) return false
         val parents = when (event) {
@@ -155,7 +159,7 @@ class SolutionFilesListener(private val project: Project) : BulkFileListener {
             is VFileMoveEvent -> listOf(event.oldParent, event.newParent)
             else -> listOfNotNull(event.file?.parent)
         }
-        return parents.any { parent -> parent.isValid && parent.children.any(DotNetProjects::isProjectFile) }
+        return parents.any { parent -> parent.isValid && parent.children.any { DotNetProjects.isProjectFile(it) || isSolutionOrFilterFile(it) } }
     }
 
     private fun affectsSolutionStructure(path: String): Boolean {

@@ -8,6 +8,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.build.BuildPerformance
 import io.github.dotnetsupport.build.MsBuildTargets
 import io.github.dotnetsupport.testing.TestExplorerModel
+import io.github.dotnetsupport.view.DotNetProjectNode
 import io.github.dotnetsupport.view.SolutionKey
 import io.github.dotnetsupport.view.SolutionNode
 import io.github.dotnetsupport.view.SolutionViewSettings
@@ -115,7 +116,7 @@ class RiderPanelsMoreTest : BasePlatformTestCase() {
         myFixture.addFileToProject("App/obj/project.assets.json", "{}")
         val sln = myFixture.addFileToProject("App.slnx", "<Solution><Project Path=\"App/App.csproj\"/></Solution>").virtualFile
 
-        fun children(): List<String> = SolutionNode(project, SolutionKey(sln), ViewSettings.DEFAULT).children.single().children
+        fun children(): List<String> = SolutionNode(project, SolutionKey(sln), ViewSettings.DEFAULT).children.filterIsInstance<DotNetProjectNode>().single().children
             .map { node: AbstractTreeNode<*> -> node.update(); node.presentation.presentableText ?: node.name.orEmpty() }.sorted()
 
         assertEquals(listOf("Dependencies", "Program.cs"), children())
@@ -130,6 +131,51 @@ class RiderPanelsMoreTest : BasePlatformTestCase() {
         // a folder that is merely called bin, without a project next to it
         val tools = myFixture.addFileToProject("App/Tools/bin/run.sh", "").virtualFile
         assertFalse(io.github.dotnetsupport.view.BuildOutputDecorator.isOutsideOfProject(tools))
+    }
+
+    /** Rider shows with Show All Files what lies beside the projects in the directory of the solution: `README.md`, `.gitignore`, folders. */
+    fun testShowAllFilesShowsTheFilesBesideTheProjects() {
+        myFixture.addFileToProject("Repo/App/App.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"/>")
+        myFixture.addFileToProject("Repo/App/Program.cs", "")
+        myFixture.addFileToProject("Repo/src/Core/Core.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"/>")
+        myFixture.addFileToProject("Repo/src/Core/Lib.cs", "")
+        myFixture.addFileToProject("Repo/src/tools.md", "")
+        myFixture.addFileToProject("Repo/README.md", "")
+        myFixture.addFileToProject("Repo/.gitignore", "")
+        myFixture.addFileToProject("Repo/docs/notes.md", "")
+        myFixture.addFileToProject("Repo/.idea/workspace.xml", "")
+        myFixture.addFileToProject("Repo/Directory.Build.props", "<Project/>")
+        val sln = myFixture.addFileToProject(
+            "Repo/Repo.slnx",
+            """<Solution><Folder Name="/Solution Items/"><File Path="Directory.Build.props"/></Folder><Project Path="App/App.csproj"/><Project Path="src/Core/Core.csproj"/></Solution>""",
+        ).virtualFile
+        val structure = io.github.dotnetsupport.view.SolutionTreeStructure(project)
+
+        fun names(node: Any): List<String> = structure.getChildElements(node).map { (it as AbstractTreeNode<*>).also(AbstractTreeNode<*>::update) }
+            .map { it.presentation.presentableText ?: it.name.orEmpty() }.sorted()
+        fun child(node: Any, name: String): Any = structure.getChildElements(node).first { (it as AbstractTreeNode<*>).update(); it.presentation.presentableText == name }
+
+        val solution = SolutionNode(project, SolutionKey(sln), structure)
+        assertEquals(listOf("App", "Core", "Solution Items"), names(solution))
+        SolutionViewSettings.setShowAllFiles(project, true)
+        // beside the projects: every file and folder no project has — the solution file and `.idea` too (nothing is hidden, the user's
+        // decision 2026-10-16); only the solution items stay in their solution folder, not to appear twice
+        assertEquals(listOf(".gitignore", ".idea", "App", "Core", "README.md", "Repo.slnx", "Solution Items", "docs", "src"), names(solution))
+        assertEquals(listOf("notes.md"), names(child(solution, "docs")))
+        // a folder with a project inside shows the rest: the project is the node of the solution
+        assertEquals(listOf("tools.md"), names(child(solution, "src")))
+        SolutionViewSettings.setShowAllFiles(project, false)
+        assertEquals(listOf("App", "Core", "Solution Items"), names(solution))
+    }
+
+    /** A project next to its solution shows all of the directory itself: nothing is added beside it. */
+    fun testShowAllFilesAddsNothingBesideAProjectInTheDirectoryOfTheSolution() {
+        myFixture.addFileToProject("Single/Single.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"/>")
+        myFixture.addFileToProject("Single/README.md", "")
+        val sln = myFixture.addFileToProject("Single/Single.slnx", """<Solution><Project Path="Single.csproj"/></Solution>""").virtualFile
+        SolutionViewSettings.setShowAllFiles(project, true)
+        val children = SolutionNode(project, SolutionKey(sln), ViewSettings.DEFAULT).children
+        assertTrue(children.toString(), children.single() is DotNetProjectNode)
     }
 
     fun testRegistration() {

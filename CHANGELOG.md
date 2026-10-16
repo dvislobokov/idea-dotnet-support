@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.221
+
+- Show All Files in the Solution tool window also shows the files and folders of the solution's directory that belong to no project —
+  `README.md`, `.gitignore`, the `.sln` itself, `.idea`, folders of docs or scripts — greyed, beside the projects, as in Rider. A file
+  added there appears without a reload.
+
 ## 0.1.220
 
 - On Linux systems where programs may not run from the IDE's own folders (fapolicyd, a `noexec` mount, SELinux), the plugin keeps all

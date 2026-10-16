@@ -602,6 +602,7 @@
 - [x] Edit 'App.csproj' / Edit 'App.slnx' в ПКМ узла проекта и solution; перетаскивание такого узла в редактор открывает его файл (как в Rider): узлы — `AbstractPsiBasedNode`, иначе drag source платформы не начинает перетаскивание
 - [x] То, что добавляет Show All Files (`bin`, `obj` с содержимым, файл проекта), в Solution view окрашено цветом «ignored» схемы — как файлы из `.gitignore`, но без зависимости от git
 - [x] Кнопка-«глаз» Show All Files в заголовке окна Project (группа `ProjectViewToolbar`), видна только в Solution view
+- [x] Show All Files на уровне solution, как в Rider: файлы и папки каталога solution вне проектов (`README.md`, `.gitignore`, папки документации) — под узлом solution рядом с проектами, серым; `.idea`, `.vs`, сам `.sln` и solution items не дублируются (сценарий — `debug-playground/README.md`, «Show All Files»)
 
 ### Веб-разработка на ASP.NET
 - [x] 0.1.7 — HTTPS dev-сертификат: при открытии solution с web-проектом (`isWebSdk`) проверка `dotnet dev-certs https --check --trust`, и если
