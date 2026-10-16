@@ -1264,6 +1264,11 @@
   на который ссылаются, помощник грузит один раз: ссылка с одним TFM приходит без него, плагин просит тот же проект с `net10.0`,
   ключи различались (`Projects.LoadAsync` помнит проект и под фактическим TFM, а проект с TFM по умолчанию — и под ключом без TFM:
   обратный порядок, MudBlazor.Analyzers и его CodeFixes)
+  - дисковый кэш design-time сборок (`helpers/codeanalysis/DesignTimeCache.cs`, рядом с папками сгенерированных файлов, `.design-time/`):
+    проект грузится без `dotnet msbuild`, пока не изменилось ничего из прочитанного сборкой — все импорты (zip `-bl:…;ProjectImports=ZipFile`),
+    `Directory.Build.*` / `global.json` / `.editorconfig` вверх по дереву (и их отсутствие), имена файлов под проектом и под папками связанных
+    файлов, XAML / proto / resx, установленные SDK / packs / манифесты workloads, окружение; файл, записанный во время сборки, — сборка не
+    кэшируется; проверки правила — `tools/codeanalysis-tests` (`dotnet run`, без MSBuild)
 - [x] 0.1.76 — веха 12.1 миграции (задача C4e): `roslyn-language-server` выключен по умолчанию (`RoslynLanguageServerSettings.ENABLED_BY_DEFAULT`),
   все фичи со своей реализацией отвечают сами; галочка на Settings | .NET | Language Server включает сервер обратно; без сервера нет
   вопроса о .NET 10 SDK. Проверка вживую — `docs/LIVE_CHECKS.md` E-121. Не сделано: замер памяти без сервера

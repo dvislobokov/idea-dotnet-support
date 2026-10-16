@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.214
+
+- Opening a solution again is faster: the generators and analyzers of C# reuse the design-time builds of its projects from a disk
+  cache instead of running MSBuild for each project (MudBlazor: no MSBuild at all on the second open, its 7 projects load in
+  8–85 ms each). The cache is used only while every file the build read is unchanged — the imports of the SDK and the packages,
+  `Directory.Build.*`, `global.json`, `.editorconfig`, the files of the project, the installed SDKs and the environment.
+
 ## 0.1.213
 
 - Which parameter each argument of a call goes to is now decided by the port of the compiler's own rules: a named argument may stand for

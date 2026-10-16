@@ -19,7 +19,7 @@ import java.security.MessageDigest
  * those of an SDK that has been updated since.
  */
 class DotNetHelper(
-    private val folder: String, val assembly: String, private val property: String, private val sources: List<String> = listOf("Program.cs"),
+    private val folder: String, val assembly: String, private val property: String, val sources: List<String> = listOf("Program.cs"),
     private val library: String? = null, private val perSdk: Boolean = false,
 ) {
     /** Null until built; the failure of a build is remembered for the session, so it is not tried again at every use. */

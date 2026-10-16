@@ -622,7 +622,7 @@ class CodeAnalysisService(private val project: Project) : Disposable {
     companion object {
         const val LOG_CATEGORY = "codeanalysis"
         const val GROUP = "Roslyn analyzers"
-        val HELPER = DotNetHelper("codeanalysis", "CodeAnalysisHelper", "HelperFramework", listOf("Program.cs", "Protocol.cs"), perSdk = true)
+        val HELPER = DotNetHelper("codeanalysis", "CodeAnalysisHelper", "HelperFramework", listOf("Program.cs", "DesignTimeCache.cs", "Protocol.cs"), perSdk = true)
 
         private val SKIPPED_FOLDERS = setOf("bin", "obj", "node_modules", ".git", ".vs", ".idea")
         private val XAML_CLASS = Regex("""\b[\w.]+:Class\s*=""")

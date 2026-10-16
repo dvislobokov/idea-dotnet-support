@@ -35,6 +35,19 @@ class CodeAnalysisTest : BasePlatformTestCase() {
         assertEquals("C:/cache/generated/Console-356acd77/Microsoft.Extensions.Logging.Generators/Microsoft.Extensions.Logging.Generators.LoggerMessageGenerator/LoggerMessage.g.cs", logging.path)
     }
 
+    /**
+     * The plugin carries every source file of the helper, the disk cache of its design-time builds among them (its rule is checked by
+     * `tools/codeanalysis-tests`, which needs `dotnet`): a file missing from [CodeAnalysisService.HELPER] would not compile on the user's machine.
+     */
+    fun testTheHelperIsInThePluginWithItsCache() {
+        val names = CodeAnalysisService.HELPER.sources
+        assertTrue(names.toString(), "DesignTimeCache.cs" in names && "Program.cs" in names && "Protocol.cs" in names)
+        val sources = io.github.dotnetsupport.cli.DotNetHelper.Sources.read("codeanalysis", names + "CodeAnalysisHelper.csproj")
+        assertNotNull("every source is in the resources of the plugin", sources)
+        assertTrue(sources!!.files.getValue("DesignTimeCache.cs").contains("static string? Stale("))
+        assertTrue("the design-time build asks the cache first", sources.files.getValue("Program.cs").contains("DesignTimeCache.Stale("))
+    }
+
     /** The folder of a project's generated files: the plugin finds it without asking, the helper writes there (`Target.OutputOf`). */
     fun testOutputFolderIsNamedAsByTheHelper() {
         // the hash the helper gave the playground of the worktree it was captured in (generate.json)

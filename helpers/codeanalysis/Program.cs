@@ -20,7 +20,8 @@
 //
 // The files are read from disk: the plugin saves the documents first. A project is the command line of its compiler (a design-time
 // `Compile` of `dotnet msbuild`, nothing built); its project references are loaded the same way and referenced as projects, so the types
-// their generators make are seen. One request at a time.
+// their generators make are seen. One request at a time. The design-time builds are cached on disk while nothing they read changes
+// (DesignTimeCache.cs, under <outputRoot>/.design-time): a new helper loads the projects without MSBuild.
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Composition;
@@ -60,6 +61,9 @@ public static class Program
 internal sealed record Target(string ProjectPath, string Configuration, string? Framework, string OutputDirectory)
 {
     public string Key => $"{ProjectPath.ToLowerInvariant()}|{Configuration}|{Framework}";
+
+    /** The disk cache of the design-time builds of the solution (DesignTimeCache): next to the folders of the generated files. */
+    public string CacheDirectory => Path.Combine(Path.GetDirectoryName(OutputDirectory)!, ".design-time");
 
     public static Target Of(JsonElement parameters)
     {
@@ -742,12 +746,105 @@ internal static class DesignTime
 {
     public sealed record Result(List<string> CommandLine, string? Framework, Dictionary<string, (string Project, string? Framework)> ProjectOutputs, List<string> Inputs, bool LiveAnalyzers, string? IntermediateDirectory, bool DefaultFramework);
 
+    /**
+     * The design-time build of [target], from the disk cache (DesignTimeCache) while nothing it read has changed; otherwise MSBuild runs
+     * and its result is cached with what it read.
+     */
     public static async Task<Result> CompileAsync(Target target, CancellationToken cancellation)
     {
+        var watch = Stopwatch.StartNew();
+        var name = Path.GetFileName(target.ProjectPath);
+        var key = DesignTimeCache.Key(target);
+        var file = DesignTimeCache.FileOf(target);
+        var environment = DesignTimeCache.EnvironmentHash(Environment.GetEnvironmentVariables());
+        var entry = DesignTimeCache.Read(file);
+        var stale = DesignTimeCache.Stale(entry, key, environment, RealDisk.Instance);
+        if (stale == null)
+        {
+            HelperProtocol.Log("info", $"design-time build of {name} ({entry!.Framework}) from the cache in {watch.ElapsedMilliseconds} ms");
+            return DesignTimeCache.ResultOf(entry);
+        }
+        HelperProtocol.Log("info", $"design-time cache of {name} ({target.Framework ?? "default framework"}) not used: {stale} ({watch.ElapsedMilliseconds} ms)");
+        var started = DateTime.UtcNow;
+        var directory = Path.GetDirectoryName(target.ProjectPath)!;
+        var before = DesignTimeCache.Take(target.ProjectPath, [], [], [], RealDisk.Instance);
+        var binlog = Path.Combine(Path.GetTempPath(), $"codeanalysis-{Guid.NewGuid():N}.binlog");
+        var zip = Path.ChangeExtension(binlog, ".ProjectImports.zip");
+        try
+        {
+            var (result, exitCode) = await RunAsync(target, binlog, cancellation);
+            if (exitCode != 0) { HelperProtocol.Log("info", $"design-time build of {name} not cached: MSBuild exited with {exitCode}"); return result; }
+            if (!File.Exists(zip)) { HelperProtocol.Log("warn", $"design-time build of {name} not cached: MSBuild wrote no list of imports"); return result; }
+            try
+            {
+                var imports = DesignTimeCache.ImportsOf(zip);
+                var skipped = OutputFolders(result, directory);
+                var immutable = PackageFolders(result.Inputs).Append(Path.GetDirectoryName(Environment.ProcessPath ?? "") ?? "").Where(p => p.Length > 0).ToList();
+                var sources = DesignTimeCache.CommandLineFiles(result.CommandLine, directory, globbedOnly: true).ToList();
+                var after = DesignTimeCache.Take(target.ProjectPath, sources, skipped, immutable, RealDisk.Instance);
+                var (made, why) = DesignTimeCache.Make(key, environment, result, target.ProjectPath, imports, before, after, started, skipped, RealDisk.Instance);
+                if (made == null) HelperProtocol.Log("info", $"design-time build of {name} not cached: {why}");
+                else
+                {
+                    DesignTimeCache.Write(file, made);
+                    HelperProtocol.Log("info", $"design-time build of {name} cached: {made.Files.Count} files, {made.Trees.Count} folders, {made.Existing.Count} named files watched");
+                }
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException)
+            {
+                // the build is good, only its cache is not: the next load runs MSBuild again
+                HelperProtocol.Log("warn", $"design-time build of {name} not cached: {e.Message}");
+            }
+            return result;
+        }
+        finally
+        {
+            foreach (var temporary in (string[])[binlog, zip])
+                try { File.Delete(temporary); } catch (Exception) { }
+        }
+    }
+
+    /** The folders a build of the project writes, when they are not named bin / obj (a custom BaseIntermediateOutputPath, artifacts/). */
+    private static List<string> OutputFolders(Result result, string directory)
+    {
+        var folders = new List<string>();
+        if (result.IntermediateDirectory != null) folders.Add(result.IntermediateDirectory.TrimEnd('\\', '/'));
+        var output = result.CommandLine.FirstOrDefault(a => a.StartsWith("/out:", StringComparison.OrdinalIgnoreCase));
+        if (output != null)
+        {
+            try { folders.Add(Path.GetDirectoryName(Path.GetFullPath(output[5..].Trim('"'), directory))!); }
+            catch (Exception) { }
+        }
+        return folders;
+    }
+
+    /** The folders of NuGet packages the restore named (project.assets.json): a package is a folder per version, never changed in place. */
+    private static List<string> PackageFolders(List<string> inputs)
+    {
+        var folders = new List<string>();
+        foreach (var assets in inputs.Where(p => p.EndsWith("project.assets.json", StringComparison.OrdinalIgnoreCase) && File.Exists(p)))
+        {
+            try
+            {
+                using var stream = File.OpenRead(assets);
+                using var json = JsonDocument.Parse(stream);
+                if (json.RootElement.TryGetProperty("packageFolders", out var packageFolders))
+                    foreach (var folder in packageFolders.EnumerateObject()) folders.Add(Path.GetFullPath(folder.Name).TrimEnd('\\', '/'));
+            }
+            catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException) { }
+        }
+        return folders;
+    }
+
+    private static async Task<(Result Result, int ExitCode)> RunAsync(Target target, string binlog, CancellationToken cancellation)
+    {
         var framework = target.Framework;
+        var exitCode = 0;
         if (string.IsNullOrEmpty(framework))
         {
-            using var properties = await MsBuildAsync(target.ProjectPath, ["-getProperty:TargetFramework", "-getProperty:TargetFrameworks", $"-p:Configuration={target.Configuration}"], cancellation);
+            var (properties, propertiesExit) = await MsBuildAsync(target.ProjectPath, ["-getProperty:TargetFramework", "-getProperty:TargetFrameworks", $"-p:Configuration={target.Configuration}"], cancellation);
+            using var _ = properties;
+            exitCode = propertiesExit;
             var all = properties.RootElement.GetProperty("Properties");
             var single = all.GetProperty("TargetFramework").GetString();
             var many = all.GetProperty("TargetFrameworks").GetString();
@@ -757,7 +854,12 @@ internal static class DesignTime
             "-p:NonExistentFile=__NonExistentSubDir__/__NonExistentFile__", $"-p:Configuration={target.Configuration}", "-getItem:CscCommandLineArgs",
             "-getItem:ReferencePathWithRefAssemblies", "-getProperty:ProjectAssetsFile", "-getProperty:TargetFramework", "-getProperty:TargetFrameworks", "-getProperty:RunAnalyzers", "-getProperty:RunAnalyzersDuringLiveAnalysis", "-getProperty:BaseIntermediateOutputPath"];
         if (!string.IsNullOrEmpty(framework)) args.Add($"-p:TargetFramework={framework}");
-        using var json = await MsBuildAsync(target.ProjectPath, args, cancellation);
+        // the binary log only for the zip of the imports it writes next to itself: every file the evaluations read, for the cache
+        // (measured on MudBlazor.Docs: 1.50 s with it, 1.44 s without)
+        args.Add($"-bl:{binlog};ProjectImports=ZipFile");
+        var (json, compileExit) = await MsBuildAsync(target.ProjectPath, args, cancellation);
+        using var __ = json;
+        if (compileExit != 0) exitCode = compileExit;
         var root = json.RootElement;
         var items = root.GetProperty("Items");
         var commandLine = items.TryGetProperty("CscCommandLineArgs", out var csc) ? csc.EnumerateArray().Select(i => i.GetProperty("Identity").GetString()!).ToList() : [];
@@ -786,10 +888,10 @@ internal static class DesignTime
         var frameworks = props.TryGetProperty("TargetFrameworks", out var tfs) ? tfs.GetString()?.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : null;
         var resolved = string.IsNullOrEmpty(actual) ? framework : actual;
         var byDefault = frameworks is not { Length: > 0 } || string.Equals(frameworks[0], resolved, StringComparison.OrdinalIgnoreCase);
-        return new Result(commandLine, resolved, outputs, inputs, liveAnalyzers, intermediate, byDefault);
+        return (new Result(commandLine, resolved, outputs, inputs, liveAnalyzers, intermediate, byDefault), exitCode);
     }
 
-    private static async Task<JsonDocument> MsBuildAsync(string project, IEnumerable<string> args, CancellationToken cancellation)
+    private static async Task<(JsonDocument Json, int ExitCode)> MsBuildAsync(string project, IEnumerable<string> args, CancellationToken cancellation)
     {
         // the dotnet that runs the helper: the plugin started it in the folder of the solution, so a global.json there counts
         var info = new ProcessStartInfo(Environment.ProcessPath ?? "dotnet")
@@ -813,7 +915,7 @@ internal static class DesignTime
         // errors of the project (it does not compile) come before the JSON; the items are there anyway
         var start = output.IndexOf('{');
         if (start < 0) throw new HelperException($"dotnet msbuild {Path.GetFileName(project)} failed (exit code {process.ExitCode}): {(output + await errors).Trim()[..Math.Min(1500, (output + await errors).Trim().Length)]}");
-        return JsonDocument.Parse(output[start..]);
+        return (JsonDocument.Parse(output[start..]), process.ExitCode);
     }
 }
 
