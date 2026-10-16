@@ -216,7 +216,13 @@ internal fun CSharpOverloads.closed(type: SemanticType, depth: Int = 0): Boolean
 
 private fun CSharpOverloads.libraryKnown(type: io.github.dotnetsupport.index.IndexedType, depth: Int): Boolean = known.getOrPut(type) {
     if (depth > 16) return@getOrPut false
-    (type.interfaces + listOfNotNull(type.baseType)).all { reference -> r.assemblies.resolve(reference)?.let { libraryKnown(it, depth + 1) } == true }
+    // an interface of the type's own namespace that the index has not is an internal one (`IImmutableArray` of ImmutableArray<T>): no
+    // conversion of anyone's goes through it, the type counts as closed without it
+    (type.interfaces + listOfNotNull(type.baseType)).all { reference ->
+        val resolved = r.assemblies.resolve(reference)
+        if (resolved == null) reference in type.interfaces && reference is io.github.dotnetsupport.index.IndexedTypeRef.Named && reference.fullName.substringBeforeLast('.') == type.fullName.substringBeforeLast('.')
+        else libraryKnown(resolved, depth + 1)
+    }
 }
 
 // ---- conversions of argument expressions

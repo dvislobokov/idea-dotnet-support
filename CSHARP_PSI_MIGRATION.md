@@ -137,7 +137,7 @@
 Пользователь решил: идти до отказа от `roslyn-language-server`, не останавливаясь на гибриде вехи S. Порядок — синтаксический
 остаток шага 9 и ссылки шага 10 параллельно, затем семантика 11a → 11b → 11c (после неё веха 12.1), затем 11d–11f и 12.2.
 У каждой фичи — переключатель, проверка роботом в обоих режимах, NATIVE по умолчанию только после неё; сценарий в
-`debug-playground`, строки в `docs/LIVE_CHECKS.md`. Статус — здесь (`[ ]` → `[x]`, дата, версия).
+`debug-playground`, пункты чек-листа в его `README.md`. Статус — здесь (`[ ]` → `[x]`, дата, версия).
 
 **A. Синтаксический остаток (шаг 9)**
 - [x] A1 (2026-10-04, 0.1.49: робот — 4 сценария совпали с сервером, NATIVE по умолчанию; «None» больше не форматирует). `FORMATTING`: робот в обоих режимах (`reformat.js`, `Formatting.cs`), NATIVE по умолчанию; выбор форматтера «Built-in» /
@@ -451,6 +451,12 @@
     **лямбды в выводе** ~700 (функциональный тип явной лямбды / группы методов к `T`, тело лямбды); типы, неизвестные выше по цепочке,
     и циклы ~1 150 — не порт. Решение: дальше не по строкам журнала, а по файлам Roslyn — D6c4 целиком, затем лямбды в выводе целиком,
     затем D6c5; эхо из журнала убрать (одна строка на причину).
+  - [x] Закрытие журнала, шаг 12 (0.1.249; тест `CSharpTypingGapsTest.testAChainOfGenericCallsTypesTheLambdaOfTheNextCall` — мимика
+    проходит, настоящий `Then` MudBlazor остаётся, 2 строки). `libraryKnown`: интерфейс из пространства имён самого типа, которого нет в
+    индексе, — internal (`IImmutableArray` у `ImmutableArray<T>`), тип считается закрытым без него (12 строк `Assert.That(ImmutableArray…)`);
+    `parameterTypesOf(…, lambdaParameters)`: кандидат, чей параметр — не делегат, не expression tree и не параметр типа, лямбду не берёт и в
+    типизацию её параметра не входит (`takesLambda`). MudBlazor 63 → 51; без `LanguageResource` — 8 строк (`Then`/`Parse` 2, Moq
+    `ReturnsAsync(x.Method)` 3, `Equals` `NullableObject` 1, `WithChangeHandler` MudStepper 1, `ReversibleChain → ExecutionTime` 1).
   - [x] Закрытие журнала, шаг 11 (0.1.248; тест `CSharpTypingGapsTest.testMudBlazorGapsThree`). `extensionMethodsIn`: для получателя `T?`
     имена и `T` (`ToPx(this int? val)` записан как `this int?`, `?` в имени получателя не хранится); `accessorValueType` сквозь лямбды и
     локальные функции аксессора; `prefix("!")` — implicit-преобразование операнда к `bool`; `collection(to)` — класс/структура без

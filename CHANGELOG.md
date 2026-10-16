@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.249
+
+- A library type whose internal interface the index does not hold (`ImmutableArray<T>` and its `IImmutableArray`) still decides
+  what it does not convert to (`Assert.That(immutableArray, constraint)`).
+- The parameter of a lambda passed to an overloaded method is typed by the candidates that can take a lambda at all — an overload
+  taking an interface there no longer leaves it untyped.
+
 ## 0.1.248
 
 - An extension method on `int?` / `DateTime?` is found for a receiver of that type (`MaxHeight.ToPx()`, `End.ToIsoDateString()`).

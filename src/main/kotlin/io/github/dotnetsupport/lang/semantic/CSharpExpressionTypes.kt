@@ -527,7 +527,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
             return CSharpRequiredMembers(r).constructorsOf(created).mapNotNull { constructor ->
                 val parameters = r.signature(constructor, false) ?: return@mapNotNull null
                 val type = parameterFor(parameters, arguments, i, 0)?.type?.invoke() ?: return@mapNotNull null
-                if (lambdaParameters != null && unwrapExpression(type)?.let(::delegateSignature)?.first?.size?.let { it != lambdaParameters } == true) null else type
+                if (lambdaParameters != null && !takesLambda(type, lambdaParameters)) null else type
             }
         }
         val call = list.parent as? CSharpInvocationExpression ?: return emptyList()
@@ -540,12 +540,20 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
             var type = parameterFor(parameters, arguments, i, if (reduced) 1 else 0)?.type?.invoke() ?: return@mapNotNull null
             val methodArguments = typeArguments(symbol, call, callee)
             if (methodArguments.isNotEmpty()) type = substituteMethod(type, methodArguments, symbol) ?: return@mapNotNull null
-            if (lambdaParameters != null) {
-                val count = unwrapExpression(type)?.let(::delegateSignature)?.first?.size
-                if (count != null && count != lambdaParameters) return@mapNotNull null
-            }
+            if (lambdaParameters != null && !takesLambda(type, lambdaParameters)) return@mapNotNull null
             type
         }
+    }
+
+    /**
+     * Whether a lambda of [parameters] parameters can go to a parameter of [type]: a delegate or expression tree of as many, or a type
+     * parameter (not known yet); an interface or a class never takes a lambda — `Then(IReversibleConverter<TOut, TNext>)` beside
+     * `Then(Func<TOut, TNext>)` of MudBlazor's converter chain left `s` of `Then(s => …)` untyped (the candidates did not agree).
+     */
+    private fun takesLambda(type: SemanticType, parameters: Int): Boolean {
+        if (type is SemanticType.Parameter) return true
+        val signature = unwrapExpression(type)?.let(::delegateSignature) ?: return false
+        return signature.first.size == parameters
     }
 
     /**

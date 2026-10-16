@@ -469,6 +469,29 @@ class CSharpTypingGapsTest : BasePlatformTestCase() {
     """, "value -> CS0029: Cannot implicitly convert type 'int' to 'string'", "MaxHeight.ToPx() -> CS0029: Cannot implicitly convert type 'int' to 'string'",
         "!_expanded -> CS0029: Cannot implicitly convert type 'bool' to 'string'", "items.Except([item]).Count() -> CS0029: Cannot implicitly convert type 'int' to 'string'")
 
+    /** A chain of generic calls with lambdas: `From<int, string>(…).Then(s => int.Parse(s) + 1)` (MudBlazor's converter chain) types `s` by the receiver's argument. */
+    fun testAChainOfGenericCallsTypesTheLambdaOfTheNextCall() = check("""
+        using System;
+        static class Conv { public static Chain<TIn, TOut> From<TIn, TOut>(Func<TIn, TOut> forward, Func<TOut, TIn> backward) => null!; }
+        interface IConv<TA, TB> { }
+        class Chain<TIn, TOut>
+        {
+            public Chain<TIn, TNext> Then<TNext>(IConv<TOut, TNext> next) => null!;
+            public Chain<TIn, TNext> Then<TNext>(Func<TOut, TNext> next) => null!;
+            public Chain<TIn, TNext> Then<TNext>(Func<TOut, TNext> forward, Func<TNext, TOut> backward) => null!;
+        }
+        class C
+        {
+            void M()
+            {
+                var chain = Conv
+                    .From<int, string>(i => i.ToString(), s => int.Parse(s))
+                    .Then(s => int.Parse(s) + 1);
+                string bad = chain;
+            }
+        }
+    """, "chain -> CS0029: Cannot implicitly convert type 'Chain<int, int>' to 'string'")
+
     /** `using static N.Helpers;` brings the extension methods of the type (§14.5.3): MudBlazor's `<Using Include="…StringHelpers" Static="True" />` and `x.ToStr()`. */
     fun testAUsingStaticBringsTheExtensionMethodsOfTheType() = check("""
         using static N.Helpers;
