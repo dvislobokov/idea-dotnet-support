@@ -443,6 +443,32 @@ class CSharpTypingGapsTest : BasePlatformTestCase() {
     """, "b.WithChangeHandler(args => !args.Value ? b.EnableAsync() : b.EnableAsync()) -> CS0029: Cannot implicitly convert type 'int' to 'string'",
         "mock.ReturnsAsync(Mocks.Of<C>) -> CS0029: Cannot implicitly convert type 'int' to 'string'")
 
+    /**
+     * MudBlazor's last lines, part 3: an extension on `int?` for an `int?` receiver, `value` of a setter inside its lambda, `!x` of a type
+     * converting to `bool`, a collection expression against a class that is no collection.
+     */
+    fun testMudBlazorGapsThree() = check("""
+        using System;
+        using System.Collections.Generic;
+        using System.Linq;
+        static class E { public static int ToPx(this int val) => 1; public static int ToPx(this int? val) => 2; }
+        class State { public static implicit operator bool(State s) => true; }
+        class Item { }
+        class C
+        {
+            int? MaxHeight;
+            State _expanded;
+            int Rows { set { Action a = () => { string bad2 = value; }; } }
+            void M(IEnumerable<Item> items, Item item)
+            {
+                string bad = MaxHeight.ToPx();
+                string bad3 = !_expanded;
+                string bad4 = items.Except([item]).Count();
+            }
+        }
+    """, "value -> CS0029: Cannot implicitly convert type 'int' to 'string'", "MaxHeight.ToPx() -> CS0029: Cannot implicitly convert type 'int' to 'string'",
+        "!_expanded -> CS0029: Cannot implicitly convert type 'bool' to 'string'", "items.Except([item]).Count() -> CS0029: Cannot implicitly convert type 'int' to 'string'")
+
     /** `using static N.Helpers;` brings the extension methods of the type (§14.5.3): MudBlazor's `<Using Include="…StringHelpers" Static="True" />` and `x.ToStr()`. */
     fun testAUsingStaticBringsTheExtensionMethodsOfTheType() = check("""
         using static N.Helpers;

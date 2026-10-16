@@ -498,6 +498,13 @@ private fun CSharpOverloads.collection(to: SemanticType): Conversion {
     if (to is SemanticType.Library && (to.type.kind == IndexedTypeKind.DELEGATE || to.type.kind == IndexedTypeKind.ENUM)) return Conversion.NONE
     // an enum of the solution is no collection either: `GetShoppingCartAsync(customer, [a, b])` beside its `ShoppingCartType?` overload
     if (to is SemanticType.Source && (to.info.kind == TypeKind.ENUM || to.info.kind == TypeKind.DELEGATE)) return Conversion.NONE
+    // a class or struct that is no IEnumerable takes no collection expression (§12.8.17: a collection builder type is enumerable too) —
+    // `Except([item])` against `MudToggleItem<T>`, `[expected]` against DiagnosticResult
+    if (to is SemanticType.Library || to is SemanticType.Source) {
+        val names = HashSet<String>()
+        r.collectSupertypes(to, LinkedHashSet(), names, 0)
+        if (closed(to) && "IEnumerable" !in names) return Conversion.NONE
+    }
     return Conversion.UNKNOWN
 }
 

@@ -123,7 +123,8 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
 
     /** The type of the implicit `value` parameter at [name]: the declared type of the member whose `set` / `init` / `add` / `remove` it is in; null in a getter or outside an accessor. */
     private fun accessorValueType(name: CSharpSimpleName): SemanticType? {
-        val accessor = PsiTreeUtil.getParentOfType(name, CSharpAccessorDeclaration::class.java, true, CSharpAnonymousFunctionExpression::class.java, CSharpLocalFunctionStatement::class.java) ?: return null
+        // through the lambdas and local functions of the accessor too (`InvokeAsync(() => SetRowsPerPageAsync(value))`): a parameter named `value` resolves before this
+        val accessor = PsiTreeUtil.getParentOfType(name, CSharpAccessorDeclaration::class.java, true) ?: return null
         if (accessor.keyword?.text !in VALUE_ACCESSORS) return null
         val member = PsiTreeUtil.getParentOfType(accessor, CSharpBasePropertyDeclaration::class.java) ?: return null
         return member.type?.let(r::resolveType)
@@ -973,7 +974,8 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
     private fun prefix(e: CSharpPrefixUnaryExpression): SemanticType? {
         val operand = e.operand ?: return null
         return when (e.operatorToken?.text) {
-            "!" -> r.typeOf(operand)?.let { if (r.definitionName(it) == BOOL || isNullable(it)) it else userOperator("op_LogicalNot", it, null) }
+            "!" -> r.typeOf(operand)?.let { if (r.definitionName(it) == BOOL || isNullable(it)) it else userOperator("op_LogicalNot", it, null)
+                ?: r.libraryType(BOOL)?.takeIf { bool -> r.conversion(it, bool) == CSharpNameResolver.Conversion.IMPLICIT } }
             "++", "--" -> r.typeOf(operand)
             "^" -> r.libraryType("System.Index")
             "-", "+", "~" -> {

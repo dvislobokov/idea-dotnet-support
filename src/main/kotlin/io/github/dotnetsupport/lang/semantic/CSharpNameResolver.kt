@@ -770,6 +770,9 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         val keys = LinkedHashSet<String>()
         val names = HashSet<String>()
         collectSupertypes(receiver, keys, names, 0)
+        // a `T?` receiver: `ToPx(this int? val)` is written `this int?` — its receiver name is `Int32` (the `?` is not kept) — and `ToPx(this int)`
+        // is a candidate the conversion of the receiver rules out
+        if (isNullable(receiver)) collectSupertypes(unwrapNullable(receiver), LinkedHashSet(), names, 0)
         keys += AssemblyIndexSet.GENERIC_RECEIVER
         val staticNames = statics.mapNotNull { t -> (t as? SemanticType.Library)?.type?.fullName ?: (t as? SemanticType.Source)?.info?.qualifiedName }.toSet()
         for (key in keys) for (member in session.extensions(assemblies, key)) {

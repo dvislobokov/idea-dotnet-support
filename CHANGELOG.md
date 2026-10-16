@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.248
+
+- An extension method on `int?` / `DateTime?` is found for a receiver of that type (`MaxHeight.ToPx()`, `End.ToIsoDateString()`).
+- `value` of a setter is typed inside a lambda of the setter too; `!x` of a type converting to `bool` is a `bool`; a collection
+  expression does not convert to a class or struct that is no collection; an interpolation holding `c ? a : b` of non-constants is
+  not a constant.
+
 ## 0.1.247
 
 - A lambda whose body names a member one candidate's parameter type does not have (`args => !args.Value ? … : …` against

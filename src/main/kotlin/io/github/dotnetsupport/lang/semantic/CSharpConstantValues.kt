@@ -70,6 +70,8 @@ internal class CSharpConstantValues(private val resolver: CSharpNameResolver) {
             e is CSharpArrayCreationExpression || e is CSharpImplicitArrayCreationExpression || e is CSharpTypeOfExpression || e is CSharpIsPatternExpression ||
             e is CSharpSwitchExpression || e is CSharpQueryExpression || e is CSharpTupleExpression || e is CSharpCollectionExpression ||
             e is CSharpAnonymousObjectCreationExpression || e is CSharpWithExpression || e is CSharpStackAllocArrayCreationExpression || e is CSharpAssignmentExpression) return true
+        // `c ? a : b` is a constant only when all three are (`$"…{(dark ? "x" : "y")}…"` of a theme provider)
+        if (e is CSharpConditionalExpression) return listOfNotNull(e.condition, e.whenTrue, e.whenFalse).any(::isNotConstant)
         val name = e as? CSharpIdentifierName ?: (e as? CSharpMemberAccessExpression)?.nameElement as? CSharpIdentifierName ?: return false
         val symbol = name.identifier?.let(resolver::resolve)?.single ?: return false
         return when (symbol) {
