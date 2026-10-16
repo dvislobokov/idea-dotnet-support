@@ -933,7 +933,12 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
                     best = m
                 }
             }
-            if (best == null) SemanticTrace.trace { "resolve ${site?.text} at ${SemanticTrace.at(site)}: gave up, no best of [${pool.joinToString { SemanticTrace.show(it.symbol) }}] (a comparison not known or none better)" }
+            if (best == null) SemanticTrace.trace {
+                // which comparisons did not answer: the case is told by them (betterMember is asked again only when the log is on)
+                val unknown = pool.flatMap { m -> pool.filter { n -> n !== m && betterMember(m, n, arguments, types, receiver) == null }.map { n -> m to n } }
+                    .joinToString { (m, n) -> "${SemanticTrace.show(m.symbol)}(${m.targets.joinToString { p -> SemanticTrace.show(p) }})<${m.methodArguments.joinToString { p -> SemanticTrace.show(p) }}> vs ${SemanticTrace.show(n.symbol)}(${n.targets.joinToString { p -> SemanticTrace.show(p) }})<${n.methodArguments.joinToString { p -> SemanticTrace.show(p) }}>" }
+                "resolve ${site?.text} at ${SemanticTrace.at(site)}: gave up, no best of [${pool.joinToString { SemanticTrace.show(it.symbol) }}]; not known: [$unknown]"
+            }
             return best?.symbol
         } finally {
             openOwners -= owners.toSet()

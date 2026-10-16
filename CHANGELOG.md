@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.205
+
+- No false "Cannot implicitly convert type 'Task<Task<T>>' to 'Task<T>'" (CS0029) for `Task.Run(() => { return StartAsync(); }, token)`:
+  a lambda whose body is a block returning a `Task<T>` picks `Task.Run(Func<Task<T>>)`, as one whose body is an expression already did.
+
 ## 0.1.204
 
 - A name inside `nameof(...)` that does not exist is an error, as the compiler says: `nameof(Counter.Missing)` (CS0117),

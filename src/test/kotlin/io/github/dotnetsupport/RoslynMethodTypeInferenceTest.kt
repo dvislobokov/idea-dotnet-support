@@ -46,6 +46,33 @@ class RoslynMethodTypeInferenceTest : BasePlatformTestCase() {
             .map { "${document.substring(0, it.startOffset).count { c -> c == '\n' } + 1}: " + document.substring(it.startOffset, it.endOffset) + " -> " + it.description }
     }
 
+    /**
+     * A colleague's case on 0.1.185: `Task.Run(() => StartTask(…), token)` with a lambda returning `Task<R>` was taken for
+     * `Run<Task<R>>(Func<Task<R>>)` — a false CS0029 «Task<Task<R>> to Task<R>»; Roslyn picks `Run<R>(Func<Task<R>>, CancellationToken)`.
+     */
+    fun testTaskRunOfALambdaReturningATask() {
+        assertEquals(listOf("13: Task.Run(() => \"x\") -> CS0029: Cannot implicitly convert type 'System.Threading.Tasks.Task<string>' to 'System.Threading.Tasks.Task<R>'"), errors("""
+            using System.Collections.Generic;
+            using System.Threading;
+            using System.Threading.Tasks;
+            class R { }
+            class C
+            {
+                Task<R> Task1 = null!;
+                Dictionary<int, CancellationTokenSource> sources = new();
+                Task<R> Start(int a, CancellationToken token) => Task.FromResult(new R());
+                void M(int id)
+                {
+                    Task1 = Task.Run(() => Start(1, sources[id].Token), sources[id].Token);
+                    Task1 = Task.Run(() => "x");
+                    Task1 = Task.Run(() => Start(1, sources[id].Token));
+                    Task1 = Task.Run(async () => await Start(1, sources[id].Token));
+                    Task1 = Task.Run(() => { return Start(1, sources[id].Token); }, sources[id].Token);
+                }
+            }
+        """))
+    }
+
     fun testUpperBoundThroughAContravariantInterface() {
         // IComparer<in T>: IComparer<object> gives T an upper bound object, "s" a lower bound string — T is string
         assertEmpty(errors("""

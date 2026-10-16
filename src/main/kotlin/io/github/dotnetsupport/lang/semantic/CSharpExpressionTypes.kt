@@ -532,7 +532,9 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
                 val returns = if (isAsync(lambda.modifiers) && written is SemanticType.Library && written.type.fullName in TASKS_OF) written.arguments.singleOrNull() else written
                 if (returns is SemanticType.Parameter && returns.ofMethod) { exact++; continue }
                 if (!lambdaFits(lambda, type)) return@mapNotNull null
-                val body = lambda.expressionBody?.let(r::typeOf)
+                // a block: the common type of its `return`s, as an expression body (`Task.Run(() => { return StartAsync(); }, token)` lost its
+                // `Func<Task<TResult>>` overload to `Func<TResult>`: a false CS0029 «Task<Task<R>> to Task<R>», a colleague's case on 0.1.185)
+                val body = lambda.expressionBody?.let(r::typeOf) ?: lambda.block?.let(::commonReturnType)
                 // `Task<T>` with `T` to infer: as exact as `T` for a body of a `Task<…>` — the better member decides then (more specific)
                 if (returns != null && body != null && (same(returns, body) || mentionsMethodParameter(returns) && r.definitionName(returns) == r.definitionName(body))) exact++
             }
