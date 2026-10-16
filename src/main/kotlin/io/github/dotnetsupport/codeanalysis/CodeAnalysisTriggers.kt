@@ -100,6 +100,32 @@ class CodeAnalysisDocumentListener : DocumentListener {
     }
 }
 
+/**
+ * Which projects load in the background when the solution opens, before any file is ([CodeAnalysisService.warmUp]): the ones the user
+ * opened or saved C# files of last time, most recent first, at most [LIMIT]. Not every project of the solution: each one costs the
+ * helper its compilation, its references' and what its generators make (MudBlazor.Docs with its references: ~1 GB, 20 s of
+ * generators) — a solution of a hundred projects would hold the helper busy and big for projects nobody looks at. Pure, tested.
+ */
+object CodeAnalysisWarmUp {
+    const val LIMIT = 3
+
+    /** [recent] after [path] was worked in: in front, once, the oldest dropped past [limit]. Paths compare as on Windows, without case. */
+    fun pushed(recent: List<String>, path: String, limit: Int = LIMIT): List<String> =
+        (listOf(path) + recent.filterNot { it.equals(path, ignoreCase = true) }).take(limit)
+
+    /** The [recent] projects that are still C# projects of the solution ([solutionProjects]), in the order of [recent]. */
+    fun toWarmUp(recent: List<String>, solutionProjects: Collection<String>, limit: Int = LIMIT): List<String> =
+        recent.mapNotNull { path -> solutionProjects.firstOrNull { it.equals(path, ignoreCase = true) } }.distinct().take(limit)
+}
+
+/** The solution is open: the projects worked in last time load and generate in the background ([CodeAnalysisService.warmUp]). */
+class CodeAnalysisWarmUpActivity : com.intellij.openapi.startup.ProjectActivity {
+    override suspend fun execute(project: Project) {
+        if (ApplicationManager.getApplication().isUnitTestMode || project.isDisposed) return
+        CodeAnalysisService.getInstance(project).warmUp()
+    }
+}
+
 /** A C# file opened in the editor: its project generates once and the file is analyzed. */
 class CodeAnalysisEditorListener(private val project: Project) : FileEditorManagerListener {
     override fun fileOpened(source: FileEditorManager, file: VirtualFile) {

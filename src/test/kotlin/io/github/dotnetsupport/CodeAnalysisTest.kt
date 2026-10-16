@@ -9,6 +9,7 @@ import io.github.dotnetsupport.codeanalysis.AnalyzerSeverity
 import io.github.dotnetsupport.codeanalysis.CodeAnalysisAnswers
 import io.github.dotnetsupport.codeanalysis.CodeAnalysisEvents
 import io.github.dotnetsupport.codeanalysis.CodeAnalysisService
+import io.github.dotnetsupport.codeanalysis.CodeAnalysisWarmUp
 import io.github.dotnetsupport.codeanalysis.TextPositions
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
@@ -115,6 +116,18 @@ class CodeAnalysisTest : BasePlatformTestCase() {
         assertEquals(CodeAnalysisEvents.Kind.SAVED_FILE, CodeAnalysisEvents.kind("C:/s/A/Pages/Counter.razor", contentChange = true, fromSave = true))
         assertEquals(CodeAnalysisEvents.Kind.NONE, CodeAnalysisEvents.kind("C:/s/A/Pages/Counter.razor", contentChange = true, fromSave = false))
         assertEquals(CodeAnalysisEvents.Kind.NONE, CodeAnalysisEvents.kind("C:/s/A/obj/Debug/x.razor", contentChange = true, fromSave = true))
+    }
+
+    /** The projects warmed up when the solution opens: the ones worked in last time, most recent first, a few, still in the solution. */
+    fun testWhichProjectsWarmUpAtTheOpening() {
+        var recent = emptyList<String>()
+        for (path in listOf("C:/s/A/A.csproj", "C:/s/B/B.csproj", "C:/s/A/A.csproj", "C:/s/C/C.csproj", "C:/s/D/D.csproj")) recent = CodeAnalysisWarmUp.pushed(recent, path)
+        assertEquals(listOf("C:/s/D/D.csproj", "C:/s/C/C.csproj", "C:/s/A/A.csproj"), recent)
+        assertEquals("the same project in another case is the same", listOf("c:/s/c/c.csproj", "C:/s/D/D.csproj", "C:/s/A/A.csproj"), CodeAnalysisWarmUp.pushed(recent, "c:/s/c/c.csproj"))
+        assertEquals(CodeAnalysisWarmUp.LIMIT, recent.size)
+        // a project gone from the solution (removed, renamed) is not loaded; the path of the solution is the one used
+        assertEquals(listOf("C:/s/A/A.csproj"), CodeAnalysisWarmUp.toWarmUp(listOf("C:/s/D/D.csproj", "c:/s/a/a.csproj"), listOf("C:/s/A/A.csproj", "C:/s/B/B.csproj")))
+        assertEmpty(CodeAnalysisWarmUp.toWarmUp(emptyList(), listOf("C:/s/A/A.csproj")))
     }
 
     /** RAZOR_PLAN.md, R0: the helper names the additional files of the generators; editing one of them makes what they made stale. */

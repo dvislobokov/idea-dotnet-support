@@ -289,9 +289,35 @@ class CodeAnalysisService(private val project: Project) : Disposable {
 
     // ---- triggers
 
+    /**
+     * The solution has opened: the projects the user worked in last time ([CodeAnalysisWarmUp]) load and generate now, in the background,
+     * so the first file opened finds them made (before, nothing ran until a C# file was opened). Under the same rules as an opening: not
+     * in Safe Mode ([schedule]), not with the generators off; files restored in editors start their projects themselves ([opened]).
+     */
+    fun warmUp() {
+        if (!DotNetSettings.getInstance().runSourceGenerators) return
+        val recent = recentProjects()
+        if (recent.isEmpty()) return
+        val projects = solutionProjects()
+        val chosen = CodeAnalysisWarmUp.toWarmUp(recent, projects.map { it.path })
+        if (chosen.isEmpty()) return
+        PluginLog.info(LOG_CATEGORY, "warming up the projects worked in last time: ${chosen.joinToString { it.substringAfterLast('/') }}")
+        for (path in chosen) projects.firstOrNull { it.path.equals(path, ignoreCase = true) }?.let { schedule(it, generate = generated[key(it.path)] == null, paths = emptyList(), delayMs = 0) }
+    }
+
+    /** The projects of the C# files opened or saved, most recent first ([CodeAnalysisWarmUp]); kept with the workspace of the IDE project. */
+    fun recentProjects(): List<String> = com.intellij.ide.util.PropertiesComponent.getInstance(project).getList(RECENT_PROJECTS_KEY).orEmpty()
+
+    private fun remember(projectFile: VirtualFile) {
+        val recent = recentProjects()
+        if (recent.firstOrNull() == projectFile.path) return
+        com.intellij.ide.util.PropertiesComponent.getInstance(project).setList(RECENT_PROJECTS_KEY, CodeAnalysisWarmUp.pushed(recent, projectFile.path))
+    }
+
     /** A C# file was saved: its project generates again (if it has generators or has not run yet) and the file is analyzed. */
     fun saved(file: VirtualFile) {
         val projectFile = ReadAction.compute<VirtualFile?, RuntimeException> { CompilationModel.getInstance(project).projectOf(file) } ?: return
+        remember(projectFile)
         // `fullSolution`: the whole project again, as the server's background analysis does on a change — a save may change what the other files say
         val whole = analyzesOnSave && analyzerScope == AnalysisScopes.FULL_SOLUTION
         schedule(projectFile, generate = needsGeneration(projectFile), paths = if (analyzesOnSave && !whole) listOf(file.path) else emptyList(), whole = whole)
@@ -307,6 +333,7 @@ class CodeAnalysisService(private val project: Project) : Disposable {
     fun opened(file: VirtualFile) {
         if (file.fileType != CSharpFileType || isGenerated(file)) return
         val projectFile = ReadAction.compute<VirtualFile?, RuntimeException> { CompilationModel.getInstance(project).projectOf(file) } ?: return
+        remember(projectFile)
         val generate = DotNetSettings.getInstance().runSourceGenerators && generated[key(projectFile.path)] == null
         val whole = analyzesOnSave && analyzerScope == AnalysisScopes.FULL_SOLUTION && projectFile.path !in analyzedProjects()
         val analyze = !whole && analyzesOnSave && analyzed[key(file.path)] == null
@@ -624,6 +651,7 @@ class CodeAnalysisService(private val project: Project) : Disposable {
         const val GROUP = "Roslyn analyzers"
         val HELPER = DotNetHelper("codeanalysis", "CodeAnalysisHelper", "HelperFramework", listOf("Program.cs", "DesignTimeCache.cs", "Protocol.cs"), perSdk = true)
 
+        private const val RECENT_PROJECTS_KEY = "dotnet.codeAnalysis.recentProjects"
         private val SKIPPED_FOLDERS = setOf("bin", "obj", "node_modules", ".git", ".vs", ".idea")
         private val XAML_CLASS = Regex("""\b[\w.]+:Class\s*=""")
 

@@ -268,6 +268,7 @@
         <additionalLibraryRootsProvider implementation="io.github.dotnetsupport.codeanalysis.GeneratedSourcesRootsProvider"/>
         <editorNotificationProvider implementation="io.github.dotnetsupport.codeanalysis.GeneratedFileNotificationProvider"/>
         <editorFactoryDocumentListener implementation="io.github.dotnetsupport.codeanalysis.CodeAnalysisDocumentListener"/>
+        <postStartupActivity implementation="io.github.dotnetsupport.codeanalysis.CodeAnalysisWarmUpActivity"/>
         <defaultLiveTemplates file="/liveTemplates/CSharp.xml"/>
         <liveTemplatePreprocessor implementation="io.github.dotnetsupport.lang.CSharpMemberTemplateSpacing"/>
         <liveTemplateContext contextId="CSHARP" implementation="io.github.dotnetsupport.lang.CSharpTemplateContext"/>

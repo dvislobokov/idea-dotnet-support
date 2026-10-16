@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.215
+
+- When a solution opens, the generators and analyzers warm up the projects you worked in last time (up to three), so their
+  generated types and warnings are there before the first file is opened.
+
 ## 0.1.214
 
 - Opening a solution again is faster: the generators and analyzers of C# reuse the design-time builds of its projects from a disk
