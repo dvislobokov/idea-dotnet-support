@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.236
+
+- Anonymous types: `new { Id = x.Id, Name }` has a type with these properties — completion and navigation on `a.Id`, the type of a LINQ
+  projection (`Select(x => new { x.Id, Count = … })`) and of what follows it (`.ToList()`, `.Where(…)`), and an assignment of a property to
+  the wrong type is CS0029. The same names and types in the same order are one type, as in the compiler; it is shown as
+  `<anonymous type: int Id, string Name>`.
+
 ## 0.1.235
 
 - `value` inside a `set`, `init`, `add` or `remove` accessor has the type of its property, indexer or event: completion on it, and an

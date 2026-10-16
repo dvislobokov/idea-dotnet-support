@@ -192,6 +192,8 @@ object NativeCSharpOverrides {
                 if (child !is CSharpStub || child.elementType != SyntaxKind.MethodDeclaration) continue
                 result += Declared(SyntaxKind.MethodDeclaration, child.name ?: continue, child.modifiers, child.parameters) { child.psi }
             }
+            // an anonymous type declares no methods
+            is TypePart.Anonymous -> {}
         }
         return result
     }

@@ -358,7 +358,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
             is SemanticType.Source -> known.getOrPut(type.info.key) {
                 known[type.info.key] = true // a cycle of bases is an error of its own, not an unknown
                 type.info.parts.all { part ->
-                    val declaration = part.element() as? CSharpBaseTypeDeclaration ?: return@all part.element() is CSharpDelegateDeclaration
+                    val declaration = part.element() as? CSharpBaseTypeDeclaration ?: return@all part.element() is CSharpDelegateDeclaration || part is io.github.dotnetsupport.lang.TypePart.Anonymous
                     val owner = (declaration.containingFile as? CSharpFile)?.let(session::reachable) ?: return@all false
                     declaration.baseList?.types.orEmpty().all { base -> base.type?.let(owner::resolveType)?.let { isKnown(it, depth + 1) } == true }
                 }

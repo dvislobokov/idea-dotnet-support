@@ -451,6 +451,13 @@
     **лямбды в выводе** ~700 (функциональный тип явной лямбды / группы методов к `T`, тело лямбды); типы, неизвестные выше по цепочке,
     и циклы ~1 150 — не порт. Решение: дальше не по строкам журнала, а по файлам Roslyn — D6c4 целиком, затем лямбды в выводе целиком,
     затем D6c5; эхо из журнала убрать (одна строка на причину).
+  - [x] Закрытие журнала, шаг 2 — анонимные типы (0.1.236; тест `CSharpTypingGapsTest.testAnAnonymousTypeHasItsProperties`). Не новый
+    подкласс `SemanticType` (137 ветвей в 40 файлах), а `SemanticType.Source` с синтезированной частью `TypePart.Anonymous`
+    (`NativeCSharpResolver`): свойства из инициализаторов (`Name = e`, `x.Name`, `Name` — §12.8.17.3) как `Member.property`, баз нет (`object`
+    добавляет `baseTypes`), `elementType = ClassDeclaration` → `TypeKind.CLASS`; имя и ключ — отображение Roslyn `<anonymous type: int Id,
+    string Name>`, так что одинаковые имена и типы — один тип. Тип выражения — `CSharpExpressionTypes.anonymousType` (известен, когда известны
+    типы всех инициализаторов); тип свойства — `memberType` по `CSharpAnonymousObjectMemberDeclarator`; `isKnown` / `closed` считают
+    анонимную часть целой. Преобразования от выражения `new { }` остались в порту (`classifyAnonymousType`).
   - [x] Закрытие журнала, шаг 1 (0.1.235; тест `CSharpTypingGapsTest`). Из 2 123 строк 0.1.234 по причинам: коллекция `[…]` к цели-делегату
     (448, `TryGetCollectionIterationType` — для делегата, примитива, `Task` вывода нет, не отказ), `value` в `set`/`init`/`add`/`remove`
     (не был типизирован нигде — `CSharpExpressionTypes.accessorValueType`), естественный тип лямбды для `typeOf` (`CSharpTypeInference.

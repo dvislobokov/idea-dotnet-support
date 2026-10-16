@@ -84,6 +84,29 @@ class CSharpTypingGapsTest : BasePlatformTestCase() {
         }
     """, "TryCreate(\"a\", out _) -> CS0029: Cannot implicitly convert type 'bool' to 'string'")
 
+    /** `new { … }` has a type: its properties, read-only; the same names and types are one type (`new[] { new { Id = 1 } }`, a LINQ projection). */
+    fun testAnAnonymousTypeHasItsProperties() = check("""
+        using System.Linq;
+        class C
+        {
+            void M()
+            {
+                var a = new { Id = 1, Name = "x" };
+                int fine = a.Id;
+                string bad = a.Id;
+                var list = new[] { new { Id = 1, Name = "a" }, new { Id = 2, Name = "b" } };
+                var q = list.Select(x => new { x.Id, Twice = x.Id * 2 }).ToList();
+                string bad2 = q[0].Twice;
+                string fine2 = list[0].Name;
+                var r = Deserialize("{}", new { id = 0, name = "" });
+                string bad3 = r.id;
+                object o = a;
+            }
+            static T Deserialize<T>(string json, T prototype) => prototype;
+        }
+    """, "a.Id -> CS0029: Cannot implicitly convert type 'int' to 'string'", "q[0].Twice -> CS0029: Cannot implicitly convert type 'int' to 'string'",
+        "r.id -> CS0029: Cannot implicitly convert type 'int' to 'string'")
+
     /** A collection expression beside an overload taking a delegate (bUnit's `Add(x => x.Items, […])`): no inference from it there, no refusal. */
     fun testACollectionExpressionGivesNoInferenceToADelegateParameter() = check("""
         using System;

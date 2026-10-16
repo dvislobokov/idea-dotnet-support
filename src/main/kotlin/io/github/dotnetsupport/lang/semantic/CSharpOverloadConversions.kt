@@ -205,7 +205,7 @@ internal fun CSharpOverloads.closed(type: SemanticType, depth: Int = 0): Boolean
         is SemanticType.Source -> type.arguments.all { it != null } && known.getOrPut(type.info.key) {
             known[type.info.key] = true
             type.info.kind != null && type.info.parts.all { part ->
-                val declaration = part.element() as? CSharpBaseTypeDeclaration ?: return@all part.element() is CSharpDelegateDeclaration
+                val declaration = part.element() as? CSharpBaseTypeDeclaration ?: return@all part.element() is CSharpDelegateDeclaration || part is io.github.dotnetsupport.lang.TypePart.Anonymous
                 val owner = (declaration.containingFile as? CSharpFile)?.let(r.session::reachable) ?: return@all false
                 declaration.baseList?.types.orEmpty().all { base -> base.type?.let(owner::resolveType)?.let { closed(it, depth + 1) } == true }
             }
@@ -236,8 +236,10 @@ internal fun CSharpOverloads.unparenthesized(e: CSharpExpression): CSharpExpress
 internal fun CSharpOverloads.argument(e: CSharpExpression, type: SemanticType?, to: SemanticType, depth: Int = 0): Conversion {
     val value = unparenthesized(e)
     if (depth > 4) return Conversion.UNKNOWN
-    // the port (D6c2, roslyn/RoslynExpressionConversions) for the kinds it covers; it answers alone, the old rules for them are gone
-    expressionSource(value)?.let { source ->
+    // the port (D6c2, roslyn/RoslynExpressionConversions) for the kinds it covers; it answers alone, the old rules for them are gone.
+    // An anonymous object whose type is known (0.1.236) converts by that type: to itself by identity (`DeserializeAnonymousType(json,
+    // new { … })` infers T as that type), to `object` by its base, to nothing else
+    expressionSource(value)?.takeIf { !(value is CSharpAnonymousObjectCreationExpression && type != null) }?.let { source ->
         when (val ported = expressionConversions.classifyImplicitConversionFromExpression(source, to)) {
             is RoslynExpressionConversions.Result.Exists -> return Conversion.IMPLICIT
             RoslynExpressionConversions.Result.None -> return Conversion.NONE

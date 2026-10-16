@@ -520,6 +520,40 @@ sealed class TypePart(val qualifiedName: String, val name: String, val namespace
     /** The base types as written: simple name and arity. */
     abstract fun bases(): List<Pair<String, Int>>
 
+    /**
+     * An anonymous type (C# §12.8.17.3): the properties of `new { Id = x.Id, Name }` in their order, public and read-only, a class with
+     * `object` for its base. Its name is Roslyn's display, `<anonymous type: int Id, string Name>`, and that is its identity too: the same
+     * names and types in the same order are one type wherever they are written ([TypeInfo.key]).
+     */
+    class Anonymous(val creation: CSharpAnonymousObjectCreationExpression, qualifiedName: String) : TypePart(qualifiedName, qualifiedName, null) {
+        override val elementType: IElementType get() = SyntaxKind.ClassDeclaration
+        override val modifiers: Collection<String> get() = emptyList()
+        override val arity: Int get() = 0
+
+        override fun element(): PsiElement = creation
+
+        override fun members(sink: (String, Member) -> Unit) {
+            for (declarator in creation.initializers) {
+                val name = nameOf(declarator) ?: continue
+                sink(name, Member.property(listOf("public")).at { declarator })
+            }
+        }
+
+        override fun bases(): List<Pair<String, Int>> = emptyList()
+
+        companion object {
+            /** The name a declarator gives its property: `Name = e`, else the name of `x.Name` / `Name` (§12.8.17.3); null for any other expression. */
+            fun nameOf(declarator: CSharpAnonymousObjectMemberDeclarator): String? {
+                declarator.nameEquals?.nameElement?.identifier?.text?.let { return it }
+                return when (val e = declarator.expression) {
+                    is CSharpIdentifierName -> e.identifier?.text
+                    is CSharpMemberAccessExpression -> (e.nameElement as? CSharpIdentifierName)?.identifier?.text
+                    else -> null
+                }
+            }
+        }
+    }
+
     class Psi(val declaration: CSharpMemberDeclaration, qualifiedName: String, name: String, namespace: String?) : TypePart(qualifiedName, name, namespace) {
         override val elementType: IElementType get() = declaration.node.elementType
         override val modifiers: Collection<String> get() = declaration.modifiers.map { it.text }

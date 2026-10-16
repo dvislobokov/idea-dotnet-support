@@ -23,8 +23,20 @@ object CSharpTypeFacts {
      * [type] as code at [at] writes it: keywords for the special types, `T?`, tuple syntax, and a named type by its simple name where that
      * name means the type there (its namespace is imported or encloses [at], nothing nearer hides it), else with its namespace.
      */
-    fun written(resolver: CSharpNameResolver, type: SemanticType?, at: PsiElement): String? =
-        CSharpTypeDisplay.display(type) { named -> simpleNameMeans(resolver, named, at) }
+    fun written(resolver: CSharpNameResolver, type: SemanticType?, at: PsiElement): String? {
+        // an anonymous type has no name code can write (`var x = new { … }` stays `var`)
+        if (mentionsAnonymous(type)) return null
+        return CSharpTypeDisplay.display(type) { named -> simpleNameMeans(resolver, named, at) }
+    }
+
+    /** Whether [type] is, or is built over, an anonymous type (0.1.236: `<anonymous type: …>`, a type of the solution with a `TypePart.Anonymous`). */
+    fun mentionsAnonymous(type: SemanticType?, depth: Int = 0): Boolean = when (type) {
+        null -> false
+        is SemanticType.Source -> depth < MAX_DEPTH && (type.info.parts.any { it is io.github.dotnetsupport.lang.TypePart.Anonymous } || type.arguments.any { mentionsAnonymous(it, depth + 1) })
+        is SemanticType.Library -> depth < MAX_DEPTH && type.arguments.any { mentionsAnonymous(it, depth + 1) }
+        is SemanticType.ArrayOf -> mentionsAnonymous(type.element, depth + 1)
+        is SemanticType.Parameter -> false
+    }
 
     internal fun simpleNameMeans(resolver: CSharpNameResolver, type: SemanticType, at: PsiElement): Boolean = when (type) {
         is SemanticType.Source -> {

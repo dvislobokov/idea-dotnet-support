@@ -53,6 +53,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
                 SemanticType.ArrayOf(element, e.commas.size + 1)
             }
             is CSharpCastExpression -> e.type?.let(r::resolveType)
+            is CSharpAnonymousObjectCreationExpression -> anonymousType(e)
             // the natural type of a lambda (C# 10): `var f = (string s) => s.Length;` is a `Func<string, int>`
             is CSharpAnonymousFunctionExpression -> r.inference.lambdaFunctionType(e)
             is CSharpDefaultExpression -> e.type?.let(r::resolveType)
@@ -104,6 +105,20 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         if (symbol == null && e.identifier?.text == "value") accessorValueType(e)?.let { return it }
         if (symbol == null) return tupleElement(e)
         return symbol.single?.let { r.valueTypeAt(it, e) }
+    }
+
+    /**
+     * The anonymous type of `new { … }` (§12.8.17.3): a type of the solution with these properties ([io.github.dotnetsupport.lang.TypePart.Anonymous]),
+     * known when the type of every initializer is; `<empty anonymous type>` for `new { }`.
+     */
+    private fun anonymousType(e: CSharpAnonymousObjectCreationExpression): SemanticType? {
+        val properties = e.initializers.map { declarator ->
+            val name = io.github.dotnetsupport.lang.TypePart.Anonymous.nameOf(declarator) ?: return null
+            val type = declarator.expression?.let(r::typeOf) ?: return null
+            (CSharpTypeDisplay.display(type) ?: return null) + " " + name
+        }
+        val display = if (properties.isEmpty()) "<empty anonymous type>" else properties.joinToString(", ", "<anonymous type: ", ">")
+        return SemanticType.Source(io.github.dotnetsupport.lang.TypeInfo(display, 0, listOf(io.github.dotnetsupport.lang.TypePart.Anonymous(e, display))), emptyList())
     }
 
     /** The type of the implicit `value` parameter at [name]: the declared type of the member whose `set` / `init` / `add` / `remove` it is in; null in a getter or outside an accessor. */

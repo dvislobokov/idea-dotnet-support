@@ -1169,6 +1169,8 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                 is CSharpMethodDeclaration -> element.returnType?.let(resolver::resolveType)
                 is CSharpEnumMemberDeclaration -> (element.parent as? CSharpEnumDeclaration)?.let { resolver.syntax.declaredType(it) }?.let { SemanticType.Source(it, emptyList()) }
                 is CSharpDelegateDeclaration -> null
+                // a property of an anonymous type: what its initializer gives
+                is CSharpAnonymousObjectMemberDeclarator -> element.expression?.let(resolver::typeOf)
                 else -> (element.parent as? CSharpParameter)?.type?.let(resolver::resolveType) // a positional parameter of a record, by its name
             }
             val owner = symbol.owner
