@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.230
+
+- Razor files fold their `@code`, `@functions`, `@section`, `@{ }` blocks and multi-line `@* *@` comments, match Razor's braces,
+  comment with Ctrl+/ (`@* *@` on markup and directives, `//` in code) and show their directives, sections and the members of
+  `@code` in the Structure window.
+
 ## 0.1.229
 
 - Razor files (`.razor` components and `.cshtml` views) open as their own language: the Razor transitions, directives and code blocks are

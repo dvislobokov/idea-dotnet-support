@@ -190,6 +190,12 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `TYPE:razor-typing`: набрать `<li>@clicks items</li>` под `<ul>` — цвета появляются по мере набора, ничего не краснеет; Ctrl+Z
 - [ ] `TYPE:razor-cshtml`: представление — `@model`, `@addTagHelper` (аргумент строкой), `@section Scripts`, `@functions`, выражение
       в атрибуте `class="@(… ? "long" : "short")"`
+- [ ] `TYPE:razor-folding`: сворачиваются `@code { }`, `{ }` у `@if` / `else` / `@foreach`, метод `Reset`, многострочный `@* *@`, `<ul>`
+- [ ] `TYPE:razor-braces`: каретка за `{` у `@code` — пара с последней `}` файла; за `{` у `Reset` — её `}`
+- [ ] `TYPE:razor-comment`: Ctrl+/ на строке `<h3` — комментарий Razor вокруг строки (не `<!-- -->`), ещё раз — снят; на `clicks = 0;` —
+      `//` (C#); Ctrl+Z
+- [ ] `TYPE:razor-structure`: Alt+7 / Ctrl+F12 — `@page "/editor/highlighting"`, `@inject …`, `@code` с членами `clicks`, `items`,
+      `Title`, `Bold(string text): RenderFragment`, `Reset(): void`; щелчок ведёт к члену
 
 ## Solution view
 

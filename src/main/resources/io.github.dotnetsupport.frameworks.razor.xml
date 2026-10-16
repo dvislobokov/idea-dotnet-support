@@ -14,6 +14,12 @@
         <lang.syntaxHighlighterFactory language="Razor" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorSyntaxHighlighterFactory"/>
         <editorHighlighterProvider filetype="Razor" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorEditorHighlighterProvider"/>
         <colorSettingsPage implementation="io.github.dotnetsupport.frameworks.razor.RazorColorSettingsPage"/>
+        <lang.braceMatcher language="Razor" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorBraceMatcher"/>
+        <lang.commenter language="Razor" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorCommenter"/>
+        <!-- Ctrl+/ on markup gives @* *@, not the comment of HTML; `//` in @code -->
+        <multiLangCommenter implementation="io.github.dotnetsupport.frameworks.razor.RazorCommentProvider"/>
+        <lang.foldingBuilder language="Razor" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorFoldingBuilder"/>
+        <lang.psiStructureViewFactory language="Razor" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorStructureViewFactory"/>
         <highlightErrorFilter implementation="io.github.dotnetsupport.frameworks.razor.RazorErrorFilter"/>
         <daemon.highlightInfoFilter implementation="io.github.dotnetsupport.frameworks.razor.RazorHtmlStructureFilter"/>
         <lang.inspectionSuppressor language="HTML" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorHtmlInspectionSuppressor"/>

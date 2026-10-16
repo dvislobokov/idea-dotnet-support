@@ -746,7 +746,11 @@
     ошибки HTML рядом с Razor и «неизвестные» теги компонентов и tag helpers не показываются. Гейт `RazorLexerGateTest`: посимвольно
     против `.cspans.txt` тестов парсера компилятора — 0.9241 (без `RazorDirectivesTest` с директивами самих тестов — 0.9822), 3305 файлов
     корпуса без незакрытых блоков и с одинаковыми токенами при перезапуске. Сценарий — `debug-playground/Blazor/Editor/RazorHighlighting.razor`
-    и `.cshtml` (0.1.229). Вживую не проверено
+    и `.cshtml` (0.1.229). Проверено UI-роботом в песочнице Windows (цвета обоих файлов и `MudAutocomplete.razor` корпуса, сворачивание,
+    Ctrl+/ в разметке и в `@code`, Structure); человеком вживую не проверено, набор с клавиатуры и светлая тема — тоже
+  - [x] R1 — редактор Razor: сворачивание (`@code`, `@functions`, `@{ }`, `@section`, блоки C# в них, многострочный `@* *@`), парные
+    скобки Razor, Ctrl+/ (`@* *@` в разметке и директивах, `//` в коде), Structure (директивы, секции, члены `@code` / `@functions`
+    разбором C# плагина). Тесты `RazorEditorTest`; сценарии — там же (`TYPE:razor-folding`, `-braces`, `-comment`, `-structure`; 0.1.230)
   - [x] F0 (2026-10-15, без версии: пользователю не видно) — фреймворки модулями рядом с ядром C#: точка расширения `csharpCodeGenerators`, модули `frameworks.razor` / `xaml` / `avalonia` / `grpc` вместо списков в `mayGenerateTypes`; тесты `CSharpCodeGeneratorsTest` (старая формула против новой), `FrameworkBoundaryTest`
 
 ### Помощники на .NET, работающие постоянно (план 2026-10-03)

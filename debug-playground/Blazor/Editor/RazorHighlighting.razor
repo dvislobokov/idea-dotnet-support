@@ -19,7 +19,7 @@
 
 <h3 class="title">Highlighting: @Title</h3>
 <p>Now @(DateTime.Now.ToString("t", CultureInfo.InvariantCulture)), escaped @@, mail me@example.com is text.</p>
-<input @bind="Title" @bind:event="oninput" />
+<label>Title <input @bind="Title" @bind:event="oninput" /></label>
 <button @onclick="() => clicks++">Clicked @clicks</button>
 <Counter Step="2" />
 
