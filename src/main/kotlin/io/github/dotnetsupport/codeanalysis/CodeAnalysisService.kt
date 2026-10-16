@@ -84,6 +84,8 @@ class CodeAnalysisService(private val project: Project) : Disposable {
     private val inFlight = AtomicInteger()
     @Volatile private var connection: HelperConnection? = null
     @Volatile private var lastUse = 0L
+    /** The helper ended after the idle time and has not been asked anything since: the next edit loads its project again ([rewarm]). */
+    @Volatile private var stoppedIdle = false
     @Volatile private var disposed = false
     private val lifecycle = Any()
     @Volatile private var testConnection: HelperConnection? = null
@@ -261,10 +263,26 @@ class CodeAnalysisService(private val project: Project) : Disposable {
             else projectOfFile.getOrPut(key(file.path)) { CompilationModel.getInstance(project).projectOf(file)?.path.orEmpty() }
         if (projectPath.isEmpty()) return
         val state = generated[key(projectPath)]
+        if (stoppedIdle && state != null) rewarm(projectPath)
         // a C# edit changes nothing of what generators reading the additional files only made (Razor): still fresh, errors go on
         if (file.fileType == CSharpFileType && state != null && !generatorsReadCSharp(state)) return
         lastEdit[key(projectPath)] = System.nanoTime()
         state?.let { if (!it.stale) { it.stale = true; modificationTracker.incModificationCount() } }
+    }
+
+    /**
+     * The first edit after the idle stop ([stopIfIdle]): the helper starts again and loads the edited project now, not at the save that
+     * is coming — the load is the design-time cache (no MSBuild), but its generators run cold (MudBlazor.Docs with its references: ~20 s),
+     * and that time is spent while the user types. The helper's memory comes back only when the user is back at the code, as at a save.
+     */
+    private fun rewarm(projectPath: String) {
+        synchronized(lifecycle) {
+            if (!stoppedIdle || disposed) return
+            stoppedIdle = false
+        }
+        val projectFile = LocalFileSystem.getInstance().findFileByPath(projectPath) ?: return
+        PluginLog.info(LOG_CATEGORY, "${projectFile.name} edited after the idle stop: CodeAnalysisHelper loads it again")
+        schedule(projectFile, generate = DotNetSettings.getInstance().runSourceGenerators, paths = emptyList())
     }
 
     /** Whether an edit of a C# file of the project may change what its generators made: some generator of the last run reads the C#. */
@@ -601,7 +619,7 @@ class CodeAnalysisService(private val project: Project) : Disposable {
         // the helper runs code of the project: MSBuild targets (design-time build), analyzer and generator dlls of its packages — never for
         // a project the user has not trusted (Safe Mode), as MsBuildEvaluation and CompilationModel
         if (!com.intellij.ide.trustedProjects.TrustedProjects.isProjectTrusted(project)) throw HelperException("the project is not trusted: analyzers and source generators do not run in Safe Mode")
-        return HelperConnection.of(HELPER, LOG_CATEGORY, ::workDirectory).also { connection = it; Disposer.register(this, it) }
+        return HelperConnection.of(HELPER, LOG_CATEGORY, ::workDirectory).also { connection = it; stoppedIdle = false; Disposer.register(this, it) }
     }
 
     /** Where `dotnet` resolves the SDK the way a build of the solution does: the folder of the solution. */
@@ -622,6 +640,7 @@ class CodeAnalysisService(private val project: Project) : Disposable {
         val idle = System.currentTimeMillis() - lastUse
         if (inFlight.get() > 0 || idle < DotNetSettings.getInstance().codeAnalysisIdleMinutes * 60_000L) return scheduleIdleCheck()
         connection = null
+        stoppedIdle = true
         Disposer.dispose(current)
         PluginLog.info(LOG_CATEGORY, "CodeAnalysisHelper stopped after ${idle / 60_000} min without requests")
     }
@@ -634,6 +653,12 @@ class CodeAnalysisService(private val project: Project) : Disposable {
     @TestOnly
     fun setConnectionForTests(connection: HelperConnection?) {
         testConnection = connection
+    }
+
+    /** As [stopIfIdle] leaves it: the helper ended after the idle time. */
+    @TestOnly
+    fun markStoppedIdleForTests() {
+        stoppedIdle = true
     }
 
     @TestOnly

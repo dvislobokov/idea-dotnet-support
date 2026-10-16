@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.217
+
+- After the code analysis rested (10 minutes without work), the first edit of a C# file loads its project again, so fresh
+  generated files come sooner after the save.
+
 ## 0.1.216
 
 - The design-time builds of the projects a project references run side by side, ahead of their turn (at most half of the

@@ -130,6 +130,66 @@ class CodeAnalysisTest : BasePlatformTestCase() {
         assertEmpty(CodeAnalysisWarmUp.toWarmUp(emptyList(), listOf("C:/s/A/A.csproj")))
     }
 
+    /** A helper on pipes that answers every request (`generate` with an empty run) and remembers the methods it was asked. */
+    private fun recordingHelper(methods: MutableList<String>): io.github.dotnetsupport.cli.HelperConnection = io.github.dotnetsupport.cli.HelperConnection("test") {
+        val toHelper = java.io.PipedOutputStream()
+        val helperInput = java.io.PipedInputStream(toHelper, 65536)
+        val helperOutput = java.io.PipedOutputStream()
+        val fromHelper = java.io.PipedInputStream(helperOutput, 65536)
+        val alive = java.util.concurrent.atomic.AtomicBoolean(true)
+        Thread {
+            val writer = helperOutput.bufferedWriter()
+            try {
+                helperInput.bufferedReader().forEachLine { line ->
+                    val request = JsonParser.parseString(line).asJsonObject
+                    val id = request.get("id")?.asLong ?: return@forEachLine
+                    val method = request.get("method").asString
+                    synchronized(methods) { methods += method }
+                    val result = if (method == "generate") """{"project":"p","framework":"net10.0","files":[],"errors":[],"milliseconds":1,"workingSet":1}""" else "{}"
+                    writer.write("""{"id":$id,"result":$result}""" + "\n")
+                    writer.flush()
+                }
+            } catch (_: java.io.IOException) {
+            }
+            alive.set(false)
+        }.apply { isDaemon = true }.start()
+        io.github.dotnetsupport.cli.HelperConnection.Transport(fromHelper, toHelper, null, alive::get) { alive.set(false); runCatching { helperOutput.close() } }
+    }
+
+    /** After the idle stop the first edit of a C# file of a project with generated files loads it again, once; without the stop, an edit asks nothing. */
+    fun testTheFirstEditAfterTheIdleStopLoadsTheProjectAgain() {
+        val folder = com.intellij.openapi.util.io.FileUtil.createTempDirectory("rewarm", null)
+        val projectIo = java.io.File(folder, "App.csproj").apply { writeText("<Project Sdk=\"Microsoft.NET.Sdk\"/>") }
+        val sourceIo = java.io.File(folder, "Program.cs").apply { writeText("class Program { }") }
+        val lfs = com.intellij.openapi.vfs.LocalFileSystem.getInstance()
+        val projectFile = lfs.refreshAndFindFileByIoFile(projectIo)!!
+        val source = lfs.refreshAndFindFileByIoFile(sourceIo)!!
+        val service = CodeAnalysisService.getInstance(project)
+        val methods = java.util.Collections.synchronizedList(ArrayList<String>())
+        val connection = recordingHelper(methods)
+        service.setConnectionForTests(connection)
+        try {
+            service.putGeneratedForTests(projectFile.path, CodeAnalysisAnswers.generated(JsonParser.parseString("""{"project":"p","files":[],"errors":[],"generators":["G"]}""")))
+            service.documentChanged(source)
+            Thread.sleep(1_500)
+            assertEmpty("an edit while the helper runs (or never ran) asks nothing", methods)
+            service.markStoppedIdleForTests()
+            service.documentChanged(source)
+            service.documentChanged(source)
+            val deadline = System.currentTimeMillis() + 15_000
+            while (synchronized(methods) { "generate" !in methods } && System.currentTimeMillis() < deadline) {
+                com.intellij.util.ui.UIUtil.dispatchAllInvocationEvents()
+                Thread.sleep(50)
+            }
+            Thread.sleep(1_500)
+            assertEquals("the project is loaded again, once", listOf("generate"), synchronized(methods) { methods.toList() })
+        } finally {
+            service.setConnectionForTests(null)
+            service.putGeneratedForTests(projectFile.path, null)
+            connection.dispose()
+        }
+    }
+
     /** RAZOR_PLAN.md, R0: the helper names the additional files of the generators; editing one of them makes what they made stale. */
     fun testAdditionalFilesOfTheGenerators() {
         val answer = JsonParser.parseString("""{"project":"C:\\s\\A\\A.csproj","framework":"net10.0","files":[],"buildFiles":[],
