@@ -1,4 +1,4 @@
-# 259 examples, Roslyn errors 445, matched 352, missing 93, extra 0
+# 260 examples, Roslyn errors 449, matched 352, missing 97, extra 0
 array-declaration-errors-1.cs	CS1922@6	missing
 array-declaration-errors-2.cs	CS0246@10	ok
 array-declaration-errors-2.cs	CS0246@11	ok
@@ -250,6 +250,10 @@ nullable-warnings-7.cs	CS0106@2	ok
 nullable-warnings-8.cs	CS0106@2	ok
 nullable-warnings-8.cs	CS0246@2	ok
 parsing-errors-1.cs	CS8180@4	ok
+plugin-lambda-to-delegate.cs	CS0029@28	missing
+plugin-lambda-to-delegate.cs	CS0029@29	missing
+plugin-lambda-to-delegate.cs	CS1662@28	missing
+plugin-lambda-to-delegate.cs	CS1662@29	missing
 plugin-nameof.cs	CS0103@24	ok
 plugin-nameof.cs	CS0103@38	ok
 plugin-nameof.cs	CS0117@19	ok

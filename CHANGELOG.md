@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.218
+
+- The C# analysis checks a lambda passed to an overload against that overload's delegate with the parameter types the delegate gives
+  (bUnit's `parameters.Add(x => x.Severity, …)`, LINQ over a typed receiver), as the compiler does: far fewer places where it gave up
+  (MudBlazor's tests: 15 721 → 9 279 in the debug log).
+
 ## 0.1.217
 
 - After the code analysis rested (10 minutes without work), the first edit of a C# file loads its project again, so fresh

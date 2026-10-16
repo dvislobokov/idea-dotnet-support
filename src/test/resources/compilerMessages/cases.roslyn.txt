@@ -332,6 +332,10 @@ nullable-warnings-8.cs	517	526	CS8321	warning
 nullable-warnings-8.cs	528	539	CS0246	error
 nullable-warnings-9.cs	540	557	CS8600	warning
 parsing-errors-1.cs	102	103	CS8180	error
+plugin-lambda-to-delegate.cs	1007	1017	CS0029	error
+plugin-lambda-to-delegate.cs	1007	1017	CS1662	error
+plugin-lambda-to-delegate.cs	1060	1066	CS0029	error
+plugin-lambda-to-delegate.cs	1060	1066	CS1662	error
 plugin-nameof.cs	172	185	CS8019	hidden
 plugin-nameof.cs	584	591	CS0117	error
 plugin-nameof.cs	854	868	CS0103	error

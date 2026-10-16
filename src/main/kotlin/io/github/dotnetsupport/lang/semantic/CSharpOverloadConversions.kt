@@ -348,13 +348,24 @@ private fun CSharpOverloads.strictLambda(lambda: CSharpAnonymousFunctionExpressi
         else if (r.definitionName(written) in TASKS_OF) (written as? SemanticType.Library)?.arguments?.singleOrNull() ?: return Conversion.UNKNOWN
         else return Conversion.UNKNOWN
     val void = r.definitionName(returns) == VOID
+    // the body bound for this delegate, as Roslyn's `HasAnonymousFunctionConversion` binds it: implicit parameters take the delegate's types
+    // (D6c2) — typed through the call being checked they were a cycle, and `Add(x => x.Severity, …)` of bUnit was not known (3541 lines)
+    val implicit = parameters?.takeIf { ps -> ps.isNotEmpty() && ps.all { it.type == null } }
+    fun body(compute: () -> Conversion): Conversion = if (implicit == null) compute() else try {
+        r.bindLambda(lambda, implicit, delegate.first.map { it ?: return Conversion.UNKNOWN }, compute)
+    } catch (e: io.github.dotnetsupport.lang.semantic.roslyn.RoslynMethodTypeInferrer.Unknown) {
+        SemanticTrace.trace { "lambda at ${SemanticTrace.at(lambda)} to ${SemanticTrace.show(to)}: not known — ${e.describe()}" }
+        Conversion.UNKNOWN
+    }
     val body = lambda.expressionBody
     if (body != null) {
         if (void) return if (r.expressions.isStatementExpression(unparenthesized(body))) Conversion.IMPLICIT else Conversion.NONE
-        return when (argument(body, r.typeOf(unparenthesized(body)), returns)) {
-            Conversion.IDENTITY, Conversion.IMPLICIT -> Conversion.IMPLICIT
-            Conversion.NONE -> Conversion.NONE
-            Conversion.UNKNOWN -> Conversion.UNKNOWN
+        return body {
+            when (argument(body, r.typeOf(unparenthesized(body)), returns)) {
+                Conversion.IDENTITY, Conversion.IMPLICIT -> Conversion.IMPLICIT
+                Conversion.NONE -> Conversion.NONE
+                Conversion.UNKNOWN -> Conversion.UNKNOWN
+            }
         }
     }
     val block = lambda.block ?: return Conversion.UNKNOWN
@@ -362,16 +373,18 @@ private fun CSharpOverloads.strictLambda(lambda: CSharpAnonymousFunctionExpressi
     if (void) return if (returned.all { it.expression == null }) Conversion.IMPLICIT else Conversion.UNKNOWN
     if (returned.isEmpty() || returned.any { it.expression == null }) return Conversion.UNKNOWN
     if (CSharpReachability(r).endOf(block) != CSharpReachability.Reach.NO) return Conversion.UNKNOWN
-    var result = Conversion.IMPLICIT
-    for (statement in returned) {
-        val value = statement.expression ?: return Conversion.UNKNOWN
-        when (argument(value, r.typeOf(unparenthesized(value)), returns)) {
-            Conversion.NONE -> return Conversion.NONE
-            Conversion.UNKNOWN -> result = Conversion.UNKNOWN
-            else -> {}
+    return body {
+        var result = Conversion.IMPLICIT
+        for (statement in returned) {
+            val value = statement.expression ?: return@body Conversion.UNKNOWN
+            when (argument(value, r.typeOf(unparenthesized(value)), returns)) {
+                Conversion.NONE -> return@body Conversion.NONE
+                Conversion.UNKNOWN -> result = Conversion.UNKNOWN
+                else -> {}
+            }
         }
+        result
     }
-    return result
 }
 
 /** A type no lambda or method group converts to: closed, no interface, without user-defined conversions. */
