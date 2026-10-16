@@ -106,7 +106,7 @@ python robot.py action Stop
 python robot.py action Exit && python robot.py click "//div[@class='MyDialog']//div[@text='Exit']"
 ```
 
-## Скрипты, добавленные прогоном 2026-10-08 (`scripts/`, итоги — `docs/ROBOT_REVIEW_2026-10-08.md`)
+## Скрипты, добавленные прогоном 2026-10-08 (`scripts/`; итоги прогона вошли в 0.1.149, см. `ROADMAP.md`)
 
 - `complete_poll.js` (`__FILE__`, `__LINE__` с 1, `__TYPE__`, `__LIMIT__`, `__WAIT__` мс, `__UNDO__` = `yes`, `__EXPLICIT__` = `yes` — Ctrl+Space,
   если автопопап не открылся, `__FIND__` — имена через запятую): набирает через `TypedAction` в конце строки, опрашивает живой lookup и печатает

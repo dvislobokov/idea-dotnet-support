@@ -633,7 +633,6 @@ PAGE = '''<!DOCTYPE html>
     <span>C# Project Support, <code>io.github.dotnetsupport</code></span>
     <span>Редакция страницы %(revision)s</span>
     <a href="demo.html">О плагине</a>
-    <a class="repo" href="../COMPARE.md">Полное сравнение с Rider</a>
     <a class="repo" href="../ROADMAP.md">Roadmap</a>
   </div>
 </footer>
