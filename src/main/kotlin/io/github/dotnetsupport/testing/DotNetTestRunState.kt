@@ -14,7 +14,6 @@ import com.intellij.execution.runners.ProgramRunner
 import com.intellij.execution.testframework.autotest.ToggleAutoTestAction
 import com.intellij.execution.testframework.sm.SMTestRunnerConnectionUtil
 import com.intellij.execution.testframework.sm.runner.ui.SMTRunnerConsoleView
-import com.intellij.openapi.util.io.FileUtil
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.coverage.DotNetCoverageService
 import io.github.dotnetsupport.run.DotNetProcessAttacher
@@ -26,7 +25,7 @@ import java.io.File
 class DotNetTestRunState(private val configuration: DotNetRunConfiguration, environment: ExecutionEnvironment, private val debug: Boolean = false) :
     CommandLineState(environment) {
     // TRX report and coverage files of this run
-    private val resultsDirectory = FileUtil.createTempDirectory("dotnet-test", null, true)
+    private val resultsDirectory = io.github.dotnetsupport.cli.PluginData.tempDirectory("dotnet-test")
     // the files of the live test logger, when it is there (VSTest only)
     private var eventsDirectory: File? = null
 
@@ -35,7 +34,7 @@ class DotNetTestRunState(private val configuration: DotNetRunConfiguration, envi
         val vsTest = configuration.testMode() == TestMode.VSTEST
         val adapterDirectory = if (vsTest) LiveTestLogger.adapterDirectory(configuration.project) else null
         if (adapterDirectory != null) {
-            val events = FileUtil.createTempDirectory("dotnet-test-events", null, true).also { eventsDirectory = it }
+            val events = io.github.dotnetsupport.cli.PluginData.tempDirectory("dotnet-test-events").also { eventsDirectory = it }
             val arguments = LiveTestLogger.insert(commandLine.parametersList.list, LiveTestLogger.options(adapterDirectory))
             commandLine.parametersList.clearAll()
             commandLine.addParameters(arguments)

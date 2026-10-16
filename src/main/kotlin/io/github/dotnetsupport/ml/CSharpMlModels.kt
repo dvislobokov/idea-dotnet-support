@@ -2,7 +2,6 @@ package io.github.dotnetsupport.ml
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.logger
@@ -335,6 +334,8 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
          */
         fun loadNn(dir: File?, options: NnCompletion.Options = NnCompletion.Options()): Nn? {
             val started = System.currentTimeMillis()
+            // the native kernels are a shared library: loaded from the data directory of the plugin when it was moved there (PluginData)
+            if (io.github.dotnetsupport.cli.PluginData.isRelocated) NativeLib.extractDirectory = io.github.dotnetsupport.cli.PluginData.root().resolve("ml").toFile()
             val (modelFile, vocab) = dir?.let { directoryNn(it) } ?: bundledNn() ?: return null
             val model = NnModel(NnFormat.read(modelFile), nThreads = minOf(8, Runtime.getRuntime().availableProcessors()))
             val nn = try {
@@ -361,7 +362,7 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
         }
 
         /**
-         * Copies a bundled resource to `<system>/dotnet-support/ml/<sha256>/` for the memory mapping of [NnFormat.read]. The directories are
+         * Copies a bundled resource to `<plugin data>/ml/<sha256>/` for the memory mapping of [NnFormat.read]. The directories are
          * the user's only (0700 where POSIX permissions exist); an existing copy is reused only when its SHA-256 equals the resource's,
          * otherwise it is written again — to a temp name in the same directory, then an atomic move (another IDE of the same system
          * directory may be extracting it too; on Windows a mapped file is locked, then the copy must already be right).
@@ -369,7 +370,7 @@ class CSharpMlModels : CSharpNnEngine, Disposable {
         private fun extract(resource: String): File? {
             val cl = CSharpMlModels::class.java.classLoader
             val sha = cl.getResourceAsStream(resource)?.use(::sha256) ?: return null
-            val dir = privateDirectories(Path.of(PathManager.getSystemPath(), "dotnet-support", "ml", sha))
+            val dir = privateDirectories(io.github.dotnetsupport.cli.PluginData.root().resolve("ml").resolve(sha))
             val out = dir.resolve(resource.substringAfterLast('/'))
             if (Files.isRegularFile(out) && Files.newInputStream(out).use(::sha256) == sha) return out.toFile()
             val tmp = Files.createTempFile(dir, "model", ".tmp")

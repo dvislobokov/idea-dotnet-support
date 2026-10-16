@@ -1,7 +1,6 @@
 package io.github.dotnetsupport.roslyn
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.logger
 import org.eclipse.lsp4j.SemanticTokensLegend
@@ -23,7 +22,14 @@ private val LOG = logger<RoslynTokensCache>()
  */
 @Service(Service.Level.APP)
 class RoslynTokensCache {
-    val store = RoslynTokenStore(File(PathManager.getSystemPath(), "dotnet-support/lsp-cache/semantic-tokens"))
+    @Volatile private var current: RoslynTokenStore? = null
+
+    /** In the data directory of the plugin, which may move during the session ([io.github.dotnetsupport.cli.PluginData]). */
+    val store: RoslynTokenStore
+        get() {
+            val directory = io.github.dotnetsupport.cli.PluginData.root().resolve("lsp-cache/semantic-tokens").toFile()
+            return current?.takeIf { it.directory == directory } ?: RoslynTokenStore(directory).also { current = it }
+        }
 
     /** In the background: a write must not hold the answer of the server on its way to the editor. */
     fun put(key: String, data: List<Int>) {
@@ -32,7 +38,7 @@ class RoslynTokensCache {
 }
 
 /** The files of [RoslynTokensCache]: one per key, the least recently used removed beyond [limitBytes]. A plain class for the tests. */
-class RoslynTokenStore(private val directory: File, private val limitBytes: Long = LIMIT_BYTES) {
+class RoslynTokenStore(val directory: File, private val limitBytes: Long = LIMIT_BYTES) {
     fun get(key: String): List<Int>? {
         val file = File(directory, key)
         if (!file.isFile) return null

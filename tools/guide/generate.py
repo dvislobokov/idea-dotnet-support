@@ -120,6 +120,16 @@ def settings():
         (name("settings.formatting.formatter"), e(RU["formatter.AUTO"].split(":")[0]),
          note("settings.formatting.comment") + " Варианты: «%s», «%s», «%s», «%s»." % tuple(e(RU["formatter." + v]) for v in ("AUTO", "CSHARPIER", "DOTNET_FORMAT", "NONE"))),
     ]))
+    group("settings.data.group")
+    out.append(table([
+        (name("settings.data.directory"), "пусто",
+         note("settings.data.directory.comment").replace("{0}", ".cache/dotnet-support") + ". Проверка — раз за сеанс при открытии проекта .NET: "
+         "в папку кладётся копия <code>/bin/true</code> и запускается, а если там уже собран индексатор — <code>dotnet</code> запускает его оттуда. "
+         "Не получилось и есть <code>/home/work/&lt;пользователь&gt;</code> (или <code>&lt;пользователь&gt;@&lt;домен&gt;</code>) — данные переезжают туда, "
+         "выбор запоминается в этом поле; рабочей папки нет — уведомление с кнопкой выбора папки. Когда папка задана, журналы пишутся в её "
+         "<code>logs</code>, а временные файлы плагина и запускаемых им команд <code>dotnet</code> (<code>TMPDIR</code>) — в её <code>tmp</code>; "
+         "программы пользователя (конфигурации запуска, тесты) получают окружение IDE как есть. На Windows ничего не проверяется."),
+    ]))
     group("settings.behavior.group")
     out.append(table([
         option("settings.behavior.runConfigurations", ON, "Для каждого запускаемого проекта и каждого профиля из <code>launchSettings.json</code> создаётся конфигурация запуска."),

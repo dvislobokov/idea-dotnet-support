@@ -97,7 +97,7 @@ object DotNetFormatRunner {
 
     fun format(file: File, text: String): FormatResult {
         val chain = editorConfigChain(file)
-        val scratch = FileUtil.createTempDirectory("dotnet-format", null, true)
+        val scratch = io.github.dotnetsupport.cli.PluginData.tempDirectory("dotnet-format")
         try {
             var mirror = scratch
             for ((index, directory) in chain.withIndex()) {

@@ -368,6 +368,8 @@
         <projectViewNestingRulesProvider implementation="io.github.dotnetsupport.view.DotNetNestingRulesProvider"/>
         <!-- IDEA opens a folder without a module: its files are not indexed, so the plugin makes one (DotNetModuleSetup) -->
         <postStartupActivity implementation="io.github.dotnetsupport.solution.DotNetModuleSetup"/>
+        <!-- can the helpers run in the data directory of the plugin (fapolicyd, noexec): moves it to the work home when not -->
+        <postStartupActivity implementation="io.github.dotnetsupport.cli.PluginDataCheck$Startup"/>
         <postStartupActivity implementation="io.github.dotnetsupport.view.SolutionViewActivator"/>
         <postStartupActivity implementation="io.github.dotnetsupport.view.ToolWindowsSetup"/>
         <!-- the page about the plugin, once after the installation and after an update -->

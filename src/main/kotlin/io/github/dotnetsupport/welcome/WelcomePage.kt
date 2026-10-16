@@ -11,7 +11,6 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
-import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.openapi.fileEditor.impl.HTMLEditorProvider
 import com.intellij.openapi.project.DumbAware
@@ -82,7 +81,7 @@ object WelcomePage {
     fun open(project: Project, page: String = INDEX, anchor: String? = null, inBrowser: Boolean = false) {
         val dark = !JBColor.isBright()
         val directory = try {
-            write(Path.of(PathManager.getSystemPath(), "dotnet-support", "welcome", if (dark) "dark" else "light"), dark)
+            write(io.github.dotnetsupport.cli.PluginData.root().resolve("welcome").resolve(if (dark) "dark" else "light"), dark)
         } catch (e: IOException) {
             PluginLog.warn(LOG_CATEGORY, "the pages of the plugin could not be written", e)
             null

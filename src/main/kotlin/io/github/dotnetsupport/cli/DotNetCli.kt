@@ -59,8 +59,21 @@ object DotNetCli {
         return wellKnown.firstOrNull { File(it).canExecute() }
     }
 
+    /**
+     * A `dotnet` command the plugin runs: a build, a restore, a helper. With the temporary directory of the plugin when its data was moved
+     * ([PluginData.processEnvironment]): an execution policy that allows one directory may deny `/tmp` as well.
+     */
     @Throws(ExecutionException::class)
-    fun commandLine(workDirectory: String?, vararg arguments: String): GeneralCommandLine {
+    fun commandLine(workDirectory: String?, vararg arguments: String): GeneralCommandLine =
+        userCommandLine(workDirectory, *arguments).withEnvironment(PluginData.processEnvironment())
+
+    /**
+     * A `dotnet` command that runs the program of the user (a run configuration, the tests): the environment of the IDE as it is, so that
+     * the program writes its temporary files where it would anyway, and `dotnet-counters` / `dotnet-trace` find its diagnostic socket in
+     * the `TMPDIR` every other .NET process of the machine uses.
+     */
+    @Throws(ExecutionException::class)
+    fun userCommandLine(workDirectory: String?, vararg arguments: String): GeneralCommandLine {
         val executable = findExecutable()
             ?: throw ExecutionException("The 'dotnet' executable is not found. Install the .NET SDK and make sure it is on PATH.")
         return GeneralCommandLine(executable)

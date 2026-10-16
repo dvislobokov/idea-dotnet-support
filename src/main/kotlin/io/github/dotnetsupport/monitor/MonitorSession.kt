@@ -12,7 +12,6 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
-import com.intellij.openapi.util.io.FileUtil
 import com.intellij.util.concurrency.AppExecutorUtil
 import io.github.dotnetsupport.run.DotNetRunConfiguration
 import io.github.dotnetsupport.cli.PluginLog
@@ -135,7 +134,7 @@ class MonitorSession(
 
     /** One `dotnet-counters collect` process and the file it writes. */
     private class Collector(executable: File, val pid: Long) {
-        private val file = FileUtil.createTempFile("dotnet-counters-$pid-", ".csv", true)
+        private val file = io.github.dotnetsupport.cli.PluginData.tempFile("dotnet-counters-$pid-", ".csv")
         private val output = StringBuffer()
         private val handler = OSProcessHandler(DotNetCounters.collectCommand(executable, pid, file))
         private val snapshot = CounterSnapshot()

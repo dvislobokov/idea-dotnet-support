@@ -636,6 +636,7 @@
 - [ ] Шаблоны: поиск по настроенным приватным фидам, установка конкретной версии
 - [x] Upgrade Assistant: «Analyze Upgrade to Newer .NET...» для проекта или solution — `upgrade-assistant analyze` с выбором целевого framework, отчёт таблицей (severity, правило, что найдено, место) с переходом к коду и ссылкой на документацию; предложение установить tool, если его нет
 - [ ] Upgrade Assistant: применение исправлений (`upgrade-assistant upgrade`), HTML-отчёт, фильтр по severity / проекту
+- [x] Linux с политикой запуска (fapolicyd, `noexec`, SELinux): все данные плагина — в одной папке (`cli/PluginData`, Settings | .NET → Plugin data); раз за сеанс проба (копия `/bin/true`, затем `dotnet` на собранном индексаторе), при запрете — переезд в `/home/work/<user>/.cache/dotnet-support` с журналами в `logs` и `TMPDIR` в `tmp`, без рабочей папки — уведомление. Тест `PluginDataTest`; вживую на fapolicyd не проверено
 
 ### Производительность и эксперименты
 - [ ] BenchmarkDotNet: ▶ у `[Benchmark]`, запуск в Release, результаты из `BenchmarkDotNet.Artifacts/results/*.csv` таблицей (Mean, Error, Allocated), сравнение с предыдущим прогоном

@@ -21,6 +21,13 @@ object NativeLib {
     @Volatile var status: String = "not loaded"; private set
     @Volatile var loaded: Boolean = false; private set
     @Volatile var isaName: String = ""; private set
+
+    /**
+     * Where the library is extracted, set by the host before the first [ensureLoaded]; null: `java.io.tmpdir`. An execution policy
+     * (fapolicyd, a `noexec` /tmp) may deny loading a shared library from the temporary directory, so a host that knows a directory
+     * where code may be loaded passes it here.
+     */
+    @Volatile var extractDirectory: File? = null
     private var attempted = false
 
     val platform: String? by lazy {
@@ -74,7 +81,7 @@ object NativeLib {
         val bytes = NativeLib::class.java.classLoader.getResourceAsStream(res)?.use { it.readBytes() }
             ?: run { status = "resource $res not bundled"; return null }
         val sha = MessageDigest.getInstance("SHA-1").digest(bytes).joinToString("") { "%02x".format(it) }.take(16)
-        val dir = File(System.getProperty("java.io.tmpdir"), "cmlkernels/$sha")
+        val dir = File(extractDirectory ?: File(System.getProperty("java.io.tmpdir")), "cmlkernels/$sha")
         val out = File(dir, res.substringAfterLast('/'))
         if (!(out.isFile && out.length() == bytes.size.toLong())) {
             dir.mkdirs()

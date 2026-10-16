@@ -84,7 +84,7 @@ class CodeMetricsService(private val project: Project) {
     }
 
     private fun measure(dll: File, inputs: JsonArray): List<MetricsNode>? {
-        val input = FileUtil.createTempFile("code-metrics", ".json", true)
+        val input = io.github.dotnetsupport.cli.PluginData.tempFile("code-metrics", ".json")
         try {
             input.writeText(JsonObject().apply { add("projects", inputs) }.toString())
             val result = DotNetCli.execute(DotNetCli.commandLine(input.parent, dll.path, "--input", input.path), HELPER_TIMEOUT_MS)

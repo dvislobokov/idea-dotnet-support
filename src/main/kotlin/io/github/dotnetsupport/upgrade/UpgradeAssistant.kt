@@ -23,7 +23,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.util.SystemInfo
-import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.ColoredTableCellRenderer
@@ -180,7 +179,7 @@ class AnalyzeUpgradeAction : AnAction(), DumbAware {
 
     private fun analyze(project: Project, executable: File, target: VirtualFile, framework: String) {
         val title = "Upgrade analysis of ${target.name} for $framework"
-        val report = FileUtil.createTempFile("upgrade-assistant", ".json", true)
+        val report = io.github.dotnetsupport.cli.PluginData.tempFile("upgrade-assistant", ".json")
         val command = UpgradeAssistant.commandLine(executable, File(target.path), framework, report)
         val capture = AnsiFree(BuildViewCommandOutput(project, title))
         // minutes, not seconds: the tool restores and compiles the projects before it looks at them

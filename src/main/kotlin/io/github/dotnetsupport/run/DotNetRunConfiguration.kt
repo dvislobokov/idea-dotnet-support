@@ -195,7 +195,7 @@ class DotNetRunConfiguration(project: Project, factory: ConfigurationFactory, na
             DotNetCommand.TEST -> testArguments(projectPath, selected, testResultsDirectory, programArguments)
         }
         val workDirectory = options.workingDirectory?.takeIf { it.isNotBlank() } ?: File(projectPath).parent
-        return DotNetCli.commandLine(workDirectory, *arguments.toTypedArray())
+        return DotNetCli.userCommandLine(workDirectory, *arguments.toTypedArray())
             // the Hot Reload state is read from the messages of `dotnet watch`, which are localized (HotReloadOutput)
             .withEnvironment(if (options.command == DotNetCommand.WATCH) mapOf("DOTNET_CLI_UI_LANGUAGE" to "en") else emptyMap())
             .withLaunchEnvironment()

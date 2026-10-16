@@ -8,7 +8,6 @@ import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetHelper
 import io.github.dotnetsupport.cli.PluginLog
 import java.io.File
-import java.nio.file.Files
 
 /**
  * The indexer of assemblies on the machine of the user: built there from the source the plugin carries ([DotNetHelper]), run with
@@ -43,7 +42,7 @@ class IndexerTool {
         if (assemblies.isEmpty()) return emptyMap()
         val dll = ensureBuilt() ?: run { reportBuildFailure(); return emptyMap() }
         output.mkdirs()
-        val list = Files.createTempFile("assemblies", ".txt").toFile()
+        val list = io.github.dotnetsupport.cli.PluginData.tempFile("assemblies", ".txt")
         try {
             list.writeText(assemblies.joinToString("\n") { it.path })
             val command = DotNetCli.commandLine(output.path, dll.path, "--out", output.path, "--list", list.path)

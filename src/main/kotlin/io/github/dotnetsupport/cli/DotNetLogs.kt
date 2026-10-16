@@ -5,8 +5,6 @@ import com.intellij.ide.actions.RevealFileAction
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.diagnostic.logger
 import com.intellij.openapi.project.DumbAware
 import java.io.File
@@ -23,14 +21,13 @@ private val LOG = logger<DotNetLogs>()
  * Every log of the plugin, in one folder of the home directory the user can find and send (asked for): `~/idea-dotnet-logs`, with
  * `plugin` (the journal of the plugin, see [PluginLog]), `commands` (every `dotnet` command the plugin runs with its output),
  * `dotnet-debugger`, `roslyn-language-server` and `DotNetBuild` in it. Not the log directory of the IDE: that one is per IDE and
- * version, and hard to find.
+ * version, and hard to find. When the data of the plugin was moved (Settings | .NET → Plugin data, [PluginData]) the logs are
+ * `<data>/logs`: on a machine with an execution policy everything the plugin writes is in the one allowed directory.
  */
 object DotNetLogs {
     private val TIME = DateTimeFormatter.ofPattern("HH:mm:ss.SSS")
 
-    val root: Path
-        get() = if (ApplicationManager.getApplication()?.isUnitTestMode == true) Path.of(PathManager.getTempPath(), "idea-dotnet-logs")
-        else Path.of(System.getProperty("user.home"), "idea-dotnet-logs")
+    val root: Path get() = PluginData.logs()
 
     fun directory(name: String): Path = root.resolve(name)
 
@@ -79,6 +76,7 @@ class DailyLog(private val directory: String, private val prefix: String) {
     private val lock = Any()
     private var writer: Writer? = null
     private var writerDay: LocalDate? = null
+    private var writerFolder: Path? = null
 
     fun fileName(day: LocalDate): String = "$prefix${DAY.format(day)}.log"
 
@@ -97,9 +95,11 @@ class DailyLog(private val directory: String, private val prefix: String) {
 
     private fun writer(): Writer? {
         val today = LocalDate.now()
-        if (writer != null && writerDay == today) return writer
-        runCatching { writer?.close() }
         val folder = DotNetLogs.directory(directory)
+        // a new file on a new day, and in the new folder when the logs have moved with the data of the plugin
+        if (writer != null && writerDay == today && writerFolder == folder) return writer
+        runCatching { writer?.close() }
+        writerFolder = folder
         Files.createDirectories(folder)
         outdated(folder.toFile().list().orEmpty().toList(), today).forEach { File(folder.toFile(), it).delete() }
         writerDay = today

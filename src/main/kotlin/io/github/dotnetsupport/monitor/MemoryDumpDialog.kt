@@ -70,9 +70,12 @@ object MemoryDumps {
     fun collectCommand(tool: File, pid: Long, file: File): GeneralCommandLine =
         GeneralCommandLine(tool.path, "collect", "--process-id", pid.toString(), "--output", file.path, "--type", "Heap").withCharset(Charsets.UTF_8)
 
-    /** A dump takes as much disk as the process takes memory: it lives in the temporary directory of the IDE while its dialog is open. */
+    /**
+     * A dump takes as much disk as the process takes memory: it lives in the temporary directory of the IDE while its dialog is open (in the
+     * one of the plugin when its data was moved, [io.github.dotnetsupport.cli.PluginData]).
+     */
     fun dumpFile(processTitle: String, pid: Long, at: LocalTime = LocalTime.now()): File =
-        File(PathManager.getTempPath(), "dotnet-dumps/${FileUtil.sanitizeFileName(processTitle.substringBefore(" ("), false)}-$pid-${at.format(TIME)}.dmp")
+        File(if (io.github.dotnetsupport.cli.PluginData.isRelocated) io.github.dotnetsupport.cli.PluginData.tmp().toFile() else File(PathManager.getTempPath()), "dotnet-dumps/${FileUtil.sanitizeFileName(processTitle.substringBefore(" ("), false)}-$pid-${at.format(TIME)}.dmp")
 
     fun take(project: Project, pid: Long, processTitle: String) {
         val tool = DotNetTool.DUMP.find() ?: return DotNetTool.DUMP.offerInstallation(project, "Memory Dump") { take(project, pid, processTitle) }

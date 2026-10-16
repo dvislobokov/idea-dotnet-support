@@ -3,7 +3,6 @@ package io.github.dotnetsupport.run
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.intellij.openapi.application.PathManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
@@ -133,7 +132,7 @@ class LaunchBuilds(private val project: Project) {
     }
 
     private fun filterFile(step: LaunchBuildPlan.Step): VirtualFile? {
-        val file = PathManager.getSystemDir().resolve("dotnet-support/launch-builds/${LaunchBuildPlan.filterName(step.projects)}").toFile()
+        val file = io.github.dotnetsupport.cli.PluginData.root().resolve("launch-builds/${LaunchBuildPlan.filterName(step.projects)}").toFile()
         file.parentFile.mkdirs()
         file.writeText(LaunchBuildPlan.filterJson(step.solutionPath!!, step.projects, file.parent))
         return LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file)?.also { it.refresh(false, false) }

@@ -22,7 +22,6 @@ import com.intellij.openapi.ui.InputValidatorEx
 import com.intellij.openapi.ui.Messages
 import com.intellij.ide.actions.RevealFileAction
 import com.intellij.openapi.util.SystemInfo
-import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
@@ -162,7 +161,7 @@ object EfCommands {
     /** `--output` always: the standard output of the tool is mixed with the build messages. No path means a scratch file. */
     private fun script(project: Project, command: EfCommand.Script, context: EfContext, reopen: () -> Unit) {
         val requested = command.output?.let(::File)?.let { if (it.isDirectory) File(it, "migrations.sql") else it }
-        val file = requested ?: FileUtil.createTempFile("ef-migrations", ".sql", true)
+        val file = requested ?: io.github.dotnetsupport.cli.PluginData.tempFile("ef-migrations", ".sql")
         EfRunner.run(project, command.copy(output = file.path), context, reopen) {
             val script = if (requested != null) LocalFileSystem.getInstance().refreshAndFindFileByIoFile(file)
             else ScratchRootType.getInstance().createScratchFile(project, "migrations.sql", null, runCatching { file.readText() }.getOrDefault("")).also { file.delete() }

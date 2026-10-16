@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.220
+
+- On Linux systems where programs may not run from the IDE's own folders (fapolicyd, a `noexec` mount, SELinux), the plugin keeps all
+  its data — caches, indexes, the helpers it builds, generated files, logs, temporary files — in `/home/work/<user>/.cache/dotnet-support`
+  when that work directory is yours, and tells you; otherwise it offers to choose a directory. The directory can also be set by hand:
+  Settings | .NET → Plugin Data. Nothing changes on Windows or where nothing is restricted.
+
 ## 0.1.219
 
 - A lambda whose body returns a value of the wrong type for its delegate is an error, as the compiler reports it: «Cannot implicitly

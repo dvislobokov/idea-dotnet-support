@@ -56,6 +56,11 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
         var dotnetPath by string("")
         /** Extra directories to scan for a `dotnet` host, ahead of PATH; see [io.github.dotnetsupport.cli.DotNetSearch]. */
         var dotnetSearchPaths by list<String>()
+        /**
+         * Where the plugin keeps its data (helpers, indexes, caches, temporary files, logs), see [io.github.dotnetsupport.cli.PluginData]; empty:
+         * the system directory of the IDE. Set by the user or by [io.github.dotnetsupport.cli.PluginDataCheck] when programs cannot run there.
+         */
+        var pluginDataDirectory by string("")
         var createRunConfigurations by property(true)
         var openBuildWindowOnEveryBuild by property(true)
         var switchToSolutionView by property(true)
@@ -120,6 +125,10 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
     var dotnetPath: String
         get() = state.dotnetPath.orEmpty()
         set(value) { state.dotnetPath = value.trim() }
+
+    var pluginDataDirectory: String
+        get() = state.pluginDataDirectory.orEmpty()
+        set(value) { state.pluginDataDirectory = value.trim() }
 
     var dotnetSearchPaths: List<String>
         get() = state.dotnetSearchPaths.toList()
@@ -215,6 +224,7 @@ class DotNetSettings : SimplePersistentStateComponent<DotNetSettings.Settings>(S
 class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurable(DotNetBundle.message("page.dotnet")) {
     private val settings get() = DotNetSettings.getInstance()
     private val pathField = TextFieldWithBrowseButton()
+    private val dataField = TextFieldWithBrowseButton()
     private val searchPathsModel = com.intellij.ui.CollectionListModel<String>()
     private val searchPaths = com.intellij.ui.components.JBList(searchPathsModel).apply { visibleRowCount = 3 }
     private val cliStatus = JBLabel()
@@ -304,6 +314,8 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
 
     override fun createPanel(): DialogPanel {
         pathField.addBrowseFolderListener(project, FileChooserDescriptorFactory.createSingleFileNoJarsDescriptor().withTitle(DotNetBundle.message("settings.cli.executable.chooser")))
+        dataField.addBrowseFolderListener(project, FileChooserDescriptorFactory.createSingleFolderDescriptor().withTitle(DotNetBundle.message("settings.data.chooser")))
+        (dataField.textField as? JBTextField)?.emptyText?.text = io.github.dotnetsupport.cli.PluginData.defaultRoot().toString()
         (pathField.textField as? JBTextField)?.emptyText?.text = DotNetCli.detectExecutable()?.let { DotNetBundle.message("settings.cli.autoDetected", it) } ?: DotNetBundle.message("settings.cli.notOnPath")
 
         return panel {
@@ -354,6 +366,13 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
                         .comment(DotNetBundle.message("settings.formatting.comment"), maxLineLength = COMMENT_WIDTH)
                 }
                 row("") { formatterStatus = comment("", maxLineLength = COMMENT_WIDTH).component }
+            }
+            group(DotNetBundle.message("settings.data.group")) {
+                row(DotNetBundle.message("settings.data.directory")) {
+                    cell(dataField).align(AlignX.FILL)
+                        .comment(DotNetBundle.message("settings.data.directory.comment", io.github.dotnetsupport.cli.PluginData.FALLBACK), maxLineLength = COMMENT_WIDTH)
+                }
+                row("") { comment(DotNetBundle.message("settings.data.now", io.github.dotnetsupport.cli.PluginData.root().toString(), io.github.dotnetsupport.cli.PluginData.logs().toString()), maxLineLength = COMMENT_WIDTH) }
             }
             group(DotNetBundle.message("settings.behavior.group")) {
                 row { checkBox(DotNetBundle.message("settings.behavior.runConfigurations")).bindSelected(settings::createRunConfigurations) }
@@ -440,7 +459,7 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
         }
     }
 
-    override fun isModified(): Boolean = super.isModified() || pathField.text.trim() != settings.dotnetPath ||
+    override fun isModified(): Boolean = super.isModified() || pathField.text.trim() != settings.dotnetPath || dataField.text.trim() != settings.pluginDataDirectory ||
         searchPathsModel.items != settings.dotnetSearchPaths ||
         toolRows.values.any { it.path.text.trim() != settings.toolPath(it.tool) }
 
@@ -451,12 +470,15 @@ class DotNetSettingsConfigurable(private val project: Project) : BoundConfigurab
         settings.dotnetPath = pathField.text
         settings.dotnetSearchPaths = searchPathsModel.items
         toolRows.values.forEach { settings.setToolPath(it.tool, it.path.text) }
+        // probed and moved in the background; the setting changes only when programs can run there
+        if (dataField.text.trim() != settings.pluginDataDirectory) io.github.dotnetsupport.cli.PluginDataCheck.relocate(project, dataField.text.trim())
         refreshInformation(settings.dotnetPath)
     }
 
     override fun reset() {
         super.reset()
         pathField.text = settings.dotnetPath
+        dataField.text = settings.pluginDataDirectory
         searchPathsModel.replaceAll(settings.dotnetSearchPaths)
         toolRows.values.forEach { it.path.text = settings.toolPath(it.tool) }
     }

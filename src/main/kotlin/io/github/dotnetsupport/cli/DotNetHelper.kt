@@ -1,6 +1,5 @@
 package io.github.dotnetsupport.cli
 
-import com.intellij.openapi.application.PathManager
 import java.io.File
 import java.security.MessageDigest
 
@@ -25,6 +24,8 @@ class DotNetHelper(
     /** Null until built; the failure of a build is remembered for the session, so it is not tried again at every use. */
     @Volatile private var built: File? = null
     @Volatile private var failed: String? = null
+    /** The data root [failed] happened under: a move of the data ([PluginDataCheck]) gives the build another chance where programs can run. */
+    @Volatile private var failedUnder: File? = null
 
     val failure: String? get() = failed
 
@@ -35,8 +36,11 @@ class DotNetHelper(
      */
     @Synchronized
     fun ensureBuilt(): File? {
-        built?.takeIf { it.isFile }?.let { return it }
-        if (failed != null) return null
+        // the first helper of a session may come before the start of the project: where it is built must be decided first
+        PluginDataCheck.ensureDecided()
+        built?.takeIf { it.isFile && it.startsWith(root()) }?.let { return it }
+        if (failed != null && failedUnder == root()) return null
+        failed = null
         val sources = Sources.read(folder, this.sources + "$assembly.csproj") ?: return fail("The source of $assembly is not in the plugin")
         val work = File(root(), folder).apply { mkdirs() }
         return java.io.RandomAccessFile(File(work, ".lock"), "rw").use { access -> access.channel.lock().use { build(sources, work) } }
@@ -76,6 +80,7 @@ class DotNetHelper(
 
     private fun fail(message: String): File? {
         failed = message
+        failedUnder = root()
         PluginLog.error(LOG_CATEGORY, "$message\n  (remembered for the session: not tried again until the IDE restarts)")
         return null
     }
@@ -114,11 +119,11 @@ class DotNetHelper(
         private const val ERROR_TAIL = 1_500
 
         /**
-         * Everything the plugin keeps of its helpers: what is built and what they have made. `-Ddotnet.support.root=<dir>` moves it out of the
-         * system directory of the IDE: the dataset export runs many IDE processes with their own system directories and one folder of
-         * indexes (the indexer locks the folder between processes anyway).
+         * Everything the plugin keeps of its helpers: what is built and what they have made — the data root of [PluginData] (the system
+         * directory of the IDE, the directory of the settings, or `-Ddotnet.support.root=<dir>`: the dataset export runs many IDE processes
+         * with their own system directories and one folder of indexes, the indexer locks the folder between processes anyway).
          */
-        fun root(): File = System.getProperty("dotnet.support.root")?.takeIf { it.isNotBlank() }?.let(::File) ?: File(PathManager.getSystemPath(), "dotnet-support")
+        fun root(): File = PluginData.root().toFile()
 
         /** `10.0.401` -> `net10.0`, `9.0.301` -> `net9.0`; null for what is older than the helpers can be built with. */
         fun framework(sdkVersion: String): String? {

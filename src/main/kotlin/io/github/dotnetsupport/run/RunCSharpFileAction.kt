@@ -44,7 +44,7 @@ class RunCSharpFileAction : AnAction(), DumbAware {
         }
         // a file-based app runs from the directory of the file; needs .NET SDK 10 or newer (an older SDK prints its own error to the console)
         val handler = try {
-            KillableColoredProcessHandler(DotNetCli.commandLine(file.parent.path, "run", file.name))
+            KillableColoredProcessHandler(DotNetCli.userCommandLine(file.parent.path, "run", file.name))
         } catch (e: Exception) {
             PluginLog.error(DotNetDebugBuild.LOG_CATEGORY, "`dotnet run ${file.name}` could not be started", e)
             return DotNetCli.notifyError(project, "Run C# File", e.message ?: "'dotnet run' could not be started.")

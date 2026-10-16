@@ -143,6 +143,8 @@ class RoslynClientDescriptor(project: Project, private val root: VirtualFile, pr
             .withWorkDirectory(root.path).withCharset(StandardCharsets.UTF_8)
             .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
             .withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en")
+            // the temporary directory of the plugin when its data was moved: the server starts build hosts and writes there
+            .withEnvironment(io.github.dotnetsupport.cli.PluginData.processEnvironment())
         // the host of the tool must find the runtime where the `dotnet` of the plugin is, not in whatever installation the machine registers
         val dotnetRoot = RoslynPolicy.dotnetRoot(command.parentEnvironment["DOTNET_ROOT"], DotNetCli.findExecutable())
         if (dotnetRoot != null) command.withEnvironment("DOTNET_ROOT", dotnetRoot)
