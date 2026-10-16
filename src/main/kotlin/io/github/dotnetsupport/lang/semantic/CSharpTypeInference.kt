@@ -1,9 +1,7 @@
 package io.github.dotnetsupport.lang.semantic
 
-import com.intellij.psi.util.PsiTreeUtil
-import com.intellij.psi.util.elementType
-import io.github.dotnetsupport.csharp.lang.SyntaxKind
 import io.github.dotnetsupport.csharp.lang.psi.*
+import io.github.dotnetsupport.lang.semantic.inference.InferenceArguments
 import io.github.dotnetsupport.lang.semantic.roslyn.InferenceArgument
 import io.github.dotnetsupport.lang.semantic.roslyn.RoslynMethodTypeInferrer
 import io.github.dotnetsupport.lang.semantic.roslyn.RoslynTypes
@@ -15,8 +13,6 @@ import io.github.dotnetsupport.lang.semantic.roslyn.RoslynTypes
  * [Inferred.Unknown].
  */
 internal class CSharpTypeInference(private val r: CSharpNameResolver) {
-    private val overloads get() = r.overloads
-
     sealed class Inferred {
         class Known(val types: List<SemanticType>) : Inferred()
         object Failed : Inferred()
@@ -111,7 +107,7 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
             byReference += kind == "ref" || kind == "out" || kind == "in"
             // an argument whose parameter mentions no type parameter of the method gives no inference: its type need not be known
             inferenceArguments += if (!mentions(target)) InferenceArgument.Opaque
-            else argument(argument.expression ?: throw RoslynMethodTypeInferrer.Unknown("argument ${i + 1} has no expression"), lenient)
+            else readers.of(argument.expression ?: throw RoslynMethodTypeInferrer.Unknown("argument ${i + 1} has no expression"), lenient)
         }
         return when (val result = RoslynMethodTypeInferrer(RoslynTypes(r), arity, ordinalOf, formal, byReference, inferenceArguments, onFixed = onFixed).infer()) {
             is RoslynMethodTypeInferrer.Result.Known -> Inferred.Known(result.types)
@@ -120,103 +116,8 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
         }
     }
 
-    /** An argument as Roslyn's inference sees it (the kind of its `BoundExpression`). */
-    private fun argument(expression: CSharpExpression, lenient: Boolean): InferenceArgument {
-        val value = overloads.unparenthesized(expression)
-        val unknownType = { if (lenient) InferenceArgument.Typed(null) else throw RoslynMethodTypeInferrer.Unknown("the type of argument `${SemanticTrace.text(value)}` is not known") }
-        return when {
-            value is CSharpAnonymousFunctionExpression -> lambda(value)
-            isMethodGroup(value) -> InferenceArgument.MethodGroup { parameters -> methodGroupReturnType(value, parameters) }
-            value.elementType == SyntaxKind.NullLiteralExpression || value.elementType == SyntaxKind.DefaultLiteralExpression -> InferenceArgument.Typed(null)
-            // `out T x` has its type; `out var x` has none yet
-            value is CSharpDeclarationExpression -> InferenceArgument.Typed(value.type?.takeIf { !r.isVar(it) }?.let { r.resolveType(it) ?: throw RoslynMethodTypeInferrer.Unknown() })
-            value is CSharpTupleExpression -> InferenceArgument.Tuple(r.typeOf(value), value.arguments.map { a -> a.expression?.let { argument(it, lenient) } ?: InferenceArgument.Opaque })
-            value is CSharpCollectionExpression || value is CSharpImplicitObjectCreationExpression || value is CSharpThrowExpression -> InferenceArgument.Opaque
-            // a conditional without a natural type is target-typed: not modeled
-            value is CSharpConditionalExpression -> r.typeOf(value)?.let { InferenceArgument.Typed(it) } ?: InferenceArgument.Opaque
-            else -> r.typeOf(value)?.let { InferenceArgument.Typed(it) } ?: unknownType()
-        }
-    }
+    /** The arguments as the inference sees them: one file per construct (package `inference`). */
+    private val readers = InferenceArguments(r)
 
-    private fun lambda(lambda: CSharpAnonymousFunctionExpression): InferenceArgument.Lambda {
-        val parameters = when (lambda) {
-            is CSharpSimpleLambdaExpression -> listOfNotNull(lambda.parameter)
-            is CSharpParenthesizedLambdaExpression -> lambda.parameterList?.parameters.orEmpty()
-            is CSharpAnonymousMethodExpression -> lambda.parameterList?.parameters.orEmpty()
-            else -> throw RoslynMethodTypeInferrer.Unknown()
-        }
-        val hasSignature = lambda !is CSharpAnonymousMethodExpression || lambda.parameterList != null
-        val explicit = if (parameters.isNotEmpty() && parameters.all { it.type != null }) {
-            parameters.map { p -> p.type?.let(r::resolveType) ?: throw RoslynMethodTypeInferrer.Unknown() }
-        } else null
-        val explicitReturnType = (lambda as? CSharpParenthesizedLambdaExpression)?.returnType?.let { r.resolveType(it) ?: throw RoslynMethodTypeInferrer.Unknown() }
-        return InferenceArgument.Lambda(parameters.size, hasSignature, explicit, explicitReturnType) { delegateParameters, delegateReturnType ->
-            // as Roslyn: the body is bound with the implicit parameters typed by the delegate of this candidate (its input types are fixed)
-            val returned = if (explicit != null || parameters.isEmpty()) returnedType(lambda) else {
-                if (delegateParameters.size != parameters.size) throw RoslynMethodTypeInferrer.Unknown("the delegate takes ${delegateParameters.size} parameters, the lambda ${parameters.size}")
-                r.bindLambda(lambda, parameters, delegateParameters) { returnedType(lambda) }
-            }
-            if (!r.expressions.isAsync(lambda.modifiers)) returned else asyncReturnType(returned, delegateReturnType)
-        }
-    }
-
-    /**
-     * What an async lambda returning [returned] (null: no value) gives (§12.6.3.13): the task-like type the delegate returns, built over it —
-     * `ValueTask<X>` for a `Func<…, ValueTask<TResult>>` (nopCommerce's `AsyncEnumerable.Select(async (x, _) => …)` was CS0411) — else
-     * `Task<X>`, or `Task` without a value.
-     */
-    private fun asyncReturnType(returned: SemanticType?, delegateReturnType: SemanticType?): SemanticType {
-        val taskLike = (delegateReturnType as? SemanticType.Library)?.type?.takeIf { it.fullName in TASK_LIKE }
-        if (taskLike != null) {
-            if (returned != null && taskLike.typeParameters.size == 1) return SemanticType.Library(taskLike, listOf(returned))
-            if (returned == null && taskLike.typeParameters.isEmpty()) return SemanticType.Library(taskLike, emptyList())
-        }
-        val task = r.libraryType(if (returned == null) "System.Threading.Tasks.Task" else "System.Threading.Tasks.Task`1") ?: throw RoslynMethodTypeInferrer.Unknown()
-        return if (returned == null) task else SemanticType.Library(task.type, listOf(returned))
-    }
-
-    /** What the body of [lambda] returns: its expression, the one type of the `return`s of its block; null when it returns no value. */
-    private fun returnedType(lambda: CSharpAnonymousFunctionExpression): SemanticType? {
-        val body = lambda.expressionBody
-        if (body != null) {
-            val type = r.typeOf(body) ?: throw RoslynMethodTypeInferrer.Unknown("the type of the lambda body `${SemanticTrace.text(body)}` is not known")
-            return type.takeIf { r.definitionName(it) != VOID }
-        }
-        val block = lambda.block ?: throw RoslynMethodTypeInferrer.Unknown("the lambda has no body")
-        val returned = PsiTreeUtil.findChildrenOfType(block, CSharpReturnStatement::class.java).filter { inLambda(it, lambda) }.mapNotNull { it.expression }
-        if (returned.isEmpty()) return null
-        val types = returned.map { r.typeOf(it) ?: throw RoslynMethodTypeInferrer.Unknown("the type of `return ${SemanticTrace.text(it)}` in the lambda is not known") }
-        if (types.any { overloads.same(it, types.first()) != true }) throw RoslynMethodTypeInferrer.Unknown("the returns of the lambda differ in type: [${types.joinToString { SemanticTrace.show(it) }}]")
-        return types.first()
-    }
-
-    /** The return type of the method of the group [value] a delegate with [parameters] takes: one method, not generic, of that arity. */
-    private fun methodGroupReturnType(value: CSharpExpression, parameters: List<SemanticType>): SemanticType? {
-        val methods = methodGroup(value) ?: throw RoslynMethodTypeInferrer.Unknown()
-        val single = methods.singleOrNull() ?: throw RoslynMethodTypeInferrer.Unknown()
-        if (r.isGeneric(single)) throw RoslynMethodTypeInferrer.Unknown()
-        val signature = r.signature(single, false) ?: throw RoslynMethodTypeInferrer.Unknown()
-        if (signature.size != parameters.size) throw RoslynMethodTypeInferrer.Unknown()
-        return r.returnType(single, emptyList())?.takeIf { r.definitionName(it) != VOID } ?: throw RoslynMethodTypeInferrer.Unknown()
-    }
-
-    private fun inLambda(statement: CSharpReturnStatement, lambda: CSharpAnonymousFunctionExpression): Boolean =
-        PsiTreeUtil.getParentOfType(statement, CSharpAnonymousFunctionExpression::class.java, CSharpLocalFunctionStatement::class.java) == lambda
-
-    fun isMethodGroup(e: CSharpExpression): Boolean = methodGroup(e) != null
-
-    private fun methodGroup(e: CSharpExpression): List<CSharpSymbol>? {
-        val name = when (e) {
-            is CSharpSimpleName -> e
-            is CSharpMemberAccessExpression -> e.nameElement
-            else -> null
-        } ?: return null
-        if (r.invocationOf(name) != null) return null
-        return r.resolveName(name)?.symbols?.takeIf { s -> s.isNotEmpty() && s.all(r::isInMethodGroup) }
-    }
-
-    companion object {
-        private const val VOID = "System.Void"
-        private val TASK_LIKE = setOf("System.Threading.Tasks.Task", "System.Threading.Tasks.Task`1", "System.Threading.Tasks.ValueTask", "System.Threading.Tasks.ValueTask`1")
-    }
+    fun isMethodGroup(e: CSharpExpression): Boolean = readers.methodGroups.isMethodGroup(e)
 }

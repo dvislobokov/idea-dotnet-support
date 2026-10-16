@@ -721,7 +721,8 @@
     StartAsync(); }, token)` с телом-блоком больше не даёт ложное CS0029 «Task<Task<T>> в Task<T>» (случай коллеги на 0.1.185: форма с
     выражением починилась раньше, блок — нет; `refineByLambdas` не смотрел тип `return` блока); 0.1.206 — D6e3 шаг 2: тело лямбды
     привязывается с типами параметров кандидата, как в Roslyn (bUnit `parameters.Add(x => x.Severity, …)` выводится, а не «не знаю»); 0.1.207 — лямбда с неявными параметрами к не-делегату
-    ничего не выводит, а не обрывает вывод (`ToDictionary(k => k.Id, v => v)`; отказов в журнале харнесса: SberEmp 453 → 258). CS8933 «using appeared previously as global using» —
+    ничего не выводит, а не обрывает вывод (`ToDictionary(k => k.Id, v => v)`; отказов в журнале харнесса: SberEmp 453 → 258); 0.1.208 — разбор аргументов вывода по
+    файлам конструкций (`lang/semantic/inference/`), поведение то же. CS8933 «using appeared previously as global using» —
     серым, как CS8019 и IDE0005 (у Roslyn скрытая подсказка, IDE показывают её так же), не ошибка. Тесты `RazorCorpusFalseErrorsTest`, `RoslynTypesTest`, `RoslynMethodTypeInferenceTest`
   - [x] F0 (2026-10-15, без версии: пользователю не видно) — фреймворки модулями рядом с ядром C#: точка расширения `csharpCodeGenerators`, модули `frameworks.razor` / `xaml` / `avalonia` / `grpc` вместо списков в `mayGenerateTypes`; тесты `CSharpCodeGeneratorsTest` (старая формула против новой), `FrameworkBoundaryTest`
 

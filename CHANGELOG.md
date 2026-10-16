@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.208
+
+- Inside the analysis of C#: how each kind of argument (a lambda, a method group, a tuple) is read for the type inference lives in a file
+  of its own, so a gap the analysis logs for one construct is fixed in one place. No change in what is reported.
+
 ## 0.1.207
 
 - The C# analysis no longer gives up on a call whose overloads differ by a non-delegate parameter where a lambda stands
