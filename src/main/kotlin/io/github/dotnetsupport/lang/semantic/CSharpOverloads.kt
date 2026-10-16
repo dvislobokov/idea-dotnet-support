@@ -1,14 +1,10 @@
 package io.github.dotnetsupport.lang.semantic
 
 import com.intellij.psi.PsiElement
-import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.psi.util.elementType
-import io.github.dotnetsupport.csharp.lang.SyntaxKind
 import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.index.IndexedMemberKind
-import io.github.dotnetsupport.index.IndexedTypeKind
 import io.github.dotnetsupport.lang.CSharpFile
-import io.github.dotnetsupport.lang.TypeKind
 import io.github.dotnetsupport.lang.semantic.CSharpNameResolver.Conversion
 import io.github.dotnetsupport.lang.semantic.roslyn.RoslynConversions
 import io.github.dotnetsupport.lang.semantic.roslyn.RoslynTypes
@@ -25,701 +21,19 @@ import java.util.IdentityHashMap
  *   inferred, constraints, the receiver of an extension method) and the better function member (§12.6.4.3: better conversion from
  *   expression and target, exact match, signed over unsigned, lambdas by their return type, then non-generic, normal form, no defaults,
  *   more specific). It answers only when one candidate surely beats all others: anything unknown on the way and it says nothing.
+ *
+ * One file per concern (D6e5, so D6c replaces them file by file): the conversions — [same], [classify], [argument] — are extensions in
+ * `CSharpOverloadConversions.kt`, the better conversion and the better function member in `CSharpOverloadBetterness.kt`; this file keeps
+ * the forms, the applicability, [resolve] / [evaluate], and the state they share.
  */
-internal class CSharpOverloads(private val r: CSharpNameResolver) {
-    private val known = IdentityHashMap<Any, Boolean>()
-    private val roslynConversions by lazy { RoslynConversions(RoslynTypes(r)) { operators(it, withBases = false) } }
-
-    // ---- identity
-
-    /** Whether [a] and [b] are the same type (tuple element names aside); null when a part of either is not known. */
-    fun same(a: SemanticType?, b: SemanticType?): Boolean? {
-        if (a == null || b == null) return null
-        if (a is SemanticType.Parameter || b is SemanticType.Parameter) {
-            if (a is SemanticType.Parameter && b is SemanticType.Parameter && a.ofMethod == b.ofMethod && a.owner == b.owner && a.name == b.name && a.index == b.index) return true
-            // a type parameter of a library method that inference left open may stand for anything
-            if (isOpen(a) || isOpen(b)) return null
-            return false
-        }
-        return when (a) {
-            is SemanticType.ArrayOf -> if (b !is SemanticType.ArrayOf || a.rank != b.rank) false else same(a.element, b.element)
-            is SemanticType.Library -> when (b) {
-                is SemanticType.Library -> if (a.type.fullName != b.type.fullName) false else sameArguments(a.arguments, b.arguments)
-                is SemanticType.Source -> if (builtFrom(a, b)) sameArguments(a.arguments, b.arguments) else false
-                else -> false
-            }
-            is SemanticType.Source -> when (b) {
-                is SemanticType.Source -> if (a.info.key != b.info.key) false else sameArguments(a.arguments, b.arguments)
-                is SemanticType.Library -> if (builtFrom(b, a)) sameArguments(a.arguments, b.arguments) else false
-                else -> false
-            }
-            is SemanticType.Parameter -> null
-        }
-    }
-
-    /**
-     * A built project is its sources: the IDE indexes the outputs of referenced projects too (`ProjectAssemblies.References.forIndex`), so a
-     * type may come from the assembly and from the source alike — MudBlazor's `KeyInterceptorService` of an extension method of the built
-     * `UnitTests.Shared` given to a parameter written in the sources (CS1503 "from 'KeyInterceptorService' to 'KeyInterceptorService'").
-     */
-    private fun builtFrom(library: SemanticType.Library, source: SemanticType.Source): Boolean =
-        library.type.qualifiedName == source.info.qualifiedName && library.type.arity == source.info.arity
-
-    private fun sameArguments(a: List<SemanticType?>, b: List<SemanticType?>): Boolean? {
-        if (a.size != b.size) return false
-        var unknown = false
-        for ((x, y) in a.zip(b)) when (same(x, y)) {
-            false -> return false
-            null -> unknown = true
-            true -> {}
-        }
-        return if (unknown) null else true
-    }
-
-    /** A type parameter of a method in a signature, not inferred: it may become any type. */
-    private fun isOpen(type: SemanticType): Boolean = type is SemanticType.Parameter && type.ofMethod && (type.owner == null || type.owner is CSharpMethodDeclaration && isCandidateParameter(type))
+internal class CSharpOverloads(internal val r: CSharpNameResolver) {
+    internal val known = IdentityHashMap<Any, Boolean>()
+    internal val roslynConversions by lazy { RoslynConversions(RoslynTypes(r)) { operators(it, withBases = false) } }
 
     // the method type parameters of the candidates being resolved: a parameter of the caller's own method is a type like any other
-    private val openOwners = HashSet<PsiElement>()
+    internal val openOwners = HashSet<PsiElement>()
 
-    private fun isCandidateParameter(type: SemanticType.Parameter): Boolean = type.owner in openOwners
-
-    // ---- conversions between types
-
-    /** The implicit conversion from [from] to [to] (§10.2); [userDefined] false: the standard ones only (the operand of a user-defined one). */
-    fun classify(from: SemanticType, to: SemanticType, userDefined: Boolean = true, depth: Int = 0): Conversion {
-        if (depth > 8) return Conversion.UNKNOWN
-        // Roslyn's classification, ported (CSHARP_PSI_MIGRATION.md, D6d), proves a conversion; what it does not prove, the rules below decide
-        val proved = if (userDefined) roslynConversions.classifyImplicitConversionFromType(from, to) else roslynConversions.classifyStandardImplicitConversion(from, to)
-        if (proved != null) return if (proved == RoslynConversions.Kind.IDENTITY) Conversion.IDENTITY else Conversion.IMPLICIT
-        val answer = classifyUnproved(from, to)
-        // the log of the analysis: a conversion the port left to the old rules and they found (the port's gap, D6e3) or could not tell; NONE
-        // is a decision both agree on (no conversion) — not logged
-        if (depth == 0 && answer != Conversion.NONE && SemanticTrace.enabled && tracedConversions.add(Triple(from.toString(), to.toString(), userDefined))) {
-            SemanticTrace.write("classify ${SemanticTrace.show(from)} -> ${SemanticTrace.show(to)}${if (userDefined) "" else " (standard)"}: port unproved, old rules $answer")
-        }
-        return answer
-    }
-
-    private val tracedConversions = HashSet<Triple<String, String, Boolean>>()
-
-    /**
-     * What the port ([RoslynConversions]) does not prove (D6e3: the rules that proved conversions are gone, the port proves them — the log
-     * showed them deciding only questions with an open type parameter, which Roslyn never asks). An open type parameter of a method being
-     * resolved: not known (the old pickers ask before inference); two instances of one definition whose arguments are not all known:
-     * identity, leniently; a type parameter of the enclosing code: by its constraints, NONE only where they all resolve; else NONE only
-     * where both types are fully known.
-     */
-    private fun classifyUnproved(from: SemanticType, to: SemanticType): Conversion {
-        when (same(from, to)) {
-            true -> return Conversion.IDENTITY
-            null -> if (from !is SemanticType.Parameter && to !is SemanticType.Parameter && r.definitionName(from) == r.definitionName(to)) return Conversion.IDENTITY
-            false -> {}
-        }
-        if (to is SemanticType.Parameter) {
-            if (to.ofMethod && (to.owner == null || isCandidateParameter(to))) return Conversion.UNKNOWN
-            // nothing converts to a type parameter but itself and what depends on it (`where T : U`), which the port proves
-            if (from is SemanticType.Parameter) return if (constraintsKnown(from)) Conversion.NONE else Conversion.UNKNOWN
-            return if (to.owner != null && closed(from)) Conversion.NONE else Conversion.UNKNOWN
-        }
-        if (from is SemanticType.Parameter) {
-            if (from.ofMethod && (from.owner == null || isCandidateParameter(from))) return Conversion.UNKNOWN
-            return if (from.owner != null && constraintsKnown(from) && closed(to)) Conversion.NONE else Conversion.UNKNOWN
-        }
-        return if (closed(from) && closed(to)) Conversion.NONE else Conversion.UNKNOWN
-    }
-
-    private fun ok(c: Conversion) = c == Conversion.IDENTITY || c == Conversion.IMPLICIT
-
-    /** The conversion of a tuple from those of its elements: NONE if any is none, UNKNOWN if any is not known, IDENTITY if all are. */
-    private fun combine(elements: List<Conversion>): Conversion = when {
-        elements.any { it == Conversion.NONE } -> Conversion.NONE
-        elements.any { it == Conversion.UNKNOWN } -> Conversion.UNKNOWN
-        elements.all { it == Conversion.IDENTITY } -> Conversion.IDENTITY
-        else -> Conversion.IMPLICIT
-    }
-
-    /** Whether every constraint of [parameter] written as a type resolves. */
-    private fun constraintsKnown(parameter: SemanticType.Parameter): Boolean {
-        val owner = parameter.owner ?: return false
-        val clauses = when (owner) {
-            is CSharpTypeDeclaration -> owner.constraintClauses
-            is CSharpMethodDeclaration -> owner.constraintClauses
-            is CSharpLocalFunctionStatement -> owner.constraintClauses
-            is CSharpDelegateDeclaration -> owner.constraintClauses
-            else -> return false
-        }
-        val clause = clauses.firstOrNull { it.nameElement?.identifier?.text == parameter.name } ?: return true
-        return clause.constraints.filterIsInstance<CSharpTypeConstraint>().size == r.constraintsOf(parameter).size
-    }
-
-    /**
-     * The implicit operators of [type] and of its base classes (§10.5.4): `implicit operator TpmHandle(SessionBase s)` converts an `AuthSession :
-     * SessionBase` too (CS1503 on `ContainsKey(session)` of a live project, 0.1.185); [depth] stops a cycle of bases the compiler reports.
-     */
-    internal fun operators(type: SemanticType, depth: Int = 0, withBases: Boolean = true): List<Pair<SemanticType?, SemanticType?>>? = if (depth > 16) null else when (type) {
-        is SemanticType.Library -> r.membersNamed(type, "op_Implicit", 0).mapNotNull { symbol ->
-            // the index marks operators OPERATOR, not METHOD: `isMethod` alone dropped every library conversion (`string` →
-            // `ReadOnlySpan<char>`, `T[]` → `ReadOnlyMemory<T>`, `string` → `PathString`) and CS1503 followed (Jellyfin, 0.1.166)
-            val operator = (symbol as? CSharpSymbol.LibraryMember)?.member?.kind == IndexedMemberKind.OPERATOR
-            if (!operator && !r.isMethod(symbol)) return@mapNotNull null
-            r.signature(symbol, false)?.singleOrNull()?.type?.invoke() to r.returnType(symbol, emptyList())
-        }
-        is SemanticType.Source -> {
-            val found = ArrayList<Pair<SemanticType?, SemanticType?>>()
-            for (part in type.info.parts) {
-                val declaration = part.element() as? CSharpTypeDeclaration ?: continue
-                val resolver = (declaration.containingFile as? CSharpFile)?.let(r.session::reachable) ?: return null
-                for (op in declaration.members.filterIsInstance<CSharpConversionOperatorDeclaration>()) {
-                    if (op.implicitOrExplicitKeyword?.text != "implicit") continue
-                    val operand = op.parameterList?.parameters?.singleOrNull()?.type?.let(resolver::resolveType)
-                    found += r.substitute(operand, type) to r.substitute(op.type?.let(resolver::resolveType), type)
-                }
-            }
-            if (withBases) for (base in r.libraryBases(type)) found += operators(base, depth + 1) ?: return null
-            if (withBases) for (base in r.baseTypes(type)) if (base is SemanticType.Source && !isInterface(base) && base.info.key != type.info.key) found += operators(base, depth + 1) ?: return null
-            found
-        }
-        is SemanticType.ArrayOf -> emptyList()
-        is SemanticType.Parameter -> null
-    }
-
-    internal fun isInterface(type: SemanticType): Boolean = when (type) {
-        is SemanticType.Library -> type.type.kind == IndexedTypeKind.INTERFACE
-        is SemanticType.Source -> type.info.kind == TypeKind.INTERFACE
-        else -> false
-    }
-
-    /** Whether [type] is a reference type; null when that is not known (a type parameter without `class`). */
-    fun isReference(type: SemanticType): Boolean? = when (type) {
-        is SemanticType.ArrayOf -> true
-        is SemanticType.Library -> type.type.kind != IndexedTypeKind.STRUCT && type.type.kind != IndexedTypeKind.ENUM
-        is SemanticType.Source -> type.info.kind?.let { it != TypeKind.STRUCT && it != TypeKind.RECORD_STRUCT && it != TypeKind.ENUM }
-        is SemanticType.Parameter -> if (r.isValueType(type)) false else null
-    }
-
-    /** A type whose base types and interfaces all resolve, all the way up: what it does not convert to, it surely does not. */
-    fun closed(type: SemanticType, depth: Int = 0): Boolean {
-        if (depth > 16) return false
-        return when (type) {
-            is SemanticType.ArrayOf -> type.element?.let { closed(it, depth + 1) } ?: false
-            is SemanticType.Parameter -> type.owner != null && constraintsKnown(type) && r.constraintsOf(type).all { closed(it, depth + 1) }
-            is SemanticType.Library -> libraryKnown(type.type, depth) && type.arguments.all { it != null }
-            is SemanticType.Source -> type.arguments.all { it != null } && known.getOrPut(type.info.key) {
-                known[type.info.key] = true
-                type.info.kind != null && type.info.parts.all { part ->
-                    val declaration = part.element() as? CSharpBaseTypeDeclaration ?: return@all part.element() is CSharpDelegateDeclaration
-                    val owner = (declaration.containingFile as? CSharpFile)?.let(r.session::reachable) ?: return@all false
-                    declaration.baseList?.types.orEmpty().all { base -> base.type?.let(owner::resolveType)?.let { closed(it, depth + 1) } == true }
-                }
-            }
-        }
-    }
-
-    private fun libraryKnown(type: io.github.dotnetsupport.index.IndexedType, depth: Int): Boolean = known.getOrPut(type) {
-        if (depth > 16) return@getOrPut false
-        (type.interfaces + listOfNotNull(type.baseType)).all { reference -> r.assemblies.resolve(reference)?.let { libraryKnown(it, depth + 1) } == true }
-    }
-
-    // ---- conversions of argument expressions
-
-    fun unparenthesized(e: CSharpExpression): CSharpExpression {
-        // `(x)` and `x!` (the null-forgiving operator changes no conversion)
-        var at = e
-        while (true) {
-            at = when {
-                at is CSharpParenthesizedExpression -> at.expression ?: return at
-                at is CSharpPostfixUnaryExpression && at.operatorToken?.text == "!" -> at.operand ?: return at
-                else -> return at
-            }
-        }
-    }
-
-    /** The conversion of the expression [e] (its natural type [type], null when none or not known) to [to]. */
-    fun argument(e: CSharpExpression, type: SemanticType?, to: SemanticType, depth: Int = 0): Conversion {
-        val value = unparenthesized(e)
-        if (depth > 4) return Conversion.UNKNOWN
-        when (value.elementType) {
-            SyntaxKind.NullLiteralExpression -> return when {
-                to is SemanticType.Parameter -> if (isReference(to) == true) Conversion.IMPLICIT else Conversion.UNKNOWN
-                r.isNullable(to) -> Conversion.IMPLICIT
-                isReference(to) == true -> Conversion.IMPLICIT
-                r.isValueType(to) -> Conversion.NONE
-                else -> Conversion.UNKNOWN
-            }
-            SyntaxKind.DefaultLiteralExpression -> return Conversion.IMPLICIT
-        }
-        when (value) {
-            is CSharpImplicitObjectCreationExpression, is CSharpThrowExpression -> return Conversion.IMPLICIT
-            is CSharpAnonymousFunctionExpression -> return if (strict) strictLambda(value, to) else lambda(value, to)
-            is CSharpCollectionExpression -> return collection(to)
-            is CSharpConditionalExpression -> if (type == null) {
-                val branches = listOfNotNull(value.whenTrue, value.whenFalse)
-                val each = branches.map { argument(it, r.typeOf(it), to, depth + 1) }
-                return when {
-                    each.any { it == Conversion.NONE } -> Conversion.NONE
-                    each.all(::ok) -> Conversion.IMPLICIT
-                    else -> Conversion.UNKNOWN
-                }
-            }
-            is CSharpTupleExpression -> {
-                // a tuple literal converts element by element, each element as the expression it is (`(null, 1)`, `(x, "a")`) — §10.2.13
-                val targets = (to as? SemanticType.Library)?.takeIf { r.definitionName(it)?.startsWith(VALUE_TUPLE) == true }?.arguments
-                if (targets != null && targets.size == value.arguments.size) {
-                    return combine(value.arguments.mapIndexed { i, element ->
-                        val expression = element.expression ?: return Conversion.UNKNOWN
-                        argument(expression, r.typeOf(unparenthesized(expression)), targets[i] ?: return Conversion.UNKNOWN, depth + 1)
-                    }).let { if (it == Conversion.IDENTITY) Conversion.IMPLICIT else it }
-                }
-                if (type == null) return Conversion.UNKNOWN
-            }
-            is CSharpInterpolatedStringExpression -> {
-                val tn = r.definitionName(to)
-                if (tn == STRING) return Conversion.IDENTITY
-                if (tn == "System.FormattableString" || tn == "System.IFormattable" || tn == OBJECT) return Conversion.IMPLICIT
-                // a constant interpolated string (`$"{nameof(x)} is null"`) is a string and converts to no handler
-                if (isHandler(to)) return when (constantInterpolation(value)) { false -> Conversion.IMPLICIT; true -> Conversion.NONE; null -> Conversion.UNKNOWN }
-            }
-        }
-        methodGroup(value)?.let { group ->
-            // `compilation.GetBestTypeByMetadataName` of an extension method: its receiver is bound, the delegate takes the rest (MudBlazor.Analyzers)
-            val name = (value as? CSharpMemberAccessExpression)?.nameElement
-            val reduced = name != null && group.any { r.expressions.isReduced(it, name) }
-            return if (strict) (if (reduced) Conversion.UNKNOWN else strictGroup(group, to)) else groupConversion(group, to, reduced)
-        }
-        val source = type ?: return Conversion.UNKNOWN
-        val conversion = classify(source, to)
-        if (conversion == Conversion.NONE && constantFits(value, to)) return Conversion.IMPLICIT
-        return conversion
-    }
-
-    private fun lambda(lambda: CSharpAnonymousFunctionExpression, to: SemanticType): Conversion {
-        if (to is SemanticType.Parameter) return Conversion.UNKNOWN
-        val target = r.expressions.unwrapExpression(to) ?: return Conversion.UNKNOWN
-        if (r.expressions.delegateSignature(target) == null) {
-            val tn = r.definitionName(target)
-            // the natural type of a lambda (C# 10) goes to `Delegate`, `object` and `Expression`; a lambda without one has no conversion
-            // there (CS8917): `MapGet("/", context => …)` takes the `RequestDelegate` overload, never the `Delegate` one
-            if (tn in NATURAL_TARGETS) return if (hasNaturalType(lambda)) Conversion.IMPLICIT else Conversion.NONE
-            return if (closed(target)) Conversion.NONE else Conversion.UNKNOWN
-        }
-        // a body that does not use untyped parameters is typed before the call is resolved: `() => 1` is no `Action`, `() => Log()` no `Func<int>`
-        if (!r.expressions.lambdaFits(lambda, to, typeBody = hasNaturalType(lambda) || r.expressions.lambdaParameterCount(lambda) == 0)) return Conversion.NONE
-        return Conversion.IMPLICIT
-    }
-
-    /**
-     * [lambda] to [to] where only what is sure counts ([strict]): the number of parameters, their `ref` kinds and written types, a value
-     * for a delegate that returns none; a body is taken as valid (its own errors are reported in it), but its type must be known where
-     * the delegate returns a value. Async lambdas and blocks whose end is reachable are not judged.
-     */
-    private fun strictLambda(lambda: CSharpAnonymousFunctionExpression, to: SemanticType): Conversion {
-        if (to is SemanticType.Parameter) return Conversion.UNKNOWN
-        val target = r.expressions.unwrapExpression(to) ?: return Conversion.UNKNOWN
-        val delegate = r.expressions.delegateSignature(target)
-        if (delegate == null) {
-            val tn = r.definitionName(target)
-            if (tn in NATURAL_TARGETS) return if (hasNaturalType(lambda)) Conversion.IMPLICIT else Conversion.NONE
-            return if (noDelegate(target)) Conversion.NONE else Conversion.UNKNOWN
-        }
-        val count = r.expressions.lambdaParameterCount(lambda)
-        val parameters = when (lambda) {
-            is CSharpSimpleLambdaExpression -> listOfNotNull(lambda.parameter)
-            is CSharpParenthesizedLambdaExpression -> lambda.parameterList?.parameters.orEmpty()
-            else -> (lambda as? CSharpAnonymousMethodExpression)?.parameterList?.parameters
-        }
-        if (count != null && count != delegate.first.size) return Conversion.NONE
-        val kinds = delegateRefKinds(target) ?: return Conversion.UNKNOWN
-        var unknown = false
-        if (parameters != null) for ((i, p) in parameters.withIndex()) {
-            val written = lambdaRefKind(p) ?: return Conversion.UNKNOWN
-            val expected = kinds.getOrNull(i) ?: return Conversion.UNKNOWN
-            if (written != expected) return if (written == "in" && expected == "ref") Conversion.UNKNOWN else Conversion.NONE
-            val syntax = p.type ?: continue
-            val type = r.resolveType(syntax) ?: return Conversion.UNKNOWN
-            val wanted = delegate.first.getOrNull(i) ?: return Conversion.UNKNOWN
-            if (mentionsCandidateParameter(wanted)) return Conversion.UNKNOWN
-            when (same(type, wanted)) {
-                false -> return Conversion.NONE
-                null -> unknown = true
-                true -> {}
-            }
-        }
-        if (unknown) return Conversion.UNKNOWN
-        if (delegate.first.any { it == null || mentionsCandidateParameter(it) }) return Conversion.UNKNOWN
-        val written = delegate.second ?: return Conversion.UNKNOWN
-        if (mentionsCandidateParameter(written)) return Conversion.UNKNOWN
-        // an async lambda to a delegate returning `Task<Y>` / `ValueTask<Y>`: what it returns converts to `Y` (§10.7.1) — nopCommerce's
-        // `GetAsync<T>(key, Func<Task<T>>)` and `GetAsync<T>(key, Func<T>)` are then both applicable and the first one is more specific
-        val returns = if (!r.expressions.isAsync(lambda.modifiers)) written
-            else if (r.definitionName(written) in TASKS_OF) (written as? SemanticType.Library)?.arguments?.singleOrNull() ?: return Conversion.UNKNOWN
-            else return Conversion.UNKNOWN
-        val void = r.definitionName(returns) == VOID
-        val body = lambda.expressionBody
-        if (body != null) {
-            if (void) return if (r.expressions.isStatementExpression(unparenthesized(body))) Conversion.IMPLICIT else Conversion.NONE
-            return when (argument(body, r.typeOf(unparenthesized(body)), returns)) {
-                Conversion.IDENTITY, Conversion.IMPLICIT -> Conversion.IMPLICIT
-                Conversion.NONE -> Conversion.NONE
-                Conversion.UNKNOWN -> Conversion.UNKNOWN
-            }
-        }
-        val block = lambda.block ?: return Conversion.UNKNOWN
-        val returned = returnsOf(block, lambda)
-        if (void) return if (returned.all { it.expression == null }) Conversion.IMPLICIT else Conversion.UNKNOWN
-        if (returned.isEmpty() || returned.any { it.expression == null }) return Conversion.UNKNOWN
-        if (CSharpReachability(r).endOf(block) != CSharpReachability.Reach.NO) return Conversion.UNKNOWN
-        var result = Conversion.IMPLICIT
-        for (statement in returned) {
-            val value = statement.expression ?: return Conversion.UNKNOWN
-            when (argument(value, r.typeOf(unparenthesized(value)), returns)) {
-                Conversion.NONE -> return Conversion.NONE
-                Conversion.UNKNOWN -> result = Conversion.UNKNOWN
-                else -> {}
-            }
-        }
-        return result
-    }
-
-    /** A type no lambda or method group converts to: closed, no interface, without user-defined conversions. */
-    private fun noDelegate(type: SemanticType): Boolean {
-        if (!closed(type) || isInterface(type) || type is SemanticType.ArrayOf) return type is SemanticType.ArrayOf
-        if (type is SemanticType.Library && type.type.kind == IndexedTypeKind.DELEGATE) return false
-        val operators = operators(type) ?: return false
-        return operators.isEmpty() || type is SemanticType.Library && type.type.fullName == STRING
-    }
-
-    private fun mentionsCandidateParameter(type: SemanticType): Boolean = when (type) {
-        is SemanticType.Parameter -> isOpen(type) || isCandidateParameter(type)
-        is SemanticType.ArrayOf -> type.element?.let(::mentionsCandidateParameter) ?: true
-        is SemanticType.Library -> type.arguments.any { it == null || mentionsCandidateParameter(it) }
-        is SemanticType.Source -> type.arguments.any { it == null || mentionsCandidateParameter(it) }
-    }
-
-    /** The `return` statements of [lambda]'s own body (not of the lambdas and local functions in it). */
-    private fun returnsOf(block: CSharpBlock, lambda: CSharpAnonymousFunctionExpression): List<CSharpReturnStatement> =
-        PsiTreeUtil.findChildrenOfType(block, CSharpReturnStatement::class.java).filter {
-            PsiTreeUtil.getParentOfType(it, CSharpAnonymousFunctionExpression::class.java, CSharpLocalFunctionStatement::class.java) == lambda
-        }
-
-    /** The type the body of [lambda] gives: its expression, or what every `return` gives, the same type; null when not known. */
-    private fun strictReturnType(lambda: CSharpAnonymousFunctionExpression): SemanticType? {
-        if (r.expressions.isAsync(lambda.modifiers)) return null
-        lambda.expressionBody?.let { return r.typeOf(it) }
-        val block = lambda.block ?: return null
-        val types = returnsOf(block, lambda).map { s -> s.expression?.let(r::typeOf) ?: return null }
-        val first = types.firstOrNull() ?: return null
-        return first.takeIf { types.all { same(it, first) == true } }
-    }
-
-
-    /** `ref`, `out`, `in` or "" (by value) of a parameter of a lambda; null for `scoped`, `ref readonly` and what else is not modeled. */
-    internal fun lambdaRefKind(p: CSharpParameter): String? {
-        val modifiers = p.modifiers.map { it.text }
-        if (modifiers.any { it != "ref" && it != "out" && it != "in" }) return null
-        return when {
-            "out" in modifiers -> "out"
-            "in" in modifiers -> "in"
-            "ref" in modifiers -> "ref"
-            else -> ""
-        }
-    }
-
-    /** The `ref` kinds of the parameters of a delegate type ("" by value); null when not known (`ref readonly`, `scoped`, `params`). */
-    internal fun delegateRefKinds(type: SemanticType): List<String>? = when (type) {
-        is SemanticType.Library -> type.type.members.firstOrNull { it.name == "Invoke" }?.let { invoke ->
-            r.session.parameters(invoke).map { p -> if (p.isOut) "out" else if (p.isIn) "in" else if (p.isRef) "ref" else "" }
-        }
-        is SemanticType.Source -> type.info.parts.firstNotNullOfOrNull { it.element() as? CSharpDelegateDeclaration }?.parameterList?.parameters?.map { p ->
-            val modifiers = p.modifiers.map { it.text }
-            if (modifiers.any { it != "ref" && it != "out" && it != "in" }) return null
-            if ("out" in modifiers) "out" else if ("in" in modifiers) "in" else if ("ref" in modifiers) "ref" else ""
-        }
-        else -> null
-    }
-
-    /**
-     * A method group to [to], strictly: methods of the group that are not generic and have neither optional, `params` nor by-reference
-     * parameters, compatible by their return type (C# 7.3) and applicable to the delegate's parameter types; NONE when none is, IMPLICIT
-     * when exactly one is and its parameters take the delegate's by identity or reference conversion.
-     */
-    private fun strictGroup(methods: List<CSharpSymbol>, to: SemanticType): Conversion {
-        if (to is SemanticType.Parameter) return Conversion.UNKNOWN
-        val target = r.expressions.unwrapExpression(to) ?: return Conversion.UNKNOWN
-        val delegate = r.expressions.delegateSignature(target)
-        if (delegate == null) {
-            val tn = r.definitionName(target)
-            if (tn == "System.Delegate" || tn == "System.MulticastDelegate" || tn == OBJECT) return Conversion.UNKNOWN
-            return if (noDelegate(target)) Conversion.NONE else Conversion.UNKNOWN
-        }
-        if (delegateRefKinds(target)?.all { it.isEmpty() } != true) return Conversion.UNKNOWN
-        val inputs = delegate.first.map { it ?: return Conversion.UNKNOWN }
-        val returns = delegate.second ?: return Conversion.UNKNOWN
-        if (inputs.any(::mentionsCandidateParameter) || mentionsCandidateParameter(returns)) return Conversion.UNKNOWN
-        val compatible = ArrayList<List<CSharpNameResolver.Parameter>>()
-        for (method in methods) {
-            if (r.isGeneric(method)) return Conversion.UNKNOWN
-            val parameters = r.signature(method, false) ?: return Conversion.UNKNOWN
-            if (parameters.any { it.optional || it.isParams || it.byRef } || hasRefParameters(method)) return Conversion.UNKNOWN
-            if (parameters.size != inputs.size) continue
-            val result = r.returnType(method, emptyList()) ?: return Conversion.UNKNOWN
-            val returnFits = when {
-                r.definitionName(returns) == VOID -> r.definitionName(result) == VOID
-                r.definitionName(result) == VOID -> false
-                else -> when (same(result, returns)) {
-                    true -> true
-                    null -> return Conversion.UNKNOWN
-                    false -> if (isReference(result) == false || isReference(returns) == false) false
-                    else when (classify(result, returns, userDefined = false)) {
-                        Conversion.IMPLICIT, Conversion.IDENTITY -> if (isReference(result) == true && isReference(returns) == true) true else return Conversion.UNKNOWN
-                        Conversion.NONE -> false
-                        Conversion.UNKNOWN -> return Conversion.UNKNOWN
-                    }
-                }
-            }
-            if (!returnFits) continue
-            var applicable = true
-            for ((p, input) in parameters.zip(inputs)) {
-                val type = p.type() ?: return Conversion.UNKNOWN
-                when (classify(input, type)) {
-                    Conversion.NONE -> { applicable = false; break }
-                    Conversion.UNKNOWN -> return Conversion.UNKNOWN
-                    else -> {}
-                }
-            }
-            if (applicable) compatible += parameters
-        }
-        if (compatible.isEmpty()) return Conversion.NONE
-        val single = compatible.singleOrNull() ?: return Conversion.UNKNOWN
-        for ((p, input) in single.zip(inputs)) {
-            val type = p.type() ?: return Conversion.UNKNOWN
-            if (same(input, type) == true) continue
-            if (isReference(input) == true && isReference(type) == true) continue
-            return Conversion.UNKNOWN
-        }
-        return Conversion.IMPLICIT
-    }
-
-    private fun hasRefParameters(method: CSharpSymbol): Boolean = when (method) {
-        is CSharpSymbol.LibraryMember -> r.session.parameters(method.member).any { it.isByReference }
-        is CSharpSymbol.SourceMember -> parameterList(method.element)?.parameters?.any { p -> p.modifiers.any { it.text != "this" } } ?: true
-        else -> true
-    }
-
-    /** C# 10: a lambda whose parameters are typed (or that takes none) has a function type, `Func<…>` / `Action<…>`. */
-    fun hasNaturalType(lambda: CSharpAnonymousFunctionExpression): Boolean = when (lambda) {
-        is CSharpParenthesizedLambdaExpression -> lambda.parameterList?.parameters.orEmpty().all { it.type != null }
-        is CSharpAnonymousMethodExpression -> lambda.parameterList != null && lambda.parameterList?.parameters.orEmpty().all { it.type != null }
-        else -> false
-    }
-
-    /** A collection expression converts to arrays, spans, the collection interfaces and the types with a collection initializer. */
-    private fun collection(to: SemanticType): Conversion {
-        if (to is SemanticType.ArrayOf) return Conversion.IMPLICIT
-        val name = r.definitionName(to) ?: return Conversion.UNKNOWN
-        if (name in COLLECTION_TARGETS) return Conversion.IMPLICIT
-        if (name in PRIMITIVES || name == OBJECT) return Conversion.NONE
-        if (to is SemanticType.Library && (to.type.kind == IndexedTypeKind.DELEGATE || to.type.kind == IndexedTypeKind.ENUM)) return Conversion.NONE
-        return Conversion.UNKNOWN
-    }
-
-    /** The methods a name not called stands for (a method group); null when it is no such name. */
-    private fun methodGroup(e: CSharpExpression): List<CSharpSymbol>? {
-        val name = when (e) {
-            is CSharpSimpleName -> e
-            is CSharpMemberAccessExpression -> e.nameElement
-            else -> null
-        } ?: return null
-        if (r.invocationOf(name) != null) return null
-        val symbols = r.resolveName(name)?.symbols ?: return null
-        return symbols.takeIf { s -> s.isNotEmpty() && s.all(r::isInMethodGroup) }
-    }
-
-    private fun groupConversion(methods: List<CSharpSymbol>, to: SemanticType, reduced: Boolean = false): Conversion {
-        if (to is SemanticType.Parameter) return Conversion.UNKNOWN
-        val target = r.expressions.unwrapExpression(to) ?: return Conversion.UNKNOWN
-        val delegate = r.expressions.delegateSignature(target)
-        if (delegate == null) {
-            val tn = r.definitionName(target)
-            if (tn == "System.Delegate" || tn == "System.MulticastDelegate" || tn == OBJECT) return Conversion.UNKNOWN
-            return if (closed(target)) Conversion.NONE else Conversion.UNKNOWN
-        }
-        val count = delegate.first.size
-        val fitting = methods.filter { m -> r.signature(m, reduced && r.isExtension(m))?.let { s -> s.size >= count && s.count { !it.optional && !it.isParams } <= count } ?: true }
-        return if (fitting.isEmpty()) Conversion.NONE else Conversion.IMPLICIT
-    }
-
-    /** §10.2.11: a constant `int` converts to `sbyte`, `byte`, `short`, `ushort`, `uint`, `ulong` (and `long` to `ulong`) when it fits. */
-    private fun constantFits(e: CSharpExpression, to: SemanticType): Boolean {
-        val value = constantValue(e) ?: return false
-        // `Take(4)` for a `byte?`: the constant converts to `byte`, then to its nullable (§10.6.1)
-        val target = if (r.definitionName(to) == NULLABLE) (to as? SemanticType.Library)?.arguments?.firstOrNull() ?: return false else to
-        val range = when (r.definitionName(target)) {
-            "System.SByte" -> -128L..127L
-            "System.Byte" -> 0L..255L
-            "System.Int16" -> -32768L..32767L
-            "System.UInt16" -> 0L..65535L
-            "System.UInt32" -> 0L..0xFFFFFFFFL
-            "System.UInt64" -> 0L..Long.MAX_VALUE
-            else -> return false
-        }
-        return value in range
-    }
-
-    private fun constantValue(e: CSharpExpression): Long? {
-        val value = unparenthesized(e)
-        if (value is CSharpPrefixUnaryExpression && value.operatorToken?.text == "-") return value.operand?.let(::constantValue)?.let { -it }
-        if (value.elementType != SyntaxKind.NumericLiteralExpression) return null
-        val keyword = CSharpNameResolver.numericKeyword(value.text)
-        if (keyword != "int" && keyword != "long") return null
-        val t = value.text.replace("_", "").lowercase().trimEnd('l', 'u')
-        return when {
-            t.startsWith("0x") -> t.drop(2).toLongOrNull(16)
-            t.startsWith("0b") -> t.drop(2).toLongOrNull(2)
-            else -> t.toLongOrNull()
-        }
-    }
-
-    // ---- better conversion
-
-    /** §12.6.4.5: 1 when the conversion of [e] to [t1] is better than to [t2], -1 the other way round, 0 neither, null not known. */
-    fun better(e: CSharpExpression, type: SemanticType?, t1: SemanticType, t2: SemanticType): Int? {
-        when (same(t1, t2)) {
-            true -> return 0
-            null -> return null
-            false -> {}
-        }
-        val value = unparenthesized(e)
-        if (value is CSharpAnonymousFunctionExpression) return betterLambda(value, t1, t2)
-        if (value is CSharpCollectionExpression) return betterCollection(t1, t2)
-        if (type == null) {
-            val targetTyped = value.elementType == SyntaxKind.NullLiteralExpression || value.elementType == SyntaxKind.DefaultLiteralExpression ||
-                value is CSharpImplicitObjectCreationExpression || value is CSharpThrowExpression
-            return if (targetTyped) betterTarget(t1, t2) else null
-        }
-        if (value is CSharpInterpolatedStringExpression) {
-            // C# 10: a handler conversion is better than any other
-            val h1 = isHandler(t1)
-            val h2 = isHandler(t2)
-            if (h1 != h2) return if (h1) 1 else -1
-        }
-        val exact1 = same(type, t1)
-        val exact2 = same(type, t2)
-        if (exact1 == true && exact2 == false) return 1
-        if (exact2 == true && exact1 == false) return -1
-        if (exact1 == null || exact2 == null) return null
-        return betterTarget(t1, t2)
-    }
-
-    /** §12.6.4.5 for an argument known by its type alone (the receiver of an extension method): the exact match, then the better target. */
-    fun betterFromType(type: SemanticType, t1: SemanticType, t2: SemanticType): Int? {
-        when (same(t1, t2)) {
-            true -> return 0
-            null -> return null
-            false -> {}
-        }
-        val exact1 = same(type, t1)
-        val exact2 = same(type, t2)
-        if (exact1 == true && exact2 == false) return 1
-        if (exact2 == true && exact1 == false) return -1
-        if (exact1 == null || exact2 == null) return null
-        return betterTarget(t1, t2)
-    }
-
-    private fun isHandler(type: SemanticType): Boolean = type is SemanticType.Library && type.type.attributes.any { it.endsWith("InterpolatedStringHandlerAttribute") }
-
-    /** §12.6.4.7, the better conversion target. */
-    fun betterTarget(t1: SemanticType, t2: SemanticType): Int? {
-        when (same(t1, t2)) {
-            true -> return 0
-            null -> return null
-            false -> {}
-        }
-        val n1 = r.definitionName(t1)
-        val n2 = r.definitionName(t2)
-        if (n1 != null && n2 != null) {
-            if (n2 in SIGNED_OVER[n1].orEmpty()) return 1
-            if (n1 in SIGNED_OVER[n2].orEmpty()) return -1
-        }
-        val c12 = classify(t1, t2)
-        val c21 = classify(t2, t1)
-        if (ok(c12) && c21 == Conversion.NONE) return 1
-        if (ok(c21) && c12 == Conversion.NONE) return -1
-        if (c12 == Conversion.NONE && c21 == Conversion.NONE) return betterUnrelatedTarget(t1, t2)
-        return null
-    }
-
-    /**
-     * Roslyn's `BetterConversionTargetCore` for two types with no conversion either way: `Task<S1>` against `Task<S2>` by `S1` and `S2`; a
-     * delegate (or `Expression<D>`) returning a value against one returning `void`, else by their return types — for any argument, not only
-     * a lambda: `KeyUp(null)` takes the `Func<KeyboardEventArgs, Task>` overload over the `Action<KeyboardEventArgs>` one (MudBlazor, CS0121).
-     */
-    private fun betterUnrelatedTarget(t1: SemanticType, t2: SemanticType): Int? {
-        val task1 = r.definitionName(t1) in GENERIC_TASKS
-        val task2 = r.definitionName(t2) in GENERIC_TASKS
-        if (task1 || task2) {
-            if (!task1 || !task2) return 0
-            val s1 = (t1 as? SemanticType.Library)?.arguments?.singleOrNull() ?: return null
-            val s2 = (t2 as? SemanticType.Library)?.arguments?.singleOrNull() ?: return null
-            return betterTarget(s1, s2)
-        }
-        val d1 = r.expressions.unwrapExpression(t1)?.let(r.expressions::delegateSignature)
-        val d2 = r.expressions.unwrapExpression(t2)?.let(r.expressions::delegateSignature)
-        if (d1 == null || d2 == null) return 0
-        val r1 = d1.second ?: return null
-        val r2 = d2.second ?: return null
-        val void1 = r.definitionName(r1) == VOID
-        val void2 = r.definitionName(r2) == VOID
-        if (void1 != void2) return if (void2) 1 else -1
-        return if (void1) 0 else betterTarget(r1, r2)
-    }
-
-    /** A lambda against two delegates taking the same parameters: by what the body returns (§12.6.4.5). */
-    private fun betterLambda(lambda: CSharpAnonymousFunctionExpression, t1: SemanticType, t2: SemanticType): Int? {
-        val d1 = r.expressions.unwrapExpression(t1)?.let(r.expressions::delegateSignature)
-        val d2 = r.expressions.unwrapExpression(t2)?.let(r.expressions::delegateSignature)
-        // C# 10: a conversion to a delegate type is better than the function type conversion to `Delegate`, `object`, `Expression`
-        if (d1 != null && d2 == null && r.definitionName(t2) in NATURAL_TARGETS) return 1
-        if (d2 != null && d1 == null && r.definitionName(t1) in NATURAL_TARGETS) return -1
-        if (d1 == null || d2 == null) return null
-        if (d1.first.size != d2.first.size) return 0
-        for ((a, b) in d1.first.zip(d2.first)) if (same(a, b) != true) return if (same(a, b) == false) 0 else null
-        val r1 = d1.second ?: return null
-        val r2 = d2.second ?: return null
-        val void1 = r.definitionName(r1) == VOID
-        val void2 = r.definitionName(r2) == VOID
-        val body = if (strict) strictReturnType(lambda) else r.expressions.lambdaReturnType(lambda)
-        if (void1 != void2) {
-            if (body == null || r.definitionName(body) == VOID) return null
-            return if (void1) -1 else 1
-        }
-        if (void1) return 0
-        body ?: return null
-        val async = r.expressions.isAsync(lambda.modifiers)
-        val y = if (async) (body as? SemanticType.Library)?.arguments?.firstOrNull() ?: return null else body
-        val y1 = if (async) (r1 as? SemanticType.Library)?.arguments?.firstOrNull() ?: return null else r1
-        val y2 = if (async) (r2 as? SemanticType.Library)?.arguments?.firstOrNull() ?: return null else r2
-        val e1 = same(y, y1)
-        val e2 = same(y, y2)
-        if (e1 == true && e2 == false) return 1
-        if (e2 == true && e1 == false) return -1
-        if (e1 == null || e2 == null) return null
-        return betterTarget(y1, y2)
-    }
-
-    /** C# 12: a collection expression goes better to `ReadOnlySpan<E>` than to `Span<E>`, to spans than to arrays and other collections. */
-    private fun betterCollection(t1: SemanticType, t2: SemanticType): Int? {
-        fun rank(t: SemanticType): Int = when (r.definitionName(t)) {
-            "System.ReadOnlySpan`1" -> 2
-            "System.Span`1" -> 1
-            else -> 0
-        }
-        val a = rank(t1)
-        val b = rank(t2)
-        if (a != b) return if (a > b) 1 else -1
-        if (a > 0) return 0
-        return betterTarget(t1, t2)
-    }
+    internal val tracedConversions = HashSet<Triple<String, String, Boolean>>()
 
     // ---- overload resolution
 
@@ -741,7 +55,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
      * For the compiler errors of [CSharpOverloadChecks]: conversions of lambdas and method groups are NONE or IMPLICIT only where that is
      * sure (the lenient answers of navigation would make an inapplicable candidate applicable there), anything else UNKNOWN.
      */
-    private var strict = false
+    internal var strict = false
 
     /** How a candidate fares with the arguments of a call ([evaluate]). */
     internal sealed class Outcome {
@@ -970,7 +284,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
     }
 
     /** Whether every hole of [e] is a constant string (a literal, `nameof`); false when one surely is not (not a string); null when not known. */
-    private fun constantInterpolation(e: CSharpInterpolatedStringExpression): Boolean? {
+    internal fun constantInterpolation(e: CSharpInterpolatedStringExpression): Boolean? {
         var known = true
         for (part in e.contents) {
             val hole = part as? CSharpInterpolation ?: continue
@@ -1128,7 +442,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         }
     }
 
-    private fun parameterList(element: PsiElement): CSharpParameterList? = when (element) {
+    internal fun parameterList(element: PsiElement): CSharpParameterList? = when (element) {
         is CSharpMethodDeclaration -> element.parameterList
         is CSharpLocalFunctionStatement -> element.parameterList
         is CSharpConstructorDeclaration -> element.parameterList
@@ -1265,112 +579,6 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         return true
     }
 
-    /** §12.6.4.3: whether [m] is a better function member than [n] for the call; null when not known. */
-    private fun betterMember(m: Form, n: Form, arguments: List<CSharpArgument>, types: List<SemanticType?>, receiver: SemanticType? = null): Boolean? {
-        var mBetter = false
-        var nBetter = false
-        var identical = true
-        // the receiver of two extension methods is their first argument: `Queryable.Where` over `Enumerable.Where` for an `IQueryable<T>`
-        val p = m.receiverTarget
-        val q = n.receiverTarget
-        if (p != null && q != null) {
-            val sameType = same(p, q) ?: return null
-            if (!sameType) {
-                identical = false
-                when (betterFromType(receiver ?: return null, p, q) ?: return null) {
-                    1 -> mBetter = true
-                    -1 -> nBetter = true
-                }
-            }
-        }
-        for ((i, argument) in arguments.withIndex()) {
-            val p = m.targets[i] ?: return null
-            val q = n.targets[i] ?: return null
-            val sameType = same(p, q) ?: return null
-            if (sameType) continue
-            identical = false
-            val expression = argument.expression ?: return null
-            when (better(expression, types[i], p, q) ?: return null) {
-                1 -> mBetter = true
-                -1 -> nBetter = true
-            }
-        }
-        if (mBetter != nBetter) return mBetter
-        if (mBetter) return false
-        if (!identical) return false
-        // C# 7.2: an argument without `in` goes better to a parameter by value than to an `in` one
-        if (m.refKinds.size == arguments.size && n.refKinds.size == arguments.size) {
-            var mValue = false
-            var nValue = false
-            for ((i, argument) in arguments.withIndex()) {
-                if (argument.refKindKeyword != null) continue
-                if (m.refKinds[i] == null && n.refKinds[i] == "in") mValue = true
-                if (n.refKinds[i] == null && m.refKinds[i] == "in") nValue = true
-            }
-            if (mValue != nValue) return mValue
-            if (mValue) return false
-        }
-        // the tie-breaks, when the parameter types of the arguments are the same
-        if (!m.generic && n.generic) return true
-        if (m.generic && !n.generic) return false
-        if (!m.expanded && n.expanded) return true
-        if (m.expanded && !n.expanded) return false
-        if (m.expanded && n.expanded) {
-            if (m.declared.size != n.declared.size) return m.declared.size > n.declared.size
-            // C# 13 `params` collections: `ReadOnlySpan<T>` over `Span<T>` over the others
-            val a = m.paramsType
-            val b = n.paramsType
-            if (a != null && b != null && same(a, b) == false) return betterCollection(a, b)?.let { it > 0 }
-        }
-        if (!m.defaults && n.defaults) return true
-        if (m.defaults && !n.defaults) return false
-        // the receiver of two extension methods is their first parameter (`this IEnumerable<T>` against `this IEnumerable<KeyValuePair<TKey, TValue>>`
-        // of AwesomeAssertions' `Should`: the second is more specific — CS0121 was ours alone)
-        val mReceiver = if (m.receiverTarget != null && n.receiverTarget != null) listOf(m.declaredReceiver ?: return null) else emptyList()
-        val nReceiver = if (m.receiverTarget != null && n.receiverTarget != null) listOf(n.declaredReceiver ?: return null) else emptyList()
-        return moreSpecific(mReceiver + m.declaredTargets, nReceiver + n.declaredTargets)
-    }
-
-    /** §12.6.4.3, the more specific parameter types: a type parameter is less specific than any other type, recursively. */
-    private fun moreSpecific(a: List<SemanticType?>, b: List<SemanticType?>): Boolean? {
-        var more = false
-        var less = false
-        for ((x, y) in a.zip(b)) {
-            when (specific(x ?: return null, y ?: return null)) {
-                1 -> more = true
-                -1 -> less = true
-                null -> return null
-            }
-        }
-        return more && !less
-    }
-
-    private fun specific(x: SemanticType, y: SemanticType): Int? {
-        val xp = x is SemanticType.Parameter
-        val yp = y is SemanticType.Parameter
-        if (xp && yp) return 0
-        if (yp) return 1
-        if (xp) return -1
-        val xa = arguments(x)
-        val ya = arguments(y)
-        if (r.definitionName(x) != r.definitionName(y) || xa.size != ya.size) return 0
-        var more = false
-        var less = false
-        for ((p, q) in xa.zip(ya)) when (specific(p ?: return null, q ?: return null)) {
-            1 -> more = true
-            -1 -> less = true
-            null -> return null
-        }
-        return if (more && !less) 1 else if (less && !more) -1 else 0
-    }
-
-    private fun arguments(type: SemanticType): List<SemanticType?> = when (type) {
-        is SemanticType.Library -> type.arguments
-        is SemanticType.Source -> type.arguments
-        is SemanticType.ArrayOf -> listOf(type.element)
-        is SemanticType.Parameter -> emptyList()
-    }
-
     /** Whether [symbol] is static: what a type, not a value, reaches. */
     fun isStatic(symbol: CSharpSymbol): Boolean? = when (symbol) {
         is CSharpSymbol.LibraryMember -> symbol.member.isStatic || symbol.member.kind == IndexedMemberKind.CONSTANT || symbol.member.kind == IndexedMemberKind.ENUM_MEMBER
@@ -1384,20 +592,20 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
     }
 
     companion object {
-        private const val OBJECT = "System.Object"
-        private const val STRING = "System.String"
-        private const val VOID = "System.Void"
-        private const val NULLABLE = "System.Nullable`1"
-        private val TASKS_OF = setOf("System.Threading.Tasks.Task`1", "System.Threading.Tasks.ValueTask`1")
-        private const val VALUE_TUPLE = "System.ValueTuple`"
-        private const val VALUE_TYPE = "System.ValueType"
+        internal const val OBJECT = "System.Object"
+        internal const val STRING = "System.String"
+        internal const val VOID = "System.Void"
+        internal const val NULLABLE = "System.Nullable`1"
+        internal val TASKS_OF = setOf("System.Threading.Tasks.Task`1", "System.Threading.Tasks.ValueTask`1")
+        internal const val VALUE_TUPLE = "System.ValueTuple`"
+        internal const val VALUE_TYPE = "System.ValueType"
 
         /** The non-delegate types a lambda converts to by its natural type (C# 10) and by nothing else. */
         val NATURAL_TARGETS = setOf(
             "System.Delegate", "System.MulticastDelegate", OBJECT, "System.Linq.Expressions.Expression", "System.Linq.Expressions.LambdaExpression",
         )
 
-        private val PRIMITIVES = setOf(
+        internal val PRIMITIVES = setOf(
             "System.Boolean", "System.Byte", "System.SByte", "System.Char", "System.Int16", "System.UInt16", "System.Int32", "System.UInt32", "System.Int64",
             "System.UInt64", "System.Single", "System.Double", "System.Decimal", "System.String",
         )
@@ -1409,7 +617,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         )
 
         /** C# §10.2.3, the implicit numeric conversions (`nint` / `nuint` included). */
-        private val GENERIC_TASKS = setOf("System.Threading.Tasks.Task`1", "System.Threading.Tasks.ValueTask`1")
+        internal val GENERIC_TASKS = setOf("System.Threading.Tasks.Task`1", "System.Threading.Tasks.ValueTask`1")
 
         internal val NUMERIC: Map<String, Set<String>> = run {
             fun s(vararg names: String) = names.map { "System.$it" }.toSet()
@@ -1430,7 +638,7 @@ internal class CSharpOverloads(private val r: CSharpNameResolver) {
         }
 
         /** §12.6.4.7: a signed integral type is a better target than the unsigned ones it does not convert to. */
-        private val SIGNED_OVER: Map<String, Set<String>> = run {
+        internal val SIGNED_OVER: Map<String, Set<String>> = run {
             fun s(vararg names: String) = names.map { "System.$it" }.toSet()
             mapOf(
                 "System.SByte" to s("Byte", "UInt16", "UInt32", "UInt64"),

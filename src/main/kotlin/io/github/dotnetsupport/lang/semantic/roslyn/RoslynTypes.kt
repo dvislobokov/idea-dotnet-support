@@ -5,6 +5,10 @@ import io.github.dotnetsupport.csharp.lang.psi.CSharpTypeDeclaration
 import io.github.dotnetsupport.index.IndexedTypeKind
 import io.github.dotnetsupport.lang.semantic.CSharpNameResolver
 import io.github.dotnetsupport.lang.semantic.SemanticType
+import io.github.dotnetsupport.lang.semantic.classify
+import io.github.dotnetsupport.lang.semantic.closed
+import io.github.dotnetsupport.lang.semantic.isReference
+import io.github.dotnetsupport.lang.semantic.same
 
 /**
  * What Roslyn's binder asks of a `TypeSymbol`, answered over [SemanticType] (CSHARP_PSI_MIGRATION.md, D6a): the facade the ported parts of

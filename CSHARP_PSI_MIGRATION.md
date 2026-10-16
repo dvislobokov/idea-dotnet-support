@@ -407,7 +407,12 @@
     (`CSharpNameResolver.inference`). Две ловушки по пути: `resolveName` после кэша не должен повторять дообработку лямбд (StackOverflow),
     повторный вход в вывод Roslyn не считается циклом (иначе `typeArguments` не кэшируется, MudBlazor 189 с). Время MudBlazor 162 → ~173 с —
     в пределах разброса одиночных замеров, перепроверить на тихой машине.
-  - [ ] D6e5. Разрезать `CSharpOverloads` (1590 строк): преобразования / применимость / лучший член. Не срочно.
+  - [x] D6e5 (0.1.211). `CSharpOverloads` (1443 строки) разрезан по назначению приёмом «частичного класса» (расширения в своих файлах,
+    вызывающие не меняются): `CSharpOverloadConversions.kt` (тождество, преобразования между типами и из выражений-аргументов, 577),
+    `CSharpOverloadBetterness.kt` (лучшее преобразование, лучший член, tie-break'и, 274), `CSharpOverloads.kt` (формы, применимость,
+    `resolve`/`evaluate`, общее состояние, 651) — по этой нарезке D6c заменяет файлы целиком. Проверка: ошибки и журнал харнесса
+    построчно как в 0.1.210. Инспекции IDEA (MCP) нашли мёртвый код — `ambiguity`, `strictArgument`, `VALUE_TYPE` — и всегда ложные
+    условия в проверке `ref`-аргументов: убрать с первым куском D6c.
 - [ ] D6c. `OverloadResolution.cs` (better function member, better conversion from expression, tie-breaks) — эвристики выбора уходят.
 - [x] D6d (0.1.189; тест `RoslynConversionsTest`). `ConversionsBase.cs` + `UserDefinedImplicitConversions.cs` → `RoslynConversions`:
   неявные преобразования из типа (тождество, числовые, nullable, ссылочные с вариантностью, массивы, делегаты, параметры типа,

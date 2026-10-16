@@ -7,6 +7,7 @@ import io.github.dotnetsupport.lang.semantic.CSharpNameResolver
 import io.github.dotnetsupport.lang.semantic.SemanticTrace
 import io.github.dotnetsupport.lang.semantic.roslyn.InferenceArgument
 import io.github.dotnetsupport.lang.semantic.roslyn.RoslynMethodTypeInferrer
+import io.github.dotnetsupport.lang.semantic.unparenthesized
 
 /**
  * An argument of a call as Roslyn's method type inference sees it — the kind of its `BoundExpression` ([InferenceArgument]). One file of

@@ -7,6 +7,7 @@ import io.github.dotnetsupport.lang.semantic.SemanticTrace
 import io.github.dotnetsupport.lang.semantic.SemanticType
 import io.github.dotnetsupport.lang.semantic.roslyn.InferenceArgument
 import io.github.dotnetsupport.lang.semantic.roslyn.RoslynMethodTypeInferrer
+import io.github.dotnetsupport.lang.semantic.same
 
 /**
  * A lambda or an anonymous method as Roslyn's inference sees it (`UnboundLambda`): its parameters, written or not, and what its body

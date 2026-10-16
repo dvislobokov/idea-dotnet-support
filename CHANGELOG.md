@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.211
+
+- Inside the analysis of C#: overload resolution is split by concern — the conversions, the choice of the better candidate and the
+  applicability each in a file of their own — to be replaced part by part by the port of the compiler's overload resolution. No change
+  in what is reported.
+
 ## 0.1.210
 
 - The C# analysis infers a generic call from a collection expression argument, as the compiler does: `First([1, 2])` with
