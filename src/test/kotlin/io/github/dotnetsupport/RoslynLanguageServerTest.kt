@@ -61,7 +61,7 @@ class RoslynLanguageServerTest : BasePlatformTestCase() {
         val scope = RoslynOptions.ALL.first { it.section == "background_analysis.dotnet_analyzer_diagnostics_scope" }
         val binlog = RoslynOptions.ALL.first { it.section == "projects.dotnet_binary_log_path" }
         settings.setValue(inlay, "true")
-        settings.setValue(scope, "fullSolution")
+        settings.setValue(scope, "openFiles")
         settings.state.additionalOptions = """
             # by hand
             csharp|completion.dotnet_trigger_completion_on_deletion = true
@@ -82,7 +82,7 @@ class RoslynLanguageServerTest : BasePlatformTestCase() {
             ),
             settings, style,
         )
-        assertEquals(listOf(true, true, "fullSolution", "openFiles", null, true, true, 500, false, 2, "tab", true, null, null), answer)
+        assertEquals(listOf(true, true, "openFiles", "fullSolution", null, true, true, 500, false, 2, "tab", true, null, null), answer)
 
         // type hints are on by default: off is stored, back to the default stores nothing, and the answer is explicit either way
         settings.setValue(inlay, "false")

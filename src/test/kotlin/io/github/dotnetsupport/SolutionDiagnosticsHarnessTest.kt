@@ -6,6 +6,7 @@ import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.index.IndexerTool
 import io.github.dotnetsupport.index.ProjectAssemblies
+import io.github.dotnetsupport.lang.AnalysisScopes
 import io.github.dotnetsupport.lang.CSharpFeature
 import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFile
@@ -66,12 +67,17 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
         // with the generated files loaded no generator can make a type the harness does not see: the errors of Razor projects are not
         // quieted (as the IDE quiets them while RazorCodeGenerators.errorsAfterGeneration is off)
         if (withGenerated) CSharpSemanticEnvironment.setGeneratesForTests(false)
+        // the background pass over the solution (Problems → Project Errors, `fullSolution` by default since 0.1.212) would check the same
+        // files beside the harness and share its caches: the trace of a run then depended on who came first (7 lines of MudBlazor came and
+        // went) and the run took a third longer — the harness is the only pass here
+        AnalysisScopes.set(AnalysisScopes.COMPILER, AnalysisScopes.OPEN_FILES)
     }
 
     override fun tearDown() {
         try {
             settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setGeneratesForTests(null)
+            AnalysisScopes.set(AnalysisScopes.COMPILER, AnalysisScopes.FULL_SOLUTION)
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

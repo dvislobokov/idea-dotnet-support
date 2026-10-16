@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.212
+
+- The C# errors and the analyzer warnings are now looked for in the whole solution by default, not only in the open files: Problems →
+  Project Errors lists the files nobody opened. Settings | .NET | Language Server → Analysis («Compiler diagnostics for», «Analyzer
+  diagnostics for») — these two options apply to the plugin's own analysis too, with the language server off; `openFiles` brings the
+  old behaviour back on a large solution.
+
 ## 0.1.211
 
 - Inside the analysis of C#: overload resolution is split by concern — the conversions, the choice of the better candidate and the

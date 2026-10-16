@@ -22,7 +22,7 @@ object AnalysisScopes {
     fun analyzer(): String = of(ANALYZER)
 
     private fun of(section: String): String =
-        RoslynLanguageServer.configuration(listOf(section), RoslynLanguageServerSettings.getInstance(), null).single()?.toString() ?: OPEN_FILES
+        RoslynLanguageServer.configuration(listOf(section), RoslynLanguageServerSettings.getInstance(), null).single()?.toString() ?: FULL_SOLUTION
 
     /** Sets [section] of the page to [value], for tests and actions; the default value clears the entry. */
     fun set(section: String, value: String) {

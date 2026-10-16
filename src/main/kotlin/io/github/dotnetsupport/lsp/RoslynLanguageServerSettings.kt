@@ -122,8 +122,10 @@ object RoslynOptions {
         RoslynOption(group, section, label, default.toString(), comment = comment, native = native)
 
     val ALL: List<RoslynOption> = listOf(
-        RoslynOption("Analysis", "background_analysis.dotnet_compiler_diagnostics_scope", "Compiler diagnostics for:", "openFiles", SCOPES, native = NativeSupport.READ),
-        RoslynOption("Analysis", "background_analysis.dotnet_analyzer_diagnostics_scope", "Analyzer diagnostics for:", "openFiles", SCOPES,
+        // the whole solution by default (decision of the user, 2026-10-16): the plugin's own pass lists the errors of every file in Problems
+        // → Project Errors, the helper analyzes whole projects; read by the plugin with the server off as well (AnalysisScopes)
+        RoslynOption("Analysis", "background_analysis.dotnet_compiler_diagnostics_scope", "Compiler diagnostics for:", "fullSolution", SCOPES, native = NativeSupport.READ),
+        RoslynOption("Analysis", "background_analysis.dotnet_analyzer_diagnostics_scope", "Analyzer diagnostics for:", "fullSolution", SCOPES,
             "\"fullSolution\" analyzes every file of the solution in the background: accurate, and heavy on a large solution", native = NativeSupport.READ),
 
         // the server's own restore on loading a project; without the server the plugin restores by its own rule, Settings | .NET | NuGet
