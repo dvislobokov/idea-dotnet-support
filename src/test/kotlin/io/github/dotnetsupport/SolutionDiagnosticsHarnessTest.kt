@@ -152,15 +152,22 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
         files[control] = myFixture.addFileToProject(control, "class HarnessControl { void M() { var x = new System.Collections.Generic.List<int>(); x.Nope(); undefinedName(); } }") as CSharpFile
         val report = StringBuilder(summary)
         if (onlyFile != null) report.append("# only: $onlyFile\n")
-        for (path in files.keys.sorted()) {
-            if (onlyFile != null && path != control && !path.endsWith(onlyFile)) continue
-            val file = files[path]!!
-            val text = file.text
-            for (p in CSharpSemanticChecks(CSharpSemanticSession(project).resolver(file)).run().filter { !it.warning }.sortedBy { it.range.startOffset }) {
-                val line = text.substring(0, p.range.startOffset).count { it == '\n' } + 1
-                report.append("$path:$line ${p.code} [${text.substring(p.range.startOffset, p.range.endOffset).take(40)}] ${p.message.take(160)}\n")
+        // the debug log of the semantics (SemanticTrace) of the pass, its distinct lines beside the report: where the analysis gave up, the
+        // measure of D6e3 (each port that replaces an old path must not add lines)
+        val (_, trace) = io.github.dotnetsupport.lang.semantic.SemanticTrace.collectForTests {
+            for (path in files.keys.sorted()) {
+                if (onlyFile != null && path != control && !path.endsWith(onlyFile)) continue
+                val file = files[path]!!
+                val text = file.text
+                for (p in CSharpSemanticChecks(CSharpSemanticSession(project).resolver(file)).run().filter { !it.warning }.sortedBy { it.range.startOffset }) {
+                    val line = text.substring(0, p.range.startOffset).count { it == '\n' } + 1
+                    report.append("$path:$line ${p.code} [${text.substring(p.range.startOffset, p.range.endOffset).take(40)}] ${p.message.take(160)}\n")
+                }
             }
         }
+        val traced = trace.distinct().sorted()
+        File(out.parentFile, out.nameWithoutExtension + ".trace.txt").apply { parentFile?.mkdirs() }.writeText(traced.joinToString("\n", postfix = "\n"))
+        report.append("# trace: ${traced.size} distinct lines — ${traced.groupingBy { it.substringBefore(' ') }.eachCount().entries.sortedByDescending { it.value }.joinToString { "${it.key} ${it.value}" }}\n")
         val probe = files[control]!!; report.append("# control: set ${CSharpSemanticEnvironment.assemblies(probe).indexes.size}, complete ${CSharpSemanticEnvironment.referencesComplete(probe)}, all ${CSharpSemanticChecks(CSharpSemanticSession(project).resolver(probe)).run().map { it.code }}\n")
         report.append("# files: ${files.size} (from obj ${generatedPaths.size}, linked ${linkedPaths.size} ${linkedPaths.take(3)}), too large for the IDE: ${tooLarge.size} ${tooLarge.take(3)}, without a set of assemblies: ${unmatched.size} ${unmatched.take(3)}\n")
         if (failedOpens.isNotEmpty()) report.append("# indexes that did not open: ${failedOpens.size} ${failedOpens.take(2)}\n")
