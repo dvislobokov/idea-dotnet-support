@@ -65,7 +65,7 @@ private fun CSharpOverloads.member(form: Form, argumentCount: Int): Member? {
     return Member(
         arity = form.methodArguments.size, expanded = form.expanded, targets = targets, refKinds = refKinds, definitionTargets = definitionTargets,
         declaredParameterCount = declaredParameterCount, parametersUsed = parametersUsed, paramsType = form.paramsType,
-        toLastParameter = List(count) { form.expanded && it >= declaredParameterCount - 1 },
+        toLastParameter = List(count) { form.expanded && it >= declaredParameterCount - 1 }, inferredFromFunctionType = form.inferredFromFunctionType,
     )
 }
 
@@ -149,7 +149,7 @@ internal class BetternessHost(private val o: CSharpOverloads) : RoslynBetterFunc
 
     override fun methodGroupConvertsTo(e: CSharpExpression, delegate: SemanticType): Boolean {
         val group = o.methodGroup(o.unparenthesized(e)) ?: return false
-        return when (o.strictGroup(group, delegate)) {
+        return when (o.methodGroupConversion(o.unparenthesized(e), group, delegate)) {
             Conversion.NONE -> false
             Conversion.UNKNOWN -> throw Unknown("whether the method group `${SemanticTrace.text(e)}` converts to $delegate is not known")
             else -> true

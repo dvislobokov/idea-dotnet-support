@@ -131,6 +131,7 @@ internal class RoslynExpressionConversions(private val types: RoslynTypes) {
      */
     private fun classifyMethodGroup(group: Source.MethodGroup, destination: SemanticType): Result {
         if (destination is SemanticType.Parameter) return Result.Unknown("a method group to a type parameter")
+        // a delegate type: the method group conversion (RoslynMethodGroupConversion), which the caller asks of the group's methods
         if (types.delegateInvoke(destination) != null) return Result.Unknown("a method group to a delegate: not ported")
         if (!isValidFunctionTypeConversionTarget(destination)) {
             return if (types.isClosed(destination)) Result.None else Result.Unknown("the type ${destination} is not fully known")
@@ -148,6 +149,13 @@ internal class RoslynExpressionConversions(private val types: RoslynTypes) {
      * Roslyn reports a method group to `Expression` as an error; not modeled, so left to the caller here.
      */
     private fun isValidFunctionTypeConversionTarget(destination: SemanticType): Boolean = types.definitionName(destination) in FUNCTION_TYPE_TARGETS
+
+    /** The function type of a method group (C# 10): its unique signature; null when it has none; [Unknown] when that is not known. */
+    fun functionType(group: Source.MethodGroup): Method? = when (val signature = getUniqueSignatureFromMethodGroup(group)) {
+        is Signature.Unique -> signature.method
+        Signature.None -> null
+        is Signature.Unknown -> throw RoslynMethodTypeInferrer.Unknown(signature.reason)
+    }
 
     private sealed class Signature {
         data class Unique(val method: Method) : Signature()

@@ -881,10 +881,24 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                     Parameter(p.name, p.isOptional || p.hasDefault, p.isParams, p.isRef || p.isOut) { fromRef(p.typeRef, symbol.declaringArguments, methodParameters) }
                 }
             }
+            // a local function (a method group of it: `DebounceAsync(Invoke)`)
+            is CSharpSymbol.Local -> {
+                val function = localFunctionOf(symbol) ?: return null
+                val resolver = (function.containingFile as? CSharpFile)?.let(session::reachable) ?: return null
+                function.parameterList?.parameters.orEmpty().map { p ->
+                    val modifiers = p.modifiers.map { it.text }
+                    Parameter(p.identifier?.text.orEmpty(), p.default != null, "params" in modifiers, "ref" in modifiers || "out" in modifiers) { p.type?.let(resolver::resolveType) }
+                }
+            }
             else -> return null
         }
         return if (reduced) all.drop(1) else all
     }
+
+    /** The declaration of the local function [symbol] stands for; null for any other local. */
+    internal fun localFunctionOf(symbol: CSharpSymbol.Local): CSharpLocalFunctionStatement? =
+        if (symbol.symbol.kind != io.github.dotnetsupport.lang.LocalSymbolKind.LOCAL_FUNCTION) null
+        else PsiTreeUtil.getParentOfType(symbol.symbol.declaration, CSharpLocalFunctionStatement::class.java, false)
 
     /** The names of the parameters of a method (without the receiver of an extension called on it), each with whether it is `params`. */
     fun parameterNames(symbol: CSharpSymbol, reduced: Boolean): List<Pair<String, Boolean>>? = signature(symbol, reduced)?.map { it.name to it.isParams }

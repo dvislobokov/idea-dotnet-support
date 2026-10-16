@@ -5,6 +5,7 @@ import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.lang.semantic.CSharpNameResolver
 import io.github.dotnetsupport.lang.semantic.SemanticTrace
 import io.github.dotnetsupport.lang.semantic.SemanticType
+import io.github.dotnetsupport.lang.semantic.lambdaRefKind
 import io.github.dotnetsupport.lang.semantic.roslyn.InferenceArgument
 import io.github.dotnetsupport.lang.semantic.roslyn.RoslynMethodTypeInferrer
 import io.github.dotnetsupport.lang.semantic.same
@@ -28,7 +29,7 @@ internal class LambdaArgument(private val r: CSharpNameResolver) {
             parameters.map { p -> p.type?.let(r::resolveType) ?: throw RoslynMethodTypeInferrer.Unknown() }
         } else null
         val explicitReturnType = (lambda as? CSharpParenthesizedLambdaExpression)?.returnType?.let { r.resolveType(it) ?: throw RoslynMethodTypeInferrer.Unknown() }
-        return InferenceArgument.Lambda(parameters.size, hasSignature, explicit, explicitReturnType) { delegateParameters, delegateReturnType ->
+        val inferReturnType = { delegateParameters: List<SemanticType>, delegateReturnType: SemanticType? ->
             // as Roslyn: the body is bound with the implicit parameters typed by the delegate of this candidate (its input types are fixed)
             val returned = if (explicit != null || parameters.isEmpty()) returnedType(lambda) else {
                 if (delegateParameters.size != parameters.size) throw RoslynMethodTypeInferrer.Unknown("the delegate takes ${delegateParameters.size} parameters, the lambda ${parameters.size}")
@@ -36,6 +37,19 @@ internal class LambdaArgument(private val r: CSharpNameResolver) {
             }
             if (!r.expressions.isAsync(lambda.modifiers)) returned else asyncReturnType(returned, delegateReturnType)
         }
+        // C# 10 (`InferDelegateType`): a lambda whose parameters are all typed (or none) and whose return type the body gives has a function
+        // type, the delegate `Action<…>` / `Func<…>` of them; `delegate { }` and implicitly typed parameters have none
+        val functionType = {
+            if (!hasSignature || (explicit == null && parameters.isNotEmpty())) null
+            else {
+                val kinds = parameters.map { p -> r.overloads.lambdaRefKind(p) ?: throw RoslynMethodTypeInferrer.Unknown("the modifier of a parameter of the lambda at ${SemanticTrace.at(lambda)} is not modeled") }
+                val returned = explicitReturnType ?: returnedType(lambda)
+                val returns = if (!r.expressions.isAsync(lambda.modifiers)) returned else asyncReturnType(returned, null)
+                r.overloads.roslynTypes.functionTypeDelegate(explicit.orEmpty(), kinds, returns)
+                    ?: throw RoslynMethodTypeInferrer.Unknown("the function type of the lambda at ${SemanticTrace.at(lambda)} is a synthesized delegate (not modeled)")
+            }
+        }
+        return InferenceArgument.Lambda(parameters.size, hasSignature, explicit, explicitReturnType, inferReturnType, functionType)
     }
 
     /**

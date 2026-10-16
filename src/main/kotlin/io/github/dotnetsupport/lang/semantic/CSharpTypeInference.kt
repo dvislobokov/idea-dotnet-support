@@ -14,7 +14,7 @@ import io.github.dotnetsupport.lang.semantic.roslyn.RoslynTypes
  */
 internal class CSharpTypeInference(private val r: CSharpNameResolver) {
     sealed class Inferred {
-        class Known(val types: List<SemanticType>) : Inferred()
+        class Known(val types: List<SemanticType>, val fromFunctionType: Boolean = false) : Inferred()
         object Failed : Inferred()
         object Unknown : Inferred()
     }
@@ -72,18 +72,9 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
         symbol: CSharpSymbol, targets: List<SemanticType?>, arguments: List<CSharpArgument>, receiver: Pair<SemanticType, SemanticType?>?, call: CSharpInvocationExpression?,
         site: CSharpSimpleName?, lenient: Boolean, onFixed: ((Int, SemanticType) -> Unit)?,
     ): Inferred {
-        val owner = (symbol as? CSharpSymbol.SourceMember)?.element
-        val names = r.typeParameterNames(owner)
         val arity = r.expressions.methodArity(symbol)
         if (arity == 0) return Inferred.Known(emptyList())
-        val ordinalOf = { p: SemanticType.Parameter ->
-            when {
-                !p.ofMethod -> null
-                symbol is CSharpSymbol.LibraryMember && p.owner == null -> p.index.takeIf { it in 0 until arity }
-                owner != null && p.owner == owner -> names.indexOf(p.name).takeIf { it >= 0 }
-                else -> null
-            }
-        }
+        val ordinalOf = ordinalOf(symbol, arity)
         fun mentions(type: SemanticType?): Boolean = when (type) {
             null -> false
             is SemanticType.Parameter -> ordinalOf(type) != null
@@ -110,9 +101,44 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
             else readers.of(argument.expression ?: throw RoslynMethodTypeInferrer.Unknown("argument ${i + 1} has no expression"), lenient)
         }
         return when (val result = RoslynMethodTypeInferrer(RoslynTypes(r), arity, ordinalOf, formal, byReference, inferenceArguments, onFixed = onFixed).infer()) {
-            is RoslynMethodTypeInferrer.Result.Known -> Inferred.Known(result.types)
+            is RoslynMethodTypeInferrer.Result.Known -> Inferred.Known(result.types, result.fromFunctionType)
             RoslynMethodTypeInferrer.Result.Failed -> Inferred.Failed
             is RoslynMethodTypeInferrer.Result.Unknown -> throw RoslynMethodTypeInferrer.Unknown(result.reason)
+        }
+    }
+
+    /** `GetOrdinal`: the index of a type parameter of [symbol] among the [arity] being inferred; null for any other type parameter. */
+    private fun ordinalOf(symbol: CSharpSymbol, arity: Int): (SemanticType.Parameter) -> Int? {
+        val owner = (symbol as? CSharpSymbol.SourceMember)?.element
+        val names = r.typeParameterNames(owner)
+        return { p ->
+            when {
+                !p.ofMethod -> null
+                symbol is CSharpSymbol.LibraryMember && p.owner == null -> p.index.takeIf { it in 0 until arity }
+                owner != null && p.owner == owner -> names.indexOf(p.name).takeIf { it >= 0 }
+                else -> null
+            }
+        }
+    }
+
+    /**
+     * The type arguments of [symbol] for arguments that are values of [argumentTypes] (a method group converted to a delegate: the delegate's
+     * parameter types, the receiver of a reduced extension method first), [formal] the declared parameter types they go to. Not cached:
+     * asked once per candidate of a conversion.
+     */
+    fun inferFromTypes(symbol: CSharpSymbol, formal: List<SemanticType?>, argumentTypes: List<SemanticType>): Inferred {
+        val arity = r.expressions.methodArity(symbol)
+        if (arity == 0) return Inferred.Known(emptyList())
+        val arguments = argumentTypes.map { InferenceArgument.Typed(it) }
+        return try {
+            when (val result = RoslynMethodTypeInferrer(RoslynTypes(r), arity, ordinalOf(symbol, arity), formal, formal.map { false }, arguments).infer()) {
+                is RoslynMethodTypeInferrer.Result.Known -> Inferred.Known(result.types, result.fromFunctionType)
+                RoslynMethodTypeInferrer.Result.Failed -> Inferred.Failed
+                is RoslynMethodTypeInferrer.Result.Unknown -> throw RoslynMethodTypeInferrer.Unknown(result.reason)
+            }
+        } catch (e: RoslynMethodTypeInferrer.Unknown) {
+            SemanticTrace.trace { "inference ${SemanticTrace.show(symbol)} for a delegate's parameters [${argumentTypes.joinToString { SemanticTrace.show(it) }}]: Unknown — ${e.describe()}" }
+            Inferred.Unknown
         }
     }
 

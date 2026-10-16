@@ -22,10 +22,15 @@ internal sealed class InferenceArgument {
     class Lambda(
         val parameterCount: Int, val hasSignature: Boolean, val explicitParameterTypes: List<SemanticType>?, val explicitReturnType: SemanticType?,
         val inferReturnType: (List<SemanticType>, SemanticType?) -> SemanticType?,
+        /** `GetTypeOrFunctionType`: the delegate of the lambda's function type (C# 10); null when it has none (implicitly typed parameters). */
+        val functionType: () -> SemanticType? = { null },
     ) : InferenceArgument()
 
-    /** `BoundMethodGroup`: [returnType] is the return type of the one method overload resolution picks for those parameter types, else null. */
-    class MethodGroup(val returnType: (List<SemanticType>) -> SemanticType?) : InferenceArgument()
+    /**
+     * `BoundMethodGroup`: [returnType] is the return type of the one method overload resolution picks for those parameter types, else null;
+     * [functionType] the delegate of the group's function type (its unique signature), null when it has none.
+     */
+    class MethodGroup(val returnType: (List<SemanticType>) -> SemanticType?, val functionType: () -> SemanticType? = { null }) : InferenceArgument()
 
     /** `BoundTupleLiteral`: its elements, [type] its natural type when every element has one. */
     class Tuple(val type: SemanticType?, val elements: List<InferenceArgument>) : InferenceArgument()
@@ -70,7 +75,8 @@ internal class RoslynMethodTypeInferrer(
     private val onFixed: ((Int, SemanticType) -> Unit)? = null,
 ) {
     sealed class Result {
-        class Known(val types: List<SemanticType>) : Result()
+        /** [fromFunctionType]: `HasTypeArgumentInferredFromFunctionType` — a type parameter was fixed to the function type of a lambda or a method group. */
+        class Known(val types: List<SemanticType>, val fromFunctionType: Boolean = false) : Result()
         object Failed : Result()
         /** Not known; [reason] — what was not known, or where the inferrer gave up ([RoslynMethodTypeInferrer.Unknown.describe]). */
         class Unknown(val reason: String) : Result()
@@ -94,6 +100,9 @@ internal class RoslynMethodTypeInferrer(
     private enum class ExactOrBoundsKind { EXACT, LOWER_BOUND, UPPER_BOUND }
 
     private val fixedResults = arrayOfNulls<SemanticType>(arity)
+    /** The lower bounds that are function types (`FunctionTypeSymbol`, by identity): `Fix` treats them apart. */
+    private val functionTypeBounds: MutableSet<SemanticType> = java.util.Collections.newSetFromMap(java.util.IdentityHashMap())
+    private val fixedFromFunctionType = BooleanArray(arity)
     private val exactBounds = arrayOfNulls<MutableList<SemanticType>>(arity)
     private val upperBounds = arrayOfNulls<MutableList<SemanticType>>(arity)
     private val lowerBounds = arrayOfNulls<MutableList<SemanticType>>(arity)
@@ -109,7 +118,7 @@ internal class RoslynMethodTypeInferrer(
         if (formalParameterTypes.isEmpty()) return Result.Failed
         return try {
             inferTypeArgsFirstPhase()
-            if (!inferTypeArgsSecondPhase()) Result.Failed else Result.Known(fixedResults.map { it ?: throw Unknown("a type parameter fixed to nothing") })
+            if (!inferTypeArgsSecondPhase()) Result.Failed else Result.Known(fixedResults.map { it ?: throw Unknown("a type parameter fixed to nothing") }, fixedFromFunctionType.any { it })
         } catch (e: Unknown) {
             Result.Unknown(e.describe())
         }
@@ -179,14 +188,12 @@ internal class RoslynMethodTypeInferrer(
                 explicitParameterTypeInference(argument, target)
                 explicitReturnTypeInference(argument, target)
             } else if (containsAnyMethodTypeParameter(target)) {
-                // a lambda with implicitly typed parameters has no type (C# 10 gives a function type to an explicit parameter list only):
-                // no inference from it, as Roslyn (`ToDictionary(k => k.Id, v => v)` against the overload with an `IEqualityComparer<TKey>`
-                // was a refusal — 851 lines of the four solutions); the function type of an explicitly typed one would be the bound: not modeled
-                if (argument.explicitParameterTypes == null && argument.parameterCount > 0) return
-                throw Unknown("the function type of a lambda to ${SemanticTrace.show(target)} is not modeled")
+                // C# 10: the lambda's function type (`GetTypeOrFunctionType`; none for implicitly typed parameters — `ToDictionary(k => k.Id,
+                // v => v)` against the overload with an `IEqualityComparer<TKey>` gives no inference) is a bound as a type would be
+                functionTypeInference(argument.functionType() ?: return, target, kind)
             }
-            // a method group to a delegate makes no inference here (no fixed types yet); its function type to a type parameter is not modeled
-            is InferenceArgument.MethodGroup -> if (delegateType(target) == null && containsAnyMethodTypeParameter(target)) throw Unknown("the function type of a method group to ${SemanticTrace.show(target)} is not modeled")
+            // a method group to a delegate makes no inference here (no fixed types yet); to a type parameter its function type is the bound
+            is InferenceArgument.MethodGroup -> if (delegateType(target) == null && containsAnyMethodTypeParameter(target)) functionTypeInference(argument.functionType() ?: return, target, kind)
             is InferenceArgument.Tuple -> if (!makeExplicitParameterTypeInferences(argument, target, kind)) {
                 argument.type?.let { exactOrBoundsInference(kind, it, target) } ?: run { if (containsAnyMethodTypeParameter(target)) throw Unknown() }
             }
@@ -194,6 +201,16 @@ internal class RoslynMethodTypeInferrer(
             is InferenceArgument.Typed -> argument.type?.let { if (isReallyAType(it)) exactOrBoundsInference(kind, it, target) }
             InferenceArgument.Opaque -> if (containsAnyMethodTypeParameter(target)) throw Unknown("an argument the inference does not model to ${SemanticTrace.show(target)}")
         }
+    }
+
+    /**
+     * `ExactOrBoundsInference` from a function type: a `FunctionTypeSymbol` is a bound of an unfixed type parameter and nothing else (no base
+     * types, no interfaces); `Fix` drops such lower bounds when any other bound is a type ([functionTypeBounds]).
+     */
+    private fun functionTypeInference(functionType: SemanticType, target: SemanticType, kind: ExactOrBoundsKind) {
+        if (target !is SemanticType.Parameter || ordinalOf(target) == null || kind != ExactOrBoundsKind.LOWER_BOUND) return
+        functionTypeBounds += functionType
+        lowerBoundInference(functionType, target)
     }
 
     /** `MakeCollectionExpressionTypeInferences`: each element against the iteration type of the target; none for an empty collection. */
@@ -756,13 +773,18 @@ internal class RoslynMethodTypeInferrer(
     private fun fix(iParam: Int): Boolean {
         val best = fix(exactBounds[iParam], lowerBounds[iParam], upperBounds[iParam]) ?: return false
         fixedResults[iParam] = best
+        fixedFromFunctionType[iParam] = best in functionTypeBounds
         onFixed?.invoke(iParam, best)
         updateDependenciesAfterFix(iParam)
         return true
     }
 
     /** `Fix` (§12.6.3.12): the candidates of the bounds each bound allows, the unique one all others convert to; null when there is none. */
-    private fun fix(exact: List<SemanticType>?, lower: List<SemanticType>?, upper: List<SemanticType>?): SemanticType? {
+    private fun fix(exact: List<SemanticType>?, lowerBounds: List<SemanticType>?, upper: List<SemanticType>?): SemanticType? {
+        // the function types among the lower bounds count only when no bound is a type (`Fix`'s `lowerPredicate`)
+        val lower = if (lowerBounds != null && lowerBounds.any { it in functionTypeBounds } &&
+            (lowerBounds.any { it !in functionTypeBounds } || exact?.any { it !in functionTypeBounds } == true || upper?.any { it !in functionTypeBounds } == true))
+            lowerBounds.filter { it !in functionTypeBounds } else lowerBounds
         // SPEC: * The set of candidate types starts out as the set of all types in the bounds.
         // SPEC: * For each exact bound U of Xi all types which are not identical to U are removed from the candidate set.
         val candidates = ArrayList<SemanticType>()

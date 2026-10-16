@@ -451,6 +451,21 @@
     **лямбды в выводе** ~700 (функциональный тип явной лямбды / группы методов к `T`, тело лямбды); типы, неизвестные выше по цепочке,
     и циклы ~1 150 — не порт. Решение: дальше не по строкам журнала, а по файлам Roslyn — D6c4 целиком, затем лямбды в выводе целиком,
     затем D6c5; эхо из журнала убрать (одна строка на причину).
+  - [x] D6c2, группы методов и функциональные типы (0.1.233; тест `RoslynMethodGroupConversionTest`, 8 случаев с контрольной CS0029 и
+    без отказов в журнале). `GetMethodGroupDelegateConversion` + `ResolveMethodGroup` с `IsMethodGroupConversion` +
+    `RemoveDelegateConversionsWithWrongReturnType` + `MethodIsCompatibleWithDelegateOrFunctionPointer` + `MethodGroupReturnType` →
+    `roslyn/RoslynMethodGroupConversion`: выбор метода группы по типам параметров делегата (обычная форма, все параметры с аргументом,
+    вывод типов generic-метода из этих типов через `CSharpTypeInference.inferFromTypes`, получатель reduced-группы — первый аргумент),
+    фильтр по возвращаемому типу (identity / implicit reference), лучший член — `RoslynBetterFunctionMember`, затем строгая совместимость
+    (`void M(long)` применим для `Action<int>`, но не совместим). Локальные функции — кандидаты (`signature` / `refKind` для
+    `CSharpSymbol.Local`). Функциональные типы C# 10 в выводе (`GetTypeOrFunctionType`, `Fix` с `lowerPredicate`): лямбда с явными типами
+    параметров (или без параметров) и группа с уникальной сигнатурой дают `Func<…>` / `Action<…>` нижней границей параметра типа
+    (`RoslynTypes.functionTypeDelegate`; синтезированные делегаты — ref kinds, >16 параметров — не моделируются), граница-функция
+    отбрасывается рядом с границей-типом, `HasTypeArgumentInferredFromFunctionType` → `RequiredFunctionType` в лучшем члене. Лямбда-блок:
+    привязка с ошибкой тела отменяет преобразование (`PreventsSuccessfulDelegateConversion`: `return e;` в `void`, `return;` или
+    достижимый конец блока при делегате со значением — `Create(this, () => { called = true; })` берёт `Action`, не `Func<Task>`).
+    Удалены `lambda()`, `groupConversion`, `strictGroup`, `hasRefParameters`, флаг `strict` (путь всегда строгий). Не перенесено:
+    указатели на функции, `dynamic`, SPEC VIOLATION для extension-метода получателя-структуры.
   - [x] D6c4 (0.1.232; тест `RoslynBetterFunctionMemberTest`, 10 правил, каждое с контрольной CS0029 и без строки `better` в журнале).
     `BetterFunctionMember`, `MoreSpecificType`, `BetterConversionFromExpression`, `ExpressionMatchExactly`, `BetterConversionTarget`,
     `BetterCollectionExpressionConversion`, `CanDowngradeConversionFromLambdaToNeither` → `roslyn/RoslynBetterFunctionMember` целиком, по

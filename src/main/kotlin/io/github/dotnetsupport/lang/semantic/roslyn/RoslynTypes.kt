@@ -212,6 +212,36 @@ internal class RoslynTypes(private val r: CSharpNameResolver) {
     /** `DelegateInvokeMethod`: the parameter types and the return type of a delegate type, substituted; null for any other type. */
     fun delegateInvoke(type: SemanticType): Pair<List<SemanticType?>, SemanticType?>? = r.expressions.delegateSignature(type)
 
+    /** `HasIdentityOrImplicitReferenceConversion`: no numeric, boxing or user-defined conversion counts; null when not known. */
+    fun hasIdentityOrImplicitReferenceConversion(source: SemanticType, destination: SemanticType): Boolean? {
+        when (same(source, destination)) {
+            true -> return true
+            null -> return null
+            false -> {}
+        }
+        val sourceReference = isReferenceType(source) ?: return null
+        val destinationReference = isReferenceType(destination) ?: return null
+        if (!sourceReference || !destinationReference) return false
+        return when (r.overloads.classify(source, destination, userDefined = false)) {
+            CSharpNameResolver.Conversion.IDENTITY, CSharpNameResolver.Conversion.IMPLICIT -> true
+            CSharpNameResolver.Conversion.NONE -> false
+            CSharpNameResolver.Conversion.UNKNOWN -> null
+        }
+    }
+
+    /**
+     * The delegate of a function type (C# 10, `GetMethodGroupOrLambdaDelegateType`): `Action<…>` / `Func<…>` for parameters passed by value
+     * ([returnType] null: `void`); null for what would be a synthesized delegate (`ref` kinds, more than 16 parameters) — not modeled.
+     */
+    fun functionTypeDelegate(parameterTypes: List<SemanticType>, refKinds: List<String?>, returnType: SemanticType?): SemanticType? {
+        if (refKinds.any { !it.isNullOrEmpty() } || parameterTypes.size > 16) return null
+        val returns = returnType?.takeIf { !isVoid(it) }
+        val arguments = if (returns == null) parameterTypes else parameterTypes + returns
+        val name = if (returns == null) (if (arguments.isEmpty()) "System.Action" else "System.Action`${arguments.size}") else "System.Func`${arguments.size}"
+        val definition = r.libraryType(name) ?: return null
+        return if (arguments.isEmpty()) definition else SemanticType.Library(definition.type, arguments)
+    }
+
     /** `Expression<TDelegate>` to `TDelegate` (`GetDelegateType` of a lambda's target), else [type] itself. */
     fun delegateOfExpression(type: SemanticType): SemanticType? = r.expressions.unwrapExpression(type)
 

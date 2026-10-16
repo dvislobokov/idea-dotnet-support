@@ -47,6 +47,8 @@ internal class RoslynBetterFunctionMember(private val types: RoslynTypes, privat
     class Member(
         val arity: Int, val expanded: Boolean, val targets: List<SemanticType>, val refKinds: List<String?>, val definitionTargets: List<SemanticType>,
         val declaredParameterCount: Int, val parametersUsed: Int, val paramsType: SemanticType?, val toLastParameter: List<Boolean>,
+        /** `HasTypeArgumentInferredFromFunctionType`: a type argument came from the function type of a lambda or a method group. */
+        val inferredFromFunctionType: Boolean = false,
     )
 
     /** What the port asks about expressions; a question with no answer throws [Unknown]. */
@@ -101,6 +103,11 @@ internal class RoslynBetterFunctionMember(private val types: RoslynTypes, privat
     // ---- BetterFunctionMember
 
     fun betterFunctionMember(m1: Member, m2: Member, arguments: List<Argument>): BetterResult {
+        // prefer the overload that did not use the function type of a lambda or a method group to infer its type arguments or to convert arguments
+        val required1 = requiredFunctionType(m1, arguments)
+        val required2 = requiredFunctionType(m2, arguments)
+        if (!required1 && required2) return BetterResult.LEFT
+        if (required1 && !required2) return BetterResult.RIGHT
         var result = BetterResult.NEITHER
         var okToDowngradeResultToNeither = false
         var ignoreDowngradableToNeither = false
@@ -206,6 +213,10 @@ internal class RoslynBetterFunctionMember(private val types: RoslynTypes, privat
         }
         return BetterResult.NEITHER
     }
+
+    /** `RequiredFunctionType`: a type argument inferred from a function type, or an argument converted by one. */
+    private fun requiredFunctionType(m: Member, arguments: List<Argument>): Boolean = m.inferredFromFunctionType ||
+        arguments.indices.any { i -> (arguments[i] as? Argument.Expression)?.let { host.conversionKind(it.expression, m.targets[i]) == FUNCTION_TYPE } == true }
 
     /** `val` parameters over `in` ones, and over `ref` ones when the argument is an interpolated string handler. */
     private fun preferValOverInOrRefInterpolatedHandlerParameters(arguments: List<Argument>, m1: Member, m2: Member): BetterResult {

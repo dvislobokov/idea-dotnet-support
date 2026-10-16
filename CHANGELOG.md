@@ -3,6 +3,14 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.233
+
+- A method group passed for a delegate is resolved as the compiler resolves it: the method is chosen by the delegate's parameter types
+  among the overloads (a generic one infers its type arguments from them), by the return type, and by the stricter delegate
+  compatibility; local functions count. A lambda with typed parameters (or none) and a method group with one signature give their
+  function type (`Func<…>` / `Action<…>`) to a type parameter of a generic method, as in C# 10 — `Create(this, () => { … })`,
+  `DebounceAsync(Invoke)` resolve to one overload. A block lambda that returns nothing is no candidate for a delegate returning a value.
+
 ## 0.1.232
 
 - Which of two applicable overloads is better is decided as the compiler decides it (the port of Roslyn's better function member):

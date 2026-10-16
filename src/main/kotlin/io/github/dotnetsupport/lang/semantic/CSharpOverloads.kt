@@ -33,6 +33,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
     internal val roslynTypes by lazy { RoslynTypes(r) }
     internal val expressionConversions by lazy { io.github.dotnetsupport.lang.semantic.roslyn.RoslynExpressionConversions(roslynTypes) }
     internal val betterFunctionMember by lazy { io.github.dotnetsupport.lang.semantic.roslyn.RoslynBetterFunctionMember(roslynTypes, BetternessHost(this)) }
+    internal val methodGroupConversion by lazy { io.github.dotnetsupport.lang.semantic.roslyn.RoslynMethodGroupConversion(roslynTypes, betterFunctionMember) }
     internal val roslynConversions by lazy { RoslynConversions(RoslynTypes(r)) { operators(it, withBases = false) } }
 
     // the method type parameters of the candidates being resolved: a parameter of the caller's own method is a type like any other
@@ -54,13 +55,9 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         val methodArguments: List<SemanticType?> = emptyList(),
         /** The `this` parameter as declared, not substituted: the receiver takes part in "more specific" with the other parameters. */
         val declaredReceiver: SemanticType? = null,
+        /** A type argument was inferred from the function type of a lambda or a method group (`HasTypeArgumentInferredFromFunctionType`). */
+        val inferredFromFunctionType: Boolean = false,
     )
-
-    /**
-     * For the compiler errors of [CSharpOverloadChecks]: conversions of lambdas and method groups are NONE or IMPLICIT only where that is
-     * sure (the lenient answers of navigation would make an inapplicable candidate applicable there), anything else UNKNOWN.
-     */
-    internal var strict = false
 
     /** How a candidate fares with the arguments of a call ([evaluate]). */
     internal sealed class Outcome {
@@ -86,8 +83,6 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         site: CSharpSimpleName? = null, infer: (List<SemanticType?>, Pair<SemanticType, SemanticType?>?) -> CSharpTypeInference.Inferred,
     ): Outcome {
         val owners = all.mapNotNull { (it as? CSharpSymbol.SourceMember)?.element }
-        val wasStrict = strict
-        strict = true
         openOwners += owners
         twins = paramsTwins(all)
         try {
@@ -97,7 +92,6 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
             if (outcome === Outcome.Unknown && why != ECHO) SemanticTrace.trace { "applicable ${site?.text} at ${SemanticTrace.at(site ?: arguments.firstOrNull())}: ${SemanticTrace.show(symbol)} not known — ${why.ifEmpty { "no reason given" }}" }
             return outcome
         } finally {
-            strict = wasStrict
             openOwners -= owners.toSet()
         }
     }
@@ -130,9 +124,10 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                 if (expanded && map[i] == parameters.size - 1) declared?.let(::elementOf) else declared
             }
             var methodArguments: List<SemanticType?> = emptyList()
+            var fromFunctionType = false
             if (generic) {
                 methodArguments = written ?: when (val inferred = infer(declaredTargets, if (reduced) receiver!! to all.first().type() else null)) {
-                    is CSharpTypeInference.Inferred.Known -> inferred.types
+                    is CSharpTypeInference.Inferred.Known -> { fromFunctionType = inferred.fromFunctionType; inferred.types }
                     CSharpTypeInference.Inferred.Failed -> { inferenceFailed = true; continue }
                     CSharpTypeInference.Inferred.Unknown -> { unknown = true; why = ECHO; continue }
                 }
@@ -182,7 +177,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
             val defaults = parameters.indices.any { p -> p !in map && !(expanded && p == parameters.size - 1) }
             val form = Form(
                 symbol, parameters, targets, declaredTargets, expanded, defaults, generic, if (expanded) parameters.last().type() else null, receiverTarget, refKinds, methodArguments,
-                if (reduced) all.first().type() else null,
+                if (reduced) all.first().type() else null, fromFunctionType,
             )
             if (wrong.isNotEmpty()) bad += Outcome.Bad(form, wrong, refMismatch)
             else if (formUnknown) unknown = true
@@ -207,8 +202,6 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
      */
     internal fun unbeaten(forms: List<Form>, arguments: List<CSharpArgument>, receiver: SemanticType?, site: CSharpSimpleName?): List<Form>? {
         val owners = forms.mapNotNull { (it.symbol as? CSharpSymbol.SourceMember)?.element }
-        val wasStrict = strict
-        strict = true
         openOwners += owners
         try {
             val beaten = HashSet<Form>()
@@ -217,7 +210,6 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
             }
             return forms.filter { it !in beaten }
         } finally {
-            strict = wasStrict
             openOwners -= owners.toSet()
         }
     }
@@ -236,8 +228,6 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         val receiver = if (reduced) site?.let(r.expressions::receiver) else null
         val written = (site as? CSharpGenericName)?.typeArgumentList?.arguments?.map { r.resolveType(it) ?: return null }
         val owners = candidates.mapNotNull { (it as? CSharpSymbol.SourceMember)?.element }
-        val wasStrict = strict
-        strict = true
         openOwners += owners
         try {
             // the applicability of each candidate as the compiler errors judge it (D6c3): Roslyn's inference, the port's conversions
@@ -278,7 +268,6 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
             }
             return best?.symbol
         } finally {
-            strict = wasStrict
             openOwners -= owners.toSet()
         }
     }
@@ -372,7 +361,8 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         val at = index + if (reduced) 1 else 0
         return when (symbol) {
             is CSharpSymbol.LibraryMember -> r.session.parameters(symbol.member).getOrNull(at)?.let { p -> if (p.isOut) "out" else if (p.isIn) "in" else if (p.isRef) "ref" else null }
-            is CSharpSymbol.SourceMember -> parameterList(symbol.element)?.parameters?.getOrNull(at)?.modifiers?.map { it.text }?.let { m ->
+            is CSharpSymbol.SourceMember, is CSharpSymbol.Local -> (if (symbol is CSharpSymbol.Local) r.localFunctionOf(symbol)?.parameterList else parameterList((symbol as CSharpSymbol.SourceMember).element))
+                ?.parameters?.getOrNull(at)?.modifiers?.map { it.text }?.let { m ->
                 when {
                     "out" in m -> "out"
                     "in" in m || "readonly" in m -> "in"
@@ -431,7 +421,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         else -> null
     }
 
-    private fun substitute(type: SemanticType?, symbol: CSharpSymbol, arguments: List<SemanticType?>): SemanticType? {
+    internal fun substitute(type: SemanticType?, symbol: CSharpSymbol, arguments: List<SemanticType?>): SemanticType? {
         val owner = (symbol as? CSharpSymbol.SourceMember)?.element
         val names = r.typeParameterNames(owner)
         return r.replace(type) { p ->
@@ -445,7 +435,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
     }
 
     /** Whether the type arguments [arguments] of [symbol] satisfy its constraints; null when that is not known (`new()`, `unmanaged`, ...). */
-    private fun constraintsHoldStrict(symbol: CSharpSymbol, arguments: List<SemanticType?>): Boolean? {
+    internal fun constraintsHoldStrict(symbol: CSharpSymbol, arguments: List<SemanticType?>): Boolean? {
         if (!constraintsHold(symbol, arguments)) return false
         fun converts(argument: SemanticType, type: SemanticType): Boolean = classify(argument, type).let { it == Conversion.IDENTITY || it == Conversion.IMPLICIT }
         when (symbol) {

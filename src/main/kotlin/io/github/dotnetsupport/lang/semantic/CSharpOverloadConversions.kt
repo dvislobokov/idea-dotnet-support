@@ -21,6 +21,8 @@ import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Companion.VALUE_TUP
 import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Companion.VOID
 import io.github.dotnetsupport.lang.semantic.roslyn.RoslynConversions
 import io.github.dotnetsupport.lang.semantic.roslyn.RoslynExpressionConversions
+import io.github.dotnetsupport.lang.semantic.roslyn.RoslynMethodGroupConversion
+import io.github.dotnetsupport.lang.semantic.roslyn.RoslynMethodTypeInferrer
 
 /*
  * The conversions of overload resolution (C# §10.2), as extensions of [CSharpOverloads] (D6e5: one file per concern, so D6c replaces
@@ -247,7 +249,7 @@ internal fun CSharpOverloads.argument(e: CSharpExpression, type: SemanticType?, 
         }
     }
     when (value) {
-        is CSharpAnonymousFunctionExpression -> return if (strict) strictLambda(value, to) else lambda(value, to)
+        is CSharpAnonymousFunctionExpression -> return strictLambda(value, to)
         is CSharpCollectionExpression -> return collection(to)
         is CSharpConditionalExpression -> if (type == null) {
             val branches = listOfNotNull(value.whenTrue, value.whenFalse)
@@ -271,39 +273,24 @@ internal fun CSharpOverloads.argument(e: CSharpExpression, type: SemanticType?, 
         }
     }
     methodGroup(value)?.let { group ->
-        // `compilation.GetBestTypeByMetadataName` of an extension method: its receiver is bound, the delegate takes the rest (MudBlazor.Analyzers)
-        val name = (value as? CSharpMemberAccessExpression)?.nameElement
-        val reduced = name != null && group.any { r.expressions.isReduced(it, name) }
-        // the port first (D6c2): a method group to what is no delegate goes by its function type (C# 10) — `MapGet(pattern, GetItems)` to
-        // `Delegate`, eShop's minimal APIs; what it does not port yet (a group to a delegate type) the rules below decide
+        // a delegate type (not `Expression<D>`): the method group conversion; any other type: by the group's function type (C# 10 —
+        // `MapGet(pattern, GetItems)` to `Delegate`, eShop's minimal APIs)
+        if (r.expressions.delegateSignature(to) != null) return methodGroupConversion(value, group, to)
+        val reduced = isReducedGroup(value, group)
         when (val ported = expressionConversions.classifyImplicitConversionFromExpression(methodGroupSource(group, value, reduced), to)) {
             is RoslynExpressionConversions.Result.Exists -> return Conversion.IMPLICIT
             RoslynExpressionConversions.Result.None -> return Conversion.NONE
-            is RoslynExpressionConversions.Result.Unknown -> if (!ported.reason.endsWith("not ported"))
+            is RoslynExpressionConversions.Result.Unknown -> {
                 SemanticTrace.trace { "conversion of the method group `${SemanticTrace.text(value)}` at ${SemanticTrace.at(value)} to ${SemanticTrace.show(to)}: not known — ${ported.reason}" }
-            RoslynExpressionConversions.Result.ByType, RoslynExpressionConversions.Result.AnonymousFunctionConversion -> {}
+                return Conversion.UNKNOWN
+            }
+            RoslynExpressionConversions.Result.ByType, RoslynExpressionConversions.Result.AnonymousFunctionConversion -> return Conversion.UNKNOWN
         }
-        return if (strict) (if (reduced) Conversion.UNKNOWN else strictGroup(group, to)) else groupConversion(group, to, reduced)
     }
     val source = type ?: return Conversion.UNKNOWN
     val conversion = classify(source, to)
     if (conversion == Conversion.NONE && constantFits(value, to)) return Conversion.IMPLICIT
     return conversion
-}
-
-private fun CSharpOverloads.lambda(lambda: CSharpAnonymousFunctionExpression, to: SemanticType): Conversion {
-    if (to is SemanticType.Parameter) return Conversion.UNKNOWN
-    val target = r.expressions.unwrapExpression(to) ?: return Conversion.UNKNOWN
-    if (r.expressions.delegateSignature(target) == null) {
-        val tn = r.definitionName(target)
-        // the natural type of a lambda (C# 10) goes to `Delegate`, `object` and `Expression`; a lambda without one has no conversion
-        // there (CS8917): `MapGet("/", context => …)` takes the `RequestDelegate` overload, never the `Delegate` one
-        if (tn in NATURAL_TARGETS) return if (hasNaturalType(lambda)) Conversion.IMPLICIT else Conversion.NONE
-        return if (closed(target)) Conversion.NONE else Conversion.UNKNOWN
-    }
-    // a body that does not use untyped parameters is typed before the call is resolved: `() => 1` is no `Action`, `() => Log()` no `Func<int>`
-    if (!r.expressions.lambdaFits(lambda, to, typeBody = hasNaturalType(lambda) || r.expressions.lambdaParameterCount(lambda) == 0)) return Conversion.NONE
-    return Conversion.IMPLICIT
 }
 
 /**
@@ -378,9 +365,17 @@ private fun CSharpOverloads.strictLambda(lambda: CSharpAnonymousFunctionExpressi
     }
     val block = lambda.block ?: return Conversion.UNKNOWN
     val returned = returnsOf(block, lambda)
-    if (void) return if (returned.all { it.expression == null }) Conversion.IMPLICIT else Conversion.UNKNOWN
-    if (returned.isEmpty() || returned.any { it.expression == null }) return Conversion.UNKNOWN
-    if (CSharpReachability(r).endOf(block) != CSharpReachability.Reach.NO) return Conversion.UNKNOWN
+    // the lambda bound for the delegate with an error of its body has no conversion (`PreventsSuccessfulDelegateConversion`): a `return e;`
+    // in a `void` one (CS0127), a `return;` or a reachable end of the block in one returning a value (CS0126, CS1643 — `Create(this,
+    // () => { called = true; })` takes the `Action` overload, not the `Func<Task>` one)
+    if (void) return if (returned.all { it.expression == null }) Conversion.IMPLICIT else Conversion.NONE
+    if (returned.any { it.expression == null }) return Conversion.NONE
+    when (CSharpReachability(r).endOf(block)) {
+        CSharpReachability.Reach.YES -> return Conversion.NONE
+        CSharpReachability.Reach.UNKNOWN -> return Conversion.UNKNOWN
+        CSharpReachability.Reach.NO -> {}
+    }
+    if (returned.isEmpty()) return Conversion.IMPLICIT
     return body {
         var result = Conversion.IMPLICIT
         for (statement in returned) {
@@ -441,74 +436,6 @@ internal fun CSharpOverloads.delegateRefKinds(type: SemanticType): List<String>?
     else -> null
 }
 
-/**
- * A method group to [to], strictly: methods of the group that are not generic and have neither optional, `params` nor by-reference
- * parameters, compatible by their return type (C# 7.3) and applicable to the delegate's parameter types; NONE when none is, IMPLICIT
- * when exactly one is and its parameters take the delegate's by identity or reference conversion.
- */
-internal fun CSharpOverloads.strictGroup(methods: List<CSharpSymbol>, to: SemanticType): Conversion {
-    if (to is SemanticType.Parameter) return Conversion.UNKNOWN
-    val target = r.expressions.unwrapExpression(to) ?: return Conversion.UNKNOWN
-    val delegate = r.expressions.delegateSignature(target)
-    if (delegate == null) {
-        val tn = r.definitionName(target)
-        if (tn == "System.Delegate" || tn == "System.MulticastDelegate" || tn == OBJECT) return Conversion.UNKNOWN
-        return if (noDelegate(target)) Conversion.NONE else Conversion.UNKNOWN
-    }
-    if (delegateRefKinds(target)?.all { it.isEmpty() } != true) return Conversion.UNKNOWN
-    val inputs = delegate.first.map { it ?: return Conversion.UNKNOWN }
-    val returns = delegate.second ?: return Conversion.UNKNOWN
-    if (inputs.any(::mentionsCandidateParameter) || mentionsCandidateParameter(returns)) return Conversion.UNKNOWN
-    val compatible = ArrayList<List<CSharpNameResolver.Parameter>>()
-    for (method in methods) {
-        if (r.isGeneric(method)) return Conversion.UNKNOWN
-        val parameters = r.signature(method, false) ?: return Conversion.UNKNOWN
-        if (parameters.any { it.optional || it.isParams || it.byRef } || hasRefParameters(method)) return Conversion.UNKNOWN
-        if (parameters.size != inputs.size) continue
-        val result = r.returnType(method, emptyList()) ?: return Conversion.UNKNOWN
-        val returnFits = when {
-            r.definitionName(returns) == VOID -> r.definitionName(result) == VOID
-            r.definitionName(result) == VOID -> false
-            else -> when (same(result, returns)) {
-                true -> true
-                null -> return Conversion.UNKNOWN
-                false -> if (isReference(result) == false || isReference(returns) == false) false
-                else when (classify(result, returns, userDefined = false)) {
-                    Conversion.IMPLICIT, Conversion.IDENTITY -> if (isReference(result) == true && isReference(returns) == true) true else return Conversion.UNKNOWN
-                    Conversion.NONE -> false
-                    Conversion.UNKNOWN -> return Conversion.UNKNOWN
-                }
-            }
-        }
-        if (!returnFits) continue
-        var applicable = true
-        for ((p, input) in parameters.zip(inputs)) {
-            val type = p.type() ?: return Conversion.UNKNOWN
-            when (classify(input, type)) {
-                Conversion.NONE -> { applicable = false; break }
-                Conversion.UNKNOWN -> return Conversion.UNKNOWN
-                else -> {}
-            }
-        }
-        if (applicable) compatible += parameters
-    }
-    if (compatible.isEmpty()) return Conversion.NONE
-    val single = compatible.singleOrNull() ?: return Conversion.UNKNOWN
-    for ((p, input) in single.zip(inputs)) {
-        val type = p.type() ?: return Conversion.UNKNOWN
-        if (same(input, type) == true) continue
-        if (isReference(input) == true && isReference(type) == true) continue
-        return Conversion.UNKNOWN
-    }
-    return Conversion.IMPLICIT
-}
-
-private fun CSharpOverloads.hasRefParameters(method: CSharpSymbol): Boolean = when (method) {
-    is CSharpSymbol.LibraryMember -> r.session.parameters(method.member).any { it.isByReference }
-    is CSharpSymbol.SourceMember -> parameterList(method.element)?.parameters?.any { p -> p.modifiers.any { it.text != "this" } } ?: true
-    else -> true
-}
-
 /** C# 10: a lambda whose parameters are typed (or that takes none) has a function type, `Func<…>` / `Action<…>`. */
 internal fun CSharpOverloads.hasNaturalType(lambda: CSharpAnonymousFunctionExpression): Boolean = when (lambda) {
     is CSharpParenthesizedLambdaExpression -> lambda.parameterList?.parameters.orEmpty().all { it.type != null }
@@ -538,18 +465,78 @@ internal fun CSharpOverloads.methodGroup(e: CSharpExpression): List<CSharpSymbol
     return symbols.takeIf { s -> s.isNotEmpty() && s.all(r::isInMethodGroup) }
 }
 
-private fun CSharpOverloads.groupConversion(methods: List<CSharpSymbol>, to: SemanticType, reduced: Boolean = false): Conversion {
-    if (to is SemanticType.Parameter) return Conversion.UNKNOWN
-    val target = r.expressions.unwrapExpression(to) ?: return Conversion.UNKNOWN
-    val delegate = r.expressions.delegateSignature(target)
-    if (delegate == null) {
-        val tn = r.definitionName(target)
-        if (tn == "System.Delegate" || tn == "System.MulticastDelegate" || tn == OBJECT) return Conversion.UNKNOWN
-        return if (closed(target)) Conversion.NONE else Conversion.UNKNOWN
+/** Whether the method group [group] of [value] is an extension method group on a receiver (`comp.InvokeAsync`), whose receiver is bound. */
+private fun CSharpOverloads.isReducedGroup(value: CSharpExpression, group: List<CSharpSymbol>): Boolean {
+    val name = (value as? CSharpMemberAccessExpression)?.nameElement ?: return false
+    return group.any { r.expressions.isReduced(it, name) }
+}
+
+/** The methods of the group [value] as [RoslynMethodGroupConversion] sees them (the receiver of a reduced group their first argument). */
+private fun CSharpOverloads.groupCandidates(value: CSharpExpression, group: List<CSharpSymbol>): List<RoslynMethodGroupConversion.Candidate> {
+    val name = (value as? CSharpMemberAccessExpression)?.nameElement
+    val receiver by lazy { name?.let(r.expressions::receiver) }
+    return group.map { m ->
+        val isReduced = name != null && r.expressions.isReduced(m, name)
+        val all = r.signature(m, false) ?: throw RoslynMethodTypeInferrer.Unknown("the signature of ${SemanticTrace.show(m)} is not known")
+        val parameters = if (isReduced) all.drop(1) else all
+        RoslynMethodGroupConversion.Candidate(
+            arity = r.expressions.methodArity(m), parameterTypes = parameters.map { it.type() }, refKinds = parameters.indices.map { refKind(m, it, isReduced) },
+            returnType = r.returnType(m, emptyList()),
+            infer = { delegateTypes ->
+                val self = if (isReduced) listOf(receiver ?: throw RoslynMethodTypeInferrer.Unknown("the receiver of ${SemanticTrace.show(m)} is not known")) else emptyList()
+                when (val inferred = r.inference.inferFromTypes(m, all.map { it.type() }, self + delegateTypes)) {
+                    is CSharpTypeInference.Inferred.Known -> when (constraintsHoldStrict(m, inferred.types)) {
+                        true -> RoslynMethodGroupConversion.Inferred.Known(inferred.types)
+                        false -> RoslynMethodGroupConversion.Inferred.Failed
+                        null -> RoslynMethodGroupConversion.Inferred.Unknown("whether the constraints of ${SemanticTrace.show(m)} hold is not known")
+                    }
+                    CSharpTypeInference.Inferred.Failed -> RoslynMethodGroupConversion.Inferred.Failed
+                    CSharpTypeInference.Inferred.Unknown -> RoslynMethodGroupConversion.Inferred.Unknown("see the `inference` line")
+                }
+            },
+            substitute = { type, typeArguments -> if (typeArguments.isEmpty()) type else substitute(type, m, typeArguments) },
+            receiverFits = { typeArguments ->
+                if (!isReduced) true else {
+                    val self = (if (typeArguments.isEmpty()) all.first().type() else substitute(all.first().type(), m, typeArguments))
+                    val from = receiver
+                    if (self == null || from == null) null else when (classify(from, self, userDefined = false)) {
+                        Conversion.IDENTITY, Conversion.IMPLICIT -> true
+                        Conversion.NONE -> false
+                        Conversion.UNKNOWN -> null
+                    }
+                }
+            },
+        )
     }
-    val count = delegate.first.size
-    val fitting = methods.filter { m -> r.signature(m, reduced && r.isExtension(m))?.let { s -> s.size >= count && s.count { !it.optional && !it.isParams } <= count } ?: true }
-    return if (fitting.isEmpty()) Conversion.NONE else Conversion.IMPLICIT
+}
+
+/** §10.8: whether the method group [group] of [value] converts to the delegate type [to]; one trace line when that is not known. */
+internal fun CSharpOverloads.methodGroupConversion(value: CSharpExpression, group: List<CSharpSymbol>, to: SemanticType): Conversion = try {
+    val kinds = delegateRefKinds(to)?.map { it.ifEmpty { null } } ?: throw RoslynMethodTypeInferrer.Unknown("the ref kinds of ${SemanticTrace.show(to)} are not known")
+    if (methodGroupConversion.conversion(groupCandidates(value, group), to, kinds)) Conversion.IMPLICIT else Conversion.NONE
+} catch (e: RoslynMethodTypeInferrer.Unknown) {
+    SemanticTrace.trace { "conversion of the method group `${SemanticTrace.text(value)}` at ${SemanticTrace.at(value)} to ${SemanticTrace.show(to)}: not known — ${e.describe()}" }
+    Conversion.UNKNOWN
+}
+
+/** `MethodGroupReturnType` of the inference: what the group [value] returns for a delegate of [parameterTypes]; null when no one method is picked. */
+internal fun CSharpOverloads.methodGroupReturnType(value: CSharpExpression, parameterTypes: List<SemanticType>): SemanticType? {
+    val group = methodGroup(unparenthesized(value)) ?: throw RoslynMethodTypeInferrer.Unknown("`${SemanticTrace.text(value)}` is no method group")
+    return when (val resolution = methodGroupConversion.resolve(groupCandidates(value, group), parameterTypes, parameterTypes.map { null }, null)) {
+        is RoslynMethodGroupConversion.Resolution.Best -> resolution.returnType.takeIf { r.definitionName(it) != VOID }
+        RoslynMethodGroupConversion.Resolution.None, RoslynMethodGroupConversion.Resolution.Ambiguous -> null
+    }
+}
+
+/** The delegate of the function type of the method group [value] (C# 10): its unique signature; null when it has none. */
+internal fun CSharpOverloads.methodGroupFunctionType(value: CSharpExpression): SemanticType? {
+    val group = methodGroup(unparenthesized(value)) ?: throw RoslynMethodTypeInferrer.Unknown("`${SemanticTrace.text(value)}` is no method group")
+    val source = methodGroupSource(group, value, isReducedGroup(value, group)) as? RoslynExpressionConversions.Source.MethodGroup
+        ?: throw RoslynMethodTypeInferrer.Unknown("the signatures of the method group `${SemanticTrace.text(value)}` are not known")
+    val method = expressionConversions.functionType(source) ?: return null
+    val parameters = method.parameters.map { it.first ?: throw RoslynMethodTypeInferrer.Unknown("a parameter type of the method group `${SemanticTrace.text(value)}` is not known") }
+    return roslynTypes.functionTypeDelegate(parameters, method.parameters.map { it.second }, method.returns)
+        ?: throw RoslynMethodTypeInferrer.Unknown("the function type of the method group `${SemanticTrace.text(value)}` is a synthesized delegate (not modeled)")
 }
 
 /** A method group as [RoslynExpressionConversions] sees it (`BoundMethodGroup`): its methods with their signatures, the type arguments written. */
