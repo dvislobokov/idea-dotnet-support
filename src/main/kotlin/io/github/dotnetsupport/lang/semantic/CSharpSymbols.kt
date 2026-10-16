@@ -37,7 +37,8 @@ sealed class CSharpSymbol {
     /** The color of a use of it, as the language server's semantic tokens give it; null for what the scopes color. */
     open val referenceKey: TextAttributesKey? get() = null
 
-    class Namespace(val qualifiedName: String) : CSharpSymbol() {
+    /** [alias]: the `extern alias` the namespace was reached through (`X::N`): what it holds is looked up in the projects of that alias only. */
+    class Namespace(val qualifiedName: String, val alias: String? = null) : CSharpSymbol() {
         override val id: String get() = "N:$qualifiedName"
         override val referenceKey: TextAttributesKey get() = CSharpColors.NAMESPACE
         override fun equals(other: Any?): Boolean = other is Namespace && other.qualifiedName == qualifiedName

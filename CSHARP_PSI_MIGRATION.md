@@ -451,6 +451,18 @@
     **лямбды в выводе** ~700 (функциональный тип явной лямбды / группы методов к `T`, тело лямбды); типы, неизвестные выше по цепочке,
     и циклы ~1 150 — не порт. Решение: дальше не по строкам журнала, а по файлам Roslyn — D6c4 целиком, затем лямбды в выводе целиком,
     затем D6c5; эхо из журнала убрать (одна строка на причину).
+  - [x] Закрытие журнала, шаг 9 (0.1.246; тест `RazorCorpusFalseErrorsTest.testAProjectReferencedUnderAnAliasIsReachedThroughItOnly`).
+    `<Aliases>` у `ProjectReference` (`MsBuildProject.projectReferenceAliases`): проект, на который ссылаются только под алиасом (без
+    `global`), не виден глобально (`CSharpSemanticEnvironment.sees` → `referenceAliases`), а `X::N.T` и `X.N.T` ищут только в его
+    файлах (`seesThroughAlias`; `CSharpSymbol.Namespace(qualifiedName, alias)` и `Qualifier.Namespace(name, alias)` несут алиас по
+    цепочке, `typesInAlias` — свой `NativeCSharpResolver` с `visible` по алиасу); найденный тип получает `TypeInfo.alias` — ключ типа
+    отличается от одноимённого типа глобального пространства (иначе кэш `membersOf` по ключу подсовывал члены чужого `Dup`).
+    Цель — 36 строк `MudBlazor.UnitTests.Analyzers` (`That(supportedDiagnostics)`, `GetDiagnosticsAsync`). Что вскрылось: (а) проект под
+    алиасом всё же виден глобально, если другая ссылка приносит его транзитивно (MSBuild передаёт транзитивную ссылку без алиаса —
+    `TestComponents` → `Analyzers`): `referencedProjects` пропускает только прямые алиасные ссылки корня; (б) `extern alias` у них стоит
+    **внутри** file-scoped namespace — `isExternAlias` читает все директивы файла; (в) ключ типа с алиасом ломал тождество: один и тот же
+    enum, достигнутый через `X::` и глобально, был двумя типами (ложная CS1503) — ключ остался именным, а кэш `membersOf` различает
+    одноимённые типы разных проектов по частям (`identityHashCode` частей). MudBlazor 119 → 86.
   - [x] Закрытие журнала, шаг 8 (0.1.245; тест `CSharpTypingGapsTest.testAUsingStaticBringsTheExtensionMethodsOfTheType`). Почти все
     строки `.g.cs` MudBlazor (179 из 190) — одна причина: `x.ToStr()` — расширение `StringHelpers` из `MudBlazor.Utilities`, которое проект
     вносит глобальным `<Using Include="MudBlazor.Utilities.StringHelpers" Static="True" />`; поиск расширений шёл только по `using`

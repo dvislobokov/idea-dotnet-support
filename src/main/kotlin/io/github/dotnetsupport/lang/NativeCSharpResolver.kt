@@ -266,11 +266,15 @@ class NativeCSharpResolver(val file: CSharpFile, private val visible: ((VirtualF
     }
 
     /** Members of [type] by simple name: its parts, then its base types of the solution (members of the nearer type win). */
-    fun membersOf(type: TypeInfo): Map<String, Member> = members[type.key] ?: run {
-        val map = LinkedHashMap<String, Member>()
-        collectMembers(type, map, HashSet(), 0)
-        members[type.key] = map
-        map
+    fun membersOf(type: TypeInfo): Map<String, Member> {
+        // by the parts, not the name alone: `N.Dup` of a project referenced under an `extern alias` beside the solution's own `N.Dup`
+        val cacheKey = type.key + "#" + type.parts.joinToString(",") { System.identityHashCode(it).toString() }
+        return members[cacheKey] ?: run {
+            val map = LinkedHashMap<String, Member>()
+            collectMembers(type, map, HashSet(), 0)
+            members[cacheKey] = map
+            map
+        }
     }
 
     private fun collectMembers(type: TypeInfo, map: MutableMap<String, Member>, visited: MutableSet<String>, depth: Int) {
@@ -709,7 +713,11 @@ sealed class TypePart(val qualifiedName: String, val name: String, val namespace
 }
 
 /** A type seen from the file being resolved: all its parts, the kind (static on any part makes a static class). */
-class TypeInfo(val qualifiedName: String, val arity: Int, val parts: List<TypePart>) {
+/**
+ * [alias]: the `extern alias` the type was reached through. Its key is the name's: the same declaration reached with and without the alias
+ * (a project referenced both ways) is one type; a type of another project with the same name is told apart by its parts ([NativeCSharpResolver.membersOf]).
+ */
+class TypeInfo(val qualifiedName: String, val arity: Int, val parts: List<TypePart>, val alias: String? = null) {
     val key: String get() = TypePart.key(qualifiedName, arity)
 
     val kind: TypeKind? = parts.firstNotNullOfOrNull { TypeKind.of(it.elementType, it.modifiers) }?.let { kind ->

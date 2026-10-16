@@ -421,8 +421,9 @@ class CSharpTypingGapsTest : BasePlatformTestCase() {
         class C { void M(double d) { string bad = d.ToStr2(); } }
     """, "d.ToStr2() -> CS0029: Cannot implicitly convert type 'int' to 'string'")
 
-    /** `extern alias X;` — a parameter typed `X::Name` in a signature (MudBlazor's analyzer tests). */
+    /** `extern alias X;` — a parameter typed `X::Name` in a signature; the directive inside a file-scoped namespace too (MudBlazor's analyzer tests). */
     fun testAnAliasQualifiedParameterTypeInASignature() = check("""
+        namespace P;
         extern alias Lib;
         class C
         {

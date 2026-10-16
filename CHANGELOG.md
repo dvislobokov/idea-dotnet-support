@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.246
+
+- A project reference with `<Aliases>` (`extern alias X;` in the code) is out of the global namespace: its types are reached
+  as `X::N.T` (or `X.N.T`) only, so a referenced project whose namespaces match the code's own does not make every name
+  ambiguous (MudBlazor's analyzer tests). An `extern alias X;` written inside a namespace declaration counts too.
+
 ## 0.1.245
 
 - `using static T;` (and a project's `<Using Include="T" Static="True" />`) brings the extension methods of `T`, as the

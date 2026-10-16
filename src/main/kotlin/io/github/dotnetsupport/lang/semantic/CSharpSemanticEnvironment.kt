@@ -156,11 +156,46 @@ object CSharpSemanticEnvironment {
         val own = projectOf(file) ?: return true
         val there = CompilationModel.getInstance(file.project).projectOf(other) ?: return true
         if (own == there) return true
+        // a project referenced under an `extern alias` only (`<Aliases>`, no `global` among them) is not in the global namespace: its
+        // types are reached as `X::N.T` alone — MudBlazor's analyzer tests, whose namespaces match the core's
+        // — unless another reference brings it in without one (MSBuild passes a transitive reference to the compiler with no alias:
+        // MudBlazor.UnitTests.Analyzers reaches the analyzers through MudBlazor.Analyzers.TestComponents too)
+        val aliases = referenceAliases(file.project, own, there)
+        val aliasedOnly = aliases.isNotEmpty() && aliases.none { it.equals("global", ignoreCase = true) }
         // the built output of that project among the assemblies of this one says it is referenced, however the reference is written
-        if (assemblies(file).indexes.any { it.assemblyName.equals(there.nameWithoutExtension, ignoreCase = true) }) return true
+        if (!aliasedOnly && assemblies(file).indexes.any { it.assemblyName.equals(there.nameWithoutExtension, ignoreCase = true) }) return true
         // references not known for sure: everything of the solution the project works in (Open Solution, 0.1.243), nothing outside it
         val referenced = referencedProjects(file.project, own) ?: return solutionProjects(file.project)?.let { there.path.lowercase() in it } ?: true
         return there.path.lowercase() in referenced
+    }
+
+    /** Whether [file] reaches [other] through `extern alias` [alias]: the project of [other] is a reference of [file]'s project with that alias. */
+    fun seesThroughAlias(file: PsiFile, other: VirtualFile, alias: String): Boolean {
+        val own = projectOf(file) ?: return false
+        val there = CompilationModel.getInstance(file.project).projectOf(other) ?: return false
+        return own != there && referenceAliases(file.project, own, there).any { it.equals(alias, ignoreCase = true) }
+    }
+
+    /** The `<Aliases>` the project [own] references [there] with (a direct reference only); empty without an alias or a reference. */
+    private fun referenceAliases(project: com.intellij.openapi.project.Project, own: VirtualFile, there: VirtualFile): List<String> {
+        val solutions = io.github.dotnetsupport.solution.SolutionService.getInstance(project)
+        val aliased = solutions.msBuildProject(own).projectReferenceAliases
+        if (aliased.isEmpty()) return emptyList()
+        for ((reference, aliases) in aliased) {
+            val target = resolveReference(project, own, reference) ?: continue
+            if (target == there) return aliases
+        }
+        return emptyList()
+    }
+
+    /** The file a `ProjectReference` [reference] of [projectFile] names; null when it has a property we cannot expand or is not there. */
+    private fun resolveReference(project: com.intellij.openapi.project.Project, projectFile: VirtualFile, reference: String): VirtualFile? {
+        val slashed = reference.replace('\\', '/')
+        val solutionDir = Regex("^\\$\\(SolutionDir\\)/?", RegexOption.IGNORE_CASE)
+        val (base, relative) = if (solutionDir.containsMatchIn(slashed)) (solutionDirectory(project) ?: return null) to solutionDir.replace(slashed, "")
+            else (projectFile.parent ?: return null) to slashed
+        if ('$' in relative) return null
+        return base.findFileByRelativePath(relative)
     }
 
     /** The project files of the active solution, lower case; null when the folder has no solution (a folder of projects sees them all). */
@@ -183,10 +218,13 @@ object CSharpSemanticEnvironment {
         val queue = ArrayDeque<VirtualFile>()
         queue.add(projectFile)
         val solutions = io.github.dotnetsupport.solution.SolutionService.getInstance(project)
+        // a direct reference under an `extern alias` is not in the global namespace (reached as `X::N.T`); a transitive one always is
+        val rootAliases = solutions.msBuildProject(projectFile).projectReferenceAliases
         while (queue.isNotEmpty()) {
             val current = queue.removeFirst()
             if (importsAddReferences(current)) return null
             for (reference in solutions.msBuildProject(current).projectReferences) {
+                if (current == projectFile && rootAliases[reference]?.none { it.equals("global", ignoreCase = true) } == true) continue
                 val slashed = reference.replace('\\', '/')
                 // `$(SolutionDir)` is the folder of the active solution (a trailing separator included, as Visual Studio passes it)
                 val solutionDir = Regex("^\\$\\(SolutionDir\\)/?", RegexOption.IGNORE_CASE)

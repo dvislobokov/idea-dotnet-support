@@ -274,7 +274,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                 if (alias == "global") return inNamespace("", text, arity)
                 // an extern alias (`extern alias MudBlazorAnalyzer;` … `MudBlazorAnalyzer::MudBlazor.Analyzers.X`): the assemblies are not told apart
                 // by alias here, the name is looked up as `global::`
-                if (isExternAlias(alias)) return inNamespace("", text, arity)
+                if (isExternAlias(alias)) return inNamespace("", text, arity, alias)
                 // `using pb = global::Google.Protobuf;` … `pb::IMessage<T>`, as protoc writes: the alias must stand for a namespace
                 val target = levels(name).firstNotNullOfOrNull { level -> if (level.hasAlias(alias)) level.alias(alias) ?: return null else null }
                 return (target as? CSharpSymbol.Namespace)?.let { inNamespace(it.qualifiedName, text, arity) }
@@ -355,18 +355,24 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
             if (imported.isNotEmpty()) return imported
         }
         // `extern alias X;` … `X.Namespace.Type` (dotted, as the compiler-messages docs write it): the alias is the global namespace here
-        if (arity == 0 && isExternAlias(text)) return listOf(CSharpSymbol.Namespace(""))
+        if (arity == 0 && isExternAlias(text)) return listOf(CSharpSymbol.Namespace("", text))
         return emptyList()
     }
 
-    private fun isExternAlias(text: String): Boolean = file.compilationUnit?.externs?.any { it.identifier?.text == text } == true
+    /** `extern alias X;` of the file — at its top or in a namespace declaration (MudBlazor's analyzer tests write it after `namespace …;`). */
+    private fun isExternAlias(text: String): Boolean = text in externAliases
 
-    /** The type or namespace [text] of the namespace [namespace]. */
-    private fun inNamespace(namespace: String, text: String, arity: Int): List<CSharpSymbol> {
-        val found = typesIn(namespace, text, arity)
+    private val externAliases: Set<String> by lazy {
+        file.compilationUnit?.let { PsiTreeUtil.findChildrenOfType(it, CSharpExternAliasDirective::class.java) }.orEmpty().mapNotNullTo(HashSet()) { it.identifier?.text }
+    }
+
+    /** The type or namespace [text] of the namespace [namespace]; through the `extern alias` [alias], in the projects of that alias only. */
+    private fun inNamespace(namespace: String, text: String, arity: Int, alias: String? = null): List<CSharpSymbol> {
+        val found = if (alias == null) typesIn(namespace, text, arity) else typesInAlias(alias, namespace, text, arity)
         if (found.isNotEmpty()) return found
         val qualified = join(namespace, text)
-        if (arity == 0 && session.namespaceExists(qualified, assemblies, ::sees)) return listOf(CSharpSymbol.Namespace(qualified))
+        val exists = if (alias == null) session.namespaceExists(qualified, assemblies, ::sees) else session.namespaceExists(qualified, assemblies) { seesThroughAlias(it, alias) }
+        if (arity == 0 && exists) return listOf(CSharpSymbol.Namespace(qualified, alias))
         return emptyList()
     }
 
@@ -380,6 +386,19 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         val library = session.findType(assemblies, namespace, path(text, arity))?.takeIf { type -> source.none { it.info.qualifiedName == type.qualifiedName } }
         return if (library == null) source else source + CSharpSymbol.LibraryType(library)
     }
+
+    /** [typesIn] through the `extern alias` [alias]: the declarations of the projects referenced with it, the assemblies as a fallback. */
+    private fun typesInAlias(alias: String, namespace: String, text: String, arity: Int): List<CSharpSymbol> {
+        val aliased = aliasSyntax.getOrPut(alias) { NativeCSharpResolver(file) { seesThroughAlias(it, alias) } }
+        val source = aliased.typeParts(text).filter { it.namespace == namespace && it.arity == arity }.map { it.qualifiedName }.distinct()
+            .mapNotNull { aliased.typeInfo(it, arity) }.map { CSharpSymbol.SourceType(io.github.dotnetsupport.lang.TypeInfo(it.qualifiedName, it.arity, it.parts, alias)) }
+        if (source.isNotEmpty()) return source
+        return listOfNotNull(session.findType(assemblies, namespace, path(text, arity))?.let { CSharpSymbol.LibraryType(it) })
+    }
+
+    private val aliasSyntax = HashMap<String, NativeCSharpResolver>()
+
+    private fun seesThroughAlias(other: com.intellij.openapi.vfs.VirtualFile, alias: String): Boolean = CSharpSemanticEnvironment.seesThroughAlias(file, other, alias)
 
     /** The name `using A.B;` / `using static A.B.T;` / `using X = A.B.T;` gives: looked up from the global namespace, then the enclosing ones. */
     private fun usingTarget(name: CSharpSimpleName, text: String, arity: Int): List<CSharpSymbol> {
@@ -404,7 +423,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
 
     /** What the left side of `A.B` is. */
     sealed class Qualifier {
-        class Namespace(val name: String) : Qualifier()
+        class Namespace(val name: String, val alias: String? = null) : Qualifier()
         class Type(val type: SemanticType) : Qualifier()
         class Value(val type: SemanticType) : Qualifier()
         /** `Color Color`: a value whose type has the name of the value (C# §12.8.7.2): both readings. */
@@ -437,7 +456,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
             return (element as? CSharpExpression)?.let(::typeOf)?.let { Qualifier.Value(it) }
         }
         return when {
-            symbol is CSharpSymbol.Namespace -> Qualifier.Namespace(symbol.qualifiedName)
+            symbol is CSharpSymbol.Namespace -> Qualifier.Namespace(symbol.qualifiedName, symbol.alias)
             symbol is CSharpSymbol.SourceType || symbol is CSharpSymbol.LibraryType -> typeOfSymbol(symbol, name)?.let { Qualifier.Type(it) }
             // `T.Zero` of `where T : INumber<T>`: static members of the constraints
             symbol is CSharpSymbol.Local && symbol.symbol.kind == LocalSymbolKind.TYPE_PARAMETER -> (name as? CSharpType)?.let(::resolveType)?.let { Qualifier.Type(it) }
@@ -484,7 +503,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
     }
 
     private fun membersOf(qualifier: Qualifier, text: String, arity: Int, site: CSharpSimpleName?): List<CSharpSymbol> = when (qualifier) {
-        is Qualifier.Namespace -> inNamespace(qualifier.name, text, arity)
+        is Qualifier.Namespace -> inNamespace(qualifier.name, text, arity, qualifier.alias)
         is Qualifier.Type -> pick(byReceiver(membersNamed(qualifier.type, text, arity), static = true), site)
         is Qualifier.Value -> pick(byReceiver(membersNamed(qualifier.type, text, arity), static = false), site)
         is Qualifier.ValueOrType -> pick(membersNamed(qualifier.value, text, arity), site)

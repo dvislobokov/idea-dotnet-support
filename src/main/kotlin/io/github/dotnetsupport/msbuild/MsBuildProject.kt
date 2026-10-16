@@ -48,6 +48,8 @@ data class MsBuildProject(
     val importsSdk: Boolean = false,
     /** An Aspire AppHost: `Aspire.AppHost.Sdk` (the `Sdk` attribute in Aspire 13, `<Sdk Name>` in Aspire 9) or `IsAspireHost` (Aspire 8). */
     val isAspireHost: Boolean = false,
+    /** The `<Aliases>` of a `ProjectReference` by its path (as in [projectReferences]): `extern alias` names the code refers to it by. */
+    val projectReferenceAliases: Map<String, List<String>> = emptyMap(),
     /** `<Reference Include="Foo"><HintPath>..\lib\Foo.dll</HintPath>`: the name of the assembly -> the path, with `/` separators. */
     val hintPaths: Map<String, String> = emptyMap(),
 ) {
@@ -112,6 +114,7 @@ data class MsBuildProject(
             val frameworks = LinkedHashSet<String>()
             val packages = LinkedHashMap<String, PackageReference>()
             val projects = LinkedHashSet<String>()
+            val referenceAliases = LinkedHashMap<String, List<String>>()
             val assemblies = LinkedHashSet<String>()
             val hintPaths = LinkedHashMap<String, String>()
             val versions = LinkedHashMap<String, String>()
@@ -163,7 +166,10 @@ data class MsBuildProject(
                     "PackageVersion" -> for (name in includes(element)) {
                         itemMetadata(element, "Version")?.let { versions[name.lowercase()] = it }
                     }
-                    "ProjectReference" -> projects += includes(element).map { it.replace('\\', '/') }
+                    "ProjectReference" -> for (path in includes(element).map { it.replace('\\', '/') }) {
+                        projects += path
+                        itemMetadata(element, "Aliases")?.split(',', ';')?.map(String::trim)?.filter { it.isNotEmpty() }?.takeIf { it.isNotEmpty() }?.let { referenceAliases[path] = it }
+                    }
                     // Include may be a strong name: "Foo, Version=1.0.0.0, Culture=neutral"
                     "Reference" -> for (include in includes(element)) {
                         val name = include.substringBefore(',').trim()
@@ -187,6 +193,7 @@ data class MsBuildProject(
                 importsSdk = importsSdk,
                 isAspireHost = aspireHost,
                 hintPaths = hintPaths,
+                projectReferenceAliases = referenceAliases,
             )
         }
 

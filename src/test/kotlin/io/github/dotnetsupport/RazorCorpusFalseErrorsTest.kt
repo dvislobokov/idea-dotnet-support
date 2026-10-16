@@ -460,6 +460,28 @@ class RazorCorpusFalseErrorsTest : BasePlatformTestCase() {
         }
     }
 
+    /**
+     * A `ProjectReference` with `<Aliases>` (MudBlazor's analyzer tests: "some namespaces are matching with the core, we must use alias"):
+     * the referenced project is out of the global namespace, its types are reached as `X::N.T` (and `X.N.T`) only.
+     */
+    fun testAProjectReferencedUnderAnAliasIsReachedThroughItOnly() {
+        myFixture.addFileToProject("Al/A/A.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>")
+        myFixture.addFileToProject("Al/A/Dup.cs", "namespace N { public class Dup { public int FromA; } }")
+        myFixture.addFileToProject("Al/T/T.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>" +
+            "<ItemGroup><ProjectReference Include=\"..\\A\\A.csproj\"><Aliases>Alpha</Aliases></ProjectReference></ItemGroup></Project>")
+        myFixture.addFileToProject("Al/T/Dup.cs", "namespace N { public class Dup { public string FromT; } }")
+        fun errorsIn(path: String, text: String): List<String> {
+            myFixture.configureFromExistingVirtualFile(myFixture.addFileToProject(path, text).virtualFile)
+            return myFixture.doHighlighting(HighlightSeverity.ERROR).filter { it.description?.startsWith("CS") == true }.map { it.description!!.substringBefore(':') }
+        }
+        // the plain name is T's own Dup, never ambiguous; through the alias it is A's
+        val found = errorsIn("Al/T/Use.cs", "extern alias Alpha;\nclass U { void M() { int bad = new N.Dup().FromT; string bad2 = new Alpha::N.Dup().FromA; string bad3 = new Alpha.N.Dup().FromA; } }")
+        assertEquals(found.toString(), listOf("CS0029", "CS0029", "CS0029"), found)
+        // A's member is not there on T's Dup, nor T's on A's
+        val crossed = errorsIn("Al/T/Crossed.cs", "extern alias Alpha;\nclass V { void M() { var a = new N.Dup().FromA; var b = new Alpha::N.Dup().FromT; } }")
+        assertEquals(crossed.toString(), listOf("CS1061", "CS1061"), crossed)
+    }
+
     fun testATypeOfAProjectNotReferencedIsNotSeen() {
         myFixture.addFileToProject("Catalog/Catalog.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>")
         myFixture.addFileToProject("Catalog/Extensions.cs", "public static class Extensions { public static void AddCatalog() { } }")
