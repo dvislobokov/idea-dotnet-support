@@ -340,7 +340,7 @@
   async) и групп методов. Аргументы — своя абстракция (тип, лямбда с выводом результата по типам параметров, группа методов, кортеж).
   Сначала заменяет строгий `CSharpTypeInference.infer`, затем мягкий `typeArguments`. Гейт: `semanticGate` не хуже, харнесс корпуса
   Razor, `RazorCorpusFalseErrorsTest`, `CompilerMessagesCoverageTest` — без новых `extra`.
-- [ ] **D6e. Упрощение — до D6c** (разбор 2026-10-15: два мира в одних файлах мешают оперативно искать и чинить). Сейчас порт и прежние
+- [x] **D6e (0.1.194–0.1.234). Упрощение — до D6c** (разбор 2026-10-15: два мира в одних файлах мешают оперативно искать и чинить). Сейчас порт и прежние
   правила склеены «сначала порт, при неудаче — старое» (`classify` → старые правила; `typeArguments`: `unify` → `roslynTypeArguments` →
   старый цикл по лямбдам; `pickByArguments`: `overloads.resolve` → очки `score` → tie-break'и; флаг `strict` в `CSharpOverloads`
   переключает три пары `strictLambda`/`lambda`, `strictGroup`/`groupConversion`, `strictReturnType`), «не знаю» без причины (189 выходов в
@@ -374,7 +374,7 @@
     `CSharpNameResolver.sourceExtensions(text)` — расширения; шесть проверок, молчавших «если где-то есть расширение с таким именем»
     (CS1061, доступ, generic, наследование, перегрузки, неиспользуемые usings), смотрят только видимые проекты. Журнал: причина
     `Result.Unknown` инферера проносится наружу, «applicable … not known» называет аргумент и преобразование.
-  - [ ] D6e3. План заката старого мира. Шаг 1 (0.1.194): старые правила `classify` удалены (213 строк: `tuple`, `sameDefinition`,
+  - [x] D6e3 (завершён D6c5, 0.1.234). План заката старого мира. Шаг 1 (0.1.194): старые правила `classify` удалены (213 строк: `tuple`, `sameDefinition`,
     `variance`, `supertype`, `instances`, `sourceInstance`, `parameter`, `userConversion`, `variantReference`, мёртвый `instancesOf`) —
     журнал за сутки по четырём решениям показал 648 уникальных обращений к ним, из которых IMPLICIT/IDENTITY без неизвестных
     аргументов — 331, и 326 из них вопросы с **открытым параметром типа в цели** (`IPagedList<Product> -> IPagedList<TObject>`): их задаёт
@@ -413,7 +413,7 @@
     `resolve`/`evaluate`, общее состояние, 651) — по этой нарезке D6c заменяет файлы целиком. Проверка: ошибки и журнал харнесса
     построчно как в 0.1.210. Инспекции IDEA (MCP) нашли мёртвый код — `ambiguity`, `strictArgument`, `VALUE_TYPE` — и всегда ложные
     условия в проверке `ref`-аргументов: убрать с первым куском D6c.
-- [ ] D6c. `OverloadResolution.cs` (better function member, better conversion from expression, tie-breaks) — эвристики выбора уходят.
+- [x] D6c (0.1.213–0.1.234). `OverloadResolution.cs` (better function member, better conversion from expression, tie-breaks) — эвристики выбора уходят.
   Порядок (2026-10-16): ArgsToParameters → преобразования из выражения → применимость → лучший член → удаление старого (`score`,
   `refineByLambdas`, `unify`, `strict`); каждый кусок — версия, полная проверка и журнал харнесса.
   - [x] D6c1 (0.1.213; тест `RoslynArgsToParametersTest`). `OverloadResolution_ArgsToParameters.cs` → `roslyn/RoslynArgsToParameters`
@@ -421,7 +421,7 @@
     (материал CS8323 / CS1739 / CS1744 / CS7036 / CS1740), `CSharpOverloads.map` — через него. Отличие от прежнего `map`: именованный
     аргумент может стоять за массив `params` в развёрнутой форме (SPEC VIOLATION Roslyn с C# 4). Убран мёртвый код, найденный
     инспекциями IDEA: `ambiguity`, `strictArgument`, `VALUE_TYPE`, всегда ложные условия проверки `ref`. Ошибки и журнал харнесса — как 0.1.211.
-  - [ ] D6c2. Преобразования из выражения. Журнал (0.1.211): из ~7 100 отказов применимости 3 541 — лямбды к **известным** делегатам
+  - [x] D6c2 (0.1.218–0.1.233). Преобразования из выражения. Журнал (0.1.211): из ~7 100 отказов применимости 3 541 — лямбды к **известным** делегатам
     (`Expression<Func<MudStep, string>>`): строгая проверка типизировала тело через вызов, который и проверяется. D6c2b (0.1.218):
     `strictLambda` привязывает тело к параметрам делегата кандидата (`bindLambda`, как `HasAnonymousFunctionConversion`) — журнал
     MudBlazor 15 721 → 9 279, nopCommerce 11 872 → 10 416, ошибки те же. Пример корпуса `plugin-lambda-to-delegate.cs`: Roslyn даёт
