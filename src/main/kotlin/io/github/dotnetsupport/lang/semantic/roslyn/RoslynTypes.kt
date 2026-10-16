@@ -7,6 +7,7 @@ import io.github.dotnetsupport.lang.semantic.CSharpNameResolver
 import io.github.dotnetsupport.lang.semantic.SemanticType
 import io.github.dotnetsupport.lang.semantic.classify
 import io.github.dotnetsupport.lang.semantic.closed
+import io.github.dotnetsupport.lang.semantic.isHandler
 import io.github.dotnetsupport.lang.semantic.isReference
 import io.github.dotnetsupport.lang.semantic.same
 
@@ -198,6 +199,9 @@ internal class RoslynTypes(private val r: CSharpNameResolver) {
 
     /** Whether every base type and interface of [type] resolves, all the way up: what it does not derive from, it surely does not. */
     fun isClosed(type: SemanticType): Boolean = r.overloads.closed(type)
+
+    /** `IsInterpolatedStringHandlerType`: a type marked `[InterpolatedStringHandler]`. */
+    fun isInterpolatedStringHandlerType(type: SemanticType): Boolean = r.overloads.isHandler(type)
 
     // ---- delegates and conversions
 

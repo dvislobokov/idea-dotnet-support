@@ -436,8 +436,9 @@
     |---|---|---|---|---|
     | 0.1.205 | `refineByLambdas` | тело-блок лямбды в выводе | вывод типов (`RoslynMethodTypeInferrer`), удаление `refineByLambdas` | `Task.Run` с блоком |
     | 0.1.218 | `strictLambda` | привязка тела к делегату кандидата | `HasAnonymousFunctionConversion` | лямбда к `Expression<Func<…>>` |
-    | 0.1.222 | `argument()`, `better()` | интерполированная строка → обработчик; константность — только в лучшем преобразовании | `ClassifyImplicitConversionFromExpression` (InterpolatedStringHandler) | `testAnInterpolatedStringConvertsToAHandler` |
-    | 0.1.224 | `argument()` | анонимный объект → `object` | преобразование из типа (класс с базой `object`) | `testAnAnAnonymousObjectGoesToTheObjectOverload` |
+    | 0.1.222 | `better()` (преобразование — в порту с 0.1.228) | интерполированная строка → обработчик; константность — только в лучшем преобразовании | `ClassifyImplicitConversionFromExpression` (InterpolatedStringHandler) | `testAnInterpolatedStringConvertsToAHandler` |
+    | ~~0.1.224~~ ✓ 0.1.228 | порт (`classifyAnonymousType`) | анонимный объект → `object` | преобразование из типа (класс с базой `object`) | `testAnAnAnonymousObjectGoesToTheObjectOverload` |
+    | ✓ 0.1.228 | порт | `null` (`ClassifyNullLiteralConversion`), `default`, `throw`, `new()` — старые ветки `argument()` удалены | — | тесты выбора перегрузок |
     | 0.1.225 | `applicable`, `evaluateStrict` | параметр-указатель берёт только `null` / `default` / `&x` | указатели в `RoslynConversions` | `testAPointerOverloadDoesNotApplyToAnObject` |
     | 0.1.226 | `resolve` | член сборки рядом со своим исходником — не второй кандидат | сбор кандидатов (поиск членов), не выбор | харнесс (юнит-тест не различает) |
 - [x] D6d (0.1.189; тест `RoslynConversionsTest`). `ConversionsBase.cs` + `UserDefinedImplicitConversions.cs` → `RoslynConversions`:

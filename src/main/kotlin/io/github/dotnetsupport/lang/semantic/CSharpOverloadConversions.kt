@@ -233,26 +233,19 @@ internal fun CSharpOverloads.unparenthesized(e: CSharpExpression): CSharpExpress
 internal fun CSharpOverloads.argument(e: CSharpExpression, type: SemanticType?, to: SemanticType, depth: Int = 0): Conversion {
     val value = unparenthesized(e)
     if (depth > 4) return Conversion.UNKNOWN
-    when (value.elementType) {
-        SyntaxKind.NullLiteralExpression -> return when {
-            to is SemanticType.Parameter -> if (isReference(to) == true) Conversion.IMPLICIT else Conversion.UNKNOWN
-            r.isNullable(to) -> Conversion.IMPLICIT
-            isReference(to) == true -> Conversion.IMPLICIT
-            r.isValueType(to) -> Conversion.NONE
-            else -> Conversion.UNKNOWN
+    // the port (D6c2, roslyn/RoslynExpressionConversions) for the kinds it covers; it answers alone, the old rules for them are gone
+    expressionSource(value)?.let { source ->
+        when (val ported = expressionConversions.classifyImplicitConversionFromExpression(source, to)) {
+            is RoslynExpressionConversions.Result.Exists -> return Conversion.IMPLICIT
+            RoslynExpressionConversions.Result.None -> return Conversion.NONE
+            is RoslynExpressionConversions.Result.Unknown -> {
+                SemanticTrace.trace { "conversion of `${SemanticTrace.text(value)}` at ${SemanticTrace.at(value)} to ${SemanticTrace.show(to)}: not known — ${ported.reason}" }
+                return Conversion.UNKNOWN
+            }
+            RoslynExpressionConversions.Result.ByType -> {}
         }
-        SyntaxKind.DefaultLiteralExpression -> return Conversion.IMPLICIT
     }
     when (value) {
-        is CSharpImplicitObjectCreationExpression, is CSharpThrowExpression -> return Conversion.IMPLICIT
-        // an anonymous type is a class with `object` for its only base and no interface: it converts to `object` (`RedirectToRoute(name,
-        // new { id })`, `Json(new { success })` — 1366 calls of nopCommerce were not known) and to no other type it can be given as
-        is CSharpAnonymousObjectCreationExpression -> return when {
-            to is SemanticType.Parameter -> Conversion.UNKNOWN
-            r.definitionName(to) == OBJECT -> Conversion.IMPLICIT
-            closed(to) -> Conversion.NONE
-            else -> Conversion.UNKNOWN
-        }
         is CSharpAnonymousFunctionExpression -> return if (strict) strictLambda(value, to) else lambda(value, to)
         is CSharpCollectionExpression -> return collection(to)
         is CSharpConditionalExpression -> if (type == null) {
@@ -275,15 +268,6 @@ internal fun CSharpOverloads.argument(e: CSharpExpression, type: SemanticType?, 
             }
             if (type == null) return Conversion.UNKNOWN
         }
-        is CSharpInterpolatedStringExpression -> {
-            val tn = r.definitionName(to)
-            if (tn == STRING) return Conversion.IDENTITY
-            if (tn == "System.FormattableString" || tn == "System.IFormattable" || tn == OBJECT) return Conversion.IMPLICIT
-            // every interpolated string converts to a handler type, a constant one too (Roslyn's `GetInterpolatedStringConversion`); being
-            // constant matters to the better conversion only (§12.6.4.5: `string` beats the handler then) — asking it here left 222 calls of
-            // `StringBuilder.AppendLine($"…")` not known (D6c2)
-            if (isHandler(to)) return Conversion.IMPLICIT
-        }
     }
     methodGroup(value)?.let { group ->
         // `compilation.GetBestTypeByMetadataName` of an extension method: its receiver is bound, the delegate takes the rest (MudBlazor.Analyzers)
@@ -296,6 +280,7 @@ internal fun CSharpOverloads.argument(e: CSharpExpression, type: SemanticType?, 
             RoslynExpressionConversions.Result.None -> return Conversion.NONE
             is RoslynExpressionConversions.Result.Unknown -> if (!ported.reason.endsWith("not ported"))
                 SemanticTrace.trace { "conversion of the method group `${SemanticTrace.text(value)}` at ${SemanticTrace.at(value)} to ${SemanticTrace.show(to)}: not known — ${ported.reason}" }
+            RoslynExpressionConversions.Result.ByType -> {}
         }
         return if (strict) (if (reduced) Conversion.UNKNOWN else strictGroup(group, to)) else groupConversion(group, to, reduced)
     }
@@ -575,6 +560,17 @@ private fun CSharpOverloads.groupConversion(methods: List<CSharpSymbol>, to: Sem
 }
 
 /** A method group as [RoslynExpressionConversions] sees it (`BoundMethodGroup`): its methods with their signatures, the type arguments written. */
+/** The kinds of expression the port classifies alone ([RoslynExpressionConversions.Source]); null for the rest. */
+private fun expressionSource(value: CSharpExpression): RoslynExpressionConversions.Source? = when {
+    value.elementType == SyntaxKind.NullLiteralExpression -> RoslynExpressionConversions.Source.NullLiteral
+    value.elementType == SyntaxKind.DefaultLiteralExpression -> RoslynExpressionConversions.Source.DefaultLiteral
+    value is CSharpThrowExpression -> RoslynExpressionConversions.Source.ThrowExpression
+    value is CSharpImplicitObjectCreationExpression -> RoslynExpressionConversions.Source.ImplicitObjectCreation
+    value is CSharpAnonymousObjectCreationExpression -> RoslynExpressionConversions.Source.AnonymousObjectCreation
+    value is CSharpInterpolatedStringExpression -> RoslynExpressionConversions.Source.InterpolatedString
+    else -> null
+}
+
 private fun CSharpOverloads.methodGroupSource(group: List<CSharpSymbol>, value: CSharpExpression, reduced: Boolean): RoslynExpressionConversions.Source {
     val name = (value as? CSharpMemberAccessExpression)?.nameElement ?: value as? CSharpSimpleName
     val arity = (name as? CSharpGenericName)?.typeArgumentList?.arguments?.size ?: 0

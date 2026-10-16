@@ -23,6 +23,24 @@ internal class RoslynExpressionConversions(private val types: RoslynTypes) {
         /** `BoundMethodGroup`: its candidate [methods]; [arity] the number of type arguments written; [reduced] an extension method group on a receiver. */
         class MethodGroup(val methods: List<Method>, val arity: Int, val reduced: Boolean) : Source()
 
+        /** The `null` literal. */
+        data object NullLiteral : Source()
+
+        /** The `default` literal (no type written). */
+        data object DefaultLiteral : Source()
+
+        /** `throw e` as an expression. */
+        data object ThrowExpression : Source()
+
+        /** `new(…)` with no type written: `BoundUnconvertedObjectCreationExpression`. */
+        data object ImplicitObjectCreation : Source()
+
+        /** `new { … }`: its type is anonymous, a class with `object` for its only base and no interface. */
+        data object AnonymousObjectCreation : Source()
+
+        /** `$"…"`, its natural type `string`. */
+        data object InterpolatedString : Source()
+
         /** A kind of expression whose conversions are not ported yet. */
         data object NotPorted : Source()
     }
@@ -35,11 +53,49 @@ internal class RoslynExpressionConversions(private val types: RoslynTypes) {
         data class Exists(val kind: String) : Result()
         data object None : Result()
         data class Unknown(val reason: String) : Result()
+
+        /** No conversion from the expression itself: the conversion from its type decides (`ClassifyImplicitConversionFromType`). */
+        data object ByType : Result()
     }
 
+    /** `ClassifyImplicitBuiltInConversionFromExpression`, the kinds ported, then [Result.ByType] for the conversion from the expression's type. */
     fun classifyImplicitConversionFromExpression(source: Source, destination: SemanticType): Result = when (source) {
         is Source.MethodGroup -> classifyMethodGroup(source, destination)
+        Source.NullLiteral -> classifyNullLiteralConversion(destination)
+        Source.DefaultLiteral -> Result.Exists("DefaultLiteral")
+        Source.ThrowExpression -> Result.Exists("ImplicitThrow")
+        // the conversion always exists; whether the type can be created so is the binding's error (CS8752 / CS1729), not the conversion's
+        Source.ImplicitObjectCreation -> Result.Exists("ObjectCreation")
+        Source.AnonymousObjectCreation -> classifyAnonymousType(destination)
+        Source.InterpolatedString -> when {
+            // `IsValidInterpolatedStringConversionTarget`; a handler takes a constant string too — the constness decides the better conversion only
+            types.definitionName(destination) in FORMATTABLE -> Result.Exists("InterpolatedString")
+            types.isInterpolatedStringHandlerType(destination) -> Result.Exists("InterpolatedStringHandler")
+            else -> Result.ByType
+        }
         Source.NotPorted -> Result.Unknown("not ported")
+    }
+
+    /** `ClassifyNullLiteralConversion`: to a nullable type, to a reference type; a pointer is not modeled (the caller's applicability decides it). */
+    private fun classifyNullLiteralConversion(destination: SemanticType): Result = when {
+        destination !is SemanticType.Parameter && types.isNullableType(destination) -> Result.Exists("NullLiteral")
+        else -> when (types.isReferenceType(destination)) {
+            true -> Result.Exists("ImplicitReference")
+            false -> Result.None
+            null -> Result.Unknown(if (destination is SemanticType.Parameter) "the constraints of ${destination} do not say whether it is a reference type"
+                else "whether ${destination} is a reference type is not known")
+        }
+    }
+
+    /**
+     * The conversions from an anonymous type: identity to itself (never a written target) and the implicit reference conversion to its only
+     * base `object`; to any other closed type none.
+     */
+    private fun classifyAnonymousType(destination: SemanticType): Result = when {
+        destination is SemanticType.Parameter -> Result.Unknown("an anonymous type to the type parameter ${destination}")
+        types.definitionName(destination) == "System.Object" -> Result.Exists("ImplicitReference")
+        types.isClosed(destination) -> Result.None
+        else -> Result.Unknown("the type ${destination} is not fully known")
     }
 
     /**
@@ -104,6 +160,7 @@ internal class RoslynExpressionConversions(private val types: RoslynTypes) {
     }
 
     private companion object {
-        val FUNCTION_TYPE_TARGETS = setOf("System.MulticastDelegate", "System.Delegate", "System.Object", "System.ICloneable", "System.Runtime.Serialization.ISerializable")
+        val FORMATTABLE = setOf("System.FormattableString", "System.IFormattable")
+        val FUNCTION_TYPE_TARGETS =setOf("System.MulticastDelegate", "System.Delegate", "System.Object", "System.ICloneable", "System.Runtime.Serialization.ISerializable")
     }
 }

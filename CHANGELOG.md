@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.228
+
+- The conversions of `null`, `default`, `throw`, `new()`, anonymous objects and interpolated strings in overload resolution follow
+  Roslyn's rules (the port of its conversions from expressions); the older rules for them are removed.
+
 ## 0.1.227
 
 - A method group passed where a `Delegate` (or `object`) is expected converts by its function type, as in C# 10: overloads such as
