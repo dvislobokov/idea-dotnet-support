@@ -79,10 +79,13 @@ export JAVA_HOME="C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 202
 - Демонам задана память в `gradle.properties` (`kotlin.daemon.jvmargs`, `org.gradle.jvmargs`): classpath IDEA в разы больше GoLand, с умолчаниями компилятор
   Kotlin падал с `GC overhead limit exceeded` посреди полной компиляции.
 - Упавшие тесты: `build/test-results/test/TEST-*.xml` (grep по `<failure`), отчёт — `build/reports/tests/test/index.html`.
-- **Только свежие результаты** (решение пользователя 2026-10-15): тесты, `semanticGate` и харнесс `SolutionDiagnosticsHarnessTest` делят
-  сборку и тестовую песочницу — два прогона сразу не запускать (второй падает на занятом jar песочницы, а старый XML / `build/solution-harness.txt`
-  потом читается как результат). Перед прогоном старые результаты убрать (`build/test-results/test`, `build/solution-harness.txt`), после —
-  нет свежего файла значит «не запускалось», а не «как раньше». **Во время прогона дерево не менять**: харнессы перекомпилируют изменённое,
+- **Полная проверка — один вызов Gradle**: `./gradlew.bat test semanticGate harness --continue -PsemanticGate.libraries=none` (около 5 минут).
+  У гейта и у каждого харнесса (`SolutionDiagnosticsHarnessTest`, задачи `harness_<имя>` по `-Pharness.solutions=<имя>=<папка>;…`,
+  по умолчанию корпус Razor; `-Pharness.file=<конец пути>` — один файл) своя песочница и свои `build/test-results/<задача>`, результат харнесса —
+  `build/solution-harness/<имя>.txt`; конфигурационный кэш даёт Gradle гонять задачи одного проекта рядом, харнессы между собой идут
+  по очереди (общий кэш индексов, память). Два отдельных вызова Gradle сразу по-прежнему не запускать (общая сборка).
+- **Только свежие результаты** (решение пользователя 2026-10-15): перед прогоном старые результаты убрать (`build/test-results/*`,
+  `build/solution-harness/`, `build/semantic-gate/report.txt`), после — нет свежего файла значит «не запускалось», а не «как раньше». **Во время прогона дерево не менять**: харнессы перекомпилируют изменённое,
   и результат отвечает за смесь состояний (ref7, 2026-10-16). Кэши индексов гейта и харнесса лежат по версии формата
   (`build/semantic-gate/index/v<N>`, `build/solution-harness-index/v<N>`); харнесс падает, если контрольный файл не даёт CS1061 и CS0103
   (сборок нет — результат не результат), скрипт печатает `INVALID`.

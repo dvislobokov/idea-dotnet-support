@@ -174,6 +174,58 @@ intellijPlatformTesting.testIde.register("semanticGate") {
     }
 }
 
+// `./gradlew harness` (SolutionDiagnosticsHarnessTest, CSHARP_PSI_MIGRATION.md D6e2): the checks over whole restored solutions, one task
+// `harness_<name>` per solution of `-Pharness.solutions=<name>=<folder>;…` (default: the Razor corpus), each in its own sandbox with its own
+// results (`build/solution-harness/<name>.txt`), one after another. With the configuration cache they run beside `test` and `semanticGate`:
+// `./gradlew test semanticGate harness --continue` is the whole verification at once. `-Pharness.file=<end of a path>`: one file only.
+val harnessPattern = "*SolutionDiagnosticsHarnessTest"
+tasks.test {
+    filter { excludeTestsMatching(harnessPattern) }
+}
+val harnessSolutions = (providers.gradleProperty("harness.solutions").orNull
+    ?: "eshop=.corpus/razor/eshop/src;mudblazor=.corpus/razor/mudblazor/src;nopcommerce=.corpus/razor/nopcommerce/src")
+    .split(';').map { it.trim() }.filter { it.isNotEmpty() }.map { it.substringBefore('=').trim() to it.substringAfter('=').trim() }
+val harnessNames = harnessSolutions.map { "harness_${it.first}" }
+for ((index, solution) in harnessSolutions.withIndex()) {
+    val (name, folder) = solution
+    intellijPlatformTesting.testIde.register("harness_$name") {
+        val localIde = providers.gradleProperty("localIdePath").orNull?.let(::file)?.takeIf { it.exists() }
+        if (localIde != null) localPath = localIde
+        else {
+            type = org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdea
+            version = providers.gradleProperty("platformVersion")
+        }
+        task {
+            description = "The C# checks over the solution $name ($folder): SolutionDiagnosticsHarnessTest."
+            group = "verification"
+            testClassesDirs = sourceSets.test.get().output.classesDirs
+            classpath += tasks.test.get().classpath
+            useJUnit()
+            isScanForTestClasses = false
+            include("**/SolutionDiagnosticsHarnessTest.class")
+            filter {
+                includeTestsMatching(harnessPattern)
+                isFailOnNoMatchingTests = false
+            }
+            mustRunAfter("prepareTestSandbox")
+            // one solution after another: the index cache of the assemblies is shared, and three harness JVMs next to the tests are too much memory
+            if (index > 0) mustRunAfter(harnessNames[index - 1])
+            outputs.upToDateWhen { false }
+            maxHeapSize = "3g"
+            workingDir = layout.projectDirectory.asFile
+            systemProperty("harness.solution", file(folder).absolutePath)
+            systemProperty("harness.generated", providers.gradleProperty("harness.generated").orNull ?: "true")
+            systemProperty("harness.out", layout.buildDirectory.file("solution-harness/$name.txt").get().asFile.absolutePath)
+            providers.gradleProperty("harness.file").orNull?.let { systemProperty("harness.file", it) }
+        }
+    }
+}
+tasks.register("harness") {
+    description = "Runs SolutionDiagnosticsHarnessTest on every solution of -Pharness.solutions, one after another."
+    group = "verification"
+    dependsOn(harnessNames)
+}
+
 // ML completion (ML_INLINE_TASK.md): `-PmlEnabled=true` (or MLENABLED=true in the environment) puts the ML features into the plugin —
 // META-INF/csharp-ml.xml (the grey-text inline provider, the weigher of the completion list, the Settings | .NET | ML completion page)
 // and the models of `-Pml.models` (a directory; default ml-models/csharp) under ml/csharp/: ONE transformer chosen by `-Pml.modelSize`

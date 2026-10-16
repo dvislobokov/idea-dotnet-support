@@ -35,11 +35,12 @@ inline in the C# of the tests (`ComponentCodeGenerationTest`, parser tests); 182
 ## The harness (RAZOR_PLAN.md, R0 / R0b)
 
 ```sh
-SOLUTION_HARNESS="$PWD/.corpus/razor/mudblazor/src" SOLUTION_HARNESS_GENERATED=true \
-  ./gradlew.bat :test --rerun --tests "io.github.dotnetsupport.SolutionDiagnosticsHarnessTest"
+./gradlew.bat harness_mudblazor                       # one solution of the corpus (eshop, mudblazor, nopcommerce)
+./gradlew.bat harness                                 # all of them, one after another
+./gradlew.bat harness "-Pharness.solutions=mine=C:/src/Mine" -Pharness.file=Services/Foo.cs   # another solution, one file of it
 ```
 
-Our errors in every `.cs` of the restored solution go to `build/solution-harness.txt`; with `SOLUTION_HARNESS_GENERATED=true` the projects
-also see `generated/` of the build (what CodeAnalysisHelper makes, byte for byte), files from `obj/` are under `<project>/~obj/` in the
-report. `--rerun`: the variables are no inputs of the task. 2026-10-15: MudBlazor 241 errors in `.cs` (409 without the generators),
+Our errors in every `.cs` of the restored solution go to `build/solution-harness/<name>.txt`; the projects also see `generated/` of the
+build (what CodeAnalysisHelper makes, byte for byte; `-Pharness.generated=false` turns it off), files from `obj/` are under
+`<project>/~obj/` in the report. Each task has its own sandbox, so it runs beside `test` and `semanticGate` in one Gradle call. 2026-10-15: MudBlazor 241 errors in `.cs` (409 without the generators),
 nopCommerce 88, eShop 15 — the list and what is a false error of the core, what an artifact of the harness, is in RAZOR_PLAN.md, R0b.

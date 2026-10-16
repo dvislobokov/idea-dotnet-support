@@ -30,13 +30,16 @@ import java.io.File
  * project of every file as in the IDE (CompilationModel: CS0101 across projects, the global usings of one project), and the files a
  * project links from outside (`<Compile Include="..\Shared\X.cs" Link="…">`, eShop) are under its folder at their link path
  * (CSHARP_PSI_MIGRATION.md, D6e2). `SOLUTION_HARNESS_FILE=<the end of a path>`: every file is loaded, the checks run on that one only
- * (seconds instead of minutes, for one false error).
+ * (seconds instead of minutes, for one false error). The Gradle task `harness` runs it per solution in its own sandbox, beside `test` and
+ * `semanticGate`: the system properties `harness.solution`, `harness.generated`, `harness.file`, `harness.out` stand for the variables.
  */
 class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
     private val settings get() = RoslynLanguageServerSettings.getInstance()
-    private val root = System.getenv("SOLUTION_HARNESS")?.let(::File)?.takeIf { it.isDirectory }?.canonicalFile
-    private val withGenerated = System.getenv("SOLUTION_HARNESS_GENERATED").toBoolean()
-    private val onlyFile = System.getenv("SOLUTION_HARNESS_FILE")?.replace('\\', '/')?.takeIf { it.isNotBlank() }
+    private fun option(property: String, variable: String): String? = System.getProperty(property)?.takeIf { it.isNotBlank() } ?: System.getenv(variable)
+    private val root = option("harness.solution", "SOLUTION_HARNESS")?.let(::File)?.takeIf { it.isDirectory }?.canonicalFile
+    private val withGenerated = option("harness.generated", "SOLUTION_HARNESS_GENERATED").toBoolean()
+    private val out = File(System.getProperty("harness.out") ?: "build/solution-harness.txt")
+    private val onlyFile = option("harness.file", "SOLUTION_HARNESS_FILE")?.replace('\\', '/')?.takeIf { it.isNotBlank() }
 
     /** The intermediate folder of [csproj] with its `project.assets.json`: `obj/` beside it, or `artifacts/obj/<name>/` above it. */
     private fun intermediate(csproj: File): File? {
@@ -162,7 +165,8 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
         report.append("# files: ${files.size} (from obj ${generatedPaths.size}, linked ${linkedPaths.size} ${linkedPaths.take(3)}), too large for the IDE: ${tooLarge.size} ${tooLarge.take(3)}, without a set of assemblies: ${unmatched.size} ${unmatched.take(3)}\n")
         if (failedOpens.isNotEmpty()) report.append("# indexes that did not open: ${failedOpens.size} ${failedOpens.take(2)}\n")
         println(report)
-        File("build/solution-harness.txt").writeText(report.toString())
+        out.parentFile?.mkdirs()
+        out.writeText(report.toString())
         // the harness is no result without assemblies: the control file then reports nothing, and "0 errors" would be read as a success
         val controlCodes = CSharpSemanticChecks(CSharpSemanticSession(project).resolver(probe)).run().map { it.code }
         assertTrue("the control file must report CS1061 and CS0103 (assemblies: ${CSharpSemanticEnvironment.assemblies(probe).indexes.size}, indexes that did not open: ${failedOpens.size}): $controlCodes",
