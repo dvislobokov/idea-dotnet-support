@@ -451,6 +451,16 @@
     **лямбды в выводе** ~700 (функциональный тип явной лямбды / группы методов к `T`, тело лямбды); типы, неизвестные выше по цепочке,
     и циклы ~1 150 — не порт. Решение: дальше не по строкам журнала, а по файлам Roslyn — D6c4 целиком, затем лямбды в выводе целиком,
     затем D6c5; эхо из журнала убрать (одна строка на причину).
+  - [x] Закрытие журнала, шаг 13 (0.1.250; тесты `CSharpTypingGapsTest.testBaseClassOverloadsStayBesideTheDerivedOnes`,
+    `testAReducedExtensionMethodGroupHasAFunctionType`). Настоящая причина `Then`/`Parse`: `NativeCSharpResolver.collectMembers` сливал
+    члены **по имени** — метод `Then` в производном классе прятал все перегрузки `Then` базового (§12.5 этого не делает: прячется только
+    та же сигнатура). Теперь `Member.mergeOverloads`: цели базового метода, чьих типов параметров (по стабу, без имён и умолчаний) нет у
+    производного, добавляются. Это касалось любого класса, добавляющего перегрузку к унаследованному методу. Function type
+    extension-группы (`obj.Ext`): сигнатура без `this` (`methodGroupSource`), отказ в `getUniqueSignatureFromMethodGroup` снят.
+    Те две строки тоже: `void`/task-лямбда проверяет `bindingFails` (MudStepper `async args => await …(args.Value)`); §12.6.4.3
+    «более конкретный тип» сравнивает типы параметров **по определению** (`Parameter.definitionType`, `Form.definitionTargets`:
+    `Equals(T other)` у `NullableObject<object>` — `T`, не `object`, и проигрывает override `Equals(object)`). MudBlazor 42 → 40
+    (только `LanguageResource` и `.g.cs`).
   - [x] Закрытие журнала, шаг 12 (0.1.249; тест `CSharpTypingGapsTest.testAChainOfGenericCallsTypesTheLambdaOfTheNextCall` — мимика
     проходит, настоящий `Then` MudBlazor остаётся, 2 строки). `libraryKnown`: интерфейс из пространства имён самого типа, которого нет в
     индексе, — internal (`IImmutableArray` у `ImmutableArray<T>`), тип считается закрытым без него (12 строк `Assert.That(ImmutableArray…)`);

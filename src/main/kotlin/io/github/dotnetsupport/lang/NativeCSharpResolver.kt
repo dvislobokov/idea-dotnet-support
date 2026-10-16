@@ -282,7 +282,12 @@ class NativeCSharpResolver(val file: CSharpFile, private val visible: ((VirtualF
         // the parts of one type together: overloads in two parts are all targets
         val own = LinkedHashMap<String, Member>()
         for (part in type.parts) part.members { name, member -> own[name]?.merge(member) ?: own.put(name, member) }
-        for ((name, member) in own) map.putIfAbsent(name, member)
+        for ((name, member) in own) {
+            val nearer = map[name]
+            // C# §12.5: the overloads of a base class stay beside the derived class's methods of the name (`Add(T)` of the base
+            // under `Add(T, int)` of the derived); one with the same parameters is overridden or hidden and drops out
+            if (nearer == null) map[name] = member else if (nearer.isMethod && member.isMethod) nearer.mergeOverloads(member)
+        }
         for (part in type.parts) for ((base, arity) in part.bases()) baseOf(part, base, arity)?.let { collectMembers(it, map, visited, depth + 1) }
     }
 
@@ -477,6 +482,25 @@ class Member(val declarationKey: TextAttributesKey, val referenceKey: TextAttrib
 
     internal fun merge(other: Member) {
         sources += other.sources
+    }
+
+    val isMethod: Boolean get() = declarationKey == CSharpColors.METHOD_DECLARATION || declarationKey == CSharpColors.STATIC_METHOD_DECLARATION || declarationKey == CSharpColors.EXTENSION_METHOD_DECLARATION
+
+    /** The methods of [other] (a base class's) whose parameter types no method here has: the overloads the derived class does not hide. */
+    internal fun mergeOverloads(other: Member) {
+        val mine = sources.mapNotNull { it()?.let(::parameterTypes) }.toSet()
+        for (source in other.sources) {
+            val types = source()?.let(::parameterTypes) ?: continue
+            if (types !in mine) sources += source
+        }
+    }
+
+    /** The parameter types of a method as written, names and defaults dropped (`(int x, string s = "")` -> `int,string`); from the stub when the file is not loaded. */
+    private fun parameterTypes(element: PsiElement): String? {
+        val text = NativeCSharpStubDeclarations.stub(element)?.parameters ?: (element as? CSharpMethodDeclaration)?.parameterList?.text ?: return null
+        return text.trim().removePrefix("(").removeSuffix(")").split(',').joinToString(",") { p ->
+            p.substringBefore('=').trim().replace(Regex("\\s+"), " ").substringBeforeLast(' ').trim()
+        }
     }
 
     fun targets(): List<PsiElement> = sources.mapNotNull { it() }.distinct()

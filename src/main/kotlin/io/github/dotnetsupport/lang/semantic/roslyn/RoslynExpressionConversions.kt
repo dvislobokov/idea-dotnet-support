@@ -170,7 +170,6 @@ internal class RoslynExpressionConversions(private val types: RoslynTypes) {
      * filter (static or instance by the receiver) and the extension methods of a reduced group are not modeled: a reduced group is not known.
      */
     private fun getUniqueSignatureFromMethodGroup(group: Source.MethodGroup): Signature {
-        if (group.reduced) return Signature.Unknown("the function type of an extension method group is not modeled")
         val candidates = group.methods.filter { it.arity == group.arity }
         val first = candidates.firstOrNull() ?: return Signature.None
         if (first.parameters.any { it.first == null } || first.returns == null) return Signature.Unknown("a type of the signature is not known")

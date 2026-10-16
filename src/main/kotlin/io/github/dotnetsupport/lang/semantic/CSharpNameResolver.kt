@@ -954,7 +954,10 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
     }
 
     /** A parameter as overload resolution sees it; [type] is computed when asked. */
-    internal class Parameter(val name: String, val optional: Boolean, val isParams: Boolean, val byRef: Boolean, val type: () -> SemanticType?)
+    /** [definitionType]: the type as declared, the declaring type's arguments not substituted (`T?` of `Equals(T? other)`, not `object`): what §12.6.4.3 compares. */
+    internal class Parameter(val name: String, val optional: Boolean, val isParams: Boolean, val byRef: Boolean, val type: () -> SemanticType?) {
+        var definitionType: () -> SemanticType? = type
+    }
 
     internal fun signature(symbol: CSharpSymbol, reduced: Boolean): List<Parameter>? {
         val all = when (symbol) {
@@ -974,13 +977,15 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                         val type = p.type?.let(resolver::resolveType)
                         val owner = symbol.owner
                         if (owner is SemanticType.Source) substitute(type, owner) else type
-                    }
+                    }.also { parameter -> parameter.definitionType = { p.type?.let(resolver::resolveType) } }
                 }
             }
             is CSharpSymbol.LibraryMember -> {
                 val methodParameters = if (symbol.member.arity > 0) symbol.member.typeParameters.mapIndexed { i, t -> SemanticType.Parameter(t.name, null, i, true) } else emptyList()
+                val typeParameters = symbol.member.type.typeParameters.mapIndexed { i, t -> SemanticType.Parameter(t.name, null, i, false) }
                 session.parameters(symbol.member).map { p ->
                     Parameter(p.name, p.isOptional || p.hasDefault, p.isParams, p.isRef || p.isOut) { fromRef(p.typeRef, symbol.declaringArguments, methodParameters) }
+                        .also { parameter -> parameter.definitionType = { fromRef(p.typeRef, typeParameters, methodParameters) } }
                 }
             }
             // a local function (a method group of it: `DebounceAsync(Invoke)`)

@@ -56,7 +56,7 @@ internal fun CSharpOverloads.isHandler(type: SemanticType): Boolean = type is Se
 private fun CSharpOverloads.member(form: Form, argumentCount: Int): Member? {
     val reduced = form.receiverTarget != null
     val targets = (listOfNotNull(form.receiverTarget) + form.targets).map { it ?: return null }
-    val definitionTargets = (if (reduced) listOf(form.declaredReceiver ?: return null) else emptyList()) + form.declaredTargets.map { it ?: return null }
+    val definitionTargets = (if (reduced) listOf(form.declaredReceiver ?: return null) else emptyList()) + form.definitionTargets.map { it ?: return null }
     val refKinds = (if (reduced) listOf(null) else emptyList<String?>()) + (if (form.refKinds.size == argumentCount) form.refKinds else List(argumentCount) { null })
     val declaredParameterCount = form.declared.size + (if (reduced) 1 else 0)
     val count = targets.size

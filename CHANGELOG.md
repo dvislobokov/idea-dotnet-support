@@ -3,6 +3,17 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.250
+
+- The overloads of a base class stay candidates beside the derived class's methods of the same name (`Add(T)` of the base under
+  `Add(T, int)` of the derived); an override with the same parameters is one method. A fluent chain like MudBlazor's
+  `From<…>(…).Then(s => …)` types the lambda's parameter again.
+- A method group of an extension method (`obj.Extension` passed where a delegate or a `T` is expected — Moq's
+  `ReturnsAsync(obj.Method)`) has its function type, with the receiver bound.
+- An async lambda whose body names a member one candidate's parameter type lacks binds with the other candidates only.
+- Which overload is more specific is judged by the parameter types as declared (`Equals(T other)` of a `Struct<object>`
+  loses to its `Equals(object)` override), as the compiler does.
+
 ## 0.1.249
 
 - A library type whose internal interface the index does not hold (`ImmutableArray<T>` and its `IImmutableArray`) still decides

@@ -45,7 +45,7 @@ class CSharpTypingGapsTest : BasePlatformTestCase() {
                 .sortedBy(HighlightInfo::getStartOffset)
                 .map { document.substring(it.startOffset, it.endOffset) + " -> " + it.description }
         }
-        assertEquals(expected.toList(), found)
+        assertEquals("trace: " + log.joinToString(" | "), expected.toList(), found)
         assertEmpty(log)
     }
 
@@ -491,6 +491,41 @@ class CSharpTypingGapsTest : BasePlatformTestCase() {
             }
         }
     """, "chain -> CS0029: Cannot implicitly convert type 'Chain<int, int>' to 'string'")
+
+    /**
+     * The overloads of a base class stay beside the derived class's methods of the name (§12.5) — `Then(Func<…>)` of MudBlazor's
+     * ConverterChain under the `Then`s of ReversibleChain; an override of the same parameters is one method, not two.
+     */
+    fun testBaseClassOverloadsStayBesideTheDerivedOnes() = check("""
+        class B { public int Add(int x) => 1; public virtual int F(int x) => 1; }
+        class D : B { public string Add(int x, int y) => ""; public override int F(int x) => 2; }
+        class C { void M() { string bad = new D().Add(1); string bad2 = new D().F(1); } }
+    """, "new D().Add(1) -> CS0029: Cannot implicitly convert type 'int' to 'string'", "new D().F(1) -> CS0029: Cannot implicitly convert type 'int' to 'string'")
+
+    /** The function type of a reduced extension method group (`5.Twice` as `Func<int>`): Moq's `ReturnsAsync(obj.Extension)`. */
+    fun testAReducedExtensionMethodGroupHasAFunctionType() = check("""
+        using System;
+        static class Ext { public static int Twice(this int x) => x * 2; }
+        static class S
+        {
+            public static int Use<TResult>(this object o, TResult value) => 1;
+            public static string Use<TResult>(this object o, Func<TResult> f) => "";
+        }
+        class C { void M(object o) { int bad = o.Use(5.Twice); } }
+    """, "o.Use(5.Twice) -> CS0029: Cannot implicitly convert type 'string' to 'int'")
+
+    /** `Equals(T? other)` of a `NullableObject<object>` beside its `Equals(object)` override: the override's `object` is more specific than the definition's `T` (§12.6.4.3). */
+    fun testTheDefinitionsParameterTypesDecideSpecificity() = check("""
+        using System;
+        struct N<T> : IEquatable<N<T>>, IEquatable<T>
+        {
+            public bool Equals(N<T> other) => true;
+            public bool Equals(T other) => true;
+            public override bool Equals(object obj) => true;
+            public override int GetHashCode() => 0;
+        }
+        class C { void M(object obj) { string bad = new N<object>().Equals(obj); } }
+    """, "new N<object>().Equals(obj) -> CS0029: Cannot implicitly convert type 'bool' to 'string'")
 
     /** `using static N.Helpers;` brings the extension methods of the type (§14.5.3): MudBlazor's `<Using Include="…StringHelpers" Static="True" />` and `x.ToStr()`. */
     fun testAUsingStaticBringsTheExtensionMethodsOfTheType() = check("""

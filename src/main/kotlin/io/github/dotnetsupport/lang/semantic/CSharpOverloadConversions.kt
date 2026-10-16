@@ -370,7 +370,9 @@ private fun CSharpOverloads.strictLambda(lambda: CSharpAnonymousFunctionExpressi
     }
     val body = lambda.expressionBody
     if (body != null) {
-        if (void) return if (r.expressions.isStatementExpression(unparenthesized(body))) Conversion.IMPLICIT else Conversion.NONE
+        // a void (or task without a value) delegate: the body must be a statement expression — and bind (`async args => await
+        // SetActiveIndexAsync(args.Value)` against the context overload of MudStepper)
+        if (void) return body { if (bindingFails(body, lambda)) Conversion.NONE else if (r.expressions.isStatementExpression(unparenthesized(body))) Conversion.IMPLICIT else Conversion.NONE }
         return body {
             // a member of the bound body that does not exist rules the candidate out even when the body has a type of its own:
             // `args => !args.Value ? A() : B()` is a `Task` for every candidate, `args.Value` only for the one with the event args
@@ -634,7 +636,8 @@ private fun CSharpOverloads.methodGroupSource(group: List<CSharpSymbol>, value: 
     val arity = (name as? CSharpGenericName)?.typeArgumentList?.arguments?.size ?: 0
     val written = (name as? CSharpGenericName)?.typeArgumentList?.arguments?.map { r.resolveType(it) }?.takeIf { types -> types.none { it == null } }
     val methods = group.map { method ->
-        val parameters = r.signature(method, false) ?: return RoslynExpressionConversions.Source.NotPorted
+        // a reduced group (`obj.Ext`): the signature of an extension method is without its `this` parameter, bound to the receiver
+        val parameters = (r.signature(method, false) ?: return RoslynExpressionConversions.Source.NotPorted).let { if (reduced && r.isExtension(method)) it.drop(1) else it }
         // type arguments written on the group: the signature of that instantiation (`Mock.Of<IJSVoidResult>` of Moq)
         val instantiated = written?.takeIf { it.size == r.expressions.methodArity(method) }
         val types = parameters.map { p -> p.type()?.let { t -> if (instantiated == null) t else substitute(t, method, instantiated) } }

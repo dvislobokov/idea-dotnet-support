@@ -60,6 +60,8 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         val declaredReceiver: SemanticType? = null,
         /** A type argument was inferred from the function type of a lambda or a method group (`HasTypeArgumentInferredFromFunctionType`). */
         val inferredFromFunctionType: Boolean = false,
+        /** [declaredTargets] as the definition writes them, the declaring type's arguments not substituted (for §12.6.4.3). */
+        val definitionTargets: List<SemanticType?> = declaredTargets,
     )
 
     /** How a candidate fares with the arguments of a call ([evaluate]). */
@@ -131,6 +133,11 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                 val declared = parameters[map[i]].type()
                 if (expanded && map[i] == parameters.size - 1) declared?.let(::elementOf) else declared
             }
+            // as declared in the definition (§12.6.4.3 compares `T?` of `Equals(T? other)` with `object` of the override, not `object` with `object`)
+            val definitionTargets = arguments.indices.map { i ->
+                val declared = parameters[map[i]].definitionType()
+                if (expanded && map[i] == parameters.size - 1) declared?.let(::elementOf) else declared
+            }
             var methodArguments: List<SemanticType?> = emptyList()
             var fromFunctionType = false
             if (generic) {
@@ -194,7 +201,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
             val defaults = parameters.indices.any { p -> p !in map && !(expanded && p == parameters.size - 1) }
             val form = Form(
                 symbol, parameters, targets, declaredTargets, expanded, defaults, generic, if (expanded) parameters.last().type() else null, receiverTarget, refKinds, methodArguments,
-                if (reduced) all.first().type() else null, fromFunctionType,
+                if (reduced) all.first().type() else null, fromFunctionType, definitionTargets = definitionTargets,
             )
             if (wrong.isNotEmpty()) bad += Outcome.Bad(form, wrong, refMismatch)
             else if (formUnknown) unknown = true
