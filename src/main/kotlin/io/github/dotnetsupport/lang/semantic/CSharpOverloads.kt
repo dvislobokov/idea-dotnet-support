@@ -203,8 +203,11 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
      * The one candidate of [candidates] a call with [arguments] calls, or null when that cannot be told surely. [reduced]: extension methods
      * called on a receiver; [site]: the name called (null for a constructor).
      */
-    fun resolve(candidates: List<CSharpSymbol>, arguments: List<CSharpArgument>, reduced: Boolean, site: CSharpSimpleName?, lambdas: Boolean = false): CSharpSymbol? {
-        if (candidates.size < 2) return null
+    fun resolve(all: List<CSharpSymbol>, arguments: List<CSharpArgument>, reduced: Boolean, site: CSharpSimpleName?, lambdas: Boolean = false): CSharpSymbol? {
+        if (all.size < 2) return null
+        val candidates = withoutBuiltTwins(all)
+        // a member and its built twin: the source one is the call
+        if (candidates.size < 2) return candidates.singleOrNull()
         val call = site?.let(r::invocationOf)
         val types = arguments.map { a -> a.expression?.let(::argumentType) }
         val receiver = if (reduced) site?.let(r.expressions::receiver) else null
@@ -248,6 +251,33 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         } finally {
             openOwners -= owners.toSet()
         }
+    }
+
+    /**
+     * The candidates without the members of a built project that stand beside their own source (the IDE indexes the outputs of the referenced
+     * projects too, `ProjectAssemblies.References.forIndex`): Roslyn sees a project reference as its compilation, so the source member is the
+     * one. Two such twins are never better than each other — MudBlazor's `Trimmed`, `ToPascalCase`, nopCommerce's `ToPagedList` ended "no
+     * best" with every comparison known (D6c). A member only in the built output (a generated part not seen yet) stays.
+     */
+    private fun withoutBuiltTwins(candidates: List<CSharpSymbol>): List<CSharpSymbol> {
+        if (candidates.none { it is CSharpSymbol.SourceMember } || candidates.none { it is CSharpSymbol.LibraryMember }) return candidates
+        val sources = candidates.filterIsInstance<CSharpSymbol.SourceMember>().mapNotNullTo(HashSet(), ::twinKey)
+        return candidates.filter { it !is CSharpSymbol.LibraryMember || twinKey(it) !in sources }
+    }
+
+    /** What a member and its built twin share: the type it is declared in, its name, its type parameters, the names of its parameters. */
+    private fun twinKey(symbol: CSharpSymbol): List<Any>? = when (symbol) {
+        is CSharpSymbol.LibraryMember -> listOf(symbol.member.type.qualifiedName, symbol.member.name, symbol.member.arity, r.session.parameters(symbol.member).map { it.name })
+        is CSharpSymbol.SourceMember -> {
+            val element = symbol.element
+            val owner = com.intellij.psi.util.PsiTreeUtil.getParentOfType(element, CSharpBaseTypeDeclaration::class.java)
+            val ownerName = owner?.let(r.syntax::qualifiedName)
+            val name = CSharpDeclarationNames.nameElement(element)?.text
+            if (ownerName == null || name == null) null
+            else listOf(ownerName, name, (element as? CSharpMethodDeclaration)?.typeParameterList?.parameters?.size ?: 0,
+                parameterList(element)?.parameters?.map { it.identifier?.text.orEmpty() }.orEmpty())
+        }
+        else -> null
     }
 
     /** Whether every hole of [e] is a constant string (a literal, `nameof`); false when one surely is not (not a string); null when not known. */

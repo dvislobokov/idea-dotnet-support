@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.226
+
+- A method of a project referenced by another one is one candidate, not two: the IDE also reads the built output of the referenced project,
+  and its copy of the method no longer stands beside the source one (as the compiler sees a project reference). Calls of such methods are
+  resolved instead of left unknown (MudBlazor: 8 967 → 6 775, nopCommerce: 4 850 → 2 387 places where the analysis gave up).
+
 ## 0.1.225
 
 - A method with a pointer parameter (`ArgumentNullException.ThrowIfNull(void*)` beside `ThrowIfNull(object?)`) is not a candidate for an

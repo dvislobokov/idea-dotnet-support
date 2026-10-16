@@ -176,7 +176,7 @@ class NativeCSharpResolver(val file: CSharpFile, private val visible: ((VirtualF
     }
 
     /** `Ns.Outer.Inner` of a type declaration of the file, as the stubs spell it; null when a name around is missing. */
-    private fun qualifiedName(declaration: PsiElement): String? = qualifiedNames.getOrPut(declaration) { psiQualifiedName(declaration) }
+    internal fun qualifiedName(declaration: PsiElement): String? = qualifiedNames.getOrPut(declaration) { psiQualifiedName(declaration) }
 
     // ---- types: of the file, of the solution (stubs)
 
