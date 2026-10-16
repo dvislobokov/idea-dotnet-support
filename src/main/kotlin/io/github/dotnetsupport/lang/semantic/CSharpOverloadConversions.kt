@@ -81,7 +81,7 @@ private fun CSharpOverloads.sameArguments(a: List<SemanticType?>, b: List<Semant
 /** A type parameter of a method in a signature, not inferred: it may become any type. */
 private fun CSharpOverloads.isOpen(type: SemanticType): Boolean = type is SemanticType.Parameter && type.ofMethod && (type.owner == null || type.owner is CSharpMethodDeclaration && isCandidateParameter(type))
 
-private fun CSharpOverloads.isCandidateParameter(type: SemanticType.Parameter): Boolean = type.owner in openOwners
+private fun CSharpOverloads.isCandidateParameter(type: SemanticType.Parameter): Boolean = type.owner in openOwners && type.owner != siteOwner
 
 // ---- conversions between types
 
@@ -147,7 +147,8 @@ internal fun CSharpOverloads.constraintsKnown(parameter: SemanticType.Parameter)
         else -> return false
     }
     val clause = clauses.firstOrNull { it.nameElement?.identifier?.text == parameter.name } ?: return true
-    return clause.constraints.filterIsInstance<CSharpTypeConstraint>().size == r.constraintsOf(parameter).size
+    // `notnull` and `unmanaged` name no type: known, and not among [CSharpNameResolver.constraintsOf]
+    return clause.constraints.filterIsInstance<CSharpTypeConstraint>().count { it.text != "notnull" && it.text != "unmanaged" } == r.constraintsOf(parameter).size
 }
 
 /**
@@ -461,6 +462,8 @@ private fun CSharpOverloads.collection(to: SemanticType): Conversion {
     if (name in COLLECTION_TARGETS) return Conversion.IMPLICIT
     if (name in PRIMITIVES || name == OBJECT) return Conversion.NONE
     if (to is SemanticType.Library && (to.type.kind == IndexedTypeKind.DELEGATE || to.type.kind == IndexedTypeKind.ENUM)) return Conversion.NONE
+    // an enum of the solution is no collection either: `GetShoppingCartAsync(customer, [a, b])` beside its `ShoppingCartType?` overload
+    if (to is SemanticType.Source && (to.info.kind == TypeKind.ENUM || to.info.kind == TypeKind.DELEGATE)) return Conversion.NONE
     return Conversion.UNKNOWN
 }
 
@@ -492,7 +495,7 @@ private fun CSharpOverloads.groupCandidates(value: CSharpExpression, group: List
         val parameters = if (isReduced) all.drop(1) else all
         RoslynMethodGroupConversion.Candidate(
             arity = r.expressions.methodArity(m), parameterTypes = parameters.map { it.type() }, refKinds = parameters.indices.map { refKind(m, it, isReduced) },
-            returnType = r.returnType(m, emptyList()),
+            returnType = { typeArguments -> r.returnType(m, typeArguments) },
             infer = { delegateTypes ->
                 val self = if (isReduced) listOf(receiver ?: throw RoslynMethodTypeInferrer.Unknown("the receiver of ${SemanticTrace.show(m)} is not known")) else emptyList()
                 when (val inferred = r.inference.inferFromTypes(m, all.map { it.type() }, self + delegateTypes)) {

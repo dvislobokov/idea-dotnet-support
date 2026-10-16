@@ -285,6 +285,104 @@ class CSharpTypingGapsTest : BasePlatformTestCase() {
         }
     """, "P(1, default) -> CS0029: Cannot implicitly convert type 'int' to 'string'", "t.Item3 -> CS0029: Cannot implicitly convert type 'string' to 'int'")
 
+    /** nopCommerce's last lines, part 1: enum arithmetic under a unary minus, a switch expression of tuple arms, `Activator.CreateInstance<T>()` with the caller's `T : new()`. */
+    fun testNopCommerceGapsOne() = check("""
+        using System;
+        class C
+        {
+            void M(DayOfWeek a, DayOfWeek b, bool c)
+            {
+                string bad = -(a - b);
+                var x = c switch { true => (a: "x", b: "y"), _ => ("p", "q") };
+                int bad2 = x;
+            }
+            static void N<T>() where T : new() { var v = Activator.CreateInstance<T>(); int bad3 = v.ToString(); }
+        }
+    """, "-(a - b) -> CS0029: Cannot implicitly convert type 'int' to 'string'", "x -> CS0029: Cannot implicitly convert type '(string, string)' to 'int'",
+        "v.ToString() -> CS0029: Cannot implicitly convert type 'string' to 'int'")
+
+    /** Part 2: `list.Count(x => …)` is Enumerable's (the property is not invocable), `where TKey : notnull`, a generic overload calling its sibling with an inferred `T`. */
+    fun testNopCommerceGapsTwo() = check("""
+        using System;
+        using System.Collections.Generic;
+        using System.Linq;
+        using System.Threading.Tasks;
+        static class E
+        {
+            public static Dictionary<TKey, TSource> ToDict<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> key) where TKey : notnull => null!;
+            public static Task<T> GetAsync<T>(string key, Func<Task<T>> acquire) => acquire();
+            public static Task<T> GetAsync<T>(string key, Func<T> acquire) => GetAsync(key, () => Task.FromResult(acquire()));
+        }
+        class C
+        {
+            async Task M(List<string> list)
+            {
+                string bad = list.Count(s => s.Length > 0);
+                string bad2 = list.ToDict(s => s.Length);
+                string bad3 = await E.GetAsync("k", () => 1);
+            }
+        }
+    """, "list.Count(s => s.Length > 0) -> CS0029: Cannot implicitly convert type 'int' to 'string'",
+        "list.ToDict(s => s.Length) -> CS0029: Cannot implicitly convert type 'System.Collections.Generic.Dictionary<int, string>' to 'string'",
+        "await E.GetAsync(\"k\", () => 1) -> CS0029: Cannot implicitly convert type 'int' to 'string'")
+
+    /** Part 3: a generic method group (`Task.FromResult`) to a delegate, `Be(default)` between `T` and `T?`, tuple-typed parameters, a generic local function with type arguments written. */
+    fun testNopCommerceGapsThree() = check("""
+        using System;
+        using System.Collections.Generic;
+        using System.Linq;
+        using System.Threading.Tasks;
+        // FluentAssertions' shape: the overloads live in the base `NumericAssertions<T, TAssertions>`, `Should()` gives the derived `NumericAssertions<T>`
+        class NA<T, TA> where T : struct where TA : NA<T, TA>
+        {
+            public TA Be(T expected, string because = "", params object[] args) => default!;
+            public TA Be(T? expected, string because = "", params object[] args) => default!;
+        }
+        class N<T> : NA<T, N<T>> where T : struct { }
+        static class SE { public static N<decimal> Should(this decimal d) => new(); }
+        class Sh { public string Id; public bool Selected; }
+        class Sh2 { public List<Sh> Options { get; set; } }
+        class C
+        {
+            Task<IList<int>> GetAllAsync(Func<IEnumerable<int>, Task<IEnumerable<int>>> f) => null!;
+            Task<IList<int>> GetAllAsync(Func<IEnumerable<int>, IEnumerable<int>> f) => null!;
+            Task<Sh> P((string A, string B) address, (string, string) option) => null!;
+            async Task M(List<string> parts)
+            {
+                string bad = await GetAllAsync(Task.FromResult);
+                string bad2 = 1.5m.Should().Be(default);
+                var option = (parts.FirstOrDefault(), parts.LastOrDefault());
+                var shipping = await P(("a", "b"), option);
+                int bad3 = shipping.Id;
+                var s = new Sh2 { Options = new List<Sh>() };
+                (s.Options.FirstOrDefault(option => string.Equals(option.Id, "x", StringComparison.InvariantCultureIgnoreCase)) ?? s.Options.First()).Selected = 1;
+                async Task<Sh> get<T>() => new Sh();
+                var r = parts.Count switch { 1 => await get<int>(), _ => null };
+                int bad4 = r.Id;
+            }
+        }
+    """, "await GetAllAsync(Task.FromResult) -> CS0029: Cannot implicitly convert type 'System.Collections.Generic.IList<int>' to 'string'",
+        "1.5m.Should().Be(default) -> CS0029: Cannot implicitly convert type 'N<decimal>' to 'string'",
+        "shipping.Id -> CS0029: Cannot implicitly convert type 'string' to 'int'", "1 -> CS0029: Cannot implicitly convert type 'int' to 'bool'",
+        "r.Id -> CS0029: Cannot implicitly convert type 'string' to 'int'")
+
+    /** A type named like an imported namespace's last part (`Shipping` of the plugin beside `using Nop.Core.Domain.Shipping;`) is the type. */
+    fun testATypeNamedLikeAnImportedNamespaceIsTheType() = check("""
+        namespace A.B.Shipping { class X { } }
+        namespace P.Domain { class Shipping { public string Name; } }
+        namespace P.Services
+        {
+            using A.B.Shipping;
+            using P.Domain;
+            class C
+            {
+                Shipping M() => null;
+                (Shipping S, string E) N() => (null, "e");
+                void O() { int bad = M().Name; var t = N(); int bad2 = t.S.Name; }
+            }
+        }
+    """, "M().Name -> CS0029: Cannot implicitly convert type 'string' to 'int'", "t.S.Name -> CS0029: Cannot implicitly convert type 'string' to 'int'")
+
     /** A collection expression beside an overload taking a delegate (bUnit's `Add(x => x.Items, […])`): no inference from it there, no refusal. */
     fun testACollectionExpressionGivesNoInferenceToADelegateParameter() = check("""
         using System;

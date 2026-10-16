@@ -366,7 +366,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         val found = typesIn(namespace, text, arity)
         if (found.isNotEmpty()) return found
         val qualified = join(namespace, text)
-        if (arity == 0 && session.namespaceExists(qualified, assemblies)) return listOf(CSharpSymbol.Namespace(qualified))
+        if (arity == 0 && session.namespaceExists(qualified, assemblies, ::sees)) return listOf(CSharpSymbol.Namespace(qualified))
         return emptyList()
     }
 
@@ -458,14 +458,28 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
             else -> return found
         }
         if (found.isNotEmpty() && callable(found, site)) return found
-        // C# §12.8.10.3: extension methods when no instance method is applicable, `span.Equals(other, comparison)`
-        return pick(extensionMethods(receiver, text, arity, site), site, reduced = true).ifEmpty { found }
+        // C# §12.8.10.3: extension methods when no instance method is applicable, `span.Equals(other, comparison)` — level by level: the
+        // innermost namespace (with its usings) that has a candidate taking the arguments wins, the outer ones are not looked at
+        // (nopCommerce's own `CountAsync` in `System.Linq` beside LinqToDB's, its `AddHttpContextAccessor` beside ASP.NET Core's)
+        val arguments = invocationOf(site)?.argumentList?.arguments
+        var first: List<CSharpSymbol>? = null
+        for (level in levels(site)) {
+            val here = extensionMethodsIn(receiver, text, arity, site, setOf(level.namespace) + level.imports)
+            if (here.isEmpty()) continue
+            // applicable here (or not known to be): this level; surely none: the next one out
+            if (arguments == null || overloads.anyApplicable(here, arguments, true, site) != false) return pick(here, site, reduced = true)
+            if (first == null) first = here
+        }
+        // no level takes the arguments (the call is being typed, `list.Where(|`): the innermost candidates, for parameter info and completion
+        return first?.let { pick(it, site, reduced = true) } ?: found
     }
 
     /** Whether some of [found] can take the arguments of the call at [site] (not a call: yes). */
     private fun callable(found: List<CSharpSymbol>, site: CSharpSimpleName): Boolean {
-        if (found.any { !isMethod(it) }) return true
         val arguments = invocationOf(site)?.argumentList?.arguments ?: return true
+        // a property or a field of a type that is no delegate is not invocable (Roslyn's `MustBeInvocableIfMember`): `list.Count(x => …)`
+        // is Enumerable's Count, not the property
+        if (found.any { !isMethod(it) }) return found.any { s -> !isMethod(s) && valueType(s)?.let { t -> expressions.unwrapExpression(t)?.let(expressions::delegateSignature) == null } != true }
         return found.any { symbol -> signature(symbol, false)?.let { fits(it, arguments) } ?: true }
     }
 
@@ -724,8 +738,11 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
      * of the assemblies by what they extend (the type, its bases and interfaces, arrays, `this T`), of the solution by the type their
      * `this` parameter names.
      */
-    internal fun extensionMethods(receiver: SemanticType, text: String, arity: Int, site: PsiElement): List<CSharpSymbol> {
-        val imported = importedNamespaces(site)
+    internal fun extensionMethods(receiver: SemanticType, text: String, arity: Int, site: PsiElement): List<CSharpSymbol> =
+        extensionMethodsIn(receiver, text, arity, site, importedNamespaces(site))
+
+    /** [extensionMethods] of the static classes of the namespaces [imported] only (one level of the lookup). */
+    private fun extensionMethodsIn(receiver: SemanticType, text: String, arity: Int, site: PsiElement, imported: Set<String>): List<CSharpSymbol> {
         val found = ArrayList<CSharpSymbol>()
         val keys = LinkedHashSet<String>()
         val names = HashSet<String>()
@@ -1353,7 +1370,15 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
 
     internal fun returnType(method: CSharpSymbol, typeArguments: List<SemanticType?>): SemanticType? = when (method) {
         is CSharpSymbol.LibraryMember -> fromRef(method.member.typeRef, method.declaringArguments, typeArguments)
-        is CSharpSymbol.Local -> localType(method)
+        // a generic local function with its type arguments written: `await getWebhookResource<Capture>()` of nopCommerce
+        is CSharpSymbol.Local -> {
+            val raw = localType(method)
+            val statement = method.symbol.declaration.parent as? CSharpLocalFunctionStatement
+            if (typeArguments.isEmpty() || statement == null) raw else {
+                val names = statement.typeParameterList?.parameters?.map { it.identifier?.text }.orEmpty()
+                replace(raw) { p -> if (p.ofMethod && p.owner == statement) typeArguments.getOrNull(names.indexOf(p.name)) else p }
+            }
+        }
         is CSharpSymbol.SourceMember -> {
             val resolver = (method.element.containingFile as? CSharpFile)?.let(session::reachable)
             val element = (method.element as? CSharpMethodDeclaration)?.takeIf { resolver != null }

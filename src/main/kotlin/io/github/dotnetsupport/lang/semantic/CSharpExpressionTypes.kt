@@ -166,8 +166,11 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
             when {
                 r.isMethod(symbol) -> r.returnType(symbol, typeArguments(symbol, call, callee))
                 // a local function: what it returns (its generic ones are not inferred)
-                symbol is CSharpSymbol.Local && symbol.symbol.kind == io.github.dotnetsupport.lang.LocalSymbolKind.LOCAL_FUNCTION ->
-                    r.returnType(symbol, emptyList())?.takeIf { (symbol.symbol.declaration.parent as? CSharpLocalFunctionStatement)?.typeParameterList == null }
+                symbol is CSharpSymbol.Local && symbol.symbol.kind == io.github.dotnetsupport.lang.LocalSymbolKind.LOCAL_FUNCTION -> {
+                    val generic = (symbol.symbol.declaration.parent as? CSharpLocalFunctionStatement)?.typeParameterList != null
+                    val written = (callee as? CSharpGenericName)?.typeArgumentList?.arguments?.map { r.resolveType(it) }
+                    if (!generic) r.returnType(symbol, emptyList()) else if (written != null && written.none { it == null }) r.returnType(symbol, written) else null
+                }
                 symbol is CSharpSymbol.SourceType || symbol is CSharpSymbol.LibraryType || symbol is CSharpSymbol.Namespace -> null
                 else -> r.valueType(symbol)?.let { delegateSignature(it)?.second }
             }
@@ -529,7 +532,8 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         val call = list.parent as? CSharpInvocationExpression ?: return emptyList()
         val callee = callee(call) ?: return emptyList()
         val symbols = r.resolveName(callee)?.symbols ?: return emptyList()
-        return symbols.filter(r::isMethod).mapNotNull { symbol ->
+        // a local function too: `isCyclicallyRequired(data, out var product)` of nopCommerce
+        return symbols.filter { r.isMethod(it) || it is CSharpSymbol.Local && it.symbol.kind == io.github.dotnetsupport.lang.LocalSymbolKind.LOCAL_FUNCTION }.mapNotNull { symbol ->
             val reduced = isReduced(symbol, callee)
             val parameters = r.signature(symbol, false) ?: return@mapNotNull null
             var type = parameterFor(parameters, arguments, i, if (reduced) 1 else 0)?.type?.invoke() ?: return@mapNotNull null
@@ -1053,6 +1057,14 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         operator == "+" && isEnum(left) && !isEnum(right) -> left
         operator == "+" && isEnum(right) && !isEnum(left) -> right
         operator == "-" && isEnum(left) && !isEnum(right) -> left
+        // `DayOfWeek - DayOfWeek` is the underlying type (§12.10.5) — `today.AddDays(-(today.DayOfWeek - fdow))` of nopCommerce
+        operator == "-" && isEnum(left) && isEnum(right) && same(left, right) -> enumUnderlying(left)
+        else -> null
+    }
+
+    private fun enumUnderlying(type: SemanticType): SemanticType? = when (type) {
+        is SemanticType.Library -> type.type.enumUnderlyingType?.let { r.fromRef(it, emptyList()) } ?: r.libraryType(INT)
+        is SemanticType.Source -> type.info.parts.firstNotNullOfOrNull { (it as? io.github.dotnetsupport.lang.TypePart.Psi)?.declaration as? CSharpEnumDeclaration }?.let(r::underlyingType)
         else -> null
     }
 
@@ -1132,6 +1144,10 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         var best = types.first()
         for (type in types.drop(1)) {
             if (same(type, best)) continue
+            // tuples that differ in element names only: one type, the names kept where they agree (Roslyn's `MergeTupleNames`)
+            if (r.conversion(type, best) == CSharpNameResolver.Conversion.IDENTITY && r.conversion(best, type) == CSharpNameResolver.Conversion.IDENTITY) {
+                best = mergeTupleNames(best, type); continue
+            }
             best = when {
                 implicitly(type, best) && !implicitly(best, type) -> best
                 implicitly(best, type) && !implicitly(type, best) -> type
@@ -1140,6 +1156,12 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         }
         if (nullLiteral && r.isValueType(best) && !isNullable(best)) return null
         return best
+    }
+
+    private fun mergeTupleNames(a: SemanticType, b: SemanticType): SemanticType {
+        if (a !is SemanticType.Library || b !is SemanticType.Library || a.tupleNames == null && b.tupleNames == null) return a
+        val names = a.arguments.indices.map { i -> a.tupleNames?.getOrNull(i)?.takeIf { it == b.tupleNames?.getOrNull(i) } }
+        return SemanticType.Library(a.type, a.arguments, names.takeIf { list -> list.any { it != null } })
     }
 
     private fun same(a: SemanticType, b: SemanticType): Boolean {

@@ -3,6 +3,22 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.240
+
+- Extension methods are looked up level by level, as the compiler does: the innermost namespace (with its usings) that has an
+  applicable candidate wins — nopCommerce's own `CountAsync` in `System.Linq` beside LinqToDB's, `AddHttpContextAccessor`
+  beside ASP.NET Core's, and its `OrderBy(this IQueryable<Product>, …)` no longer shadows System.Linq's for other queries.
+- `list.Count(x => …)` is Enumerable's: a property of a non-delegate type is not invocable. A generic method group
+  (`Task.FromResult`) converts to a delegate by its inferred type arguments.
+- A generic overload calling its sibling with its own type parameter (`GetAsync<T>(key, () => Task.FromResult(acquire()))`)
+  resolves; a lambda does not convert to a type parameter; `() => throw …` is compared by its targets.
+- `where TKey : notnull` holds; `unmanaged` for primitives and enums; `allows ref struct` is no constraint.
+- `DayOfWeek - DayOfWeek` is an `int`; a switch expression of tuples differing in names only is typed; a generic local
+  function with type arguments written is typed; `out var x` of a local function is typed; a collection expression does not
+  convert to an enum of the solution.
+- A namespace of the solution counts only when a file of a project this one sees declares it (another plugin's
+  `Nop.Plugin.Shipping` was the `Shipping` type of the PayPal plugin).
+
 ## 0.1.239
 
 - The returns of a lambda take their best common type (`IEnumerable<X>` over `List<X>`); `return null` / `default` / a tuple

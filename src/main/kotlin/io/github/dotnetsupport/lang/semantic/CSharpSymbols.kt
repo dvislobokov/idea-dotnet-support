@@ -2,6 +2,7 @@ package io.github.dotnetsupport.lang.semantic
 
 import com.intellij.openapi.editor.colors.TextAttributesKey
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.stubs.StubIndex
@@ -172,7 +173,6 @@ sealed class SemanticType {
  */
 class CSharpSemanticSession @JvmOverloads constructor(val project: Project, private val loadsOtherFiles: Boolean = true) {
     private val resolvers = HashMap<CSharpFile, CSharpNameResolver>()
-    private val sourceNamespaces = HashMap<String, Boolean>()
     private val libraryNamespaces = IdentityHashMap<AssemblyIndexSet, Set<String>>()
     private val globalUsings = HashMap<String, List<GlobalUsing>>()
 
@@ -212,14 +212,30 @@ class CSharpSemanticSession @JvmOverloads constructor(val project: Project, priv
             all
         }
         if (name in library) return true
-        return sourceNamespaces.getOrPut(name) {
-            var found = false
-            StubIndex.getInstance().processElements(CSharpStubIndexKeys.NAMESPACES, name, project, io.github.dotnetsupport.codeanalysis.CSharpSourceScope.of(project), CSharpElement::class.java) {
-                found = true
-                false
-            }
-            found
+        return sourceNamespaceFiles(name).isNotEmpty()
+    }
+
+    /**
+     * [namespaceExists] for the code of one project: a namespace declared by the sources counts when a file declaring it is one the
+     * project [sees] — `Shipping` in the PayPal plugin of nopCommerce is its `Api.Models.Shipping` type, not the namespace `Nop.Plugin.Shipping`
+     * of a plugin it does not reference.
+     */
+    fun namespaceExists(name: String, assemblies: AssemblyIndexSet, sees: (VirtualFile) -> Boolean): Boolean {
+        if (name.isEmpty()) return true
+        if (namespaceExists(name, assemblies) && name in libraryNamespaces[assemblies].orEmpty()) return true
+        return sourceNamespaceFiles(name).any(sees)
+    }
+
+    private val sourceNamespaceFiles = HashMap<String, List<VirtualFile>>()
+
+    /** The files declaring the namespace [name] (every prefix of a declaration is in the index), remembered for the session. */
+    private fun sourceNamespaceFiles(name: String): List<VirtualFile> = sourceNamespaceFiles.getOrPut(name) {
+        val files = LinkedHashSet<VirtualFile>()
+        StubIndex.getInstance().processElements(CSharpStubIndexKeys.NAMESPACES, name, project, io.github.dotnetsupport.codeanalysis.CSharpSourceScope.of(project), CSharpElement::class.java) { e ->
+            e.containingFile?.viewProvider?.virtualFile?.let(files::add)
+            true
         }
+        files.toList()
     }
 
     private val sourceExtensions = HashMap<String, List<CSharpElement>>()

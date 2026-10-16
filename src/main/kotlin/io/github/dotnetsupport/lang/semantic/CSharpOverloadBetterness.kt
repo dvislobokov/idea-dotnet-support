@@ -127,7 +127,9 @@ internal class BetternessHost(private val o: CSharpOverloads) : RoslynBetterFunc
     override fun isAsync(lambda: CSharpAnonymousFunctionExpression): Boolean = r.expressions.isAsync(lambda.modifiers)
 
     override fun inferredReturnType(lambda: CSharpAnonymousFunctionExpression, delegate: SemanticType): SemanticType? {
-        if (returnExpressions(lambda).isEmpty()) return null
+        val returns = returnExpressions(lambda)
+        // `() => throw …`, `() => null`: no inferred return type (Roslyn's `InferReturnType` finds none) — the targets decide, as for `GetAsync<object>(key, () => throw …)`
+        if (returns.isEmpty() || returns.all { o.targetTyped(it) }) return null
         return boundFor(lambda, delegate) { r.expressions.lambdaReturnType(lambda) ?: throw Unknown("the type the lambda at ${SemanticTrace.at(lambda)} returns is not known") }
     }
 

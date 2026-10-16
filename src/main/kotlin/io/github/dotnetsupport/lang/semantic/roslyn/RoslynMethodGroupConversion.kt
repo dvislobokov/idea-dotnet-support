@@ -30,13 +30,13 @@ internal class RoslynMethodGroupConversion(private val types: RoslynTypes, priva
 
     /**
      * A method of the group: [parameterTypes] as declared (the `this` parameter of a reduced extension method dropped; null not known),
-     * [refKinds] how each is passed (null by value), [returnType] as declared; [infer] its type arguments from the delegate's parameter
+     * [refKinds] how each is passed (null by value), [returnType] for the type arguments given (a generic method's mentions them: `Task.FromResult` is `Task<TResult>`); [infer] its type arguments from the delegate's parameter
      * types (the receiver first for a reduced extension method), the constraints checked; [substitute] a declared type with them;
      * [receiverFits] `ConvertExtensionMethodThisArg` for a reduced extension method with the type arguments (true for any other method;
      * null not known).
      */
     class Candidate(
-        val arity: Int, val parameterTypes: List<SemanticType?>, val refKinds: List<String?>, val returnType: SemanticType?,
+        val arity: Int, val parameterTypes: List<SemanticType?>, val refKinds: List<String?>, val returnType: (List<SemanticType>) -> SemanticType?,
         val infer: (List<SemanticType>) -> Inferred, val substitute: (SemanticType?, List<SemanticType>) -> SemanticType?,
         val receiverFits: (List<SemanticType>) -> Boolean?,
     )
@@ -82,7 +82,7 @@ internal class RoslynMethodGroupConversion(private val types: RoslynTypes, priva
                 if (!ok) { fits = false; break }
             }
             if (!fits) continue
-            val returns = c.substitute(c.returnType ?: throw Unknown("the return type of the method is not known"), typeArguments) ?: throw Unknown("the return type of the method is not known")
+            val returns = c.returnType(typeArguments) ?: throw Unknown("the return type of the method is not known")
             if (returnType != null && !returnsMatch(returns, returnType)) continue
             applicable += Applicable(c, typeArguments, targets, returns)
         }

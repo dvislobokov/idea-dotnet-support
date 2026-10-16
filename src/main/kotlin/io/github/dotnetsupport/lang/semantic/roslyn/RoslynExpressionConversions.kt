@@ -89,7 +89,8 @@ internal class RoslynExpressionConversions(private val types: RoslynTypes) {
      * (`IEqualityComparer<T>`, `IOpenApiDocumentTransformer`), a struct, a class it is none, whatever operators they declare.
      */
     private fun classifyAnonymousFunction(lambda: Source.AnonymousFunction, destination: SemanticType): Result {
-        if (destination is SemanticType.Parameter) return Result.Unknown("a lambda to the type parameter ${destination}")
+        // a type parameter is no delegate nor expression type: no anonymous function conversion to it (`HasAnonymousFunctionConversion`)
+        if (destination is SemanticType.Parameter) return Result.None
         val delegate = types.delegateOfExpression(destination) ?: return Result.Unknown("the delegate of ${destination} is not known")
         if (types.delegateInvoke(delegate) != null) return Result.AnonymousFunctionConversion
         if (isValidFunctionTypeConversionTarget(destination) || types.definitionName(destination) in EXPRESSION_TYPES) {

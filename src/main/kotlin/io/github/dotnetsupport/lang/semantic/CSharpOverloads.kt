@@ -38,6 +38,9 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
 
     // the method type parameters of the candidates being resolved: a parameter of the caller's own method is a type like any other
     internal val openOwners = HashSet<PsiElement>()
+    // the method (or local function) the call is written in: its own type parameters are concrete types there, never open — even when
+    // it is a candidate itself (an overload calling its sibling, `GetAsync<T>(key, Func<T>)` calling `GetAsync(key, () => Task.FromResult(acquire()))`)
+    internal var siteOwner: PsiElement? = null
 
     internal val tracedConversions = HashSet<Triple<String, String, Boolean>>()
 
@@ -87,6 +90,8 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         val owners = if (written != null) emptyList() else all.mapNotNull { (it as? CSharpSymbol.SourceMember)?.element }
         openOwners += owners
         twins = paramsTwins(all)
+        val previousSiteOwner = siteOwner
+        siteOwner = site?.let { enclosingFunction(it) }
         try {
             why = ""
             val outcome = evaluateStrict(symbol, reduced, receiver, arguments, written, infer)
@@ -95,6 +100,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
             return outcome
         } finally {
             openOwners -= owners.toSet()
+            siteOwner = previousSiteOwner
         }
     }
 
@@ -189,7 +195,8 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         }
         if (unknown) return Outcome.Unknown
         if (bad.isNotEmpty()) {
-            if (inferenceFailed || constraintFailed) return unknown("one form does not convert an argument, the other failed its inference or constraints")
+            // one form does not convert an argument, the other failed its inference or constraints: the candidate is not applicable either way
+            // (nopCommerce's `e.Id.In(entities.Select(x => x.Id))` against `In<T>(this T, params T[])`)
             if (bad.size == 1) return bad.single()
             // both forms of a `params` method fail: the expanded one when the last argument is no array of it (as `checkArgumentTypes`)
             val (normal, expanded) = bad
@@ -233,6 +240,8 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         val written = (site as? CSharpGenericName)?.typeArgumentList?.arguments?.map { r.resolveType(it) ?: return null }
         val owners = if (written != null) emptyList() else candidates.mapNotNull { (it as? CSharpSymbol.SourceMember)?.element }
         openOwners += owners
+        val previousSiteOwner = siteOwner
+        siteOwner = site?.let { enclosingFunction(it) }
         try {
             // the applicability of each candidate as the compiler errors judge it (D6c3): Roslyn's inference, the port's conversions
             val applicable = ArrayList<Form>()
@@ -281,6 +290,42 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
             return best?.symbol
         } finally {
             openOwners -= owners.toSet()
+            siteOwner = previousSiteOwner
+        }
+    }
+
+    /**
+     * Whether some of [all] is applicable to the call at [site] (§12.6.4.2): true, false, or null when none surely is but one is not known.
+     * For the extension method lookup level by level (§12.8.10.3): the innermost namespace with an applicable candidate wins —
+     * nopCommerce's `ProductExtensions.OrderBy(this IQueryable<Product>, …)` in the file's own namespace is no match for `query.OrderBy(x => …)`
+     * over `IQueryable<ReviewType>`, System.Linq's is.
+     */
+    fun anyApplicable(all: List<CSharpSymbol>, arguments: List<CSharpArgument>, reduced: Boolean, site: CSharpSimpleName?): Boolean? {
+        val candidates = withoutBuiltTwins(all)
+        val call = site?.let(r::invocationOf)
+        val receiver = if (reduced) site?.let(r.expressions::receiver) else null
+        val written = (site as? CSharpGenericName)?.typeArgumentList?.arguments?.map { r.resolveType(it) ?: return null }
+        val owners = if (written != null) emptyList() else candidates.mapNotNull { (it as? CSharpSymbol.SourceMember)?.element }
+        openOwners += owners
+        val previousSiteOwner = siteOwner
+        siteOwner = site?.let { enclosingFunction(it) }
+        try {
+            var unknown = false
+            for (symbol in candidates) {
+                val isReduced = reduced && r.isExtension(symbol)
+                val outcome = evaluate(symbol, isReduced, receiver, arguments, candidates, written, site) { targets, self ->
+                    if (call == null || site == null) CSharpTypeInference.Inferred.Unknown else inference.infer(symbol, targets, arguments, self, call, site)
+                }
+                when (outcome) {
+                    is Outcome.Applicable -> return true
+                    Outcome.Unknown -> unknown = true
+                    else -> {}
+                }
+            }
+            return if (unknown) null else false
+        } finally {
+            openOwners -= owners.toSet()
+            siteOwner = previousSiteOwner
         }
     }
 
@@ -349,11 +394,16 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
     private fun hasPriority(symbol: CSharpSymbol): Boolean =
         symbol is CSharpSymbol.LibraryMember && symbol.member.attributes.any { it == "System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute" }
 
+    private fun enclosingFunction(site: PsiElement): PsiElement? =
+        com.intellij.psi.util.PsiTreeUtil.getParentOfType(site, CSharpMethodDeclaration::class.java, CSharpLocalFunctionStatement::class.java)
+
     private fun argumentType(e: CSharpExpression): SemanticType? {
         val value = unparenthesized(e)
         return when {
             value is CSharpAnonymousFunctionExpression -> null
             value is CSharpDeclarationExpression && value.type?.let(r::isVar) != false -> null
+            // `default`, `null`, `new()`, `[…]`: typed by the parameter chosen — asking now is the call asking itself (`Should().Be(default)` was a cycle)
+            targetTyped(value) -> null
             else -> r.typeOf(value)
         }
     }
@@ -461,6 +511,11 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
     }
 
     /** Whether the type arguments [arguments] of [symbol] satisfy its constraints; null when that is not known (`new()`, `unmanaged`, ...). */
+    /** A primitive or an enum is an unmanaged type for sure; a struct of fields may be, not checked. */
+    private fun surelyUnmanaged(argument: SemanticType): Boolean =
+        r.definitionName(argument) in PRIMITIVES || (argument as? SemanticType.Library)?.type?.kind == io.github.dotnetsupport.index.IndexedTypeKind.ENUM ||
+            (argument as? SemanticType.Source)?.info?.kind == io.github.dotnetsupport.lang.TypeKind.ENUM
+
     internal fun constraintsHoldStrict(symbol: CSharpSymbol, arguments: List<SemanticType?>): Boolean? {
         if (!constraintsHold(symbol, arguments)) return false
         fun converts(argument: SemanticType, type: SemanticType): Boolean = classify(argument, type).let { it == Conversion.IDENTITY || it == Conversion.IMPLICIT }
@@ -469,7 +524,8 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                 val argument = arguments.getOrNull(i) ?: return null
                 val reference = roslynTypes.isReferenceType(argument)
                 if (parameter.isStruct && reference != false || parameter.isClass && reference != true) return if (reference == null) null else false
-                if (parameter.isUnmanaged || parameter.allowsRefStruct) return null
+                // `allows ref struct` is an anti-constraint: every type satisfies it (ConcurrentDictionary.GetOrAdd<TArg> of .NET 9)
+                if (parameter.isUnmanaged && !surelyUnmanaged(argument)) return null
                 if (parameter.hasNew && !parameter.isStruct) when (newable(argument)) {
                     false -> return false
                     null -> return null
@@ -495,13 +551,11 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                                 if (constraint.text.endsWith("?") || struct && r.isNullable(argument)) return null
                             }
                             is CSharpTypeConstraint -> {
-                                val type = constraint.type?.let(resolver::resolveType)?.let { substitute(it, symbol, arguments) } ?: return null
                                 // `notnull` not met is a warning (CS8714), never an error: it holds here; `unmanaged` — a primitive or an enum surely is
+                                // (neither names a type: checked before the type is resolved — nopCommerce's `ToDictionaryAsync … where TKey : notnull`)
                                 if (constraint.text == "notnull") continue
-                                if (constraint.text == "unmanaged") {
-                                    val enum = (argument as? SemanticType.Library)?.type?.kind == io.github.dotnetsupport.index.IndexedTypeKind.ENUM || (argument as? SemanticType.Source)?.info?.kind == io.github.dotnetsupport.lang.TypeKind.ENUM
-                                    if (r.definitionName(argument) in PRIMITIVES || enum) continue else return null
-                                }
+                                if (constraint.text == "unmanaged") { if (surelyUnmanaged(argument)) continue else return null }
+                                val type = constraint.type?.let(resolver::resolveType)?.let { substitute(it, symbol, arguments) } ?: return null
                                 if (!converts(argument, type)) return null
                             }
                             is CSharpConstructorConstraint -> when (newable(argument)) {

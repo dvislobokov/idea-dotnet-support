@@ -451,6 +451,23 @@
     **лямбды в выводе** ~700 (функциональный тип явной лямбды / группы методов к `T`, тело лямбды); типы, неизвестные выше по цепочке,
     и циклы ~1 150 — не порт. Решение: дальше не по строкам журнала, а по файлам Roslyn — D6c4 целиком, затем лямбды в выводе целиком,
     затем D6c5; эхо из журнала убрать (одна строка на причину).
+  - [x] Закрытие журнала, шаг 6 (0.1.240; тесты `CSharpTypingGapsTest.testNopCommerceGaps*`, `testATypeNamedLikeAnImportedNamespaceIsTheType`).
+    nopCommerce в исходниках 80 → 9. Поиск методов расширения **по уровням** (§12.8.10.3, `CSharpNameResolver.member`: `levels(site)` изнутри
+    наружу, уровень = его пространство имён + его `using`; первый уровень с применимым кандидатом (`CSharpOverloads.anyApplicable`: строгая
+    применимость, «не знаю» тоже останавливает) — `extensionMethodsIn`; без вызова (parameter info) — первый уровень с кандидатами);
+    свойство не-делегатного типа не вызывается (`callable`: `list.Count(x => …)` — Enumerable); `Candidate.returnType` группы методов —
+    функция аргументов типа (`Task.FromResult` был `Task<null>`); `CSharpOverloads.siteOwner` — параметры типа метода, в котором написан
+    вызов, закрыты, даже если он сам кандидат (перегрузка зовёт соседку, `isCandidateParameter`); лямбда к параметру типа — `None`
+    (`HasAnonymousFunctionConversion`); `inferredReturnType` betterness: `() => throw` — «нет типа», решают цели; `notnull` и `unmanaged`
+    проверяются до разрешения типа ограничения, `allows ref struct` — не ограничение, `constraintsKnown` их не считает; ничья форм
+    (`params`) — не применим, не «не знаю»; `enumArithmetic` enum − enum; `common` сливает имена кортежей (`MergeTupleNames`);
+    `returnType(Local, args)` для generic локальной функции с написанными аргументами; `parameterTypesOf` знает локальные функции;
+    `argumentType`: target-typed аргумент не спрашивается (цикл `Should().Be(default)`); `collection(to)` — enum/делегат solution — NONE;
+    `namespaceExists(name, assemblies, sees)` — пространство имён исходников считается, если его объявляет видимый проект.
+    **Остаток nopCommerce (9 строк, один файл `PayPalCommerceServiceManager.cs`)**: `Shipping` резолвится в namespace `Nop.Plugin.Shipping`
+    чужого плагина, потому что `<ProjectReference Include="$(SolutionDir)\…" />` делает ссылки «неизвестными» и `sees` видит всё. Решение
+    пользователя 2026-10-16: сначала **Open Solution** (открывать `.sln` как проект IDE, как Rider; при папке с несколькими — выбор; контекст
+    только его проектов), потом `$(SolutionDir)` = папка активного solution, потом остаток журнала уже в контексте solution.
   - [x] Закрытие журнала, шаг 5 (0.1.239; тесты в `CSharpTypingGapsTest`). 42 строки `lowerBoundTypeArgumentInference:664` («тип элемента
     `?` выше по цепочке») — четыре корня: `return`'ы лямбды разных типов (`IEnumerable<X>` и `List<X>`) — лучший общий тип §12.6.3.15
     (`LambdaArgument.bestCommonType`), `return null` / `default` / кортеж с таким элементом — «нет типа», не отказ (`typeless`);
