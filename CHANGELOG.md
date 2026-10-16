@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.204
+
+- A name inside `nameof(...)` that does not exist is an error, as the compiler says: `nameof(Counter.Missing)` (CS0117),
+  `nameof(Undefined)` (CS0103), `nameof(System.Nothing)` (CS0234), `nameof(text.Nope)` (CS1061); `nameof(text.Select)` of an extension
+  method is CS8093. What `nameof` allows stays silent: a method group, an instance member through its type, a type parameter.
+
 ## 0.1.203
 
 - A project referenced by another one is loaded once by the generators and analyzers, not twice: opening a test file of MudBlazor

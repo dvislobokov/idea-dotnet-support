@@ -131,8 +131,8 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
   правка `.cs` делала проект «несвежим» (`CodeAnalysisService.documentChanged`/`editedSince`), и семантика молчала всё время набора.
   Исправлено в 0.1.198: `CSharpCodeGenerators.readsOnlyAdditionalFiles` — генератор Razor читает только `.razor`/`.cshtml`, правка `.cs`
   свежести не меняет (что он берёт из C# — `[Parameter]` code-behind для разметки другого компонента — подтянется при следующем
-  сохранении `.razor` или сборке). Заодно пробел ядра: `nameof(X.Missing)` в инициализаторе поля не даёт CS0117 (Roslyn даёт) — в корпус
-  `compiler-messages`. Это правки ядра C# (`lang/semantic`),
+  сохранении `.razor` или сборке). Заодно пробел ядра: `nameof(X.Missing)` в инициализаторе поля не даёт CS0117 (Roslyn даёт) —
+  закрыт в 0.1.204 (имена аргумента `nameof` проверяются, плюс CS8093; пример `compilerMessages/cases/plugin-nameof.cs`). Это правки ядра C# (`lang/semantic`),
   по одному классу ошибок с примером в корпусе `CompilerMessagesCoverageTest`. Найдено (харнесс, 2026-10-15):
   - группа методов как делегат: `Inject(..., InjectTraceContextIntoBasicProperties)` (локальная функция, параметр `IBasicProperties` к
     `Action<BasicProperties, …>`), `TrackingAction` / `Invoke` → `Func<Task>` — CS1503 «cannot convert from 'Task' / 'void'» (больше 100);

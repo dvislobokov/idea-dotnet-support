@@ -102,7 +102,7 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
                     is CSharpBlock -> if (isFunctionBody(element)) warnings.checkUnreachable(element)
                 }
                 access.check(element)
-            }
+            } else if (element is CSharpSimpleName && inNameof(element)) checkName(element, nameof = true)
             true
         }
         CSharpDeclarationChecks(resolver, ::isQuiet, this) { code, message, range -> report(code, message, range) }.run()
@@ -166,6 +166,18 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         call is CSharpInvocationExpression && (call.expression as? CSharpIdentifierName)?.identifier?.text == "nameof"
 
     /**
+     * A name of the argument of `nameof(...)` (`X`, `A.B.C`, `List<int>.Count`): the rest of the checks keep quiet there (a method group, an
+     * instance member through its type are fine), but the name itself must exist — CS0103 / CS0117 / CS0234 / CS1061, as Roslyn.
+     */
+    private fun inNameof(name: CSharpSimpleName): Boolean {
+        var current: PsiElement = name
+        while (current.parent is CSharpMemberAccessExpression || current.parent is CSharpQualifiedName) current = current.parent
+        val call = (current.parent as? CSharpArgument)?.parent?.takeIf { it is CSharpArgumentList }?.parent as? CSharpInvocationExpression ?: return false
+        val callee = (call.expression as? CSharpIdentifierName)?.identifier ?: return false
+        return callee.text == "nameof" && resolver.syntax.symbolAt(callee) == null && !isQuiet(call)
+    }
+
+    /**
      * Where a syntax error silences the semantic checks: the innermost statement around it (what is typed there is not finished; the
      * other statements of the method are whole and checked, as Roslyn and Rider do — the live case of 2026-10-08: `this.db` two lines
      * below an unterminated string), else the member (an error in a signature or an expression body), else the file (top-level code).
@@ -194,12 +206,12 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
 
     // ---- names: CS0103, CS0246, CS0234, CS1061, CS0117
 
-    private fun checkName(name: CSharpSimpleName) {
+    private fun checkName(name: CSharpSimpleName, nameof: Boolean = false) {
         val leaf = name.identifier ?: return
         if (leaf.textLength == 0) return
         val parent = name.parent
         when {
-            parent is CSharpMemberAccessExpression && name == parent.nameElement -> parent.expression?.let { checkMember(name, resolver.qualifier(it), parent) }
+            parent is CSharpMemberAccessExpression && name == parent.nameElement -> parent.expression?.let { checkMember(name, resolver.qualifier(it), parent, nameof) }
             parent is CSharpMemberBindingExpression -> resolver.receiverOfBinding(parent)?.let { checkMember(name, CSharpNameResolver.Qualifier.Value(it), parent) }
             parent is CSharpQualifiedName && name == parent.right -> parent.left?.let { checkQualified(name, it) }
             parent is CSharpAliasQualifiedName -> {}
@@ -289,10 +301,16 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
     }
 
     /** `a.B`, `a?.B`, `T.B`, `N.B` in an expression: CS1061 / CS0117 / CS0234 when nothing of that name is there. */
-    private fun checkMember(name: CSharpSimpleName, qualifier: CSharpNameResolver.Qualifier?, access: CSharpExpression) {
+    private fun checkMember(name: CSharpSimpleName, qualifier: CSharpNameResolver.Qualifier?, access: CSharpExpression, nameof: Boolean = false) {
         val leaf = name.identifier ?: return
         val text = leaf.text
-        if (qualifier == null || resolver.resolve(leaf) != null) return
+        if (qualifier == null) return
+        // `nameof(text.Select)`: the name resolves, to an extension method group, which nameof does not take
+        if (nameof && qualifier is CSharpNameResolver.Qualifier.Value && checkable(qualifier.type) && !has(qualifier.type, text) && extensionNamed(text, name, qualifier.type)) {
+            if (!generated) report("CS8093", "Extension method groups are not allowed as an argument to 'nameof'.", access.textRange)
+            return
+        }
+        if (resolver.resolve(leaf) != null) return
         when (qualifier) {
             is CSharpNameResolver.Qualifier.Namespace -> {
                 if (!inNamespaceAbsent(qualifier.name, text) || generated) return

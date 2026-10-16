@@ -140,9 +140,9 @@ class CSharpSemanticErrorsTest : BasePlatformTestCase() {
             dyn.Whatever();
             var anonymous = new { A = 1 };
             anonymous.A.ToString();
-            var x = nameof(Missing);
             Odd odd = null!;
             odd.Whatever();
+            var x = nameof(odd.Whatever);
             Action act = null!;
             act.Invoke();
         """, members = """
