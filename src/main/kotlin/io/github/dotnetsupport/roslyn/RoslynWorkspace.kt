@@ -48,6 +48,8 @@ import io.github.dotnetsupport.lsp.RoslynPhase
 import io.github.dotnetsupport.lsp.RoslynPolicy
 import io.github.dotnetsupport.lsp.RoslynServerStatus
 import io.github.dotnetsupport.lsp.RoslynWorkspaceTarget
+import io.github.dotnetsupport.solution.ActiveSolution
+import io.github.dotnetsupport.solution.SolutionService
 import io.github.dotnetsupport.solution.SolutionFinder
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import java.io.File
@@ -66,6 +68,13 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
     class Choice : BaseState() {
         /** The solution to load when the folder has several, relative to the folder. */
         var solution by string()
+    }
+
+    init {
+        // the project's solution changed (.NET | Select Solution, a solution opened as the project): the server loads that one
+        project.messageBus.connect(this).subscribe(ActiveSolution.CHANGED, object : ActiveSolution.Listener {
+            override fun activeSolutionChanged(file: VirtualFile) = solutionChosen(relative(file.path))
+        })
     }
 
     /** Solution and project files under the opened folder, as absolute paths. */
@@ -181,7 +190,13 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
         return Found(files.solutions.map { it.path }, files.projects.map { it.path }).also { found = it }
     }
 
-    fun workspaceTarget(files: Found = scan()): RoslynWorkspaceTarget? = RoslynLanguageServer.workspaceTarget(files.solutions, absolute(state.solution), files.projects)
+    /** The solution of the project ([ActiveSolution], 0.1.242) is the server's; the choice this service kept before migrates to it. */
+    fun workspaceTarget(files: Found = scan()): RoslynWorkspaceTarget? {
+        val active = ActiveSolution.getInstance(project)
+        if (active.chosen() == null) state.solution?.let { old -> project.guessProjectDir()?.findFileByRelativePath(old)?.let { active.choose(it, reload = false) } }
+        val chosen = active.chosen()?.path ?: active.pick(SolutionService.getInstance(project).foundSolutionFiles())?.path
+        return RoslynLanguageServer.workspaceTarget(files.solutions, chosen, files.projects)
+    }
 
     fun serverInitialized() {
         if (project.isDisposed) return
@@ -218,7 +233,7 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
         when (target) {
             is RoslynWorkspaceTarget.Solution -> client.sendNotification { (it as RoslynServer).openSolution(SolutionOpenParams(uri(client.descriptor, target.path))) }
             // nothing is loaded before the user has answered, and nothing is reported as an error meanwhile
-            is RoslynWorkspaceTarget.Choice -> return chooseSolution(target.solutions)
+            is RoslynWorkspaceTarget.Choice -> return chooseSolution()
             // with --autoLoadProjects the server has found the projects itself, naming them again would load them twice
             is RoslynWorkspaceTarget.Projects -> if (!RoslynLanguageServerSettings.getInstance().state.autoLoadProjects) {
                 client.sendNotification { (it as RoslynServer).openProjects(ProjectOpenParams(target.paths.map { path -> uri(client.descriptor, path) })) }
@@ -228,30 +243,8 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
         opened = true
     }
 
-    /** The list of solutions to choose from; dismissed, it leaves a notification to come back to. */
-    fun chooseSolution(solutions: List<String> = knownSolutions) {
-        ApplicationManager.getApplication().invokeLater({
-            if (project.isDisposed || solutions.isEmpty()) return@invokeLater
-            val current = state.solution
-            JBPopupFactory.getInstance().createPopupChooserBuilder(solutions.map(::relative))
-                .setTitle("Select Solution for C# Language Server")
-                .apply { if (current != null) setSelectedValue(current, true) }
-                .setItemChosenCallback { solutionChosen(it) }
-                .addListener(object : JBPopupListener {
-                    override fun onClosed(event: LightweightWindowEvent) {
-                        if (!event.isOk && !opened) remindToChoose(solutions.size)
-                    }
-                })
-                .createPopup().showCenteredInCurrentWindow(project)
-        }, ModalityState.nonModal())
-    }
-
-    private fun remindToChoose(count: Int) {
-        NotificationGroupManager.getInstance().getNotificationGroup(DotNetCli.NOTIFICATION_GROUP)
-            .createNotification("C# language server", "$count solutions are found in the opened folder. The server loads one of them: errors, completion and navigation wait for the choice.", NotificationType.INFORMATION)
-            .addAction(NotificationAction.createSimpleExpiring("Select Solution...") { chooseSolution() })
-            .notify(project)
-    }
+    /** The chooser of the project's solution ([ActiveSolution]): the server follows it through [ActiveSolution.CHANGED]. */
+    fun chooseSolution() = ActiveSolution.getInstance(project).chooseInteractively()
 
     /** The banner of a file of another solution ([RoslynUnloadedSolutionBanner]) follows what the server loads. */
     private fun loadedSolution(path: String?) {
@@ -525,20 +518,6 @@ class RoslynWorkspace(private val project: Project) : SimplePersistentStateCompo
 
         /** Where the server writes its log: the folder of the settings page, or the one next to the logs of the IDE. */
         fun logDirectory(): File = RoslynLanguageServerSettings.getInstance().state.logDirectory?.takeIf { it.isNotBlank() }?.let(::File) ?: RoslynLanguageServerConfigurable.defaultLogDirectory()
-    }
-}
-
-/** Menu .NET | Select Solution for Language Server: which of the solutions of the opened folder the server loads. */
-class SelectRoslynSolutionAction : AnAction(), DumbAware {
-    override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
-
-    override fun update(e: AnActionEvent) {
-        // one solution leaves nothing to choose; the folder is walked when the server starts, not here
-        e.presentation.isEnabled = (e.project?.service<RoslynWorkspace>()?.knownSolutions?.size ?: 0) > 1
-    }
-
-    override fun actionPerformed(e: AnActionEvent) {
-        e.project?.service<RoslynWorkspace>()?.chooseSolution()
     }
 }
 

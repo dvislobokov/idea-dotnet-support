@@ -370,6 +370,9 @@
         <postStartupActivity implementation="io.github.dotnetsupport.solution.DotNetModuleSetup"/>
         <!-- can the helpers run in the data directory of the plugin (fapolicyd, noexec): moves it to the work home when not -->
         <postStartupActivity implementation="io.github.dotnetsupport.cli.PluginDataCheck$Startup"/>
+        <!-- a .sln / .slnx / .slnf opens as the project, the folder with several solutions asks which (Open Solution, 0.1.242) -->
+        <projectOpenProcessor implementation="io.github.dotnetsupport.solution.SolutionOpenProcessor"/>
+        <postStartupActivity implementation="io.github.dotnetsupport.solution.ActiveSolutionActivity"/>
         <postStartupActivity implementation="io.github.dotnetsupport.view.SolutionViewActivator"/>
         <postStartupActivity implementation="io.github.dotnetsupport.view.ToolWindowsSetup"/>
         <!-- the page about the plugin, once after the installation and after an update -->
@@ -775,6 +778,8 @@
             <separator/>
             <reference ref="DotNet.ReloadSolution"/>
             <reference ref="DotNet.ReloadProject"/>
+            <action id="DotNet.SelectSolution" class="io.github.dotnetsupport.solution.SelectSolutionAction" text="Select Solution..."
+                    description="Choose which of the solutions of the opened folder the plugin works in"/>
             <separator/>
             <action id="DotNet.Welcome" class="io.github.dotnetsupport.welcome.ShowWelcomePageAction" text="Welcome to C# Project Support"
                     description="What the plugin can do and where to start"/>

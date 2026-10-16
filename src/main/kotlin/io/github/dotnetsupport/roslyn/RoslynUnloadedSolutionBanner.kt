@@ -11,6 +11,7 @@ import com.intellij.ui.EditorNotificationProvider
 import com.intellij.ui.EditorNotifications
 import io.github.dotnetsupport.msbuild.DotNetProjects
 import io.github.dotnetsupport.solution.SolutionService
+import io.github.dotnetsupport.solution.isSolutionFilterFile
 import io.github.dotnetsupport.view.resolveFile
 import java.util.function.Function
 import javax.swing.JComponent
@@ -45,7 +46,7 @@ class RoslynUnloadedSolutionBanner : EditorNotificationProvider {
 
         /** The solutions of the opened folder (absolute paths) with the paths of their projects that are on disk. */
         fun solutionProjects(project: Project): Map<String, List<String>> = SolutionService.getInstance(project).let { service ->
-            service.solutionFiles().associate { solution -> solution.path to service.solution(solution).allProjects.mapNotNull { it.resolveFile(solution)?.path } }
+            service.foundSolutionFiles().filter { !isSolutionFilterFile(it) }.associate { solution -> solution.path to service.solution(solution).allProjects.mapNotNull { it.resolveFile(solution)?.path } }
         }
 
         /**

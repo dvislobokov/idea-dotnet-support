@@ -3,6 +3,14 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.242
+
+- Open Solution, as Rider: a `.sln` / `.slnx` / `.slnf` opens as the project (File | Open, the welcome screen, a file dropped on the
+  window) — its folder becomes the project and that solution the one the plugin works in. A folder with several solutions asks
+  which one on start; the Solution view, Build, NuGet, Unit Tests and the C# language server all work in the one chosen.
+  .NET | Select Solution… changes it; the choice is kept with the project. The language server's own choice moves to it.
+- A solution folder is drawn lilac, as in Rider.
+
 ## 0.1.241
 
 - `using X;` of a namespace declared only by a project this one does not reference is CS0246, as the compiler says (the test of

@@ -49,10 +49,6 @@
     <actions>
         <!-- the action of the platform with its id, shortcut and texts; only C# files with a loaded server go to the server -->
         <action id="GotoImplementation" class="io.github.dotnetsupport.roslyn.RoslynGotoImplementationAction" overrides="true"/>
-        <action id="DotNet.Roslyn.SelectSolution" class="io.github.dotnetsupport.roslyn.SelectRoslynSolutionAction" text="Select Solution for Language Server..."
-                description="Choose which of the solutions of the opened folder the C# language server loads">
-            <add-to-group group-id="DotNet.MainMenu" anchor="last"/>
-        </action>
         <action id="DotNet.Roslyn.Restart" class="io.github.dotnetsupport.roslyn.RestartRoslynServerAction" text="Restart C# Language Server"
                 description="Start the C# language server anew and load the solution again">
             <add-to-group group-id="DotNet.MainMenu" anchor="last"/>

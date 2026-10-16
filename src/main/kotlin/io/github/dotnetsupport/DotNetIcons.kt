@@ -12,6 +12,7 @@ object DotNetIcons {
     @JvmField val VisualBasic: Icon = load("vb")
 
     @JvmField val Solution: Icon = load("solution")
+    @JvmField val SolutionFolder: Icon = load("solutionFolder")
     @JvmField val Project: Icon = load("project")
     @JvmField val ProjectFSharp: Icon = load("projectFSharp")
     @JvmField val ProjectVisualBasic: Icon = load("projectVb")

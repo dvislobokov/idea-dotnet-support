@@ -28,14 +28,17 @@ class SolutionService(private val project: Project) {
     /** The solutions of the opened folder, found by the last walk; dropped by [solutionFilesChanged] when files come and go. */
     @Volatile private var found: Pair<VirtualFile, SolutionFinder.Found>? = null
 
-    /** Solution files (`.sln`, `.slnx`) of the opened directory, the ones in its root first (see [SolutionFinder]). */
-    fun solutionFiles(): List<VirtualFile> = find().solutions.filter { it.isValid }
+    /** Every solution file (`.sln`, `.slnx`) and filter (`.slnf`) under the opened directory, the ones in its root first (see [SolutionFinder]): what there is to choose from. */
+    fun foundSolutionFiles(): List<VirtualFile> = (find().solutions + find().filters).filter { it.isValid }
 
-    /** Solution filters (`.slnf`) of the opened directory. */
-    fun solutionFilters(): List<VirtualFile> = find().filters.filter { it.isValid }
+    /**
+     * The solution the project works in — one file (a solution or a filter), the [ActiveSolution] of the folder: as Rider, the plugin opens
+     * one solution, whatever else the folder holds (0.1.242). Empty when the folder has none.
+     */
+    fun solutionFiles(): List<VirtualFile> = listOfNotNull(ActiveSolution.getInstance(project).pick(foundSolutionFiles()))
 
-    /** What the Solution view shows at its root: solutions and the filters of them. */
-    fun allSolutionFiles(): List<VirtualFile> = solutionFiles() + solutionFilters()
+    /** What the Solution view shows at its root: the active solution (or filter). */
+    fun allSolutionFiles(): List<VirtualFile> = solutionFiles()
 
     /** A solution or a filter file appeared, disappeared or moved: the next question walks the folder again. */
     fun solutionFilesChanged() {

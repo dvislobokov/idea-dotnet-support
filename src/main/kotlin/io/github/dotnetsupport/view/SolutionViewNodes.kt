@@ -1,6 +1,5 @@
 package io.github.dotnetsupport.view
 
-import com.intellij.icons.AllIcons
 import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.projectView.ProjectViewNode
 import com.intellij.ide.projectView.ViewSettings
@@ -226,7 +225,8 @@ class SolutionFolderNode(project: Project, key: SolutionFolderKey, settings: Vie
         folder?.allProjects().orEmpty().asSequence().map { directoryStatus(nodeProject, it.resolveFile(value.solutionFile)?.parent) }.firstOrNull { it != FileStatus.NOT_CHANGED } ?: FileStatus.NOT_CHANGED
 
     override fun update(presentation: PresentationData) {
-        presentation.setIcon(AllIcons.Nodes.Folder)
+        // lilac, as Rider draws a solution folder: it is no directory on disk
+        presentation.setIcon(DotNetIcons.SolutionFolder)
         presentation.presentableText = folder?.name ?: value.folderId
     }
 }

@@ -69,12 +69,16 @@ class RoslynLspClientTest : BasePlatformTestCase() {
         assertTrue(found.projects.any { it.endsWith("/RoslynScan/App/App.csproj") })
         assertEquals(found.solutions, workspace.knownSolutions)
         try {
-            assertTrue(workspace.workspaceTarget(found) is RoslynWorkspaceTarget.Choice)
+            // the server loads the project's solution (ActiveSolution, 0.1.242): the first of the folder until one is chosen, never a Choice of its own
+            assertEquals(RoslynWorkspaceTarget.Solution(found.solutions.first()), workspace.workspaceTarget(found))
             val root = project.guessProjectDir()!!.path
+            // the choice this service kept before 0.1.242 migrates to the project's
             workspace.state.solution = found.solutions.first { it.endsWith("Tools.slnx") }.removePrefix("$root/")
             assertEquals(RoslynWorkspaceTarget.Solution(found.solutions.first { it.endsWith("Tools.slnx") }), workspace.workspaceTarget(found))
+            assertEquals("RoslynScan/tools/deep/Tools.slnx", io.github.dotnetsupport.solution.ActiveSolution.getInstance(project).state.solution)
         } finally {
             workspace.state.solution = null
+            io.github.dotnetsupport.solution.ActiveSolution.getInstance(project).loadState(io.github.dotnetsupport.solution.ActiveSolution.Choice())
         }
     }
 

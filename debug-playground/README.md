@@ -1166,3 +1166,10 @@ Settings | .NET | Language Server, группа Analysis: «Compiler diagnostics
 - [ ] `TYPE:where-after-base` — `where` у обобщённого типа, у обычного ничего.
 - [ ] `TYPE:where-type-parameter` — после `where` только `TKey`.
 - [ ] `TYPE:template-scopes` — в теле метода `while`, без `prop`; среди членов `prop` / `ctor` / `class`, без `while`.
+
+### Open Solution (0.1.242) — вживую не проверено
+
+- Открыть папку `debug-playground` как проект: при старте — попап «Select Solution» с `DebugPlayground.sln` и `Extra/Extra.sln`; Esc — нотификация «Several solutions» со ссылкой Select Solution…; до выбора активен `DebugPlayground.sln` (корневой).
+- .NET → Select Solution… → `Extra/Extra.sln`: панель Solution показывает один solution `Extra` с проектом `Console`; Build Solution собирает его; сервер языка (если включён) перезапускается на нём.
+- File → Open → `debug-playground/Extra/Extra.sln`: открывается папка `Extra` как проект, панель Solution сразу показывает `Extra`, попапа нет.
+- Иконка solution folder (например, `Editor` в `DebugPlayground.sln`, если есть) — сиреневая; сравнить с Rider.
