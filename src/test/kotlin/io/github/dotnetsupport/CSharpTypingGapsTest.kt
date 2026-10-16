@@ -414,6 +414,35 @@ class CSharpTypingGapsTest : BasePlatformTestCase() {
         "items.Contain([\"a\", \"b\"]) -> CS0029: Cannot implicitly convert type 'int' to 'string'",
         "d.Be(null) -> CS0029: Cannot implicitly convert type 'int' to 'string'")
 
+    /**
+     * MudBlazor's last lines, part 2: a lambda whose body has a type for every candidate but a member for one of them only (`args.Value` of
+     * the event args, not of the context) binds with that one alone; a generic method group with its type arguments written
+     * (`Mock.Of<T>`) has the signature of that instantiation for the inference.
+     */
+    fun testMudBlazorGapsTwo() = check("""
+        using System;
+        using System.Threading.Tasks;
+        class Args<T> { public T Value; }
+        struct Context { public int Count; }
+        class Builder
+        {
+            public int WithChangeHandler(Func<Args<bool>, Task> handler) => 1;
+            public string WithChangeHandler(Func<Context, Task> handler) => "";
+            public Task EnableAsync() => Task.CompletedTask;
+        }
+        static class Mocks { public static T Of<T>() where T : class => null!; public static T Of<T>(Func<T, bool> predicate) where T : class => null!; }
+        static class Setup { public static int ReturnsAsync<TResult>(this object mock, Func<TResult> value) => 1; }
+        class C
+        {
+            void M(Builder b, object mock)
+            {
+                string bad = b.WithChangeHandler(args => !args.Value ? b.EnableAsync() : b.EnableAsync());
+                string bad2 = mock.ReturnsAsync(Mocks.Of<C>);
+            }
+        }
+    """, "b.WithChangeHandler(args => !args.Value ? b.EnableAsync() : b.EnableAsync()) -> CS0029: Cannot implicitly convert type 'int' to 'string'",
+        "mock.ReturnsAsync(Mocks.Of<C>) -> CS0029: Cannot implicitly convert type 'int' to 'string'")
+
     /** `using static N.Helpers;` brings the extension methods of the type (§14.5.3): MudBlazor's `<Using Include="…StringHelpers" Static="True" />` and `x.ToStr()`. */
     fun testAUsingStaticBringsTheExtensionMethodsOfTheType() = check("""
         using static N.Helpers;

@@ -451,6 +451,12 @@
     **лямбды в выводе** ~700 (функциональный тип явной лямбды / группы методов к `T`, тело лямбды); типы, неизвестные выше по цепочке,
     и циклы ~1 150 — не порт. Решение: дальше не по строкам журнала, а по файлам Roslyn — D6c4 целиком, затем лямбды в выводе целиком,
     затем D6c5; эхо из журнала убрать (одна строка на причину).
+  - [x] Закрытие журнала, шаг 10 (0.1.247; тест `CSharpTypingGapsTest.testMudBlazorGapsTwo`). `bindingFails` проверяется для каждого
+    тела, а не только при неизвестном типе тела (`!args.Value ? A() : B()` — тип `Task` у любого кандидата, `Value` только у event args);
+    группа методов с написанными аргументами типа: `methodGroupSource` подставляет их в сигнатуру (function type), `groupCandidates.infer`
+    отдаёт их как `Known` вместо вывода из делегата (`Mock.Of<IJSVoidResult>` → Moq `ReturnsAsync`). MudBlazor 86 → 73. Остаток в
+    исходниках: `LanguageResource.*` (29, source generator), `Assert.That(ImmutableArray<…>, constraint)` (8 — `classify ImmutableArray<T>
+    → bool/Action/Func<bool>/TestDelegate: port unproved`), `ReturnsAsync(x.Method)` — function type extension-группы (3), россыпь.
   - [x] Закрытие журнала, шаг 9 (0.1.246; тест `RazorCorpusFalseErrorsTest.testAProjectReferencedUnderAnAliasIsReachedThroughItOnly`).
     `<Aliases>` у `ProjectReference` (`MsBuildProject.projectReferenceAliases`): проект, на который ссылаются только под алиасом (без
     `global`), не виден глобально (`CSharpSemanticEnvironment.sees` → `referenceAliases`), а `X::N.T` и `X.N.T` ищут только в его

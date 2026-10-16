@@ -366,12 +366,14 @@ private fun CSharpOverloads.strictLambda(lambda: CSharpAnonymousFunctionExpressi
     if (body != null) {
         if (void) return if (r.expressions.isStatementExpression(unparenthesized(body))) Conversion.IMPLICIT else Conversion.NONE
         return body {
+            // a member of the bound body that does not exist rules the candidate out even when the body has a type of its own:
+            // `args => !args.Value ? A() : B()` is a `Task` for every candidate, `args.Value` only for the one with the event args
+            if (bindingFails(body, lambda)) return@body Conversion.NONE
             val bodyType = r.typeOf(unparenthesized(body))
             when (argument(body, bodyType, returns)) {
                 Conversion.IDENTITY, Conversion.IMPLICIT -> Conversion.IMPLICIT
                 Conversion.NONE -> Conversion.NONE
-                Conversion.UNKNOWN -> if (bodyType == null && bindingFails(body, lambda)) Conversion.NONE
-                    else unknown("the body `${SemanticTrace.text(body)}` of ${SemanticTrace.show(bodyType)} to ${SemanticTrace.show(returns)}: conversion not known")
+                Conversion.UNKNOWN -> unknown("the body `${SemanticTrace.text(body)}` of ${SemanticTrace.show(bodyType)} to ${SemanticTrace.show(returns)}: conversion not known")
             }
         }
     }
@@ -389,14 +391,14 @@ private fun CSharpOverloads.strictLambda(lambda: CSharpAnonymousFunctionExpressi
     }
     if (returned.isEmpty()) return Conversion.IMPLICIT
     return body {
+        if (bindingFails(block, lambda)) return@body Conversion.NONE
         var result = Conversion.IMPLICIT
         for (statement in returned) {
             val value = statement.expression ?: return@body unknown("a `return` without a value")
             val valueType = r.typeOf(unparenthesized(value))
             when (argument(value, valueType, returns)) {
                 Conversion.NONE -> return@body Conversion.NONE
-                Conversion.UNKNOWN -> if (valueType == null && bindingFails(value, lambda)) return@body Conversion.NONE
-                    else result = unknown("`return ${SemanticTrace.text(value)}` of ${SemanticTrace.show(valueType)} to ${SemanticTrace.show(returns)}: conversion not known")
+                Conversion.UNKNOWN -> result = unknown("`return ${SemanticTrace.text(value)}` of ${SemanticTrace.show(valueType)} to ${SemanticTrace.show(returns)}: conversion not known")
                 else -> {}
             }
         }
@@ -410,9 +412,9 @@ private fun CSharpOverloads.strictLambda(lambda: CSharpAnonymousFunctionExpressi
  * (`PreventsSuccessfulDelegateConversion`): the candidate is not applicable, not "not known". Only a receiver whose members are all
  * seen counts — a library type, or a type of the solution in one part, in a project without generators.
  */
-private fun CSharpOverloads.bindingFails(expression: CSharpExpression, lambda: CSharpAnonymousFunctionExpression): Boolean {
+private fun CSharpOverloads.bindingFails(body: com.intellij.psi.PsiElement, lambda: CSharpAnonymousFunctionExpression): Boolean {
     var fails = false
-    com.intellij.psi.util.PsiTreeUtil.processElements(expression) { e ->
+    com.intellij.psi.util.PsiTreeUtil.processElements(body) { e ->
         if (e is CSharpMemberAccessExpression && com.intellij.psi.util.PsiTreeUtil.getParentOfType(e, CSharpAnonymousFunctionExpression::class.java) == lambda) {
             val name = e.nameElement
             val receiver = e.expression?.let { r.typeOf(unparenthesized(it)) }
@@ -521,6 +523,8 @@ private fun CSharpOverloads.isReducedGroup(value: CSharpExpression, group: List<
 private fun CSharpOverloads.groupCandidates(value: CSharpExpression, group: List<CSharpSymbol>): List<RoslynMethodGroupConversion.Candidate> {
     val name = (value as? CSharpMemberAccessExpression)?.nameElement
     val receiver by lazy { name?.let(r.expressions::receiver) }
+    // type arguments written on the group (`Mock.Of<IJSVoidResult>`): the method's, nothing to infer from the delegate
+    val written = ((name ?: value as? CSharpSimpleName) as? CSharpGenericName)?.typeArgumentList?.arguments?.map { r.resolveType(it) }?.takeIf { t -> t.none { it == null } }?.map { it!! }
     return group.map { m ->
         val isReduced = name != null && r.expressions.isReduced(m, name)
         val all = r.signature(m, false) ?: throw RoslynMethodTypeInferrer.Unknown("the signature of ${SemanticTrace.show(m)} is not known")
@@ -528,7 +532,8 @@ private fun CSharpOverloads.groupCandidates(value: CSharpExpression, group: List
         RoslynMethodGroupConversion.Candidate(
             arity = r.expressions.methodArity(m), parameterTypes = parameters.map { it.type() }, refKinds = parameters.indices.map { refKind(m, it, isReduced) },
             returnType = { typeArguments -> r.returnType(m, typeArguments) },
-            infer = { delegateTypes ->
+            infer = infer@{ delegateTypes ->
+                if (written != null && written.size == r.expressions.methodArity(m)) return@infer RoslynMethodGroupConversion.Inferred.Known(written)
                 val self = if (isReduced) listOf(receiver ?: throw RoslynMethodTypeInferrer.Unknown("the receiver of ${SemanticTrace.show(m)} is not known")) else emptyList()
                 when (val inferred = r.inference.inferFromTypes(m, all.map { it.type() }, self + delegateTypes)) {
                     is CSharpTypeInference.Inferred.Known -> when (constraintsHoldStrict(m, inferred.types)) {
@@ -614,10 +619,14 @@ private fun expressionSource(value: CSharpExpression): RoslynExpressionConversio
 private fun CSharpOverloads.methodGroupSource(group: List<CSharpSymbol>, value: CSharpExpression, reduced: Boolean): RoslynExpressionConversions.Source {
     val name = (value as? CSharpMemberAccessExpression)?.nameElement ?: value as? CSharpSimpleName
     val arity = (name as? CSharpGenericName)?.typeArgumentList?.arguments?.size ?: 0
+    val written = (name as? CSharpGenericName)?.typeArgumentList?.arguments?.map { r.resolveType(it) }?.takeIf { types -> types.none { it == null } }
     val methods = group.map { method ->
         val parameters = r.signature(method, false) ?: return RoslynExpressionConversions.Source.NotPorted
-        RoslynExpressionConversions.Method(r.expressions.methodArity(method), parameters.mapIndexed { i, p -> p.type() to (refKind(method, i, false) ?: "") },
-            r.returnType(method, emptyList()))
+        // type arguments written on the group: the signature of that instantiation (`Mock.Of<IJSVoidResult>` of Moq)
+        val instantiated = written?.takeIf { it.size == r.expressions.methodArity(method) }
+        val types = parameters.map { p -> p.type()?.let { t -> if (instantiated == null) t else substitute(t, method, instantiated) } }
+        RoslynExpressionConversions.Method(r.expressions.methodArity(method), types.mapIndexed { i, t -> t to (refKind(method, i, false) ?: "") },
+            r.returnType(method, instantiated ?: emptyList()))
     }
     return RoslynExpressionConversions.Source.MethodGroup(methods, arity, reduced)
 }

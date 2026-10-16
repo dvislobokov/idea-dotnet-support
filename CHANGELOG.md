@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.247
+
+- A lambda whose body names a member one candidate's parameter type does not have (`args => !args.Value ? … : …` against
+  `Func<ParameterChangedContext, Task>`) binds with the other candidates only, even when the body has a type of its own.
+- A generic method group with its type arguments written (`Mock.Of<T>` passed to Moq's `ReturnsAsync`) has the signature of
+  that instantiation: nothing is inferred from the delegate.
+
 ## 0.1.246
 
 - A project reference with `<Aliases>` (`extern alias X;` in the code) is out of the global namespace: its types are reached
