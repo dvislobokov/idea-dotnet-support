@@ -414,6 +414,13 @@ class CSharpTypingGapsTest : BasePlatformTestCase() {
         "items.Contain([\"a\", \"b\"]) -> CS0029: Cannot implicitly convert type 'int' to 'string'",
         "d.Be(null) -> CS0029: Cannot implicitly convert type 'int' to 'string'")
 
+    /** `using static N.Helpers;` brings the extension methods of the type (§14.5.3): MudBlazor's `<Using Include="…StringHelpers" Static="True" />` and `x.ToStr()`. */
+    fun testAUsingStaticBringsTheExtensionMethodsOfTheType() = check("""
+        using static N.Helpers;
+        namespace N { static class Helpers { public static int ToStr2(this double d) => 1; } }
+        class C { void M(double d) { string bad = d.ToStr2(); } }
+    """, "d.ToStr2() -> CS0029: Cannot implicitly convert type 'int' to 'string'")
+
     /** `extern alias X;` — a parameter typed `X::Name` in a signature (MudBlazor's analyzer tests). */
     fun testAnAliasQualifiedParameterTypeInASignature() = check("""
         extern alias Lib;

@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.245
+
+- `using static T;` (and a project's `<Using Include="T" Static="True" />`) brings the extension methods of `T`, as the
+  compiler's lookup does: MudBlazor's `x.ToStr()` in every chart resolves.
+- No "unnecessary using directive" in generated files (`obj/…/generated`), as the compiler hides them there.
+
 ## 0.1.244
 
 - A lambda whose body does not bind with a candidate's parameter types (`item.StartsWith(…)` with `item` an `object` of that

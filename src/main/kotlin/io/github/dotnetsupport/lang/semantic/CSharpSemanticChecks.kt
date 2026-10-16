@@ -114,7 +114,8 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         CSharpModifierChecks(resolver, ::isQuiet) { code, message, range -> report(code, message, range) }.run(unit)
         CSharpRefChecks(resolver, ::isQuiet) { code, message, range -> report(code, message, range) }.run(unit)
         if (broken.isEmpty()) warnings.checkUnusedLocals()
-        if (broken.isEmpty()) CSharpUnusedUsings(resolver).find(unit).let(found::addAll)
+        // not in a generated file (`obj/…/generated`): the compiler hides CS8019 there, and the usings of `_Imports.razor` are not the file's own
+        if (broken.isEmpty() && !isGeneratedFile()) CSharpUnusedUsings(resolver).find(unit).let(found::addAll)
         return withoutFlowOfBrokenDeclarations(found).distinctBy { Triple(it.code, it.range, it.message) }
     }
 
@@ -133,6 +134,9 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
     }
 
     private val QUOTED = Regex("'([^']+)'")
+
+    private fun isGeneratedFile(): Boolean =
+        file.project.getServiceIfCreated(io.github.dotnetsupport.codeanalysis.CodeAnalysisService::class.java)?.isGenerated(file.viewProvider.virtualFile) == true
 
     private fun inSources(): Boolean {
         val virtualFile = file.viewProvider.virtualFile

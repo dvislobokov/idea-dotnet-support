@@ -451,6 +451,12 @@
     **лямбды в выводе** ~700 (функциональный тип явной лямбды / группы методов к `T`, тело лямбды); типы, неизвестные выше по цепочке,
     и циклы ~1 150 — не порт. Решение: дальше не по строкам журнала, а по файлам Roslyn — D6c4 целиком, затем лямбды в выводе целиком,
     затем D6c5; эхо из журнала убрать (одна строка на причину).
+  - [x] Закрытие журнала, шаг 8 (0.1.245; тест `CSharpTypingGapsTest.testAUsingStaticBringsTheExtensionMethodsOfTheType`). Почти все
+    строки `.g.cs` MudBlazor (179 из 190) — одна причина: `x.ToStr()` — расширение `StringHelpers` из `MudBlazor.Utilities`, которое проект
+    вносит глобальным `<Using Include="MudBlazor.Utilities.StringHelpers" Static="True" />`; поиск расширений шёл только по `using`
+    пространств имён. §14.5.3: `using static T` вносит и методы расширения `T` — `extensionMethodsIn(…, statics)`: библиотечные по
+    `member.type.fullName`, исходные по `declaredIn(element, qualifiedName)` (контейнеры стаба / PSI), на каждом уровне `level.statics()`.
+    Попутно: CS8019 не выдаётся в сгенерированных файлах (у Roslyn скрытая диагностика там подавлена). MudBlazor 296 → 119.
   - [x] Закрытие журнала, шаг 7 (0.1.244; тест `CSharpTypingGapsTest.testMudBlazorGapsOne`). MudBlazor 389 → 296 (исходники 167 → 105):
     тело лямбды, не связывающееся с типами параметров кандидата (`item.StartsWith` над `object` — `strictLambda.bindingFails`: обращение к
     члену получателя, все члены которого видны — библиотечный тип или непартиальный тип solution, — которое ничего не находит), — NONE, как

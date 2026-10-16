@@ -464,7 +464,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         val arguments = invocationOf(site)?.argumentList?.arguments
         var first: List<CSharpSymbol>? = null
         for (level in levels(site)) {
-            val here = extensionMethodsIn(receiver, text, arity, site, setOf(level.namespace) + level.imports)
+            val here = extensionMethodsIn(receiver, text, arity, site, setOf(level.namespace) + level.imports, level.statics())
             if (here.isEmpty()) continue
             // applicable here (or not known to be): this level; surely none: the next one out
             if (arguments == null || overloads.anyApplicable(here, arguments, true, site) != false) return pick(here, site, reduced = true)
@@ -739,24 +739,44 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
      * `this` parameter names.
      */
     internal fun extensionMethods(receiver: SemanticType, text: String, arity: Int, site: PsiElement): List<CSharpSymbol> =
-        extensionMethodsIn(receiver, text, arity, site, importedNamespaces(site))
+        extensionMethodsIn(receiver, text, arity, site, importedNamespaces(site), staticTypes(site))
 
-    /** [extensionMethods] of the static classes of the namespaces [imported] only (one level of the lookup). */
-    private fun extensionMethodsIn(receiver: SemanticType, text: String, arity: Int, site: PsiElement, imported: Set<String>): List<CSharpSymbol> {
+    /**
+     * [extensionMethods] of the static classes of the namespaces [imported] and of the types [statics] a `using static` names (§14.5.3:
+     * a `using static` brings the extension methods of the type too — MudBlazor's `<Using Include="MudBlazor.Utilities.StringHelpers"
+     * Static="True" />` is how `x.ToStr()` of every chart reaches it), one level of the lookup.
+     */
+    private fun extensionMethodsIn(receiver: SemanticType, text: String, arity: Int, site: PsiElement, imported: Set<String>, statics: List<SemanticType>): List<CSharpSymbol> {
         val found = ArrayList<CSharpSymbol>()
         val keys = LinkedHashSet<String>()
         val names = HashSet<String>()
         collectSupertypes(receiver, keys, names, 0)
         keys += AssemblyIndexSet.GENERIC_RECEIVER
+        val staticNames = statics.mapNotNull { t -> (t as? SemanticType.Library)?.type?.fullName ?: (t as? SemanticType.Source)?.info?.qualifiedName }.toSet()
         for (key in keys) for (member in session.extensions(assemblies, key)) {
-            if (member.name == text && (arity == 0 || member.arity == arity) && member.type.namespace in imported) {
+            if (member.name == text && (arity == 0 || member.arity == arity) && (member.type.namespace in imported || member.type.fullName in staticNames)) {
                 // `where TBuilder : IEndpointConventionBuilder`: not a method of a value that does not satisfy it
                 val symbol = CSharpSymbol.LibraryMember(member)
                 if (key != AssemblyIndexSet.GENERIC_RECEIVER || expressions.receiverFits(symbol, receiver)) found += symbol
             }
         }
-        for (element in sourceExtensions(text)) sourceExtension(element, arity, imported::contains, names)?.let { found += it }
+        for (element in sourceExtensions(text)) {
+            val symbol = sourceExtension(element, arity, imported::contains, names) ?: if (staticNames.any { declaredIn(element, it) }) sourceExtension(element, arity, { true }, names) else null
+            if (symbol != null) found += symbol
+        }
         return found
+    }
+
+    /** Whether the declaration [element] (a stub or the PSI) is a member of the type [qualifiedName]. */
+    private fun declaredIn(element: PsiElement, qualifiedName: String): Boolean {
+        val stub = NativeCSharpStubDeclarations.stub(element)
+        val containers = if (stub != null) NativeCSharpStubDeclarations.containers(stub).map { it.first }
+            else generateSequence(element.parent) { it.parent }.mapNotNull { when (it) {
+                is CSharpBaseTypeDeclaration -> it.identifier?.text
+                is CSharpBaseNamespaceDeclaration -> NativeCSharpResolver.compact(it.nameElement).removePrefix("global::")
+                else -> null
+            } }.toList().asReversed()
+        return containers.joinToString(".") == qualifiedName
     }
 
     /** An extension method of the solution found by name in the stub index, if it is imported where the lookup is and may take a receiver of [names]. */
