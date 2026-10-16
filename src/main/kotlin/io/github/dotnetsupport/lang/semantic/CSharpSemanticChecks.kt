@@ -841,20 +841,30 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
         // target-typed: a switch expression converts arm by arm; `?:` with a natural type (both branches of one type) converts by it, as Roslyn
         if (value is CSharpSwitchExpression) return value.arms.forEach { arm -> arm.expression?.let { checkConversion(it, target) } }
         if (value is CSharpConditionalExpression) return checkConditional(value, target)
+        conversionProblem(expression, target)?.let { (code, message) -> report(code, message, expression.textRange) }
+    }
+
+    /**
+     * CS0029 / CS0266 with its message when [expression] (not a switch or a conditional: they convert by their parts) surely does not convert
+     * to [target]; null when it converts or that is not known. Also the returned values of a lambda ([CSharpOverloadChecks], CS1662).
+     */
+    internal fun conversionProblem(expression: CSharpExpression, target: SemanticType): Pair<String, String>? {
+        val value = unparenthesized(expression)
+        if (value is CSharpSwitchExpression || value is CSharpConditionalExpression) return null
         // `$"…"` converts to `string`, `IFormattable`, `FormattableString` and handler types only: to a number, `char` or `bool` it is a `string`
         if (value is CSharpInterpolatedStringExpression) {
-            if ((target as? SemanticType.Library)?.let(::special).let { it == null || it == STRING }) return
-            val to = CSharpTypeDisplay.display(target) ?: return
-            return report("CS0029", "Cannot implicitly convert type 'string' to '$to'", expression.textRange)
+            if ((target as? SemanticType.Library)?.let(::special).let { it == null || it == STRING }) return null
+            val to = CSharpTypeDisplay.display(target) ?: return null
+            return "CS0029" to "Cannot implicitly convert type 'string' to '$to'"
         }
-        if (isTargetTyped(value)) return
-        val source = resolver.typeOf(value) ?: return
-        val code = conversionError(source, target, value) ?: "CS0029".takeIf { noConversion(value, source, target) } ?: return
-        val from = CSharpTypeDisplay.display(source) ?: return
-        val to = CSharpTypeDisplay.display(target) ?: return
-        if (from == to) return
-        if (code == "CS0266") report(code, "Cannot implicitly convert type '$from' to '$to'. An explicit conversion exists (are you missing a cast?)", expression.textRange)
-        else report(code, "Cannot implicitly convert type '$from' to '$to'", expression.textRange)
+        if (isTargetTyped(value)) return null
+        val source = resolver.typeOf(value) ?: return null
+        val code = conversionError(source, target, value) ?: "CS0029".takeIf { noConversion(value, source, target) } ?: return null
+        val from = CSharpTypeDisplay.display(source) ?: return null
+        val to = CSharpTypeDisplay.display(target) ?: return null
+        if (from == to) return null
+        return if (code == "CS0266") code to "Cannot implicitly convert type '$from' to '$to'. An explicit conversion exists (are you missing a cast?)"
+        else code to "Cannot implicitly convert type '$from' to '$to'"
     }
 
     private fun checkConditional(conditional: CSharpConditionalExpression, target: SemanticType) {

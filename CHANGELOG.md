@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.219
+
+- A lambda whose body returns a value of the wrong type for its delegate is an error, as the compiler reports it: «Cannot implicitly
+  convert type 'int' to 'string'» (CS0029, CS0266 when a cast would do) and CS1662 on the returned value — `Label(x => x.Severity)`
+  for a `Func<Alert, string>`, also when the parameter's type comes from the call itself.
+
 ## 0.1.218
 
 - The C# analysis checks a lambda passed to an overload against that overload's delegate with the parameter types the delegate gives

@@ -515,7 +515,37 @@ internal class CSharpOverloadChecks(private val checks: CSharpSemanticChecks, pr
         if (written != null && written.isNotEmpty() && written.all { it.type != null }) {
             if (!checkParameterTypes(written, delegate.first, kinds, kind, shown, at)) return
         }
+        checkReturnedValues(lambda, written, delegate, kind)
         if (place == null) checkPaths(lambda, delegate.second, kind, shown, arrow)
+    }
+
+    /**
+     * CS0029 / CS0266 + CS1662 for a value the body returns that surely does not convert to what the delegate returns, as Roslyn reports a
+     * body bound for its delegate — `Label(x => x.Severity)` for a `Func<Alert, string>` (D6c2): the body is bound with the delegate's parameter
+     * types ([CSharpNameResolver.bindLambda]); an async lambda and a delegate whose return type is open are left alone.
+     */
+    private fun checkReturnedValues(lambda: CSharpAnonymousFunctionExpression, written: List<CSharpParameter>?, delegate: Pair<List<SemanticType?>, SemanticType?>, kind: String) {
+        if (r.expressions.isAsync(lambda.modifiers)) return
+        val returns = delegate.second ?: return
+        if (r.definitionName(returns) == "System.Void" || mentionsTypeParameter(returns)) return
+        val values = lambda.expressionBody?.let(::listOf) ?: lambda.block?.let { block ->
+            PsiTreeUtil.findChildrenOfType(block, CSharpReturnStatement::class.java)
+                .filter { PsiTreeUtil.getParentOfType(it, CSharpAnonymousFunctionExpression::class.java, CSharpLocalFunctionStatement::class.java) == lambda }
+                .mapNotNull { it.expression }
+        } ?: return
+        if (values.isEmpty()) return
+        val problems = { values.mapNotNull { value -> checks.conversionProblem(value, returns)?.let { value to it } } }
+        val implicit = written?.takeIf { ps -> ps.isNotEmpty() && ps.all { it.type == null } }
+        val found = if (implicit == null) problems() else try {
+            r.bindLambda(lambda, implicit, delegate.first.map { it ?: return }, problems)
+        } catch (e: io.github.dotnetsupport.lang.semantic.roslyn.RoslynMethodTypeInferrer.Unknown) {
+            SemanticTrace.trace { "CS1662 at ${SemanticTrace.at(lambda)}: the body is not known — ${e.describe()}" }
+            return
+        }
+        for ((value, problem) in found) {
+            checks.report(problem.first, problem.second, value.textRange)
+            checks.report("CS1662", "Cannot convert $kind to intended delegate type because some of the return types in the block are not implicitly convertible to the delegate return type", value.textRange)
+        }
     }
 
     /** CS1676 / CS1677 for each parameter whose `ref` kind is not the delegate's; false when something said or not known. */

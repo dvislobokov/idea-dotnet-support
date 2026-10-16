@@ -730,7 +730,8 @@
     пользователя 2026-10-16; настройки страницы Language Server читает и сам плагин без сервера); харнесс у себя этот фоновый проход
     выключает — рядом с ним журнал менялся от прогона к прогону; 0.1.213 — D6c1: соответствие аргументов параметрам — порт Roslyn
     (`roslyn/RoslynArgsToParameters`), `M(x: 1234)` для `params int[] x` применим, как в компиляторе; 0.1.218 — D6c2b: строгая
-    проверка «лямбда → делегат» привязывает тело к параметрам делегата кандидата (журнал MudBlazor 15 721 → 9 279). CS8933 «using appeared previously as global using» —
+    проверка «лямбда → делегат» привязывает тело к параметрам делегата кандидата (журнал MudBlazor 15 721 → 9 279); 0.1.219 —
+    CS0029 / CS0266 + CS1662 на значении, которое тело лямбды возвращает не того типа (`plugin-lambda-to-delegate.cs`: 4 из 4). CS8933 «using appeared previously as global using» —
     серым, как CS8019 и IDE0005 (у Roslyn скрытая подсказка, IDE показывают её так же), не ошибка. Тесты `RazorCorpusFalseErrorsTest`, `RoslynTypesTest`, `RoslynMethodTypeInferenceTest`
   - [x] F0 (2026-10-15, без версии: пользователю не видно) — фреймворки модулями рядом с ядром C#: точка расширения `csharpCodeGenerators`, модули `frameworks.razor` / `xaml` / `avalonia` / `grpc` вместо списков в `mayGenerateTypes`; тесты `CSharpCodeGeneratorsTest` (старая формула против новой), `FrameworkBoundaryTest`
 
