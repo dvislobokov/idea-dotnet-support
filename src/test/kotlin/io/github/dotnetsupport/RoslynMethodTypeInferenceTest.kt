@@ -157,6 +157,35 @@ class RoslynMethodTypeInferenceTest : BasePlatformTestCase() {
         assertEmpty(log.filter { it.startsWith("inference Pick") })
     }
 
+    /**
+     * A collection expression bounds the type parameter through the element type of its target (`MakeCollectionExpressionTypeInferences`):
+     * its elements and the element types of its spreads; an empty one infers nothing (CS0411 alone). It was a refusal (D6e3, 492 lines).
+     */
+    fun testACollectionExpressionInfersFromItsElements() {
+        val (found, log) = io.github.dotnetsupport.lang.semantic.SemanticTrace.collectForTests {
+            errors("""
+                using System.Collections.Generic;
+                class C
+                {
+                    static List<T> Make<T>(IEnumerable<T> items) => new();
+                    static T First<T>(T[] items) => items[0];
+                    void M(List<int> more)
+                    {
+                        List<int> a = Make([1, 2]);
+                        int b = First([1, 2, ..more]);
+                        string c = First([1, 2]);
+                        var d = Make([]);
+                    }
+                }
+            """)
+        }
+        assertEquals(listOf(
+            "10: First([1, 2]) -> CS0029: Cannot implicitly convert type 'int' to 'string'",
+            "11: Make -> CS0411: The type arguments for method 'C.Make<T>(IEnumerable<T>)' cannot be inferred from the usage. Try specifying the type arguments explicitly.",
+        ), found)
+        assertEmpty(log.filter { it.startsWith("inference") })
+    }
+
     fun testUpperBoundThroughAContravariantInterface() {
         // IComparer<in T>: IComparer<object> gives T an upper bound object, "s" a lower bound string — T is string
         assertEmpty(errors("""

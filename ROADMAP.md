@@ -723,7 +723,8 @@
     привязывается с типами параметров кандидата, как в Roslyn (bUnit `parameters.Add(x => x.Severity, …)` выводится, а не «не знаю»); 0.1.207 — лямбда с неявными параметрами к не-делегату
     ничего не выводит, а не обрывает вывод (`ToDictionary(k => k.Id, v => v)`; отказов в журнале харнесса: SberEmp 453 → 258); 0.1.208 — разбор аргументов вывода по
     файлам конструкций (`lang/semantic/inference/`), поведение то же; 0.1.209 — `new()`, `throw` и условное без типа ничего не
-    выводят, а не обрывают вывод (как Roslyn: не `IsReallyAType`). CS8933 «using appeared previously as global using» —
+    выводят, а не обрывают вывод (как Roslyn: не `IsReallyAType`); 0.1.210 — коллекции `[...]` выводятся по элементам и `..spread`
+    против типа элемента цели (`inference/CollectionArgument.kt`, `MakeCollectionExpressionTypeInferences`); `Make([])` — CS0411, как у Roslyn. CS8933 «using appeared previously as global using» —
     серым, как CS8019 и IDE0005 (у Roslyn скрытая подсказка, IDE показывают её так же), не ошибка. Тесты `RazorCorpusFalseErrorsTest`, `RoslynTypesTest`, `RoslynMethodTypeInferenceTest`
   - [x] F0 (2026-10-15, без версии: пользователю не видно) — фреймворки модулями рядом с ядром C#: точка расширения `csharpCodeGenerators`, модули `frameworks.razor` / `xaml` / `avalonia` / `grpc` вместо списков в `mayGenerateTypes`; тесты `CSharpCodeGeneratorsTest` (старая формула против новой), `FrameworkBoundaryTest`
 

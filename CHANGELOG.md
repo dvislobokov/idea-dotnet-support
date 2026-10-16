@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.210
+
+- The C# analysis infers a generic call from a collection expression argument, as the compiler does: `First([1, 2])` with
+  `T First<T>(T[] items)` is `int`, spreads included (`[1, ..more]`); an empty `[]` infers nothing, so `Make([])` is CS0411. Errors
+  such calls hid before are now reported.
+
 ## 0.1.209
 
 - The C# analysis infers a generic call that has a target-typed `new()` among its arguments from the other arguments, as the compiler

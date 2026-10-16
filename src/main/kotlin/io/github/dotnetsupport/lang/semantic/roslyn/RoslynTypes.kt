@@ -99,6 +99,9 @@ internal class RoslynTypes(private val r: CSharpNameResolver) {
         return arguments.take(7) + rest
     }
 
+    /** `TryGetCollectionIterationType` of a target type: what `foreach` over it gives (arrays, spans, `IEnumerable<T>`, the pattern); null when not known. */
+    fun collectionIterationType(type: SemanticType): SemanticType? = r.elementType(type)
+
     // ---- named types: definition, arguments, variance
 
     /** The definition a constructed type comes from (`OriginalDefinition`), as a name: `System.Collections.Generic.List\`1`. */

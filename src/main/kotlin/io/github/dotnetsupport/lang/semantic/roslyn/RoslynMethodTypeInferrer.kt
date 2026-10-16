@@ -30,7 +30,16 @@ internal sealed class InferenceArgument {
     /** `BoundTupleLiteral`: its elements, [type] its natural type when every element has one. */
     class Tuple(val type: SemanticType?, val elements: List<InferenceArgument>) : InferenceArgument()
 
-    /** An argument the inference does not model (a collection expression, a target-typed `new()`): an inference that needs it is unknown. */
+    /** `BoundUnconvertedCollectionExpression`: its elements, an expression as the argument it is, a spread `..x` by the element type of `x`. */
+    class Collection(val elements: List<CollectionElement>) : InferenceArgument()
+
+    sealed class CollectionElement {
+        class Expression(val argument: InferenceArgument) : CollectionElement()
+        /** `BoundCollectionExpressionSpreadElement`: [elementType] what `foreach` over the spread value gives (its `EnumeratorInfoOpt`). */
+        class Spread(val elementType: SemanticType?) : CollectionElement()
+    }
+
+    /** An argument the inference does not model: an inference that needs it is unknown. */
     object Opaque : InferenceArgument()
 }
 
@@ -181,9 +190,34 @@ internal class RoslynMethodTypeInferrer(
             is InferenceArgument.Tuple -> if (!makeExplicitParameterTypeInferences(argument, target, kind)) {
                 argument.type?.let { exactOrBoundsInference(kind, it, target) } ?: run { if (containsAnyMethodTypeParameter(target)) throw Unknown() }
             }
+            is InferenceArgument.Collection -> makeCollectionExpressionTypeInferences(argument, target, kind)
             is InferenceArgument.Typed -> argument.type?.let { if (isReallyAType(it)) exactOrBoundsInference(kind, it, target) }
-            InferenceArgument.Opaque -> if (containsAnyMethodTypeParameter(target)) throw Unknown("an argument the inference does not model (a collection expression, `new()`, `throw`) to ${SemanticTrace.show(target)}")
+            InferenceArgument.Opaque -> if (containsAnyMethodTypeParameter(target)) throw Unknown("an argument the inference does not model to ${SemanticTrace.show(target)}")
         }
+    }
+
+    /** `MakeCollectionExpressionTypeInferences`: each element against the iteration type of the target; none for an empty collection. */
+    private fun makeCollectionExpressionTypeInferences(argument: InferenceArgument.Collection, target: SemanticType, kind: ExactOrBoundsKind) {
+        if (argument.elements.isEmpty()) return
+        val targetElementType = collectionIterationType(target) ?: return
+        for (element in argument.elements) when (element) {
+            is InferenceArgument.CollectionElement.Spread -> makeSpreadElementTypeInferences(element, targetElementType)
+            is InferenceArgument.CollectionElement.Expression -> makeExplicitParameterTypeInferences(element.argument, targetElementType, kind)
+        }
+    }
+
+    /** `MakeSpreadElementTypeInferences`: the element type of the spread value is a lower bound of the target's. */
+    private fun makeSpreadElementTypeInferences(argument: InferenceArgument.CollectionElement.Spread, target: SemanticType) {
+        lowerBoundInference(argument.elementType ?: return, target)
+    }
+
+    /**
+     * `TryGetCollectionIterationType`: null when [target] is no collection type — a type parameter of the method (a collection expression
+     * has no type to bound it with); a refusal when the type is one whose element type is not known.
+     */
+    private fun collectionIterationType(target: SemanticType): SemanticType? {
+        if (target is SemanticType.Parameter) return null
+        return types.collectionIterationType(target) ?: throw Unknown("the element type of ${SemanticTrace.show(target)} for a collection expression is not known")
     }
 
     /** A tuple literal to a tuple type of its cardinality: element by element; false when the target is no such tuple. */
@@ -227,6 +261,11 @@ internal class RoslynMethodTypeInferrer(
         if (argument is InferenceArgument.Tuple && argument.type == null) {
             val destTypes = types.tupleElementTypes(formalType)?.takeIf { it.size == argument.elements.size } ?: return
             for (i in argument.elements.indices) makeOutputTypeInferences(argument.elements[i], destTypes[i] ?: throw Unknown())
+        } else if (argument is InferenceArgument.Collection) {
+            // `MakeOutputTypeInferences(BoundUnconvertedCollectionExpression)`: the expression elements against the iteration type
+            if (argument.elements.isEmpty()) return
+            val targetElementType = collectionIterationType(formalType) ?: return
+            for (element in argument.elements) if (element is InferenceArgument.CollectionElement.Expression) makeOutputTypeInferences(element.argument, targetElementType)
         } else if (hasUnfixedParamInOutputType(argument, formalType) && !hasUnfixedParamInInputType(argument, formalType)) {
             outputTypeInference(argument, formalType)
         }
