@@ -123,7 +123,7 @@ object NativeCSharpParameterInfo {
     /** What the receiver and the arguments written so far fix of a generic method's type parameters: `Func<Order, bool> predicate`, not `Func<TSource, bool>`. */
     private fun methodArguments(symbol: CSharpSymbol, call: CSharpInvocationExpression, callee: CSharpSimpleName?, resolver: CSharpNameResolver): List<SemanticType?> {
         if (callee == null || symbol !is CSharpSymbol.LibraryMember || symbol.member.arity == 0) return emptyList()
-        return runCatching { resolver.expressions.typeArguments(symbol, call, callee, withLambdas = false) }.getOrDefault(emptyList())
+        return runCatching { resolver.expressions.typeArguments(symbol, call, callee, partial = true) }.getOrDefault(emptyList())
     }
 
     private fun callee(call: CSharpInvocationExpression): CSharpSimpleName? = when (val expression = call.expression) {

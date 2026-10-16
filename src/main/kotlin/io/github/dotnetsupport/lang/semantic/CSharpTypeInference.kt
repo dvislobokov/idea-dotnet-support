@@ -35,21 +35,30 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
         // a call inside a lambda being bound for a candidate is answered for that binding only (the types of its arguments depend on it)
         val answers = r.cacheFor(call ?: site, this.answers)
         answers[key]?.let { cached ->
-            if (cached is Inferred.Known && onFixed != null) cached.types.forEachIndexed { i, type -> onFixed(i, type) }
-            return cached
+            // what the run fixed before it ended, told again: the asker's partial answer (a lambda's parameter typed through the call) is the same
+            if (onFixed != null) cached.fixed.forEachIndexed { i, type -> if (type != null) onFixed(i, type) }
+            return cached.result
         }
         val before = r.cycleCount
         val where = { "inference ${site?.text ?: SemanticTrace.show(symbol)}${if (lenient) " (lenient)" else ""} at ${SemanticTrace.at(call ?: site)}" }
+        val partial = arrayOfNulls<SemanticType>(r.expressions.methodArity(symbol))
+        val hear: (Int, SemanticType) -> Unit = { i, type ->
+            if (i in partial.indices) partial[i] = type
+            onFixed?.invoke(i, type)
+        }
         // Failed is a decision (the candidate does not apply, as in Roslyn), Unknown is a refusal: only the latter goes to the log
         val result = try {
-            inferOrThrow(symbol, targets, arguments, receiver, call, site, lenient, onFixed)
+            inferOrThrow(symbol, targets, arguments, receiver, call, site, lenient, hear)
         } catch (e: RoslynMethodTypeInferrer.Unknown) {
             SemanticTrace.trace { "${where()}: Unknown — ${e.describe()}" }
             Inferred.Unknown
         }
-        if (r.cycleCount == before) answers[key] = result
+        if (r.cycleCount == before) answers[key] = Answer(result, partial.toList())
         return result
     }
+
+    /** An answer kept: the result, and what the run had fixed when it ended (all of it for a [Inferred.Known]). */
+    private class Answer(val result: Inferred, val fixed: List<SemanticType?>)
 
     /** A question of [infer], by what it is asked with: the types by their [fingerprint] (they compare by identity, and are made anew per ask). */
     private data class Key(
@@ -66,7 +75,7 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
         is SemanticType.Parameter -> listOf(type.name, type.owner, type.index, type.ofMethod)
     }
 
-    private val answers = HashMap<Key, Inferred>()
+    private val answers = HashMap<Key, Answer>()
 
     private fun inferOrThrow(
         symbol: CSharpSymbol, targets: List<SemanticType?>, arguments: List<CSharpArgument>, receiver: Pair<SemanticType, SemanticType?>?, call: CSharpInvocationExpression?,
@@ -126,12 +135,12 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
      * parameter types, the receiver of a reduced extension method first), [formal] the declared parameter types they go to. Not cached:
      * asked once per candidate of a conversion.
      */
-    fun inferFromTypes(symbol: CSharpSymbol, formal: List<SemanticType?>, argumentTypes: List<SemanticType>): Inferred {
+    fun inferFromTypes(symbol: CSharpSymbol, formal: List<SemanticType?>, argumentTypes: List<SemanticType>, onFixed: ((Int, SemanticType) -> Unit)? = null): Inferred {
         val arity = r.expressions.methodArity(symbol)
         if (arity == 0) return Inferred.Known(emptyList())
         val arguments = argumentTypes.map { InferenceArgument.Typed(it) }
         return try {
-            when (val result = RoslynMethodTypeInferrer(RoslynTypes(r), arity, ordinalOf(symbol, arity), formal, formal.map { false }, arguments).infer()) {
+            when (val result = RoslynMethodTypeInferrer(RoslynTypes(r), arity, ordinalOf(symbol, arity), formal, formal.map { false }, arguments, onFixed = onFixed).infer()) {
                 is RoslynMethodTypeInferrer.Result.Known -> Inferred.Known(result.types, result.fromFunctionType)
                 RoslynMethodTypeInferrer.Result.Failed -> Inferred.Failed
                 is RoslynMethodTypeInferrer.Result.Unknown -> throw RoslynMethodTypeInferrer.Unknown(result.reason)

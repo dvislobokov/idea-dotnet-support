@@ -191,15 +191,10 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         val known = cacheFor(name, names)
         if (known.containsKey(name)) return known[name]
         var result = answer("name", name, names, onCycle = { null }) { compute(name)?.takeIf { it.isNotEmpty() }?.distinct()?.let(::CSharpResolution) }
-        // overloads a lambda argument tells apart: with the candidates known, the lambdas' parameters are typed, then their bodies
+        // overloads a lambda argument tells apart: with the candidates known (no cycle on the name any more), the overload resolution binds
+        // the lambdas for each candidate and may tell the rest apart
         if (result != null && result.symbols.size > 1) {
-            val refined = expressions.refineByLambdas(name, result.symbols)
-            if (refined.size < result.symbols.size) {
-                result = CSharpResolution(refined)
-                known[name] = result
-            }
-            // the lambdas' bodies typed, the better function member may tell the rest apart (task D1)
-            if (result.symbols.size > 1) {
+            run {
                 val call = invocationOf(name)
                 if (call != null && call.argumentList?.arguments.orEmpty().any { it.expression is CSharpAnonymousFunctionExpression }) {
                     val reduced = expressions.receiver(name) != null
@@ -795,39 +790,12 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         if (constructors.size == 1) constructors.single() else pickByArguments(constructors, arguments, false, constructors, null).singleOrNull()
 
     private fun pickByArguments(receiving: List<CSharpSymbol>, arguments: List<CSharpArgument>, reduced: Boolean, candidates: List<CSharpSymbol>, site: CSharpSimpleName?): List<CSharpSymbol> {
-        // C# §12.6.4: the applicable candidates and the better function member, when everything it needs is known (task D1)
+        // C# §12.6.4, as Roslyn: the applicable candidates and the better function member (CSharpOverloads, D6c); when that is not known,
+        // the candidates that take as many arguments stay — nothing is scored any more (D6c5)
         overloads.resolve(receiving, arguments, reduced, site)?.let { return listOf(it) }
-        val signatures = receiving.map { it to signature(it, reduced && isExtension(it)) }
-        val fitting = signatures.filter { (_, s) -> s != null && fits(s, arguments) }
-        if (fitting.size == 1) return listOf(fitting.single().first)
-        val pool = fitting.ifEmpty { return candidates }
-        val argumentTypes = arguments.map { argument -> argument.expression?.let(::typeOfArgument) }
-        var best = -1
-        val scored = ArrayList<Triple<CSharpSymbol, List<Parameter>, Int>>()
-        for ((symbol, signature) in pool) {
-            val score = score(signature!!, arguments, argumentTypes, (symbol as? CSharpSymbol.SourceMember)?.element) ?: continue
-            scored += Triple(symbol, signature, score)
-            if (score > best) best = score
-        }
-        // `[OverloadResolutionPriority(n)]` removes the candidates of lower priority before anything else. The index does not keep n; the
-        // libraries use it to step aside (-1: `Debug.Assert(bool)` for the overload with the caller's expression, `Span` overloads of
-        // `MemoryExtensions` for the `ReadOnlySpan` ones), so a candidate with it loses to any other
-        if (scored.size > 1 && scored.any { (symbol, _, _) -> hasPriority(symbol) } && scored.any { (symbol, _, _) -> !hasPriority(symbol) }) {
-            scored.removeAll { (symbol, _, _) -> hasPriority(symbol) }
-            best = scored.maxOf { it.third }
-        }
-        var top = scored.filter { it.third == best }
-        // C# §12.6.4.3, the tie-breaks of the better function member: the normal form over the expanded one (no `params`, no default left
-        // out), a method that is not generic over a generic one — when the types of all arguments are known, else the tie may be none
-        if (top.size > 1 && argumentTypes.any { it == null }) return scored.map { it.first }
-        if (top.size > 1) top.filter { (_, s, _) -> s.size == arguments.size && s.lastOrNull()?.isParams != true }.takeIf { it.isNotEmpty() }?.let { top = it }
-        if (top.size > 1) top.filter { (symbol, _, _) -> !isGeneric(symbol) }.takeIf { it.isNotEmpty() }?.let { top = it }
-        if (top.size > 1) top.filter { (_, s, _) -> s.size == arguments.size }.takeIf { it.isNotEmpty() }?.let { top = it }
-        return if (top.size == 1) listOf(top.single().first) else if (scored.isNotEmpty()) scored.map { it.first } else pool.map { it.first }
+        val fitting = receiving.filter { signature(it, reduced && isExtension(it))?.let { s -> fits(s, arguments) } ?: true }
+        return fitting.ifEmpty { candidates }
     }
-
-    private fun hasPriority(symbol: CSharpSymbol): Boolean =
-        symbol is CSharpSymbol.LibraryMember && symbol.member.attributes.any { it == "System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute" }
 
     internal fun isGeneric(symbol: CSharpSymbol): Boolean = when (symbol) {
         is CSharpSymbol.LibraryMember -> symbol.member.arity > 0
@@ -912,67 +880,9 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         return count >= required && (count <= parameters.size || variadic)
     }
 
-    /** How well the known argument types fit: 2 per identical type, 1 per a conversion that is surely there; null when one surely does not fit. */
-    private fun score(parameters: List<Parameter>, arguments: List<CSharpArgument>, types: List<SemanticType?>, owner: PsiElement?): Int? {
-        var score = 0
-        for ((i, argument) in arguments.withIndex()) {
-            val name = argument.nameColon?.nameElement?.identifier?.text
-            val parameter = (if (name != null) parameters.firstOrNull { it.name == name } else parameters.getOrNull(i) ?: parameters.lastOrNull()) ?: return null
-            val argumentType = types[i]
-            if (argument.expression?.elementType == SyntaxKind.NullLiteralExpression) {
-                val p = parameter.type() ?: continue
-                if (isValueType(p) && !isNullable(p)) return null
-                continue
-            }
-            val lambda = argument.expression as? CSharpAnonymousFunctionExpression
-            if (lambda != null) {
-                // `Select(x => ...)` or `Select((x, i) => ...)`: the number of the lambda's parameters picks the delegate
-                val p = parameter.type() ?: continue
-                if (!expressions.lambdaFits(lambda, p, typeBody = expressions.lambdaParameterCount(lambda) == 0)) return null
-                continue
-            }
-            if (argumentType == null) continue
-            var p = parameter.type() ?: continue
-            if (parameter.isParams && i >= parameters.size - 1 && p is SemanticType.ArrayOf && !(argumentType is SemanticType.ArrayOf)) p = p.element ?: continue
-            // a type parameter of the method is inferred from the argument: identity
-            // (only the candidate's own: a type parameter of the method the call is in is a type like any other)
-            val conversion = if (p is SemanticType.Parameter && p.ofMethod && (p.owner == null || p.owner == owner)) Conversion.IDENTITY else simpleConversion(argumentType, p)
-            // `ref` / `out` take a variable of the very type
-            if (parameter.byRef && conversion == Conversion.IMPLICIT) return null
-            score += when (conversion) {
-                Conversion.IDENTITY -> 2
-                Conversion.IMPLICIT -> 1
-                Conversion.UNKNOWN -> 0
-                Conversion.NONE -> return null
-            }
-        }
-        return score
-    }
-
     internal enum class Conversion { IDENTITY, IMPLICIT, UNKNOWN, NONE }
 
     internal fun conversion(from: SemanticType, to: SemanticType): Conversion = overloads.classify(from, to)
-
-    /** The conversion of layer 11a/11b before task D1: what the scoring of [pickByArguments] was tuned on. */
-    private fun simpleConversion(from: SemanticType, to: SemanticType): Conversion {
-        if (to is SemanticType.Parameter || from is SemanticType.Parameter) return Conversion.UNKNOWN
-        val fromName = definitionName(from)
-        val toName = definitionName(to)
-        if (fromName != null && fromName == toName) return Conversion.IDENTITY
-        if (toName == OBJECT) return Conversion.IMPLICIT
-        if (fromName != null && toName != null) {
-            NUMERIC_CONVERSIONS[fromName]?.let { targets -> if (toName in targets) return Conversion.IMPLICIT }
-            if (toName == "System.Nullable`1") return (to as? SemanticType.Library)?.arguments?.firstOrNull()?.let { simpleConversion(from, it) }?.let { if (it == Conversion.IDENTITY) Conversion.IMPLICIT else it } ?: Conversion.UNKNOWN
-            val keys = HashSet<String>()
-            collectSupertypes(from, keys, HashSet(), 0)
-            if (toName in keys) return Conversion.IMPLICIT
-            // what converts from a primitive or a string to what it does not derive from: nothing, unless a user conversion (rare in the libraries)
-            if (fromName in PRIMITIVES && (toName in PRIMITIVES || (to is SemanticType.Library && !hasImplicitConversions(to.type)))) return Conversion.NONE
-        }
-        return Conversion.UNKNOWN
-    }
-
-    private fun hasImplicitConversions(type: IndexedType): Boolean = type.members.any { it.name == "op_Implicit" }
 
     internal fun definitionName(type: SemanticType): String? = when (type) {
         is SemanticType.Library -> type.type.fullName
@@ -1007,14 +917,6 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
     }
 
     internal fun isNullable(type: SemanticType): Boolean = type is SemanticType.Library && type.type.fullName == "System.Nullable`1"
-
-    /** The type of an argument for overload resolution: a lambda or a method group says nothing here. */
-    private fun typeOfArgument(expression: CSharpExpression): SemanticType? = when {
-        expression is CSharpAnonymousFunctionExpression -> null
-        // `out var x` is typed by the parameter the overload resolution is choosing
-        expression is CSharpDeclarationExpression && expression.type?.let(::isVar) != false -> null
-        else -> typeOf(expression)
-    }
 
     internal fun invocationOf(site: CSharpSimpleName): CSharpInvocationExpression? {
         var expression: PsiElement = site

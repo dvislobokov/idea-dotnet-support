@@ -232,6 +232,8 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         try {
             // the applicability of each candidate as the compiler errors judge it (D6c3): Roslyn's inference, the port's conversions
             val applicable = ArrayList<Form>()
+            val bad = ArrayList<Outcome.Bad>()
+            val unknown = ArrayList<CSharpSymbol>()
             for (symbol in candidates) {
                 val isReduced = reduced && r.isExtension(symbol)
                 val outcome = evaluate(symbol, isReduced, receiver, arguments, candidates, written, site) { targets, self ->
@@ -240,12 +242,18 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                 when (outcome) {
                     is Outcome.Applicable -> applicable += outcome.form
                     // the `applicable` line of evaluate says why: no echo here
-                    Outcome.Unknown -> return null
+                    Outcome.Unknown -> unknown += symbol
+                    is Outcome.Bad -> bad += outcome
                     else -> {}
                 }
             }
+            // a candidate not known beside applicable ones: no telling; alone among candidates that surely do not apply, it is the call
+            // (`Select(x => x.Nope)`: the body of the lambda is not known, the overload with the index never takes a one-parameter lambda)
+            if (unknown.isNotEmpty()) return if (applicable.isEmpty() && unknown.size == 1) unknown.single() else null
             if (applicable.size == 1) return applicable.single().symbol
-            if (applicable.isEmpty()) return null
+            // no candidate applies: the call is the one whose lambdas bind to its delegates with their errors (`Select(x => { if (…) return 1; })`
+            // is the `Func<T, R>` overload with CS1643, never the `Func<T, int, R>` one) — the failed candidate Roslyn reports and navigates to
+            if (applicable.isEmpty()) return bad.filter { b -> b.bad.all { i -> lambdaBindsTo(arguments[i], b.form.targets[i]) } }.singleOrNull()?.form?.symbol
             // §12.8.10.3: the extension methods are candidates only when no instance method applies (Roslyn looks them up only then)
             if (applicable.any { it.receiverTarget == null } && applicable.any { it.receiverTarget != null }) applicable.removeAll { it.receiverTarget != null }
             if (applicable.size == 1) return applicable.single().symbol
@@ -270,6 +278,14 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         } finally {
             openOwners -= owners.toSet()
         }
+    }
+
+    /** [argument] is a lambda and [target] a delegate type with as many parameters: the lambda binds to it, with the errors of its body. */
+    private fun lambdaBindsTo(argument: CSharpArgument, target: SemanticType?): Boolean {
+        val lambda = argument.expression as? CSharpAnonymousFunctionExpression ?: return false
+        val delegate = target?.let(r.expressions::unwrapExpression)?.let(r.expressions::delegateSignature) ?: return false
+        val count = r.expressions.lambdaParameterCount(lambda) ?: return true
+        return count == delegate.first.size
     }
 
     /**

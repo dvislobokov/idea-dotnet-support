@@ -160,17 +160,32 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
         if (onlyFile != null) report.append("# only: $onlyFile\n")
         // the debug log of the semantics (SemanticTrace) of the pass, its distinct lines beside the report: where the analysis gave up, the
         // measure of D6e3 (each port that replaces an old path must not add lines)
+        // the other side of the trace (D6c5): of the calls in the sources, how many resolve to one method and have a type — what the deleted
+        // old inference used to guess; a port that loses them loses navigation and completion there
+        var calls = 0
+        var resolved = 0
+        var typed = 0
         val (_, trace) = io.github.dotnetsupport.lang.semantic.SemanticTrace.collectForTests {
             for (path in files.keys.sorted()) {
                 if (onlyFile != null && path != control && !path.endsWith(onlyFile)) continue
                 val file = files[path]!!
                 val text = file.text
-                for (p in CSharpSemanticChecks(CSharpSemanticSession(project).resolver(file)).run().filter { !it.warning }.sortedBy { it.range.startOffset }) {
+                val resolver = CSharpSemanticSession(project).resolver(file)
+                for (p in CSharpSemanticChecks(resolver).run().filter { !it.warning }.sortedBy { it.range.startOffset }) {
                     val line = text.substring(0, p.range.startOffset).count { it == '\n' } + 1
                     report.append("$path:$line ${p.code} [${text.substring(p.range.startOffset, p.range.endOffset).take(40)}] ${p.message.take(160)}\n")
                 }
+                if (path in generatedPaths || path == control) continue
+                for (call in com.intellij.psi.util.PsiTreeUtil.findChildrenOfType(file, io.github.dotnetsupport.csharp.lang.psi.CSharpInvocationExpression::class.java)) {
+                    val callee = call.expression as? io.github.dotnetsupport.csharp.lang.psi.CSharpSimpleName
+                        ?: (call.expression as? io.github.dotnetsupport.csharp.lang.psi.CSharpMemberAccessExpression)?.nameElement ?: continue
+                    calls++
+                    if (resolver.resolveName(callee)?.symbols?.size == 1) resolved++
+                    if (resolver.typeOf(call) != null) typed++
+                }
             }
         }
+        report.append("# calls: $calls in the sources, resolved to one method $resolved, with a type $typed\n")
         val traced = trace.distinct().sorted()
         File(out.parentFile, out.nameWithoutExtension + ".trace.txt").apply { parentFile?.mkdirs() }.writeText(traced.joinToString("\n", postfix = "\n"))
         report.append("# trace: ${traced.size} distinct lines — ${traced.groupingBy { it.substringBefore(' ') }.eachCount().entries.sortedByDescending { it.value }.joinToString { "${it.key} ${it.value}" }}\n")

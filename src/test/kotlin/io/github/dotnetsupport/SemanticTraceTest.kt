@@ -66,7 +66,8 @@ class SemanticTraceTest : BasePlatformTestCase() {
             }
         """)
         assertLine(lines, "inference Pick", "Unknown")
-        assertLine(lines, "typeArguments Pick", "the simple one answers")
+        // D6c5: nothing guesses what the inference does not know — no second line for the same call
+        assertEmpty(lines.filter { it.startsWith("typeArguments Pick") })
     }
 
     fun testNothingIsBuiltWhenTheLogIsOff() {

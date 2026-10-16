@@ -256,12 +256,13 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
     }
 
     /**
-     * The type arguments of a call of the generic method [symbol]: written, or inferred (C# §12.6.3, the simple part): each argument of a
-     * known type fixes what the type parameters of its parameter's type stand for — through the base types and interfaces of the argument
-     * (`List<Order>` for `IEnumerable<TSource>`); then each lambda, its parameters typed by what is fixed so far, fixes the rest by the type of
-     * its body (`Select(o => o.Name)`). While a lambda's body is typed, the arguments fixed so far are what its parameters see.
+     * The type arguments of a call of the generic method [symbol]: written, or inferred by Roslyn's method type inference (CSHARP_PSI_MIGRATION.md,
+     * D6b; lenient: an argument of no known type gives no bound). What the inference fixes goes into the answer as it goes — a lambda's
+     * parameters read it while the inference runs ([lambdaParameterType]) — so an inference that does not succeed still leaves what it fixed
+     * before (parameter info of a call being typed); the others stay null, and the type of the call is not known then (D6c5: the old
+     * inference that guessed the rest is gone). [partial]: the fixing so far is wanted whatever the inference's answer (parameter info).
      */
-    fun typeArguments(symbol: CSharpSymbol, call: CSharpInvocationExpression, callee: CSharpSimpleName, withLambdas: Boolean = true): List<SemanticType?> {
+    fun typeArguments(symbol: CSharpSymbol, call: CSharpInvocationExpression, callee: CSharpSimpleName, partial: Boolean = false): List<SemanticType?> {
         val arity = methodArity(symbol)
         if (arity == 0) return emptyList()
         (callee as? CSharpGenericName)?.typeArgumentList?.arguments?.takeIf { it.size == arity }?.let { written -> return written.map(r::resolveType) }
@@ -276,37 +277,19 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         try {
             val reduced = isReduced(symbol, callee)
             val parameters = r.signature(symbol, false) ?: return fixed.toList()
-            val owner = (symbol as? CSharpSymbol.SourceMember)?.element
-            if (reduced) unify(parameters.firstOrNull()?.type?.invoke(), receiver(callee), fixed, owner)
             val arguments = call.argumentList?.arguments.orEmpty()
-            val lambdas = ArrayList<Pair<CSharpAnonymousFunctionExpression, CSharpNameResolver.Parameter>>()
-            for ((i, argument) in arguments.withIndex()) {
-                val parameter = parameterFor(parameters, arguments, i, if (reduced) 1 else 0) ?: continue
-                val expression = argument.expression ?: continue
-                if (expression is CSharpAnonymousFunctionExpression) { lambdas += expression to parameter; continue }
-                if (expression is CSharpDeclarationExpression) continue
-                var type = parameter.type() ?: continue
-                val argumentType = r.typeOf(expression) ?: continue
-                if (parameter.isParams && type is SemanticType.ArrayOf && argumentType !is SemanticType.ArrayOf) type = type.element ?: continue
-                unify(type, argumentType, fixed, owner)
+            when (val result = roslynTypeArguments(symbol, call, callee, reduced, parameters, arguments, fixed)) {
+                is CSharpTypeInference.Inferred.Known -> {
+                    for (i in result.types.indices) fixed[i] = result.types[i]
+                    // an answer that met a question in progress (a lambda typed while its call is being resolved) is not kept
+                    return fixed.toList().also { if (r.cycleCount == cycles) cache[key] = it }
+                }
+                // the candidate does not infer (several may remain when none applies, or the call is being typed): nothing is guessed
+                CSharpTypeInference.Inferred.Failed -> if (!partial) SemanticTrace.trace { "typeArguments ${callee.text} at ${SemanticTrace.at(call)}: the inference fails for this candidate; fixed so far [${fixed.joinToString { SemanticTrace.show(it) }}]" }
+                // not known: the `inference` line says why; nothing is guessed
+                else -> {}
             }
-            // Roslyn's inference (CSHARP_PSI_MIGRATION.md, D6b): the bounds of all arguments and the best type of them, the lambdas typed as
-            // their input types get fixed — what it fixes goes into [fixed] as it goes, which a lambda's parameters read meanwhile
-            if (withLambdas) roslynTypeArguments(symbol, call, callee, reduced, parameters, arguments, fixed)?.let { known ->
-                for (i in known.indices) fixed[i] = known[i]
-                return fixed.toList().also { if (r.cycleCount == cycles) cache[key] = it }
-            }
-            if (withLambdas) SemanticTrace.trace { "typeArguments ${callee.text} at ${SemanticTrace.at(call)}: Roslyn's inference gave nothing (see `inference` above), the simple one answers; unified so far [${fixed.joinToString { SemanticTrace.show(it) }}]" }
-            for ((lambda, parameter) in lambdas) {
-                if (!withLambdas) break
-                val delegate = parameter.type()?.let(::unwrapExpression) ?: continue
-                val returns = delegateSignature(delegate)?.second ?: continue
-                if (!mentionsUnfixed(returns, fixed)) continue
-                val body = lambdaReturnType(lambda) ?: continue
-                unify(returns, body, fixed, owner)
-            }
-            // an answer that met a question in progress (a lambda typed while its call is being resolved) is not kept
-            return fixed.toList().also { if (withLambdas && r.cycleCount == cycles) cache[key] = it }
+            return fixed.toList()
         } finally {
             r.leave(TYPE_ARGUMENTS, key)
         }
@@ -315,41 +298,35 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
     private val inference get() = r.inference
 
     /**
-     * The type arguments of [symbol] for [call] by Roslyn's method type inference, lenient (an argument of no known type gives nothing); null
-     * when it does not succeed — the simple inference of [typeArguments] answers then, as before.
+     * The type arguments of [symbol] for [call] by Roslyn's method type inference, lenient (an argument of no known type gives nothing);
+     * what it fixes goes into [fixed] as it goes.
      */
     private fun roslynTypeArguments(
         symbol: CSharpSymbol, call: CSharpInvocationExpression, callee: CSharpSimpleName, reduced: Boolean, parameters: List<CSharpNameResolver.Parameter>,
         arguments: List<CSharpArgument>, fixed: Array<SemanticType?>,
-    ): List<SemanticType>? {
-        // asked again from inside its own run (exponential in the overloads of nested lambdas): the simple inference answers
-        if (!r.enter(ROSLYN_INFERENCE, call, counts = false)) {
-            SemanticTrace.trace { "typeArguments ${callee.text} at ${SemanticTrace.at(call)}: asked again from inside its own Roslyn inference, the simple one answers" }
-            return null
+    ): CSharpTypeInference.Inferred {
+        // asked again from inside its own run (a candidate's lambda bound, its body typed through this call — `Select(x => x.Nope)` asks the
+        // type of `x`; exponential in the overloads of nested lambdas): what the run has fixed so far, the rest unfixed — nothing is guessed
+        if (!r.enter(ROSLYN_INFERENCE, call, fixed, counts = false)) {
+            @Suppress("UNCHECKED_CAST")
+            (r.partial(ROSLYN_INFERENCE, call) as? Array<SemanticType?>)?.forEachIndexed { i, type -> if (i in fixed.indices && fixed[i] == null) fixed[i] = type }
+            return CSharpTypeInference.Inferred.Unknown
         }
         try {
-            return roslynTypeArgumentsOnce(symbol, call, callee, reduced, parameters, arguments, fixed)
+            val targets = ArrayList<SemanticType?>()
+            for ((i, argument) in arguments.withIndex()) {
+                val parameter = parameterFor(parameters, arguments, i, if (reduced) 1 else 0) ?: return CSharpTypeInference.Inferred.Unknown
+                var type = parameter.type() ?: return CSharpTypeInference.Inferred.Unknown
+                val expression = argument.expression ?: return CSharpTypeInference.Inferred.Unknown
+                // the expanded `params` form: an argument that is not itself the array goes to its element
+                if (parameter.isParams && type is SemanticType.ArrayOf && expression !is CSharpAnonymousFunctionExpression && r.typeOf(expression) !is SemanticType.ArrayOf) type = type.element ?: return CSharpTypeInference.Inferred.Unknown
+                targets += type
+            }
+            val self = if (reduced) (receiver(callee) ?: return CSharpTypeInference.Inferred.Unknown) to parameters.firstOrNull()?.type?.invoke() else null
+            return inference.infer(symbol, targets, arguments, self, call, callee, lenient = true) { i, type -> if (i in fixed.indices) fixed[i] = type }
         } finally {
             r.leave(ROSLYN_INFERENCE, call)
         }
-    }
-
-    private fun roslynTypeArgumentsOnce(
-        symbol: CSharpSymbol, call: CSharpInvocationExpression, callee: CSharpSimpleName, reduced: Boolean, parameters: List<CSharpNameResolver.Parameter>,
-        arguments: List<CSharpArgument>, fixed: Array<SemanticType?>,
-    ): List<SemanticType>? {
-        val targets = ArrayList<SemanticType?>()
-        for ((i, argument) in arguments.withIndex()) {
-            val parameter = parameterFor(parameters, arguments, i, if (reduced) 1 else 0) ?: return null
-            var type = parameter.type() ?: return null
-            val expression = argument.expression ?: return null
-            // the expanded `params` form: an argument that is not itself the array goes to its element
-            if (parameter.isParams && type is SemanticType.ArrayOf && expression !is CSharpAnonymousFunctionExpression && r.typeOf(expression) !is SemanticType.ArrayOf) type = type.element ?: return null
-            targets += type
-        }
-        val self = if (reduced) (receiver(callee) ?: return null) to parameters.firstOrNull()?.type?.invoke() else null
-        val result = inference.infer(symbol, targets, arguments, self, call, callee, lenient = true) { i, type -> if (i in fixed.indices) fixed[i] = type }
-        return (result as? CSharpTypeInference.Inferred.Known)?.types
     }
 
     /**
@@ -362,7 +339,8 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         if (arity == 0 || !r.isExtension(symbol)) return emptyList()
         val self = r.signature(symbol, false)?.firstOrNull()?.type?.invoke() ?: return emptyList()
         val fixed = arrayOfNulls<SemanticType>(arity)
-        unify(self, receiver, fixed, (symbol as? CSharpSymbol.SourceMember)?.element)
+        // Roslyn's inference from the receiver alone: what it fixes before it finds the rest unfixed
+        inference.inferFromTypes(symbol, listOf(self), listOf(receiver)) { i, type -> if (i in fixed.indices) fixed[i] = type }
         return fixed.toList()
     }
 
@@ -453,7 +431,8 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
             // overloads that differ in what the delegate returns (`Sum(x => x.Total)`) still agree on what it takes; one taking `Delegate` or
             // `object` says nothing and cannot take a lambda without a natural type anyway (`MapGet(pattern, Delegate)` next to `RequestDelegate`)
             val natural = r.overloads.hasNaturalType(lambda)
-            val found = parameterTypesOf(argument, lambdaParameterCount(lambda)).mapNotNull { type ->
+            val raw = parameterTypesOf(argument, lambdaParameterCount(lambda))
+            val found = raw.mapNotNull { type ->
                 val target = unwrapExpression(type) ?: return null
                 delegateSignature(target)?.first?.getOrNull(index) ?: if (!natural && r.definitionName(target) in CSharpOverloads.NATURAL_TARGETS) null else return null
             }
@@ -464,91 +443,6 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
     }
 
     /**
-     * False when [lambda] surely cannot convert to [parameterType] (C# §10.7.1): a delegate that takes another number of parameters; one
-     * returning `void` for a body that is a value and no statement (`() => "x"` is no `Action`); one returning a value for a block that
-     * returns none, or for a body whose type surely does not convert (`() => "x"` is no `Func<Task>`).
-     */
-    fun lambdaFits(lambda: CSharpAnonymousFunctionExpression, parameterType: SemanticType, typeBody: Boolean = true): Boolean {
-        val target = unwrapExpression(parameterType) ?: return true
-        // `Delegate`, `object`, `Expression` take a lambda by its natural type only (C# 10): none without typed parameters
-        val delegate = delegateSignature(target) ?: return r.overloads.hasNaturalType(lambda) || r.definitionName(target) !in CSharpOverloads.NATURAL_TARGETS
-        val count = lambdaParameterCount(lambda)
-        if (count != null && delegate.first.size != count) return false
-        // explicitly typed parameters take only a delegate with exactly those types (§10.7.1): `(int id) => …` is no `RequestDelegate`
-        val written = (lambda as? CSharpParenthesizedLambdaExpression)?.parameterList?.parameters ?: (lambda as? CSharpAnonymousMethodExpression)?.parameterList?.parameters
-        if (written != null) for ((p, expected) in written.zip(delegate.first)) {
-            val type = p.type?.let(r::resolveType) ?: continue
-            if (expected != null && r.overloads.same(type, expected) == false && !mentionsMethodParameter(expected)) return false
-        }
-        val returns = delegate.second ?: return true
-        val void = r.definitionName(returns) == "System.Void"
-        val body = lambda.expressionBody
-        if (isAsync(lambda.modifiers)) return true
-        if (body == null) {
-            val block = lambda.block ?: return true
-            return void || firstReturn(block) != null || !completesNormally(block)
-        }
-        if (void) return isStatementExpression(body)
-        // a body that uses the lambda's parameters is typed once the call is resolved (refineByLambdas), not for every overload
-        if (!typeBody) return true
-        val type = r.typeOf(body) ?: return true
-        if (mentionsMethodParameter(returns)) {
-            if (returns !is SemanticType.Library || returns.arguments.isEmpty()) return true
-            return instanceOf(type, returns.type.fullName) != null || r.definitionName(type) == null
-        }
-        return r.conversion(type, returns) != CSharpNameResolver.Conversion.NONE
-    }
-
-    /**
-     * Of the overloads [candidates] of a call at [site] that has lambdas among its arguments, the ones whose delegates take the lambdas'
-     * bodies, preferring those that return exactly the type of the bodies (`Sum(x => x.Total)` with a `decimal` `Total`). Asked when the
-     * name is resolved to the candidates already: typing the bodies needs the lambdas' parameters, which every candidate gives the same.
-     */
-    fun refineByLambdas(site: CSharpSimpleName, candidates: List<CSharpSymbol>): List<CSharpSymbol> {
-        if (candidates.size < 2 || candidates.any { !r.isMethod(it) }) return candidates
-        val call = r.invocationOf(site) ?: return candidates
-        val arguments = call.argumentList?.arguments.orEmpty()
-        if (arguments.none { it.expression is CSharpAnonymousFunctionExpression }) return candidates
-        // `Delegate` / `object` / `Expression` take a lambda by its natural type only (C# 10): the overloads with them drop out first for a
-        // lambda with untyped parameters, whatever its body does — `MapGet("/", context => { … })` is the `RequestDelegate` overload even when
-        // the body fits no delegate (CS1643 of that overload, as Roslyn reports it)
-        val eligible = candidates.filter { symbol ->
-            val parameters = r.signature(symbol, false) ?: return@filter true
-            val offset = if (isReduced(symbol, site)) 1 else 0
-            arguments.withIndex().none { (i, argument) ->
-                val lambda = argument.expression as? CSharpAnonymousFunctionExpression ?: return@none false
-                val target = parameterFor(parameters, arguments, i, offset)?.type?.invoke()?.let(::unwrapExpression) ?: return@none false
-                delegateSignature(target) == null && r.definitionName(target) in CSharpOverloads.NATURAL_TARGETS && !r.overloads.hasNaturalType(lambda)
-            }
-        }.ifEmpty { candidates }
-        if (eligible.size == 1) return eligible
-        val scored = eligible.mapNotNull { symbol ->
-            val parameters = r.signature(symbol, false) ?: return@mapNotNull symbol to 0
-            val offset = if (isReduced(symbol, site)) 1 else 0
-            var exact = 0
-            for ((i, argument) in arguments.withIndex()) {
-                val lambda = argument.expression as? CSharpAnonymousFunctionExpression ?: continue
-                // the parameter as declared: what the delegate returns decides, inferring the method's type arguments is not needed for it
-                val type = parameterFor(parameters, arguments, i, offset)?.type?.invoke() ?: continue
-                val written = unwrapExpression(type)?.let(::delegateSignature)?.second
-                // an async lambda returns what `Task<X>` holds: `Func<Task<T>>` takes it as exactly as `Func<T>` (nopCommerce's cache GetAsync)
-                val returns = if (isAsync(lambda.modifiers) && written is SemanticType.Library && written.type.fullName in TASKS_OF) written.arguments.singleOrNull() else written
-                if (returns is SemanticType.Parameter && returns.ofMethod) { exact++; continue }
-                if (!lambdaFits(lambda, type)) return@mapNotNull null
-                // a block: the common type of its `return`s, as an expression body (`Task.Run(() => { return StartAsync(); }, token)` lost its
-                // `Func<Task<TResult>>` overload to `Func<TResult>`: a false CS0029 «Task<Task<R>> to Task<R>», a colleague's case on 0.1.185)
-                val body = lambda.expressionBody?.let(r::typeOf) ?: lambda.block?.let(::commonReturnType)
-                // `Task<T>` with `T` to infer: as exact as `T` for a body of a `Task<…>` — the better member decides then (more specific)
-                if (returns != null && body != null && (same(returns, body) || mentionsMethodParameter(returns) && r.definitionName(returns) == r.definitionName(body))) exact++
-            }
-            symbol to exact
-        }
-        if (scored.isEmpty()) return eligible
-        val best = scored.maxOf { it.second }
-        return scored.filter { it.second == best }.map { it.first }
-    }
-
-    /**
      * What may stand as a statement (§13.7), so the body of a lambda for a delegate that returns nothing: a call — `a?.M()` too, which the
      * Razor generator writes for `@onclick="() => _table?.ExpandAllGroups()"` — an assignment, `await`, `new`, `++` / `--`, `throw`.
      */
@@ -556,9 +450,6 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         e is CSharpAwaitExpression || e is CSharpBaseObjectCreationExpression || e is CSharpPostfixUnaryExpression ||
         (e is CSharpPrefixUnaryExpression && (e.operatorToken?.text == "++" || e.operatorToken?.text == "--")) || e is CSharpThrowExpression ||
         e is CSharpConditionalAccessExpression && e.whenNotNull?.let(::isStatementExpression) == true
-
-    /** A block that ends in `throw` never returns: it converts to any delegate. */
-    private fun completesNormally(block: CSharpBlock): Boolean = block.statements.lastOrNull() !is CSharpThrowStatement
 
     fun lambdaParameterCount(lambda: CSharpAnonymousFunctionExpression): Int? = when (lambda) {
         is CSharpSimpleLambdaExpression -> 1

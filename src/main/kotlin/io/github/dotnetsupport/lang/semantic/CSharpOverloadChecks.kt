@@ -639,10 +639,16 @@ internal class CSharpOverloadChecks(private val checks: CSharpSemanticChecks, pr
         checkPaths(lambda, delegate.second, "lambda expression", shown, at)
     }
 
-    /** [argument] is a lambda and [target] a delegate type it is bound to (not `Delegate` / `object`, which bind by the natural type only). */
+    /**
+     * [argument] is a lambda and [target] a delegate type it binds to (not `Delegate` / `object`, which bind by the natural type only): one
+     * taking as many parameters as the lambda — the errors of that binding are what Roslyn reports; a delegate of another count never binds
+     * it (`Select(x => { … })`: the `Func<T, int, R>` overload says nothing, the `Func<T, R>` one reports CS1643).
+     */
     private fun lambdaToDelegate(argument: CSharpArgument, target: SemanticType?): Boolean {
-        if (argument.expression !is CSharpAnonymousFunctionExpression || target == null) return false
-        return r.expressions.unwrapExpression(target)?.let(r.expressions::delegateSignature) != null
+        val lambda = argument.expression as? CSharpAnonymousFunctionExpression ?: return false
+        val delegate = target?.let(r.expressions::unwrapExpression)?.let(r.expressions::delegateSignature) ?: return false
+        val count = r.expressions.lambdaParameterCount(lambda) ?: return true
+        return count == delegate.first.size
     }
 
     private fun argumentOf(lambda: CSharpExpression): CSharpArgument? {

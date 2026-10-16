@@ -451,6 +451,23 @@
     **лямбды в выводе** ~700 (функциональный тип явной лямбды / группы методов к `T`, тело лямбды); типы, неизвестные выше по цепочке,
     и циклы ~1 150 — не порт. Решение: дальше не по строкам журнала, а по файлам Roslyn — D6c4 целиком, затем лямбды в выводе целиком,
     затем D6c5; эхо из журнала убрать (одна строка на причину).
+  - [x] D6c5 (0.1.234). Старый мир удалён: lenient-ветка `CSharpExpressionTypes.typeArguments` (`unify` по аргументам, лямбды по
+    `lambdaReturnType`, «the simple one answers»), `refineByLambdas`, `lambdaFits`, `completesNormally`, `score` / `simpleConversion` /
+    `hasImplicitConversions` / `typeOfArgument` / tie-break'и и `hasPriority` в `pickByArguments`, флаг `strict`. Тип вызова — только
+    вывод Roslyn (`roslynTypeArguments` → `Inferred`; частичная фиксация через `onFixed` остаётся для parameter info: `partial = true`);
+    `receiverTypeArguments` (completion) — `inferFromTypes` по получателю. `pickByArguments`: `overloads.resolve`, иначе кандидаты по
+    числу аргументов (`fits`). Когда не применим ни один кандидат, `resolve` берёт того, чьи лямбды привязываются к его делегатам
+    (`lambdaBindsTo`, как Roslyn сообщает ошибки «лучшего неудачника» — CS1643 у `Select(x => { if (…) return 1; })`). `unify` /
+    `mentionsUnfixed` остаются у перевода query-выражений (`CSharpQueryTranslation`, свой вывод — не D6c). Что старый `unify`
+    маскировал и что вскрылось при удалении: (а) кэш ответов вывода (`CSharpTypeInference.Answer`) теперь хранит и частичную фиксацию
+    — повторный вопрос с ответом «не знаю» снова сообщает `onFixed`, иначе параметр лямбды `x` в `Select(x => x.Nope)` оставался
+    `TSource` и CS1061 молчала; (б) повторный вход в вывод того же вызова (`ROSLYN_INFERENCE`) отдаёт зафиксированное внешним прогоном;
+    (в) `resolve`: кандидат «не знаю» один среди точно неприменимых — это вызов; ни один не применим — тот, чьи лямбды привязываются
+    к его делегатам по числу параметров (`lambdaBindsTo`), как Roslyn сообщает ошибки лучшего неудачника (CS1643 у `Select(x => { if
+    (…) return 1; })`); `CSharpOverloadChecks.lambdaToDelegate` — то же правило по числу параметров. Харнесс пишет `# calls`:
+    вызовов в исходниках, разрешённых к одному методу, с известным типом — вторая сторона журнала (что старый мир угадывал).
+    Реестр заплаток: 0.1.205 (`refineByLambdas`) — удалена; остаются 0.1.218 (`strictLambda` привязывает тело — это и есть
+    `HasAnonymousFunctionConversion`, не заплатка), 0.1.225 (указатели), 0.1.226 (двойники сборки в `resolve`).
   - [x] D6c2, группы методов и функциональные типы (0.1.233; тест `RoslynMethodGroupConversionTest`, 8 случаев с контрольной CS0029 и
     без отказов в журнале). `GetMethodGroupDelegateConversion` + `ResolveMethodGroup` с `IsMethodGroupConversion` +
     `RemoveDelegateConversionsWithWrongReturnType` + `MethodIsCompatibleWithDelegateOrFunctionPointer` + `MethodGroupReturnType` →

@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.234
+
+- The type arguments of a generic call and the overload a call goes to come from the compiler's rules alone: the older guessing
+  (unifying argument types, scoring candidates, refining by lambda bodies) is removed. A call whose type the compiler's inference cannot
+  fix has no type now instead of a guessed one. When no overload applies, the call goes to the one whose lambda binds to its delegate —
+  the candidate the compiler reports (`Select(x => { if (…) return 1; })` is the `Func<T, R>` overload with CS1643).
+
 ## 0.1.233
 
 - A method group passed for a delegate is resolved as the compiler resolves it: the method is chosen by the delegate's parameter types
