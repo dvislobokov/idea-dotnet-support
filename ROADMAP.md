@@ -719,7 +719,8 @@
     CS8604 в MudBlazor, увидено в песочнице через окно Problems); 0.1.204 — имена в `nameof(...)` проверяются (CS0103 / CS0117 / CS0234 /
     CS1061, плюс CS8093 на группе extension-методов; пробел нашёл UI-робот, пример `compilerMessages/cases/plugin-nameof.cs`); 0.1.205 — `Task.Run(() => { return
     StartAsync(); }, token)` с телом-блоком больше не даёт ложное CS0029 «Task<Task<T>> в Task<T>» (случай коллеги на 0.1.185: форма с
-    выражением починилась раньше, блок — нет; `refineByLambdas` не смотрел тип `return` блока). CS8933 «using appeared previously as global using» —
+    выражением починилась раньше, блок — нет; `refineByLambdas` не смотрел тип `return` блока); 0.1.206 — D6e3 шаг 2: тело лямбды
+    привязывается с типами параметров кандидата, как в Roslyn (bUnit `parameters.Add(x => x.Severity, …)` выводится, а не «не знаю»). CS8933 «using appeared previously as global using» —
     серым, как CS8019 и IDE0005 (у Roslyn скрытая подсказка, IDE показывают её так же), не ошибка. Тесты `RazorCorpusFalseErrorsTest`, `RoslynTypesTest`, `RoslynMethodTypeInferenceTest`
   - [x] F0 (2026-10-15, без версии: пользователю не видно) — фреймворки модулями рядом с ядром C#: точка расширения `csharpCodeGenerators`, модули `frameworks.razor` / `xaml` / `avalonia` / `grpc` вместо списков в `mayGenerateTypes`; тесты `CSharpCodeGeneratorsTest` (старая формула против новой), `FrameworkBoundaryTest`
 

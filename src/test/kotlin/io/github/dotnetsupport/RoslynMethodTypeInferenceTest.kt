@@ -47,6 +47,41 @@ class RoslynMethodTypeInferenceTest : BasePlatformTestCase() {
     }
 
     /**
+     * bUnit's `parameters.Add(x => x.Severity, …)` (MudBlazor's tests, D6e3): the lambda's parameter is typed by the receiver's type argument
+     * only through the call being inferred — Roslyn binds the body for the candidate; the port did not (the log: "lambda parameter `x` is ?
+     * to the resolver, MudBlazor.MudAlert to the inference", 3391 distinct lines), and the type of the call was the simple inference's.
+     */
+    fun testLambdaBodyBoundWithTheCandidatesParameterTypes() {
+        val (found, log) = io.github.dotnetsupport.lang.semantic.SemanticTrace.collectForTests {
+            errors("""
+                using System;
+                class Alert { public int Severity; public string Text = ""; }
+                class Builder<TComponent>
+                {
+                    public Builder<TComponent> Add<TValue>(Func<TComponent, TValue> selector, TValue value) => this;
+                    public TValue Get<TValue>(Func<TComponent, TValue> selector) => default!;
+                }
+                class C
+                {
+                    void M()
+                    {
+                        var b = new Builder<Alert>().Add(x => x.Severity, 1).Add(x => x.Text, "a");
+                        int fine = new Builder<Alert>().Get(x => x.Severity);
+                        string wrong = new Builder<Alert>().Get(x => x.Severity);
+                        var nope = new Builder<Alert>().Get(x => x.Nope);
+                    }
+                }
+            """)
+        }
+        assertEquals(listOf(
+            "14: new Builder<Alert>().Get(x => x.Severity) -> CS0029: Cannot implicitly convert type 'int' to 'string'",
+            "15: Nope -> CS1061: 'Alert' does not contain a definition for 'Nope' and no accessible extension method 'Nope' accepting a first argument of type 'Alert' could be found (are you missing a using directive or an assembly reference?)",
+        ), found)
+        // the calls with a body of a known type are inferred by Roslyn's inference, without a refusal
+        assertEmpty(log.filter { it.startsWith("inference") && ("Inference${files - 1}.cs:12" in it || "Inference${files - 1}.cs:13" in it || "Inference${files - 1}.cs:14" in it) })
+    }
+
+    /**
      * A colleague's case on 0.1.185: `Task.Run(() => StartTask(…), token)` with a lambda returning `Task<R>` was taken for
      * `Run<Task<R>>(Func<Task<R>>)` — a false CS0029 «Task<Task<R>> to Task<R>»; Roslyn picks `Run<R>(Func<Task<R>>, CancellationToken)`.
      */

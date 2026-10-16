@@ -74,7 +74,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
      * (a question another path answers completely when asked again: Roslyn's inference of a call, which the simple one answers then).
      */
     internal fun enter(kind: String, key: Any, partial: Any? = null, counts: Boolean = true): Boolean {
-        val id = kind to key
+        val id = kind to scoped(key)
         if (answering.containsKey(id)) {
             if (counts) cycles++
             return false
@@ -84,17 +84,74 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
     }
 
     internal fun leave(kind: String, key: Any) {
-        answering.remove(kind to key)
+        answering.remove(kind to scoped(key))
     }
 
     /** What the question [kind] of [key] in progress has so far ([enter]'s partial). */
-    internal fun partial(kind: String, key: Any): Any? = answering[kind to key]
+    internal fun partial(kind: String, key: Any): Any? = answering[kind to scoped(key)]
+
+    // ---- lambda bindings: Roslyn binds the body of a lambda once per candidate, its implicit parameters typed by that candidate's
+    // delegate. While a body is bound so ([bindLambda]), a question about an element inside it belongs to that binding: asked apart from
+    // the same question of the code as it stands (which may be in progress — the checks typing `x.Severity` reach the inference of the call
+    // through `x`) and kept apart. The answers of a binding are kept by the types it binds with — of its lambda and of the lambdas around
+    // it being bound (a nested body sees their parameters) — as Roslyn's `UnboundLambda` keeps its bindings by the parameter types: bound
+    // anew for every candidate and every asker, the nested lambdas of a test of MudBlazor's grew without end (six hours, 0.1.205 in progress).
+    private class Binding(val lambda: PsiElement, val parameters: Map<PsiElement, SemanticType>, val caches: IdentityHashMap<Any, MutableMap<Any?, Any?>>)
+    private val bindings = ArrayList<Binding>()
+    private val bindingAnswers = HashMap<List<Any?>, IdentityHashMap<Any, MutableMap<Any?, Any?>>>()
+    private class Bound(val caches: Any, val key: Any) {
+        override fun equals(other: Any?) = other is Bound && other.caches === caches && other.key == key
+        override fun hashCode() = System.identityHashCode(caches) * 31 + key.hashCode()
+    }
+
+    /** [body] with the parameters of [lambda] typed [types], as Roslyn binds a lambda for a candidate. */
+    internal fun <T> bindLambda(lambda: CSharpAnonymousFunctionExpression, parameters: List<CSharpParameter>, types: List<SemanticType>, body: () -> T): T {
+        com.intellij.openapi.progress.ProgressManager.checkCanceled()
+        // the same lambda bound again inside its own binding (its body asks for the inference of its call): each binding's questions are
+        // its own, so no cycle is seen and the bindings nest without end — the full test suite stood six hours on one (0.1.205 in progress)
+        if (bindings.any { it.lambda == lambda }) {
+            noteCycle()
+            throw io.github.dotnetsupport.lang.semantic.roslyn.RoslynMethodTypeInferrer.Unknown("the lambda at ${SemanticTrace.at(lambda)} is being bound already (a cycle)")
+        }
+        val around = bindings.filter { PsiTreeUtil.isAncestor(it.lambda, lambda, true) }
+        val key = around.flatMap { b -> listOf(b.lambda, b.parameters.values.map(inference::fingerprint)) } + listOf(lambda, types.map(inference::fingerprint))
+        bindings += Binding(lambda, parameters.zip(types).toMap(), bindingAnswers.getOrPut(key) { IdentityHashMap() })
+        try {
+            return body()
+        } finally {
+            bindings.removeAt(bindings.lastIndex)
+        }
+    }
+
+    /** The type [parameter] has in a binding of its lambda in progress; null when none binds it. */
+    internal fun boundParameterType(parameter: CSharpParameter): SemanticType? {
+        for (i in bindings.indices.reversed()) bindings[i].parameters[parameter]?.let { return it }
+        return null
+    }
+
+    private fun bindingOf(element: PsiElement?): Binding? {
+        if (bindings.isEmpty() || element == null) return null
+        for (i in bindings.indices.reversed()) if (PsiTreeUtil.isAncestor(bindings[i].lambda, element, false)) return bindings[i]
+        return null
+    }
+
+    private fun elementOf(key: Any): PsiElement? = key as? PsiElement ?: (key as? Pair<*, *>)?.first as? PsiElement
+
+    private fun scoped(key: Any): Any = bindingOf(elementOf(key))?.let { Bound(it.caches, key) } ?: key
+
+    /** [cache], or the binding's own copy of it when [element] is inside a lambda being bound. */
+    internal fun <K, V> cacheFor(element: PsiElement?, cache: MutableMap<K, V>): MutableMap<K, V> {
+        val binding = bindingOf(element) ?: return cache
+        @Suppress("UNCHECKED_CAST")
+        return binding.caches.getOrPut(cache) { HashMap() } as MutableMap<K, V>
+    }
 
     /**
      * The answer of the question [kind] of [key]: from [cache], else [compute]d; [onCycle] when it is being computed already. An answer
      * that met a cycle is kept only when it is not "nothing" — what the question in progress gave was incomplete.
      */
-    internal fun <K : Any, V> answer(kind: String, key: K, cache: MutableMap<K, V?>?, onCycle: () -> V?, compute: () -> V?): V? {
+    internal fun <K : Any, V> answer(kind: String, key: K, global: MutableMap<K, V?>?, onCycle: () -> V?, compute: () -> V?): V? {
+        val cache = global?.let { cacheFor(elementOf(key), it) }
         if (cache != null && cache.containsKey(key)) return cache[key]
         if (!enter(kind, key)) return onCycle()
         try {
@@ -131,14 +188,15 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
 
     fun resolveName(name: CSharpSimpleName): CSharpResolution? {
         // an answer already given is not post-processed again (the lambdas below ask for this name while being typed)
-        if (names.containsKey(name)) return names[name]
+        val known = cacheFor(name, names)
+        if (known.containsKey(name)) return known[name]
         var result = answer("name", name, names, onCycle = { null }) { compute(name)?.takeIf { it.isNotEmpty() }?.distinct()?.let(::CSharpResolution) }
         // overloads a lambda argument tells apart: with the candidates known, the lambdas' parameters are typed, then their bodies
         if (result != null && result.symbols.size > 1) {
             val refined = expressions.refineByLambdas(name, result.symbols)
             if (refined.size < result.symbols.size) {
                 result = CSharpResolution(refined)
-                names[name] = result
+                known[name] = result
             }
             // the lambdas' bodies typed, the better function member may tell the rest apart (task D1)
             if (result.symbols.size > 1) {
@@ -147,7 +205,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                     val reduced = expressions.receiver(name) != null
                     overloads.resolve(result.symbols, call.argumentList?.arguments.orEmpty(), reduced, name, lambdas = true)?.let {
                         result = CSharpResolution(listOf(it))
-                        names[name] = result
+                        known[name] = result
                     }
                 }
             }

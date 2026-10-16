@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.206
+
+- The C# analysis types a lambda for each overload of its call as the compiler does — with the parameter types that overload gives — so
+  calls like bUnit's `parameters.Add(x => x.Severity, Severity.Warning)` are inferred instead of left unknown.
+
 ## 0.1.205
 
 - No false "Cannot implicitly convert type 'Task<Task<T>>' to 'Task<T>'" (CS0029) for `Task.Run(() => { return StartAsync(); }, token)`:

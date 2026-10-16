@@ -36,6 +36,8 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
         // the same question comes from the type of the call, the overload checks and the applicability of each candidate (up to ten times a
         // call, the log showed): answered once per resolver, unless the answer met a cycle (D6e4)
         val key = Key(symbol, call, site, lenient, targets.map(::fingerprint), receiver?.let { fingerprint(it.first) to fingerprint(it.second) })
+        // a call inside a lambda being bound for a candidate is answered for that binding only (the types of its arguments depend on it)
+        val answers = r.cacheFor(call ?: site, this.answers)
         answers[key]?.let { cached ->
             if (cached is Inferred.Known && onFixed != null) cached.types.forEachIndexed { i, type -> onFixed(i, type) }
             return cached
@@ -60,7 +62,7 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
     )
 
     /** The parts of [type] that make it the type it is, as nested lists (hashed structurally, no text built). */
-    private fun fingerprint(type: SemanticType?): Any? = when (type) {
+    internal fun fingerprint(type: SemanticType?): Any? = when (type) {
         null -> null
         is SemanticType.Library -> listOf(type.type, type.arguments.map(::fingerprint), type.tupleNames)
         is SemanticType.Source -> listOf(type.info.key, type.arguments.map(::fingerprint), fingerprint(type.outer))
@@ -149,13 +151,11 @@ internal class CSharpTypeInference(private val r: CSharpNameResolver) {
         } else null
         val explicitReturnType = (lambda as? CSharpParenthesizedLambdaExpression)?.returnType?.let { r.resolveType(it) ?: throw RoslynMethodTypeInferrer.Unknown() }
         return InferenceArgument.Lambda(parameters.size, hasSignature, explicit, explicitReturnType) { delegateParameters, delegateReturnType ->
-            // the body is typed by the resolver, which types implicit parameters by its own inference: only where that agrees with this one
-            if (explicit == null) for ((i, p) in parameters.withIndex()) {
-                if (overloads.same(r.lambdaParameterType(p), delegateParameters.getOrNull(i)) != true) {
-                    throw RoslynMethodTypeInferrer.Unknown("lambda parameter `${p.identifier?.text}` is ${SemanticTrace.show(r.lambdaParameterType(p))} to the resolver, ${SemanticTrace.show(delegateParameters.getOrNull(i))} to the inference")
-                }
+            // as Roslyn: the body is bound with the implicit parameters typed by the delegate of this candidate (its input types are fixed)
+            val returned = if (explicit != null || parameters.isEmpty()) returnedType(lambda) else {
+                if (delegateParameters.size != parameters.size) throw RoslynMethodTypeInferrer.Unknown("the delegate takes ${delegateParameters.size} parameters, the lambda ${parameters.size}")
+                r.bindLambda(lambda, parameters, delegateParameters) { returnedType(lambda) }
             }
-            val returned = returnedType(lambda)
             if (!r.expressions.isAsync(lambda.modifiers)) returned else asyncReturnType(returned, delegateReturnType)
         }
     }

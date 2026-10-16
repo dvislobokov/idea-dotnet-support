@@ -266,7 +266,8 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         if (arity == 0) return emptyList()
         (callee as? CSharpGenericName)?.typeArgumentList?.arguments?.takeIf { it.size == arity }?.let { written -> return written.map(r::resolveType) }
         val key: Pair<PsiElement, CSharpSymbol> = call to symbol
-        inferred[key]?.let { return it }
+        val cache = r.cacheFor(call, inferred)
+        cache[key]?.let { return it }
         val fixed = arrayOfNulls<SemanticType>(arity)
         // asked again while being inferred (a lambda's parameter typed through this call): what is fixed so far
         @Suppress("UNCHECKED_CAST")
@@ -293,7 +294,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
             // their input types get fixed — what it fixes goes into [fixed] as it goes, which a lambda's parameters read meanwhile
             if (withLambdas) roslynTypeArguments(symbol, call, callee, reduced, parameters, arguments, fixed)?.let { known ->
                 for (i in known.indices) fixed[i] = known[i]
-                return fixed.toList().also { if (r.cycleCount == cycles) inferred[key] = it }
+                return fixed.toList().also { if (r.cycleCount == cycles) cache[key] = it }
             }
             if (withLambdas) SemanticTrace.trace { "typeArguments ${callee.text} at ${SemanticTrace.at(call)}: Roslyn's inference gave nothing (see `inference` above), the simple one answers; unified so far [${fixed.joinToString { SemanticTrace.show(it) }}]" }
             for ((lambda, parameter) in lambdas) {
@@ -305,7 +306,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
                 unify(returns, body, fixed, owner)
             }
             // an answer that met a question in progress (a lambda typed while its call is being resolved) is not kept
-            return fixed.toList().also { if (withLambdas && r.cycleCount == cycles) inferred[key] = it }
+            return fixed.toList().also { if (withLambdas && r.cycleCount == cycles) cache[key] = it }
         } finally {
             r.leave(TYPE_ARGUMENTS, key)
         }
@@ -433,6 +434,8 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
 
     /** The type of a parameter of a lambda without written types: the parameter of the delegate the lambda converts to. */
     fun lambdaParameterType(parameter: CSharpParameter): SemanticType? {
+        // the lambda is being bound for a candidate of Roslyn's inference: its parameters are what that candidate gives
+        r.boundParameterType(parameter)?.let { return it }
         val lambda: CSharpAnonymousFunctionExpression
         val index: Int
         when (val parent = parameter.parent) {
