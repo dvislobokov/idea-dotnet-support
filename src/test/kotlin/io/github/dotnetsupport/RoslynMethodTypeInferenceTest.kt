@@ -231,6 +231,34 @@ class RoslynMethodTypeInferenceTest : BasePlatformTestCase() {
         assertEmpty(log.filter { it.startsWith("applicable Go") || it.startsWith("resolve Go") })
     }
 
+    /**
+     * A pointer parameter takes `null`, `default` or a pointer only: beside an `object?` overload a `void*` one does not apply to an object —
+     * `ArgumentNullException.ThrowIfNull(x)` was "the type of parameter 1 is not known" in 1354 calls of nopCommerce (D6c2).
+     */
+    fun testAPointerOverloadDoesNotApplyToAnObject() {
+        val (found, log) = io.github.dotnetsupport.lang.semantic.SemanticTrace.collectForTests {
+            errors("""
+                using System;
+                unsafe class Lib
+                {
+                    public static int Go(object? x) => 1;
+                    public static string Go(void* x) => "";
+                }
+                class C
+                {
+                    void M(object o)
+                    {
+                        ArgumentNullException.ThrowIfNull(o);
+                        int fine = Lib.Go(o);
+                        string bad = Lib.Go(o);
+                    }
+                }
+            """)
+        }
+        assertEquals(listOf("13: Lib.Go(o) -> CS0029: Cannot implicitly convert type 'int' to 'string'"), found)
+        assertEmpty(log.filter { it.contains("ThrowIfNull") || it.startsWith("applicable Go") || it.startsWith("resolve Go") })
+    }
+
     fun testUpperBoundThroughAContravariantInterface() {
         // IComparer<in T>: IComparer<object> gives T an upper bound object, "s" a lower bound string — T is string
         assertEmpty(errors("""

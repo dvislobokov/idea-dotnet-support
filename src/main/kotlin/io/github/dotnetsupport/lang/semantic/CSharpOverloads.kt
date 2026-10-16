@@ -1,6 +1,8 @@
 package io.github.dotnetsupport.lang.semantic
 
 import com.intellij.psi.PsiElement
+import com.intellij.psi.util.elementType
+import io.github.dotnetsupport.csharp.lang.SyntaxKind
 import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.index.IndexedMemberKind
 import io.github.dotnetsupport.lang.CSharpFile
@@ -137,7 +139,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
             var formUnknown = false
             for ((i, argument) in arguments.withIndex()) {
                 val expression = argument.expression ?: return Outcome.Unknown
-                val target = targets[i] ?: return Outcome.Unknown
+                val target = targets[i] ?: if (pointerParameter(symbol, map[i], reduced) && !mayBePointer(expression)) { wrong += i; continue } else return Outcome.Unknown
                 val writtenKind = argument.refKindKeyword?.text
                 val kind = refKinds[i]
                 val handlerByRef = kind == "ref" && writtenKind == null && unparenthesized(expression) is CSharpInterpolatedStringExpression && isHandler(target)
@@ -324,6 +326,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                 declaredTargets += declared
                 targets += target
                 val expression = argument.expression ?: continue
+                if (target == null && pointerParameter(symbol, index, reduced) && !mayBePointer(expression)) { fits = false; break }
                 if (target == null) { unknown = true; why = "the type of parameter ${index + 1} is not known"; continue }
                 val written = argument.refKindKeyword?.text
                 val kind = refKind(symbol, index, reduced)
@@ -408,6 +411,27 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
             else -> null
         }
     }
+
+    /**
+     * Whether the parameter at [index] is a pointer or a function pointer: the types the semantics does not model. Only `null`, `default` and
+     * another pointer convert to one (§23.5.1), so for any other argument the candidate does not apply — `ArgumentNullException.ThrowIfNull`
+     * has a `void*` overload beside the `object?` one, and "the type of parameter 1 is not known" was 1354 calls of nopCommerce (D6c2).
+     */
+    private fun pointerParameter(symbol: CSharpSymbol, index: Int, reduced: Boolean): Boolean {
+        val at = index + if (reduced) 1 else 0
+        return when (symbol) {
+            is CSharpSymbol.LibraryMember -> r.session.parameters(symbol.member).getOrNull(at)?.typeRef
+                .let { it is io.github.dotnetsupport.index.IndexedTypeRef.PointerTo || it is io.github.dotnetsupport.index.IndexedTypeRef.FunctionPointer }
+            is CSharpSymbol.SourceMember -> parameterList(symbol.element)?.parameters?.getOrNull(at)?.type
+                .let { it is CSharpPointerType || it is CSharpFunctionPointerType }
+            else -> false
+        }
+    }
+
+    /** An argument that may go to a pointer: `null`, `default` (and a pointer, which no expression of the modeled types is). */
+    private fun mayBePointer(expression: CSharpExpression): Boolean = unparenthesized(expression).elementType.let {
+        it == SyntaxKind.NullLiteralExpression || it == SyntaxKind.DefaultLiteralExpression || it == SyntaxKind.DefaultExpression
+    } || unparenthesized(expression).let { it is CSharpPrefixUnaryExpression && it.operatorToken?.text == "&" }
 
     internal fun parameterList(element: PsiElement): CSharpParameterList? = when (element) {
         is CSharpMethodDeclaration -> element.parameterList

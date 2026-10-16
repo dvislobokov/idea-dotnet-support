@@ -735,7 +735,8 @@
     проверка «лямбда → делегат» привязывает тело к параметрам делегата кандидата (журнал MudBlazor 15 721 → 9 279); 0.1.219 —
     CS0029 / CS0266 + CS1662 на значении, которое тело лямбды возвращает не того типа (`plugin-lambda-to-delegate.cs`: 4 из 4);
     0.1.222 — интерполированная строка к типу-обработчику преобразуется всегда, константность решает только лучшую перегрузку;
-    0.1.224 — анонимный объект преобразуется к `object` и ни к какому классу (журнал nopCommerce 10 337 → 7 558). CS8933 «using appeared previously as global using» —
+    0.1.224 — анонимный объект преобразуется к `object` и ни к какому классу (журнал nopCommerce 10 337 → 7 558);
+    0.1.225 — перегрузка с параметром-указателем не применяется к обычному аргументу (`ThrowIfNull(void*)`; nopCommerce 7 558 → 4 850). CS8933 «using appeared previously as global using» —
     серым, как CS8019 и IDE0005 (у Roslyn скрытая подсказка, IDE показывают её так же), не ошибка. Тесты `RazorCorpusFalseErrorsTest`, `RoslynTypesTest`, `RoslynMethodTypeInferenceTest`
   - [x] F0 (2026-10-15, без версии: пользователю не видно) — фреймворки модулями рядом с ядром C#: точка расширения `csharpCodeGenerators`, модули `frameworks.razor` / `xaml` / `avalonia` / `grpc` вместо списков в `mayGenerateTypes`; тесты `CSharpCodeGeneratorsTest` (старая формула против новой), `FrameworkBoundaryTest`
 
