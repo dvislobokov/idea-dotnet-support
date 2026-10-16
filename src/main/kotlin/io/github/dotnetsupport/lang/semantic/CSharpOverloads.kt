@@ -32,6 +32,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
     internal val known = IdentityHashMap<Any, Boolean>()
     internal val roslynTypes by lazy { RoslynTypes(r) }
     internal val expressionConversions by lazy { io.github.dotnetsupport.lang.semantic.roslyn.RoslynExpressionConversions(roslynTypes) }
+    internal val betterFunctionMember by lazy { io.github.dotnetsupport.lang.semantic.roslyn.RoslynBetterFunctionMember(roslynTypes, BetternessHost(this)) }
     internal val roslynConversions by lazy { RoslynConversions(RoslynTypes(r)) { operators(it, withBases = false) } }
 
     // the method type parameters of the candidates being resolved: a parameter of the caller's own method is a type like any other
@@ -92,7 +93,8 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         try {
             why = ""
             val outcome = evaluateStrict(symbol, reduced, receiver, arguments, written, infer)
-            if (outcome === Outcome.Unknown) SemanticTrace.trace { "applicable ${site?.text} at ${SemanticTrace.at(site ?: arguments.firstOrNull())}: ${SemanticTrace.show(symbol)} not known — ${why.ifEmpty { "no reason given" }}" }
+            // a reason another line already gives (the inference's) is not repeated
+            if (outcome === Outcome.Unknown && why != ECHO) SemanticTrace.trace { "applicable ${site?.text} at ${SemanticTrace.at(site ?: arguments.firstOrNull())}: ${SemanticTrace.show(symbol)} not known — ${why.ifEmpty { "no reason given" }}" }
             return outcome
         } finally {
             strict = wasStrict
@@ -104,6 +106,8 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
     private var why = ""
 
     private fun unknown(reason: String): Outcome { why = reason; return Outcome.Unknown }
+
+    private val ECHO = "(see the `inference` line)"
 
     private fun evaluateStrict(
         symbol: CSharpSymbol, reduced: Boolean, receiver: SemanticType?, arguments: List<CSharpArgument>, written: List<SemanticType?>?,
@@ -130,7 +134,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                 methodArguments = written ?: when (val inferred = infer(declaredTargets, if (reduced) receiver!! to all.first().type() else null)) {
                     is CSharpTypeInference.Inferred.Known -> inferred.types
                     CSharpTypeInference.Inferred.Failed -> { inferenceFailed = true; continue }
-                    CSharpTypeInference.Inferred.Unknown -> { unknown = true; why = "the inference of its type arguments is not known (see `inference` above)"; continue }
+                    CSharpTypeInference.Inferred.Unknown -> { unknown = true; why = ECHO; continue }
                 }
                 when (constraintsHoldStrict(symbol, methodArguments)) {
                     false -> { constraintFailed = true; continue }
@@ -201,16 +205,15 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
      * Of the applicable [forms], those no other one is better than (§12.6.4.3): one is the best member, two or more an ambiguity; null when
      * a comparison is not known. [receiver]: of a reduced call of extension methods.
      */
-    internal fun unbeaten(forms: List<Form>, arguments: List<CSharpArgument>, receiver: SemanticType?): List<Form>? {
+    internal fun unbeaten(forms: List<Form>, arguments: List<CSharpArgument>, receiver: SemanticType?, site: CSharpSimpleName?): List<Form>? {
         val owners = forms.mapNotNull { (it.symbol as? CSharpSymbol.SourceMember)?.element }
         val wasStrict = strict
         strict = true
         openOwners += owners
         try {
-            val types = arguments.map { a -> a.expression?.let(::argumentType) }
             val beaten = HashSet<Form>()
             for (m in forms) for (n in forms) {
-                if (m !== n && (betterMember(m, n, arguments, types, receiver) ?: return null)) beaten += n
+                if (m !== n && (betterMember(m, n, arguments, receiver, site) ?: return null)) beaten += n
             }
             return forms.filter { it !in beaten }
         } finally {
@@ -246,20 +249,21 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                 }
                 when (outcome) {
                     is Outcome.Applicable -> applicable += outcome.form
-                    Outcome.Unknown -> {
-                        SemanticTrace.trace { "resolve ${site?.text} at ${SemanticTrace.at(site)}: gave up, the applicability of ${SemanticTrace.show(symbol)} is not known" }
-                        return null
-                    }
+                    // the `applicable` line of evaluate says why: no echo here
+                    Outcome.Unknown -> return null
                     else -> {}
                 }
             }
             if (applicable.size == 1) return applicable.single().symbol
             if (applicable.isEmpty()) return null
+            // §12.8.10.3: the extension methods are candidates only when no instance method applies (Roslyn looks them up only then)
+            if (applicable.any { it.receiverTarget == null } && applicable.any { it.receiverTarget != null }) applicable.removeAll { it.receiverTarget != null }
+            if (applicable.size == 1) return applicable.single().symbol
             val pool = if (applicable.any { hasPriority(it.symbol) } && applicable.any { !hasPriority(it.symbol) }) applicable.filter { !hasPriority(it.symbol) } else applicable
             if (pool.size == 1) return pool.single().symbol
             var best: Form? = null
             for (m in pool) {
-                if (pool.all { n -> n === m || betterMember(m, n, arguments, types, receiver) == true }) {
+                if (pool.all { n -> n === m || betterMember(m, n, arguments, receiver, site) == true }) {
                     if (best != null) {
                         val first = best
                         SemanticTrace.trace { "resolve ${site?.text} at ${SemanticTrace.at(site)}: gave up, ${SemanticTrace.show(first.symbol)} and ${SemanticTrace.show(m.symbol)} both unbeaten" }
@@ -268,11 +272,9 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                     best = m
                 }
             }
-            if (best == null) SemanticTrace.trace {
-                // which comparisons did not answer: the case is told by them (betterMember is asked again only when the log is on)
-                val unknown = pool.flatMap { m -> pool.filter { n -> n !== m && betterMember(m, n, arguments, types, receiver) == null }.map { n -> m to n } }
-                    .joinToString { (m, n) -> "${SemanticTrace.show(m.symbol)}(${m.targets.joinToString { p -> SemanticTrace.show(p) }})<${m.methodArguments.joinToString { p -> SemanticTrace.show(p) }}> vs ${SemanticTrace.show(n.symbol)}(${n.targets.joinToString { p -> SemanticTrace.show(p) }})<${n.methodArguments.joinToString { p -> SemanticTrace.show(p) }}>" }
-                "resolve ${site?.text} at ${SemanticTrace.at(site)}: gave up, no best of [${pool.joinToString { SemanticTrace.show(it.symbol) }}]; not known: [$unknown]"
+            // a comparison not known wrote its `better` line; every comparison known and still no best is an ambiguity Roslyn would report
+            if (best == null && pool.all { m -> pool.all { n -> n === m || betterMember(m, n, arguments, receiver, site) != null } }) SemanticTrace.trace {
+                "resolve ${site?.text} at ${SemanticTrace.at(site)}: no best of [${pool.joinToString { m -> "${SemanticTrace.show(m.symbol)}(${m.targets.joinToString { p -> SemanticTrace.show(p) }})" }}]"
             }
             return best?.symbol
         } finally {
@@ -317,10 +319,14 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
             val value = hole.expression?.let(::unparenthesized) ?: return null
             if (value is CSharpLiteralExpression && value.text.let { it.startsWith("\"") || it.startsWith("@\"") }) continue
             if (value is CSharpInvocationExpression && value.expression?.text == "nameof") continue
-            // a call, an element access, a creation is never a constant, whatever it returns (`$"M {ToS(x)}"` of MudBlazor's charts)
-            if (value is CSharpInvocationExpression || value is CSharpElementAccessExpression || value is CSharpBaseObjectCreationExpression) return false
+            // a `const string` (a field, a local, a constant of an assembly) keeps it constant; any other constant (an int) does not
+            val constant = r.expressions.constants.of(value)
+            if (constant != null) { if (constant.kind == CSharpConstantValues.Kind.STRING || constant.kind == CSharpConstantValues.Kind.NULL) continue else return false }
+            // a call, a creation, a variable, a property is never a constant, whatever it returns (`$"M {ToS(x)}"` of MudBlazor's charts)
+            if (r.expressions.constants.isNotConstant(value)) return false
             val type = r.typeOf(value)
-            if (type == null) known = false else if (r.definitionName(type) != STRING) return false else known = false
+            if (type != null && r.definitionName(type) != STRING) return false
+            known = false
         }
         return if (known) true else null
     }
@@ -613,14 +619,5 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         }
 
         /** §12.6.4.7: a signed integral type is a better target than the unsigned ones it does not convert to. */
-        internal val SIGNED_OVER: Map<String, Set<String>> = run {
-            fun s(vararg names: String) = names.map { "System.$it" }.toSet()
-            mapOf(
-                "System.SByte" to s("Byte", "UInt16", "UInt32", "UInt64"),
-                "System.Int16" to s("UInt16", "UInt32", "UInt64"),
-                "System.Int32" to s("UInt32", "UInt64"),
-                "System.Int64" to s("UInt64"),
-            )
-        }
     }
 }

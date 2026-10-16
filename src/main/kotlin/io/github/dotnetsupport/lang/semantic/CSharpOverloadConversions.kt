@@ -325,11 +325,7 @@ private fun CSharpOverloads.strictLambda(lambda: CSharpAnonymousFunctionExpressi
     val target = r.expressions.unwrapExpression(to) ?: return Conversion.UNKNOWN
     val delegate = r.expressions.delegateSignature(target) ?: return Conversion.UNKNOWN
     val count = r.expressions.lambdaParameterCount(lambda)
-    val parameters = when (lambda) {
-        is CSharpSimpleLambdaExpression -> listOfNotNull(lambda.parameter)
-        is CSharpParenthesizedLambdaExpression -> lambda.parameterList?.parameters.orEmpty()
-        else -> (lambda as? CSharpAnonymousMethodExpression)?.parameterList?.parameters
-    }
+    val parameters = lambdaParameters(lambda)
     if (count != null && count != delegate.first.size) return Conversion.NONE
     val kinds = delegateRefKinds(target) ?: return Conversion.UNKNOWN
     var unknown = false
@@ -415,21 +411,10 @@ private fun CSharpOverloads.mentionsCandidateParameter(type: SemanticType): Bool
 }
 
 /** The `return` statements of [lambda]'s own body (not of the lambdas and local functions in it). */
-private fun CSharpOverloads.returnsOf(block: CSharpBlock, lambda: CSharpAnonymousFunctionExpression): List<CSharpReturnStatement> =
+internal fun CSharpOverloads.returnsOf(block: CSharpBlock, lambda: CSharpAnonymousFunctionExpression): List<CSharpReturnStatement> =
     PsiTreeUtil.findChildrenOfType(block, CSharpReturnStatement::class.java).filter {
         PsiTreeUtil.getParentOfType(it, CSharpAnonymousFunctionExpression::class.java, CSharpLocalFunctionStatement::class.java) == lambda
     }
-
-/** The type the body of [lambda] gives: its expression, or what every `return` gives, the same type; null when not known. */
-internal fun CSharpOverloads.strictReturnType(lambda: CSharpAnonymousFunctionExpression): SemanticType? {
-    if (r.expressions.isAsync(lambda.modifiers)) return null
-    lambda.expressionBody?.let { return r.typeOf(it) }
-    val block = lambda.block ?: return null
-    val types = returnsOf(block, lambda).map { s -> s.expression?.let(r::typeOf) ?: return null }
-    val first = types.firstOrNull() ?: return null
-    return first.takeIf { types.all { same(it, first) == true } }
-}
-
 
 /** `ref`, `out`, `in` or "" (by value) of a parameter of a lambda; null for `scoped`, `ref readonly` and what else is not modeled. */
 internal fun CSharpOverloads.lambdaRefKind(p: CSharpParameter): String? {
@@ -461,7 +446,7 @@ internal fun CSharpOverloads.delegateRefKinds(type: SemanticType): List<String>?
  * parameters, compatible by their return type (C# 7.3) and applicable to the delegate's parameter types; NONE when none is, IMPLICIT
  * when exactly one is and its parameters take the delegate's by identity or reference conversion.
  */
-private fun CSharpOverloads.strictGroup(methods: List<CSharpSymbol>, to: SemanticType): Conversion {
+internal fun CSharpOverloads.strictGroup(methods: List<CSharpSymbol>, to: SemanticType): Conversion {
     if (to is SemanticType.Parameter) return Conversion.UNKNOWN
     val target = r.expressions.unwrapExpression(to) ?: return Conversion.UNKNOWN
     val delegate = r.expressions.delegateSignature(target)
@@ -542,7 +527,7 @@ private fun CSharpOverloads.collection(to: SemanticType): Conversion {
 }
 
 /** The methods a name not called stands for (a method group); null when it is no such name. */
-private fun CSharpOverloads.methodGroup(e: CSharpExpression): List<CSharpSymbol>? {
+internal fun CSharpOverloads.methodGroup(e: CSharpExpression): List<CSharpSymbol>? {
     val name = when (e) {
         is CSharpSimpleName -> e
         is CSharpMemberAccessExpression -> e.nameElement
@@ -573,6 +558,13 @@ internal fun CSharpOverloads.targetTyped(value: CSharpExpression): Boolean {
     val e = unparenthesized(value)
     return e is CSharpAnonymousFunctionExpression || e is CSharpCollectionExpression || e is CSharpImplicitObjectCreationExpression || e is CSharpThrowExpression ||
         e.elementType == SyntaxKind.NullLiteralExpression || e.elementType == SyntaxKind.DefaultLiteralExpression || methodGroup(e) != null
+}
+
+/** The parameters of a lambda; null for an anonymous method without a parameter list (`delegate { … }`, any parameters). */
+internal fun lambdaParameters(lambda: CSharpAnonymousFunctionExpression): List<CSharpParameter>? = when (lambda) {
+    is CSharpSimpleLambdaExpression -> listOfNotNull(lambda.parameter)
+    is CSharpParenthesizedLambdaExpression -> lambda.parameterList?.parameters.orEmpty()
+    else -> (lambda as? CSharpAnonymousMethodExpression)?.parameterList?.parameters
 }
 
 /** The kinds of expression the port classifies alone ([RoslynExpressionConversions.Source]); null for the rest. */

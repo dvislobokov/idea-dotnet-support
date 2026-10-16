@@ -451,6 +451,18 @@
     **лямбды в выводе** ~700 (функциональный тип явной лямбды / группы методов к `T`, тело лямбды); типы, неизвестные выше по цепочке,
     и циклы ~1 150 — не порт. Решение: дальше не по строкам журнала, а по файлам Roslyn — D6c4 целиком, затем лямбды в выводе целиком,
     затем D6c5; эхо из журнала убрать (одна строка на причину).
+  - [x] D6c4 (0.1.232; тест `RoslynBetterFunctionMemberTest`, 10 правил, каждое с контрольной CS0029 и без строки `better` в журнале).
+    `BetterFunctionMember`, `MoreSpecificType`, `BetterConversionFromExpression`, `ExpressionMatchExactly`, `BetterConversionTarget`,
+    `BetterCollectionExpressionConversion`, `CanDowngradeConversionFromLambdaToNeither` → `roslyn/RoslynBetterFunctionMember` целиком, по
+    файлу Roslyn, а не по строкам журнала. Выражения порт видит через `Host` (вид преобразования, естественный тип, лямбда, привязанная к
+    делегату через `bindLambda`, элементы коллекции), типы — через `RoslynTypes`; факт, которого нет, — `Unknown` с причиной, адаптер
+    (`CSharpOverloadBetterness`, теперь только адаптер) пишет одну строку `better … vs …: not known — …`. Удалены старые `better`,
+    `betterLambda`, `betterTarget`, `betterUnrelatedTarget`, `betterCollection`, `moreSpecific`, `specific`, `strictReturnType`,
+    `SIGNED_OVER`. Вместе с ним: extension-методы — кандидаты только когда не применим ни один метод экземпляра (§12.8.10.3, как ищет
+    Roslyn); эхо убрано из журнала (`resolve: applicability not known`, `applicable: inference not known`); строка `resolve … no best`
+    остаётся только когда все сравнения известны (это неоднозначность, которую Roslyn бы сообщил). Константность интерполированной строки:
+    `const string` в дырке — константа, переменная / свойство / вызов — нет (`CSharpConstantValues.isNotConstant`). Не перенесено:
+    `NormalizeTaskTypes`, COM `considerRefKinds`, `dynamic`, указатели, submissions, custom modifiers, правила коллекций C# 12.
 - [x] D6d (0.1.189; тест `RoslynConversionsTest`). `ConversionsBase.cs` + `UserDefinedImplicitConversions.cs` → `RoslynConversions`:
   неявные преобразования из типа (тождество, числовые, nullable, ссылочные с вариантностью, массивы, делегаты, параметры типа,
   упаковка, кортежи, span) и пользовательские (множество D, применимые и lifted-операторы, самые подходящие исходный и целевой типы,

@@ -59,6 +59,29 @@ internal class CSharpConstantValues(private val resolver: CSharpNameResolver) {
         }
     }
 
+    /**
+     * Whether [expression] is surely no constant expression (§12.23): a call, a creation, an element access, a lambda, `await`, `this`, or
+     * a name that is a parameter, a property, a method, a field or local without `const`. False where it may be one, or that is not known.
+     */
+    fun isNotConstant(expression: CSharpExpression): Boolean {
+        val e = unparenthesized(expression)
+        if (e is CSharpInvocationExpression || e is CSharpElementAccessExpression || e is CSharpBaseObjectCreationExpression || e is CSharpAnonymousFunctionExpression ||
+            e is CSharpAwaitExpression || e is CSharpThisExpression || e is CSharpInterpolatedStringExpression) return true
+        val name = e as? CSharpIdentifierName ?: (e as? CSharpMemberAccessExpression)?.nameElement as? CSharpIdentifierName ?: return false
+        val symbol = name.identifier?.let(resolver::resolve)?.single ?: return false
+        return when (symbol) {
+            is CSharpSymbol.SourceMember -> when (val element = symbol.element) {
+                is CSharpEnumMemberDeclaration -> false
+                // a property or a method has no field; a field without `const` is none either
+                else -> PsiTreeUtil.getParentOfType(element, CSharpBaseFieldDeclaration::class.java, false)?.modifiers?.none { it.text == "const" } ?: true
+            }
+            is CSharpSymbol.Local -> symbol.symbol.kind != LocalSymbolKind.LOCAL ||
+                PsiTreeUtil.getParentOfType(symbol.symbol.declaration, CSharpLocalDeclarationStatement::class.java)?.modifiers?.none { it.text == "const" } ?: true
+            is CSharpSymbol.LibraryMember -> symbol.member.kind != IndexedMemberKind.CONSTANT && symbol.member.kind != IndexedMemberKind.ENUM_MEMBER
+            else -> false
+        }
+    }
+
     /** The integral types a value of [kind] converts to implicitly in a `case` of a switch on that type (C# §10.2.3, §10.2.11 for literals). */
     fun forSwitch(value: Value, governing: SemanticType): Value? = when {
         enumKey(governing) != null -> value.takeIf { it.kind == Kind.ENUM && it.enum == enumKey(governing) }

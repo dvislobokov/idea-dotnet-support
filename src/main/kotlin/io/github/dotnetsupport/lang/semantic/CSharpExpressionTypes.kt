@@ -1149,7 +1149,7 @@ internal class CSharpExpressionTypes(private val r: CSharpNameResolver) {
         }
     }
 
-    private val constants by lazy { CSharpConstantValues(r) }
+    internal val constants by lazy { CSharpConstantValues(r) }
 
     /**
      * An `int` constant that converts to [wide] implicitly (§10.2.11): a literal, or a constant expression whose value fits — not negative for

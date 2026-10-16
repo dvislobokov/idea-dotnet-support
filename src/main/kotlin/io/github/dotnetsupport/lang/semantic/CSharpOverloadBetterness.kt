@@ -4,267 +4,173 @@ import com.intellij.psi.util.elementType
 import io.github.dotnetsupport.csharp.lang.SyntaxKind
 import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.lang.semantic.CSharpNameResolver.Conversion
-import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Companion.GENERIC_TASKS
-import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Companion.NATURAL_TARGETS
-import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Companion.SIGNED_OVER
-import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Companion.VOID
+import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Companion.STRING
 import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Form
+import io.github.dotnetsupport.lang.semantic.roslyn.RoslynBetterFunctionMember
+import io.github.dotnetsupport.lang.semantic.roslyn.RoslynBetterFunctionMember.Argument
+import io.github.dotnetsupport.lang.semantic.roslyn.RoslynBetterFunctionMember.BetterResult
+import io.github.dotnetsupport.lang.semantic.roslyn.RoslynBetterFunctionMember.Element
+import io.github.dotnetsupport.lang.semantic.roslyn.RoslynBetterFunctionMember.Member
+import io.github.dotnetsupport.lang.semantic.roslyn.RoslynMethodTypeInferrer.Unknown
 
 /*
- * Which candidate is better (C# §12.6.4.3 – §12.6.4.7), as extensions of [CSharpOverloads] (D6e5): the better conversion from an
- * expression ([better]) and from a type ([betterFromType]), the better conversion target, lambdas by what they return, collection
- * targets, and the better function member with its tie-breaks ([betterMember]: non-generic, normal form, no defaults, more specific).
- * Roslyn's `OverloadResolution.cs` replaces it in D6c.
+ * Which candidate is better (C# §12.6.4.3 – §12.6.4.7): Roslyn's `BetterFunctionMember`, ported as [RoslynBetterFunctionMember] (D6c4).
+ * This file is the adapter: a [Form] as the port's [Member], the arguments with the receiver of an extension method first, the resolver
+ * as the port's [RoslynBetterFunctionMember.Host]. A fact the port lacks is one trace line and "not known" (null) here.
  */
 
-// ---- better conversion
-
-/** §12.6.4.5: 1 when the conversion of [e] to [t1] is better than to [t2], -1 the other way round, 0 neither, null not known. */
-internal fun CSharpOverloads.better(e: CSharpExpression, type: SemanticType?, t1: SemanticType, t2: SemanticType): Int? {
-    when (same(t1, t2)) {
-        true -> return 0
-        null -> return null
-        false -> {}
+/** Whether [m] is a better function member than [n] for the call at [site]; null when not known. [receiver]: of a reduced call. */
+internal fun CSharpOverloads.betterMember(m: Form, n: Form, arguments: List<CSharpArgument>, receiver: SemanticType?, site: CSharpSimpleName?): Boolean? {
+    val m1 = member(m, arguments.size) ?: return null
+    val m2 = member(n, arguments.size) ?: return null
+    if ((m.receiverTarget != null) != (n.receiverTarget != null)) {
+        // Roslyn never compares the two: the extension methods are looked up only when no instance method applies (resolve drops them)
+        SemanticTrace.trace { "better ${site?.text} at ${SemanticTrace.at(site)}: an instance method against an extension method" }
+        return null
     }
-    val value = unparenthesized(e)
-    if (value is CSharpAnonymousFunctionExpression) return betterLambda(value, t1, t2)
-    if (value is CSharpCollectionExpression) return betterCollection(t1, t2)
-    if (type == null) {
-        val targetTyped = value.elementType == SyntaxKind.NullLiteralExpression || value.elementType == SyntaxKind.DefaultLiteralExpression ||
-            value is CSharpImplicitObjectCreationExpression || value is CSharpThrowExpression
-        return if (targetTyped) betterTarget(t1, t2) else null
+    val args = ArrayList<Argument>()
+    if (m.receiverTarget != null) args += Argument.Receiver(receiver ?: return null)
+    for (argument in arguments) args += Argument.Expression(argument.expression ?: return null)
+    return try {
+        betterFunctionMember.betterFunctionMember(m1, m2, args) == BetterResult.LEFT
+    } catch (e: Unknown) {
+        SemanticTrace.trace { "better ${site?.text} at ${SemanticTrace.at(site)}: ${SemanticTrace.show(m.symbol)} vs ${SemanticTrace.show(n.symbol)}: not known — ${e.describe()}" }
+        null
     }
-    if (value is CSharpInterpolatedStringExpression) {
-        // C# 10: a handler conversion is better than any other — for a non-constant interpolated string only (§12.6.4.5); a constant one
-        // is a `string` and goes on to the exact match, where `string` wins
-        val h1 = isHandler(t1)
-        val h2 = isHandler(t2)
-        if (h1 != h2) when (constantInterpolation(value)) {
-            false -> return if (h1) 1 else -1
-            null -> return null
-            true -> {}
-        }
-    }
-    val exact1 = same(type, t1)
-    val exact2 = same(type, t2)
-    if (exact1 == true && exact2 == false) return 1
-    if (exact2 == true && exact1 == false) return -1
-    if (exact1 == null || exact2 == null) return null
-    return betterTarget(t1, t2)
 }
 
-/** §12.6.4.5 for an argument known by its type alone (the receiver of an extension method): the exact match, then the better target. */
-internal fun CSharpOverloads.betterFromType(type: SemanticType, t1: SemanticType, t2: SemanticType): Int? {
-    when (same(t1, t2)) {
-        true -> return 0
-        null -> return null
-        false -> {}
+/** §12.6.4.5 for an argument known by its type alone (the receiver in the query translation): 1 when [t1] is better, -1, 0; null not known. */
+internal fun CSharpOverloads.betterFromType(type: SemanticType, t1: SemanticType, t2: SemanticType): Int? = try {
+    when (betterFunctionMember.betterConversionFromExpression(Argument.Receiver(type), t1, t2).first) {
+        BetterResult.LEFT -> 1
+        BetterResult.RIGHT -> -1
+        BetterResult.NEITHER -> 0
     }
-    val exact1 = same(type, t1)
-    val exact2 = same(type, t2)
-    if (exact1 == true && exact2 == false) return 1
-    if (exact2 == true && exact1 == false) return -1
-    if (exact1 == null || exact2 == null) return null
-    return betterTarget(t1, t2)
+} catch (e: Unknown) {
+    null
 }
 
 internal fun CSharpOverloads.isHandler(type: SemanticType): Boolean = type is SemanticType.Library && type.type.attributes.any { it.endsWith("InterpolatedStringHandlerAttribute") }
 
-/** §12.6.4.7, the better conversion target. */
-internal fun CSharpOverloads.betterTarget(t1: SemanticType, t2: SemanticType): Int? {
-    when (same(t1, t2)) {
-        true -> return 0
-        null -> return null
-        false -> {}
-    }
-    val n1 = r.definitionName(t1)
-    val n2 = r.definitionName(t2)
-    if (n1 != null && n2 != null) {
-        if (n2 in SIGNED_OVER[n1].orEmpty()) return 1
-        if (n1 in SIGNED_OVER[n2].orEmpty()) return -1
-    }
-    val c12 = classify(t1, t2)
-    val c21 = classify(t2, t1)
-    if (ok(c12) && c21 == Conversion.NONE) return 1
-    if (ok(c21) && c12 == Conversion.NONE) return -1
-    if (c12 == Conversion.NONE && c21 == Conversion.NONE) return betterUnrelatedTarget(t1, t2)
-    return null
+/** [form] as the port sees it, the receiver of a reduced call its first argument; null when a parameter type is not known. */
+private fun CSharpOverloads.member(form: Form, argumentCount: Int): Member? {
+    val reduced = form.receiverTarget != null
+    val targets = (listOfNotNull(form.receiverTarget) + form.targets).map { it ?: return null }
+    val definitionTargets = (if (reduced) listOf(form.declaredReceiver ?: return null) else emptyList()) + form.declaredTargets.map { it ?: return null }
+    val refKinds = (if (reduced) listOf(null) else emptyList<String?>()) + (if (form.refKinds.size == argumentCount) form.refKinds else List(argumentCount) { null })
+    val declaredParameterCount = form.declared.size + (if (reduced) 1 else 0)
+    val count = targets.size
+    // `GetParameterCounts`: an expanded form uses as many parameters as there are arguments, or all but the unused `params` one
+    val parametersUsed = if (form.expanded) (if (count < declaredParameterCount) declaredParameterCount - 1 else count) else declaredParameterCount
+    return Member(
+        arity = form.methodArguments.size, expanded = form.expanded, targets = targets, refKinds = refKinds, definitionTargets = definitionTargets,
+        declaredParameterCount = declaredParameterCount, parametersUsed = parametersUsed, paramsType = form.paramsType,
+        toLastParameter = List(count) { form.expanded && it >= declaredParameterCount - 1 },
+    )
 }
 
-/**
- * Roslyn's `BetterConversionTargetCore` for two types with no conversion either way: `Task<S1>` against `Task<S2>` by `S1` and `S2`; a
- * delegate (or `Expression<D>`) returning a value against one returning `void`, else by their return types — for any argument, not only
- * a lambda: `KeyUp(null)` takes the `Func<KeyboardEventArgs, Task>` overload over the `Action<KeyboardEventArgs>` one (MudBlazor, CS0121).
- */
-private fun CSharpOverloads.betterUnrelatedTarget(t1: SemanticType, t2: SemanticType): Int? {
-    val task1 = r.definitionName(t1) in GENERIC_TASKS
-    val task2 = r.definitionName(t2) in GENERIC_TASKS
-    if (task1 || task2) {
-        if (!task1 || !task2) return 0
-        val s1 = (t1 as? SemanticType.Library)?.arguments?.singleOrNull() ?: return null
-        val s2 = (t2 as? SemanticType.Library)?.arguments?.singleOrNull() ?: return null
-        return betterTarget(s1, s2)
-    }
-    val d1 = r.expressions.unwrapExpression(t1)?.let(r.expressions::delegateSignature)
-    val d2 = r.expressions.unwrapExpression(t2)?.let(r.expressions::delegateSignature)
-    if (d1 == null || d2 == null) return 0
-    val r1 = d1.second ?: return null
-    val r2 = d2.second ?: return null
-    val void1 = r.definitionName(r1) == VOID
-    val void2 = r.definitionName(r2) == VOID
-    if (void1 != void2) return if (void2) 1 else -1
-    return if (void1) 0 else betterTarget(r1, r2)
-}
+/** The resolver as the port's host: the expressions as Roslyn's bound nodes know them. */
+internal class BetternessHost(private val o: CSharpOverloads) : RoslynBetterFunctionMember.Host {
+    private val r get() = o.r
 
-/** A lambda against two delegates taking the same parameters: by what the body returns (§12.6.4.5). */
-private fun CSharpOverloads.betterLambda(lambda: CSharpAnonymousFunctionExpression, t1: SemanticType, t2: SemanticType): Int? {
-    val d1 = r.expressions.unwrapExpression(t1)?.let(r.expressions::delegateSignature)
-    val d2 = r.expressions.unwrapExpression(t2)?.let(r.expressions::delegateSignature)
-    // C# 10: a conversion to a delegate type is better than the function type conversion to `Delegate`, `object`, `Expression`
-    if (d1 != null && d2 == null && r.definitionName(t2) in NATURAL_TARGETS) return 1
-    if (d2 != null && d1 == null && r.definitionName(t1) in NATURAL_TARGETS) return -1
-    if (d1 == null || d2 == null) return null
-    if (d1.first.size != d2.first.size) return 0
-    for ((a, b) in d1.first.zip(d2.first)) if (same(a, b) != true) return if (same(a, b) == false) 0 else null
-    val r1 = d1.second ?: return null
-    val r2 = d2.second ?: return null
-    val void1 = r.definitionName(r1) == VOID
-    val void2 = r.definitionName(r2) == VOID
-    val body = if (strict) strictReturnType(lambda) else r.expressions.lambdaReturnType(lambda)
-    if (void1 != void2) {
-        if (body == null || r.definitionName(body) == VOID) return null
-        return if (void1) -1 else 1
-    }
-    if (void1) return 0
-    body ?: return null
-    val async = r.expressions.isAsync(lambda.modifiers)
-    val y = if (async) (body as? SemanticType.Library)?.arguments?.firstOrNull() ?: return null else body
-    val y1 = if (async) (r1 as? SemanticType.Library)?.arguments?.firstOrNull() ?: return null else r1
-    val y2 = if (async) (r2 as? SemanticType.Library)?.arguments?.firstOrNull() ?: return null else r2
-    val e1 = same(y, y1)
-    val e2 = same(y, y2)
-    if (e1 == true && e2 == false) return 1
-    if (e2 == true && e1 == false) return -1
-    if (e1 == null || e2 == null) return null
-    return betterTarget(y1, y2)
-}
+    private fun delegateOf(to: SemanticType): SemanticType? = r.expressions.unwrapExpression(to)?.takeIf { r.expressions.delegateSignature(it) != null }
 
-/** C# 12: a collection expression goes better to `ReadOnlySpan<E>` than to `Span<E>`, to spans than to arrays and other collections. */
-private fun CSharpOverloads.betterCollection(t1: SemanticType, t2: SemanticType): Int? {
-    fun rank(t: SemanticType): Int = when (r.definitionName(t)) {
-        "System.ReadOnlySpan`1" -> 2
-        "System.Span`1" -> 1
-        else -> 0
-    }
-    val a = rank(t1)
-    val b = rank(t2)
-    if (a != b) return if (a > b) 1 else -1
-    if (a > 0) return 0
-    return betterTarget(t1, t2)
-}
-
-/** §12.6.4.3: whether [m] is a better function member than [n] for the call; null when not known. */
-internal fun CSharpOverloads.betterMember(m: Form, n: Form, arguments: List<CSharpArgument>, types: List<SemanticType?>, receiver: SemanticType? = null): Boolean? {
-    var mBetter = false
-    var nBetter = false
-    var identical = true
-    // the receiver of two extension methods is their first argument: `Queryable.Where` over `Enumerable.Where` for an `IQueryable<T>`
-    val p = m.receiverTarget
-    val q = n.receiverTarget
-    if (p != null && q != null) {
-        val sameType = same(p, q) ?: return null
-        if (!sameType) {
-            identical = false
-            when (betterFromType(receiver ?: return null, p, q) ?: return null) {
-                1 -> mBetter = true
-                -1 -> nBetter = true
+    override fun conversionKind(e: CSharpExpression, to: SemanticType): String {
+        val value = o.unparenthesized(e)
+        return when {
+            value is CSharpInterpolatedStringExpression -> if (o.isHandler(to)) RoslynBetterFunctionMember.INTERPOLATED_STRING_HANDLER else RoslynBetterFunctionMember.OTHER
+            value is CSharpAnonymousFunctionExpression -> if (delegateOf(to) != null) RoslynBetterFunctionMember.ANONYMOUS_FUNCTION else RoslynBetterFunctionMember.FUNCTION_TYPE
+            value is CSharpCollectionExpression -> RoslynBetterFunctionMember.COLLECTION_EXPRESSION
+            o.methodGroup(value) != null -> if (delegateOf(to) != null) RoslynBetterFunctionMember.METHOD_GROUP else RoslynBetterFunctionMember.FUNCTION_TYPE
+            value is CSharpConditionalExpression && r.typeOf(value) == null -> RoslynBetterFunctionMember.CONDITIONAL_EXPRESSION
+            else -> {
+                val type = r.typeOf(value) ?: return RoslynBetterFunctionMember.OTHER
+                when {
+                    o.same(type, to) == true -> RoslynBetterFunctionMember.IDENTITY
+                    isSpanConversion(type, to) -> RoslynBetterFunctionMember.IMPLICIT_SPAN
+                    else -> RoslynBetterFunctionMember.OTHER
+                }
             }
         }
     }
-    for ((i, argument) in arguments.withIndex()) {
-        val p = m.targets[i] ?: return null
-        val q = n.targets[i] ?: return null
-        val sameType = same(p, q) ?: return null
-        if (sameType) continue
-        identical = false
-        val expression = argument.expression ?: return null
-        when (better(expression, types[i], p, q) ?: return null) {
-            1 -> mBetter = true
-            -1 -> nBetter = true
+
+    /** C# 14: an array to `Span<T>` / `ReadOnlySpan<T>`, a string to `ReadOnlySpan<char>` — the implicit span conversion. */
+    private fun isSpanConversion(from: SemanticType, to: SemanticType): Boolean {
+        val target = r.definitionName(to)
+        if (target != "System.Span`1" && target != "System.ReadOnlySpan`1") return false
+        return from is SemanticType.ArrayOf || r.definitionName(from) == STRING && target == "System.ReadOnlySpan`1"
+    }
+
+    override fun naturalType(e: CSharpExpression): SemanticType? {
+        val value = o.unparenthesized(e)
+        if (o.targetTyped(value)) return null
+        // a conditional expression or a tuple literal may have no natural type (target-typed, C# 9)
+        if (value is CSharpConditionalExpression || value is CSharpTupleExpression) return r.typeOf(value)
+        return r.typeOf(value) ?: throw Unknown("the type of `${SemanticTrace.text(value)}` is not known")
+    }
+
+    override fun isInterpolatedString(e: CSharpExpression): Boolean = o.unparenthesized(e) is CSharpInterpolatedStringExpression
+
+    override fun isConstantInterpolatedString(e: CSharpExpression): Boolean =
+        o.constantInterpolation(o.unparenthesized(e) as CSharpInterpolatedStringExpression) ?: throw Unknown("whether `${SemanticTrace.text(e)}` is constant is not known")
+
+    override fun isImplicitlyTypedOutVariable(e: CSharpExpression): Boolean {
+        val value = o.unparenthesized(e)
+        return value is CSharpDeclarationExpression && value.type?.let(r::isVar) != false || value.elementType == SyntaxKind.IdentifierName && value.text == "_"
+    }
+
+    override fun lambdaOf(e: CSharpExpression): CSharpAnonymousFunctionExpression? = o.unparenthesized(e) as? CSharpAnonymousFunctionExpression
+
+    override fun isAsync(lambda: CSharpAnonymousFunctionExpression): Boolean = r.expressions.isAsync(lambda.modifiers)
+
+    override fun inferredReturnType(lambda: CSharpAnonymousFunctionExpression, delegate: SemanticType): SemanticType? {
+        if (returnExpressions(lambda).isEmpty()) return null
+        return boundFor(lambda, delegate) { r.expressions.lambdaReturnType(lambda) ?: throw Unknown("the type the lambda at ${SemanticTrace.at(lambda)} returns is not known") }
+    }
+
+    override fun <T> boundFor(lambda: CSharpAnonymousFunctionExpression, delegate: SemanticType, body: () -> T): T {
+        val parameters = lambdaParameters(lambda)
+        if (parameters == null || parameters.isEmpty() || parameters.any { it.type != null }) return body()
+        val signature = r.expressions.delegateSignature(delegate) ?: throw Unknown("the signature of $delegate is not known")
+        if (signature.first.size != parameters.size) throw Unknown("the lambda at ${SemanticTrace.at(lambda)} takes ${parameters.size} parameters, $delegate ${signature.first.size}")
+        return r.bindLambda(lambda, parameters, signature.first.map { it ?: throw Unknown("a parameter type of $delegate is not known") }, body)
+    }
+
+    override fun returnExpressions(lambda: CSharpAnonymousFunctionExpression): List<CSharpExpression> {
+        lambda.expressionBody?.let { return listOf(it) }
+        val block = lambda.block ?: return emptyList()
+        return o.returnsOf(block, lambda).mapNotNull { it.expression }
+    }
+
+    override fun tupleElements(e: CSharpExpression): List<CSharpExpression>? =
+        (o.unparenthesized(e) as? CSharpTupleExpression)?.arguments?.map { it.expression ?: throw Unknown("an element of the tuple is missing") }
+
+    override fun isMethodGroup(e: CSharpExpression): Boolean = o.methodGroup(o.unparenthesized(e)) != null
+
+    override fun methodGroupConvertsTo(e: CSharpExpression, delegate: SemanticType): Boolean {
+        val group = o.methodGroup(o.unparenthesized(e)) ?: return false
+        return when (o.strictGroup(group, delegate)) {
+            Conversion.NONE -> false
+            Conversion.UNKNOWN -> throw Unknown("whether the method group `${SemanticTrace.text(e)}` converts to $delegate is not known")
+            else -> true
         }
     }
-    if (mBetter != nBetter) return mBetter
-    if (mBetter) return false
-    if (!identical) return false
-    // C# 7.2: an argument without `in` goes better to a parameter by value than to an `in` one
-    if (m.refKinds.size == arguments.size && n.refKinds.size == arguments.size) {
-        var mValue = false
-        var nValue = false
-        for ((i, argument) in arguments.withIndex()) {
-            if (argument.refKindKeyword != null) continue
-            if (m.refKinds[i] == null && n.refKinds[i] == "in") mValue = true
-            if (n.refKinds[i] == null && m.refKinds[i] == "in") nValue = true
-        }
-        if (mValue != nValue) return mValue
-        if (mValue) return false
-    }
-    // the tie-breaks, when the parameter types of the arguments are the same
-    if (!m.generic && n.generic) return true
-    if (m.generic && !n.generic) return false
-    if (!m.expanded && n.expanded) return true
-    if (m.expanded && !n.expanded) return false
-    if (m.expanded && n.expanded) {
-        if (m.declared.size != n.declared.size) return m.declared.size > n.declared.size
-        // C# 13 `params` collections: `ReadOnlySpan<T>` over `Span<T>` over the others
-        val a = m.paramsType
-        val b = n.paramsType
-        if (a != null && b != null && same(a, b) == false) return betterCollection(a, b)?.let { it > 0 }
-    }
-    if (!m.defaults && n.defaults) return true
-    if (m.defaults && !n.defaults) return false
-    // the receiver of two extension methods is their first parameter (`this IEnumerable<T>` against `this IEnumerable<KeyValuePair<TKey, TValue>>`
-    // of AwesomeAssertions' `Should`: the second is more specific — CS0121 was ours alone)
-    val mReceiver = if (m.receiverTarget != null && n.receiverTarget != null) listOf(m.declaredReceiver ?: return null) else emptyList()
-    val nReceiver = if (m.receiverTarget != null && n.receiverTarget != null) listOf(n.declaredReceiver ?: return null) else emptyList()
-    return moreSpecific(mReceiver + m.declaredTargets, nReceiver + n.declaredTargets)
-}
 
-/** §12.6.4.3, the more specific parameter types: a type parameter is less specific than any other type, recursively. */
-private fun CSharpOverloads.moreSpecific(a: List<SemanticType?>, b: List<SemanticType?>): Boolean? {
-    var more = false
-    var less = false
-    for ((x, y) in a.zip(b)) {
-        when (specific(x ?: return null, y ?: return null)) {
-            1 -> more = true
-            -1 -> less = true
-            null -> return null
+    override fun collectionElements(e: CSharpExpression): List<Element>? = (o.unparenthesized(e) as? CSharpCollectionExpression)?.elements?.map { element ->
+        when (element) {
+            is CSharpSpreadElement -> Element.Spread
+            is CSharpExpressionElement -> Element.Expression(element.expression ?: throw Unknown("an element of the collection expression is missing"))
+            else -> throw Unknown("an element of the collection expression is not modeled")
         }
     }
-    return more && !less
-}
 
-private fun CSharpOverloads.specific(x: SemanticType, y: SemanticType): Int? {
-    val xp = x is SemanticType.Parameter
-    val yp = y is SemanticType.Parameter
-    if (xp && yp) return 0
-    if (yp) return 1
-    if (xp) return -1
-    val xa = arguments(x)
-    val ya = arguments(y)
-    if (r.definitionName(x) != r.definitionName(y) || xa.size != ya.size) return 0
-    var more = false
-    var less = false
-    for ((p, q) in xa.zip(ya)) when (specific(p ?: return null, q ?: return null)) {
-        1 -> more = true
-        -1 -> less = true
-        null -> return null
+    override fun identicalDelegateParameters(d1: SemanticType, d2: SemanticType): Boolean {
+        val s1 = r.expressions.delegateSignature(d1) ?: throw Unknown("the signature of $d1 is not known")
+        val s2 = r.expressions.delegateSignature(d2) ?: throw Unknown("the signature of $d2 is not known")
+        if (s1.first.size != s2.first.size) return false
+        val k1 = o.delegateRefKinds(d1) ?: throw Unknown("the ref kinds of $d1 are not known")
+        val k2 = o.delegateRefKinds(d2) ?: throw Unknown("the ref kinds of $d2 are not known")
+        if (k1 != k2) return false
+        return s1.first.indices.all { o.same(s1.first[it], s2.first[it]) ?: throw Unknown("the parameters of $d1 and $d2 cannot be compared") }
     }
-    return if (more && !less) 1 else if (less && !more) -1 else 0
-}
-
-private fun CSharpOverloads.arguments(type: SemanticType): List<SemanticType?> = when (type) {
-    is SemanticType.Library -> type.arguments
-    is SemanticType.Source -> type.arguments
-    is SemanticType.ArrayOf -> listOf(type.element)
-    is SemanticType.Parameter -> emptyList()
 }

@@ -3,6 +3,15 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.232
+
+- Which of two applicable overloads is better is decided as the compiler decides it (the port of Roslyn's better function member):
+  the exact match of a lambda by what it returns, `Queryable` over `Enumerable` for an `IQueryable` receiver, a delegate returning a value
+  over a `void` one, the normal form over the expanded `params` one, a non-generic method over a generic one, the more specific
+  parameter types, a signed integral type over an unsigned one, a value parameter over an `in` one. The older rules are removed.
+- A `const string` in an interpolated string keeps it constant; a variable, a property or a call does not — the choice between
+  `AppendLine(string)` and the handler overload is made for every interpolated string.
+
 ## 0.1.231
 
 - The overload a call goes to is chosen as the compiler errors judge it: Roslyn's type inference with the lambdas, the ported

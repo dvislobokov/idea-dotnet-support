@@ -111,7 +111,7 @@ internal class CSharpOverloadChecks(private val checks: CSharpSemanticChecks, pr
             val nearest = applicable.minOf { group.candidates[it].depth }
             val kept = applicable.filter { group.candidates[it].depth == nearest }
             val forms = kept.map { (outcomes[it] as Outcome.Applicable).form }
-            val best = overloads.unbeaten(forms, arguments, receiver) ?: return quiet
+            val best = overloads.unbeaten(forms, arguments, receiver, callee) ?: return quiet
             if (best.size < 2 || !group.ordered) return quiet
             val first = kept.filter { forms[kept.indexOf(it)] in best }.take(2).map { group.candidates[it] }
             return Analysis(callee, arguments, only, ambiguous = first[0] to first[1])
