@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.202
+
+- Closing a project while its source generators or analyzers are still running no longer reports an internal error of the plugin
+  ("Already disposed" in the IDE log).
+
 ## 0.1.201
 
 - No false "Possible null reference argument" (CS8604) in the arms of a `switch` expression after a `null => …` arm, nor in the sections of

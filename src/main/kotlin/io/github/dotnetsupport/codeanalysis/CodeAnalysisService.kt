@@ -85,6 +85,7 @@ class CodeAnalysisService(private val project: Project) : Disposable {
     @Volatile private var connection: HelperConnection? = null
     @Volatile private var lastUse = 0L
     @Volatile private var disposed = false
+    private val lifecycle = Any()
     @Volatile private var testConnection: HelperConnection? = null
 
     private class Pending(val projectFile: VirtualFile) {
@@ -95,6 +96,10 @@ class CodeAnalysisService(private val project: Project) : Disposable {
     }
 
     init {
+        // Disposer disposes the children last-registered first and the parent after them: this child sets the flag before the alarms
+        // above die, so a request ending on a pooled thread while the project closes no longer adds to a disposed alarm (SEVERE
+        // "Already disposed", seen by the UI robot); the lock closes the window between the check and the add
+        Disposer.register(this) { synchronized(lifecycle) { disposed = true } }
         project.messageBus.connect(this).subscribe(DotNetBuildListener.TOPIC, DotNetBuildListener { _, _ -> afterBuild() })
     }
 
@@ -354,8 +359,11 @@ class CodeAnalysisService(private val project: Project) : Disposable {
         if (generate) entry.generate = true
         if (whole) entry.whole = true
         entry.paths += paths
-        alarm.cancelAllRequests()
-        alarm.addRequest({ executor.execute(::drain) }, delayMs)
+        synchronized(lifecycle) {
+            if (disposed) return
+            alarm.cancelAllRequests()
+            alarm.addRequest({ executor.execute(::drain) }, delayMs)
+        }
     }
 
     private fun drain() {
@@ -573,9 +581,11 @@ class CodeAnalysisService(private val project: Project) : Disposable {
     private fun workDirectory(): String = SolutionService.getInstance(project).solutionFiles().firstOrNull()?.parent?.path ?: project.basePath ?: DotNetHelper.root().path
 
     private fun scheduleIdleCheck() {
-        if (disposed) return
-        idleAlarm.cancelAllRequests()
-        idleAlarm.addRequest(::stopIfIdle, DotNetSettings.getInstance().codeAnalysisIdleMinutes * 60_000L + 1_000)
+        synchronized(lifecycle) {
+            if (disposed) return
+            idleAlarm.cancelAllRequests()
+            idleAlarm.addRequest(::stopIfIdle, DotNetSettings.getInstance().codeAnalysisIdleMinutes * 60_000L + 1_000)
+        }
     }
 
     /** No request for the idle time: the helper ends (its memory goes back), the next request starts it again. */
