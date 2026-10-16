@@ -468,6 +468,9 @@
     чужого плагина, потому что `<ProjectReference Include="$(SolutionDir)\…" />` делает ссылки «неизвестными» и `sees` видит всё. Решение
     пользователя 2026-10-16: сначала **Open Solution** (открывать `.sln` как проект IDE, как Rider; при папке с несколькими — выбор; контекст
     только его проектов), потом `$(SolutionDir)` = папка активного solution, потом остаток журнала уже в контексте solution.
+    Сделано: 0.1.242 Open Solution (ROADMAP, «Действия над solution»), 0.1.243 — `sees` при неизвестных ссылках ограничен проектами
+    активного solution (`CSharpSemanticEnvironment.solutionProjects`), `$(SolutionDir)` в `ProjectReference` резолвится относительно папки
+    активного solution внутри VFS (тест `RazorCorpusFalseErrorsTest.testTheSolutionBoundsWhatAProjectWithUnknownReferencesSees`).
   - [x] Закрытие журнала, шаг 5 (0.1.239; тесты в `CSharpTypingGapsTest`). 42 строки `lowerBoundTypeArgumentInference:664` («тип элемента
     `?` выше по цепочке») — четыре корня: `return`'ы лямбды разных типов (`IEnumerable<X>` и `List<X>`) — лучший общий тип §12.6.3.15
     (`LambdaArgument.bestCommonType`), `return null` / `default` / кортеж с таким элементом — «нет типа», не отказ (`typeless`);

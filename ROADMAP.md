@@ -35,9 +35,12 @@
   solution спрашивает при старте (попап, при отказе — нотификация), .NET → Select Solution… меняет; `SolutionService.solutionFiles()`
   отдаёт только активный — панель Solution, Build, NuGet, тесты и сервер языка работают в нём; выбор сервера языка переехал сюда.
   Иконка solution folder — сиреневая, как в Rider. Сценарий — `debug-playground/Extra/Extra.sln` (README, «Open Solution»).
-  **Дальше**: (2) контекст проектов активного solution — `projectOf(file)`, `sees`, assemblies только по его проектам, файлы чужих
-  проектов — вне контекста; (3) `$(SolutionDir)` в `ProjectReference` = папка активного solution (nopCommerce, 9 строк журнала PayPal).
-  «Open with» из проводника Windows — не делаем (решение пользователя 2026-10-16).
+  Проверено в WSL настоящей мышью 2026-10-16 (README площадки). 0.1.243: solution ограничивает видимость — при ссылках, которых из
+  файла проекта не прочитать (`$(Свойство)\…`, `Directory.Build.props` со ссылками), видны все проекты активного solution и ничего вне
+  его (`CSharpSemanticEnvironment.sees` → `solutionProjects`); `$(SolutionDir)` в `ProjectReference` — папка активного solution;
+  нотификация платформы «C# solution build scripts found» снята (`canImportProjectAfterwards = false`). Не сделано: проекты вне папки
+  solution (`..\Console` в `Extra.sln`) в панели без файлов — content root для них; «Open with» из проводника Windows — не делаем
+  (решение пользователя 2026-10-16).
 
 ## Заход 2 — навигация и редактор без парсера
 - [x] Сканер объявлений поверх лексера (`CSharpDeclarations`): namespace (в т.ч. file-scoped), типы, члены (поля, свойства, индексаторы, методы, конструкторы, операторы, события, делегаты, enum-члены) по заголовку до `{` / `;` / `=` / `=>` и балансу скобок; generic-методы, tuple-типы, явные реализации интерфейсов, атрибуты, top-level program; на недописанном коде — меньше объявлений, без исключений. Парсер строит по нему PSI-узел на объявление (`CSharpDeclaration`), внутри членов токены остаются плоскими

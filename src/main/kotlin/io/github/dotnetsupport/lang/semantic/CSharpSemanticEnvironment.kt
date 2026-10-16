@@ -17,6 +17,7 @@ import com.intellij.util.io.IOUtil
 import com.intellij.util.io.KeyDescriptor
 import io.github.dotnetsupport.index.AssemblyIndexService
 import io.github.dotnetsupport.index.AssemblyIndexSet
+import io.github.dotnetsupport.view.resolveFile
 import io.github.dotnetsupport.lang.CSharpFileType
 import io.github.dotnetsupport.msbuild.CompilationModel
 import io.github.dotnetsupport.msbuild.GlobalUsing
@@ -157,9 +158,21 @@ object CSharpSemanticEnvironment {
         if (own == there) return true
         // the built output of that project among the assemblies of this one says it is referenced, however the reference is written
         if (assemblies(file).indexes.any { it.assemblyName.equals(there.nameWithoutExtension, ignoreCase = true) }) return true
-        val referenced = referencedProjects(file.project, own) ?: return true
+        // references not known for sure: everything of the solution the project works in (Open Solution, 0.1.243), nothing outside it
+        val referenced = referencedProjects(file.project, own) ?: return solutionProjects(file.project)?.let { there.path.lowercase() in it } ?: true
         return there.path.lowercase() in referenced
     }
+
+    /** The project files of the active solution, lower case; null when the folder has no solution (a folder of projects sees them all). */
+    fun solutionProjects(project: com.intellij.openapi.project.Project): Set<String>? {
+        val solutions = io.github.dotnetsupport.solution.SolutionService.getInstance(project)
+        val solution = solutions.solutionFiles().firstOrNull() ?: return null
+        return solutions.solution(solution).allProjects.mapNotNull { it.resolveFile(solution)?.path?.lowercase() }.toSet()
+    }
+
+    /** The folder of the active solution: what `$(SolutionDir)` stands for in a `ProjectReference` (nopCommerce's plugins reference `$(SolutionDir)\…\Nop.Web.csproj`). */
+    private fun solutionDirectory(project: com.intellij.openapi.project.Project): VirtualFile? =
+        io.github.dotnetsupport.solution.SolutionService.getInstance(project).solutionFiles().firstOrNull()?.parent
 
     /**
      * The project files [projectFile] references, transitively, by their paths in lower case; null when they cannot be known for sure — a
@@ -174,8 +187,13 @@ object CSharpSemanticEnvironment {
             val current = queue.removeFirst()
             if (importsAddReferences(current)) return null
             for (reference in solutions.msBuildProject(current).projectReferences) {
-                if ('$' in reference) return null
-                val target = current.parent?.findFileByRelativePath(reference.replace('\\', '/')) ?: return null
+                val slashed = reference.replace('\\', '/')
+                // `$(SolutionDir)` is the folder of the active solution (a trailing separator included, as Visual Studio passes it)
+                val solutionDir = Regex("^\\$\\(SolutionDir\\)/?", RegexOption.IGNORE_CASE)
+                val (base, relative) = if (solutionDir.containsMatchIn(slashed)) (solutionDirectory(project) ?: return null) to solutionDir.replace(slashed, "")
+                    else (current.parent ?: return null) to slashed
+                if ('$' in relative) return null
+                val target = base.findFileByRelativePath(relative) ?: return null
                 if (found.add(target.path.lowercase())) queue.add(target)
             }
         }

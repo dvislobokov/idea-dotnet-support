@@ -129,6 +129,10 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
             files[path] = psi
             return true
         }
+        // the solution files of the root: the active solution bounds what a project with unknown references sees and gives `$(SolutionDir)`
+        // its meaning (Open Solution, 0.1.243) — nopCommerce's plugins reference `$(SolutionDir)\…\Nop.Web.csproj`
+        for (solution in root.listFiles { f -> f.isFile && f.extension.lowercase() in setOf("sln", "slnx") }.orEmpty()) myFixture.addFileToProject(solution.name, solution.readText())
+        io.github.dotnetsupport.solution.SolutionService.getInstance(project).solutionFilesChanged()
         for (csproj in projects) {
             val projectFolder = csproj.parentFile.relativeTo(root).invariantSeparatorsPath
             // the project file itself: the semantics finds the project of a file by it, as in the IDE (CompilationModel.projectOf)

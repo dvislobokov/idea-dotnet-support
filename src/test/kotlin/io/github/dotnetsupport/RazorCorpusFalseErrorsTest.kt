@@ -6,6 +6,8 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpFeature
 import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
+import io.github.dotnetsupport.solution.ActiveSolution
+import io.github.dotnetsupport.solution.SolutionService
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
 import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
@@ -407,6 +409,57 @@ class RazorCorpusFalseErrorsTest : BasePlatformTestCase() {
      * eShop's AppHost: a `static class Extensions` of the global namespace in a project this one does not reference is not seen, so
      * `Extensions` is the one `using eShop.AppHost` brings; with a reference to that project the global one wins, as in C# — CS0117.
      */
+    /**
+     * The solution bounds what a project sees (Open Solution, 0.1.243): references the project file does not tell (`$(Mystery)\…`)
+     * open every project of the active solution and none outside it; `$(SolutionDir)` is the folder of that solution.
+     */
+    fun testTheSolutionBoundsWhatAProjectWithUnknownReferencesSees() {
+        fun csproj(path: String, reference: String?) = myFixture.addFileToProject(path,
+            "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>" +
+                (reference?.let { "<ItemGroup><ProjectReference Include=\"$it\" /></ItemGroup>" } ?: "") + "</Project>")
+        fun slnProject(name: String) = "Project(\"{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}\") = \"$name\", \"$name\\\\$name.csproj\", \"{00000000-0000-0000-0000-00000000000${name[0]}}\"\nEndProject\n"
+        val sln = myFixture.addFileToProject("Ctx/Ctx.sln", "Microsoft Visual Studio Solution File, Format Version 12.00\n" + listOf("A", "B", "C", "E").joinToString("") { slnProject(it) }).virtualFile
+        csproj("Ctx/A/A.csproj", "\$(Mystery)\\X\\X.csproj")
+        csproj("Ctx/B/B.csproj", null)
+        myFixture.addFileToProject("Ctx/B/BType.cs", "namespace InB { public class BType { } }")
+        csproj("Ctx/C/C.csproj", null)
+        myFixture.addFileToProject("Ctx/C/CType.cs", "namespace InC { public class CType { } }")
+        csproj("Ctx/D/D.csproj", null)   // not in the solution
+        myFixture.addFileToProject("Ctx/D/DType.cs", "namespace InD { public class DType { } }")
+        csproj("Ctx/E/E.csproj", "\$(SolutionDir)\\B\\B.csproj")
+        val solutions = SolutionService.getInstance(project)
+        solutions.solutionFilesChanged()
+        ActiveSolution.getInstance(project).choose(sln)
+        try {
+            assertEquals(listOf(sln), solutions.solutionFiles())
+            val bounded = CSharpSemanticEnvironment.solutionProjects(project)
+            assertEquals(bounded.toString(), setOf("A", "B", "C", "E").map { "${sln.parent.path}/$it/$it.csproj".lowercase() }.toSet(), bounded)
+            fun errorsIn(path: String, text: String): List<String> {
+                myFixture.configureFromExistingVirtualFile(myFixture.addFileToProject(path, text).virtualFile)
+                return myFixture.doHighlighting(HighlightSeverity.ERROR).filter { it.description?.startsWith("CS") == true }.map { it.description!!.substringBefore(':') }
+            }
+            // A: references unknown — B and C of the solution are seen, D outside it is not (`using InD;` and `DType`)
+            val use = myFixture.addFileToProject("Ctx/A/Use.cs", "using InB;\nusing InC;\nusing InD;\nclass U : BType { CType c; DType d; }")
+            val aProject = io.github.dotnetsupport.msbuild.DotNetProjects.findOwningProject(use.virtualFile)!!
+            assertEquals("A.csproj", aProject.name)
+            assertNull(CSharpSemanticEnvironment.referencedProjects(project, aProject))
+            assertTrue(CSharpSemanticEnvironment.sees(use, myFixture.findFileInTempDir("Ctx/B/BType.cs")))
+            assertFalse(CSharpSemanticEnvironment.sees(use, myFixture.findFileInTempDir("Ctx/D/DType.cs")))
+            myFixture.configureFromExistingVirtualFile(use.virtualFile)
+            val fromA = myFixture.doHighlighting(HighlightSeverity.ERROR).filter { it.description?.startsWith("CS") == true }.map { it.description!!.substringBefore(':') }
+            assertEquals(fromA.toString(), listOf("CS0246", "CS0246"), fromA)
+            val eProject = myFixture.findFileInTempDir("Ctx/E/E.csproj")
+            assertEquals(setOf("${sln.parent.path}/B/B.csproj".lowercase()), CSharpSemanticEnvironment.referencedProjects(project, eProject))
+            // E: `$(SolutionDir)\B\B.csproj` resolves — B is seen, C of the same solution is not
+            val fromE = errorsIn("Ctx/E/Use.cs", "using InB;\nusing InC;\nclass V : BType { CType c; }")
+            assertEquals(fromE.toString(), listOf("CS0246", "CS0246"), fromE)
+            assertEmpty(errorsIn("Ctx/E/Fine.cs", "using InB;\nclass W : BType { }"))
+        } finally {
+            ActiveSolution.getInstance(project).loadState(ActiveSolution.Choice())
+            solutions.solutionFilesChanged()
+        }
+    }
+
     fun testATypeOfAProjectNotReferencedIsNotSeen() {
         myFixture.addFileToProject("Catalog/Catalog.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup></Project>")
         myFixture.addFileToProject("Catalog/Extensions.cs", "public static class Extensions { public static void AddCatalog() { } }")

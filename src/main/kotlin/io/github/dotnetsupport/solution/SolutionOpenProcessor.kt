@@ -28,6 +28,10 @@ class SolutionOpenProcessor : ProjectOpenProcessor() {
     // a folder with a solution inside is opened as a folder by the platform; this processor takes solution files only
     override fun lookForProjectsInDirectory(): Boolean = false
 
+    // the external-system autolink would list every solution of the folder as "C# solution build scripts found" (seen live, WSL
+    // 2026-10-16): the plugin's own chooser does that; nothing to import afterwards
+    override fun canImportProjectAfterwards(): Boolean = false
+
     override suspend fun openProjectAsync(virtualFile: VirtualFile, projectToClose: Project?, forceOpenInNewFrame: Boolean): Project? {
         val directory = virtualFile.parent ?: return null
         val options = PlatformProjectOpenProcessor.createOptionsToOpenDotIdeaOrCreateNewIfNotExists(directory.toNioPath(), projectToClose).copy(

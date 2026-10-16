@@ -3,6 +3,14 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.243
+
+- The solution bounds what a project sees: when its references cannot be read from the project file (`$(SomeProperty)\…`,
+  a `Directory.Build.props` adding references), every project of the active solution is visible and none outside it;
+  `$(SolutionDir)` in a `ProjectReference` is the folder of the active solution (nopCommerce's plugins).
+- The platform's "C# solution build scripts found" notification listing every solution of the folder is gone — the plugin's
+  own chooser does that.
+
 ## 0.1.242
 
 - Open Solution, as Rider: a `.sln` / `.slnx` / `.slnf` opens as the project (File | Open, the welcome screen, a file dropped on the
