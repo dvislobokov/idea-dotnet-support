@@ -266,7 +266,7 @@ internal class CSharpGenericChecks(private val checks: CSharpSemanticChecks, pri
             if (reference) report("CS0311", "$head There is no implicit reference conversion from '$full' to '$to'.", range)
             else report("CS0315", "$head There is no boxing conversion from '$full' to '$to'.", range)
         }
-        if (bound.hasNew && !bound.isStruct && newable(argument) == false) {
+        if (bound.hasNew && !bound.isStruct && r.newable(argument, checks::isPartial) == false) {
             report("CS0310", "'$short' must be a non-abstract type with a public parameterless constructor $where", range)
         }
     }
@@ -277,42 +277,6 @@ internal class CSharpGenericChecks(private val checks: CSharpSemanticChecks, pri
         is SemanticType.ArrayOf -> complete(type.element)
         is SemanticType.Library -> type.arguments.all(::complete)
         is SemanticType.Source -> type.arguments.all(::complete) && (type.outer == null || complete(type.outer))
-    }
-
-    /** Whether [type] satisfies `new()`: a value type, or a non-abstract class with a public constructor without parameters; null when not known. */
-    private fun newable(type: SemanticType): Boolean? = when (type) {
-        // an array has no parameterless constructor
-        is SemanticType.ArrayOf -> false
-        is SemanticType.Library -> when (type.type.kind) {
-            IndexedTypeKind.STRUCT, IndexedTypeKind.ENUM -> true
-            IndexedTypeKind.INTERFACE, IndexedTypeKind.DELEGATE -> false
-            IndexedTypeKind.CLASS -> if (type.type.isStatic) null else if (type.type.isAbstract) false else {
-                val constructors = type.type.members.filter { it.kind == IndexedMemberKind.CONSTRUCTOR && !it.isStatic }
-                if (constructors.isEmpty()) null else constructors.any { !it.isProtected && r.session.parameters(it).isEmpty() }
-            }
-            else -> null
-        }
-        is SemanticType.Source -> when (type.info.kind) {
-            TypeKind.STRUCT, TypeKind.RECORD_STRUCT, TypeKind.ENUM -> true
-            TypeKind.INTERFACE, TypeKind.DELEGATE -> false
-            TypeKind.CLASS, TypeKind.RECORD -> sourceNewable(type)
-            else -> null
-        }
-        else -> null
-    }
-
-    private fun sourceNewable(type: SemanticType.Source): Boolean? {
-        if (checks.isPartial(type.info)) return null
-        val declarations = type.info.parts.map { part ->
-            val declaration = part.element() as? CSharpTypeDeclaration ?: return null
-            (declaration.containingFile as? CSharpFile)?.let(r.session::reachable) ?: return null
-            declaration
-        }
-        if (declarations.any { d -> d.modifiers.any { it.text == "abstract" } }) return false
-        val constructors = declarations.flatMap { d -> d.members.filterIsInstance<CSharpConstructorDeclaration>().filter { c -> c.modifiers.none { it.text == "static" } } }
-        val primary = declarations.mapNotNull { it.parameterList }
-        if (constructors.isEmpty() && primary.isEmpty()) return true
-        return primary.any { it.parameters.isEmpty() } || constructors.any { c -> c.modifiers.any { it.text == "public" } && c.parameterList?.parameters.isNullOrEmpty() }
     }
 
     /** The type parameters of the generic type [symbol] with their constraints, [arguments] put for the type parameters in them. */

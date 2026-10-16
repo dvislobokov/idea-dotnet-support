@@ -7,6 +7,7 @@ import io.github.dotnetsupport.lang.semantic.CSharpNameResolver
 import io.github.dotnetsupport.lang.semantic.SemanticType
 import io.github.dotnetsupport.lang.semantic.classify
 import io.github.dotnetsupport.lang.semantic.closed
+import io.github.dotnetsupport.lang.semantic.constraintsKnown
 import io.github.dotnetsupport.lang.semantic.isHandler
 import io.github.dotnetsupport.lang.semantic.isReference
 import io.github.dotnetsupport.lang.semantic.same
@@ -51,6 +52,9 @@ internal class RoslynTypes(private val r: CSharpNameResolver) {
             r.hasClassConstraint(type) -> true
             // `ValueType` and `Enum` are classes a struct or an enum satisfies: they say nothing
             r.constraintsOf(type).any { isClassType(it) && definitionName(it) != VALUE_TYPE && definitionName(it) != ENUM } -> true
+            // every constraint is seen and none makes it a reference type (none at all, or interfaces): not one, as Roslyn's
+            // `IsReferenceType` — `IRequest<out TResponse>` from an `IRequest<R>` of an unconstrained `R` is an exact inference (MediatR's `Send`)
+            r.overloads.constraintsKnown(type) && r.constraintsOf(type).none { it is SemanticType.Parameter } -> false
             else -> null
         }
         else -> r.overloads.isReference(type)

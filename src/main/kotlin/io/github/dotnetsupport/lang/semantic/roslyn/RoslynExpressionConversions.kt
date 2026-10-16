@@ -41,6 +41,9 @@ internal class RoslynExpressionConversions(private val types: RoslynTypes) {
         /** `$"…"`, its natural type `string`. */
         data object InterpolatedString : Source()
 
+        /** A lambda or an anonymous method (`UnboundLambda`); [hasFunctionType]: whether it has a natural type (C# 10). */
+        class AnonymousFunction(val hasFunctionType: Boolean) : Source()
+
         /** A kind of expression whose conversions are not ported yet. */
         data object NotPorted : Source()
     }
@@ -56,6 +59,9 @@ internal class RoslynExpressionConversions(private val types: RoslynTypes) {
 
         /** No conversion from the expression itself: the conversion from its type decides (`ClassifyImplicitConversionFromType`). */
         data object ByType : Result()
+
+        /** To a delegate or `Expression<D>`: the anonymous function conversion, decided by the body (`HasAnonymousFunctionConversion`, the caller's still). */
+        data object AnonymousFunctionConversion : Result()
     }
 
     /** `ClassifyImplicitBuiltInConversionFromExpression`, the kinds ported, then [Result.ByType] for the conversion from the expression's type. */
@@ -73,7 +79,27 @@ internal class RoslynExpressionConversions(private val types: RoslynTypes) {
             types.isInterpolatedStringHandlerType(destination) -> Result.Exists("InterpolatedStringHandler")
             else -> Result.ByType
         }
+        is Source.AnonymousFunction -> classifyAnonymousFunction(source, destination)
         Source.NotPorted -> Result.Unknown("not ported")
+    }
+
+    /**
+     * A lambda converts to a delegate type or `Expression<D>` (the anonymous function conversion), else only by its function type to the
+     * function type targets and the non-generic expression types; it has no type of its own, so no other conversion — to an interface
+     * (`IEqualityComparer<T>`, `IOpenApiDocumentTransformer`), a struct, a class it is none, whatever operators they declare.
+     */
+    private fun classifyAnonymousFunction(lambda: Source.AnonymousFunction, destination: SemanticType): Result {
+        if (destination is SemanticType.Parameter) return Result.Unknown("a lambda to the type parameter ${destination}")
+        val delegate = types.delegateOfExpression(destination) ?: return Result.Unknown("the delegate of ${destination} is not known")
+        if (types.delegateInvoke(delegate) != null) return Result.AnonymousFunctionConversion
+        if (isValidFunctionTypeConversionTarget(destination) || types.definitionName(destination) in EXPRESSION_TYPES) {
+            return if (lambda.hasFunctionType) Result.Exists("FunctionType") else Result.None
+        }
+        return when (types.typeKind(destination)) {
+            null -> Result.Unknown("the kind of ${destination} is not known")
+            RoslynTypes.TypeKind.DELEGATE -> Result.Unknown("the signature of the delegate ${destination} is not known")
+            else -> Result.None
+        }
     }
 
     /** `ClassifyNullLiteralConversion`: to a nullable type, to a reference type; a pointer is not modeled (the caller's applicability decides it). */
@@ -160,6 +186,7 @@ internal class RoslynExpressionConversions(private val types: RoslynTypes) {
     }
 
     private companion object {
+        val EXPRESSION_TYPES = setOf("System.Linq.Expressions.Expression", "System.Linq.Expressions.LambdaExpression")
         val FORMATTABLE = setOf("System.FormattableString", "System.IFormattable")
         val FUNCTION_TYPE_TARGETS =setOf("System.MulticastDelegate", "System.Delegate", "System.Object", "System.ICloneable", "System.Runtime.Serialization.ISerializable")
     }

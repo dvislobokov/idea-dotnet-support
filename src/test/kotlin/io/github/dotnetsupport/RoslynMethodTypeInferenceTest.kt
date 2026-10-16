@@ -260,6 +260,46 @@ class RoslynMethodTypeInferenceTest : BasePlatformTestCase() {
     }
 
     /**
+     * D6c3: the overload a call resolves to is judged as the compiler errors judge it — Roslyn's inference with the lambdas, the port's
+     * conversions. bUnit's `InvokeAsync<TComponent, T>(Func<T>)` was compared with `InvokeAsync(Func<Task>)` with `T` not inferred ("no
+     * best", 1158 lines of MudBlazor's trace); `new()` of a partial class whose parts are all seen (nopCommerce's settings) was not known.
+     */
+    fun testOverloadsResolveByTheStrictApplicability() {
+        val (found, log) = io.github.dotnetsupport.lang.semantic.SemanticTrace.collectForTests {
+            errors("""
+                using System;
+                using System.Threading.Tasks;
+                interface ISettings { }
+                partial class ReminderSettings : ISettings { public bool Enabled { get; set; } }
+                interface ISettingService
+                {
+                    Task SaveSettingAsync<T>(T settings, int storeId = 0) where T : ISettings, new();
+                    Task SaveSettingAsync<T, TPropType>(T settings, Func<T, TPropType> keySelector, int storeId = 0) where T : ISettings, new();
+                }
+                class Alert { public Task CloseAsync() => Task.CompletedTask; }
+                class Rendered<TComponent> { public TComponent Instance = default!; }
+                static class Ext
+                {
+                    public static Task InvokeAsync<TComponent>(this Rendered<TComponent> c, Action work) => Task.CompletedTask;
+                    public static Task InvokeAsync<TComponent>(this Rendered<TComponent> c, Func<Task> work) => Task.CompletedTask;
+                    public static Task<T> InvokeAsync<TComponent, T>(this Rendered<TComponent> c, Func<T> work) => Task.FromResult(work());
+                }
+                class C
+                {
+                    async Task M(Rendered<Alert> comp, ISettingService service, ReminderSettings settings)
+                    {
+                        await comp.InvokeAsync(() => comp.Instance.CloseAsync());
+                        await service.SaveSettingAsync(settings, x => x.Enabled, 0);
+                        int bad = service.SaveSettingAsync(settings);
+                    }
+                }
+            """)
+        }
+        assertEquals(listOf("24: service.SaveSettingAsync(settings) -> CS0029: Cannot implicitly convert type 'System.Threading.Tasks.Task' to 'int'"), found)
+        assertEmpty(log.filter { it.startsWith("resolve") || it.startsWith("applicable") })
+    }
+
+    /**
      * A method group goes to `Delegate` by its function type (C# 10, `RoslynExpressionConversions`): eShop's `app.MapGet("/items", GetItems)`
      * picks the `Delegate` overload when the handler fits no `RequestDelegate` — the port's first piece of D6c2 (the old rules said "not known").
      */

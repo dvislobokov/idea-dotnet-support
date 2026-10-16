@@ -12,6 +12,7 @@ import io.github.dotnetsupport.lang.semantic.CSharpNameResolver.Conversion
 import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Companion.COLLECTION_TARGETS
 import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Companion.NATURAL_TARGETS
 import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Companion.NULLABLE
+import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Companion.NO_VALUE_TASKS
 import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Companion.OBJECT
 import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Companion.PRIMITIVES
 import io.github.dotnetsupport.lang.semantic.CSharpOverloads.Companion.STRING
@@ -134,7 +135,7 @@ private fun CSharpOverloads.combine(elements: List<Conversion>): Conversion = wh
 }
 
 /** Whether every constraint of [parameter] written as a type resolves. */
-private fun CSharpOverloads.constraintsKnown(parameter: SemanticType.Parameter): Boolean {
+internal fun CSharpOverloads.constraintsKnown(parameter: SemanticType.Parameter): Boolean {
     val owner = parameter.owner ?: return false
     val clauses = when (owner) {
         is CSharpTypeDeclaration -> owner.constraintClauses
@@ -242,7 +243,7 @@ internal fun CSharpOverloads.argument(e: CSharpExpression, type: SemanticType?, 
                 SemanticTrace.trace { "conversion of `${SemanticTrace.text(value)}` at ${SemanticTrace.at(value)} to ${SemanticTrace.show(to)}: not known — ${ported.reason}" }
                 return Conversion.UNKNOWN
             }
-            RoslynExpressionConversions.Result.ByType -> {}
+            RoslynExpressionConversions.Result.ByType, RoslynExpressionConversions.Result.AnonymousFunctionConversion -> {}
         }
     }
     when (value) {
@@ -280,7 +281,7 @@ internal fun CSharpOverloads.argument(e: CSharpExpression, type: SemanticType?, 
             RoslynExpressionConversions.Result.None -> return Conversion.NONE
             is RoslynExpressionConversions.Result.Unknown -> if (!ported.reason.endsWith("not ported"))
                 SemanticTrace.trace { "conversion of the method group `${SemanticTrace.text(value)}` at ${SemanticTrace.at(value)} to ${SemanticTrace.show(to)}: not known — ${ported.reason}" }
-            RoslynExpressionConversions.Result.ByType -> {}
+            RoslynExpressionConversions.Result.ByType, RoslynExpressionConversions.Result.AnonymousFunctionConversion -> {}
         }
         return if (strict) (if (reduced) Conversion.UNKNOWN else strictGroup(group, to)) else groupConversion(group, to, reduced)
     }
@@ -311,14 +312,18 @@ private fun CSharpOverloads.lambda(lambda: CSharpAnonymousFunctionExpression, to
  * the delegate returns a value. Async lambdas and blocks whose end is reachable are not judged.
  */
 private fun CSharpOverloads.strictLambda(lambda: CSharpAnonymousFunctionExpression, to: SemanticType): Conversion {
-    if (to is SemanticType.Parameter) return Conversion.UNKNOWN
-    val target = r.expressions.unwrapExpression(to) ?: return Conversion.UNKNOWN
-    val delegate = r.expressions.delegateSignature(target)
-    if (delegate == null) {
-        val tn = r.definitionName(target)
-        if (tn in NATURAL_TARGETS) return if (hasNaturalType(lambda)) Conversion.IMPLICIT else Conversion.NONE
-        return if (noDelegate(target)) Conversion.NONE else Conversion.UNKNOWN
+    // the port decides what the target is (D6c3); the anonymous function conversion to a delegate is checked below
+    when (val ported = expressionConversions.classifyImplicitConversionFromExpression(RoslynExpressionConversions.Source.AnonymousFunction(hasNaturalType(lambda)), to)) {
+        is RoslynExpressionConversions.Result.Exists -> return Conversion.IMPLICIT
+        RoslynExpressionConversions.Result.None -> return Conversion.NONE
+        is RoslynExpressionConversions.Result.Unknown -> {
+            SemanticTrace.trace { "conversion of the lambda at ${SemanticTrace.at(lambda)} to ${SemanticTrace.show(to)}: not known — ${ported.reason}" }
+            return Conversion.UNKNOWN
+        }
+        RoslynExpressionConversions.Result.AnonymousFunctionConversion, RoslynExpressionConversions.Result.ByType -> {}
     }
+    val target = r.expressions.unwrapExpression(to) ?: return Conversion.UNKNOWN
+    val delegate = r.expressions.delegateSignature(target) ?: return Conversion.UNKNOWN
     val count = r.expressions.lambdaParameterCount(lambda)
     val parameters = when (lambda) {
         is CSharpSimpleLambdaExpression -> listOfNotNull(lambda.parameter)
@@ -348,10 +353,13 @@ private fun CSharpOverloads.strictLambda(lambda: CSharpAnonymousFunctionExpressi
     if (mentionsCandidateParameter(written)) return Conversion.UNKNOWN
     // an async lambda to a delegate returning `Task<Y>` / `ValueTask<Y>`: what it returns converts to `Y` (§10.7.1) — nopCommerce's
     // `GetAsync<T>(key, Func<Task<T>>)` and `GetAsync<T>(key, Func<T>)` are then both applicable and the first one is more specific
-    val returns = if (!r.expressions.isAsync(lambda.modifiers)) written
+    // an async lambda to a delegate returning `void`, `Task` or `ValueTask` returns no value, as a lambda to a `void` one (§12.21.1) —
+    // the `async () => { … }` of the tag helpers of every generated view to `Func<Task>` (5 800 lines of nopCommerce's trace)
+    val async = r.expressions.isAsync(lambda.modifiers)
+    val returns = if (!async || r.definitionName(written) == VOID || r.definitionName(written) in NO_VALUE_TASKS) written
         else if (r.definitionName(written) in TASKS_OF) (written as? SemanticType.Library)?.arguments?.singleOrNull() ?: return Conversion.UNKNOWN
         else return Conversion.UNKNOWN
-    val void = r.definitionName(returns) == VOID
+    val void = r.definitionName(returns) == VOID || async && r.definitionName(returns) in NO_VALUE_TASKS
     // the body bound for this delegate, as Roslyn's `HasAnonymousFunctionConversion` binds it: implicit parameters take the delegate's types
     // (D6c2) — typed through the call being checked they were a cycle, and `Add(x => x.Severity, …)` of bUnit was not known (3541 lines)
     val implicit = parameters?.takeIf { ps -> ps.isNotEmpty() && ps.all { it.type == null } }
@@ -560,6 +568,13 @@ private fun CSharpOverloads.groupConversion(methods: List<CSharpSymbol>, to: Sem
 }
 
 /** A method group as [RoslynExpressionConversions] sees it (`BoundMethodGroup`): its methods with their signatures, the type arguments written. */
+/** Whether [value] has no type of its own and is typed by its target: a lambda, a method group, `null`, `default`, `new()`, a collection. */
+internal fun CSharpOverloads.targetTyped(value: CSharpExpression): Boolean {
+    val e = unparenthesized(value)
+    return e is CSharpAnonymousFunctionExpression || e is CSharpCollectionExpression || e is CSharpImplicitObjectCreationExpression || e is CSharpThrowExpression ||
+        e.elementType == SyntaxKind.NullLiteralExpression || e.elementType == SyntaxKind.DefaultLiteralExpression || methodGroup(e) != null
+}
+
 /** The kinds of expression the port classifies alone ([RoslynExpressionConversions.Source]); null for the rest. */
 private fun expressionSource(value: CSharpExpression): RoslynExpressionConversions.Source? = when {
     value.elementType == SyntaxKind.NullLiteralExpression -> RoslynExpressionConversions.Source.NullLiteral

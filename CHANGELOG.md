@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.231
+
+- The overload a call goes to is chosen as the compiler errors judge it: Roslyn's type inference with the lambdas, the ported
+  conversions, the `new()` and `class` constraints. A lambda passed where an interface or another non-delegate type is expected is no
+  candidate; an `async` lambda fits a delegate returning `Task`, `ValueTask` or `void`. bUnit's `InvokeAsync(() => …)` and
+  nopCommerce's `SaveSettingAsync(settings, …)` now resolve to one overload.
+
 ## 0.1.230
 
 - Razor files fold their `@code`, `@functions`, `@section`, `@{ }` blocks and multi-line `@* *@` comments, match Razor's braces,

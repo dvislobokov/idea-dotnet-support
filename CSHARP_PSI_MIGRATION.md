@@ -439,8 +439,18 @@
     | 0.1.222 | `better()` (преобразование — в порту с 0.1.228) | интерполированная строка → обработчик; константность — только в лучшем преобразовании | `ClassifyImplicitConversionFromExpression` (InterpolatedStringHandler) | `testAnInterpolatedStringConvertsToAHandler` |
     | ~~0.1.224~~ ✓ 0.1.228 | порт (`classifyAnonymousType`) | анонимный объект → `object` | преобразование из типа (класс с базой `object`) | `testAnAnAnonymousObjectGoesToTheObjectOverload` |
     | ✓ 0.1.228 | порт | `null` (`ClassifyNullLiteralConversion`), `default`, `throw`, `new()` — старые ветки `argument()` удалены | — | тесты выбора перегрузок |
-    | 0.1.225 | `applicable`, `evaluateStrict` | параметр-указатель берёт только `null` / `default` / `&x` | указатели в `RoslynConversions` | `testAPointerOverloadDoesNotApplyToAnObject` |
+    | 0.1.225 | `evaluateStrict` (`applicable` удалён в 0.1.231) | параметр-указатель берёт только `null` / `default` / `&x` | указатели в `RoslynConversions` | `testAPointerOverloadDoesNotApplyToAnObject` |
+    | ✓ 0.1.231 | порт (`classifyAnonymousFunction`) | лямбда к не-делегату — нет преобразования; `async`-лямбда к `Task` / `ValueTask` / `void` — без значения | — | `testOverloadsResolveByTheStrictApplicability` |
     | 0.1.226 | `resolve` | член сборки рядом со своим исходником — не второй кандидат | сбор кандидатов (поиск членов), не выбор | харнесс (юнит-тест не различает) |
+  - [x] D6c3 (0.1.231). Применимость: `CSharpOverloads.resolve` (навигация, тип вызова) идёт тем же `evaluate`, что и ошибки
+    компилятора — вывод Roslyn с лямбдами, преобразования порта, строгие ограничения (`new()` через `CSharpNewConstraint`, `class` /
+    `struct` через `RoslynTypes.isReferenceType`); старый `applicable` / `inferenceFails` / `UNKNOWN_FORM` удалены. Строгий путь пишет
+    причину каждого отказа; проверка ошибок останавливается на первом «не знаю». Журнал ref35: 7 126 строк (0.1.228: 9 375), ошибки те же.
+    Разбор остатка по причинам (2026-10-16): эхо одной причины на двух-трёх уровнях ~2 100; старый lenient-вывод для типа вызова ~1 100
+    (уходит с D6c5); **лучший член** ~1 200 (D6c4: `Expression<Func>` vs `Func` при `IQueryable`, сравнение типов параметров, tie-break);
+    **лямбды в выводе** ~700 (функциональный тип явной лямбды / группы методов к `T`, тело лямбды); типы, неизвестные выше по цепочке,
+    и циклы ~1 150 — не порт. Решение: дальше не по строкам журнала, а по файлам Roslyn — D6c4 целиком, затем лямбды в выводе целиком,
+    затем D6c5; эхо из журнала убрать (одна строка на причину).
 - [x] D6d (0.1.189; тест `RoslynConversionsTest`). `ConversionsBase.cs` + `UserDefinedImplicitConversions.cs` → `RoslynConversions`:
   неявные преобразования из типа (тождество, числовые, nullable, ссылочные с вариантностью, массивы, делегаты, параметры типа,
   упаковка, кортежи, span) и пользовательские (множество D, применимые и lifted-операторы, самые подходящие исходный и целевой типы,

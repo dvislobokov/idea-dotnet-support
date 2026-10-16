@@ -30,7 +30,8 @@ import java.util.IdentityHashMap
  */
 internal class CSharpOverloads(internal val r: CSharpNameResolver) {
     internal val known = IdentityHashMap<Any, Boolean>()
-    internal val expressionConversions by lazy { io.github.dotnetsupport.lang.semantic.roslyn.RoslynExpressionConversions(RoslynTypes(r)) }
+    internal val roslynTypes by lazy { RoslynTypes(r) }
+    internal val expressionConversions by lazy { io.github.dotnetsupport.lang.semantic.roslyn.RoslynExpressionConversions(roslynTypes) }
     internal val roslynConversions by lazy { RoslynConversions(RoslynTypes(r)) { operators(it, withBases = false) } }
 
     // the method type parameters of the candidates being resolved: a parameter of the caller's own method is a type like any other
@@ -69,6 +70,8 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         class Bad(val form: Form, val bad: List<Int>, val refMismatch: Boolean) : Outcome()
         object InferenceFailed : Outcome()
         object ConstraintFailed : Outcome()
+        /** The receiver of an extension method has no identity, reference or boxing conversion to its `this` parameter. */
+        object ReceiverFailed : Outcome()
         object Unknown : Outcome()
     }
 
@@ -79,7 +82,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
      */
     internal fun evaluate(
         symbol: CSharpSymbol, reduced: Boolean, receiver: SemanticType?, arguments: List<CSharpArgument>, all: List<CSharpSymbol>, written: List<SemanticType?>?,
-        infer: (List<SemanticType?>, Pair<SemanticType, SemanticType?>?) -> CSharpTypeInference.Inferred,
+        site: CSharpSimpleName? = null, infer: (List<SemanticType?>, Pair<SemanticType, SemanticType?>?) -> CSharpTypeInference.Inferred,
     ): Outcome {
         val owners = all.mapNotNull { (it as? CSharpSymbol.SourceMember)?.element }
         val wasStrict = strict
@@ -87,19 +90,27 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         openOwners += owners
         twins = paramsTwins(all)
         try {
-            return evaluateStrict(symbol, reduced, receiver, arguments, written, infer)
+            why = ""
+            val outcome = evaluateStrict(symbol, reduced, receiver, arguments, written, infer)
+            if (outcome === Outcome.Unknown) SemanticTrace.trace { "applicable ${site?.text} at ${SemanticTrace.at(site ?: arguments.firstOrNull())}: ${SemanticTrace.show(symbol)} not known — ${why.ifEmpty { "no reason given" }}" }
+            return outcome
         } finally {
             strict = wasStrict
             openOwners -= owners.toSet()
         }
     }
 
+    // why the candidate [evaluateStrict] judges last is not known, for the trace
+    private var why = ""
+
+    private fun unknown(reason: String): Outcome { why = reason; return Outcome.Unknown }
+
     private fun evaluateStrict(
         symbol: CSharpSymbol, reduced: Boolean, receiver: SemanticType?, arguments: List<CSharpArgument>, written: List<SemanticType?>?,
         infer: (List<SemanticType?>, Pair<SemanticType, SemanticType?>?) -> CSharpTypeInference.Inferred,
     ): Outcome {
-        val all = r.signature(symbol, false) ?: return Outcome.Unknown
-        if (reduced && (all.isEmpty() || receiver == null)) return Outcome.Unknown
+        val all = r.signature(symbol, false) ?: return unknown("the signature is not known")
+        if (reduced && (all.isEmpty() || receiver == null)) return unknown("the receiver of the extension method is not known")
         val parameters = (if (reduced) all.drop(1) else all).let(::withParamsSpan)
         val generic = r.isGeneric(symbol)
         val types = arguments.map { a -> a.expression?.let(::argumentType) }
@@ -119,19 +130,24 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                 methodArguments = written ?: when (val inferred = infer(declaredTargets, if (reduced) receiver!! to all.first().type() else null)) {
                     is CSharpTypeInference.Inferred.Known -> inferred.types
                     CSharpTypeInference.Inferred.Failed -> { inferenceFailed = true; continue }
-                    CSharpTypeInference.Inferred.Unknown -> { unknown = true; continue }
+                    CSharpTypeInference.Inferred.Unknown -> { unknown = true; why = "the inference of its type arguments is not known (see `inference` above)"; continue }
                 }
                 when (constraintsHoldStrict(symbol, methodArguments)) {
                     false -> { constraintFailed = true; continue }
-                    null -> { unknown = true; continue }
+                    null -> { unknown = true; why = "whether the constraints hold for [${methodArguments.joinToString { SemanticTrace.show(it) }}] is not known"; continue }
                     true -> {}
                 }
             }
             fun substituted(type: SemanticType?): SemanticType? = if (methodArguments.isEmpty()) type else substitute(type, symbol, methodArguments)
             var receiverTarget: SemanticType? = null
             if (reduced) {
-                receiverTarget = substituted(all.first().type()) ?: return Outcome.Unknown
-                if (classify(receiver!!, receiverTarget, userDefined = false) !in listOf(Conversion.IDENTITY, Conversion.IMPLICIT)) return Outcome.Unknown
+                receiverTarget = substituted(all.first().type()) ?: return unknown("the type of the `this` parameter is not known")
+                // the receiver of an extension method: identity, reference or boxing conversions only
+                when (classify(receiver!!, receiverTarget, userDefined = false)) {
+                    Conversion.NONE -> return Outcome.ReceiverFailed
+                    Conversion.UNKNOWN -> return unknown("the conversion of the receiver ${SemanticTrace.show(receiver)} to ${SemanticTrace.show(receiverTarget)} is not known")
+                    else -> {}
+                }
             }
             val targets = declaredTargets.map(::substituted)
             val refKinds = arguments.indices.map { refKind(symbol, map[it], reduced) }
@@ -139,8 +155,9 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
             var refMismatch = false
             var formUnknown = false
             for ((i, argument) in arguments.withIndex()) {
-                val expression = argument.expression ?: return Outcome.Unknown
-                val target = targets[i] ?: if (pointerParameter(symbol, map[i], reduced) && !mayBePointer(expression)) { wrong += i; continue } else return Outcome.Unknown
+                val expression = argument.expression ?: return unknown("argument ${i + 1} is missing")
+                val target = targets[i] ?: if (pointerParameter(symbol, map[i], reduced) && !mayBePointer(expression)) { wrong += i; continue }
+                    else return unknown("the type of parameter ${map[i] + 1} is not known")
                 val writtenKind = argument.refKindKeyword?.text
                 val kind = refKinds[i]
                 val handlerByRef = kind == "ref" && writtenKind == null && unparenthesized(expression) is CSharpInterpolatedStringExpression && isHandler(target)
@@ -151,7 +168,9 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                 val conversion = if (expression is CSharpDeclarationExpression && expression.type?.let(r::isVar) != false) Conversion.IDENTITY else argument(expression, types[i], target)
                 when (conversion) {
                     Conversion.NONE -> wrong += i
-                    Conversion.UNKNOWN -> formUnknown = true
+                    // an argument whose own type is not known is told once, not once for each parameter type it is tried against
+                    Conversion.UNKNOWN -> { formUnknown = true; why = if (types[i] == null && !targetTyped(expression)) "the type of argument ${i + 1} `${SemanticTrace.text(expression)}` is not known"
+                        else "argument ${i + 1} `${SemanticTrace.text(expression)}` of ${SemanticTrace.show(types[i])} to ${SemanticTrace.show(target)}: conversion not known" }
                     Conversion.IMPLICIT -> if (byRef) { wrong += i; refMismatch = true }
                     Conversion.IDENTITY -> {}
                 }
@@ -167,7 +186,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         }
         if (unknown) return Outcome.Unknown
         if (bad.isNotEmpty()) {
-            if (inferenceFailed || constraintFailed) return Outcome.Unknown
+            if (inferenceFailed || constraintFailed) return unknown("one form does not convert an argument, the other failed its inference or constraints")
             if (bad.size == 1) return bad.single()
             // both forms of a `params` method fail: the expanded one when the last argument is no array of it (as `checkArgumentTypes`)
             val (normal, expanded) = bad
@@ -204,7 +223,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
      * The one candidate of [candidates] a call with [arguments] calls, or null when that cannot be told surely. [reduced]: extension methods
      * called on a receiver; [site]: the name called (null for a constructor).
      */
-    fun resolve(all: List<CSharpSymbol>, arguments: List<CSharpArgument>, reduced: Boolean, site: CSharpSimpleName?, lambdas: Boolean = false): CSharpSymbol? {
+    fun resolve(all: List<CSharpSymbol>, arguments: List<CSharpArgument>, reduced: Boolean, site: CSharpSimpleName?): CSharpSymbol? {
         if (all.size < 2) return null
         val candidates = withoutBuiltTwins(all)
         // a member and its built twin: the source one is the call
@@ -212,20 +231,27 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         val call = site?.let(r::invocationOf)
         val types = arguments.map { a -> a.expression?.let(::argumentType) }
         val receiver = if (reduced) site?.let(r.expressions::receiver) else null
+        val written = (site as? CSharpGenericName)?.typeArgumentList?.arguments?.map { r.resolveType(it) ?: return null }
         val owners = candidates.mapNotNull { (it as? CSharpSymbol.SourceMember)?.element }
+        val wasStrict = strict
+        strict = true
         openOwners += owners
         try {
+            // the applicability of each candidate as the compiler errors judge it (D6c3): Roslyn's inference, the port's conversions
             val applicable = ArrayList<Form>()
-            val ownTwins = paramsTwins(candidates)
             for (symbol in candidates) {
                 val isReduced = reduced && r.isExtension(symbol)
-                twins = ownTwins
-                val form = applicable(symbol, isReduced, arguments, types, call, site, lambdas) ?: continue
-                if (form === UNKNOWN_FORM) {
-                    SemanticTrace.trace { "resolve ${site?.text} at ${SemanticTrace.at(site)}: gave up, the applicability of ${SemanticTrace.show(symbol)} is not known" }
-                    return null
+                val outcome = evaluate(symbol, isReduced, receiver, arguments, candidates, written, site) { targets, self ->
+                    if (call == null || site == null) CSharpTypeInference.Inferred.Unknown else inference.infer(symbol, targets, arguments, self, call, site)
                 }
-                applicable += form
+                when (outcome) {
+                    is Outcome.Applicable -> applicable += outcome.form
+                    Outcome.Unknown -> {
+                        SemanticTrace.trace { "resolve ${site?.text} at ${SemanticTrace.at(site)}: gave up, the applicability of ${SemanticTrace.show(symbol)} is not known" }
+                        return null
+                    }
+                    else -> {}
+                }
             }
             if (applicable.size == 1) return applicable.single().symbol
             if (applicable.isEmpty()) return null
@@ -250,6 +276,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
             }
             return best?.symbol
         } finally {
+            strict = wasStrict
             openOwners -= owners.toSet()
         }
     }
@@ -310,99 +337,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         }
     }
 
-    private val UNKNOWN_FORM = Form(CSharpSymbol.Namespace(""), emptyList(), emptyList(), emptyList(), false, false, false, null)
-
-    /** [symbol] as applicable to the call (normal form first, then expanded); null when surely not; [UNKNOWN_FORM] when that is not known. */
-    private fun applicable(
-        symbol: CSharpSymbol, reduced: Boolean, arguments: List<CSharpArgument>, types: List<SemanticType?>, call: CSharpInvocationExpression?,
-        site: CSharpSimpleName?, lambdas: Boolean,
-    ): Form? {
-        val all = r.signature(symbol, false) ?: return UNKNOWN_FORM
-        if (reduced && all.isEmpty()) return null
-        val parameters = (if (reduced) all.drop(1) else all).let(::withParamsSpan)
-        val generic = r.isGeneric(symbol)
-        val methodArguments: List<SemanticType?> = if (generic && call != null && site != null) r.expressions.typeArguments(symbol, call, site, withLambdas = lambdas) else emptyList()
-        // a candidate that does not apply is a decision, not a refusal: not logged
-        if (generic && !constraintsHold(symbol, methodArguments)) return null
-        // a type parameter the lenient inference left open: when Roslyn's inference surely fails, the candidate is not applicable
-        // (`Should<TCollection, TKey, TValue>(this TCollection)` of an `IDictionary` infers no TKey — AwesomeAssertions in MudBlazor's tests)
-        if (generic && call != null && site != null && methodArguments.any { it == null } && inferenceFails(symbol, all, parameters, arguments, reduced, call, site)) return null
-        fun substituted(type: SemanticType?): SemanticType? = if (methodArguments.isEmpty()) type else substitute(type, symbol, methodArguments)
-        var receiverTarget: SemanticType? = null
-        if (reduced) {
-            val receiver = site?.let(r.expressions::receiver) ?: return UNKNOWN_FORM
-            val self = substituted(all.first().type()) ?: return UNKNOWN_FORM
-            receiverTarget = self
-            // the receiver of an extension method: identity, reference or boxing conversions only
-            when (classify(receiver, self, userDefined = false)) {
-                Conversion.NONE -> return null
-                Conversion.UNKNOWN -> {}
-                else -> {}
-            }
-        }
-        var unknown = false
-        var why = ""
-        for (expanded in listOf(false, true)) {
-            if (expanded && parameters.lastOrNull()?.isParams != true) break
-            val map = map(parameters, arguments, expanded) ?: continue
-            val declaredTargets = ArrayList<SemanticType?>()
-            val targets = ArrayList<SemanticType?>()
-            var fits = true
-            for ((i, argument) in arguments.withIndex()) {
-                val index = map[i]
-                val parameter = parameters[index]
-                var declared = parameter.type()
-                if (expanded && index == parameters.size - 1) declared = declared?.let(::elementOf)
-                val target = substituted(declared)
-                declaredTargets += declared
-                targets += target
-                val expression = argument.expression ?: continue
-                if (target == null && pointerParameter(symbol, index, reduced) && !mayBePointer(expression)) { fits = false; break }
-                if (target == null) { unknown = true; why = "the type of parameter ${index + 1} is not known"; continue }
-                val written = argument.refKindKeyword?.text
-                val kind = refKind(symbol, index, reduced)
-                // `in` parameters take an argument with `in`, `ref` or nothing; `ref` / `out` only their own keyword
-                // a `ref` interpolated string handler (`Debug.Assert(bool, ref AssertInterpolatedStringHandler)`) takes `$"..."` as it is
-                val handlerByRef = kind == "ref" && written == null && unparenthesized(expression) is CSharpInterpolatedStringExpression && isHandler(target)
-                if (!(written == kind || handlerByRef || kind == "in" && (written == null || written == "ref"))) { fits = false; break }
-                val byRef = written == "ref" || written == "out"
-                val conversion = if (expression is CSharpDeclarationExpression && expression.type?.let(r::isVar) != false) Conversion.IDENTITY else argument(expression, types[i], target)
-                when (conversion) {
-                    Conversion.NONE -> { fits = false; break }
-                    Conversion.UNKNOWN -> { unknown = true; why = "argument ${i + 1} `${SemanticTrace.text(expression)}` of ${SemanticTrace.show(types[i])} to ${SemanticTrace.show(target)}: conversion not known" }
-                    Conversion.IMPLICIT -> if (byRef) { fits = false; break }
-                    Conversion.IDENTITY -> {}
-                }
-            }
-            if (!fits) continue
-            if (unknown) {
-                SemanticTrace.trace { "applicable ${site?.text} at ${SemanticTrace.at(site)}: ${SemanticTrace.show(symbol)} not known — $why" }
-                return UNKNOWN_FORM
-            }
-            val defaults = parameters.indices.any { p -> p !in map && !(expanded && p == parameters.size - 1) }
-            return Form(symbol, parameters, targets, declaredTargets, expanded, defaults, generic, if (expanded) parameters.last().type() else null, receiverTarget,
-                declaredReceiver = if (reduced) all.first().type() else null)
-        }
-        if (unknown) SemanticTrace.trace { "applicable ${site?.text} at ${SemanticTrace.at(site)}: ${SemanticTrace.show(symbol)} not known — $why" }
-        return if (unknown) UNKNOWN_FORM else null
-    }
-
     private val inference get() = r.inference
-
-    /**
-     * Whether the strict inference ([CSharpTypeInference], Roslyn's) surely fails for [symbol] in its normal form — a form with `params`
-     * may infer from the expanded one, so it is not asked then. [all]: the declared parameters with the receiver of a reduced call.
-     */
-    private fun inferenceFails(
-        symbol: CSharpSymbol, all: List<CSharpNameResolver.Parameter>, parameters: List<CSharpNameResolver.Parameter>, arguments: List<CSharpArgument>,
-        reduced: Boolean, call: CSharpInvocationExpression, site: CSharpSimpleName,
-    ): Boolean {
-        if (parameters.lastOrNull()?.isParams == true) return false
-        val map = map(parameters, arguments, false) ?: return false
-        val targets = arguments.indices.map { i -> parameters[map[i]].type() }
-        val self = if (reduced) (r.expressions.receiver(site) ?: return false) to all.first().type() else null
-        return inference.infer(symbol, targets, arguments, self, call, site) == CSharpTypeInference.Inferred.Failed
-    }
 
     // the `params` arrays of the candidates by (parameter count, name of the last one)
     private var twins: Set<Pair<Int, String>> = emptySet()
@@ -510,8 +445,14 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         when (symbol) {
             is CSharpSymbol.LibraryMember -> for ((i, parameter) in symbol.member.typeParameters.withIndex()) {
                 val argument = arguments.getOrNull(i) ?: return null
-                if (parameter.isStruct && isReference(argument) != false || parameter.isClass && isReference(argument) != true) return null
-                if (parameter.hasNew || parameter.isUnmanaged || parameter.allowsRefStruct) return null
+                val reference = roslynTypes.isReferenceType(argument)
+                if (parameter.isStruct && reference != false || parameter.isClass && reference != true) return if (reference == null) null else false
+                if (parameter.isUnmanaged || parameter.allowsRefStruct) return null
+                if (parameter.hasNew && !parameter.isStruct) when (newable(argument)) {
+                    false -> return false
+                    null -> return null
+                    true -> {}
+                }
                 for (constraint in parameter.constraints) {
                     val type = r.fromRef(constraint, symbol.declaringArguments, arguments) ?: return null
                     if (!converts(argument, type)) return null
@@ -527,12 +468,18 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                         when (constraint) {
                             is CSharpClassOrStructConstraint -> {
                                 val struct = constraint.text.startsWith("struct")
-                                if (struct && isReference(argument) != false || !struct && isReference(argument) != true) return null
+                                val reference = roslynTypes.isReferenceType(argument)
+                                if (struct && reference != false || !struct && reference != true) return if (reference == null) null else false
                                 if (constraint.text.endsWith("?") || struct && r.isNullable(argument)) return null
                             }
                             is CSharpTypeConstraint -> {
                                 val type = constraint.type?.let(resolver::resolveType)?.let { substitute(it, symbol, arguments) } ?: return null
                                 if (constraint.text == "notnull" || constraint.text == "unmanaged" || !converts(argument, type)) return null
+                            }
+                            is CSharpConstructorConstraint -> when (newable(argument)) {
+                                false -> return false
+                                null -> return null
+                                true -> {}
                             }
                             else -> return null
                         }
@@ -542,6 +489,30 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
             else -> return null
         }
         return true
+    }
+
+    /**
+     * `new()` for the applicability of a candidate (Roslyn's `CheckConstraints`): a type parameter by its own `new()` or `struct`; a
+     * partial type of the sources may have a constructor in a part not seen (generated), so it is not known then.
+     */
+    private fun newable(argument: SemanticType): Boolean? = when (argument) {
+        is SemanticType.Parameter -> if (r.isValueType(argument) || hasConstructorConstraint(argument)) true else if (constraintsKnown(argument)) false else null
+        else -> r.newable(argument, ::mayHaveUnseenParts)
+    }
+
+    /**
+     * A partial type with a part the IDE may not see: its project may generate code ([CSharpSemanticEnvironment.mayGenerateTypes]) and the
+     * generators have not run — nopCommerce's `public partial class ReminderSettings : ISettings` of a plain library is whole.
+     */
+    private fun mayHaveUnseenParts(info: io.github.dotnetsupport.lang.TypeInfo): Boolean = info.parts.any { "partial" in it.modifiers } && info.parts.any { part ->
+        val file = part.element()?.containingFile ?: return@any true
+        !CSharpSemanticEnvironment.generatedKnown(file) && CSharpSemanticEnvironment.mayGenerateTypes(file)
+    }
+
+    private fun hasConstructorConstraint(parameter: SemanticType.Parameter): Boolean {
+        val owner = parameter.owner as? CSharpMethodDeclaration ?: (parameter.owner as? CSharpTypeDeclaration) ?: return false
+        val clauses = if (owner is CSharpMethodDeclaration) owner.constraintClauses else (owner as CSharpTypeDeclaration).constraintClauses
+        return clauses.any { c -> c.nameElement?.identifier?.text == parameter.name && c.constraints.any { it is CSharpConstructorConstraint } }
     }
 
     /** Whether the type arguments inferred for [symbol] may satisfy its constraints: false only when one surely does not. */
@@ -601,6 +572,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
         internal const val VOID = "System.Void"
         internal const val NULLABLE = "System.Nullable`1"
         internal val TASKS_OF = setOf("System.Threading.Tasks.Task`1", "System.Threading.Tasks.ValueTask`1")
+        internal val NO_VALUE_TASKS = setOf("System.Threading.Tasks.Task", "System.Threading.Tasks.ValueTask")
         internal const val VALUE_TUPLE = "System.ValueTuple`"
 
         /** The non-delegate types a lambda converts to by its natural type (C# 10) and by nothing else. */

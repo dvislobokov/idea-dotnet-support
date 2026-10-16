@@ -96,12 +96,12 @@ internal class CSharpOverloadChecks(private val checks: CSharpSemanticChecks, pr
             if (!lambdasAgree(group, arguments)) return quiet
             if (group.candidates.any { it.reduced } && receiver == null) receiver = r.expressions.receiver(callee) ?: return quiet
             val symbols = group.candidates.map { it.symbol }
+            // one candidate not known keeps the call quiet: the rest are not asked (nor logged)
             val outcomes = group.candidates.map { c ->
-                overloads.evaluate(c.symbol, c.reduced, receiver, arguments, symbols, written) { targets, self ->
+                overloads.evaluate(c.symbol, c.reduced, receiver, arguments, symbols, written, callee) { targets, self ->
                     inference.infer(c.symbol, targets, arguments, self?.let { (type, parameter) -> type to parameter }, call, callee)
-                }
+                }.also { if (it is Outcome.Unknown) return quiet }
             }
-            if (outcomes.any { it is Outcome.Unknown }) return quiet
             val applicable = group.candidates.indices.filter { outcomes[it] is Outcome.Applicable }
             if (applicable.isEmpty()) {
                 if (failed == null) failed = group to outcomes

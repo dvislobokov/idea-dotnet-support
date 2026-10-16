@@ -203,7 +203,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
                 val call = invocationOf(name)
                 if (call != null && call.argumentList?.arguments.orEmpty().any { it.expression is CSharpAnonymousFunctionExpression }) {
                     val reduced = expressions.receiver(name) != null
-                    overloads.resolve(result.symbols, call.argumentList?.arguments.orEmpty(), reduced, name, lambdas = true)?.let {
+                    overloads.resolve(result.symbols, call.argumentList?.arguments.orEmpty(), reduced, name)?.let {
                         result = CSharpResolution(listOf(it))
                         known[name] = result
                     }
