@@ -23,6 +23,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.PosixFilePermission
+import java.nio.file.attribute.PosixFilePermissions
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -212,7 +213,6 @@ object DotNetExecutionProbe {
     private val DENIED = listOf("Permission denied", "Operation not permitted", "EACCES", "EPERM", "Access to the path")
 }
 
-/** What [PluginDataCheck] does at the start of a session. */
 sealed interface PluginDataDecision {
     /** The data stays where it is. */
     data object Keep : PluginDataDecision
@@ -220,19 +220,17 @@ sealed interface PluginDataDecision {
     /** Programs cannot run in the default directory, [target] in the work home can: move there and remember it. */
     data class Relocate(val from: Path, val target: Path, val reason: String) : PluginDataDecision
 
-    /** Programs cannot run in [root] and no known good directory exists: tell the user, who chooses one. */
-    data class Notify(val root: Path, val reason: String) : PluginDataDecision
+    /**
+     * Programs cannot run in [root] and no work home took the data: tell the user, who chooses one. [rejected]: each work home tried and
+     * why it was not taken (the journal says it); [suggestion]: the directory under an existing work home to offer as the choice.
+     */
+    data class Notify(val root: Path, val reason: String, val rejected: List<String> = emptyList(), val suggestion: Path? = null) : PluginDataDecision
 }
 
 object PluginDataRule {
-    /**
-     * Pure, for tests. Windows and `-Ddotnet.support.root`: nothing to decide. A directory set in the settings is kept (the next start does
-     * not depend on the probe) unless programs cannot run there. The default directory moves to [PluginData.FALLBACK] under the first
-     * work home that exists and is the user's ([workHomes], [owned]) when programs cannot run in the default one and can in the fallback.
-     */
     fun decide(
         windows: Boolean, property: String?, setting: String, defaultRoot: Path, probe: (Path) -> DotNetExecutionProbe.Outcome,
-        workHomes: List<Path>, owned: (Path) -> Boolean,
+        workHomes: List<Path>, usable: (Path) -> String?, prepare: (Path) -> Unit, owned: (Path) -> Boolean,
     ): PluginDataDecision {
         if (windows || !property.isNullOrBlank()) return PluginDataDecision.Keep
         val chosen = setting.trim()
@@ -242,22 +240,43 @@ object PluginDataRule {
         }
         val outcome = probe(defaultRoot)
         if (outcome.result != DotNetExecutionProbe.Result.NOT_EXECUTABLE) return PluginDataDecision.Keep
-        val fallback = workHomes.firstOrNull(owned)?.resolve(PluginData.FALLBACK)
-        // the fallback is made by the probe; owned again: a directory of that name made by someone else must not become the place we run from
-        if (fallback != null && probe(fallback).result == DotNetExecutionProbe.Result.OK && owned(fallback)) return PluginDataDecision.Relocate(defaultRoot, fallback, outcome.reason)
-        return PluginDataDecision.Notify(defaultRoot, outcome.reason)
+        // the work home itself only has to exist and take our files: on corporate machines it is often the group's, or its owner is named
+        // otherwise than the process sees itself (a colleague's machine, 0.1.220: no move, "choose another directory"); what must be ours
+        // alone is our own directory under it, made by us with rwx------ before it is probed and checked
+        val rejected = ArrayList<String>()
+        var suggestion: Path? = null
+        for (home in workHomes) {
+            usable(home)?.let { rejected += "$home: $it"; continue }
+            val fallback = home.resolve(PluginData.FALLBACK)
+            if (suggestion == null) suggestion = fallback
+            runCatching { prepare(fallback) }.onFailure { rejected += "$fallback: cannot be made (${it.message})"; continue }
+            val there = probe(fallback)
+            if (there.result != DotNetExecutionProbe.Result.OK) { rejected += "$fallback: ${there.reason.ifEmpty { there.result.name }}"; continue }
+            if (!owned(fallback)) { rejected += "$fallback: not the user's own, or writable by others"; continue }
+            return PluginDataDecision.Relocate(defaultRoot, fallback, outcome.reason)
+        }
+        return PluginDataDecision.Notify(defaultRoot, outcome.reason, rejected, suggestion)
     }
 
-    /**
-     * The work homes a machine may have, by the account: `/home/work/<user.name>` and, for domain accounts whose home is
-     * `/home/<domain>@<user>` while the work home is `/home/work/<user>@<domain>` (seen live by the Go plugin), the swapped name too.
-     */
-    fun workHomes(userName: String?, userHome: String?): List<Path> {
+    fun workHomes(userName: String?, userHome: String?, listing: List<String> = emptyList()): List<Path> {
         val names = LinkedHashSet<String>()
         userName?.takeIf { it.isNotBlank() }?.let { names += it; names += swapped(it) }
         userHome?.let { runCatching { Path.of(it).fileName?.toString() }.getOrNull() }?.takeIf { it.isNotBlank() }?.let { names += it; names += swapped(it) }
+        // what `/home/work` really holds: an entry named by the account in another form (`ivan@CORP.LOCAL`, `Ivan`) — matched by the
+        // whole name, or by the user part of it, never by the domain alone
+        val users = names.flatMap { userParts(it) }.mapTo(HashSet()) { it.lowercase() }
+        for (entry in listing.sorted()) {
+            if (entry.lowercase() in names.mapTo(HashSet()) { it.lowercase() } || userParts(entry).any { it.lowercase() in users }) names += entry
+        }
         return names.filter { '/' !in it }.map { Path.of("/home/work", it) }
     }
+
+    /** The user part of an account name: `ivan` of `ivan`, `CORP\ivan`, `ivan@corp`; both parts of `corp@ivan` (either order is seen). */
+    private fun userParts(name: String): List<String> = when {
+        '\\' in name -> listOf(name.substringAfterLast('\\'))
+        name.count { it == '@' } == 1 -> listOf(name.substringBefore('@'), name.substringAfter('@'))
+        else -> listOf(name)
+    }.filter { it.length >= 2 }
 
     /** `domain@user` ↔ `user@domain`; `DOMAIN\user` → `user@domain`; a name without either stays. */
     private fun swapped(name: String): String = when {
@@ -274,6 +293,20 @@ object PluginDataRule {
         val permissions = Files.getPosixFilePermissions(directory)
         PosixFilePermission.OTHERS_WRITE !in permissions && PosixFilePermission.GROUP_WRITE !in permissions
     }.getOrDefault(false)
+
+    /** Why [home] cannot take the data: it does not exist, is no directory or not writable by this process; null when it can. */
+    fun usable(home: Path): String? = when {
+        !Files.exists(home) -> "does not exist"
+        !Files.isDirectory(home) -> "is no directory"
+        !Files.isWritable(home) -> "is not writable"
+        else -> null
+    }
+
+    /** Makes our own directory under a work home, readable and writable by the user only (whatever the umask). */
+    fun prepare(directory: Path) {
+        Files.createDirectories(directory)
+        runCatching { Files.setPosixFilePermissions(directory, PosixFilePermissions.fromString("rwx------")) }
+    }
 }
 
 /**
@@ -295,11 +328,14 @@ object PluginDataCheck {
     }
 
     private fun decide(): PluginDataDecision {
+        val listing = runCatching { File("/home/work").list()?.toList() }.getOrNull().orEmpty()
+        val homes = PluginDataRule.workHomes(System.getProperty("user.name"), System.getProperty("user.home"), listing)
         val result = PluginDataRule.decide(SystemInfo.isWindows, System.getProperty(PluginData.ROOT_PROPERTY), DotNetSettings.getInstance().pluginDataDirectory,
-            PluginData.defaultRoot(), DotNetExecutionProbe::check, PluginDataRule.workHomes(System.getProperty("user.name"), System.getProperty("user.home")), PluginDataRule::ownedByMe)
+            PluginData.defaultRoot(), DotNetExecutionProbe::check, homes, PluginDataRule::usable, PluginDataRule::prepare, PluginDataRule::ownedByMe)
         when (result) {
             is PluginDataDecision.Keep -> PluginLog.info(LOG_CATEGORY, "plugin data: ${PluginData.root()}, logs: ${PluginData.logs()}")
-            is PluginDataDecision.Notify -> PluginLog.warn(LOG_CATEGORY, "Programs cannot run in the plugin data directory ${result.root}: ${result.reason}")
+            is PluginDataDecision.Notify -> PluginLog.warn(LOG_CATEGORY, "Programs cannot run in the plugin data directory ${result.root}: ${result.reason}; " +
+                "work homes tried: ${homes.joinToString().ifEmpty { "none" }}" + result.rejected.joinToString("") { "\n  not taken — $it" })
             is PluginDataDecision.Relocate -> {
                 PluginLog.warn(LOG_CATEGORY, "Programs cannot run in the plugin data directory ${result.from}: ${result.reason}; the data moves to ${result.target}")
                 moveTo(result.target.toString())
@@ -355,6 +391,10 @@ object PluginDataCheck {
                     "Programs cannot run in ${result.root} (${result.reason}), so the helpers of the plugin cannot start there. Choose a directory where they can " +
                         "(Settings | .NET → Plugin data), for example one an execution policy allows.", NotificationType.WARNING)
                 is PluginDataDecision.Keep -> return
+            }
+            // a work home exists but did not take the data by itself: offer it, the probe decides again when it is chosen
+            (result as? PluginDataDecision.Notify)?.suggestion?.let { suggested ->
+                notification.addAction(NotificationAction.createSimpleExpiring("Use $suggested") { relocate(project, suggested.toString()) })
             }
             notification.addAction(NotificationAction.createSimple("Choose Directory...") {
                 ShowSettingsUtil.getInstance().showSettingsDialog(project, io.github.dotnetsupport.settings.DotNetSettingsConfigurable::class.java)

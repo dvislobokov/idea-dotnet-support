@@ -3,6 +3,14 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.223
+
+- The move of the plugin's data to the work directory under an execution policy (0.1.220) no longer gives up when
+  `/home/work/<user>` is shared with a group or its owner is named in another form: it only has to exist and be writable; the plugin's own
+  `.cache/dotnet-support` under it is made private (`rwx------`). The work directory is also found by what `/home/work` holds
+  (`ivan@CORP.LOCAL`, `Ivan`). When none takes the data, the notification offers the one found, and the log (`plugin-data`) says why each
+  candidate was not taken.
+
 ## 0.1.222
 
 - An interpolated string passed to a method that takes an interpolated string handler (`StringBuilder.Append($"…")`,

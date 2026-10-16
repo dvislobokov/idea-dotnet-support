@@ -22,8 +22,8 @@ class PluginDataTest : BasePlatformTestCase() {
     private val denied = Outcome(Result.NOT_EXECUTABLE, "a program there exited with 126")
 
     private fun decide(windows: Boolean = false, property: String? = null, setting: String = "", probe: (Path) -> Outcome = { ok },
-                       homes: List<Path> = listOf(workHome), owned: (Path) -> Boolean = { true }) =
-        PluginDataRule.decide(windows, property, setting, default, probe, homes, owned)
+                       homes: List<Path> = listOf(workHome), usable: (Path) -> String? = { null }, owned: (Path) -> Boolean = { true }) =
+        PluginDataRule.decide(windows, property, setting, default, probe, homes, usable, {}, owned)
 
     fun testTheRootComesFromThePropertyThenTheSettingThenTheSystemDirectory() {
         assertEquals(Path.of("/p"), PluginData.resolve("/p", "/s", default))
@@ -50,10 +50,30 @@ class PluginDataTest : BasePlatformTestCase() {
 
     fun testWithoutAUsableWorkHomeTheUserIsTold() {
         assertEquals(PluginDataDecision.Notify(default, denied.reason), decide(probe = { denied }, homes = emptyList()))
-        assertEquals("a work home of someone else", PluginDataDecision.Notify(default, denied.reason), decide(probe = { if (it == default) denied else ok }, owned = { false }))
-        assertEquals("programs cannot run in the work home either", PluginDataDecision.Notify(default, denied.reason), decide(probe = { denied }))
-        assertEquals("the first owned work home is the one", PluginDataDecision.Relocate(default, Path.of("/home/work/u@corp").resolve(PluginData.FALLBACK), denied.reason),
-            decide(probe = { if (it == default) denied else ok }, homes = listOf(workHome, Path.of("/home/work/u@corp")), owned = { it != workHome }))
+        assertEquals("our directory under it is someone else's", PluginDataDecision.Notify(default, denied.reason, listOf("$fallback: not the user's own, or writable by others"), fallback),
+            decide(probe = { if (it == default) denied else ok }, owned = { false }))
+        assertEquals("programs cannot run in the work home either", PluginDataDecision.Notify(default, denied.reason, listOf("$fallback: ${denied.reason}"), fallback),
+            decide(probe = { denied }))
+        assertEquals("a work home that is not there is no suggestion", PluginDataDecision.Notify(default, denied.reason, listOf("$workHome: does not exist"), null),
+            decide(probe = { denied }, usable = { "does not exist" }))
+        assertEquals("the first work home that takes it is the one", PluginDataDecision.Relocate(default, Path.of("/home/work/u@corp").resolve(PluginData.FALLBACK), denied.reason),
+            decide(probe = { if (it == default) denied else ok }, homes = listOf(workHome, Path.of("/home/work/u@corp")), owned = { it != fallback }))
+    }
+
+    /**
+     * A colleague's machine (0.1.220): the work home is the group's, or its owner is named otherwise than the process sees itself — the data
+     * did not move ("choose another directory"), though a directory chosen there by hand worked. Only our own directory under it is checked.
+     */
+    fun testTheWorkHomeNeedNotBeTheUsersOwn() {
+        val checked = ArrayList<Path>()
+        assertEquals(PluginDataDecision.Relocate(default, fallback, denied.reason),
+            decide(probe = { if (it == default) denied else ok }, owned = { checked.add(it); true }))
+        assertEquals("ownership is asked of our directory, not of the work home", listOf(fallback), checked)
+    }
+
+    fun testTheWorkHomesInTheListingOfHomeWork() {
+        assertEquals(listOf(Path.of("/home/work/ivan"), Path.of("/home/work/Ivan"), Path.of("/home/work/ivan@CORP.LOCAL")),
+            PluginDataRule.workHomes("ivan", "/home/ivan", listOf("petr", "ivan@CORP.LOCAL", "Ivan", "CORP.LOCAL@admin")))
     }
 
     fun testAChosenDirectoryIsKeptWithoutTheDefaultBeingProbed() {
