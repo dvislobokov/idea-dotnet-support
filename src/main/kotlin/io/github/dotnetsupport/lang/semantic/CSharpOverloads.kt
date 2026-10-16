@@ -161,7 +161,14 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
             val wrong = ArrayList<Int>()
             var refMismatch = false
             var formUnknown = false
-            for ((i, argument) in arguments.withIndex()) {
+            // the lambdas last: a form another argument already rules out is not worth binding their bodies for (nor the `conversion of the
+            // lambda … not known` lines of it — bUnit's `Add(x => x.ItemDisabledFunc, item => …)` against every `Add` taking a callback)
+            val lambdaFirst = arguments.indexOfFirst { a -> a.expression?.let(::unparenthesized) is CSharpAnonymousFunctionExpression }
+            val order = if (lambdaFirst < 0) arguments.indices.toList() else arguments.indices.sortedBy { i -> if (arguments[i].expression?.let(::unparenthesized) is CSharpAnonymousFunctionExpression) 1 else 0 }
+            for (i in order) {
+                val argument = arguments[i]
+                // a form another argument rules out: the lambdas still say which of them bind (CS1593 of the best failed), quietly
+                val quiet = wrong.isNotEmpty() && argument.expression?.let(::unparenthesized) is CSharpAnonymousFunctionExpression
                 val expression = argument.expression ?: return unknown("argument ${i + 1} is missing")
                 val target = targets[i] ?: if (pointerParameter(symbol, map[i], reduced) && !mayBePointer(expression)) { wrong += i; continue }
                     else return unknown("the type of parameter ${map[i] + 1} is not known")
@@ -174,7 +181,7 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
                 val byRef = writtenKind == "ref" || writtenKind == "out"
                 // `out var x` and the discard `out _` take the parameter's type, whatever it is
                 val conversion = if (expression is CSharpDeclarationExpression && expression.type?.let(r::isVar) != false || writtenKind == "out" && isDiscard(expression)) Conversion.IDENTITY
-                    else argument(expression, types[i], target)
+                    else SemanticTrace.quietly(quiet) { argument(expression, types[i], target) }
                 when (conversion) {
                     Conversion.NONE -> wrong += i
                     // an argument whose own type is not known is told once, not once for each parameter type it is tried against
@@ -267,6 +274,9 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
             // no candidate applies: the call is the one whose lambdas bind to its delegates with their errors (`Select(x => { if (…) return 1; })`
             // is the `Func<T, R>` overload with CS1643, never the `Func<T, int, R>` one) — the failed candidate Roslyn reports and navigates to
             if (applicable.isEmpty()) return bad.filter { b -> b.bad.all { i -> lambdaBindsTo(arguments[i], b.form.targets[i]) } }.singleOrNull()?.form?.symbol
+            // §12.6.4.1: beside an applicable method of a derived class, the methods declared in its base classes are no candidates
+            // (FluentAssertions' `Be(Guid?)` of NullableGuidAssertions over `Be(string)` of GuidAssertions for `Should().Be(null)`)
+            if (applicable.size > 1) applicable.removeAll { form -> applicable.any { other -> other !== form && declaredInBaseOf(form.symbol, other.symbol) } }
             // §12.8.10.3: the extension methods are candidates only when no instance method applies (Roslyn looks them up only then)
             if (applicable.any { it.receiverTarget == null } && applicable.any { it.receiverTarget != null }) applicable.removeAll { it.receiverTarget != null }
             if (applicable.size == 1) return applicable.single().symbol
@@ -327,6 +337,24 @@ internal class CSharpOverloads(internal val r: CSharpNameResolver) {
             openOwners -= owners.toSet()
             siteOwner = previousSiteOwner
         }
+    }
+
+    /** Whether [symbol] is declared in a base class of the class declaring [other] (both of the same hierarchy of the receiver). */
+    private fun declaredInBaseOf(symbol: CSharpSymbol, other: CSharpSymbol): Boolean {
+        val mine = declaringTypeOf(symbol) ?: return false
+        val theirs = declaringTypeOf(other) ?: return false
+        val key = when (mine) { is SemanticType.Library -> mine.type.fullName; is SemanticType.Source -> mine.name; else -> return false }
+        if (key == (when (theirs) { is SemanticType.Library -> theirs.type.fullName; is SemanticType.Source -> theirs.name; else -> return false })) return false
+        val keys = HashSet<String>()
+        val names = HashSet<String>()
+        r.collectSupertypes(theirs, keys, names, 0)
+        return key in keys || mine is SemanticType.Source && key in names
+    }
+
+    private fun declaringTypeOf(symbol: CSharpSymbol): SemanticType? = when (symbol) {
+        is CSharpSymbol.LibraryMember -> SemanticType.Library(symbol.member.type, symbol.declaringArguments)
+        is CSharpSymbol.SourceMember -> symbol.owner
+        else -> null
     }
 
     /** `_` where no variable of that name is in scope: a discard (`TryCreate(x, out _)`). */

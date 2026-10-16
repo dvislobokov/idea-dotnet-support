@@ -3,6 +3,15 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.244
+
+- A lambda whose body does not bind with a candidate's parameter types (`item.StartsWith(…)` with `item` an `object` of that
+  delegate) is no conversion to it, as the compiler judges: the candidate drops out instead of staying "not known".
+- Beside an applicable method of a derived class, the methods of its base classes are no candidates (§12.6.4.1 —
+  FluentAssertions' `Should().Be(null)` on a `Guid?`).
+- A collection expression converts to `ImmutableArray<T>` and the other immutable collections, not to an `Expression<…>`.
+- The analysis debug log no longer reports the lambdas of a candidate another argument already rules out.
+
 ## 0.1.243
 
 - The solution bounds what a project sees: when its references cannot be read from the project file (`$(SomeProperty)\…`,

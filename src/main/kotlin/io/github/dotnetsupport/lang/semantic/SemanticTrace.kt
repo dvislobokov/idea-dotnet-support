@@ -25,7 +25,23 @@ object SemanticTrace {
     private const val SEEN_LIMIT = 50_000
 
     inline fun trace(message: () -> String) {
-        if (enabled) write(message())
+        if (enabled && !isQuiet()) write(message())
+    }
+
+    // a stretch of work whose refusals are no news (the lambdas of a form another argument already rules out): nothing is written in it
+    private val quietDepth: ThreadLocal<Int> = ThreadLocal.withInitial { 0 }
+
+    fun isQuiet(): Boolean = quietDepth.get() > 0
+
+    fun enterQuiet() = quietDepth.set(quietDepth.get() + 1)
+
+    fun leaveQuiet() = quietDepth.set(quietDepth.get() - 1)
+
+    /** [block] with the trace off when [quiet]. */
+    inline fun <T> quietly(quiet: Boolean, block: () -> T): T {
+        if (!quiet) return block()
+        enterQuiet()
+        try { return block() } finally { leaveQuiet() }
     }
 
     fun write(line: String) {

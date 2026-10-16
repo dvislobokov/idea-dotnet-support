@@ -451,6 +451,17 @@
     **лямбды в выводе** ~700 (функциональный тип явной лямбды / группы методов к `T`, тело лямбды); типы, неизвестные выше по цепочке,
     и циклы ~1 150 — не порт. Решение: дальше не по строкам журнала, а по файлам Roslyn — D6c4 целиком, затем лямбды в выводе целиком,
     затем D6c5; эхо из журнала убрать (одна строка на причину).
+  - [x] Закрытие журнала, шаг 7 (0.1.244; тест `CSharpTypingGapsTest.testMudBlazorGapsOne`). MudBlazor 389 → 296 (исходники 167 → 105):
+    тело лямбды, не связывающееся с типами параметров кандидата (`item.StartsWith` над `object` — `strictLambda.bindingFails`: обращение к
+    члену получателя, все члены которого видны — библиотечный тип или непартиальный тип solution, — которое ничего не находит), — NONE, как
+    `PreventsSuccessfulDelegateConversion`; лямбды форм, отброшенных другим аргументом, считаются молча (`SemanticTrace.quietly`, порядок
+    аргументов — лямбды последними); `collection(to)`: `Expression<…>` — NONE, `System.Collections.Immutable.*` — IMPLICIT;
+    §12.6.4.1 — методы базового класса рядом с применимым методом производного не кандидаты (`CSharpOverloads.declaredInBaseOf`).
+    Остаток MudBlazor в исходниках: `LanguageResource.*` из source generator (29), проект `MudBlazor.UnitTests.Analyzers` с `extern alias`
+    на проект анализаторов, чьи пространства имён совпадают с ядром (36: `That(supportedDiagnostics)`, `GetDiagnosticsAsync` — тип параметра
+    `MudBlazorAnalyzer::…AllowedAttributePattern` не разрешается: алиас у нас — `global::`, а тип нужен из конкретной сборки), Moq
+    `ReturnsAsync(Mock.Of<T>)` (7), `WithChangeHandler` (5 — `ParameterChangedContext`, у которого `args.Value` нет, не отброшен: тип в
+    нескольких частях?), россыпь по 2–4.
   - [x] Закрытие журнала, шаг 6 (0.1.240; тесты `CSharpTypingGapsTest.testNopCommerceGaps*`, `testATypeNamedLikeAnImportedNamespaceIsTheType`).
     nopCommerce в исходниках 80 → 9. Поиск методов расширения **по уровням** (§12.8.10.3, `CSharpNameResolver.member`: `levels(site)` изнутри
     наружу, уровень = его пространство имён + его `using`; первый уровень с применимым кандидатом (`CSharpOverloads.anyApplicable`: строгая

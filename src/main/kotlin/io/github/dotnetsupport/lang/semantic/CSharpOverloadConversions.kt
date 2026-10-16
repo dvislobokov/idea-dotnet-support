@@ -370,7 +370,8 @@ private fun CSharpOverloads.strictLambda(lambda: CSharpAnonymousFunctionExpressi
             when (argument(body, bodyType, returns)) {
                 Conversion.IDENTITY, Conversion.IMPLICIT -> Conversion.IMPLICIT
                 Conversion.NONE -> Conversion.NONE
-                Conversion.UNKNOWN -> unknown("the body `${SemanticTrace.text(body)}` of ${SemanticTrace.show(bodyType)} to ${SemanticTrace.show(returns)}: conversion not known")
+                Conversion.UNKNOWN -> if (bodyType == null && bindingFails(body, lambda)) Conversion.NONE
+                    else unknown("the body `${SemanticTrace.text(body)}` of ${SemanticTrace.show(bodyType)} to ${SemanticTrace.show(returns)}: conversion not known")
             }
         }
     }
@@ -394,12 +395,39 @@ private fun CSharpOverloads.strictLambda(lambda: CSharpAnonymousFunctionExpressi
             val valueType = r.typeOf(unparenthesized(value))
             when (argument(value, valueType, returns)) {
                 Conversion.NONE -> return@body Conversion.NONE
-                Conversion.UNKNOWN -> result = unknown("`return ${SemanticTrace.text(value)}` of ${SemanticTrace.show(valueType)} to ${SemanticTrace.show(returns)}: conversion not known")
+                Conversion.UNKNOWN -> if (valueType == null && bindingFails(value, lambda)) return@body Conversion.NONE
+                    else result = unknown("`return ${SemanticTrace.text(value)}` of ${SemanticTrace.show(valueType)} to ${SemanticTrace.show(returns)}: conversion not known")
                 else -> {}
             }
         }
         result
     }
+}
+
+/**
+ * Whether [expression], bound for the delegate of the candidate, has a member access that surely does not bind: `item.StartsWith(…)`
+ * with `item` an `object` of this candidate's delegate. Roslyn binds the body and a binding error prevents the delegate conversion
+ * (`PreventsSuccessfulDelegateConversion`): the candidate is not applicable, not "not known". Only a receiver whose members are all
+ * seen counts — a library type, or a type of the solution in one part, in a project without generators.
+ */
+private fun CSharpOverloads.bindingFails(expression: CSharpExpression, lambda: CSharpAnonymousFunctionExpression): Boolean {
+    var fails = false
+    com.intellij.psi.util.PsiTreeUtil.processElements(expression) { e ->
+        if (e is CSharpMemberAccessExpression && com.intellij.psi.util.PsiTreeUtil.getParentOfType(e, CSharpAnonymousFunctionExpression::class.java) == lambda) {
+            val name = e.nameElement
+            val receiver = e.expression?.let { r.typeOf(unparenthesized(it)) }
+            if (name != null && receiver != null && membersAllSeen(receiver) && r.resolveName(name)?.symbols.isNullOrEmpty()) { fails = true; return@processElements false }
+        }
+        true
+    }
+    return fails
+}
+
+private fun CSharpOverloads.membersAllSeen(type: SemanticType): Boolean = when (type) {
+    is SemanticType.Library -> true
+    // a type in one part that is not partial gets no member from a generator: its members are all here, whatever the project generates
+    is SemanticType.Source -> type.info.parts.size == 1 && type.info.parts.none { "partial" in it.modifiers }
+    else -> false
 }
 
 /** A type no lambda or method group converts to: closed, no interface, without user-defined conversions. */
@@ -460,7 +488,11 @@ private fun CSharpOverloads.collection(to: SemanticType): Conversion {
     if (to is SemanticType.ArrayOf) return Conversion.IMPLICIT
     val name = r.definitionName(to) ?: return Conversion.UNKNOWN
     if (name in COLLECTION_TARGETS) return Conversion.IMPLICIT
+    // the immutable collections build from a collection expression through their `[CollectionBuilder]` (C# 12): `WithAnalyzers([analyzer])`
+    if (name.startsWith("System.Collections.Immutable.Immutable")) return Conversion.IMPLICIT
     if (name in PRIMITIVES || name == OBJECT) return Conversion.NONE
+    // an expression tree is no collection either: FluentAssertions' `Contain(Expression<Func<string, bool>>)` beside `Contain(IEnumerable<string>)`
+    if (name.startsWith("System.Linq.Expressions.Expression")) return Conversion.NONE
     if (to is SemanticType.Library && (to.type.kind == IndexedTypeKind.DELEGATE || to.type.kind == IndexedTypeKind.ENUM)) return Conversion.NONE
     // an enum of the solution is no collection either: `GetShoppingCartAsync(customer, [a, b])` beside its `ShoppingCartType?` overload
     if (to is SemanticType.Source && (to.info.kind == TypeKind.ENUM || to.info.kind == TypeKind.DELEGATE)) return Conversion.NONE

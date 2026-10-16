@@ -383,6 +383,47 @@ class CSharpTypingGapsTest : BasePlatformTestCase() {
         }
     """, "M().Name -> CS0029: Cannot implicitly convert type 'string' to 'int'", "t.S.Name -> CS0029: Cannot implicitly convert type 'string' to 'int'")
 
+    /**
+     * MudBlazor's last lines, part 1: a lambda whose body does not bind with a candidate's parameter types (`item.StartsWith` over `object`)
+     * has no conversion to that delegate (Roslyn's `PreventsSuccessfulDelegateConversion`); a collection expression does not convert to an
+     * `Expression<…>`; of the applicable candidates those of a base class drop out beside one of the derived class (§12.6.4.1).
+     */
+    fun testMudBlazorGapsOne() = check("""
+        using System;
+        using System.Collections.Generic;
+        using System.Threading.Tasks;
+        class Items
+        {
+            public int Search(Func<object, Task> f) => 1;
+            public int Search(Func<string, bool> f) => 2;
+            public int Contain(Func<string, bool> e) => 1;
+            public int Contain(IEnumerable<string> items) => 2;
+        }
+        class Base { public string Be(string expected) => "base"; }
+        class Derived : Base { public int Be(Guid? expected) => 1; }
+        class C
+        {
+            void M(Items items, Derived d)
+            {
+                string bad = items.Search(item => item.StartsWith("x", StringComparison.Ordinal));
+                string bad2 = items.Contain(["a", "b"]);
+                string bad3 = d.Be(null);
+            }
+        }
+    """, "items.Search(item => item.StartsWith(\"x\", StringComparison.Ordinal)) -> CS0029: Cannot implicitly convert type 'int' to 'string'",
+        "items.Contain([\"a\", \"b\"]) -> CS0029: Cannot implicitly convert type 'int' to 'string'",
+        "d.Be(null) -> CS0029: Cannot implicitly convert type 'int' to 'string'")
+
+    /** `extern alias X;` — a parameter typed `X::Name` in a signature (MudBlazor's analyzer tests). */
+    fun testAnAliasQualifiedParameterTypeInASignature() = check("""
+        extern alias Lib;
+        class C
+        {
+            static int M(Lib::System.Collections.Generic.List<int> x) => 1;
+            void N() { string bad = M(null); }
+        }
+    """, "M(null) -> CS0029: Cannot implicitly convert type 'int' to 'string'")
+
     /** A collection expression beside an overload taking a delegate (bUnit's `Add(x => x.Items, […])`): no inference from it there, no refusal. */
     fun testACollectionExpressionGivesNoInferenceToADelegateParameter() = check("""
         using System;
