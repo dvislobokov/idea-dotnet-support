@@ -244,6 +244,14 @@ internal fun CSharpOverloads.argument(e: CSharpExpression, type: SemanticType?, 
     }
     when (value) {
         is CSharpImplicitObjectCreationExpression, is CSharpThrowExpression -> return Conversion.IMPLICIT
+        // an anonymous type is a class with `object` for its only base and no interface: it converts to `object` (`RedirectToRoute(name,
+        // new { id })`, `Json(new { success })` — 1366 calls of nopCommerce were not known) and to no other type it can be given as
+        is CSharpAnonymousObjectCreationExpression -> return when {
+            to is SemanticType.Parameter -> Conversion.UNKNOWN
+            r.definitionName(to) == OBJECT -> Conversion.IMPLICIT
+            closed(to) -> Conversion.NONE
+            else -> Conversion.UNKNOWN
+        }
         is CSharpAnonymousFunctionExpression -> return if (strict) strictLambda(value, to) else lambda(value, to)
         is CSharpCollectionExpression -> return collection(to)
         is CSharpConditionalExpression -> if (type == null) {

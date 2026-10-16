@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.224
+
+- An anonymous object passed to a method (`RedirectToRoute("Product", new { id })`, `Json(new { success = true })`) converts to an `object`
+  parameter and to no class, as the compiler sees it: such calls are resolved instead of left unknown (nopCommerce: 10 337 → 7 558 places
+  where the analysis gave up).
+
 ## 0.1.223
 
 - The move of the plugin's data to the work directory under an execution policy (0.1.220) no longer gives up when

@@ -210,6 +210,27 @@ class RoslynMethodTypeInferenceTest : BasePlatformTestCase() {
         assertEmpty(log.filter { it.startsWith("applicable Append") || it.startsWith("resolve Append") })
     }
 
+    /** An anonymous object converts to `object` and to no class: nopCommerce's `RedirectToRoute(name, new { id })` was not known (1366 calls). */
+    fun testAnAnonymousObjectGoesToTheObjectOverload() {
+        val (found, log) = io.github.dotnetsupport.lang.semantic.SemanticTrace.collectForTests {
+            errors("""
+                class P { }
+                class C
+                {
+                    static int Go(string name, object values) => 1;
+                    static string Go(string name, P p) => "";
+                    void M(int id)
+                    {
+                        int fine = Go("x", new { id });
+                        string bad = Go("x", new { id, name = "n" });
+                    }
+                }
+            """)
+        }
+        assertEquals(listOf("9: Go(\"x\", new { id, name = \"n\" }) -> CS0029: Cannot implicitly convert type 'int' to 'string'"), found)
+        assertEmpty(log.filter { it.startsWith("applicable Go") || it.startsWith("resolve Go") })
+    }
+
     fun testUpperBoundThroughAContravariantInterface() {
         // IComparer<in T>: IComparer<object> gives T an upper bound object, "s" a lower bound string — T is string
         assertEmpty(errors("""
