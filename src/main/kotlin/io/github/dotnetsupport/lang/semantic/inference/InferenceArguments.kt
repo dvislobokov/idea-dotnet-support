@@ -30,9 +30,11 @@ internal class InferenceArguments(private val r: CSharpNameResolver) {
             // `out T x` has its type; `out var x` has none yet
             value is CSharpDeclarationExpression -> InferenceArgument.Typed(value.type?.takeIf { !r.isVar(it) }?.let { r.resolveType(it) ?: throw RoslynMethodTypeInferrer.Unknown() })
             value is CSharpTupleExpression -> tuples.of(value, lenient)
-            value is CSharpCollectionExpression || value is CSharpImplicitObjectCreationExpression || value is CSharpThrowExpression -> InferenceArgument.Opaque
-            // a conditional without a natural type is target-typed: not modeled
-            value is CSharpConditionalExpression -> r.typeOf(value)?.let { InferenceArgument.Typed(it) } ?: InferenceArgument.Opaque
+            value is CSharpCollectionExpression -> InferenceArgument.Opaque
+            // a target-typed `new()`, a `throw`, a conditional without a natural type have no type: no inference from them, as Roslyn
+            // (`MakeExplicitParameterTypeInferences`: not `IsReallyAType`) — the others infer the call (bUnit's `Add(p => p.Items, new())`)
+            value is CSharpImplicitObjectCreationExpression || value is CSharpThrowExpression -> InferenceArgument.Typed(null)
+            value is CSharpConditionalExpression -> InferenceArgument.Typed(r.typeOf(value))
             else -> r.typeOf(value)?.let { InferenceArgument.Typed(it) } ?: unknownType()
         }
     }

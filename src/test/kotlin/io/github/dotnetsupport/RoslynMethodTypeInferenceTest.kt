@@ -133,6 +133,30 @@ class RoslynMethodTypeInferenceTest : BasePlatformTestCase() {
         assertEmpty(log.filter { it.startsWith("inference ToDictionary") })
     }
 
+    /**
+     * A target-typed `new()` (and a `throw`, a conditional without a natural type) has no type: Roslyn makes no inference from it and
+     * infers from the other arguments — the port refused the whole call (bUnit's `Add(p => p.Items, new())`, D6e3).
+     */
+    fun testATargetTypedNewGivesNoInference() {
+        val (found, log) = io.github.dotnetsupport.lang.semantic.SemanticTrace.collectForTests {
+            errors("""
+                class R { }
+                class C
+                {
+                    static T Pick<T>(T a, T b) => a;
+                    void M(bool flag)
+                    {
+                        R fine = Pick(new R(), new());
+                        R both = Pick(new R(), flag ? null : new());
+                        string wrong = Pick(new R(), new());
+                    }
+                }
+            """)
+        }
+        assertEquals(listOf("9: Pick(new R(), new()) -> CS0029: Cannot implicitly convert type 'R' to 'string'"), found)
+        assertEmpty(log.filter { it.startsWith("inference Pick") })
+    }
+
     fun testUpperBoundThroughAContravariantInterface() {
         // IComparer<in T>: IComparer<object> gives T an upper bound object, "s" a lower bound string — T is string
         assertEmpty(errors("""

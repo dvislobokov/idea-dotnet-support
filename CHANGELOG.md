@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.209
+
+- The C# analysis infers a generic call that has a target-typed `new()` among its arguments from the other arguments, as the compiler
+  does (`Pick(new R(), new())` is `R`), instead of giving up on the call.
+
 ## 0.1.208
 
 - Inside the analysis of C#: how each kind of argument (a lambda, a method group, a tuple) is read for the type inference lives in a file
