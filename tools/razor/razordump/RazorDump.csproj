@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The oracle of razor-psi (RAZOR_PLAN.md, R2), as tools/csharp-psi/roslyndump is of csharp-psi: dumps the syntax trees and the
+    diagnostics the Razor compiler builds for .razor / .cshtml files, in the format of the compiler's own test baselines
+    (`.stree.txt`, SyntaxSerializer). A development tool only: it is not shipped with the plugin.
+
+    The compiler is the one of the installed SDK (Microsoft.CodeAnalysis.Razor.Compiler.dll of the Razor SDK's source generator,
+    tools/razor/README.md): the same code that compiles the user's project. Its classes are mostly internal and the dll is
+    ReadyToRun (IgnoresAccessChecksToGenerator cannot rewrite it), so the few internal members are reached by reflection (Internals in
+    Program.cs); the Roslyn package must be the version that compiler was built against (SDK 10.0.401: 5.9.0).
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <NoWarn>$(NoWarn);RSEXPERIMENTAL003</NoWarn>
+    <RazorGeneratorDir Condition="'$(RazorGeneratorDir)' == ''">$(NetCoreRoot)sdk/$(NETCoreSdkVersion)/Sdks/Microsoft.NET.Sdk.Razor/source-generators/</RazorGeneratorDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+    <Reference Include="Microsoft.CodeAnalysis.Razor.Compiler">
+      <HintPath>$(RazorGeneratorDir)Microsoft.CodeAnalysis.Razor.Compiler.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Razor.Utilities.Shared">
+      <HintPath>$(RazorGeneratorDir)Microsoft.AspNetCore.Razor.Utilities.Shared.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

@@ -38,6 +38,8 @@ dependencies {
         pluginComposedModule(implementation(project(":csharp-psi-core")))
         pluginComposedModule(implementation(project(":csharp-psi-semantic")))
         pluginComposedModule(implementation(project(":csharp-psi-ide")))
+        // The Razor parser (RAZOR_PLAN.md, R2; razor-psi-core): composed the same way, used by the host's frameworks/razor.
+        pluginComposedModule(implementation(project(":razor-psi-core")))
     }
     testImplementation("junit:junit:4.13.2")
     // The ML completion engine (ml-core/, a copy of idea-ml-completion's module): the C# adapter of its ranker lives in csharp-psi-ide,

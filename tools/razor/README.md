@@ -32,6 +32,12 @@ Under `.corpus/razor/razor-compiler/src/Razor/src/Compiler/*/test/TestFiles/`, b
 (the declaration pass), `.mappings.txt` (source mappings, 527), `.diag.txt` / `.diagnostics.txt` (diagnostics). The inputs are mostly
 inline in the C# of the tests (`ComponentCodeGenerationTest`, parser tests); 182 `.cshtml` and 108 `.razor` are files of their own.
 
+## razordump and the gates of razor-psi (RAZOR_PLAN.md, R2)
+
+`tools/razor/razordump` (README there) dumps the compiler's syntax trees; `./gradlew.bat :razor-psi-core:corpusTest` diffs ours
+against them (`RazorTreeCorpusTest`: the three solutions, `build/razor-gate/<name>.txt`), against the compiler's own parser test
+baselines (`RazorBaselineCorpusTest`) and runs the mutation fuzz; metrics in `razor-psi-core/testData/metrics` only improve.
+
 ## The harness (RAZOR_PLAN.md, R0 / R0b)
 
 ```sh

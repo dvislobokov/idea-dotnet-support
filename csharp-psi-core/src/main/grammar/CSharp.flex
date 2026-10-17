@@ -61,6 +61,27 @@ import io.github.dotnetsupport.csharp.lang.SyntaxKind;
     lineState = LineState.CLEAN;
   }
 
+  /** razor-psi (its C# tokenizer restarts the lexer at earlier positions): whether the next token comes from the queue of a run. */
+  public boolean inQueue() {
+    return queueIndex < queueSize;
+  }
+
+  /** razor-psi: [lineState] of the next token start (LineState.CLEAN: a `#` there starts a directive, not a misplaced one). */
+  public int lineStateValue() {
+    return lineState;
+  }
+
+  /** razor-psi: the context a restart at the next token start carries, for [restoreContext]; meaningful only when not [inQueue]. */
+  public Object[] contextSnapshot() {
+    return new Object[] { directives, lineState };
+  }
+
+  /** razor-psi: after reset() and [clearQueue], the context of [contextSnapshot] taken at that position. */
+  public void restoreContext(Object[] snapshot) {
+    directives = (DirectiveStack) snapshot[0];
+    lineState = (Integer) snapshot[1];
+  }
+
   /** The state of the next token start: 0 only where lexing may restart (see [LineState.state]). */
   public int currentState() {
     if (queueIndex < queueSize) return queueState[queueIndex];

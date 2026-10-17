@@ -167,10 +167,26 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
   и ошибки восстановления. Корпус трёх solution: 3305 файлов, 0 незакрытых блоков, перезапуск совпадает. Известные пробелы: значения
   параметров компонентов (`OnClick="Increment"`) — разметка до R5; `@bind:culture` и параметры кроме `event` / `format` — C#;
   выражения в `@{ #if … }` поперёк блоков — нет.
-- [ ] **R2. Парсер и гейт дерева** (2–3). `razor-psi-core`: перенос парсера, оба вида файла, восстановление после ошибок как у
-  компилятора (RZ1xxx синтаксиса). `tools/razor/razordump tree`. Гейты: 0 расхождений с `razordump tree` на корпусе (MudBlazor,
-  nopCommerce, eShop, отдельные файлы тестов компилятора), метрики `testData/metrics/razor-*-tree.json`; мутационный фазз — 0
-  исключений.
+- [x] **R2 (0.1.251). Парсер и гейт дерева.** Подпроект `razor-psi-core` (пакеты `io.github.dotnetsupport.razor.*`, в jar как
+  csharp-psi): порт парсера компилятора метод в метод — `HtmlMarkupParser`, `CSharpCodeParser`, `TokenizerBackedParser`, токенизаторы
+  HTML и «родной» C#, директивы движка по видам файла (`RazorDirectives.forFileKind`), флаги версий (`RazorParserOptions`), диагностики
+  RZ1000–RZ2005 с текстами, chunk generators и edit handlers (печатаются как у компилятора), узлы и виды дерева сгенерированы из
+  `Syntax.xml` / `SyntaxKind.cs` (`tools/razor/gen_syntax.py`), дерево без PSI (`RazorNode` / `RazorToken` / `RazorList`, ширины по
+  требованию), сериализатор в формате `.stree.txt`. Токенизатор Roslyn (`use-roslyn-tokenizer`, умолчание SDK 10) — `RoslynCSharpTokenizer`
+  на лексере csharp-psi (`CSharpLexerCursor`: снимки контекста директив лексера, перезапуск при откатах парсера, новый блок C# лексится
+  заново, как `SkipForwardTo`; строка директивы — один токен до перевода строки, интерполированная строка — один токен из частей,
+  `///` берёт свой перевод строки). Проходы движка над деревом, которые видит тулинг: `WhitespaceRewriter` (отступ перед `@x` —
+  разметка) и RZ2002 вложенных `@section`. Оракул — `tools/razor/razordump` (`tree`, `cases`; README там): компилятор установленного
+  SDK, рефлексия, движок как у генератора. Гейты (`:razor-psi-core:corpusTest`): эталоны тестов компилятора `.stree.txt` —
+  1245/1245 (`legacyTest` родным токенизатором с edit handlers, `test` Roslyn-токенизатором без них; вне гейта — tag helpers (R5),
+  директивы самих тестов и 16 кейсов с опциями тестов, список в `RazorBaselineCorpusTest`); корпус против `razordump tree`: eShop
+  58/58, nopCommerce 1193/1193, MudBlazor 2051/2054 — 3 расхождения это разница версий компилятора: исходники корпуса (dotnet/roslyn
+  main) новее SDK 10.0.401, у нового `switch`-выражение с вложенными блоками разбирается как вложенные блоки кода
+  (`ParseNestedBlocksAsMarkup`), у старого — одним литералом; порт следует исходникам; метрики `testData/metrics/*.json` только
+  растут; мутационный фазз (`RazorParserFuzzCorpusTest`) — 0 исключений, текст дерева равен входу. Факты: эталоны тестов — CRLF
+  (`LF` в первой строке), `K14` — число ключевых слов зависит от набора директив (нормализуется); у `test/` опции — Roslyn-токенизатор,
+  без edit handlers; несколько файлов MudBlazor в UTF-16 и с двойным BOM (читать как .NET: `RazorTestUtil.readText`). Не сделано в R2:
+  PSI IDE ещё на плоском дереве R1 — переключение редактора на это дерево (замена `RazorParser` хоста, токены по дереву) идёт с R3a.
 - [ ] **R3. Виртуальный C#-документ** (3–4).
   - R3a. Развилка (одна сессия, решение записать сюда): инъекция из многих кусков против своего `LightVirtualFile` с переносом позиций.
     Решает, работают ли `lang/semantic`, completion, navigation, rename на инъецированном файле: многое в хосте спрашивает

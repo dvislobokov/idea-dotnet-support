@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.251
+
+- Groundwork for the Razor editor (RAZOR_PLAN.md, R2): a port of the Razor compiler's parser (`razor-psi-core`), checked against
+  the compiler's own parser tests and against the installed SDK's compiler on the corpus of three solutions. Nothing visible yet:
+  the editor still runs on the lexer of 0.1.229.
+
 ## 0.1.250
 
 - The overloads of a base class stay candidates beside the derived class's methods of the same name (`Add(T)` of the base under

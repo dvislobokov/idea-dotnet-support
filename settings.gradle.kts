@@ -9,6 +9,11 @@ include(
     "csharp-psi-ide",
 )
 
+// razor-psi (RAZOR_PLAN.md, R2): the port of the Razor compiler's parser and its tree, on csharp-psi-core's lexer; composed into the
+// plugin jar like csharp-psi (package io.github.dotnetsupport.razor.*). The Razor language, file type and PSI stay in the host's
+// frameworks/razor.
+include("razor-psi-core")
+
 // Shared ML completion engine: ml-core/ is a plain copy of the pure-Kotlin ml-core module of
 // https://github.com/dvislobokov/idea-ml-completion (refreshed with tools/ml/sync-ml-core.sh; the training CLI and the corpus
 // tools stay in that repository). It carries the n-gram LM, the ranker, the neural inference and our native SIMD kernels
