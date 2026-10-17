@@ -3,6 +3,15 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.257
+
+- Unity (UNITY_PLAN.md, step 3): the event functions by completion, as Rider writes them — in the body of a `MonoBehaviour` (and of a
+  `ScriptableObject`, `Editor`, `EditorWindow`, `AssetPostprocessor`), `OnTrigEn` offers `OnTriggerEnter(Collider other)` and the other
+  messages the class does not declare yet; Enter writes the method with an empty body, the caret inside (`private`, or the access
+  modifier typed before the name).
+- Unity: only the solution in the root of a Unity project is offered — a package's own `.sln` in `Assets` (FishNet's `Mono.Cecil.sln`)
+  no longer brings "Several solutions" and the chooser. The namespace of a folder takes the `rootNamespace` of its assembly definition.
+
 ## 0.1.256
 
 - Unity (UNITY_PLAN.md, step 2): what the engine uses without code no longer reads "no usages" — "Event function" over the messages of

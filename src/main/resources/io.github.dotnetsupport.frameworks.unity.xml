@@ -11,6 +11,8 @@
         <!-- the Solution view: Library / Temp / Logs / obj and the .meta files out of the tree, the Unity icon and the editor's version on the solution -->
         <treeStructureProvider implementation="io.github.dotnetsupport.frameworks.unity.UnityTreeStructureProvider"/>
         <projectViewNodeDecorator implementation="io.github.dotnetsupport.frameworks.unity.UnitySolutionDecorator"/>
+        <!-- `Upd` in the body of a MonoBehaviour → `private void Update() { }`: the event functions of the class's Unity base -->
+        <completion.contributor language="C#" order="first" implementationClass="io.github.dotnetsupport.frameworks.unity.UnityEventFunctionCompletion"/>
     </extensions>
 
     <actions>

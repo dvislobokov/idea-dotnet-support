@@ -59,8 +59,36 @@ class UnityImplicitUsage : CSharpImplicitUsage {
         return if (base in SERIALIZED_BASES || "Serializable" in attributeNames(type)) SET_BY_UNITY else null
     }
 
+    private fun unityBase(type: CSharpBaseTypeDeclaration): String? = UnityTypes.unityBase(type)
+
+    /** `[SerializeField]`, `[UnityEngine.SerializeField]`, `[SerializeFieldAttribute]` → `SerializeField`. */
+    private fun attributeNames(member: CSharpMemberDeclaration): Set<String> =
+        member.attributeLists.flatMap { list -> PsiTreeUtil.getChildrenOfTypeAsList(list, io.github.dotnetsupport.csharp.lang.psi.CSharpAttribute::class.java) }
+            .mapNotNullTo(HashSet()) { attribute -> attribute.nameElement?.text?.substringAfterLast('.')?.removeSuffix("Attribute")?.trim() }
+
+    private companion object {
+        const val UNITY_SCRIPT = "Unity script"
+        const val EVENT_FUNCTION = "Event function"
+        const val SET_BY_UNITY = "Set by Unity"
+        const val CALLED_BY_UNITY = "Called by Unity"
+
+        val SERIALIZED_BASES = setOf("UnityEngine.MonoBehaviour", "UnityEngine.ScriptableObject", "UnityEngine.StateMachineBehaviour", "UnityEditor.EditorWindow")
+
+        /** Methods Unity finds by an attribute: menu items, the hooks of loading, building and opening assets. */
+        val CALLED_BY_ATTRIBUTES = setOf(
+            "MenuItem", "ContextMenu", "ContextMenuItem", "RuntimeInitializeOnLoadMethod", "InitializeOnLoadMethod", "InitializeOnEnterPlayMode",
+            "DidReloadScripts", "PostProcessBuild", "PostProcessScene", "OnOpenAsset", "Shortcut", "ClutchShortcut", "SettingsProvider",
+            "SettingsProviderGroup",
+        )
+    }
+}
+
+/** Which Unity class a class of the project derives from: what the lenses, the completion of event functions and the inspections ask. */
+object UnityTypes {
+    private const val MAX_DEPTH = 16
+
     /** The Unity class [type] derives from (`UnityEngine.MonoBehaviour`...), the nearest one; null for a class of no Unity base. Cached until the PSI changes. */
-    private fun unityBase(type: CSharpBaseTypeDeclaration): String? = CachedValuesManager.getCachedValue(type) {
+    fun unityBase(type: CSharpBaseTypeDeclaration): String? = CachedValuesManager.getCachedValue(type) {
         CachedValueProvider.Result.create(computeUnityBase(type), PsiModificationTracker.MODIFICATION_COUNT)
     }
 
@@ -100,28 +128,6 @@ class UnityImplicitUsage : CSharpImplicitUsage {
             current = assemblies.baseTypes(current).firstOrNull()?.type
         }
         return null
-    }
-
-    /** `[SerializeField]`, `[UnityEngine.SerializeField]`, `[SerializeFieldAttribute]` → `SerializeField`. */
-    private fun attributeNames(member: CSharpMemberDeclaration): Set<String> =
-        member.attributeLists.flatMap { list -> PsiTreeUtil.getChildrenOfTypeAsList(list, io.github.dotnetsupport.csharp.lang.psi.CSharpAttribute::class.java) }
-            .mapNotNullTo(HashSet()) { attribute -> attribute.nameElement?.text?.substringAfterLast('.')?.removeSuffix("Attribute")?.trim() }
-
-    private companion object {
-        const val UNITY_SCRIPT = "Unity script"
-        const val EVENT_FUNCTION = "Event function"
-        const val SET_BY_UNITY = "Set by Unity"
-        const val CALLED_BY_UNITY = "Called by Unity"
-        const val MAX_DEPTH = 16
-
-        val SERIALIZED_BASES = setOf("UnityEngine.MonoBehaviour", "UnityEngine.ScriptableObject", "UnityEngine.StateMachineBehaviour", "UnityEditor.EditorWindow")
-
-        /** Methods Unity finds by an attribute: menu items, the hooks of loading, building and opening assets. */
-        val CALLED_BY_ATTRIBUTES = setOf(
-            "MenuItem", "ContextMenu", "ContextMenuItem", "RuntimeInitializeOnLoadMethod", "InitializeOnLoadMethod", "InitializeOnEnterPlayMode",
-            "DidReloadScripts", "PostProcessBuild", "PostProcessScene", "OnOpenAsset", "Shortcut", "ClutchShortcut", "SettingsProvider",
-            "SettingsProviderGroup",
-        )
     }
 }
 
@@ -175,4 +181,46 @@ object UnityMessages {
     val BASES: Set<String> = BY_BASE.keys
 
     fun of(base: String): Set<String> = BY_BASE[base].orEmpty()
+
+    /** How a message is declared (the scripting reference): what the completion of event functions writes. */
+    class Signature(val parameters: String = "", val returnType: String = "void", val isStatic: Boolean = false)
+
+    /** The messages that are no longer sent (the networking of Unity 4): not offered by the completion, still recognized as event functions. */
+    val OBSOLETE: Set<String> = setOf(
+        "OnServerInitialized", "OnConnectedToServer", "OnDisconnectedFromServer", "OnFailedToConnect", "OnPlayerConnected", "OnPlayerDisconnected",
+        "OnNetworkInstantiate", "OnSerializeNetworkView", "OnMasterServerEvent", "OnFailedToConnectToMasterServer",
+    )
+
+    private val SIGNATURES: Map<String, Signature> = mapOf(
+        "OnCollisionEnter" to Signature("Collision other"), "OnCollisionStay" to Signature("Collision other"), "OnCollisionExit" to Signature("Collision other"),
+        "OnCollisionEnter2D" to Signature("Collision2D other"), "OnCollisionStay2D" to Signature("Collision2D other"), "OnCollisionExit2D" to Signature("Collision2D other"),
+        "OnTriggerEnter" to Signature("Collider other"), "OnTriggerStay" to Signature("Collider other"), "OnTriggerExit" to Signature("Collider other"),
+        "OnTriggerEnter2D" to Signature("Collider2D other"), "OnTriggerStay2D" to Signature("Collider2D other"), "OnTriggerExit2D" to Signature("Collider2D other"),
+        "OnApplicationFocus" to Signature("bool hasFocus"), "OnApplicationPause" to Signature("bool pauseStatus"),
+        "OnControllerColliderHit" to Signature("ControllerColliderHit hit"), "OnJointBreak" to Signature("float breakForce"),
+        "OnJointBreak2D" to Signature("Joint2D brokenJoint"), "OnParticleCollision" to Signature("GameObject other"),
+        "OnAnimatorIK" to Signature("int layerIndex"), "OnAudioFilterRead" to Signature("float[] data, int channels"),
+        "OnRenderImage" to Signature("RenderTexture source, RenderTexture destination"),
+        "HasFrameBounds" to Signature(returnType = "bool"), "OnGetFrameBounds" to Signature(returnType = "Bounds"),
+        "OnPostprocessAllAssets" to Signature("string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths", isStatic = true),
+        "OnPostprocessTexture" to Signature("Texture2D texture"), "OnPostprocessCubemap" to Signature("Cubemap texture"),
+        "OnPostprocessModel" to Signature("GameObject root"), "OnPostprocessPrefab" to Signature("GameObject root"),
+        "OnPostprocessAudio" to Signature("AudioClip clip"), "OnPostprocessMaterial" to Signature("Material material"),
+        "OnPostprocessSprites" to Signature("Texture2D texture, Sprite[] sprites"), "OnPostprocessAnimation" to Signature("GameObject root, AnimationClip clip"),
+        "OnPostprocessMeshHierarchy" to Signature("GameObject root"), "OnAssignMaterialModel" to Signature("Material material, Renderer renderer", "Material"),
+        "OnPostprocessGameObjectWithUserProperties" to Signature("GameObject gameObject, string[] propNames, object[] values"),
+        "OnPostprocessSpeedTree" to Signature("GameObject root"), "OnPostprocessAssetbundleNameChanged" to Signature("string assetPath, string previousAssetBundleName, string newAssetBundleName"),
+        "GetPostprocessOrder" to Signature(returnType = "int"), "GetVersion" to Signature(returnType = "uint"),
+        "OnWillCreateAsset" to Signature("string assetName", isStatic = true),
+        "OnWillDeleteAsset" to Signature("string assetPath, RemoveAssetOptions options", "AssetDeleteResult", isStatic = true),
+        "OnWillMoveAsset" to Signature("string sourcePath, string destinationPath", "AssetMoveResult", isStatic = true),
+        "OnWillSaveAssets" to Signature("string[] paths", "string[]", isStatic = true),
+        "IsOpenForEdit" to Signature("string assetPath, out string message", "bool", isStatic = true),
+        "CanOpenForEdit" to Signature("string[] assetOrMetaFilePaths, List<string> outNotEditablePaths, StatusQueryOptions statusQueryOptions", "bool", isStatic = true),
+        "MakeEditable" to Signature("string[] paths, string prompt, List<string> outNotEditablePaths", "bool", isStatic = true),
+        "FileModeChanged" to Signature("string[] assets, FileMode mode", isStatic = true),
+        "ShowButton" to Signature("Rect position"),
+    )
+
+    fun signature(message: String): Signature = SIGNATURES[message] ?: Signature()
 }

@@ -73,20 +73,36 @@ object UnityProjects {
 class UnitySolutionLayout : SolutionLayout {
     override fun isGeneratedDirectory(directory: VirtualFile): Boolean = UnityProjects.isGeneratedDirectory(directory)
 
+    /** Unity writes its solution into the root of the project; a `.sln` deeper down (`Assets/<package>/...`) is a package's own. */
+    override fun isForeignSolution(solution: VirtualFile): Boolean {
+        val root = UnityProjects.rootOf(solution) ?: return false
+        return solution.parent != root
+    }
+
     override fun namespaceFor(directory: VirtualFile, projectFile: VirtualFile, rootNamespace: String?): String? {
         val root = projectFile.parent?.takeIf(UnityProjects::isUnityRoot) ?: return null
         val assets = root.findChild("Assets") ?: return null
         if (!VfsUtilCore.isAncestor(assets, directory, false)) return null
         var base: VirtualFile = assets
+        var asmdef: VirtualFile? = null
         var current: VirtualFile? = directory
         while (current != null && current != assets) {
-            if (current.children.any { !it.isDirectory && it.extension.equals("asmdef", ignoreCase = true) }) {
+            asmdef = current.children.firstOrNull { !it.isDirectory && it.extension.equals("asmdef", ignoreCase = true) }
+            if (asmdef != null) {
                 base = current
                 break
             }
             current = current.parent
         }
+        // the root namespace of the assembly definition itself (what Unity writes into the project of that assembly), else the project's
+        val namespaceRoot = asmdef?.let(::asmdefRootNamespace) ?: rootNamespace.orEmpty()
         val folders = VfsUtilCore.getRelativePath(directory, base, '/').orEmpty().split('/').filter { it.isNotBlank() && !it.equals("Scripts", ignoreCase = true) }
-        return (rootNamespace.orEmpty().split('.') + folders).filter { it.isNotBlank() }.joinToString(".", transform = io.github.dotnetsupport.msbuild.DotNetProjects::toIdentifier)
+        return (namespaceRoot.split('.') + folders).filter { it.isNotBlank() }.joinToString(".", transform = io.github.dotnetsupport.msbuild.DotNetProjects::toIdentifier)
+    }
+
+    /** `"rootNamespace": "Game.Boot"` of an `.asmdef`; null when it has none or is not readable. */
+    private fun asmdefRootNamespace(asmdef: VirtualFile): String? {
+        val text = runCatching { VfsUtilCore.loadText(asmdef) }.getOrNull() ?: return null
+        return Regex(""""rootNamespace"\s*:\s*"([^"]*)"""").find(text)?.groupValues?.get(1)?.takeIf { it.isNotBlank() }
     }
 }

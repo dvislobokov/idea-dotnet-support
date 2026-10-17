@@ -50,7 +50,9 @@ class UnityProjectsTest : BasePlatformTestCase() {
         assertTrue(UnityProjects.isGeneratedDirectory(root.findChild("Library")!!))
         assertTrue(UnityProjects.isGeneratedDirectory(root.findChild("Temp")!!))
         assertFalse(UnityProjects.isGeneratedDirectory(root.findChild("Assets")!!))
-        // the solutions inside the package cache are nobody's: the finder skips the generated folders
+        // the solutions inside the package cache are nobody's: the finder skips the generated folders; a package's own in Assets is not
+        // the project's either (FishNet's Mono.Cecil.sln): only the root's solution, no chooser
+        myFixture.addFileToProject("u/Assets/FishNet/CodeGenerating/cecil-0.11.4/Mono.Cecil.sln", "")
         assertEquals(listOf("u.slnx"), SolutionFinder.find(root).solutions.map { it.name })
     }
 
@@ -85,6 +87,10 @@ class UnityProjectsTest : BasePlatformTestCase() {
         // Assembly-CSharp: no root namespace, the folders from Assets, `Scripts` none of them
         assertEquals("Enemies", io.github.dotnetsupport.msbuild.DotNetProjects.namespaceFor(root.findFileByRelativePath("Assets/Scripts/Enemies")!!, main, ""))
         assertEquals("", io.github.dotnetsupport.msbuild.DotNetProjects.namespaceFor(root.findChild("Assets")!!, main, ""))
+        // an assembly definition with no project of its own yet (the editor has not regenerated): its rootNamespace counts
+        myFixture.addFileToProject("u/Assets/Gameplay/Gameplay.asmdef", """{ "name": "Demo.Gameplay", "rootNamespace": "Demo.Gameplay" }""")
+        myFixture.addFileToProject("u/Assets/Gameplay/Ai/Brain.cs", "")
+        assertEquals("Demo.Gameplay.Ai", io.github.dotnetsupport.msbuild.DotNetProjects.namespaceFor(root.findFileByRelativePath("Assets/Gameplay/Ai")!!, main, ""))
     }
 
     fun testNewUnityScriptsRenderWithTheirUsings() {

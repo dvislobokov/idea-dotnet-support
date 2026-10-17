@@ -205,6 +205,20 @@ Solution для живой проверки плагина: отладчика (
       `Navigation` — строка `@inject`
 - [ ] `TYPE:razor-errors`: в `Increase` набрать `count = "x";` — `"x"` красное с CS0029, как в `.cs`; Ctrl+Z
 
+### Unity (UNITY_PLAN.md, 0.1.255–0.1.257; вживую человеком не проверено) — `Unity/Assets/Scripts/Player.cs`, `Spawner.cs`
+
+Отдельный маленький проект Unity в формате, который генерирует редактор (старый `.csproj`, ссылки абсолютным `HintPath` на редактор
+6000.6.0f1 из Unity Hub); в `DebugPlayground.sln` не входит — открыть папку `debug-playground/Unity` (или `Unity.sln`) отдельно.
+Нужен установленный Unity 6000.6.0f1 (другая версия — поправить пути в `Assembly-CSharp.csproj` и `ProjectSettings/ProjectVersion.txt`).
+- [ ] `UNITY:view`: узел solution с иконкой Unity и «Unity 6000.6.0f1 · 1 project», без `.meta`; «Show .meta Files» в меню панели их возвращает;
+      меню .NET → «Open in Unity Editor 6000.6.0f1»
+- [ ] `UNITY:lenses`: «Unity script», «Set by Unity», «Event function», «Called by Unity» вместо «no usages»; у `notSerialized` и `Helper` — «no usages»
+- [ ] `UNITY:new`: ПКМ → New → «Unity ▸» сразу после Class/Interface, категории .NET прямо в New; MonoBehaviour Script без namespace
+      в `Assets/Scripts`, с блочным `namespace Demo.Gameplay` в `Assets/Gameplay`
+- [ ] `TYPE:unity-event-function`: `OnColl` → OnCollisionEnter… с «(Collision other)», Enter пишет метод с телом; `public OnDis` → `public void OnDisable()`
+- [ ] `UNITY:editor-messages` (`Spawner.cs`, ScriptableObject): `OnVal` → OnValidate, Update не предлагается
+- [ ] `UNITY:defines`: ветка `#if UNITY_EDITOR` — живой код, `#else` серая
+
 ## Solution view
 
 ### Reload Solution / Reload Project

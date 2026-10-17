@@ -73,12 +73,25 @@
     namespace (`isFileScopedPreferred`). Символы `#if` Unity (151, `UNITY_EDITOR`, `UNITY_6000_6_OR_NEWER`) и C# 9 доходят до парсера
     (проверено пробой `parse_keys.js`).
 
+- [x] 0.1.257 — шаги 3 и 4:
+  - **Completion событий** (`UnityEventFunctionCompletion`, как «Generate Unity event functions» Rider): в теле класса-наследника базы
+    Unity, в начале члена (строка — отступ, модификаторы, начало имени; без тела метода, списка аксессоров, аргументов, параметров,
+    инициализатора, `=>` между ними) — сообщения этой базы, которых в классе ещё нет, без устаревших сетевых Unity 4, с параметрами
+    (`OnTriggerEnter(Collider other)`, `OnPostprocessAllAssets(…)` static, `OnWillDeleteAsset` с возвращаемым `AssetDeleteResult`) и
+    подписью «event function»; Enter пишет метод с телом и кареткой внутри (`return false;` / `return 0;` / `return default;` у не-void),
+    набранный модификатор доступа сохраняется, иначе `private`. Тест `UnityCompletionTest`; в песочнице на `GameBootstrap.cs` —
+    настоящий набор `OnTrigEn` + Enter (снимки `build/ui-robot/unity9.png`, `unity10.png`). Атрибуты (`[SerializeField]`, `[Header]`,
+    `[Range]`) completion типов уже предлагает из индекса сборок редактора.
+  - **Только `.sln` корня**: `SolutionLayout.isForeignSolution` — `.sln` глубже корня проекта Unity (`Assets/FishNet/…/Mono.Cecil.sln`)
+    искатель не берёт: нет попапа «Select Solution» и уведомления «Several solutions».
+  - **Namespace папки** берёт `rootNamespace` самого `.asmdef` (папка с `.asmdef`, для которой Unity ещё не сгенерировал проект).
+  - Площадка: `debug-playground/Unity` (маленький проект в формате генератора, маркеры `UNITY:*` и `TYPE:unity-event-function`).
+
 ## Известные мелочи
 
-- Попап «Select Solution» при открытии `nine-to-fire`: `Mono.Cecil.sln` внутри `Assets/FishNet/CodeGenerating/cecil-0.11.4` — чужой
-  solution пакета в `Assets`, не в `Library`, поэтому `solutionLayout` его не скрывает. Для проекта Unity правильно предлагать только
-  `.sln` корня — шаг 4.
-- Build / Run у solution Unity — кнопки на месте, хотя собирает редактор.
+- Build / Run у solution Unity — кнопки на месте. `dotnet build` проекта Unity работает (старый формат, все ссылки по `HintPath`) и
+  полезен как проверка ошибок; запускает игру редактор («Open in Unity Editor»). Оставлено как есть.
+- Вставленный метод события занимает пустую строку, на которой набирали: отделяющая пустая строка до следующего члена не добавляется.
 
 ## Дальше — по порядку (модуль `frameworks.unity`)
 
@@ -92,14 +105,13 @@
    заменить на «Open in Unity» (редактор по `ProjectVersion.txt` через Unity Hub: `Hub/Editor/<версия>/Editor/Unity.exe -projectPath`).
 2. ~~Семантика~~ — 0.1.256. Серых «неиспользуемых» членов плагин не рисует (только локальные и недостижимый код), поэтому
    подавление свелось к линзе; если появится серый для членов — спрашивать ту же `csharpImplicitUsage`.
-3. **Completion и генерация** (1 выпуск). Внутри класса-наследника `MonoBehaviour` — completion сообщений (`void Update()` с
-   сигнатурой, как Rider «Generate Unity event functions»), атрибуты `[SerializeField]`, `[Header]`, `[Range]`; `GetComponent<T>` —
-   T из компонентов. `Input`-ось / тэг / слой строками из `ProjectSettings` — позже.
+3. ~~Completion и генерация~~ — 0.1.257. Дальше по желанию: `GetComponent<T>` — T из компонентов; строки осей `Input`, тэгов и
+   слоёв из `ProjectSettings/InputManager.asset` / `TagManager.asset`; отладчик Unity (Mono) — отдельный большой шаг.
 4. **Проверка** без площадки в репозитории: проекты Unity лежат у пользователя (`~/My project`, `~/nine-to-fire`, `~/TOP DOWN SHOOTER`);
    копия для песочницы WSL — `tools/ui-robot/wsl/copy-unity.sh` (переписывает пути `HintPath` на `/mnt/c/...`, так же как сделал бы
    Unity под Linux), пробы — скрипты робота `index_probe.js`, `msbuild_probe.js`, `references_probe.js`, `errors_at.js`,
    `complete_at_line.js`, `doc_at.js`, `lenses.js` (линзы файла), `parse_keys.js` (символы `#if` и версия языка файла). Перед проверкой
    «IDE error» — убрать `~/robot/sandbox/log/idea.log` и `system/{caches,index}` песочницы, иначе считаются старые ошибки. Тесты — на
-   статике (`ProjectsInOneFolderTest`, `UnityProjectsTest`, Unity-случай `CSharpCodeLensTest`): настоящий Unity в тестах не нужен.
-   Шаг 4 — мелочи выше (попап выбора solution, Build / Run).
+   статике (`ProjectsInOneFolderTest`, `UnityProjectsTest`, `UnityCompletionTest`, Unity-случай `CSharpCodeLensTest`): настоящий
+   Unity в тестах не нужен. Живой набор в песочнице: `caret_at.js` ставит каретку и фокус, затем `screen.sh type` / `key`.
 5. Не делать (пока): отладчик Unity (Mono), шейдеры, UXML/USS, профайлер, `.unity`/`.prefab` (YAML — платформа и так подсвечивает).

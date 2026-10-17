@@ -1,4 +1,4 @@
-# CSharpStubs.VERSION = 3
+# CSharpStubs.VERSION = 4
 PsiFileStubImpl
   CompilationUnit:CSharpStub
     NamespaceDeclaration:CSharpStub name=Shop.Orders

@@ -19,6 +19,12 @@ interface SolutionLayout {
      */
     fun namespaceFor(directory: VirtualFile, projectFile: VirtualFile, rootNamespace: String?): String? = null
 
+    /**
+     * A solution file that belongs to a package inside the project of the framework, not to the project the user opened: the `.sln` a
+     * Unity package brings in `Assets` (FishNet's `Mono.Cecil.sln`). The solution finder leaves it out: no "Several solutions", no chooser.
+     */
+    fun isForeignSolution(solution: VirtualFile): Boolean = false
+
     companion object {
         val EP_NAME: ExtensionPointName<SolutionLayout> = ExtensionPointName.create("io.github.dotnetsupport.solutionLayout")
 
@@ -26,5 +32,7 @@ interface SolutionLayout {
 
         fun namespaceFor(directory: VirtualFile, projectFile: VirtualFile, rootNamespace: String?): String? =
             EP_NAME.extensionList.firstNotNullOfOrNull { it.namespaceFor(directory, projectFile, rootNamespace) }
+
+        fun isForeignSolution(solution: VirtualFile): Boolean = EP_NAME.extensionList.any { it.isForeignSolution(solution) }
     }
 }

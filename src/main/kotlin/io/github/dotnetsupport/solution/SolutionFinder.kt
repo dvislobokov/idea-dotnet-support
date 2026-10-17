@@ -31,7 +31,7 @@ object SolutionFinder {
                 if (file.isDirectory) return file == root || !isSkipped(file)
                 val extension = file.extension?.lowercase()
                 when {
-                    extension in SOLUTION_EXTENSIONS -> solutions += file
+                    extension in SOLUTION_EXTENSIONS -> if (!SolutionLayout.isForeignSolution(file)) solutions += file
                     extension == SOLUTION_FILTER_EXTENSION -> filters += file
                     includeProjects && DotNetProjects.isProjectFile(file) -> projects += file
                 }

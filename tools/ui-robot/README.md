@@ -138,6 +138,8 @@ python robot.py action Exit && python robot.py click "//div[@class='MyDialog']//
   найдены ли типы, `CompilationModel.projectOf` файла. `index_schedule.js` / `index_refresh_now.js` (`__PROJECT__`) — обновить индекс
   (в фоне / на месте, с исключением). `msbuild_probe.js` (`__PROJECT__`) — статическая модель проекта: legacy, фреймворки, `HintPath`,
   проекты solution. `references_probe.js` (`__PROJECT__`) — `ProjectAssemblies.references` без assets: сколько сборок попадёт в индекс.
+- `caret_at.js` (`__FILE__`, `__LINE__` с 1): открыть файл, каретку в конец строки, фокус в редактор — дальше настоящий набор
+  `screen.sh type "…"` и `screen.sh key Return` (так проверен completion событий Unity, 0.1.257).
 - `lenses.js` (`__FILE__`): линзы использований файла, как их считает плагин (`строка: текст`). `parse_keys.js` (`__FILE__`,
   `__SYMBOLS__` через запятую): символы `#if` и версия языка, с которыми разбирается файл, и есть ли среди них названные.
 - `threads.js` (`__NEEDLE__`): потоки, в стеке которых есть подстрока. `reload.js` (`__FILE__`): сбросить несохранённые правки файла

@@ -766,6 +766,10 @@
     `RazorCSharpInjector`); completion после `@` и `@Model.`, Go to Declaration из разметки в `@code` и в `.cs`, ошибки C# — через ту же
     семантику; PSI хоста — дерево компилятора R2 (`RazorTree.kt`), HTML-файл по нему. Сценарий `Blazor/Editor/RazorCSharp.razor` (вживую
     не проверено). Генерация документа по образцу компилятора — R3b (`RAZOR_PLAN.md`)
+  - [x] Unity, шаги 3–4 (0.1.257) — completion событий в теле наследника базы Unity (`OnTrigEn` → `private void OnTriggerEnter(Collider
+    other)` с телом; сообщения, которых в классе нет, с параметрами), только `.sln` корня проекта Unity (нет попапа выбора из-за
+    `Mono.Cecil.sln` пакета), namespace от `rootNamespace` самого `.asmdef`. Сценарии — `debug-playground/Unity` (`UNITY:*`,
+    `TYPE:unity-event-function`); проверено настоящим набором в песочнице WSL на `nine-to-fire`, человеком вживую не проверено
   - [x] Unity, шаг 2 (0.1.256) — семантика: «IDE error occurred» при открытии (несовпадение стабов на файлах с `#if`) устранено в ядре —
     `CSharpParseOptions` кладёт символы, просит переиндексацию и заново разбирает PSI одним write action; точка расширения
     `csharpImplicitUsage`: над сообщениями `MonoBehaviour` и др. «Event function», над сериализуемыми полями «Set by Unity», над
