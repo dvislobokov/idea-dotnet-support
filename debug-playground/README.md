@@ -213,6 +213,11 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `TYPE:razor-component-completion`: в `Step="@st|"` Ctrl+Space — `step` в списке
 - [ ] `TYPE:razor-component-new-parameter`: добавить `[Parameter] public string Label { get; set; } = "";` в `Counter.razor` без сохранения,
       набрать здесь `<Counter Label="@title" />` — через мгновение Ctrl+B на `title` ведёт в `@code`
+- [ ] (R5e, 0.1.265) `TYPE:razor-tag-completion`: `<Cou` + Ctrl+Space — `Counter` в списке; без `@using` — только полное имя
+- [ ] (R5e) `TYPE:razor-attribute-completion`: Ctrl+Space перед `CountChanged` — сверху `Step`, `CountChanged`, ниже `@bind-Step`, `@ref`,
+      `@onclick`…; Enter пишет `Step=""`
+- [ ] (R5e) `TYPE:razor-tag-goto`: Ctrl+B на `Counter` — открывается `Counter.razor`; на имени атрибута `Step` — свойство в `@code`;
+      на `button` — ничего нашего
 
 ### Unity (UNITY_PLAN.md, 0.1.255–0.1.257; вживую человеком не проверено) — `Unity/Assets/Scripts/Player.cs`, `Spawner.cs`
 

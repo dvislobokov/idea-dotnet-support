@@ -19,6 +19,7 @@ import io.github.dotnetsupport.razor.lang.codegen.RazorProjectEngine
 import io.github.dotnetsupport.razor.lang.codegen.RazorProjectFileSystem
 import io.github.dotnetsupport.razor.lang.codegen.RazorProjectItem
 import io.github.dotnetsupport.razor.lang.codegen.SourceMapping
+import io.github.dotnetsupport.razor.lang.codegen.getTagHelperContext
 import io.github.dotnetsupport.razor.lang.syntax.RazorDiagnostic
 import io.github.dotnetsupport.razor.lang.syntax.RazorFileKind
 import io.github.dotnetsupport.razor.lang.syntax.RazorLanguageVersion
@@ -37,7 +38,11 @@ object RazorCSharpDocument {
     class Place(val prefix: String, val host: RazorCodeLiteral, val range: TextRange, var suffix: String)
 
     /** What the generator made of the file: the C#, the mappings (original → generated) and the diagnostics of the compiler. */
-    class Generated(val code: String, val mappings: List<SourceMapping>, val diagnostics: List<RazorDiagnostic>, val filePath: String)
+    class Generated(
+        val code: String, val mappings: List<SourceMapping>, val diagnostics: List<RazorDiagnostic>, val filePath: String,
+        /** The components and tag helpers in scope of the file (R5e: completion and navigation in the markup); null without the project's. */
+        val tagHelperContext: io.github.dotnetsupport.razor.lang.syntax.TagHelperDocumentContext? = null,
+    )
 
     private val GENERATED = com.intellij.openapi.util.Key.create<com.intellij.psi.util.CachedValue<Generated?>>("razor.generated")
 
@@ -50,8 +55,10 @@ object RazorCSharpDocument {
     private fun generateNow(file: RazorFile): Generated? = withEngine(file) { engine, item, projectFile ->
         // the components and tag helpers of the project (R5d): their elements become C# — parameters, `@bind`, event handlers
         val tagHelpers = projectFile?.let { RazorTagHelperService.getInstance(file.project).tagHelpers(it) }
-        val csharp = engine.process(item, tagHelpers).getCSharpDocument() ?: return@withEngine null
-        Generated(csharp.generatedCode, csharp.sourceMappingsSortedByGenerated, csharp.diagnostics, item.getSource().filePath ?: item.filePath ?: "")
+        val document = engine.process(item, tagHelpers)
+        val csharp = document.getCSharpDocument() ?: return@withEngine null
+        val context = if (tagHelpers == null) null else document.getTagHelperContext()
+        Generated(csharp.generatedCode, csharp.sourceMappingsSortedByGenerated, csharp.diagnostics, item.getSource().filePath ?: item.filePath ?: "", context)
     }
 
     private val DECLARATION = com.intellij.openapi.util.Key.create<com.intellij.psi.util.CachedValue<String?>>("razor.declaration")

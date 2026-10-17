@@ -291,6 +291,12 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
     `AspNetCoreComponents.dnix` (`tools/index-fixture/components` — заглушка API компонентов под настоящим именем сборки). Найдено:
     движки документа держали `VirtualFile` корня проекта — после удаления и восстановления папки обращались к недействительному.
   - [ ] **R5e. Редактор**: completion тегов и атрибутов, переход тег → компонент, Find Usages и rename, tag helpers `.cshtml`, площадка.
+    - [x] Часть 1 (0.1.265): `RazorTagHelperEditor` — контекст tag helpers документа (`TagHelperDocumentContext` из того же прогона движка,
+      что и документ C#, хранится в `RazorCSharpDocument.Generated`), кандидаты для тега по правилам сопоставления (полное имя — ниже,
+      `ChildContent` — только внутри родителя), completion тегов и атрибутов (HTML-контрибутор), Ctrl+B тег → `.razor` / класс C# / тип
+      сборки (`AssemblyNavigation`), атрибут → свойство-параметр; имена в разметке не инъектированы как C#, цель одна. Тесты —
+      `RazorTagHelpersTest`, площадка — `RazorComponents.razor` (`TYPE:razor-tag-completion`, `-attribute-completion`, `-tag-goto`).
+    - [ ] Часть 2: Find Usages и rename компонентов (файл и теги) и параметров, tag helpers `.cshtml` (`asp-*`).
 - [ ] **R6. Ошибки** (2). Синтаксис Razor (RZ1xxx) — свой парсер; RZ9xxx / RZ10xxx (неизвестный параметр, неизвестный компонент как
   предупреждение RZ10012, `@bind` без пары) — своими проверками, сверка с `razordump diagnostics`; C#-ошибки в разметке — та же
   семантика. Корпус `CompilerMessagesCoverageTest` пополнить RZ-кодами (примеры со страниц документации Razor) и

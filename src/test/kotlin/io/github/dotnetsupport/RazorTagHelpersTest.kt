@@ -96,6 +96,59 @@ class RazorTagHelpersTest : BasePlatformTestCase() {
         assertTrue(found.any { it.kind == TagHelperKind.Ref } && found.any { it.kind == TagHelperKind.Key })
     }
 
+    /** A Razor file of the project in the editor, the caret at `|`, after the project's descriptors are discovered. */
+    private fun open(path: String, text: String): RazorFile {
+        val offset = text.indexOf('|')
+        val file = myFixture.addFileToProject(path, text.removeRange(offset, offset + 1))
+        myFixture.configureFromExistingVirtualFile(file.virtualFile)
+        myFixture.editor.caretModel.moveToOffset(offset)
+        val service = RazorTagHelperService.getInstance(project)
+        service.tagHelpers(projectFile)
+        PlatformTestUtil.waitWithEventsDispatching("the tag helpers of the project", { service.tagHelpers(projectFile) != null }, 60)
+        return razor(file)
+    }
+
+    fun testCompletionOffersTheTagsOfTheComponentsInScope() {
+        open("App/Pages/Tags.razor", "@using App.Components\n<Gr|\n")
+        val items = myFixture.completeBasic()?.map { it.lookupString }.orEmpty()
+        assertTrue(items.toString(), "Greeting" in items)
+        // a component of a namespace not imported only by its full name
+        open("App/Pages/Tags2.razor", "<App.Components.Pa|\n")
+        val qualified = myFixture.completeBasic()?.map { it.lookupString }.orEmpty() + listOfNotNull(myFixture.editor.document.text.takeIf { "App.Components.Panel" in it })
+        assertTrue(qualified.toString(), qualified.any { it == "App.Components.Panel" || "App.Components.Panel" in it })
+    }
+
+    fun testCompletionOffersTheParametersAndDirectiveAttributesOfAnElement() {
+        open("App/Pages/Attributes.razor", "@using App.Components\n<Greeting T| />\n")
+        val items = myFixture.completeBasic()?.map { it.lookupString }.orEmpty()
+        assertTrue(items.toString(), items.containsAll(listOf("Title", "TitleChanged")))
+        open("App/Pages/Attributes2.razor", "@using App.Components\n<Greeting @| />\n")
+        val directives = myFixture.completeBasic()?.map { it.lookupString }.orEmpty()
+        assertTrue(directives.toString(), directives.containsAll(listOf("@bind-Title", "@onclick", "@ref", "@key")))
+    }
+
+    fun testGoToDeclarationFromATagAndAnAttribute() {
+        val file = open("App/Pages/Navigate.razor", "@using App.Components\n<Greeting Title=\"x\" />\n<Panel Size=\"3\" />\n|")
+        fun targets(word: String, occurrence: Int = 0): List<com.intellij.psi.PsiElement> {
+            var at = -1
+            repeat(occurrence + 1) { at = myFixture.editor.document.text.indexOf(word, at + 1) }
+            val element = myFixture.file.viewProvider.findElementAt(at, com.intellij.lang.html.HTMLLanguage.INSTANCE)
+            return io.github.dotnetsupport.frameworks.razor.RazorTagHelperGotoDeclarationHandler().getGotoDeclarationTargets(element, at, myFixture.editor)?.toList().orEmpty()
+        }
+        // a component of a `.razor` file: the file; its parameter: where `@code` declares it
+        assertEquals("Greeting.razor", (targets("Greeting").single() as? com.intellij.psi.PsiFile)?.name)
+        val title = targets("Title").single()
+        assertEquals("Greeting.razor", title.containingFile.name)
+        assertTrue(title.containingFile.text.substring(title.textRange.startOffset).startsWith("Title"))
+        // a component of a C# file: its class; its parameter: the property
+        assertEquals("Panel", (targets("Panel").single() as io.github.dotnetsupport.csharp.lang.psi.CSharpBaseTypeDeclaration).identifier?.text)
+        assertEquals("Size", (targets("Size").single() as io.github.dotnetsupport.csharp.lang.psi.CSharpPropertyDeclaration).identifier?.text)
+        assertNotNull(file)
+        // the names are markup, not C# of the document: the handler is the only target
+        val manager = com.intellij.lang.injection.InjectedLanguageManager.getInstance(project)
+        for (word in listOf("Greeting", "Title", "Panel", "Size")) assertNull(word, manager.findInjectedElementAt(myFixture.file, myFixture.editor.document.text.indexOf(word)))
+    }
+
     fun testTheDocumentOfARazorFileIsMadeWithTheTagHelpersOfItsProject() {
         val file = razor(myFixture.addFileToProject("App/Pages/Home.razor", home))
         val service = RazorTagHelperService.getInstance(project)

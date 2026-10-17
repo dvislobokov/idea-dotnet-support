@@ -3,6 +3,14 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.265
+
+- Razor: completion of components in the markup. After `<` the components in scope are offered by their names (the others by the full
+  name), inside an element of a component its parameters come first, then `@bind-…`, `@onclick`, `@ref`, `@key` and the rest that
+  applies to it.
+- Razor: Go to Declaration (Ctrl+B, Ctrl+click) from the tag of a component opens its `.razor` file or its C# class (a component of a
+  package — its type in the assembly view), from the name of an attribute — the parameter.
+
 ## 0.1.264
 
 - Razor: the components and tag helpers are known as the compiler knows them. In a `.razor` file an element of a component

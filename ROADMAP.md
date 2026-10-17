@@ -780,8 +780,12 @@
     компонентов `.razor` нашим движком, проекты-ссылки); документ C# файла Razor собирается с дескрипторами проекта (`RazorTagHelperService`:
     фон, пересчёт после правки) — элементы компонентов и директивные атрибуты становятся C#. Гейты: дескрипторы против `razordump` на
     reference packs, `MudBlazor.dll`, выводе Nop.Web и 45 проектах корпуса — без расхождений; кодогенерация с tag helpers — 1172 / 1172
-    файла как у компилятора. Сценарий — `debug-playground/Blazor/Editor/RazorComponents.razor` (вживую не проверено). Дальше — R5e
-    (completion тегов и атрибутов, переход тег → компонент, Find Usages, rename)
+    файла как у компилятора. Сценарий — `debug-playground/Blazor/Editor/RazorComponents.razor` (вживую не проверено)
+  - [x] R5e, часть 1 (0.1.265) — completion тегов компонентов (в области видимости — по имени, остальные — полным именем) и атрибутов
+    элемента (сначала его параметры, потом `@bind-…`, `@onclick`, `@ref`, `@key`…), Ctrl+B с тега на `.razor` / класс C# / тип сборки,
+    с имени атрибута — на параметр (`RazorTagHelperEditor`: по контексту tag helpers документа). Сценарий — `RazorComponents.razor`,
+    маркеры `TYPE:razor-tag-completion`, `-attribute-completion`, `-tag-goto` (вживую не проверено). Дальше — R5e, часть 2: Find Usages
+    и rename компонентов и параметров, tag helpers `.cshtml`
   - [x] Unity, индекс ассетов (0.1.260) — «Used in Boot.unity» над скриптом, «Event handler» / «Animation event» над методом,
     «Set by Unity: 5» над полем, Find Usages в сценах, сцены и префабы как YAML со ссылками `guid` / `m_MethodName` в код, «Missing
     script», `[FormerlySerializedAs]` при переименовании поля. Сценарий — `debug-playground/Unity/Assets/Scripts/Door.cs`
