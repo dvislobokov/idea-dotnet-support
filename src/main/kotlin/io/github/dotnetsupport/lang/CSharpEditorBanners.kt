@@ -67,7 +67,8 @@ class CSharpEditorBanners : EditorNotificationProvider {
             if (shown(Kind.NO_SERVER) && RoslynLanguageServerSettings.getInstance().state.enabled && DotNetTool.ROSLYN_LANGUAGE_SERVER.find() == null) {
                 return Banner(Kind.NO_SERVER, "The C# language server (roslyn-language-server) is not installed: no errors, completion or navigation from the compiler.")
             }
-            val projectFile = DotNetProjects.findOwningProject(file)
+            // the project that compiles the file (a linking one, the right one of several in a folder), else the one of its directory
+            val projectFile = io.github.dotnetsupport.msbuild.CompilationModel.getInstance(project).projectOf(file) ?: DotNetProjects.findOwningProject(file)
             if (projectFile == null) {
                 return if (shown(Kind.NO_PROJECT)) Banner(Kind.NO_PROJECT, "This file belongs to no project of the folder: it is not built, and code analysis sees only the file itself.") else null
             }

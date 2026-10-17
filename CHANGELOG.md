@@ -3,6 +3,14 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.254
+
+- Unity projects open with their types (UNITY_PLAN.md): an absolute `HintPath` (Unity's generated projects name the editor's
+  assemblies by their full path) was joined to the project folder and dropped, so nothing was indexed; and a folder holding several
+  project files (Unity keeps one per assembly definition in the root) always picked the first one — the Solution view showed another
+  project's files under a project, the editor said a file was not a part of the wrong project. The project of a file is now the one
+  whose `Compile` items list it; the Solution view takes the project of the node above.
+
 ## 0.1.253
 
 - Razor: the virtual C# document of a `.razor` / `.cshtml` file is now the C# of the SDK's source generator (RAZOR_PLAN.md, R3b): the

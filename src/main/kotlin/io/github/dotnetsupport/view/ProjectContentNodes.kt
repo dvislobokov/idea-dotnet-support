@@ -41,7 +41,9 @@ class ProjectContentStructureProvider : TreeStructureProvider {
             is DotNetProjectNode -> parent.virtualFile?.parent
             else -> null
         } ?: return children
-        val projectFile = DotNetProjects.findOwningProject(directory) ?: return children
+        // the project of the node above, not the first project file of the directory: Unity keeps every project of the solution in one folder
+        val projectFile = generateSequence(parent as AbstractTreeNode<*>?) { it.parent }.filterIsInstance<DotNetProjectNode>().firstOrNull()?.virtualFile
+            ?: DotNetProjects.findOwningProject(directory) ?: return children
         val projectDirectory = projectFile.parent ?: return children
         val content = contentOf(project, projectFile)
         val showAll = SolutionViewSettings.isShowAllFiles(project)

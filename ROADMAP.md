@@ -766,6 +766,10 @@
     `RazorCSharpInjector`); completion после `@` и `@Model.`, Go to Declaration из разметки в `@code` и в `.cs`, ошибки C# — через ту же
     семантику; PSI хоста — дерево компилятора R2 (`RazorTree.kt`), HTML-файл по нему. Сценарий `Blazor/Editor/RazorCSharp.razor` (вживую
     не проверено). Генерация документа по образцу компилятора — R3b (`RAZOR_PLAN.md`)
+  - [x] Unity, шаг 0 (0.1.254) — проекты Unity открываются с типами: абсолютный `HintPath` берётся как есть (индекс 18 проектов / 509
+    сборок), среди нескольких `.csproj` одной папки файлу назначается тот, чьи `Compile` его перечисляют (панель Solution, баннер).
+    Проверено в песочнице WSL на `nine-to-fire`: completion по `Vector3`, Quick Doc `GetComponent<T>`, 0 ложных ошибок. План и факты —
+    `UNITY_PLAN.md`; дальше модуль `frameworks.unity` (узел Unity, `.meta`, сообщения MonoBehaviour)
   - [x] R3b (0.1.253) — генерация C# документа как у компилятора: порт конвейера генерации Razor (IR, проходы директив и компонентов,
     разрешение tag helpers, runtime writer с `#line` и mappings) в `razor-psi-core`; гейты — 93/93 файловых эталонов компилятора, корпус
     против dll SDK без tag helpers (eShop 58/58, nopCommerce 1193/1193, MudBlazor 2051/2054); хост берёт документ из генератора

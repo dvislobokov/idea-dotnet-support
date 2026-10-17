@@ -195,9 +195,10 @@ object ProjectAssemblies {
     /** `Newtonsoft.Json.13.0.1`, `Serilog.4.0.0-beta.1`: the folder `nuget restore` of `packages.config` makes for a package. */
     private val PACKAGES_CONFIG_FOLDER = Regex("""^(.+?)\.(\d+(?:\.\d+){1,3}(?:-[0-9A-Za-z.-]+)?)$""")
 
+    /** The `HintPath` files that exist: relative to the project directory, or absolute as Unity's generated projects write them (`C:\Program Files\Unity\...`). */
     private fun hintPaths(request: Request): List<File> = request.msbuild?.hintPaths?.values.orEmpty()
         .filter { '$' !in it }
-        .map { File(request.projectDirectory, it).normalize() }
+        .map { File(it).takeIf { file -> file.isAbsolute } ?: File(request.projectDirectory, it).normalize() }
         .filter { it.isFile }
 
     /**

@@ -129,6 +129,20 @@ python robot.py action Exit && python robot.py click "//div[@class='MyDialog']//
 - `copy-playground.sh` берёт из HEAD только `CompletionRanking.cs`; если площадка в HEAD не собирается (2026-10-08: `Console/Editor/CodeLens.cs:59`,
   `ShopApi/Controllers/CustomersController.cs:26`, `Web/Program.cs:25`), сборку перед запуском отладчика чинить в копии `~/robot/playground`.
 
+## Скрипты проб проекта (`scripts/`, прогон Unity 2026-10-17, `UNITY_PLAN.md`)
+
+- `projects.js` (`__CLOSE__` — подстрока пути проектов, которые закрыть; пусто — только список): открытые проекты песочницы. Песочница
+  при старте открывает прошлый проект; `robot.py open` нового показывает диалог «This Window / New Window» — нажать мышью
+  (`screen.sh click`), иначе проект не откроется.
+- `index_probe.js` (`__PROJECT__`, `__TYPES__` через запятую, `__FILE__`): индекс сборок проекта плагина — complete, число индексов,
+  найдены ли типы, `CompilationModel.projectOf` файла. `index_schedule.js` / `index_refresh_now.js` (`__PROJECT__`) — обновить индекс
+  (в фоне / на месте, с исключением). `msbuild_probe.js` (`__PROJECT__`) — статическая модель проекта: legacy, фреймворки, `HintPath`,
+  проекты solution. `references_probe.js` (`__PROJECT__`) — `ProjectAssemblies.references` без assets: сколько сборок попадёт в индекс.
+- `threads.js` (`__NEEDLE__`): потоки, в стеке которых есть подстрока. `reload.js` (`__FILE__`): сбросить несохранённые правки файла
+  (после `complete_poll.js`, упавшего до undo).
+- `wsl/copy-unity.sh [путь проекта Unity на /mnt/c]`: копия проекта Unity в `~/robot/unity` для песочницы WSL с путями `HintPath`,
+  переписанными на `/mnt/c/...` (как сгенерировал бы Unity под Linux).
+
 ## Скрипты для проверок отладчика (`scripts/`)
 
 `. tools/ui-robot/scripts/session.sh` (Git Bash, из корня репозитория) даёт функции поверх `robot.py js`:
