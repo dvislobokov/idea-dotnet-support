@@ -111,7 +111,8 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
         for ((csproj, found) in references) summary.append("# ${csproj.parentFile.name}: ${found.framework}, ${found.libraries.joinToString { "${it.kind} ${it.presentableName}" }}\n")
         val unmatched = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
         CSharpSemanticEnvironment.setAssembliesForTests { file ->
-            val path = file.viewProvider.virtualFile.path
+            // a light file (the declaration of a component) is compiled where its original is
+            val path = file.originalFile.viewProvider.virtualFile.path
             projectOf(path.removePrefix("/src/"))?.let(sets::get) ?: null.also { unmatched += path }
         }
         val files = HashMap<String, CSharpFile>()
@@ -128,10 +129,17 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
         // its meaning (Open Solution, 0.1.243) — nopCommerce's plugins reference `$(SolutionDir)\…\Nop.Web.csproj`
         for (solution in root.listFiles { f -> f.isFile && f.extension.lowercase() in setOf("sln", "slnx") }.orEmpty()) myFixture.addFileToProject(solution.name, solution.readText())
         io.github.dotnetsupport.solution.SolutionService.getInstance(project).solutionFilesChanged()
+        val projectFiles = HashMap<File, com.intellij.openapi.vfs.VirtualFile>()
+        val razorProjects = ArrayList<File>()
         for (csproj in projects) {
             val projectFolder = csproj.parentFile.relativeTo(root).invariantSeparatorsPath
             // the project file itself: the semantics finds the project of a file by it, as in the IDE (CompilationModel.projectOf)
-            myFixture.addFileToProject(csproj.relativeTo(root).invariantSeparatorsPath, csproj.readText())
+            projectFiles[csproj] = myFixture.addFileToProject(csproj.relativeTo(root).invariantSeparatorsPath, csproj.readText()).virtualFile
+            // its Razor files: the declarations of its components are its sources for the tag helper discovery (RAZOR_PLAN.md, R5c)
+            val razor = csproj.parentFile.walkTopDown().onEnter { it.name != "bin" && it.name != "obj" && it.name != "node_modules" }
+                .filter { it.isFile && (it.extension == "razor" || it.extension == "cshtml") }.toList()
+            for (f in razor) myFixture.addFileToProject(f.relativeTo(root).invariantSeparatorsPath, f.readText().replace("\r\n", "\n"))
+            if (razor.isNotEmpty()) razorProjects += csproj
             csproj.parentFile.walkTopDown().onEnter { it.name != "bin" && (it.name != "obj" || it.parentFile == null) }
                 .filter { it.isFile && it.extension == "cs" && "${File.separator}obj${File.separator}" !in it.path }.forEach { f ->
                     val path = f.relativeTo(root).invariantSeparatorsPath
@@ -185,6 +193,7 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
             }
         }
         report.append("# calls: $calls in the sources, resolved to one method $resolved, with a type $typed\n")
+        if (onlyFile == null) tagHelperGate(root, razorProjects, projectFiles, references, sets, report)
         val traced = trace.distinct().sorted()
         File(out.parentFile, out.nameWithoutExtension + ".trace.txt").apply { parentFile?.mkdirs() }.writeText(traced.joinToString("\n", postfix = "\n"))
         report.append("# trace: ${traced.size} distinct lines — ${traced.groupingBy { it.substringBefore(' ') }.eachCount().entries.sortedByDescending { it.value }.joinToString { "${it.key} ${it.value}" }}\n")
@@ -199,5 +208,65 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
         assertTrue("the control file must report CS1061 and CS0103 (assemblies: ${CSharpSemanticEnvironment.assemblies(probe).indexes.size}, indexes that did not open: ${failedOpens.size}): $controlCodes",
             "CS1061" in controlCodes && "CS0103" in controlCodes)
         assertEmpty("every index of the assemblies must open", failedOpens)
+    }
+
+    /**
+     * The gate of the symbols of the sources (RAZOR_PLAN.md, R5c): for every project with Razor files, the tag helpers the plugin discovers
+     * ([io.github.dotnetsupport.frameworks.razor.RazorTagHelpers]: its C# files and the declarations of its components, without other
+     * generators' output; the assemblies of its set) against what the Razor compiler of the SDK discovers in the same compilation (`razordump
+     * tag-helpers` of the project's folder with its global usings and the same assemblies but the framework packs, which razordump adds).
+     * The documentation is left out (the compiler's has its `cref`s resolved), so is the order across a project's types. A line per project in
+     * the report, the differences in `<out>-taghelpers.txt`. Skipped without razordump.
+     */
+    private fun tagHelperGate(
+        root: File, razorProjects: List<File>, projectFiles: Map<File, com.intellij.openapi.vfs.VirtualFile>, references: Map<File, ProjectAssemblies.References>,
+        sets: Map<String, AssemblyIndexSet>, report: StringBuilder,
+    ) {
+        val razordump = File("tools/razor/razordump/bin/Release/net10.0/RazorDump.dll").absoluteFile
+        if (!razordump.isFile || razorProjects.isEmpty()) return
+        val details = StringBuilder()
+        val work = File(out.parentFile, out.nameWithoutExtension + "-taghelpers").apply { mkdirs() }
+        for (csproj in razorProjects) {
+            val name = csproj.parentFile.name
+            try {
+                val projectFile = projectFiles[csproj] ?: continue
+                val found = references[csproj] ?: continue
+                val options = io.github.dotnetsupport.msbuild.CompilationModel.getInstance(project).options(projectFile)
+                val assemblyName = options.assemblyName?.takeIf { it.isNotBlank() } ?: csproj.nameWithoutExtension
+                val rootNamespace = options.rootNamespace?.takeIf { it.isNotBlank() } ?: csproj.nameWithoutExtension
+                val ours = io.github.dotnetsupport.frameworks.razor.RazorTagHelpers.discover(project, projectFile, generated = false, assemblies = sets[name])
+                val frameworks = found.libraries.filter { it.kind == ProjectAssemblies.LibraryKind.FRAMEWORK }.flatMapTo(HashSet()) { it.assemblies }
+                // the framework packs the project compiles against (a Razor class library without ASP.NET Core's framework has .NET's alone)
+                // the symbols the files were parsed with (the harness evaluates no project: the parser's default)
+                val sample = io.github.dotnetsupport.frameworks.razor.RazorTagHelpers.sourceFiles(project, projectFile, generated = false).firstOrNull { it.viewProvider.virtualFile !is com.intellij.testFramework.LightVirtualFile }
+                val symbols = io.github.dotnetsupport.csharp.lang.CSharpPreprocessorSymbols.forFile(sample)
+                val packs = found.libraries.filter { it.kind == ProjectAssemblies.LibraryKind.FRAMEWORK }.map { it.presentableName.substringBefore(' ') }
+                    .filter { it == "Microsoft.NETCore.App.Ref" || it == "Microsoft.AspNetCore.App.Ref" }.ifEmpty { listOf("Microsoft.NETCore.App.Ref") }
+                val list = File(work, "$name.references.txt").apply { writeText(found.forIndex.filter { it !in frameworks }.joinToString("\n") { it.path }) }
+                val usings = intermediate(csproj)?.let { compileFolderOf(it, found.framework) }?.listFiles { f -> f.name.endsWith(".GlobalUsings.g.cs") }.orEmpty()
+                val oracleFile = File(work, "$name.oracle.json")
+                val command = listOf("dotnet", razordump.path, "tag-helpers", csproj.parentFile.path, "--assembly-name", assemblyName, "--root-namespace", rootNamespace, "--references", "@${list.path}", "--out", oracleFile.path) +
+                    usings.flatMap { listOf("--csharp", it.path) } + listOf("--packs", packs.joinToString(";")) +
+                    listOf("--define", symbols.joinToString(";"))
+                val process = ProcessBuilder(command).redirectErrorStream(true).start()
+                val log = process.inputStream.bufferedReader().readText()
+                check(process.waitFor(10, java.util.concurrent.TimeUnit.MINUTES) && process.exitValue() == 0) { "razordump failed: $log" }
+                val absent = io.github.dotnetsupport.razor.lang.discovery.TagHelperCompatibility.absentOf(log.trim().lines().last())
+                fun normalized(c: io.github.dotnetsupport.razor.lang.syntax.TagHelperCollection) =
+                    io.github.dotnetsupport.razor.lang.discovery.TagHelperCompatibility.withDefaults(c, absent, documentation = false)
+                val expected = normalized(io.github.dotnetsupport.razor.lang.syntax.TagHelperDescriptorJson.read(oracleFile.readText()))
+                val actual = normalized(ours)
+                File(work, "$name.ours.json").writeText(io.github.dotnetsupport.razor.lang.syntax.TagHelperDescriptorJson.write(actual))
+                val differences = io.github.dotnetsupport.razor.lang.discovery.TagHelperCompatibility.compare(expected, actual)
+                val (order, other) = differences.partition { it.startsWith("order:") }
+                val own = expected.count { it.assemblyName == assemblyName }
+                report.append("# tag helpers $name: ${actual.size} ours, ${expected.size} of the compiler ($own of the project), ${other.size} differ, ${order.size} elsewhere in the order\n")
+                details.append("## $name\n").append(other.joinToString("\n", postfix = "\n"))
+            } catch (e: Throwable) {
+                report.append("# tag helpers $name: failed, ${e.javaClass.simpleName}: ${e.message?.lines()?.firstOrNull()}\n")
+                details.append("## $name\n").append(e.stackTraceToString().lines().take(12).joinToString("\n", postfix = "\n"))
+            }
+        }
+        File(out.parentFile, out.nameWithoutExtension + "-taghelpers.txt").writeText(details.toString())
     }
 }

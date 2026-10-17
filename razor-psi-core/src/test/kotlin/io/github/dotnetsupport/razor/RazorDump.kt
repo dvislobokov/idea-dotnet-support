@@ -23,9 +23,15 @@ object RazorDump {
     /** `razordump codegen <dir> --out <file>` (README.md there, "Code generation"); returns the summary line, or throws. */
     fun codegen(dir: Path, out: Path, vararg options: String): String = run("codegen", dir, out, *options)
 
-    private fun run(mode: String, dir: Path, out: Path, vararg options: String): String {
+    /** `razordump tag-helpers [<dir>] --out <file>`: the descriptors the compiler discovers, as JSON. */
+    fun tagHelpers(dir: Path?, out: Path, vararg options: String): String = run("tag-helpers", dir, out, *options)
+
+    /** `razordump symbols [<dir>] --out <file>`: the symbols its producers read (the input of razor-psi's discovery). */
+    fun symbols(dir: Path?, out: Path, vararg options: String): String = run("symbols", dir, out, *options)
+
+    private fun run(mode: String, dir: Path?, out: Path, vararg options: String): String {
         val dll = dll() ?: throw IllegalStateException("razordump is not built: dotnet build tools/razor/razordump -c Release")
-        val command = listOf("dotnet", dll.toString(), mode, dir.toString(), "--out", out.toString(), "--langversion", "latest") + options
+        val command = listOf("dotnet", dll.toString(), mode) + listOfNotNull(dir?.toString()) + listOf("--out", out.toString(), "--langversion", "latest") + options
         val process = ProcessBuilder(command).redirectErrorStream(true).start()
         val output = process.inputStream.bufferedReader().readText()
         if (!process.waitFor(30, TimeUnit.MINUTES)) {

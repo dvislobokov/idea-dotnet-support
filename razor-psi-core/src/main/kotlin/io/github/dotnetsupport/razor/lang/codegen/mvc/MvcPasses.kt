@@ -47,7 +47,7 @@ object RazorExtensionsDiagnosticFactory {
     val ViewComponent_AmbiguousMethods = descriptor(3901, "View component '{0}' must contain exactly one public method named '{1}' or '{2}'.")
     fun createViewComponent_AmbiguousMethods(tagHelperType: String) = RazorDiagnostic(ViewComponent_AmbiguousMethods, undefined, listOf(tagHelperType, ViewComponentTypes.syncMethodName, ViewComponentTypes.asyncMethodName))
 
-    val ViewComponent_AsyncMethod_ShouldReturnTask = descriptor(3902, "Method '{0}' of view component '{1}' should be declared to return {2}<T>.")
+    val ViewComponent_AsyncMethod_ShouldReturnTask = descriptor(3902, "Method '{0}' of view component '{1}' should be declared to return {2}&lt;T&gt;.")
     fun createViewComponent_AsyncMethod_ShouldReturnTask(tagHelperType: String) = RazorDiagnostic(ViewComponent_AsyncMethod_ShouldReturnTask, undefined, listOf(ViewComponentTypes.asyncMethodName, tagHelperType, "Task"))
 
     val ViewComponent_SyncMethod_ShouldReturnValue = descriptor(3903, "Method '{0}' of view component '{1}' should be declared to return a value.")

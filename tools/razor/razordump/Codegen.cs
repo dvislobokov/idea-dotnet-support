@@ -105,7 +105,15 @@ static class Codegen
     public static TagHelperCollection DiscoverProjectTagHelpers(RazorProjectEngine engine, DumpFileSystem fileSystem, string? root,
         IEnumerable<string> razorPaths, string assemblyName, IEnumerable<string> references, IEnumerable<string> extraCSharp)
     {
-        var parseOptions = new CSharpParseOptions(LanguageVersion.Preview);
+        var (compilation, discoveryEngine) = DiscoveryCompilation(engine, fileSystem, root, razorPaths, assemblyName, references, extraCSharp);
+        return TagHelperDiscovery.Discover(discoveryEngine, compilation);
+    }
+
+    /// <summary>The compilation <see cref="DiscoverProjectTagHelpers"/> searches and the engine whose producers search it (symbols dumps the same).</summary>
+    public static (Compilation, RazorProjectEngine) DiscoveryCompilation(RazorProjectEngine engine, DumpFileSystem fileSystem, string? root,
+        IEnumerable<string> razorPaths, string assemblyName, IEnumerable<string> references, IEnumerable<string> extraCSharp)
+    {
+        var parseOptions = new CSharpParseOptions(LanguageVersion.Preview, preprocessorSymbols: TagHelperDiscovery.Defines);
         var trees = new List<SyntaxTree>();
         foreach (var relative in razorPaths)
         {
@@ -134,7 +142,7 @@ static class Codegen
             Microsoft.AspNetCore.Mvc.Razor.Extensions.RazorExtensions.Register(b);
             b.RegisterDefaultTagHelperProducer();
         });
-        return TagHelperDiscovery.Discover(discoveryEngine, compilation);
+        return (compilation, discoveryEngine);
     }
 
     /// <summary>
@@ -372,13 +380,19 @@ static class TagHelperDiscovery
 {
     static ImmutableArray<MetadataReference>? references;
 
+    /// <summary>The reference packs to compile against (--packs): both by default; a project without ASP.NET Core's framework has only .NET's.</summary>
+    /// <summary>The preprocessor symbols of the discovery compilation (--define): a project's DefineConstants (`NET9_0_OR_GREATER`).</summary>
+    public static string[] Defines = [];
+
+    public static string[] Packs = ["Microsoft.NETCore.App.Ref", "Microsoft.AspNetCore.App.Ref"];
+
     public static ImmutableArray<MetadataReference> References()
     {
         if (references is { } cached) return cached;
         // <dotnet>/shared/Microsoft.NETCore.App/<version>/System.Private.CoreLib.dll
         var dotnetRoot = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location)!, "..", "..", ".."));
         var result = new List<MetadataReference>();
-        foreach (var pack in new[] { "Microsoft.NETCore.App.Ref", "Microsoft.AspNetCore.App.Ref" })
+        foreach (var pack in Packs)
         {
             var packDir = Path.Combine(dotnetRoot, "packs", pack);
             var version = Directory.Exists(packDir)

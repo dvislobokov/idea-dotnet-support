@@ -205,6 +205,15 @@ Solution для живой проверки плагина: отладчика (
       `Navigation` — строка `@inject`
 - [ ] `TYPE:razor-errors`: в `Increase` набрать `count = "x";` — `"x"` красное с CS0029, как в `.cs`; Ctrl+Z
 
+### Компоненты в разметке Razor (RAZOR_PLAN.md R5, 0.1.264; вживую не проверено) — `Blazor/Editor/RazorComponents.razor`
+
+Элемент компонента проекта (`<Counter …>`) и директивные атрибуты (`@onclick`, `@bind`) — C# документа страницы, как у компилятора.
+- [ ] `TYPE:razor-component-parameters`: Ctrl+B на `step` в `Step="@step"` — поле `step` в `@code`; на `OnCount` в `CountChanged="OnCount"` —
+      метод; на `Reset` в `@onclick="Reset"` — метод
+- [ ] `TYPE:razor-component-completion`: в `Step="@st|"` Ctrl+Space — `step` в списке
+- [ ] `TYPE:razor-component-new-parameter`: добавить `[Parameter] public string Label { get; set; } = "";` в `Counter.razor` без сохранения,
+      набрать здесь `<Counter Label="@title" />` — через мгновение Ctrl+B на `title` ведёт в `@code`
+
 ### Unity (UNITY_PLAN.md, 0.1.255–0.1.257; вживую человеком не проверено) — `Unity/Assets/Scripts/Player.cs`, `Spawner.cs`
 
 Отдельный маленький проект Unity в формате, который генерирует редактор (старый `.csproj`, ссылки абсолютным `HintPath` на редактор

@@ -246,6 +246,51 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
   (`TItem` по аргументам), `@ref`; переход тег → `.razor` / тип сборки, Find Usages и rename компонента (файл и теги). Tag helpers
   для `.cshtml` после подъёма формата индекса: `asp-*`, свои, `@addTagHelper`. Гейт: `razordump` отдаёт привязки тегов
   (`.tspans` / tag helper descriptors) — наши совпадают на корпусе.
+  Подшаги (2026-10-17):
+  - [x] **R5a. Порт поиска дескрипторов** (2026-10-17, без версии: пользователю не видно). Producers компилятора (`Language/TagHelpers/Producers`,
+    `DefaultTagHelperDescriptorFactory`, view components MVC) класс в класс — `razor-psi-core`, пакет `razor.lang.discovery`: модель
+    символов без Roslyn (`RazorSymbols.kt`: типы-ссылки над определениями, атрибуты с аргументами; вопросы к компиляции — преобразование
+    строкового литерала, `Dictionary<string, object>` → тип, awaitable-делегат, `IDictionary<,>` типа — свойства члена, о котором спрашивают),
+    написание типов в трёх форматах Roslyn (`RazorTypeDisplay`), builders с проверками имён (RZ3000–3017, RZ3500–3507), `RequiredAttributeParser`,
+    `TagHelperDiscovery` (порядок producers как у движка генератора, поиск по сборке — то, что хост кэширует). Оракул — новый режим
+    `razordump symbols` (символы той же компиляции, что у `tag-helpers`). Гейт `TagHelperDiscoveryCorpusTest` (`:razor-psi-core:corpusTest`):
+    reference packs, eShop WebApp / WebAppComponents, MudBlazor, Nop.Web — без пакетов и как в сборке (`GlobalUsings.g.cs` + dll вывода) —
+    4906 / 4906 дескрипторов байт в байт, ~57 тыс. написаний типов как у Roslyn. Факты: флаг `caseSensitive` атрибута — только явно заданный;
+    `IsGenericType` у Roslyn истинен и для вложенного в generic типа; неразрешённый `Func<T, string>` — тоже generic; текст RZ3902 в ресурсах
+    дважды экранирован (`Task&lt;T&gt;`); компилятор SDK 10.0.401 не знает `AcceptsUnmatchedAttributes`, `AcceptsAssetPath`,
+    `AcceptsStringLiteral` (razordump пишет их умолчаниями и называет в `absent=`, гейт приводит наши так же; порт следует main).
+  - [x] **R5b. Символы из индекса сборок** (2026-10-17, без версии). Формат индекса 7 (`indexer/README.md`): атрибуты с аргументами у типов,
+    членов и generic-параметров (каждый экземпляр по порядку метаданных; конструктор и именованные; строки, числа, `typeof`, enum, массивы),
+    `notnull` параметров типа, имена ссылок сборки, строка типа в TypeDef (компилятор обходит сборку по порядку метаданных, индекс сортирует по
+    имени; от порядка зависит порядок дескрипторов) — +14 % на ASP.NET Core. Плагин: `IndexedAttribute`, `IndexRazorCompilation`
+    (`frameworks/razor/IndexRazorSymbols.kt`: обход как у `TagHelperDiscoverer`, ссылки на типы в модель, вопросы к компиляции —
+    по базам и интерфейсам индекса; документации нет — у компилятора для метаданных её тоже нет). Гейт `RazorTagHelperSemanticGate`
+    (часть `semanticGate`: индексатор и razordump запускают `dotnet`): reference packs, `MudBlazor.dll` как пакет, dll вывода Nop.Web —
+    2114 / 2114 дескрипторов байт в байт. Кэш дескрипторов сборки по MVID — вместе с R5d (там их спрашивает редактор).
+  - [x] **R5c. Символы исходников solution** (2026-10-17, без версии). `SourceRazorSymbols` (`frameworks/razor`): типы C#-файлов проекта и
+    объявления его компонентов `.razor` — их делает наш движок (`RazorCSharpDocument.declaration`, `ProcessDeclarationOnly`), лёгкий C#-файл
+    с `originalFile` = `.razor` компилируется в проекте `.razor` (`RazorTagHelpers.declarationFile`); части partial-типа — объявление
+    компонента первым, потом части индекса без вывода генератора Razor; базы, интерфейсы, типы атрибутов и свойств — своим резолвером там,
+    где написаны (ограничения — в файле своего `where`, атрибуты параметров типа — со всех частей), аргументы атрибутов — вычислителем констант
+    плюс `typeof`, массивы, `nameof`, свои `const` типа (`Attributes = FOR_ATTRIBUTE_NAME`); типы сборок — через `IndexRazorCompilation`;
+    проекты-ссылки — из исходников со своим `AssemblyName`. `RazorTagHelpers.discover(project, projectFile)` — компиляция проекта целиком
+    (её спросит редактор, R5d). Гейт — в харнессе (`SolutionDiagnosticsHarnessTest.tagHelperGate`): на каждый проект с Razor наш поиск
+    против `razordump tag-helpers` той же компиляции (`--root-namespace`, `--assembly-name`, глобальные using, те же сборки, `--packs` —
+    паки фреймворков проекта, `--define` — символы, с которыми разобраны файлы); документация не сравнивается (у компилятора `cref`
+    разрешены). eShop 4 / 4, MudBlazor 7 / 7, nopCommerce 34 / 34 проектов без расхождений (свои дескрипторы MudBlazor — 1240, Docs — 2152);
+    расходится только порядок между сборками. Факты: лёгкому файлу сборки харнесса выдавались по пути `viewProvider` — у него это путь
+    без проекта, теперь по `originalFile`, как в IDE.
+  - [x] **R5d. Дескрипторы в движок редактора** (2026-10-17, 0.1.264; вживую не проверено). `RazorTagHelperService` (проект): дескрипторы
+    каждого проекта с Razor — в фоне (`ReadAction.nonBlocking`, один прогон за раз, пересчёт через 0,7 с после правки C# или Razor),
+    дескрипторы сборок — в кэше на набор сборок (`RazorTagHelpers.Cache`); `RazorCSharpDocument` собирает документ с ними
+    (`RazorProjectEngine.process(item, tagHelpers)`) и пересобирает, когда они меняются (`tracker`). Гейт кодогенерации
+    (`RazorCodegenCorpusTest.test*TagHelpers`: проект как в сборке, дескрипторы — `razordump tag-helpers` той же компиляции) — eShop
+    WebApp 18 / 18, WebAppComponents 3 / 3, MudBlazor 165 / 165, Nop.Web 986 / 986; с нашими дескрипторами из харнесса — так же (порядок
+    дескрипторов между сборками у нас другой и на этих файлах ни на что не влияет; внутри сборки — как у компилятора, а он важен: у
+    `FormTagHelper` и `RenderAtEndOfFormTagHelper` одного `<form>` от него зависит порядок полей). Тест `RazorTagHelpersTest` на фикстуре
+    `AspNetCoreComponents.dnix` (`tools/index-fixture/components` — заглушка API компонентов под настоящим именем сборки). Найдено:
+    движки документа держали `VirtualFile` корня проекта — после удаления и восстановления папки обращались к недействительному.
+  - [ ] **R5e. Редактор**: completion тегов и атрибутов, переход тег → компонент, Find Usages и rename, tag helpers `.cshtml`, площадка.
 - [ ] **R6. Ошибки** (2). Синтаксис Razor (RZ1xxx) — свой парсер; RZ9xxx / RZ10xxx (неизвестный параметр, неизвестный компонент как
   предупреждение RZ10012, `@bind` без пары) — своими проверками, сверка с `razordump diagnostics`; C#-ошибки в разметке — та же
   семантика. Корпус `CompilerMessagesCoverageTest` пополнить RZ-кодами (примеры со страниц документации Razor) и

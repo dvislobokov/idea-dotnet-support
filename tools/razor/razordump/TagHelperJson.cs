@@ -123,6 +123,9 @@ static class TagHelperJson
         ["AssetPath"] = ["Element", "Attribute"],
     };
 
+    /// <summary>The metadata properties the installed compiler lacks that a dump wrote as defaults (<c>Component.AcceptsUnmatchedAttributes</c>).</summary>
+    public static readonly SortedSet<string> Absent = new(StringComparer.Ordinal);
+
     /// <summary>The kind and the properties of <see cref="MetadataProperties"/>, camel-cased, in that order.</summary>
     static Obj Metadata(MetadataObject metadata)
     {
@@ -145,6 +148,7 @@ static class TagHelperJson
                 continue;
             }
             // A property the installed compiler lacks: the record's default (false for the flags, null for the strings).
+            if (property == null) Absent.Add(kind + "." + name);
             result[CamelCase(name)] = property == null ? (name.StartsWith("Is") || name.StartsWith("Has") || name.StartsWith("Accepts") ? false : null)
                 : value switch { null or string or bool => value, _ => throw new InvalidOperationException($"metadata value of type {value.GetType()}") };
         }

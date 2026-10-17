@@ -20,5 +20,6 @@
   <ItemGroup>
     <!-- the assembly of the errors of access is built on its own -->
     <Compile Remove="access/**" />
+    <Compile Remove="components/**" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,32 @@
+@page "/editor/components"
+@using Playground.Blazor.Components.Pages
+@* RAZOR_PLAN.md, R5c / R5d: the components of the project (`Counter.razor`) and the directive attributes of ASP.NET Core (`@onclick`,
+   `@bind`) are found as the compiler finds them, and the C# document of this file is made with them: `<Counter …>` is the component,
+   its attributes are its parameters in C# — the values below are C#, with completion and navigation, not markup text.
+
+   TYPE:razor-component-parameters — Ctrl+B (or Ctrl+click) on `step` in `Step="@step"` below. EXPECT: the caret goes to `private int
+   step` in `@code`. Ctrl+B on `OnCount` in `CountChanged="OnCount"`: the method `OnCount`. Ctrl+B on `Reset` in `@onclick="Reset"`:
+   the method `Reset`. Before 0.1.264 the first two were markup: no navigation.
+
+   TYPE:razor-component-completion — in `Step="@step"` put the caret after `@st`, delete `ep` and press Ctrl+Space. EXPECT: `step` in the
+   list (a field of `@code`), Enter writes it. Ctrl+Z.
+
+   TYPE:razor-component-new-parameter — in `Components/Pages/Counter.razor` add `[Parameter] public string Label { get; set; } = "";` to its
+   `@code` (no save needed), come back here and on the empty line under `<Counter …/>` type `<Counter Label="@title" />`. EXPECT: a
+   moment later Ctrl+B on `title` goes to `private string title` in `@code` (the new parameter is known without a build). Ctrl+Z both. *@
+
+<h3>Components</h3>
+<Counter Step="@step" CountChanged="OnCount" />
+
+<button @onclick="Reset">Reset</button>
+<p>Total: @total</p>
+
+@code {
+    private int step = 2;
+    private int total;
+    private string title = "Counter";
+
+    private void OnCount(int value) => total = value;
+
+    private void Reset() => total = 0;
+}

@@ -184,6 +184,13 @@ sealed class IndexedTypeRef {
             if (mark < 0) segment to 0 else segment.substring(0, mark) to (segment.substring(mark + 1).toIntOrNull() ?: 0)
         }
 
+        /** The reference that starts at [start] of [text] and the offset after it (references are written one after another in attributes). */
+        fun parsePrefix(text: String, start: Int): Pair<IndexedTypeRef, Int> {
+            val parser = Parser(text)
+            parser.at = start
+            return parser.ref() to parser.at
+        }
+
         /** The grammar is described at `TypeRefs` of indexer/Program.cs. */
         fun parse(encoded: String): IndexedTypeRef {
             val parser = Parser(encoded)

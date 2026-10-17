@@ -253,7 +253,7 @@ object TagHelperDescriptorJson {
         output.append('"')
     }
 
-    private class Parser(private val text: String) {
+    internal class Parser(private val text: String) {
         private var i = 0
 
         fun parseDocument(): Any? {

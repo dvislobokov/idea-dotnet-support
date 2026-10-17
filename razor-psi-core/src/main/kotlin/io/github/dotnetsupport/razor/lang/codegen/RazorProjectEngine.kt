@@ -490,6 +490,10 @@ class RazorProjectEngine internal constructor(
 
     fun process(projectItem: RazorProjectItem): RazorCodeDocument = engine.process(createCodeDocument(projectItem))
 
+    /** [projectItem] with its imports and [tagHelpers] — the descriptors of its project, as the source generator passes the discovered ones. */
+    fun process(projectItem: RazorProjectItem, tagHelpers: TagHelperCollection?): RazorCodeDocument =
+        engine.process(createCodeDocumentCore(projectItem.getSource(), projectItem.fileKind, getImportSources(projectItem), tagHelpers, projectItem.cssScope, null, null))
+
     fun process(source: RazorSourceDocument, fileKind: RazorFileKind, importSources: List<RazorSourceDocument>, tagHelpers: TagHelperCollection?): RazorCodeDocument =
         engine.process(createCodeDocumentCore(source, fileKind, importSources, tagHelpers, null, null, null))
 

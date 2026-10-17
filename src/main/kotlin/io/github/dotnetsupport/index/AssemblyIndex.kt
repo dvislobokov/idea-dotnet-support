@@ -27,7 +27,11 @@ enum class IndexedMemberKind(val code: Int) {
 }
 
 /** A generic parameter: `out T`, `where T : class, IComparable<T>, new()`. */
-class IndexedTypeParameter(val name: String, private val flags: Int, val constraints: List<IndexedTypeRef>) {
+class IndexedTypeParameter(
+    val name: String, private val flags: Int, val constraints: List<IndexedTypeRef>,
+    /** Its attributes with their arguments (format 7): `[DynamicallyAccessedMembers(…)] T`. */
+    val attributes: List<IndexedAttribute> = emptyList(),
+) {
     val isCovariant: Boolean get() = flags and 1 != 0
     val isContravariant: Boolean get() = flags and 2 != 0
     val isClass: Boolean get() = flags and 4 != 0
@@ -35,6 +39,8 @@ class IndexedTypeParameter(val name: String, private val flags: Int, val constra
     val hasNew: Boolean get() = flags and 16 != 0 && !isStruct
     val allowsRefStruct: Boolean get() = flags and 32 != 0
     val isUnmanaged: Boolean get() = flags and 64 != 0
+    /** `where T : notnull` (format 7). */
+    val isNotNull: Boolean get() = flags and 128 != 0
 
     override fun toString(): String = listOfNotNull("out".takeIf { isCovariant }, "in".takeIf { isContravariant }, name).joinToString(" ")
 }
@@ -112,6 +118,10 @@ class IndexedType internal constructor(val index: AssemblyIndex, val row: Int) {
     val hiddenNestedTypes: List<IndexedType> get() = index.list(index.typeInt(row, 15)).map(index::type)
     /** The full names of its attributes but the ones the compiler writes for itself (`[Nullable]`, `[IsReadOnly]`…): `System.ObsoleteAttribute`. */
     val attributes: List<String> get() = index.list(index.typeInt(row, 11)).map(index::string)
+    /** Every attribute with its arguments, in the order of the metadata (format 7; [attributes] has each name once). */
+    val attributeData: List<IndexedAttribute> get() = index.attributes(index.typeInt(row, 16))
+    /** Its row in the TypeDef table of the assembly (format 7): the order of the metadata, which the compiler walks an assembly in. */
+    val metadataRow: Int get() = index.typeInt(row, 17)
     val enumUnderlyingType: IndexedTypeRef? get() = index.ref(index.typeInt(row, 12))
 
     /** `T:System.Collections.Generic.Dictionary`2.Enumerator`. */
@@ -205,6 +215,8 @@ class IndexedMember internal constructor(private val index: AssemblyIndex, val r
         }
 
     val attributes: List<String> get() = index.list(index.memberInt(row, 8)).map(index::string)
+    /** Every attribute with its arguments, in the order of the metadata (format 7; [attributes] has each name once). */
+    val attributeData: List<IndexedAttribute> get() = index.attributes(index.memberInt(row, 11))
 
     /** The value of a constant or an enum member as C# writes it: `42`, `"text"`, `1.5F`. */
     val constantValue: String? get() = index.memberInt(row, 9).takeIf { it >= 0 }?.let(index::string)
@@ -302,6 +314,9 @@ class AssemblyIndex private constructor(private val buffer: ByteBuffer, docsFile
      * assembly signed with it is a friend). They see its internal types and members.
      */
     val internalsVisibleTo: List<String> by lazy { list(buffer.getInt(104)).map(::string) }
+
+    /** The names of the assemblies it references (format 7): Razor searches for tag helpers only in what references ASP.NET Core. */
+    val assemblyReferences: List<String> by lazy { list(buffer.getInt(108)).map(::string) }
 
     fun type(index: Int): IndexedType {
         require(index in 0 until allTypeCount) { "type $index of $allTypeCount" }
@@ -448,7 +463,7 @@ class AssemblyIndex private constructor(private val buffer: ByteBuffer, docsFile
         require(first >= 0 && count >= 0 && first + count <= genericCount) { "generics $first+$count of $genericCount" }
         return List(count) { i ->
             val at = genericTable + (first + i) * GENERIC_SIZE
-            IndexedTypeParameter(string(buffer.getInt(at)), buffer.getInt(at + 4), list(buffer.getInt(at + 8)).map { ref(it)!! })
+            IndexedTypeParameter(string(buffer.getInt(at)), buffer.getInt(at + 4), list(buffer.getInt(at + 8)).map { ref(it)!! }, attributes(buffer.getInt(at + 12)))
         }
     }
 
@@ -459,6 +474,13 @@ class AssemblyIndex private constructor(private val buffer: ByteBuffer, docsFile
         require(count >= 0 && at + count < intCount) { "list $at+$count of $intCount" }
         return List(count) { buffer.getInt(intTable + (at + 1 + it) * 4) }
     }
+
+    /** A list of attributes with their arguments (strings of the grammar of `MetadataScanner.AttributeValues`), decoded when asked for. */
+    internal fun attributes(list: Int): List<IndexedAttribute> = list(list).map { id ->
+        attributeCache[id] ?: IndexedAttribute.parse(string(id)).also { attributeCache[id] = it }
+    }
+
+    private val attributeCache = java.util.concurrent.ConcurrentHashMap<Int, IndexedAttribute>()
 
     internal fun ref(id: Int): IndexedTypeRef? {
         if (id < 0) return null
@@ -477,15 +499,15 @@ class AssemblyIndex private constructor(private val buffer: ByteBuffer, docsFile
     }
 
     companion object {
-        const val FORMAT_VERSION = 6
+        const val FORMAT_VERSION = 7
         const val EXTENSION = "dnix"
         const val DEFAULT_LIMIT = 200
         private const val MAGIC = 0x58494E44 // "DNIX", little-endian
-        private const val HEADER_SIZE = 108
-        private const val TYPE_SIZE = 64
-        private const val MEMBER_SIZE = 44
+        private const val HEADER_SIZE = 112
+        private const val TYPE_SIZE = 72
+        private const val MEMBER_SIZE = 48
         private const val PARAMETER_SIZE = 16
-        private const val GENERIC_SIZE = 12
+        private const val GENERIC_SIZE = 16
         private const val NAME_SIZE = 8
         private const val EXTENSION_SIZE = 8
         private const val MEMBER_MASK = 0x7FFFFFFF

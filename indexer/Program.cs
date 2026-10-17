@@ -30,7 +30,7 @@ namespace DotNetSupport.Indexer;
 // the second process waits for the first and then finds the indexes made.
 public static class Program
 {
-    public const int FormatVersion = 6;
+    public const int FormatVersion = 7;
 
     public static int Main(string[] args)
     {
@@ -271,9 +271,10 @@ public enum ParameterFlags { None = 0, Optional = 1, Out = 2, Ref = 4, Params = 
 
 /// <summary>Variance and constraints of a generic parameter; the first five are the bits of the metadata.</summary>
 [Flags]
-public enum GenericFlags { None = 0, Covariant = 1, Contravariant = 2, Class = 4, Struct = 8, New = 16, AllowsRefStruct = 32, Unmanaged = 64 }
+public enum GenericFlags { None = 0, Covariant = 1, Contravariant = 2, Class = 4, Struct = 8, New = 16, AllowsRefStruct = 32, Unmanaged = 64, NotNull = 128 }
 
-public sealed record GenericEntry(string Name, GenericFlags Flags, List<string> Constraints);
+/// <param name="Attributes">Its attributes with their arguments (<c>MetadataScanner.AttributeValues</c>), format 7.</param>
+public sealed record GenericEntry(string Name, GenericFlags Flags, List<string> Constraints, List<string> Attributes);
 
 public sealed record ParameterEntry(string Type, string Name, ParameterFlags Flags, string? Default);
 
@@ -287,6 +288,8 @@ public sealed class MemberEntry
     public List<ParameterEntry> Parameters = new();
     public List<GenericEntry> Generics = new();
     public List<string> Attributes = new();
+    /// <summary>Every attribute with its arguments, in the order of the metadata (<c>MetadataScanner.AttributeValues</c>), format 7.</summary>
+    public List<string> AttributeData = new();
     /// <summary>The value of a constant or an enum member, as C# writes it.</summary>
     public string? Value;
     /// <summary>What the `this` parameter of an extension method is: a type by its metadata name, `[]` an array, `!` a type parameter.</summary>
@@ -315,8 +318,12 @@ public sealed class TypeEntry
     /// <summary>All of them, the ones of the types around a nested type first, as the metadata has them.</summary>
     public List<GenericEntry> Generics = new();
     public List<string> Attributes = new();
+    /// <summary>Every attribute with its arguments, in the order of the metadata (<c>MetadataScanner.AttributeValues</c>), format 7.</summary>
+    public List<string> AttributeData = new();
     /// <summary>The underlying type of an enum.</summary>
     public string? Underlying;
+    /// <summary>Its row in the TypeDef table (format 7): the order of the metadata, which the compiler walks an assembly in (the index sorts by name).</summary>
+    public int MetadataRow;
     public readonly List<MemberEntry> Members = new();
 }
 
@@ -327,6 +334,8 @@ public sealed class AssemblyData
     public readonly List<TypeEntry> Types = new();
     /// <summary>The assemblies `[assembly: InternalsVisibleTo("Name, PublicKey=…")]` names: `Name`, or `Name,key` when a key is required.</summary>
     public readonly List<string> InternalsVisibleTo = new();
+    /// <summary>The names of the assemblies it references (format 7: Razor searches for tag helpers only in what references ASP.NET Core).</summary>
+    public readonly List<string> References = new();
 }
 
 /// <summary>The types other assemblies see and their members, from the metadata tables.</summary>
@@ -345,6 +354,7 @@ public sealed class MetadataScanner(MetadataReader reader)
     ];
 
     private readonly SignatureProvider _provider = new();
+    private AttributeTypeProvider? _attributeProvider;
 
     public AssemblyData Scan()
     {
@@ -354,6 +364,7 @@ public sealed class MetadataScanner(MetadataReader reader)
             var assembly = reader.GetAssemblyDefinition();
             data.Name = reader.GetString(assembly.Name);
             data.Version = assembly.Version.ToString();
+            foreach (var handle in reader.AssemblyReferences) data.References.Add(reader.GetString(reader.GetAssemblyReference(handle).Name));
             foreach (var handle in assembly.GetCustomAttributes())
             {
                 var attribute = reader.GetCustomAttribute(handle);
@@ -379,7 +390,7 @@ public sealed class MetadataScanner(MetadataReader reader)
             var name = reader.GetString(type.Name);
             if (name.Contains('<')) continue;
             var custom = type.GetCustomAttributes();
-            var entry = new TypeEntry { Kind = KindOf(type) };
+            var entry = new TypeEntry { Kind = KindOf(type), MetadataRow = System.Reflection.Metadata.Ecma335.MetadataTokens.GetRowNumber(handle) };
             var outermost = type;
             while (outermost.IsNested) outermost = reader.GetTypeDefinition(outermost.GetDeclaringType());
             entry.Namespace = reader.GetString(outermost.Namespace);
@@ -391,6 +402,7 @@ public sealed class MetadataScanner(MetadataReader reader)
             var context = Context(custom, type.IsNested ? DefaultContext(reader.GetTypeDefinition(type.GetDeclaringType())) : (byte)0);
             entry.Generics = Generics(type.GetGenericParameters(), context);
             entry.Attributes = AttributeNames(custom);
+            entry.AttributeData = AttributeValues(custom);
             if (!type.BaseType.IsNil && entry.Kind is TypeKind.Class or TypeKind.StaticClass)
                 entry.Base = TypeRefs.Encode(Decode(type.BaseType), Annotations.Of(reader, AttributeType, custom, context));
             foreach (var implementation in type.GetInterfaceImplementations())
@@ -453,7 +465,7 @@ public sealed class MetadataScanner(MetadataReader reader)
             var member = new MemberEntry
             {
                 Name = name, Kind = kind, Flags = MethodFlags(attributes, custom, entry.Kind == TypeKind.Interface),
-                Generics = Generics(method.GetGenericParameters(), context), Attributes = AttributeNames(custom),
+                Generics = Generics(method.GetGenericParameters(), context), Attributes = AttributeNames(custom), AttributeData = AttributeValues(custom),
             };
             var (returnAttributes, parameters, nullability) = Parameters(method.GetParameters(), signature.ParameterTypes, context, extension);
             member.Type = TypeRefs.Encode(signature.ReturnType, Annotations.Of(reader, AttributeType, returnAttributes, context));
@@ -672,7 +684,8 @@ public sealed class MetadataScanner(MetadataReader reader)
             {
                 Name = name, Kind = signature.ParameterTypes.Length > 0 ? MemberKind.Indexer : MemberKind.Property, Flags = flags,
                 // a property has no nullable context of its own: the one of its type (an accessor may have one, for its parameters)
-                Attributes = AttributeNames(custom), Type = TypeRefs.Encode(signature.ReturnType, Annotations.Of(reader, AttributeType, custom, typeContext)),
+                Attributes = AttributeNames(custom), AttributeData = AttributeValues(custom),
+                Type = TypeRefs.Encode(signature.ReturnType, Annotations.Of(reader, AttributeType, custom, typeContext)),
             };
             if (signature.ParameterTypes.Length > 0)
             {
@@ -711,7 +724,8 @@ public sealed class MetadataScanner(MetadataReader reader)
             entry.Members.Add(new MemberEntry
             {
                 Name = name, Kind = MemberKind.Event, Flags = MethodFlags(accessor.Attributes, custom, entry.Kind == TypeKind.Interface),
-                Attributes = AttributeNames(custom), Type = TypeRefs.Encode(Decode(@event.Type), Annotations.Of(reader, AttributeType, custom, typeContext)),
+                Attributes = AttributeNames(custom), AttributeData = AttributeValues(custom),
+                Type = TypeRefs.Encode(Decode(@event.Type), Annotations.Of(reader, AttributeType, custom, typeContext)),
             });
         }
     }
@@ -745,7 +759,7 @@ public sealed class MetadataScanner(MetadataReader reader)
             if (kind == MemberKind.Field && IsOblivious(fieldType, custom, context)) nullability.Add("r:o");
             entry.Members.Add(new MemberEntry
             {
-                Name = name, Kind = kind, Flags = flags, Attributes = AttributeNames(custom),
+                Name = name, Kind = kind, Flags = flags, Attributes = AttributeNames(custom), AttributeData = AttributeValues(custom),
                 Type = TypeRefs.Encode(fieldType, Annotations.Of(reader, AttributeType, custom, context)),
                 Value = (attributes & FieldAttributes.Literal) != 0 && !constant.IsNil ? Literals.Of(reader, constant) : null,
                 Nullability = Join(nullability),
@@ -761,6 +775,8 @@ public sealed class MetadataScanner(MetadataReader reader)
             var parameter = reader.GetGenericParameter(handle);
             var flags = (GenericFlags)((int)parameter.Attributes & 0x3F);
             if (Has(parameter.GetCustomAttributes(), CompilerServices, "IsUnmanagedAttribute")) flags |= GenericFlags.Unmanaged;
+            // `where T : notnull` (format 7): not annotated — `[Nullable(1)]` of the parameter, else the context — with neither `class` nor `struct`
+            if ((flags & (GenericFlags.Class | GenericFlags.Struct)) == 0 && Context(parameter.GetCustomAttributes(), context, CompilerServices + ".NullableAttribute") == 1) flags |= GenericFlags.NotNull;
             var constraints = new List<string>();
             foreach (var constraintHandle in parameter.GetConstraints())
             {
@@ -770,7 +786,7 @@ public sealed class MetadataScanner(MetadataReader reader)
                 if ((flags & GenericFlags.Struct) != 0 && sig is NamedSig { Name: "System.ValueType" }) continue;
                 constraints.Add(TypeRefs.Encode(sig, Annotations.Of(reader, AttributeType, constraint.GetCustomAttributes(), context)));
             }
-            result.Add(new GenericEntry(reader.GetString(parameter.Name), flags, constraints));
+            result.Add(new GenericEntry(reader.GetString(parameter.Name), flags, constraints, AttributeValues(parameter.GetCustomAttributes())));
         }
         return result;
     }
@@ -920,12 +936,12 @@ public sealed class MetadataScanner(MetadataReader reader)
     private static string Qualified(string @namespace, string name) => @namespace.Length == 0 ? name : @namespace + "." + name;
 
     /// <summary>The nullable context a member falls back to: `[NullableContext]` of it, else of the type, else of the types around.</summary>
-    private byte Context(CustomAttributeHandleCollection custom, byte outer)
+    private byte Context(CustomAttributeHandleCollection custom, byte outer, string attributeName = CompilerServices + ".NullableContextAttribute")
     {
         foreach (var handle in custom)
         {
             var attribute = reader.GetCustomAttribute(handle);
-            if (AttributeType(attribute) != CompilerServices + ".NullableContextAttribute") continue;
+            if (AttributeType(attribute) != attributeName) continue;
             var blob = reader.GetBlobReader(attribute.Value);
             if (blob.Length >= 3 && blob.ReadUInt16() == 1) return blob.ReadByte();
         }
@@ -944,6 +960,33 @@ public sealed class MetadataScanner(MetadataReader reader)
             if (name.Length > 0 && !Decoded.Contains(name) && !names.Contains(name)) names.Add(name);
         }
         return names;
+    }
+
+    /// <summary>
+    /// Every attribute of [custom] but the ones the index says otherwise (<see cref="Decoded"/>), with its arguments, in the order of the
+    /// metadata (format 7; the compiler's tag helper discovery reads `[EventHandler("onclick", typeof(MouseEventArgs))]`, `[HtmlTargetElement]`…):
+    /// <code>
+    /// attribute := name ['(' constant* ')'] ['{' (length ':' name constant)* '}']   the arguments of the constructor, the named ones
+    /// constant  := 'n'                      null                 | 'T' | 'F'              a bool
+    ///            | 'i' integer ';'          an integer, a char   | 'u' integer ';'        a ulong over the range of a long
+    ///            | 'd' number ';'           a float, a double    | 's' length ':' text    a string
+    ///            | 't' ref                  typeof (a TypeRefs reference)
+    ///            | 'e' ref 'i' integer ';'  an enum: its type, its value
+    ///            | 'a' count ':' constant*  an array             | 'A'                    a null array
+    /// </code>
+    /// An attribute whose value cannot be decoded (an enum of another assembly whose underlying type is not int) keeps its name alone.
+    /// </summary>
+    private List<string> AttributeValues(CustomAttributeHandleCollection custom)
+    {
+        var result = new List<string>();
+        foreach (var handle in custom)
+        {
+            var attribute = reader.GetCustomAttribute(handle);
+            var name = AttributeType(attribute);
+            if (name.Length == 0 || Decoded.Contains(name)) continue;
+            result.Add(AttributeArguments.Encode(attribute, name, _attributeProvider ??= new AttributeTypeProvider(reader)));
+        }
+        return result;
     }
 
     /// <summary>`[EditorBrowsable(EditorBrowsableState.Never)]`: what its author does not want to be offered.</summary>
@@ -1009,7 +1052,7 @@ public sealed record FunctionPointerSig(Sig Return, ImmutableArray<Sig> Paramete
 /// <summary>`modreq` / `modopt`: `IsExternalInit` of an init accessor, `InAttribute` of `in` and `ref readonly`.</summary>
 public sealed record ModifiedSig(string Modifier, Sig Inner) : Sig;
 
-public sealed class SignatureProvider : ISignatureTypeProvider<Sig, object?>
+public class SignatureProvider : ISignatureTypeProvider<Sig, object?>
 {
     public Sig GetPrimitiveType(PrimitiveTypeCode typeCode) => typeCode switch
     {
@@ -1065,6 +1108,171 @@ public sealed class SignatureProvider : ISignatureTypeProvider<Sig, object?>
     public Sig GetGenericMethodParameter(object? context, int index) => new ParameterSig(index, true);
 
     private static string Qualified(string @namespace, string name) => @namespace.Length == 0 ? name : @namespace + "." + name;
+}
+
+/// <summary>
+/// The types of the arguments of an attribute (`CustomAttribute.DecodeValue`): `typeof` arguments by their serialized names, the underlying
+/// type of an enum — of this assembly from its `value__`, of another one taken as int (the metadata of a value does not say it).
+/// </summary>
+public sealed class AttributeTypeProvider : SignatureProvider, ICustomAttributeTypeProvider<Sig>
+{
+    private readonly Dictionary<string, PrimitiveTypeCode> _enums = new(StringComparer.Ordinal);
+
+    public AttributeTypeProvider(MetadataReader reader)
+    {
+        foreach (var handle in reader.TypeDefinitions)
+        {
+            var type = reader.GetTypeDefinition(handle);
+            foreach (var fieldHandle in type.GetFields())
+            {
+                var field = reader.GetFieldDefinition(fieldHandle);
+                if ((field.Attributes & FieldAttributes.RTSpecialName) == 0 || !reader.StringComparer.Equals(field.Name, "value__")) continue;
+                if (field.DecodeSignature(this, null) is NamedSig underlying && Primitive(underlying.Name) is { } code)
+                    _enums[((NamedSig)GetTypeFromDefinition(reader, handle, 0)).Name] = code;
+            }
+        }
+    }
+
+    public Sig GetSystemType() => new NamedSig("System.Type", false);
+
+    public bool IsSystemType(Sig type) => type is NamedSig { Name: "System.Type" };
+
+    public PrimitiveTypeCode GetUnderlyingEnumType(Sig type) =>
+        type is NamedSig named && _enums.TryGetValue(named.Name, out var code) ? code : PrimitiveTypeCode.Int32;
+
+    /// <summary>`Name, Assembly, Version=…` → the type; `List`1[[System.Int32, …]]` and `T[]` as well.</summary>
+    public Sig GetTypeFromSerializedName(string name)
+    {
+        var at = 0;
+        return Parse(name, ref at);
+    }
+
+    private static Sig Parse(string text, ref int at)
+    {
+        var start = at;
+        while (at < text.Length && text[at] is not ('[' or ',' or ']')) at++;
+        Sig result = new NamedSig(text[start..at].Trim(), false);
+        if (at + 1 < text.Length && text[at] == '[' && text[at + 1] == '[')
+        {
+            at++;
+            var arguments = ImmutableArray.CreateBuilder<Sig>();
+            while (at < text.Length && text[at] == '[')
+            {
+                at++;
+                arguments.Add(Parse(text, ref at));
+                // the assembly of the argument, up to its closing bracket
+                var depth = 0;
+                while (at < text.Length && !(text[at] == ']' && depth == 0))
+                {
+                    if (text[at] == '[') depth++;
+                    else if (text[at] == ']') depth--;
+                    at++;
+                }
+                at++;
+                if (at < text.Length && text[at] == ',') at++;
+            }
+            if (at < text.Length && text[at] == ']') at++;
+            result = new GenericSig((NamedSig)result, arguments.ToImmutable());
+        }
+        while (at + 1 < text.Length && text[at] == '[' && text[at + 1] == ']')
+        {
+            result = new ArraySig(result, 0);
+            at += 2;
+        }
+        return result;
+    }
+
+    private static PrimitiveTypeCode? Primitive(string name) => name switch
+    {
+        "System.Byte" => PrimitiveTypeCode.Byte, "System.SByte" => PrimitiveTypeCode.SByte, "System.Int16" => PrimitiveTypeCode.Int16,
+        "System.UInt16" => PrimitiveTypeCode.UInt16, "System.Int32" => PrimitiveTypeCode.Int32, "System.UInt32" => PrimitiveTypeCode.UInt32,
+        "System.Int64" => PrimitiveTypeCode.Int64, "System.UInt64" => PrimitiveTypeCode.UInt64, "System.Char" => PrimitiveTypeCode.Char,
+        "System.Boolean" => PrimitiveTypeCode.Boolean, _ => null,
+    };
+}
+
+/// <summary>An attribute with its arguments as a string of the grammar at <c>MetadataScanner.AttributeValues</c>.</summary>
+public static class AttributeArguments
+{
+    private static readonly HashSet<string> Primitives = new(StringComparer.Ordinal)
+    {
+        "System.Boolean", "System.Char", "System.SByte", "System.Byte", "System.Int16", "System.UInt16", "System.Int32", "System.UInt32", "System.Int64",
+        "System.UInt64", "System.Single", "System.Double", "System.String", "System.Object", "System.Type",
+    };
+
+    public static string Encode(CustomAttribute attribute, string name, AttributeTypeProvider provider)
+    {
+        CustomAttributeValue<Sig> value;
+        try
+        {
+            value = attribute.DecodeValue(provider);
+        }
+        catch (Exception e) when (e is BadImageFormatException or ArgumentOutOfRangeException or InvalidOperationException or ArgumentException)
+        {
+            return name;
+        }
+        if (value.FixedArguments.Length == 0 && value.NamedArguments.Length == 0) return name;
+        var builder = new StringBuilder(name);
+        if (value.FixedArguments.Length > 0)
+        {
+            builder.Append('(');
+            foreach (var argument in value.FixedArguments) Constant(argument.Type, argument.Value, builder);
+            builder.Append(')');
+        }
+        if (value.NamedArguments.Length > 0)
+        {
+            builder.Append('{');
+            foreach (var argument in value.NamedArguments)
+            {
+                var argumentName = argument.Name ?? "";
+                builder.Append(argumentName.Length.ToString(CultureInfo.InvariantCulture)).Append(':').Append(argumentName);
+                Constant(argument.Type, argument.Value, builder);
+            }
+            builder.Append('}');
+        }
+        return builder.ToString();
+    }
+
+    private static void Constant(Sig type, object? value, StringBuilder builder)
+    {
+        var invariant = CultureInfo.InvariantCulture;
+        switch (value)
+        {
+            case ImmutableArray<CustomAttributeTypedArgument<Sig>> items:
+                builder.Append('a').Append(items.Length.ToString(invariant)).Append(':');
+                foreach (var item in items) Constant(item.Type, item.Value, builder);
+                return;
+            case null:
+                builder.Append(type is ArraySig ? 'A' : 'n');
+                return;
+            case Sig typeOf:
+                builder.Append('t').Append(TypeRefs.Encode(typeOf, Annotations.None));
+                return;
+        }
+        // an enum: its type, then its value as an integer
+        if (type is NamedSig named && !Primitives.Contains(named.Name)) builder.Append('e').Append(TypeRefs.Encode(new NamedSig(named.Name, true), Annotations.None));
+        switch (value)
+        {
+            case string text:
+                builder.Append('s').Append(text.Length.ToString(invariant)).Append(':').Append(text);
+                break;
+            case bool flag:
+                builder.Append(flag ? 'T' : 'F');
+                break;
+            case char c:
+                builder.Append('i').Append(((int)c).ToString(invariant)).Append(';');
+                break;
+            case float or double:
+                builder.Append('d').Append(Convert.ToDouble(value, invariant).ToString("R", invariant)).Append(';');
+                break;
+            case ulong big when big > long.MaxValue:
+                builder.Append('u').Append(big.ToString(invariant)).Append(';');
+                break;
+            default:
+                builder.Append('i').Append(Convert.ToInt64(value, invariant).ToString(invariant)).Append(';');
+                break;
+        }
+    }
 }
 
 /// <summary>
@@ -1319,20 +1527,22 @@ public static class Literals
 /// header    "DNIX", version, mvid (16 bytes), assembly name, assembly version,
 ///           strings, types, members, parameters, generics, ints, names, extensions: for each its count and the offset of its table,
 ///           all the types, all the members (format 4: the counts above are of what other assemblies see), the friend assemblies
-///           (list of InternalsVisibleTo: `Name`, `Name,key` when it needs a key)                              108 bytes
+///           (list of InternalsVisibleTo: `Name`, `Name,key` when it needs a key), the referenced assemblies (list of
+///           names, format 7)                                                                                    112 bytes
 /// strings   count + 1 offsets into the data that follows them, UTF-8
 /// types     namespace, path (`Dictionary`2+Enumerator`), kind | flags &lt;&lt; 8, declaring type, base (reference),
 ///           interfaces (list of references), first generic, generic count, first member, member count, nested (list of types),
 ///           attributes (list of names), underlying type of an enum, first and count of the members only a friend sees,
-///           the nested types only a friend or no one sees (list)                                                 64 bytes
+///           the nested types only a friend or no one sees (list), the attributes with their arguments (list of
+///           <c>MetadataScanner.AttributeValues</c> strings, format 7), the row in the TypeDef table (format 7)   72 bytes
 ///           the types other assemblies see sorted by the namespace, then by the path: a type by its name and the types of a
 ///           namespace by a binary search; after them the internal and private ones (no members for a private one), sorted so too
 /// members   name, type, kind | flags &lt;&lt; 8, type (reference), first parameter, parameter count, first generic,
-///           generic count, attributes (list of names), value, nullability                                        44 bytes
+///           generic count, attributes (list of names), value, nullability, attributes with their arguments (list)  48 bytes
 ///           the ones of a type together, in the order of the types: first the members everyone sees of the types everyone sees,
 ///           then the internal and private protected members, and all the members of the internal types
 /// params    type (reference), name, flags, default value                                                        16 bytes
-/// generics  name, flags, constraints (list of references)                                                       12 bytes
+/// generics  name, flags, constraints (list of references), attributes with their arguments (list, format 7)     16 bytes
 /// names     name, target: a type, or a member with the highest bit set                                           8 bytes
 ///           the types and the static members other code sees (not the protected ones), sorted by the name in lower case,
 ///           then by the name: the table a prefix is searched in
@@ -1343,8 +1553,10 @@ public static class Literals
 public static class IndexWriter
 {
     public const int MemberBit = unchecked((int)0x80000000);
-    public const int HeaderSize = 4 + 4 + 16 + 4 + 4 + 8 * 8 + 3 * 4;
-    public const int TypeSize = 16 * 4;
+    public const int HeaderSize = 4 + 4 + 16 + 4 + 4 + 8 * 8 + 4 * 4;
+    public const int TypeSize = 18 * 4;
+    public const int MemberSize = 12 * 4;
+    public const int GenericSize = 4 * 4;
 
     /// <summary>A type other assemblies see (public, or nested protected): not only a friend, not nobody.</summary>
     private static bool IsSeen(TypeEntry type) => (type.Flags & (TypeFlags.Internal | TypeFlags.Private)) == 0;
@@ -1376,7 +1588,7 @@ public static class IndexWriter
         int Generics(List<GenericEntry> generics)
         {
             var first = genericRows.Count;
-            foreach (var generic in generics) genericRows.Add([strings.Id(generic.Name), (int)generic.Flags, Refs(generic.Constraints)]);
+            foreach (var generic in generics) genericRows.Add([strings.Id(generic.Name), (int)generic.Flags, Refs(generic.Constraints), Refs(generic.Attributes)]);
             return first;
         }
 
@@ -1392,7 +1604,7 @@ public static class IndexWriter
                 var memberGeneric = Generics(member.Generics);
                 memberRows.Add([
                     strings.Id(member.Name), t, (byte)member.Kind | ((int)member.Flags << 8), strings.Id(member.Type), firstParameter, member.Parameters.Count,
-                    memberGeneric, member.Generics.Count, Refs(member.Attributes), Ref(member.Value), Ref(member.Nullability),
+                    memberGeneric, member.Generics.Count, Refs(member.Attributes), Ref(member.Value), Ref(member.Nullability), Refs(member.AttributeData),
                 ]);
                 // what import completion offers: a static member other code sees, called by the name of its type
                 if (offered && (member.Flags & (MemberFlags.Static | MemberFlags.Protected)) == MemberFlags.Static && member.Kind is not (MemberKind.Constructor or MemberKind.Operator))
@@ -1431,6 +1643,7 @@ public static class IndexWriter
                 Ref(type.Base), Refs(type.Interfaces), firstGeneric, type.Generics.Count, range.First, range.Count,
                 ints.Id(type.Nested.Where(IsSeen).Select(nested => typeIndex[nested]).OrderBy(index => index).ToList()), Refs(type.Attributes), Ref(type.Underlying),
                 range.FirstFriend, range.FriendCount, ints.Id(type.Nested.Where(nested => !IsSeen(nested)).Select(nested => typeIndex[nested]).OrderBy(index => index).ToList()),
+                Refs(type.AttributeData), type.MetadataRow,
             ]);
         }
         // a nested type is found by its own name: `Enumerator` of `Dictionary.Enumerator`
@@ -1445,14 +1658,15 @@ public static class IndexWriter
         var assembly = strings.Id(data.Name);
         var version = strings.Id(data.Version);
         var friends = Refs(data.InternalsVisibleTo);
+        var references = Refs(data.References);
 
         var stringTable = HeaderSize;
         var stringData = stringTable + (strings.Count + 1) * 4;
         var typeTable = Align(stringData + strings.Bytes);
         var memberTable = typeTable + typeRows.Count * TypeSize;
-        var parameterTable = memberTable + memberRows.Count * 44;
+        var parameterTable = memberTable + memberRows.Count * MemberSize;
         var genericTable = parameterTable + parameterRows.Count * 16;
-        var intTable = genericTable + genericRows.Count * 12;
+        var intTable = genericTable + genericRows.Count * GenericSize;
         var nameTable = intTable + ints.Count * 4;
         var extensionTable = nameTable + sortedNames.Count * 8;
 
@@ -1475,6 +1689,7 @@ public static class IndexWriter
         writer.Write(typeRows.Count);
         writer.Write(memberRows.Count);
         writer.Write(friends);
+        writer.Write(references);
         var position = 0;
         foreach (var bytes in strings.Encoded)
         {

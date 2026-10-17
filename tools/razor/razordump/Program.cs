@@ -64,6 +64,10 @@ for (var i = 0; i < args.Length; i++)
         case "--keep-newlines": keepNewlines = true; break;
         // codegen, ir: no tag helper discovery (components and directive attributes stay markup).
         case "--no-tag-helpers": discoverTagHelpers = false; break;
+        // codegen, ir, tag-helpers, symbols: the reference packs of the discovery, `;`-separated (default both .NET's and ASP.NET Core's)
+        // codegen, ir, tag-helpers, symbols: the preprocessor symbols of the discovery compilation, `;`-separated (a project's DefineConstants)
+        case "--define": TagHelperDiscovery.Defines = args[++i].Split(';', StringSplitOptions.RemoveEmptyEntries); break;
+        case "--packs": TagHelperDiscovery.Packs = args[++i].Split(';', StringSplitOptions.RemoveEmptyEntries); break;
         // cases-codegen: compare every case with its baselines, the summary to stderr.
         case "--check": check = true; break;
         // cases-codegen: the descriptors of every processed case as JSON, <dir>/<Project>/<Class>/<Name>.taghelpers.json.
@@ -84,8 +88,9 @@ const string usage = """
            razordump ir <file or directory> [same options as codegen]
            razordump cases-codegen <TestFiles directory> [--langversion V] [--check] [--tag-helpers-out dir] [--out file]
            razordump tag-helpers [<directory>] [--langversion V] [--root-namespace NS] [--assembly-name A] [--references P;Q|@file] [--csharp P;Q|@file] [--out file]
+           razordump symbols [<directory>] [same options as tag-helpers]
     """;
-if (positional.Count != 2 && !(positional.Count == 1 && positional[0] == "tag-helpers"))
+if (positional.Count != 2 && !(positional.Count == 1 && positional[0] is "tag-helpers" or "symbols"))
 {
     Console.Error.WriteLine(usage);
     return 2;
@@ -189,7 +194,20 @@ switch (command)
         var json = TagHelperJson.Serialize(tagHelpers);
         if (outPath != null) File.WriteAllText(outPath, json, new UTF8Encoding(false));
         else Console.Out.Write(json);
-        Console.Error.WriteLine($"# tagHelpers={tagHelpers.Count} millis={stopwatch.ElapsedMilliseconds}");
+        Console.Error.WriteLine($"# tagHelpers={tagHelpers.Count} millis={stopwatch.ElapsedMilliseconds} absent={string.Join(",", TagHelperJson.Absent)}");
+        return 0;
+    }
+    case "symbols":
+    {
+        // The symbols the producers of tag-helpers read (the same compilation), as JSON: the input of razor-psi's port of the discovery.
+        List<string> all = target == null ? [] : [.. EnumerateFiles(target, []).Select(f => Path.GetRelativePath(target, f).Replace('\\', '/'))];
+        var fileSystem = target == null ? new DumpFileSystem() : Codegen.ReadDirectory(target, all, "\n", absolutePaths: false);
+        var engine = Codegen.CreateGeneratorEngine(fileSystem, razorVersion, rootNamespace ?? "ASP", "\n", new FixedTagHelperFeature(TagHelperCollection.Empty), false);
+        var (compilation, _) = Codegen.DiscoveryCompilation(engine, fileSystem, target, all, assemblyName ?? rootNamespace ?? "ASP", references, extraCSharp);
+        var json = SymbolsJson.Serialize(compilation);
+        if (outPath != null) File.WriteAllText(outPath, json, new UTF8Encoding(false));
+        else Console.Out.Write(json);
+        Console.Error.WriteLine($"# bytes={json.Length} millis={stopwatch.ElapsedMilliseconds}");
         return 0;
     }
     default:

@@ -3,6 +3,15 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.264
+
+- Razor: the components and tag helpers are known as the compiler knows them. In a `.razor` file an element of a component
+  (`<Counter Step="@step" CountChanged="OnCount" />`) is the component: its attributes are its parameters in C#, with completion and
+  Go to Declaration in their values; `@onclick`, `@bind`, `@bind-Value`, `@ref`, `@key` and MVC's tag helpers in `.cshtml` are C# too.
+  The components come from the project's `.razor` and `.cs` files (a new `[Parameter]` is known a moment after it is typed, no build
+  needed), from the projects it references and from its packages.
+- The index of assemblies keeps the arguments of attributes (format 7): the indexes are made again once after the update.
+
 ## 0.1.263
 
 - The page about the plugin (the Welcome tab) has a section on Unity: the project as in Rider, the scripts that know their scenes,

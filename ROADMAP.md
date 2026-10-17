@@ -775,6 +775,13 @@
     `RazorCSharpInjector`); completion после `@` и `@Model.`, Go to Declaration из разметки в `@code` и в `.cs`, ошибки C# — через ту же
     семантику; PSI хоста — дерево компилятора R2 (`RazorTree.kt`), HTML-файл по нему. Сценарий `Blazor/Editor/RazorCSharp.razor` (вживую
     не проверено). Генерация документа по образцу компилятора — R3b (`RAZOR_PLAN.md`)
+  - [x] R5a–R5d (0.1.264) — компоненты и tag helpers как у компилятора: перенос поиска дескрипторов компилятора Razor (`razor-psi-core`,
+    `razor.lang.discovery`), символы из индекса сборок (формат 7: аргументы атрибутов) и из исходников проекта (свои `.cs`, объявления
+    компонентов `.razor` нашим движком, проекты-ссылки); документ C# файла Razor собирается с дескрипторами проекта (`RazorTagHelperService`:
+    фон, пересчёт после правки) — элементы компонентов и директивные атрибуты становятся C#. Гейты: дескрипторы против `razordump` на
+    reference packs, `MudBlazor.dll`, выводе Nop.Web и 45 проектах корпуса — без расхождений; кодогенерация с tag helpers — 1172 / 1172
+    файла как у компилятора. Сценарий — `debug-playground/Blazor/Editor/RazorComponents.razor` (вживую не проверено). Дальше — R5e
+    (completion тегов и атрибутов, переход тег → компонент, Find Usages, rename)
   - [x] Unity, индекс ассетов (0.1.260) — «Used in Boot.unity» над скриптом, «Event handler» / «Animation event» над методом,
     «Set by Unity: 5» над полем, Find Usages в сценах, сцены и префабы как YAML со ссылками `guid` / `m_MethodName` в код, «Missing
     script», `[FormerlySerializedAs]` при переименовании поля. Сценарий — `debug-playground/Unity/Assets/Scripts/Door.cs`

@@ -18,6 +18,7 @@ the same code that compiles the user's project; its internals are reached by ref
 | `ir <file or dir> [same options as codegen]` | The intermediate representation of every file after all the passes, in the format of the `.ir.txt` baselines |
 | `cases-codegen <TestFiles dir> [--langversion V] [--check] [--tag-helpers-out dir] [--out file]` | The compiler's code generation integration tests: every `<Name>.cshtml` / `.razor` with a `<Name>.codegen.cs` beside it (recursively), processed as its test does; `--check` compares with the baselines |
 | `tag-helpers [<dir>] [--langversion V] [--root-namespace NS] [--assembly-name A] [--references P;Q\|@file] [--csharp P;Q\|@file] [--out file]` | The tag helper descriptors `codegen` discovers, as JSON |
+| `symbols [<dir>] [same options as tag-helpers]` | The symbols of that compilation the compiler's producers read (types, properties, attributes with their arguments), as JSON: the input of razor-psi's port of the discovery |
 
 The engine is configured as the SDK's source generator configures it (`RazorSourceGenerator.Helpers.cs`): the compiler's features,
 the MVC extension (`inject`, `model`, `page`, `section` for `.cshtml`), the file kind by the file name (`_Imports.razor`, `.razor`,
@@ -75,6 +76,9 @@ Without them a component is a markup element and `@bind` an attribute. Options:
   when the project has `ImplicitUsings` (without it a parameter of type `List<T>` is not resolved and the generated `TypeCheck<…>`
   differs), and the output of other source generators the components use;
 - `--no-tag-helpers`: no discovery;
+- `--packs P;Q`: the reference packs of the discovery (default `Microsoft.NETCore.App.Ref;Microsoft.AspNetCore.App.Ref`; a Razor class
+  library without ASP.NET Core's framework has .NET's alone, its packages through `--references`);
+- `--define A;B`: the preprocessor symbols of the discovery compilation (a project's `DefineConstants`: `#if NET9_0_OR_GREATER` members);
 - `--metadata-checksums`: the `RazorSourceChecksumAttribute`s of the file and its imports (`GenerateRazorMetadataSourceChecksumAttributes`,
   which MVC's runtime compilation package turns on);
 - `--absolute-paths`: the physical paths are absolute with the OS separators, as a build has them; by default they are the relative paths
@@ -163,4 +167,35 @@ the flags as booleans, `tagMatchingRules` (with the required `attributes`), `bou
 `ViewComponentMetadata`, … — as dotnet/roslyn main declares them; a property the installed compiler lacks is written with the record's
 default) and `diagnostics` (`id`, `severity`, `warningLevel`, `message`, `span`) on every level. Keys in a fixed order, two spaces of indentation,
 `[]` / `{}` when empty, only `"`, `\` and the control characters escaped: razor-psi's `TagHelperDescriptorJson` reads it and writes the same text
-back (and the plugin's index will hand descriptors to the engine in it, RAZOR_PLAN.md R5). The count goes to stderr: `# tagHelpers= millis=`.
+back (and the plugin's index will hand descriptors to the engine in it, RAZOR_PLAN.md R5). The count goes to stderr: `# tagHelpers= millis=`,
+then `absent=` — the metadata properties the installed compiler lacks that the dump wrote as defaults (10.0.401:
+`Component.AcceptsUnmatchedAttributes`, `Property.AcceptsAssetPath`, `Property.AcceptsStringLiteral`); the discovery gate sets ours so too.
+
+## Symbols for the discovery: `symbols`
+
+`symbols [<dir>]` writes the compilation `tag-helpers` searches as the compiler's producers see it — the input of razor-psi's discovery
+(`razor-psi-core`, package `razor.lang.discovery`: the producers ported over a symbol model without Roslyn), whose output the gate
+`TagHelperDiscoveryCorpusTest` diffs against `tag-helpers` of the same options (`Symbols.cs`). One line of JSON:
+
+- `assembly` — the compilation's name; `assemblies` — in the order the discovery visits them (the compilation's, then the references):
+  `name`, `references` (the names of the assemblies it references), `types` — the keys of its types as `TagHelperDiscoverer` walks them
+  (namespaces depth first, the nested types of public types), only for an assembly that might hold tag helpers (its name or a reference
+  starts with `Microsoft.AspNetCore.`);
+- `byMetadataName` / `wellKnown` — `GetTypeByMetadataName` / `GetTypesByMetadataName` of the names the producers' factories look up;
+- `types` — the definitions by key `assembly|metadata name` (nested types with `+`): name, namespace, containing type, kind, accessibility,
+  `abstract`, `static`, `special` (`SpecialType`), `arity`; the walked ones, the base classes and the attribute classes in full (`full`:
+  `typeParameters` with constraints and attributes, `base`, `interfaces` — `AllInterfaces` —, `attributes`, `doc` — the XML documentation —,
+  `properties`, `methods` — only `Invoke`, `InvokeAsync`, `AddNamedEvent`, `AddComponentParameter`, the ones the producers ask for), the rest
+  as stubs. A property has its type, accessibility, `static`, `override` with `overridden` (the declaring type and name), `parameters`
+  (an indexer's count), the accessibility of `getter` / `setter`, `initOnly`, attributes, `doc`, and the compilation's answers the producers
+  ask about it: `stringLiteral` (`CanConvertStringLiteral`: an implicit union conversion from `string`), `dictionaryAssignable`
+  (`Dictionary<string, object>` converts by identity or an implicit reference conversion), `awaitable` (a delegate whose `Invoke` returns an
+  awaitable), `dictionary` (the type arguments of the `IDictionary<,>` it implements);
+- an attribute: `class` (a key), `arguments` and `named` as typed constants (`kind`, `type`, `value`: a string, a number — an enum as its
+  value —, a boolean, a type reference, a list of constants);
+- a type reference: `{"t":"n","d":key,"a":[arguments],"o":containing type,"tn":tuple element names}`, `{"t":"p","n"}` (a type
+  parameter, `"m"` of a method), `{"t":"a","e","r"}` (an array), `ptr`, `dyn`, `{"t":"err","n","ns","a"}` (a type the compilation could
+  not bind), `"q"` when annotated nullable; where the producers print the type, `"s"` — its three spellings: `ToDisplayString()`, the full
+  name and the globally qualified name of `WellKnownSymbolDisplayFormats` (the gate checks razor-psi's `RazorTypeDisplay` against them).
+
+Reference packs alone: 8 MB, 2 s.

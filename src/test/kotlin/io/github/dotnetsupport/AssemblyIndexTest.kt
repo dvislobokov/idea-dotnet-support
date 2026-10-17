@@ -1,11 +1,14 @@
 package io.github.dotnetsupport
 
 import io.github.dotnetsupport.index.AssemblyIndex
+import io.github.dotnetsupport.index.IndexedConstant
+import io.github.dotnetsupport.index.IndexedTypeRef
 import io.github.dotnetsupport.index.IndexedMemberKind
 import io.github.dotnetsupport.index.IndexedTypeKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Files
@@ -30,6 +33,38 @@ class AssemblyIndexTest {
         assertTrue("the assembly version", console.assemblyVersion.startsWith("10.0."))
         val statics = console.allTypes.flatMap { it.members }.count { it.isStatic && !it.isProtected && it.kind != IndexedMemberKind.CONSTRUCTOR && it.kind != IndexedMemberKind.OPERATOR }
         assertEquals("every type and every static member is found by its name", console.typeCount + statics, console.nameCount)
+    }
+
+    @Test
+    fun `attributes with their arguments and the referenced assemblies (format 7)`() {
+        val fixture = AssemblyIndex.read(fixture("IndexFixture"))
+        assertTrue(fixture.assemblyReferences.toString(), "System.Runtime" in fixture.assemblyReferences)
+        val tagged = fixture.allTypes.single { it.name == "Tagged" }
+        val (first, second) = tagged.attributeData.filter { it.typeName == "Fixture.TaggedAttribute" }
+        assertEquals("first", first.arguments[0].value)
+        assertEquals(IndexedConstant.Kind.TYPE, first.arguments[1].kind)
+        val list = first.arguments[1].value as IndexedTypeRef.Generic
+        assertEquals("System.Collections.Generic.List`1", list.definition.fullName)
+        assertEquals("System.Int32", (list.arguments.single() as IndexedTypeRef.Named).fullName)
+        assertEquals(IndexedConstant.Kind.ENUM, first.arguments[2].kind)
+        assertEquals("System.AttributeTargets", (first.arguments[2].enumType as IndexedTypeRef.Named).fullName)
+        assertEquals(4L or 64L, first.arguments[2].value)
+        assertEquals(listOf(1L, 2L), (first.arguments[3].value as List<*>).map { (it as IndexedConstant).value })
+        assertEquals("a boxed object argument is its own constant", "boxed", first.arguments[4].value)
+        assertEquals(listOf("Note" to "a (note)"), first.namedArguments.map { it.first to it.second.value })
+        assertEquals(listOf('x'.code.toLong(), 1.5, true, -9000000000L), second.arguments.map { it.value })
+        assertEquals(listOf("a", null), (second.namedArguments.single { it.first == "Names" }.second.value as List<*>).map { (it as IndexedConstant).value })
+        assertNull(second.namedArguments.single { it.first == "Note" }.second.value)
+        // a type parameter's attributes, and a null array
+        val parameter = tagged.typeParameters.single().attributes.single()
+        assertEquals("param", parameter.arguments[0].value)
+        assertNull(parameter.arguments[3].value)
+        assertEquals(3L, parameter.arguments[4].value)
+        // a member's, in the order of the metadata, beside the names
+        val value = tagged.members.single { it.name == "Value" }
+        assertEquals(listOf("System.ObsoleteAttribute", "Fixture.TaggedAttribute"), value.attributeData.map { it.typeName })
+        assertEquals("old", value.attributeData[0].arguments.single().value)
+        assertEquals("System.Int32", ((value.attributeData[1].arguments[1].value as IndexedTypeRef.ArrayOf).element as IndexedTypeRef.Named).fullName)
     }
 
     @Test

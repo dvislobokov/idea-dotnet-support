@@ -2,7 +2,8 @@
 # Makes the fixtures of the index of assemblies (src/test/resources/index): the indexes and the documentation of System.Console,
 # System.Runtime (its index only),
 # System.Linq, System.Collections and System.ObjectModel (the compiler-messages corpus, no docs) of the reference pack of .NET 10, of this folder's IndexFixture.dll and of access/AccessFixture.dll
-# (the errors of access: internal members, accessors, InternalsVisibleTo).
+# (the errors of access: internal members, accessors, InternalsVisibleTo) and of components/ (a stand-in of Microsoft.AspNetCore.Components:
+# the components and tag helpers of Razor, RazorTagHelpersTest).
 # From the root of the repository, in Git Bash:  sh tools/index-fixture/fixtures.sh
 set -e
 root=$(pwd)
@@ -10,11 +11,14 @@ work=$(mktemp -d)
 dotnet build indexer -c Release -o "$work/indexer" -v q -nologo
 dotnet build tools/index-fixture -c Release -o "$work/fixture" -v q -nologo
 dotnet build tools/index-fixture/access -c Release -o "$work/access" -v q -nologo
+dotnet build tools/index-fixture/components -c Release -o "$work/components" -v q -nologo
 dotnet_root=$(dirname "$(command -v dotnet)")
 pack=$(ls -d "$dotnet_root"/packs/Microsoft.NETCore.App.Ref/10.0.* | sort -V | tail -1)/ref/net10.0
 target="$root/src/test/resources/index"
-for assembly in "$pack/System.Console.dll" "$pack/System.Linq.dll" "$pack/System.Collections.dll" "$pack/System.Runtime.dll" "$pack/System.ObjectModel.dll" "$work/fixture/IndexFixture.dll" "$work/access/AccessFixture.dll"; do
+for assembly in "$pack/System.Console.dll" "$pack/System.Linq.dll" "$pack/System.Collections.dll" "$pack/System.Runtime.dll" "$pack/System.ObjectModel.dll" "$work/fixture/IndexFixture.dll" "$work/access/AccessFixture.dll" "$work/components/Microsoft.AspNetCore.Components.dll"; do
   name=$(basename "$assembly" .dll)
+  # the stand-in of ASP.NET Core's components (RazorTagHelpersTest) under a name of its own
+  [ "$name" = "Microsoft.AspNetCore.Components" ] && name=AspNetCoreComponents
   line=$(dotnet "$work/indexer/AssemblyIndexer.dll" --out "$work/out" --force "$assembly" | head -1)
   mvid=$(echo "$line" | sed 's/.*"mvid":"\([0-9a-f]*\)".*/\1/')
   cp "$work/out/$mvid.dnix" "$target/$name.dnix"

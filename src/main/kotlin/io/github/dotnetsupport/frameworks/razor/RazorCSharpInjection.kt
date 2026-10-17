@@ -43,10 +43,32 @@ object RazorCSharpDocument {
 
     /** The generator's output for [file]; null when the file has no text. Cached until the file changes. */
     fun generate(file: RazorFile): Generated? = CachedValuesManager.getManager(file.project).getCachedValue(file, GENERATED, {
-        CachedValueProvider.Result.create(generateNow(file), file)
+        // made again when the tag helpers of the project change (a component's new parameter in another file)
+        CachedValueProvider.Result.create(generateNow(file), file, RazorTagHelperService.getInstance(file.project).tracker)
     }, false)
 
-    private fun generateNow(file: RazorFile): Generated? {
+    private fun generateNow(file: RazorFile): Generated? = withEngine(file) { engine, item, projectFile ->
+        // the components and tag helpers of the project (R5d): their elements become C# — parameters, `@bind`, event handlers
+        val tagHelpers = projectFile?.let { RazorTagHelperService.getInstance(file.project).tagHelpers(it) }
+        val csharp = engine.process(item, tagHelpers).getCSharpDocument() ?: return@withEngine null
+        Generated(csharp.generatedCode, csharp.sourceMappingsSortedByGenerated, csharp.diagnostics, item.getSource().filePath ?: item.filePath ?: "")
+    }
+
+    private val DECLARATION = com.intellij.openapi.util.Key.create<com.intellij.psi.util.CachedValue<String?>>("razor.declaration")
+
+    /**
+     * The declaration of the component [file] declares, as the source generator compiles it for the tag helper discovery
+     * (`ProcessDeclarationOnly`: the class with its usings, `@inherits`, `@typeparam`, `@attribute` and the members of `@code`, no rendering);
+     * null for a file that is no component (`.cshtml`, `_Imports.razor`) or has no text. Cached until the file changes.
+     */
+    fun declaration(file: RazorFile): String? = CachedValuesManager.getManager(file.project).getCachedValue(file, DECLARATION, {
+        val component = io.github.dotnetsupport.razor.lang.codegen.FileKinds.getFileKindFromPath(file.name) == RazorFileKind.Component
+        val text = if (!component) null else withEngine(file) { engine, item, _ -> engine.processDeclarationOnly(item).getCSharpDocument()?.generatedCode }
+        CachedValueProvider.Result.create(text, file)
+    }, false)
+
+    /** [action] with the engine of [file]'s project and the item of [file] (its text as the PSI has it). */
+    private fun <T> withEngine(file: RazorFile, action: (RazorProjectEngine, RazorProjectItem, VirtualFile?) -> T?): T? {
         val text = file.text
         if (text.isEmpty()) return null
         // a copy of the file (completion works on one) has a virtual file without a parent: the project is the original's
@@ -57,15 +79,15 @@ object RazorCSharpDocument {
         val options = if (projectFile != null) CompilationModel.getInstance(file.project).optionsFor(virtualFile) else null
         val rootNamespace = options?.rootNamespace?.takeIf { it.isNotBlank() } ?: projectFile?.nameWithoutExtension ?: file.project.name
         val version = RazorGeneratorEngine.versionOf(options?.targetFramework ?: options?.targetFrameworks?.firstOrNull())
-        val engine = engines.computeIfAbsent(EngineKey(root?.path, rootNamespace, version)) {
-            RazorGeneratorEngine.create(HostFileSystem(root), version, rootNamespace, "\n") { b -> b.features.add(RazorIdeLayoutPass()) }
-        }
+        // a folder deleted and made again is another file: the engine of the old one would read an invalid one
+        val engine = engines.compute(EngineKey(root?.path, rootNamespace, version)) { _, old ->
+            old?.takeIf { (it.fileSystem as HostFileSystem).root?.isValid != false }
+                ?: RazorGeneratorEngine.create(HostFileSystem(root), version, rootNamespace, "\n") { b -> b.features.add(RazorIdeLayoutPass()) }
+        }!!
         val fileSystem = engine.fileSystem as HostFileSystem
         fileSystem.current.set(Current("/$relative", virtualFile.path, text))
         try {
-            val item = fileSystem.getItem("/$relative", null)
-            val csharp = engine.process(item).getCSharpDocument() ?: return null
-            return Generated(csharp.generatedCode, csharp.sourceMappingsSortedByGenerated, csharp.diagnostics, item.getSource().filePath ?: "/$relative")
+            return action(engine, fileSystem.getItem("/$relative", null), projectFile)
         } finally {
             fileSystem.current.remove()
         }
@@ -155,7 +177,7 @@ object RazorCSharpDocument {
     /** The file being generated: its Razor path, physical path and the text of the PSI. */
     private class Current(val filePath: String, val physicalPath: String, val text: String)
 
-    private class HostFileSystem(private val root: VirtualFile?) : RazorProjectFileSystem() {
+    private class HostFileSystem(val root: VirtualFile?) : RazorProjectFileSystem() {
         val current = ThreadLocal<Current?>()
 
         override fun enumerateItems(basePath: String): Sequence<RazorProjectItem> = emptySequence()

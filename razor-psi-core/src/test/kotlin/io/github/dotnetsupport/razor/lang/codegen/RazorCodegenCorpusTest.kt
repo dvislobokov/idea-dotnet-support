@@ -27,7 +27,38 @@ class RazorCodegenCorpusTest : TestCase() {
     fun testMudblazor() = gate("mudblazor", "razor/mudblazor/src")
     fun testNopcommerce() = gate("nopcommerce", "razor/nopcommerce/src")
 
-    private fun gate(name: String, relative: String) {
+    // With tag helpers (RAZOR_PLAN.md, R5d): a project each, compiled as its build compiles it (tools/razor/README.md), the descriptors razordump
+    // discovers in that compilation (`tag-helpers`, the same options) given to our engine — the lowering of components, `@bind`, event handlers,
+    // MVC's tag helpers and view components against the compiler's.
+    fun testEshopTagHelpers() = gateBuilt("eshop-th", "razor/eshop/src/WebApp", "razor/eshop/artifacts/obj/WebApp/debug/WebApp.GlobalUsings.g.cs", "razor/eshop/artifacts/bin/WebApp/debug", "WebApp.dll")
+    fun testEshopComponentsTagHelpers() = gateBuilt(
+        "eshop-components-th", "razor/eshop/src/WebAppComponents", "razor/eshop/artifacts/obj/WebAppComponents/debug/WebAppComponents.GlobalUsings.g.cs", null, null,
+    )
+    fun testMudblazorTagHelpers() = gateBuilt("mudblazor-th", "razor/mudblazor/src/MudBlazor", "razor/mudblazor/src/MudBlazor/obj/Debug/net10.0/MudBlazor.GlobalUsings.g.cs", null, null)
+    fun testNopcommerceTagHelpers() = gateBuilt(
+        "nopcommerce-th", "razor/nopcommerce/src/Presentation/Nop.Web", "razor/nopcommerce/src/Presentation/Nop.Web/obj/Debug/net10.0/Nop.Web.GlobalUsings.g.cs",
+        "razor/nopcommerce/src/Presentation/Nop.Web/bin/Debug/net10.0", "Nop.Web.dll",
+    )
+
+    private fun gateBuilt(name: String, relative: String, globalUsings: String, bin: String?, own: String?) {
+        val corpus = RazorTestUtil.corpusRoot()
+        if (!Files.isDirectory(corpus.resolve(relative).resolve("obj")) && !Files.isDirectory(corpus.resolve(globalUsings).parent)) {
+            return println("RazorCodegenCorpusTest: $relative is not built (tools/razor/README.md), $name skipped")
+        }
+        // a project without ImplicitUsings has no global usings
+        val usings = corpus.resolve(globalUsings)
+        val options = if (Files.isRegularFile(usings)) arrayListOf("--csharp", usings.toString()) else arrayListOf()
+        if (bin != null) {
+            val dlls = Files.list(corpus.resolve(bin)).use { s -> s.filter { it.fileName.toString().endsWith(".dll") && it.fileName.toString() != own }.map { it.toString() }.sorted().toList() }
+            val list = RazorTestUtil.buildDir("razor-gate").resolve("$name.references.txt")
+            Files.write(list, dlls)
+            options += listOf("--references", "@$list")
+        }
+        gate(name, relative, options)
+    }
+
+    /** [tagHelperOptions]: discover tag helpers in the compilation of these razordump options (null: none, both sides `--no-tag-helpers`). */
+    private fun gate(name: String, relative: String, tagHelperOptions: List<String>? = null) {
         val root = RazorTestUtil.corpusRoot().resolve(relative)
         if (!Files.isDirectory(root)) return println("RazorCodegenCorpusTest: $root is missing (tools/razor/fetch-corpus.sh), $name skipped")
         if (RazorDump.dll() == null) return println("RazorCodegenCorpusTest: razordump is not built (dotnet build tools/razor/razordump -c Release), $name skipped")
@@ -35,9 +66,14 @@ class RazorCodegenCorpusTest : TestCase() {
         val dump = work.resolve("$name-codegen.oracle.txt")
         // The oracle is the installed SDK's compiler, whose latest language version is 10.0; ours follows the compiler's main (11.0), so
         // both sides are pinned to 10.0 (razordump takes the last --langversion).
-        val options = (if (System.getProperty("razorpsi.codegenTagHelpers")?.toBoolean() == true) emptyList() else listOf("--no-tag-helpers")) + listOf("--langversion", "10.0")
+        val options = (tagHelperOptions ?: listOf("--no-tag-helpers")) + listOf("--langversion", "10.0")
         println("  razordump codegen: " + RazorDump.codegen(root, dump, *options.toTypedArray()))
         val oracle = RazorDump.parseCodegen(Files.readString(dump))
+        val tagHelpers = if (tagHelperOptions == null) TagHelperCollection.EMPTY else {
+            val file = work.resolve("$name.taghelpers.json")
+            println("  razordump tag-helpers: " + RazorDump.tagHelpers(root, file, *options.toTypedArray()))
+            io.github.dotnetsupport.razor.lang.syntax.TagHelperDescriptorJson.read(Files.readString(file))
+        }
 
         // razordump's file system (Codegen.ReadDirectory): every file under the root, Razor path `/rel`, physical and relative path `rel`,
         // the text with its line breaks LF, a BOM if the file had one
@@ -59,7 +95,7 @@ class RazorCodegenCorpusTest : TestCase() {
             val actual = try {
                 val item = fileSystem.getItem("/$path")
                 val imports = RazorProjectEngine.getImportSourceDocuments(engine.getImports(item))
-                val document = engine.process(item.getSource(), item.fileKind, imports, TagHelperCollection.EMPTY)
+                val document = engine.process(item.getSource(), item.fileKind, imports, tagHelpers)
                 normalize(codegenBlock(document))
             } catch (e: Throwable) {
                 exceptions++

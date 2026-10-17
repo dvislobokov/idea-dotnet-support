@@ -266,3 +266,21 @@ public class Oblivious
     public static string Make(string value) => value;
 }
 #nullable restore
+
+/// <summary>The arguments of attributes (format 7): every kind of constant, named arguments, repeated attributes, a type parameter's.</summary>
+[AttributeUsage(AttributeTargets.All, AllowMultiple = true)]
+public sealed class TaggedAttribute : Attribute
+{
+    public TaggedAttribute(string name, Type type, AttributeTargets targets, int[] numbers, object boxed) { }
+    public TaggedAttribute(char c, double d, bool b, long l) { }
+    public string? Note { get; set; }
+    public string[]? Names;
+}
+
+[Tagged("first", typeof(System.Collections.Generic.List<int>), AttributeTargets.Class | AttributeTargets.Method, new[] { 1, 2 }, "boxed", Note = "a (note)")]
+[Tagged('x', 1.5, true, -9000000000, Names = new[] { "a", null }, Note = null)]
+public class Tagged<[Tagged("param", typeof(string), AttributeTargets.GenericParameter, null, 3)] T>
+{
+    [Obsolete("old"), Tagged("property", typeof(int[]), (AttributeTargets)0, new int[0], null)]
+    public T? Value { get; set; }
+}
