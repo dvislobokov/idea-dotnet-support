@@ -25,7 +25,7 @@ class CSharpCaseInsensitiveCompletion : CompletionContributor() {
         if (parameters.originalFile !is CSharpFile) return
         // in or right after a number nothing is completed, as in Rider and Visual Studio
         // ...except in the format of an interpolation or of string.Format, where `{x:0` starts a custom format: CSharpFormatSpecifierCompletion lists those
-        val text = parameters.editor.document.charsSequence
+        val text = parameters.documentText
         if (isInNumericLiteral(text, parameters.offset) && CSharpFormatPlaces.at(parameters.position, parameters.offset, text) == null) {
             result.stopHere()
             return
@@ -42,6 +42,14 @@ class CSharpCaseInsensitiveCompletion : CompletionContributor() {
         result.stopHere()
     }
 }
+
+/**
+ * The text [CompletionParameters.getOffset] counts in: the document of the file completion was invoked in. For a fragment injected into
+ * another file (the C# of a Razor file) that is the document window of the fragment, not the editor's document of the host, whose offsets
+ * are different (RAZOR_PLAN.md, R3a).
+ */
+val CompletionParameters.documentText: CharSequence
+    get() = originalFile.viewProvider.document?.immutableCharSequence ?: originalFile.viewProvider.contents
 
 /**
  * The caret at [offset] is in or right after a numeric literal (`1`, `0x1F`, `1.5e`, `2L`): the word before it starts with a digit. The

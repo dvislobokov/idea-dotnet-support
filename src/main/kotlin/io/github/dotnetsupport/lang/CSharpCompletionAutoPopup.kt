@@ -115,7 +115,7 @@ class CSharpCompletionAutoPopup : TypedHandlerDelegate() {
          * argument may be a lambda (after `(` / `,`), the values after `== ` / `!= ` / `case `. Asked by [NativeCSharpCompletion.opensByItself].
          */
         fun opensAt(parameters: CompletionParameters, kind: NativeCompletionKind): Boolean {
-            val text = parameters.editor.document.charsSequence
+            val text = parameters.documentText
             val offset = parameters.offset
             var before = offset
             while (before > 0 && text[before - 1].isWhitespace() && text[before - 1] != '\n') before--

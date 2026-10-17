@@ -8,17 +8,17 @@ class RazorTokenType(debugName: String) : IElementType(debugName, RazorLanguage)
     override fun toString(): String = "Razor:" + super.toString()
 }
 
-class RazorElementType(debugName: String, language: com.intellij.lang.Language = RazorLanguage) : IElementType(debugName, language) {
-    override fun toString(): String = "Razor:" + super.toString()
-}
-
 /**
  * The tokens of [RazorLexer], after the spans of the Razor compiler (`.cspans.txt`: Markup, Transition, MetaCode, Code, Comment): what is
- * not markup is Razor's own or C#. The editor's lexer splits [CSHARP] and [CSHARP_CODE] into the tokens of the plugin's C# lexer.
+ * not markup is Razor's own or C#. The editor's lexer splits [CSHARP] and [CSHARP_CODE] into the tokens of the plugin's C# lexer. The
+ * editor highlighter runs on them (incremental); the PSI and the HTML file are built from the compiler's tree ([RazorTreeTypes]).
  */
 object RazorTokenTypes {
     /** Markup: the text of the HTML file of the view ([RazorFileViewProvider]). */
     @JvmField val MARKUP = RazorTokenType("MARKUP")
+
+    /** Everything but the markup, as one run, for the base lexer of the HTML file ([RazorTemplateLexer]). */
+    @JvmField val TEMPLATE_OUTER = RazorTokenType("TEMPLATE_OUTER")
 
     /** `@` starting C#, a directive or `@:` (the Transition span). */
     @JvmField val TRANSITION = RazorTokenType("TRANSITION")
@@ -65,21 +65,9 @@ object RazorTokenTypes {
     @JvmField val COMMENTS = TokenSet.create(COMMENT)
     @JvmField val CODE = TokenSet.create(CSHARP, CSHARP_CODE)
 
-    /** Everything but markup: the HTML parser's errors next to them are not errors of the page ([RazorErrorFilter]). */
+    /** Everything but markup, of the lexer's tokens; the PSI's are [RazorTreeTypes.TEMPLATE]. */
     @JvmField val TEMPLATE = TokenSet.create(
         TRANSITION, ESCAPE, DIRECTIVE, LBRACE, RBRACE, LPAREN, RPAREN, COLON, COMMENT, TEXT_TAG, DIRECTIVE_ATTRIBUTE, ATTRIBUTE_VALUE,
-        DIRECTIVE_VALUE, CSHARP, CSHARP_CODE,
+        DIRECTIVE_VALUE, CSHARP, CSHARP_CODE, TEMPLATE_OUTER,
     )
-}
-
-/** The nodes of the tree of [RazorParser]: flat but for these. */
-object RazorElementTypes {
-    /** `@page "/x"`, `@code { ... }`, `@section Scripts { ... }`: the transition, the name, the argument or the block. */
-    @JvmField val DIRECTIVE = RazorElementType("DIRECTIVE")
-
-    /** `@{ ... }`. */
-    @JvmField val CODE_BLOCK = RazorElementType("CODE_BLOCK")
-
-    /** A token of [RazorTokenTypes.CSHARP_CODE], of [RazorCodeLanguage]. */
-    @JvmField val CODE = RazorElementType("CODE", RazorCodeLanguage)
 }

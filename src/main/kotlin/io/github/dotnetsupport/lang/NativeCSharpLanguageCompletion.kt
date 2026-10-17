@@ -42,7 +42,7 @@ class NativeCSharpLanguageCompletionContributor : CompletionContributor() {
         val file = parameters.position.containingFile as? CSharpFile ?: return
         if (file.compilationUnit == null) return
         val prefix = result.prefixMatcher.prefix
-        val text = parameters.editor.document.charsSequence
+        val text = parameters.documentText
         val dot = text.getOrNull(parameters.offset - prefix.length - 1) == '.'
         // a list that opened by itself after a space with nothing typed: only the ones the native list opens too ([NativeCSharpCompletion.opensByItself])
         if (parameters.isAutoPopup && prefix.isEmpty() && !dot) return

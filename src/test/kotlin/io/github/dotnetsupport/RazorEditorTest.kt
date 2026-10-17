@@ -63,7 +63,8 @@ class RazorEditorTest : BasePlatformTestCase() {
         val html = myFixture.file.viewProvider.getPsi(HTMLLanguage.INSTANCE)
         assertNotNull(html)
         assertEquals(HTMLLanguage.INSTANCE, PsiUtilCore.getLanguageAtOffset(myFixture.file, offset("title")))
-        assertEquals(RazorLanguage, PsiUtilCore.getLanguageAtOffset(myFixture.file, offset("currentCount</h1>")))
+        assertEquals(io.github.dotnetsupport.frameworks.razor.RazorCodeLanguage, PsiUtilCore.getLanguageAtOffset(myFixture.file, offset("currentCount</h1>")))
+        assertEquals(RazorLanguage, PsiUtilCore.getLanguageAtOffset(myFixture.file, offset("@currentCount")))
         val tags = com.intellij.psi.util.PsiTreeUtil.findChildrenOfType(html, com.intellij.psi.xml.XmlTag::class.java).map { it.name }
         assertEquals(listOf("h1", "Counter", "button", "p"), tags)
     }

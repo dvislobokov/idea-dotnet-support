@@ -81,7 +81,7 @@ class CSharpServiceRegistrationCompletion : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
         val original = parameters.originalFile as? CSharpFile ?: return
         if (!CSharpFeatures.native(CSharpFeature.COMPLETION, original)) return
-        val place = CSharpServiceRegistrations.placeAt(parameters.editor.document.charsSequence, parameters.offset) ?: return
+        val place = CSharpServiceRegistrations.placeAt(parameters.documentText, parameters.offset) ?: return
         val implementations = CSharpServiceRegistrations.implementations(original.project, place.service)
         if (implementations.isEmpty()) return
         val fileNamespace = CSharpServiceRegistrations.namespaceOf(parameters.position)

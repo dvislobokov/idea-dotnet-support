@@ -39,8 +39,9 @@ object CSharpSemanticEnvironment {
 
     /** The project file [file] is compiled in; null for a loose file (and in tests without one). */
     fun projectOf(file: PsiFile): VirtualFile? {
-        // the copy completion works in is a light file: its original says the project
-        val virtualFile = file.originalFile.viewProvider.virtualFile
+        // the copy completion works in is a light file: its original says the project; a fragment injected into another file (the C# of
+        // a Razor file) is compiled where that file is
+        val virtualFile = file.originalFile.viewProvider.virtualFile.let { (it as? com.intellij.injected.editor.VirtualFileWindow)?.delegate ?: it }
         return CompilationModel.getInstance(file.project).projectOf(virtualFile)
     }
 

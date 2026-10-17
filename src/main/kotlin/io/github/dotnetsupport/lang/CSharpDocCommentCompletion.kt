@@ -29,7 +29,7 @@ class CSharpDocCommentCompletion : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
         val file = parameters.originalFile as? CSharpFile ?: return
         if (!CSharpFeatures.native(CSharpFeature.COMPLETION, file)) return
-        val text = parameters.editor.document.charsSequence
+        val text = parameters.documentText
         val offset = parameters.offset
         val rest = CSharpDocCommentItems.restOfLine(text, offset) ?: return
         if (!CSharpLeaves.isTrivia(parameters.position) && parameters.position.parent?.let(CSharpLeaves::isTrivia) != true) return

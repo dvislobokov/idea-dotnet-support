@@ -207,7 +207,7 @@ class CSharpRouteTemplateCompletion : CompletionContributor() {
         val leaf = parameters.position
         val literal = CSharpStringArguments.literalOf(leaf) ?: return
         if (!CSharpRouteTemplates.isRoute(literal)) return
-        val typed = CSharpStringArguments.typedBefore(leaf, parameters.offset, parameters.editor.document.charsSequence) ?: return
+        val typed = CSharpStringArguments.typedBefore(leaf, parameters.offset, parameters.documentText) ?: return
         val open = typed.lastIndexOf('{')
         val token = typed.lastIndexOf('[')
         when {

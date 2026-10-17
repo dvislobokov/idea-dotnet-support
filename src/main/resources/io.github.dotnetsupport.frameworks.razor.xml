@@ -23,5 +23,7 @@
         <highlightErrorFilter implementation="io.github.dotnetsupport.frameworks.razor.RazorErrorFilter"/>
         <daemon.highlightInfoFilter implementation="io.github.dotnetsupport.frameworks.razor.RazorHtmlStructureFilter"/>
         <lang.inspectionSuppressor language="HTML" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorHtmlInspectionSuppressor"/>
+        <!-- R3: the virtual C# document — one injection of the C# pieces of the file -->
+        <multiHostInjector implementation="io.github.dotnetsupport.frameworks.razor.RazorCSharpInjector"/>
     </extensions>
 </idea-plugin>

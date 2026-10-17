@@ -16,7 +16,7 @@ import com.intellij.psi.xml.XmlTag
 import com.intellij.psi.xml.XmlTokenType
 
 /** The HTML parser's errors next to Razor (an `@if` around a start tag, a value made by C#) are not errors of the page. */
-class RazorErrorFilter : TemplateLanguageErrorFilter(RazorTokenTypes.TEMPLATE, RazorFileViewProvider::class.java, "HTML")
+class RazorErrorFilter : TemplateLanguageErrorFilter(TokenSet.orSet(RazorTreeTypes.TEMPLATE, RazorTokenTypes.TEMPLATE), RazorFileViewProvider::class.java, "HTML")
 
 /**
  * The tags HTML sees open or close in two branches (`@if (x) { <span> } else { <span class="b"> } … </span>`) are no error of the page:

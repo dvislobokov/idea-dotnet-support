@@ -188,12 +188,31 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
   без edit handlers; несколько файлов MudBlazor в UTF-16 и с двойным BOM (читать как .NET: `RazorTestUtil.readText`). Не сделано в R2:
   PSI IDE ещё на плоском дереве R1 — переключение редактора на это дерево (замена `RazorParser` хоста, токены по дереву) идёт с R3a.
 - [ ] **R3. Виртуальный C#-документ** (3–4).
-  - R3a. Развилка (одна сессия, решение записать сюда): инъекция из многих кусков против своего `LightVirtualFile` с переносом позиций.
-    Решает, работают ли `lang/semantic`, completion, navigation, rename на инъецированном файле: многое в хосте спрашивает
-    `projectOf(file)`, `CompilationModel` по физическому `.cs` — нужен контекст хоста. Проба — completion после `@Model.` и
-    Go to Declaration из разметки.
-  - R3b. Генерация документа по образцу design-time режима компилятора, оба вида файла; `_Imports.razor` / `_ViewImports.cshtml`
-    по иерархии папок, `@model` → `RazorPage<TModel>`, `@page` Razor Pages → `PageModel` из `.cshtml.cs`, partial-класс из `.razor.cs`.
+  - [x] R3a (0.1.252). **Решение: инъекция** (`MultiHostInjector` из многих кусков), не свой файл. Проба прошла: completion после `@cur`
+    и `@Model.`, Go to Declaration из разметки в `@code` и в `.cs` проекта — и обработчиком на инъецированном листе, и действием на
+    редакторе фрагмента (`RazorCSharpDocumentTest`). В ядре потребовалось два места, оба — платформенные понятия, не Razor:
+    `CSharpSemanticEnvironment.projectOf` снимает `VirtualFileWindow` (проект фрагмента — проект файла-хоста), completion-контрибьюторы
+    читали `parameters.editor.document` — у инъекции это документ хоста с другими смещениями, теперь `CompletionParameters.documentText`
+    (документ файла, в котором идёт completion). Остальное — `originalFile`, `containingFile.virtualFile` — у инъекции и так своё.
+    Заодно сделано из R2: **PSI хоста — дерево компилятора** (`RazorTree.kt`: типы элементов по `RazorSyntaxKind`, по два у литералов —
+    C#-литерал языка `RazorCSharp`, токены с спаном MARKUP / CODE / META по chunk generator литерала; `RazorAstBuilder` строит AST
+    напрямую, без `PsiBuilder`; `RazorFile.syntaxTree` — дерево с диагностиками для R6); HTML-файл представления — по дереву
+    (`RazorTemplateLexer`: разметка одним прогоном, остальное outer); folding, структура, Ctrl+/ — по PSI. Лексер R1 остался только у
+    подсветки редактора (инкрементальный) и у brace matcher. Документ (`RazorCSharpDocument`) — пока ручной эмиттер по кускам в порядке
+    файла: `using` хостами до класса, заголовок класса текстом (`@inherits` / `@model` / `@typeparam` / `@implements` / `@attribute` /
+    `@namespace` — из директив файла), `@inject` → свойство, `@code` / `@functions` → члены, выражения `__o = …;`, операторы как есть,
+    `@section` → `DefineSection`, шаблоны `@<b>` → лямбда; разметка после `@code` — второй метод `__RazorRender2`. Его заменит R3b.
+    Факт: `GotoDeclarationAction.findAllTargetElements` на редакторе хоста инъекцию не видит (IDE сама даёт `EditorWindow`), в тестах
+    брать `InjectedLanguageEditorUtil.getEditorForInjectedLanguageNoCommit`.
+  - R3b. **Перенос генерации design-time документа из компилятора** (решение 2026-10-17, по вопросу пользователя «что ещё перенести из
+    Roslyn»): конвейер `Intermediate` (понижение дерева в IR, проходы директив `ModelDirective`, `InjectDirective`, `PagesPropertyInjectionPass`,
+    классификаторы документа — компонент / view / Razor Page), проходы компонентов (`ComponentLoweringPass`, `ComponentBindLoweringPass`,
+    `ComponentEventHandlerLoweringPass`, `ComponentGenericTypePass`…), `DesignTimeNodeWriter` + `CodeWriter` + `SourceMapping`; runtime-writer
+    не нужен. Mappings генератора — ровно куски инъекции (сопоставленные спаны = хосты, остальной текст = prefix / suffix). Оба вида файла;
+    `_Imports.razor` / `_ViewImports.cshtml` по иерархии папок (`ImportDocuments` движка), `@model` → `RazorPage<TModel>`, `@page` Razor
+    Pages → `PageModel` из `.cshtml.cs`, partial-класс из `.razor.cs`, namespace по папке / RootNamespace. Оракул — `razordump designtime`
+    и эталоны `*_DesignTime.codegen.cs` (828) и `.mappings.txt` (527), гейт как в R2. Объём ~R2 (2–3 сессии). Не переносить: языковой
+    сервер Razor (completion, форматтер, semantic tokens — всё на Roslyn Workspaces; это даёт инъекция платформы); привязка тегов — R5.
   - Гейт: имена и типы C#-выражений в разметке против `roslyndump semantics` на выводе `razordump designtime` — тот же порог, что у
     `semanticGate` для `.cs`; 0 ложных ошибок на трёх solution.
 - [ ] **R4. C# в разметке** (2). Completion (члены, `@` в разметке — выражения и директивы, параметры `@inject`), Go to Declaration,

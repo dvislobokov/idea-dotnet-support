@@ -197,6 +197,14 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `TYPE:razor-structure`: Alt+7 / Ctrl+F12 — `@page "/editor/highlighting"`, `@inject …`, `@code` с членами `clicks`, `items`,
       `Title`, `Bold(string text): RenderFragment`, `Reset(): void`; щелчок ведёт к члену
 
+### C# в разметке Razor (RAZOR_PLAN.md R3a, 0.1.252; вживую не проверено) — `Blazor/Editor/RazorCSharp.razor`
+
+Весь C# страницы — один виртуальный C#-документ (класс компонента, `__o = <выражение>;`, члены `@code`), инъецированный в файл кусками.
+- [ ] `TYPE:razor-completion`: под `<ul>` набрать `<li>@cou` — в списке `count` и `Counter`, Enter пишет `count`; после `.` — члены `int`
+- [ ] `TYPE:razor-goto`: Ctrl+B на `count` в `<p>Count: @count</p>` — `private int count;` в `@code`; на `Step` — `Counter.razor`; на
+      `Navigation` — строка `@inject`
+- [ ] `TYPE:razor-errors`: в `Increase` набрать `count = "x";` — `"x"` красное с CS0029, как в `.cs`; Ctrl+Z
+
 ## Solution view
 
 ### Reload Solution / Reload Project

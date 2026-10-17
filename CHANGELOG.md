@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.252
+
+- Razor: the C# of a `.razor` / `.cshtml` file is one virtual C# document injected into the page (RAZOR_PLAN.md, R3a): completion
+  after `@` and `@Model.`, Go to Declaration from the markup to `@code` and to the `.cs` files of the project, the C# errors of the
+  plugin's analysis in the markup and in `@code`. The Razor tree in the editor is now the port of the compiler's parser (0.1.251);
+  folding, the structure view and Ctrl+/ follow it.
+
 ## 0.1.251
 
 - Groundwork for the Razor editor (RAZOR_PLAN.md, R2): a port of the Razor compiler's parser (`razor-psi-core`), checked against

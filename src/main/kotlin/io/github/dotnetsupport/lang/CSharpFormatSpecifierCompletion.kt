@@ -25,7 +25,7 @@ class CSharpFormatSpecifierCompletion : CompletionContributor() {
         val original = parameters.originalFile as? CSharpFile ?: return
         if (!CSharpFeatures.native(CSharpFeature.COMPLETION, original)) return
         val file = parameters.position.containingFile as? CSharpFile ?: return
-        val place = CSharpFormatPlaces.at(parameters.position, parameters.offset, parameters.editor.document.charsSequence) ?: return
+        val place = CSharpFormatPlaces.at(parameters.position, parameters.offset, parameters.documentText) ?: return
         val resolver = CSharpSemanticSession(file.project).resolver(file)
         val kind = place.kind ?: place.value?.let { CSharpFormatSpecifiers.kindOf(resolver.typeOf(it)) }
         if (kind == null) {

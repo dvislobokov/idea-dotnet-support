@@ -130,7 +130,7 @@ object NativeCSharpCompletion {
     fun opensByItself(parameters: CompletionParameters, prefix: String, kind: NativeCompletionKind, modifiers: List<String> = emptyList()): Boolean {
         if (!parameters.isAutoPopup || prefix.isNotEmpty()) return true
         if (CSharpCompletionAutoPopup.opensAt(parameters, kind)) return true
-        val text = parameters.editor.document.charsSequence
+        val text = parameters.documentText
         return when (text.getOrNull(parameters.offset - 1)) {
             '.' -> true
             '[' -> kind == NativeCompletionKind.ATTRIBUTE

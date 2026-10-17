@@ -212,7 +212,7 @@ class CSharpLoggerTemplateCompletion : CompletionContributor() {
         val leaf = parameters.position
         val literal = CSharpStringArguments.literalOf(leaf) ?: return
         val template = CSharpLoggerTemplates.templateOf(literal) ?: return
-        val text = parameters.editor.document.charsSequence
+        val text = parameters.documentText
         val typed = CSharpStringArguments.typedBefore(leaf, parameters.offset, text) ?: return
         val hole = openHole(typed)
         if (hole == null) {

@@ -133,7 +133,7 @@ class CSharpConfigurationKeyCompletion : CompletionContributor() {
         val literal = CSharpStringArguments.literalOf(leaf) ?: return
         val place = CSharpConfigurationKeys.placeOf(literal) ?: return
         val virtualFile = original.viewProvider.virtualFile
-        val typed = CSharpStringArguments.typedBefore(leaf, parameters.offset, parameters.editor.document.charsSequence) ?: return
+        val typed = CSharpStringArguments.typedBefore(leaf, parameters.offset, parameters.documentText) ?: return
         val keys = CSharpConfigurationKeys.keysFor(virtualFile)
         val set = result.withPrefixMatcher(typed)
         val offered = keys.filterKeys { it.startsWith(place.section) && it.length > place.section.length }

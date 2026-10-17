@@ -1,13 +1,11 @@
 package io.github.dotnetsupport.frameworks.razor
 
-import com.intellij.extapi.psi.ASTWrapperPsiElement
 import com.intellij.extapi.psi.PsiFileBase
 import com.intellij.lang.ASTNode
 import com.intellij.lang.Language
 import com.intellij.lang.LanguageParserDefinitions
 import com.intellij.lang.ParserDefinition
 import com.intellij.lang.PsiBuilder
-import com.intellij.lang.PsiBuilderFactory
 import com.intellij.lang.PsiParser
 import com.intellij.lang.html.HTMLLanguage
 import com.intellij.lexer.Lexer
@@ -21,125 +19,77 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
 import com.intellij.psi.impl.source.PsiFileImpl
+import com.intellij.psi.impl.source.tree.SharedImplUtil
 import com.intellij.psi.templateLanguages.TemplateDataElementType
 import com.intellij.psi.templateLanguages.TemplateLanguageFileViewProvider
 import com.intellij.psi.tree.IElementType
 import com.intellij.psi.tree.IFileElementType
 import com.intellij.psi.tree.TokenSet
+import io.github.dotnetsupport.razor.lang.parser.RazorSyntaxTree
+import io.github.dotnetsupport.razor.lang.syntax.RazorSyntaxKind
 
 /** The file of the Razor tree; its markup is in the HTML file of the same view ([RazorFileViewProvider]). */
 class RazorFile(viewProvider: FileViewProvider) : PsiFileBase(viewProvider, RazorLanguage) {
     override fun getFileType(): FileType = RazorFileType
     override fun toString(): String = "Razor File"
     val kind: RazorFileKind get() = RazorFileKind.of(name)
+
+    /** The root of the compiler's tree. */
+    val document: RazorDocumentPsi? get() = findChildByClass(RazorDocumentPsi::class.java)
+
+    /** The compiler's tree of the last parse, with its diagnostics; null before the first. */
+    val syntaxTree: RazorSyntaxTree?
+        get() {
+            node // loads the AST, which parses
+            return getUserData(RazorAstBuilder.TREE)
+        }
+
+    /** The directives of the file in order: `@page`, `@using`, `@inject`, `@code`... */
+    val directives: List<RazorDirectivePsi> get() = com.intellij.psi.util.PsiTreeUtil.findChildrenOfType(this, RazorDirectivePsi::class.java).toList()
 }
 
-/** A `@directive` with its argument or block ([RazorElementTypes.DIRECTIVE]) or a `@{ }` ([RazorElementTypes.CODE_BLOCK]). */
-class RazorBlock(node: ASTNode) : ASTWrapperPsiElement(node) {
-    /** `code`, `section`, `page`...; null for `@{ }`. */
-    val directiveName: String? get() = node.findChildByType(RazorTokenTypes.DIRECTIVE)?.text
-
-    /** The argument of the directive as written: `Scripts` of `@section Scripts`, `"/counter"` of `@page`. */
-    val argument: String?
-        get() = generateSequence(node.firstChildNode) { it.treeNext }.takeWhile { it.elementType != RazorTokenTypes.LBRACE }
-            .firstOrNull { it.elementType in ARGUMENT }?.text?.trim()?.takeIf { it.isNotEmpty() }
-
-    val openBrace: ASTNode? get() = node.findChildByType(RazorTokenTypes.LBRACE)
-    val closeBrace: ASTNode? get() = node.getChildren(BRACES).lastOrNull()?.takeIf { it.elementType == RazorTokenTypes.RBRACE }
-
-    private companion object {
-        val ARGUMENT = TokenSet.create(RazorTokenTypes.CSHARP, RazorTokenTypes.DIRECTIVE_VALUE)
-        val BRACES = TokenSet.create(RazorTokenTypes.LBRACE, RazorTokenTypes.RBRACE)
-    }
-}
-
-/** A run of C# statements or members ([RazorElementTypes.CODE]). */
-class RazorCode(node: ASTNode) : ASTWrapperPsiElement(node)
-
-/** The element type of a Razor file: its lexer is of the kind the name of the file gives. */
+/** The element type of a Razor file: the compiler's parser (razor-psi-core, R2) with the options of the kind the name of the file gives. */
 object RazorFileElementType : IFileElementType("RAZOR_FILE", RazorLanguage) {
     private fun readResolve(): Any = RazorFileElementType
 
     override fun doParseContents(chameleon: ASTNode, psi: PsiElement): ASTNode {
-        val kind = RazorFileKind.of(psi.containingFile?.viewProvider?.virtualFile?.name ?: psi.containingFile?.name)
-        val builder = PsiBuilderFactory.getInstance().createBuilder(psi.project, chameleon, RazorLexer(kind), RazorLanguage, chameleon.chars)
-        return RazorParser().parse(this, builder).firstChildNode
+        val name = psi.containingFile?.viewProvider?.virtualFile?.name ?: psi.containingFile?.name ?: "file.razor"
+        val tree = RazorAstBuilder.parse(chameleon.chars, name)
+        psi.containingFile?.putUserData(RazorAstBuilder.TREE, tree)
+        return RazorAstBuilder.build(tree, SharedImplUtil.findCharTableByTree(chameleon))
     }
 }
 
 class RazorParserDefinition : ParserDefinition {
     override fun createLexer(project: Project?): Lexer = RazorLexer(RazorFileKind.COMPONENT)
-    override fun createParser(project: Project?): PsiParser = RazorParser()
+    override fun createParser(project: Project?): PsiParser = PsiParser { root, builder -> unsupported(root, builder) }
     override fun getFileNodeType(): IFileElementType = RazorFileElementType
-    override fun getWhitespaceTokens(): TokenSet = TokenSet.WHITE_SPACE
-    override fun getCommentTokens(): TokenSet = RazorTokenTypes.COMMENTS
+    override fun getWhitespaceTokens(): TokenSet = TokenSet.EMPTY
+    override fun getCommentTokens(): TokenSet = RazorTreeTypes.COMMENTS
     override fun getStringLiteralElements(): TokenSet = TokenSet.EMPTY
     override fun createFile(viewProvider: FileViewProvider): PsiFile = RazorFile(viewProvider)
 
-    override fun createElement(node: ASTNode): PsiElement =
-        if (node.elementType == RazorElementTypes.CODE) RazorCode(node) else RazorBlock(node)
-}
+    override fun createElement(node: ASTNode): PsiElement = when ((node.elementType as? RazorTreeNodeType)?.kind) {
+        RazorSyntaxKind.RazorDocument -> RazorDocumentPsi(node)
+        RazorSyntaxKind.RazorDirective, RazorSyntaxKind.RazorUsingDirective, RazorSyntaxKind.RazorDocumentationDirective -> RazorDirectivePsi(node)
+        RazorSyntaxKind.CSharpStatementLiteral, RazorSyntaxKind.CSharpExpressionLiteral -> RazorCodeLiteral(node)
+        else -> RazorElement(node)
+    }
 
-/**
- * Flat, but for the directives and `@{ }` (their blocks, for folding and the structure view) and the runs of statements: what is C# in
- * them gets a parent of [RazorCodeLanguage]. The tree of the compiler is R2.
- */
-class RazorParser : PsiParser {
-    override fun parse(root: IElementType, builder: PsiBuilder): ASTNode {
-        val file = builder.mark()
-        while (!builder.eof()) {
-            if (builder.tokenType == RazorTokenTypes.TRANSITION) block(builder) else token(builder)
-        }
-        file.done(root)
+    /** The file is parsed by [RazorFileElementType] from its text; a builder-driven parse of a fragment is not a thing of this language. */
+    private fun unsupported(root: IElementType, builder: PsiBuilder): ASTNode {
+        val marker = builder.mark()
+        while (!builder.eof()) builder.advanceLexer()
+        marker.done(root)
         return builder.treeBuilt
     }
-
-    private fun token(builder: PsiBuilder) {
-        if (builder.tokenType == RazorTokenTypes.CSHARP_CODE) {
-            val code = builder.mark()
-            builder.advanceLexer()
-            code.done(RazorElementTypes.CODE)
-        } else builder.advanceLexer()
-    }
-
-    private fun block(builder: PsiBuilder) {
-        val start = builder.mark()
-        builder.advanceLexer()
-        val type = when (builder.tokenType) {
-            RazorTokenTypes.DIRECTIVE -> RazorElementTypes.DIRECTIVE
-            RazorTokenTypes.LBRACE -> RazorElementTypes.CODE_BLOCK
-            else -> null
-        }
-        if (type == null) {
-            start.drop()
-            return
-        }
-        if (type == RazorElementTypes.DIRECTIVE) {
-            builder.advanceLexer()
-            while (builder.tokenType == RazorTokenTypes.CSHARP || builder.tokenType == RazorTokenTypes.DIRECTIVE_VALUE) builder.advanceLexer()
-        }
-        if (builder.tokenType == RazorTokenTypes.LBRACE) {
-            builder.advanceLexer()
-            var depth = 1
-            while (!builder.eof()) {
-                val current = builder.tokenType
-                if (current == RazorTokenTypes.LBRACE) depth++
-                if (current == RazorTokenTypes.RBRACE && --depth == 0) {
-                    builder.advanceLexer()
-                    break
-                }
-                if (current == RazorTokenTypes.TRANSITION) block(builder) else token(builder)
-            }
-        }
-        start.done(type)
-    }
 }
 
-/** The HTML file of a Razor view: the markup, with the Razor in it as outer elements. */
+/** The HTML file of a Razor view: the markup of the compiler's tree, with the Razor in it as outer elements. */
 object RazorTemplateDataElementType : TemplateDataElementType("RAZOR_HTML", RazorLanguage, RazorTokenTypes.MARKUP, RazorTokenTypes.OUTER) {
     private fun readResolve(): Any = RazorTemplateDataElementType
 
-    override fun createBaseLexer(viewProvider: TemplateLanguageFileViewProvider): Lexer = RazorLexer(RazorFileKind.of(viewProvider.virtualFile.name))
+    override fun createBaseLexer(viewProvider: TemplateLanguageFileViewProvider): Lexer = RazorTemplateLexer(viewProvider.virtualFile.name)
 }
 
 /** Razor as the base language, HTML as the template data (its tags, colours, Emmet, folding), the platform's way of JSP and others. */

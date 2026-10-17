@@ -58,10 +58,10 @@ class RazorStructureViewFactory : PsiStructureViewFactory {
         private const val CLASS = "class __RazorCode__ {"
 
         internal fun items(file: RazorFile): List<Item> {
-            val blocks = PsiTreeUtil.getChildrenOfTypeAsList(file, RazorBlock::class.java).filter { it.directiveName in SHOWN }
+            val blocks = file.directives.filter { it.directiveName in SHOWN }
             val members = members(file, blocks.filter { it.directiveName == "code" || it.directiveName == "functions" })
             return blocks.map { block ->
-                val name = block.directiveName!!
+                val name = block.directiveName
                 val text = "@$name" + block.argument?.let { " $it" }.orEmpty()
                 val icon = when (name) {
                     "code", "functions" -> AllIcons.Nodes.Class
@@ -73,13 +73,13 @@ class RazorStructureViewFactory : PsiStructureViewFactory {
         }
 
         /** The members of the code blocks, from their C# alone: the text of the file with all else blanked, inside one class. */
-        private fun members(file: RazorFile, blocks: List<RazorBlock>): List<Item> {
+        private fun members(file: RazorFile, blocks: List<RazorDirectivePsi>): List<Item> {
             if (blocks.isEmpty()) return emptyList()
             val text = file.text
             val masked = StringBuilder(text.length)
             for (i in text.indices) masked.append(if (text[i] == '\n' || text[i] == '\r') text[i] else ' ')
             for (block in blocks) {
-                PsiTreeUtil.findChildrenOfType(block, RazorCode::class.java).forEach { code ->
+                PsiTreeUtil.findChildrenOfType(block, RazorCodeLiteral::class.java).filter { it.isValidHost }.forEach { code ->
                     for (i in code.textRange.startOffset until code.textRange.endOffset) masked.setCharAt(i, text[i])
                 }
             }

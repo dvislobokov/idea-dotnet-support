@@ -1009,7 +1009,7 @@ class NativeCSharpValueCompletion : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
         val file = parameters.originalFile as? CSharpFile ?: return
         if (!NativeCSharpEditing.usable(file)) return
-        val text = parameters.editor.document.immutableCharSequence
+        val text = parameters.documentText
         val values = NativeCSharpTypingGhost.valuesAt(file, text, parameters.offset)
         // the order of the gray text: a path under a local or parameter it ranks lower (`name` before `dto.Name`), at the top before the rest
         val firstLocal = values.indexOfFirst { '.' !in it }.let { if (it < 0) Int.MAX_VALUE else it }
@@ -1043,7 +1043,7 @@ class NativeCSharpAssignmentCompletion : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
         val file = parameters.originalFile as? CSharpFile ?: return
         if (!CSharpFeatures.native(CSharpFeature.COMPLETION, file)) return
-        val rows = NativeCSharpTypingGhost.assignmentRows(file, parameters.editor.document.immutableCharSequence, parameters.offset) ?: return
+        val rows = NativeCSharpTypingGhost.assignmentRows(file, parameters.documentText, parameters.offset) ?: return
         rows.forEach(result::addElement)
         result.stopHere()
     }

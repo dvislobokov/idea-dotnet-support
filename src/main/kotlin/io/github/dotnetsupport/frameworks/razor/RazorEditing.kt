@@ -17,7 +17,7 @@ import com.intellij.psi.templateLanguages.MultipleLangCommentProvider
 import com.intellij.psi.tree.IElementType
 import com.intellij.psi.util.PsiTreeUtil
 import io.github.dotnetsupport.lang.CSharpCommenter
-import io.github.dotnetsupport.lang.CSharpTokenTypes
+import io.github.dotnetsupport.razor.lang.syntax.RazorSyntaxKind
 
 /** `@{ }`, `@( )`, `@code { }`, `@section { }`: the braces of Razor; those of C# are the C# matcher's, the tags HTML's. */
 class RazorBraceMatcher : PairedBraceMatcher {
@@ -57,33 +57,43 @@ class RazorCommentProvider : MultipleLangCommentProvider {
 class RazorFoldingBuilder : FoldingBuilderEx(), DumbAware {
     override fun buildFoldRegions(root: PsiElement, document: Document, quick: Boolean): Array<FoldingDescriptor> {
         val file = root as? RazorFile ?: return FoldingDescriptor.EMPTY_ARRAY
-        val text = document.charsSequence
         val result = ArrayList<FoldingDescriptor>()
         fun multiline(range: TextRange) = range.length > 1 && document.getLineNumber(range.startOffset) != document.getLineNumber(range.endOffset)
-        for (block in PsiTreeUtil.findChildrenOfType(file, RazorBlock::class.java)) {
+        // the blocks of the directives (`@code { }`, `@section Name { }`) and `@{ }`: the braces are Razor's meta code
+        for (block in PsiTreeUtil.findChildrenOfType(file, RazorDirectivePsi::class.java)) {
             val open = block.openBrace ?: continue
             val close = block.closeBrace ?: continue
-            val range = TextRange(open.startOffset, close.textRange.endOffset)
+            val range = TextRange(open.textRange.startOffset, close.textRange.endOffset)
             if (multiline(range)) result += FoldingDescriptor(block.node, range, null, "{...}")
         }
-        // the comments and the C# braces, from the editor's tokens of the text
-        val lexer = RazorLexer(file.kind, split = true)
-        lexer.start(text, 0, text.length, 0)
+        for (statement in PsiTreeUtil.findChildrenOfType(file, RazorElement::class.java).filter { it.kind == RazorSyntaxKind.CSharpStatementBody }) {
+            val braces = statement.children.filterIsInstance<RazorElement>().filter { it.kind == RazorSyntaxKind.RazorMetaCode }
+            val open = braces.firstOrNull { it.text == "{" } ?: continue
+            val close = braces.lastOrNull { it.text == "}" } ?: continue
+            val range = TextRange(open.textRange.startOffset, close.textRange.endOffset)
+            if (multiline(range)) result += FoldingDescriptor(statement.node, range, null, "{...}")
+        }
+        // the comments and the C# braces, from the tokens of the tree
         val braces = ArrayList<Int>()
         fun fold(range: TextRange, placeholder: String) {
             val node = file.node.findLeafElementAt(range.startOffset) ?: return
             result += FoldingDescriptor(node, range, null, placeholder)
         }
-        while (lexer.tokenType != null) {
-            when (lexer.tokenType) {
-                RazorTokenTypes.COMMENT -> TextRange(lexer.tokenStart, lexer.tokenEnd).takeIf(::multiline)?.let { fold(it, "@*...*@") }
-                CSharpTokenTypes.LBRACE -> braces += lexer.tokenStart
-                CSharpTokenTypes.RBRACE -> if (braces.isNotEmpty()) {
-                    val range = TextRange(braces.removeAt(braces.size - 1), lexer.tokenEnd)
+        for (comment in PsiTreeUtil.findChildrenOfType(file, RazorElement::class.java).filter { it.kind == RazorSyntaxKind.RazorComment }) {
+            comment.textRange.takeIf(::multiline)?.let { fold(it, "@*...*@") }
+        }
+        var leaf = file.node.firstChildNode?.let { com.intellij.psi.impl.source.tree.TreeUtil.findFirstLeaf(it) }
+        while (leaf != null) {
+            val type = leaf.elementType as? RazorTreeTokenType
+            if (type?.span == RazorSpan.CODE) when (type.kind) {
+                RazorSyntaxKind.LeftBrace -> braces += leaf.startOffset
+                RazorSyntaxKind.RightBrace -> if (braces.isNotEmpty()) {
+                    val range = TextRange(braces.removeAt(braces.size - 1), leaf.textRange.endOffset)
                     if (multiline(range)) fold(range, "{...}")
                 }
+                else -> {}
             }
-            lexer.advance()
+            leaf = com.intellij.psi.impl.source.tree.TreeUtil.nextLeaf(leaf)
         }
         return result.toTypedArray()
     }

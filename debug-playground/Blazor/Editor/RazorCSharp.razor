@@ -1,0 +1,32 @@
+@page "/editor/csharp"
+@using Playground.Blazor.Components.Pages
+@inject NavigationManager Navigation
+@* RAZOR_PLAN.md, R3a: the C# of the page is one virtual C# document (the class of the component, `__o = <expr>;` for the expressions of
+   the markup, the members of `@code`), injected into the file piece by piece; the plugin's C# works through it.
+
+   TYPE:razor-completion — on the empty line under `<ul>` below type `<li>@cou` and wait for the popup (or Ctrl+Space). EXPECT: `count`
+   and `Counter` in the list, `count` first; Enter writes `count`. Then type `.` after it: the members of int (`ToString`, `CompareTo`).
+   Ctrl+Z until the line is empty.
+
+   TYPE:razor-goto — Ctrl+B (or Ctrl+click) on `count` in `<p>Count: @count</p>`. EXPECT: the caret goes to `private int count;` in
+   `@code` below. Ctrl+B on `Step` in `@(new Counter().Step)`: `Counter.razor`, its `[Parameter] public int Step`. Ctrl+B on
+   `Navigation` in `Navigation.Uri`: the `@inject` line of this file.
+
+   TYPE:razor-errors — in `Increase` below `count += 1;` type `count = "x";`. EXPECT: `"x"` red with CS0029 after a moment, as in a
+   `.cs` file; Ctrl+Z takes it away. Not checked live yet. *@
+
+<h3>C# in the markup</h3>
+<p>Count: @count, at @Navigation.Uri</p>
+<p>Step of the counter: @(new Counter().Step)</p>
+<ul>
+
+</ul>
+
+@code {
+    private int count;
+
+    private void Increase()
+    {
+        count += 1;
+    }
+}
