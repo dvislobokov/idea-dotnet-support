@@ -45,34 +45,24 @@ class UnityImplicitUsage : CSharpImplicitUsage {
         return if (name in UnityMessages.of(base)) EVENT_FUNCTION else null
     }
 
-    private fun field(declaration: PsiElement): String? {
-        val field = declaration as? CSharpBaseFieldDeclaration ?: PsiTreeUtil.getParentOfType(declaration, CSharpBaseFieldDeclaration::class.java) ?: return null
-        val attributes = attributeNames(field)
-        if ("NonSerialized" in attributes) return null
-        val modifiers = field.modifiers.map { it.text }
-        if (modifiers.any { it == "static" || it == "const" || it == "readonly" }) return null
-        val serialized = "SerializeField" in attributes || "SerializeReference" in attributes || "public" in modifiers
-        if (!serialized) return null
-        val type = PsiTreeUtil.getParentOfType(field, CSharpBaseTypeDeclaration::class.java) ?: return null
-        val base = unityBase(type)
-        // a class of the project marked [Serializable] is serialized as a field of a component: its fields are set the same way
-        return if (base in SERIALIZED_BASES || "Serializable" in attributeNames(type)) SET_BY_UNITY else null
+    private fun field(declaration: PsiElement): String? = if (UnityAssetUsages.serializedField(declaration) != null) SET_BY_UNITY else null
+
+    /** The uses in the scenes, prefabs and animations (the asset index): "Used in Boot.unity", "Set by Unity: 5", "Event handler in Menu.prefab". */
+    override fun usageNote(declaration: PsiElement, session: CSharpSemanticSession): String? {
+        val file = declaration.containingFile as? CSharpFile ?: return null
+        if (file.virtualFile?.let(UnityProjects::rootOf) == null) return null
+        return UnityAssetUsages.note(declaration)
     }
 
     private fun unityBase(type: CSharpBaseTypeDeclaration): String? = UnityTypes.unityBase(type)
 
-    /** `[SerializeField]`, `[UnityEngine.SerializeField]`, `[SerializeFieldAttribute]` → `SerializeField`. */
-    private fun attributeNames(member: CSharpMemberDeclaration): Set<String> =
-        member.attributeLists.flatMap { list -> PsiTreeUtil.getChildrenOfTypeAsList(list, io.github.dotnetsupport.csharp.lang.psi.CSharpAttribute::class.java) }
-            .mapNotNullTo(HashSet()) { attribute -> attribute.nameElement?.text?.substringAfterLast('.')?.removeSuffix("Attribute")?.trim() }
+    private fun attributeNames(member: CSharpMemberDeclaration): Set<String> = UnityTypes.attributeNames(member)
 
     private companion object {
         const val UNITY_SCRIPT = "Unity script"
         const val EVENT_FUNCTION = "Event function"
         const val SET_BY_UNITY = "Set by Unity"
         const val CALLED_BY_UNITY = "Called by Unity"
-
-        val SERIALIZED_BASES = setOf("UnityEngine.MonoBehaviour", "UnityEngine.ScriptableObject", "UnityEngine.StateMachineBehaviour", "UnityEditor.EditorWindow")
 
         /** Methods Unity finds by an attribute: menu items, the hooks of loading, building and opening assets. */
         val CALLED_BY_ATTRIBUTES = setOf(
@@ -97,6 +87,11 @@ object UnityTypes {
         val session = CSharpSemanticSession(type.project)
         return nearest(CSharpSolutionSearch.supertypes(type, session), file, session, UnityMessages.BASES)
     }
+
+    /** `[SerializeField]`, `[UnityEngine.SerializeField]`, `[SerializeFieldAttribute]` → `SerializeField`. */
+    fun attributeNames(member: CSharpMemberDeclaration): Set<String> =
+        member.attributeLists.flatMap { list -> PsiTreeUtil.getChildrenOfTypeAsList(list, io.github.dotnetsupport.csharp.lang.psi.CSharpAttribute::class.java) }
+            .mapNotNullTo(HashSet()) { attribute -> attribute.nameElement?.text?.substringAfterLast('.')?.removeSuffix("Attribute")?.trim() }
 
     /** `UnityEngine.Object`: what `?.`, `??` and `== null` mean differently for (the engine object may be destroyed while the C# one lives). */
     const val UNITY_OBJECT = "UnityEngine.Object"

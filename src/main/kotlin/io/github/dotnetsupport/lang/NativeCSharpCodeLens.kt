@@ -127,8 +127,8 @@ object NativeCSharpCodeLens {
             }
             val inside = count(project, cached.target, LocalSearchScope(file), session)
             val total = inside + cached.outside
-            // no usage in code, but a framework uses it ("Event function" of Unity): that, not "no usages"
-            val text = (if (total == 0) CSharpImplicitUsage.of(declaration, session) else null) ?: usagesText(total)
+            // no usage in code, but a framework uses it ("Event function" of Unity): that, not "no usages"; its uses outside the code beside
+            val text = CSharpImplicitUsage.lensText(usagesText(total), total, { CSharpImplicitUsage.of(declaration, session) }, CSharpImplicitUsage.noteOf(declaration, session))
             Lens(range(declaration), text, declaration)
         }
     }

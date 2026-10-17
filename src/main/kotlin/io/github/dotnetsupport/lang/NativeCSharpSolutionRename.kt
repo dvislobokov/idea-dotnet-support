@@ -32,7 +32,11 @@ import org.jetbrains.annotations.TestOnly
  */
 object NativeCSharpSolutionRename {
     /** What is renamed: the symbols (the member and, if asked, its hierarchy) and every range per file, the declarations included. */
-    class Plan(val symbols: List<CSharpSearchTarget>, val ranges: Map<CSharpFile, List<TextRange>>, val oldName: String, val typeFiles: List<CSharpFile>) {
+    class Plan(
+        val symbols: List<CSharpSearchTarget>, val ranges: Map<CSharpFile, List<TextRange>>, val oldName: String, val typeFiles: List<CSharpFile>,
+        /** What the frameworks insert beside the rename ([CSharpRenameParticipant]): `[FormerlySerializedAs("old")]` of Unity. */
+        val insertions: List<CSharpRenameParticipant.Insertion> = emptyList(),
+    ) {
         val primary: CSharpSearchTarget get() = symbols.first()
     }
 
@@ -108,7 +112,9 @@ object NativeCSharpSolutionRename {
                 if (file.viewProvider.virtualFile.nameWithoutExtension == primary.name && file !in typeFiles) typeFiles += file
             }
         }
-        return Plan(symbols, ranges.mapValues { (_, set) -> set.sortedBy { it.startOffset } }, primary.name, typeFiles)
+        val insertions = symbols.flatMap { symbol -> symbol.declarations.flatMap { CSharpRenameParticipant.insertions(it, symbol.name) } }
+            .distinctBy { Triple(it.file, it.offset, it.text) }
+        return Plan(symbols, ranges.mapValues { (_, set) -> set.sortedBy { it.startOffset } }, primary.name, typeFiles, insertions)
     }
 
     private fun nameOf(declaration: PsiElement): PsiElement? = when (declaration) {
@@ -182,11 +188,18 @@ object NativeCSharpSolutionRename {
         }, "Checking Conflicts of ${plan.oldName}", true, project)
         if (conflicts.isNotEmpty() && !confirm(project, plan, conflicts)) return false
         val documents = PsiDocumentManager.getInstance(project)
-        val files = plan.ranges.keys.toList()
+        val files = (plan.ranges.keys + plan.insertions.map { it.file }).distinct()
         WriteCommandAction.writeCommandAction(project, files).withName("Rename").run<RuntimeException> {
-            for ((file, ranges) in plan.ranges) {
+            for (file in files) {
                 val document = documents.getDocument(file) ?: continue
-                for (range in ranges.asReversed()) {
+                // the renamed ranges and the insertions of the frameworks, from the end of the text so the offsets before stay right
+                val edits = plan.ranges[file].orEmpty().map { it to null as String? } +
+                    plan.insertions.filter { it.file == file }.map { TextRange.from(it.offset, 0) to it.text }
+                for ((range, insertion) in edits.sortedWith(compareByDescending<Pair<TextRange, String?>> { it.first.startOffset }.thenByDescending { it.second == null })) {
+                    if (insertion != null) {
+                        document.insertString(range.startOffset, insertion)
+                        continue
+                    }
                     val old = document.charsSequence.subSequence(range.startOffset, range.endOffset).toString().removePrefix("@")
                     val replacement = if (plan.primary.isType && old != plan.oldName && plan.oldName.endsWith("Attribute") && old == plan.oldName.removeSuffix("Attribute")) {
                         NativeCSharpRename.written(name.removeSuffix("Attribute").ifEmpty { name })

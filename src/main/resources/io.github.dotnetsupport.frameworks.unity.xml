@@ -5,6 +5,14 @@
         <solutionLayout implementation="io.github.dotnetsupport.frameworks.unity.UnitySolutionLayout"/>
         <!-- "Event function" / "Set by Unity" / "Unity script" in place of "no usages" -->
         <csharpImplicitUsage implementation="io.github.dotnetsupport.frameworks.unity.UnityImplicitUsage"/>
+        <!-- [FormerlySerializedAs("old")] on the rename of a serialized field the scenes set -->
+        <csharpRenameParticipant implementation="io.github.dotnetsupport.frameworks.unity.UnityFormerlySerializedAs"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- the asset index: the components, UnityEvent calls and animation events of the scenes, prefabs and assets; the GUIDs of the .meta files -->
+        <fileBasedIndex implementation="io.github.dotnetsupport.frameworks.unity.UnityAssetUsageIndex"/>
+        <fileBasedIndex implementation="io.github.dotnetsupport.frameworks.unity.UnityMetaGuidIndex"/>
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij">

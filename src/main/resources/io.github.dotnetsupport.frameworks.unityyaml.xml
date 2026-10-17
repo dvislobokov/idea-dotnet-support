@@ -1,0 +1,22 @@
+<!-- A framework module of the plugin (RAZOR_PLAN.md, "Модульность"): the text assets of Unity (UNITY_PLAN.md, the asset index) — scenes,
+     prefabs, assets and .meta files as YAML, their GUIDs and UnityEvent methods as links, Find Usages of scripts, methods and serialized
+     fields in them, missing scripts. Needs the YAML plugin and the Unity module (the asset index lives there, without YAML).
+     Classes: io.github.dotnetsupport.frameworks.unityyaml only. -->
+<idea-plugin package="io.github.dotnetsupport.frameworks.unityyaml">
+    <dependencies>
+        <plugin id="org.jetbrains.plugins.yaml"/>
+        <module name="io.github.dotnetsupport.frameworks.unity"/>
+    </dependencies>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileTypeDetector implementation="io.github.dotnetsupport.frameworks.unityyaml.UnityYamlFileTypeDetector"/>
+        <daemon.highlightInfoFilter implementation="io.github.dotnetsupport.frameworks.unityyaml.UnityYamlErrorFilter"/>
+        <lang.inspectionSuppressor language="yaml" implementationClass="io.github.dotnetsupport.frameworks.unityyaml.UnityYamlInspectionSuppressor"/>
+        <psi.referenceContributor language="yaml" implementation="io.github.dotnetsupport.frameworks.unityyaml.UnityYamlReferenceContributor"/>
+        <referencesSearch implementation="io.github.dotnetsupport.frameworks.unityyaml.UnityAssetReferencesSearcher"/>
+        <usageTypeProvider implementation="io.github.dotnetsupport.frameworks.unityyaml.UnityAssetUsageTypeProvider"/>
+        <localInspection language="yaml" shortName="UnityMissingScript" displayName="Missing script"
+                         groupPath="C#" groupName="Unity" enabledByDefault="true" level="WARNING"
+                         implementationClass="io.github.dotnetsupport.frameworks.unityyaml.UnityMissingScriptInspection"/>
+    </extensions>
+</idea-plugin>

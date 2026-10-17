@@ -3,6 +3,20 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.260
+
+- Unity scenes, prefabs and assets, as Rider reads them (an index of their text, "Force Text" serialization):
+  - the usages lens says where the assets use the code: "Used in Boot.unity" over a script, "Event handler in Menu.prefab" over a
+    method a UnityEvent calls, "Animation event in Walk.anim" over a method an animation calls, "Set by Unity: 5" over a field the
+    inspector set;
+  - Find Usages of a script, a method or a serialized field lists its uses in the scenes, prefabs and animations;
+  - scenes, prefabs, assets and `.meta` files open as YAML (needs the bundled YAML plugin): Go to Declaration from a `guid` to the
+    script or asset, from `m_MethodName` to the method; a component whose script is gone is reported ("Missing script");
+  - renaming a serialized field whose value an asset stores adds `[FormerlySerializedAs("oldName")]`, so the value survives.
+- IntelliJ IDEA: the module the plugin makes for a folder with a solution is no longer lost when the project model is synced from `.idea`
+  a few seconds after the start (an IDE closed without saving, then reopened): the files of the solution stopped being indexed, and
+  navigation, Find Usages and the inspections of non-C# files went quiet five minutes after opening.
+
 ## 0.1.259
 
 - Unity assembly definitions: `.asmdef` and `.asmref` open as JSON, `.asmdef` with the schema of Unity Assembly Definition (the keys

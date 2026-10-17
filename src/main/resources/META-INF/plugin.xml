@@ -32,6 +32,8 @@
         <module name="io.github.dotnetsupport.frameworks.unity"/>
         <!-- the JSON of Unity (.asmdef, .asmref): needs the JSON plugin, so a module of its own -->
         <module name="io.github.dotnetsupport.frameworks.unityjson"/>
+        <!-- the scenes and prefabs of Unity as YAML (links, Find Usages, missing scripts): needs the YAML plugin, so a module of its own -->
+        <module name="io.github.dotnetsupport.frameworks.unityyaml"/>
     </content>
 
     <!-- the native C# PSI (csharp-psi-core, csharp-psi-semantic, csharp-psi-ide; CSHARP_PSI_MIGRATION.md): composed into the main jar;
@@ -57,6 +59,8 @@
         <extensionPoint qualifiedName="io.github.dotnetsupport.csharpCodeGenerators" interface="io.github.dotnetsupport.lang.semantic.CSharpCodeGenerators" dynamic="true"/>
         <!-- a declaration a framework uses without code (Unity's event functions, serialized fields): the usages lens says so instead of "no usages" -->
         <extensionPoint qualifiedName="io.github.dotnetsupport.csharpImplicitUsage" interface="io.github.dotnetsupport.lang.CSharpImplicitUsage" dynamic="true"/>
+        <!-- what a framework writes beside a rename (Unity: [FormerlySerializedAs] on a serialized field the scenes set) -->
+        <extensionPoint qualifiedName="io.github.dotnetsupport.csharpRenameParticipant" interface="io.github.dotnetsupport.lang.CSharpRenameParticipant" dynamic="true"/>
         <!-- the generated folders of a framework's project (Unity's Library, Temp): the solution finder skips them, the Solution view hides them -->
         <extensionPoint qualifiedName="io.github.dotnetsupport.solutionLayout" interface="io.github.dotnetsupport.solution.SolutionLayout" dynamic="true"/>
     </extensionPoints>

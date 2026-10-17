@@ -766,6 +766,9 @@
     `RazorCSharpInjector`); completion после `@` и `@Model.`, Go to Declaration из разметки в `@code` и в `.cs`, ошибки C# — через ту же
     семантику; PSI хоста — дерево компилятора R2 (`RazorTree.kt`), HTML-файл по нему. Сценарий `Blazor/Editor/RazorCSharp.razor` (вживую
     не проверено). Генерация документа по образцу компилятора — R3b (`RAZOR_PLAN.md`)
+  - [x] Unity, индекс ассетов (0.1.260) — «Used in Boot.unity» над скриптом, «Event handler» / «Animation event» над методом,
+    «Set by Unity: 5» над полем, Find Usages в сценах, сцены и префабы как YAML со ссылками `guid` / `m_MethodName` в код, «Missing
+    script», `[FormerlySerializedAs]` при переименовании поля. Сценарий — `debug-playground/Unity/Assets/Scripts/Door.cs`
   - [x] Unity, `.asmdef` / `.asmref` (0.1.259) — JSON со схемой Unity Assembly Definition, `"references"` по имени и по
     `"GUID:…"` из `.meta`: completion, Ctrl+B, предупреждение на несуществующую. Сценарий —
     `debug-playground/Unity/Assets/Gameplay/Editor/Demo.Gameplay.Editor.asmdef`

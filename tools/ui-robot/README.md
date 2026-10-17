@@ -140,6 +140,10 @@ python robot.py action Exit && python robot.py click "//div[@class='MyDialog']//
   проекты solution. `references_probe.js` (`__PROJECT__`) — `ProjectAssemblies.references` без assets: сколько сборок попадёт в индекс.
 - `caret_at.js` (`__FILE__`, `__LINE__` с 1): открыть файл, каретку в конец строки, фокус в редактор — дальше настоящий набор
   `screen.sh type "…"` и `screen.sh key Return` (так проверен completion событий Unity, 0.1.257).
+- `modules_probe.js` (`__FILE__`): модули проекта и их корни, индексируемый ли файл (папка без модуля в IDEA — содержимое без индекса);
+  `solution_finder_probe.js`: что `SolutionFinder` видит в корне проекта; `meta_guid_probe.js` (`__META__`): что индекс GUID `.meta`
+  хранит для файла и находит по GUID; `missing_script_probe.js` (`__FILE__`, `__GUID__`): включена ли инспекция «Missing script»,
+  её условия и её прогон руками по файлу (классы content-модуля — через загрузчик самой инспекции).
 - `lenses.js` (`__FILE__`): линзы использований файла, как их считает плагин (`строка: текст`). `parse_keys.js` (`__FILE__`,
   `__SYMBOLS__` через запятую): символы `#if` и версия языка, с которыми разбирается файл, и есть ли среди них названные.
 - `threads.js` (`__NEEDLE__`): потоки, в стеке которых есть подстрока. `reload.js` (`__FILE__`): сбросить несохранённые правки файла

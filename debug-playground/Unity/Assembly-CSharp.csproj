@@ -42,6 +42,7 @@
     <Compile Include="Assets\Scripts\Player.cs" />
     <Compile Include="Assets\Scripts\Spawner.cs" />
     <Compile Include="Assets\Scripts\Checks.cs" />
+    <Compile Include="Assets\Scripts\Door.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine.CoreModule">

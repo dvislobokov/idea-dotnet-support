@@ -32,6 +32,8 @@ dependencies {
         testFramework(TestFrameworkType.Platform)
         // JSON (a plugin since 2024.3): only the content module io.github.dotnetsupport.jsonschema needs it, see its descriptor
         bundledPlugin("com.intellij.modules.json")
+        // YAML: only the content module io.github.dotnetsupport.frameworks.unityyaml needs it (the scenes and prefabs of Unity)
+        bundledPlugin("org.jetbrains.plugins.yaml")
         // The native C# PSI (CSHARP_PSI_MIGRATION.md; the parser in csharp-psi-core, -semantic and -ide still empty): composed, so the classes go into the main
         // jar, which the main descriptor loads, and their META-INF/csharp-psi-*.xml are xi:included by plugin.xml. The content module
         // io.github.dotnetsupport.roslyn sees these classes (its loader has the main one as a parent), never the other way round.

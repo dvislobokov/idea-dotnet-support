@@ -226,6 +226,12 @@ Solution для живой проверки плагина: отладчика (
   - [ ] `TYPE:unity-get-component`: в `GetComponent<…>` сверху компоненты проекта и Unity
   - [ ] `TYPE:unity-templates`: `sfield` + Tab, `coroutine` + Tab
   - [ ] `UNITY:meta`: переименование `Checks.cs` уносит `Checks.cs.meta`
+- `Unity/Assets/Scripts/Door.cs` (0.1.260, индекс ассетов; сцена `Assets/Scenes/Boot.unity`, анимация `Assets/Animations/DoorOpen.anim`):
+  - [ ] `UNITY:asset-lenses`: «Used in Boot.unity» над `Door`, «1 usage, set by Unity: 3» над `openSpeed`, «Event handler in Boot.unity»
+        над `Open`, «Animation event in DoorOpen.anim» над `OnDoorOpened`
+  - [ ] `UNITY:asset-usages`: Alt+F7 на `Door` / `Open` / `openSpeed` — группа «Usage in Unity assets» со строкой `Boot.unity`
+  - [ ] `UNITY:scene-links`: `Boot.unity` — YAML без красного, Ctrl+B с `guid` и с `m_MethodName: Open` в код, жёлтый «Missing script»
+  - [ ] `UNITY:formerly-serialized`: Shift+F6 на `openSpeed` добавляет `[FormerlySerializedAs("openSpeed")]` и `using UnityEngine.Serialization;`
 - `Unity/Assets/Gameplay/Editor/Demo.Gameplay.Editor.asmdef` (0.1.259, маркеров в JSON нет — смотреть `"references"`):
   - [ ] файл открывается как JSON, у ключей подсказки и описание схемы «Unity Assembly Definition» (Ctrl+Q на `"autoReferenced"`)
   - [ ] в `"references"` Ctrl+Space в пустой строке `""` предлагает `Demo.Gameplay`; Ctrl+B на `"Demo.Gameplay"` и на `"GUID:5a1c…"`

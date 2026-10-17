@@ -1,0 +1,41 @@
+// The GUID index of the .meta files of a Unity project (UNITY_PLAN.md, the asset index): what the index keeps for __META__ (a .meta file,
+// forward slashes) — its file type, the keys of the plugin's index for it, and which files the index gives for the GUID read from its text.
+importClass(com.intellij.openapi.project.ProjectManager)
+importClass(com.intellij.openapi.application.ReadAction)
+importClass(com.intellij.openapi.vfs.LocalFileSystem)
+importClass(com.intellij.openapi.vfs.VfsUtilCore)
+importClass(com.intellij.util.indexing.FileBasedIndex)
+importClass(com.intellij.psi.search.GlobalSearchScope)
+importClass(com.intellij.profile.codeInspection.InspectionProjectProfileManager)
+
+var projects = ProjectManager.getInstance().getOpenProjects()
+var project = projects[projects.length - 1]
+var meta = LocalFileSystem.getInstance().refreshAndFindFileByPath("__META__")
+ReadAction.compute(function () {
+    var out = new java.lang.StringBuilder()
+    var wrapper = InspectionProjectProfileManager.getInstance(project).getCurrentProfile().getInspectionTool("UnityMissingScript", project)
+    var loader = wrapper.getTool().getClass().getClassLoader()
+    var companion = loader.loadClass("io.github.dotnetsupport.frameworks.unity.UnityMetaGuidIndex").getField("Companion").get(null)
+    var name = companion.getNAME()
+    out.append("type: " + meta.getFileType().getName() + ", length: " + meta.getLength() + "\n")
+    out.append("indexed keys: " + FileBasedIndex.getInstance().getFileData(name, meta, project).keySet() + "\n")
+    var text = VfsUtilCore.loadText(meta)
+    var guid = /guid: ([0-9a-f]{32})/.exec(String(text))
+    out.append("guid in text: " + (guid ? guid[1] : "none") + "\n")
+    if (guid) {
+        var index = FileBasedIndex.getInstance()
+        out.append("files of it (all): " + index.getContainingFiles(name, guid[1], GlobalSearchScope.allScope(project)) + "\n")
+        out.append("files of it (project): " + index.getContainingFiles(name, guid[1], GlobalSearchScope.projectScope(project)) + "\n")
+        out.append("files of it (everything): " + index.getContainingFiles(name, guid[1], GlobalSearchScope.everythingScope(project)) + "\n")
+        var seen = new java.util.ArrayList()
+        index.processValues(name, guid[1], null, function (file, value) { seen.add(file.getName()); return true }, GlobalSearchScope.everythingScope(project))
+        out.append("processValues: " + seen + "\n")
+        out.append("in all scope: " + GlobalSearchScope.allScope(project).contains(meta) + "\n")
+        out.append("FilenameIndex: " + com.intellij.psi.search.FilenameIndex.getVirtualFilesByName(meta.getName(), GlobalSearchScope.allScope(project)) + "\n")
+        out.append("dumb: " + com.intellij.openapi.project.DumbService.isDumb(project) + "\n")
+        var ids = com.intellij.util.indexing.FileBasedIndex.getInstance()
+        out.append("indexable: " + (ids.getIndexableFilesFilterHolder ? "holder" : "-") + ", id " + meta.getId() + "\n")
+    }
+    out.append("all keys: " + FileBasedIndex.getInstance().getAllKeys(name, project).size() + "\n")
+    return out.toString()
+})

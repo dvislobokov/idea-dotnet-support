@@ -1,0 +1,42 @@
+// The missing script check of a Unity asset (UNITY_PLAN.md, the asset index): opens nothing, asks for __FILE__ (forward slashes) whether the
+// inspection UnityMissingScript is on in the profile and what its conditions answer — a Unity YAML file, the GUIDs of the packages indexed,
+// and whether __GUID__ is the GUID of some .meta. The classes of the content module are reached through the inspection's own class loader.
+importClass(com.intellij.openapi.project.ProjectManager)
+importClass(com.intellij.openapi.application.ReadAction)
+importClass(com.intellij.openapi.vfs.LocalFileSystem)
+importClass(com.intellij.psi.PsiManager)
+importClass(com.intellij.profile.codeInspection.InspectionProjectProfileManager)
+importClass(com.intellij.codeInsight.daemon.HighlightDisplayKey)
+
+var projects = ProjectManager.getInstance().getOpenProjects()
+var project = projects[projects.length - 1]
+var vfile = LocalFileSystem.getInstance().refreshAndFindFileByPath("__FILE__")
+ReadAction.compute(function () {
+    var out = new java.lang.StringBuilder()
+    var psi = PsiManager.getInstance(project).findFile(vfile)
+    out.append("file type: " + vfile.getFileType().getName() + ", psi: " + psi.getClass().getSimpleName() + "\n")
+    var profile = InspectionProjectProfileManager.getInstance(project).getCurrentProfile()
+    var key = HighlightDisplayKey.find("UnityMissingScript")
+    out.append("key: " + key + ", enabled: " + (key != null && profile.isToolEnabled(key, psi)) + "\n")
+    var wrapper = profile.getInspectionTool("UnityMissingScript", project)
+    if (wrapper == null) return out.append("no tool in the profile").toString()
+    var index = com.intellij.openapi.roots.ProjectFileIndex.getInstance(project)
+    out.append("in content: " + index.isInContent(vfile) + ", in source: " + index.isInSource(vfile) + ", excluded: " + index.isExcluded(vfile) + "\n")
+    out.append("tool language: " + wrapper.getLanguage() + ", applicable to " + psi.getLanguage().getID() + ": " + wrapper.isApplicable(psi.getLanguage()) + "\n")
+    var levels = com.intellij.codeInsight.daemon.impl.analysis.HighlightingSettingsPerFile.getInstance(project)
+    out.append("shouldInspect: " + levels.shouldInspect(psi) + ", shouldHighlight: " + levels.shouldHighlight(psi) + "\n")
+    var loader = wrapper.getTool().getClass().getClassLoader()
+    var yaml = loader.loadClass("io.github.dotnetsupport.frameworks.unityyaml.UnityYaml").getField("INSTANCE").get(null)
+    out.append("isUnityYaml: " + yaml.isUnityYaml(psi) + ", packagesIndexed: " + yaml.packagesIndexed(project, vfile) + "\n")
+    var assets = loader.loadClass("io.github.dotnetsupport.frameworks.unity.UnityAssets").getField("INSTANCE").get(null)
+    out.append("isKnownGuid(__GUID__): " + assets.isKnownGuid(project, "__GUID__") + "\n")
+    // the inspection run by hand over every element of the file, as the daemon would
+    var holder = new com.intellij.codeInspection.ProblemsHolder(com.intellij.codeInspection.InspectionManager.getInstance(project), psi, true)
+    var visitor = wrapper.getTool().buildVisitor(holder, true)
+    var elements = com.intellij.psi.SyntaxTraverser.psiTraverser(psi).iterator()
+    while (elements.hasNext()) elements.next().accept(visitor)
+    var problems = holder.getResults()
+    out.append("problems by hand: " + problems.size() + "\n")
+    for (var i = 0; i < problems.size(); i++) out.append("  " + problems.get(i).getDescriptionTemplate() + "\n")
+    return out.toString()
+})

@@ -111,9 +111,39 @@
   строки `"references"` (у `.asmref` — `"reference"`) — ссылки на `.asmdef` проекта по `name` или по `"GUID:<guid>"` из `.asmdef.meta`:
   completion, Ctrl+B, инспекция `UnityAssemblyDefinitionReference` на несуществующую. Тест `UnityAssemblyDefinitionsTest`, сценарий —
   `debug-playground/Unity/Assets/Gameplay/Editor/Demo.Gameplay.Editor.asmdef`.
-  Дальше из того же списка: файлы ассетов (`.unity`, `.prefab`, `.asset`, `.mat`…) как YAML, индекс GUID ассетов → «Used in scenes»
-  у скриптов, Find Usages в ассетах, обработчики `UnityEvent` из сцен, значения полей из инспектора, события анимаций,
-  `[FormerlySerializedAs]` при переименовании сериализуемого поля.
+
+- [x] 0.1.260 — индекс ассетов, как в Rider (решение пользователя 2026-10-17 «Приступай»):
+  - **индекс** (`frameworks.unity`, `UnityAssetIndex.kt`, без YAML): `UnityAssetParser` читает текст сцен, префабов, ассетов, анимаций
+    построчно (`--- !u!<класс> &<id>`, свойства верхнего уровня, вложенное — только нужное): компонент скрипта (`m_Script` документа
+    `MonoBehaviour`, кроме `stripped`) с именем GameObject и полями после `m_EditorClassIdentifier`, вызов `UnityEvent` (`m_MethodName`
+    с целью: GUID скрипта компонента `m_Target` в том же файле, иначе `m_TargetAssemblyTypeName`), событие анимации (`functionName`
+    документа `AnimationClip`). `UnityAssetUsageIndex` — ключи `s:<guid>` / `m:<метод>`, вход по расширениям, без лимита размера
+    (сцены — мегабайты); `UnityMetaGuidIndex` — GUID `.meta` → файл;
+  - **линзы** (`UnityAssetUsages`, новый метод `usageNote` точки `csharpImplicitUsage`): «Used in Boot.unity» / «Used in 3 assets» над
+    классом, «Event handler in …» / «Animation event in …» над методом, «Set by Unity: 5» / «Set by Unity: 3 values in …» над полем;
+    при использованиях в коде — «2 usages, used in Boot.unity»;
+  - **`[FormerlySerializedAs("old")]`** при переименовании сериализуемого поля, значение которого записано в ассетах, и
+    `using UnityEngine.Serialization;` (новая точка ядра `csharpRenameParticipant`: вставки считаются вместе с планом переименования
+    и пишутся той же командой);
+  - **модуль `frameworks.unityyaml`** (зависит от плагина YAML и модуля `frameworks.unity`): сцены, префабы, ассеты и `.meta` — YAML по
+    содержимому (`fileTypeDetector`: заголовок `%YAML` с тэгом Unity, `.meta` с `fileFormatVersion:`; расширения не регистрируем —
+    `.asset`, `.mat` бывают чужими), ошибки плагина YAML в них не показываются (формат Unity, `stripped`); `guid:` — ссылка на скрипт
+    (его класс) или ассет, `m_MethodName:` — на метод; Find Usages класса, метода, поля находит их в ассетах (группа «Usage in Unity
+    assets»); инспекция `UnityMissingScript` — `m_Script` скрипта с GUID, которого нет ни у одного `.meta` (только когда
+    `Library/PackageCache` проиндексирован, иначе скрипты пакетов выглядели бы пропавшими).
+  Инспекции самого плагина YAML (`YAMLUnusedAnchor`: «Anchor &1100 is never used» на каждом объекте) в файлах Unity выключены
+  (`UnityYamlInspectionSuppressor`).
+  Тест `UnityAssetsTest`; сценарий — `debug-playground/Unity/Assets/Scripts/Door.cs` со сценой `Assets/Scenes/Boot.unity` и анимацией
+  `Assets/Animations/DoorOpen.anim`. Проверено в песочнице WSL (копия площадки, пути `HintPath` переписаны на `/mnt/c`): линзы, Find
+  Usages с группой «Usage in Unity assets», сцена без красного и шума, Ctrl+B из `m_MethodName`, «Missing script», переименование
+  `openSpeed` с атрибутом и `closeDelay` без него.
+  Найдено в песочнице (ошибка ядра, исправлена в том же выпуске): модуль, который `DotNetModuleSetup` делает для папки в IDEA,
+  пропадал через 4 с — модель проекта, загруженная из кэша, синхронизируется с `.idea`, где модуля ещё нет (IDE закрыли без
+  сохранения); через 5 минут проверка платформы выкидывала файлы из индексируемых, и индексы плагина, Find Usages и инспекции не-C#
+  файлов замолкали. Теперь модуль сразу сохраняется, а активность минуту следит и создаёт его снова, если синхронизация его убрала.
+  Пробы робота: `modules_probe.js`, `solution_finder_probe.js`, `meta_guid_probe.js`, `missing_script_probe.js`.
+  Не сделано: переопределения полей в экземплярах префабов (`m_Modifications` с `propertyPath`), значения вложенных полей и списков,
+  обработчики `UnityEvent` из базового класса, бинарные ассеты.
 
 ## Известные мелочи
 
