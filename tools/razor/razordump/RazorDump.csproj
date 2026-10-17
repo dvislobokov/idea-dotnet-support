@@ -2,7 +2,9 @@
   <!--
     The oracle of razor-psi (RAZOR_PLAN.md, R2), as tools/csharp-psi/roslyndump is of csharp-psi: dumps the syntax trees and the
     diagnostics the Razor compiler builds for .razor / .cshtml files, in the format of the compiler's own test baselines
-    (`.stree.txt`, SyntaxSerializer). A development tool only: it is not shipped with the plugin.
+    (`.stree.txt`, SyntaxSerializer), and the code generation (R3b: the generated C#, its source mappings, diagnostics and IR in the
+    formats of `.codegen.cs` / `.mappings.txt` / `.diagnostics.txt` / `.ir.txt`, by the tests' serializers copied into Baselines/).
+    A development tool only: it is not shipped with the plugin.
 
     The compiler is the one of the installed SDK (Microsoft.CodeAnalysis.Razor.Compiler.dll of the Razor SDK's source generator,
     tools/razor/README.md): the same code that compiles the user's project. Its classes are mostly internal and the dll is

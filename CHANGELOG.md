@@ -3,6 +3,16 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.253
+
+- Razor: the virtual C# document of a `.razor` / `.cshtml` file is now the C# of the SDK's source generator (RAZOR_PLAN.md, R3b): the
+  compiler's code generation pipeline — the intermediate tree, the directive and component passes, tag helper resolution, the runtime
+  writer with its `#line` pragmas and source mappings — is ported to Kotlin in `razor-psi-core` and generates byte for byte what the
+  compiler generates (its 93 file-based baselines, eShop, MudBlazor and nopCommerce against the SDK). The document follows the project:
+  `_Imports.razor` / `_ViewImports.cshtml` up the folders, the root namespace, the Razor version of the target framework; the members of
+  `@code` and `@inject` sit at their place in the file. Tag helper and component descriptors come as data (`TagHelperDescriptorJson`);
+  the project's own come with R5.
+
 ## 0.1.252
 
 - Razor: the C# of a `.razor` / `.cshtml` file is one virtual C# document injected into the page (RAZOR_PLAN.md, R3a): completion

@@ -5,14 +5,26 @@ using System.Text;
 using Microsoft.AspNetCore.Razor.Language;
 using System.Reflection;
 using Microsoft.CodeAnalysis.CSharp;
+using RazorDump;
 
 var positional = new List<string>();
 string? outPath = null;
 var roslynTokenizer = true;
 var editHandlers = true;
-var languageVersion = "latest";
+string? languageVersionOption = null;
 var crlf = false;
+string? rootNamespace = null;
+string? assemblyName = null;
+var check = false;
+var discoverTagHelpers = true;
+var metadataChecksums = false;
+var absolutePaths = false;
+string? newLineOption = null;
+var keepNewlines = false;
+var references = new List<string>();
+var extraCSharp = new List<string>();
 var includes = new List<string>();
+string? tagHelpersOut = null;
 for (var i = 0; i < args.Length; i++)
 {
     switch (args[i])
@@ -23,9 +35,39 @@ for (var i = 0; i < args.Length; i++)
         // Span edit handlers (`SpanEditHandler;Accepts:…` after a span): the tooling's view, on in the compiler's own test baselines.
         case "--no-edit-handlers": editHandlers = false; break;
         // A Razor language version as RazorLangVersion takes it: 3.0, 8.0, 10.0 (the SDK's for net10.0), latest, experimental.
-        case "--langversion": languageVersion = args[++i]; break;
-        // tree: the files are read with their line breaks turned into CRLF instead of LF (as the compiler's test inputs are written).
+        case "--langversion": languageVersionOption = args[++i]; break;
+        // tree, codegen, ir: the files are read with their line breaks turned into CRLF instead of LF (as the compiler's test inputs are
+        // written); codegen, ir also generate CRLF then (--newline overrides). cases-codegen always reads CRLF, as the tests ran on Windows.
         case "--crlf": crlf = true; break;
+        // codegen, ir: the project's root namespace (MSBuild RootNamespace); the source generator's default is ASP.
+        case "--root-namespace": rootNamespace = args[++i]; break;
+        // codegen, ir: the assembly the directory's components and tag helpers belong to (`@addTagHelper *, Name`); default the root namespace.
+        case "--assembly-name": assemblyName = args[++i]; break;
+        // codegen, ir: more assemblies to discover tag helpers and components in (package references), `;`-separated or `@file`.
+        case "--references":
+            var referenceSpec = args[++i];
+            references.AddRange((referenceSpec.StartsWith('@') ? File.ReadAllLines(referenceSpec[1..]) : referenceSpec.Split(';')).Select(x => x.Trim()).Where(x => x.Length > 0));
+            break;
+        // codegen, ir: more C# for the discovery compilation (files or directories; obj/<cfg>/<tfm>/<Project>.GlobalUsings.g.cs of ImplicitUsings).
+        case "--csharp":
+            var csharpSpec = args[++i];
+            extraCSharp.AddRange((csharpSpec.StartsWith('@') ? File.ReadAllLines(csharpSpec[1..]) : csharpSpec.Split(';')).Select(x => x.Trim()).Where(x => x.Length > 0));
+            break;
+        // codegen, ir: the RazorSourceChecksumAttribute of the file and its imports (GenerateRazorMetadataSourceChecksumAttributes=true).
+        case "--metadata-checksums": metadataChecksums = true; break;
+        // codegen, ir: the files' absolute paths with the OS separators as the build has them (#pragma checksum, #line, the tag helper ids).
+        case "--absolute-paths": absolutePaths = true; break;
+        // codegen, ir: the generated document's line breaks, lf or crlf; default those of the input (--crlf). A build on Windows writes crlf
+        // (the generator's NewLine is Environment.NewLine) whatever the input's are.
+        case "--newline": newLineOption = args[++i]; break;
+        // codegen, ir: the files' line breaks as on disk (a build reads them so) instead of LF (or CRLF with --crlf).
+        case "--keep-newlines": keepNewlines = true; break;
+        // codegen, ir: no tag helper discovery (components and directive attributes stay markup).
+        case "--no-tag-helpers": discoverTagHelpers = false; break;
+        // cases-codegen: compare every case with its baselines, the summary to stderr.
+        case "--check": check = true; break;
+        // cases-codegen: the descriptors of every processed case as JSON, <dir>/<Project>/<Class>/<Name>.taghelpers.json.
+        case "--tag-helpers-out": tagHelpersOut = args[++i]; break;
         // Relative paths under the directory to dump (files or directories), `;`-separated; `@file` reads one per line.
         case "--include":
             var spec = args[++i];
@@ -38,19 +80,23 @@ for (var i = 0; i < args.Length; i++)
 const string usage = """
     usage: razordump tree <file or directory> [--native-tokenizer] [--no-edit-handlers] [--langversion V] [--crlf] [--include P;Q|@file] [--out file]
            razordump cases <directory of .stree.txt baselines> [--native-tokenizer] [--no-edit-handlers] [--langversion V] [--out file]
+           razordump codegen <file or directory> [--langversion V] [--root-namespace NS] [--assembly-name A] [--references P;Q|@file] [--csharp P;Q|@file] [--no-tag-helpers] [--metadata-checksums] [--absolute-paths] [--newline lf|crlf] [--crlf | --keep-newlines] [--include P;Q|@file] [--out file]
+           razordump ir <file or directory> [same options as codegen]
+           razordump cases-codegen <TestFiles directory> [--langversion V] [--check] [--tag-helpers-out dir] [--out file]
+           razordump tag-helpers [<directory>] [--langversion V] [--root-namespace NS] [--assembly-name A] [--references P;Q|@file] [--csharp P;Q|@file] [--out file]
     """;
-if (positional.Count != 2)
+if (positional.Count != 2 && !(positional.Count == 1 && positional[0] == "tag-helpers"))
 {
     Console.Error.WriteLine(usage);
     return 2;
 }
-if (!RazorLanguageVersion.TryParse(languageVersion, out var razorVersion))
+if (!RazorLanguageVersion.TryParse(languageVersionOption ?? "latest", out var razorVersion))
 {
-    Console.Error.WriteLine($"unknown Razor language version: {languageVersion}");
+    Console.Error.WriteLine($"unknown Razor language version: {languageVersionOption}");
     return 2;
 }
 var command = positional[0];
-var target = Path.GetFullPath(positional[1]);
+var target = positional.Count > 1 ? Path.GetFullPath(positional[1]) : null!;
 var output = new StringBuilder();
 var stopwatch = Stopwatch.StartNew();
 var files = 0;
@@ -99,13 +145,62 @@ switch (command)
         }
         break;
     }
+    case "codegen":
+    case "ir":
+    {
+        // The source generator's view: every file with the imports of its folder and the folders above (within the directory).
+        var root = Directory.Exists(target) ? target : Path.GetDirectoryName(target)!;
+        var all = EnumerateFiles(root, []).Select(f => Path.GetRelativePath(root, f).Replace('\\', '/')).ToList();
+        var fileSystem = Codegen.ReadDirectory(root, all, keepNewlines ? null : crlf ? "\r\n" : "\n", absolutePaths);
+        var tagHelpers = new FixedTagHelperFeature(TagHelperCollection.Empty);
+        var newLine = (newLineOption ?? (crlf ? "crlf" : "lf")) == "crlf" ? "\r\n" : "\n";
+        var engine = Codegen.CreateGeneratorEngine(fileSystem, razorVersion, rootNamespace ?? "ASP", newLine, tagHelpers, metadataChecksums);
+        if (discoverTagHelpers)
+            tagHelpers.TagHelpers = Codegen.DiscoverProjectTagHelpers(engine, fileSystem, root, all, assemblyName ?? rootNamespace ?? "ASP", references, extraCSharp);
+        foreach (var file in EnumerateFiles(target, includes))
+        {
+            var relative = Path.GetRelativePath(root, file).Replace('\\', '/');
+            var codeDocument = engine.Process(fileSystem.GetItem("/" + relative, fileKind: null), CancellationToken.None);
+            output.Append("### ").Append(relative).Append('\n');
+            if (command == "ir") Codegen.AppendSection(output, null, Codegen.Ir(codeDocument));
+            else Codegen.AppendCodegen(output, codeDocument, relative);
+            if (Codegen.GetCSharpDocument(codeDocument).Diagnostics.Length > 0) filesWithDiagnostics++;
+            files++;
+        }
+        break;
+    }
+    case "cases-codegen":
+    {
+        var summary = CasesCodegen.Run(target, languageVersionOption == null ? null : razorVersion, check, output, tagHelpersOut);
+        if (outPath != null) File.WriteAllText(outPath, output.ToString(), new UTF8Encoding(false));
+        else Console.Out.Write(output.ToString());
+        Console.Error.Write(summary);
+        Console.Error.WriteLine($"# millis={stopwatch.ElapsedMilliseconds}");
+        return 0;
+    }
+    case "tag-helpers":
+    {
+        // The descriptors codegen discovers (all the producers), as JSON: of a project directory's components and `.cs` files, or of
+        // --csharp / --references alone without one.
+        List<string> all = target == null ? [] : [.. EnumerateFiles(target, []).Select(f => Path.GetRelativePath(target, f).Replace('\\', '/'))];
+        var fileSystem = target == null ? new DumpFileSystem() : Codegen.ReadDirectory(target, all, "\n", absolutePaths: false);
+        var engine = Codegen.CreateGeneratorEngine(fileSystem, razorVersion, rootNamespace ?? "ASP", "\n", new FixedTagHelperFeature(TagHelperCollection.Empty), false);
+        var tagHelpers = Codegen.DiscoverProjectTagHelpers(engine, fileSystem, target, all, assemblyName ?? rootNamespace ?? "ASP", references, extraCSharp);
+        var json = TagHelperJson.Serialize(tagHelpers);
+        if (outPath != null) File.WriteAllText(outPath, json, new UTF8Encoding(false));
+        else Console.Out.Write(json);
+        Console.Error.WriteLine($"# tagHelpers={tagHelpers.Count} millis={stopwatch.ElapsedMilliseconds}");
+        return 0;
+    }
     default:
         Console.Error.WriteLine(usage);
         return 2;
 }
 if (outPath != null) File.WriteAllText(outPath, output.ToString(), new UTF8Encoding(false));
 else Console.Out.Write(output.ToString());
-Console.Error.WriteLine($"# files={files} filesWithDiagnostics={filesWithDiagnostics} nodes={nodes} millis={stopwatch.ElapsedMilliseconds}");
+Console.Error.WriteLine(command is "codegen" or "ir"
+    ? $"# files={files} filesWithDiagnostics={filesWithDiagnostics} millis={stopwatch.ElapsedMilliseconds}"
+    : $"# files={files} filesWithDiagnostics={filesWithDiagnostics} nodes={nodes} millis={stopwatch.ElapsedMilliseconds}");
 return 0;
 
 static RazorProjectEngine CreateEngine(string root, RazorLanguageVersion version, bool roslynTokenizer, bool editHandlers)

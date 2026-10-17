@@ -766,6 +766,12 @@
     `RazorCSharpInjector`); completion после `@` и `@Model.`, Go to Declaration из разметки в `@code` и в `.cs`, ошибки C# — через ту же
     семантику; PSI хоста — дерево компилятора R2 (`RazorTree.kt`), HTML-файл по нему. Сценарий `Blazor/Editor/RazorCSharp.razor` (вживую
     не проверено). Генерация документа по образцу компилятора — R3b (`RAZOR_PLAN.md`)
+  - [x] R3b (0.1.253) — генерация C# документа как у компилятора: порт конвейера генерации Razor (IR, проходы директив и компонентов,
+    разрешение tag helpers, runtime writer с `#line` и mappings) в `razor-psi-core`; гейты — 93/93 файловых эталонов компилятора, корпус
+    против dll SDK без tag helpers (eShop 58/58, nopCommerce 1193/1193, MudBlazor 2051/2054); хост берёт документ из генератора
+    (`_Imports.razor` по папкам, RootNamespace, версия Razor по TFM), куски инъекции — по mappings, члены по месту в файле
+    (`RazorIdeLayoutPass`). Дескрипторы tag helpers — данные (`TagHelperDescriptorJson`), свои — R5. Сценарий тот же,
+    `Blazor/Editor/RazorCSharp.razor` (вживую не проверено)
   - [x] R2 (0.1.251, пользователю не видно) — парсер Razor: подпроект `razor-psi-core`, порт парсера компилятора (разметка, код, оба
     токенизатора C#, директивы, диагностики RZ, проходы движка над деревом), оракул `tools/razor/razordump`; гейты — эталоны тестов
     компилятора 1245/1245, корпус eShop 58/58, nopCommerce 1193/1193, MudBlazor 2051/2054 (3 — разница версий компилятора), фазз без

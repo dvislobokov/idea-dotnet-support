@@ -34,7 +34,7 @@ import io.github.dotnetsupport.razor.lang.syntax.SyntaxConstants
  * conditional), comments, CDATA, `<text>`, `@:` lines, the switch to the code parser at `@`. A port of the compiler's class, method by
  * method; the comments of the original are not repeated.
  */
-class HtmlMarkupParser private constructor(context: ParserContext, private val parseAsXml: Boolean) : TokenizerBackedParser<HtmlTokenizer>(HtmlLanguageCharacteristics, context) {
+class HtmlMarkupParser private constructor(context: ParserContext, private val parseAsXml: Boolean) : TokenizerBackedParser<HtmlTokenizer>(if (!parseAsXml && context.options.parseLeadingDirectives) FirstDirectiveHtmlLanguageCharacteristics else HtmlLanguageCharacteristics, context) {
     constructor(context: ParserContext) : this(context, parseAsXml = false)
 
     init {

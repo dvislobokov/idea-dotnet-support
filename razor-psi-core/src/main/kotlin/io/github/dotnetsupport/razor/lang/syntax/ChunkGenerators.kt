@@ -32,15 +32,15 @@ sealed class ChunkGenerator {
         override fun toString() = "DirectiveToken {${descriptor.name};${descriptor.kind};Opt:${if (descriptor.optional) "True" else "False"}}"
     }
 
-    class AddTagHelper(val lookupText: String, val directiveText: String, val typePattern: String?, val assemblyName: String?, val diagnostics: List<RazorDiagnostic>) : ChunkGenerator() {
+    class AddTagHelper(val lookupText: String, val directiveText: String, val typePattern: String?, val assemblyName: String?, val diagnostics: MutableList<RazorDiagnostic>) : ChunkGenerator() {
         override fun toString() = "AddTagHelper:{$lookupText;$directiveText;${typePattern ?: ""};${assemblyName ?: ""}}" + diagnosticsSuffix(diagnostics)
     }
 
-    class RemoveTagHelper(val lookupText: String, val directiveText: String, val typePattern: String?, val assemblyName: String?, val diagnostics: List<RazorDiagnostic>) : ChunkGenerator() {
+    class RemoveTagHelper(val lookupText: String, val directiveText: String, val typePattern: String?, val assemblyName: String?, val diagnostics: MutableList<RazorDiagnostic>) : ChunkGenerator() {
         override fun toString() = "RemoveTagHelper:{$lookupText;$directiveText;${typePattern ?: ""};${assemblyName ?: ""}}" + diagnosticsSuffix(diagnostics)
     }
 
-    class TagHelperPrefix(val prefix: String, val directiveText: String, val diagnostics: List<RazorDiagnostic>) : ChunkGenerator() {
+    class TagHelperPrefix(val prefix: String, val directiveText: String, val diagnostics: MutableList<RazorDiagnostic>) : ChunkGenerator() {
         override fun toString() = "TagHelperPrefix:{$prefix;$directiveText}" + diagnosticsSuffix(diagnostics)
     }
 

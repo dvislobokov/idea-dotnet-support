@@ -74,49 +74,46 @@ class RazorCSharpDocumentTest : BasePlatformTestCase() {
 
     fun testTheDocumentOfAComponent() {
         val file = razor(myFixture.configureByText("Counter.razor", counter))
-        val expected = listOf(
-            "using System.Globalization;",
-            "using global::System;",
-            "using global::System.Collections.Generic;",
-            "using global::System.Linq;",
-            "using global::System.Threading.Tasks;",
-            "using global::Microsoft.AspNetCore.Components;",
+        val text = RazorCSharpDocument.text(file)
+        // the places glued are the generated code of the compiler's pipeline, the Razor text of the hosts as written
+        assertEquals(RazorCSharpDocument.generate(file)!!.code, text)
+        for (expected in listOf(
+            "[global::Microsoft.AspNetCore.Components.RouteAttribute(",
+            "using System.Globalization",
             "public partial class Counter : global::Microsoft.AspNetCore.Components.ComponentBase",
-            "{",
-            "#pragma warning disable 0414",
-            "private static object __o = null;",
-            "#pragma warning restore 0414",
-            "[global::Microsoft.AspNetCore.Components.InjectAttribute] private ILogger<Counter> Logger { get; set; }",
             "protected override void BuildRenderTree(global::Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder)",
-            "{",
-            "__o = currentCount;",
-            "__o = (currentCount + 1);",
-            "__o = DateTime.Now.ToString(\"t\", CultureInfo.InvariantCulture);",
+            "__builder.AddContent(3, currentCount",
+            "__builder.AddContent(6, currentCount + 1",
+            "DateTime.Now.ToString(\"t\", CultureInfo.InvariantCulture)",
             "if (currentCount > 3)",
-            "{",
-            "}",
-            "}",
-            "",
             "    [Parameter] public int Step { get; set; }",
-            "    private int currentCount;",
-            "",
-            "    private void Increment()",
-            "    {",
-            "        currentCount += Step;",
-            "    }",
-            "",
-            "}",
-            "",
-        ).joinToString("\n")
-        assertEquals(expected, RazorCSharpDocument.text(file))
+            "[global::Microsoft.AspNetCore.Components.InjectAttribute] private ",
+        )) assertTrue(text, text.contains(expected))
+        // the hosts: the C# of the file, each once, in the order of the file (the layout pass puts `@inject` before the render method, which
+        // the markup after it continues in a second method)
+        val places = RazorCSharpDocument.places(file)
+        val hosts = places.map { it.range.substring(it.host.text) }
+        assertEquals(hosts.toString(), hosts.size, hosts.toSet().size)
+        assertTrue(hosts.toString(), "currentCount" in hosts && "ILogger<Counter>" in hosts && "Logger" in hosts)
+        val offsets = places.map { it.host.textRange.startOffset + it.range.startOffset }
+        assertEquals(offsets.toString(), offsets.sorted(), offsets)
+        assertTrue(text, text.indexOf("ILogger<Counter>") < text.indexOf("void BuildRenderTree("))
     }
 
     fun testTheDocumentOfAView() {
-        val file = razor(myFixture.configureByText("Index.cshtml", "@model Shop.Order\n@{\n    var count = Model.Lines;\n}\n<p>@Model.Id — @count</p>\n@section Scripts {\n<script>console.log(\"@count\");</script>\n}\n@functions {\n    string Title() => \"x\";\n}\n"))
+        val view = listOf(
+            "@model Shop.Order", "@{", "    var count = Model.Lines;", "}", "<p>@Model.Id - @count</p>", "@section Scripts {",
+            "<script>console.log(\"@count\");</script>", "}", "@functions {", "    string Title() => \"x\";", "}", "",
+        ).joinToString("\n")
+        val file = razor(myFixture.configureByText("Index.cshtml", view))
         val text = RazorCSharpDocument.text(file)
-        assertTrue(text, text.contains("public partial class Index : global::Microsoft.AspNetCore.Mvc.Razor.RazorPage<Shop.Order>\n{"))
-        assertTrue(text, text.contains("public override async global::System.Threading.Tasks.Task ExecuteAsync()\n{\n\n    var count = Model.Lines;\n\n__o = Model.Id;\n__o = count;\nDefineSection(\"Scripts\", async () => {\n__o = count;\n});\n}\n"))
-        assertTrue(text, text.contains("\n    string Title() => \"x\";\n\n}\n"))
+        assertEquals(RazorCSharpDocument.generate(file)!!.code, text)
+        assertTrue(text, text.contains("internal sealed class Index : global::Microsoft.AspNetCore.Mvc.Razor.RazorPage<\n#nullable restore\n#line (1,8)-(1,18) \"/Index.cshtml\"\nShop.Order\n"))
+        assertTrue(text, text.contains("public async override global::System.Threading.Tasks.Task ExecuteAsync()"))
+        assertTrue(text, text.contains("    var count = Model.Lines;\n"))
+        assertTrue(text, text.contains("Write(Model.Id\n"))
+        assertTrue(text, text.contains("DefineSection(\"Scripts\", async() => {"))
+        assertTrue(text, text.contains("    string Title() => \"x\";\n"))
     }
 
     fun testTheInjectedFileIsTheDocument() {

@@ -37,6 +37,17 @@ inline in the C# of the tests (`ComponentCodeGenerationTest`, parser tests); 182
 `tools/razor/razordump` (README there) dumps the compiler's syntax trees; `./gradlew.bat :razor-psi-core:corpusTest` diffs ours
 against them (`RazorTreeCorpusTest`: the three solutions, `build/razor-gate/<name>.txt`), against the compiler's own parser test
 baselines (`RazorBaselineCorpusTest`) and runs the mutation fuzz; metrics in `razor-psi-core/testData/metrics` only improve.
+It also dumps the compiler's code generation (R3b): `codegen` / `ir` — the C# (with the source mappings and the diagnostics) and the IR the
+source generator makes of a project's files, tag helpers and components discovered as the generator does (equal to
+`EmitCompilerGeneratedFiles` byte for byte on MudBlazor and nopCommerce), `cases-codegen --check` — the compiler's code generation
+integration tests against their `.codegen.cs` / `.ir.txt` / `.mappings.txt` / `.diagnostics.txt` baselines.
+
+The integration tests run with the tag helper descriptors a Roslyn compilation discovers — MVC's `UrlResolutionTagHelper`, `HeadTagHelper`,
+`BodyTagHelper` (and the rest of the shared framework's) from the references, the view components and tag helpers of the test's own C#
+(`AddCSharpSyntaxTree`) — which the port cannot discover, so they are data: `razor-psi-core/testData/codegen-tagHelpers/<Project>/<Class>/<Name>.taghelpers.json`,
+written by `razordump cases-codegen --tag-helpers-out` (command in the razordump README), read by `TagHelperDescriptorJson` for
+`RazorCodegenBaselineCorpusTest` (a case without a file runs without tag helpers; `TagHelperDescriptorJsonTest` checks that every file reads and
+writes back unchanged). Regenerate them with the installed SDK when the corpus moves; razordump writes one file per case, and the 87 that hold only the reference set (identical) are kept once as `references.taghelpers.json`, which the gate takes for a case without a file of its own.
 
 ## The harness (RAZOR_PLAN.md, R0 / R0b)
 

@@ -18,9 +18,14 @@ object RazorDump {
     }
 
     /** `razordump tree <dir> --out <file>`; returns the summary line razordump prints, or throws. */
-    fun tree(dir: Path, out: Path, vararg options: String): String {
+    fun tree(dir: Path, out: Path, vararg options: String): String = run("tree", dir, out, *options)
+
+    /** `razordump codegen <dir> --out <file>` (README.md there, "Code generation"); returns the summary line, or throws. */
+    fun codegen(dir: Path, out: Path, vararg options: String): String = run("codegen", dir, out, *options)
+
+    private fun run(mode: String, dir: Path, out: Path, vararg options: String): String {
         val dll = dll() ?: throw IllegalStateException("razordump is not built: dotnet build tools/razor/razordump -c Release")
-        val command = listOf("dotnet", dll.toString(), "tree", dir.toString(), "--out", out.toString(), "--langversion", "latest") + options
+        val command = listOf("dotnet", dll.toString(), mode, dir.toString(), "--out", out.toString(), "--langversion", "latest") + options
         val process = ProcessBuilder(command).redirectErrorStream(true).start()
         val output = process.inputStream.bufferedReader().readText()
         if (!process.waitFor(30, TimeUnit.MINUTES)) {
@@ -48,6 +53,30 @@ object RazorDump {
         if (name != null) result[name] = body.toString().trimEnd('\n')
         return result
     }
+
+    /**
+     * The files of a `codegen` dump by path: everything after a `### <path>` line up to the next one — the generated code, then the
+     * `### mappings` and `### diagnostics` sections, which stay in the block (they are not file headers).
+     */
+    fun parseCodegen(dump: String): Map<String, String> {
+        val result = LinkedHashMap<String, String>()
+        var name: String? = null
+        val body = StringBuilder()
+        for (line in dump.lineSequence()) {
+            if (line.startsWith("### ") && line != CODEGEN_MAPPINGS && line != CODEGEN_DIAGNOSTICS) {
+                if (name != null) result[name] = body.toString().trimEnd('\n')
+                name = line.substring(4)
+                body.setLength(0)
+            } else {
+                body.append(line).append('\n')
+            }
+        }
+        if (name != null) result[name] = body.toString().trimEnd('\n')
+        return result
+    }
+
+    const val CODEGEN_MAPPINGS = "### mappings"
+    const val CODEGEN_DIAGNOSTICS = "### diagnostics"
 
     /** The diagnostics of a dump by file path: `RZ1006(10:0,10 [1] path) message` lines. */
     fun diagnostics(dump: String): Map<String, List<String>> {

@@ -36,6 +36,9 @@ abstract class Tokenizer(val source: SeekableTextReader) {
 
     val endOfFile: Boolean get() = source.peek() == -1
 
+    /** A tokenizer that ends before the text does by design (the directive tokenizers of `ParseLeadingDirectives`). */
+    open val stopsEarly: Boolean get() = false
+
     abstract val razorCommentStarKind: RazorSyntaxKind
     abstract val razorCommentKind: RazorSyntaxKind
     abstract val razorCommentTransitionKind: RazorSyntaxKind
@@ -213,7 +216,7 @@ abstract class Tokenizer(val source: SeekableTextReader) {
 }
 
 /** `HtmlTokenizer`: text, whitespace, new lines, the markup characters (`<`, `/`, `>`, `=`, quotes, `!`, `?`, `[`, `]`, `--`), `@`. */
-class HtmlTokenizer(source: SeekableTextReader) : Tokenizer(source) {
+open class HtmlTokenizer(source: SeekableTextReader) : Tokenizer(source) {
     init {
         currentState = startState
     }
@@ -229,7 +232,9 @@ class HtmlTokenizer(source: SeekableTextReader) : Tokenizer(source) {
 
     override fun createToken(content: String, kind: RazorSyntaxKind, errors: List<RazorDiagnostic>): RazorToken = RazorToken(kind, content, errors)
 
-    override fun dispatch(): StateResult = when (currentState) {
+    override fun dispatch(): StateResult = dispatchHtml()
+
+    private fun dispatchHtml(): StateResult = when (currentState) {
         DATA -> data()
         TEXT -> text()
         ESCAPED_RAZOR_COMMENT_TRANSITION -> escapedRazorCommentTransition()
@@ -331,7 +336,7 @@ abstract class CSharpTokenizer(source: SeekableTextReader) : Tokenizer(source)
  * numbers, simple string and character literals, comments, operators; no interpolated or raw strings (they are tokenized as the
  * compiler would, piece by piece).
  */
-class NativeCSharpTokenizer(source: SeekableTextReader) : CSharpTokenizer(source) {
+open class NativeCSharpTokenizer(source: SeekableTextReader) : CSharpTokenizer(source) {
     init {
         currentState = startState
     }
@@ -345,7 +350,9 @@ class NativeCSharpTokenizer(source: SeekableTextReader) : CSharpTokenizer(source
 
     override fun getTokenKeyword(token: RazorToken?): String? = token?.content?.takeIf { it in KEYWORDS }
 
-    override fun dispatch(): StateResult = when (currentState) {
+    override fun dispatch(): StateResult = dispatchCSharp()
+
+    private fun dispatchCSharp(): StateResult = when (currentState) {
         DATA -> data()
         BLOCK_COMMENT -> blockComment()
         QUOTED_CHARACTER_LITERAL -> quotedLiteral('\'', RazorSyntaxKind.CharacterLiteral)
@@ -614,7 +621,7 @@ class TokenizerView<T : Tokenizer>(val tokenizer: T) {
         current = tokenizer.nextToken()
         endOfFile = current == null
         // a tokenizer that gives up before the end would leave the parsers looping on the same position: a bug, reported as one
-        check(!endOfFile || source.position >= source.length) { "${tokenizer.javaClass.simpleName} stopped at ${source.position} of ${source.length}" }
+        check(!endOfFile || tokenizer.stopsEarly || source.position >= source.length) { "${tokenizer.javaClass.simpleName} stopped at ${source.position} of ${source.length}" }
         return !endOfFile
     }
 
@@ -662,7 +669,7 @@ abstract class LanguageCharacteristics<T : Tokenizer> {
 
 enum class KnownTokenType { Unknown, Identifier, Keyword, NewLine, Whitespace, Transition, CommentStart, CommentStar, CommentBody }
 
-object HtmlLanguageCharacteristics : LanguageCharacteristics<HtmlTokenizer>() {
+open class HtmlLanguageCharacteristicsBase : LanguageCharacteristics<HtmlTokenizer>() {
     override fun createTokenizer(source: SeekableTextReader) = HtmlTokenizer(source)
     override fun createToken(content: String, kind: RazorSyntaxKind) = RazorToken(kind, content)
     override fun createMarkerToken() = RazorToken(RazorSyntaxKind.Marker, "")
@@ -712,9 +719,10 @@ object HtmlLanguageCharacteristics : LanguageCharacteristics<HtmlTokenizer>() {
 }
 
 /** The C# side: [createTokenizer] picks the tokenizer the options ask for (the compiler's own, or Roslyn's — csharp-psi's lexer). */
-class CSharpLanguageCharacteristics(private val useRoslynTokenizer: Boolean) : LanguageCharacteristics<CSharpTokenizer>() {
+class CSharpLanguageCharacteristics(private val useRoslynTokenizer: Boolean, private val parseLeadingDirectives: Boolean = false) : LanguageCharacteristics<CSharpTokenizer>() {
+    /** `FirstDirectiveCSharpLanguageCharacteristics` when [parseLeadingDirectives]: the directive tokenizer, whatever the tokenizer option. */
     override fun createTokenizer(source: SeekableTextReader): CSharpTokenizer =
-        if (useRoslynTokenizer) RoslynCSharpTokenizer(source) else NativeCSharpTokenizer(source)
+        if (parseLeadingDirectives) DirectiveCSharpTokenizer(source) else if (useRoslynTokenizer) RoslynCSharpTokenizer(source) else NativeCSharpTokenizer(source)
 
     override fun createToken(content: String, kind: RazorSyntaxKind) = RazorToken(kind, content)
     override fun createMarkerToken() = RazorToken(RazorSyntaxKind.Marker, "")
@@ -773,4 +781,71 @@ class CSharpLanguageCharacteristics(private val useRoslynTokenizer: Boolean) : L
             RazorSyntaxKind.Transition to "@",
         )
     }
+}
+
+/** The HTML side as the parser uses it. */
+object HtmlLanguageCharacteristics : HtmlLanguageCharacteristicsBase()
+
+/** `FirstDirectiveHtmlLanguageCharacteristics`: the HTML side of `ParseLeadingDirectives` — a tokenizer that stops after the first token. */
+object FirstDirectiveHtmlLanguageCharacteristics : HtmlLanguageCharacteristicsBase() {
+    override fun createTokenizer(source: SeekableTextReader) = DirectiveHtmlTokenizer(source)
+}
+
+/** `DirectiveHtmlTokenizer`: tokens until the first one that is not whitespace, a line break, a Razor comment or a transition — then nothing. */
+class DirectiveHtmlTokenizer(source: SeekableTextReader) : HtmlTokenizer(source) {
+    override val stopsEarly: Boolean get() = true
+    private var visitedFirstTokenStart = false
+    private var firstTokenVisitLocation: SourceLocation = SourceLocation.UNDEFINED
+
+    override fun dispatch(): StateResult {
+        val location = currentLocation
+        val result = super.dispatch()
+        val token = result.result
+        if (token != null && isValidTokenType(token.kind)) {
+            visitedFirstTokenStart = true
+            firstTokenVisitLocation = location
+        }
+        return result
+    }
+
+    override fun nextToken(): RazorToken? {
+        check(buffer.isEmpty())
+        startToken()
+        if (endOfFile || (visitedFirstTokenStart && firstTokenVisitLocation != currentLocation)) return null
+        val token = turn()
+        check(buffer.isEmpty())
+        return token
+    }
+
+    private fun isValidTokenType(kind: RazorSyntaxKind): Boolean =
+        kind != RazorSyntaxKind.Whitespace && kind != RazorSyntaxKind.NewLine && kind != RazorSyntaxKind.RazorCommentLiteral &&
+            kind != RazorSyntaxKind.RazorCommentStar && kind != RazorSyntaxKind.RazorCommentTransition && kind != RazorSyntaxKind.Transition
+}
+
+/** `DirectiveCSharpTokenizer`: the first directive's line only — tokens until the line break after the first real token. */
+class DirectiveCSharpTokenizer(source: SeekableTextReader) : NativeCSharpTokenizer(source) {
+    override val stopsEarly: Boolean get() = true
+    private var visitedFirstTokenStart = false
+    private var visitedFirstTokenLineEnd = false
+
+    override fun dispatch(): StateResult {
+        val result = super.dispatch()
+        val token = result.result
+        if (token != null && !visitedFirstTokenStart && isValidTokenType(token.kind)) visitedFirstTokenStart = true
+        else if (token != null && visitedFirstTokenStart && token.kind == RazorSyntaxKind.NewLine) visitedFirstTokenLineEnd = true
+        return result
+    }
+
+    override fun nextToken(): RazorToken? {
+        check(buffer.isEmpty())
+        startToken()
+        if (endOfFile || (visitedFirstTokenStart && visitedFirstTokenLineEnd)) return null
+        val token = turn()
+        check(buffer.isEmpty())
+        return token
+    }
+
+    private fun isValidTokenType(kind: RazorSyntaxKind): Boolean =
+        kind != RazorSyntaxKind.Whitespace && kind != RazorSyntaxKind.NewLine && kind != RazorSyntaxKind.CSharpComment && kind != RazorSyntaxKind.RazorCommentLiteral &&
+            kind != RazorSyntaxKind.RazorCommentStar && kind != RazorSyntaxKind.RazorCommentTransition && kind != RazorSyntaxKind.Transition
 }

@@ -141,8 +141,126 @@ def nodes():
     io.open(os.path.join(OUT, "RazorSyntaxNodes.kt"), "w", encoding="utf-8", newline="\n").write("\n".join(out))
 
 
+RED_OUT = os.path.join(OUT, "red")
+GREEN = "io.github.dotnetsupport.razor.lang.syntax."
+
+
+def red_type(t, optional):
+    """The red-side type of a field: tokens are RedToken, lists are List<RedNode> (of tokens: List<RedToken>), nodes keep their names."""
+    if t == "SyntaxToken":
+        return "RedToken" + ("?" if optional else "")
+    if t == "SyntaxList<SyntaxToken>":
+        return "List<RedToken>"
+    if t.startswith("SyntaxList<"):
+        return "List<RedNode>"
+    if t == "RazorSyntaxNode" or t == "SyntaxNode":
+        return "RedNode" + ("?" if optional else "")
+    if t.endswith("Syntax") or t.endswith("SyntaxNode"):
+        return t + ("?" if optional else "")
+    return KOTLIN_TYPES.get(t, t)
+
+
+def red_nodes():
+    """The red tree (RAZOR_PLAN.md, R3b): a node per green node with its parent and position, typed slot accessors, the plain properties
+    delegated to the green node, `accept` for the red visitor; the visitor and the factory from the same list."""
+    tree = ET.parse(os.path.join(COMPILER, "Syntax", "Syntax.xml"))
+    root = tree.getroot()
+    out = [HEADER.format(source="Syntax/Syntax.xml"), "@file:Suppress(\"unused\", \"UNCHECKED_CAST\")", "",
+           "package io.github.dotnetsupport.razor.lang.syntax.red", "",
+           "import io.github.dotnetsupport.razor.lang.syntax.ChunkGenerator", "import io.github.dotnetsupport.razor.lang.syntax.DirectiveDescriptor",
+           "import io.github.dotnetsupport.razor.lang.syntax.RazorNode", "import io.github.dotnetsupport.razor.lang.syntax.RazorToken",
+           "import io.github.dotnetsupport.razor.lang.syntax.SpanEditHandler", "import io.github.dotnetsupport.razor.lang.syntax.TagHelperAttributeInfo",
+           "import io.github.dotnetsupport.razor.lang.syntax.TagHelperInfo", ""]
+    abstract_fields = {}
+    concrete = []  # (name, kind)
+    for el in root:
+        if el.tag == "PredefinedNode":
+            continue
+        name = el.get("Name")
+        base = el.get("Base")
+        base_red = "RedNode" if base in ("SyntaxNode", "RazorSyntaxNode") else base
+        fields = [(f.get("Name"), f.get("Type"), f.get("Optional") == "true", f.get("Override") == "true") for f in el.findall("Field")]
+        if el.tag == "AbstractNode":
+            abstract_fields[name] = fields
+            out.append(f"abstract class {name}(green: RazorNode, parent: RedNode?, position: Int) : {base_red}(green, parent, position) {{")
+            for fname, ftype, optional, _ in fields:
+                out.append(f"    abstract val {lower(fname)}: {red_type(ftype, optional)}")
+            out.append("}")
+            out.append("")
+        elif el.tag == "Node":
+            kind = el.find("Kind").get("Name")
+            concrete.append((name, kind))
+            inherited = {}
+            b = base
+            while b in abstract_fields:
+                for fname, ftype, optional, _ in abstract_fields[b]:
+                    inherited[fname] = (ftype, optional)
+                b = None
+            own = {fname for fname, _, _, _ in fields}
+            out.append(f"/** `{kind}`. */")
+            out.append(f"class {name}(green: {GREEN}{name}, parent: RedNode?, position: Int) : {base_red}(green, parent, position) {{")
+            out.append(f"    val greenNode: {GREEN}{name} get() = green as {GREEN}{name}")
+            slot = 0
+            for fname, ftype, optional, override in fields:
+                rt = red_type(ftype, optional)
+                mod = "override " if (override or fname in inherited) else ""
+                if is_node_type(ftype):
+                    if ftype == "SyntaxToken":
+                        expr = f"slotToken({slot})" + ("" if optional else "!!")
+                    elif ftype == "SyntaxList<SyntaxToken>":
+                        expr = f"slotList({slot}) as List<RedToken>"
+                    elif ftype.startswith("SyntaxList<"):
+                        expr = f"slotList({slot})"
+                    else:
+                        expr = f"slotNode({slot}) as {rt}" if optional else f"slotNode({slot}) as {rt}"
+                    out.append(f"    {mod}val {lower(fname)}: {rt} get() = {expr}")
+                    slot += 1
+                else:
+                    out.append(f"    {mod}val {lower(fname)}: {rt} get() = greenNode.{lower(fname)}")
+            for fname, (ftype, optional) in inherited.items():
+                if fname not in own:
+                    match = next((f for f, _, _, _ in fields if f.endswith(fname)), None)
+                    out.append(f"    override val {lower(fname)}: {red_type(ftype, optional)} get() = {lower(match)}")
+            short = name[:-len("Syntax")] if name.endswith("Syntax") else name
+            out.append(f"    override fun accept(visitor: RedSyntaxVisitor) = visitor.visit{short}(this)")
+            out.append("}")
+            out.append("")
+    # the visitor: one method per concrete node, the tokens, the default
+    out.append("/** `SyntaxVisitor`: a method per node kind, each falling back to [defaultVisit]. */")
+    out.append("open class RedSyntaxVisitor {")
+    out.append("    open fun visit(node: RedNode?) {")
+    out.append("        node?.accept(this)")
+    out.append("    }")
+    out.append("    open fun defaultVisit(node: RedNode) {}")
+    out.append("    open fun visitToken(token: RedToken) = defaultVisit(token)")
+    for name, _ in concrete:
+        short = name[:-len("Syntax")] if name.endswith("Syntax") else name
+        out.append(f"    open fun visit{short}(node: {name}) = defaultVisit(node)")
+    out.append("}")
+    out.append("")
+    out.append("/** `SyntaxWalker`: visits the children (nodes and tokens) by default. */")
+    out.append("open class RedSyntaxWalker : RedSyntaxVisitor() {")
+    out.append("    override fun defaultVisit(node: RedNode) {")
+    out.append("        for (child in node.childNodesAndTokens()) visit(child)")
+    out.append("    }")
+    out.append("}")
+    out.append("")
+    out.append("/** The red node of a green one. */")
+    out.append("object RedNodes {")
+    out.append("    fun create(green: RazorNode, parent: RedNode?, position: Int): RedNode = when (green) {")
+    out.append("        is RazorToken -> RedToken(green, parent, position)")
+    for name, _ in concrete:
+        out.append(f"        is {GREEN}{name} -> {name}(green, parent, position)")
+    out.append("        else -> throw IllegalArgumentException(\"no red node for ${green.kind}\")")
+    out.append("    }")
+    out.append("}")
+    os.makedirs(RED_OUT, exist_ok=True)
+    io.open(os.path.join(RED_OUT, "RazorRedNodes.kt"), "w", encoding="utf-8", newline="\n").write("\n".join(out) + "\n")
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     names = kinds()
     nodes()
-    print(f"kinds: {len(names)}; nodes written to {OUT}")
+    red_nodes()
+    print(f"kinds: {len(names)}; nodes written to {OUT}, red nodes to {RED_OUT}")

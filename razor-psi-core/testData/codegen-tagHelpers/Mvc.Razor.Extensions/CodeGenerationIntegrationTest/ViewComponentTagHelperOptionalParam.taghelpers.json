@@ -1,0 +1,4983 @@
+[
+  {
+    "kind": "ViewComponent",
+    "runtimeKind": "ITagHelper",
+    "name": "__Generated__OptionalTestViewComponentTagHelper",
+    "assemblyName": "AppCode",
+    "displayName": "OptionalTestViewComponentTagHelper",
+    "typeName": "__Generated__OptionalTestViewComponentTagHelper",
+    "typeNamespace": null,
+    "typeNameIdentifier": null,
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "vc:optional-test",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "show-secret",
+        "propertyName": "showSecret",
+        "typeName": "System.Boolean",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "bool OptionalTestViewComponentTagHelper.showSecret",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "ViewComponent",
+      "name": "OptionalTest",
+      "originalTypeName": "OptionalTestViewComponent",
+      "originalTypeNamespace": "",
+      "originalTypeNameIdentifier": "OptionalTestViewComponent"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ViewComponent",
+    "runtimeKind": "ITagHelper",
+    "name": "__Generated__OptionalTestWithParamViewComponentTagHelper",
+    "assemblyName": "AppCode",
+    "displayName": "OptionalTestWithParamViewComponentTagHelper",
+    "typeName": "__Generated__OptionalTestWithParamViewComponentTagHelper",
+    "typeNamespace": null,
+    "typeNameIdentifier": null,
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "vc:optional-test-with-param",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "secret",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "secret",
+        "propertyName": "secret",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string OptionalTestWithParamViewComponentTagHelper.secret",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "show-secret",
+        "propertyName": "showSecret",
+        "typeName": "System.Boolean",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "bool OptionalTestWithParamViewComponentTagHelper.showSecret",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "ViewComponent",
+      "name": "OptionalTestWithParam",
+      "originalTypeName": "OptionalTestWithParamViewComponent",
+      "originalTypeNamespace": "",
+      "originalTypeNameIdentifier": "OptionalTestWithParamViewComponent"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ViewComponent",
+    "runtimeKind": "ITagHelper",
+    "name": "__Generated__OptionalWithMultipleTypesViewComponentTagHelper",
+    "assemblyName": "AppCode",
+    "displayName": "OptionalWithMultipleTypesViewComponentTagHelper",
+    "typeName": "__Generated__OptionalWithMultipleTypesViewComponentTagHelper",
+    "typeNamespace": null,
+    "typeNameIdentifier": null,
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "vc:optional-with-multiple-types",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "age",
+        "propertyName": "age",
+        "typeName": "System.Int32",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "int OptionalWithMultipleTypesViewComponentTagHelper.age",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "favorite-decimal",
+        "propertyName": "favoriteDecimal",
+        "typeName": "System.Double",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "double OptionalWithMultipleTypesViewComponentTagHelper.favoriteDecimal",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "favorite-letter",
+        "propertyName": "favoriteLetter",
+        "typeName": "System.Char",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "char OptionalWithMultipleTypesViewComponentTagHelper.favoriteLetter",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "birth-date",
+        "propertyName": "birthDate",
+        "typeName": "System.DateTime?",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "System.DateTime? OptionalWithMultipleTypesViewComponentTagHelper.birthDate",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "another-one",
+        "propertyName": "anotherOne",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string OptionalWithMultipleTypesViewComponentTagHelper.anotherOne",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "ViewComponent",
+      "name": "OptionalWithMultipleTypes",
+      "originalTypeName": "OptionalWithMultipleTypesViewComponent",
+      "originalTypeNamespace": "",
+      "originalTypeNameIdentifier": "OptionalWithMultipleTypesViewComponent"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.Razor.TagHelpers.BodyTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.Razor",
+    "displayName": "Microsoft.AspNetCore.Mvc.Razor.TagHelpers.BodyTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.Razor.TagHelpers.BodyTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.Razor.TagHelpers",
+    "typeNameIdentifier": "BodyTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "body",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.Razor.TagHelpers.HeadTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.Razor",
+    "displayName": "Microsoft.AspNetCore.Mvc.Razor.TagHelpers.HeadTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.Razor.TagHelpers.HeadTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.Razor.TagHelpers",
+    "typeNameIdentifier": "HeadTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "head",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.Razor.TagHelpers.UrlResolutionTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.Razor",
+    "displayName": "Microsoft.AspNetCore.Mvc.Razor.TagHelpers.UrlResolutionTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.Razor.TagHelpers.UrlResolutionTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.Razor.TagHelpers",
+    "typeNameIdentifier": "UrlResolutionTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "*",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "itemid",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "a",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "href",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "applet",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "archive",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "area",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "href",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "audio",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "src",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "base",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "href",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "blockquote",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "cite",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "button",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "formaction",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "del",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "cite",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "embed",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "src",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "form",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "action",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "html",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "manifest",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "iframe",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "src",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "img",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "src",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "img",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "srcset",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "src",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "formaction",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "ins",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "cite",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "link",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "href",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "menuitem",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "icon",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "object",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "archive",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "object",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "data",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "q",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "cite",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "script",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "src",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "source",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "src",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "source",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "srcset",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "track",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "src",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "video",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "src",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "video",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "poster",
+            "nameComparison": "FullMatch",
+            "value": "~/",
+            "valueComparison": "PrefixMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.AnchorTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.AnchorTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.AnchorTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "AnchorTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "a",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-action",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "a",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-controller",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "a",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-area",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "a",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-page",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "a",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-page-handler",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "a",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-fragment",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "a",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-host",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "a",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-protocol",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "a",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-route",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "a",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-all-route-data",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "a",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-route-",
+            "nameComparison": "PrefixMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "asp-action",
+        "propertyName": "Action",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.AnchorTagHelper.Action",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-controller",
+        "propertyName": "Controller",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.AnchorTagHelper.Controller",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-area",
+        "propertyName": "Area",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.AnchorTagHelper.Area",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-page",
+        "propertyName": "Page",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.AnchorTagHelper.Page",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-page-handler",
+        "propertyName": "PageHandler",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.AnchorTagHelper.PageHandler",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-protocol",
+        "propertyName": "Protocol",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.AnchorTagHelper.Protocol",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-host",
+        "propertyName": "Host",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.AnchorTagHelper.Host",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-fragment",
+        "propertyName": "Fragment",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.AnchorTagHelper.Fragment",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-route",
+        "propertyName": "Route",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.AnchorTagHelper.Route",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-all-route-data",
+        "propertyName": "RouteValues",
+        "typeName": "System.Collections.Generic.IDictionary<System.String, System.String>",
+        "indexerNamePrefix": "asp-route-",
+        "indexerTypeName": "System.String",
+        "documentation": null,
+        "displayName": "System.Collections.Generic.IDictionary<System.String, System.String> Microsoft.AspNetCore.Mvc.TagHelpers.AnchorTagHelper.RouteValues",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": true,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.CacheTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.CacheTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.CacheTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "CacheTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "cache",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "priority",
+        "propertyName": "Priority",
+        "typeName": "Microsoft.Extensions.Caching.Memory.CacheItemPriority?",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "Microsoft.Extensions.Caching.Memory.CacheItemPriority? Microsoft.AspNetCore.Mvc.TagHelpers.CacheTagHelper.Priority",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "vary-by",
+        "propertyName": "VaryBy",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.CacheTagHelper.VaryBy",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "vary-by-header",
+        "propertyName": "VaryByHeader",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.CacheTagHelper.VaryByHeader",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "vary-by-query",
+        "propertyName": "VaryByQuery",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.CacheTagHelper.VaryByQuery",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "vary-by-route",
+        "propertyName": "VaryByRoute",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.CacheTagHelper.VaryByRoute",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "vary-by-cookie",
+        "propertyName": "VaryByCookie",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.CacheTagHelper.VaryByCookie",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "vary-by-user",
+        "propertyName": "VaryByUser",
+        "typeName": "System.Boolean",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "bool Microsoft.AspNetCore.Mvc.TagHelpers.CacheTagHelper.VaryByUser",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "vary-by-culture",
+        "propertyName": "VaryByCulture",
+        "typeName": "System.Boolean",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "bool Microsoft.AspNetCore.Mvc.TagHelpers.CacheTagHelper.VaryByCulture",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "expires-on",
+        "propertyName": "ExpiresOn",
+        "typeName": "System.DateTimeOffset?",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "System.DateTimeOffset? Microsoft.AspNetCore.Mvc.TagHelpers.CacheTagHelper.ExpiresOn",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "expires-after",
+        "propertyName": "ExpiresAfter",
+        "typeName": "System.TimeSpan?",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "System.TimeSpan? Microsoft.AspNetCore.Mvc.TagHelpers.CacheTagHelper.ExpiresAfter",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "expires-sliding",
+        "propertyName": "ExpiresSliding",
+        "typeName": "System.TimeSpan?",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "System.TimeSpan? Microsoft.AspNetCore.Mvc.TagHelpers.CacheTagHelper.ExpiresSliding",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "enabled",
+        "propertyName": "Enabled",
+        "typeName": "System.Boolean",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "bool Microsoft.AspNetCore.Mvc.TagHelpers.CacheTagHelper.Enabled",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.ComponentTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.ComponentTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.ComponentTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "ComponentTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "component",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "params",
+        "propertyName": "Parameters",
+        "typeName": "System.Collections.Generic.IDictionary<System.String, System.Object>",
+        "indexerNamePrefix": "param-",
+        "indexerTypeName": "System.Object",
+        "documentation": null,
+        "displayName": "System.Collections.Generic.IDictionary<System.String, System.Object> Microsoft.AspNetCore.Mvc.TagHelpers.ComponentTagHelper.Parameters",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": true,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "type",
+        "propertyName": "ComponentType",
+        "typeName": "System.Type",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "System.Type Microsoft.AspNetCore.Mvc.TagHelpers.ComponentTagHelper.ComponentType",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "render-mode",
+        "propertyName": "RenderMode",
+        "typeName": "Microsoft.AspNetCore.Mvc.Rendering.RenderMode",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "Microsoft.AspNetCore.Mvc.Rendering.RenderMode Microsoft.AspNetCore.Mvc.TagHelpers.ComponentTagHelper.RenderMode",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": true,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.DistributedCacheTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.DistributedCacheTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.DistributedCacheTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "DistributedCacheTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "distributed-cache",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "name",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "name",
+        "propertyName": "Name",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.DistributedCacheTagHelper.Name",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "vary-by",
+        "propertyName": "VaryBy",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.DistributedCacheTagHelper.VaryBy",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "vary-by-header",
+        "propertyName": "VaryByHeader",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.DistributedCacheTagHelper.VaryByHeader",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "vary-by-query",
+        "propertyName": "VaryByQuery",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.DistributedCacheTagHelper.VaryByQuery",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "vary-by-route",
+        "propertyName": "VaryByRoute",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.DistributedCacheTagHelper.VaryByRoute",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "vary-by-cookie",
+        "propertyName": "VaryByCookie",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.DistributedCacheTagHelper.VaryByCookie",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "vary-by-user",
+        "propertyName": "VaryByUser",
+        "typeName": "System.Boolean",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "bool Microsoft.AspNetCore.Mvc.TagHelpers.DistributedCacheTagHelper.VaryByUser",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "vary-by-culture",
+        "propertyName": "VaryByCulture",
+        "typeName": "System.Boolean",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "bool Microsoft.AspNetCore.Mvc.TagHelpers.DistributedCacheTagHelper.VaryByCulture",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "expires-on",
+        "propertyName": "ExpiresOn",
+        "typeName": "System.DateTimeOffset?",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "System.DateTimeOffset? Microsoft.AspNetCore.Mvc.TagHelpers.DistributedCacheTagHelper.ExpiresOn",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "expires-after",
+        "propertyName": "ExpiresAfter",
+        "typeName": "System.TimeSpan?",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "System.TimeSpan? Microsoft.AspNetCore.Mvc.TagHelpers.DistributedCacheTagHelper.ExpiresAfter",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "expires-sliding",
+        "propertyName": "ExpiresSliding",
+        "typeName": "System.TimeSpan?",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "System.TimeSpan? Microsoft.AspNetCore.Mvc.TagHelpers.DistributedCacheTagHelper.ExpiresSliding",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "enabled",
+        "propertyName": "Enabled",
+        "typeName": "System.Boolean",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "bool Microsoft.AspNetCore.Mvc.TagHelpers.DistributedCacheTagHelper.Enabled",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.EnvironmentTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.EnvironmentTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.EnvironmentTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "EnvironmentTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "environment",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "names",
+        "propertyName": "Names",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.EnvironmentTagHelper.Names",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "include",
+        "propertyName": "Include",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.EnvironmentTagHelper.Include",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "exclude",
+        "propertyName": "Exclude",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.EnvironmentTagHelper.Exclude",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.FormActionTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.FormActionTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.FormActionTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "FormActionTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "button",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-action",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "button",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-controller",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "button",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-area",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "button",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-page",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "button",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-page-handler",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "button",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-fragment",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "button",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-route",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "button",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-all-route-data",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "button",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-route-",
+            "nameComparison": "PrefixMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "image",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-action",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "image",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-controller",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "image",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-area",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "image",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-page",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "image",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-page-handler",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "image",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-fragment",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "image",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-route",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "image",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-all-route-data",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "image",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-route-",
+            "nameComparison": "PrefixMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "submit",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-action",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "submit",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-controller",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "submit",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-area",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "submit",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-page",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "submit",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-page-handler",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "submit",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-fragment",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "submit",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-route",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "submit",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-all-route-data",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": "submit",
+            "valueComparison": "FullMatch",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "asp-route-",
+            "nameComparison": "PrefixMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "asp-action",
+        "propertyName": "Action",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.FormActionTagHelper.Action",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-controller",
+        "propertyName": "Controller",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.FormActionTagHelper.Controller",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-area",
+        "propertyName": "Area",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.FormActionTagHelper.Area",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-page",
+        "propertyName": "Page",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.FormActionTagHelper.Page",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-page-handler",
+        "propertyName": "PageHandler",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.FormActionTagHelper.PageHandler",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-fragment",
+        "propertyName": "Fragment",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.FormActionTagHelper.Fragment",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-route",
+        "propertyName": "Route",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.FormActionTagHelper.Route",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-all-route-data",
+        "propertyName": "RouteValues",
+        "typeName": "System.Collections.Generic.IDictionary<System.String, System.String>",
+        "indexerNamePrefix": "asp-route-",
+        "indexerTypeName": "System.String",
+        "documentation": null,
+        "displayName": "System.Collections.Generic.IDictionary<System.String, System.String> Microsoft.AspNetCore.Mvc.TagHelpers.FormActionTagHelper.RouteValues",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": true,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.FormTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.FormTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.FormTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "FormTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "form",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "asp-action",
+        "propertyName": "Action",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.FormTagHelper.Action",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-controller",
+        "propertyName": "Controller",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.FormTagHelper.Controller",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-area",
+        "propertyName": "Area",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.FormTagHelper.Area",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-page",
+        "propertyName": "Page",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.FormTagHelper.Page",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-page-handler",
+        "propertyName": "PageHandler",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.FormTagHelper.PageHandler",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-antiforgery",
+        "propertyName": "Antiforgery",
+        "typeName": "System.Boolean?",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "System.Boolean? Microsoft.AspNetCore.Mvc.TagHelpers.FormTagHelper.Antiforgery",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-fragment",
+        "propertyName": "Fragment",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.FormTagHelper.Fragment",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-route",
+        "propertyName": "Route",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.FormTagHelper.Route",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "method",
+        "propertyName": "Method",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.FormTagHelper.Method",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-all-route-data",
+        "propertyName": "RouteValues",
+        "typeName": "System.Collections.Generic.IDictionary<System.String, System.String>",
+        "indexerNamePrefix": "asp-route-",
+        "indexerTypeName": "System.String",
+        "documentation": null,
+        "displayName": "System.Collections.Generic.IDictionary<System.String, System.String> Microsoft.AspNetCore.Mvc.TagHelpers.FormTagHelper.RouteValues",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": true,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.ImageTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.ImageTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.ImageTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "ImageTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "img",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-append-version",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          },
+          {
+            "name": "src",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "src",
+        "propertyName": "Src",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.ImageTagHelper.Src",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-append-version",
+        "propertyName": "AppendVersion",
+        "typeName": "System.Boolean",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "bool Microsoft.AspNetCore.Mvc.TagHelpers.ImageTagHelper.AppendVersion",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.InputTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.InputTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.InputTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "InputTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "input",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-for",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "asp-for",
+        "propertyName": "For",
+        "typeName": "Microsoft.AspNetCore.Mvc.ViewFeatures.ModelExpression",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "Microsoft.AspNetCore.Mvc.ViewFeatures.ModelExpression Microsoft.AspNetCore.Mvc.TagHelpers.InputTagHelper.For",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-format",
+        "propertyName": "Format",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.InputTagHelper.Format",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "type",
+        "propertyName": "InputTypeName",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.InputTagHelper.InputTypeName",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "form",
+        "propertyName": "FormName",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.InputTagHelper.FormName",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "name",
+        "propertyName": "Name",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.InputTagHelper.Name",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "value",
+        "propertyName": "Value",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.InputTagHelper.Value",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.LabelTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.LabelTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.LabelTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "LabelTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "label",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-for",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "asp-for",
+        "propertyName": "For",
+        "typeName": "Microsoft.AspNetCore.Mvc.ViewFeatures.ModelExpression",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "Microsoft.AspNetCore.Mvc.ViewFeatures.ModelExpression Microsoft.AspNetCore.Mvc.TagHelpers.LabelTagHelper.For",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.LinkTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.LinkTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.LinkTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "LinkTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "link",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-href-include",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "link",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-href-exclude",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "link",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-fallback-href",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "link",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-fallback-href-include",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "link",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-fallback-href-exclude",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "link",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-fallback-test-class",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "link",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-fallback-test-property",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "link",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-fallback-test-value",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "link",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-append-version",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "href",
+        "propertyName": "Href",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.LinkTagHelper.Href",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-href-include",
+        "propertyName": "HrefInclude",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.LinkTagHelper.HrefInclude",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-href-exclude",
+        "propertyName": "HrefExclude",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.LinkTagHelper.HrefExclude",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-fallback-href",
+        "propertyName": "FallbackHref",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.LinkTagHelper.FallbackHref",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-suppress-fallback-integrity",
+        "propertyName": "SuppressFallbackIntegrity",
+        "typeName": "System.Boolean",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "bool Microsoft.AspNetCore.Mvc.TagHelpers.LinkTagHelper.SuppressFallbackIntegrity",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-append-version",
+        "propertyName": "AppendVersion",
+        "typeName": "System.Boolean?",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "System.Boolean? Microsoft.AspNetCore.Mvc.TagHelpers.LinkTagHelper.AppendVersion",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-fallback-href-include",
+        "propertyName": "FallbackHrefInclude",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.LinkTagHelper.FallbackHrefInclude",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-fallback-href-exclude",
+        "propertyName": "FallbackHrefExclude",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.LinkTagHelper.FallbackHrefExclude",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-fallback-test-class",
+        "propertyName": "FallbackTestClass",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.LinkTagHelper.FallbackTestClass",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-fallback-test-property",
+        "propertyName": "FallbackTestProperty",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.LinkTagHelper.FallbackTestProperty",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-fallback-test-value",
+        "propertyName": "FallbackTestValue",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.LinkTagHelper.FallbackTestValue",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.OptionTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.OptionTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.OptionTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "OptionTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "option",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "value",
+        "propertyName": "Value",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.OptionTagHelper.Value",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.PartialTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.PartialTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.PartialTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "PartialTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "partial",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "name",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "name",
+        "propertyName": "Name",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.PartialTagHelper.Name",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "for",
+        "propertyName": "For",
+        "typeName": "Microsoft.AspNetCore.Mvc.ViewFeatures.ModelExpression",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "Microsoft.AspNetCore.Mvc.ViewFeatures.ModelExpression Microsoft.AspNetCore.Mvc.TagHelpers.PartialTagHelper.For",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "model",
+        "propertyName": "Model",
+        "typeName": "System.Object",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "object Microsoft.AspNetCore.Mvc.TagHelpers.PartialTagHelper.Model",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "optional",
+        "propertyName": "Optional",
+        "typeName": "System.Boolean",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "bool Microsoft.AspNetCore.Mvc.TagHelpers.PartialTagHelper.Optional",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "fallback-name",
+        "propertyName": "FallbackName",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.PartialTagHelper.FallbackName",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "view-data",
+        "propertyName": "ViewData",
+        "typeName": "Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary",
+        "indexerNamePrefix": "view-data-",
+        "indexerTypeName": "System.Object",
+        "documentation": null,
+        "displayName": "Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary Microsoft.AspNetCore.Mvc.TagHelpers.PartialTagHelper.ViewData",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": true,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.PersistComponentStateTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.PersistComponentStateTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.PersistComponentStateTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "PersistComponentStateTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "persist-component-state",
+        "parentTag": null,
+        "tagStructure": "WithoutEndTag",
+        "caseSensitive": false,
+        "attributes": [],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "persist-mode",
+        "propertyName": "PersistenceMode",
+        "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.PersistenceMode?",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.PersistenceMode? Microsoft.AspNetCore.Mvc.TagHelpers.PersistComponentStateTagHelper.PersistenceMode",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.RenderAtEndOfFormTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.RenderAtEndOfFormTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.RenderAtEndOfFormTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "RenderAtEndOfFormTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "form",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.ScriptTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.ScriptTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.ScriptTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "ScriptTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "script",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-src-include",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "script",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-src-exclude",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "script",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-fallback-src",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "script",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-fallback-src-include",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "script",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-fallback-src-exclude",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "script",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-fallback-test",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "script",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-append-version",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "script",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "type",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "script",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-importmap",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "src",
+        "propertyName": "Src",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.ScriptTagHelper.Src",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "type",
+        "propertyName": "Type",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.ScriptTagHelper.Type",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-src-include",
+        "propertyName": "SrcInclude",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.ScriptTagHelper.SrcInclude",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-src-exclude",
+        "propertyName": "SrcExclude",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.ScriptTagHelper.SrcExclude",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-fallback-src",
+        "propertyName": "FallbackSrc",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.ScriptTagHelper.FallbackSrc",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-suppress-fallback-integrity",
+        "propertyName": "SuppressFallbackIntegrity",
+        "typeName": "System.Boolean",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "bool Microsoft.AspNetCore.Mvc.TagHelpers.ScriptTagHelper.SuppressFallbackIntegrity",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-append-version",
+        "propertyName": "AppendVersion",
+        "typeName": "System.Boolean?",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "System.Boolean? Microsoft.AspNetCore.Mvc.TagHelpers.ScriptTagHelper.AppendVersion",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-fallback-src-include",
+        "propertyName": "FallbackSrcInclude",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.ScriptTagHelper.FallbackSrcInclude",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-fallback-src-exclude",
+        "propertyName": "FallbackSrcExclude",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.ScriptTagHelper.FallbackSrcExclude",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-fallback-test",
+        "propertyName": "FallbackTestExpression",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.ScriptTagHelper.FallbackTestExpression",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-importmap",
+        "propertyName": "ImportMap",
+        "typeName": "Microsoft.AspNetCore.Components.ImportMapDefinition",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "Microsoft.AspNetCore.Components.ImportMapDefinition Microsoft.AspNetCore.Mvc.TagHelpers.ScriptTagHelper.ImportMap",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.SelectTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.SelectTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.SelectTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "SelectTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "select",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-for",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      },
+      {
+        "tagName": "select",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-items",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "asp-for",
+        "propertyName": "For",
+        "typeName": "Microsoft.AspNetCore.Mvc.ViewFeatures.ModelExpression",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "Microsoft.AspNetCore.Mvc.ViewFeatures.ModelExpression Microsoft.AspNetCore.Mvc.TagHelpers.SelectTagHelper.For",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "asp-items",
+        "propertyName": "Items",
+        "typeName": "System.Collections.Generic.IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "System.Collections.Generic.IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> Microsoft.AspNetCore.Mvc.TagHelpers.SelectTagHelper.Items",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "name",
+        "propertyName": "Name",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.SelectTagHelper.Name",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.TextAreaTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.TextAreaTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.TextAreaTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "TextAreaTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "textarea",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-for",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "asp-for",
+        "propertyName": "For",
+        "typeName": "Microsoft.AspNetCore.Mvc.ViewFeatures.ModelExpression",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "Microsoft.AspNetCore.Mvc.ViewFeatures.ModelExpression Microsoft.AspNetCore.Mvc.TagHelpers.TextAreaTagHelper.For",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      },
+      {
+        "name": "name",
+        "propertyName": "Name",
+        "typeName": "System.String",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "string Microsoft.AspNetCore.Mvc.TagHelpers.TextAreaTagHelper.Name",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.ValidationMessageTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.ValidationMessageTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.ValidationMessageTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "ValidationMessageTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "span",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-validation-for",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "asp-validation-for",
+        "propertyName": "For",
+        "typeName": "Microsoft.AspNetCore.Mvc.ViewFeatures.ModelExpression",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "Microsoft.AspNetCore.Mvc.ViewFeatures.ModelExpression Microsoft.AspNetCore.Mvc.TagHelpers.ValidationMessageTagHelper.For",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": false,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  },
+  {
+    "kind": "ITagHelper",
+    "runtimeKind": "ITagHelper",
+    "name": "Microsoft.AspNetCore.Mvc.TagHelpers.ValidationSummaryTagHelper",
+    "assemblyName": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "displayName": "Microsoft.AspNetCore.Mvc.TagHelpers.ValidationSummaryTagHelper",
+    "typeName": "Microsoft.AspNetCore.Mvc.TagHelpers.ValidationSummaryTagHelper",
+    "typeNamespace": "Microsoft.AspNetCore.Mvc.TagHelpers",
+    "typeNameIdentifier": "ValidationSummaryTagHelper",
+    "documentation": null,
+    "tagOutputHint": null,
+    "caseSensitive": false,
+    "isFullyQualifiedNameMatch": false,
+    "classifyAttributesOnly": false,
+    "tagMatchingRules": [
+      {
+        "tagName": "div",
+        "parentTag": null,
+        "tagStructure": "Unspecified",
+        "caseSensitive": false,
+        "attributes": [
+          {
+            "name": "asp-validation-summary",
+            "nameComparison": "FullMatch",
+            "value": null,
+            "valueComparison": "None",
+            "caseSensitive": false,
+            "isDirectiveAttribute": false,
+            "diagnostics": []
+          }
+        ],
+        "diagnostics": []
+      }
+    ],
+    "boundAttributes": [
+      {
+        "name": "asp-validation-summary",
+        "propertyName": "ValidationSummary",
+        "typeName": "Microsoft.AspNetCore.Mvc.Rendering.ValidationSummary",
+        "indexerNamePrefix": null,
+        "indexerTypeName": null,
+        "documentation": null,
+        "displayName": "Microsoft.AspNetCore.Mvc.Rendering.ValidationSummary Microsoft.AspNetCore.Mvc.TagHelpers.ValidationSummaryTagHelper.ValidationSummary",
+        "containingType": null,
+        "caseSensitive": false,
+        "hasIndexer": false,
+        "isEnum": true,
+        "isEditorRequired": false,
+        "isDirectiveAttribute": false,
+        "isWeaklyTyped": false,
+        "parameters": [],
+        "metadata": {
+          "kind": "None"
+        },
+        "diagnostics": []
+      }
+    ],
+    "allowedChildTags": [],
+    "metadata": {
+      "kind": "None"
+    },
+    "diagnostics": []
+  }
+]

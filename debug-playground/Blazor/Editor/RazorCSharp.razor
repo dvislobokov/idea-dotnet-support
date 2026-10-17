@@ -1,8 +1,9 @@
 @page "/editor/csharp"
 @using Playground.Blazor.Components.Pages
 @inject NavigationManager Navigation
-@* RAZOR_PLAN.md, R3a: the C# of the page is one virtual C# document (the class of the component, `__o = <expr>;` for the expressions of
-   the markup, the members of `@code`), injected into the file piece by piece; the plugin's C# works through it.
+@* RAZOR_PLAN.md, R3a / R3b: the C# of the page is one virtual C# document — the C# the SDK's generator makes of it (the class of the
+   component, `__builder.AddContent(…, <expr>)` for the expressions of the markup, the members of `@code`, `_Imports.razor` of the
+   project), injected into the file piece by piece; the plugin's C# works through it.
 
    TYPE:razor-completion — on the empty line under `<ul>` below type `<li>@cou` and wait for the popup (or Ctrl+Space). EXPECT: `count`
    and `Counter` in the list, `count` first; Enter writes `count`. Then type `.` after it: the members of int (`ToString`, `CompareTo`).

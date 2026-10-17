@@ -204,15 +204,38 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
     `@section` → `DefineSection`, шаблоны `@<b>` → лямбда; разметка после `@code` — второй метод `__RazorRender2`. Его заменит R3b.
     Факт: `GotoDeclarationAction.findAllTargetElements` на редакторе хоста инъекцию не видит (IDE сама даёт `EditorWindow`), в тестах
     брать `InjectedLanguageEditorUtil.getEditorForInjectedLanguageNoCommit`.
-  - R3b. **Перенос генерации design-time документа из компилятора** (решение 2026-10-17, по вопросу пользователя «что ещё перенести из
-    Roslyn»): конвейер `Intermediate` (понижение дерева в IR, проходы директив `ModelDirective`, `InjectDirective`, `PagesPropertyInjectionPass`,
-    классификаторы документа — компонент / view / Razor Page), проходы компонентов (`ComponentLoweringPass`, `ComponentBindLoweringPass`,
-    `ComponentEventHandlerLoweringPass`, `ComponentGenericTypePass`…), `DesignTimeNodeWriter` + `CodeWriter` + `SourceMapping`; runtime-writer
-    не нужен. Mappings генератора — ровно куски инъекции (сопоставленные спаны = хосты, остальной текст = prefix / suffix). Оба вида файла;
-    `_Imports.razor` / `_ViewImports.cshtml` по иерархии папок (`ImportDocuments` движка), `@model` → `RazorPage<TModel>`, `@page` Razor
-    Pages → `PageModel` из `.cshtml.cs`, partial-класс из `.razor.cs`, namespace по папке / RootNamespace. Оракул — `razordump designtime`
-    и эталоны `*_DesignTime.codegen.cs` (828) и `.mappings.txt` (527), гейт как в R2. Объём ~R2 (2–3 сессии). Не переносить: языковой
-    сервер Razor (completion, форматтер, semantic tokens — всё на Roslyn Workspaces; это даёт инъекция платформы); привязка тегов — R5.
+  - [x] R3b (0.1.253). **Полный перенос конвейера генерации компилятора** (решение пользователя 2026-10-17: «вариант A, целевой,
+    без приколов»). Факты, из-за которых план был переписан: design-time режима больше нет ни в исходниках корпуса, ни в dll SDK
+    10.0.401 — тулинг живёт на runtime-выводе с `#line (строка,колонка)-(строка,колонка)` и `SourceMappings`; разметка понижается в
+    `UnresolvedElement`-узлы, а компоненты и tag helpers разрешаются отдельной фазой по IR (`DefaultTagHelperResolutionPhase`), без неё
+    разметка не разворачивается даже при нуле tag helpers; «расщепление» документа (`DefaultRazorMarkupSplitPhase`, decl / impl) есть
+    только в исходниках корпуса, в движке выключено по умолчанию. Перенесено ≈ 31 тыс. строк C# класс в класс (razor-psi-core, пакеты
+    `razor.lang.intermediate`, `razor.lang.codegen` с `extensions`, `mvc`, `components`): red-дерево над зелёным деревом R2 (`syntax/red`,
+    генерируется `tools/razor/gen_syntax.py`, `RedSyntaxRewriter` строит зелёные узлы заново), IR с узлами, обходами, builder и
+    форматтером, `RazorSourceDocument` / `RazorCodeDocument` / `RazorProjectEngine` с фазами и features как у компилятора, понижение,
+    discovery контекста tag helpers, разрешение (`TagHelperResolution.kt`: legacy и компонентный резолверы), переписывание дерева
+    (`TagHelperParseTreeRewriter`), классификаторы и проходы директив (`Extensions`, `Mvc` с view components, ~25 проходов компонентов),
+    `CodeWriter` + runtime node writer + `ComponentNodeWriter`, расщепление, `Utf8WriteLiteralPhase` (без Roslyn — карта поддержки
+    приходит извне, иначе выключена), `TypeNameRewriters` со своим разбором имён типов C# вместо Roslyn. Движок генератора SDK —
+    `RazorGeneratorEngine` (как razordump его строит). **Гейты** (`:razor-psi-core:corpusTest`): эталоны файловых тестов компилятора
+    `RazorCodegenBaselineCorpusTest` — 93/93 по `.codegen.cs`, `.ir.txt`, `.mappings.txt`, `.diagnostics.txt` (33 случая с дескрипторами
+    из статического C# тестов — вне гейта до R5; сериализаторы IR и mappings тестов компилятора перенесены — `RazorIrSerializer`,
+    `RazorMappingsSerializer`); корпус против `razordump codegen` dll SDK без tag helpers (`RazorCodegenCorpusTest`, версия языка 10.0 с
+    обеих сторон — latest SDK) — eShop 58/58, nopCommerce 1193/1193, MudBlazor 2051/2054 (те же 3 файла новее SDK). Факты: контрольная
+    сумма `#pragma checksum` считается по байтам потока вместе с BOM (`RazorSourceDocument.hasBom`); `ParseLeadingDirectives` движка
+    ведущих директив — свои токенизаторы (`DirectiveHtmlTokenizer` / `DirectiveCSharpTokenizer`); SDK 10.0 пишет `@rendermode` без
+    `#line`, main — с ним с Razor 11 (порт следует версии). **Дескрипторы — данные**: `TagHelperDescriptorJson` (`syntax/`) читает и
+    пишет JSON, который `razordump tag-helpers` / `cases-codegen --tag-helpers-out` снимает с discovery компилятора
+    (`testData/codegen-tagHelpers`, общий набор ссылочных пакетов + 6 своих); этим же форматом индекс плагина отдаст дескрипторы в R5.
+    **Хост** (`RazorCSharpInjection.kt`): документ = вывод генератора на тексте редактора с `_Imports.razor` / `_ViewImports.cshtml` по
+    иерархии папок проекта, RootNamespace и версией Razor по TFM (`HostFileSystem` читает документы IDE; копия файла для completion — через
+    `originalFile`); хосты инъекции — source mappings, чьи спаны лежат в C#-литерале PSI, остальной текст — клей. Факт платформы:
+    куски инъекции склеиваются в порядке хостов, и completion проверяет, что каретка между первым и последним хостом
+    (`CompletionAssertions`, «startOffset after injected») — поэтому хосты обязаны идти в порядке файла. Решение: проход
+    `RazorIdeLayoutPass` (только в IDE, не в гейтах) расставляет члены класса по позиции в файле, разрезая render-метод там, где между
+    его операторами стоит член (`BuildRenderTree__2` — как делал design-time документ), а среди mappings хостами становится самая
+    тяжёлая цепочка в порядке файла (`longestChain`), остальное — текст (например, маршрут `@page` перед `@using`). Эмиттер R3a убран.
+    Не переносить: языковой сервер Razor (completion, форматтер — на Roslyn Workspaces; это даёт инъекция платформы).
   - Гейт: имена и типы C#-выражений в разметке против `roslyndump semantics` на выводе `razordump designtime` — тот же порог, что у
     `semanticGate` для `.cs`; 0 ложных ошибок на трёх solution.
 - [ ] **R4. C# в разметке** (2). Completion (члены, `@` в разметке — выражения и директивы, параметры `@inject`), Go to Declaration,

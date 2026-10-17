@@ -50,7 +50,7 @@ import io.github.dotnetsupport.razor.lang.syntax.UnclassifiedTextLiteralSyntax
  * method by method; keywords are kept as their text (the compiler's `CSharpSyntaxKind` of the keyword).
  */
 class CSharpCodeParser(directives: List<DirectiveDescriptor>, context: ParserContext) :
-    TokenizerBackedParser<CSharpTokenizer>(CSharpLanguageCharacteristics(context.options.useRoslynTokenizer), context) {
+    TokenizerBackedParser<CSharpTokenizer>(CSharpLanguageCharacteristics(context.options.useRoslynTokenizer, context.options.parseLeadingDirectives), context) {
 
     private val currentKeywords: KeywordSet
     val keywords: KeywordSet

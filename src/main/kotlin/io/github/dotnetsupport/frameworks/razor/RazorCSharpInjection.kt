@@ -2,267 +2,186 @@ package io.github.dotnetsupport.frameworks.razor
 
 import com.intellij.lang.injection.MultiHostInjector
 import com.intellij.lang.injection.MultiHostRegistrar
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.util.TextRange
+import com.intellij.openapi.vfs.VfsUtilCore
+import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
+import com.intellij.psi.util.CachedValueProvider
+import com.intellij.psi.util.CachedValuesManager
+import com.intellij.psi.util.PsiTreeUtil
 import io.github.dotnetsupport.lang.CSharpLanguage
-import io.github.dotnetsupport.razor.lang.syntax.RazorSyntaxKind
+import io.github.dotnetsupport.msbuild.CompilationModel
+import io.github.dotnetsupport.msbuild.DotNetProjects
+import io.github.dotnetsupport.razor.lang.codegen.NotFoundProjectItem
+import io.github.dotnetsupport.razor.lang.codegen.RazorGeneratorEngine
+import io.github.dotnetsupport.razor.lang.codegen.RazorProjectEngine
+import io.github.dotnetsupport.razor.lang.codegen.RazorProjectFileSystem
+import io.github.dotnetsupport.razor.lang.codegen.RazorProjectItem
+import io.github.dotnetsupport.razor.lang.codegen.SourceMapping
+import io.github.dotnetsupport.razor.lang.syntax.RazorDiagnostic
+import io.github.dotnetsupport.razor.lang.syntax.RazorFileKind
+import io.github.dotnetsupport.razor.lang.syntax.RazorLanguageVersion
+import java.util.concurrent.ConcurrentHashMap
 
 /**
- * The virtual C# document of a Razor file (RAZOR_PLAN.md, R3): one C# injection of many pieces, the C# literals of the tree as written,
- * glued by text after the design-time output of the Razor compiler — the class of the component or the page, `__o = <expr>;` for the
- * expressions of the markup, the members of `@code` / `@functions`, the properties of `@inject`, the `using` directives. The platform maps
- * the positions: completion, navigation, errors and rename work in the Razor editor through the pieces. The header (the namespace, the base
- * class, `_Imports.razor`) is R3b; here it is the file's own directives.
+ * The virtual C# document of a Razor file (RAZOR_PLAN.md, R3b): the C# the SDK's source generator makes of it — the port of the compiler's
+ * pipeline in razor-psi-core ([RazorGeneratorEngine]) run on the text of the editor, with the project's `_Imports.razor` /
+ * `_ViewImports.cshtml` up the folders, its root namespace and its Razor language version. One C# injection of many pieces: every source
+ * mapping of the generated code whose original span lies in a C# literal of the PSI is a host (the Razor text as written), the generated
+ * text between the mappings is the glue. The platform maps the positions: completion, navigation, errors and rename work in the Razor
+ * editor through the pieces.
  */
 object RazorCSharpDocument {
-    /** A piece of the document: text of the generator, or a host of the Razor file taken as written. */
-    sealed class Piece {
-        class Text(val text: String) : Piece()
-        class Host(val host: RazorCodeLiteral) : Piece()
+    /** A place of the injection: the [range] of [host] with the generated text before and after it. */
+    class Place(val prefix: String, val host: RazorCodeLiteral, val range: TextRange, var suffix: String)
+
+    /** What the generator made of the file: the C#, the mappings (original → generated) and the diagnostics of the compiler. */
+    class Generated(val code: String, val mappings: List<SourceMapping>, val diagnostics: List<RazorDiagnostic>, val filePath: String)
+
+    private val GENERATED = com.intellij.openapi.util.Key.create<com.intellij.psi.util.CachedValue<Generated?>>("razor.generated")
+
+    /** The generator's output for [file]; null when the file has no text. Cached until the file changes. */
+    fun generate(file: RazorFile): Generated? = CachedValuesManager.getManager(file.project).getCachedValue(file, GENERATED, {
+        CachedValueProvider.Result.create(generateNow(file), file)
+    }, false)
+
+    private fun generateNow(file: RazorFile): Generated? {
+        val text = file.text
+        if (text.isEmpty()) return null
+        // a copy of the file (completion works on one) has a virtual file without a parent: the project is the original's
+        val virtualFile = file.originalFile.viewProvider.virtualFile
+        val projectFile = virtualFile.takeIf { it.isInLocalFileSystem }?.let { DotNetProjects.findOwningProject(it) }
+        val root = projectFile?.parent ?: virtualFile.parent
+        val relative = root?.let { VfsUtilCore.getRelativePath(virtualFile, it, '/') } ?: virtualFile.name
+        val options = if (projectFile != null) CompilationModel.getInstance(file.project).optionsFor(virtualFile) else null
+        val rootNamespace = options?.rootNamespace?.takeIf { it.isNotBlank() } ?: projectFile?.nameWithoutExtension ?: file.project.name
+        val version = RazorGeneratorEngine.versionOf(options?.targetFramework ?: options?.targetFrameworks?.firstOrNull())
+        val engine = engines.computeIfAbsent(EngineKey(root?.path, rootNamespace, version)) {
+            RazorGeneratorEngine.create(HostFileSystem(root), version, rootNamespace, "\n") { b -> b.features.add(RazorIdeLayoutPass()) }
+        }
+        val fileSystem = engine.fileSystem as HostFileSystem
+        fileSystem.current.set(Current("/$relative", virtualFile.path, text))
+        try {
+            val item = fileSystem.getItem("/$relative", null)
+            val csharp = engine.process(item).getCSharpDocument() ?: return null
+            return Generated(csharp.generatedCode, csharp.sourceMappingsSortedByGenerated, csharp.diagnostics, item.getSource().filePath ?: "/$relative")
+        } finally {
+            fileSystem.current.remove()
+        }
     }
 
-    /** A place of the injection: the host with the text before and after it. */
-    class Place(val prefix: String, val host: RazorCodeLiteral, var suffix: String)
-
-    private enum class Level { FILE, CLASS, RENDER }
-
-    /** The places of [file], in order; empty when the file has no C# at all. */
+    /**
+     * The places of [file], in the order of the generated code; empty when the file has no C# at all. The hosts must come in the order of the
+     * file (the platform assumes it: completion asserts the caret lies between the first and the last host), so of the mappings the longest
+     * chain in the order of the file (weighted by length, [RazorIdeLayoutPass] has put the members in order already) are the hosts, the
+     * rest is glue text — the `@page` route before the `@using` lines, a mapping of the same expression written twice.
+     */
     fun places(file: RazorFile): List<Place> {
-        val document = file.document ?: return emptyList()
-        val pieces = Emitter(file).run { walk(document); finish() }
+        val generated = generate(file) ?: return emptyList()
+        class Candidate(val mapping: SourceMapping, val host: RazorCodeLiteral, val range: TextRange)
+        val candidates = ArrayList<Candidate?>()
+        for (mapping in generated.mappings) {
+            val o = mapping.originalSpan
+            val host = if (o.filePath == generated.filePath) hostOf(file, o.absoluteIndex, o.length) else null
+            candidates += host?.let { Candidate(mapping, it, TextRange(o.absoluteIndex - it.textRange.startOffset, o.absoluteIndex - it.textRange.startOffset + o.length)) }
+        }
+        val chosen = longestChain(candidates.map { c -> c?.let { it.mapping.originalSpan.absoluteIndex to it.mapping.originalSpan.length } })
         val places = ArrayList<Place>()
         val pending = StringBuilder()
-        for (piece in pieces) when (piece) {
-            is Piece.Text -> pending.append(piece.text)
-            is Piece.Host -> {
-                places += Place(pending.toString(), piece.host, "")
-                pending.setLength(0)
-            }
+        var at = 0
+        for ((i, candidate) in candidates.withIndex()) {
+            if (candidate == null || i !in chosen) continue
+            val g = candidate.mapping.generatedSpan
+            if (g.absoluteIndex < at) continue // overlapping the previous mapping in the generated code: glue
+            pending.append(generated.code, at, g.absoluteIndex)
+            at = g.absoluteIndex + g.length
+            places += Place(pending.toString(), candidate.host, candidate.range, "")
+            pending.setLength(0)
         }
         if (places.isEmpty()) return emptyList()
+        pending.append(generated.code, at, generated.code.length)
         places.last().suffix = pending.toString()
         return places
     }
 
+    /** The indices of the heaviest chain of [spans] (start, length; null — not a candidate) whose spans follow each other without overlap. */
+    private fun longestChain(spans: List<Pair<Int, Int>?>): Set<Int> {
+        val best = IntArray(spans.size)
+        val previous = IntArray(spans.size) { -1 }
+        var bestEnd = -1
+        for (i in spans.indices) {
+            val span = spans[i] ?: continue
+            best[i] = span.second
+            for (j in 0 until i) {
+                val before = spans[j] ?: continue
+                if (before.first + before.second <= span.first && best[j] + span.second > best[i]) {
+                    best[i] = best[j] + span.second
+                    previous[i] = j
+                }
+            }
+            if (bestEnd < 0 || best[i] > best[bestEnd]) bestEnd = i
+        }
+        val chosen = HashSet<Int>()
+        var i = bestEnd
+        while (i >= 0) {
+            chosen += i
+            i = previous[i]
+        }
+        return chosen
+    }
+
+    /** The C# literal of the PSI that holds [start]..[start]+[length] whole, when it is a host. */
+    private fun hostOf(file: RazorFile, start: Int, length: Int): RazorCodeLiteral? {
+        if (length <= 0) return null
+        val leaf = file.findElementAt(start) ?: return null
+        val host = PsiTreeUtil.getParentOfType(leaf, RazorCodeLiteral::class.java, false) ?: return null
+        if (!host.isValidHost) return null
+        return host.takeIf { it.textRange.contains(TextRange(start, start + length)) }
+    }
+
     /** The text of the document as the C# parser sees it: the places glued, for tests and the trace. */
-    fun text(file: RazorFile): String = places(file).joinToString("") { it.prefix + it.host.text + it.suffix }
+    fun text(file: RazorFile): String = places(file).joinToString("") { it.prefix + it.range.substring(it.host.text) + it.suffix }
 
-    private class Emitter(val file: RazorFile) {
-        val pieces = ArrayList<Piece>()
-        val legacy = file.kind == RazorFileKind.LEGACY
-        var level = Level.FILE
-        val header = Header(file)
+    private data class EngineKey(val root: String?, val rootNamespace: String, val version: RazorLanguageVersion)
 
-        /** Inside the members of `@code` or a template (a lambda): what renders there does not open the render method. */
-        var nested = 0
-        var renders = 0
+    /** One engine per project root, root namespace and version: the engine holds no document state, the file system reads the IDE's documents. */
+    private val engines = ConcurrentHashMap<EngineKey, RazorProjectEngine>()
 
-        fun text(s: String) {
-            pieces += Piece.Text(s)
-        }
+    /**
+     * The files of the project as the IDE sees them: the text of an open document (unsaved edits included), else the file on disk; the file
+     * being generated — [current] — as the PSI has it.
+     */
+    /** The file being generated: its Razor path, physical path and the text of the PSI. */
+    private class Current(val filePath: String, val physicalPath: String, val text: String)
 
-        fun host(literal: RazorCodeLiteral) {
-            if (literal.isValidHost) pieces += Piece.Host(literal)
-        }
+    private class HostFileSystem(private val root: VirtualFile?) : RazorProjectFileSystem() {
+        val current = ThreadLocal<Current?>()
 
-        fun render() {
-            if (nested == 0) ensure(Level.RENDER)
-        }
+        override fun enumerateItems(basePath: String): Sequence<RazorProjectItem> = emptySequence()
 
-        fun ensure(wanted: Level) {
-            if (level == wanted) return
-            if (level == Level.FILE) {
-                text(header.classHeader())
-                level = Level.CLASS
-            }
-            if (wanted == Level.RENDER) {
-                // the markup after a `@code` block renders in a method of its own: the pieces keep the order of the file
-                renders++
-                text(
-                    when {
-                        renders > 1 -> "private async global::System.Threading.Tasks.Task __RazorRender$renders()\n{\n"
-                        legacy -> "public override async global::System.Threading.Tasks.Task ExecuteAsync()\n{\n"
-                        else -> "protected override void BuildRenderTree(global::Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder __builder)\n{\n"
-                    },
-                )
-                level = Level.RENDER
-            } else if (level == Level.RENDER) {
-                text("}\n")
-                level = Level.CLASS
-            }
-        }
-
-        fun finish(): List<Piece> {
-            if (level == Level.RENDER) text("}\n")
-            if (level != Level.FILE) text("}\n" + header.classFooter())
-            return pieces
-        }
-
-        fun walk(element: PsiElement) {
-            if (element is RazorCodeLiteral) return host(element)
-            val razor = element as? RazorElement ?: return
-            when (razor.kind) {
-                RazorSyntaxKind.RazorComment, RazorSyntaxKind.MarkupTransition, RazorSyntaxKind.MarkupEphemeralTextLiteral, RazorSyntaxKind.CSharpTransition -> return
-                RazorSyntaxKind.RazorUsingDirective -> {
-                    if (level != Level.FILE) return // already in the header, as text
-                    val tokens = (razor as RazorDirectivePsi).tokens
-                    tokens.forEach(::host)
-                    if (tokens.lastOrNull()?.text?.trimEnd()?.endsWith(';') != true) text(";")
-                    text("\n")
-                }
-                RazorSyntaxKind.RazorDirective -> directive(razor as RazorDirectivePsi)
-                RazorSyntaxKind.CSharpStatement -> {
-                    render()
-                    children(razor)
-                    text("\n")
-                }
-                RazorSyntaxKind.CSharpImplicitExpression, RazorSyntaxKind.CSharpExplicitExpression -> {
-                    render()
-                    text("__o = ")
-                    children(razor)
-                    text(";\n")
-                }
-                RazorSyntaxKind.CSharpExplicitExpressionBody -> {
-                    text("(")
-                    children(razor)
-                    text(")")
-                }
-                RazorSyntaxKind.CSharpTemplateBlock -> {
-                    text(if (legacy) "item => new global::Microsoft.AspNetCore.Mvc.Razor.HelperResult(async(__razor_template_writer) => {\n" else "(global::Microsoft.AspNetCore.Components.RenderFragment)((__builder2) => {\n")
-                    nested++
-                    children(razor)
-                    nested--
-                    text("})")
-                }
-                RazorSyntaxKind.CSharpCodeBlock -> {
-                    // a block of statements (`@if`, `@foreach` with their markup) renders; one that only holds a directive or an expression is walked through
-                    if (razor.children.any { it is RazorCodeLiteral && it.isValidHost }) render()
-                    children(razor)
-                }
-                RazorSyntaxKind.RazorMetaCode -> return
-                else -> children(razor)
-            }
-        }
-
-        fun children(element: PsiElement) {
-            var child = element.firstChild
-            while (child != null) {
-                walk(child)
-                child = child.nextSibling
-            }
-        }
-
-        fun directive(directive: RazorDirectivePsi) {
-            when (val name = directive.directiveName) {
-                "code", "functions" -> {
-                    ensure(Level.CLASS)
-                    nested++
-                    directive.codeBlock()?.let(::children)
-                    nested--
-                    text("\n")
-                }
-                "inject" -> {
-                    ensure(Level.CLASS)
-                    val tokens = directive.tokens
-                    if (tokens.size < 2) return
-                    text(if (legacy) "[global::Microsoft.AspNetCore.Mvc.Razor.Internal.RazorInjectAttribute] public " else "[global::Microsoft.AspNetCore.Components.InjectAttribute] private ")
-                    host(tokens[0])
-                    text(" ")
-                    host(tokens[1])
-                    text(" { get; set; }\n")
-                }
-                "section" -> {
-                    ensure(Level.RENDER)
-                    text("DefineSection(\"${directive.tokens.firstOrNull()?.text ?: "section"}\", async () => {\n")
-                    directive.codeBlock()?.let(::children)
-                    text("});\n")
-                }
-                else -> if (name !in Header.HEADER_DIRECTIVES && name !in Header.IGNORED_DIRECTIVES) {
-                    // an unknown directive with a block (a directive of a test, a future one): its code, so the C# in it is still C#
-                    directive.codeBlock()?.let { ensure(Level.RENDER); children(it) }
-                }
-            }
-        }
-
-        /** The content of a block directive between its braces. */
-        private fun RazorDirectivePsi.codeBlock(): PsiElement? {
-            val open = openBrace ?: return null
-            var sibling = open.nextSibling
-            while (sibling != null) {
-                if ((sibling as? RazorElement)?.kind == RazorSyntaxKind.CSharpCodeBlock || (sibling as? RazorElement)?.kind == RazorSyntaxKind.MarkupBlock) return sibling
-                sibling = sibling.nextSibling
-            }
-            return null
+        override fun getItem(path: String, fileKind: RazorFileKind?): RazorProjectItem {
+            val normalized = normalizeAndEnsureValidPath(path)
+            val currentFile = current.get()
+            if (currentFile != null && currentFile.filePath == normalized) return HostItem(normalized, currentFile.physicalPath, normalized.removePrefix("/"), fileKind, currentFile.text)
+            val file = root?.findFileByRelativePath(normalized.removePrefix("/"))
+            if (file == null || !file.exists() || file.isDirectory) return NotFoundProjectItem(normalized, fileKind)
+            val text = FileDocumentManager.getInstance().getCachedDocument(file)?.text ?: VfsUtilCore.loadText(file)
+            return HostItem(normalized, file.path, normalized.removePrefix("/"), fileKind, text)
         }
     }
 
-    /** What the class header takes from the file's own directives: the base class, the interfaces, the type parameters, the attributes, the namespace. */
-    class Header(file: RazorFile) {
-        private val legacy = file.kind == RazorFileKind.LEGACY
-        private val isPage: Boolean
-        private val className: String = file.name.substringBeforeLast('.').replace(Regex("[^A-Za-z0-9_]"), "_").let { if (it.firstOrNull()?.isDigit() == true) "_$it" else it }
-        private val namespace: String?
-        private val inherits: String?
-        private val model: String?
-        private val implements: List<String>
-        private val typeParameters: List<String>
-        private val attributes: List<String>
-        private val lateUsings: List<String>
-
-        init {
-            val directives = file.directives
-            isPage = legacy && directives.any { it.directiveName == "page" }
-            namespace = directives.lastOrNull { it.directiveName == "namespace" }?.argument
-            inherits = directives.lastOrNull { it.directiveName == "inherits" }?.argument
-            model = directives.lastOrNull { it.directiveName == "model" }?.argument
-            implements = directives.filter { it.directiveName == "implements" }.mapNotNull { it.argument }
-            typeParameters = directives.filter { it.directiveName == "typeparam" }.mapNotNull { it.argument?.substringBefore(' ') }
-            attributes = directives.filter { it.directiveName == "attribute" }.mapNotNull { it.argument }
-            // a `@using` after a member-level directive cannot be a host any more: the header carries it as text
-            var members = false
-            val late = ArrayList<String>()
-            for (directive in directives) {
-                if (directive.directiveName in MEMBER_DIRECTIVES) members = true
-                else if (directive.directiveName == "using" && members) directive.argument?.let { late += it }
-            }
-            lateUsings = late
-        }
-
-        fun classHeader(): String {
-            val sb = StringBuilder()
-            for (using in if (legacy) LEGACY_USINGS else COMPONENT_USINGS) sb.append("using ").append(using).append(";\n")
-            for (using in lateUsings) sb.append(using).append(";\n")
-            if (namespace != null) sb.append("namespace ").append(namespace).append("\n{\n")
-            for (attribute in attributes) sb.append(attribute).append('\n')
-            val base = when {
-                inherits != null -> inherits
-                !legacy -> "global::Microsoft.AspNetCore.Components.ComponentBase"
-                isPage -> "global::Microsoft.AspNetCore.Mvc.RazorPages.Page"
-                else -> "global::Microsoft.AspNetCore.Mvc.Razor.RazorPage<" + (model ?: "dynamic") + ">"
-            }
-            sb.append("public partial class ").append(className)
-            if (typeParameters.isNotEmpty()) sb.append(typeParameters.joinToString(", ", "<", ">"))
-            sb.append(" : ").append(base)
-            for (i in implements) sb.append(", ").append(i)
-            sb.append("\n{\n")
-            sb.append("#pragma warning disable 0414\nprivate static object __o = null;\n#pragma warning restore 0414\n")
-            if (isPage && model != null) sb.append("public ").append(model).append(" Model => (").append(model).append(")ViewContext.ViewData.Model;\n")
-            return sb.toString()
-        }
-
-        fun classFooter(): String = if (namespace != null) "}\n" else ""
-
-        companion object {
-            val HEADER_DIRECTIVES = setOf("inherits", "model", "implements", "typeparam", "attribute", "namespace", "layout", "page", "rendermode", "preservewhitespace", "using")
-            val IGNORED_DIRECTIVES = setOf("addTagHelper", "removeTagHelper", "tagHelperPrefix")
-            val MEMBER_DIRECTIVES = setOf("code", "functions", "inject", "section")
-            val COMPONENT_USINGS = listOf("global::System", "global::System.Collections.Generic", "global::System.Linq", "global::System.Threading.Tasks", "global::Microsoft.AspNetCore.Components")
-            val LEGACY_USINGS = listOf("global::System", "global::System.Collections.Generic", "global::System.Linq", "global::System.Threading.Tasks", "global::Microsoft.AspNetCore.Mvc", "global::Microsoft.AspNetCore.Mvc.Rendering", "global::Microsoft.AspNetCore.Mvc.ViewFeatures")
-        }
+    private class HostItem(
+        override val filePath: String, override val physicalPath: String, override val relativePhysicalPath: String, private val kind: RazorFileKind?, private val content: String,
+    ) : RazorProjectItem() {
+        override val basePath: String get() = RazorProjectFileSystem.DEFAULT_BASE_PATH
+        override val exists: Boolean get() = true
+        override val fileKind: RazorFileKind get() = kind ?: super.fileKind
+        override fun read(): String = content
     }
 }
 
-/** Injects the virtual C# document ([RazorCSharpDocument]) into a Razor file: asked at its root ([RazorDocumentPsi]), the hosts are the C# literals. */
+/** The injection: the C# document of a Razor file, one injection of its places. */
 class RazorCSharpInjector : MultiHostInjector {
     override fun elementsToInjectIn(): List<Class<out PsiElement>> = listOf(RazorDocumentPsi::class.java)
 
@@ -271,7 +190,7 @@ class RazorCSharpInjector : MultiHostInjector {
         val places = RazorCSharpDocument.places(file)
         if (places.isEmpty()) return
         registrar.startInjecting(CSharpLanguage)
-        for (place in places) registrar.addPlace(place.prefix, place.suffix, place.host, TextRange(0, place.host.textLength))
+        for (place in places) registrar.addPlace(place.prefix, place.suffix, place.host, place.range)
         registrar.doneInjecting()
     }
 }

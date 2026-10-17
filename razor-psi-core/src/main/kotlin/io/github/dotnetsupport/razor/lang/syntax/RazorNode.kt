@@ -140,8 +140,8 @@ class RazorListBuilder {
     }
 }
 
-/** The tag helper binding of an element (R5); unused by the parser of R2, kept for the generated node of the rewritten tree. */
-class TagHelperInfo(val tagName: String, val tagMode: String)
+/** `TagHelperInfo`: the tag helper binding of an element of the rewritten tree (`TagHelperParseTreeRewriter`). */
+data class TagHelperInfo(val tagName: String, val tagMode: TagMode, val bindingResult: TagHelperBinding)
 
-/** The tag helper binding of an attribute (R5). */
-class TagHelperAttributeInfo(val name: String, val attributeStructure: String, val bound: Boolean)
+/** `TagHelperAttributeInfo`: the binding of an attribute of a tag helper element of the rewritten tree (`TagHelperBlockRewriter`). */
+class TagHelperAttributeInfo(val name: String, val parameterName: String?, val attributeStructure: AttributeStructure, val bound: Boolean, val isDirectiveAttribute: Boolean)

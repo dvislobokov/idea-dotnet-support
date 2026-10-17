@@ -10,25 +10,53 @@ data class SourceLocation(val filePath: String?, val absoluteIndex: Int, val lin
     }
 }
 
-/** `SourceSpan`: printed as the compiler prints it in the baselines, `(15:0,15 [1] )` (path last, empty when none). */
-data class SourceSpan(val filePath: String?, val absoluteIndex: Int, val lineIndex: Int, val characterIndex: Int, val length: Int) {
-    constructor(location: SourceLocation, contentLength: Int) : this(location.filePath, location.absoluteIndex, location.lineIndex, location.characterIndex, contentLength)
+/**
+ * `SourceSpan`: printed as the compiler prints it in the baselines, `(15:0,15 [1] )` (path last, empty when none). [lineCount] and
+ * [endCharacterIndex] (the code generator's `#line (l,c)-(l,c)`) take no part in equality, as in the compiler.
+ */
+class SourceSpan(
+    val filePath: String?, val absoluteIndex: Int, val lineIndex: Int, val characterIndex: Int, val length: Int,
+    val lineCount: Int = 0, val endCharacterIndex: Int = characterIndex + length,
+) {
+    constructor(location: SourceLocation, contentLength: Int) :
+        this(location.filePath, location.absoluteIndex, location.lineIndex, location.characterIndex, contentLength, lineCount = 1, endCharacterIndex = 0)
 
     val endIndex: Int get() = absoluteIndex + length
 
     override fun toString(): String = "($absoluteIndex:$lineIndex,$characterIndex [$length] ${filePath ?: ""})"
+
+    override fun equals(other: Any?): Boolean =
+        other is SourceSpan && other.filePath == filePath && other.absoluteIndex == absoluteIndex && other.lineIndex == lineIndex && other.characterIndex == characterIndex && other.length == length
+
+    override fun hashCode(): Int = ((((filePath.hashCode() * 31) + absoluteIndex) * 31 + lineIndex) * 31 + characterIndex) * 31 + length
+
+    fun copy(
+        filePath: String? = this.filePath, absoluteIndex: Int = this.absoluteIndex, lineIndex: Int = this.lineIndex, characterIndex: Int = this.characterIndex,
+        length: Int = this.length, lineCount: Int = this.lineCount, endCharacterIndex: Int = this.endCharacterIndex,
+    ) = SourceSpan(filePath, absoluteIndex, lineIndex, characterIndex, length, lineCount, endCharacterIndex)
+
+    /** `GetZeroWidthEndSpan`. */
+    fun zeroWidthEndSpan(): SourceSpan = SourceSpan(filePath, absoluteIndex + length, lineIndex, endCharacterIndex, 0, 0, endCharacterIndex)
+
+    /** `Slice(startIndex, length)`: the compiler keeps the line index and count of the whole span (no new line position is computed). */
+    fun slice(startIndex: Int, length: Int): SourceSpan =
+        SourceSpan(filePath, absoluteIndex + startIndex, lineIndex, characterIndex + startIndex, length, lineCount, characterIndex + startIndex + length)
 
     companion object {
         val UNDEFINED = SourceSpan(SourceLocation.UNDEFINED, 0)
     }
 }
 
-/** `RazorDiagnosticDescriptor`: the id (`RZ1000`) and the message format (`{0}` placeholders). */
-class RazorDiagnosticDescriptor(val id: String, val messageFormat: String)
+enum class RazorDiagnosticSeverity { WARNING, ERROR }
 
-/** `RazorDiagnostic`: a diagnostic of the parser at [span]; [message] is the format with the arguments substituted. */
+/** `RazorDiagnosticDescriptor`: the id (`RZ1000`), the message format (`{0}` placeholders), the severity and the warning level (0: always reported). */
+class RazorDiagnosticDescriptor(val id: String, val messageFormat: String, val severity: RazorDiagnosticSeverity = RazorDiagnosticSeverity.ERROR, val warningLevel: Int = 0)
+
+/** `RazorDiagnostic`: a diagnostic at [span]; [message] is the format with the arguments substituted. */
 class RazorDiagnostic(val descriptor: RazorDiagnosticDescriptor, val span: SourceSpan, val args: List<Any?> = emptyList()) {
     val id: String get() = descriptor.id
+    val severity: RazorDiagnosticSeverity get() = descriptor.severity
+    val warningLevel: Int get() = descriptor.warningLevel
 
     val message: String
         get() = descriptor.messageFormat.replace(Regex("\\{(\\d+)}")) { m -> args.getOrNull(m.groupValues[1].toInt())?.toString() ?: "" }
@@ -42,7 +70,7 @@ class RazorDiagnostic(val descriptor: RazorDiagnosticDescriptor, val span: Sourc
  * tokenizers and parsers call, named as the compiler's `CreateParsing_*` (the prefix dropped).
  */
 object RazorDiagnosticFactory {
-    private fun descriptor(code: Int, message: String) = RazorDiagnosticDescriptor("RZ$code", message)
+    private fun descriptor(code: Int, message: String, severity: RazorDiagnosticSeverity = RazorDiagnosticSeverity.ERROR, warningLevel: Int = 0) = RazorDiagnosticDescriptor("RZ$code", message, severity, warningLevel)
 
     val Parsing_UnterminatedStringLiteral = descriptor(1000, "Unterminated string literal.  Strings that start with a quotation mark (\") must be terminated before the end of the line.  However, strings that start with @ and a quotation mark (@\") can span multiple lines.")
     val Parsing_BlockCommentNotTerminated = descriptor(1001, "End of file was reached before the end of the block comment.  All comments started with \"/*\" sequence must be terminated with a matching \"*/\" sequence.")
@@ -83,7 +111,7 @@ object RazorDiagnosticFactory {
     val Parsing_PossibleMisplacedPreprocessorDirective = descriptor(1044, "Possible C# preprocessor directive is misplaced. C# preprocessor directives must be at the start of the line, except for whitespace.")
     val Parsing_DefineAndUndefNotAllowed = descriptor(1045, "'#define' and '#undef' cannot be used in razor markup.")
     val Parsing_DocumentationCommentTerminator = descriptor(1047, "The '@documentation' directive cannot contain '*/'. Use an XML character reference instead.")
-    val Parsing_DocumentationDirectiveWillChangeMeaning = descriptor(1048, "The '@documentation' syntax will be treated as a directive in Razor 12.0. Use an explicit expression ('@(...)') to preserve the current meaning.")
+    val Parsing_DocumentationDirectiveWillChangeMeaning = descriptor(1048, "The '@documentation' syntax will be treated as a directive in Razor 12.0. Use an explicit expression ('@(...)') to preserve the current meaning.", RazorDiagnosticSeverity.WARNING, 11)
     val Parsing_DocumentationShouldStartWithTag = descriptor(1049, "Documentation should start with an XML tag, such as '<summary>'.")
     val Parsing_DuplicateDirective = descriptor(2001, "The '{0}' directive may only occur once per document.")
     val Parsing_SectionsCannotBeNested = descriptor(2002, "Section blocks (\"{0}\") cannot be nested.  Only one level of section blocks are allowed.")
@@ -142,6 +170,71 @@ object RazorDiagnosticFactory {
     fun inlineMarkupBlocksCannotBeNested(location: SourceSpan) = create(Parsing_InlineMarkupBlocksCannotBeNested, location)
     fun namespaceImportAndTypeAliasCannotExistWithinCodeBlock(location: SourceSpan) = create(Parsing_NamespaceImportAndTypeAliasCannotExistWithinCodeBlock, location)
     fun directiveMustAppearAtStartOfLine(location: SourceSpan, directiveName: String) = create(Parsing_DirectiveMustAppearAtStartOfLine, location, directiveName)
+
+    // The code target (semantic errors, RZ2000): an extension node whose target lacks its extension. No span (`SourceSpan.Undefined`);
+    // the extension by its type's simple name, as `Type.Name`.
+    val CodeTarget_UnsupportedExtension = descriptor(2000, "The document type '{0}' does not support the extension '{1}'.")
+
+    fun codeTarget_UnsupportedExtension(documentKind: String, extension: Class<*>) =
+        create(CodeTarget_UnsupportedExtension, SourceSpan.UNDEFINED, documentKind, extension.simpleName)
+
+    // Tag helper attribute values the runtime writer cannot render (RZ2006, RZ2007; DefaultTagHelperTargetExtension). The messages are
+    // Resources.resx after `string.Format`: its `{{` / `}}` are single braces here, since [RazorDiagnostic.message] does not unescape them.
+    val TagHelper_CodeBlocksNotSupportedInAttributes = descriptor(
+        2006,
+        "Code blocks (e.g. @{var variable = 23;}) must not appear in non-string tag helper attribute values.\n Already in an expression (code) context. " +
+            "If necessary an explicit expression (e.g. @(@readonly)) may be used.",
+    )
+    val TagHelper_InlineMarkupBlocksNotSupportedInAttributes = descriptor(
+        2007,
+        "Inline markup blocks (e.g. @<p>content</p>) must not appear in non-string tag helper attribute values.\n Expected a '{0}' attribute value, not a string.",
+    )
+
+    fun tagHelper_CodeBlocksNotSupportedInAttributes(location: SourceSpan?) = create(TagHelper_CodeBlocksNotSupportedInAttributes, location ?: SourceSpan.UNDEFINED)
+    fun tagHelper_InlineMarkupBlocksNotSupportedInAttributes(location: SourceSpan?, expectedTypeName: String?) =
+        create(TagHelper_InlineMarkupBlocksNotSupportedInAttributes, location ?: SourceSpan.UNDEFINED, expectedTypeName)
+
+    // The tag helper phases (DefaultTagHelperResolutionPhase, TagHelperParseTreeRewriter, TagHelperBlockRewriter): named as the compiler's
+    // `CreateParsing_*` / `CreateTagHelper_*` without `Create`; the `{{ key }}` of Resources.resx is `{ key }` after `string.Format`.
+    val Parsing_TagHelperIndexerAttributeNameMustIncludeKey =
+        descriptor(1029, "The tag helper attribute '{0}' in element '{1}' is missing a key. The syntax is '<{1} {0}{ key }=\"value\">'.")
+    val Parsing_TagHelperAttributeListMustBeWellFormed = descriptor(1030, "TagHelper attributes must be well-formed.")
+    val Parsing_TagHelpersCannotHaveCSharpInTagDeclaration = descriptor(1031, "The tag helper '{0}' must not have C# in the element's attribute declaration area.")
+    val Parsing_TagHelperMustNotHaveAnEndTag =
+        descriptor(1033, "Found an end tag (</{0}>) for tag helper '{1}' with tag structure that disallows an end tag ('{2}').")
+    val Parsing_TagHelperFoundMalformedTagHelper =
+        descriptor(1034, "Found a malformed '{0}' tag helper. Tag helpers must have a start and end tag or be self closing.")
+    val Parsing_TagHelperMissingCloseAngle = descriptor(1035, "Missing close angle for tag helper '{0}'.")
+    val Parsing_VoidElement = descriptor(
+        1042,
+        "Component or tag helper '{0}' must be self-closing because it's named like an HTML void element. To use child content, qualify such components " +
+            "with their namespace or use prefixes with such tag helpers.",
+    )
+    val TagHelper_EmptyBoundAttribute = descriptor(
+        2008,
+        "Attribute '{0}' on tag helper element '{1}' requires a value. Tag helper bound attributes of type '{2}' cannot be empty or contain only whitespace.",
+    )
+    val TagHelper_CannotHaveNonTagContent =
+        descriptor(2009, "The parent <{0}> tag helper does not allow non-tag content. Only child tag helper(s) targeting tag name(s) '{1}' are allowed.")
+    val TagHelper_InvalidNestedTag = descriptor(2010, "The <{0}> tag is not allowed by parent <{1}> tag helper. Only child tags with name(s) '{2}' are allowed.")
+    val TagHelper_InconsistentTagStructure = descriptor(2011, "Tag helpers '{0}' and '{1}' targeting element '{2}' must not expect different {3} values.")
+
+    fun parsing_TagHelperIndexerAttributeNameMustIncludeKey(location: SourceSpan, attributeName: String, tagName: String) =
+        create(Parsing_TagHelperIndexerAttributeNameMustIncludeKey, location, attributeName, tagName)
+    fun parsing_TagHelperAttributeListMustBeWellFormed(location: SourceSpan) = create(Parsing_TagHelperAttributeListMustBeWellFormed, location)
+    fun parsing_TagHelpersCannotHaveCSharpInTagDeclaration(location: SourceSpan, tagName: String) = create(Parsing_TagHelpersCannotHaveCSharpInTagDeclaration, location, tagName)
+    fun parsing_TagHelperMustNotHaveAnEndTag(location: SourceSpan, tagName: String, displayName: String, tagStructure: TagStructure) =
+        create(Parsing_TagHelperMustNotHaveAnEndTag, location, tagName, displayName, tagStructure)
+    fun parsing_TagHelperFoundMalformedTagHelper(location: SourceSpan, tagName: String) = create(Parsing_TagHelperFoundMalformedTagHelper, location, tagName)
+    fun parsing_TagHelperMissingCloseAngle(location: SourceSpan, tagName: String) = create(Parsing_TagHelperMissingCloseAngle, location, tagName)
+    fun parsing_VoidElement(location: SourceSpan, tagName: String) = create(Parsing_VoidElement, location, tagName)
+    fun tagHelper_EmptyBoundAttribute(location: SourceSpan, attributeName: String, tagName: String, propertyTypeName: String?) =
+        create(TagHelper_EmptyBoundAttribute, location, attributeName, tagName, propertyTypeName)
+    fun tagHelper_CannotHaveNonTagContent(location: SourceSpan, tagName: String, allowedChildren: String) = create(TagHelper_CannotHaveNonTagContent, location, tagName, allowedChildren)
+    fun tagHelper_InvalidNestedTag(location: SourceSpan, tagName: String, parent: String, allowedChildren: String) =
+        create(TagHelper_InvalidNestedTag, location, tagName, parent, allowedChildren)
+    fun tagHelper_InconsistentTagStructure(location: SourceSpan, firstDescriptor: String?, secondDescriptor: String, tagName: String) =
+        create(TagHelper_InconsistentTagStructure, location, firstDescriptor, secondDescriptor, tagName, "TagStructure")
 }
 
 /** `SyntaxConstants`: the characters and keywords Razor itself knows. */
@@ -167,3 +260,14 @@ object SyntaxConstants {
         const val HELPER_KEYWORD = "helper"
     }
 }
+
+// The component errors of RazorDiagnosticFactory (RZ2012, `#region Component Errors`), declared outside the object as extensions so that
+// the factory's own body stays as it is; called as `RazorDiagnosticFactory.createComponent_EditorRequiredParameterNotSpecified(...)`.
+private val component_EditorRequiredParameterNotSpecified = RazorDiagnosticDescriptor(
+    "RZ2012", "Component '{0}' expects a value for the parameter '{1}', but a value may not have been provided.", RazorDiagnosticSeverity.WARNING,
+)
+
+val RazorDiagnosticFactory.Component_EditorRequiredParameterNotSpecified: RazorDiagnosticDescriptor get() = component_EditorRequiredParameterNotSpecified
+
+fun RazorDiagnosticFactory.createComponent_EditorRequiredParameterNotSpecified(location: SourceSpan?, tagName: String?, parameterName: String): RazorDiagnostic =
+    RazorDiagnostic(component_EditorRequiredParameterNotSpecified, location ?: SourceSpan.UNDEFINED, listOf(tagName, parameterName))
