@@ -213,11 +213,12 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `TYPE:razor-component-completion`: в `Step="@st|"` Ctrl+Space — `step` в списке
 - [ ] `TYPE:razor-component-new-parameter`: добавить `[Parameter] public string Label { get; set; } = "";` в `Counter.razor` без сохранения,
       набрать здесь `<Counter Label="@title" />` — через мгновение Ctrl+B на `title` ведёт в `@code`
-- [ ] (R5e, 0.1.265) `TYPE:razor-tag-completion`: `<Cou` + Ctrl+Space — `Counter` в списке; без `@using` — только полное имя
-- [ ] (R5e) `TYPE:razor-attribute-completion`: Ctrl+Space перед `CountChanged` — сверху `Step`, `CountChanged`, ниже `@bind-Step`, `@ref`,
-      `@onclick`…; Enter пишет `Step=""`
-- [ ] (R5e) `TYPE:razor-tag-goto`: Ctrl+B на `Counter` — открывается `Counter.razor`; на имени атрибута `Step` — свойство в `@code`;
-      на `button` — ничего нашего
+- [x] (робот в WSL, 0.1.265; повторный Ctrl+Space — 0.1.266) `TYPE:razor-tag-completion`: `<Cou` — список сам, `Counter` первым, полное
+      имя вторым; Ctrl+Space ещё раз их не теряет
+- [x] (робот в WSL, 0.1.265) `TYPE:razor-attribute-completion`: Ctrl+Space перед `CountChanged` — директивные атрибуты (`@key`, `@ref`,
+      `@rendermode`…), без уже стоящих `Step` / `CountChanged`; `@k` + Enter — `@key=""`, каретка в кавычках
+- [x] (робот в WSL, 0.1.265) `TYPE:razor-tag-goto`: Ctrl+B на `Counter` — открывается `Counter.razor`; на имени атрибута `Step` — свойство
+      `Step` в `@code`
 
 ### Unity (UNITY_PLAN.md, 0.1.255–0.1.257; вживую человеком не проверено) — `Unity/Assets/Scripts/Player.cs`, `Spawner.cs`
 

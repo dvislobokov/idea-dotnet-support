@@ -784,8 +784,10 @@
   - [x] R5e, часть 1 (0.1.265) — completion тегов компонентов (в области видимости — по имени, остальные — полным именем) и атрибутов
     элемента (сначала его параметры, потом `@bind-…`, `@onclick`, `@ref`, `@key`…), Ctrl+B с тега на `.razor` / класс C# / тип сборки,
     с имени атрибута — на параметр (`RazorTagHelperEditor`: по контексту tag helpers документа). Сценарий — `RazorComponents.razor`,
-    маркеры `TYPE:razor-tag-completion`, `-attribute-completion`, `-tag-goto` (вживую не проверено). Дальше — R5e, часть 2: Find Usages
-    и rename компонентов и параметров, tag helpers `.cshtml`
+    маркеры `TYPE:razor-tag-completion`, `-attribute-completion`, `-tag-goto` (проверено роботом в WSL). 0.1.266: повторный Ctrl+Space
+    над открытым списком тегов давал «No suggestions» — платформенный `XmlCompletionContributor` на повторном вызове дополняет имена тегов
+    по схемам и останавливает остальных (в Razor схемы компонентов не знают); наш контрибутор теперь перед ним. Дальше — R5e, часть 2:
+    Find Usages и rename компонентов и параметров, tag helpers `.cshtml`
   - [x] Unity, индекс ассетов (0.1.260) — «Used in Boot.unity» над скриптом, «Event handler» / «Animation event» над методом,
     «Set by Unity: 5» над полем, Find Usages в сценах, сцены и префабы как YAML со ссылками `guid` / `m_MethodName` в код, «Missing
     script», `[FormerlySerializedAs]` при переименовании поля. Сценарий — `debug-playground/Unity/Assets/Scripts/Door.cs`

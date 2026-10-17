@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.266
+
+- Razor: Ctrl+Space pressed again over the open list of tags kept saying "No suggestions" — the components stay in the list now.
+- Razor: the types beside the attributes in completion read as in code, `EventCallback<MouseEventArgs>` instead of `MouseEventArgs>`.
+
 ## 0.1.265
 
 - Razor: completion of components in the markup. After `<` the components in scope are offered by their names (the others by the full

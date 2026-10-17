@@ -156,6 +156,20 @@ python robot.py action Exit && python robot.py click "//div[@class='MyDialog']//
 - `wsl/copy-unity.sh [путь проекта Unity на /mnt/c]`: копия проекта Unity в `~/robot/unity` для песочницы WSL с путями `HintPath`,
   переписанными на `/mnt/c/...` (как сгенерировал бы Unity под Linux).
 
+## Скрипты проб редактора Razor (`scripts/`, прогон R5e 2026-10-18, `RAZOR_PLAN.md`)
+
+- `razor_tag_helpers_probe.js` (`__FILE__`): проект файла, сколько дескрипторов у `RazorTagHelperService` (null — ещё не найдены), сколько
+  в контексте документа и каких видов (`Component`, `Bind`, `EventHandler`…), компоненты в области видимости. `razor_completion_steps.js`:
+  проверки `RazorTagHelperCompletionContributor` по одной у каретки выбранного редактора (на исходном файле).
+- `completion_copy.js`: копия файла, которую делает completion (с `IntellijIdeaRulezzz `), и PSI у каретки в ней. `psi_at_caret.js` — лист
+  у каретки и его родители во всех языках вида (HTML Razor — не дерево Razor); `language_at_caret.js` — язык и PSI-файл, в которых пойдут
+  completion и действия; `injection_at_caret.js` — инъекции у каретки; `dumb_state.js` — индексирует ли IDE (dumb mode глушит не-DumbAware).
+- `screen.sh type` из Git Bash идёт через оболочку WSL: текст с `<`, `>`, `|` — во внутренних одинарных кавычках (`$S type "'<Cou'"`),
+  а с пробелом так нельзя — кавычки напечатаются; пробел — `$S key space`, остальное отдельным `type`.
+- Повторный Ctrl+Space над открытым списком — это `invocationCount = 2` (`isExtendedCompletion`), в тесте —
+  `myFixture.complete(CompletionType.BASIC, 2)` после вызова с 1: так нашёлся `XmlCompletionContributor`, который на нём останавливает
+  остальных.
+
 ## Скрипты для проверок отладчика (`scripts/`)
 
 `. tools/ui-robot/scripts/session.sh` (Git Bash, из корня репозитория) даёт функции поверх `robot.py js`:

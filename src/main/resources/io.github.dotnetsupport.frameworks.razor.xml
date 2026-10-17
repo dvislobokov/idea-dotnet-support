@@ -26,7 +26,8 @@
         <!-- R3: the virtual C# document — one injection of the C# pieces of the file -->
         <multiHostInjector implementation="io.github.dotnetsupport.frameworks.razor.RazorCSharpInjector"/>
         <!-- R5e: the components and tag helpers in the markup -->
-        <completion.contributor language="HTML" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorTagHelperCompletionContributor"/>
+        <!-- before XmlCompletionContributor: on a repeated Ctrl+Space it completes tag names from the schemas and stops the others (none in Razor) -->
+        <completion.contributor language="HTML" order="first, before xml" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorTagHelperCompletionContributor"/>
         <gotoDeclarationHandler implementation="io.github.dotnetsupport.frameworks.razor.RazorTagHelperGotoDeclarationHandler"/>
     </extensions>
 </idea-plugin>

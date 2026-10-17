@@ -1,6 +1,9 @@
 @page "/editor/components"
 @using Playground.Blazor.Components.Pages
-@* RAZOR_PLAN.md, R5c / R5d: the components of the project (`Counter.razor`) and the directive attributes of ASP.NET Core (`@onclick`,
+@using Microsoft.AspNetCore.Components.Web
+@* `Components/_Imports.razor` does not reach this folder: without the line above `@onclick` is no event handler here, as for the compiler.
+
+   RAZOR_PLAN.md, R5c / R5d: the components of the project (`Counter.razor`) and the directive attributes of ASP.NET Core (`@onclick`,
    `@bind`) are found as the compiler finds them, and the C# document of this file is made with them: `<Counter …>` is the component,
    its attributes are its parameters in C# — the values below are C#, with completion and navigation, not markup text.
 
@@ -17,13 +20,14 @@
 
    R5e (0.1.265): the tags and attributes of the components in the editor.
 
-   TYPE:razor-tag-completion — on the empty line under `<Counter …/>` type `<Cou` and press Ctrl+Space. EXPECT: `Counter` in the list
-   (the component of `Components/Pages`, imported by `@using` above), Enter writes `<Counter`. Without the `@using` only
-   `Playground.Blazor.Components.Pages.Counter` is offered. Ctrl+Z.
+   TYPE:razor-tag-completion — on the empty line under `<Counter …/>` type `<Cou`. EXPECT: the list opens by itself with `Counter` first
+   (the component of `Components/Pages`, imported by `@using` above) and `Playground.Blazor.Components.Pages.Counter` after it; Ctrl+Space
+   once more keeps them (0.1.265 said "No suggestions" there). Enter writes `<Counter`. Ctrl+Z.
 
    TYPE:razor-attribute-completion — in `<Counter Step="@step" …` put the caret before `CountChanged` and press Ctrl+Space. EXPECT: the
-   parameters `Step`, `CountChanged` at the top, then the directive attributes `@bind-Step`, `@ref`, `@key`, `@onclick`…; Enter on a
-   parameter writes `Name=""` with the caret in the quotes. Ctrl+Z.
+   directive attributes `@attributes`, `@formname`, `@key`, `@ref`, `@rendermode`, `@onclick` and the other events; not `Step` and
+   `CountChanged`, the element has them already, and no `@bind-Step` (its pair would be `StepChanged`, not `CountChanged`). Type `@k`,
+   Enter: `@key=""` with the caret in the quotes. Ctrl+Z.
 
    TYPE:razor-tag-goto — Ctrl+B (or Ctrl+click) on `Counter` in `<Counter …/>`. EXPECT: `Components/Pages/Counter.razor` opens. Ctrl+B
    on `Step` (the attribute name): the property `Step` in its `@code`. Ctrl+B on `button` in `<button @onclick…>`: nothing of ours (an

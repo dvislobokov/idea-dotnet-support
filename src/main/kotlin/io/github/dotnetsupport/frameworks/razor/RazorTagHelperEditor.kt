@@ -218,7 +218,7 @@ class RazorTagHelperCompletionContributor : CompletionContributor() {
             for (attribute in descriptor.boundAttributes) {
                 val name = attribute.name
                 if (name.isEmpty() || name.endsWith("...") || name in present || !seen.add(name)) continue
-                val type = attribute.typeName.substringAfterLast('.').let { BoundAttributeSimpleNames[attribute.typeName] ?: it }
+                val type = BoundAttributeSimpleNames[attribute.typeName] ?: attribute.typeName.replace(Qualifier, "")
                 val element = LookupElementBuilder.create(name)
                     .withIcon(if (attribute.isDirectiveAttribute) AllIcons.Nodes.Annotationtype else AllIcons.Nodes.Property)
                     .withTypeText(type, true)
@@ -231,6 +231,8 @@ class RazorTagHelperCompletionContributor : CompletionContributor() {
     }
 
     private companion object {
+        /** The namespaces of every name in a type (`EventCallback<Microsoft.AspNetCore.Components.Web.MouseEventArgs>` → `EventCallback<MouseEventArgs>`). */
+        val Qualifier = Regex("""(?:global::)?\b(?:[A-Za-z_]\w*\.)+""")
         val BoundAttributeSimpleNames = mapOf(
             "System.String" to "string", "System.Boolean" to "bool", "System.Int32" to "int", "System.Object" to "object", "System.Double" to "double",
             "System.Int64" to "long", "System.Decimal" to "decimal", "System.Single" to "float",

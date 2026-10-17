@@ -118,6 +118,18 @@ class RazorTagHelpersTest : BasePlatformTestCase() {
         assertTrue(qualified.toString(), qualified.any { it == "App.Components.Panel" || "App.Components.Panel" in it })
     }
 
+    /**
+     * Found live in the playground: Ctrl+Space again over the open list (a repeated basic completion) said "No suggestions" — the platform's
+     * XmlCompletionContributor completes tag names from the schemas then and stops the others, and a Razor file's schemas know no component.
+     */
+    fun testARepeatedCompletionOfATagKeepsTheComponents() {
+        open("App/Pages/Between.razor", "@using App.Components\n<h3>x</h3>\n<Greeting Title=\"a\" />\n<Gr|\n<button @onclick=\"Click\">x</button>\n\n@code {\n    void Click() { }\n}\n")
+        val first = myFixture.complete(com.intellij.codeInsight.completion.CompletionType.BASIC, 1)?.map { it.lookupString }
+        assertTrue(first.toString(), first != null && "Greeting" in first)
+        val second = myFixture.complete(com.intellij.codeInsight.completion.CompletionType.BASIC, 2)?.map { it.lookupString }
+        assertTrue(second.toString(), second == null && "<Greeting" in myFixture.editor.document.text.substringAfter("/>") || second != null && "Greeting" in second)
+    }
+
     fun testCompletionOffersTheParametersAndDirectiveAttributesOfAnElement() {
         open("App/Pages/Attributes.razor", "@using App.Components\n<Greeting T| />\n")
         val items = myFixture.completeBasic()?.map { it.lookupString }.orEmpty()
@@ -125,6 +137,9 @@ class RazorTagHelpersTest : BasePlatformTestCase() {
         open("App/Pages/Attributes2.razor", "@using App.Components\n<Greeting @| />\n")
         val directives = myFixture.completeBasic()?.map { it.lookupString }.orEmpty()
         assertTrue(directives.toString(), directives.containsAll(listOf("@bind-Title", "@onclick", "@ref", "@key")))
+        // the type without namespaces, generic arguments too (live in 0.1.265: "MouseEventArgs>")
+        val onclick = myFixture.lookupElements!!.first { it.lookupString == "@onclick" }
+        assertEquals("EventCallback<MouseEventArgs>", com.intellij.codeInsight.lookup.LookupElementPresentation.renderElement(onclick).typeText)
     }
 
     fun testGoToDeclarationFromATagAndAnAttribute() {

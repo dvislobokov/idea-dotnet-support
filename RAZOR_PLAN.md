@@ -296,6 +296,10 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
       `ChildContent` — только внутри родителя), completion тегов и атрибутов (HTML-контрибутор), Ctrl+B тег → `.razor` / класс C# / тип
       сборки (`AssemblyNavigation`), атрибут → свойство-параметр; имена в разметке не инъектированы как C#, цель одна. Тесты —
       `RazorTagHelpersTest`, площадка — `RazorComponents.razor` (`TYPE:razor-tag-completion`, `-attribute-completion`, `-tag-goto`).
+      Проверено роботом в WSL; найдено (0.1.266): на повторном Ctrl+Space (`isExtendedCompletion`) `XmlCompletionContributor` дополняет
+      имена тегов по схемам и зовёт `stopHere()` — в Razor без единого пункта; контрибутор зарегистрирован `first, before xml`. Площадка
+      получила `@using Microsoft.AspNetCore.Components.Web`: `_Imports.razor` папки `Components` не доходит до `Editor`, и без него
+      `@onclick` там не обработчик события — как у компилятора.
     - [ ] Часть 2: Find Usages и rename компонентов (файл и теги) и параметров, tag helpers `.cshtml` (`asp-*`).
 - [ ] **R6. Ошибки** (2). Синтаксис Razor (RZ1xxx) — свой парсер; RZ9xxx / RZ10xxx (неизвестный параметр, неизвестный компонент как
   предупреждение RZ10012, `@bind` без пары) — своими проверками, сверка с `razordump diagnostics`; C#-ошибки в разметке — та же
