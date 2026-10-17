@@ -50,17 +50,35 @@
   проекту, у которого есть её файлы (Build 'Game.Boot' у папки `Assets/Game/Boot`, не 'Game.Net'). Тест `UnityProjectsTest`; проверено
   в песочнице WSL на `nine-to-fire`: узел, меню New, «Open in Unity Editor 6000.6.0f1» (снимки `build/ui-robot/unity*.png`).
 
-## Известная проблема (2026-10-17, песочница WSL на `nine-to-fire`)
+- [x] 0.1.256 — шаг 2, семантика:
+  - **«IDE error occurred» при открытии** (`UpToDateStubIndexMismatch` / `Stub count (214) doesn't match stubbed node length (215)` на
+    файлах с множеством `#if`: `Assets/FishNet/Runtime/Managing/NetworkManager.cs`, `InputControl.cs` пакета Input System, 12 раз за
+    сеанс). Причина в ядре: `CSharpParseOptions` клал символы `#if` и версию языка на `VirtualFile` в фоновом read action, а заново
+    разбирал PSI позже на EDT; у Unity 18 проектов оцениваются один за другим, набор символов файла меняется несколько раз, и проход
+    подсветки между этими моментами загружал AST stub-PSI с новыми символами против стабов старых. Теперь фон только вычисляет, а
+    ключи, `requestReindex` и `reparseFiles` идут на EDT одним write action (`applyPending`): ни один read action не видит новые ключи
+    со старым PSI. Песочница после чистки индексов: 0 SEVERE, 0 несовпадений стабов. Тест `CSharpParseOptionsTest.testTheKeysArePutOnlyWithTheReparse`.
+  - **Неявные использования**: новая точка расширения ядра `csharpImplicitUsage` (`lang/CSharpImplicitUsage`) — линза использований
+    вместо «no usages» показывает то, что ответит модуль. Реализация Unity (`UnityImplicitUsage`, таблица `UnityMessages` по базовым
+    классам: `MonoBehaviour`, `ScriptableObject`, `StateMachineBehaviour`, `Editor`, `EditorWindow`, `AssetPostprocessor`,
+    `AssetModificationProcessor`): «Event function» над сообщениями (`Update`, `OnTriggerEnter`…; не `override`), «Set by Unity» над
+    сериализуемыми полями (`[SerializeField]` / `[SerializeReference]`, публичные не `static` / `const` / `readonly` поля компонентов
+    и классов `[Serializable]`, без `[NonSerialized]`), «Called by Unity» над методами `[MenuItem]`, `[ContextMenu]`,
+    `[RuntimeInitializeOnLoadMethod]`, `[InitializeOnLoadMethod]`…, «Unity script» над классами-наследниками. Наследование — по
+    семантике плагина (исходники и индекс сборок), с кэшем до изменения PSI. Тест `CSharpCodeLensTest.testWhatUnityUsesWithoutCodeIsNotNoUsages`;
+    в песочнице над `DebugHotkeys` — «Unity script», над `Update()` — «Event function».
+  - **Namespace папки** считается от `.asmdef` над ней, как у Unity и Rider (`SolutionLayout.namespaceFor`): `Assets/Game/Boot` с
+    `Game.Boot.asmdef` — `Game.Boot` (было `Game.Boot.Assets.Game.Boot`, и проверка «namespace не совпадает с папкой» ругалась на
+    каждый файл); без `.asmdef` — от `Assets`, папки `Scripts` не в счёт. Новые файлы проекта с `LangVersion` < 10 получают блочный
+    namespace (`isFileScopedPreferred`). Символы `#if` Unity (151, `UNITY_EDITOR`, `UNITY_6000_6_OR_NEWER`) и C# 9 доходят до парсера
+    (проверено пробой `parse_keys.js`).
 
-«IDE error occurred» при открытии: `UpToDateStubIndexMismatch` / `AssertionError: Stub count (214) doesn't match stubbed node length
-(215)` на файлах с множеством `#if` (`Assets/FishNet/Runtime/Managing/NetworkManager.cs`,
-`Library/PackageCache/com.unity.inputsystem@…/InputControl.cs`), 12 раз за сеанс и после подъёма версии стабов (`CSharpStubs.VERSION` 4).
-Это ядро, не модуль: символы `#if` лежат в user data `VirtualFile` (`CSharpParseOptions`), стаб строится с теми, что есть в момент
-индексации, PSI — с текущими; у Unity 18 проектов оцениваются MsBuildHost один за другим, набор символов файла меняется несколько
-раз (статические `DefineConstants` → оценённые, проект файла среди нескольких в папке), `requestReindex` идёт асинхронно, и платформа
-успевает сверить старый стаб с новым деревом. Функционально восстанавливается само (платформа перестраивает стаб), но уведомление
-об ошибке видно. Разбирать в шаге 2: снимок символов, с которыми построен стаб, класть в стаб файла и при расхождении
-перестраивать молча; или индексировать только после оценки всех проектов solution.
+## Известные мелочи
+
+- Попап «Select Solution» при открытии `nine-to-fire`: `Mono.Cecil.sln` внутри `Assets/FishNet/CodeGenerating/cecil-0.11.4` — чужой
+  solution пакета в `Assets`, не в `Library`, поэтому `solutionLayout` его не скрывает. Для проекта Unity правильно предлагать только
+  `.sln` корня — шаг 4.
+- Build / Run у solution Unity — кнопки на месте, хотя собирает редактор.
 
 ## Дальше — по порядку (модуль `frameworks.unity`)
 
@@ -72,15 +90,16 @@
    `.meta` (переключатель «Show .meta files» в меню панели, как в Rider); `.asmdef` с иконкой. Уведомления «C# solution build scripts
    found» и «Several solutions» не считать `.sln` внутри `Library/PackageCache`. Кнопки Build / Run для solution Unity — спрятать или
    заменить на «Open in Unity» (редактор по `ProjectVersion.txt` через Unity Hub: `Hub/Editor/<версия>/Editor/Unity.exe -projectPath`).
-2. **Семантика** (1 выпуск). Точка расширения «подавление диагностик» (RAZOR_PLAN, «Модульность»): методы-сообщения `MonoBehaviour`
-   (`Awake`, `Start`, `Update`, `OnEnable`, `OnCollisionEnter`…) и `ScriptableObject` не «не используются»; поля с `[SerializeField]`
-   и публичные поля компонентов — тоже; `Debug.Log` в `UNITY_EDITOR`. Список сообщений — из `UnityEngine.CoreModule` (документация
-   `MonoBehaviour`) таблицей в модуле, как у анализаторов Unity (`UNT0001`…).
+2. ~~Семантика~~ — 0.1.256. Серых «неиспользуемых» членов плагин не рисует (только локальные и недостижимый код), поэтому
+   подавление свелось к линзе; если появится серый для членов — спрашивать ту же `csharpImplicitUsage`.
 3. **Completion и генерация** (1 выпуск). Внутри класса-наследника `MonoBehaviour` — completion сообщений (`void Update()` с
    сигнатурой, как Rider «Generate Unity event functions»), атрибуты `[SerializeField]`, `[Header]`, `[Range]`; `GetComponent<T>` —
    T из компонентов. `Input`-ось / тэг / слой строками из `ProjectSettings` — позже.
 4. **Проверка** без площадки в репозитории: проекты Unity лежат у пользователя (`~/My project`, `~/nine-to-fire`, `~/TOP DOWN SHOOTER`);
    копия для песочницы WSL — `tools/ui-robot/wsl/copy-unity.sh` (переписывает пути `HintPath` на `/mnt/c/...`, так же как сделал бы
    Unity под Linux), пробы — скрипты робота `index_probe.js`, `msbuild_probe.js`, `references_probe.js`, `errors_at.js`,
-   `complete_at_line.js`, `doc_at.js`. Тесты — на статике (`ProjectsInOneFolderTest`): настоящий Unity в тестах не нужен.
+   `complete_at_line.js`, `doc_at.js`, `lenses.js` (линзы файла), `parse_keys.js` (символы `#if` и версия языка файла). Перед проверкой
+   «IDE error» — убрать `~/robot/sandbox/log/idea.log` и `system/{caches,index}` песочницы, иначе считаются старые ошибки. Тесты — на
+   статике (`ProjectsInOneFolderTest`, `UnityProjectsTest`, Unity-случай `CSharpCodeLensTest`): настоящий Unity в тестах не нужен.
+   Шаг 4 — мелочи выше (попап выбора solution, Build / Run).
 5. Не делать (пока): отладчик Unity (Mono), шейдеры, UXML/USS, профайлер, `.unity`/`.prefab` (YAML — платформа и так подсвечивает).

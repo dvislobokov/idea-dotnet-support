@@ -92,9 +92,12 @@ object CSharpNamespaces {
             }
             current = current.parent
         }
-        val frameworks = DotNetProjects.findOwningProject(directory)
-            ?.let { SolutionService.getInstance(project).msBuildProject(it).targetFrameworks }
-            .orEmpty()
+        val projectFile = DotNetProjects.findOwningProject(directory)
+        // `<LangVersion>9.0</LangVersion>` (Unity's projects): no file-scoped namespace before C# 10, whatever the framework says
+        val languageVersion = projectFile?.let { io.github.dotnetsupport.msbuild.CompilationModel.getInstance(project).options(it).languageVersion }
+            ?.let(io.github.dotnetsupport.csharp.lang.CSharpLanguageVersion::parse)?.effective()
+        if (languageVersion != null && languageVersion.value < io.github.dotnetsupport.csharp.lang.CSharpLanguageVersion.CSharp10.value) return false
+        val frameworks = projectFile?.let { SolutionService.getInstance(project).msBuildProject(it).targetFrameworks }.orEmpty()
         return frameworks.none(::isLegacyFramework)
     }
 

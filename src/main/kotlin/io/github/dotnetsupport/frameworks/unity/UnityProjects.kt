@@ -63,7 +63,30 @@ object UnityProjects {
     }
 }
 
-/** The generated folders of a Unity project are skipped by the solution finder and hidden in the Solution view ([SolutionLayout]). */
+/**
+ * The generated folders of a Unity project are skipped by the solution finder and hidden in the Solution view ([SolutionLayout]); the
+ * namespace of a folder counts from the assembly definition above it, as Unity and Rider do: `Assets/Game/Boot/Game.Boot.asmdef` with
+ * `rootNamespace` `Game.Boot` (the `RootNamespace` Unity writes into the project) makes `Assets/Game/Boot/Ui` `Game.Boot.Ui`; without an
+ * assembly definition (`Assembly-CSharp`, no root namespace) the folders count from `Assets`. `Scripts` folders are no namespace (Rider's
+ * default for Unity).
+ */
 class UnitySolutionLayout : SolutionLayout {
     override fun isGeneratedDirectory(directory: VirtualFile): Boolean = UnityProjects.isGeneratedDirectory(directory)
+
+    override fun namespaceFor(directory: VirtualFile, projectFile: VirtualFile, rootNamespace: String?): String? {
+        val root = projectFile.parent?.takeIf(UnityProjects::isUnityRoot) ?: return null
+        val assets = root.findChild("Assets") ?: return null
+        if (!VfsUtilCore.isAncestor(assets, directory, false)) return null
+        var base: VirtualFile = assets
+        var current: VirtualFile? = directory
+        while (current != null && current != assets) {
+            if (current.children.any { !it.isDirectory && it.extension.equals("asmdef", ignoreCase = true) }) {
+                base = current
+                break
+            }
+            current = current.parent
+        }
+        val folders = VfsUtilCore.getRelativePath(directory, base, '/').orEmpty().split('/').filter { it.isNotBlank() && !it.equals("Scripts", ignoreCase = true) }
+        return (rootNamespace.orEmpty().split('.') + folders).filter { it.isNotBlank() }.joinToString(".", transform = io.github.dotnetsupport.msbuild.DotNetProjects::toIdentifier)
+    }
 }

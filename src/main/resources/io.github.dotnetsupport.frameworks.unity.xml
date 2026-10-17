@@ -3,6 +3,8 @@
 <idea-plugin package="io.github.dotnetsupport.frameworks.unity">
     <extensions defaultExtensionNs="io.github.dotnetsupport">
         <solutionLayout implementation="io.github.dotnetsupport.frameworks.unity.UnitySolutionLayout"/>
+        <!-- "Event function" / "Set by Unity" / "Unity script" in place of "no usages" -->
+        <csharpImplicitUsage implementation="io.github.dotnetsupport.frameworks.unity.UnityImplicitUsage"/>
     </extensions>
 
     <extensions defaultExtensionNs="com.intellij">

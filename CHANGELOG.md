@@ -3,6 +3,17 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.256
+
+- Unity (UNITY_PLAN.md, step 2): what the engine uses without code no longer reads "no usages" — "Event function" over the messages of
+  `MonoBehaviour`, `ScriptableObject`, `Editor`, `EditorWindow`, `AssetPostprocessor` (`Update`, `OnTriggerEnter`...), "Set by Unity" over
+  serialized fields (`[SerializeField]`, public fields of a component), "Called by Unity" over `[MenuItem]` / `[ContextMenu]` /
+  `[RuntimeInitializeOnLoadMethod]` methods, "Unity script" over component classes. The namespace of a folder counts from its assembly
+  definition (`Assets/Game/Boot` of `Game.Boot.asmdef` is `Game.Boot`, not `Game.Boot.Assets.Game.Boot`), and new files of a project with
+  `LangVersion` below 10 get a block namespace.
+- Opening a project whose `#if` symbols settle while its projects are evaluated (a Unity project of many assemblies) no longer raises
+  "IDE error occurred" (a stub tree that does not match the file): the symbols of a file, its reindex and its new PSI now change together.
+
 ## 0.1.255
 
 - Unity (UNITY_PLAN.md): a Unity project (`ProjectSettings/ProjectVersion.txt` and `Assets`) shows in the Solution view with the Unity

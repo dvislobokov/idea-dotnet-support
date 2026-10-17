@@ -139,7 +139,30 @@ class CSharpParseOptionsTest : BasePlatformTestCase() {
         assertEmpty(done)
         done += files[0]
         options.fill(files, done)
-        assertEquals("the skipped file keeps whatever it had, the others are put", files.toSet(), done)
-        files.drop(1).forEach { assertTrue("put a loose file: no symbols, the parser's defaults", it.getUserData(CSharpPreprocessorSymbols.KEY) == null) }
+        assertEquals("the skipped file keeps whatever it had, the others are computed", files.toSet(), done)
+        files.drop(1).forEach { assertTrue("a loose file: no symbols, the parser's defaults", it.getUserData(CSharpPreprocessorSymbols.KEY) == null) }
+    }
+
+    /**
+     * The background pass only computes; the keys, the reindex and the reparse come together on the EDT in one write action (0.1.256): a read
+     * in between saw the new keys with the PSI of the old ones — "Stub count doesn't match stubbed node length" on a Unity project.
+     */
+    fun testTheKeysArePutOnlyWithTheReparse() {
+        CSharpSyntaxTrees.forceNativeTreeForTests(true)
+        myFixture.addFileToProject("ParseOptions/Apply/Apply.csproj", """<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net48</TargetFramework></PropertyGroup></Project>""")
+        val file = myFixture.addFileToProject("ParseOptions/Apply/Lib.cs", "#if NET48\nclass A { }\n#else\nclass B { }\n#endif\n").virtualFile
+        val options = CSharpParseOptions.getInstance(project)
+        CSharpParseOptions.put(file, setOf("NET10_0"), null)
+        val before = PsiManager.getInstance(project).findFile(file)!!
+        assertEquals(listOf(file), ReadAction.compute<List<VirtualFile>, RuntimeException> { options.fill(listOf(file)) })
+        assertEquals("not put by the background pass", setOf("NET10_0"), file.getUserData(CSharpPreprocessorSymbols.KEY))
+        assertTrue(before.isValid)
+        options.applyPending()
+        assertTrue("NET48" in file.getUserData(CSharpPreprocessorSymbols.KEY)!!)
+        assertFalse("parsed again with them", before.isValid)
+        assertEquals(listOf("A"), PsiTreeUtil.findChildrenOfType(PsiManager.getInstance(project).findFile(file), CSharpClassDeclaration::class.java).map { it.identifier?.text })
+        val parsed = PsiManager.getInstance(project).findFile(file)
+        options.update(listOf(file))
+        assertSame("the same values: nothing pending, no reparse", parsed, PsiManager.getInstance(project).findFile(file))
     }
 }

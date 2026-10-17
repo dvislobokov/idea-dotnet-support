@@ -126,7 +126,10 @@ object NativeCSharpCodeLens {
                 CSharpUsageCounts.Usages(full, count(project, full, outside, session))
             }
             val inside = count(project, cached.target, LocalSearchScope(file), session)
-            Lens(range(declaration), usagesText(inside + cached.outside), declaration)
+            val total = inside + cached.outside
+            // no usage in code, but a framework uses it ("Event function" of Unity): that, not "no usages"
+            val text = (if (total == 0) CSharpImplicitUsage.of(declaration, session) else null) ?: usagesText(total)
+            Lens(range(declaration), text, declaration)
         }
     }
 

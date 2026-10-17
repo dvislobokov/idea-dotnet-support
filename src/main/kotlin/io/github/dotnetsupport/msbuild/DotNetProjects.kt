@@ -46,9 +46,11 @@ object DotNetProjects {
 
     /**
      * Default namespace of a new file in [directory]: root namespace of the project plus the folders
-     * between the project and the file, the way the SDK and Rider compute it.
+     * between the project and the file, the way the SDK and Rider compute it. A framework with a rule of its own answers first
+     * ([io.github.dotnetsupport.solution.SolutionLayout.namespaceFor]: Unity counts the folders from the assembly definition).
      */
     fun namespaceFor(directory: VirtualFile, projectFile: VirtualFile, rootNamespace: String?): String {
+        io.github.dotnetsupport.solution.SolutionLayout.namespaceFor(directory, projectFile, rootNamespace)?.let { return it }
         val root = rootNamespace ?: projectFile.nameWithoutExtension
         val folders = VfsUtilCore.getRelativePath(directory, projectFile.parent, '/').orEmpty()
         return (root.split('.') + folders.split('/'))

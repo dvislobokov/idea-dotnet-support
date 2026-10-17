@@ -134,6 +134,54 @@ class CSharpCodeLensTest : BasePlatformTestCase() {
         assertEquals(listOf("3: no usages", "5: no usages"), references(program))
     }
 
+    /**
+     * UNITY_PLAN.md, step 2: in a Unity project what the engine uses without code reads as Rider shows it — the event functions of a
+     * component, the fields the inspector sets, the methods of Unity's attributes, the component class; a plain unused member stays "no usages".
+     */
+    fun testWhatUnityUsesWithoutCodeIsNotNoUsages() {
+        myFixture.addFileToProject("unityLens/ProjectSettings/ProjectVersion.txt", "m_EditorVersion: 6000.6.0f1\n")
+        file("unityLens/Assets/Engine.cs", """
+            namespace UnityEngine
+            {
+                public class Object { }
+                public class Component : Object { }
+                public class Behaviour : Component { }
+                public class MonoBehaviour : Behaviour { }
+                public sealed class SerializeField : System.Attribute { }
+                public sealed class ContextMenu : System.Attribute { public ContextMenu(string name) { } }
+            }
+        """)
+        val player = file("unityLens/Assets/Player.cs", """
+            using UnityEngine;
+            public class Unit : MonoBehaviour
+            {
+            }
+            public class Player : Unit
+            {
+                [SerializeField] private float speed;
+                public int health;
+                private int hidden;
+                void Update() { }
+                void Helper() { }
+                [ContextMenu("Reset health")]
+                void ResetHealth() { }
+            }
+        """)
+        assertEquals(
+            listOf(
+                "2: 1 usage",           // Unit: the base of Player
+                "5: Unity script",      // Player: a scene creates it
+                "7: Set by Unity",      // [SerializeField] speed
+                "8: Set by Unity",      // public health
+                "9: no usages",         // hidden: nobody sets it
+                "10: Event function",   // Update
+                "11: no usages",        // Helper: no message of that name
+                "12: Called by Unity",  // [ContextMenu]: the lens stands above the attributes
+            ),
+            references(player),
+        )
+    }
+
     /** The native Find Usages resolves a name to every overload (no overload resolution by arguments): the lens says what a click lists. */
     fun testOverloadsCountWhatFindUsagesLists() {
         val file = file("lens2/Overloads.cs", """

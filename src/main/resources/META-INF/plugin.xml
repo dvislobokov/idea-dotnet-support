@@ -53,6 +53,8 @@
         <extensionPoint qualifiedName="io.github.dotnetsupport.csharpPopupContributor" interface="io.github.dotnetsupport.lang.CSharpPopupContributor" dynamic="true"/>
         <!-- what a framework module knows of the C# the build makes of a project: the semantics stays silent where types may come from it -->
         <extensionPoint qualifiedName="io.github.dotnetsupport.csharpCodeGenerators" interface="io.github.dotnetsupport.lang.semantic.CSharpCodeGenerators" dynamic="true"/>
+        <!-- a declaration a framework uses without code (Unity's event functions, serialized fields): the usages lens says so instead of "no usages" -->
+        <extensionPoint qualifiedName="io.github.dotnetsupport.csharpImplicitUsage" interface="io.github.dotnetsupport.lang.CSharpImplicitUsage" dynamic="true"/>
         <!-- the generated folders of a framework's project (Unity's Library, Temp): the solution finder skips them, the Solution view hides them -->
         <extensionPoint qualifiedName="io.github.dotnetsupport.solutionLayout" interface="io.github.dotnetsupport.solution.SolutionLayout" dynamic="true"/>
     </extensionPoints>

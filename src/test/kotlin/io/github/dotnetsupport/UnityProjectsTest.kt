@@ -31,7 +31,11 @@ class UnityProjectsTest : BasePlatformTestCase() {
         myFixture.addFileToProject("u/Library/ScriptAssemblies/Assembly-CSharp.dll", "")
         myFixture.addFileToProject("u/Library/PackageCache/com.unity.nuget.mono-cecil@1/cecil.sln", "")
         myFixture.addFileToProject("u/Temp/UnityLockfile", "")
-        myFixture.addFileToProject("u/Assembly-CSharp.csproj", "<Project ToolsVersion=\"4.0\"><ItemGroup><Compile Include=\"Assets\\Game\\Player.cs\" /></ItemGroup></Project>")
+        myFixture.addFileToProject(
+            "u/Assembly-CSharp.csproj",
+            "<Project ToolsVersion=\"4.0\"><PropertyGroup><LangVersion>9.0</LangVersion><RootNamespace></RootNamespace></PropertyGroup>" +
+                "<ItemGroup><Compile Include=\"Assets\\Game\\Player.cs\" /></ItemGroup></Project>",
+        )
         return myFixture.addFileToProject("u/u.slnx", """<Solution><Project Path="Assembly-CSharp.csproj" /></Solution>""").virtualFile
     }
 
@@ -67,6 +71,22 @@ class UnityProjectsTest : BasePlatformTestCase() {
         assertEquals(listOf("Player.cs", "Player.cs.meta"), names(structure, game))
     }
 
+    /** The namespace of a folder counts from the assembly definition above it (Unity, Rider), not from the project file in the root. */
+    fun testTheNamespaceOfAFolderCountsFromTheAssemblyDefinition() {
+        val sln = unityProject()
+        val root = sln.parent
+        myFixture.addFileToProject("u/Assets/Game/Boot/Game.Boot.asmdef", """{ "name": "Game.Boot", "rootNamespace": "Game.Boot" }""")
+        myFixture.addFileToProject("u/Assets/Game/Boot/Ui/Menu.cs", "")
+        myFixture.addFileToProject("u/Assets/Scripts/Enemies/Enemy.cs", "")
+        val boot = myFixture.addFileToProject("u/Game.Boot.csproj", "<Project ToolsVersion=\"4.0\"><PropertyGroup><RootNamespace>Game.Boot</RootNamespace></PropertyGroup></Project>").virtualFile
+        val main = root.findChild("Assembly-CSharp.csproj")!!
+        assertEquals("Game.Boot", io.github.dotnetsupport.msbuild.DotNetProjects.namespaceFor(root.findFileByRelativePath("Assets/Game/Boot")!!, boot, "Game.Boot"))
+        assertEquals("Game.Boot.Ui", io.github.dotnetsupport.msbuild.DotNetProjects.namespaceFor(root.findFileByRelativePath("Assets/Game/Boot/Ui")!!, boot, "Game.Boot"))
+        // Assembly-CSharp: no root namespace, the folders from Assets, `Scripts` none of them
+        assertEquals("Enemies", io.github.dotnetsupport.msbuild.DotNetProjects.namespaceFor(root.findFileByRelativePath("Assets/Scripts/Enemies")!!, main, ""))
+        assertEquals("", io.github.dotnetsupport.msbuild.DotNetProjects.namespaceFor(root.findChild("Assets")!!, main, ""))
+    }
+
     fun testNewUnityScriptsRenderWithTheirUsings() {
         val sln = unityProject()
         val directory = sln.parent.findFileByRelativePath("Assets/Game")!!
@@ -74,6 +94,8 @@ class UnityProjectsTest : BasePlatformTestCase() {
         val text = String(script.contentsToByteArray())
         assertEquals("Enemy.cs", script.name)
         assertTrue(text, text.startsWith("using UnityEngine;"))
+        // the namespace of the folder from Assets (no assembly definition, no root namespace), a block: LangVersion 9 has no file-scoped one
+        assertTrue(text, "namespace Game\n{" in text)
         assertTrue(text, "public class Enemy : MonoBehaviour" in text && "void Update()" in text)
         val editor = ItemCreator.create(project, directory, UnityItemTemplates.ALL.first { it.id == "unityEditor" }, "Enemy").single()
         val editorText = String(editor.contentsToByteArray())

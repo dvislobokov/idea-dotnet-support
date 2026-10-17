@@ -766,6 +766,12 @@
     `RazorCSharpInjector`); completion после `@` и `@Model.`, Go to Declaration из разметки в `@code` и в `.cs`, ошибки C# — через ту же
     семантику; PSI хоста — дерево компилятора R2 (`RazorTree.kt`), HTML-файл по нему. Сценарий `Blazor/Editor/RazorCSharp.razor` (вживую
     не проверено). Генерация документа по образцу компилятора — R3b (`RAZOR_PLAN.md`)
+  - [x] Unity, шаг 2 (0.1.256) — семантика: «IDE error occurred» при открытии (несовпадение стабов на файлах с `#if`) устранено в ядре —
+    `CSharpParseOptions` кладёт символы, просит переиндексацию и заново разбирает PSI одним write action; точка расширения
+    `csharpImplicitUsage`: над сообщениями `MonoBehaviour` и др. «Event function», над сериализуемыми полями «Set by Unity», над
+    `[MenuItem]` / `[ContextMenu]` «Called by Unity», над компонентами «Unity script» вместо «no usages»; namespace папки от `.asmdef`;
+    блочный namespace новых файлов при `LangVersion` < 10. Проверено в песочнице WSL на `nine-to-fire` (0 SEVERE в свежем логе, линзы
+    `DebugHotkeys`, 151 символ Unity и C# 9 у файла); человеком вживую не проверено
   - [x] Unity, шаг 1 (0.1.255) — модуль `frameworks.unity`: узел solution с иконкой Unity и версией редактора, `Library` / `Temp` /
     `Logs` / `obj` / `UserSettings` и `.meta` скрыты (переключатель «Show .meta Files»), `.sln` из `Library/PackageCache` не
     предлагаются (точка расширения `solutionLayout`), New → Unity ▸ (MonoBehaviour Script, ScriptableObject, Editor Script, Property
