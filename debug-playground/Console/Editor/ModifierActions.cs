@@ -3,7 +3,7 @@ namespace Playground.Editor;
 /// <summary>
 /// Live check of 0.1.171: the modifiers changed from a header with Alt+Enter, as Rider offers them on Jellyfin. Put the caret where the
 /// <c>// TYPE:name</c> comment says, press Alt+Enter, compare with EXPECT, undo (Ctrl+Z). Nothing here is called, the file only has to
-/// compile. Context actions = Built-in (the default).
+/// compile.
 /// </summary>
 public class ModifierActions
 {

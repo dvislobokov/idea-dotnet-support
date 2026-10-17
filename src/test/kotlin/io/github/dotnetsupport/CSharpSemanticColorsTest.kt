@@ -11,31 +11,25 @@ import io.github.dotnetsupport.lang.CSharpBracketColors
 import io.github.dotnetsupport.lang.CSharpColorSettingsPage
 import io.github.dotnetsupport.lang.CSharpColors
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.LocalSymbolKind
 import io.github.dotnetsupport.lang.NativeCSharpScopes
 import io.github.dotnetsupport.lang.NativeCSharpSemanticColors
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * `SEMANTIC_COLORS` NATIVE (CSHARP_PSI_MIGRATION.md, task A4): the palette of [CSharpColors] from the file's tree ([NativeCSharpScopes]) and the
  * stubs of the solution. A color is written `name:KEY` with the key's external name without `CSHARP_` and `_IDENTIFIER`.
  */
 class CSharpSemanticColorsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
-            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -318,18 +312,6 @@ class CSharpSemanticColorsTest : BasePlatformTestCase() {
         assertEquals(emptyList<String>(), expected.filter { it !in colors })
         // what only the server knows stays plain
         assertTrue(colors.none { it.startsWith("Console:") || it.startsWith("WriteLine:") || it.startsWith("total:LOCAL_VARIABLE") || it.startsWith("title:PROPERTY") })
-    }
-
-    /** NATIVE: the native annotator colors and the heuristics step aside; ROSLYN: the heuristics color with the coarse keys, as before. */
-    fun testTheSwitchChoosesTheAnnotator() {
-        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
-        myFixture.configureByText("SemSwitch.cs", "class SemSwitch { static void Main() { int n = 1; n++; } }")
-        // the identifiers only: the matching brackets have colors of their own (CSharpBracketColors)
-        fun highlighted() = myFixture.doHighlighting().mapNotNull { info -> info.forcedTextAttributesKey?.takeIf { it !in CSharpBracketColors.LEVELS }?.let { "${info.text}:${short(it)}" } }
-        assertEquals(listOf("SemSwitch:CLASS", "Main:STATIC_METHOD_DECLARATION", "n:MUTABLE_LOCAL_VARIABLE", "n:MUTABLE_LOCAL_VARIABLE"), highlighted())
-        settings.setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.ROSLYN)
-        com.intellij.codeInsight.daemon.DaemonCodeAnalyzer.getInstance(project).restart(myFixture.file)
-        assertEquals(listOf("SemSwitch:TYPE", "Main:METHOD"), highlighted())
     }
 
     /** Every key is on the color page, in its demo text, and the bundled schemes give the keys Rider's look. */

@@ -36,7 +36,6 @@ import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSymbol
 import io.github.dotnetsupport.lang.semantic.CSharpTypeFacts
 import io.github.dotnetsupport.lang.semantic.SemanticType
-import io.github.dotnetsupport.lsp.RoslynServerStatus
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.DumbService
 import com.intellij.psi.util.CachedValueProvider
@@ -214,45 +213,6 @@ object CSharpUsingNames {
         var name = method.removeSuffix("Async")
         VERBS.firstOrNull { name.startsWith(it) && name.length > it.length && name[it.length].isUpperCase() }?.let { name = name.substring(it.length) }
         return name.takeIf { it.firstOrNull()?.isUpperCase() == true }
-    }
-}
-
-/**
- * Server code actions the plugin's own Alt+Enter actions stand for when their feature is NATIVE: the platform shows both otherwise (the
- * server's under its own title). Read by the client of the server (`RoslynCodeActionsSupport`) per action; exact titles of Roslyn.
- */
-object NativeCSharpServerActions {
-    private const val FIX_ALL = "Fix All: "
-
-    private val SHADOWED = mapOf(
-        "Use simple 'using' statement" to CSharpFeature.EDITING,
-        "Make method async" to CSharpFeature.COMPLETION,
-        // A7, the native context actions (NativeCSharpContextActions.kt)
-        "Convert to conditional expression" to CSharpFeature.CONTEXT_ACTIONS,
-        "Use explicit type" to CSharpFeature.CONTEXT_ACTIONS,
-        "Use explicit type instead of 'var'" to CSharpFeature.CONTEXT_ACTIONS,
-        "Use implicit type" to CSharpFeature.CONTEXT_ACTIONS,
-        "Use 'var' instead of explicit type" to CSharpFeature.CONTEXT_ACTIONS,
-        "Inline temporary variable" to CSharpFeature.CONTEXT_ACTIONS,
-        // the server's row of "Convert '?:' to 'if' statement" (robot, E-76, 0.1.72: both on `return c ? a : b;`)
-        "Replace conditional expression with statements" to CSharpFeature.CONTEXT_ACTIONS,
-    )
-
-    // titles with the member kind or the expression in them: "Use expression body for method", "Introduce local for 'a + b'"
-    private val SHADOWED_PREFIXES = listOf(
-        "Use expression body for " to CSharpFeature.CONTEXT_ACTIONS,
-        "Use block body for " to CSharpFeature.CONTEXT_ACTIONS,
-        "Introduce local for " to CSharpFeature.CONTEXT_ACTIONS,
-        // 0.1.81: Introduce Parameter / Introduce Field of Refactor This ("Introduce parameter for all occurrences of 'x'" too)
-        "Introduce parameter for " to CSharpFeature.CONTEXT_ACTIONS,
-        "Introduce field for " to CSharpFeature.CONTEXT_ACTIONS,
-    )
-
-    fun shadowed(title: String?, project: Project): Boolean {
-        // its "Fix All: …" row goes with it: above the plugin's row, it took the first place of the list (robot 0.1.63, "Make method async")
-        val title = title?.removePrefix(FIX_ALL) ?: return false
-        val feature = SHADOWED[title] ?: SHADOWED_PREFIXES.firstOrNull { title.startsWith(it.first) }?.second ?: return false
-        return CSharpFeatures.native(feature, project)
     }
 }
 
@@ -515,10 +475,9 @@ object NativeCSharpUsingEdits {
 }
 
 /**
- * The `using` intentions on the native tree. Those the server has too (its "Use simple 'using' statement") stand back while it is ready and
- * the feature is its; when the feature is NATIVE, the server's one is dropped ([NativeCSharpServerActions]).
+ * The `using` intentions on the native tree.
  */
-abstract class NativeCSharpUsingIntention(private val title: String, private val serverHasIt: Boolean) : IntentionAction, PriorityAction, DumbAware {
+abstract class NativeCSharpUsingIntention(private val title: String) : IntentionAction, PriorityAction, DumbAware {
     override fun getText(): String = title
     override fun getFamilyName(): String = title
     override fun startInWriteAction(): Boolean = true
@@ -526,7 +485,6 @@ abstract class NativeCSharpUsingIntention(private val title: String, private val
 
     override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean {
         if (editor == null || file !is CSharpFile || file.compilationUnit == null) return false
-        if (serverHasIt && !CSharpFeatures.native(CSharpFeature.EDITING, file) && RoslynServerStatus.isReady(project, file.virtualFile)) return false
         return edit(file, editor.caretModel.offset, editor.document.charsSequence) != null
     }
 
@@ -547,19 +505,19 @@ abstract class NativeCSharpUsingIntention(private val title: String, private val
 }
 
 /** Alt+Enter on the header of `using (var x = …) { }` that ends its block: `using var x = …;` (Rider: "Convert to 'using' declaration"). */
-class NativeCSharpToUsingDeclarationIntention : NativeCSharpUsingIntention("Convert to 'using' declaration", serverHasIt = true) {
+class NativeCSharpToUsingDeclarationIntention : NativeCSharpUsingIntention("Convert to 'using' declaration") {
     override fun edit(file: CSharpFile, offset: Int, text: CharSequence): CSharpTextEdit? =
         NativeCSharpUsingEdits.usingStatementAt(file, offset)?.let { NativeCSharpUsingEdits.toDeclaration(it, text) }
 }
 
 /** Alt+Enter on `using var x = …;`: `using (var x = …) { the rest of the block }`. */
-class NativeCSharpToUsingStatementIntention : NativeCSharpUsingIntention("Convert to 'using' statement", serverHasIt = false) {
+class NativeCSharpToUsingStatementIntention : NativeCSharpUsingIntention("Convert to 'using' statement") {
     override fun edit(file: CSharpFile, offset: Int, text: CharSequence): CSharpTextEdit? =
         NativeCSharpUsingEdits.declarationAt(file, offset)?.let { NativeCSharpUsingEdits.toStatement(it, text, unit(file)) }
 }
 
 /** Alt+Enter on `var x = new T(…);`: the rest of the block in `using (var x = new T(…)) { }`. */
-class NativeCSharpWrapInUsingIntention : NativeCSharpUsingIntention("Wrap in 'using' statement", serverHasIt = false) {
+class NativeCSharpWrapInUsingIntention : NativeCSharpUsingIntention("Wrap in 'using' statement") {
     override fun edit(file: CSharpFile, offset: Int, text: CharSequence): CSharpTextEdit? =
         NativeCSharpUsingEdits.declarationAt(file, offset)?.takeIf { disposable(file, it) }?.let { NativeCSharpUsingEdits.wrapInUsing(it, text, unit(file)) }
 
@@ -580,7 +538,7 @@ class NativeCSharpWrapInUsingIntention : NativeCSharpUsingIntention("Wrap in 'us
 }
 
 /** Alt+Enter on a `using` directive: the directives of its place sorted as Rider does (global first, `System` first, then the alphabet). */
-class NativeCSharpSortUsingsIntention : NativeCSharpUsingIntention("Sort 'using' directives", serverHasIt = false) {
+class NativeCSharpSortUsingsIntention : NativeCSharpUsingIntention("Sort 'using' directives") {
     override fun edit(file: CSharpFile, offset: Int, text: CharSequence): CSharpTextEdit? =
         NativeCSharpGlobalUsings.directiveAt(file, offset)?.let { directive ->
             // `dotnet_sort_system_directives_first` of `.editorconfig`, as Optimize Imports reads it

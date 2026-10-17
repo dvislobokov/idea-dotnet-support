@@ -181,7 +181,7 @@ object NativeCSharpWarningFixes {
  * name"). The caret may be anywhere in the argument, a string literal included, and the argument may be one of an attribute
  * (`[GeneratedRegex(@"…")]`, Jellyfin p22, 0.1.170). One name to add is in the title, as Rider's "Add argument name 'pattern'".
  */
-class NativeCSharpAddArgumentNameIntention : NativeCSharpContextAction("Add argument name", serverHasIt = true, needsTypes = true) {
+class NativeCSharpAddArgumentNameIntention : NativeCSharpContextAction("Add argument name", needsTypes = true) {
     @Volatile private var title = "Add argument name"
 
     override fun getText(): String = title

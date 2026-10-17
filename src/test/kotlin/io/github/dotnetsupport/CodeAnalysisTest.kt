@@ -12,7 +12,6 @@ import io.github.dotnetsupport.codeanalysis.CodeAnalysisService
 import io.github.dotnetsupport.codeanalysis.CodeAnalysisWarmUp
 import io.github.dotnetsupport.codeanalysis.TextPositions
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * Source generators and analyzers through CodeAnalysisHelper (D3 / D4): the protocol on answers captured from the helper on
@@ -250,25 +249,18 @@ class CodeAnalysisTest : BasePlatformTestCase() {
     /** The annotations in the editor: the id first, the fixes of the analyzer on Alt+Enter; nothing while the language server is enabled. */
     fun testAnnotationsWithFixes() {
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        val settings = RoslynLanguageServerSettings.getInstance()
-        val enabled = settings.state.enabled
         try {
             val file = myFixture.configureByText("AnalyzerAnnotations.cs", "class A\n{\n    public async System.Threading.Tasks.Task Load() { await System.Threading.Tasks.Task.Yield(); }\n}\n")
             val diagnostic = CodeAnalysisAnswers.analysis(fixture("analyze.json")).diagnostics.first().copy(path = file.virtualFile.path, startLine = 2, endLine = 2, startColumn = 45, endColumn = 49)
             val service = CodeAnalysisService.getInstance(project)
             service.putAnalyzedForTests(file.virtualFile.path, AnalyzedFile("C:/s/A/A.csproj", listOf(diagnostic), listOf("public async System.Threading.Tasks.Task Load() { await System.Threading.Tasks.Task.Yield(); }"),
                 CodeAnalysisAnswers.target("C:/s/A/A.csproj", "Debug", null, "r")))
-            settings.state.enabled = false
             val warning = myFixture.doHighlighting(HighlightSeverity.WARNING).single { it.description?.startsWith("VSTHRD200") == true }
             assertEquals("Load", myFixture.editor.document.text.substring(warning.startOffset, warning.endOffset))
             myFixture.editor.caretModel.moveToOffset(warning.startOffset + 1)
             assertTrue(myFixture.availableIntentions.map { it.text }.toString(), myFixture.availableIntentions.any { it.text == "Rename to LoadAsync" })
-            settings.state.enabled = true
-            com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(project) { myFixture.editor.document.insertString(myFixture.editor.document.textLength, " ") }
-            assertTrue("the server runs the analyzers itself", myFixture.doHighlighting(HighlightSeverity.WARNING).none { it.description?.startsWith("VSTHRD200") == true })
             service.putAnalyzedForTests(file.virtualFile.path, null)
         } finally {
-            settings.state.enabled = enabled
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         }
     }

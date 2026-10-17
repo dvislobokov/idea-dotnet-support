@@ -26,7 +26,7 @@ data class ProbeReport(val ide: Map<String, String>, val expectedSource: String,
 }
 
 /**
- * Tells whether the LSP and DAP modules of the platform are there in the IDE the plugin runs in, and how their API differs from
+ * Tells whether the DAP module of the platform is there in the IDE the plugin runs in, and how their API differs from
  * the one of IntelliJ IDEA 2026.1.4 (`platformProbe/expected.json`). Everything goes through reflection and names: the plugin
  * does not depend on these modules, so it loads where they are absent, and that is exactly the case to find out about.
  */
@@ -40,8 +40,8 @@ object PlatformApiProbe {
     const val PLUGIN_MODULE = "plugin module"
 
     /** Content modules of the plugin by the area they need: the prefix of their classes is how their extensions are told. */
-    // the debugger needs no module of the platform any more: it is the plugin's own DAP client on XDebugger
-    private val OWN_MODULES = mapOf("lsp" to "io.github.dotnetsupport.roslyn")
+    // none any more: the debugger is the plugin's own DAP client on XDebugger, the client of the C# language server is gone (0.1.262)
+    private val OWN_MODULES = emptyMap<String, String>()
 
     private const val EXPECTED = "/platformProbe/expected.json"
 

@@ -7,11 +7,8 @@ namespace Playground.Editor;
 
 /// <summary>
 /// Live check of Go to Declaration (Ctrl+B, Ctrl+click), Ctrl+hover and the highlighting of usages under the caret on the plugin's own
-/// tree (0.1.50). Settings | .NET | Language Server → Source of Features → «Navigation and usages» = Built-in. Nothing is typed:
-/// put the caret (or the mouse with Ctrl held) where a <c>// TYPE:name</c> comment says and compare with EXPECT. With «Language server»
-/// (the default for now) the server answers once «Roslyn: DebugPlayground.sln» is ready: the targets must be the same. With Built-in the
-/// targets of the markers below come without the server (stop it or open the file before it is ready to see that); what the tree cannot
-/// resolve (a member after a dot, a type of the framework) still goes to the server. The file only has to compile.
+/// tree (0.1.50). Nothing is typed: put the caret (or the mouse with Ctrl held) where a <c>// TYPE:name</c> comment says and compare
+/// with EXPECT. The file only has to compile.
 /// </summary>
 public partial class Navigation(int seed)
 {
@@ -82,9 +79,8 @@ public partial class Navigation(int seed)
     public void Add(string amount) => _count += amount.Length;
 
     // TYPE:nav-types — Ctrl+click: `UsageSample` → the class in FindUsages.cs (same namespace); `UsageLog` → the class in Lib/UsageLog.cs
-    // (namespace Playground.Lib, brought in by `using Playground.Lib;` at the top). Then the fallback: `Record` (after the dot) and `Count`
-    // of `items.Count` are not resolved by the tree — with the server ready they go where the server says (the method Record of UsageLog, the decompiled
-    // List<T>.Count), without it nothing happens (no wrong jump)
+    // (namespace Playground.Lib, brought in by `using Playground.Lib;` at the top). Then the members after a dot: `Record` → the method
+    // Record of UsageLog, `Count` of `items.Count` → List<T>.Count in the metadata view of the library; never a wrong jump
     public int Types(List<int> items)
     {
         UsageSample sample = new UsageSample();
@@ -94,8 +90,8 @@ public partial class Navigation(int seed)
 
     // TYPE:nav-highlight — put the caret on `total` in `total += step` (no click). EXPECT: every `total` of Highlight is highlighted, the
     // declaration and the writes (`+=`, `++`, `out total`) in the write color, the reads in the read color; the `total` of Locals above is
-    // not. Caret on `step`: its declaration and the read in `+= step` only. Caret on `_count` (a field, which the tree leaves to the server):
-    // the occurrences as before — from the server when it is ready, else every `_count` of the file by text
+    // not. Caret on `step`: its declaration and the read in `+= step` only. Caret on `_count` (a field):
+    // every `_count` of the file
     public int Highlight(int step)
     {
         var total = 0;

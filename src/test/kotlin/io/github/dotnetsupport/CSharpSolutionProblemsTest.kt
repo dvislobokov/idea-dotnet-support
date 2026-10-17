@@ -17,7 +17,7 @@ import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpSolutionProblems
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
 import io.github.dotnetsupport.lang.AnalysisScopes
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
+import io.github.dotnetsupport.settings.CSharpEditorSettings
 import java.io.File
 
 /**
@@ -26,30 +26,24 @@ import java.io.File
  * editor either. The analyzer scope puts the helper's warnings into the same tab under `fullSolution`.
  */
 class CSharpSolutionProblemsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
+    private val settings get() = CSharpEditorSettings.getInstance()
     private val service get() = NativeCSharpSolutionProblems.getInstance(project)
-    private var enabled = false
     private var options: Map<String, String> = emptyMap()
     private var files = 0
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        enabled = settings.state.enabled
         options = settings.state.options.toMap()
-        settings.state.enabled = false
         service.includeLooseFilesForTests(testRootDisposable)
     }
 
     override fun tearDown() {
         try {
-            settings.state.enabled = false
             AnalysisScopes.set(AnalysisScopes.COMPILER, AnalysisScopes.NONE)
             AnalysisScopes.set(AnalysisScopes.ANALYZER, AnalysisScopes.NONE)
             pass() // the rows of this test leave the shared collector
-            settings.state.enabled = enabled
             settings.state.options = options.toMutableMap()
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

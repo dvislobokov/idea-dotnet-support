@@ -12,10 +12,8 @@ import io.github.dotnetsupport.index.AssemblyDocs
 import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * COMPLETION inside strings (tasks 2.6 and 2.7 of docs/COMPLETION_GAPS.md): names and members in the holes of interpolated strings of
@@ -23,14 +21,12 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * in `string.Format` / `Console.WriteLine` items, in `ToString("…")` and `ParseExact`, as Rider lists them (dumps 20, 43).
  */
 class CSharpStringCompletionTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var autocomplete = true
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { ASSEMBLIES }
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
     }
@@ -38,7 +34,6 @@ class CSharpStringCompletionTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

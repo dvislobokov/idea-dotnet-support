@@ -11,14 +11,12 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.ui.UIUtil
 import io.github.dotnetsupport.lang.CSharpCompletionAutoPopup
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpLookupDocumentationTargetProvider
 import io.github.dotnetsupport.lang.CSharpSuggestionMode
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpCompletion
 import io.github.dotnetsupport.lang.NativeCSharpDocumentationTarget
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.suggest.SuggestionStats
 
 /**
@@ -27,15 +25,12 @@ import io.github.dotnetsupport.suggest.SuggestionStats
  * `typeof(`, middle matching. The keywords of Roslyn's recommenders: [CSharpKeywordRecommendationsTest].
  */
 class CSharpCompletionBehaviourTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var files = 0
     private var autocomplete = true
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
-        settings.setSource(CSharpFeature.DOCUMENTATION, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
     }
@@ -44,7 +39,6 @@ class CSharpCompletionBehaviourTest : BasePlatformTestCase() {
         try {
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
             runCatching { myFixture.lookup?.hideLookup(true) }
-            settings.state.features = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)

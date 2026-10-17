@@ -4,8 +4,8 @@ namespace Playground.Editor;
 
 /// <summary>
 /// Live check of the Alt+Enter context actions on <c>switch</c> (0.1.162, <c>NativeCSharpSwitchActions.kt</c>): the missing sections and
-/// arms of an enum, <c>default</c>, section braces, statement ↔ expression, statement → <c>if</c> chain. «Context actions» = Built-in (the
-/// default). Put the caret where a marker says, press Alt+Enter, check EXPECT, then undo (Ctrl+Z) so the file stays as it is. Nothing here
+/// arms of an enum, <c>default</c>, section braces, statement ↔ expression, statement → <c>if</c> chain.
+/// Put the caret where a marker says, press Alt+Enter, check EXPECT, then undo (Ctrl+Z) so the file stays as it is. Nothing here
 /// is called, the file only has to compile.
 /// </summary>
 public class SwitchActions

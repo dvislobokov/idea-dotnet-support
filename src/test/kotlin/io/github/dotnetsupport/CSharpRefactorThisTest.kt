@@ -8,32 +8,26 @@ import io.github.dotnetsupport.index.AssemblyDocs
 import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpRiderPopups
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * Refactor This lists Introduce Field / Introduce Parameter only where they apply (0.1.170, the Jellyfin comparison: they showed at all 25
  * places, on a type header too) and Rename on every identifier of the solution, as Rider.
  */
 class CSharpRefactorThisTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var files = 0
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { ASSEMBLIES }
-        settings.setSource(CSharpFeature.CONTEXT_ACTIONS, CSharpFeatureSource.NATIVE)
-        settings.setSource(CSharpFeature.RENAME, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

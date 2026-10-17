@@ -28,7 +28,7 @@ import javax.swing.JPanel
 import javax.swing.JTable
 import javax.swing.table.DefaultTableCellRenderer
 
-/** .NET → Probe Platform LSP / DAP API: a diagnostic for trying the plugin in another IDE or without a license. */
+/** .NET → Probe Platform DAP API: a diagnostic for trying the plugin in another IDE or without a license. */
 class PlatformApiProbeAction : AnAction(), DumbAware {
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
@@ -51,7 +51,7 @@ class PlatformApiProbeDialog(project: Project?, private val report: ProbeReport)
     private val problemsOnly = JBCheckBox("Problems only", report.checks.any { it.status != ProbeStatus.OK })
 
     init {
-        title = "Platform LSP / DAP API"
+        title = "Platform DAP API"
         setOKButtonText("Close")
         init()
     }
@@ -111,7 +111,7 @@ class PlatformApiProbeDialog(project: Project?, private val report: ProbeReport)
     }
 
     companion object {
-        /** "IntelliJ IDEA 2026.1.4 (IU-261…), license: none — LSP: module is there, 129 of 129 classes; DAP: …" */
+        /** "IntelliJ IDEA 2026.1.4 (IU-261…), license: none — DAP: module is there, … classes" */
         fun summary(report: ProbeReport): String {
             val areas = report.checks.map { it.area }.distinct().joinToString("&nbsp;&nbsp;|&nbsp;&nbsp;") { area ->
                 val points = report.of(area, PlatformApiProbe.EXTENSION_POINT)

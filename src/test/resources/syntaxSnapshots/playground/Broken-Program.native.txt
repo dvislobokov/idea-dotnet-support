@@ -11,9 +11,6 @@
 ## IL Viewer: type / member at the line
 1: - / -
 
-## Go to Base: member at the line
-1: -
-
 ## breakpoint lines
 4-5
 

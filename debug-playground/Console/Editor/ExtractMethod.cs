@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of Extract Method and Introduce Field without the language server (0.1.75, CSHARP_PSI_MIGRATION.md task C4d). Select what a
+/// Live check of Extract Method and Introduce Field (0.1.75, CSHARP_PSI_MIGRATION.md task C4d). Select what a
 /// marker says, press Ctrl+Alt+M (Refactor | Extract | Method) or Refactor This (Ctrl+Alt+Shift+T) → "Extract Method...", check EXPECT,
 /// then undo (Ctrl+Z). After the extraction the name `NewMethod` is in a frame at the call and the declaration: typing a new name changes
-/// both, Enter finishes (a scenario not undone leaves its `NewMethod`: the next one is `NewMethod1`). With the server ready Refactor This
-/// has no second "Extract method" row of the server. Introduce Field puts the field after the last field of the type.
+/// both, Enter finishes (a scenario not undone leaves its `NewMethod`: the next one is `NewMethod1`). Refactor This
+/// has one "Extract Method..." row, not two. Introduce Field puts the field after the last field of the type.
 /// </summary>
 public class ExtractMethodScenarios
 {

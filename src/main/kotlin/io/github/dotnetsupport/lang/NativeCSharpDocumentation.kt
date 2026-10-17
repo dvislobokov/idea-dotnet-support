@@ -35,7 +35,7 @@ import io.github.dotnetsupport.lang.semantic.CSharpNameResolver
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSymbol
 import io.github.dotnetsupport.lang.semantic.CSharpSymbolText
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpOptions
 
 /**
  * Quick documentation (Ctrl+Q, the popup on hover) of C# on the plugin's semantics (CSHARP_PSI_MIGRATION.md, task C3), behind
@@ -43,9 +43,6 @@ import io.github.dotnetsupport.lsp.RoslynOptions
  * first line as Roslyn's Quick Info writes it ([CSharpSymbolText.quickInfo]), then the XML documentation — the `///` comment of a declaration
  * of the solution, the documentation file of an assembly ([io.github.dotnetsupport.index.AssemblyDocs]) — as summary, parameters, type
  * parameters, returns, value, exceptions and remarks, the way Rider lays them out.
- *
- * The platform shows the targets of all providers as pages of one popup, so with the switch on Built-in the module `roslyn` turns the
- * server's hover off (its `hoverCustomizer`): one page, the plugin's (robot, E-83: the server's was the second page, 0.1.72).
  */
 class NativeCSharpDocumentationTargetProvider : DocumentationTargetProvider {
     override fun documentationTargets(file: PsiFile, offset: Int): List<DocumentationTarget> {
@@ -489,7 +486,7 @@ object NativeCSharpDocumentation {
         doc.value?.let { sections += "Value:" to inline(it) }
         doc.exceptions.takeIf { it.isNotEmpty() }?.let { list -> sections += "Exceptions:" to list.joinToString("<br>") { (cref, text) -> "${linked(cref, links)} – ${inline(text)}" } }
         // `quick_info.dotnet_show_remarks_in_quick_info` of the server's page, obeyed by the native documentation too
-        if (RoslynOptions.isOn("quick_info.dotnet_show_remarks_in_quick_info")) doc.remarks?.let { sections += "Remarks:" to inline(it) }
+        if (CSharpOptions.isOn("quick_info.dotnet_show_remarks_in_quick_info")) doc.remarks?.let { sections += "Remarks:" to inline(it) }
         if (sections.isNotEmpty()) {
             append(DocumentationMarkup.SECTIONS_START)
             for ((header, body) in sections) {

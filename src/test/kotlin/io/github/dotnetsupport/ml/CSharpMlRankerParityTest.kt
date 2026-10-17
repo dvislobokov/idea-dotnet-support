@@ -13,10 +13,8 @@ import io.github.completionml.core.rank.FeatureExtractor
 import io.github.completionml.core.rank.Rankers
 import io.github.completionml.core.spi.TokenKind
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpMlInfo
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import java.io.File
 import java.util.Random
 
@@ -34,7 +32,6 @@ class CSharpMlRankerParityTest : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
         CSharpMlSettings.getInstance().showMarker = true   // off by default; the test checks the mark on every ranked row
@@ -45,7 +42,6 @@ class CSharpMlRankerParityTest : BasePlatformTestCase() {
             CSharpMlCompletionRanker.modelsForTests = null
             CSharpMlSettings.getInstance().showMarker = false
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
-            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)

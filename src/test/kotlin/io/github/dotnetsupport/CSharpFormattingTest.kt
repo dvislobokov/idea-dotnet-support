@@ -15,11 +15,9 @@ import io.github.dotnetsupport.format.DotNetFormattingSettings
 import io.github.dotnetsupport.format.FormatterChoice
 import io.github.dotnetsupport.lang.CSharpEditorConfig
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFileType
 import io.github.dotnetsupport.lang.CSharpFormatOptions
 import io.github.dotnetsupport.lang.NativeCSharpFormatting
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * The native formatter (CSharpFeature.FORMATTING, 0.1.49). The `*.after.cs` files of `resources/formatting` are what
@@ -29,17 +27,8 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * outside `test`, because it runs `dotnet`.
  */
 class CSharpFormattingTest : BasePlatformTestCase() {
-    private val serverSettings get() = RoslynLanguageServerSettings.getInstance()
-
-    override fun setUp() {
-        super.setUp()
-        serverSettings.setSource(CSharpFeature.FORMATTING, CSharpFeatureSource.NATIVE)
-    }
-
     override fun tearDown() {
         try {
-            serverSettings.state.features = mutableMapOf()
-            serverSettings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             DotNetFormattingSettings.getInstance(project).formatter = FormatterChoice.AUTO
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -214,9 +203,8 @@ class CSharpFormattingTest : BasePlatformTestCase() {
         assertEquals("class A\n{\nvoid M(){int a=1;}\n    void N()\n    {\n        int b = 2;\n    }\n}\n", document.text)
     }
 
-    /** "Built-in" chosen, or "Auto" with the switch NATIVE: the native formatter; "dotnet format", CSharpier and "None" are what they say. */
+    /** "Built-in" or "Auto" without CSharpier: the native formatter; "dotnet format", CSharpier and "None" are what they say. */
     fun testWhenTheNativeFormatterAnswers() {
-        serverSettings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         val file = myFixture.addFileToProject("FormattingWiring/Program.cs", "class Program{}")
         val formatting = DotNetFormattingSettings.getInstance(project)
         val service = DotNetFormattingService()
@@ -225,7 +213,7 @@ class CSharpFormattingTest : BasePlatformTestCase() {
         assertEquals("class Program\n{\n}", reformat(file))
 
         formatting.formatter = FormatterChoice.DOTNET_FORMAT
-        assertFalse("dotnet format chosen: dotnet format, whatever the switch", NativeCSharpFormatting.engaged(file))
+        assertFalse("dotnet format chosen: dotnet format", NativeCSharpFormatting.engaged(file))
         assertTrue(service.canFormat(file))
         formatting.formatter = FormatterChoice.BUILT_IN
         assertTrue(NativeCSharpFormatting.engaged(file))
@@ -239,14 +227,6 @@ class CSharpFormattingTest : BasePlatformTestCase() {
             reformat(myFixture.addFileToProject("FormattingWiring/None.cs", "class None{}")))
         formatting.formatter = FormatterChoice.AUTO
 
-        serverSettings.setSource(CSharpFeature.FORMATTING, CSharpFeatureSource.ROSLYN)
-        assertFalse("ROSLYN: today's path", NativeCSharpFormatting.engaged(file))
-        assertTrue(service.canFormat(file))
-        formatting.formatter = FormatterChoice.BUILT_IN
-        assertTrue("Built-in chosen: the switch decides only for Auto", NativeCSharpFormatting.engaged(file))
-        formatting.formatter = FormatterChoice.AUTO
-        serverSettings.state.enabled = false
-        assertTrue("no server: the native one, by the rule of CSharpFeatures", NativeCSharpFormatting.engaged(file))
         assertFalse("not a C# file", NativeCSharpFormatting.engaged(myFixture.addFileToProject("FormattingWiring/a.txt", "x")))
     }
 }

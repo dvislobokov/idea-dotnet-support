@@ -58,17 +58,6 @@ Synthetic.Strings
 27: Synthetic.Strings.Templates / AfterStrings
 28: Synthetic.Strings.Templates / -
 
-## Go to Base: member at the line
-1: -
-10: Templates.Interpolated(int x)
-12: Templates.Raw()
-16: Templates.RawInterpolated(int x)
-20: Templates.Nested(int x)
-22: Templates.Nested(int x) (in body)
-25: -
-27: Templates.AfterStrings()
-28: -
-
 ## breakpoint lines
 5-8, 10, 12, 14, 16, 18, 21-23, 27
 

@@ -6,9 +6,8 @@ namespace Playground.Editor;
 /// <summary>
 /// Live check of the usages the code does not write by name (0.1.82): the implicit calls Roslyn's Find References counts — `Deconstruct`
 /// of a deconstruction or a positional pattern, the constructor of a target-typed `new(…)` wherever its type comes from the place,
-/// `GetEnumerator` of `foreach`, `Dispose` of `using`, `GetAwaiter` of `await`, `Add` of a collection initializer. The server off (or the
-/// «Navigation» feature Built-in, the default). Put the caret on the name a `// TYPE:` comment says, Alt+F7, compare with EXPECT; with the
-/// server on, the same keys must give the same places. The file only has to compile.
+/// `GetEnumerator` of `foreach`, `Dispose` of `using`, `GetAwaiter` of `await`, `Add` of a collection initializer.
+/// Put the caret on the name a `// TYPE:` comment says, Alt+F7, compare with EXPECT. The file only has to compile.
 /// </summary>
 public sealed class ImplicitPoint(int x, int y)
 {
@@ -16,8 +15,8 @@ public sealed class ImplicitPoint(int x, int y)
     public int Y { get; } = y;
 
     // TYPE:implicit-deconstruct — caret on `Deconstruct`, Alt+F7. EXPECT: 3 usages in ImplicitUsageScenarios below: `var (a, b)` and
-    // `(var c, var d)` of the two deconstructions, `var (px, py)` of the foreach (the row starts at the left side / the variable, as with
-    // the server). NOT: the positional patterns `(0, _)` and `(var sx, _)` (the server does not count them either), this comment.
+    // `(var c, var d)` of the two deconstructions, `var (px, py)` of the foreach (the row starts at the left side / the variable, as in
+    // Roslyn). NOT: the positional patterns `(0, _)` and `(var sx, _)` (Roslyn does not count them either), this comment.
     // Shift+F6 on `Deconstruct` renames only the declaration: no `var` is touched
     public void Deconstruct(out int x, out int y) => (x, y) = (X, Y);
 }
@@ -31,13 +30,13 @@ public sealed class ImplicitBag : IEnumerable<int>, IDisposable
     public void Add(int item) => items.Add(item);
 
     // TYPE:implicit-enumerator — caret on `GetEnumerator` (the first), Alt+F7. EXPECT: the `foreach` over `bag` in Run (the row is
-    // `foreach`) and the call in the explicit IEnumerable.GetEnumerator below. The server lists more: every `foreach` of the solution over
-    // any IEnumerable<T> (it cascades to the interface member of the library); the plugin only the loops that bind to this method
+    // `foreach`) and the call in the explicit IEnumerable.GetEnumerator below; only the loops that bind to
+    // this method, NOT every `foreach` of the solution over any IEnumerable<T>
     public IEnumerator<int> GetEnumerator() => items.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-    // TYPE:implicit-dispose — caret on `Dispose`, Alt+F7. EXPECT: the `using` of Run (the row is `using`). The server also lists the
-    // `using` of other IDisposable types (Usings.cs), the plugin does not
+    // TYPE:implicit-dispose — caret on `Dispose`, Alt+F7. EXPECT: the `using` of Run (the row is `using`). NOT the
+    // `using` of other IDisposable types (Usings.cs)
     public void Dispose() => items.Clear();
 }
 
@@ -51,7 +50,7 @@ public static class ImplicitUsageScenarios
 {
     // TYPE:implicit-new — caret on `ImplicitPoint` of the class above, Alt+F7. EXPECT, among the 7 usages by name: 7 rows on `new` —
     // every `new(…)` below: the field, the property initializer, the return of Make, the dictionary initializer `["a"] = new(1, 2)`, the
-    // collection expression element, the collection initializer element, the argument of Sum (14 usages in all, as with the server)
+    // collection expression element, the collection initializer element, the argument of Sum (14 usages in all, as in Roslyn)
     private static readonly ImplicitPoint Origin = new(0, 0);
 
     public static ImplicitPoint Corner { get; } = new(9, 9);

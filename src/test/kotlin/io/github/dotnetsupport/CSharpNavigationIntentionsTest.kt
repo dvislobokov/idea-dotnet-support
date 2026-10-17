@@ -7,31 +7,26 @@ import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.csharp.lang.psi.CSharpDeclarationNames
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpNavigationIntentions
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * The navigation Rider lists in Alt+Enter on a member's header (Jellyfin p01, p16, p19, p21, p24; 0.1.170): "Incoming Calls", "Outgoing
  * Calls", "Implements method from 'IStore' interface" / "Overrides method from 'Base' class" — only on the header, never in a body.
  */
 class CSharpNavigationIntentionsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var files = 0
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { ASSEMBLIES }
-        settings.setSource(CSharpFeature.NAVIGATION, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
             NativeCSharpNavigationIntentions.openForTests = null
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

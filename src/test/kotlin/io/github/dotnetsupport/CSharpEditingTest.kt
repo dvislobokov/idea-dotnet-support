@@ -4,7 +4,7 @@ import com.intellij.openapi.actionSystem.IdeActions
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpCompleteStatement
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
+import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.CSharpFeatures
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpGhostText
@@ -14,21 +14,18 @@ import io.github.dotnetsupport.lang.NativeCSharpCompleteStatement
 import io.github.dotnetsupport.lang.NativeCSharpGhostText
 import io.github.dotnetsupport.lang.NativeCSharpSelection
 import io.github.dotnetsupport.lang.NativeCSharpSyntaxModel
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
- * `CSharpFeature.EDITING` (CSHARP_PSI_MIGRATION.md, step 9): Extend Selection, Complete Statement and the gray `;` by the tokens (ROSLYN,
- * today's path) and by the tree (NATIVE). Where both answer the same the cases say so once; where the tree answers better the pair
+ * `CSharpFeature.EDITING` (CSHARP_PSI_MIGRATION.md, step 9): Extend Selection, Complete Statement and the gray `;` by the tokens (a file of the
+ * heuristic tree) and by the tree (the native one). Where both answer the same the cases say so once; where the tree answers better the pair
  * (tokens, tree) is written out.
  */
 class CSharpEditingTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var files = 0
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
-            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
+            CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
         } finally {
@@ -36,7 +33,10 @@ class CSharpEditingTest : BasePlatformTestCase() {
         }
     }
 
-    private fun use(source: CSharpFeatureSource) = settings.setSource(CSharpFeature.EDITING, source)
+    /** By the tokens: a file of the heuristic tree; by the tree: of the native one (the switch of the feature went with the language server, 0.1.262). */
+    private enum class Source { TOKENS, TREE }
+
+    private fun use(source: Source) = CSharpSyntaxTrees.forceNativeTreeForTests(source == Source.TREE)
 
     // ---- Extend Selection
 
@@ -57,7 +57,7 @@ class CSharpEditingTest : BasePlatformTestCase() {
     """.trimIndent()
 
     /** What Ctrl+W selects, pressed [times] times with the caret at [anchor] of [text]. */
-    private fun selections(source: CSharpFeatureSource, anchor: String, times: Int, text: String = order): List<String> {
+    private fun selections(source: Source, anchor: String, times: Int, text: String = order): List<String> {
         use(source)
         myFixture.configureByText("Select${files++}.cs", text)
         myFixture.editor.caretModel.moveToOffset(text.indexOf(anchor))
@@ -68,18 +68,17 @@ class CSharpEditingTest : BasePlatformTestCase() {
     }
 
     fun testExtendSelectionGoesThroughTheNodes() {
-        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         assertEquals(
             listOf(
                 "name", "name.Trim", "name.Trim()", "count, name.Trim()", "(count, name.Trim())", "Compute(count, name.Trim())", "Compute(count, name.Trim()) + 1",
                 "= Compute(count, name.Trim()) + 1", "total = Compute(count, name.Trim()) + 1", "var total = Compute(count, name.Trim()) + 1",
                 "var total = Compute(count, name.Trim()) + 1;",
             ),
-            selections(CSharpFeatureSource.NATIVE, "name.Trim", 11),
+            selections(Source.TREE, "name.Trim", 11),
         )
         // the tokens: the word, then brackets only, straight to the contents of the block with its line breaks
-        assertEquals(listOf("name", "count, name.Trim()", "(count, name.Trim())"), selections(CSharpFeatureSource.ROSLYN, "name.Trim", 3))
-        val block = selections(CSharpFeatureSource.NATIVE, "name.Trim", 16).drop(11)
+        assertEquals(listOf("name", "count, name.Trim()", "(count, name.Trim())"), selections(Source.TOKENS, "name.Trim", 3))
+        val block = selections(Source.TREE, "name.Trim", 16).drop(11)
         assertEquals("the statements of the block, comments included, without the line breaks around them",
             order.substring(order.indexOf("var total"), order.indexOf("}\n    }") + 1), block[0])
         assertTrue(block[1].startsWith("{") && block[1].endsWith("}"))
@@ -88,24 +87,22 @@ class CSharpEditingTest : BasePlatformTestCase() {
     }
 
     fun testExtendSelectionInStrings() {
-        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
         assertEquals(
             listOf("plain", "plain text here", "\"plain text here\""),
-            selections(CSharpFeatureSource.NATIVE, "ain text", 3),
+            selections(Source.TREE, "ain text", 3),
         )
-        assertEquals("the tokens: the literal with its quotes at once", listOf("plain", "\"plain text here\""), selections(CSharpFeatureSource.ROSLYN, "ain text", 2))
+        assertEquals("the tokens: the literal with its quotes at once", listOf("plain", "\"plain text here\""), selections(Source.TOKENS, "ain text", 2))
         assertEquals(
             listOf("total", "total ", "total {total:N2} of {name}", "\$\"total {total:N2} of {name}\""),
-            selections(CSharpFeatureSource.NATIVE, "otal {total", 4),
+            selections(Source.TREE, "otal {total", 4),
         )
-        assertEquals(listOf("total", "total ", "\$\"total {total:N2} of {name}\""), selections(CSharpFeatureSource.ROSLYN, "otal {total", 3))
         // a hole: the expression, the hole with its braces
-        assertEquals(listOf("name", "{name}"), selections(CSharpFeatureSource.NATIVE, "name}\"", 2))
+        assertEquals(listOf("name", "{name}"), selections(Source.TREE, "name}\"", 2))
     }
 
     fun testExtendSelectionOfAConditionAndAStatement() {
-        assertEquals(listOf(">", "total > 0", "(total > 0)"), selections(CSharpFeatureSource.ROSLYN, "> 0", 3))
-        val native = selections(CSharpFeatureSource.NATIVE, "> 0", 4)
+        assertEquals(listOf(">", "total > 0", "(total > 0)"), selections(Source.TOKENS, "> 0", 3))
+        val native = selections(Source.TREE, "> 0", 4)
         assertEquals(listOf(">", "total > 0", "(total > 0)"), native.take(3))
         assertTrue("the whole if statement", native[3].startsWith("if (total > 0)") && native[3].endsWith("}"))
     }
@@ -130,7 +127,7 @@ class CSharpEditingTest : BasePlatformTestCase() {
 
     // ---- Complete Statement
 
-    private fun complete(source: CSharpFeatureSource, before: String): String {
+    private fun complete(source: Source, before: String): String {
         use(source)
         myFixture.configureByText("Complete${files++}.cs", before)
         myFixture.performEditorAction(IdeActions.ACTION_EDITOR_COMPLETE_STATEMENT)
@@ -143,8 +140,8 @@ class CSharpEditingTest : BasePlatformTestCase() {
 
     /** The same result by the tokens and by the tree. */
     private fun agreed(before: String): String {
-        val tokens = complete(CSharpFeatureSource.ROSLYN, before)
-        assertEquals("the tokens and the tree disagree on $before", tokens, complete(CSharpFeatureSource.NATIVE, before))
+        val tokens = complete(Source.TOKENS, before)
+        assertEquals("the tokens and the tree disagree on $before", tokens, complete(Source.TREE, before))
         return tokens
     }
 
@@ -168,8 +165,7 @@ class CSharpEditingTest : BasePlatformTestCase() {
 
     /** (tokens, tree): where the tree knows what the statement lacks. */
     fun testCompleteStatementWhereTheTreeKnowsBetter() {
-        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
-        fun pair(before: String) = complete(CSharpFeatureSource.ROSLYN, before) to complete(CSharpFeatureSource.NATIVE, before)
+        fun pair(before: String) = complete(Source.TOKENS, before) to complete(Source.TREE, before)
 
         assertEquals(method("Foo(a, b\n            <caret>") to method("Foo(a, b);\n        <caret>"), pair(method("Foo(a, b<caret>")))
         assertEquals(method("return Foo(Bar(1\n            <caret>") to method("return Foo(Bar(1));\n        <caret>"), pair(method("return Foo(Bar(1<caret>")))
@@ -249,7 +245,7 @@ class CSharpEditingTest : BasePlatformTestCase() {
     private fun playground(name: String) = java.io.File("debug-playground/Console/Editor/$name").readText().replace("\r\n", "\n")
 
     /** [typed] on the empty line under the comment of [marker], Complete Statement by [source]: the text from the typed line on. */
-    private fun scenario(marker: String, typed: String, source: CSharpFeatureSource): String {
+    private fun scenario(marker: String, typed: String, source: Source): String {
         val text = playground("CompleteStatement.cs")
         val comment = text.indexOf("// TYPE:$marker ")
         val blank = Regex("""\n([ \t]*)\n""").find(text, comment)!!
@@ -260,9 +256,8 @@ class CSharpEditingTest : BasePlatformTestCase() {
     }
 
     fun testThePlaygroundScenariosOfCompleteStatement() {
-        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
-        val n = CSharpFeatureSource.NATIVE
-        val t = CSharpFeatureSource.ROSLYN
+        val n = Source.TREE
+        val t = Source.TOKENS
         val i = "        "
         assertEquals("${i}Make(a, b);\n$i<caret>", scenario("complete-call", "Make(a, b", n))
         assertEquals("${i}Make(a, b\n$i    <caret>", scenario("complete-call", "Make(a, b", t))
@@ -285,14 +280,14 @@ class CSharpEditingTest : BasePlatformTestCase() {
 
     fun testThePlaygroundScenariosOfExtendSelection() {
         val text = playground("ExtendSelection.cs")
-        val native = selections(CSharpFeatureSource.NATIVE, "name.Trim()) + 1", 16, text)
+        val native = selections(Source.TREE, "name.Trim()) + 1", 16, text)
         assertEquals(listOf("name", "name.Trim", "name.Trim()", "count, name.Trim()", "(count, name.Trim())"), native.take(5))
         assertEquals("var total = Compute(count, name.Trim()) + 1;", native[10])
         assertTrue("the statement with the comment above it", native[11].startsWith("// TYPE:extend-selection-call") && native[11].endsWith("+ 1;"))
         assertTrue("the contents of the body", native[12].startsWith("// TYPE:extend-selection-call") && native[12].endsWith("return total;"))
         assertTrue(native[13].startsWith("{") && native[14].startsWith("[Obsolete") && native[15].startsWith("/// <summary>Saves"))
-        assertEquals(listOf("plain", "plain text here", "\"plain text here\""), selections(CSharpFeatureSource.NATIVE, "lain text here\");", 3, text))
-        assertEquals(listOf(">", "total > 1", "(total > 1)"), selections(CSharpFeatureSource.NATIVE, "> 1)\n", 4, text).take(3))
+        assertEquals(listOf("plain", "plain text here", "\"plain text here\""), selections(Source.TREE, "lain text here\");", 3, text))
+        assertEquals(listOf(">", "total > 1", "(total > 1)"), selections(Source.TREE, "> 1)\n", 4, text).take(3))
     }
 
     // ---- Broken code, the switch
@@ -315,23 +310,4 @@ class CSharpEditingTest : BasePlatformTestCase() {
         }
     }
 
-    fun testTheSwitch() {
-        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
-        assertTrue(CSharpFeatures.hasNative(CSharpFeature.EDITING))
-        assertFalse("no index needed", CSharpFeature.EDITING.needsIndexes)
-        assertEquals("the tree by default since the robot (0.1.48)", CSharpFeatureSource.NATIVE, CSharpFeature.EDITING.defaultSource)
-        assertTrue(CSharpFeatures.native(CSharpFeature.EDITING, project))
-        assertFalse("ROSLYN: the tokens", "name.Trim()" in selections(CSharpFeatureSource.ROSLYN, "name.Trim", 4))
-        assertTrue("NATIVE: the tree", "name.Trim()" in selections(CSharpFeatureSource.NATIVE, "name.Trim", 4))
-        assertTrue(CSharpFeatures.native(CSharpFeature.EDITING, project))
-        // a file of the heuristic tree has nothing to give: the tokens answer even with NATIVE
-        settings.setSource(CSharpFeature.SYNTAX_TREE, CSharpFeatureSource.ROSLYN)
-        assertFalse("name.Trim()" in selections(CSharpFeatureSource.NATIVE, "name.Trim", 4))
-        assertTrue(myFixture.file is HeuristicCSharpFile)
-        settings.setSource(CSharpFeature.SYNTAX_TREE, CSharpFeatureSource.NATIVE)
-        // no server: what is built in works
-        settings.state.enabled = false
-        use(CSharpFeatureSource.ROSLYN)
-        assertTrue(CSharpFeatures.native(CSharpFeature.EDITING, project))
-    }
 }

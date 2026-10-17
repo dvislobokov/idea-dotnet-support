@@ -3,7 +3,7 @@ using System;
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of Introduce Parameter without the language server (0.1.81). Select what a marker says, press Ctrl+Alt+P (Refactor |
+/// Live check of Introduce Parameter (0.1.81). Select what a marker says, press Ctrl+Alt+P (Refactor |
 /// Introduce Parameter) or Refactor This (Ctrl+Alt+Shift+T) → "Introduce Parameter...", check EXPECT, then undo (Ctrl+Z; the calls in
 /// IntroduceParameterCaller are undone with it). After the refactoring the name of the parameter is in a box at the declaration and at its
 /// use: type another name, both change, Enter.

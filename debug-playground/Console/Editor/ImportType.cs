@@ -1,10 +1,9 @@
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of «Import type» and the semantic errors of the built-in diagnostics (0.1.74, CSHARP_PSI_MIGRATION.md task C4c): Settings |
-/// .NET | Language Server → Source of Features → «Errors and warnings» = Built-in (the default). Type on the empty line under a marker, check
-/// EXPECT, undo with Ctrl+Z until the file is as it was (it compiles as it is). The errors come from the plugin's resolver and the index of
-/// assemblies, not from a build or the server: they are there before «Roslyn: DebugPlayground.sln» appears. The project has ImplicitUsings
+/// Live check of «Import type» and the semantic errors of the built-in diagnostics (0.1.74, CSHARP_PSI_MIGRATION.md task C4c). Type on
+/// the empty line under a marker, check EXPECT, undo with Ctrl+Z until the file is as it was (it compiles as it is). The errors come from
+/// the plugin's resolver and the index of assemblies, not from a build. The project has ImplicitUsings
 /// (`System`, `System.IO`, `System.Linq`, `System.Collections.Generic`, `System.Threading.Tasks` need no `using`).
 /// </summary>
 public class ImportType
@@ -15,7 +14,7 @@ public class ImportType
         // EXPECT: «CS0103: The name 'Stopwatch' does not exist in the current context» under `Stopwatch` at once, and a blue hint
         // «System.Diagnostics.Stopwatch? Alt+Enter» over it (the platform's auto-import hint, as in Rider); Alt+Enter adds
         // `using System.Diagnostics;` at the top of the file (before `namespace`) and the red goes away. NOT: a second red mark from the
-        // server or from the last build for the same error.
+        // last build for the same error.
 
         // TYPE:import-type-declaration — type `StringBuilder builder = new StringBuilder();`.
         // EXPECT: «CS0246: The type or namespace name 'StringBuilder' could not be found (…)» on the first `StringBuilder` and CS0246 on the

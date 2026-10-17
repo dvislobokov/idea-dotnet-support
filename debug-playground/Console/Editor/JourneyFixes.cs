@@ -3,9 +3,8 @@ using System.Runtime.CompilerServices;
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of the editor findings of the developer journey (docs/DEV_JOURNEY.md, stage 4; 0.1.100). Settings | .NET | Language Server →
-/// Source of Features: «Errors and warnings», «Completion», «Formatting» = Built-in. Type on the empty line under a marker comment (or do what
-/// it says), compare with EXPECT, then undo (Ctrl+Z; delete a file a fix created) so the file keeps compiling.
+/// Live check of the editor findings of the developer journey (docs/DEV_JOURNEY.md, stage 4; 0.1.100).
+/// Type on the empty line under a marker comment (or do what it says), compare with EXPECT, then undo (Ctrl+Z; delete a file a fix created) so the file keeps compiling.
 /// </summary>
 public interface IJourneyOrders
 {

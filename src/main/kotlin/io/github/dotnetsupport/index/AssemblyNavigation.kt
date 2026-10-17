@@ -24,8 +24,7 @@ import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpFileType
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSymbol
-import io.github.dotnetsupport.lsp.RoslynServerStatus
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpOptions
 import io.github.dotnetsupport.sourcelink.LibrarySources
 import java.io.File
 import java.util.function.Function
@@ -136,7 +135,6 @@ object AssemblyNavigation {
      * name: one the server has not loaded is ours.
      */
     fun targets(project: Project, symbol: CSharpSymbol, from: VirtualFile? = null): List<PsiElement> {
-        if (RoslynServerStatus.isReady(project, from)) return emptyList()
         return when (symbol) {
             is CSharpSymbol.LibraryType -> listOfNotNull(original(project, symbol.type, null) ?: decompiled(project, symbol.type, symbol.type.docId) ?: target(project, symbol.type))
             is CSharpSymbol.LibraryMember -> listOfNotNull(original(project, symbol.member.type, symbol.member) ?: decompiled(project, symbol.member.type, symbol.member.docId)
@@ -167,7 +165,7 @@ object AssemblyNavigation {
     fun declarationTargets(leaf: PsiElement): List<PsiElement>? {
         val file = leaf.containingFile as? CSharpFile ?: return null
         val project = file.project
-        if (DumbService.isDumb(project) || RoslynServerStatus.isReady(project, file.virtualFile)) return null
+        if (DumbService.isDumb(project)) return null
         val symbols = CSharpSemanticSession(project).resolver(file).resolve(leaf)?.symbols ?: return null
         return symbols.filter { it.declarations.isEmpty() }.flatMap { targets(project, it, file.virtualFile) }.distinct().ifEmpty { null }
     }
@@ -179,7 +177,7 @@ object AssemblyNavigation {
      */
     private fun decompiled(project: Project, type: IndexedType, docId: String): PsiElement? {
         // the page of the server decides for the native path too: off, the metadata view as the server's "metadata as source"
-        if (!RoslynOptions.isOn("navigation.dotnet_navigate_to_decompiled_sources")) return null
+        if (!CSharpOptions.isOn("navigation.dotnet_navigate_to_decompiled_sources")) return null
         val decompiler = AssemblyDecompiler.getInstance(project)
         if (!decompiler.isAvailable) return null
         val assembly = assemblyFile(type.index.mvid) ?: return null

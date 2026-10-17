@@ -9,8 +9,7 @@ import io.github.dotnetsupport.build.DotNetBuildConfigurable
 import io.github.dotnetsupport.build.MsBuildVerbosity
 import io.github.dotnetsupport.coverage.CoverageSettingsConfigurable
 import io.github.dotnetsupport.format.FormatterChoice
-import io.github.dotnetsupport.lsp.RoslynLanguageServerConfigurable
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpOptions
 import io.github.dotnetsupport.nuget.NuGetSettingsConfigurable
 import io.github.dotnetsupport.settings.DotNetDebuggerConfigurable
 import io.github.dotnetsupport.settings.DotNetSettings
@@ -51,7 +50,7 @@ class DotNetBundleTest : BasePlatformTestCase() {
     /** What is ticked and chosen on the pages that start nothing when they are built. */
     private fun choices(): List<String> {
         val pages = listOf(NuGetSettingsConfigurable(), DotNetBuildConfigurable(project), DotNetDebuggerConfigurable(project), CoverageSettingsConfigurable(),
-            RoslynLanguageServerConfigurable(project), io.github.dotnetsupport.codeanalysis.CodeAnalysisConfigurable(project))
+            io.github.dotnetsupport.settings.CSharpEditorConfigurable(), io.github.dotnetsupport.codeanalysis.CodeAnalysisConfigurable(project))
         return pages.map(::build).flatMap { page ->
             UIUtil.findComponentsOfType(page, JCheckBox::class.java).map { it.text } + UIUtil.findComponentsOfType(page, JRadioButton::class.java).map { it.text }
         }
@@ -65,8 +64,8 @@ class DotNetBundleTest : BasePlatformTestCase() {
         assertTrue("the file is read as UTF-8", cyrillic.containsMatchIn(DotNetBundle.bundle("ru").getString("settings.cli.check")))
 
         assertEquals("not translated", emptySet<String>(), english - russian)
-        // the options of the language server have their English texts in the code
-        assertEquals("translated, but not there in English", emptySet<String>(), russian.filterNot { it.startsWith("roslyn.") }.toSet() - english)
+        // the options of the C# editor have their English texts in the code
+        assertEquals("translated, but not there in English", emptySet<String>(), russian.filterNot { it.startsWith("csharp.") }.toSet() - english)
         for (key in english) {
             val there = placeholder.findAll(DotNetBundle.bundle("en").getString(key)).map { it.value }.toSet()
             val here = placeholder.findAll(DotNetBundle.bundle("ru").getString(key)).map { it.value }.toSet()
@@ -74,21 +73,21 @@ class DotNetBundleTest : BasePlatformTestCase() {
         }
     }
 
-    fun testTheOptionsOfTheLanguageServerAreTranslated() {
+    fun testTheOptionsOfTheCSharpEditorAreTranslated() {
         val russian = DotNetBundle.bundle("ru")
-        for (option in RoslynOptions.ALL) {
-            assertTrue(option.section, russian.containsKey("roslyn.option.${option.section}"))
-            if (option.comment != null) assertTrue(option.section + ": the comment", russian.containsKey("roslyn.option.${option.section}.comment"))
+        for (option in CSharpOptions.ALL) {
+            assertTrue(option.section, russian.containsKey("csharp.option.${option.section}"))
+            if (option.comment != null) assertTrue(option.section + ": the comment", russian.containsKey("csharp.option.${option.section}.comment"))
         }
-        for (group in RoslynOptions.GROUPS) assertTrue(group, russian.containsKey(RoslynOptions.key(group)))
-        val known = RoslynOptions.ALL.flatMap { listOf("roslyn.option.${it.section}", "roslyn.option.${it.section}.comment") }.toSet() + RoslynOptions.GROUPS.map(RoslynOptions::key)
-        assertEquals("translated, but no such option", emptyList<String>(), russian.keySet().filter { it.startsWith("roslyn.") && it !in known })
+        for (group in CSharpOptions.GROUPS) assertTrue(group, russian.containsKey(CSharpOptions.key(group)))
+        val known = CSharpOptions.ALL.flatMap { listOf("csharp.option.${it.section}", "csharp.option.${it.section}.comment") }.toSet() + CSharpOptions.GROUPS.map(CSharpOptions::key)
+        assertEquals("translated, but no such option", emptyList<String>(), russian.keySet().filter { it.startsWith("csharp.") && it !in known })
 
-        val option = RoslynOptions.ALL.first { it.section == "completion.dotnet_provide_regex_completions" }
+        val option = CSharpOptions.ALL.first { it.section == "completion.dotnet_provide_regex_completions" }
         assertEquals("Completion inside regular expressions", option.text)
         assertEquals("Автодополнение внутри регулярных выражений", inRussian { option.text })
-        assertEquals("Inlay Hints", RoslynOptions.title("Inlay Hints"))
-        assertEquals("Подсказки в коде", inRussian { RoslynOptions.title("Inlay Hints") })
+        assertEquals("Inlay Hints", CSharpOptions.title("Inlay Hints"))
+        assertEquals("Подсказки в коде", inRussian { CSharpOptions.title("Inlay Hints") })
     }
 
     fun testTheLanguageIsTheOneChosen() {
@@ -129,7 +128,7 @@ class DotNetBundleTest : BasePlatformTestCase() {
         assertEquals("Toolset and Build", DotNetBuildConfigurable(project).displayName)
         // in the tree of Settings the platform names the pages by the language of the IDE
         val pluginXml = javaClass.getResource("/META-INF/plugin.xml")!!.readText()
-        for (page in listOf("dotnet", "build", "nuget", "coverage", "debugger", "languageServer")) {
+        for (page in listOf("dotnet", "build", "nuget", "coverage", "debugger", "csharpEditor")) {
             assertTrue(page, "key=\"page.$page\" bundle=\"messages.DotNetBundle\"" in pluginXml)
         }
     }
@@ -141,7 +140,7 @@ class DotNetBundleTest : BasePlatformTestCase() {
         fun escaped(text: String) = text.trimEnd(':').replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         val missing = (inRussian { choices() } + choices()).filterNot { escaped(it) in guide }
         assertEquals("on a settings page and not in the documentation: run tools/guide/generate.py", emptyList<String>(), missing)
-        for (option in RoslynOptions.ALL) assertTrue(option.section, escaped(inRussian { option.text }) in guide)
+        for (option in CSharpOptions.ALL) assertTrue(option.section, escaped(inRussian { option.text }) in guide)
     }
 
     fun testThePagesLeadToEachOther() {

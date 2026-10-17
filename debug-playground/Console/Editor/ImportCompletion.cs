@@ -4,8 +4,8 @@ namespace Playground.Editor;
 /// Live check of the completion of what is not imported (ROADMAP: «Свой индекс сборок»): static members of the types of the
 /// framework and of the packages, by the bare name, with the <c>using</c> that is missing. Lines to type on are marked
 /// <c>// TYPE:name</c>: the caret on the empty line under the marker, type what the comment says, choose the item with Enter or Tab,
-/// compare with EXPECT, undo (Ctrl+Z). The items come from the index of assemblies, not from the language server: they are there
-/// before «Roslyn: DebugPlayground.sln» appears. The first start of the IDE builds the indexer (a few seconds, see idea.log:
+/// compare with EXPECT, undo (Ctrl+Z). The items come from the index of assemblies.
+/// The first start of the IDE builds the indexer (a few seconds, see idea.log:
 /// «The indexer of assemblies is built for net…») and indexes the assemblies of the solution («Index of assemblies: …»).
 /// The project has ImplicitUsings: `System`, `System.IO`, `System.Linq`, `System.Threading.Tasks` need no using here.
 /// </summary>
@@ -42,7 +42,7 @@ public class ImportCompletion
     }
 
     /// <summary>
-    /// 0.1.87: types and extension methods without the language server — the types of the namespaces the file sees with nothing typed,
+    /// 0.1.87: types and extension methods — the types of the namespaces the file sees with nothing typed,
     /// and, from the first letter, what is not imported (of the framework, of the packages and of this solution) as rows
     /// «Name (in Namespace)» that add the using. The neighbour namespaces are in ImportCompletionTargets.cs.
     /// </summary>

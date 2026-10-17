@@ -23,15 +23,14 @@ import io.github.dotnetsupport.csharp.lang.CSharpPreprocessorSymbols
 import io.github.dotnetsupport.csharp.lang.diagnostics.CSharpErrorCode
 import io.github.dotnetsupport.csharp.lang.diagnostics.CSharpSyntaxDiagnostic
 import io.github.dotnetsupport.csharp.lang.diagnostics.CSharpSyntaxDiagnostics
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
+import io.github.dotnetsupport.settings.CSharpEditorSettings
 import java.util.concurrent.atomic.AtomicReference
 
 /**
  * `DIAGNOSTICS` on csharp-psi's tree, the syntactic part (CSHARP_PSI_MIGRATION.md, step 9, task A3): Roslyn's syntax errors of the parser,
  * the lexer and the directives with Roslyn's codes, messages and spans ([CSharpSyntaxDiagnostics]), shown as `CS1002: ; expected`. Since
  * 0.1.74 also the semantic part ([NativeCSharpSemanticDiagnostics], task C4c): the errors the resolver is sure of and the gray of unused
- * `using` directives. The server is still asked with NATIVE; its diagnostics the native pass reports too give way ([repeatsNative],
- * `RoslynLspIntegration`), so nothing is shown twice and nothing the plugin does not know yet is lost.
+ * `using` directives.
  */
 object NativeCSharpDiagnostics {
     /**
@@ -44,23 +43,6 @@ object NativeCSharpDiagnostics {
     /** The syntax diagnostics of [file] (native tree), cached until the next change of PSI. */
     fun of(file: CSharpFile): List<CSharpSyntaxDiagnostic> = CachedValuesManager.getCachedValue(file) {
         CachedValueProvider.Result.create(CSharpSyntaxDiagnostics.of(file.node, CSharpPreprocessorSymbols.forFile(file)), PsiModificationTracker.MODIFICATION_COUNT)
-    }
-
-    /**
-     * Whether a highlight of another source (the server) with [description] starting at [offset] of [file] repeats a syntax error the
-     * native pass shows: the same message of Roslyn on the same line. The server is the same Roslyn, so the texts and lines agree; the
-     * native ones carry the code (`CS1002: ; expected`) and never match themselves.
-     */
-    fun repeatsNative(file: PsiFile, description: String?, offset: Int, code: String? = null): Boolean {
-        if (description == null || !serves(file)) return false
-        val document = PsiDocumentManager.getInstance(file.project).getDocument(file) ?: return false
-        if (offset > document.textLength) return false
-        val line = document.getLineNumber(offset)
-        // the semantic errors of the native pass (C4c): the same code on the same line, the texts of two Roslyn versions may differ a little
-        if (code != null) NativeCSharpSemanticDiagnostics.codesByLine(file as CSharpFile)[line]?.let { if (NativeCSharpSemanticDiagnostics.sameCode(it, code)) return true }
-        if (of(file as CSharpFile).any { it.message == description && it.start <= document.textLength && document.getLineNumber(it.start) == line }) return true
-        // the errors of `using` the native pass reports from the types of C2 (CS1674 and its kin)
-        return NativeCSharpUsingChecks.of(file).any { it.error.message == description && it.range.startOffset <= document.textLength && document.getLineNumber(it.range.startOffset) == line }
     }
 
     /**
@@ -139,12 +121,12 @@ class NativeCSharpDiagnosticsAnnotator : Annotator, DumbAware {
 }
 
 /**
- * The errors on screen follow «Errors and warnings» and the «Analysis» scopes of the Language Server page at once: highlighting restarts
- * on Apply, as for the colors, and the solution-wide pass ([NativeCSharpSolutionProblems]) starts or stops.
+ * The errors on screen follow the «Analysis» scopes of Settings | .NET | C# Editor at once: highlighting restarts on Apply and the
+ * solution-wide pass ([NativeCSharpSolutionProblems]) starts or stops.
  */
-class NativeCSharpDiagnosticsSwitch : RoslynLanguageServerSettings.Listener {
-    override fun settingsChanged(restart: Boolean) {
-        val now = listOf(CSharpFeatures.native(CSharpFeature.DIAGNOSTICS).toString(), AnalysisScopes.compiler(), AnalysisScopes.analyzer())
+class NativeCSharpDiagnosticsSwitch : CSharpEditorSettings.Listener {
+    override fun settingsChanged() {
+        val now = listOf(AnalysisScopes.compiler(), AnalysisScopes.analyzer())
         if (last.getAndSet(now) == now) return
         ApplicationManager.getApplication().invokeLater({
             for (project in ProjectManager.getInstance().openProjects) {

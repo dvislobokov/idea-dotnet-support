@@ -1,12 +1,12 @@
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of Roslyn analyzers without the language server (0.1.77, CSHARP_PSI_MIGRATION.md task D3): the helper of the plugin runs
+/// Live check of Roslyn analyzers (0.1.77, CSHARP_PSI_MIGRATION.md task D3): the helper of the plugin runs
 /// the analyzers of the project — the package Microsoft.VisualStudio.Threading.Analyzers (VSTHRD*), the CA rules of the SDK and the IDE
 /// rules of code style — with the severities of `Console/.editorconfig` (its section for this file turns a few of them into warnings).
 /// They come in the background a second after a save (Settings | .NET | Analyzers and Generators → «Run analyzers in the background on
-/// save»), and for the whole project from .NET → Code Analysis → Run Code Analysis (the list goes to the Build tool window). The server
-/// off. Type on the empty line under a marker, save (Ctrl+S), check EXPECT, undo with Ctrl+Z and save.
+/// save»), and for the whole project from .NET → Code Analysis → Run Code Analysis (the list goes to the Build tool window).
+/// Type on the empty line under a marker, save (Ctrl+S), check EXPECT, undo with Ctrl+Z and save.
 /// </summary>
 public class AnalyzerScenarios
 {

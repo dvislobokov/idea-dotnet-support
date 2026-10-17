@@ -5,11 +5,11 @@ using Microsoft.Extensions.Logging;
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of source generators without the language server (0.1.77, CSHARP_PSI_MIGRATION.md task D4): the helper of the plugin
+/// Live check of source generators (0.1.77, CSHARP_PSI_MIGRATION.md task D4): the helper of the plugin
 /// (CodeAnalysisHelper, built from source with the SDK of the machine on first use) runs the generators of the project on save, after a
 /// build and on .NET → Code Analysis → Refresh Generated Files, and writes what they make to the caches of the IDE. Settings | .NET |
-/// Analyzers and Generators → «Run source generators» (on by default). The server off (Settings | .NET | Language Server), so nothing
-/// below comes from it. Three generators of the framework and of Microsoft.Extensions.Logging: regex, JSON, logging.
+/// Analyzers and Generators → «Run source generators» (on by default).
+/// Three generators of the framework and of Microsoft.Extensions.Logging: regex, JSON, logging.
 /// Type on the empty line under a marker, check EXPECT, undo with Ctrl+Z.
 /// </summary>
 public static partial class GeneratorScenarios

@@ -3,29 +3,24 @@ package io.github.dotnetsupport
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * The errors of overload resolution and lambdas of the native pass (`CSharpOverloadChecks`): CS0121, CS0411, CS1503 with overloads,
  * CS1593, CS1660, CS1661 / CS1678, CS1643 — Roslyn's texts and spans (checked against `dotnet build`), and silence where anything is not known.
  */
 class CSharpOverloadErrorsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var files = 0
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { CSharpUsingTypesTest.ASSEMBLIES }
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

@@ -12,9 +12,6 @@ usings 2:1-3:22
 ## IL Viewer: type / member at the line
 1: - / -
 
-## Go to Base: member at the line
-1: -
-
 ## breakpoint lines
 5-6, 8-14, 16-17, 27, 29-34, 36-40, 42-46, 48-50, 52, 54, 56, 58
 

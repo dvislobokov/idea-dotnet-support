@@ -13,11 +13,9 @@ import io.github.dotnetsupport.frameworks.razor.RazorCodeLiteral
 import io.github.dotnetsupport.frameworks.razor.RazorFile
 import io.github.dotnetsupport.frameworks.razor.RazorLanguage
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpGotoDeclarationHandler
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * RAZOR_PLAN.md, R3a: the virtual C# document of a Razor file is one injection of the C# pieces of the compiler's tree ([RazorCSharpDocument]);
@@ -25,18 +23,15 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * and to a `.cs` of the project.
  */
 class RazorCSharpDocumentTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { CSharpUsingTypesTest.ASSEMBLIES }
-        for (feature in listOf(CSharpFeature.COMPLETION, CSharpFeature.NAVIGATION, CSharpFeature.DIAGNOSTICS)) settings.setSource(feature, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

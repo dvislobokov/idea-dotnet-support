@@ -3,7 +3,7 @@ namespace Playground.Editor;
 /// <summary>
 /// Live check of Go to Base (Ctrl+U) on members (ROADMAP: «До уровня Rider и .NET Framework», stage 1). Places to press it are marked
 /// <c>// TYPE:name</c>: put the caret where the comment says, press Ctrl+U, compare with EXPECT. Nothing is typed here and nothing is called,
-/// the file only has to compile. Wait for the widget «Roslyn: DebugPlayground.sln» first: the supertypes come from the server.
+/// the file only has to compile.
 /// </summary>
 public interface IBaseShape
 {
@@ -51,7 +51,7 @@ public class GoToBase : MiddleShape, IDisposable
     }
 
     // TYPE:go-to-base-metadata — caret on `Dispose` below, Ctrl+U. EXPECT: no exception; IDisposable is metadata: a jump to the decompiled
-    // IDisposable if the server gives its file, otherwise the hint «No base symbols of Dispose found…»
+    // (or metadata) view of IDisposable, otherwise the hint «No base symbols of Dispose found…»
     public void Dispose() { }
 
     // TYPE:go-to-base-none — caret on `Own` below, Ctrl+U. EXPECT: the hint «No base symbols of Own found»
@@ -60,7 +60,7 @@ public class GoToBase : MiddleShape, IDisposable
     // TYPE:go-to-base-type — caret on `GoToBase` in the class header, Ctrl+U. EXPECT: as before, a list of the base types MiddleShape and IDisposable
 
     // TYPE:go-to-symbol — Ctrl+Alt+Shift+N, `area`. EXPECT: rows `Area()` with the type in gray — IBaseShape, BaseShape, MiddleShape,
-    // GoToBase, GoToBase.Nested — and GoToBase.cs on the right; the same rows before the server is ready and after.
+    // GoToBase, GoToBase.Nested — and GoToBase.cs on the right.
     // Ctrl+N `nested`: `Nested` with `Playground.Editor.GoToBase` in gray.
     public class Nested
     {

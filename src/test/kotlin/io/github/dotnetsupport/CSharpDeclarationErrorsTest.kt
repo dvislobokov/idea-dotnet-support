@@ -3,10 +3,8 @@ package io.github.dotnetsupport
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * Duplicate declarations and declaration order of the native pass ([io.github.dotnetsupport.lang.semantic.CSharpDeclarationChecks]):
@@ -14,19 +12,16 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * Roslyn's texts and spans (every expectation checked against `dotnet build`), and silence where C# allows the name or the verdict is not sure.
  */
 class CSharpDeclarationErrorsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var files = 0
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { CSharpUsingTypesTest.ASSEMBLIES }
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

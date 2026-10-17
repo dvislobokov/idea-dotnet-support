@@ -6,7 +6,6 @@ import io.github.dotnetsupport.index.AssemblyDocs
 import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpGhostText
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
@@ -14,7 +13,6 @@ import io.github.dotnetsupport.lang.CSharpVariableNames
 import io.github.dotnetsupport.lang.NativeCSharpSyntaxModel
 import io.github.dotnetsupport.lang.NativeCSharpTypingGhost
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * The gray text of 0.1.101 ([NativeCSharpTypingGhost]): `new User();` by the variable's name, `);` after `new User(`, the members of an
@@ -22,18 +20,15 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * `class` row instead of two.
  */
 class TypingGhostTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { ASSEMBLIES }
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

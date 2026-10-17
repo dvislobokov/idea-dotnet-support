@@ -12,7 +12,6 @@ import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSolutionSearch
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * The usages Find Usages finds without the name written (0.1.82), as Roslyn's Find References answers them on the same code
@@ -30,7 +29,6 @@ class CSharpImplicitUsagesTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         try {
-            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

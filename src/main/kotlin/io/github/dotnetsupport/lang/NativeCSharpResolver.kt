@@ -25,7 +25,7 @@ import java.util.IdentityHashMap
  * solution by name and arity. Other files are read from their stubs ([CSharpStubIndexKeys.TYPE_NAMES], `childrenStubs`, `baseTypes`), never
  * parsed. `this.X` / `base.X` / `Type.X` / `Outer.Inner` / `new T { X = ... }` reach the members of that type.
  *
- * Not resolved (no target, so the language server answers when it is ready): the name after a dot of anything but `this`, `base` and a type
+ * Not resolved (no target here; the semantics of `lang/semantic` resolves them): the name after a dot of anything but `this`, `base` and a type
  * of the solution, named arguments, aliases, members of library types, types of referenced assemblies. Overloads are not told apart (step
  * 11d): every member of the name in the nearest type is a target. One instance per use: its caches are of one moment of the stubs.
  */

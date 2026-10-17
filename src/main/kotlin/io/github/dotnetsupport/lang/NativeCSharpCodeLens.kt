@@ -45,18 +45,17 @@ import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.lang.semantic.CSharpSearchTarget
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSolutionSearch
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpEditorSettings
+import io.github.dotnetsupport.settings.CSharpOptions
 import io.github.dotnetsupport.testing.testTargets
 import java.awt.event.MouseEvent
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Code Vision of a C# file without the language server (feature `CODE_LENS`): "N usages" above every type and member, "N implementations" /
+ * Code Vision of a C# file (feature `CODE_LENS`): "N usages" above every type and member, "N implementations" /
  * "N overrides" / "N inheritors" where there are any, "Run | Debug" above tests and test classes. The two Code Lens options of
- * Settings | .NET | Language Server govern it exactly as they govern the server's `textDocument/codeLens`; the server's lenses stand down
- * with NATIVE (`RoslynLspIntegration`), these with ROSLYN. The platform's Code Vision settings (Settings | Inlay Hints | Code Vision) apply
+ * Settings | .NET | C# Editor govern it. The platform's Code Vision settings (Settings | Inlay Hints | Code Vision) apply
  * on top: the usages are the platform's "Usages" group, the inheritors its "Inheritors" group, the tests a group of their own.
  *
  * The counts are the plugin's own Find Usages ([NativeCSharpFindUsages], `CSharpSolutionSearch`), so a click shows the same usages the
@@ -89,8 +88,8 @@ object NativeCSharpCodeLens {
         return virtualFile.isWritable && virtualFile !is LightVirtualFile
     }
 
-    fun referencesEnabled(): Boolean = RoslynOptions.isOn("code_lens.dotnet_enable_references_code_lens")
-    fun testsEnabled(): Boolean = RoslynOptions.isOn("code_lens.dotnet_enable_tests_code_lens")
+    fun referencesEnabled(): Boolean = CSharpOptions.isOn("code_lens.dotnet_enable_references_code_lens")
+    fun testsEnabled(): Boolean = CSharpOptions.isOn("code_lens.dotnet_enable_tests_code_lens")
 
     /** The types and members of [file] a lens stands above, in the order of the text: what Find Usages can search for. */
     fun declarations(file: CSharpFile): List<PsiElement> = PsiTreeUtil.collectElementsOfType(file, CSharpMemberDeclaration::class.java).flatMap { member ->
@@ -365,9 +364,9 @@ class NativeCSharpDebugTestCodeVisionProvider : NativeCSharpTestCodeVisionProvid
  * providers of the host are asked anew in every editor — the plugin's lenses, and the server's, which reads the switch per request: a
  * switch of the source while the server runs shows its lenses, or hides them, at once.
  */
-class NativeCSharpCodeLensSwitch : RoslynLanguageServerSettings.Listener {
-    override fun settingsChanged(restart: Boolean) {
-        val now = listOf(NativeCSharpCodeLens.referencesEnabled(), NativeCSharpCodeLens.testsEnabled(), CSharpFeatures.native(CSharpFeature.CODE_LENS))
+class NativeCSharpCodeLensSwitch : CSharpEditorSettings.Listener {
+    override fun settingsChanged() {
+        val now = listOf(NativeCSharpCodeLens.referencesEnabled(), NativeCSharpCodeLens.testsEnabled())
         if (last.getAndSet(now) == now) return
         CSharpEditorRefresh.onEdt {
             for (project in CSharpEditorRefresh.editors().map { it.second }.distinct()) {

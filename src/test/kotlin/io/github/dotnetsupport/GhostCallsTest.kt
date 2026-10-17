@@ -6,26 +6,21 @@ import io.github.dotnetsupport.index.AssemblyDocs
 import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpGhostCalls
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /** A gray text that ends on the name of a method gets its call, as the row of the list writes it (0.1.167): `.Sel` + `ect` → `Select(|)`. */
 class GhostCallsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { ASSEMBLIES }
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

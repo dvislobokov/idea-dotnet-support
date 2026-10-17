@@ -4,8 +4,8 @@ Writes docs/guide.html, the documentation of the plugin (the second page of the 
     uv run --no-project python tools/guide/generate.py
 
 The names of the settings are not typed here: they are read from the texts of the settings pages
-(src/main/resources/messages/DotNetBundle*.properties) and from the catalogue of the options of the language server
-(RoslynOptions), so the page names an option the way the IDE does, in Russian and in English. The look (colors, the top bar)
+(src/main/resources/messages/DotNetBundle*.properties) and from the catalogue of the options of the C# editor
+(CSharpOptions), so the page names an option the way the IDE does, in Russian and in English. The look (colors, the top bar)
 is taken from docs/demo.html. GuidePageTest fails when an option is on a settings page and not on this one: run the script again.
 """
 import html
@@ -31,12 +31,12 @@ EN = properties(MESSAGES / "DotNetBundle.properties")
 RU = properties(MESSAGES / "DotNetBundle_ru.properties")
 
 
-def roslyn_options():
-    """(group, section, label, default, values) of RoslynOptions.ALL, in its order."""
-    source = (ROOT / "src/main/kotlin/io/github/dotnetsupport/lsp/RoslynLanguageServerSettings.kt").read_text(encoding="utf-8")
-    body = source[source.index("val ALL: List<RoslynOption> = listOf("):source.index("val GROUPS")]
+def csharp_options():
+    """(group, section, label, default, values) of CSharpOptions.ALL, in its order."""
+    source = (ROOT / "src/main/kotlin/io/github/dotnetsupport/settings/CSharpEditorSettings.kt").read_text(encoding="utf-8")
+    body = source[source.index("val ALL: List<CSharpOption> = listOf("):source.index("val GROUPS")]
     found = []
-    pattern = re.compile(r'(toggle|RoslynOption)\("([^"]+)", "([^"]+)", "([^"]+)", (true|false|"[^"]*")(?:,\s*(SCOPES|listOf\(([^)]*)\)))?')
+    pattern = re.compile(r'(toggle|CSharpOption)\("([^"]+)", "([^"]+)", "([^"]+)", (true|false|"[^"]*")(?:,\s*(SCOPES|listOf\(([^)]*)\)))?')
     for match in pattern.finditer(body):
         default = match.group(5).strip('"')
         values = None
@@ -110,7 +110,7 @@ def settings():
     ]))
     group("settings.tools.group")
     out.append("<p>%s</p>" % note("settings.tools.comment"))
-    tools = ["roslyn-language-server", "dotnet-debugger-dap", "csharpier", "dotnet-ef", "dotnet-counters", "dotnet-stack", "dotnet-gcdump", "dotnet-dump", "upgrade-assistant"]
+    tools = ["dotnet-debugger-dap", "csharpier", "dotnet-ef", "dotnet-counters", "dotnet-stack", "dotnet-gcdump", "dotnet-dump", "upgrade-assistant"]
     out.append('<div class="table"><table><thead><tr><th>Инструмент</th><th>Для чего нужен</th></tr></thead><tbody>')
     for tool in tools:
         out.append("<tr><td><code>%s</code></td><td>%s</td></tr>" % (tool, e(RU["tool.purpose." + tool])))
@@ -234,37 +234,25 @@ def settings():
     ]))
     out.append(table([option("codeAnalysis.idle", "10", note("codeAnalysis.idle.comment") + ".")]))
 
-    page("settings-server", "Settings | .NET | Language Server", "page.languageServer",
-         note("server.about") + " Изменение параметров группы «%s» перезапускает сервер, остальные применяются на лету." % e(RU["server.group"]))
-    out.append(table([option("server.enabled", ON, "Выключено: сервер не запускается, редактор работает на собственных эвристиках плагина — без ошибок компилятора и рефакторингов.")]))
-    group("server.group")
-    out.append(table([
-        (name("server.executable"), "", note("server.executable.comment").replace("{0}", "roslyn-language-server") + "."),
-        option("server.logLevel", "Information", "<code>--logLevel</code>. Для разбора неполадок — Debug или Trace."),
-        option("server.logFolder", "<code>~/idea-dotnet-logs/roslyn-language-server</code>", "<code>--extensionLogDirectory</code>."),
-        option("server.autoLoad", ON),
-        option("server.autoLoad.limit", "0", "Сколько проектов сервер загружает сам. 0 — предел, который рекомендует сервер."),
-        option("server.generators", "Automatic"),
-        option("server.arguments", "пусто"),
-    ]))
-    options = roslyn_options()
+    page("settings-csharp", "Settings | .NET | C# Editor", "page.csharpEditor",
+         "Что делают анализ, автодополнение, навигация, Code Vision, подсказки в коде и генерация кода плагина. "
+         "Параметры применяются на лету: открытые редакторы перерисовываются сразу после Apply.")
+    options = csharp_options()
     groups = []
     for item in options:
         if item[0] not in groups:
             groups.append(item[0])
     for title in groups:
-        group("roslyn.group." + title.lower().replace(" ", "_"), title)
+        group("csharp.group." + title.lower().replace(" ", "_"), title)
         rows = []
         for _, section, label, default, values in (o for o in options if o[0] == title):
-            key = "roslyn.option." + section
+            key = "csharp.option." + section
             shown = {"true": ON, "false": OFF, "": "пусто"}.get(default, "<code>%s</code>" % e(default))
             description = note(key + ".comment")
             if values:
                 description = (description + " " if description else "") + "Значения: " + ", ".join("<code>%s</code>" % e(v) for v in values) + "."
             rows.append((name(key, label), shown, description))
         out.append(table(rows))
-    group("server.other")
-    out.append("<p>%s.</p>" % note("server.other.comment"))
 
     out.append('<h3 id="settings-style">Стиль кода C# <small lang="en">Code Style | C#</small></h3>')
     out.append('<p class="path">Settings | Editor | Code Style | C#</p>')
@@ -291,19 +279,16 @@ def content():
 <ul>
   <li>IDE на платформе IntelliJ версии 2026.1 или новее: IntelliJ IDEA (включая Community), GoLand, PyCharm, WebStorm.</li>
   <li>Пакет SDK .NET. Для подсказок по библиотекам и для измерения расхода памяти нужен SDK 8 или новее.</li>
-  <li>Два инструмента .NET: %(required)s. Остальные ставятся по мере надобности.</li>
+  <li>Отладчик .NET: %(required)s. Остальные инструменты ставятся по мере надобности.</li>
 </ul>
 <h3>Первые шаги</h3>
 <ol>
   <li><b>Установите инструменты.</b> Откройте <b>Settings | .NET</b>, раздел «%(tools_group)s», и нажмите «%(install)s» у нужных инструментов.</li>
   <li><b>Откройте папку с решением.</b> Именно папку, а не файл решения. Окно Project переключится на вид Solution.</li>
-  <li><b>Выберите решение, если их несколько.</b> IDE спросит, какое загрузить. Позже выбор меняется щелчком на значке сервера в статус-баре.</li>
-  <li><b>Дождитесь загрузки.</b> Значок сервера C# в статус-баре показывает состояние. Подсветка, структура и серое продолжение строки работают сразу,
-      ошибки компилятора и рефакторинги — после загрузки решения.</li>
+  <li><b>Выберите решение, если их несколько.</b> IDE спросит, какое показать в виде Solution.</li>
+  <li><b>Дождитесь индексации.</b> Подсветка, структура и серое продолжение строки работают сразу; ошибки компилятора, навигация
+      и рефакторинги — когда IDE проиндексирует решение и сборки библиотек.</li>
 </ol>
-<h3>Значок сервера в статус-баре</h3>
-<p>Виден, пока открыт проект. По щелчку показывает состояние сервера, загрузку процессора и занятую память, и даёт действия:
-   Restart, Select Solution, Log, Timings, Settings.</p>
 </section>
 
 <section id="menu">
@@ -369,12 +354,12 @@ def content():
 <h2>Если что-то не работает</h2>
 %(trouble)s
 <p>Если причина не нашлась, откройте <b>.NET | Plugin Logs</b>: это журнал плагина — что он запускал, что вернулось, что не удалось и почему,
-по строке на событие (время, уровень, категория: <code>dotnet</code>, <code>roslyn</code>, <code>debugger</code>, <code>nuget</code>…), без записей самой IDE.
+по строке на событие (время, уровень, категория: <code>dotnet</code>, <code>msbuild</code>, <code>debugger</code>, <code>nuget</code>…), без записей самой IDE.
 Кнопка «Warnings and Errors Only» оставляет только проблемы. Тот же журнал лежит в <code>~/idea-dotnet-logs/plugin</code>; <b>.NET | Open Logs Folder</b>
 открывает папку, которую можно целиком приложить к сообщению об ошибке.</p>
 </section>
 ''' % dict(
-        required=tools("roslyn-language-server", "dotnet-debugger-dap"),
+        required=tools("dotnet-debugger-dap"),
         tools_group=e(RU["settings.tools.group"]), install=e(RU["settings.tools.install"]), language=e(RU["settings.language"].rstrip(":")),
         settings=settings(),
         menu=simple_table("Пункт", "Что делает", [
@@ -441,15 +426,15 @@ def content():
             ("Настройки плагина на этой машине", "Файл <code>dotnet-support.xml</code> в папке настроек IDE."),
             ("Форматтер проекта", "<code>.idea/dotnet.xml</code>. Файл можно хранить в репозитории, чтобы команда форматировала одинаково."),
             ("Параметры сборки проекта", "Рабочие файлы проекта в <code>.idea</code>; в репозиторий не попадают."),
-            ("Журналы", "<code>~/idea-dotnet-logs</code>: журнал плагина (<code>plugin</code>), команды <code>dotnet</code> с выводом (<code>commands</code>), журналы сборки, отладчика и сервера языка. Старше двух недель удаляются."),
-            ("Кэши", "Папка <code>dotnet-support</code> в системной папке IDE: индекс библиотек, вспомогательные программы, кэш ответов сервера. "
+            ("Журналы", "<code>~/idea-dotnet-logs</code>: журнал плагина (<code>plugin</code>), команды <code>dotnet</code> с выводом (<code>commands</code>), журналы сборки и отладчика. Старше двух недель удаляются."),
+            ("Кэши", "Папка <code>dotnet-support</code> в системной папке IDE: индекс библиотек, вспомогательные программы. "
                      "Удаление безопасно: всё создаётся заново."),
             ("Рядом с вашими проектами", "Плагин ничего не создаёт, кроме стандартной папки <code>.idea</code>."),
         ]),
         trouble=simple_table("Что видно", "Что сделать", [
-            ("Нет ошибок компилятора и рефакторингов", "Проверьте значок сервера в статус-баре. Если сервер не найден, установите <code>roslyn-language-server</code> "
-                                                        "на странице <a href=\"#settings-dotnet\">.NET</a>. Если он завис, выберите Restart."),
-            ("Загружено не то решение", "Щёлкните значок сервера и выберите Select Solution."),
+            ("Нет ошибок компилятора и подсказок по библиотекам", "Дождитесь конца индексации. Если типов библиотек всё равно нет, восстановите пакеты "
+                                                                   "(<b>.NET | Restore</b>) и проверьте, что установлен SDK 8 или новее: им собирается индексатор сборок."),
+            ("Показано не то решение", "<b>.NET | Reload Solution</b>: IDE спросит заново, если решений в папке несколько."),
             ("Новый файл или папка не видны в дереве", "<b>.NET | Reload Solution</b> или Reload Project в контекстном меню проекта."),
             ("Кнопка Debug не запускает отладку", "Установите <code>dotnet-debugger-dap</code> на странице <a href=\"#settings-dotnet\">.NET</a>."),
             ("Сборка не находит SDK", "Откройте <b>.NET | .NET on This Machine...</b>: там видно, какой SDK требует <code>global.json</code> и установлен ли он."),
@@ -470,7 +455,7 @@ TOC = [
     ("memory", "Расход памяти", []),
     ("settings", "Настройки", [("settings-dotnet", ".NET"), ("settings-build", "Инструменты и сборка"), ("settings-nuget", "NuGet"),
                                ("settings-coverage", "Покрытие"), ("settings-debugger", "Отладчик"), ("settings-analysis", "Анализаторы и генераторы"),
-                               ("settings-server", "Сервер языка"),
+                               ("settings-csharp", "Редактор C#"),
                                ("settings-style", "Стиль кода C#")]),
     ("files", "Где что хранится", []),
     ("trouble", "Если что-то не работает", []),

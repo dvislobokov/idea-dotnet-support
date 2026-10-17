@@ -5,12 +5,10 @@ using System.Linq;
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of the Alt+Enter context actions on the plugin's own tree (0.1.64, CSHARP_PSI_MIGRATION.md task A7). Settings | .NET |
-/// Language Server → Source of Features → «Context actions» = Built-in, the default since 0.1.72 (with Language server and the server ready, the server's own
-/// actions answer instead; without the server the built-in ones answer either way). Put the caret where a marker says, press Alt+Enter,
-/// check EXPECT, then undo (Ctrl+Z) so the file stays as it is. With Built-in there must be one row per action: the server's rows of the
-/// same actions ("Convert to conditional expression", "Use expression body for method", "Use explicit type", "Use implicit type",
-/// "Introduce local for …", "Inline temporary variable") are gone.
+/// Live check of the Alt+Enter context actions on the plugin's own tree (0.1.64, CSHARP_PSI_MIGRATION.md task A7). Put the caret where
+/// a marker says, press Alt+Enter, check EXPECT, then undo (Ctrl+Z) so the file stays as it is. There must be one row per action
+/// ("Convert to conditional expression", "Use expression body for method", "Use explicit type", "Use implicit type",
+/// "Introduce local for …", "Inline temporary variable"), never two.
 /// </summary>
 public class ContextActions
 {

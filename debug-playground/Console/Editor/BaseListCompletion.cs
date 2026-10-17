@@ -3,7 +3,7 @@ using System;
 namespace Playground.Editor;
 
 // Completion in the header of a type (0.1.178): the base list, `where`, and the live templates by their scope, as in Rider.
-// "Completion" = Built-in. Type on the marked spot, compare with EXPECT, Ctrl+Z.
+// Type on the marked spot, compare with EXPECT, Ctrl+Z.
 
 public interface IShapeSample { }
 

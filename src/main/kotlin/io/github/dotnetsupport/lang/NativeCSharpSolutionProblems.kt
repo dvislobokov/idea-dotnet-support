@@ -50,10 +50,8 @@ import javax.swing.Icon
 private val LOG = logger<NativeCSharpSolutionProblems>()
 
 /**
- * The «Analysis» scopes of Settings | .NET | Language Server without the server ([AnalysisScopes]): the errors and warnings of the solution
- * in the Problems tool window (its Project Errors tab, through its [ProblemsCollector]), as `RoslynSolutionProblems` of the server module
- * fills it from `workspace/diagnostic` — the same rows, so a switch between the two changes nothing on screen. Only one of them fills the
- * tab: this one when «Errors and warnings» is Built-in (or the server is off), the server's otherwise.
+ * The «Analysis» scopes of Settings | .NET | C# Editor ([AnalysisScopes]): the errors and warnings of the solution in the Problems tool
+ * window (its Project Errors tab, through its [ProblemsCollector]).
  *
  * Compiler diagnostics: with `fullSolution` every C# file of the solution's projects is checked in the background by the checks the editor
  * annotator runs ([NativeCSharpDiagnostics], [NativeCSharpUsingChecks], [NativeCSharpSemanticDiagnostics]) — one file per non-blocking read

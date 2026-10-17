@@ -3,13 +3,11 @@ package io.github.dotnetsupport
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.csharp.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticChecks
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpWarningContext
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import java.io.File
 
 /**
@@ -18,19 +16,16 @@ import java.io.File
  * `nullableFlow/Cases.cs` is checked against Roslyn's own diagnostics of it (`Cases.roslyn.txt`: `roslyndump semantics Cases.cs`).
  */
 class CSharpNullableFlowTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var files = 0
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { CSharpUsingTypesTest.ASSEMBLIES }
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpWarningContext.setNullableForTests(null, set = false)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)

@@ -5,7 +5,7 @@ namespace Playground.Tests;
 
 /// <summary>
 /// Live check of the "Run | Debug" Code Vision above tests (NativeCSharpCodeLens, option Code Lens → «Run and debug tests» of
-/// Settings | .NET | Language Server). The lens runs the very configuration the ▶ gutter runs. Marker comments stand above their
+/// Settings | .NET | C# Editor). The lens runs the very configuration the ▶ gutter runs. Marker comments stand above their
 /// declarations, so the lenses are visible in any Code Vision position.
 /// </summary>
 // TYPE:lens-test-class — EXPECT: "Run | Debug" at the class below (beside "no usages"); click Run → `dotnet test --filter FullyQualifiedName~Playground.Tests.CodeLensTests.` runs both tests, the Run tool window shows them green

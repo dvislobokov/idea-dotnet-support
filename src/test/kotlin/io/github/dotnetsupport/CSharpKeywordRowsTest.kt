@@ -6,21 +6,17 @@ import io.github.dotnetsupport.index.AssemblyDocs
 import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /** The keywords stay in the list next to the types of the assemblies: `publi` before a class, `ca` in a `switch` (the user's report, 0.1.166). */
 class CSharpKeywordRowsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var autocomplete = true
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { ASSEMBLIES }
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
     }
@@ -29,7 +25,6 @@ class CSharpKeywordRowsTest : BasePlatformTestCase() {
         try {
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
             runCatching { myFixture.lookup?.hideLookup(true) }
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

@@ -11,7 +11,6 @@ import io.github.dotnetsupport.cli.LogEntry
 import io.github.dotnetsupport.cli.LogLevel
 import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.cli.PluginLogsToolWindowFactory
-import io.github.dotnetsupport.lsp.RoslynPolicy
 import io.github.dotnetsupport.sdk.DotNetRuntimes
 import java.nio.file.Files
 import java.time.LocalDate
@@ -75,38 +74,6 @@ class PluginLogTest : BasePlatformTestCase() {
         val entry = PluginLog.entries.last { it.category == DotNetLogs.CATEGORY_COMMANDS }
         assertEquals(LogLevel.WARN, entry.level)
         assertEquals("Build: exit code 1 in 2.0 s\nerror CS1002: ; expected", entry.text)
-    }
-
-    /** The error stream of a tool built for .NET 10 started by a host that has only .NET 8 (idea.log of 2026-10-02). */
-    fun testMissingFrameworkIsReadFromTheHost() {
-        val stderr = """
-            You must install or update .NET to run this application.
-
-            App: /home/user/.dotnet/tools/.store/roslyn-language-server/5.12.0/tools/net10.0/linux-x64/roslyn-language-server
-            Architecture: x64
-            Framework: 'Microsoft.NETCore.App', version '10.0.0' (x64)
-            .NET location: /usr/share/dotnet-sdk-8.8.403
-
-            The following frameworks were found:
-              8.0.10 at [/usr/share/dotnet-sdk-8.8.403/shared/Microsoft.NETCore.App]
-
-            Learn more:
-            https://aka.ms/dotnet/app-launch-failed
-        """.trimIndent()
-        val missing = RoslynPolicy.missingFramework(stderr)!!
-        assertEquals("Microsoft.NETCore.App 10.0.0", missing.required)
-        assertEquals("/usr/share/dotnet-sdk-8.8.403", missing.location)
-        assertEquals(listOf("8.0.10 at [/usr/share/dotnet-sdk-8.8.403/shared/Microsoft.NETCore.App]"), missing.found)
-        assertEquals("The server needs Microsoft.NETCore.App 10.0.0; the dotnet host at /usr/share/dotnet-sdk-8.8.403 has only: 8.0.10 at [/usr/share/dotnet-sdk-8.8.403/shared/Microsoft.NETCore.App].", missing.describe())
-        assertNull("another crash is not a missing runtime", RoslynPolicy.missingFramework("Unhandled exception. System.IO.IOException: broken pipe"))
-        assertNull(RoslynPolicy.missingFramework(""))
-    }
-
-    fun testDotNetRootForTheServer() {
-        assertEquals("/opt/dotnet10", RoslynPolicy.dotnetRoot("/opt/dotnet10", "/usr/share/dotnet/dotnet"))
-        assertEquals(java.io.File("/usr/share/dotnet/dotnet").absoluteFile.parent, RoslynPolicy.dotnetRoot("", "/usr/share/dotnet/dotnet"))
-        assertEquals(java.io.File("C:\\Program Files\\dotnet\\dotnet.exe").absoluteFile.parent, RoslynPolicy.dotnetRoot(null, "C:\\Program Files\\dotnet\\dotnet.exe"))
-        assertNull(RoslynPolicy.dotnetRoot(null, null))
     }
 
     fun testRuntimesAreParsed() {

@@ -20,8 +20,7 @@ import io.github.dotnetsupport.lang.semantic.SemanticType
 /**
  * Parameter Info (Ctrl+P) on the plugin's semantics (CSHARP_PSI_MIGRATION.md, task C3), behind [CSharpFeature.DOCUMENTATION]: every overload
  * of the called method (or constructor of `new T(...)`) as a row, as in Rider, the parameter at the caret highlighted, the overload the
- * resolver picks marked; an overload with fewer parameters than the arguments typed is greyed. With the switch on the server the handler of
- * the module `roslyn` answers and this one does not, and the other way round.
+ * resolver picks marked; an overload with fewer parameters than the arguments typed is greyed.
  */
 class NativeCSharpParameterInfoHandler : ParameterInfoHandler<CSharpBaseArgumentList, NativeCSharpParameterInfo.Row> {
     override fun findElementForParameterInfo(context: CreateParameterInfoContext): CSharpBaseArgumentList? {

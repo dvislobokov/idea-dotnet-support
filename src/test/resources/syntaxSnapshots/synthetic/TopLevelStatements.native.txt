@@ -27,11 +27,6 @@ Helper
 25: Helper / Square
 26: Helper / -
 
-## Go to Base: member at the line
-1: -
-25: Helper.Square(int x)
-26: -
-
 ## breakpoint lines
 5-7, 9, 11-14, 16-19, 25
 

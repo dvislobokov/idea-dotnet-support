@@ -4,7 +4,7 @@ namespace Playground.Grpc;
 
 /// <summary>
 /// Live check of the C# the build makes of protos (0.1.82): HelloRequest, HelloReply and Greeter.GreeterBase are declared only in
-/// obj/Debug/net9.0/Protos/*.cs, which Grpc.Tools writes. The server off; open this file and wait a few seconds (the helper of the plugin
+/// obj/Debug/net9.0/Protos/*.cs, which Grpc.Tools writes. Open this file and wait a few seconds (the helper of the plugin
 /// runs the design-time build that makes them; no build needed). Type on the empty line under a marker, check EXPECT, Ctrl+Z.
 /// </summary>
 public sealed class GreeterService : Greeter.GreeterBase

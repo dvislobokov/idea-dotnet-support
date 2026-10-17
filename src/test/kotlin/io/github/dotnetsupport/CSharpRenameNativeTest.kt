@@ -11,31 +11,25 @@ import com.intellij.refactoring.rename.RenameHandlerRegistry
 import com.intellij.refactoring.util.CommonRefactoringUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpRename
 import io.github.dotnetsupport.lang.NativeCSharpRenameHandler
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * RENAME on the native tree (CSHARP_PSI_MIGRATION.md, step 9, task A5): Shift+F6 of locals, parameters, local functions, labels, range
  * variables and type parameters by the one resolver, conflicts, `@` before keywords; members and types across the solution (C4b).
  */
 class CSharpRenameNativeTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var files = 0
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.RENAME, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
-            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -212,7 +206,7 @@ class CSharpRenameNativeTest : BasePlatformTestCase() {
 
     fun testRecordPositionalParameterIsAProperty() {
         val hint = refusal("record Point(int <caret>X, int Y) { int Sum => X + Y; }")
-        assertTrue(hint, hint.contains("not a local symbol"))
+        assertTrue(hint, hint.contains("not a symbol the built-in rename knows"))
     }
 
     fun testLabelsAndQueries() {
@@ -298,16 +292,6 @@ class CSharpRenameNativeTest : BasePlatformTestCase() {
         // the rename of the solution (C4b, CSharpSolutionRenameTest has the rest)
         check("class R { int <caret>Total; int Get() => Total; }", "Sum", "class R { int Sum; int Get() => Sum; }")
         check("class <caret>R { R() { } static R Make() => new R(); }", "Q", "class Q { Q() { } static Q Make() => new Q(); }")
-        assertFalse("NATIVE: one handler, the native one", NativeCSharpRename.serverRenames(myFixture.file))
-    }
-
-    fun testRoslynLeavesShiftF6ToTheServer() {
-        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
-        settings.setSource(CSharpFeature.RENAME, CSharpFeatureSource.ROSLYN)
-        myFixture.configureByText("RenameRoslyn.cs", "class R { void M() { var <caret>x = 1; } }")
-        val handler = RenameHandlerRegistry.getInstance().getRenameHandler((myFixture.editor as com.intellij.openapi.editor.ex.EditorEx).dataContext)
-        assertFalse("not the native one: $handler", handler is NativeCSharpRenameHandler)
-        assertTrue(NativeCSharpRename.serverRenames(myFixture.file))
     }
 
     fun testBrokenCodeDoesNotThrow() {

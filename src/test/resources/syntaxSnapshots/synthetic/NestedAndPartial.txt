@@ -96,20 +96,6 @@ Synthetic.Nested
 43: Synthetic.Nested.Outer / -
 45: Synthetic.Nested.OnlyHere / -
 
-## Go to Base: member at the line
-1: -
-9: Deepest.Leaf()
-10: -
-12: Inner.Value
-13: -
-27: Outer.this[int index]
-29: Outer.Changed
-31: Outer.Changed (in body)
-34: -
-38: Outer.SecondPart()
-40: Outer.SecondPart() (in body)
-43: -
-
 ## breakpoint lines
 9, 12, 19, 21, 23, 25, 27, 30-33, 39-42
 

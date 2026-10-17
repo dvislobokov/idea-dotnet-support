@@ -190,7 +190,7 @@ object NativeCSharpFieldEdits {
 }
 
 /** Alt+Enter on a field no constructor assigns: a parameter of each constructor and the assignment (Rider: "Initialize field from constructor"). */
-class NativeCSharpInitializeFieldFromConstructorIntention : NativeCSharpContextAction("Initialize field from constructor", serverHasIt = true) {
+class NativeCSharpInitializeFieldFromConstructorIntention : NativeCSharpContextAction("Initialize field from constructor") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val (field, type) = NativeCSharpFieldEdits.fieldAt(file, editor.caretModel.offset) ?: return null
         return NativeCSharpFieldEdits.initialize(type, listOf(field), editor.document.charsSequence, NativeCSharpContextEdits.unit(file))
@@ -198,7 +198,7 @@ class NativeCSharpInitializeFieldFromConstructorIntention : NativeCSharpContextA
 }
 
 /** Alt+Enter on one of several such fields: all of them at once (Rider: "Initialize members from constructor"). */
-class NativeCSharpInitializeMembersFromConstructorIntention : NativeCSharpContextAction("Initialize members from constructor", serverHasIt = true) {
+class NativeCSharpInitializeMembersFromConstructorIntention : NativeCSharpContextAction("Initialize members from constructor") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val (_, type) = NativeCSharpFieldEdits.fieldAt(file, editor.caretModel.offset) ?: return null
         val fields = NativeCSharpFieldEdits.unassignedFields(type).takeIf { it.size >= 2 } ?: return null

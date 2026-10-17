@@ -39,7 +39,7 @@ import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.lang.CSharpFileType
 import io.github.dotnetsupport.lang.NativeCSharpSolutionProblems
 import io.github.dotnetsupport.lang.AnalysisScopes
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
+import io.github.dotnetsupport.settings.CSharpEditorSettings
 import io.github.dotnetsupport.msbuild.CompilationModel
 import io.github.dotnetsupport.settings.DotNetSettings
 import io.github.dotnetsupport.solution.SolutionService
@@ -61,14 +61,12 @@ class GeneratedState(val projectPath: String, val run: GeneratedRun, val output:
 class AnalyzedFile(val projectPath: String, val diagnostics: List<AnalyzerDiagnostic>, val lineTexts: List<String?>, val target: JsonObject, val path: String? = null)
 
 /**
- * Source generators and Roslyn analyzers without the language server (CSHARP_PSI_MIGRATION.md, D3 and D4), through CodeAnalysisHelper
+ * Source generators and Roslyn analyzers (CSHARP_PSI_MIGRATION.md, D3 and D4), through CodeAnalysisHelper
  * (`helpers/codeanalysis`): one helper per solution, started at the first request, stopped after [DotNetSettings.codeAnalysisIdleMinutes]
  * without one. Generators run on the save of a C# file of the project, after a build, when a project file changes and on Refresh Generated
  * Files; their files go to the caches of the IDE ([outputRoot]) and are a library of the project ([GeneratedSourcesRootsProvider]), so the
  * semantics of the plugin sees what they declare. Analyzers run on the save of a file (that file) and on Run Code Analysis (the project);
  * their diagnostics are annotations ([AnalyzerAnnotator]) with the code fixes of the analyzers, which the helper applies.
- *
- * The analyzers stand back while the language server is enabled: it runs them itself, a second copy would double every warning.
  */
 @Service(Service.Level.PROJECT)
 class CodeAnalysisService(private val project: Project) : Disposable {
@@ -168,7 +166,7 @@ class CodeAnalysisService(private val project: Project) : Disposable {
 
     fun analyzedProjects(): Set<String> = analyzed.values.mapTo(HashSet()) { it.projectPath }
 
-    /** `background_analysis.dotnet_analyzer_diagnostics_scope` of Settings | .NET | Language Server, honoured without the server as with it. */
+    /** `background_analysis.dotnet_analyzer_diagnostics_scope` of Settings | .NET | C# Editor, honoured without the server as with it. */
     private val analyzerScope: String get() = AnalysisScopes.analyzer()
 
     /** Whether the helper runs on a save or an opening: not with `none` (Run Code Analysis still does), and only with the switch on. */
@@ -303,7 +301,8 @@ class CodeAnalysisService(private val project: Project) : Disposable {
         }
     }
 
-    val analyzersActive: Boolean get() = !RoslynLanguageServerSettings.getInstance().state.enabled
+    /** The analyzers of the helper always run: the plugin is the only source of their diagnostics (the language server was, until 0.1.262). */
+    val analyzersActive: Boolean get() = true
 
     // ---- triggers
 

@@ -16,24 +16,18 @@ import io.github.dotnetsupport.csharp.lang.CSharpLanguageVersion
 import io.github.dotnetsupport.csharp.lang.CSharpPreprocessorSymbols
 import io.github.dotnetsupport.csharp.lang.psi.CSharpClassDeclaration
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpParseOptions
-import io.github.dotnetsupport.lang.CSharpSyntaxTreeSwitch
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.HeuristicCSharpFile
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /** CSHARP_PSI_MIGRATION.md, steps 7 and 10: the switch of the tree rebuilds the PSI, the project model gives each file its `#if` symbols. */
 class CSharpParseOptionsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
 
     override fun tearDown() {
         try {
-            CSharpSyntaxTreeSwitch.reactInTests = false
+            CSharpParseOptions.reactInTests = false
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
-            settings.state.features = mutableMapOf()
-            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             DotNetBuildSettings.getInstance(project).framework = null
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -42,36 +36,6 @@ class CSharpParseOptionsTest : BasePlatformTestCase() {
         }
     }
 
-    private fun applied() = ApplicationManager.getApplication().messageBus.syncPublisher(RoslynLanguageServerSettings.CHANGED).settingsChanged(false)
-
-    /** An open file gets the tree of the new answer once the page is applied, and back; the server switched off counts too. */
-    fun testSwitchingTheTreeReparsesOpenFiles() {
-        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
-        CSharpSyntaxTreeSwitch.reactInTests = true
-        // the native tree is the default (0.1.45): start from a stored ROSLYN, the heuristic tree
-        settings.setSource(CSharpFeature.SYNTAX_TREE, CSharpFeatureSource.ROSLYN)
-        val heuristic = myFixture.configureByText("TreeSwitch.cs", "namespace N { class A { } }")
-        val file = heuristic.virtualFile
-        fun current() = PsiManager.getInstance(project).findFile(file) as CSharpFile
-        assertInstanceOf(heuristic, HeuristicCSharpFile::class.java)
-
-        settings.setSource(CSharpFeature.SYNTAX_TREE, CSharpFeatureSource.NATIVE)
-        applied()
-        assertNotNull("the native tree", current().compilationUnit)
-        assertFalse("the old PSI is gone", heuristic.isValid)
-        assertEquals("A", PsiTreeUtil.findChildOfType(current(), CSharpClassDeclaration::class.java)?.identifier?.text)
-
-        settings.setSource(CSharpFeature.SYNTAX_TREE, CSharpFeatureSource.ROSLYN)
-        applied()
-        assertInstanceOf(current(), HeuristicCSharpFile::class.java)
-        val before = current()
-        applied()
-        assertSame("nothing changed: nothing is parsed again", before, current())
-
-        settings.state.enabled = false
-        applied()
-        assertNotNull("no server: the native tree", current().compilationUnit)
-    }
 
     /** `net10.0;net48`, the framework of the toolbar: the native tree has the class of the active `#if` branch. */
     fun testTheFrameworkOfTheToolbarFlipsIfRegions() {

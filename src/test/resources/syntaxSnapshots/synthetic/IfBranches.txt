@@ -25,12 +25,6 @@ Synthetic.Directives
 6: Synthetic.Directives.Conditional / Run
 28: Synthetic.Directives.Conditional / -
 
-## Go to Base: member at the line
-1: -
-6: Conditional.Run(int x)
-8: Conditional.Run(int x) (in body)
-28: -
-
 ## breakpoint lines
 7, 9-10, 12-13, 16, 20, 24, 27
 

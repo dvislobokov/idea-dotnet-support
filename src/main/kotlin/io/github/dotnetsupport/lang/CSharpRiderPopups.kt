@@ -30,23 +30,11 @@ import com.intellij.refactoring.actions.RefactoringQuickListPopupAction
  * The three popups Rider builds for the caret of a C# file: Refactor This (Ctrl+Alt+Shift+T in the default keymap), Navigate To
  * (Ctrl+Shift+G) and Generate (Alt+Insert). Rider's backend fills them; here they are action groups of what exists at the caret:
  * the actions of the platform that the plugin serves (Rename, Go to Declaration...), the plugin's own intentions that are refactorings
- * or generators, and what the language server offers ([CSharpPopupContributor]). What is not available is not listed.
+ * or generators. What is not available is not listed.
  */
 
 /** Which of Rider's lists a contribution goes to. */
 enum class CSharpPopupKind { REFACTOR, GENERATE }
-
-/**
- * Rows of Refactor This and Generate from elsewhere: the module of the language server adds the code actions of the server. Called on a
- * pooled thread under a progress indicator, outside a read action (a contributor may wait for a server); [file] is the C# file of [editor].
- */
-interface CSharpPopupContributor {
-    fun actions(kind: CSharpPopupKind, project: Project, editor: Editor, file: PsiFile): List<AnAction>
-
-    companion object {
-        val EP_NAME: ExtensionPointName<CSharpPopupContributor> = ExtensionPointName.create("io.github.dotnetsupport.csharpPopupContributor")
-    }
-}
 
 object CSharpRiderPopups {
     /** Refactor This: the platform's refactorings by their ids, in Rider's order; the ones the plugin does not serve for C# hide themselves. */
@@ -59,14 +47,6 @@ object CSharpRiderPopups {
         "IntroduceParameter" to "Introduce Parameter...", "ExtractMethod" to "Extract Method...", "ExtractInterface" to "Extract Interface...",
         "ExtractSuperclass" to "Extract Superclass...", "MembersPullUp" to "Pull Members Up...", "MemberPushDown" to "Push Members Down...",
     )
-
-    /**
-     * The server's rows that a native generator or refactoring stands for: dropped from the popups, the native row answers (gray where it
-     * has nothing to offer, as Rider's).
-     */
-    private val SERVER_EQUIVALENTS = Regex("""^(Generate constructor|Generate Equals|Generate overrides|Generate comparison operators|Implement interface$|Implement abstract class$|Extract method$|Introduce parameter for )""")
-
-    fun hasNativeEquivalent(title: String?): Boolean = title != null && SERVER_EQUIVALENTS.containsMatchIn(title)
     val REFACTOR_MOVE = listOf("Move", "CopyElement")
 
     /** Navigate To: action id to Rider's name of the row, in Rider's order and groups; null keeps the platform's name. */
@@ -180,13 +160,10 @@ object CSharpRiderPopups {
         }
     }
 
-    /** The rows that need computing: the plugin's intentions and the contributors (the language server), under a progress. */
+    /** The rows that need computing: the plugin's intentions, under a progress. */
     fun dynamicActions(kind: CSharpPopupKind, project: Project, editor: Editor, file: PsiFile): List<AnAction> =
         ProgressManager.getInstance().runProcessWithProgressSynchronously<List<AnAction>, RuntimeException>({
-            val own = nativeActions(kind, project, editor, file)
-            val contributed = CSharpPopupContributor.EP_NAME.extensionList.flatMap { contributor -> runCatching { contributor.actions(kind, project, editor, file) }.getOrDefault(emptyList()) }
-            val ownTitles = own.mapNotNull { it.templatePresentation.text?.lowercase() }.toSet()
-            own + contributed.filter { it.templatePresentation.text?.lowercase() !in ownTitles && !hasNativeEquivalent(it.templatePresentation.text) }
+            nativeActions(kind, project, editor, file)
         }, if (kind == CSharpPopupKind.REFACTOR) "Looking for Refactorings" else "Looking for What Can Be Generated", true, project)
 
     /** Shows [group] as Rider's list under the caret, or a hint when nothing in it is available. */

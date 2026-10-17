@@ -4,11 +4,9 @@ import com.intellij.psi.impl.PsiManagerEx
 import com.intellij.psi.impl.source.PsiFileImpl
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpSemanticColors
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * The colors of a file are the same whatever happens to the AST of the other files (№ 79 of docs/compare/jellyfin-2026-10-12.md): the
@@ -16,17 +14,14 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * only while that file's AST happened to be loaded (open, or not yet collected).
  */
 class CSharpSemanticColorsIdempotenceTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)

@@ -355,13 +355,13 @@ object NativeCSharpTypeEdits {
 }
 
 /** Alt+Enter on `throw new X(…)` in a member: `/// <exception cref="X"></exception>` in its documentation (Rider: "Add exception documentation"). */
-class NativeCSharpAddExceptionDocumentationIntention : NativeCSharpContextAction("Add exception documentation", serverHasIt = false) {
+class NativeCSharpAddExceptionDocumentationIntention : NativeCSharpContextAction("Add exception documentation") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpTypeEdits.exceptionAt(file, editor.caretModel.offset)?.let { NativeCSharpTypeEdits.addExceptionDoc(it, editor.document.charsSequence) }
 }
 
 /** Alt+Enter on `Math.Max(…)`: `using static System.Math;` and every static member of the type in the file without its name (Rider: "Import static members"). */
-class NativeCSharpImportStaticMembersIntention : NativeCSharpContextAction("Import static members", serverHasIt = false, needsTypes = true) {
+class NativeCSharpImportStaticMembersIntention : NativeCSharpContextAction("Import static members", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val text = editor.document.charsSequence
         val import = NativeCSharpTypeEdits.staticImportAt(file, editor.caretModel.offset, resolver(file)) ?: return null
@@ -377,7 +377,7 @@ class NativeCSharpImportStaticMembersIntention : NativeCSharpContextAction("Impo
 }
 
 /** Alt+Enter (and Refactor This) on a call of a method of the same type: its value or its statements in place of the call (Rider: "Inline Method"). */
-class NativeCSharpInlineMethodIntention : NativeCSharpContextAction("Inline Method", serverHasIt = false, needsTypes = true) {
+class NativeCSharpInlineMethodIntention : NativeCSharpContextAction("Inline Method", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val call = NativeCSharpTypeEdits.callAt(file, editor.caretModel.offset) ?: return null
         return NativeCSharpTypeEdits.inlineCall(call, resolver(file), editor.document.charsSequence)?.let { CSharpTextEdit(it.range, it.text) }
@@ -385,7 +385,7 @@ class NativeCSharpInlineMethodIntention : NativeCSharpContextAction("Inline Meth
 }
 
 /** Alt+Enter (and Refactor This) on the header of a private method: every call inlined and the method removed (Rider's "Inline Method", all usages). */
-class NativeCSharpInlineMethodAllIntention : NativeCSharpContextAction("Inline Method", serverHasIt = false, needsTypes = true) {
+class NativeCSharpInlineMethodAllIntention : NativeCSharpContextAction("Inline Method", needsTypes = true) {
     override fun getFamilyName(): String = "Inline Method (all calls)"
 
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
@@ -407,7 +407,7 @@ class NativeCSharpInlineMethodAllIntention : NativeCSharpContextAction("Inline M
  * Alt+Enter on the header of a class or an interface: a class deriving from it right after it, with the members it has to implement or
  * override written by the "Missing members" generator, the caret on its name (Rider: "Create derived type").
  */
-class NativeCSharpCreateDerivedTypeIntention : NativeCSharpContextAction("Create derived type", serverHasIt = false, needsTypes = true) {
+class NativeCSharpCreateDerivedTypeIntention : NativeCSharpContextAction("Create derived type", needsTypes = true) {
     override fun generatePreview(project: Project, editor: Editor, file: PsiFile): IntentionPreviewInfo = IntentionPreviewInfo.EMPTY
 
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {

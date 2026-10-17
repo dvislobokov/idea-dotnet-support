@@ -3,11 +3,9 @@ package io.github.dotnetsupport
 import com.intellij.codeInsight.inline.completion.testInlineCompletion
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFileType
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /** The gray text of [io.github.dotnetsupport.lang.NativeCSharpTypingGhostProvider] through the platform: shown, and Tab writes it as shown. */
 class TypingGhostInlineTest : BasePlatformTestCase() {
@@ -17,12 +15,10 @@ class TypingGhostInlineTest : BasePlatformTestCase() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { TypingGhostTest.ASSEMBLIES }
-        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

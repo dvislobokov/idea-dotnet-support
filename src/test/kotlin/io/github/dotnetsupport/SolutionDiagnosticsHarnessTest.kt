@@ -8,13 +8,11 @@ import io.github.dotnetsupport.index.IndexerTool
 import io.github.dotnetsupport.index.ProjectAssemblies
 import io.github.dotnetsupport.lang.AnalysisScopes
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticChecks
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.msbuild.MsBuildProject
 import java.io.File
 
@@ -35,7 +33,6 @@ import java.io.File
  * `semanticGate`: the system properties `harness.solution`, `harness.generated`, `harness.file`, `harness.out` stand for the variables.
  */
 class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private fun option(property: String, variable: String): String? = System.getProperty(property)?.takeIf { it.isNotBlank() } ?: System.getenv(variable)
     private val root = option("harness.solution", "SOLUTION_HARNESS")?.let(::File)?.takeIf { it.isDirectory }?.canonicalFile
     private val withGenerated = option("harness.generated", "SOLUTION_HARNESS_GENERATED").toBoolean()
@@ -63,7 +60,6 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.NATIVE)
         // with the generated files loaded no generator can make a type the harness does not see: the errors of Razor projects are not
         // quieted (as the IDE quiets them while RazorCodeGenerators.errorsAfterGeneration is off)
         if (withGenerated) CSharpSemanticEnvironment.setGeneratesForTests(false)
@@ -75,7 +71,6 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setGeneratesForTests(null)
             AnalysisScopes.set(AnalysisScopes.COMPILER, AnalysisScopes.FULL_SOLUTION)
             CSharpSemanticEnvironment.setAssembliesForTests(null)

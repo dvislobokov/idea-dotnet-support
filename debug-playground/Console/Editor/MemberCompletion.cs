@@ -7,9 +7,7 @@ namespace Playground.Editor;
 
 /// <summary>
 /// Live check of completion after a dot, quick documentation and parameter info on the plugin's own semantics (0.1.66,
-/// CSHARP_PSI_MIGRATION.md task C3). Completion needs Settings | .NET | Language Server → Source of Features → «Completion» =
-/// Built-in; quick documentation and parameter info need «Documentation and parameter info» = Built-in (the default since 0.1.72).
-/// Best with the server switched off, after the assemblies are indexed (restore). Type on the empty line under a marker comment, check
+/// CSHARP_PSI_MIGRATION.md task C3). Best after the assemblies are indexed (restore). Type on the empty line under a marker comment, check
 /// EXPECT, then undo (Ctrl+Z) so the file keeps compiling.
 /// </summary>
 public class MemberCompletion
@@ -25,7 +23,7 @@ public class MemberCompletion
     }
 
     // TYPE:dot-generic — type `_orders.`. EXPECT: Add `(MemberOrder item)`, Count `: int`, Where / Select / OrderBy (System.Linq is
-    // imported), one item per name (the server's twins are dropped once it is ready). Then `_orders[0].` → Total, Ship, Lines; NOT _secret.
+    // imported), one item per name. Then `_orders[0].` → Total, Ship, Lines; NOT _secret.
     public void Generic()
     {
 
@@ -60,7 +58,7 @@ public class MemberCompletion
     // EXPECT: `void Console.WriteLine(string value) (+ N overloads)` and the text of the documentation of System.Console with the
     // parameter; `string string.Substring(int startIndex, int length) (+ 1 overload)`; `decimal MemberOrder.Total { get; set; }` with
     // «The sum of the lines.»; `void MemberOrder.Add(string item, int count = 1) (+ 1 overload)` with Params; `(parameter) int limit` with
-    // «How many to show.»; on `Documented` itself — «Shows the first orders.». NOT: the server's hover beside it.
+    // «How many to show.»; on `Documented` itself — «Shows the first orders.». NOT: a second hover beside it.
     /// <summary>Shows the first orders.</summary>
     /// <param name="limit">How many to show.</param>
     public void Documented(int limit)
@@ -78,7 +76,7 @@ public class MemberCompletion
 
     // TYPE:quick-doc-inherit (0.1.72) — Ctrl+Q on `Ship` and on `Name` in Inherited below. EXPECT: on Ship — «Ships it.», Params `express` –
     // «Faster.» (of IShippable) and Returns «Always the same.» (its own part); on Name — «The name of it.» of the base class. NOT: an
-    // empty popup, `inheritdoc` as text, a second page `2/2` of the server.
+    // empty popup, `inheritdoc` as text, a second page `2/2`.
     // TYPE:quick-doc-cref (0.1.72) — Ctrl+Q on `ShippedOrder` in the header of Inherited. EXPECT: «Made by MemberShipping, shipped by
     // MemberShipping.Ship to the Console» with the three names as links; a click shows the documentation of the name, F4 there opens it
     // (the source; for Console — the metadata view of System.Console).

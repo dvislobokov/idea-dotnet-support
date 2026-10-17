@@ -6,14 +6,12 @@ import io.github.dotnetsupport.index.AssemblyDocs
 import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpDocumentation
 import io.github.dotnetsupport.lang.NativeCSharpDocumentationTargetProvider
 import io.github.dotnetsupport.lang.NativeCSharpParameterInfo
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * Quick documentation and parameter info on the plugin's semantics (CSHARP_PSI_MIGRATION.md, task C3, [CSharpFeature.DOCUMENTATION]): the
@@ -21,19 +19,15 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * src/test/resources/index (System.Console has one, System.Runtime has none), the overloads of a call, the switch.
  */
 class CSharpQuickDocTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { ASSEMBLIES }
-        settings.setSource(CSharpFeature.DOCUMENTATION, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
-            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
@@ -204,15 +198,6 @@ class CSharpQuickDocTest : BasePlatformTestCase() {
     fun testLibraryParametersShowTheirNullability() {
         val definition = definition("using System;\nclass A { void M() { Console.Write|Line(\"x\"); } }")!!
         assertTrue("as Roslyn: `string? value` where the assembly annotates it: $definition", definition.startsWith("void Console.WriteLine(string"))
-    }
-
-    fun testTheSwitch() {
-        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
-        val file = myFixture.configureByText("Switch.cs", "using System;\nclass A { void M() { Console.ReadLine(); } }") as CSharpFile
-        val offset = file.text.indexOf("ReadLine")
-        assertEquals(1, NativeCSharpDocumentationTargetProvider().documentationTargets(file, offset).size)
-        settings.setSource(CSharpFeature.DOCUMENTATION, CSharpFeatureSource.ROSLYN)
-        assertTrue("the server's hover answers", NativeCSharpDocumentationTargetProvider().documentationTargets(file, offset).isEmpty())
     }
 
     fun testRenderingOfTheXml() {

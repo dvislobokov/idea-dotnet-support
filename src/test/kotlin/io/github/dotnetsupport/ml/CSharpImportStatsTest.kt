@@ -6,10 +6,8 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.completionml.core.imports.ImportsModel
 import io.github.dotnetsupport.CSharpUsingTypesTest
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.settings.DotNetSettings
 import java.io.File
 import kotlin.math.ln
@@ -21,7 +19,6 @@ import kotlin.math.roundToInt
  * (PMI +3), two solution classes `Widget` in `Alpha` and `Beta`; the real `ml-models/csharp/cs-imports-e20.cml` on stable names.
  */
 class CSharpImportStatsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var autocomplete = true
     private var enabled = true
 
@@ -29,8 +26,6 @@ class CSharpImportStatsTest : BasePlatformTestCase() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { CSharpUsingTypesTest.ASSEMBLIES }
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
         enabled = DotNetSettings.getInstance().importStatistics
@@ -46,7 +41,6 @@ class CSharpImportStatsTest : BasePlatformTestCase() {
             CSharpImportStats.modelForTests = null
             DotNetSettings.getInstance().importStatistics = enabled
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

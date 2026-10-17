@@ -5,11 +5,9 @@ import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.csharp.lang.diagnostics.CSharpSyntaxDiagnostics
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpDiagnostics
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * `DIAGNOSTICS` NATIVE, the syntactic part (CSHARP_PSI_MIGRATION.md, task A3): Roslyn's syntax errors from csharp-psi's tree. The cases are an
@@ -17,7 +15,6 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * tools/csharp-psi/roslyndump). Diagnostics the port only counts (`addError` on a built node) are left out, named at their case.
  */
 class CSharpSyntaxDiagnosticsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
 
     override fun setUp() {
         super.setUp()
@@ -26,8 +23,6 @@ class CSharpSyntaxDiagnosticsTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
-            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -126,7 +121,6 @@ class CSharpSyntaxDiagnosticsTest : BasePlatformTestCase() {
 
     /** NATIVE: the annotator shows Roslyn's text at Roslyn's place (a zero-width one after the end of its line); the error elements stay hidden. */
     fun testAnnotatorWithNative() {
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.NATIVE)
         myFixture.configureByText("DiagNative.cs", "class DiagNative\n{\n    void M()\n    {\n        int x = 1\n        x++;\n    }\n}\n")
         val errors = myFixture.doHighlighting(HighlightSeverity.ERROR)
         assertEquals(listOf("CS1002: ; expected"), errors.map { it.description })
@@ -137,37 +131,8 @@ class CSharpSyntaxDiagnosticsTest : BasePlatformTestCase() {
         assertEquals("CS1002: ; expected", error.toolTip?.let { com.intellij.openapi.util.text.StringUtil.removeHtmlTags(it) })
     }
 
-    /** ROSLYN (the default): the server reports, the tree shows nothing; the switch takes effect on the next pass. */
-    fun testAnnotatorWithRoslyn() {
-        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.ROSLYN)
-        myFixture.configureByText("DiagRoslyn.cs", "class DiagRoslyn { void M() { int x = 1 x++; } }\n")
-        assertEquals(emptyList<String>(), myFixture.doHighlighting(HighlightSeverity.ERROR).map { it.description })
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.NATIVE)
-        DaemonCodeAnalyzer.getInstance(project).restart(myFixture.file)
-        assertEquals(listOf("CS1002: ; expected"), myFixture.doHighlighting(HighlightSeverity.ERROR).map { it.description })
-    }
-
-    /** With NATIVE the server's syntax errors that the tree reports give way; its semantic ones, and syntax ones the tree misses, do not. */
-    fun testServerGivesWayOnlyToWhatTheTreeShows() {
-        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
-        val file = myFixture.configureByText("DiagServer.cs", "class DiagServer\n{\n    void M()\n    {\n        int x = 1\n        x++;\n    }\n}\n")
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.ROSLYN)
-        val line4 = file.text.indexOf("int x = 1")
-        val line5 = file.text.indexOf("x++")
-        fun repeats(message: String?, offset: Int) = NativeCSharpDiagnostics.repeatsNative(file, message, offset)
-        assertFalse("ROSLYN: the server's", repeats("; expected", line4))
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.NATIVE)
-        assertTrue(repeats("; expected", line4))
-        assertFalse("another line", repeats("; expected", line5))
-        assertFalse("semantic", repeats("The name 'y' does not exist in the current context", line4))
-        assertFalse("a syntax error the tree does not report here", repeats(") expected", line4))
-        assertFalse(repeats(null, line4))
-    }
-
     /** A zero-width diagnostic inside a line takes the character after it, as the platform shows an empty error element. */
     fun testZeroWidthRanges() {
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.NATIVE)
         myFixture.configureByText("DiagRange.cs", "class DiagRange\n{\n    char a = '';\n}\n")
         val error = myFixture.doHighlighting(HighlightSeverity.ERROR).single()
         assertEquals("CS1011: Empty character literal", error.description)

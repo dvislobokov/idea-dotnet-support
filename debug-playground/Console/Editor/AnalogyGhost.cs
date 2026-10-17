@@ -4,7 +4,7 @@ namespace Playground.Editor;
 /// Live check of 0.1.163, the analogy and value rules of the gray text (no network): the statement a `switch` repeats, the collection of a
 /// `foreach`, the bound of a `for`, the parameter of `nameof(`, the string of `string.IsNullOrEmpty(`. Lines to type on are marked
 /// <c>// TYPE:name</c>: put the caret on the empty line under the marker, type what the comment says, compare with EXPECT, undo (Ctrl+Z).
-/// Nothing here is called, the file only has to compile. Completion = Built-in (the default).
+/// Nothing here is called, the file only has to compile.
 /// </summary>
 public class AnalogyGhost
 {

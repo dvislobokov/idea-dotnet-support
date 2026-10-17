@@ -220,7 +220,7 @@ object NativeCSharpModifierEdits {
 }
 
 /** Alt+Enter on a header: the accessibility Rider puts first, the other legal ones in the submenu ("To private", "To internal"…). */
-class NativeCSharpChangeAccessibilityIntention : NativeCSharpContextAction("Change accessibility", serverHasIt = true), IntentionActionWithOptions {
+class NativeCSharpChangeAccessibilityIntention : NativeCSharpContextAction("Change accessibility"), IntentionActionWithOptions {
     @Volatile private var shown: String = "Change accessibility"
     @Volatile private var others: List<String> = emptyList()
 
@@ -239,25 +239,25 @@ class NativeCSharpChangeAccessibilityIntention : NativeCSharpContextAction("Chan
 }
 
 /** One accessibility of the submenu of [NativeCSharpChangeAccessibilityIntention]. */
-class NativeCSharpToAccessOption(private val access: String) : NativeCSharpContextAction("To $access", serverHasIt = true) {
+class NativeCSharpToAccessOption(private val access: String) : NativeCSharpContextAction("To $access") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpModifierEdits.headerAt(file, editor.caretModel.offset)?.let { NativeCSharpModifierEdits.toAccess(it, access) }
 }
 
 /** Alt+Enter on the header of an overridable member of a class: `virtual` (Rider: "To virtual"). */
-class NativeCSharpToVirtualIntention : NativeCSharpContextAction("To virtual", serverHasIt = true) {
+class NativeCSharpToVirtualIntention : NativeCSharpContextAction("To virtual") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpModifierEdits.headerAt(file, editor.caretModel.offset)?.let(NativeCSharpModifierEdits::toVirtual)
 }
 
 /** Alt+Enter on the header of a method or property of an abstract class: `abstract`, the body removed (Rider: "To abstract"). */
-class NativeCSharpToAbstractIntention : NativeCSharpContextAction("To abstract", serverHasIt = true) {
+class NativeCSharpToAbstractIntention : NativeCSharpContextAction("To abstract") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpModifierEdits.headerAt(file, editor.caretModel.offset)?.let { NativeCSharpModifierEdits.toAbstract(it, editor.document.charsSequence) }
 }
 
 /** Alt+Enter on the header of a type that is not partial: `partial` before its keyword (Rider: "Make partial"). */
-class NativeCSharpMakePartialIntention : NativeCSharpContextAction("Make partial", serverHasIt = true) {
+class NativeCSharpMakePartialIntention : NativeCSharpContextAction("Make partial") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpModifierEdits.headerAt(file, editor.caretModel.offset)?.let(NativeCSharpModifierEdits::makePartial)
 }

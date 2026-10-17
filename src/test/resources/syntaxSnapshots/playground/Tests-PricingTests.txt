@@ -32,14 +32,6 @@ Playground.Tests
 17: Playground.Tests.PricingTests / DiscountBounds
 25: Playground.Tests.PricingTests / -
 
-## Go to Base: member at the line
-1: -
-9: PricingTests.TotalAppliesTheDiscount()
-12: PricingTests.TotalAppliesTheDiscount() (in body)
-17: PricingTests.DiscountBounds(decimal discount, decimal expected)
-22: PricingTests.DiscountBounds(decimal discount, decimal expected) (in body)
-25: -
-
 ## breakpoint lines
 11-15, 21-24
 

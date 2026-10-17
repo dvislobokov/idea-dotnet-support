@@ -6,11 +6,9 @@ import com.intellij.codeInsight.lookup.Lookup
 import com.intellij.codeInsight.lookup.LookupElement
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpMappingCompletion
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.settings.DotNetSettings
 
 /**
@@ -19,7 +17,6 @@ import io.github.dotnetsupport.settings.DotNetSettings
  * where the rows stand, and nothing with the setting off.
  */
 class CSharpMappingCompletionTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var autocomplete = true
     private var counter = 0
 
@@ -27,7 +24,6 @@ class CSharpMappingCompletionTest : BasePlatformTestCase() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { CSharpUsingTypesTest.ASSEMBLIES }
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
         DotNetSettings.getInstance().mappingCompletion = true
@@ -38,7 +34,6 @@ class CSharpMappingCompletionTest : BasePlatformTestCase() {
             DotNetSettings.getInstance().mappingCompletion = true
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
             runCatching { myFixture.lookup?.hideLookup(true) }
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

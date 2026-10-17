@@ -16,10 +16,8 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.csharp.lang.SyntaxKind
 import io.github.dotnetsupport.csharp.lang.lexer.CSharpTokenTypes
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFileType
 import io.github.dotnetsupport.lang.CSharpFormatOptions
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -44,7 +42,6 @@ class CSharpFormatOracle : BasePlatformTestCase() {
 
     override fun tearDown() {
         try {
-            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
         } catch (e: Throwable) {
             addSuppressedException(e)
         } finally {
@@ -61,7 +58,6 @@ class CSharpFormatOracle : BasePlatformTestCase() {
         val styles = (option("styles") ?: "$DOTNET,$RIDER").split(',').map { it.trim() }.onEach { require(it == DOTNET || it == RIDER) { "unknown style $it" } }
         val corpus = option("corpus")?.let(::File)
             ?: listOf(File(repo, ".corpus"), File(repo.parentFile, "csharp-psi/.corpus"), File(System.getProperty("user.home"), "csharp-psi/.corpus")).firstOrNull { it.isDirectory }
-        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.FORMATTING, CSharpFeatureSource.NATIVE)
 
         val sources = sources(repo, corpus, sample)
         println("format oracle: ${sources.size} files (corpus: ${corpus ?: "none"}), variants $variants, out $out")

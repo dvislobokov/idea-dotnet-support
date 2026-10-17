@@ -2,10 +2,8 @@ package io.github.dotnetsupport
 
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpCompletion
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * Keywords of the native list against Roslyn's `KeywordRecommenders` (dotnet/roslyn, `src/Features/CSharp/Portable/Completion/
@@ -17,12 +15,10 @@ class CSharpKeywordRecommendationsTest : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)

@@ -49,8 +49,7 @@ import javax.swing.ListCellRenderer
 /**
  * Go to Super (Ctrl+U), Type Hierarchy (Ctrl+H), Call Hierarchy (Ctrl+Alt+H) and the gutter of overrides and implementations without the
  * language server (CSHARP_PSI_MIGRATION.md, task C4b; feature `NAVIGATION`): the hierarchy of [CSharpSolutionSearch] on the declarations of
- * csharp-psi's tree. A type or member of an assembly is shown by its metadata view (B4). With ROSLYN the providers of the module `roslyn`
- * answer as before (each of these stands back first).
+ * csharp-psi's tree. A type or member of an assembly is shown by its metadata view (B4).
  */
 object NativeCSharpHierarchies {
     /** The type or member the caret is on: a declaration's name, a usage resolved to one; else the member, then the type, around the caret. */
@@ -134,8 +133,7 @@ object NativeCSharpHierarchies {
 }
 
 /**
- * Ctrl+U: the base types of a type, the members a member overrides or implements ([CSharpSolutionSearch.baseMembers]). First for C#:
- * with ROSLYN it hands the action to the handler of the module `roslyn`.
+ * Ctrl+U: the base types of a type, the members a member overrides or implements ([CSharpSolutionSearch.baseMembers]). First for C#.
  */
 class NativeCSharpGotoSuperHandler : LanguageCodeInsightActionHandler {
     override fun startInWriteAction(): Boolean = false
@@ -159,7 +157,7 @@ class NativeCSharpGotoSuperHandler : LanguageCodeInsightActionHandler {
     }
 }
 
-/** Ctrl+H on the native tree: the type at the caret; null for ROSLYN and outside a type, so the next provider (the server's) answers. */
+/** Ctrl+H on the native tree: the type at the caret; null outside a type. */
 class NativeCSharpTypeHierarchyProvider : HierarchyProvider {
     override fun getTarget(dataContext: DataContext): PsiElement? {
         val file = dataContext.getData(CommonDataKeys.PSI_FILE) as? CSharpFile ?: return null

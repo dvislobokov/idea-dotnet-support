@@ -6,7 +6,7 @@ namespace Playground.Editor;
 /// Live check of the leftovers of completion 0.1.85–0.1.91 (0.1.92): parentheses after a method chosen by `.` / `;` or inserted by itself,
 /// the types of extension methods with the receiver's type arguments, a lambda place found by the resolved delegate type, exceptions first
 /// in `catch (`. Lines to type on are marked <c>// TYPE:name</c>: put the caret on the empty line under the marker, type what the comment
-/// says, compare with EXPECT, undo (Ctrl+Z). Nothing here is called, the file only has to compile. Completion = Built-in (the default).
+/// says, compare with EXPECT, undo (Ctrl+Z). Nothing here is called, the file only has to compile.
 /// </summary>
 public class CompletionInsertion
 {

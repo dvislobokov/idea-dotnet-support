@@ -21,7 +21,7 @@ import io.github.dotnetsupport.run.DotNetRunConfigurationGenerator
 import io.github.dotnetsupport.solution.SolutionService
 import io.github.dotnetsupport.view.SolutionViewPane
 
-/** A solution or a project has been read anew from the disk; the language server of the other module reloads it as well. */
+/** A solution or a project has been read anew from the disk. */
 interface SolutionReloadListener {
     /** [projectFile] is null when the whole solution is reloaded. */
     fun reloaded(projectFile: VirtualFile?)

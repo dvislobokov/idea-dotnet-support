@@ -130,7 +130,7 @@ object NativeCSharpExtensionBlockEdits {
 }
 
 /** Alt+Enter on an extension method: every extension method of the class with its receiver in one `extension` block (Rider's "(N methods)"). */
-class NativeCSharpConvertToExtensionBlockIntention : NativeCSharpContextAction("Convert to extension block", serverHasIt = true) {
+class NativeCSharpConvertToExtensionBlockIntention : NativeCSharpContextAction("Convert to extension block") {
     @Volatile private var count = 0
 
     override fun getText(): String = "Convert to extension block ($count methods)"
@@ -146,7 +146,7 @@ class NativeCSharpConvertToExtensionBlockIntention : NativeCSharpContextAction("
 }
 
 /** Alt+Enter on an extension method: that one method in an `extension` block of its receiver (Rider: "Convert this method to extension block"). */
-class NativeCSharpConvertMethodToExtensionBlockIntention : NativeCSharpContextAction("Convert this method to extension block", serverHasIt = true) {
+class NativeCSharpConvertMethodToExtensionBlockIntention : NativeCSharpContextAction("Convert this method to extension block") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         if (!NativeCSharpExtensionBlockEdits.allowed(file)) return null
         val method = NativeCSharpExtensionBlockEdits.methodAt(file, editor.caretModel.offset) ?: return null

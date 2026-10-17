@@ -9,9 +9,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.ui.UIUtil
 import io.github.dotnetsupport.lang.CSharpDocCommentItems
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * COMPLETION of preprocessor directives (task 2.3 of docs/COMPLETION_GAPS.md, Rider's dump 36) and in XML documentation comments (task
@@ -19,13 +17,11 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * tags, parameter and type parameter names not documented yet, `cref` targets.
  */
 class CSharpDirectiveAndDocCompletionTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var autocomplete = true
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
     }
@@ -33,7 +29,6 @@ class CSharpDirectiveAndDocCompletionTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
-            settings.state.features = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)

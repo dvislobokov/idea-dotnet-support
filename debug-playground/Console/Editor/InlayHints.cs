@@ -5,10 +5,9 @@ using System.Linq;
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of inlay hints without the language server (0.1.116): the names of parameters before arguments and the types of
-/// <c>var</c>, lambda parameters, <c>new()</c> and collection expressions, on the plugin's own semantics with Roslyn's rules. Settings |
-/// .NET | Language Server → Source of Features → «Inlay hints» = Built-in, the server off; the thirteen «Inlay Hints» options of the same
-/// page drive what is shown (their defaults: names at literals, indexers and <c>new</c>; types of <c>var</c> and lambda parameters).
+/// Live check of inlay hints (0.1.116): the names of parameters before arguments and the types of
+/// <c>var</c>, lambda parameters, <c>new()</c> and collection expressions, on the plugin's own semantics with Roslyn's rules. The thirteen
+/// «Inlay Hints» options of Settings | .NET | C# Editor drive what is shown (their defaults: names at literals, indexers and <c>new</c>; types of <c>var</c> and lambda parameters).
 /// Nothing is typed: look at the lines a <c>// TYPE:inlay-*</c> comment points at and compare with EXPECT. Also Settings | Editor |
 /// Inlay Hints | C# must list «Parameter names» and «Types», both on.
 /// </summary>
@@ -79,7 +78,6 @@ public class InlayHints
         Fill([3]);
         // TYPE:inlay-click — Ctrl+click (or click) on the `Certificate` hint at `one` above: EXPECT the caret in `class Certificate` below;
         // on `List<int>` at `list`: the metadata view of List<T> opens
-        // TYPE:inlay-switch — «Inlay hints» = Language server (server on): EXPECT the server's hints only, never two of a kind at one place
         return list.Count + one.Days + found + a + b.Length + plain + resp.Count() + add(1, 2) + typed(3) + xs.Count + ys.Count + (a > 0 ? 0 : 1);
     }
 

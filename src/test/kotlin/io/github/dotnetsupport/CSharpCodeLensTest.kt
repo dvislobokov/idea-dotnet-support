@@ -9,7 +9,6 @@ import com.intellij.openapi.util.registry.Registry
 import com.intellij.testFramework.TestModeFlags
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.CSharpUsageCounts
@@ -20,17 +19,17 @@ import io.github.dotnetsupport.lang.NativeCSharpInheritorsCodeVisionProvider
 import io.github.dotnetsupport.lang.NativeCSharpReferencesCodeVisionProvider
 import io.github.dotnetsupport.lang.NativeCSharpRunTestCodeVisionProvider
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpEditorSettings
+import io.github.dotnetsupport.settings.CSharpOptions
 import io.github.dotnetsupport.run.DotNetCommand
 import io.github.dotnetsupport.run.DotNetRunConfiguration
 
 /**
  * Code Vision without the language server (feature CODE_LENS): "N usages" by the native Find Usages, "N implementations" by the hierarchy,
- * "Run" / "Debug" over tests by the producer of the gutter; the two Code Lens options of the Language Server page switch them off.
+ * "Run" / "Debug" over tests by the producer of the gutter; the two Code Lens options of Settings | .NET | C# Editor switch them off.
  */
 class CSharpCodeLensTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
+    private val settings get() = CSharpEditorSettings.getInstance()
 
     override fun setUp() {
         // the Code Vision host computes synchronously and draws the inlays, as the platform's CodeVisionTestCase arranges it
@@ -44,9 +43,7 @@ class CSharpCodeLensTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             settings.state.options = mutableMapOf()
-            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
@@ -352,7 +349,7 @@ class CSharpCodeLensTest : BasePlatformTestCase() {
         assertEquals("FullyQualifiedName~Lens6.Tests.XunitTests.", type.options.testFilter)
     }
 
-    fun testTheProvidersFollowTheOptionsAndTheSwitch() {
+    fun testTheProvidersFollowTheOptions() {
         myFixture.addFileToProject("Lens7.Tests/Lens7.Tests.csproj", """<Project Sdk="Microsoft.NET.Sdk"><ItemGroup><PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0"/></ItemGroup></Project>""")
         val file = file("Lens7.Tests/Tests.cs", """
             using Xunit;
@@ -377,24 +374,15 @@ class CSharpCodeLensTest : BasePlatformTestCase() {
         assertEquals(NativeCSharpCodeLens.REFERENCES_ID, references.computeLenses(editor, file).first().second.providerId)
         assertEquals(emptyList<String>(), texts(NativeCSharpInheritorsCodeVisionProvider()))
 
-        settings.setValue(RoslynOptions.option("code_lens.dotnet_enable_references_code_lens"), "false")
+        settings.setValue(CSharpOptions.option("code_lens.dotnet_enable_references_code_lens"), "false")
         assertEquals("the References option is read natively", emptyList<String>(), texts(references))
         assertEquals(listOf("5: Run", "3: Run"), texts(run))
-        settings.setValue(RoslynOptions.option("code_lens.dotnet_enable_tests_code_lens"), "false")
+        settings.setValue(CSharpOptions.option("code_lens.dotnet_enable_tests_code_lens"), "false")
         assertEquals("the Run and debug tests option is read natively", emptyList<String>(), texts(run))
         assertEquals(emptyList<String>(), texts(debug))
-        settings.setValue(RoslynOptions.option("code_lens.dotnet_enable_references_code_lens"), "true")
-        settings.setValue(RoslynOptions.option("code_lens.dotnet_enable_tests_code_lens"), "true")
+        settings.setValue(CSharpOptions.option("code_lens.dotnet_enable_references_code_lens"), "true")
+        settings.setValue(CSharpOptions.option("code_lens.dotnet_enable_tests_code_lens"), "true")
 
-        // with the server on and the feature given to it, the native lenses stand down; without the server they answer whatever the switch
-        settings.state.enabled = true
-        settings.setSource(CSharpFeature.CODE_LENS, CSharpFeatureSource.ROSLYN)
-        assertFalse(NativeCSharpCodeLens.serves(file))
-        assertEquals(emptyList<String>(), texts(references))
-        assertEquals(emptyList<String>(), texts(run))
-        settings.state.enabled = false
-        assertTrue(NativeCSharpCodeLens.serves(file))
-        assertEquals(listOf("5: Run", "3: Run"), texts(run))
 
         // silent while the IDE indexes: the counts need the indexes
         val token = com.intellij.testFramework.DumbModeTestUtils.startEternalDumbModeTask(project)
@@ -408,7 +396,7 @@ class CSharpCodeLensTest : BasePlatformTestCase() {
 
     /**
      * The Code Vision host computes again only when a document changed: Apply asks it in the open editors
-     * ([io.github.dotnetsupport.lang.NativeCSharpCodeLensSwitch]), so a toggled option or a switched source is seen without an edit.
+     * ([io.github.dotnetsupport.lang.NativeCSharpCodeLensSwitch]), so a toggled option is seen without an edit.
      */
     fun testApplyingThePageRedrawsTheLensesOfOpenEditors() {
         val file = file("lens8/Refresh.cs", """
@@ -426,27 +414,19 @@ class CSharpCodeLensTest : BasePlatformTestCase() {
         host.invalidateProviderSignal.advise(testRootDisposable.createLifetime()) { invalidated += it }
         // a lambda, not a local fun: a local fun that captures nothing compiles to a method `test…$applied`, which JUnit 3 runs as a test
         val applied = {
-            com.intellij.openapi.application.ApplicationManager.getApplication().messageBus.syncPublisher(RoslynLanguageServerSettings.CHANGED).settingsChanged(false)
+            com.intellij.openapi.application.ApplicationManager.getApplication().messageBus.syncPublisher(CSharpEditorSettings.CHANGED).settingsChanged()
             com.intellij.testFramework.PlatformTestUtil.dispatchAllEventsInIdeEventQueue()
         }
         val lenses = listOf("2: no usages", "4: no usages", "5: 1 usage")
         assertEquals(lenses, vision())
-        settings.setValue(RoslynOptions.option("code_lens.dotnet_enable_references_code_lens"), "false")
+        settings.setValue(CSharpOptions.option("code_lens.dotnet_enable_references_code_lens"), "false")
         applied()
         assertEquals("References off: the host is asked, the lenses go without an edit", 1, invalidated.count { it.editor == null && it.providerIds.isEmpty() })
         assertEquals(emptyList<String>(), vision())
-        settings.setValue(RoslynOptions.option("code_lens.dotnet_enable_references_code_lens"), "true")
+        settings.setValue(CSharpOptions.option("code_lens.dotnet_enable_references_code_lens"), "true")
         applied()
         assertEquals("and come back", lenses, vision())
-        // the source given to the running server: the plugin's lenses stand down at once
-        settings.state.enabled = true
-        settings.setSource(CSharpFeature.CODE_LENS, CSharpFeatureSource.ROSLYN)
-        applied()
-        assertEquals("the server answers", emptyList<String>(), vision())
-        settings.setSource(CSharpFeature.CODE_LENS, CSharpFeatureSource.NATIVE)
-        applied()
-        assertEquals("the plugin again", lenses, vision())
-        assertEquals(4, invalidated.count { it.editor == null && it.providerIds.isEmpty() })
+        assertEquals(2, invalidated.count { it.editor == null && it.providerIds.isEmpty() })
     }
 
     /** Rider shows no lenses over a library source (Source Link), a decompiled type or the metadata view: the sources of the solution alone. */

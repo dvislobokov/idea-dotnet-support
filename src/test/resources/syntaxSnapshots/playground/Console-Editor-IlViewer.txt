@@ -92,29 +92,6 @@ Playground.Editor
 79: Playground.Editor.IlViewerHeader / -
 81: - / -
 
-## Go to Base: member at the line
-1: -
-18: IlViewer.Add(int a, int b)
-20: IlViewer.Add(int a, int b) (in body)
-25: -
-27: IlViewer.Scale(int value)
-29: IlViewer.Scale(int value, int factor)
-31: -
-34: IlViewer.LoadAsync()
-36: IlViewer.LoadAsync() (in body)
-40: -
-42: IlViewer.Squares(int count)
-44: IlViewer.Squares(int count) (in body)
-48: -
-51: IlViewer.Filter(int[] values, int limit)
-53: IlViewer.Filter(int[] values, int limit) (in body)
-56: -
-58: IlViewer.Compute(int n)
-60: IlViewer.Compute(int n) (in body)
-68: -
-78: IlViewerHeader.ToString()
-79: -
-
 ## breakpoint lines
 19-23, 27, 29, 35-38, 43-46, 52-54, 59-60, 62-66, 78
 

@@ -1,8 +1,6 @@
 package io.github.dotnetsupport
 
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
-import io.github.dotnetsupport.lang.CSharpFeatureSource
-import io.github.dotnetsupport.lang.CSharpFeature
+import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpBracketColors
@@ -15,15 +13,13 @@ import io.github.dotnetsupport.lang.IdentifierKind.TYPE
 class IdentifierColorsTest : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
-        RoslynLanguageServerSettings.getInstance().state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
-        // the server's path (and the heuristics beside it): built-in is the default since 0.1.60
-        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.ROSLYN)
+        // the heuristic colors: a file of the heuristic tree (the native colors answer on the native one, CSharpSemanticColorsTest)
+        CSharpSyntaxTrees.forceNativeTreeForTests(false)
     }
 
     override fun tearDown() {
         try {
-            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
-            RoslynLanguageServerSettings.getInstance().state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
+            CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } finally {
             super.tearDown()
         }

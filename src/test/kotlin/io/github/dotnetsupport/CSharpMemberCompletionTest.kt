@@ -14,11 +14,9 @@ import io.github.dotnetsupport.index.AssemblyDocs
 import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpCompletion
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * COMPLETION after a dot on the plugin's semantics (CSHARP_PSI_MIGRATION.md, task C3): members of the type of a value (of the solution and
@@ -26,26 +24,19 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * extension methods in scope, what C# lets the place see, substituted type arguments, the merge with the server's list.
  */
 class CSharpMemberCompletionTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var autocomplete = true
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { ASSEMBLIES }
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
-        val plugin = PluginManagerCore.getPlugin(PluginId.getId("io.github.dotnetsupport"))!!
-        ApplicationManager.getApplication().extensionArea.getExtensionPoint(CompletionContributor.EP)
-            .registerExtension(CompletionContributorEP("C#", CSharpCompletionNativeTest.FakeServer::class.java.name, plugin), testRootDisposable)
     }
 
     override fun tearDown() {
         try {
-            CSharpCompletionNativeTest.FakeServer.items = emptyList()
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
@@ -266,22 +257,6 @@ class CSharpMemberCompletionTest : BasePlatformTestCase() {
         choose("AddSingleton<TService>").let { assertTrue(it, it.contains("Services.AddSingleton<>()")) }
         choose("Convert<TResult>").let { assertTrue(it, it.contains("Services.Convert<>()")) }
         choose("Echo<T>").let { assertTrue(it, it.contains("Services.Echo()")) }
-    }
-
-    fun testTheServersDuplicatesAreDropped() {
-        CSharpCompletionNativeTest.FakeServer.items = listOf(CSharpCompletionNativeTest.FakeServer.Item("Length", 40.0), CSharpCompletionNativeTest.FakeServer.Item("Something", 30.0))
-        val all = lookup(body("text.<caret>"))
-        val strings = all.map { it.lookupString }
-        assertEquals("one Length, the native one", 1, strings.count { it == "Length" })
-        assertEquals(true, all.first { it.lookupString == "Length" }.getUserData(NativeCSharpCompletion.NATIVE))
-        assertTrue("what the native list has not is kept", "Something" in strings)
-    }
-
-    fun testAnUnknownTypeLeavesTheServersList() {
-        CSharpCompletionNativeTest.FakeServer.items = listOf(CSharpCompletionNativeTest.FakeServer.Item("Frobnicate", 30.0))
-        val all = lookup(body("Unknown.Thing.<caret>"))
-        assertTrue(all.none { it.getUserData(NativeCSharpCompletion.NATIVE) == true })
-        assertTrue(all.any { it.lookupString == "Frobnicate" })
     }
 
     private companion object {

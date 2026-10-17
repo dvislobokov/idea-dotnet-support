@@ -50,15 +50,6 @@ Playground.Web
 30: Playground.Web.HotReloadCounter / Next
 31: Playground.Web.HotReloadCounter / -
 
-## Go to Base: member at the line
-1: -
-9: HotReloadScenario.MapHotReload(this WebApplication app)
-11: -
-18: HotReloadScenario.Message()
-19: -
-30: HotReloadCounter.Next()
-31: -
-
 ## breakpoint lines
 9, 18, 30
 

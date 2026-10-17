@@ -4,7 +4,7 @@ namespace Playground.Editor;
 
 /// <summary>
 /// Live check of the Alt+Enter context actions on <c>if</c> (0.1.163, <c>NativeCSharpIfActions.kt</c>): Invert 'if', Merge nested 'if'
-/// statements, Split into two 'if's, Convert to guard clause, Add braces / Remove braces. «Context actions» = Built-in (the default). Put
+/// statements, Split into two 'if's, Convert to guard clause, Add braces / Remove braces. Put
 /// the caret where a marker says, press Alt+Enter, check EXPECT, then undo (Ctrl+Z) so the file stays as it is. Nothing here is called,
 /// the file only has to compile.
 /// </summary>

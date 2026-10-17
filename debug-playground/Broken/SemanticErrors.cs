@@ -1,8 +1,7 @@
-// Semantic errors of the built-in diagnostics (CSharpFeature.DIAGNOSTICS, «Errors and warnings» = Built-in, 0.1.74, task C4c of
-// CSHARP_PSI_MIGRATION.md): Roslyn's codes, messages and places from the plugin's own resolver, without the language server. Excluded from
-// the compilation of Broken (Broken.csproj), like SyntaxErrors.cs; the editor still sees the file. Every line under a "permanent" marker is
-// broken as it is: compare the marks with EXPECT, and with the server (Settings | .NET | Language Server, «Errors and warnings» =
-// Language server) — the same codes in the same places, each shown once. The lines marked "silent" are correct or unknowable: NO red there.
+// Semantic errors of the built-in diagnostics (CSharpFeature.DIAGNOSTICS, 0.1.74, task C4c of CSHARP_PSI_MIGRATION.md): Roslyn's codes,
+// messages and places from the plugin's own resolver. Excluded from the compilation of Broken (Broken.csproj), like SyntaxErrors.cs; the
+// editor still sees the file. Every line under a "permanent" marker is broken as it is: compare the marks with EXPECT — Roslyn's codes in
+// Roslyn's places, each shown once. The lines marked "silent" are correct or unknowable: NO red there.
 using System.Text;
 using System.Collections.Concurrent;
 

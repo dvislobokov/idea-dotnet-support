@@ -11,8 +11,8 @@ using System.Collections.Generic;
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of completion in XML documentation comments and preprocessor directives (0.1.90). Server off (Settings | .NET | Language
-/// Server). Type where a marker says and undo with Ctrl+Z. The file compiles as it is.
+/// Live check of completion in XML documentation comments and preprocessor directives (0.1.90).
+/// Type where a marker says and undo with Ctrl+Z. The file compiles as it is.
 /// </summary>
 public sealed class DocCompletion<TItem>
 {

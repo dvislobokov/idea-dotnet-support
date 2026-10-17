@@ -1,6 +1,6 @@
-// The «Analysis» scopes of Settings | .NET | Language Server without the server: «Compiler diagnostics for» and «Analyzer diagnostics for»
+// The «Analysis» scopes of Settings | .NET | C# Editor: «Compiler diagnostics for» and «Analyzer diagnostics for»
 // (openFiles / fullSolution / none). With fullSolution the errors and warnings of the whole solution are in the Problems tool window
-// (View | Tool Windows | Problems, tab Project Errors), as with the server. «Errors and warnings» = Built-in (the default). The file
+// (View | Tool Windows | Problems, tab Project Errors). The file
 // compiles: one warning on purpose (CS0219), so a closed file has a row to show.
 namespace Playground.Editor;
 

@@ -266,7 +266,7 @@ object NativeCSharpLoopEdits {
 }
 
 /** Alt+Enter on `foreach` over an array, a string or an `IList<T>`: the `for` with the index (Rider: "Convert 'foreach' to 'for'"). */
-class NativeCSharpForEachToForIntention : NativeCSharpContextAction("Convert 'foreach' to 'for'", serverHasIt = true, needsTypes = true) {
+class NativeCSharpForEachToForIntention : NativeCSharpContextAction("Convert 'foreach' to 'for'", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val statement = NativeCSharpLoopEdits.forEachAt(file, editor.caretModel.offset) ?: return null
         val count = statement.expression?.let { NativeCSharpLoopEdits.countMember(resolver(file), it) } ?: return null
@@ -275,19 +275,19 @@ class NativeCSharpForEachToForIntention : NativeCSharpContextAction("Convert 'fo
 }
 
 /** Alt+Enter on `for (var i = 0; i < items.Count; i++)` reading `items[i]` only: the `foreach` (Rider: "Convert 'for' to 'foreach'"). */
-class NativeCSharpForToForEachIntention : NativeCSharpContextAction("Convert 'for' to 'foreach'", serverHasIt = true) {
+class NativeCSharpForToForEachIntention : NativeCSharpContextAction("Convert 'for' to 'foreach'") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpLoopEdits.forAt(file, editor.caretModel.offset)?.let { NativeCSharpLoopEdits.forToForEach(it, editor.document.charsSequence, NativeCSharpContextEdits.unit(file)) }
 }
 
 /** Alt+Enter on a counting `for`: the same loop the other way round (Rider: "Reverse 'for'"). */
-class NativeCSharpReverseForIntention : NativeCSharpContextAction("Reverse 'for'", serverHasIt = true) {
+class NativeCSharpReverseForIntention : NativeCSharpContextAction("Reverse 'for'") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpLoopEdits.forAt(file, editor.caretModel.offset)?.let { NativeCSharpLoopEdits.reverseFor(it, editor.document.charsSequence) }
 }
 
 /** Alt+Enter on an expression statement of a collection (`items;`): `foreach` over it (Rider: "Iterate via 'foreach'"). */
-class NativeCSharpIterateViaForEachIntention : NativeCSharpContextAction("Iterate via 'foreach'", serverHasIt = true, needsTypes = true) {
+class NativeCSharpIterateViaForEachIntention : NativeCSharpContextAction("Iterate via 'foreach'", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val statement = NativeCSharpLoopEdits.expressionStatementAt(file, editor.caretModel.offset) ?: return null
         val expression = statement.expression ?: return null

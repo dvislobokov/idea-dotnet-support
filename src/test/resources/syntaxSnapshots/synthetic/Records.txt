@@ -61,16 +61,6 @@ Synthetic.Records
 21: Synthetic.Records.Shape / -
 22: Synthetic.Records.Circle / -
 
-## Go to Base: member at the line
-1: -
-7: Point.Length
-8: -
-12: Box.With(T value)
-13: -
-17: Money.Zero
-18: Money.Note
-19: -
-
 ## breakpoint lines
 7, 12, 17-18
 

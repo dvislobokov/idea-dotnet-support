@@ -67,26 +67,6 @@ Playground
 86: Playground.AllocationScenario / Counter
 90: Playground.AllocationScenario / -
 
-## Go to Base: member at the line
-1: -
-24: AllocationScenario.RunFast()
-26: AllocationScenario.RunFast() (in body)
-41: AllocationScenario.Run()
-43: AllocationScenario.Run() (in body)
-52: AllocationScenario.Round(int round)
-54: AllocationScenario.Round(int round) (in body)
-64: AllocationScenario.Buffer()
-66: AllocationScenario.Buffer() (in body)
-69: AllocationScenario.Name(int round, int index)
-71: AllocationScenario.Name(int round, int index) (in body)
-74: AllocationScenario.Boxed(int value)
-76: AllocationScenario.Boxed(int value) (in body)
-79: AllocationScenario.Numbers()
-81: AllocationScenario.Numbers() (in body)
-86: AllocationScenario.Counter(int start)
-88: AllocationScenario.Counter(int start) (in body)
-90: -
-
 ## breakpoint lines
 18, 25-39, 42-50, 53-62, 65-67, 70-72, 75-77, 80-84, 87-89
 

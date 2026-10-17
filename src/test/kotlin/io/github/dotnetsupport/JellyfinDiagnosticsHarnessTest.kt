@@ -4,13 +4,11 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticChecks
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import java.io.File
 
 /**
@@ -20,21 +18,18 @@ import java.io.File
  * `path|old text|new text` lines) are applied to the copies, and every diagnostic of the broken files goes to `build/jellyfin-harness.txt`.
  */
 class JellyfinDiagnosticsHarnessTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private val root = System.getenv("JELLYFIN_HARNESS")?.let(::File)?.takeIf { it.isDirectory }
     private val indexes = System.getenv("LATENCY_HARNESS")?.let(::File)?.takeIf { it.isDirectory }
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.NATIVE)
         val set = assemblies()
         CSharpSemanticEnvironment.setAssembliesForTests { set }
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

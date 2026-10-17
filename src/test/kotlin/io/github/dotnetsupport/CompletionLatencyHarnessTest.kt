@@ -6,10 +6,8 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import java.io.File
 
 /**
@@ -19,13 +17,11 @@ import java.io.File
  * methods of the plugin a sampler found the completion thread in. A bound of 3 s keeps it from silently getting much slower.
  */
 class CompletionLatencyHarnessTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private val dir = System.getenv("LATENCY_HARNESS")?.let(::File)?.takeIf { it.isDirectory }
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
         val set = assemblies()
         CSharpSemanticEnvironment.setAssembliesForTests { set }
@@ -34,7 +30,6 @@ class CompletionLatencyHarnessTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = true
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

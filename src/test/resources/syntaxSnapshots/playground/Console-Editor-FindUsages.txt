@@ -106,28 +106,6 @@ Playground.Editor
 83: Playground.Editor.UsageNoteAttribute / -
 85: - / -
 
-## Go to Base: member at the line
-1: -
-22: UsageSample.Title
-24: -
-30: UsageSample.Read()
-32: UsageSample.Write()
-34: UsageSample.Write() (in body)
-41: UsageSample.ByRef()
-43: UsageSample.ByRef() (in body)
-49: UsageSample.Name()
-51: UsageSample.Bump(ref int value)
-52: UsageSample.Reset(out int value)
-53: UsageSample.Peek(in int value)
-54: -
-64: DerivedSample.Make(UsageSample other)
-66: DerivedSample.Make(UsageSample other) (in body)
-72: -
-76: DerivedSample.Log()
-77: -
-82: UsageNoteAttribute.Member
-83: -
-
 ## breakpoint lines
 22, 25-28, 30, 33-39, 42-47, 49, 51-53, 62, 65-70, 76, 82
 

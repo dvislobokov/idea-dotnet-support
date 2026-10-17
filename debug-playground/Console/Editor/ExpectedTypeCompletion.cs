@@ -6,9 +6,8 @@ namespace Playground.Editor;
 
 /// <summary>
 /// Live check of completion by the expected type (0.1.88, ROADMAP «Completion по ожидаемому типу»): initializers and property patterns,
-/// enum members, `await` rows, `new` with a target type, filtered type places, smart completion (Ctrl+Shift+Space). Built-in completion
-/// (Settings | .NET | Language Server → Source of Features → «Completion» = Built-in, the default since 0.1.76). Type on the empty line
-/// under a marker comment, check EXPECT, then undo (Ctrl+Z) so the file keeps compiling.
+/// enum members, `await` rows, `new` with a target type, filtered type places, smart completion (Ctrl+Shift+Space).
+/// Type on the empty line under a marker comment, check EXPECT, then undo (Ctrl+Z) so the file keeps compiling.
 /// </summary>
 public class ExpectedTypeCompletion
 {

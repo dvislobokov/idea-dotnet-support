@@ -13,13 +13,11 @@ import io.github.dotnetsupport.csharp.lang.psi.CSharpDeclarationNames
 import io.github.dotnetsupport.csharp.lang.psi.CSharpVariableDeclarator
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSolutionSearch
-import io.github.dotnetsupport.lsp.RoslynServerStatus
 
 /**
  * Highlights the other occurrences of the identifier under the caret. With NAVIGATION NATIVE on the native tree a local, parameter, label,
  * range variable or type parameter gets its usages from the tree, read and written apart ([NativeCSharpNavigation.localUsages]). Anything else
- * goes on as with ROSLYN: to the server's `documentHighlight` (the platform's factory, registered last) once it covers the file, before
- * that to the occurrences of the identifier token's text in the file.
+ * gets the occurrences of the identifier token's text in the file.
  */
 class CSharpHighlightUsagesHandlerFactory : HighlightUsagesHandlerFactoryBase() {
     override fun createHighlightUsagesHandler(editor: Editor, psiFile: PsiFile, target: PsiElement): HighlightUsagesHandlerBase<*>? {
@@ -29,8 +27,6 @@ class CSharpHighlightUsagesHandlerFactory : HighlightUsagesHandlerFactoryBase() 
             if (usages != null) return Handler(editor, psiFile, usages.read, usages.write)
             memberUsages(psiFile, editor.caretModel.offset)?.let { (read, write) -> return Handler(editor, psiFile, read, write) }
         }
-        val file = psiFile.virtualFile
-        if (file != null && RoslynServerStatus.covers(psiFile.project, file)) return null // the server answers with documentHighlight
         val ranges = CSharpUsageHighlights.occurrences(editor.document.immutableCharSequence, editor.caretModel.offset)
         return if (ranges.isEmpty()) null else Handler(editor, psiFile, ranges, emptyList())
     }

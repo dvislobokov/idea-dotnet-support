@@ -128,37 +128,6 @@ Playground.Editor
 58: Playground.Editor.GoToBase / Own
 60: Playground.Editor.GoToBase / -
 
-## Go to Base: member at the line
-1: -
-10: IBaseShape.Area()
-11: IBaseShape.Name
-12: IBaseShape.Changed
-13: IBaseShape.this[int index]
-14: -
-18: INamedShape.Rename(string name)
-19: INamedShape.Rename(string name, bool notify)
-20: -
-24: BaseShape.Area()
-25: BaseShape.Name
-26: BaseShape.Changed
-27: BaseShape.this[int index]
-28: BaseShape.Rename(string name)
-29: BaseShape.Rename(string name, bool notify)
-30: -
-34: MiddleShape.Area()
-35: -
-41: GoToBase.Area()
-43: -
-44: GoToBase.Name
-46: -
-48: GoToBase.Rename(string name, bool notify)
-50: GoToBase.Rename(string name, bool notify) (in body)
-53: -
-55: GoToBase.Dispose()
-57: -
-58: GoToBase.Own()
-60: -
-
 ## breakpoint lines
 11, 13, 25, 27-29, 34, 41, 44, 49-51, 55, 58
 

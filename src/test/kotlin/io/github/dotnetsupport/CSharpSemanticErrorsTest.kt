@@ -5,17 +5,14 @@ import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * The semantic errors of the native pass (CSHARP_PSI_MIGRATION.md, task C4c): Roslyn's codes, texts and spans where everything involved is
  * known, and silence where anything is not (the cases of `build/c4c-probe`, checked against `dotnet build`).
  */
 class CSharpSemanticErrorsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var files = 0
     private var assemblies: AssemblyIndexSet? = null
 
@@ -24,12 +21,10 @@ class CSharpSemanticErrorsTest : BasePlatformTestCase() {
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         assemblies = CSharpUsingTypesTest.ASSEMBLIES
         CSharpSemanticEnvironment.setAssembliesForTests { assemblies }
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSemanticEnvironment.setGeneratesForTests(null)
             CSharpSemanticEnvironment.setGeneratedKnownForTests(null)

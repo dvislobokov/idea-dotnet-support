@@ -188,34 +188,6 @@ Playground
 79: Playground.EndlessGetter / Forever
 86: Playground.EndlessGetter / -
 
-## Go to Base: member at the line
-1: -
-16: Person.MyProperty
-17: Person.Name
-18: Person.Age
-19: Person.Friend
-20: Person.IsAdult
-21: Person.Notes
-23: Person.ToString()
-24: -
-29: SlowToString.ToString()
-31: SlowToString.ToString() (in body)
-34: -
-38: ThrowingProperty.Value
-39: -
-50: LeakyCache.Remember(CachedOrder order)
-51: LeakyCache.Count
-52: -
-56: PriceFeed.Changed
-57: PriceFeed.Subscribers
-58: -
-72: PriceWatcher.OnChanged(object? sender, decimal price)
-74: PriceWatcher.ToString()
-75: -
-79: EndlessGetter.Forever
-81: EndlessGetter.Forever (in body)
-86: -
-
 ## breakpoint lines
 15-21, 23, 30-33, 38, 48, 50-51, 57, 64, 67-70, 72, 74, 80-85
 

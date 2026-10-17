@@ -195,39 +195,6 @@ Playground.Editor
 137: - / -
 138: Playground.Editor.Shop / -
 
-## Go to Base: member at the line
-1: -
-15: AppSettingsSchemaScenario.Bind(IServiceCollection services, IConfiguration configuration)
-17: AppSettingsSchemaScenario.Bind(IServiceCollection services, IConfiguration configuration) (in body)
-63: -
-71: PositionOptions.Title
-73: -
-74: PositionOptions.Height
-76: PositionOptions.Maximized
-77: -
-83: ShopOptions.Name
-85: -
-86: ShopOptions.Mode
-88: -
-89: ShopOptions.Timeout
-91: ShopOptions.Tags
-93: -
-94: ShopOptions.Prices
-96: ShopOptions.Retry
-98: ShopOptions.Owner
-100: ShopOptions.Secret
-102: ShopOptions.Total
-103: -
-109: RetryOptions.Count
-111: RetryOptions.Delay
-112: -
-126: FeatureOptions.Enabled
-127: FeatureOptions.Id
-128: -
-133: CacheOptions.SizeMb
-134: CacheOptions.Endpoints
-135: -
-
 ## breakpoint lines
 16, 18, 21-22, 25-28, 62, 68, 71, 74, 76, 83, 86, 89, 91, 94, 96, 98, 100, 102, 109, 111, 126-127, 133-134
 

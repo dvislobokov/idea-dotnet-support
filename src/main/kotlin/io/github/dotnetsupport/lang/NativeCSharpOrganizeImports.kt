@@ -9,7 +9,7 @@ import com.intellij.psi.codeStyle.CodeStyleSettings
 import com.intellij.psi.impl.source.codeStyle.PostFormatProcessor
 import com.intellij.psi.util.PsiTreeUtil
 import io.github.dotnetsupport.csharp.lang.psi.CSharpBaseNamespaceDeclaration
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpOptions
 
 /**
  * `formatting.dotnet_organize_imports_on_format` of the page of the server for the native formatter: Reformat Code of a whole file
@@ -31,7 +31,7 @@ class NativeCSharpOrganizeImports : PostFormatProcessor {
     }
 
     private fun organize(file: PsiFile) {
-        if (file !is CSharpFile || !RoslynOptions.isOn(OPTION) || !NativeCSharpFormatting.engaged(file)) return
+        if (file !is CSharpFile || !CSharpOptions.isOn(OPTION) || !NativeCSharpFormatting.engaged(file)) return
         val project = file.project
         val documents = PsiDocumentManager.getInstance(project)
         val document = documents.getDocument(file) ?: return

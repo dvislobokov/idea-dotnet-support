@@ -412,7 +412,7 @@ class AddRequiredMembersFix(private val at: SmartPsiElementPointer<PsiElement>) 
  * Alt+Enter in `new T { | }` (or on `new T(...)`): `Name = ` for each required member left unset. On the type CS9035 underlines its quick
  * fix «Add initializer for required members» does the same, so this one stands back there.
  */
-class NativeCSharpInitializeRequiredMembersIntention : NativeCSharpContextAction("Initialize required members", serverHasIt = false, needsTypes = true) {
+class NativeCSharpInitializeRequiredMembersIntention : NativeCSharpContextAction("Initialize required members", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val creation = NativeCSharpObjectInitializers.creationAt(file, editor.caretModel.offset) ?: return null
         val caret = editor.caretModel.offset
@@ -424,7 +424,7 @@ class NativeCSharpInitializeRequiredMembersIntention : NativeCSharpContextAction
 }
 
 /** Alt+Enter in `new T { | }` (or on `new T(...)`): `Name = ` for every member the initializer may set and does not set yet, the required ones first. */
-class NativeCSharpInitializeMembersIntention : NativeCSharpContextAction("Initialize members", serverHasIt = false, needsTypes = true) {
+class NativeCSharpInitializeMembersIntention : NativeCSharpContextAction("Initialize members", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val creation = NativeCSharpObjectInitializers.creationAt(file, editor.caretModel.offset) ?: return null
         val r = resolver(file)

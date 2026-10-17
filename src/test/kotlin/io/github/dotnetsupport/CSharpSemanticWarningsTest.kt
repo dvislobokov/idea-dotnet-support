@@ -4,13 +4,11 @@ import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.csharp.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticChecks
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpWarningContext
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * The compiler warnings and the errors of task D2 (CSHARP_PSI_MIGRATION.md): CS0162, CS0168 / CS0219, CS4014, the simple nullable ones,
@@ -18,19 +16,16 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * codes and spans are Roslyn's (`roslyndump semantics` of the same text).
  */
 class CSharpSemanticWarningsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var files = 0
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { CSharpUsingTypesTest.ASSEMBLIES }
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpWarningContext.setNullableForTests(null, set = false)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)

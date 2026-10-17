@@ -10,19 +10,16 @@ import com.intellij.openapi.actionSystem.IdeActions
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpCompletion
 import io.github.dotnetsupport.lang.NativeCSharpObjectInitializers
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * Object initializers and C# 11 `required` members (0.1.98, [NativeCSharpObjectInitializers]): CS9035 and its fix, `new T` completed with
  * the initializer, the fill rows and `Name = ` in an initializer, «Initialize members» — on the assemblies of src/test/resources/index.
  */
 class CSharpRequiredMembersTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var autocomplete = true
 
     override fun setUp() {
@@ -31,8 +28,6 @@ class CSharpRequiredMembersTest : BasePlatformTestCase() {
         // the initializer of `new T` is a live template (0.1.102)
         TemplateManagerImpl.setTemplateTesting(testRootDisposable)
         CSharpSemanticEnvironment.setAssembliesForTests { CSharpUsingTypesTest.ASSEMBLIES }
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
     }
@@ -40,7 +35,6 @@ class CSharpRequiredMembersTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

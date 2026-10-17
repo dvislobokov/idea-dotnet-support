@@ -55,9 +55,8 @@ object CSharpStructure {
 }
 
 /**
- * A declaration is a named PSI element, so the rename of the platform takes it for its own and ends in [CSharpDeclaration.setName]
- * ("needs a language server") even when a language server is there: the rename of the LSP client is registered last. Vetoed,
- * the rename of the platform steps aside and the one of the server is what Shift+F6 does. A declaration of the native tree is vetoed
+ * A declaration is a named PSI element, so the rename of the platform takes it for its own and ends in [CSharpDeclaration.setName],
+ * which renames nothing. Vetoed, the rename of the platform steps aside and the plugin's own ([NativeCSharpRenameHandler]) is what Shift+F6 does. A declaration of the native tree is vetoed
  * the same way: whatever [CSharpSyntaxModel] takes for a declaration.
  */
 class CSharpRenameVeto : Condition<PsiElement> {
@@ -81,7 +80,7 @@ class CSharpDeclaration(node: ASTNode) : ASTWrapperPsiElement(node), PsiNameIden
     override fun getName(): String? = info?.name
     override fun getNameIdentifier(): PsiElement? = info?.let { containingFile.findElementAt(it.nameRange.startOffset) }
     override fun getTextOffset(): Int = info?.nameRange?.startOffset ?: super.getTextOffset()
-    override fun setName(name: String): PsiElement = throw IncorrectOperationException("Renaming C# declarations needs a language server")
+    override fun setName(name: String): PsiElement = throw IncorrectOperationException("C# declarations are renamed by Shift+F6 on their name")
 
     /** The types around, without the namespace: `BaseShape`, `Outer.Inner`. */
     val containingTypes: String

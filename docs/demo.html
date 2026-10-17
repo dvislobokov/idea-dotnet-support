@@ -270,7 +270,7 @@ footer a { color: var(--text-2); }
   <div class="wrap">
     <div class="rise"><h3>Одна IDE на весь стек</h3><p>Сервисы на .NET рядом с фронтендом, Go и Python. Одни настройки, одни горячие клавиши, одно окно.</p></div>
     <div class="rise"><h3>Работает в бесплатной IDEA</h3><p>Все возможности, включая отладчик, доступны в IntelliJ IDEA Community.</p></div>
-    <div class="rise"><h3>Компилятор Microsoft внутри</h3><p>Ошибки и исправления даёт Roslyn: тот же компилятор, который собирает ваш код.</p></div>
+    <div class="rise"><h3>Свой анализ C#</h3><p>Ошибки с кодами компилятора Roslyn на тех же местах, что при сборке. Без отдельного сервера и без .NET 10.</p></div>
   </div>
 </section>
 
@@ -454,8 +454,8 @@ footer a { color: var(--text-2); }
         <table>
           <thead><tr><th>Область</th><th>Rider</th><th>C# Project Support</th></tr></thead>
           <tbody>
-            <tr><td>Анализ кода</td><td>Собственный движок ReSharper</td><td><span class="s part"></span>Компилятор и анализаторы Roslyn</td></tr>
-            <tr><td>Рефакторинги</td><td>Более 60</td><td><span class="s part"></span>Переименование и рефакторинги Roslyn</td></tr>
+            <tr><td>Анализ кода</td><td>Собственный движок ReSharper</td><td><span class="s part"></span>Свой анализ по правилам компилятора, анализаторы Roslyn</td></tr>
+            <tr><td>Рефакторинги</td><td>Более 60</td><td><span class="s part"></span>Переименование, Change Signature, Extract Method, Safe Delete и другие</td></tr>
             <tr><td>Навигация</td><td>Полная</td><td><span class="s ok"></span>Объявления, реализации, иерархии, код библиотек</td></tr>
             <tr><td>Отладчик</td><td>.NET, .NET Framework, Mono</td><td><span class="s part"></span>Современный .NET, без Hot Reload</td></tr>
             <tr><td>Расход памяти</td><td>Пометки в коде без измерения</td><td><span class="s part"></span>Измеренные значения у строк, по выборке</td></tr>
@@ -499,9 +499,9 @@ footer a { color: var(--text-2); }
   <div class="wrap">
     <h2>Три шага до первой строки кода</h2>
     <ol class="start">
-      <li class="rise"><h3>Установите инструменты</h3><p>Settings, .NET, .NET Tools. Нужны сервер языка и отладчик, остальное по желанию.</p></li>
+      <li class="rise"><h3>Установите инструменты</h3><p>Settings, .NET, .NET Tools. Нужен отладчик, остальное по желанию.</p></li>
       <li class="rise"><h3>Откройте папку с решением</h3><p>Панель проекта переключится на Solution. Если решений несколько, IDE спросит, какое загрузить.</p></li>
-      <li class="rise"><h3>Работайте</h3><p>Подсветка и подсказки доступны сразу, полный анализ включается после загрузки решения. Состояние видно в статус-баре.</p></li>
+      <li class="rise"><h3>Работайте</h3><p>Подсветка и подсказки доступны сразу, ошибки компилятора и навигация по библиотекам — после индексации решения.</p></li>
     </ol>
     <p style="margin-top:40px; color:var(--text-2); font-size:1rem">Меню, окна и каждый параметр настроек описаны в <a href="guide.html">документации</a>.</p>
     <p style="margin-top:10px; color:var(--text-3); font-size:.95rem">Обе страницы всегда под рукой: меню .NET, пункты Welcome to C# Project Support и Plugin Documentation.</p>

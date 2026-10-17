@@ -33,12 +33,6 @@ Playground.Editor
 14: Playground.Editor.ImportCompletion / Statements
 42: Playground.Editor.ImportCompletion / -
 
-## Go to Base: member at the line
-1: -
-14: ImportCompletion.Statements()
-16: ImportCompletion.Statements() (in body)
-42: -
-
 ## breakpoint lines
 15-16, 39-40
 

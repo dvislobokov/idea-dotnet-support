@@ -3,7 +3,7 @@ namespace Playground.Editor;
 /// <summary>
 /// Live check of 0.1.168: Alt+Enter on a field no constructor assigns, as Rider offers it — "Initialize field from constructor" and, with
 /// several such fields, "Initialize members from constructor". Put the caret where the marker says, press Alt+Enter, choose the item,
-/// compare with EXPECT, undo (Ctrl+Z). Nothing here is called, the file only has to compile. Context actions = Built-in (the default).
+/// compare with EXPECT, undo (Ctrl+Z). Nothing here is called, the file only has to compile.
 /// </summary>
 public class FieldActionsOne
 {

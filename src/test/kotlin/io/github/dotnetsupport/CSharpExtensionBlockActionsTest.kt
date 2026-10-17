@@ -4,9 +4,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.csharp.lang.CSharpLanguageLevel
 import io.github.dotnetsupport.csharp.lang.CSharpLanguageVersion
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * Extension methods into a C# 14 `extension` block (0.1.173, `NativeCSharpExtensionBlockActions.kt`): every method of the receiver
@@ -14,18 +12,15 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * a generic method or a class that cannot hold extension blocks.
  */
 class CSharpExtensionBlockActionsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var files = 0
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.CONTEXT_ACTIONS, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)

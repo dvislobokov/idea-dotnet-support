@@ -16,7 +16,6 @@ import io.github.dotnetsupport.lang.CSharpCompletionAutoPopup
 import io.github.dotnetsupport.lang.CSharpCreateFromUsage
 import io.github.dotnetsupport.lang.CSharpDeclarations
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpGenerator
 import io.github.dotnetsupport.lang.CSharpPostfixMembers
@@ -25,16 +24,15 @@ import io.github.dotnetsupport.lang.NativeCSharpCompletion
 import io.github.dotnetsupport.lang.NativeCSharpDocumentation
 import io.github.dotnetsupport.lang.NativeCSharpGenerateRunner
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpEditorSettings
+import io.github.dotnetsupport.settings.CSharpOptions
 
 /**
- * The options of Settings | .NET | Language Server obeyed by the plugin's own C# as by the server (rule of the user 2026-10-06): each one
- * on and off, on the native features, with the fixture assemblies of src/test/resources/index. The ones of Go to Class / Symbol and of the
+ * The options of Settings | .NET | C# Editor obeyed by the plugin's own C# (rule of the user 2026-10-06): each one on and off, on the native features, with the fixture assemblies of src/test/resources/index. The ones of Go to Class / Symbol and of the
  * decompiler are in `AssemblyGotoLibraryTest`, where the indexes of the libraries are set up.
  */
 class NativeServerOptionsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
+    private val settings get() = CSharpEditorSettings.getInstance()
     private var autocomplete = true
     private var files = 0
 
@@ -42,9 +40,6 @@ class NativeServerOptionsTest : BasePlatformTestCase() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { CSharpUsingTypesTest.ASSEMBLIES }
-        for (feature in listOf(CSharpFeature.COMPLETION, CSharpFeature.DOCUMENTATION, CSharpFeature.FORMATTING)) {
-            settings.setSource(feature, CSharpFeatureSource.NATIVE)
-        }
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
     }
@@ -55,7 +50,6 @@ class NativeServerOptionsTest : BasePlatformTestCase() {
             NativeCSharpGenerateRunner.setChooserForTests(null)
             DotNetFormattingSettings.getInstance(project).formatter = FormatterChoice.AUTO
             settings.state.options = mutableMapOf()
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
@@ -65,7 +59,7 @@ class NativeServerOptionsTest : BasePlatformTestCase() {
         }
     }
 
-    private fun set(section: String, value: String) = settings.setValue(RoslynOptions.option(section), value)
+    private fun set(section: String, value: String) = settings.setValue(CSharpOptions.option(section), value)
 
     private fun lookup(text: String): List<LookupElement> {
         myFixture.configureByText("Options${files++}.cs", text.trimIndent())

@@ -406,13 +406,13 @@ object NativeCSharpMemberEdits {
 }
 
 /** Alt+Enter on an auto-property: a private field and accessors over it (Rider: "To property with backing field"). */
-class NativeCSharpToBackingFieldIntention : NativeCSharpContextAction("To property with backing field", serverHasIt = true) {
+class NativeCSharpToBackingFieldIntention : NativeCSharpContextAction("To property with backing field") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpMemberEdits.propertyAt(file, editor.caretModel.offset)?.let { NativeCSharpMemberEdits.toBackingField(it, editor.document.charsSequence, NativeCSharpContextEdits.unit(file)) }
 }
 
 /** Alt+Enter on an auto-property, C# 14: accessors over `field` (Rider: "To property with 'field' keyword"). */
-class NativeCSharpToFieldKeywordIntention : NativeCSharpContextAction("To property with 'field' keyword", serverHasIt = true) {
+class NativeCSharpToFieldKeywordIntention : NativeCSharpContextAction("To property with 'field' keyword") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         if (!CSharpLanguageLevel.forFile(file).isFeatureEnabled(io.github.dotnetsupport.csharp.lang.CSharpFeature.FieldKeyword)) return null
         return NativeCSharpMemberEdits.propertyAt(file, editor.caretModel.offset)?.let { NativeCSharpMemberEdits.toFieldKeyword(it, editor.document.charsSequence, NativeCSharpContextEdits.unit(file)) }
@@ -420,19 +420,19 @@ class NativeCSharpToFieldKeywordIntention : NativeCSharpContextAction("To proper
 }
 
 /** Alt+Enter on an auto-property: an expression-bodied get-only property (Rider: "To computed property"). */
-class NativeCSharpToComputedPropertyIntention : NativeCSharpContextAction("To computed property", serverHasIt = true) {
+class NativeCSharpToComputedPropertyIntention : NativeCSharpContextAction("To computed property") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpMemberEdits.propertyAt(file, editor.caretModel.offset)?.let { NativeCSharpMemberEdits.toComputed(it, editor.document.charsSequence) }
 }
 
 /** Alt+Enter on a property over a private field used nowhere else: an auto-property, the field gone (Rider: "To auto-property"). */
-class NativeCSharpToAutoPropertyIntention : NativeCSharpContextAction("To auto-property", serverHasIt = true) {
+class NativeCSharpToAutoPropertyIntention : NativeCSharpContextAction("To auto-property") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpMemberEdits.propertyAt(file, editor.caretModel.offset)?.let { NativeCSharpMemberEdits.toAuto(it, editor.document.charsSequence) }
 }
 
 /** Alt+Enter on a field: a property over it (Rider: "Encapsulate field"). */
-class NativeCSharpEncapsulateFieldIntention : NativeCSharpContextAction("Encapsulate field", serverHasIt = true) {
+class NativeCSharpEncapsulateFieldIntention : NativeCSharpContextAction("Encapsulate field") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val (declaration, type) = NativeCSharpMemberEdits.fieldAt(file, editor.caretModel.offset) ?: return null
         return NativeCSharpMemberEdits.encapsulate(declaration, type, editor.document.charsSequence, NativeCSharpContextEdits.unit(file))
@@ -440,13 +440,13 @@ class NativeCSharpEncapsulateFieldIntention : NativeCSharpContextAction("Encapsu
 }
 
 /** Alt+Enter on a constructor: a static `Create` and the constructor private (Rider: "To factory method"). */
-class NativeCSharpToFactoryMethodIntention : NativeCSharpContextAction("To factory method", serverHasIt = true) {
+class NativeCSharpToFactoryMethodIntention : NativeCSharpContextAction("To factory method") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpMemberEdits.constructorAt(file, editor.caretModel.offset)?.let { NativeCSharpMemberEdits.toFactory(file, it, editor.document.charsSequence) }
 }
 
 /** Alt+Enter on a public member implementing one interface member: `void IRunner.Run()` (Rider: "To explicit implementation"). */
-class NativeCSharpToExplicitImplementationIntention : NativeCSharpContextAction("To explicit implementation", serverHasIt = true, needsTypes = true) {
+class NativeCSharpToExplicitImplementationIntention : NativeCSharpContextAction("To explicit implementation", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val member = NativeCSharpMemberEdits.implicitAt(file, editor.caretModel.offset) ?: return null
         val iface = NativeCSharpMemberEdits.interfaceOf(member, CSharpSemanticSession(file.project)) ?: return null
@@ -455,7 +455,7 @@ class NativeCSharpToExplicitImplementationIntention : NativeCSharpContextAction(
 }
 
 /** Alt+Enter on an explicit implementation: `public void Run()` (Rider: "To implicit implementation"). */
-class NativeCSharpToImplicitImplementationIntention : NativeCSharpContextAction("To implicit implementation", serverHasIt = true) {
+class NativeCSharpToImplicitImplementationIntention : NativeCSharpContextAction("To implicit implementation") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpMemberEdits.explicitAt(file, editor.caretModel.offset)?.let { NativeCSharpMemberEdits.toImplicit(it, editor.document.charsSequence) }
 }

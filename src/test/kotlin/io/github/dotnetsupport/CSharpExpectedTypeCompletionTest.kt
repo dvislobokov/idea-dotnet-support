@@ -15,13 +15,11 @@ import io.github.dotnetsupport.index.AssemblyDocs
 import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpCompletion
 import io.github.dotnetsupport.lang.NativeCSharpCompletionContributor
 import io.github.dotnetsupport.lang.NativeCSharpExpectedCompletion
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * COMPLETION by the expected type (0.1.88, [NativeCSharpExpectedCompletion]): members of initializers and property patterns, the members of an
@@ -29,7 +27,6 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * src/test/resources/index.
  */
 class CSharpExpectedTypeCompletionTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var autocomplete = true
     private var autocompleteSmart = true
 
@@ -37,24 +34,18 @@ class CSharpExpectedTypeCompletionTest : BasePlatformTestCase() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { ASSEMBLIES }
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         val code = CodeInsightSettings.getInstance()
         autocomplete = code.AUTOCOMPLETE_ON_CODE_COMPLETION
         autocompleteSmart = code.AUTOCOMPLETE_ON_SMART_TYPE_COMPLETION
         code.AUTOCOMPLETE_ON_CODE_COMPLETION = false
         code.AUTOCOMPLETE_ON_SMART_TYPE_COMPLETION = false
-        val plugin = PluginManagerCore.getPlugin(PluginId.getId("io.github.dotnetsupport"))!!
-        ApplicationManager.getApplication().extensionArea.getExtensionPoint(CompletionContributor.EP)
-            .registerExtension(CompletionContributorEP("C#", CSharpCompletionNativeTest.FakeServer::class.java.name, plugin), testRootDisposable)
     }
 
     override fun tearDown() {
         try {
-            CSharpCompletionNativeTest.FakeServer.items = emptyList()
             val code = CodeInsightSettings.getInstance()
             code.AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
             code.AUTOCOMPLETE_ON_SMART_TYPE_COMPLETION = autocompleteSmart
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

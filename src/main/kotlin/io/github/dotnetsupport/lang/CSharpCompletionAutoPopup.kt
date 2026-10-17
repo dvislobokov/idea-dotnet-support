@@ -11,7 +11,7 @@ import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpOptions
 
 /**
  * The list opens by itself with nothing typed where Rider opens it (COMPLETION_GAPS 2.10; Rider dumps 1, 10, 15, 23, 33, 36): after `#` at
@@ -41,7 +41,7 @@ class CSharpCompletionAutoPopup : TypedHandlerDelegate() {
         }
 
         /** `completion.dotnet_trigger_completion_in_argument_lists` of the server's page: off, `(` and `,` open nothing, as with the server. */
-        val inArgumentLists: Boolean get() = RoslynOptions.isOn("completion.dotnet_trigger_completion_in_argument_lists")
+        val inArgumentLists: Boolean get() = CSharpOptions.isOn("completion.dotnet_trigger_completion_in_argument_lists")
 
         /** After a method chosen with `(` ([CSharpCommitCharFilter]): when the caret ends in an argument where a lambda may go, the list opens. */
         fun afterCommit(editor: Editor) {

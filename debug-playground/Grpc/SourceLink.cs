@@ -6,7 +6,7 @@ namespace Playground.Grpc;
 
 /// <summary>
 /// Live check of Go to Declaration into the original sources of a library (0.1.116): the portable PDBs that Grpc.Net.* ship next to their dlls
-/// in the NuGet cache carry Source Link to raw.githubusercontent.com. The server off, Settings | .NET | Language Server → «Navigate to
+/// in the NuGet cache carry Source Link to raw.githubusercontent.com. Settings | .NET | C# Editor → «Navigate to
 /// Source Link and embedded sources» on (the default), the network reachable. Ctrl+Click on a name under a marker, check EXPECT.
 /// Journal: .NET | Plugin Logs, category «sourcelink».
 /// </summary>
@@ -35,7 +35,7 @@ public static class SourceLinkScenarios
     // no PDB …», and no more lines for this assembly on the next clicks.
     public static IHostBuilder Builder() => Host.CreateDefaultBuilder();
 
-    // TYPE:sourcelink-off — Settings | .NET | Language Server, uncheck «Navigate to Source Link and embedded sources», OK; Ctrl+Click on
+    // TYPE:sourcelink-off — Settings | .NET | C# Editor, uncheck «Navigate to Source Link and embedded sources», OK; Ctrl+Click on
     // `GzipCompressionProvider` in Gzip() above.
     // EXPECT: the decompiled view (or the metadata view), not the Source Link tab; check the option again — the Source Link tab is back at once
     // (from the cache on disk, no download).

@@ -15,8 +15,8 @@ import javax.swing.Icon
  * The semantic palette of C# identifiers, the keys of Rider (`ReSharper.CSHARP_*`, docs/rider-analysis/dumps/color-keys-csharp.txt) without
  * the `ReSharper.` prefix. [TYPE], [METHOD] and [MEMBER] are the coarse keys of the heuristics (`CSharpIdentifierAnnotator`), which knows no
  * more than that; every finer key falls back to one of them (or to a key of Language Defaults where Rider's does), so a scheme that has
- * only the three coarse ones, or none, still shows a file as before. Filled by the semantic tokens of the server (`RoslynPolicy`) and by
- * the plugin's own tree (`NativeCSharpSemanticColors`). The IDE's schemes get no colors from the plugin: where a kind has a Language
+ * only the three coarse ones, or none, still shows a file as before. Filled by the plugin's own tree
+ * (`NativeCSharpSemanticColors`). The IDE's schemes get no colors from the plugin: where a kind has a Language
  * Defaults key of its own (interface, static method and field, constant, metadata, function declaration) it falls back to it, so C# looks
  * like the other languages of the scheme and follows its edits. Rider's palette is the bundled scheme "Rider Dark" / "Rider Light"
  * (`colorSchemes/Rider*.xml`); since 0.1.97 Rider's and other themes' palettes also go on top of any scheme (`lang/palette`, C# keys only).

@@ -8,8 +8,8 @@ namespace Playground.Editor;
 
 /// <summary>
 /// Live check of completion inside strings (0.1.90): names and members in the holes of interpolated strings, format specifiers by the type
-/// of the value, regular expressions injected into the patterns of <see cref="Regex"/>. Server off (Settings | .NET | Language Server), the
-/// assemblies indexed. Type on the empty line under a marker (Ctrl+Space where the marker says so) and undo with Ctrl+Z. Compiles as it is.
+/// of the value, regular expressions injected into the patterns of <see cref="Regex"/>. Let the
+/// assemblies be indexed. Type on the empty line under a marker (Ctrl+Space where the marker says so) and undo with Ctrl+Z. Compiles as it is.
 /// </summary>
 public static partial class StringCompletion
 {

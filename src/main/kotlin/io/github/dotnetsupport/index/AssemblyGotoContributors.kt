@@ -12,7 +12,7 @@ import com.intellij.util.indexing.FindSymbolParameters
 import com.intellij.util.indexing.IdFilter
 import io.github.dotnetsupport.lang.CSharpIcons
 import io.github.dotnetsupport.lang.DeclarationKind
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpOptions
 import java.util.Collections
 import java.util.WeakHashMap
 import javax.swing.Icon
@@ -75,7 +75,7 @@ internal class AssemblyIndexNames private constructor(val typeNames: Array<Strin
  */
 abstract class AssemblyGotoContributor(private val members: Boolean) : ChooseByNameContributorEx, DumbAware {
     // `symbol_search.dotnet_search_reference_assemblies` of the server's page: off, the native side does not search the libraries either
-    private val enabled: Boolean get() = RoslynOptions.isOn("symbol_search.dotnet_search_reference_assemblies")
+    private val enabled: Boolean get() = CSharpOptions.isOn("symbol_search.dotnet_search_reference_assemblies")
 
     override fun processNames(processor: Processor<in String>, scope: GlobalSearchScope, filter: IdFilter?) {
         if (!scope.isSearchInLibraries || !enabled) return

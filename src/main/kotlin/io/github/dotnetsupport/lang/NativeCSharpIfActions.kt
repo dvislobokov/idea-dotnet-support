@@ -354,43 +354,43 @@ object NativeCSharpIfEdits {
 }
 
 /** Alt+Enter on `if`: the condition negated and the branches swapped; a trailing `if` without `else` becomes a guard (Rider: "Invert 'if'"). */
-class NativeCSharpInvertIfIntention : NativeCSharpContextAction("Invert 'if'", serverHasIt = true) {
+class NativeCSharpInvertIfIntention : NativeCSharpContextAction("Invert 'if'") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpIfEdits.ifAt(file, editor.caretModel.offset)?.let { NativeCSharpIfEdits.invert(it, editor.document.charsSequence, NativeCSharpContextEdits.unit(file)) }
 }
 
 /** Alt+Enter on a `?:`: the condition negated and the branches swapped (Rider: "Invert condition"). */
-class NativeCSharpInvertConditionIntention : NativeCSharpContextAction("Invert condition", serverHasIt = true) {
+class NativeCSharpInvertConditionIntention : NativeCSharpContextAction("Invert condition") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpIfEdits.conditionalAt(file, editor.caretModel.offset)?.let { NativeCSharpIfEdits.invertCondition(it, editor.document.charsSequence) }
 }
 
 /** Alt+Enter on an `if` whose only statement is another `if`: one `if` with `&&` (Rider: "Merge nested 'if' statements"). */
-class NativeCSharpMergeNestedIfIntention : NativeCSharpContextAction("Merge nested 'if' statements", serverHasIt = true) {
+class NativeCSharpMergeNestedIfIntention : NativeCSharpContextAction("Merge nested 'if' statements") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpIfEdits.ifAt(file, editor.caretModel.offset)?.let { NativeCSharpIfEdits.mergeNested(it, editor.document.charsSequence, NativeCSharpContextEdits.unit(file)) }
 }
 
 /** Alt+Enter on `if (a && b)`: `if (a) { if (b) … }` (Rider: "Split into two 'if's"). */
-class NativeCSharpSplitIfIntention : NativeCSharpContextAction("Split into two 'if's", serverHasIt = true) {
+class NativeCSharpSplitIfIntention : NativeCSharpContextAction("Split into two 'if's") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpIfEdits.ifAt(file, editor.caretModel.offset)?.let { NativeCSharpIfEdits.split(it, editor.document.charsSequence, NativeCSharpContextEdits.unit(file)) }
 }
 
 /** Alt+Enter on the trailing `if` of a body with a block of statements: `if (!c) return;` and the statements after it (Rider: "Convert to guard clause"). */
-class NativeCSharpToGuardClauseIntention : NativeCSharpContextAction("Convert to guard clause", serverHasIt = true) {
+class NativeCSharpToGuardClauseIntention : NativeCSharpContextAction("Convert to guard clause") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpIfEdits.ifAt(file, editor.caretModel.offset)?.let { NativeCSharpIfEdits.toGuardClause(it, editor.document.charsSequence, NativeCSharpContextEdits.unit(file)) }
 }
 
 /** Alt+Enter on `if` / `else` / a loop / `using` / `lock` with a single-statement body: the body in braces (Rider: "Add braces"). */
-class NativeCSharpAddBracesIntention : NativeCSharpContextAction("Add braces", serverHasIt = true) {
+class NativeCSharpAddBracesIntention : NativeCSharpContextAction("Add braces") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpIfEdits.bodyOwnerAt(file, editor.caretModel.offset)?.let { (owner, body) -> NativeCSharpIfEdits.addBraces(owner, body, editor.document.charsSequence, NativeCSharpContextEdits.unit(file)) }
 }
 
 /** Alt+Enter on `if` / `else` / a loop / `using` / `lock` whose block holds one statement: the statement alone (Rider: "Remove braces"). */
-class NativeCSharpRemoveBracesIntention : NativeCSharpContextAction("Remove braces", serverHasIt = true) {
+class NativeCSharpRemoveBracesIntention : NativeCSharpContextAction("Remove braces") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpIfEdits.bodyOwnerAt(file, editor.caretModel.offset)?.let { (owner, body) -> NativeCSharpIfEdits.removeBraces(owner, body, editor.document.charsSequence, NativeCSharpContextEdits.unit(file)) }
 }

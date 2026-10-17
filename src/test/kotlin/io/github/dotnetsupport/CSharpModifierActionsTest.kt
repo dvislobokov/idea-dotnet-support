@@ -3,28 +3,22 @@ package io.github.dotnetsupport
 import com.intellij.codeInsight.intention.IntentionActionWithOptions
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * The modifiers from a header (0.1.171, `NativeCSharpModifierActions.kt`), as Rider on Jellyfin: "To private" on a public member,
  * "To internal" on a public top-level type, the others in the submenu; "To virtual", "To abstract", "Make partial"; where none is offered.
  */
 class CSharpModifierActionsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var files = 0
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.CONTEXT_ACTIONS, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
-            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)

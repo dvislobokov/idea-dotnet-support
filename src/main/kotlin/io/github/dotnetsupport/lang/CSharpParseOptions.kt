@@ -59,7 +59,7 @@ class CSharpParseOptions(private val project: Project) : Disposable {
      * would otherwise start over at every save.
      */
     fun refresh(files: Collection<VirtualFile>?) {
-        if (project.isDisposed || ApplicationManager.getApplication().isUnitTestMode && !CSharpSyntaxTreeSwitch.reactInTests) return
+        if (project.isDisposed || ApplicationManager.getApplication().isUnitTestMode && !reactInTests) return
         val done: MutableSet<VirtualFile> = ConcurrentHashMap.newKeySet()
         var task = ReadAction.nonBlocking(Callable { fill(files ?: allFiles(), done) }).expireWith(this)
         if (files == null) task = task.inSmartMode(project).coalesceBy(this)
@@ -155,6 +155,10 @@ class CSharpParseOptions(private val project: Project) : Disposable {
     }
 
     companion object {
+        /** In unit tests the background refresh is off unless a test asks: it would reparse the files the other tests share. */
+        @Volatile
+        var reactInTests: Boolean = false
+
         private val CONDITIONAL = Regex("""^\s*#\s*(if|elif)\b""", RegexOption.MULTILINE)
 
         fun getInstance(project: Project): CSharpParseOptions = project.service()

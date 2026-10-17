@@ -155,7 +155,7 @@ footer a { color: var(--text-2); }
 <li><a href="#memory">Расход памяти</a>
 </li>
 <li><a href="#settings">Настройки</a>
-<ul><li><a href="#settings-dotnet">.NET</a></li><li><a href="#settings-build">Инструменты и сборка</a></li><li><a href="#settings-nuget">NuGet</a></li><li><a href="#settings-coverage">Покрытие</a></li><li><a href="#settings-debugger">Отладчик</a></li><li><a href="#settings-analysis">Анализаторы и генераторы</a></li><li><a href="#settings-server">Сервер языка</a></li><li><a href="#settings-style">Стиль кода C#</a></li></ul>
+<ul><li><a href="#settings-dotnet">.NET</a></li><li><a href="#settings-build">Инструменты и сборка</a></li><li><a href="#settings-nuget">NuGet</a></li><li><a href="#settings-coverage">Покрытие</a></li><li><a href="#settings-debugger">Отладчик</a></li><li><a href="#settings-analysis">Анализаторы и генераторы</a></li><li><a href="#settings-csharp">Редактор C#</a></li><li><a href="#settings-style">Стиль кода C#</a></li></ul>
 </li>
 <li><a href="#files">Где что хранится</a>
 </li>
@@ -172,19 +172,16 @@ footer a { color: var(--text-2); }
 <ul>
   <li>IDE на платформе IntelliJ версии 2026.1 или новее: IntelliJ IDEA (включая Community), GoLand, PyCharm, WebStorm.</li>
   <li>Пакет SDK .NET. Для подсказок по библиотекам и для измерения расхода памяти нужен SDK 8 или новее.</li>
-  <li>Два инструмента .NET: <code>roslyn-language-server</code>, <code>dotnet-debugger-dap</code>. Остальные ставятся по мере надобности.</li>
+  <li>Отладчик .NET: <code>dotnet-debugger-dap</code>. Остальные инструменты ставятся по мере надобности.</li>
 </ul>
 <h3>Первые шаги</h3>
 <ol>
   <li><b>Установите инструменты.</b> Откройте <b>Settings | .NET</b>, раздел «Инструменты .NET», и нажмите «Установить» у нужных инструментов.</li>
   <li><b>Откройте папку с решением.</b> Именно папку, а не файл решения. Окно Project переключится на вид Solution.</li>
-  <li><b>Выберите решение, если их несколько.</b> IDE спросит, какое загрузить. Позже выбор меняется щелчком на значке сервера в статус-баре.</li>
-  <li><b>Дождитесь загрузки.</b> Значок сервера C# в статус-баре показывает состояние. Подсветка, структура и серое продолжение строки работают сразу,
-      ошибки компилятора и рефакторинги — после загрузки решения.</li>
+  <li><b>Выберите решение, если их несколько.</b> IDE спросит, какое показать в виде Solution.</li>
+  <li><b>Дождитесь индексации.</b> Подсветка, структура и серое продолжение строки работают сразу; ошибки компилятора, навигация
+      и рефакторинги — когда IDE проиндексирует решение и сборки библиотек.</li>
 </ol>
-<h3>Значок сервера в статус-баре</h3>
-<p>Виден, пока открыт проект. По щелчку показывает состояние сервера, загрузку процессора и занятую память, и даёт действия:
-   Restart, Select Solution, Log, Timings, Settings.</p>
 </section>
 
 <section id="menu">
@@ -308,7 +305,6 @@ footer a { color: var(--text-2); }
 <h4>Инструменты .NET <small lang="en">.NET Tools</small></h4>
 <p>Глобальные инструменты, которые запускает плагин. Пустой путь: инструмент ищется в PATH и в ~/.dotnet/tools. Кнопки «Установить» и «Обновить» выполняют 'dotnet tool update --global'.</p>
 <div class="table"><table><thead><tr><th>Инструмент</th><th>Для чего нужен</th></tr></thead><tbody>
-<tr><td><code>roslyn-language-server</code></td><td>Сервер языка C# (Roslyn): Settings | .NET | Language Server</td></tr>
 <tr><td><code>dotnet-debugger-dap</code></td><td>Отладка: адаптер отладки (DAP), который стоит за кнопкой Debug</td></tr>
 <tr><td><code>csharpier</code></td><td>Reformat Code через CSharpier</td></tr>
 <tr><td><code>dotnet-ef</code></td><td>EF Core: миграции и команды базы данных</td></tr>
@@ -322,7 +318,7 @@ footer a { color: var(--text-2); }
 <div class="table"><table>
 <thead><tr><th>Параметр</th><th>По умолчанию</th><th>Что делает</th></tr></thead>
 <tbody>
-<tr><td><b>Форматтер</b><small lang="en">Formatter</small></td><td>Авто</td><td>Работает за Reformat Code и за «Reformat code» в Actions on Save для файлов C#. Хранится вместе с проектом: команда форматирует одинаково. Встроенный: правила пробелов dotnet format по .editorconfig, считаются в самой IDE на лету \u2014 Reformat Code, выделение, Auto-Indent Lines, вставка, без запуска процесса. dotnet format: только файлы целиком, поэтому работает по Reformat Code и при сохранении (включите «Reformat code» в Actions on Save); около секунды на файл, мгновенно с сервером языка. Авто: CSharpier, если он используется в репозитории (.csharpierrc или манифест инструментов), иначе встроенный или dotnet format \u2014 как выбрано «Formatting» на странице Language Server. CSharpier форматирует только файлы целиком. Варианты: «Авто», «CSharpier», «dotnet format (при сохранении)», «Нет».</td></tr>
+<tr><td><b>Форматтер</b><small lang="en">Formatter</small></td><td>Авто</td><td>Работает за Reformat Code и за «Reformat code» в Actions on Save для файлов C#. Хранится вместе с проектом: команда форматирует одинаково. Встроенный: правила пробелов dotnet format по .editorconfig, считаются в самой IDE на лету \u2014 Reformat Code, выделение, Auto-Indent Lines, вставка, без запуска процесса. dotnet format: только файлы целиком, поэтому работает по Reformat Code и при сохранении (включите «Reformat code» в Actions on Save); около секунды на файл. Авто: CSharpier, если он используется в репозитории (.csharpierrc или манифест инструментов), иначе встроенный. CSharpier форматирует только файлы целиком. Варианты: «Авто», «CSharpier», «dotnet format (при сохранении)», «Нет».</td></tr>
 </tbody>
 </table></div>
 <h4>Данные плагина <small lang="en">Plugin Data</small></h4>
@@ -464,44 +460,15 @@ footer a { color: var(--text-2); }
 <tr><td><b>Останавливать помощника после минут без запросов</b><small lang="en">Stop the helper after minutes without requests</small></td><td>10</td><td>Один помощник на решение (CodeAnalysisHelper, собирается SDK этой машины); при следующем запросе запускается снова.</td></tr>
 </tbody>
 </table></div>
-<h3 id="settings-server">Сервер языка <small lang="en">Language Server</small></h3>
-<p class="path">Settings | .NET | Language Server</p>
-<p><code>roslyn-language-server</code> — сервер языка C# на основе Roslyn: ошибки компилятора, автодополнение, навигация, рефакторинги. По умолчанию выключен: без него отвечает своя модель кода C# плагина. Включённый, запускается, когда открыт файл C#. Изменение параметров группы «Сервер» перезапускает сервер, остальные применяются на лету.</p>
-<div class="table"><table>
-<thead><tr><th>Параметр</th><th>По умолчанию</th><th>Что делает</th></tr></thead>
-<tbody>
-<tr><td><b>Использовать сервер языка для C#</b><small lang="en">Use the language server for C#</small></td><td>включено</td><td>Выключено: сервер не запускается, редактор работает на собственных эвристиках плагина — без ошибок компилятора и рефакторингов.</td></tr>
-</tbody>
-</table></div>
-<h4>Сервер <small lang="en">Server</small></h4>
-<div class="table"><table>
-<thead><tr><th>Параметр</th><th>По умолчанию</th><th>Что делает</th></tr></thead>
-<tbody>
-<tr><td><b>Исполняемый файл</b><small lang="en">Executable</small></td><td></td><td>Инструмент <code>roslyn-language-server</code> на родительской странице, .NET.</td></tr>
-<tr><td><b>Уровень журнала</b><small lang="en">Log level</small></td><td>Information</td><td><code>--logLevel</code>. Для разбора неполадок — Debug или Trace.</td></tr>
-<tr><td><b>Папка журналов</b><small lang="en">Log folder</small></td><td><code>~/idea-dotnet-logs/roslyn-language-server</code></td><td><code>--extensionLogDirectory</code>.</td></tr>
-<tr><td><b>Разрешить серверу самому искать проекты в папке без решения</b><small lang="en">Let the server find the projects of a folder without a solution</small></td><td>включено</td><td><code>--autoLoadProjects</code>. Решение всегда открывает плагин; из нескольких решений — выбранное в .NET | Select Solution for Language Server</td></tr>
-<tr><td><b>Не больше</b><small lang="en">At most</small></td><td>0</td><td>Сколько проектов сервер загружает сам. 0 — предел, который рекомендует сервер.</td></tr>
-<tr><td><b>Запуск генераторов исходного кода</b><small lang="en">Run source generators</small></td><td>Automatic</td><td><code>--sourceGeneratorExecutionPreference</code>. Automatic: при каждом изменении; Balanced: при сохранении и при сборке</td></tr>
-<tr><td><b>Дополнительные аргументы</b><small lang="en">Additional arguments</small></td><td>пусто</td><td>Добавляются к командной строке; <code>--stdio</code> и <code>--clientProcessId</code> передаются всегда</td></tr>
-</tbody>
-</table></div>
+<h3 id="settings-csharp">Редактор C# <small lang="en">C# Editor</small></h3>
+<p class="path">Settings | .NET | C# Editor</p>
+<p>Что делают анализ, автодополнение, навигация, Code Vision, подсказки в коде и генерация кода плагина. Параметры применяются на лету: открытые редакторы перерисовываются сразу после Apply.</p>
 <h4>Анализ <small lang="en">Analysis</small></h4>
 <div class="table"><table>
 <thead><tr><th>Параметр</th><th>По умолчанию</th><th>Что делает</th></tr></thead>
 <tbody>
 <tr><td><b>Диагностика компилятора для</b><small lang="en">Compiler diagnostics for</small></td><td><code>fullSolution</code></td><td>Значения: <code>openFiles</code>, <code>fullSolution</code>, <code>none</code>.</td></tr>
 <tr><td><b>Диагностика анализаторов для</b><small lang="en">Analyzer diagnostics for</small></td><td><code>fullSolution</code></td><td>«fullSolution» анализирует в фоне каждый файл решения: точно, но тяжело для большого решения Значения: <code>openFiles</code>, <code>fullSolution</code>, <code>none</code>.</td></tr>
-</tbody>
-</table></div>
-<h4>Проекты <small lang="en">Projects</small></h4>
-<div class="table"><table>
-<thead><tr><th>Параметр</th><th>По умолчанию</th><th>Что делает</th></tr></thead>
-<tbody>
-<tr><td><b>Восстанавливать пакеты NuGet, когда это нужно проекту</b><small lang="en">Restore NuGet packages when a project needs it</small></td><td>включено</td><td></td></tr>
-<tr><td><b>Поддерживать программы из одного файла (файл .cs, запускаемый через 'dotnet run file.cs')</b><small lang="en">Support file-based programs (a .cs file run with 'dotnet run file.cs')</small></td><td>выключено</td><td>Включено: новый файл .cs проекта анализируется сам по себе, пока его вкладку не откроют заново</td></tr>
-<tr><td><b>Считать отдельный файл .cs программой из одного файла, когда неясно, чей он</b><small lang="en">Treat a loose .cs file as a file-based program when it is ambiguous</small></td><td>выключено</td><td></td></tr>
-<tr><td><b>Папка двоичных журналов MSBuild при загрузке проектов</b><small lang="en">Folder for MSBuild binary logs of project loading</small></td><td>пусто</td><td>Пусто: двоичные журналы не пишутся</td></tr>
 </tbody>
 </table></div>
 <h4>Автодополнение <small lang="en">Completion</small></h4>
@@ -569,8 +536,6 @@ footer a { color: var(--text-2); }
 <tr><td><b>Создаваемые свойства</b><small lang="en">Generated properties</small></td><td><code>prefer_throwing_properties</code></td><td>Значения: <code>prefer_throwing_properties</code>, <code>prefer_auto_properties</code>.</td></tr>
 </tbody>
 </table></div>
-<h4>Прочие параметры сервера <small lang="en">Other Settings of the Server</small></h4>
-<p>По строке <code>раздел = значение</code>, с именами, как их называет сервер, например <code>completion.dotnet_trigger_completion_on_deletion = true</code>; они важнее параметров выше.</p>
 <h3 id="settings-style">Стиль кода C# <small lang="en">Code Style | C#</small></h3>
 <p class="path">Settings | Editor | Code Style | C#</p>
 <p>Отступы, с которыми редактор набирает код: по умолчанию четыре пробела. Если в репозитории есть <code>.editorconfig</code>, значения <code>indent_style</code> и <code>indent_size</code> из него важнее. Остальное оформление кода задаёт форматтер: CSharpier или <code>dotnet format</code> по правилам <code>.editorconfig</code>.</p>
@@ -582,8 +547,8 @@ footer a { color: var(--text-2); }
 <tr><td>Настройки плагина на этой машине</td><td>Файл <code>dotnet-support.xml</code> в папке настроек IDE.</td></tr>
 <tr><td>Форматтер проекта</td><td><code>.idea/dotnet.xml</code>. Файл можно хранить в репозитории, чтобы команда форматировала одинаково.</td></tr>
 <tr><td>Параметры сборки проекта</td><td>Рабочие файлы проекта в <code>.idea</code>; в репозиторий не попадают.</td></tr>
-<tr><td>Журналы</td><td><code>~/idea-dotnet-logs</code>: журнал плагина (<code>plugin</code>), команды <code>dotnet</code> с выводом (<code>commands</code>), журналы сборки, отладчика и сервера языка. Старше двух недель удаляются.</td></tr>
-<tr><td>Кэши</td><td>Папка <code>dotnet-support</code> в системной папке IDE: индекс библиотек, вспомогательные программы, кэш ответов сервера. Удаление безопасно: всё создаётся заново.</td></tr>
+<tr><td>Журналы</td><td><code>~/idea-dotnet-logs</code>: журнал плагина (<code>plugin</code>), команды <code>dotnet</code> с выводом (<code>commands</code>), журналы сборки и отладчика. Старше двух недель удаляются.</td></tr>
+<tr><td>Кэши</td><td>Папка <code>dotnet-support</code> в системной папке IDE: индекс библиотек, вспомогательные программы. Удаление безопасно: всё создаётся заново.</td></tr>
 <tr><td>Рядом с вашими проектами</td><td>Плагин ничего не создаёт, кроме стандартной папки <code>.idea</code>.</td></tr>
 </tbody></table></div>
 </section>
@@ -591,8 +556,8 @@ footer a { color: var(--text-2); }
 <section id="trouble">
 <h2>Если что-то не работает</h2>
 <div class="table"><table><thead><tr><th>Что видно</th><th>Что сделать</th></tr></thead><tbody>
-<tr><td>Нет ошибок компилятора и рефакторингов</td><td>Проверьте значок сервера в статус-баре. Если сервер не найден, установите <code>roslyn-language-server</code> на странице <a href="#settings-dotnet">.NET</a>. Если он завис, выберите Restart.</td></tr>
-<tr><td>Загружено не то решение</td><td>Щёлкните значок сервера и выберите Select Solution.</td></tr>
+<tr><td>Нет ошибок компилятора и подсказок по библиотекам</td><td>Дождитесь конца индексации. Если типов библиотек всё равно нет, восстановите пакеты (<b>.NET | Restore</b>) и проверьте, что установлен SDK 8 или новее: им собирается индексатор сборок.</td></tr>
+<tr><td>Показано не то решение</td><td><b>.NET | Reload Solution</b>: IDE спросит заново, если решений в папке несколько.</td></tr>
 <tr><td>Новый файл или папка не видны в дереве</td><td><b>.NET | Reload Solution</b> или Reload Project в контекстном меню проекта.</td></tr>
 <tr><td>Кнопка Debug не запускает отладку</td><td>Установите <code>dotnet-debugger-dap</code> на странице <a href="#settings-dotnet">.NET</a>.</td></tr>
 <tr><td>Сборка не находит SDK</td><td>Откройте <b>.NET | .NET on This Machine...</b>: там видно, какой SDK требует <code>global.json</code> и установлен ли он.</td></tr>
@@ -600,7 +565,7 @@ footer a { color: var(--text-2); }
 <tr><td>Нет значений расхода памяти</td><td>Проверьте, что пункт Show Allocations in Editor отмечен, решение собрано, а приложение запущено из IDE. Причина неудачи показывается уведомлением.</td></tr>
 </tbody></table></div>
 <p>Если причина не нашлась, откройте <b>.NET | Plugin Logs</b>: это журнал плагина — что он запускал, что вернулось, что не удалось и почему,
-по строке на событие (время, уровень, категория: <code>dotnet</code>, <code>roslyn</code>, <code>debugger</code>, <code>nuget</code>…), без записей самой IDE.
+по строке на событие (время, уровень, категория: <code>dotnet</code>, <code>msbuild</code>, <code>debugger</code>, <code>nuget</code>…), без записей самой IDE.
 Кнопка «Warnings and Errors Only» оставляет только проблемы. Тот же журнал лежит в <code>~/idea-dotnet-logs/plugin</code>; <b>.NET | Open Logs Folder</b>
 открывает папку, которую можно целиком приложить к сообщению об ошибке.</p>
 </section>

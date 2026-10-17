@@ -18,10 +18,8 @@ import io.github.dotnetsupport.csharp.lang.lexer.CSharpTokenTypes as NativeCShar
 
 /**
  * Which tree a C# file gets (CSHARP_PSI_MIGRATION.md, step 7): the heuristic one of the plugin ([HeuristicCSharpParserDefinition]) or
- * csharp-psi's port of Roslyn's parser (`io.github.dotnetsupport.csharp.lang.CSharpParserDefinition`). The switch is
- * [CSharpFeature.SYNTAX_TREE], application settings only (a parser definition has no project), by the rule of [CSharpFeatures.native]:
- * the heuristic tree by default, the native one when chosen or when the language server is off. A change of the answer rebuilds the
- * PSI of C# files ([CSharpSyntaxTreeSwitch]).
+ * csharp-psi's port of Roslyn's parser (`io.github.dotnetsupport.csharp.lang.CSharpParserDefinition`). The native one,
+ * always since 0.1.262 ([CSharpFeature.SYNTAX_TREE] needs no index); the heuristic one is for the tests that force it.
  */
 object CSharpSyntaxTrees {
     @Volatile

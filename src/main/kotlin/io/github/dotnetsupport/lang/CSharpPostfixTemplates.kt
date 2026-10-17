@@ -22,7 +22,6 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import io.github.dotnetsupport.lang.semantic.CSharpPostfixFacts
 import io.github.dotnetsupport.lang.semantic.NamedType
-import io.github.dotnetsupport.lsp.RoslynServerStatus
 
 /**
  * Postfix templates of C# (`person.if`, `list.foreach`, `Load().await`, `x.return`...), Rider's list (jetbrains.com/help/rider/Postfix_Templates,
@@ -142,7 +141,6 @@ class CSharpPostfixTemplate(
         }
         if (awaits) {
             val psi = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return
-            if (!CSharpFeatures.native(CSharpFeature.COMPLETION, psi) && RoslynServerStatus.isReady(project, psi.virtualFile)) return
             NativeCSharpCommonCalls.makeAsyncAt(psi, start, editor)
         }
     }

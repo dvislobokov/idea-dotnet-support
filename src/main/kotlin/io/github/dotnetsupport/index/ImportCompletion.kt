@@ -308,7 +308,7 @@ class ImportItem(val type: IndexedType, val name: String, val overloads: List<In
 object ImportCompletion {
     const val MIN_PREFIX = 3
     const val MAX_ITEMS = 40
-    /** Of a type that is not imported: under the keywords, as the items of unimported namespaces of the server (`RoslynCompletionPolicy.UNIMPORTED`). */
+    /** Of a type that is not imported: under the keywords, as Roslyn ranks the items of unimported namespaces. */
     const val PRIORITY = -5.0
     /**
      * Its namespace is imported after all: above the members of unimported namespaces, under the keywords (0.1.169: `Thro` listed

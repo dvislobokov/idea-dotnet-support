@@ -23,20 +23,19 @@ class PlatformApiProbeTest : BasePlatformTestCase() {
         assertEquals(listOf("gone/1", "plain/3"), PlatformApiProbe.missingMembers(Sample::class.java, listOf("plain/0", "gone/1", "field", "plain/3")))
     }
 
-    fun testExpectedFileCoversBothModules() {
+    fun testExpectedFileCoversTheDapModule() {
         val areas = PlatformApiProbe.expected().getAsJsonObject("areas")
-        assertEquals(setOf("lsp", "dap"), areas.keySet())
+        assertEquals(setOf("dap"), areas.keySet())
         val dap = areas.getAsJsonObject("dap")
         assertTrue(dap.getAsJsonArray("extensionPoints").any { it.asJsonObject.get("name").asString == "com.intellij.platform.dap.debugAdapterSupportProvider" })
         assertTrue("createXDebugProcess" in dap.getAsJsonObject("classes").getAsJsonObject("com.intellij.platform.dap.DebugAdapterDescriptor").getAsJsonArray("members").toString())
-        assertTrue(areas.getAsJsonObject("lsp").getAsJsonObject("classes").has("com.intellij.platform.lsp.api.LspClientDescriptor"))
     }
 
     /** Whatever the test IDE has, the probe answers for every expected item and never throws. */
     fun testProbeRunsHere() {
         val report = PlatformApiProbe.run(project)
         val expected = PlatformApiProbe.expected().getAsJsonObject("areas")
-        for (area in listOf("lsp", "dap")) {
+        for (area in listOf("dap")) {
             assertEquals(expected.getAsJsonObject(area).getAsJsonObject("classes").size(), report.of(area, PlatformApiProbe.CLASS).size)
             assertTrue(report.of(area, PlatformApiProbe.EXTENSION_POINT).isNotEmpty())
         }
@@ -50,7 +49,7 @@ class PlatformApiProbeTest : BasePlatformTestCase() {
 
     /**
      * The debugger is the plugin's own DAP client on XDebugger and needs no module of the platform: IntelliJ IDEA Community and its forks
-     * (GIGA IDE) have no DAP module at all. What needs the LSP module of the platform is still a content module of its own.
+     * (GIGA IDE) have no DAP module at all; the client of the C# language server, which needed the LSP module, is gone (0.1.262).
      */
     fun testDebuggerNeedsNoModuleOfThePlatform() {
         val pluginXml = javaClass.getResource("/META-INF/plugin.xml")!!.readText()
@@ -58,12 +57,8 @@ class PlatformApiProbeTest : BasePlatformTestCase() {
         assertFalse("io.github.dotnetsupport.dap" in pluginXml)
         assertNull(javaClass.getResource("/io.github.dotnetsupport.dap.xml"))
         assertTrue("io.github.dotnetsupport.debugger.DotNetDebugRunner" in pluginXml)
-        // the descriptor the tests see went through patchPluginXml, which reformats it
-        assertTrue(Regex("""<module name="io\.github\.dotnetsupport\.roslyn"\s*/>""").containsMatchIn(pluginXml))
-        val module = javaClass.getResource("/io.github.dotnetsupport.roslyn.xml")!!.readText()
-        assertTrue(Regex("""<module name="intellij\.platform\.lsp\.impl"\s*/>""").containsMatchIn(module))
-        // every class the module registers is in its package
-        Regex("(?:implementation|class)=\"(io\\.github[^\"]+)\"").findAll(module).forEach { assertTrue(it.groupValues[1], it.groupValues[1].startsWith("io.github.dotnetsupport.roslyn.")) }
+        assertFalse("io.github.dotnetsupport.roslyn" in pluginXml)
+        assertFalse("intellij.platform.lsp" in pluginXml)
     }
 
     fun testJsonIsCompact() {

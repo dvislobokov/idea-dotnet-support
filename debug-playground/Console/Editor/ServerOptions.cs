@@ -6,8 +6,8 @@ using System.Text.RegularExpressions;
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of the options of Settings | .NET | Language Server on the plugin's own C# (the server off, every feature Built-in):
-/// each option works for the built-in features as for the server. For every marker: toggle the named option (Apply), do what the
+/// Live check of the options of Settings | .NET | C# Editor on the plugin's own C#.
+/// For every marker: toggle the named option (Apply), do what the
 /// comment says on the empty line under it, check EXPECT, undo (Ctrl+Z) and put the option back.
 /// </summary>
 public class ServerOptions

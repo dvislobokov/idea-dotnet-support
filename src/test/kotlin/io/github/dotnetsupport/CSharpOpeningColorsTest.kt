@@ -12,33 +12,27 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.openapi.application.impl.NonBlockingReadActionImpl
 import io.github.dotnetsupport.lang.CSharpColors
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpOpeningColors
 import io.github.dotnetsupport.lang.CSharpSyntaxHighlighter
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpSemanticColors
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * The colors painted as a C# editor opens (0.1.84, [CSharpOpeningColors]): they are what the annotators paint, the remembered ones are for
  * the same text only, and the layer gives way to the daemon.
  */
 class CSharpOpeningColorsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.NATIVE)
         CSharpOpeningColors.forgetAll()
     }
 
     override fun tearDown() {
         try {
             CSharpOpeningColors.forgetAll()
-            settings.state.features = mutableMapOf()
-            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -99,16 +93,6 @@ class CSharpOpeningColorsTest : BasePlatformTestCase() {
         // the semantic part is cached on the file: the pass of the daemon after the opening colors does not compute it again
         val file = myFixture.file as CSharpFile
         assertSame(ReadAction.compute<Any, RuntimeException> { NativeCSharpSemanticColors.colors(file) }, ReadAction.compute<Any, RuntimeException> { NativeCSharpSemanticColors.colors(file) })
-    }
-
-    fun testTheHeuristicColorsWhenTheNativeOnesDoNotServe() {
-        settings.state.enabled = true
-        settings.setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.ROSLYN)
-        myFixture.configureByText("OpeningHeuristic.cs", code)
-        val text = myFixture.editor.document.immutableCharSequence
-        val computed = show(computed(), text)
-        assertEquals(show(daemonColors(), text), computed)
-        assertTrue(computed.toString(), computed.any { it.endsWith(" Describe:${CSharpColors.METHOD.externalName}") })
     }
 
     fun testRememberedColorsAreForTheSameTextOnly() {

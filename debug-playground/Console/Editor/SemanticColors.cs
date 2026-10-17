@@ -5,9 +5,8 @@ namespace Playground.Editor;
 
 /// <summary>
 /// Live check of the colors of identifiers (Settings | Editor | Color Scheme | C#, the keys of Rider). Nothing is typed here: look at the names
-/// a <c>// TYPE:colors-*</c> comment points at and compare with EXPECT (colors of Darcula / Islands Dark; the light scheme has darker ones). Two modes:
-/// Settings | .NET | Language Server → Source of Features → «Colors of identifiers» = Built-in (the plugin's own tree and stubs) or
-/// Language server (semantic tokens of the server). Since 0.1.56 Built-in also colors types and members of the referenced assemblies
+/// a <c>// TYPE:colors-*</c> comment points at and compare with EXPECT (colors of Darcula / Islands Dark; the light scheme has darker ones). The
+/// colors come from the plugin's own tree and stubs; since 0.1.56 also for types and members of the referenced assemblies
 /// (`Console`, `WriteLine`; more in LibraryNames.cs); a name it cannot resolve where only a type can stand gets the plain type color. The robot prints the keys:
 /// <c>tools/ui-robot/scripts/highlight_keys.js</c>. The other part of the partial class and the base class are in SemanticColorsPart.cs.
 /// </summary>
@@ -34,7 +33,7 @@ public partial class ColorOrder(string customer) : ColorBase, IColorShape
     {
         // TYPE:colors-locals — EXPECT: `builder` plain (local), `total` UNDERLINED at every occurrence (written again: `+=`, `++`),
         // `repeat` and `format` plain (parameters), `TFormat` violet (type parameter), `Indent` green (local function, also above its
-        // declaration), `line` plain (foreach variable), `again` (label) plain; Built-in = Language server here
+        // declaration), `line` plain (foreach variable), `again` (label) plain
         var builder = new StringBuilder();
         int total = 0;
         foreach (var line in _lines) total += line.Qty;
@@ -51,7 +50,7 @@ public partial class ColorOrder(string customer) : ColorBase, IColorShape
     {
         // TYPE:colors-members — EXPECT: `_created` / `Tick` / `_ticks` (the last two from ColorBase in the other file), `Reset` and `Count`
         // (the other part of the partial class ColorRegistry, through `using static`), `Changed` pink, `Title` cyan, `ColorKind.Small`:
-        // violet + cyan bold; `this.Title` cyan; `customer` plain (primary constructor parameter) — all colored also in Built-in, where
+        // violet + cyan bold; `this.Title` cyan; `customer` plain (primary constructor parameter);
         // `Console` (class) and `WriteLine` (static method) colored too since 0.1.56 (the plugin indexes the referenced assemblies)
         _created++;
         Tick();

@@ -7,11 +7,9 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.SyntaxTraverser
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpGotoDeclarationHandler
 import io.github.dotnetsupport.lang.CSharpHighlightUsagesHandlerFactory
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * NAVIGATION on the native tree (CSHARP_PSI_MIGRATION.md, step 9, task A2): Go to Declaration / Ctrl + hover and the usages under the caret
@@ -19,19 +17,15 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * `/*D:tag*/` right before the declared name; no `/*D:tag*/` means "not resolved", left to the server.
  */
 class CSharpNavigationNativeTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var dirs = 0
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.NAVIGATION, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
-            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -380,13 +374,6 @@ class CSharpNavigationNativeTest : BasePlatformTestCase() {
         val file = addFiles(arrayOf("class Broken { void M(int a { var x = ; if (x > a { foo(x, ; } int Y => x. ; class { from q in ")).single()
         val handler = CSharpGotoDeclarationHandler()
         for (leaf in SyntaxTraverser.psiTraverser(file).filter { it.firstChild == null }) handler.getGotoDeclarationTargets(leaf, leaf.textRange.startOffset, null)
-    }
-
-    fun testRoslynLeavesItToTheServer() {
-        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
-        settings.setSource(CSharpFeature.NAVIGATION, CSharpFeatureSource.ROSLYN)
-        val files = addFiles(arrayOf("class R { void M() { var /*D:a*/x = 1; System.Console.Write(/*U:a*/x); } }"))
-        assertNull(targets(files, "a").second)
     }
 
     fun testCtrlBMovesTheCaret() {

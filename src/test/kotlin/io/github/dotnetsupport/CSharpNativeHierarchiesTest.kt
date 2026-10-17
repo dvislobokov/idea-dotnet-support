@@ -7,7 +7,6 @@ import com.intellij.psi.PsiElement
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.csharp.lang.psi.CSharpDeclarationNames
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpCallGraph
 import io.github.dotnetsupport.lang.NativeCSharpCallHierarchyProvider
@@ -17,7 +16,6 @@ import io.github.dotnetsupport.lang.NativeCSharpTypeHierarchyBrowser
 import io.github.dotnetsupport.lang.NativeCSharpTypeHierarchyProvider
 import io.github.dotnetsupport.lang.NativeCSharpTypeHierarchyStructure
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * Go to Super, Type Hierarchy, Call Hierarchy and the gutter of overrides without the language server (task C4b of CSHARP_PSI_MIGRATION.md),
@@ -34,8 +32,6 @@ class CSharpNativeHierarchiesTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         try {
-            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
-            RoslynLanguageServerSettings.getInstance().state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
@@ -154,12 +150,4 @@ class CSharpNativeHierarchiesTest : BasePlatformTestCase() {
         assertTrue(rows.all { it.icon != null })
     }
 
-    fun testTheServerAnswersWithNavigationOnIt() {
-        RoslynLanguageServerSettings.getInstance().state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
-        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.NAVIGATION, CSharpFeatureSource.ROSLYN)
-        shapes("Circle.cs", "Circle : IShape")
-        assertNull(NativeCSharpTypeHierarchyProvider().getTarget(dataContext))
-        assertNull(NativeCSharpCallHierarchyProvider().getTarget(dataContext))
-        assertEquals(emptyList<String>(), myFixture.findAllGutters().mapNotNull { it.tooltipText })
-    }
 }

@@ -33,8 +33,8 @@ import io.github.dotnetsupport.cli.DotNetHelper
 import io.github.dotnetsupport.cli.HelperException
 import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.lang.CSharpFileType
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpEditorSettings
+import io.github.dotnetsupport.settings.CSharpOptions
 import io.github.dotnetsupport.nuget.NuGetHelper
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
@@ -209,8 +209,8 @@ class LibrarySources(private val project: Project) {
     /** A URL that could not be downloaded or gave another file: not tried again this session (a timeout at every Go to Declaration would be worse). */
     private val failedUrls = ConcurrentHashMap.newKeySet<String>()
 
-    /** The option of the page Settings | .NET | Language Server, as the server reads it; the native navigation reads it the same way. */
-    val isEnabled: Boolean get() = RoslynLanguageServerSettings.getInstance().value(OPTION) == "true"
+    /** The option of Settings | .NET | C# Editor. */
+    val isEnabled: Boolean get() = CSharpEditorSettings.getInstance().value(OPTION) == "true"
 
     /** The helper could not be built in this session: nothing to read PDBs with. */
     private val isAvailable: Boolean get() = NuGetHelper.HELPER.failure == null && !(ApplicationManager.getApplication().isUnitTestMode && locator is HelperSourceLocator)
@@ -358,8 +358,8 @@ class LibrarySources(private val project: Project) {
         private const val READ_TIMEOUT_MS = 30_000
         private val NONE = Any()
 
-        /** The option of the page Settings | .NET | Language Server that the server and the plugin both honour. */
-        val OPTION = RoslynOptions.ALL.first { it.section == "navigation.dotnet_navigate_to_source_link_and_embedded_sources" }
+        /** The option of the page Settings | .NET | C# Editor that the server and the plugin both honour. */
+        val OPTION = CSharpOptions.ALL.first { it.section == "navigation.dotnet_navigate_to_source_link_and_embedded_sources" }
 
         fun getInstance(project: Project): LibrarySources = project.service()
 

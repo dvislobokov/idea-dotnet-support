@@ -1,9 +1,9 @@
 package io.github.dotnetsupport.lang
 
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpOptions
 
 /**
- * The "Code Generation" options of the page of the server (Settings | .NET | Language Server), obeyed by every native generator that
+ * The "Code Generation" options of the page of the server (Settings | .NET | C# Editor), obeyed by every native generator that
  * writes a member into a type, as the server obeys them (rule of the user 2026-10-06: one page, both sides).
  */
 object CSharpGenerationOptions {
@@ -15,8 +15,8 @@ object CSharpGenerationOptions {
      * `with_other_members_of_the_same_kind`, is what each generator does on its own: a field after the fields, a property after the
      * properties, Generate (Alt+Insert) and Implement at the caret, as in Rider.
      */
-    val atEnd: Boolean get() = RoslynOptions.value(INSERTION_LOCATION) == "at_the_end"
+    val atEnd: Boolean get() = CSharpOptions.value(INSERTION_LOCATION) == "at_the_end"
 
     /** `prefer_throwing_properties` (the default of Roslyn): an implemented property throws `NotImplementedException` instead of `{ get; set; }`. */
-    val throwingProperties: Boolean get() = RoslynOptions.value(PROPERTY_BEHAVIOR) != "prefer_auto_properties"
+    val throwingProperties: Boolean get() = CSharpOptions.value(PROPERTY_BEHAVIOR) != "prefer_auto_properties"
 }

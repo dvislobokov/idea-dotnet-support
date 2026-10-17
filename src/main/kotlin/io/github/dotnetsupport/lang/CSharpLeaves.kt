@@ -80,8 +80,8 @@ object CSharpLeaves {
 }
 
 /**
- * Hides the error elements of the native parser in C# files, always: with `CSharpFeature.DIAGNOSTICS` ROSLYN the language server reports
- * the syntax errors, with NATIVE [NativeCSharpDiagnosticsAnnotator] does, at Roslyn's spans and with its codes. An element's own range is
+ * Hides the error elements of the native parser in C# files, always: [NativeCSharpDiagnosticsAnnotator] reports
+ * the syntax errors, at Roslyn's spans and with its codes. An element's own range is
  * not where Roslyn reports (a missing `;` is after the line break, a skipped token may carry no diagnostic), so the elements themselves
  * would show the errors twice and in the wrong places. The heuristic tree has no error elements.
  */

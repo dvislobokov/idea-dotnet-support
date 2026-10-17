@@ -5,7 +5,7 @@ namespace Playground.Editor;
 
 /// <summary>
 /// Live check of the Alt+Enter context actions on loops (0.1.163, <c>NativeCSharpLoopActions.kt</c>): <c>foreach</c> ↔ <c>for</c> over an
-/// indexable collection, a <c>for</c> reversed, <c>foreach</c> over an expression statement. «Context actions» = Built-in (the default).
+/// indexable collection, a <c>for</c> reversed, <c>foreach</c> over an expression statement.
 /// Put the caret where a marker says, press Alt+Enter, check EXPECT, then undo (Ctrl+Z) so the file stays as it is. Nothing here is
 /// called, the file only has to compile.
 /// </summary>

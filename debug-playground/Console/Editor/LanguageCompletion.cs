@@ -8,8 +8,7 @@ namespace Playground.Editor;
 /// <summary>
 /// Live check of the language places of the completion (0.1.94, COMPLETION_GAPS 3.2, 3.3, 3.5, 3.6): members of an interface implemented
 /// explicitly, <c>[]</c> after the dot, names of tuple elements and of what a deconstruction takes apart, <c>partial class |</c>.
-/// Settings | .NET | Language Server → «Completion» = Built-in (the default with the server off). Put the caret on the empty line under a
-/// marker, type what it says, compare with EXPECT, undo with Ctrl+Z. The file compiles as it is.
+/// Put the caret on the empty line under a marker, type what it says, compare with EXPECT, undo with Ctrl+Z. The file compiles as it is.
 /// </summary>
 public interface ILcPriced
 {

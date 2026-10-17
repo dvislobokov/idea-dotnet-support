@@ -5,11 +5,8 @@ using System.Linq;
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of Rename (Shift+F6) on the plugin's own tree (0.1.53). Settings | .NET | Language Server → Source of Features →
-/// «Rename» = Built-in. Put the caret where a <c>// TYPE:name</c> comment says, press Shift+F6, type the new name, Enter; compare with
-/// EXPECT, then Ctrl+Z (one Ctrl+Z must bring back the whole old text). With «Language server» (the default for now) the server renames
-/// once «Roslyn: DebugPlayground.sln» is ready: the result must be the same. With Built-in the locals below are renamed without the server
-/// (open the file before it is ready, or stop it, to see that); a member or a type still goes to the server, or gets a hint without it.
+/// Live check of Rename (Shift+F6) on the plugin's own tree (0.1.53). Put the caret where a <c>// TYPE:name</c> comment says, press
+/// Shift+F6, type the new name, Enter; compare with EXPECT, then Ctrl+Z (one Ctrl+Z must bring back the whole old text).
 /// The file only has to compile.
 /// </summary>
 /// <param name="owner">Who orders.</param>
@@ -70,7 +67,7 @@ public class RenameScenarios(string owner)
 
     // TYPE:rename-primary-member — Shift+F6 on `owner` in `Describe` → `customer`: the primary constructor parameter at the top of the
     // class and `<param name="customer">` above it. Then Shift+F6 on `Limit` in `Limit * discount` (a property) → `Cap`. EXPECT (since
-    // 0.1.73, with or without the server): the built-in rename renames the property, `Cap * discount` and `{Cap}` in Describe; members across
+    // 0.1.73): the rename renames the property, `Cap * discount` and `{Cap}` in Describe; members across
     // files — SolutionUsages.cs
     public string Describe() => $"{owner}: {Limit}";
 }

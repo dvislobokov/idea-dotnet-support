@@ -90,23 +90,6 @@ Playground.Editor
 91: Playground.Editor.RankedOrder / Customer
 92: Playground.Editor.RankedOrder / -
 
-## Go to Base: member at the line
-1: -
-16: CompletionRanking.Count
-17: CompletionRanking.Name
-19: CompletionRanking.Total(RankedOrder order)
-21: CompletionRanking.Save(RankedOrder order, CancellationToken cancellationToken)
-22: CompletionRanking.Send(string message)
-23: CompletionRanking.Run(CancellationToken token)
-25: CompletionRanking.Handle(RankedOrder order, string customerName, CancellationToken cancellationToken)
-27: CompletionRanking.Handle(RankedOrder order, string customerName, CancellationToken cancellationToken) (in body)
-78: -
-88: RankedOrder.Amount
-89: RankedOrder.Quantity
-90: RankedOrder.Price
-91: RankedOrder.Customer
-92: -
-
 ## breakpoint lines
 13-14, 16-17, 19, 21-23, 26-29, 31-33, 35, 37, 39, 41, 74-76, 88-91
 

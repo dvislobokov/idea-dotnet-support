@@ -3,12 +3,10 @@ using Playground.Lib;
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of usages, rename and the hierarchy of types and members across the solution without the language server (0.1.73, task C4b
-/// of CSHARP_PSI_MIGRATION.md). Settings | .NET | Language Server → Source of Features → «Navigation» and «Rename» = Built-in (the
-/// default); stop the server (or open the file before it is ready) to be sure the plugin answers. The other half is in
+/// Live check of usages, rename and the hierarchy of types and members across the solution (0.1.73, task C4b
+/// of CSHARP_PSI_MIGRATION.md). The other half is in
 /// <c>Lib/SolutionShapes.cs</c> (another project). Put the caret where a <c>// TYPE:name</c> comment says, press the keys, compare with
-/// EXPECT; after a rename Ctrl+Z (one step brings back every file). With «Language server» and the server ready the same keys go to the
-/// server: the results must be the same. The file only has to compile.
+/// EXPECT; after a rename Ctrl+Z (one step brings back every file). The file only has to compile.
 /// </summary>
 public class SolutionTile : SolutionSquare
 {
@@ -24,8 +22,8 @@ public static class SolutionUsages
 {
     // TYPE:solution-find-usages — caret on `Side` in `square.Side = 3` below, Alt+F7. EXPECT: 7 usages in 2 projects — Lib (5): the
     // constructor (write), `Side * Side` (2 reads), `nameof(Side)` (Usage in nameof), the `cref` of the doc comment of ISolutionFigure;
-    // Console (2): `square.Side = 3` (write) and `square.Side` in the return (read). Group by Usage Type shows Read / Write / nameof as with the
-    // server. Ctrl+Alt+F7 (Show Usages): the same rows in a popup. No «Side» of the comments or strings of this file
+    // Console (2): `square.Side = 3` (write) and `square.Side` in the return (read). Group by Usage Type shows Read / Write / nameof.
+    // Ctrl+Alt+F7 (Show Usages): the same rows in a popup. No «Side» of the comments or strings of this file
     public static double Measure(ISolutionFigure figure)
     {
         var square = new SolutionSquare(2);

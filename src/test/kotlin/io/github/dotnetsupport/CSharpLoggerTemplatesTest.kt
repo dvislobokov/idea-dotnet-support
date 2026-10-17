@@ -5,11 +5,9 @@ import com.intellij.codeInsight.lookup.Lookup
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpLoggerTemplates
 import io.github.dotnetsupport.lang.CSharpSyntaxHighlighter
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * Message templates of logging (task 3.8 of docs/COMPLETION_GAPS.md, 0.1.93): the placeholders of `logger.LogX("…")`, Serilog's
@@ -17,13 +15,11 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * does not match (CA2017) and of a placeholder without a parameter (SYSLIB1014), the names of the arguments after `{`, `{Name}` in the text.
  */
 class CSharpLoggerTemplatesTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var autocomplete = true
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
     }
@@ -31,7 +27,6 @@ class CSharpLoggerTemplatesTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
-            settings.state.features = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)

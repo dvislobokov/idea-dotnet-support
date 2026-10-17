@@ -2,7 +2,7 @@ namespace Playground.Editor;
 
 /// <summary>
 /// Live check of the member actions of 0.1.173 (`NativeCSharpMemberActions.kt`), as Rider offers them on Alt+Enter. Put the caret where
-/// the <c>// TYPE:name</c> marker says, press Alt+Enter, choose the action, compare with EXPECT, undo (Ctrl+Z). Context actions = Built-in.
+/// the <c>// TYPE:name</c> marker says, press Alt+Enter, choose the action, compare with EXPECT, undo (Ctrl+Z).
 /// </summary>
 public class MemberActions
 {

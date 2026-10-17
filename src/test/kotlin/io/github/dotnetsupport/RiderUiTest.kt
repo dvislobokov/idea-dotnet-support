@@ -20,7 +20,6 @@ import io.github.dotnetsupport.build.BuildConfigurationChoices
 import io.github.dotnetsupport.build.BuildSolutionBar
 import io.github.dotnetsupport.lang.CSharpEditorMenuGroup
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpGenerateAction
 import io.github.dotnetsupport.lang.CSharpNavigateToAction
 import io.github.dotnetsupport.lang.CSharpPopupKind
@@ -28,7 +27,6 @@ import io.github.dotnetsupport.lang.CSharpRefactorThisAction
 import io.github.dotnetsupport.lang.CSharpRiderPopups
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.RiderNamedAction
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import javax.swing.KeyStroke
 
 /**
@@ -40,7 +38,6 @@ class RiderUiTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         try {
-            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -64,7 +61,7 @@ class RiderUiTest : BasePlatformTestCase() {
         val parent = pages.single { it.id == "io.github.dotnetsupport.settings" }
         assertEquals("root", parent.parentId)
         assertEquals(
-            setOf("settings.build", "settings.nuget", "settings.coverage", "settings.debugger", "settings.codeAnalysis", "settings.languageServer"),
+            setOf("settings.build", "settings.nuget", "settings.coverage", "settings.debugger", "settings.codeAnalysis", "settings.csharpEditor"),
             pages.filter { it.parentId == "io.github.dotnetsupport.settings" }.map { it.id.removePrefix("io.github.dotnetsupport.") }.toSet(),
         )
         // the tree the Settings dialog builds: .NET among the top-level nodes, not under Tools
@@ -153,7 +150,6 @@ class RiderUiTest : BasePlatformTestCase() {
 
     fun testRefactorThisListsTheNativeRefactoringsAtTheCaret() {
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.CONTEXT_ACTIONS, CSharpFeatureSource.NATIVE)
         myFixture.configureByText("Popups2.cs", "class Sample\n{\n    int M(int a, int b)\n    {\n        var <caret>sum = a + b;\n        return sum * 2;\n    }\n}\n")
         val rows = CSharpRiderPopups.nativeActions(CSharpPopupKind.REFACTOR, project, myFixture.editor, myFixture.file).map { it.templatePresentation.text }
         assertTrue(rows.toString(), "Inline Variable" in rows)

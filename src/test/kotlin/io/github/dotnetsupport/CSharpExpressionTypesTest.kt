@@ -8,14 +8,12 @@ import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpColors
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpNavigation
 import io.github.dotnetsupport.lang.NativeCSharpSemanticColors
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.NativeCSharpSemanticModel
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * Types of expressions, layer 11b (CSHARP_PSI_MIGRATION.md, task C2), over the fixtures of src/test/resources/index with System.Runtime
@@ -23,7 +21,6 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * native semantic model answers for exactly that range, in Roslyn's display format (the semantic gate's).
  */
 class CSharpExpressionTypesTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
 
     override fun setUp() {
         super.setUp()
@@ -33,7 +30,6 @@ class CSharpExpressionTypesTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
@@ -300,7 +296,6 @@ class CSharpExpressionTypesTest : BasePlatformTestCase() {
         assertEquals("public string Name", target("Name", 1))
         assertEquals("public decimal Total", target("Total", 1))
         assertEquals("public decimal Total", target("Total", 2))
-        settings.setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.NATIVE)
         val colors = NativeCSharpSemanticColors.colors(f).associate { text.substring(it.first.startOffset, it.first.endOffset) + "@" + it.first.startOffset to it.second }
         assertEquals(CSharpColors.PROPERTY, colors["Total@${text.indexOf("Total")}"])
         assertEquals(CSharpColors.PROPERTY, colors["Name@${text.indexOf("x.Name") + 2}"])
@@ -326,7 +321,6 @@ class CSharpExpressionTypesTest : BasePlatformTestCase() {
     }
 
     fun testSpeedOfColorsWithLambdasOnALargeFile() {
-        settings.setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.NATIVE)
         val body = (0 until 150).joinToString("\n") { i ->
             """
                 public decimal M$i(List<Item> items, Dictionary<string, Item> map)

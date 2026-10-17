@@ -41,7 +41,6 @@ import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.lang.semantic.CSharpSearchTarget
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSolutionSearch
-import io.github.dotnetsupport.lsp.RoslynServerStatus
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.roots.ProjectFileIndex
 
@@ -56,26 +55,16 @@ import com.intellij.openapi.roots.ProjectFileIndex
  * platform shows them.
  *
  * Types and members of the solution are renamed across it by [NativeCSharpSolutionRename] (task C4b). What is left (a record's positional
- * parameter, which is a property; a name the resolver does not know) goes to the language server when it is ready; without the server a
- * hint says why. ROSLYN: the server's rename, as before.
+ * parameter, which is a property; a name the resolver does not know) is not renamed: a hint says why.
  */
 object NativeCSharpRename {
     /** The switch gives RENAME to the native tree and [file] is of it. */
     fun serves(file: PsiFile?): Boolean = file is CSharpFile && file.compilationUnit != null && CSharpFeatures.native(CSharpFeature.RENAME, file)
 
-    private val forwarding = ThreadLocal.withInitial { false }
-
-    /**
-     * The rename of the language server answers for [file] (`LspRenameSupport.shouldRunRename`): ROSLYN, a file of the heuristic tree, or
-     * a symbol [NativeCSharpRenameHandler] hands over to the server. One handler at a time, so the platform never asks which.
-     */
-    fun serverRenames(file: PsiFile): Boolean = !serves(file) || forwarding.get()
-
-    /** What renames the name at [offset]: this rename, the server's, or nobody (with the reason). */
+    /** What renames the name at [offset]: this rename, or nobody (with the reason). */
     sealed interface Decision
     class Native(val target: Target) : Decision
     class Refuse(val reason: String) : Decision
-    data object Server : Decision
 
     /** A type or member of the solution: [NativeCSharpSolutionRename] (task C4b). */
     class Solution(val target: CSharpSearchTarget) : Decision
@@ -98,21 +87,21 @@ object NativeCSharpRename {
      * (the index of words and the trees of the files that have the word; at Shift+F6, not on every update of the action).
      */
     fun decide(file: CSharpFile, offset: Int, deep: Boolean = true): Decision {
-        if (!serves(file)) return Server
-        val leaf = identifierAt(file, offset) ?: return Server
+        if (!serves(file)) return Refuse(NOT_HERE)
+        val leaf = identifierAt(file, offset) ?: return Refuse(NOT_HERE)
         val resolver = NativeCSharpResolver(file)
         val symbol = resolver.symbolAt(leaf)
         if (symbol == null || symbol.isMember) return solution(file, leaf)
         val owner = owner(symbol)
         // every part of a partial type or method declares its type parameters (and a partial method its parameters) again
         if (symbol.kind != LocalSymbolKind.PRIMARY_CONSTRUCTOR_PARAMETER && owner is CSharpMemberDeclaration && owner.modifiers.any { it.textMatches("partial") }) {
-            return elsewhere(file, "'${symbol.name}' is declared by every part of a partial declaration: it is renamed by the C# language server, which is not ready")
+            return Refuse("'${symbol.name}' is declared by every part of a partial declaration: the built-in rename does not rename it")
         }
         val extra = ArrayList<TextRange>()
         if (symbol.kind == LocalSymbolKind.PARAMETER || symbol.kind == LocalSymbolKind.PRIMARY_CONSTRUCTOR_PARAMETER) {
             val named = namedArguments(file, resolver, symbol, owner)
             if (named == null || deep && owner !is CSharpLocalFunctionStatement && namedArgumentsElsewhere(file, symbol.name.removePrefix("@"))) {
-                return elsewhere(file, "Parameter '${symbol.name}' is used as a named argument the built-in rename cannot follow: it is renamed by the C# language server, which is not ready")
+                return Refuse("Parameter '${symbol.name}' is used as a named argument the built-in rename cannot follow")
             }
             extra += named
         }
@@ -131,12 +120,12 @@ object NativeCSharpRename {
      */
     private fun solution(file: CSharpFile, leaf: PsiElement): Decision {
         val project = file.project
-        val notLocal = "'${leaf.text}' is not a local symbol: it is renamed by the C# language server, which is not ready"
-        if (leaf.parent is CSharpParameter || DumbService.isDumb(project)) return elsewhere(file, notLocal)
-        var target = CSharpSolutionSearch.targetAt(leaf, CSharpSemanticSession(project)) ?: return elsewhere(file, notLocal)
+        val notLocal = "'${leaf.text}' is not a symbol the built-in rename knows"
+        if (leaf.parent is CSharpParameter || DumbService.isDumb(project)) return Refuse(notLocal)
+        var target = CSharpSolutionSearch.targetAt(leaf, CSharpSemanticSession(project)) ?: return Refuse(notLocal)
         // a constructor is named by its type: renaming it renames the type, as in Rider
         if (target.kind == CSharpSearchTarget.Kind.CONSTRUCTOR) {
-            target = target.primary?.let(CSharpSolutionSearch::ownerType)?.let(CSharpSolutionSearch::targetOf) ?: return elsewhere(file, notLocal)
+            target = target.primary?.let(CSharpSolutionSearch::ownerType)?.let(CSharpSolutionSearch::targetOf) ?: return Refuse(notLocal)
         }
         if (target.declarations.isEmpty()) return Refuse("'${target.name}' is declared in a referenced assembly and cannot be renamed")
         val index = ProjectFileIndex.getInstance(project)
@@ -147,9 +136,6 @@ object NativeCSharpRename {
         if (outside != null) return Refuse("'${target.name}' is declared outside the solution (${outside.containingFile?.name}) and cannot be renamed")
         return Solution(target)
     }
-
-    // a file of a project the server has not loaded is not renamed by it either
-    private fun elsewhere(file: PsiFile, reason: String): Decision = if (RoslynServerStatus.isReady(file.project, file.virtualFile)) Server else Refuse(reason)
 
     /** What declares the parameters or type parameters [symbol] is one of: a method, a lambda, a type...; null for locals and labels. */
     private fun owner(symbol: LocalSymbol): PsiElement? = when (val parent = symbol.declaration.parent) {
@@ -341,24 +327,13 @@ object NativeCSharpRename {
         if (editor == null) Messages.showErrorDialog(project, message, "Rename") else CommonRefactoringUtil.showErrorHint(project, editor, message, "Rename", null)
     }
 
-    /** The rename of the language server on [dataContext], as if it were the only handler: for what this rename leaves to it. */
-    internal fun forwardToServer(project: Project, editor: Editor, file: PsiFile, dataContext: DataContext): Boolean {
-        val server = RenameHandler.EP_NAME.extensionList.firstOrNull { it.javaClass.name.endsWith(".LspRenameHandler") } ?: return false
-        forwarding.set(true)
-        try {
-            if (!server.isAvailableOnDataContext(dataContext)) return false
-            server.invoke(project, editor, file, dataContext)
-            return true
-        } finally {
-            forwarding.set(false)
-        }
-    }
+
+    private const val NOT_HERE = "Nothing to rename here"
 }
 
 /**
- * Shift+F6 on the native tree when RENAME is NATIVE ([NativeCSharpRename]): available on any identifier of such a file, so the platform
- * never offers a choice between it and the language server's (that one stands down, `RoslynLspIntegration`); a symbol it does not rename
- * goes on to the server from here, or gets a hint without it. Inplace (a template over every occurrence, as the platform renames a local)
+ * Shift+F6 on the native tree ([NativeCSharpRename]): available on any identifier of a C# file; a symbol it does not rename gets a hint
+ * that says why. Inplace (a template over every occurrence, as the platform renames a local)
  * unless the editor's "Rename in place" is off or a test passes the new name.
  */
 class NativeCSharpRenameHandler : RenameHandler {
@@ -384,9 +359,6 @@ class NativeCSharpRenameHandler : RenameHandler {
             }
             is NativeCSharpRename.Solution -> NativeCSharpSolutionRename.invoke(project, editor, file, decision.target, dataContext?.let(PsiElementRenameHandler.DEFAULT_NAME::getData))
             is NativeCSharpRename.Refuse -> NativeCSharpRename.showError(project, editor, decision.reason)
-            NativeCSharpRename.Server -> if (dataContext == null || !NativeCSharpRename.forwardToServer(project, editor, file, dataContext)) {
-                NativeCSharpRename.showError(project, editor, "The C# language server cannot rename this symbol now")
-            }
         }
     }
 

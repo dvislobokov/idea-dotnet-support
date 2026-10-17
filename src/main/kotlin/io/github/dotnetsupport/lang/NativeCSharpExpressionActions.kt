@@ -377,12 +377,12 @@ object NativeCSharpExpressionEdits {
 }
 
 /** Alt+Enter on `(T)x` of a reference or nullable type: `x as T` (Rider: "To safe cast"). */
-class NativeCSharpToSafeCastIntention : NativeCSharpContextAction("To safe cast", serverHasIt = false, needsTypes = true) {
+class NativeCSharpToSafeCastIntention : NativeCSharpContextAction("To safe cast", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpExpressionEdits.castAt(file, editor.caretModel.offset)?.let { NativeCSharpExpressionEdits.toSafeCast(it, resolver(file)) }
 }
 
-abstract class NativeCSharpStringFormIntention(title: String, private val form: NativeCSharpExpressionEdits.StringForm) : NativeCSharpContextAction(title, serverHasIt = true) {
+abstract class NativeCSharpStringFormIntention(title: String, private val form: NativeCSharpExpressionEdits.StringForm) : NativeCSharpContextAction(title) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpExpressionEdits.stringAt(file, editor.caretModel.offset)?.let { NativeCSharpExpressionEdits.convert(it, form) }
 }
@@ -397,19 +397,19 @@ class NativeCSharpToVerbatimStringIntention : NativeCSharpStringFormIntention("T
 class NativeCSharpToRawStringIntention : NativeCSharpStringFormIntention("To raw string", NativeCSharpExpressionEdits.StringForm.RAW)
 
 /** Alt+Enter on the name of an extension method called on its receiver: the static call (Rider: "To static method invocation"). */
-class NativeCSharpToStaticInvocationIntention : NativeCSharpContextAction("To static method invocation", serverHasIt = false, needsTypes = true) {
+class NativeCSharpToStaticInvocationIntention : NativeCSharpContextAction("To static method invocation", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpExpressionEdits.memberCallAt(file, editor.caretModel.offset)?.let { NativeCSharpExpressionEdits.toStaticInvocation(it, resolver(file)) }
 }
 
 /** Alt+Enter on the name of an extension method called statically: the call on its first argument (Rider: "To extension method invocation"). */
-class NativeCSharpToExtensionInvocationIntention : NativeCSharpContextAction("To extension method invocation", serverHasIt = false, needsTypes = true) {
+class NativeCSharpToExtensionInvocationIntention : NativeCSharpContextAction("To extension method invocation", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpExpressionEdits.memberCallAt(file, editor.caretModel.offset)?.let { NativeCSharpExpressionEdits.toExtensionInvocation(it, resolver(file)) }
 }
 
 /** Alt+Enter on a call of a statement: the statement in `try` / `catch` (Rider: "Generate try-catch block"). */
-class NativeCSharpGenerateTryCatchIntention : NativeCSharpContextAction("Generate try-catch block", serverHasIt = false) {
+class NativeCSharpGenerateTryCatchIntention : NativeCSharpContextAction("Generate try-catch block") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpExpressionEdits.throwingStatementAt(file, editor.caretModel.offset)?.let {
             NativeCSharpExpressionEdits.tryCatch(it, editor.document.charsSequence, NativeCSharpContextEdits.unit(file))
@@ -417,7 +417,7 @@ class NativeCSharpGenerateTryCatchIntention : NativeCSharpContextAction("Generat
 }
 
 /** Alt+Enter on `var x = new T { A = a };`: `var x = new T();` and `x.A = a;` (Rider: "Convert initializer to assignment"). */
-class NativeCSharpInitializerToAssignmentsIntention : NativeCSharpContextAction("Convert initializer to assignment", serverHasIt = false) {
+class NativeCSharpInitializerToAssignmentsIntention : NativeCSharpContextAction("Convert initializer to assignment") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpExpressionEdits.initializedAt(file, editor.caretModel.offset)?.let {
             NativeCSharpExpressionEdits.initializerToAssignments(it, editor.document.charsSequence)

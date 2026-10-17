@@ -25,7 +25,7 @@ import com.intellij.psi.util.PsiTreeUtil
 import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.csharp.lang.psi.impl.CSharpStubElementImpl
 import io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubIndexKeys
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpOptions
 import io.github.dotnetsupport.ml.CSharpMlCandidateKind
 import io.github.dotnetsupport.ml.CSharpMlCompletionRanker
 import io.github.dotnetsupport.ml.CSharpMlScope
@@ -37,26 +37,16 @@ import javax.swing.Icon
  * partial parts and base classes of the solution, members of `using static` types, types of the solution the file sees), `override` /
  * `partial` members, names of a variable after its type, and the common calls of a non-`async` method that returns a task
  * ([NativeCSharpCommonCalls]). The place comes from [NativeCSharpCompletionPlace], the names from [NativeCSharpResolver] and
- * [NativeCSharpScopes] (read only); no index but the stubs of the solution, so it answers before the server has loaded anything.
+ * [NativeCSharpScopes] (read only); no index but the stubs of the solution.
  *
  * Order (higher first, as Rider): what is wanted at the caret (the declared type of the variable being initialized, the return type after
  * `return`, the type and name of the parameter of a method of the solution being called) — then locals, parameters, local functions,
- * members (fields and properties above methods), type parameters, types, keywords last. The numbers are those of
- * `RoslynCompletionPolicy.priority` for the server's kinds, so the two lists interleave by kind.
+ * members (fields and properties above methods), type parameters, types, keywords last.
  *
- * How it meets the server — nothing is lost. When the switch is NATIVE the language server still completes (`RoslynCompletionSupport`
- * runs whatever the switch), and this contributor stands in front of it (`first, after dotnetCaseInsensitive`; the LSP contributor of
- * the platform is `last`). It adds its items, then runs the contributors after it and passes on their items except those of the server
- * ([isServerItem]) that the native list already has:
- *  - an item whose name (the lookup string up to `(` or `<`, without `@`) is the name of a native item: the native one stays, with its
- *    kind and its rank;
- *  - where the tree decides which keywords are legal ([NativeCSharpCompletionPlace.keywordsAreNative]: a statement, an expression, a
- *    type, a member's start...), every keyword item of the server: the native list has the legal ones.
  * Members after a dot are [NativeCSharpMemberCompletion]'s (task C3: the semantics of `lang/semantic`), and where it cannot type the left
- * side it adds nothing. Types and members of referenced assemblies without a dot, unimported types, snippets, lambdas, `await Method()`:
- * the server's (when it is ready) and the index of assemblies', untouched; where the native part has no place (in an accessor list) it
- * adds nothing and passes everything. The targets of `using` directives and `using var` are [NativeCSharpUsingCompletion]'s (task A8). Items of other contributors (live templates, postfix templates, the index of
- * assemblies) are never dropped. The switch ROSLYN or a file of the heuristic tree: this contributor does nothing.
+ * side it adds nothing. Types and members of referenced assemblies without a dot and unimported types are the index of assemblies'; where
+ * the native part has no place (in an accessor list) it adds nothing and passes everything. The targets of `using` directives and `using var` are [NativeCSharpUsingCompletion]'s (task A8). Items of other contributors (live templates, postfix templates, the index of
+ * assemblies) are never dropped. A file of the heuristic tree: this contributor does nothing.
  */
 class NativeCSharpCompletionContributor : CompletionContributor() {
     // `status == `, `case `: the list of the expected enum opens by itself (0.1.88, see NativeCSharpExpectedCompletion.opensAfterSpace)
@@ -100,7 +90,7 @@ class NativeCSharpCompletionContributor : CompletionContributor() {
         val afterOverride = place.kind == NativeCompletionKind.MEMBER_START && "override" in place.modifiers
         result.runRemainingContributors(parameters) { found ->
             if (afterOverride && NativeCSharpCompletion.isKeywordOrTemplate(found.lookupElement)) return@runRemainingContributors
-            if (!NativeCSharpCompletion.isDuplicate(found.lookupElement, names, place.keywordsAreNative)) ml?.pass(found) ?: result.passResult(found)
+            ml?.pass(found) ?: result.passResult(found)
         }
         ml?.flush()
         result.stopHere()
@@ -115,9 +105,6 @@ object NativeCSharpCompletion {
 
     /** The option of the server's page the names after a type (`Person |`, `foreach (var |`, parameters) obey, as the server's name provider. */
     const val NAME_SUGGESTIONS = "completion.dotnet_show_name_completion_suggestions"
-
-    /** Put by the client of the server on its items (`RoslynCompletionSupport`): what [isDuplicate] may drop. */
-    val SERVER: Key<Boolean> = Key.create("dotnet.serverCompletion")
 
     /**
      * Whether the native list is shown at a list that opened by itself with nothing typed yet. The client of the server opens it on every
@@ -142,10 +129,7 @@ object NativeCSharpCompletion {
         }
     }
 
-    /** The object of the lookup elements of the LSP client of the platform. */
-    const val SERVER_OBJECT = "com.intellij.platform.lsp.impl.features.completion.LspCompletionObject"
-
-    // the kinds of the server for the same kinds (RoslynCompletionPolicy.priority): variables 40, methods 30, types 20, keywords 0
+    // the priorities of the kinds, as Roslyn ranks them: variables 40, methods 30, types 20, keywords 0
     const val LOCAL = 48.0
     const val PARAMETER = 46.0
     const val LOCAL_FUNCTION = 44.0
@@ -186,7 +170,7 @@ object NativeCSharpCompletion {
     const val COMMON_CALL = 300.0
     private const val MAX_INITIALIZER_ROWS = 8
 
-    // what fits the place goes up over its kind, as RoslynCompletionRanking does for the server's items
+    // what fits the place goes up over its kind
     const val EXPECTED_TYPE = 25.0
     const val NAME_EXACT = 30.0
     const val NAME_PARTIAL = 12.0
@@ -197,16 +181,6 @@ object NativeCSharpCompletion {
     /** The name of an item as the lists compare them: `Equals(object? obj)` → `Equals`, `List<>` → `List`, `@event` → `event`. */
     fun nameOf(lookupString: String): String = lookupString.removePrefix("@").substringBefore('(').substringBefore('<').trim()
 
-    /** A server item the native list already has (see the class comment of [NativeCSharpCompletionContributor]). */
-    fun isDuplicate(element: LookupElement, nativeNames: Set<String>, keywordsAreNative: Boolean): Boolean {
-        if (!isServerItem(element)) return false
-        // the server's `override` / `partial` members come with an empty lookup string, named by the text shown (`Describe(int digits)`)
-        val name = nameOf(element.lookupString.ifBlank { LookupElementPresentation.renderElement(element).itemText.orEmpty() })
-        // a named argument (`amount:`, the lookup string `amount`) is not the local of the same name the native list has, but its own `amount:` (NativeCSharpArgumentCompletion)
-        if (name.isNotEmpty() && LookupElementPresentation.renderElement(element).itemText?.endsWith(":") == true) return "$name:" in nativeNames
-        if (name.isNotEmpty() && name in nativeNames) return true
-        return keywordsAreNative && element.lookupString in NativeCSharpCompletionPlace.ALL_KEYWORDS
-    }
 
     /** A keyword or a live template of another contributor: nothing of that goes after `override`. */
     fun isKeywordOrTemplate(element: LookupElement): Boolean {
@@ -214,15 +188,6 @@ object NativeCSharpCompletion {
         var current: LookupElement? = element
         while (current != null) {
             if (current.javaClass.name.contains("LiveTemplateLookupElement")) return true
-            current = (current as? LookupElementDecorator<*>)?.delegate
-        }
-        return false
-    }
-
-    fun isServerItem(element: LookupElement): Boolean {
-        var current: LookupElement? = element
-        while (current != null) {
-            if (current.getUserData(SERVER) == true || current.`object`?.javaClass?.name == SERVER_OBJECT) return true
             current = (current as? LookupElementDecorator<*>)?.delegate
         }
         return false
@@ -531,7 +496,7 @@ object NativeCSharpCompletion {
 
         private fun declarationNames() {
             // `completion.dotnet_show_name_completion_suggestions` of the server's page, as the server's NameCompletionProvider
-            if (!RoslynOptions.isOn(NAME_SUGGESTIONS)) return
+            if (!CSharpOptions.isOn(NAME_SUGGESTIONS)) return
             val type = place.declaredType ?: return
             val taken = NativeCSharpLocals.visible(resolver.scopes, place.leaf).mapTo(HashSet()) { it.name }
             for ((index, suggestion) in CSharpVariableNames.forType(type, place.nameStyle).withIndex()) {
@@ -1004,7 +969,7 @@ object NativeCSharpCalls {
         document.insertString(offset, call.text)
         context.editor.caretModel.moveToOffset(offset + call.caret)
         context.commitDocument()
-        // the caret between the parentheses: what the server's items get (RoslynCompletionItems), the parameter info and the gray arguments
+        // the caret between the parentheses: the parameter info and the gray arguments
         if (call.caret < call.text.length) NativeCSharpCallPopups.afterCall(context.editor)
     }
 

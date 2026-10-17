@@ -123,22 +123,6 @@ class CSharpTreeAgnosticTest : BasePlatformTestCase() {
         }
     }
 
-    /** The platform does not paint the error elements of the tree: the errors are Roslyn's, with «Errors and warnings» = Built-in. */
-    fun testSyntaxErrorsOfTheNativeTreeAreNotHighlighted() {
-        CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        val settings = io.github.dotnetsupport.lsp.RoslynLanguageServerSettings.getInstance()
-        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
-        settings.setSource(io.github.dotnetsupport.lang.CSharpFeature.DIAGNOSTICS, io.github.dotnetsupport.lang.CSharpFeatureSource.ROSLYN)
-        try {
-            val file = myFixture.configureByText("BrokenNative.cs", "class A\n{\n    void M( { int x = ; }\n    int\n}\n")
-            assertFalse(PsiTreeUtil.findChildrenOfType(file, PsiErrorElement::class.java).isEmpty())
-            assertEquals(emptyList<String>(), myFixture.doHighlighting(HighlightSeverity.ERROR).map { it.description })
-        } finally {
-            settings.state.features = mutableMapOf()
-            settings.state.enabled = io.github.dotnetsupport.lsp.RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
-        }
-    }
-
     /** The editors of the debugger parse an expression as a whole file: on the native tree that is a file with errors. */
     fun testErrorsOfADebuggerExpressionAreNotHighlighted() {
         CSharpSyntaxTrees.forceNativeTreeForTests(true)

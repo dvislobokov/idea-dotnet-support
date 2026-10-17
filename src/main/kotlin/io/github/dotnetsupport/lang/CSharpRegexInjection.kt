@@ -7,7 +7,7 @@ import com.intellij.lang.injection.InjectedLanguageManager
 import com.intellij.lang.injection.MultiHostInjector
 import com.intellij.lang.injection.MultiHostRegistrar
 import com.intellij.psi.PsiElement
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpOptions
 import org.intellij.lang.regexp.DefaultRegExpPropertiesProvider
 import org.intellij.lang.regexp.RegExpLanguage
 import org.intellij.lang.regexp.RegExpLanguageHost
@@ -30,7 +30,7 @@ class CSharpRegexInjector : MultiHostInjector {
         val shape = CSharpStringLiterals.shape(host.text) ?: return
         if (shape.contentEnd <= shape.contentStart || !CSharpRegexPlaces.isRegex(host)) return
         // the server's "highlight related regex components" off: no RegExp inside the string at all, so no colors, no matching of groups
-        if (!RoslynOptions.isOn("highlighting.dotnet_highlight_related_regex_components")) return
+        if (!CSharpOptions.isOn("highlighting.dotnet_highlight_related_regex_components")) return
         registrar.startInjecting(RegExpLanguage.INSTANCE)
         for (range in shape.lines) registrar.addPlace(null, null, host, range)
         registrar.doneInjecting()
@@ -43,7 +43,7 @@ class CSharpRegexInjector : MultiHostInjector {
  */
 class CSharpRegexCompletionSwitch : CompletionContributor() {
     override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
-        if (RoslynOptions.isOn("completion.dotnet_provide_regex_completions")) return
+        if (CSharpOptions.isOn("completion.dotnet_provide_regex_completions")) return
         val host = InjectedLanguageManager.getInstance(parameters.position.project).getInjectionHost(parameters.position)
         if (host is CSharpStringLiteralLeaf) result.stopHere()
     }

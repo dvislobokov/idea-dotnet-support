@@ -1,8 +1,0 @@
-{
- "method": "(notifications of the server)",
- "result": [
-  "$/progress",
-  "window/logMessage",
-  "workspace/projectInitializationComplete"
- ]
-}

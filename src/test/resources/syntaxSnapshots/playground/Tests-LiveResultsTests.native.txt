@@ -49,18 +49,6 @@ Playground.Tests
 34: Playground.Tests.LiveResultsTests / WritesOutput
 41: Playground.Tests.LiveResultsTests / -
 
-## Go to Base: member at the line
-1: -
-15: LiveResultsTests.Slow1()
-18: LiveResultsTests.Slow2()
-21: LiveResultsTests.Slow3()
-24: LiveResultsTests.Fails()
-27: LiveResultsTests.Fails() (in body)
-31: LiveResultsTests.Skipped()
-34: LiveResultsTests.WritesOutput()
-37: LiveResultsTests.WritesOutput() (in body)
-41: -
-
 ## breakpoint lines
 16, 19, 22, 26-29, 32, 36-40
 

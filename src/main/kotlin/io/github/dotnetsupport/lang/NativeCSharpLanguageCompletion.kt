@@ -20,7 +20,7 @@ import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSymbol
 import io.github.dotnetsupport.lang.semantic.CSharpTypeDisplay
 import io.github.dotnetsupport.lang.semantic.SemanticType
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpOptions
 import javax.swing.Icon
 
 /**
@@ -61,7 +61,7 @@ object NativeCSharpLanguageCompletion {
         interfaceNames(leaf, file, matcher)?.let { return Found(it) }
         partialTypes(leaf, file, matcher)?.let { return Found(it) }
         // names of `var (a, b)` are name suggestions too: the same option as the names after a type
-        if (RoslynOptions.isOn(NativeCSharpCompletion.NAME_SUGGESTIONS)) deconstructionNames(leaf, file, matcher)?.let { return Found(it) }
+        if (CSharpOptions.isOn(NativeCSharpCompletion.NAME_SUGGESTIONS)) deconstructionNames(leaf, file, matcher)?.let { return Found(it) }
         memberAccess(leaf, file, matcher)?.let { return Found(it) }
         return null
     }

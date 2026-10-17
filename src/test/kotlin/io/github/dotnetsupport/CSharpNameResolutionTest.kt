@@ -9,7 +9,6 @@ import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpColors
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpNavigation
 import io.github.dotnetsupport.lang.NativeCSharpSemanticColors
@@ -18,7 +17,6 @@ import io.github.dotnetsupport.lang.semantic.CSharpResolution
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSymbol
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * Name resolution of layer 11a (CSHARP_PSI_MIGRATION.md, task C1) over a fake reference set: the fixtures of src/test/resources/index
@@ -26,7 +24,6 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * `/*^*/` right before it; answers are documentation comment ids for symbols of the assemblies and declarations for the solution's.
  */
 class CSharpNameResolutionTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
 
     override fun setUp() {
         super.setUp()
@@ -36,7 +33,6 @@ class CSharpNameResolutionTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
@@ -295,7 +291,6 @@ class CSharpNameResolutionTest : BasePlatformTestCase() {
     }
 
     fun testColorsOfAssemblyTypesAndMembers() {
-        settings.setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.NATIVE)
         val f = file("resolve/Colors.cs", """
             using Fixture;
             using System.Linq;
@@ -348,7 +343,6 @@ class CSharpNameResolutionTest : BasePlatformTestCase() {
     }
 
     fun testSpeedOfColorsOnALargeFile() {
-        settings.setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.NATIVE)
         val body = (0 until 150).joinToString("\n") { i ->
             """
                 public double M$i(Circle circle, List<int> numbers)

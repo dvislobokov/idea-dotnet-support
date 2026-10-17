@@ -24,10 +24,9 @@ import io.github.dotnetsupport.suggest.SuggestionRules
 import io.github.dotnetsupport.suggest.SuggestionStats
 
 /**
- * The gray text where an argument begins, on the plugin's semantics (0.1.86; before, only the server's signature help gave it —
- * `RoslynLambdaGhost`): a lambda when the parameter is a delegate (`Register(` -> `serviceProvider => `), else the variables at hand named
- * or typed as the parameters (`Save(` -> `order, cancellationToken`). Behind [CSharpFeature.DOCUMENTATION] = NATIVE, as the parameter
- * info it comes from; with the switch on the server the module `roslyn` answers.
+ * The gray text where an argument begins, on the plugin's semantics (0.1.86): a lambda when the parameter is a delegate (`Register(` -> `serviceProvider => `), else the variables at hand named
+ * or typed as the parameters (`Save(` -> `order, cancellationToken`). Behind [CSharpFeature.DOCUMENTATION], as the parameter
+ * info it comes from.
  */
 class NativeCSharpLambdaGhost : InlineCompletionProvider {
     override val id: InlineCompletionProviderID = ID

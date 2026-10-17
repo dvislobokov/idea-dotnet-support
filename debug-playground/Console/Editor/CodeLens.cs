@@ -4,12 +4,10 @@ using System.Collections.Generic;
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of Code Vision without the language server: "N usages" and "N implementations" at types and members
-/// (NativeCSharpCodeLens). Settings | .NET | Language Server → Source of Features → «Code Vision» = Built-in (the default), Code Lens →
-/// «References» on. Nothing is typed unless a marker says so: each marker comment stands on its own line ABOVE its declaration, so the
+/// Live check of Code Vision: "N usages" and "N implementations" at types and members
+/// (NativeCSharpCodeLens). Settings | .NET | C# Editor → Code Lens → «References» on. Nothing is typed unless a marker says so: each marker comment stands on its own line ABOVE its declaration, so the
 /// lens of the declaration is visible in any Code Vision position (Settings | Editor | Inlay Hints | Code vision: Top or Right — at Right
-/// it stands right after the code); compare it with EXPECT. A click on "N usages" opens the Show Usages popup with exactly N rows. With
-/// «Language server» and the server on, the server's "N references" lenses show instead, never both.
+/// it stands right after the code); compare it with EXPECT. A click on "N usages" opens the Show Usages popup with exactly N rows.
 /// </summary>
 // TYPE:lens-interface — EXPECT: "5 usages | 3 implementations" (two base lists, two parameter types, List<>); click "3 implementations" → LensCircle, LensSquare, LensRing (all the way down)
 public interface ILensShape
@@ -73,7 +71,7 @@ public static class LensProgram
 
     public static double Total(ILensShape shape) => shape.Area();
 
-    // TYPE:lens-click — click "no usages"/"N usages" of any member above. EXPECT: the Show Usages popup of the plugin (kinds «Invocation», «Read» …), not the server's
+    // TYPE:lens-click — click "no usages"/"N usages" of any member above. EXPECT: the Show Usages popup of the plugin (kinds «Invocation», «Read» …)
     public static void Describe()
     {
         var circle = new LensCircle(2);

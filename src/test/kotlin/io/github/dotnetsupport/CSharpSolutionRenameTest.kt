@@ -4,11 +4,9 @@ import com.intellij.refactoring.BaseRefactoringProcessor
 import com.intellij.refactoring.util.CommonRefactoringUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpSolutionRename
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * Rename of types and members across the solution without the language server (task C4b of CSHARP_PSI_MIGRATION.md): every declaration and
@@ -22,13 +20,11 @@ class CSharpSolutionRenameTest : BasePlatformTestCase() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { null }
-        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.RENAME, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
             NativeCSharpSolutionRename.answerHierarchyForTests(null)
-            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

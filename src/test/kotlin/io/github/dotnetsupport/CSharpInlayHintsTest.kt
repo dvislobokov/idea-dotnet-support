@@ -7,14 +7,13 @@ import io.github.dotnetsupport.index.AssemblyDocs
 import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFeatures
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpInlayHints
 import io.github.dotnetsupport.lang.NativeCSharpInlayHints.Options
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpEditorSettings
+import io.github.dotnetsupport.settings.CSharpOptions
 import io.github.dotnetsupport.settings.DotNetSettings
 
 /**
@@ -23,15 +22,13 @@ import io.github.dotnetsupport.settings.DotNetSettings
  * Language Server on and off. A hint is rendered into the text as `«text»` before the character it stands at.
  */
 class CSharpInlayHintsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
-    private var serverEnabled = false
+    private val settings get() = CSharpEditorSettings.getInstance()
     private var hideObvious = true
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { ASSEMBLIES }
-        serverEnabled = settings.state.enabled
         // the older cases show every `var` hint; the obvious ones are tested below
         hideObvious = DotNetSettings.getInstance().hideObviousTypeHints
         DotNetSettings.getInstance().hideObviousTypeHints = false
@@ -39,9 +36,7 @@ class CSharpInlayHintsTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             settings.state.options = mutableMapOf()
-            settings.state.enabled = serverEnabled
             DotNetSettings.getInstance().hideObviousTypeHints = hideObvious
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
@@ -417,7 +412,7 @@ class CSharpInlayHintsTest : BasePlatformTestCase() {
         assertTrue(defaults.parameters && defaults.literals && defaults.indexers && defaults.objectCreation && !defaults.others)
         assertTrue(defaults.suppressSuffix && defaults.suppressIntent && defaults.suppressArgumentName)
         assertTrue(defaults.types && defaults.varTypes && defaults.lambdaTypes && !defaults.implicitNew && !defaults.collections)
-        assertEquals("every inlay option of the page is read", 13, RoslynOptions.ALL.count { it.section.startsWith("inlay_hints.") })
+        assertEquals("every inlay option of the page is read", 13, CSharpOptions.ALL.count { it.section.startsWith("inlay_hints.") })
         on("dotnet_enable_inlay_hints_for_other_parameters")
         on("csharp_enable_inlay_hints_for_collection_expressions")
         off("csharp_enable_inlay_hints_for_types")
@@ -439,7 +434,7 @@ class CSharpInlayHintsTest : BasePlatformTestCase() {
             return myFixture.editor.inlayModel.getInlineElementsInRange(0, myFixture.editor.document.textLength).size
         }
         // a lambda, not a local fun: a local fun that captures nothing compiles to a method `test…$applied`, which JUnit 3 runs as a test
-        val applied = { ApplicationManager.getApplication().messageBus.syncPublisher(RoslynLanguageServerSettings.CHANGED).settingsChanged(false) }
+        val applied = { ApplicationManager.getApplication().messageBus.syncPublisher(CSharpEditorSettings.CHANGED).settingsChanged() }
         assertEquals("«width:» before 1", 1, shown())
         off("dotnet_enable_inlay_hints_for_literal_parameters")
         applied()
@@ -447,25 +442,6 @@ class CSharpInlayHintsTest : BasePlatformTestCase() {
         on("dotnet_enable_inlay_hints_for_literal_parameters")
         applied()
         assertEquals("and comes back", 1, shown())
-        // the source given to the running server: the plugin's hints go at once (the server's pass is forced the same way)
-        settings.state.enabled = true
-        settings.setSource(CSharpFeature.INLAY_HINTS, CSharpFeatureSource.ROSLYN)
-        applied()
-        assertEquals("the server answers", 0, shown())
-        settings.setSource(CSharpFeature.INLAY_HINTS, CSharpFeatureSource.NATIVE)
-        applied()
-        assertEquals("the plugin again", 1, shown())
-    }
-
-    fun testTheSwitchGivesTheHintsToOneSource() {
-        val f = myFixture.addFileToProject("hints/Switch.cs", "class A { void M() { var x = 1; } }") as CSharpFile
-        assertTrue("built-in by default", CSharpFeatures.native(CSharpFeature.INLAY_HINTS, project))
-        assertTrue(NativeCSharpInlayHints.serves(f))
-        settings.state.enabled = true
-        settings.setSource(CSharpFeature.INLAY_HINTS, CSharpFeatureSource.ROSLYN)
-        assertFalse("the server's hints answer", NativeCSharpInlayHints.serves(f))
-        settings.state.enabled = false
-        assertTrue("without the server the plugin's answer whatever the switch", NativeCSharpInlayHints.serves(f))
     }
 
     private companion object {

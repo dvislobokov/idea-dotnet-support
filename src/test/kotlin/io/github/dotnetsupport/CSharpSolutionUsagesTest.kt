@@ -12,7 +12,6 @@ import io.github.dotnetsupport.lang.NativeCSharpFindUsages
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSolutionSearch
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * Find Usages, Go to Implementation and the hierarchy of types and members across the solution without the language server (task C4b of
@@ -27,7 +26,6 @@ class CSharpSolutionUsagesTest : BasePlatformTestCase() {
 
     override fun tearDown() {
         try {
-            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
@@ -222,7 +220,7 @@ class CSharpSolutionUsagesTest : BasePlatformTestCase() {
         assertEquals(found.toString(), 2, found.count { it.startsWith("SolutionUsages.cs") })
         val area = NativeCSharpFindUsages.targetElement(console.findElementAt(console.text.indexOf("Area() + square"))!!)!!
         fun names(element: PsiElement) = DefinitionsScopedSearch.search(element).findAll().map { describe(CSharpSolutionSearchTestNames.nameOf(it)) }.sortedWith(PLACES)
-        assertEquals(listOf("SolutionShapes.cs:20:Area", "SolutionUsages.cs:20:Area"), names(area))
+        assertEquals(listOf("SolutionShapes.cs:20:Area", "SolutionUsages.cs:18:Area"), names(area))
         assertNotNull(lib)
     }
 

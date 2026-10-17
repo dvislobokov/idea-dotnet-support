@@ -1,7 +1,6 @@
-// Errors and warnings of task D2 of CSHARP_PSI_MIGRATION.md (0.1.78): the plugin's own pass, without the language server. Excluded from
-// the compilation of Broken (Broken.csproj), like SemanticErrors.cs; the editor still sees the file. Every line under a "permanent" marker
-// is as it is on purpose: compare the marks with EXPECT, and with the server (Settings | .NET | Language Server, «Errors and warnings» =
-// Language server) — the same codes in the same places. The lines marked "silent" are correct: NO mark there.
+// Errors and warnings of task D2 of CSHARP_PSI_MIGRATION.md (0.1.78): the plugin's own pass. Excluded from the compilation of Broken
+// (Broken.csproj), like SemanticErrors.cs; the editor still sees the file. Every line under a "permanent" marker is as it is on purpose:
+// compare the marks with EXPECT — Roslyn's codes in Roslyn's places. The lines marked "silent" are correct: NO mark there.
 #nullable enable
 using System.Threading.Tasks;
 

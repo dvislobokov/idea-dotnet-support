@@ -5,7 +5,7 @@ import com.intellij.lang.injection.MultiHostInjector
 import com.intellij.lang.injection.MultiHostRegistrar
 import com.intellij.psi.PsiElement
 import io.github.dotnetsupport.csharp.lang.psi.*
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpOptions
 
 /**
  * Which string literals are JSON (task 3.7 of docs/COMPLETION_GAPS.md), as Rider and Roslyn's embedded languages decide: a literal after
@@ -41,7 +41,7 @@ class CSharpJsonInjector : MultiHostInjector {
         val literal = CSharpStringArguments.literalOf(host) ?: return
         if (!CSharpJsonPlaces.isJson(literal)) return
         // the server's "highlight related JSON components" off: no JSON inside the string, so no colors, no matching of brackets
-        if (!RoslynOptions.isOn("highlighting.dotnet_highlight_related_json_components")) return
+        if (!CSharpOptions.isOn("highlighting.dotnet_highlight_related_json_components")) return
         registrar.startInjecting(JsonLanguage.INSTANCE)
         for (range in shape.lines) registrar.addPlace(null, null, host, range)
         registrar.doneInjecting()

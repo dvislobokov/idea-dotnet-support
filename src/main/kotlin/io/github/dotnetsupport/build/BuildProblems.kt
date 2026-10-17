@@ -16,7 +16,6 @@ import com.intellij.psi.PsiFile
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.NativeCSharpDiagnostics
 import io.github.dotnetsupport.lang.NativeCSharpSemanticDiagnostics
-import io.github.dotnetsupport.lsp.RoslynServerStatus
 import java.io.File
 
 /** A diagnostic of the last build, with the text of its line then: the way to find the line again after edits. */
@@ -80,9 +79,6 @@ class BuildProblemsAnnotator : ExternalAnnotator<BuildProblemsAnnotator.Input, L
     override fun collectInformation(file: PsiFile, editor: Editor, hasErrors: Boolean): Input? = collectInformation(file)
 
     override fun collectInformation(file: PsiFile): Input? {
-        // the language server reports the same problems live; the ones of the last build would double them and go stale
-        // a file of a project the server has not loaded gets nothing from it: the build is the only source there
-        if (RoslynServerStatus.isReady(file.project, file.virtualFile)) return null
         val path = file.virtualFile?.path ?: return null
         var problems = BuildProblems.getInstance(file.project).of(path).takeIf { it.isNotEmpty() } ?: return null
         // the analyzers of the helper have looked at this file since (D3): theirs are the live ones, the build's would be doubles

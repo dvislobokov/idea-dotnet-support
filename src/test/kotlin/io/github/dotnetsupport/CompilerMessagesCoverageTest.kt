@@ -5,11 +5,9 @@ import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
 import io.github.dotnetsupport.lang.semantic.CSharpWarningContext
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import java.io.File
 
 /**
@@ -23,7 +21,6 @@ import java.io.File
  * over the resource. `by-code.md` next to it ranks the missing codes by how many examples want them: the order of the work.
  */
 class CompilerMessagesCoverageTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
 
     private companion object {
         /** The usual fixtures plus System.ObjectModel (ObservableCollection of the cs0050 examples); the oracle compiles against the whole ref pack. */
@@ -38,12 +35,10 @@ class CompilerMessagesCoverageTest : BasePlatformTestCase() {
         CSharpSemanticEnvironment.setAssembliesForTests { ASSEMBLIES }
         CSharpWarningContext.setNullableForTests("enable")
         CSharpSemanticEnvironment.setGeneratedKnownForTests(true)   // no source generators in the corpus: what is not in the file is not anywhere
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpWarningContext.setNullableForTests(null, set = false)
             CSharpSemanticEnvironment.setGeneratedKnownForTests(null)

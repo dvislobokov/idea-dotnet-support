@@ -20,7 +20,6 @@ import com.intellij.psi.impl.source.tree.TreeUtil
 import io.github.dotnetsupport.csharp.lang.SyntaxKind
 import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -86,24 +85,6 @@ object NativeCSharpInactiveCode {
             leaf = TreeUtil.nextLeaf(leaf)
         }
         return out
-    }
-}
-
-/**
- * The colors on screen follow «Colors of identifiers» of the Language Server page at once: when its answer changes on Apply, highlighting
- * restarts in the open projects (the annotators and the semantic tokens of the server read the switch per pass).
- */
-class NativeCSharpSemanticColorsSwitch : RoslynLanguageServerSettings.Listener {
-    override fun settingsChanged(restart: Boolean) {
-        val native = CSharpFeatures.native(CSharpFeature.SEMANTIC_COLORS)
-        if (last.getAndSet(native) == native) return
-        ApplicationManager.getApplication().invokeLater({
-            for (project in ProjectManager.getInstance().openProjects) if (!project.isDisposed) DaemonCodeAnalyzer.getInstance(project).restart()
-        }, ModalityState.nonModal())
-    }
-
-    private companion object {
-        val last = AtomicReference<Boolean?>(null)
     }
 }
 

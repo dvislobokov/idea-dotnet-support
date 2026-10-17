@@ -29,14 +29,13 @@ import io.github.dotnetsupport.lang.CSharpStructureViewFactory
 import io.github.dotnetsupport.lang.CSharpSyntaxModel
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpSyntaxModel
-import io.github.dotnetsupport.roslyn.RoslynBaseMembers
 import io.github.dotnetsupport.testing.DotNetTestRunLineMarkerContributor
 import io.github.dotnetsupport.testing.testTargetAt
 import java.io.File
 
 /**
  * Snapshots of everything [CSharpSyntaxModel] feeds, per file: the declarations, Structure view, folding, breadcrumbs, the names of the IL
- * Viewer and the member of Go to Base at each line, breakpoint lines, run-gutter markers, Go to Class / Symbol. The goldens record what the
+ * Viewer at each line, breakpoint lines, run-gutter markers, Go to Class / Symbol. The goldens record what the
  * heuristics do today, mistakes included (CSHARP_PSI_MIGRATION.md, step 7): the implementation on the own PSI is compared to them, and
  * every difference is reviewed, then the golden is updated, not the other way round.
  *
@@ -148,9 +147,6 @@ class CSharpSyntaxSnapshotTest : BasePlatformTestCase() {
             generateSequence(file.findElementAt(offset)) { it.parent }.filter(crumbs::acceptElement).map(crumbs::getElementInfo).toList().asReversed().joinToString(" > ")
         })
         section("IL Viewer: type / member at the line", byLine { offset -> IlViewerLogic.names(text, offset).let { (type, member) -> "${type ?: "-"} / ${member ?: "-"}" } })
-        section("Go to Base: member at the line", byLine { offset ->
-            RoslynBaseMembers.memberAt(structure, offset)?.let { "${it.type.name}.${it.member.name}${it.member.parameters.orEmpty()}" + if (it.inBody) " (in body)" else "" } ?: "-"
-        })
         section("breakpoint lines", listOf(lineRuns(CSharpBreakpointLines.find(text).map { it + 1 }.sorted())))
         val gutter = DotNetTestRunLineMarkerContributor()
         section("run gutter", SyntaxTraverser.psiTraverser(file).filter { it.firstChild == null }.toList().mapNotNull { leaf ->

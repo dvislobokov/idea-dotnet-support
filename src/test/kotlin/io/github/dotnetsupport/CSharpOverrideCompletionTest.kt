@@ -9,7 +9,6 @@ import io.github.dotnetsupport.index.AssemblyDocs
 import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSpaceAutoPopup
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.CSharpFile
@@ -17,7 +16,6 @@ import io.github.dotnetsupport.lang.NativeCSharpCompletion
 import io.github.dotnetsupport.lang.NativeCSharpParameterInfo
 import io.github.dotnetsupport.lang.NativeCSharpTypingGhost
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * `override |` (0.1.85): the members to override of bases of the solution, of files the build generates (gRPC's `Greeter.GreeterBase`
@@ -25,14 +23,12 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * the member written as Rider writes it with its `using` directives, `async` typed before; the list opening by itself after the space.
  */
 class CSharpOverrideCompletionTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var files = 0
     private var autocomplete = true
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         CSharpSemanticEnvironment.setAssembliesForTests { ASSEMBLIES }
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
@@ -42,7 +38,6 @@ class CSharpOverrideCompletionTest : BasePlatformTestCase() {
         try {
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
             CSharpSemanticEnvironment.setAssembliesForTests(null)
-            settings.state.features = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)

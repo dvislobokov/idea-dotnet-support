@@ -6,8 +6,8 @@ namespace Playground.Editor;
 /// Live check of the nullable flow analysis on the plugin's own semantics (0.1.80; the project has <c>&lt;Nullable&gt;enable</c>): CS8602
 /// (dereference of a maybe-null value), CS8600 / CS8601 / CS8625 (a maybe-null value or <c>null</c> where it may not be), CS8604 (as an
 /// argument), CS8603 (returned), CS8618 (a constructor leaves a field null), through null tests, <c>??</c>, <c>?.</c>, <c>!</c>, early exits,
-/// loops and the attributes of <c>System.Diagnostics.CodeAnalysis</c> of the source and of the assemblies. Turn the server off (Settings | .NET |
-/// Language Server), let the assemblies be indexed. A yellow warning is what Roslyn reports in the same place (`dotnet build` lists them);
+/// loops and the attributes of <c>System.Diagnostics.CodeAnalysis</c> of the source and of the assemblies. Let the assemblies
+/// be indexed. A yellow warning is what Roslyn reports in the same place (`dotnet build` lists them);
 /// type on the empty line under a marker and undo with Ctrl+Z. The file compiles as it is (its warnings are part of the check).
 /// </summary>
 public class NullableFlow

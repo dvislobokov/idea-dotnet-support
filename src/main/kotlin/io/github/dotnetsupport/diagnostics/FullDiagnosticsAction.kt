@@ -82,7 +82,7 @@ class FullDiagnosticsAction : AnAction(), DumbAware {
             appendLine("dotnet ${arguments.joinToString(" ")}:")
             out?.stdout?.lines()?.filter { it.isNotBlank() }?.forEach { appendLine("  $it") } ?: appendLine("  (failed)")
         }
-        appendLine("who reports: " + CSharpFeature.entries.joinToString { "${it.name}=${if (CSharpFeatures.native(it, project)) "NATIVE" else "ROSLYN"}" })
+        appendLine("who reports: " + CSharpFeature.entries.joinToString { "${it.name}=${if (CSharpFeatures.native(it, project)) "plugin" else "heuristics (indexing)"}" })
         appendLine("analysis scopes: compiler ${AnalysisScopes.compiler()}, analyzers ${AnalysisScopes.analyzer()}")
 
         // the projects of the solutions, each with what it is compiled against

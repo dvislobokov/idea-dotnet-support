@@ -9,10 +9,8 @@ import io.github.completionml.core.ngram.NgramModel
 import io.github.completionml.core.rank.Rankers
 import io.github.completionml.core.spi.ContextKind
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpCompletion
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.ml.CSharpMlCandidate
 import io.github.dotnetsupport.ml.CSharpMlCandidateKind
 import io.github.dotnetsupport.ml.CSharpMlCompletionRanker
@@ -31,7 +29,6 @@ import kotlin.math.ln
  * with the setting off.
  */
 class CSharpAcceptanceMemoryTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var autocomplete = true
     private var files = 0
     private val memory get() = CSharpAcceptanceMemory.getInstance(project)
@@ -43,7 +40,6 @@ class CSharpAcceptanceMemoryTest : BasePlatformTestCase() {
         savedStats = SuggestionStats.getInstance().state
         SuggestionStats.getInstance().loadState(SuggestionStats.Data())
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
         DotNetSettings.getInstance().rememberChoices = true
@@ -57,7 +53,6 @@ class CSharpAcceptanceMemoryTest : BasePlatformTestCase() {
             DotNetSettings.getInstance().rememberChoices = true
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
             runCatching { myFixture.lookup?.hideLookup(true) }
-            settings.state.features = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)

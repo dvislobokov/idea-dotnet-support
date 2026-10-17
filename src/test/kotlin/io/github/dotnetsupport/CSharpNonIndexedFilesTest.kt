@@ -9,14 +9,11 @@ import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpColors
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpGotoDeclarationHandler
 import io.github.dotnetsupport.lang.CSharpLanguage
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpInactiveCode
 import io.github.dotnetsupport.lang.NativeCSharpQuickNavigateInfo
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
-import io.github.dotnetsupport.lsp.RoslynPolicy
 import io.github.dotnetsupport.solution.DotNetModuleSetup
 import java.nio.file.Files
 
@@ -27,19 +24,14 @@ import java.nio.file.Files
  * of Ctrl + hover over a native target.
  */
 class CSharpNonIndexedFilesTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.SEMANTIC_COLORS, CSharpFeatureSource.NATIVE)
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
-        settings.setSource(CSharpFeature.NAVIGATION, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -97,12 +89,6 @@ class CSharpNonIndexedFilesTest : BasePlatformTestCase() {
         assertFalse(DotNetModuleSetup.needsModule(moduleCount = 0, solutions = 0, projects = 0))
         assertEquals("playground", DotNetModuleSetup.moduleName("playground"))
         assertEquals("dotnet", DotNetModuleSetup.moduleName("a:b"))
-    }
-
-    fun testServerDiagnosticsCarryTheirCode() {
-        assertEquals("CS0230: Type and identifier are both required", RoslynPolicy.diagnosticText("CS0230", "Type and identifier are both required"))
-        assertEquals("CS0230: x", RoslynPolicy.diagnosticText("CS0230", "CS0230: x"))
-        assertEquals("x", RoslynPolicy.diagnosticText(null, "x"))
     }
 
     /** Ctrl + hover over a local: the Quick Info line, as the server gives for its targets. */

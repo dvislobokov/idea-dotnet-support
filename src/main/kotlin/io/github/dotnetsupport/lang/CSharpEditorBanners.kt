@@ -13,7 +13,7 @@ import com.intellij.ui.EditorNotifications
 import io.github.dotnetsupport.build.DotNetBuildCommand
 import io.github.dotnetsupport.build.DotNetBuildService
 import io.github.dotnetsupport.cli.DotNetTool
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
+import io.github.dotnetsupport.settings.CSharpEditorSettings
 import io.github.dotnetsupport.msbuild.DotNetProjects
 import io.github.dotnetsupport.msbuild.MsBuildEvaluation
 import io.github.dotnetsupport.solution.SolutionService
@@ -22,12 +22,12 @@ import javax.swing.JComponent
 
 /**
  * What a C# file in the editor should say about itself, as Rider does above a file that is not what the developer thinks it is:
- * the language server is not installed, the file belongs to no project of the folder, the project file excludes it, the packages
+ * the file belongs to no project of the folder, the project file excludes it, the packages
  * of its project are not restored. One banner at a time, the most important first; each kind can be hidden for the project.
  */
 class CSharpEditorBanners : EditorNotificationProvider {
     enum class Kind(val key: String) {
-        NO_SERVER("dotnet.banner.noServer"), NO_PROJECT("dotnet.banner.noProject"), EXCLUDED("dotnet.banner.excluded"), NOT_RESTORED("dotnet.banner.notRestored")
+        NO_PROJECT("dotnet.banner.noProject"), EXCLUDED("dotnet.banner.excluded"), NOT_RESTORED("dotnet.banner.notRestored")
     }
 
     class Banner(val kind: Kind, val text: String, val projectFile: VirtualFile? = null)
@@ -38,10 +38,6 @@ class CSharpEditorBanners : EditorNotificationProvider {
             EditorNotificationPanel(editor, EditorNotificationPanel.Status.Info).apply {
                 text = banner.text
                 when (banner.kind) {
-                    Kind.NO_SERVER -> {
-                        createActionLabel("Install") { DotNetTool.ROSLYN_LANGUAGE_SERVER.install(project) { EditorNotifications.getInstance(project).updateAllNotifications() } }
-                        createActionLabel("Settings...") { ShowSettingsUtil.getInstance().showSettingsDialog(project, "Language Server") }
-                    }
                     Kind.NOT_RESTORED -> banner.projectFile?.let { projectFile ->
                         createActionLabel("Restore") { DotNetBuildService.getInstance(project).run(projectFile, DotNetBuildCommand.RESTORE) { EditorNotifications.getInstance(project).updateAllNotifications() } }
                     }
@@ -64,9 +60,6 @@ class CSharpEditorBanners : EditorNotificationProvider {
             val hidden = PropertiesComponent.getInstance(project)
             fun shown(kind: Kind) = !hidden.getBoolean(kind.key)
 
-            if (shown(Kind.NO_SERVER) && RoslynLanguageServerSettings.getInstance().state.enabled && DotNetTool.ROSLYN_LANGUAGE_SERVER.find() == null) {
-                return Banner(Kind.NO_SERVER, "The C# language server (roslyn-language-server) is not installed: no errors, completion or navigation from the compiler.")
-            }
             // the project that compiles the file (a linking one, the right one of several in a folder), else the one of its directory
             val projectFile = io.github.dotnetsupport.msbuild.CompilationModel.getInstance(project).projectOf(file) ?: DotNetProjects.findOwningProject(file)
             if (projectFile == null) {

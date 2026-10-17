@@ -43,15 +43,6 @@ Playground.Lib
 23: Playground.Lib.ShopException / Code
 24: Playground.Lib.ShopException / -
 
-## Go to Base: member at the line
-1: -
-6: Pricing.Total(IEnumerable<OrderLine> lines, decimal discountPercent)
-8: Pricing.Total(IEnumerable<OrderLine> lines, decimal discountPercent) (in body)
-16: Pricing.Apply(decimal sum, decimal discountPercent)
-17: -
-23: ShopException.Code
-24: -
-
 ## breakpoint lines
 7-14, 16, 23
 

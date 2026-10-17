@@ -1,12 +1,10 @@
 package io.github.dotnetsupport.lang
 
-import io.github.dotnetsupport.lsp.RoslynLanguageServer
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpEditorSettings
+import io.github.dotnetsupport.settings.CSharpOptions
 
 /**
- * The «Analysis» options of Settings | .NET | Language Server, read the way the server gets them (`additionalOptions` included): what the
- * server does with them when it runs, the plugin's own pass does without it (`NativeCSharpSolutionProblems`, `CodeAnalysisService`).
+ * The «Analysis» options of Settings | .NET | C# Editor, for the plugin's own passes (`NativeCSharpSolutionProblems`, `CodeAnalysisService`).
  * As Roslyn's `CompilerDiagnosticsScope` / `BackgroundAnalysisScope`: [OPEN_FILES] reports on the open documents, [FULL_SOLUTION] on every
  * file of the solution in the background (the Problems tool window), [NONE] reports nothing at all — not even on open files; a build is
  * then the only source of errors.
@@ -21,12 +19,11 @@ object AnalysisScopes {
     fun compiler(): String = of(COMPILER)
     fun analyzer(): String = of(ANALYZER)
 
-    private fun of(section: String): String =
-        RoslynLanguageServer.configuration(listOf(section), RoslynLanguageServerSettings.getInstance(), null).single()?.toString() ?: FULL_SOLUTION
+    private fun of(section: String): String = CSharpOptions.value(section).ifBlank { FULL_SOLUTION }
 
     /** Sets [section] of the page to [value], for tests and actions; the default value clears the entry. */
     fun set(section: String, value: String) {
-        val option = RoslynOptions.ALL.first { it.section == section }
-        RoslynLanguageServerSettings.getInstance().setValue(option, value)
+        val option = CSharpOptions.ALL.first { it.section == section }
+        CSharpEditorSettings.getInstance().setValue(option, value)
     }
 }

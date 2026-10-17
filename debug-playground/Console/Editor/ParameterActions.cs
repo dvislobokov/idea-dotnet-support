@@ -4,7 +4,7 @@ namespace Playground.Editor;
 
 /// <summary>
 /// Live check of the Alt+Enter context actions on parameters and arguments (0.1.163, <c>NativeCSharpParameterActions.kt</c>): the null
-/// check of a parameter, the names of the arguments of a call added and removed. «Context actions» = Built-in (the default). Put the caret
+/// check of a parameter, the names of the arguments of a call added and removed. Put the caret
 /// where a marker says, press Alt+Enter, check EXPECT, then undo (Ctrl+Z) so the file stays as it is. Nothing here is called, the file
 /// only has to compile.
 /// </summary>

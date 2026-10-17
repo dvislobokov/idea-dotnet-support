@@ -33,14 +33,6 @@ Playground.Lib
 13: Playground.Lib.UsageLog / RecordTwice
 18: Playground.Lib.UsageLog / -
 
-## Go to Base: member at the line
-1: -
-9: UsageLog.Count
-11: UsageLog.Record(string what)
-13: UsageLog.RecordTwice(string what)
-15: UsageLog.RecordTwice(string what) (in body)
-18: -
-
 ## breakpoint lines
 9, 11, 14-17
 

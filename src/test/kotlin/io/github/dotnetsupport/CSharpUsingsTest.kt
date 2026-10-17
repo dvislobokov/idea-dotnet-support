@@ -11,15 +11,12 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexService
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpPostfixTemplateProvider
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.CSharpUsingNames
 import io.github.dotnetsupport.lang.NativeCSharpCompletion
-import io.github.dotnetsupport.lang.NativeCSharpServerActions
 import io.github.dotnetsupport.lang.NativeCSharpUsingCompletion
 import io.github.dotnetsupport.lang.NativeCSharpUsingEdits
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * `using` directives and `using` / `await using` statements on the native tree (CSHARP_PSI_MIGRATION.md, task A8): completion of the
@@ -28,14 +25,12 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * undo, the server's duplicate rows.
  */
 class CSharpUsingsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var files = 0
     private var autocomplete = true
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
     }
@@ -43,8 +38,6 @@ class CSharpUsingsTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
-            settings.state.features = mutableMapOf()
-            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -376,26 +369,6 @@ class CSharpUsingsTest : BasePlatformTestCase() {
     }
 
     // ---- the server
-
-    fun testTheServersRowsStandBackForNativeOnes() {
-        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
-        settings.setSource(CSharpFeature.EDITING, CSharpFeatureSource.NATIVE)
-        // "Use implicit type" belongs to the context actions (Built-in by default since 0.1.72): only EDITING is looked at here
-        settings.setSource(CSharpFeature.CONTEXT_ACTIONS, CSharpFeatureSource.ROSLYN)
-        assertTrue(NativeCSharpServerActions.shadowed("Use simple 'using' statement", project))
-        assertFalse(NativeCSharpServerActions.shadowed("Use implicit type", project))
-        assertTrue(NativeCSharpServerActions.shadowed("Make method async", project))
-        // and their Fix All rows (above the plugin's row, robot 0.1.63)
-        assertTrue(NativeCSharpServerActions.shadowed("Fix All: Make method async", project))
-        assertTrue(NativeCSharpServerActions.shadowed("Fix All: Use simple 'using' statement", project))
-        assertFalse(NativeCSharpServerActions.shadowed("Fix All: Use implicit type", project))
-        settings.setSource(CSharpFeature.EDITING, CSharpFeatureSource.ROSLYN)
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.ROSLYN)
-        assertFalse(NativeCSharpServerActions.shadowed("Use simple 'using' statement", project))
-        assertFalse(NativeCSharpServerActions.shadowed("Make method async", project))
-        // no server ready in tests: the native action stays
-        assertTrue(available("class A { void M() { <caret>using (var r = Open()) { Use(r); } } }", "Convert to 'using' declaration"))
-    }
 
     // ---- the playground
 

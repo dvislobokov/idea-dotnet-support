@@ -634,7 +634,7 @@ object NativeCSharpSwitchEdits {
 }
 
 /** Alt+Enter on `switch (enum)`: the sections of the members no label covers, and `default` (Rider: "Add 'switch' sections"). */
-class NativeCSharpAddSwitchSectionsIntention : NativeCSharpContextAction("Add 'switch' sections", serverHasIt = true, needsTypes = true) {
+class NativeCSharpAddSwitchSectionsIntention : NativeCSharpContextAction("Add 'switch' sections", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val statement = NativeCSharpSwitchEdits.switchAt(file, editor.caretModel.offset) ?: return null
         val type = statement.expression?.let { NativeCSharpSwitchEdits.enumOf(resolver(file), it) } ?: return null
@@ -643,7 +643,7 @@ class NativeCSharpAddSwitchSectionsIntention : NativeCSharpContextAction("Add 's
 }
 
 /** Alt+Enter on `enum switch { … }`: the arms of the members no arm names, and `_` (Rider: "Add missing arms"). */
-class NativeCSharpAddMissingArmsIntention : NativeCSharpContextAction("Add missing arms", serverHasIt = true, needsTypes = true) {
+class NativeCSharpAddMissingArmsIntention : NativeCSharpContextAction("Add missing arms", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val expression = NativeCSharpSwitchEdits.switchExpressionAt(file, editor.caretModel.offset) ?: return null
         val type = expression.governingExpression?.let { NativeCSharpSwitchEdits.enumOf(resolver(file), it) } ?: return null
@@ -652,25 +652,25 @@ class NativeCSharpAddMissingArmsIntention : NativeCSharpContextAction("Add missi
 }
 
 /** Alt+Enter on a `switch` without `default`: `default: break;` at its end (Rider: "Add 'default' section"). */
-class NativeCSharpAddDefaultSectionIntention : NativeCSharpContextAction("Add 'default' section", serverHasIt = true) {
+class NativeCSharpAddDefaultSectionIntention : NativeCSharpContextAction("Add 'default' section") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpSwitchEdits.switchAt(file, editor.caretModel.offset)?.let { NativeCSharpSwitchEdits.addDefault(it, editor.document.charsSequence, NativeCSharpContextEdits.unit(file)) }
 }
 
 /** Alt+Enter on a `switch` with unbraced sections: `{ }` around each section's statements (Rider: "Add section braces"). */
-class NativeCSharpAddSectionBracesIntention : NativeCSharpContextAction("Add section braces", serverHasIt = true) {
+class NativeCSharpAddSectionBracesIntention : NativeCSharpContextAction("Add section braces") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpSwitchEdits.switchAt(file, editor.caretModel.offset)?.let { NativeCSharpSwitchEdits.addSectionBraces(it, editor.document.charsSequence, NativeCSharpContextEdits.unit(file)) }
 }
 
 /** Alt+Enter on a `switch` whose sections return / assign one variable: the `switch` expression (Rider: "To 'switch' expression"). */
-class NativeCSharpToSwitchExpressionIntention : NativeCSharpContextAction("To 'switch' expression", serverHasIt = true) {
+class NativeCSharpToSwitchExpressionIntention : NativeCSharpContextAction("To 'switch' expression") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpSwitchEdits.switchAt(file, editor.caretModel.offset)?.let { NativeCSharpSwitchEdits.toSwitchExpression(it, editor.document.charsSequence, NativeCSharpContextEdits.unit(file)) }
 }
 
 /** Alt+Enter on a `switch` statement: the `if` / `else if` / `else` chain of its sections (Rider: "To 'if' statements"). */
-class NativeCSharpSwitchToIfIntention : NativeCSharpContextAction("To 'if' statements", serverHasIt = true) {
+class NativeCSharpSwitchToIfIntention : NativeCSharpContextAction("To 'if' statements") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val text = editor.document.charsSequence
         val unit = NativeCSharpContextEdits.unit(file)
@@ -681,19 +681,19 @@ class NativeCSharpSwitchToIfIntention : NativeCSharpContextAction("To 'if' state
 }
 
 /** Alt+Enter on a `switch` expression that is returned or assigned: the `switch` statement (Rider: "To 'switch' statement"). */
-class NativeCSharpToSwitchStatementIntention : NativeCSharpContextAction("To 'switch' statement", serverHasIt = true) {
+class NativeCSharpToSwitchStatementIntention : NativeCSharpContextAction("To 'switch' statement") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpSwitchEdits.switchExpressionAt(file, editor.caretModel.offset)?.let { NativeCSharpSwitchEdits.toSwitchStatement(it, editor.document.charsSequence, NativeCSharpContextEdits.unit(file)) }
 }
 
 /** Alt+Enter on a `switch` expression of one arm and `_`: the `?:` it stands for (Rider: "To ?: expression"). */
-class NativeCSharpSwitchToConditionalIntention : NativeCSharpContextAction("To ?: expression", serverHasIt = true) {
+class NativeCSharpSwitchToConditionalIntention : NativeCSharpContextAction("To ?: expression") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpSwitchEdits.switchExpressionAt(file, editor.caretModel.offset)?.let(NativeCSharpSwitchEdits::toConditional)
 }
 
 /** Alt+Enter on a `switch`: one more component of the value it matches, every pattern widened with `_` (Rider: "Add condition component"). */
-class NativeCSharpAddConditionComponentIntention : NativeCSharpContextAction("Add condition component", serverHasIt = true) {
+class NativeCSharpAddConditionComponentIntention : NativeCSharpContextAction("Add condition component") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         NativeCSharpSwitchEdits.switchAt(file, editor.caretModel.offset)?.let { return NativeCSharpSwitchEdits.addConditionComponent(it) }
         return NativeCSharpSwitchEdits.switchExpressionAt(file, editor.caretModel.offset)?.let { NativeCSharpSwitchEdits.addConditionComponent(it) }
@@ -704,7 +704,7 @@ class NativeCSharpAddConditionComponentIntention : NativeCSharpContextAction("Ad
  * Alt+Enter on a `switch` over a class or an interface: a section (an arm) for each direct subtype of the solution no pattern tests yet,
  * `case Series series:` + `break;` (Rider: "Generate type patterns…", without its dialog: every subtype).
  */
-class NativeCSharpGenerateTypePatternsIntention : NativeCSharpContextAction("Generate type patterns", serverHasIt = true, needsTypes = true) {
+class NativeCSharpGenerateTypePatternsIntention : NativeCSharpContextAction("Generate type patterns", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val text = editor.document.charsSequence
         val unit = NativeCSharpContextEdits.unit(file)

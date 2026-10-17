@@ -13,14 +13,12 @@ import io.github.dotnetsupport.frameworks.unity.UnityAssetParser
 import io.github.dotnetsupport.frameworks.unity.UnityAssetUsages
 import io.github.dotnetsupport.frameworks.unityyaml.UnityMissingScriptInspection
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFile
 import io.github.dotnetsupport.lang.CSharpImplicitUsage
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpCodeLens
 import io.github.dotnetsupport.lang.NativeCSharpSolutionRename
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import org.jetbrains.yaml.YAMLFileType
 
 /**
@@ -33,13 +31,11 @@ class UnityAssetsTest : BasePlatformTestCase() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { null }
-        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.RENAME, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
             NativeCSharpSolutionRename.answerHierarchyForTests(null)
-            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {

@@ -349,7 +349,7 @@ object NativeCSharpParameterEdits {
 }
 
 /** Alt+Enter on a parameter of a reference type: its null check first in the body (Rider: "Check parameter for null"). */
-class NativeCSharpCheckParameterForNullIntention : NativeCSharpContextAction("Check parameter for null", serverHasIt = true, needsTypes = true) {
+class NativeCSharpCheckParameterForNullIntention : NativeCSharpContextAction("Check parameter for null", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val parameter = NativeCSharpParameterEdits.parameterAt(file, editor.caretModel.offset) ?: return null
         val resolver = resolver(file)
@@ -359,7 +359,7 @@ class NativeCSharpCheckParameterForNullIntention : NativeCSharpContextAction("Ch
 }
 
 /** Alt+Enter on a local of a type that may be null: its check right after the declaration (Rider: "Check variable for null"). */
-class NativeCSharpCheckVariableForNullIntention : NativeCSharpContextAction("Check variable for null", serverHasIt = true, needsTypes = true) {
+class NativeCSharpCheckVariableForNullIntention : NativeCSharpContextAction("Check variable for null", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val (statement, variable) = NativeCSharpParameterEdits.localAt(file, editor.caretModel.offset) ?: return null
         val resolver = resolver(file)
@@ -371,7 +371,7 @@ class NativeCSharpCheckVariableForNullIntention : NativeCSharpContextAction("Che
 }
 
 /** Alt+Enter on a value that may be null: its statement under `if (value != null)` (Rider: "Check expression for null"). */
-class NativeCSharpCheckExpressionForNullIntention : NativeCSharpContextAction("Check expression for null", serverHasIt = true, needsTypes = true) {
+class NativeCSharpCheckExpressionForNullIntention : NativeCSharpContextAction("Check expression for null", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         if (NativeCSharpParameterEdits.localAt(file, editor.caretModel.offset) != null) return null
         val (expression, statement) = NativeCSharpParameterEdits.expressionAt(file, editor.caretModel.offset) ?: return null
@@ -382,7 +382,7 @@ class NativeCSharpCheckExpressionForNullIntention : NativeCSharpContextAction("C
 }
 
 /** Alt+Enter on a value that may be null: `Debug.Assert(value != null, …);` before its statement (Rider: "Assert expression is not null"). */
-class NativeCSharpAssertNotNullIntention : NativeCSharpContextAction("Assert expression is not null", serverHasIt = true, needsTypes = true) {
+class NativeCSharpAssertNotNullIntention : NativeCSharpContextAction("Assert expression is not null", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         if (NativeCSharpParameterEdits.localAt(file, editor.caretModel.offset) != null) return null
         val (expression, statement) = NativeCSharpParameterEdits.expressionAt(file, editor.caretModel.offset) ?: return null
@@ -393,7 +393,7 @@ class NativeCSharpAssertNotNullIntention : NativeCSharpContextAction("Assert exp
 }
 
 /** Alt+Enter in the arguments of a call: `name: ` before each positional one (Rider: "Add argument names"). */
-class NativeCSharpAddArgumentNamesIntention : NativeCSharpContextAction("Add argument names", serverHasIt = true, needsTypes = true) {
+class NativeCSharpAddArgumentNamesIntention : NativeCSharpContextAction("Add argument names", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val list = NativeCSharpParameterEdits.argumentsAt(file, editor.caretModel.offset) ?: return null
         if (list.arguments.count { it.nameColon == null } < 2) return null
@@ -403,7 +403,7 @@ class NativeCSharpAddArgumentNamesIntention : NativeCSharpContextAction("Add arg
 }
 
 /** Alt+Enter in the arguments of a call, all named in order: the names dropped (Rider: "Remove argument names"). */
-class NativeCSharpRemoveArgumentNamesIntention : NativeCSharpContextAction("Remove argument names", serverHasIt = true, needsTypes = true) {
+class NativeCSharpRemoveArgumentNamesIntention : NativeCSharpContextAction("Remove argument names", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val list = NativeCSharpParameterEdits.argumentsAt(file, editor.caretModel.offset) ?: return null
         val parameters = NativeCSharpParameterEdits.parametersOf(list, resolver(file)) ?: return null
@@ -412,19 +412,19 @@ class NativeCSharpRemoveArgumentNamesIntention : NativeCSharpContextAction("Remo
 }
 
 /** Alt+Enter on a parameter: an overload without it, forwarding its default value (Rider: "Create overload without parameter"). */
-class NativeCSharpCreateOverloadWithoutParameterIntention : NativeCSharpContextAction("Create overload without parameter", serverHasIt = true) {
+class NativeCSharpCreateOverloadWithoutParameterIntention : NativeCSharpContextAction("Create overload without parameter") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpParameterEdits.parameterAt(file, editor.caretModel.offset)?.let { NativeCSharpParameterEdits.overloadWithout(it, editor.document.charsSequence) }
 }
 
 /** Alt+Enter in a parameter list on one line: each parameter on its own line, aligned (Rider: "Chop parameters list"). */
-class NativeCSharpChopParametersIntention : NativeCSharpContextAction("Chop parameters list", serverHasIt = true) {
+class NativeCSharpChopParametersIntention : NativeCSharpContextAction("Chop parameters list") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpParameterEdits.parameterListAt(file, editor.caretModel.offset)?.let { NativeCSharpParameterEdits.chop(it, editor.document.charsSequence) }
 }
 
 /** Alt+Enter in a parameter list over several lines: the parameters on one line (Rider: "Put parameters on one line"). */
-class NativeCSharpParametersOnOneLineIntention : NativeCSharpContextAction("Put parameters on one line", serverHasIt = true) {
+class NativeCSharpParametersOnOneLineIntention : NativeCSharpContextAction("Put parameters on one line") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpParameterEdits.parameterListAt(file, editor.caretModel.offset)?.let { NativeCSharpParameterEdits.putOnOneLine(it, editor.document.charsSequence) }
 }

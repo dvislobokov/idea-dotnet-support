@@ -37,15 +37,15 @@ import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSymbol
 import io.github.dotnetsupport.lang.semantic.CSharpTypeFacts
 import io.github.dotnetsupport.lang.semantic.SemanticType
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpEditorSettings
+import io.github.dotnetsupport.settings.CSharpOptions
 import io.github.dotnetsupport.settings.DotNetSettings
 import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Inlay hints of C# on the plugin's own semantics (INLAY_HINTS = Built-in): the names of parameters before arguments and the types of
  * `var`, of lambda parameters, of `new()` and of collection expressions, with the rules of Roslyn's `InlineParameterNameHintsService` /
- * `InlineTypeHintsService` and the thirteen options of Settings | .NET | Language Server, so the switch changes who answers and nothing
+ * `InlineTypeHintsService` and the thirteen options of Settings | .NET | C# Editor, so the switch changes who answers and nothing
  * else. Parameters come from the overload resolution of the call (what parameter info marks), types from [CSharpNameResolver]; no hint
  * where either is unsure (never an error type, never a guess between overloads). Pure over the tree: the providers below only render.
  */
@@ -78,9 +78,9 @@ object NativeCSharpInlayHints {
         }
 
         companion object {
-            /** The values of Settings | .NET | Language Server (the same the server gets): the switch changes who answers, not what. */
+            /** The values of Settings | .NET | C# Editor (the same the server gets): the switch changes who answers, not what. */
             fun fromSettings(): Options {
-                fun on(section: String): Boolean = RoslynOptions.isOn(section)
+                fun on(section: String): Boolean = CSharpOptions.isOn(section)
                 return Options(
                     parameters = on("inlay_hints.dotnet_enable_inlay_hints_for_parameters"), literals = on("inlay_hints.dotnet_enable_inlay_hints_for_literal_parameters"),
                     indexers = on("inlay_hints.dotnet_enable_inlay_hints_for_indexer_parameters"), objectCreation = on("inlay_hints.dotnet_enable_inlay_hints_for_object_creation_parameters"),
@@ -326,8 +326,7 @@ object NativeCSharpInlayHints {
 
 /**
  * The declarative inlay providers of C# (Settings | Editor | Inlay Hints | C#): one for the parameter names, one for the types, as the
- * platform groups them. Silent while the IDE indexes and while the language server serves INLAY_HINTS (`RoslynLspIntegration` disables
- * the server's hints when the plugin's are on), so one source draws at a time.
+ * platform groups them. Silent while the IDE indexes.
  */
 abstract class NativeCSharpInlayHintsProvider(private val kind: NativeCSharpInlayHints.Kind) : InlayHintsProvider {
     override fun createCollector(file: PsiFile, editor: Editor): InlayHintsCollector? {
@@ -369,9 +368,9 @@ class NativeCSharpTypeHintsProvider : NativeCSharpInlayHintsProvider(NativeCShar
  * (the server's hints, whose provider asks the switch per pass): a switch of the source while the server runs shows its hints, or
  * hides them, on that pass, no restart of the server.
  */
-class NativeCSharpInlayHintsSwitch : RoslynLanguageServerSettings.Listener {
-    override fun settingsChanged(restart: Boolean) {
-        val now = RoslynOptions.ALL.filter { it.section.startsWith("inlay_hints.") }.map { RoslynOptions.value(it.section) } + CSharpFeatures.native(CSharpFeature.INLAY_HINTS).toString() + DotNetSettings.getInstance().hideObviousTypeHints.toString()
+class NativeCSharpInlayHintsSwitch : CSharpEditorSettings.Listener {
+    override fun settingsChanged() {
+        val now = CSharpOptions.ALL.filter { it.section.startsWith("inlay_hints.") }.map { CSharpOptions.value(it.section) } + DotNetSettings.getInstance().hideObviousTypeHints.toString()
         if (last.getAndSet(now) == now) return
         CSharpEditorRefresh.onEdt {
             InlayHintsPassFactoryInternal.forceHintsUpdateOnNextPass()
@@ -384,7 +383,7 @@ class NativeCSharpInlayHintsSwitch : RoslynLanguageServerSettings.Listener {
     }
 }
 
-/** The editors of C# files, and the EDT, for the listeners of the Language Server page that redraw what is open. */
+/** The editors of C# files, and the EDT, for the listeners of the C# Editor page that redraw what is open. */
 internal object CSharpEditorRefresh {
     /** Now when on the EDT (the settings page), else on it later. */
     fun onEdt(block: () -> Unit) {

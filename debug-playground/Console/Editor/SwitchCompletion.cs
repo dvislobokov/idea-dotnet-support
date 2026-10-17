@@ -4,7 +4,7 @@ namespace Playground.Editor;
 /// Live check of 0.1.162: the statement templates list the names in scope at their variable (`switch` + Tab → `switch (|)` with a list,
 /// as Rider's completeSmart()), and the gray text writes the next `case` of a `switch` over an enum by a rule, no network. Lines to
 /// type on are marked <c>// TYPE:name</c>: put the caret on the empty line under the marker, type what the comment says, compare with
-/// EXPECT, undo (Ctrl+Z). Nothing here is called, the file only has to compile. Completion = Built-in (the default).
+/// EXPECT, undo (Ctrl+Z). Nothing here is called, the file only has to compile.
 /// </summary>
 public class SwitchCompletion
 {

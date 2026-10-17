@@ -15,14 +15,12 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.extensions.PluginId
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpGhostText
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.CSharpVariableNames
 import io.github.dotnetsupport.lang.NativeCSharpCompletion
 import io.github.dotnetsupport.lang.NativeCSharpCompletionPlace
 import io.github.dotnetsupport.lang.isInNumericLiteral
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.suggest.SuggestionRules
 
 /**
@@ -31,27 +29,19 @@ import io.github.dotnetsupport.suggest.SuggestionRules
  * method (`Task.FromResult`, `Task.CompletedTask`, `async` by `await`), the merge with the server's list, broken code, the switch.
  */
 class CSharpCompletionNativeTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var files = 0
     private var autocomplete = true
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
-        val plugin = PluginManagerCore.getPlugin(PluginId.getId("io.github.dotnetsupport"))!!
-        ApplicationManager.getApplication().extensionArea.getExtensionPoint(CompletionContributor.EP)
-            .registerExtension(CompletionContributorEP("C#", FakeServer::class.java.name, plugin), testRootDisposable)
     }
 
     override fun tearDown() {
         try {
-            FakeServer.items = emptyList()
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
-            settings.state.features = mutableMapOf()
-            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -375,45 +365,6 @@ class CSharpCompletionNativeTest : BasePlatformTestCase() {
 
     // ---- the merge with the server
 
-    fun testServerDuplicatesAreDropped() {
-        FakeServer.items = listOf(
-            FakeServer.Item("total", 40.0), FakeServer.Item("if", 0.0), FakeServer.Item("break", 0.0), FakeServer.Item("Console", 20.0),
-            FakeServer.Item("Equals(object? obj)", 30.0),
-        )
-        val all = lookup("class A { void M() { var total = 1; <caret> } }")
-        val strings = all.map { it.lookupString }
-        assertEquals("one total, the native one", 1, strings.count { it == "total" })
-        assertEquals(true, all.first { it.lookupString == "total" }.getUserData(NativeCSharpCompletion.NATIVE))
-        assertEquals("one if", 1, strings.count { it == "if" })
-        assertFalse("the tree says no `break` outside a loop: $strings", strings.contains("break"))
-        assertTrue("what the native list has not is kept: $strings", strings.contains("Console"))
-        assertTrue(strings.contains("Equals(object? obj)"))
-    }
-
-    /** Robot 0.1.60: the server's `override` members (empty lookup string, `Describe(int digits)` shown) stood beside the native ones. */
-    fun testServerOverridesWithoutALookupStringAreDropped() {
-        myFixture.addFileToProject("Shapes2/Shape.cs", "namespace Shapes2; public abstract class Shape { public virtual string Describe(int digits) => \"\"; }")
-        FakeServer.items = listOf(FakeServer.Item("", 30.0, "Describe(int digits)"), FakeServer.Item("", 30.0, "Clone()"))
-        val all = lookup("namespace Shapes2;\npublic class Circle : Shape\n{\n    public override <caret>\n}\n")
-        val shown = all.map { LookupElementPresentation.renderElement(it).itemText }
-        assertTrue(all.any { it.lookupString == "Describe" && it.getUserData(NativeCSharpCompletion.NATIVE) == true })
-        assertFalse("the server's Describe is a duplicate: $shown", "Describe(int digits)" in shown)
-        assertTrue("what the native list has not is kept: $shown", "Clone()" in shown)
-    }
-
-    /**
-     * Robot 0.1.60: the server's named argument `amount:` (lookup string `amount`) is not the native local `amount`; since 0.1.86 the native
-     * list has its own `amount:` (NativeCSharpArgumentCompletion), and the server's is the duplicate of that one.
-     */
-    fun testANamedArgumentIsNotADuplicate() {
-        FakeServer.items = listOf(FakeServer.Item("amount", 40.0, "amount:"))
-        val all = lookup("class A { void Resize(int amount) { } void M() { var amount = 1; Resize(<caret>); } }")
-        val shown = all.filter { NativeCSharpCompletion.nameOf(it.lookupString).removeSuffix(":") == "amount" }
-            .map { LookupElementPresentation.renderElement(it).itemText to (it.getUserData(NativeCSharpCompletion.NATIVE) == true) }
-        val everything = all.map { "${it.lookupString}/${LookupElementPresentation.renderElement(it).itemText}" }
-        assertEquals("the native local and the native named argument: $everything", listOf("amount" to true, "amount:" to true), shown.sortedBy { it.first })
-    }
-
     /** Robot 0.1.60: keywords the server offers where the tree decides the keywords (its keyword items are dropped there). */
     fun testKeywordsTheServerAlsoOffers() {
         val statement = native("class A { void M() { <caret> } }")
@@ -424,22 +375,6 @@ class CSharpCompletionNativeTest : BasePlatformTestCase() {
         for (keyword in listOf("dynamic", "global")) assertTrue(keyword, keyword in type)
         val member = native("class A { <caret> }")
         for (keyword in listOf("dynamic", "global", "ref", "sealed")) assertTrue(keyword, keyword in member)
-    }
-
-    fun testAfterADotEverythingIsTheServers() {
-        FakeServer.items = listOf(FakeServer.Item("Length", 40.0), FakeServer.Item("if", 0.0))
-        val all = lookup("class A { void M(string s) { s.<caret> } }")
-        assertTrue(all.none { it.getUserData(NativeCSharpCompletion.NATIVE) == true })
-        assertTrue(all.map { it.lookupString }.containsAll(listOf("Length", "if")))
-    }
-
-    fun testRoslynSwitchAddsNothing() {
-        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.ROSLYN)
-        FakeServer.items = listOf(FakeServer.Item("total", 40.0), FakeServer.Item("break", 0.0))
-        val all = lookup("class A { void M() { var total = 1; <caret> } }")
-        assertTrue(all.none { it.getUserData(NativeCSharpCompletion.NATIVE) == true })
-        assertTrue(all.map { it.lookupString }.containsAll(listOf("total", "break")))
     }
 
     // ---- broken code
@@ -502,25 +437,5 @@ class CSharpCompletionNativeTest : BasePlatformTestCase() {
         // names with digits still complete
         assertFalse(isInNumericLiteral("x1", 2))
         assertTrue(isInNumericLiteral("= 0x1F", 6))
-    }
-
-    /** Items as the client of the server makes them: marked [NativeCSharpCompletion.SERVER]. */
-    class FakeServer : CompletionContributor() {
-        /** [shown]: the text of the list, when it is not [label] (the server's `override` members have an empty label, named arguments `name:`). */
-        class Item(val label: String, val priority: Double, val shown: String? = null)
-
-        override fun fillCompletionVariants(parameters: CompletionParameters, result: CompletionResultSet) {
-            for (item in items) {
-                val builder = LookupElementBuilder.create(item, item.label).let { if (item.shown != null) it.withPresentableText(item.shown) else it }
-                val element = PrioritizedLookupElement.withPriority(builder, item.priority)
-                element.putUserData(NativeCSharpCompletion.SERVER, true)
-                result.addElement(element)
-            }
-        }
-
-        companion object {
-            @Volatile
-            var items: List<Item> = emptyList()
-        }
     }
 }

@@ -71,7 +71,7 @@ class PluginLogsPanel(project: Project, parentDisposable: Disposable) : SimpleTo
                 reprint()
             }
         }
-        val folder = object : AnAction("Open Logs Folder", "~/idea-dotnet-logs (or <plugin data>/logs): this journal, every dotnet command with its output, the logs of the debugger and of the language server", AllIcons.Nodes.Folder), DumbAware {
+        val folder = object : AnAction("Open Logs Folder", "~/idea-dotnet-logs (or <plugin data>/logs): this journal, every dotnet command with its output, the logs of the debugger", AllIcons.Nodes.Folder), DumbAware {
             override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
             override fun actionPerformed(e: AnActionEvent) = RevealFileAction.openDirectory(Files.createDirectories(DotNetLogs.root))
         }

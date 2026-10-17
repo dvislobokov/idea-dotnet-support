@@ -6,34 +6,27 @@ import io.github.dotnetsupport.index.AssemblyDocs
 import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpFeatures
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
-import io.github.dotnetsupport.lang.NativeCSharpServerActions
 import io.github.dotnetsupport.lang.NativeCSharpIntroduceVariableIntention
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * The context actions of the native tree (CSHARP_PSI_MIGRATION.md, task A7): `if` ↔ `?:`, block ↔ expression body, `var` ↔ explicit
  * type (types of C2 over the fixture assemblies), introduce / inline variable; where each is not offered; the server's rows they stand for.
  */
 class CSharpContextActionsTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var files = 0
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { ASSEMBLIES }
-        settings.setSource(CSharpFeature.CONTEXT_ACTIONS, CSharpFeatureSource.NATIVE)
         TemplateManagerImpl.setTemplateTesting(testRootDisposable)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
-            settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
@@ -367,22 +360,6 @@ class CSharpContextActionsTest : BasePlatformTestCase() {
     }
 
     // ---- the server
-
-    fun testTheServersRowsStandBackForNativeOnes() {
-        assertTrue(CSharpFeatures.hasNative(CSharpFeature.CONTEXT_ACTIONS))
-        assertEquals("built-in by default since the robot (0.1.72)", CSharpFeatureSource.NATIVE, CSharpFeature.CONTEXT_ACTIONS.defaultSource)
-        for (title in listOf("Use expression body for method", "Use block body for property", "Convert to conditional expression", "Use explicit type",
-            "Use implicit type", "Introduce local for 'a + b'", "Inline temporary variable", "Replace conditional expression with statements",
-            "Introduce local for all occurrences of 'a + b'", "Introduce parameter for '1'", "Introduce parameter for all occurrences of '1'", "Introduce field for 'a'")) {
-            assertTrue(title, NativeCSharpServerActions.shadowed(title, project))
-        }
-        assertFalse("a constant is not the native action's", NativeCSharpServerActions.shadowed("Introduce local constant for '1'", project))
-        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
-        settings.setSource(CSharpFeature.CONTEXT_ACTIONS, CSharpFeatureSource.ROSLYN)
-        assertFalse(NativeCSharpServerActions.shadowed("Use expression body for method", project))
-        // the server is not ready in tests: the native actions answer under ROSLYN as well
-        assertTrue(available("int <caret>One() => 1;", "To block body"))
-    }
 
     private companion object {
         const val USINGS = "using System;\nusing System.Collections.Generic;\n\n"

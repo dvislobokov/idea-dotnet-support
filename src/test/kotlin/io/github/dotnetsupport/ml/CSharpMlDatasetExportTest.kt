@@ -9,10 +9,8 @@ import io.github.completionml.core.rank.FeatureSchema
 import io.github.completionml.core.spi.ContextKind
 import io.github.completionml.core.vocab.Vocabulary
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpMlInfo
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import java.io.File
 
 /**
@@ -26,7 +24,6 @@ class CSharpMlDatasetExportTest : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
     }
@@ -34,7 +31,6 @@ class CSharpMlDatasetExportTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
-            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)

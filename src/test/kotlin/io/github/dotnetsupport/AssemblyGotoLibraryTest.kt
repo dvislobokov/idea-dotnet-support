@@ -11,6 +11,7 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.util.CommonProcessors
 import com.intellij.util.indexing.FindSymbolParameters
+import io.github.dotnetsupport.settings.CSharpEditorSettings
 import io.github.dotnetsupport.index.AssemblyDocs
 import io.github.dotnetsupport.index.AssemblyGotoClassContributor
 import io.github.dotnetsupport.index.AssemblyGotoContributor
@@ -24,12 +25,10 @@ import io.github.dotnetsupport.index.AssemblyMetadataText
 import io.github.dotnetsupport.index.AssemblyNavigation
 import io.github.dotnetsupport.index.AssemblyTypeItem
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpGotoDeclarationHandler
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpOptions
 import java.io.File
 
 /**
@@ -60,8 +59,7 @@ class AssemblyGotoLibraryTest : BasePlatformTestCase() {
             FileEditorManager.getInstance(project).openFiles.forEach { FileEditorManager.getInstance(project).closeFile(it) }
             AssemblyIndexService.getInstance(project).clearIndexes()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
-            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
-            RoslynLanguageServerSettings.getInstance().state.options = mutableMapOf()
+            CSharpEditorSettings.getInstance().state.options = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
@@ -159,21 +157,20 @@ class AssemblyGotoLibraryTest : BasePlatformTestCase() {
 
     /** `symbol_search.dotnet_search_reference_assemblies` of the page of the server, off: the libraries are not searched. */
     fun testGoToClassAndSymbolObeyTheSearchReferenceAssembliesOption() {
-        val option = RoslynOptions.option("symbol_search.dotnet_search_reference_assemblies")
-        RoslynLanguageServerSettings.getInstance().setValue(option, "false")
+        val option = CSharpOptions.option("symbol_search.dotnet_search_reference_assemblies")
+        CSharpEditorSettings.getInstance().setValue(option, "false")
         assertEmpty(names(AssemblyGotoClassContributor(), ProjectScope.getAllScope(project)))
         assertEmpty(items(AssemblyGotoClassContributor(), "List", everywhere = true))
         assertEmpty(names(AssemblyGotoSymbolContributor(), ProjectScope.getAllScope(project)))
         assertEmpty(items(AssemblyGotoSymbolContributor(), "WriteLine", everywhere = true))
-        RoslynLanguageServerSettings.getInstance().setValue(option, "true")
+        CSharpEditorSettings.getInstance().setValue(option, "true")
         assertTrue("List" in names(AssemblyGotoClassContributor(), ProjectScope.getAllScope(project)))
     }
 
     /** `navigation.dotnet_navigate_to_decompiled_sources` off: the metadata view, and the decompiler is never asked. */
     fun testGoToDeclarationStaysOnTheMetadataViewWithDecompiledSourcesOff() {
         CSharpSemanticEnvironment.setAssembliesForTests { AssemblyIndexSet(listOf(FIXTURE)) }
-        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.NAVIGATION, CSharpFeatureSource.NATIVE)
-        RoslynLanguageServerSettings.getInstance().setValue(RoslynOptions.option("navigation.dotnet_navigate_to_decompiled_sources"), "false")
+        CSharpEditorSettings.getInstance().setValue(CSharpOptions.option("navigation.dotnet_navigate_to_decompiled_sources"), "false")
         val decompiler = io.github.dotnetsupport.decompiler.AssemblyDecompiler.getInstance(project)
         val helper = decompiler.source
         val dll = java.io.File(com.intellij.openapi.util.io.FileUtil.createTempDirectory("gotoMetadata", null), "IndexFixture.dll").apply { writeText("not really an assembly") }
@@ -200,7 +197,6 @@ class AssemblyGotoLibraryTest : BasePlatformTestCase() {
 
     fun testGoToDeclarationOfTheNativeTreeOpensTheMetadataView() {
         CSharpSemanticEnvironment.setAssembliesForTests { AssemblyIndexSet(listOf(FIXTURE, CONSOLE, COLLECTIONS, LINQ)) }
-        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.NAVIGATION, CSharpFeatureSource.NATIVE)
         val file = myFixture.addFileToProject("GotoLibApp/Program.cs", """
             using System.Collections.Generic;
 
@@ -242,7 +238,6 @@ class AssemblyGotoLibraryTest : BasePlatformTestCase() {
     /** With the decompiler of DotNetHelper: the first Go to Declaration is the metadata view and decompiles behind it; the next one is the code. */
     fun testGoToDeclarationGoesToTheDecompiledCodeOnceItIsThere() {
         CSharpSemanticEnvironment.setAssembliesForTests { AssemblyIndexSet(listOf(FIXTURE)) }
-        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.NAVIGATION, CSharpFeatureSource.NATIVE)
         val decompiler = io.github.dotnetsupport.decompiler.AssemblyDecompiler.getInstance(project)
         val helper = decompiler.source
         val dll = java.io.File(com.intellij.openapi.util.io.FileUtil.createTempDirectory("gotoDecompiled", null), "IndexFixture.dll").apply { writeText("not really an assembly") }

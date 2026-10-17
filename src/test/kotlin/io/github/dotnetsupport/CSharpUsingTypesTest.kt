@@ -7,12 +7,10 @@ import io.github.dotnetsupport.index.AssemblyDocs
 import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpCompletion
 import io.github.dotnetsupport.lang.NativeCSharpDiagnostics
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * The tails of task A8 that waited for the types of C2: CS1674 / CS8410 / CS8417 / CS8418 on a `using` resource that is not disposable, and
@@ -20,7 +18,6 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * unresolved bases, type parameters, the dispose pattern, assemblies without System.Runtime.
  */
 class CSharpUsingTypesTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var files = 0
     private var assemblies: AssemblyIndexSet? = null
     private var autocomplete = true
@@ -30,8 +27,6 @@ class CSharpUsingTypesTest : BasePlatformTestCase() {
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         assemblies = ASSEMBLIES
         CSharpSemanticEnvironment.setAssembliesForTests { assemblies }
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false
     }
@@ -39,7 +34,6 @@ class CSharpUsingTypesTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
@@ -151,14 +145,6 @@ class CSharpUsingTypesTest : BasePlatformTestCase() {
                 using (Plain p = new Plain()) { }
             """.trimIndent()),
         )
-    }
-
-    fun testTheServersCopyGivesWay() {
-        myFixture.configureByText("UsingTypes${files++}.cs", text("using (var n = 5) { }"))
-        myFixture.doHighlighting()
-        val offset = myFixture.editor.document.text.indexOf("using (var n")
-        assertTrue(NativeCSharpDiagnostics.repeatsNative(myFixture.file, "'int': type used in a using statement must implement 'System.IDisposable'.", offset))
-        assertFalse(NativeCSharpDiagnostics.repeatsNative(myFixture.file, "'long': type used in a using statement must implement 'System.IDisposable'.", offset))
     }
 
     // ---- completion

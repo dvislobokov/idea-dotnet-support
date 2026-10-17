@@ -3,6 +3,16 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.262
+
+- The C# language server (roslyn-language-server) is gone from the plugin: its client, the Language Server settings page, the
+  switches between the server and the built-in features, the server's status widget and banners. Every C# feature is the plugin's own
+  and needs neither the server nor .NET 10 to run it.
+- The options of the editor (analysis scopes, completion, navigation, Code Lens, inlay hints, editing, code generation) are on
+  Settings | .NET | C# Editor; the values set before are kept.
+- Settings | .NET | Toolset and Build no longer lists roslyn-language-server among the tools; .NET → Probe Platform DAP API probes the DAP
+  module only.
+
 ## 0.1.261
 
 - GIGA IDE editions: in GIGA IDE without Pro the allocation profiler ("Show Allocations in Editor") is off and the .NET Monitor shows

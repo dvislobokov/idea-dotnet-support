@@ -7,10 +7,10 @@ import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.intellij.psi.PsiManager
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
+import io.github.dotnetsupport.settings.CSharpEditorSettings
 import io.github.dotnetsupport.cli.HelperException
 import io.github.dotnetsupport.lang.CSharpFileType
 import io.github.dotnetsupport.lang.CSharpLanguage
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.sourcelink.DeclarationFinder
 import io.github.dotnetsupport.sourcelink.DocumentChecksums
 import io.github.dotnetsupport.sourcelink.HelperSourceLocator
@@ -50,7 +50,7 @@ class SourceLinkTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             FileEditorManager.getInstance(project).openFiles.forEach { FileEditorManager.getInstance(project).closeFile(it) }
-            RoslynLanguageServerSettings.getInstance().setValue(LibrarySources.OPTION, LibrarySources.OPTION.default)
+            CSharpEditorSettings.getInstance().setValue(LibrarySources.OPTION, LibrarySources.OPTION.default)
             LibrarySources.getInstance(project).apply { locator = HelperSourceLocator(); urlRefusal = { SourceLinkUrls.refusal(it) }; forget() }
             LibrarySourceFiles.clearMemory()
             LibrarySourceFiles.diskRoot = null
@@ -286,7 +286,7 @@ class SourceLinkTest : BasePlatformTestCase() {
         assertEquals("GzipCompressionProvider", target.name)
         assertEquals("the handler does not wait for the helper", 0, locator.calls)
 
-        RoslynLanguageServerSettings.getInstance().setValue(LibrarySources.OPTION, "false")
+        CSharpEditorSettings.getInstance().setValue(LibrarySources.OPTION, "false")
         assertFalse(sources.isEnabled)
         assertNull(sources.target(dll, "Grpc.Net.Compression.GzipCompressionProvider", "T:Grpc.Net.Compression.GzipCompressionProvider", "GzipCompressionProvider") {})
         assertNull("an assembly that is not there", sources.target(File(work, "Gone.dll"), "X", "T:X", "X") {})

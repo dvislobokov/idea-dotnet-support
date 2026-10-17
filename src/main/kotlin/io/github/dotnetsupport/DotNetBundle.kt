@@ -53,7 +53,7 @@ object DotNetBundle {
     /** `{0}`, `{1}` are replaced as they are: no `MessageFormat`, so an apostrophe of a text needs no doubling. */
     fun message(key: String, vararg parameters: Any?): String = format(find(key) ?: "!$key!", parameters)
 
-    /** The text of [key], or [fallback] where the key is not there (the options of the language server have English in the code). */
+    /** The text of [key], or [fallback] where the key is not there (the options of the C# editor have English in the code). */
     fun messageOr(key: String, fallback: String, vararg parameters: Any?): String = format(find(key) ?: fallback, parameters)
 
     private fun find(key: String): String? = try {

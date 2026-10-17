@@ -5,7 +5,7 @@ namespace Playground.Editor;
 /// <summary>
 /// Live check of writing an override (0.1.85): `override ` completion over bases of the solution, of assemblies and of files the build
 /// generates (see also `Grpc/Greeter.cs`, TYPE:grpc-override), Ctrl+O / Ctrl+I, Alt+Enter «Implement missing members» / «Override
-/// members...», the red CS0534 / CS0535, `base.` and Ctrl+P in `: base(`. The server off (Settings | .NET | Language Server). Type on
+/// members...», the red CS0534 / CS0535, `base.` and Ctrl+P in `: base(`. Type on
 /// the empty line under a marker, check EXPECT, then Ctrl+Z until the file is as it was (it builds as it is).
 /// </summary>
 public abstract class OvShape

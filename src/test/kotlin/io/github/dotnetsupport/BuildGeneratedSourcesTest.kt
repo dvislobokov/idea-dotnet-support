@@ -10,10 +10,8 @@ import io.github.dotnetsupport.codeanalysis.CodeAnalysisAnswers
 import io.github.dotnetsupport.codeanalysis.CodeAnalysisEvents
 import io.github.dotnetsupport.codeanalysis.CodeAnalysisService
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * The C# the targets of the build make in `obj/` (0.1.82): XAML of WPF, Grpc.Tools, resources. From the design-time build of the helper
@@ -22,18 +20,15 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * errors of such a project speak.
  */
 class BuildGeneratedSourcesTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
 
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { CSharpUsingTypesTest.ASSEMBLIES }
-        settings.setSource(CSharpFeature.DIAGNOSTICS, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            settings.state.features = mutableMapOf()
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSemanticEnvironment.setBuildGeneratedKnownForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)

@@ -9,7 +9,7 @@ namespace Playground.Editor;
 /// <summary>
 /// Live check of how the completion list behaves (0.1.91, COMPLETION_GAPS 2.8–2.14, 3.4, 3.10): statistics of choices, commit characters,
 /// suggestion mode at names, the list opening by itself, Quick Doc of an item, type arguments, keywords of Roslyn's recommenders,
-/// <c>nameof(</c> / <c>typeof(</c>, middle matching. Settings | .NET | Language Server → «Completion» = Built-in (the default with the server off).
+/// <c>nameof(</c> / <c>typeof(</c>, middle matching.
 /// Put the caret on the empty line under a marker, type what it says, compare with EXPECT, undo with Ctrl+Z. The file compiles as it is.
 /// </summary>
 public class CompletionBehaviour

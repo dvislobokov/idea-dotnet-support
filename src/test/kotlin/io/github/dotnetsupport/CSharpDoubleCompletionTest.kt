@@ -11,12 +11,10 @@ import io.github.dotnetsupport.index.AssemblyDocs
 import io.github.dotnetsupport.index.AssemblyIndex
 import io.github.dotnetsupport.index.AssemblyIndexSet
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
 import io.github.dotnetsupport.lang.NativeCSharpCompletion
 import io.github.dotnetsupport.lang.NativeCSharpDoubleCompletion
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /**
  * Double completion (0.1.96, [NativeCSharpDoubleCompletion]): the second Ctrl+Space shows the members the place does not see (grayed) and
@@ -25,7 +23,6 @@ import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
  * `System.Collections` stands for a package of the solution the project does not reference.
  */
 class CSharpDoubleCompletionTest : BasePlatformTestCase() {
-    private val settings get() = RoslynLanguageServerSettings.getInstance()
     private var autocomplete = true
     private var autocompleteSmart = true
 
@@ -34,7 +31,6 @@ class CSharpDoubleCompletionTest : BasePlatformTestCase() {
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
         CSharpSemanticEnvironment.setAssembliesForTests { REFERENCED }
         NativeCSharpDoubleCompletion.setSourcesForTests(listOf(NativeCSharpDoubleCompletion.Source(fixture("System.Collections"), "System.Collections 9.0.0", package_ = "System.Collections" to "9.0.0")))
-        settings.setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         val code = CodeInsightSettings.getInstance()
         autocomplete = code.AUTOCOMPLETE_ON_CODE_COMPLETION
         autocompleteSmart = code.AUTOCOMPLETE_ON_SMART_TYPE_COMPLETION
@@ -47,7 +43,6 @@ class CSharpDoubleCompletionTest : BasePlatformTestCase() {
             val code = CodeInsightSettings.getInstance()
             code.AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
             code.AUTOCOMPLETE_ON_SMART_TYPE_COMPLETION = autocompleteSmart
-            settings.state.features = mutableMapOf()
             NativeCSharpDoubleCompletion.setSourcesForTests(null)
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)

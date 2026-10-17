@@ -365,15 +365,6 @@ class CSharpGenerateTest : BasePlatformTestCase() {
         assertTrue("outside a type there is nothing to generate", CSharpRiderPopups.generatorRows(project, myFixture.editor, myFixture.file).isEmpty())
     }
 
-    fun testServerRowsWithANativeEquivalentAreDropped() {
-        for (title in listOf("Generate constructor 'Order(int)'", "Generate Equals and GetHashCode...", "Generate overrides...", "Implement interface", "Implement abstract class", "Extract method")) {
-            assertTrue(title, CSharpRiderPopups.hasNativeEquivalent(title))
-        }
-        for (title in listOf("Add 'DebuggerDisplay' attribute", "Extract interface...", "Implement all members explicitly", "Extract local function")) {
-            assertFalse(title, CSharpRiderPopups.hasNativeEquivalent(title))
-        }
-    }
-
     private companion object {
         fun bytes(name: String): ByteArray? = CSharpGenerateTest::class.java.getResourceAsStream("/index/$name")?.use { it.readBytes() }
         fun fixture(name: String): AssemblyIndex = AssemblyIndex.read(bytes("$name.dnix")!!, bytes("$name.dnxd")?.let(AssemblyDocs::read))

@@ -4,10 +4,7 @@ using System.IO;
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of Generate (Alt+Insert) without the language server (0.1.75, CSHARP_PSI_MIGRATION.md task C4d). Works the same with the
-/// server off (Settings | .NET | Language Server, uncheck the server) and on: with the server ready its rows of the same generators
-/// ("Generate constructor …", "Generate Equals and GetHashCode…", "Generate overrides…", "Implement interface", "Implement abstract class")
-/// are not in the list. Put the caret on the empty line under a marker, press Alt+Insert, choose the row, check the member chooser and
+/// Live check of Generate (Alt+Insert) (0.1.75, CSHARP_PSI_MIGRATION.md task C4d). Put the caret on the empty line under a marker, press Alt+Insert, choose the row, check the member chooser and
 /// EXPECT, then undo (Ctrl+Z) so the file stays as it is.
 /// </summary>
 public class GenOrder
@@ -20,7 +17,7 @@ public class GenOrder
     // (gray, Ctrl+I), Overriding members (gray here: nothing virtual but object's members when the assemblies are not indexed; Ctrl+O),
     // Delegating members, Partial members (gray), Partial Part, Deconstructor, Equality members, Equality comparer, Relational members,
     // Relational comparer, Formatting members, Dispose pattern, Unit Test (Rider's order, 0.1.81), then the rest of the platform's group
-    // (Insert New GUID…). NOT expected: a second "Constructor" row of the server, "Override Methods…" or
+    // (Insert New GUID…). NOT expected: a second "Constructor" row, "Override Methods…" or
     // "Implement Methods…" of the platform (the native rows answer them). Members generated here go on this line (as in Rider).
 
     // TYPE:gen-constructor — Alt+Insert → Constructor. EXPECT: the chooser "Generate Constructor" with groups Fields (`_id: int` checked,

@@ -29,7 +29,7 @@ class LambdaSuggestion(val parameters: List<String>) {
 /**
  * The names of the parameters of a lambda for a delegate type written as text (`Func<IServiceProvider, object>`), as Rider names them: from
  * the types (`serviceProvider`, `i` for `int`, `x` for a bare type parameter), `(sender, e)` for an event handler, `(x, y)` for a comparison.
- * Shared by the lambdas of the server's signature help (module `roslyn`) and the native ones ([NativeCSharpLambdas]).
+ * Used by the native lambdas ([NativeCSharpLambdas]).
  */
 object CSharpLambdaNames {
     private val DELEGATE = Regex("""^(?:params\s+|ref\s+|in\s+|out\s+)?(?:System\.)?(?:Linq\.Expressions\.)?(Expression<(.+)>|Func<(.+)>|Action<(.+)>|Action|Predicate<(.+)>|Comparison<(.+)>|Converter<(.+)>|EventHandler<(.+)>|EventHandler|Func|Predicate)\??$""")

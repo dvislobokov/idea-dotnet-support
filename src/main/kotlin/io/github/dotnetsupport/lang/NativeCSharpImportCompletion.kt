@@ -27,7 +27,7 @@ import io.github.dotnetsupport.ml.CSharpMlScope
 import io.github.dotnetsupport.suggest.SuggestionRules
 import io.github.dotnetsupport.suggest.SuggestionStats
 import java.util.Collections
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpOptions
 import java.util.WeakHashMap
 import java.util.concurrent.ConcurrentHashMap
 import javax.swing.Icon
@@ -53,7 +53,7 @@ object NativeCSharpImportCompletion {
     const val MIN_PREFIX = 1
 
     /** `completion.dotnet_show_completion_items_from_unimported_namespaces` of the server's page: off, only what a `using` sees is listed. */
-    val unimportedEnabled: Boolean get() = RoslynOptions.isOn("completion.dotnet_show_completion_items_from_unimported_namespaces")
+    val unimportedEnabled: Boolean get() = CSharpOptions.isOn("completion.dotnet_show_completion_items_from_unimported_namespaces")
 
     /** Of what is not imported, the rows a call gives at most, the most likely first: `System` first, then the shorter names. */
     const val MAX_UNIMPORTED = 150

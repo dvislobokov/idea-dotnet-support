@@ -18,7 +18,6 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.PsiTreeUtil
 import io.github.dotnetsupport.csharp.lang.psi.*
-import io.github.dotnetsupport.lsp.RoslynServerStatus
 
 /**
  * The common calls of the roadmap («Подсказки для частых вызовов»), the syntactic ones: what is written where a task is returned and
@@ -213,9 +212,7 @@ object NativeCSharpCommonCalls {
 
 /**
  * Alt+Enter on `await` (also of `await using` and `await foreach`) in a method, local function or lambda that is not `async`: "Make method
- * async" — `async` into the header and the return type a task ([NativeCSharpCommonCalls.makeAsync]). On the native tree; while the
- * language server is ready and completion is its, its own fix (CS4032 / CS4033) is offered instead, and when completion is NATIVE the
- * server's row of the same title is dropped ([NativeCSharpServerActions]), so the two do not stand side by side.
+ * async" — `async` into the header and the return type a task ([NativeCSharpCommonCalls.makeAsync]). On the native tree.
  */
 class NativeCSharpMakeAsyncIntention : IntentionAction, PriorityAction, DumbAware {
     override fun getText(): String = "Make method async"
@@ -225,7 +222,6 @@ class NativeCSharpMakeAsyncIntention : IntentionAction, PriorityAction, DumbAwar
 
     override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean {
         if (editor == null || file !is CSharpFile || file.compilationUnit == null) return false
-        if (!CSharpFeatures.native(CSharpFeature.COMPLETION, file) && RoslynServerStatus.isReady(project, file.virtualFile)) return false
         return awaitAt(file, editor.caretModel.offset)?.let(NativeCSharpCommonCalls::functionToMakeAsync) != null
     }
 

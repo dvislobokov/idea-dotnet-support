@@ -21,12 +21,6 @@ import io.github.dotnetsupport.lang.CSharpUsageKinds
 import io.github.dotnetsupport.lang.CSharpUsages
 import io.github.dotnetsupport.lang.NativeCSharpUsageKinds
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
-import io.github.dotnetsupport.roslyn.RoslynServer
-import org.eclipse.lsp4j.Location
-import org.eclipse.lsp4j.jsonrpc.json.MessageJsonHandler
-import org.eclipse.lsp4j.jsonrpc.services.ServiceEndpoints
 import java.io.File
 
 /**
@@ -37,8 +31,6 @@ import java.io.File
 class CSharpFindUsagesTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
-            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
-            RoslynLanguageServerSettings.getInstance().state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
         } catch (e: Throwable) {
             addSuppressedException(e)
         } finally {
@@ -228,27 +220,7 @@ class CSharpFindUsagesTest : BasePlatformTestCase() {
     }
 
     /** The same usages on both trees: the heuristic tree of `SYNTAX_TREE` = ROSLYN gets the heuristic kinds whatever `USAGE_KINDS` says. */
-    fun testTheSwitchPicksTheClassifier() {
-        val settings = RoslynLanguageServerSettings.getInstance()
-        val file = myFixture.addFileToProject("FindUsagesSwitch/Program.cs", "class P\n{\n    void M()\n    {\n        (a, b) = (1, 2);\n    }\n}\n")
-        val range = file.text.indexOf("a,").let { TextRange(it, it + 1) }
-        assertNotNull("the native tree by default", (file as io.github.dotnetsupport.lang.CSharpFile).compilationUnit)
-        assertEquals("NATIVE by default (0.1.46): the tree", WRITE, CSharpUsages.analysis(file).kindOf(range))
-        settings.state.enabled = true // ROSLYN is the server's path: the server is off by default since 0.1.76
-        settings.setSource(CSharpFeature.USAGE_KINDS, CSharpFeatureSource.ROSLYN)
-        try {
-            assertEquals("ROSLYN: the tokens, at once", READ, CSharpUsages.analysis(file).kindOf(range))
-            settings.state.enabled = false
-            try {
-                assertEquals("no server: the built-in one", WRITE, CSharpUsages.analysis(file).kindOf(range))
-            } finally {
-                settings.state.enabled = RoslynLanguageServerSettings.ENABLED_BY_DEFAULT
-            }
-        } finally {
-            settings.setSource(CSharpFeature.USAGE_KINDS, CSharpFeatureSource.NATIVE)
-        }
-        assertEquals(WRITE, CSharpUsages.analysis(file).kindOf(range))
-    }
+
 
     /** Half-typed code: an answer for every offset, no exception. */
     fun testBrokenCode() {
@@ -266,17 +238,16 @@ class CSharpFindUsagesTest : BasePlatformTestCase() {
     }
 
     /**
-     * What the Usages view gets from the LSP client of the platform for one location of `textDocument/references`: a text usage of the
-     * file and the range, wrapped as Find Usages wraps every usage of a search target (the classes are internal to Kotlin, hence reflection).
+     * A text usage of the file and the range (what a usage search that knows no PSI element gives), wrapped as Find Usages wraps every usage of a search target (the classes are internal to Kotlin, hence reflection).
      */
-    private fun lspUsage(file: PsiFile, range: TextRange): Usage {
+    private fun textUsage(file: PsiFile, range: TextRange): Usage {
         val loader = PsiUsage::class.java.classLoader
         val info = loader.loadClass("com.intellij.find.usages.impl.PsiUsage2UsageInfo").getConstructor(PsiUsage::class.java).newInstance(PsiUsage.textUsage(file, range))
         return loader.loadClass("com.intellij.find.usages.impl.Psi2UsageInfo2UsageAdapter").getConstructor(info.javaClass).newInstance(info) as Usage
     }
 
-    /** The rules as the Usages view runs them, on the very kind of usage the LSP client of the platform makes. */
-    fun testRulesOnTheUsagesOfTheLspClient() {
+    /** The rules as the Usages view runs them, on a text usage. */
+    fun testRulesOnTextUsages() {
         val file = myFixture.addFileToProject("FindUsagesRules/Console/Sample.cs", """
             namespace Playground;
             public class Sample
@@ -289,7 +260,7 @@ class CSharpFindUsagesTest : BasePlatformTestCase() {
         myFixture.addFileToProject("FindUsagesRules/Console/Console.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\" />")
         val text = file.text
         val write = text.indexOf("Counter = 5")
-        val usage = lspUsage(file, TextRange(write, write + "Counter".length))
+        val usage = textUsage(file, TextRange(write, write + "Counter".length))
 
         assertNull("the platform's own rule gets no type from a text usage: why the plugin brings its own", UsageTypeGroupingRule().getParentGroupsFor(usage, UsageTarget.EMPTY_ARRAY).singleOrNull())
 
@@ -303,105 +274,10 @@ class CSharpFindUsagesTest : BasePlatformTestCase() {
         val member: UsageGroupingRule = CSharpMemberGroupRuleProvider().getUsageGroupingRule(project)
         assertEquals("a member with its parameters, as in the Structure view", listOf("Sample", "Write()"), member.getParentGroupsFor(usage, UsageTarget.EMPTY_ARRAY).map(UsageGroup::getPresentableGroupText))
         val read = text.indexOf("Counter;", write)
-        val other = lspUsage(file, TextRange(read, read + "Counter".length))
+        val other = textUsage(file, TextRange(read, read + "Counter".length))
         val (sampleOfWrite, _) = member.getParentGroupsFor(usage, UsageTarget.EMPTY_ARRAY)
         val (sampleOfRead, readGroup) = member.getParentGroupsFor(other, UsageTarget.EMPTY_ARRAY)
         assertEquals("one group of the type for the usages in its members", sampleOfWrite, sampleOfRead)
         assertEquals("Read()", readGroup.presentableGroupText)
-    }
-
-    // ---- the answers of the real server ----
-
-    private val directory = File(javaClass.getResource("/roslyn/capture-5.12-references/03-textDocument_references_field.json")!!.toURI()).parentFile
-    private val sources = mapOf("FindUsages.cs" to File(directory, "FindUsages.cs.txt").readText(), "UsageLog.cs" to File(directory, "UsageLog.cs.txt").readText())
-    private val handler = MessageJsonHandler(ServiceEndpoints.getSupportedMethods(RoslynServer::class.java))
-
-    private fun record(name: String): JsonObject = JsonParser.parseString(File(directory, "$name.json").readText()).asJsonObject
-
-    /** The answer read by lsp4j, as the LSP client of the IDE reads it. */
-    @Suppress("UNCHECKED_CAST")
-    private fun locations(name: String): List<Location> {
-        handler.setMethodProvider { "textDocument/references" }
-        val envelope = JsonObject().apply { addProperty("jsonrpc", "2.0"); addProperty("id", "1"); add("result", record(name).get("result")) }
-        return (handler.parseMessage(envelope.toString()) as org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage).result as List<Location>
-    }
-
-    private fun offset(text: String, line: Int, character: Int): Int = text.split('\n').take(line).sumOf { it.length + 1 } + character
-
-    /** A location of the server's answer and its kind; the tokens and the tree must agree on every one. */
-    private fun classified(location: Location): Pair<String, CSharpUsageKind> {
-        val name = location.uri.substringAfterLast('/')
-        val text = sources.getValue(name)
-        val start = offset(text, location.range.start.line, location.range.start.character)
-        val end = offset(text, location.range.end.line, location.range.end.character)
-        val line = "$name:${location.range.start.line + 1} " + text.split('\n')[location.range.start.line].trim()
-        val heuristic = CSharpUsageKinds.classify(text, TextRange(start, end))
-        assertEquals("the tree and the tokens disagree on $line", heuristic, NativeCSharpUsageKinds.classify(text, TextRange(start, end)))
-        return line to heuristic
-    }
-
-    fun testWhatTheServerAnswers() {
-        val field = locations("03-textDocument_references_field")
-        assertTrue("bare locations: uri and range, nothing about the kind", record("03-textDocument_references_field").getAsJsonArray("result").all { (it as JsonObject).keySet() == setOf("uri", "range") })
-        assertEquals("includeDeclaration adds the declaration and nothing else", field.size - 1, locations("04-textDocument_references_field_without_declaration").size)
-        assertEquals("the declaration comes in no special place and with no mark", setOf(DECLARATION), field.map(::classified).filter { "public int Counter" in it.first }.map { it.second }.toSet())
-        // a type: its constructor is a declaration too; an attribute with a primary constructor: the same range twice
-        assertEquals(2, locations("07-textDocument_references_type").size - locations("08-textDocument_references_type_without_declaration").size)
-        val attribute = locations("09-textDocument_references_attribute")
-        val header = sources.getValue("FindUsages.cs").split('\n').indexOfFirst { "class UsageNoteAttribute" in it }
-        assertEquals(2, attribute.count { it.range.start.line == header })
-        assertEquals(ATTRIBUTE, classified(locations("10-textDocument_references_attribute_without_declaration").single()).second)
-    }
-
-    fun testTheKindsOfTheFieldAgreeWithWhatTheServerTellsVisualStudio() {
-        // what Roslyn gives a client that says it is Visual Studio: VSInternalReferenceKind 3 Read, 4 Write, 5 Reference (ref / in / out), 6 Name (nameof)
-        val visualStudio = record("vs-03-textDocument_references_field_visual_studio_client").getAsJsonArray("result").map { it as JsonObject }
-        val server = visualStudio.associate { item ->
-            val range = item.getAsJsonObject("_vs_location").getAsJsonObject("range").getAsJsonObject("start")
-            val kinds = item.getAsJsonArray("_vs_kind").map { it.asInt }.toSet()
-            val kind = when {
-                kinds.isEmpty() -> DECLARATION
-                6 in kinds -> NAMEOF
-                4 in kinds -> WRITE
-                else -> READ
-            }
-            (range.get("line").asInt to range.get("character").asInt) to kind
-        }
-        val ours = locations("03-textDocument_references_field").associate { (it.range.start.line to it.range.start.character) to classified(it).second }
-        assertEquals(server, ours)
-
-        // and documentHighlight of plain LSP: 1 Text (the declaration), 2 Read, 3 Write; nameof is a read there
-        val highlights = record("11-textDocument_documentHighlight_field").getAsJsonArray("result").map { it as JsonObject }.associate { item ->
-            val start = item.getAsJsonObject("range").getAsJsonObject("start")
-            (start.get("line").asInt to start.get("character").asInt) to when (item.get("kind").asInt) { 1 -> DECLARATION; 3 -> WRITE; else -> READ }
-        }
-        assertEquals(highlights, ours.mapValues { (_, kind) -> if (kind == NAMEOF) READ else kind })
-    }
-
-    fun testTheContainingMembersAgreeWithTheServer() {
-        val visualStudio = record("vs-03-textDocument_references_field_visual_studio_client").getAsJsonArray("result").map { it as JsonObject }
-        val text = sources.getValue("FindUsages.cs")
-        val structure = CSharpDeclarations.scan(text)
-        for (item in visualStudio) {
-            val start = item.getAsJsonObject("_vs_location").getAsJsonObject("range").getAsJsonObject("start")
-            val path = CSharpUsages.containers(structure, offset(text, start.get("line").asInt, start.get("character").asInt))
-            assertEquals(item.get("_vs_containingType").asString, path.first().name)
-            // the server names a constructor `.ctor`; on the declaration of the field itself it names no member, and the plugin puts it under the field
-            val member = item.get("_vs_containingMember")?.asString?.replace(".ctor", "UsageSample") ?: "Counter"
-            assertEquals(member, path.last().name)
-        }
-    }
-
-    fun testTheUsagesOfTheScenarioByKind() {
-        fun kinds(name: String) = locations(name).map(::classified).groupingBy { it.second }.eachCount()
-        assertEquals("the `<see cref>` in a doc comment is a reference to the server", mapOf(DECLARATION to 1, INVOCATION to 5, COMMENT to 1), kinds("05-textDocument_references_method"))
-        assertEquals(mapOf(DECLARATION to 2, NEW to 1, BASE_TYPE to 1, NAMEOF to 1, DECLARATION_TYPE to 1, TYPEOF to 1, TYPE_CHECK to 1, TYPE_ARGUMENT to 1), kinds("07-textDocument_references_type"))
-        assertEquals(mapOf(DECLARATION to 2, ATTRIBUTE to 1), kinds("09-textDocument_references_attribute"))
-    }
-
-    fun testTheAnswerToVisualStudioIsNotForThisClient() {
-        val answer = runCatching { locations("vs-03-textDocument_references_field_visual_studio_client") }
-        assertTrue("lsp4j cannot read the items Roslyn gives Visual Studio as locations: ${answer.getOrNull()?.firstOrNull()}",
-            answer.isFailure || answer.getOrThrow().all { it.uri == null })
     }
 }

@@ -17,7 +17,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Ref
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
-import io.github.dotnetsupport.lsp.RoslynOptions
+import io.github.dotnetsupport.settings.CSharpOptions
 
 /** Live templates of `liveTemplates/CSharp.xml` apply to C# files. */
 class CSharpTemplateContext : TemplateContextType("C#") {
@@ -39,7 +39,7 @@ object CSharpDocComments {
      * `auto_insert.dotnet_enable_auto_insert` of the page of the server, what its `OnAutoInsert` does: the `///` skeleton and `///` on
      * Enter inside a doc comment. The pair of `{` and `}` on Enter is the platform's (Settings | Editor | Smart Keys), as in VS Code.
      */
-    val autoInsert: Boolean get() = RoslynOptions.isOn("auto_insert.dotnet_enable_auto_insert")
+    val autoInsert: Boolean get() = CSharpOptions.isOn("auto_insert.dotnet_enable_auto_insert")
 
     /** `a`, `b` of `(int a, string b = "x", params object[] rest)`: the last word of each parameter before its default value. */
     fun parameterNames(parameters: String?): List<String> {

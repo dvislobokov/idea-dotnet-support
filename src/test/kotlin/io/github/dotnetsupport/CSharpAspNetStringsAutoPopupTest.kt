@@ -3,9 +3,7 @@ package io.github.dotnetsupport
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import com.intellij.testFramework.fixtures.CompletionAutoPopupTester
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 
 /** 0.1.93: the list opens by itself after `{` of a message template and of a route, after `:` of a route parameter, after `AddScoped<I, `. */
 class CSharpAspNetStringsAutoPopupTest : BasePlatformTestCase() {
@@ -17,12 +15,10 @@ class CSharpAspNetStringsAutoPopupTest : BasePlatformTestCase() {
         super.setUp()
         tester = CompletionAutoPopupTester(myFixture)
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
     }
 
     override fun tearDown() {
         try {
-            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)

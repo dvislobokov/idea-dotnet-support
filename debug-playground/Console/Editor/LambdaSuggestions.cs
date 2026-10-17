@@ -5,8 +5,7 @@ namespace Playground.Editor;
 /// completion list and as gray text after `(` / `,`, the lambda and «Create method» at `Changed += `, the named arguments `name:`, the
 /// parameter info after a method chosen in the list. Lines to type on are marked <c>// TYPE:name</c>: put the caret on the empty line under
 /// the marker, type what the comment says, compare with EXPECT, undo (Ctrl+Z). Nothing here is called, the file only has to compile.
-/// Since 0.1.86 the plugin's own semantics answer (Settings | .NET | Language Server: Completion and Documentation = Built-in, the default);
-/// the server need not run.
+/// Since 0.1.86 the plugin's own semantics answer.
 /// </summary>
 public class LambdaSuggestions
 {

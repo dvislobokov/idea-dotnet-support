@@ -23,11 +23,10 @@ import com.intellij.util.io.EnumeratorStringDescriptor
 import com.intellij.util.io.KeyDescriptor
 import io.github.dotnetsupport.csharp.lang.psi.CSharpElement
 import io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubIndexKeys
-import io.github.dotnetsupport.lsp.RoslynServerStatus
 import java.util.IdentityHashMap
 
 /**
- * Names of the types and members of every C# file of the heuristic tree (SYNTAX_TREE = ROSLYN), for Go to Class and Go to Symbol. The key
+ * Names of the types and members of every C# file of the heuristic tree, for Go to Class and Go to Symbol. The key
  * carries the kind (`T:OrderService`, `M:Total`), so that one index serves both; the declarations themselves are found again in the file.
  * With the native tree the stub indexes of csharp-psi serve them (CSHARP_PSI_MIGRATION.md, step 8) and this index is empty: a file is not
  * parsed twice while it is indexed.
@@ -69,10 +68,7 @@ class CSharpDeclarationIndex : ScalarIndexExtension<String>() {
 /**
  * Go to Class / Go to Symbol. With the native tree from the stub indexes of csharp-psi (types by name, members by name): the items are the
  * stub-based declarations, shown from their stubs, so the files they are in are not parsed (`NativeCSharpPresentationProvider`); with the
- * heuristic tree from [CSharpDeclarationIndex], the declarations found again in the file. Where the language server is ready and knows the
- * file, it answers the same question through `workspace/symbol` of the platform, and both answers were shown as two rows of one type: those
- * files are left to it (`RoslynServerStatus.covers`). Everything else — while the server loads, a project that is in no solution, a loose
- * file — stays here.
+ * heuristic tree from [CSharpDeclarationIndex], the declarations found again in the file.
  */
 abstract class CSharpGotoContributor(private val types: Boolean, private val members: Boolean) : ChooseByNameContributorEx, DumbAware {
     private val stubKeys = listOfNotNull(CSharpStubIndexKeys.TYPE_NAMES.takeIf { types }, CSharpStubIndexKeys.MEMBER_NAMES.takeIf { members })
@@ -93,8 +89,7 @@ abstract class CSharpGotoContributor(private val types: Boolean, private val mem
         if (CSharpSyntaxTrees.nativeTree()) {
             val found = ArrayList<CSharpElement>()
             for (key in stubKeys) StubIndex.getInstance().processElements(key, name, project, parameters.searchScope, CSharpElement::class.java) { element ->
-                val file = element.containingFile?.virtualFile
-                if (file == null || !RoslynServerStatus.covers(project, file)) found += element
+                found += element
                 true
             }
             for (element in inTextOrder(found)) if (!processor.process(element as NavigationItem)) return
@@ -105,7 +100,6 @@ abstract class CSharpGotoContributor(private val types: Boolean, private val mem
         val files = keys.flatMapTo(LinkedHashSet()) { index.getContainingFiles(CSharpDeclarationIndex.NAME, it, parameters.searchScope) }
         val psiManager = PsiManager.getInstance(project)
         for (file in files) {
-            if (RoslynServerStatus.covers(project, file)) continue
             val psiFile = psiManager.findFile(file) ?: continue
             if (!process(psiFile, name, processor)) return
         }

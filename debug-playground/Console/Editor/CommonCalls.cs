@@ -5,9 +5,8 @@ using System.Threading.Tasks;
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of the common calls of a task method (0.1.55, ROADMAP «Подсказки для частых вызовов»). Completion items need
-/// Settings | .NET | Language Server → Source of Features → «Completion» = Built-in (the default is still «Language server»);
-/// the gray text of `return ` and the intention «Make method async» work with any source. Type on the empty line under a marker
+/// Live check of the common calls of a task method (0.1.55, ROADMAP «Подсказки для частых вызовов»). Completion items,
+/// the gray text of `return ` and the intention «Make method async». Type on the empty line under a marker
 /// comment, check EXPECT, then undo (Ctrl+Z) so the file keeps compiling.
 /// </summary>
 public class CommonCalls
@@ -49,7 +48,7 @@ public class CommonCalls
         return default;
     }
 
-    // TYPE:complete-await-async — on the empty line in Total type `aw` and choose `await` (Built-in completion). EXPECT: `await ` is
+    // TYPE:complete-await-async — on the empty line in Total type `aw` and choose `await`. EXPECT: `await ` is
     // inserted and the header becomes `public async Task<int> Total()`; Ctrl+Z twice gets the file back. In Fire (void) the header becomes
     // `async Task Fire()`; in OnClick (an event handler) it stays `async void`. NOT in Name (a property getter): no `await` item at all
     public int Total()
@@ -78,8 +77,7 @@ public class CommonCalls
     }
 
     // TYPE:complete-make-async — on the empty line in Delayed type `await Task.Delay(10);`, put the caret on `await`, Alt+Enter.
-    // EXPECT: «Make method async» first; it gives `public async Task<int> Delayed()`. With «Completion» = Language server and the server
-    // loaded the server's own fix «Make method async» is offered instead (one entry, not two)
+    // EXPECT: «Make method async» first; it gives `public async Task<int> Delayed()` (one entry, not two)
     public int Delayed()
     {
 

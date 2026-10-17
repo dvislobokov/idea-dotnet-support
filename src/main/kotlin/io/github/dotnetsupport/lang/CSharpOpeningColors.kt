@@ -27,7 +27,6 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiManager
 import com.intellij.util.concurrency.AppExecutorUtil
-import io.github.dotnetsupport.lsp.RoslynServerStatus
 import org.jetbrains.annotations.TestOnly
 
 /**
@@ -81,7 +80,6 @@ object CSharpOpeningColors {
         if (file.compilationUnit != null) for (range in NativeCSharpInactiveCode.ranges(file)) out += range to CSharpColors.INACTIVE_BRANCH
         when {
             NativeCSharpSemanticColors.serves(file) -> out += NativeCSharpSemanticColors.colors(file)
-            RoslynServerStatus.colorsIdentifiers(file.project, file.virtualFile) -> {}
             else -> for ((range, kind) in CSharpIdentifierClassifier.classify(file.viewProvider.contents)) out += range to CSharpIdentifierAnnotator.keyFor(kind)
         }
         for ((range, second) in CSharpFormatItems.items(file.viewProvider.contents)) {

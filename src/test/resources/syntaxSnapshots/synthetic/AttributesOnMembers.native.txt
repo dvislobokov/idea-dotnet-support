@@ -94,25 +94,6 @@ Synthetic.Tests
 56: Synthetic.Tests.ITests / -
 57: - / -
 
-## Go to Base: member at the line
-1: -
-12: OrderTests.PlainFact()
-15: OrderTests.TheoryWithData(int value)
-18: OrderTests.QualifiedFact()
-21: OrderTests.ManyCases(int x)
-25: OrderTests.Generic()
-28: OrderTests.SkippedFact()
-32: OrderTests.OneLine()
-34: OrderTests.NotATest([FromBody] string body)
-36: OrderTests.Changed
-39: -
-41: Nested.InNested()
-43: -
-48: StructTests.InStruct()
-50: -
-54: ITests.InInterface()
-56: -
-
 ## breakpoint lines
 13, 16, 19, 23, 26, 30, 32, 34, 42, 49
 

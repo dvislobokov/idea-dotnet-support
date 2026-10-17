@@ -62,19 +62,6 @@ Playground.Editor
 49: Playground.Editor.LambdaOrder / Price
 50: Playground.Editor.LambdaOrder / -
 
-## Go to Base: member at the line
-1: -
-13: LambdaSuggestions.Changed
-15: LambdaSuggestions.Each(Action<LambdaOrder> action)
-16: LambdaSuggestions.Sort(Comparison<LambdaOrder> comparison)
-17: LambdaSuggestions.Register(Func<IServiceProvider, object> implementationFactory)
-18: LambdaSuggestions.Retry(int attempts, Func<int, string, bool> shouldRetry)
-20: LambdaSuggestions.Use()
-22: LambdaSuggestions.Use() (in body)
-45: -
-49: LambdaOrder.Price
-50: -
-
 ## breakpoint lines
 11, 15-18, 21-29, 44, 49
 

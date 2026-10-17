@@ -25,7 +25,6 @@ import io.github.dotnetsupport.lang.semantic.CSharpNameResolver
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpTypeDisplay
 import io.github.dotnetsupport.lang.semantic.CSharpTypeFacts
-import io.github.dotnetsupport.lsp.RoslynServerStatus
 
 /*
  * Alt+Enter context actions on csharp-psi's tree, without the language server (CSHARP_PSI_MIGRATION.md, task A7): `if` ↔ `?:` (the return
@@ -953,11 +952,10 @@ object NativeCSharpContextEdits {
 }
 
 /**
- * A native context action ([CSharpFeature.CONTEXT_ACTIONS]). Those the server has too stand back while it is ready and the switch is
- * ROSLYN; with NATIVE the server's rows are dropped ([NativeCSharpServerActions]). [needsTypes]: it reads the types of C2, so not while
+ * A native context action ([CSharpFeature.CONTEXT_ACTIONS]). [needsTypes]: it reads the types of C2, so not while
  * the IDE indexes.
  */
-abstract class NativeCSharpContextAction(private val title: String, private val serverHasIt: Boolean, private val needsTypes: Boolean = false) : IntentionAction, PriorityAction, DumbAware {
+abstract class NativeCSharpContextAction(private val title: String, private val needsTypes: Boolean = false) : IntentionAction, PriorityAction, DumbAware {
     override fun getText(): String = title
     override fun getFamilyName(): String = title
     override fun startInWriteAction(): Boolean = true
@@ -965,7 +963,6 @@ abstract class NativeCSharpContextAction(private val title: String, private val 
 
     override fun isAvailable(project: Project, editor: Editor?, file: PsiFile?): Boolean {
         if (editor == null || file !is CSharpFile || file.compilationUnit == null) return false
-        if (serverHasIt && !CSharpFeatures.native(CSharpFeature.CONTEXT_ACTIONS, file) && RoslynServerStatus.isReady(project, file.virtualFile)) return false
         if (needsTypes && DumbService.isDumb(project)) return false
         return edit(file, editor) != null
     }
@@ -984,13 +981,13 @@ abstract class NativeCSharpContextAction(private val title: String, private val 
 }
 
 /** Alt+Enter on `if`: `return c ? a : b;` / `x = c ? a : b;` for an `if` whose branches return or assign (Rider: "Convert to '?:' expression"). */
-class NativeCSharpIfToConditionalIntention : NativeCSharpContextAction("Convert to '?:' expression", serverHasIt = true) {
+class NativeCSharpIfToConditionalIntention : NativeCSharpContextAction("Convert to '?:' expression") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpContextEdits.ifAt(file, editor.caretModel.offset)?.let { NativeCSharpContextEdits.ifToConditional(it, editor.document.charsSequence) }
 }
 
 /** Alt+Enter on a `?:` that is returned or assigned: the `if` / `else` statement it stands for; deeper in a statement, the statement in both branches. */
-class NativeCSharpConditionalToIfIntention : NativeCSharpContextAction("Convert '?:' to 'if' statement", serverHasIt = true) {
+class NativeCSharpConditionalToIfIntention : NativeCSharpContextAction("Convert '?:' to 'if' statement") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? {
         val text = editor.document.charsSequence
         val unit = NativeCSharpContextEdits.unit(file)
@@ -1005,13 +1002,13 @@ class NativeCSharpConditionalToIfIntention : NativeCSharpContextAction("Convert 
 }
 
 /** Alt+Enter on the header of a member, local function or accessor whose body is one statement: `=> expression;` (Rider: "To expression body"). */
-class NativeCSharpToExpressionBodyIntention : NativeCSharpContextAction("To expression body", serverHasIt = true) {
+class NativeCSharpToExpressionBodyIntention : NativeCSharpContextAction("To expression body") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpContextEdits.bodyOwnerAt(file, editor.caretModel.offset)?.let { NativeCSharpContextEdits.toExpressionBody(it, editor.document.charsSequence) }
 }
 
 /** Alt+Enter on the header of an expression-bodied member: a block with `return expression;` (Rider: "To block body"). */
-class NativeCSharpToBlockBodyIntention : NativeCSharpContextAction("To block body", serverHasIt = true) {
+class NativeCSharpToBlockBodyIntention : NativeCSharpContextAction("To block body") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpContextEdits.bodyOwnerAt(file, editor.caretModel.offset)?.let {
             NativeCSharpContextEdits.toBlockBody(it, editor.document.charsSequence, NativeCSharpContextEdits.unit(file))
@@ -1019,19 +1016,19 @@ class NativeCSharpToBlockBodyIntention : NativeCSharpContextAction("To block bod
 }
 
 /** Alt+Enter on `var` of a local: the type it stands for (Rider: "Use explicit type"). */
-class NativeCSharpUseExplicitTypeIntention : NativeCSharpContextAction("Use explicit type", serverHasIt = true, needsTypes = true) {
+class NativeCSharpUseExplicitTypeIntention : NativeCSharpContextAction("Use explicit type", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpContextEdits.typeSiteAt(file, editor.caretModel.offset)?.let { NativeCSharpContextEdits.useExplicitType(it, resolver(file)) }
 }
 
 /** Alt+Enter on the explicit type of a local whose value has that very type: `var` (Rider: "Use 'var'"). */
 /** Alt+Enter on a local with its value: the declaration and the assignment apart (Rider: "Split variable declaration and initialization"). */
-class NativeCSharpSplitDeclarationIntention : NativeCSharpContextAction("Split variable declaration and initialization", serverHasIt = true, needsTypes = true) {
+class NativeCSharpSplitDeclarationIntention : NativeCSharpContextAction("Split variable declaration and initialization", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpContextEdits.typeSiteAt(file, editor.caretModel.offset)?.let { NativeCSharpContextEdits.splitDeclaration(it, resolver(file), editor.document.charsSequence) }
 }
 
-class NativeCSharpUseVarIntention : NativeCSharpContextAction("Use 'var'", serverHasIt = true, needsTypes = true) {
+class NativeCSharpUseVarIntention : NativeCSharpContextAction("Use 'var'", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpContextEdits.typeSiteAt(file, editor.caretModel.offset)?.let { NativeCSharpContextEdits.useVar(it, resolver(file)) }
 }
@@ -1040,7 +1037,7 @@ class NativeCSharpUseVarIntention : NativeCSharpContextAction("Use 'var'", serve
  * Alt+Enter on an expression (the selected one, or the call / member access / operator at the caret): `var name = expression;` before
  * its statement and the name in its place, the name then edited in both places at once (Rider: "Introduce variable").
  */
-class NativeCSharpIntroduceVariableIntention : NativeCSharpContextAction("Introduce variable", serverHasIt = true, needsTypes = true) {
+class NativeCSharpIntroduceVariableIntention : NativeCSharpContextAction("Introduce variable", needsTypes = true) {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         extraction(file, editor)?.let { NativeCSharpContextEdits.extract(it, editor.document.charsSequence, unit = NativeCSharpContextEdits.unit(file)) }
 
@@ -1120,7 +1117,7 @@ class NativeCSharpIntroduceVariableIntention : NativeCSharpContextAction("Introd
 }
 
 /** Alt+Enter on a local assigned once (its declaration or a use): its value in place of every use, the declaration gone (Rider: "Inline variable"). */
-class NativeCSharpInlineVariableIntention : NativeCSharpContextAction("Inline variable", serverHasIt = true) {
+class NativeCSharpInlineVariableIntention : NativeCSharpContextAction("Inline variable") {
     override fun edit(file: CSharpFile, editor: Editor): CSharpTextEdit? =
         NativeCSharpContextEdits.inliningAt(file, editor.caretModel.offset)?.let { CSharpTextEdit(it.statement.textRange, "") }
 

@@ -11,7 +11,6 @@ import io.github.dotnetsupport.codeanalysis.CodeAnalysisAnswers
 import io.github.dotnetsupport.codeanalysis.CodeAnalysisReport
 import io.github.dotnetsupport.codeanalysis.CodeAnalysisService
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import io.github.dotnetsupport.settings.DotNetSettings
 
 /**
@@ -57,11 +56,8 @@ class AnalyzerNoiseTest : BasePlatformTestCase() {
     /** In the editor: the warning drawn with its tooltip, the Info not drawn and not described, its fix on Alt+Enter at the caret. */
     fun testSilentSuggestionKeepsItsFix() {
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        val settings = RoslynLanguageServerSettings.getInstance()
-        val enabled = settings.state.enabled
         val suggestions = DotNetSettings.getInstance().showAnalyzerSuggestions
         try {
-            settings.state.enabled = false
             DotNetSettings.getInstance().showAnalyzerSuggestions = false
             val text = "class Noise\n{\n    public int Twice(int value) => value * 2;\n}\n"
             val file = myFixture.configureByText("AnalyzerNoise.cs", text)
@@ -81,7 +77,6 @@ class AnalyzerNoiseTest : BasePlatformTestCase() {
             assertTrue(myFixture.doHighlighting(HighlightSeverity.WEAK_WARNING).any { it.description?.startsWith("CA1822") == true })
             service.putAnalyzedForTests(file.virtualFile.path, null)
         } finally {
-            settings.state.enabled = enabled
             DotNetSettings.getInstance().showAnalyzerSuggestions = suggestions
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         }

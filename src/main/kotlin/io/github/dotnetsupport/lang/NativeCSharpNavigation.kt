@@ -14,7 +14,6 @@ import io.github.dotnetsupport.csharp.lang.psi.CSharpSimpleName
 import io.github.dotnetsupport.csharp.lang.psi.CSharpTypeDeclaration
 import io.github.dotnetsupport.index.AssemblyNavigation
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
-import io.github.dotnetsupport.lsp.RoslynServerStatus
 
 /**
  * Go to Declaration, Ctrl + hover and the usages of a symbol in its file on csharp-psi's tree (CSHARP_PSI_MIGRATION.md, step 9, feature
@@ -22,8 +21,7 @@ import io.github.dotnetsupport.lsp.RoslynServerStatus
  * (the same as for colors and rename): locals, parameters, local functions, labels, range variables, type parameters by the scopes of C#;
  * members of the enclosing types, their partial parts and base classes of the solution; `this.X`, `base.X`, `Type.X`, members set by an
  * object initializer; types of the solution by simple name and arity among the namespaces the usage sees; an attribute by its name with
- * `Attribute`. What it cannot tell (null) goes on to whoever comes next: the language server when it is ready. The switch NATIVE therefore
- * never loses navigation the server gave.
+ * `Attribute`. What it cannot tell (null) goes on to whoever comes next.
  */
 object NativeCSharpNavigation {
     /** The file is the native tree's and the switch gives NAVIGATION to it. Settings and dumb mode only (the stub index needs smart mode). */
@@ -84,8 +82,7 @@ object NativeCSharpNavigation {
 
 /**
  * Go to Declaration (Ctrl+B, Ctrl + click) and Ctrl + hover on the native tree when NAVIGATION is NATIVE ([NativeCSharpNavigation]).
- * First among the handlers: the platform asks them before the references, so a name the tree resolves never reaches the language
- * server; one it cannot resolve (null) goes on to the server's references (`textDocument/definition`) as with ROSLYN.
+ * First among the handlers: the platform asks them before the references.
  */
 class CSharpGotoDeclarationHandler : GotoDeclarationHandler {
     override fun getGotoDeclarationTargets(sourceElement: PsiElement?, offset: Int, editor: Editor?): Array<PsiElement>? {
@@ -93,8 +90,6 @@ class CSharpGotoDeclarationHandler : GotoDeclarationHandler {
         if (!NativeCSharpNavigation.serves(leaf.containingFile)) return null
         // a type or member of an assembly: its metadata view (B4) when the server is not ready to give its decompiled source
         val targets = NativeCSharpNavigation.targets(leaf) ?: AssemblyNavigation.declarationTargets(leaf) ?: return null
-        // overloads are not resolved by syntax (step 11d): a ready server picks the one of the call, the tree offers them all only without it
-        if (targets.size > 1 && RoslynServerStatus.isReady(leaf.project, leaf.containingFile?.virtualFile)) return null
         return targets.toTypedArray()
     }
 }

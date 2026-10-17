@@ -21,7 +21,6 @@
 
     <!-- optional parts: a module is loaded only where its dependencies are (see the descriptor of the module next to META-INF) -->
     <content>
-        <module name="io.github.dotnetsupport.roslyn"/>
         <!-- the schema of appsettings*.json, where the JSON plugin is -->
         <module name="io.github.dotnetsupport.jsonschema"/>
         <!-- frameworks (RAZOR_PLAN.md, "Модульность"): beside the core of C#, which hears from them through io.github.dotnetsupport.csharp* only -->
@@ -51,10 +50,6 @@
     <extensionPoints>
         <!-- who can attach a debugger to a .NET process: the module with the debugger, where it is loaded -->
         <extensionPoint qualifiedName="io.github.dotnetsupport.processAttacher" interface="io.github.dotnetsupport.run.DotNetProcessAttacher" dynamic="true"/>
-        <!-- who changes the namespace of a moved file together with its usages: the module of the language server -->
-        <extensionPoint qualifiedName="io.github.dotnetsupport.namespaceAdjuster" interface="io.github.dotnetsupport.lang.CSharpNamespaceAdjuster" dynamic="true"/>
-        <!-- rows of Rider's Refactor This and Generate in C# that come from elsewhere: the code actions of the language server -->
-        <extensionPoint qualifiedName="io.github.dotnetsupport.csharpPopupContributor" interface="io.github.dotnetsupport.lang.CSharpPopupContributor" dynamic="true"/>
         <!-- what a framework module knows of the C# the build makes of a project: the semantics stays silent where types may come from it -->
         <extensionPoint qualifiedName="io.github.dotnetsupport.csharpCodeGenerators" interface="io.github.dotnetsupport.lang.semantic.CSharpCodeGenerators" dynamic="true"/>
         <!-- a declaration a framework uses without code (Unity's event functions, serialized fields): the usages lens says so instead of "no usages" -->
@@ -333,8 +328,7 @@
         <referencesSearch implementation="io.github.dotnetsupport.lang.CSharpReferencesSearcher"/>
         <definitionsScopedSearch implementation="io.github.dotnetsupport.lang.CSharpDefinitionsSearcher"/>
         <usageTypeProvider implementation="io.github.dotnetsupport.lang.CSharpUsageTypeProvider"/>
-        <!-- Go to Super, Type / Call Hierarchy and the gutter of overrides on the native resolver (NativeCSharpHierarchies.kt); first, each
-             stands back for ROSLYN and the providers of the module roslyn answer -->
+        <!-- Go to Super, Type / Call Hierarchy and the gutter of overrides on the native resolver (NativeCSharpHierarchies.kt) -->
         <codeInsight.gotoSuper language="C#" order="first" implementationClass="io.github.dotnetsupport.lang.NativeCSharpGotoSuperHandler"/>
         <typeHierarchyProvider language="C#" order="first" implementationClass="io.github.dotnetsupport.lang.NativeCSharpTypeHierarchyProvider"/>
         <callHierarchyProvider language="C#" order="first" implementationClass="io.github.dotnetsupport.lang.NativeCSharpCallHierarchyProvider"/>
@@ -425,8 +419,8 @@
                              instance="io.github.dotnetsupport.settings.DotNetDebuggerConfigurable"/>
         <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.codeAnalysis" key="page.codeAnalysis" bundle="messages.DotNetBundle"
                              instance="io.github.dotnetsupport.codeanalysis.CodeAnalysisConfigurable"/>
-        <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.languageServer" key="page.languageServer" bundle="messages.DotNetBundle"
-                             instance="io.github.dotnetsupport.lsp.RoslynLanguageServerConfigurable"/>
+        <projectConfigurable parentId="io.github.dotnetsupport.settings" id="io.github.dotnetsupport.settings.csharpEditor" key="page.csharpEditor" bundle="messages.DotNetBundle"
+                             instance="io.github.dotnetsupport.settings.CSharpEditorConfigurable"/>
         <langCodeStyleSettingsProvider implementation="io.github.dotnetsupport.lang.CSharpCodeStyleSettingsProvider"/>
         <projectViewNodeDecorator implementation="io.github.dotnetsupport.coverage.CoverageProjectViewDecorator"/>
         <postStartupActivity implementation="io.github.dotnetsupport.build.BuildAfterSolutionIsLoaded"/>
@@ -811,7 +805,7 @@
                     description="Write every DAP message of the debug sessions that start from now on next to the debugger logs"/>
             <!-- a diagnostic: is the LSP / DAP API of the platform there in this IDE and with this license -->
             <action id="DotNet.PlatformApiProbe" class="io.github.dotnetsupport.probe.PlatformApiProbeAction"
-                    text="Probe Platform LSP / DAP API..." description="Check which LSP and DAP API of the platform this IDE has; the result can be copied as JSON"/>
+                    text="Probe Platform DAP API..." description="Check which DAP API of the platform this IDE has; the result can be copied as JSON"/>
             <!-- a diagnostic: what the plugin compiles the C# file of the editor against, to be sent when a name the compiler sees is red -->
             <action id="DotNet.CopyCompilationReferences" class="io.github.dotnetsupport.index.CopyCompilationReferencesAction"
                     text="Copy Compilation References of Current File"
@@ -929,18 +923,13 @@
     </projectListeners>
 
     <applicationListeners>
-        <!-- the tree of C# files follows Structure, folding and breadcrumbs: Language server | Built-in -->
-        <listener class="io.github.dotnetsupport.lang.CSharpSyntaxTreeSwitch"
-                  topic="io.github.dotnetsupport.lsp.RoslynLanguageServerSettings$Listener"/>
-        <listener class="io.github.dotnetsupport.lang.NativeCSharpSemanticColorsSwitch"
-                  topic="io.github.dotnetsupport.lsp.RoslynLanguageServerSettings$Listener"/>
         <listener class="io.github.dotnetsupport.lang.NativeCSharpDiagnosticsSwitch"
-                  topic="io.github.dotnetsupport.lsp.RoslynLanguageServerSettings$Listener"/>
+                  topic="io.github.dotnetsupport.settings.CSharpEditorSettings$Listener"/>
         <!-- the inlay hints and the Code Vision of open C# files are made again on Apply: their passes run only when the PSI changed -->
         <listener class="io.github.dotnetsupport.lang.NativeCSharpInlayHintsSwitch"
-                  topic="io.github.dotnetsupport.lsp.RoslynLanguageServerSettings$Listener"/>
+                  topic="io.github.dotnetsupport.settings.CSharpEditorSettings$Listener"/>
         <listener class="io.github.dotnetsupport.lang.NativeCSharpCodeLensSwitch"
-                  topic="io.github.dotnetsupport.lsp.RoslynLanguageServerSettings$Listener"/>
+                  topic="io.github.dotnetsupport.settings.CSharpEditorSettings$Listener"/>
         <!-- the C# palette follows a switch of the color scheme or of the theme, in the variant of the new background -->
         <listener class="io.github.dotnetsupport.lang.palette.CSharpPaletteSchemeListener"
                   topic="com.intellij.openapi.editor.colors.EditorColorsListener"/>

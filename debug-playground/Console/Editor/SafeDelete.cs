@@ -1,7 +1,7 @@
 namespace Playground.Editor;
 
 /// <summary>
-/// Live check of Safe Delete without the language server (0.1.174): Alt+Delete (or Refactor This → Safe Delete...) with the caret on a
+/// Live check of Safe Delete (0.1.174): Alt+Delete (or Refactor This → Safe Delete...) with the caret on a
 /// name. Every marker <c>// TYPE:del-name</c> says where to put the caret, what to press and what must happen (EXPECT); undo with
 /// Ctrl+Z after each. The file only has to compile.
 /// </summary>

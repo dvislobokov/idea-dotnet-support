@@ -159,63 +159,6 @@ Playground
 275: Playground.Scenarios / Wait
 284: Playground.Scenarios / -
 
-## Go to Base: member at the line
-1: -
-15: Scenarios.Run(string name)
-17: Scenarios.Run(string name) (in body)
-43: -
-45: Scenarios.Variables()
-47: Scenarios.Variables() (in body)
-67: Scenarios.Collections()
-69: Scenarios.Collections() (in body)
-80: Scenarios.Strings()
-82: Scenarios.Strings() (in body)
-94: Scenarios.Expensive()
-96: Scenarios.Expensive() (in body)
-101: Scenarios.SetValue()
-103: Scenarios.SetValue() (in body)
-113: -
-115: Scenarios.Stepping()
-117: Scenarios.Stepping() (in body)
-131: Scenarios.Greet(Person person)
-133: Scenarios.Greet(Person person) (in body)
-137: Scenarios.Measure(string text)
-139: Scenarios.Library()
-141: Scenarios.Library() (in body)
-146: Scenarios.Closures()
-148: Scenarios.Closures() (in body)
-155: Scenarios.Numbers()
-157: Scenarios.Numbers() (in body)
-161: -
-163: Scenarios.Exceptions()
-165: Scenarios.Exceptions() (in body)
-184: Scenarios.Async()
-186: Scenarios.Async() (in body)
-192: Scenarios.Compute(int input)
-194: Scenarios.Compute(int input) (in body)
-198: Scenarios.Threads()
-200: Scenarios.Threads() (in body)
-215: -
-217: Scenarios.EnvironmentAndArguments()
-219: Scenarios.EnvironmentAndArguments() (in body)
-230: Scenarios.Output()
-232: Scenarios.Output() (in body)
-238: -
-241: Scenarios.Evil()
-243: Scenarios.Evil() (in body)
-247: -
-248: Scenarios.Input()
-250: Scenarios.Input() (in body)
-255: -
-259: Scenarios.Leak()
-261: Scenarios.Leak() (in body)
-271: -
-272: Scenarios.Crash()
-274: -
-275: Scenarios.Wait()
-277: Scenarios.Wait() (in body)
-284: -
-
 ## breakpoint lines
 12-13, 16-41, 46-65, 68-78, 81-92, 95-99, 102-111, 116-129, 132-135, 137, 140-144, 147-153, 156-159, 164-172, 174-182, 185-190, 193-196, 199-206, 208-213, 218-228, 231-236, 242-245, 249-253, 260-269, 272, 276-283
 

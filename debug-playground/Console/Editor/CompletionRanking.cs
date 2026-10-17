@@ -6,7 +6,7 @@ namespace Playground.Editor;
 /// Live check of the order of the completion list and of the suggestion statistics (ROADMAP: «Порядок списка completion по контексту»,
 /// «Статистика подсказок»). Lines to type on are marked <c>// TYPE:name</c>: put the caret on the empty line under the marker, type what
 /// the comment says, compare the list with EXPECT. Nothing here is called, the file only has to compile: undo what was typed
-/// (Ctrl+Z) before going on to the next marker. Wait for the widget «Roslyn: DebugPlayground.sln» first.
+/// (Ctrl+Z) before going on to the next marker.
 /// </summary>
 public class CompletionRanking
 {
@@ -61,7 +61,7 @@ public class CompletionRanking
         // `Length`, then the other members; Enter on `[]` gives `customerName[|]` with the caret inside the brackets
 
         // TYPE:expected-type — `int amount = `. EXPECT: gray `count;` at once, Tab takes it. With Ctrl+Space instead: `count` first, then `Count`;
-        // `customerName`, `text`, `_title` and the keywords are below; `amount` itself is NOT in the list (the server offers it, the plugin drops it)
+        // `customerName`, `text`, `_title` and the keywords are below; `amount` itself is NOT in the list
 
         // TYPE:method-by-type — `decimal sum = `. EXPECT: gray `Total(order);`, Tab takes it. With Ctrl+Space instead: the method `Total` above
         // the variables; chosen from the list it becomes `Total(|);` with the gray `order` inside — the semicolon is there though Total returns a value
@@ -87,7 +87,7 @@ public class CompletionRanking
         // TYPE:declared-nearby — `var copy = ` and Ctrl+Space. EXPECT: `text` and `count` (declared a few lines above) over the fields `_orders`, `_title`
 
         // TYPE:chosen-before — type `_or`, Enter (`_orders`), Ctrl+Z; three times. Then type `_` on the empty line.
-        // EXPECT: `_orders` above `_title`. .NET | Suggestion Statistics | Reset brings the order of the server back
+        // EXPECT: `_orders` above `_title`. .NET | Suggestion Statistics | Reset brings the default order back
 
         Console.WriteLine($"{count} {text} {customerName} {_title} {cancellationToken.IsCancellationRequested}");
         return order;

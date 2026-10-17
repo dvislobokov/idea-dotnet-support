@@ -7,9 +7,7 @@ import io.github.completionml.core.ngram.NgramModel
 import io.github.completionml.core.rank.ExampleShards
 import io.github.completionml.core.rank.FeatureExtractor
 import io.github.dotnetsupport.lang.CSharpFeature
-import io.github.dotnetsupport.lang.CSharpFeatureSource
 import io.github.dotnetsupport.lang.CSharpSyntaxTrees
-import io.github.dotnetsupport.lsp.RoslynLanguageServerSettings
 import java.io.File
 
 /**
@@ -58,7 +56,6 @@ class CSharpMlDatasetExport : BasePlatformTestCase() {
     override fun setUp() {
         super.setUp()
         CSharpSyntaxTrees.forceNativeTreeForTests(true)
-        RoslynLanguageServerSettings.getInstance().setSource(CSharpFeature.COMPLETION, CSharpFeatureSource.NATIVE)
         autocomplete = CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION
         CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = false   // a single candidate must stay a list, not an insertion
         // Every document change in the fixture editor otherwise schedules the daemon and the plugin's CodeVision pass over the whole
@@ -78,7 +75,6 @@ class CSharpMlDatasetExport : BasePlatformTestCase() {
         try {
             ApplicationManagerEx.setInStressTest(stressTest)
             CodeInsightSettings.getInstance().AUTOCOMPLETE_ON_CODE_COMPLETION = autocomplete
-            RoslynLanguageServerSettings.getInstance().state.features = mutableMapOf()
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
         } catch (e: Throwable) {
             addSuppressedException(e)
