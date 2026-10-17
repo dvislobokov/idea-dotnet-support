@@ -23,7 +23,7 @@
   экран; категории шаблонов по тегам, Empty Solution, Custom Templates, framework + выбор SDK (`global.json`), язык, неподдерживаемые
   шаблоны под разделителем, Template description (Identity / Group ID из `templatecache.json`), Advanced Settings, Git. Тест
   `NewSolutionTest`. Вживую не проверено создание до конца, стартовый экран, SDK; нет секции Docker (это функция Rider, не `dotnet new`)
-- [x] New → .NET ▸ генераторы по категориям (C#, ASP.NET, Razor/Blazor, Tests, EF Core, Configuration, Resources): подходящие проекту — сразу, остальные в «Other»; partial-часть, тест для класса, копия .resx для культуры, `dotnet ef migrations add` (остальной EF — в меню .NET → EF Core), любой item-шаблон SDK
+- [x] New → генераторы по категориям (подменю прямо в New с 0.1.255; до того под пунктом .NET ▸) (C#, ASP.NET, Razor/Blazor, Tests, EF Core, Configuration, Resources): подходящие проекту — сразу, остальные в «Other»; partial-часть, тест для класса, копия .resx для культуры, `dotnet ef migrations add` (остальной EF — в меню .NET → EF Core), любой item-шаблон SDK
 - [x] New → C# Class / Interface / Record / Struct / Enum с вычисленным namespace (RootNamespace + путь, file-scoped по `.editorconfig`)
 ### Действия над solution
 - [x] Add Existing Project, Remove from Solution
@@ -766,6 +766,13 @@
     `RazorCSharpInjector`); completion после `@` и `@Model.`, Go to Declaration из разметки в `@code` и в `.cs`, ошибки C# — через ту же
     семантику; PSI хоста — дерево компилятора R2 (`RazorTree.kt`), HTML-файл по нему. Сценарий `Blazor/Editor/RazorCSharp.razor` (вживую
     не проверено). Генерация документа по образцу компилятора — R3b (`RAZOR_PLAN.md`)
+  - [x] Unity, шаг 1 (0.1.255) — модуль `frameworks.unity`: узел solution с иконкой Unity и версией редактора, `Library` / `Temp` /
+    `Logs` / `obj` / `UserSettings` и `.meta` скрыты (переключатель «Show .meta Files»), `.sln` из `Library/PackageCache` не
+    предлагаются (точка расширения `solutionLayout`), New → Unity ▸ (MonoBehaviour Script, ScriptableObject, Editor Script, Property
+    Drawer, Editor Window, Assembly Definition), «Open in Unity Editor <версия>» в меню .NET и ПКМ. Заодно по решению пользователя
+    (2026-10-17) из New ушёл уровень «.NET»: категории (C#, ASP.NET, Tests, Configuration, Other…) — подменю прямо в New, Unity —
+    такое же рядом. Проверено в песочнице WSL на `nine-to-fire` (снимки `build/ui-robot/unity*.png`); человеком вживую не проверено.
+    Известная проблема — «IDE error occurred» на стабах файлов с `#if` при открытии (`UNITY_PLAN.md`)
   - [x] Unity, шаг 0 (0.1.254) — проекты Unity открываются с типами: абсолютный `HintPath` берётся как есть (индекс 18 проектов / 509
     сборок), среди нескольких `.csproj` одной папки файлу назначается тот, чьи `Compile` его перечисляют (панель Solution, баннер).
     Проверено в песочнице WSL на `nine-to-fire`: completion по `Vector3`, Quick Doc `GetComponent<T>`, 0 ложных ошибок. План и факты —

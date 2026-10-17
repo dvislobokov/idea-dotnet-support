@@ -29,6 +29,7 @@
         <module name="io.github.dotnetsupport.frameworks.xaml"/>
         <module name="io.github.dotnetsupport.frameworks.avalonia"/>
         <module name="io.github.dotnetsupport.frameworks.grpc"/>
+        <module name="io.github.dotnetsupport.frameworks.unity"/>
     </content>
 
     <!-- the native C# PSI (csharp-psi-core, csharp-psi-semantic, csharp-psi-ide; CSHARP_PSI_MIGRATION.md): composed into the main jar;
@@ -52,6 +53,8 @@
         <extensionPoint qualifiedName="io.github.dotnetsupport.csharpPopupContributor" interface="io.github.dotnetsupport.lang.CSharpPopupContributor" dynamic="true"/>
         <!-- what a framework module knows of the C# the build makes of a project: the semantics stays silent where types may come from it -->
         <extensionPoint qualifiedName="io.github.dotnetsupport.csharpCodeGenerators" interface="io.github.dotnetsupport.lang.semantic.CSharpCodeGenerators" dynamic="true"/>
+        <!-- the generated folders of a framework's project (Unity's Library, Temp): the solution finder skips them, the Solution view hides them -->
+        <extensionPoint qualifiedName="io.github.dotnetsupport.solutionLayout" interface="io.github.dotnetsupport.solution.SolutionLayout" dynamic="true"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
@@ -572,8 +575,9 @@
         <action id="DotNet.NewSolution.Welcome" class="io.github.dotnetsupport.newproject.NewSolutionAction" text="New Solution"
                 description="Create a .NET solution with a project from a template, or an empty solution" icon="AllIcons.Welcome.CreateNewProjectTab"/>
 
+        <!-- not a popup: the categories (C#, ASP.NET, Tests...) are submenus right under New, as the Unity one is (user's decision 2026-10-17: one level less) -->
         <group id="DotNet.NewItems" class="io.github.dotnetsupport.templates.NewDotNetItemGroup"
-               text=".NET" description="C#, ASP.NET, Razor, test, EF Core and configuration items" popup="true">
+               text=".NET" description="C#, ASP.NET, Razor, test, EF Core and configuration items" popup="false">
             <add-to-group group-id="NewGroup" anchor="after" relative-to-action="DotNet.NewCSharpFile"/>
         </group>
 

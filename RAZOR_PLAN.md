@@ -257,7 +257,9 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
   C#-кусков), стек и шаги в `.razor`, Evaluate в контексте компонента. Hot Reload уже применяет «C# and Razor changes». Только
   Blazor Server / SSR / MVC; WASM — вне плана.
 - [ ] **R9. Действия и навигация** (1–2). Extract Component, «Create component», Alt+Enter «Add @using», переход `.razor` ↔
-  `.razor.cs` ↔ `.razor.css`, Razor Pages в Endpoints (`@page "/route"`), New → .NET уже есть.
+  `.razor.cs` ↔ `.razor.css`, Razor Pages в Endpoints (`@page "/route"`); ПКМ → New в папке проекта с Razor SDK (пользователь,
+  2026-10-17, как в Rider и как у Unity в `UNITY_PLAN.md`): после разделителя Razor Component, Razor Page (`.cshtml` + `.cshtml.cs` с
+  `PageModel`), MVC View, Layout, `_Imports.razor` — действия модуля `frameworks.razor` в группе New, видимые только там.
 
 Порядок: F0 → R0 → R0b → D6e `CSHARP_PSI_MIGRATION.md` (упрощение семантики: трасса «почему», харнесс по файлу, закат старых правил —
 решение 2026-10-15, до включения ошибок Razor и до R1) → R1 → R2 → R3 → R4 / R5 / R6 параллельно → R7, R8, R9. Каждый шаг полезен сам по себе: после R0 — веб-проекты без

@@ -47,9 +47,10 @@ private fun iconFor(fileName: String): Icon =
     DotNetIcons.forFile(fileName.substringAfterLast('/'))?.takeIf { it !== DotNetIcons.CSharp } ?: DotNetIcons.CSharpType
 
 /**
- * New → .NET: generators grouped by category. The categories that make sense for the project of the selected
- * directory (ASP.NET for a web project, Tests for a test one, ...) are at the first level, the rest is folded
- * into "Other", so that the menu stays short.
+ * New → the categories of .NET items, each a submenu right under New (one level less than a ".NET" submenu, user's decision 2026-10-17;
+ * the "Unity" submenu of `frameworks/unity` sits beside them the same way). The categories that make sense for the project of the
+ * selected directory (ASP.NET for a web project, Tests for a test one, ...) are there, the rest is folded into "Other", so that the menu
+ * stays short.
  */
 class NewDotNetItemGroup : ActionGroup(), DumbAware {
     private val categoryGroups: Map<ItemCategory, ActionGroup> by lazy {
@@ -84,6 +85,7 @@ class NewDotNetItemGroup : ActionGroup(), DumbAware {
     override fun getChildren(e: AnActionEvent?): Array<AnAction> {
         val project = e?.project ?: return emptyArray()
         val msBuildProject = e.targetDirectory()?.let(DotNetProjects::findOwningProject)?.let { SolutionService.getInstance(project).msBuildProject(it) }
+        // the categories right under New, each a submenu: one level less than a ".NET" submenu (user's decision 2026-10-17)
         return arrange(msBuildProject).toTypedArray()
     }
 

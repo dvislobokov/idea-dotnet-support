@@ -38,9 +38,36 @@
   Framework 4.7.1, not restored» с Projects и Assemblies, предупреждения анализаторов Unity в редакторе (UAC0009), define-символы
   `UNITY_*` из csproj.
 
+- [x] 0.1.255 — модуль `frameworks.unity` (пакет `frameworks/unity`, дескриптор `io.github.dotnetsupport.frameworks.unity.xml`):
+  проект Unity = `ProjectSettings/ProjectVersion.txt` + `Assets/` (`UnityProjects`); узел solution с иконкой Unity и версией редактора
+  («Unity 6000.6.0f1 · 18 projects», `UnitySolutionDecorator`); `Library`, `Temp`, `Logs`, `obj`, `UserSettings` не показываются,
+  `.meta` — по переключателю «Show .meta Files» в меню панели (`UnityTreeStructureProvider`, `ShowMetaFilesAction`); новая точка
+  расширения ядра `solutionLayout` — искатель solution'ов не заходит в сгенерированные папки (`.sln` из `Library/PackageCache` не
+  предлагаются); ПКМ → New: после разделителя «Unity» — MonoBehaviour Script, ScriptableObject, Editor Script, Property Drawer, Editor
+  Window, Assembly Definition (`UnityNewItemGroup`, шаблоны `dotnetTemplates/unity/`, рендер как у остальных C#-шаблонов: namespace
+  папки, `using UnityEngine;`); «Open in Unity Editor <версия>» в меню .NET и ПКМ панели (`OpenInUnityAction`: редактор по версии из
+  `ProjectVersion.txt` в `Hub/Editor/<версия>`, Windows / Linux / macOS, иначе уведомление). Папка среди нескольких `.csproj` относится к
+  проекту, у которого есть её файлы (Build 'Game.Boot' у папки `Assets/Game/Boot`, не 'Game.Net'). Тест `UnityProjectsTest`; проверено
+  в песочнице WSL на `nine-to-fire`: узел, меню New, «Open in Unity Editor 6000.6.0f1» (снимки `build/ui-robot/unity*.png`).
+
+## Известная проблема (2026-10-17, песочница WSL на `nine-to-fire`)
+
+«IDE error occurred» при открытии: `UpToDateStubIndexMismatch` / `AssertionError: Stub count (214) doesn't match stubbed node length
+(215)` на файлах с множеством `#if` (`Assets/FishNet/Runtime/Managing/NetworkManager.cs`,
+`Library/PackageCache/com.unity.inputsystem@…/InputControl.cs`), 12 раз за сеанс и после подъёма версии стабов (`CSharpStubs.VERSION` 4).
+Это ядро, не модуль: символы `#if` лежат в user data `VirtualFile` (`CSharpParseOptions`), стаб строится с теми, что есть в момент
+индексации, PSI — с текущими; у Unity 18 проектов оцениваются MsBuildHost один за другим, набор символов файла меняется несколько
+раз (статические `DefineConstants` → оценённые, проект файла среди нескольких в папке), `requestReindex` идёт асинхронно, и платформа
+успевает сверить старый стаб с новым деревом. Функционально восстанавливается само (платформа перестраивает стаб), но уведомление
+об ошибке видно. Разбирать в шаге 2: снимок символов, с которыми построен стаб, класть в стаб файла и при расхождении
+перестраивать молча; или индексировать только после оценки всех проектов solution.
+
 ## Дальше — по порядку (модуль `frameworks.unity`)
 
-1. **Распознавание и панель Solution** (1 выпуск). Проект Unity = `ProjectSettings/ProjectVersion.txt` + `Assets/`. Узел solution с
+1. ~~Распознавание, панель Solution, New → Unity~~ — 0.1.255. Осталось из него: уведомление «C# solution build scripts found» на чужие
+   `.sln` в `Assets` (сторонние пакеты кладут свои solution'ы в `Assets/...`, как `Mono.Cecil.sln` у FishNet) — пока показывается;
+   Build / Run для solution Unity — кнопки на месте, `dotnet build` проекта Unity не нужен (собирает редактор). New → Razor тем же
+   приёмом — `RAZOR_PLAN.md`, R9. Проект Unity = `ProjectSettings/ProjectVersion.txt` + `Assets/`. Узел solution с
    иконкой Unity и версией редактора; при Show All Files скрывать `Library`, `Temp`, `Logs`, `obj`, `UserSettings`, `*.csproj.user`,
    `.meta` (переключатель «Show .meta files» в меню панели, как в Rider); `.asmdef` с иконкой. Уведомления «C# solution build scripts
    found» и «Several solutions» не считать `.sln` внутри `Library/PackageCache`. Кнопки Build / Run для solution Unity — спрятать или

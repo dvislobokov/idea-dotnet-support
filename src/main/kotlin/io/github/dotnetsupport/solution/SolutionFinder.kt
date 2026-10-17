@@ -18,7 +18,8 @@ object SolutionFinder {
         }
     }
 
-    fun isSkipped(directory: VirtualFile): Boolean = directory.name.lowercase() in SKIPPED_DIRECTORIES || directory.name.startsWith(".")
+    fun isSkipped(directory: VirtualFile): Boolean =
+        directory.name.lowercase() in SKIPPED_DIRECTORIES || directory.name.startsWith(".") || SolutionLayout.isGeneratedDirectory(directory)
 
     /** Shallow files first, then by name: the solution in the root of the folder stays "the" solution of the tools. Not for EDT on big folders. */
     fun find(root: VirtualFile, includeProjects: Boolean = false): Found {

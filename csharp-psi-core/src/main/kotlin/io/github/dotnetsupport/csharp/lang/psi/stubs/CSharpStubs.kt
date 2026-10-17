@@ -74,8 +74,12 @@ class CSharpStub(
 
 /** The stub layer of csharp-psi (CSHARP_PSI_MIGRATION.md, step 8): version, modifier bits, the rules of which nodes are stubbed. */
 object CSharpStubs {
-    /** The version of the stubs: bump on any change of what is stubbed or how it is serialized ([CSharpStubElementFactory]), of [CSharpStubRules]. */
-    const val VERSION = 3
+    /**
+     * The version of the stubs: bump on any change of what is stubbed or how it is serialized ([CSharpStubElementFactory]), of [CSharpStubRules],
+     * and when the `#if` symbols a file is parsed with can change for an existing index (4: the project of a file among several of one folder,
+     * 0.1.254 — a stub of the old choice against the tree of the new one is "Stub count doesn't match", seen on a Unity project).
+     */
+    const val VERSION = 4
 
     /** Roslyn's modifier keywords; a stub keeps bit `i` for `MODIFIERS[i]`. Append only (the bits are serialized). */
     val MODIFIERS: List<String> = listOf(

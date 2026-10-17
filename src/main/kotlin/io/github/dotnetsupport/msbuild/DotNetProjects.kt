@@ -19,9 +19,11 @@ object DotNetProjects {
         while (directory != null) {
             val candidates = directory.children.filter(::isProjectFile)
             if (candidates.isNotEmpty()) {
-                if (candidates.size == 1 || file.isDirectory) return candidates.first()
-                val relative = VfsUtilCore.getRelativePath(file, directory, '/') ?: return candidates.first()
-                return candidates.firstOrNull { compileItems(it).contains(relative.lowercase()) } ?: candidates.first()
+                if (candidates.size == 1) return candidates.first()
+                val relative = VfsUtilCore.getRelativePath(file, directory, '/')?.lowercase() ?: return candidates.first()
+                // a directory: the project with a file of it among its items (Build 'X' of the folder `Assets/Game/Boot` builds Game.Boot)
+                return candidates.firstOrNull { project -> compileItems(project).let { items -> if (file.isDirectory) items.any { it.startsWith("$relative/") } else relative in items } }
+                    ?: candidates.first()
             }
             directory = directory.parent
         }

@@ -3,6 +3,17 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.255
+
+- Unity (UNITY_PLAN.md): a Unity project (`ProjectSettings/ProjectVersion.txt` and `Assets`) shows in the Solution view with the Unity
+  icon and the editor's version, without `Library`, `Temp`, `Logs`, `obj`, `UserSettings` and the `.meta` files (Show .meta Files in
+  the view options brings them back); the solutions inside `Library/PackageCache` are not offered as solutions. New → Unity after a
+  separator: MonoBehaviour Script, ScriptableObject, Editor Script, Property Drawer, Editor Window, Assembly Definition. .NET →
+  Open in Unity Editor starts the editor of the project's version installed by Unity Hub. A folder among several projects of one
+  directory belongs to the project that has its files (Build of the folder builds that project).
+- New: one level less — the categories of .NET items (C#, ASP.NET, Tests, Configuration, Other...) are submenus right under New, no
+  ".NET" submenu in between; Unity is one of them.
+
 ## 0.1.254
 
 - Unity projects open with their types (UNITY_PLAN.md): an absolute `HintPath` (Unity's generated projects name the editor's
