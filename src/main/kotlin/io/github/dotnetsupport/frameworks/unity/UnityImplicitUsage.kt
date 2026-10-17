@@ -95,18 +95,40 @@ object UnityTypes {
     private fun computeUnityBase(type: CSharpBaseTypeDeclaration): String? {
         val file = type.containingFile as? CSharpFile ?: return null
         val session = CSharpSemanticSession(type.project)
+        return nearest(CSharpSolutionSearch.supertypes(type, session), file, session, UnityMessages.BASES)
+    }
+
+    /** `UnityEngine.Object`: what `?.`, `??` and `== null` mean differently for (the engine object may be destroyed while the C# one lives). */
+    const val UNITY_OBJECT = "UnityEngine.Object"
+    const val COMPONENT = "UnityEngine.Component"
+
+    /**
+     * The first of [targets] (full names) that [type] is or derives from, through the sources of the solution and the assemblies of
+     * [file]; null for none, for a type parameter or an unknown type.
+     */
+    fun derivesFrom(type: SemanticType?, file: CSharpFile, targets: Set<String>, session: CSharpSemanticSession = CSharpSemanticSession(file.project)): String? =
+        if (type == null) null else nearest(listOf(type), file, session, targets)
+
+    /** Whether [type] is an interface (of the solution or of an assembly). */
+    fun isInterface(type: SemanticType?): Boolean = when (type) {
+        is SemanticType.Library -> type.type.kind == io.github.dotnetsupport.index.IndexedTypeKind.INTERFACE
+        is SemanticType.Source -> type.info.kind == io.github.dotnetsupport.lang.TypeKind.INTERFACE
+        else -> false
+    }
+
+    private fun nearest(start: List<SemanticType>, file: CSharpFile, session: CSharpSemanticSession, targets: Set<String>): String? {
         val assemblies = CSharpSemanticEnvironment.assemblies(file)
         val seen = HashSet<Any>()
-        var level: List<SemanticType> = CSharpSolutionSearch.supertypes(type, session)
+        var level: List<SemanticType> = start
         repeat(MAX_DEPTH) {
             val next = ArrayList<SemanticType>()
             for (supertype in level) {
                 ProgressManager.checkCanceled()
                 when (supertype) {
-                    is SemanticType.Library -> libraryBase(assemblies, supertype.type, seen)?.let { return it }
+                    is SemanticType.Library -> libraryBase(assemblies, supertype.type, seen, targets)?.let { return it }
                     is SemanticType.Source -> {
                         // Unity's own classes as sources (a package in the solution, a test): the same names
-                        if (supertype.info.qualifiedName in UnityMessages.BASES) return supertype.info.qualifiedName
+                        if (supertype.info.qualifiedName in targets) return supertype.info.qualifiedName
                         for (part in supertype.info.parts) {
                             val element = part.element() as? CSharpBaseTypeDeclaration ?: continue
                             if (seen.add(element)) next += CSharpSolutionSearch.supertypes(element, session)
@@ -121,10 +143,10 @@ object UnityTypes {
         return null
     }
 
-    private fun libraryBase(assemblies: AssemblyIndexSet, type: IndexedType, seen: HashSet<Any>): String? {
+    private fun libraryBase(assemblies: AssemblyIndexSet, type: IndexedType, seen: HashSet<Any>, targets: Set<String>): String? {
         var current: IndexedType? = type
         while (current != null && seen.add(current.fullName)) {
-            if (current.fullName in UnityMessages.BASES) return current.fullName
+            if (current.fullName in targets) return current.fullName
             current = assemblies.baseTypes(current).firstOrNull()?.type
         }
         return null

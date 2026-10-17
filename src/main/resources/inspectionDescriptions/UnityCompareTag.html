@@ -1,0 +1,7 @@
+<html>
+<body>
+Reports <code>gameObject.tag == "Player"</code> and <code>other.tag != "Enemy"</code> in a Unity project. Reading <code>tag</code>
+allocates a new string on every call; <code>CompareTag("Player")</code> compares without allocating and reports an unknown tag.
+<p>The quick-fix rewrites the comparison as <code>CompareTag</code> (with <code>!</code> for <code>!=</code>).</p>
+</body>
+</html>

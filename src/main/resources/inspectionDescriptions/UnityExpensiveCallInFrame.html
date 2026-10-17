@@ -1,0 +1,10 @@
+<html>
+<body>
+Reports lookups that cost on every frame in <code>Update</code>, <code>FixedUpdate</code>, <code>LateUpdate</code> and <code>OnGUI</code>
+of a <code>MonoBehaviour</code>: <code>GetComponent</code> and its kin, <code>FindObjectOfType</code> / <code>FindAnyObjectByType</code>,
+<code>GameObject.Find</code> and <code>FindWithTag</code>, <code>SendMessage</code>, <code>AddComponent</code>.
+<p>Look such things up once, in <code>Awake</code> or <code>Start</code>, and keep them in a field. For <code>GetComponent&lt;T&gt;()</code>
+of the component itself the quick-fix does that: a field <code>private T _t;</code>, <code>_t = GetComponent&lt;T&gt;();</code> in
+<code>Awake</code> (created when there is none), and the field in place of the call.</p>
+</body>
+</html>

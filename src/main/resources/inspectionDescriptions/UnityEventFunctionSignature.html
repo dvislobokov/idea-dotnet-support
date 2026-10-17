@@ -1,0 +1,12 @@
+<html>
+<body>
+Reports a method of a Unity class (a <code>MonoBehaviour</code>, <code>ScriptableObject</code>, <code>Editor</code>, <code>EditorWindow</code>,
+<code>AssetPostprocessor</code>) that looks like an event function but is not one, so Unity never calls it:
+<ul>
+  <li>the name in another case: <code>update</code>, <code>onTriggerEnter</code> — the quick-fix renames it;</li>
+  <li>parameters of another type: <code>OnTriggerEnter(Collision other)</code> instead of <code>OnTriggerEnter(Collider other)</code> —
+    the quick-fix writes the signature Unity calls. A message declared without its parameter (<code>OnCollisionEnter()</code>) is fine:
+    Unity calls it that way as well.</li>
+</ul>
+</body>
+</html>

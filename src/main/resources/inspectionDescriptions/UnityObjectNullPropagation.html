@@ -1,0 +1,10 @@
+<html>
+<body>
+Reports <code>?.</code>, <code>??</code> and <code>??=</code> on a value of a type derived from <code>UnityEngine.Object</code>
+(components, game objects, scriptable objects, assets) in a Unity project.
+<p>Unity overloads <code>==</code> for these types: an object destroyed with <code>Destroy</code> compares equal to <code>null</code>
+while the C# object is still there. The null-conditional and null-coalescing operators do not call that overload, so a destroyed
+object passes them and the next access throws <code>MissingReferenceException</code>. Compare with <code>null</code> explicitly
+(<code>if (target != null) target.Hit();</code>) or use the implicit bool conversion (<code>if (target)</code>).</p>
+</body>
+</html>

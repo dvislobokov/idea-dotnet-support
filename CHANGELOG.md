@@ -3,6 +3,20 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.258
+
+- Unity extras (UNITY_PLAN.md), as Rider has them, in Unity projects only:
+  - inspections with quick-fixes (Settings | Editor | Inspections | C# | Unity): `?.` / `??` on a Unity object (a destroyed object is
+    not null to them); `tag == "…"` → `CompareTag`; a redundant `[SerializeField]` on a static, const or readonly field; an event
+    function in the wrong case (`update`) or with parameters of the wrong type (`OnTriggerEnter(Collision)`); `GetComponent`, `Find`,
+    `SendMessage` in `Update` / `FixedUpdate` / `LateUpdate` / `OnGUI` — "Introduce a field and initialize it in 'Awake'"; `GetComponent<T>`
+    of a `T` that is not a component (an `ArgumentException` at run time); a tag, layer, scene or input axis the project does not define;
+  - the Unity icon in the gutter of event functions, "called every frame" on the frame methods;
+  - completion of the tags, layers, scenes and input axes of `ProjectSettings` in `CompareTag("`, `LayerMask.NameToLayer("`,
+    `SceneManager.LoadScene("`, `Input.GetAxis("`; the components of the project and of Unity first in `GetComponent<`;
+  - the `.meta` of a file follows it on Rename and Move, so the scenes keep their references to the script;
+  - live templates `sfield`, `coroutine`, `menuitem`, `header`.
+
 ## 0.1.257
 
 - Unity (UNITY_PLAN.md, step 3): the event functions by completion, as Rider writes them — in the body of a `MonoBehaviour` (and of a

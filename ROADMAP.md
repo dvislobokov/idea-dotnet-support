@@ -766,6 +766,10 @@
     `RazorCSharpInjector`); completion после `@` и `@Model.`, Go to Declaration из разметки в `@code` и в `.cs`, ошибки C# — через ту же
     семантику; PSI хоста — дерево компилятора R2 (`RazorTree.kt`), HTML-файл по нему. Сценарий `Blazor/Editor/RazorCSharp.razor` (вживую
     не проверено). Генерация документа по образцу компилятора — R3b (`RAZOR_PLAN.md`)
+  - [x] Unity, «плюшки» (0.1.258) — инспекции с исправлениями (`?.`/`??` на объектах Unity, `CompareTag`, лишний `[SerializeField]`,
+    регистр и сигнатура событий, дорогие вызовы в кадровых методах с «поле + Awake», `GetComponent<T>` не компонента, неизвестные
+    тэг/слой/сцена/ось), значок Unity у событий, completion тэгов/слоёв/сцен/осей и компонентов в `GetComponent<`, перенос `.meta`
+    при Rename/Move, шаблоны `sfield`/`coroutine`/`menuitem`/`header`. Сценарии — `debug-playground/Unity/Assets/Scripts/Checks.cs`
   - [x] Unity, шаги 3–4 (0.1.257) — completion событий в теле наследника базы Unity (`OnTrigEn` → `private void OnTriggerEnter(Collider
     other)` с телом; сообщения, которых в классе нет, с параметрами), только `.sln` корня проекта Unity (нет попапа выбора из-за
     `Mono.Cecil.sln` пакета), namespace от `rootNamespace` самого `.asmdef`. Сценарии — `debug-playground/Unity` (`UNITY:*`,

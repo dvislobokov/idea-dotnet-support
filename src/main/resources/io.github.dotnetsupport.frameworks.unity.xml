@@ -11,6 +11,40 @@
         <!-- the Solution view: Library / Temp / Logs / obj and the .meta files out of the tree, the Unity icon and the editor's version on the solution -->
         <treeStructureProvider implementation="io.github.dotnetsupport.frameworks.unity.UnityTreeStructureProvider"/>
         <projectViewNodeDecorator implementation="io.github.dotnetsupport.frameworks.unity.UnitySolutionDecorator"/>
+        <!-- the inspections of Unity (Settings | Editor | Inspections | C# | Unity), in the files of a Unity project only -->
+        <localInspection language="C#" shortName="UnityObjectNullPropagation" displayName="Null propagation on a Unity object"
+                         groupPath="C#" groupName="Unity" enabledByDefault="true" level="WARNING"
+                         implementationClass="io.github.dotnetsupport.frameworks.unity.UnityObjectNullPropagationInspection"/>
+        <localInspection language="C#" shortName="UnityCompareTag" displayName="String comparison of a tag instead of CompareTag"
+                         groupPath="C#" groupName="Unity" enabledByDefault="true" level="WARNING"
+                         implementationClass="io.github.dotnetsupport.frameworks.unity.UnityCompareTagInspection"/>
+        <localInspection language="C#" shortName="UnityRedundantSerializeField" displayName="Redundant SerializeField attribute"
+                         groupPath="C#" groupName="Unity" enabledByDefault="true" level="WARNING"
+                         implementationClass="io.github.dotnetsupport.frameworks.unity.UnityRedundantSerializeFieldInspection"/>
+        <localInspection language="C#" shortName="UnityEventFunctionSignature" displayName="Incorrect event function name or signature"
+                         groupPath="C#" groupName="Unity" enabledByDefault="true" level="WARNING"
+                         implementationClass="io.github.dotnetsupport.frameworks.unity.UnityEventFunctionSignatureInspection"/>
+        <localInspection language="C#" shortName="UnityExpensiveCallInFrame" displayName="Expensive call in a method called every frame"
+                         groupPath="C#" groupName="Unity" enabledByDefault="true" level="WEAK WARNING"
+                         implementationClass="io.github.dotnetsupport.frameworks.unity.UnityExpensiveCallInFrameInspection"/>
+        <localInspection language="C#" shortName="UnityGetComponentType" displayName="GetComponent of a type that is not a component"
+                         groupPath="C#" groupName="Unity" enabledByDefault="true" level="ERROR"
+                         implementationClass="io.github.dotnetsupport.frameworks.unity.UnityGetComponentTypeInspection"/>
+        <localInspection language="C#" shortName="UnityUnknownName" displayName="Tag, layer, scene or input axis not defined in the project"
+                         groupPath="C#" groupName="Unity" enabledByDefault="true" level="WARNING"
+                         implementationClass="io.github.dotnetsupport.frameworks.unity.UnityUnknownNameInspection"/>
+        <!-- tags, layers, scenes, axes of ProjectSettings in CompareTag("…"), NameToLayer("…"), LoadScene("…"), Input.GetAxis("…") -->
+        <completion.contributor language="C#" order="first" implementationClass="io.github.dotnetsupport.frameworks.unity.UnityStringCompletion"/>
+        <!-- the components first in GetComponent<…>, AddComponent<…>, [RequireComponent(typeof(…))] -->
+        <!-- before the case-insensitive wrapper of the core: it runs every other contributor, and this one leaves out their items of the same names -->
+        <completion.contributor language="C#" order="first, before dotnetCaseInsensitive" implementationClass="io.github.dotnetsupport.frameworks.unity.UnityComponentCompletion"/>
+        <!-- the .meta of an asset follows it on Rename and Move: the GUID the scenes refer to the script by stays -->
+        <refactoring.elementListenerProvider implementation="io.github.dotnetsupport.frameworks.unity.UnityMetaFilesListenerProvider"/>
+        <!-- sfield, coroutine, menuitem, header: in the member list of a type, in a Unity project only -->
+        <defaultLiveTemplates file="/liveTemplates/Unity.xml"/>
+        <liveTemplateContext contextId="UNITY_MEMBER" baseContextId="CSHARP_MEMBER" implementation="io.github.dotnetsupport.frameworks.unity.UnityMemberTemplateContext"/>
+        <!-- the Unity icon on the event functions; the ones called every frame say so -->
+        <codeInsight.lineMarkerProvider language="C#" implementationClass="io.github.dotnetsupport.frameworks.unity.UnityEventFunctionLineMarkerProvider"/>
         <!-- `Upd` in the body of a MonoBehaviour → `private void Update() { }`: the event functions of the class's Unity base -->
         <completion.contributor language="C#" order="first" implementationClass="io.github.dotnetsupport.frameworks.unity.UnityEventFunctionCompletion"/>
     </extensions>

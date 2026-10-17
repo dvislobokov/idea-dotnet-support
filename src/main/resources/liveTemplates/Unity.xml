@@ -1,0 +1,28 @@
+<templateSet group="Unity">
+  <template name="sfield" value="[SerializeField] private $TYPE$ $NAME$;$END$" description="Serialized field shown in the Inspector" toReformat="false" toShortenFQNames="false">
+    <variable name="TYPE" expression="" defaultValue='"float"' alwaysStopAt="true"/>
+    <variable name="NAME" expression="" defaultValue='"speed"' alwaysStopAt="true"/>
+    <context>
+      <option name="UNITY_MEMBER" value="true"/>
+    </context>
+  </template>
+  <template name="coroutine" value="private IEnumerator $NAME$()&#10;{&#10;    $END$&#10;    yield return null;&#10;}" description="Coroutine (start it with StartCoroutine)" toReformat="false" toShortenFQNames="false">
+    <variable name="NAME" expression="" defaultValue='"Routine"' alwaysStopAt="true"/>
+    <context>
+      <option name="UNITY_MEMBER" value="true"/>
+    </context>
+  </template>
+  <template name="menuitem" value="[UnityEditor.MenuItem(&quot;$PATH$&quot;)]&#10;private static void $NAME$()&#10;{&#10;    $END$&#10;}" description="Editor menu item" toReformat="false" toShortenFQNames="false">
+    <variable name="PATH" expression="" defaultValue='"Tools/My Command"' alwaysStopAt="true"/>
+    <variable name="NAME" expression="" defaultValue='"MyCommand"' alwaysStopAt="true"/>
+    <context>
+      <option name="UNITY_MEMBER" value="true"/>
+    </context>
+  </template>
+  <template name="header" value="[Header(&quot;$TEXT$&quot;)]$END$" description="Header above the next fields in the Inspector" toReformat="false" toShortenFQNames="false">
+    <variable name="TEXT" expression="" defaultValue='"Settings"' alwaysStopAt="true"/>
+    <context>
+      <option name="UNITY_MEMBER" value="true"/>
+    </context>
+  </template>
+</templateSet>

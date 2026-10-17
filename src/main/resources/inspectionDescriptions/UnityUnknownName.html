@@ -1,0 +1,14 @@
+<html>
+<body>
+Reports a string a Unity API takes as a name of the project that the project does not define:
+<ul>
+  <li>a tag in <code>CompareTag</code>, <code>tag == "…"</code>, <code>FindWithTag</code>, <code>FindGameObjectsWithTag</code> — not in
+    <i>Tags and Layers</i> (<code>ProjectSettings/TagManager.asset</code>, plus the built-in tags); <code>CompareTag</code> throws on it;</li>
+  <li>a layer in <code>LayerMask.NameToLayer</code>, <code>LayerMask.GetMask</code> — <code>NameToLayer</code> gives -1;</li>
+  <li>a scene in <code>SceneManager.LoadScene</code> and its kin that is not in the scenes of the build
+    (<code>ProjectSettings/EditorBuildSettings.asset</code>, by name or path);</li>
+  <li>an axis or button in <code>Input.GetAxis</code>, <code>GetButton</code>… — not in the Input Manager (<code>ProjectSettings/InputManager.asset</code>).</li>
+</ul>
+The same names are offered by the completion inside these strings.
+</body>
+</html>

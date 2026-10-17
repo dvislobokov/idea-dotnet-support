@@ -218,6 +218,14 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `TYPE:unity-event-function`: `OnColl` → OnCollisionEnter… с «(Collision other)», Enter пишет метод с телом; `public OnDis` → `public void OnDisable()`
 - [ ] `UNITY:editor-messages` (`Spawner.cs`, ScriptableObject): `OnVal` → OnValidate, Update не предлагается
 - [ ] `UNITY:defines`: ветка `#if UNITY_EDITOR` — живой код, `#else` серая
+- `Unity/Assets/Scripts/Checks.cs` (0.1.258, «плюшки»):
+  - [ ] `UNITY:inspections`, `UNITY:signature`, `UNITY:compare-tag`, `UNITY:frame`, `UNITY:null-check`, `UNITY:get-component-type`:
+        инспекции Unity и их Alt+Enter
+  - [ ] `UNITY:gutter`: значок Unity у `Update` и `OnTriggerEnter`, у `Update` — «called every frame»
+  - [ ] `TYPE:unity-strings`, `UNITY:unknown-names`: тэги, слои, оси в строках из `ProjectSettings`, неизвестный тэг жёлтый
+  - [ ] `TYPE:unity-get-component`: в `GetComponent<…>` сверху компоненты проекта и Unity
+  - [ ] `TYPE:unity-templates`: `sfield` + Tab, `coroutine` + Tab
+  - [ ] `UNITY:meta`: переименование `Checks.cs` уносит `Checks.cs.meta`
 
 ## Solution view
 

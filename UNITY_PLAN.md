@@ -87,6 +87,24 @@
   - **Namespace папки** берёт `rootNamespace` самого `.asmdef` (папка с `.asmdef`, для которой Unity ещё не сгенерировал проект).
   - Площадка: `debug-playground/Unity` (маленький проект в формате генератора, маркеры `UNITY:*` и `TYPE:unity-event-function`).
 
+- [x] 0.1.258 — недорогие «плюшки», как в Rider (решение пользователя 2026-10-17: «добавим плюшки, которые не дорого реализовывать»):
+  - **инспекции** (`UnityInspections.kt`, группа C# | Unity): `UnityObjectNullPropagation` (`?.`, `??`, `??=` на наследнике
+    `UnityEngine.Object`), `UnityCompareTag` (исправление на `CompareTag`, `!` для `!=`), `UnityRedundantSerializeField` (static / const
+    / readonly; исправление убирает атрибут), `UnityEventFunctionSignature` (регистр имени — переименовать; тип параметров — записать
+    сигнатуру Unity; сообщение без параметра Unity тоже вызывает — не ошибка), `UnityExpensiveCallInFrame` (`GetComponent*`,
+    `Find*ObjectOfType`, `GameObject.Find`, `FindWithTag`, `SendMessage`, `AddComponent` в `Update` / `FixedUpdate` / `LateUpdate` /
+    `OnGUI` не через лямбду; для `GetComponent<T>()` своего объекта — «Introduce a field and initialize it in 'Awake'», `Awake` создаётся,
+    если его нет), `UnityGetComponentType` (`T` не компонент и не интерфейс; у `AddComponent` — не компонент), `UnityUnknownName`
+    (тэг, слой, сцена, ось, которых нет в `ProjectSettings`);
+  - **значок Unity** у событий в gutter (`UnityEventFunctionLineMarkerProvider`), у кадровых — «called every frame»;
+  - **completion строк** (`UnityStringCompletion`, `UnityProjectSettings`: `TagManager.asset` + встроенные тэги, `EditorBuildSettings.asset`,
+    `InputManager.asset` как текст YAML, кэш до изменения файлов) и **компонентов в `GetComponent<`** (`UnityComponentCompletion`:
+    наследники `MonoBehaviour` проекта по stub-индексу базовых списков, затем частые компоненты `UnityEngine`);
+  - **`.meta` следует за файлом** при Rename / Move (`UnityMetaFilesListenerProvider`, слушатель рефакторинга; у цели уже есть свой
+    `.meta` — не трогаем);
+  - **шаблоны** `liveTemplates/Unity.xml` (контекст `UNITY_MEMBER` — член типа в проекте Unity).
+  Тесты `UnityInspectionsTest`, `UnityExtrasTest`; сценарии — `debug-playground/Unity/Assets/Scripts/Checks.cs`.
+
 ## Известные мелочи
 
 - Build / Run у solution Unity — кнопки на месте. `dotnet build` проекта Unity работает (старый формат, все ссылки по `HintPath`) и
