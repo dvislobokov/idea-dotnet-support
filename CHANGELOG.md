@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.263
+
+- The page about the plugin (the Welcome tab) has a section on Unity: the project as in Rider, the scripts that know their scenes,
+  prefabs and animations, the hints and inspections of Unity; Unity in the comparison with Rider.
+
 ## 0.1.262
 
 - The C# language server (roslyn-language-server) is gone from the plugin: its client, the Language Server settings page, the
