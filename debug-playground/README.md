@@ -226,6 +226,10 @@ Solution для живой проверки плагина: отладчика (
   - [ ] `TYPE:unity-get-component`: в `GetComponent<…>` сверху компоненты проекта и Unity
   - [ ] `TYPE:unity-templates`: `sfield` + Tab, `coroutine` + Tab
   - [ ] `UNITY:meta`: переименование `Checks.cs` уносит `Checks.cs.meta`
+- `Unity/Assets/Gameplay/Editor/Demo.Gameplay.Editor.asmdef` (0.1.259, маркеров в JSON нет — смотреть `"references"`):
+  - [ ] файл открывается как JSON, у ключей подсказки и описание схемы «Unity Assembly Definition» (Ctrl+Q на `"autoReferenced"`)
+  - [ ] в `"references"` Ctrl+Space в пустой строке `""` предлагает `Demo.Gameplay`; Ctrl+B на `"Demo.Gameplay"` и на `"GUID:5a1c…"`
+        открывает `Gameplay.asmdef`; `"Demo.Missing"` жёлтое — «No assembly definition 'Demo.Missing' in the project»
 
 ## Solution view
 

@@ -105,6 +105,16 @@
   - **шаблоны** `liveTemplates/Unity.xml` (контекст `UNITY_MEMBER` — член типа в проекте Unity).
   Тесты `UnityInspectionsTest`, `UnityExtrasTest`; сценарии — `debug-playground/Unity/Assets/Scripts/Checks.cs`.
 
+- [x] 0.1.259 — `.asmdef` / `.asmref` (вопрос пользователя 2026-10-17 «что ещё для удобства, Rider умеет читать из meta файлов»):
+  отдельный модуль `frameworks.unityjson` (зависит от плагина JSON, которого может не быть — без него выключается только эта часть):
+  оба расширения — JSON, у `.asmdef` своя схема (`resources/unityjson/asmdef.schema.json`: ключи, типы, описания для Ctrl+Q);
+  строки `"references"` (у `.asmref` — `"reference"`) — ссылки на `.asmdef` проекта по `name` или по `"GUID:<guid>"` из `.asmdef.meta`:
+  completion, Ctrl+B, инспекция `UnityAssemblyDefinitionReference` на несуществующую. Тест `UnityAssemblyDefinitionsTest`, сценарий —
+  `debug-playground/Unity/Assets/Gameplay/Editor/Demo.Gameplay.Editor.asmdef`.
+  Дальше из того же списка: файлы ассетов (`.unity`, `.prefab`, `.asset`, `.mat`…) как YAML, индекс GUID ассетов → «Used in scenes»
+  у скриптов, Find Usages в ассетах, обработчики `UnityEvent` из сцен, значения полей из инспектора, события анимаций,
+  `[FormerlySerializedAs]` при переименовании сериализуемого поля.
+
 ## Известные мелочи
 
 - Build / Run у solution Unity — кнопки на месте. `dotnet build` проекта Unity работает (старый формат, все ссылки по `HintPath`) и

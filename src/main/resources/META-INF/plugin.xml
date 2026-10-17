@@ -30,6 +30,8 @@
         <module name="io.github.dotnetsupport.frameworks.avalonia"/>
         <module name="io.github.dotnetsupport.frameworks.grpc"/>
         <module name="io.github.dotnetsupport.frameworks.unity"/>
+        <!-- the JSON of Unity (.asmdef, .asmref): needs the JSON plugin, so a module of its own -->
+        <module name="io.github.dotnetsupport.frameworks.unityjson"/>
     </content>
 
     <!-- the native C# PSI (csharp-psi-core, csharp-psi-semantic, csharp-psi-ide; CSHARP_PSI_MIGRATION.md): composed into the main jar;

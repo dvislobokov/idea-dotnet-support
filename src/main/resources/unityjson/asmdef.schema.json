@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Unity Assembly Definition",
+  "description": "An assembly definition of Unity (.asmdef): the scripts of its folder compile into an assembly of their own.",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string", "description": "The name of the assembly; the other assembly definitions refer to it by this name." },
+    "rootNamespace": { "type": "string", "description": "The namespace of the new scripts of the folder (and of its subfolders, folder by folder)." },
+    "references": {
+      "type": "array",
+      "description": "The assembly definitions this one uses: by name, or \"GUID:<guid of the .asmdef.meta>\".",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "includePlatforms": { "type": "array", "items": { "type": "string" }, "description": "The platforms the assembly is built for (empty: all of them but the excluded ones). \"Editor\" makes it an editor-only assembly." },
+    "excludePlatforms": { "type": "array", "items": { "type": "string" }, "description": "The platforms the assembly is not built for (only when includePlatforms is empty)." },
+    "allowUnsafeCode": { "type": "boolean", "default": false, "description": "Allows the unsafe keyword in the scripts of the assembly." },
+    "overrideReferences": { "type": "boolean", "default": false, "description": "Refer only to the precompiled assemblies of precompiledReferences, not to all of them." },
+    "precompiledReferences": { "type": "array", "items": { "type": "string" }, "description": "The plug-in assemblies (.dll) this one refers to when overrideReferences is on." },
+    "autoReferenced": { "type": "boolean", "default": true, "description": "Assembly-CSharp and the other predefined assemblies refer to this one by themselves." },
+    "defineConstraints": { "type": "array", "items": { "type": "string" }, "description": "Symbols that must all be defined (or, with !, undefined) for the assembly to be compiled." },
+    "versionDefines": {
+      "type": "array",
+      "description": "Symbols defined when a package or module of a version range is in the project.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "The package or module (com.unity.inputsystem)." },
+          "expression": { "type": "string", "description": "The version range ([1.0,2.0), 1.4.0)." },
+          "define": { "type": "string", "description": "The symbol defined when the range matches." }
+        },
+        "required": ["name", "expression", "define"]
+      }
+    },
+    "noEngineReferences": { "type": "boolean", "default": false, "description": "No reference to the assemblies of UnityEngine (a plain .NET library)." }
+  },
+  "required": ["name"]
+}

@@ -766,6 +766,9 @@
     `RazorCSharpInjector`); completion после `@` и `@Model.`, Go to Declaration из разметки в `@code` и в `.cs`, ошибки C# — через ту же
     семантику; PSI хоста — дерево компилятора R2 (`RazorTree.kt`), HTML-файл по нему. Сценарий `Blazor/Editor/RazorCSharp.razor` (вживую
     не проверено). Генерация документа по образцу компилятора — R3b (`RAZOR_PLAN.md`)
+  - [x] Unity, `.asmdef` / `.asmref` (0.1.259) — JSON со схемой Unity Assembly Definition, `"references"` по имени и по
+    `"GUID:…"` из `.meta`: completion, Ctrl+B, предупреждение на несуществующую. Сценарий —
+    `debug-playground/Unity/Assets/Gameplay/Editor/Demo.Gameplay.Editor.asmdef`
   - [x] Unity, «плюшки» (0.1.258) — инспекции с исправлениями (`?.`/`??` на объектах Unity, `CompareTag`, лишний `[SerializeField]`,
     регистр и сигнатура событий, дорогие вызовы в кадровых методах с «поле + Awake», `GetComponent<T>` не компонента, неизвестные
     тэг/слой/сцена/ось), значок Unity у событий, completion тэгов/слоёв/сцен/осей и компонентов в `GetComponent<`, перенос `.meta`

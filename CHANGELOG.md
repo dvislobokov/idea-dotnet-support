@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.259
+
+- Unity assembly definitions: `.asmdef` and `.asmref` open as JSON, `.asmdef` with the schema of Unity Assembly Definition (the keys
+  completed, their meaning in Quick Documentation, wrong types reported). The names in `"references"` (`"reference"` of an `.asmref`)
+  are links to the assembly definitions of the project, by name or by `"GUID:…"` of the `.meta`: completion, Go to Declaration,
+  and a warning on one the project does not have (Settings | Editor | Inspections | C# | Unity). Needs the bundled JSON plugin.
+
 ## 0.1.258
 
 - Unity extras (UNITY_PLAN.md), as Rider has them, in Unity projects only:
