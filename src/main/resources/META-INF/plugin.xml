@@ -379,6 +379,8 @@
         <projectViewNestingRulesProvider implementation="io.github.dotnetsupport.view.DotNetNestingRulesProvider"/>
         <!-- IDEA opens a folder without a module: its files are not indexed, so the plugin makes one (DotNetModuleSetup) -->
         <postStartupActivity implementation="io.github.dotnetsupport.solution.DotNetModuleSetup"/>
+        <!-- a development build (-PeditionChecks=false, edition/DotNetEdition) says so at the start -->
+        <postStartupActivity implementation="io.github.dotnetsupport.edition.DotNetEditionStartup"/>
         <!-- can the helpers run in the data directory of the plugin (fapolicyd, noexec): moves it to the work home when not -->
         <postStartupActivity implementation="io.github.dotnetsupport.cli.PluginDataCheck$Startup"/>
         <!-- a .sln / .slnx / .slnf opens as the project, the folder with several solutions asks which (Open Solution, 0.1.242) -->

@@ -230,6 +230,25 @@ tasks.register("harness") {
     dependsOn(harnessNames)
 }
 
+// The edition checks (edition/DotNetEdition.kt; the user's decision 2026-10-17): in GIGA IDE without Pro the paid features are off. For the
+// local development `-PeditionChecks=false` puts the resource edition/unlocked into the plugin, and the plugin works as in Pro everywhere.
+// The zip keeps its name, so three things keep such a build away from the users: the publication and the signing fail here, the plugin
+// says "Edition checks are off" at its start, and the release checks the zip (tools/release/check-zip.sh). Never put the flag into a
+// gradle.properties: the verification of a release builds in a worktree that would read it.
+val editionChecks = providers.gradleProperty("editionChecks").map { !it.equals("false", ignoreCase = true) }.getOrElse(true)
+if (!editionChecks) {
+    tasks.processResources { from("src/edition-unlocked/resources") }
+    // a dependency, not a doFirst: signPlugin and publishPlugin skip themselves without their credentials, their dependencies still run
+    val refuseUnlocked = tasks.register("refuseUnlockedBuild") {
+        doLast { throw GradleException("-PeditionChecks=false makes a development build with the edition checks off: it is not published or signed") }
+    }
+    tasks.matching { it.name == "publishPlugin" || it.name == "signPlugin" }.configureEach { dependsOn(refuseUnlocked) }
+} else {
+    // processResources copies and never deletes: the marker of an earlier development build would stay in build/resources and in the jar
+    val staleMarker = layout.buildDirectory.file("resources/main/edition/unlocked").get().asFile
+    tasks.processResources { doLast { staleMarker.delete() } }
+}
+
 // ML completion (ML_INLINE_TASK.md): `-PmlEnabled=true` (or MLENABLED=true in the environment) puts the ML features into the plugin —
 // META-INF/csharp-ml.xml (the grey-text inline provider, the weigher of the completion list, the Settings | .NET | ML completion page)
 // and the models of `-Pml.models` (a directory; default ml-models/csharp) under ml/csharp/: ONE transformer chosen by `-Pml.modelSize`

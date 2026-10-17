@@ -1,5 +1,7 @@
 .gradle/
 .idea/
+# the project settings GIGA IDE writes beside .idea (tools/ui-robot/giga)
+.gigaide/
 .intellijPlatform/
 .kotlin/
 # everything under build is ignored except the plugin distributions, kept in git so every version's zip is available

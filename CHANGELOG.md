@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.261
+
+- GIGA IDE editions: in GIGA IDE without Pro the allocation profiler ("Show Allocations in Editor") is off and the .NET Monitor shows
+  CPU, Memory, Time in GC and GC collections; the other charts come with Pro ("Activate PRO mode" right in the window), without a
+  restart. Outside GIGA IDE nothing changes.
+
 ## 0.1.260
 
 - Unity scenes, prefabs and assets, as Rider reads them (an index of their text, "Force Text" serialization):
