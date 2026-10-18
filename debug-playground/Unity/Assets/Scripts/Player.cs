@@ -74,6 +74,11 @@ public class Player : MonoBehaviour
 #endif
 }
 
+// UNITY:no-build (0.1.279) — this Unity folder open in the IDE. EXPECT: no Build Solution button (hammer) on the toolbar; .NET → Build
+// Solution, Rebuild Solution, Clean Solution, Publish…, Run Project, Debug Project are greyed out, hovering one says "Unity compiles the
+// scripts and runs the game in its editor…"; right click on Assembly-CSharp in the Solution view has no Build / Rebuild / Clean / Run /
+// Debug; right click in this file offers no "Run 'Assembly-CSharp'". Play in Unity / Refresh Assets in Unity are where they were.
+//
 // UNITY:debug-mode (0.1.274) — with the editor connected (UNITY:editor-link), in Release mode (the bug icon at the right of Unity's status
 // bar is blue-grey). EXPECT: the tooltip of "Unity: edit mode" in the status bar ends with "Code optimization: Release."; .NET → Switch Unity
 // to Debug Mode → Unity compiles the scripts without being focused (the status bar says "compiling", ~25 s on nine-to-fire), then the

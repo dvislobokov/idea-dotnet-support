@@ -15,6 +15,7 @@ abstract class BuildSelectedAction(private val command: DotNetBuildCommand) : An
 
     override fun update(e: AnActionEvent) {
         val target = SolutionContext.buildTarget(e)
+        if (DotNetBuildAvailability.disable(e, DotNetBuildAvailability.unavailable(target))) return
         e.presentation.isEnabledAndVisible = target != null
         if (target != null) e.presentation.text = "${command.title} '${target.nameWithoutExtension}'"
     }
@@ -35,7 +36,9 @@ abstract class BuildSolutionAction(private val command: DotNetBuildCommand) : An
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
-        e.presentation.isEnabledAndVisible = solutionFile(e) != null
+        val solution = solutionFile(e)
+        if (DotNetBuildAvailability.disable(e, DotNetBuildAvailability.unavailable(solution))) return
+        e.presentation.isEnabledAndVisible = solution != null
     }
 
     override fun actionPerformed(e: AnActionEvent) {

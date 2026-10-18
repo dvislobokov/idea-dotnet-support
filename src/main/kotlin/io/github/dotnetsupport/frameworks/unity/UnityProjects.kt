@@ -24,6 +24,10 @@ object UnityProjects {
         "package added here would be gone at the next generation. Unity's packages come from its Package Manager (Packages/manifest.json); " +
         "a .NET library goes into Assets/Plugins as a DLL, or through NuGetForUnity."
 
+    /** Why Build and Run say nothing for a Unity project ([io.github.dotnetsupport.solution.SolutionLayout.buildUnavailable]). */
+    const val BUILD_UNAVAILABLE = "Unity compiles the scripts and runs the game in its editor: Play in Unity and Refresh Assets in Unity " +
+        "(the .NET menu and the toolbar) do it from here, and the errors of its compilation are in the Unity window."
+
     /** The folders Unity writes and rewrites itself: caches, build output, logs — not a part of the project to anyone. */
     val GENERATED_DIRECTORIES: Set<String> = setOf("Library", "Temp", "Logs", "obj", "UserSettings")
 
@@ -79,6 +83,9 @@ class UnitySolutionLayout : SolutionLayout {
     override fun isGeneratedDirectory(directory: VirtualFile): Boolean = UnityProjects.isGeneratedDirectory(directory)
 
     override fun nuGetUnavailable(solutionDirectory: VirtualFile): String? = if (UnityProjects.isUnityRoot(solutionDirectory)) UnityProjects.NUGET_UNAVAILABLE else null
+
+    // the editor builds and runs: the plugin's Build / Run of the generated projects would make DLLs nobody loads (decision of the user 2026-10-18)
+    override fun buildUnavailable(solutionDirectory: VirtualFile): String? = if (UnityProjects.isUnityRoot(solutionDirectory)) UnityProjects.BUILD_UNAVAILABLE else null
 
 
     /** Unity writes its solution into the root of the project; a `.sln` deeper down (`Assets/<package>/...`) is a package's own. */

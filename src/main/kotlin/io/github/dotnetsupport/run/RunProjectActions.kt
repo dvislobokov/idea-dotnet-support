@@ -34,6 +34,7 @@ abstract class RunProjectAction(private val verb: String, private val executor: 
 
     override fun update(e: AnActionEvent) {
         val project = e.project
+        if (project != null && io.github.dotnetsupport.build.DotNetBuildAvailability.disable(e, io.github.dotnetsupport.build.DotNetBuildAvailability.unavailable(project))) return
         val several = project?.let { RunProjectTarget.allSelected(it, e) }.orEmpty()
         if (several.size > 1) {
             e.presentation.isEnabledAndVisible = several.all { ProgramRunner.getRunner(executor().id, it.settings(project!!).configuration) != null }

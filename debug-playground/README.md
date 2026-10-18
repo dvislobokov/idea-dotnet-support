@@ -247,6 +247,9 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `UNITY:external-editor` (0.1.272, нужен открытый Unity): предложение «Open scripts from Unity in this IDE?», IDE в Preferences |
       External Tools, двойной клик по скрипту и по строке консоли в Unity открывает файл в IDE на строке и выводит её окно вперёд, закрытая
       IDE запускается, новый скрипт попадает в `.csproj`, «Stop Opening Scripts from Unity Here» возвращает прежний редактор
+- [ ] `UNITY:no-build` (0.1.279, `Unity/Assets/Scripts/Player.cs`, в конце файла): у solution Unity нет кнопки Build Solution на
+      тулбаре; в меню .NET Build / Rebuild / Clean, Publish, Run / Debug Project выключены с объяснением; в контекстном меню проекта их нет;
+      «Run» из файла не предлагается; Play / Refresh Assets in Unity на месте
 - [ ] `UNITY:debugger` (0.1.275, `Unity/Assets/Scripts/Player.cs`, в конце файла, нужен открытый Unity со сценой, где есть Player):
       .NET → Attach to Unity Editor — согласие на Debug mode, вкладка «Unity Editor», без диалога в Unity; Play — остановка на строке 46
       (Main Thread, кадр `Player.Update  Player.cs:46`), Step Over → 47, Resume, Pause, точка работает после перекомпиляции, Stop отпускает редактор; переменные (0.1.276): `this` с полями,

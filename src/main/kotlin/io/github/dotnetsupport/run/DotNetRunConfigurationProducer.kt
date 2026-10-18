@@ -38,6 +38,8 @@ class DotNetRunConfigurationProducer : LazyRunConfigurationProducer<DotNetRunCon
     private fun target(context: ConfigurationContext): Pair<VirtualFile, DotNetCommand>? {
         val file = context.location?.virtualFile ?: return null
         val projectFile = DotNetProjects.findOwningProject(file) ?: return null
+        // a project the plugin does not run (Unity's: its own producer runs the tests in the editor)
+        if (io.github.dotnetsupport.build.DotNetBuildAvailability.unavailable(projectFile) != null) return null
         val msBuildProject = SolutionService.getInstance(context.project).msBuildProject(projectFile)
         return when {
             msBuildProject.isTestProject -> projectFile to DotNetCommand.TEST

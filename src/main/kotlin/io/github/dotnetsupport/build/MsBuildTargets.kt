@@ -61,7 +61,9 @@ class RunMsBuildTargetAction : AnAction(), DumbAware {
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
-        e.presentation.isEnabledAndVisible = projectFile(e) != null
+        val projectFile = projectFile(e)
+        if (DotNetBuildAvailability.disable(e, DotNetBuildAvailability.unavailable(projectFile))) return
+        e.presentation.isEnabledAndVisible = projectFile != null
     }
 
     private fun projectFile(e: AnActionEvent): VirtualFile? = SolutionContext.buildTarget(e)?.takeIf(DotNetProjects::isProjectFile)

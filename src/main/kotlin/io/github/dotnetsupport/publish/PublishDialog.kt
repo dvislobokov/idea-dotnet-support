@@ -91,6 +91,8 @@ class PublishAction : AnAction(), DumbAware {
 
     override fun update(e: AnActionEvent) {
         val project = e.project
+        // `dotnet publish` of a project the plugin does not build (Unity's: a player is built by the editor)
+        if (project != null && io.github.dotnetsupport.build.DotNetBuildAvailability.disable(e, io.github.dotnetsupport.build.DotNetBuildAvailability.unavailable(project))) return
         val selected = project?.let { selectedProject(e, it) }
         if (e.isFromContextMenu) {
             e.presentation.isEnabledAndVisible = selected != null

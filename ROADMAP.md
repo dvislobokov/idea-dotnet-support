@@ -802,6 +802,11 @@
 
 
 
+  - [x] Unity: без Build и Run (0.1.279) — решение пользователя 2026-10-18 «Давай для unity убирать build и run»: новая точка
+    `SolutionLayout.buildUnavailable` (как `nuGetUnavailable`), `DotNetBuildAvailability` в ядре; Build / Rebuild / Clean, Build
+    Performance, MSBuild Target, Publish, Run / Debug Project — выключены в меню .NET с причиной, скрыты в контекстных, кнопки сборки
+    на тулбаре нет, producer `dotnet run` / `dotnet test` молчит для проектов Unity. Сценарий — `UNITY:no-build` в
+    `debug-playground/Unity/Assets/Scripts/Player.cs`; человеком вживую не проверено
   - [x] Unity 2023 и исправления отладчика (0.1.278) — пакет 1.4.2 собирается с Test Framework 1.3.9 (отмена прогона рефлексией),
     Attach больше не ждёт вечно после переключения в Debug, IDE не ставит свой пакет поверх более нового, enum по имени, `List<string>`,
     статические свойства структур — в «Static members». Проверено роботом на Unity 2023.1.22f1 (проект пользователя `jnmgbmgvjkhgg`,

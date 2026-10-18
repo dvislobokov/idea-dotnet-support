@@ -59,6 +59,46 @@ class UnityProjectsTest : BasePlatformTestCase() {
         assertNull(io.github.dotnetsupport.solution.SolutionLayout.nuGetUnavailable(root.findChild("Assets")!!))
     }
 
+    fun testNoBuildAndRunForAUnitySolution() {
+        val sln = unityProject()
+        val root = sln.parent
+        val csproj = root.findChild("Assembly-CSharp.csproj")!!
+        // the editor compiles the scripts and runs the game: the plugin neither builds nor runs its generated projects
+        assertEquals(UnityProjects.BUILD_UNAVAILABLE, io.github.dotnetsupport.build.DotNetBuildAvailability.unavailable(sln))
+        assertEquals(UnityProjects.BUILD_UNAVAILABLE, io.github.dotnetsupport.build.DotNetBuildAvailability.unavailable(csproj))
+        val other = myFixture.addFileToProject("plain/App.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"></Project>").virtualFile
+        assertNull("an ordinary project is built as before", io.github.dotnetsupport.build.DotNetBuildAvailability.unavailable(other))
+
+        fun presentation(fromContextMenu: Boolean): com.intellij.openapi.actionSystem.Presentation {
+            val context = com.intellij.openapi.actionSystem.impl.SimpleDataContext.builder()
+                .add(com.intellij.openapi.actionSystem.CommonDataKeys.PROJECT, project)
+                .add(com.intellij.openapi.actionSystem.CommonDataKeys.VIRTUAL_FILE, csproj)
+                .add(com.intellij.openapi.actionSystem.CommonDataKeys.VIRTUAL_FILE_ARRAY, arrayOf(csproj))
+                .build()
+            val action = io.github.dotnetsupport.build.BuildSelected()
+            val event = if (fromContextMenu) {
+                com.intellij.openapi.actionSystem.AnActionEvent.createEvent(action, context, null, com.intellij.openapi.actionSystem.ActionPlaces.PROJECT_VIEW_POPUP,
+                    com.intellij.openapi.actionSystem.ActionUiKind.POPUP, null)
+            } else {
+                com.intellij.openapi.actionSystem.AnActionEvent.createEvent(action, context, null, com.intellij.openapi.actionSystem.ActionPlaces.MAIN_MENU,
+                    com.intellij.openapi.actionSystem.ActionUiKind.MAIN_MENU, null)
+            }
+            action.update(event)
+            return event.presentation
+        }
+        val menu = presentation(fromContextMenu = false)
+        assertTrue("the main menu keeps the item, off, with the reason", menu.isVisible && !menu.isEnabled)
+        assertEquals(UnityProjects.BUILD_UNAVAILABLE, menu.description)
+        assertFalse("a context menu has no Build", presentation(fromContextMenu = true).isVisible)
+
+        // no `dotnet run` / `dotnet test` configuration from a file of the project: the Unity Tests producer runs its tests
+        val player = root.findFileByRelativePath("Assets/Game/Player.cs")!!
+        val psi = com.intellij.psi.PsiManager.getInstance(project).findFile(player)!!
+        val configurationContext = com.intellij.execution.actions.ConfigurationContext.createEmptyContextForLocation(com.intellij.execution.PsiLocation(psi))
+        val produced = configurationContext.configurationsFromContext.orEmpty().map { it.configuration }
+        assertTrue("$produced", produced.none { it is io.github.dotnetsupport.run.DotNetRunConfiguration })
+    }
+
     fun testTheSolutionViewHidesTheCachesAndTheMetaFiles() {
         val sln = unityProject()
         SolutionViewSettings.setShowAllFiles(project, true)

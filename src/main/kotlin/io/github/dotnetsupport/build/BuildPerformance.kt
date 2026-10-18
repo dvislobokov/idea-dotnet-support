@@ -64,7 +64,9 @@ class BuildPerformanceAction : AnAction(), DumbAware {
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
-        e.presentation.isEnabledAndVisible = target(e) != null
+        val target = target(e)
+        if (DotNetBuildAvailability.disable(e, DotNetBuildAvailability.unavailable(target))) return
+        e.presentation.isEnabledAndVisible = target != null
     }
 
     private fun target(e: AnActionEvent): VirtualFile? =

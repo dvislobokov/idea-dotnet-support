@@ -31,6 +31,13 @@ interface SolutionLayout {
      */
     fun nuGetUnavailable(solutionDirectory: VirtualFile): String? = null
 
+    /**
+     * Why the plugin does not build or run the solution in [solutionDirectory] (Build / Rebuild / Clean, the Build Solution button,
+     * Run / Debug Project, the `dotnet run` / `dotnet test` configurations of its projects); null when it does. Unity compiles the scripts
+     * and runs the game in its editor.
+     */
+    fun buildUnavailable(solutionDirectory: VirtualFile): String? = null
+
     companion object {
         val EP_NAME: ExtensionPointName<SolutionLayout> = ExtensionPointName.create("io.github.dotnetsupport.solutionLayout")
 
@@ -42,6 +49,8 @@ interface SolutionLayout {
         fun isForeignSolution(solution: VirtualFile): Boolean = EP_NAME.extensionList.any { it.isForeignSolution(solution) }
 
         fun nuGetUnavailable(solutionDirectory: VirtualFile): String? = EP_NAME.extensionList.firstNotNullOfOrNull { it.nuGetUnavailable(solutionDirectory) }
+
+        fun buildUnavailable(solutionDirectory: VirtualFile): String? = EP_NAME.extensionList.firstNotNullOfOrNull { it.buildUnavailable(solutionDirectory) }
 
     }
 }

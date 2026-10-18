@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.279
+
+- Unity: no Build and Run for a Unity solution — Unity compiles the scripts and runs the game in its editor. Build / Rebuild / Clean,
+  Build Performance, Run MSBuild Target, Publish and Run / Debug Project are off in the .NET menu (with the reason) and gone from the
+  context menus; the Build Solution button is not on the toolbar; no `dotnet run` / `dotnet test` configuration is made from a Unity
+  project (its tests run in the editor through "Unity Tests").
+
 ## 0.1.278
 
 - Unity 2023: the editor package (1.4.2) compiles with the Test Framework of Unity 2023 (1.3.9), where cancelling a test run is not a

@@ -157,6 +157,15 @@ Unity Code Pro (VS Code поверх DotRush: тесты, отладка; тол
 
 ## Сделано
 
+- [x] 0.1.279 — без Build и Run для solution Unity (решение пользователя 2026-10-18 «Давай для unity убирать build и run»): точка
+  расширения `SolutionLayout.buildUnavailable` (у Unity — `UnityProjects.BUILD_UNAVAILABLE` для корня проекта), в ядре
+  `build/DotNetBuildAvailability` (по папке solution или проекта; в главном меню — выключено с причиной в описании, в контекстном —
+  скрыто). Под правилом: Build / Rebuild / Clean выбранного и solution (и NuGet Restore как действие solution), Build Solution на
+  тулбаре и Cancel Build, Build Performance, Run MSBuild Target, Publish, Run / Debug Project, `DotNetRunConfigurationProducer` (для
+  Unity его место занимает `UnityTestConfigurationProducer`). Тест `UnityProjectsTest.testNoBuildAndRunForAUnitySolution`; сценарий
+  `UNITY:no-build`. Человеком вживую не проверено.
+
+
 - [x] 0.1.278 — проверка на Unity 2023.1.22f1 и исправления по её итогам (решение пользователя 2026-10-18 «Протестируй отладчик на нём»):
   пакет 1.4.2 (`CancelTestRun` рефлексией — собирается с Test Framework 1.3.9; `compiledAt` в `SessionState`); IDE: `UnityDebugger.ready`
   принимает увиденную компиляцию, пакет новее версии IDE не перезаписывается (`Status.NEWER`, и действие установки его не предлагает),
@@ -434,8 +443,8 @@ Unity Code Pro (VS Code поверх DotRush: тесты, отладка; тол
 
 ## Известные мелочи
 
-- Build / Run у solution Unity — кнопки на месте. `dotnet build` проекта Unity работает (старый формат, все ссылки по `HintPath`) и
-  полезен как проверка ошибок; запускает игру редактор («Open in Unity Editor»). Оставлено как есть.
+- ~~Build / Run у solution Unity — кнопки на месте~~ — убраны в 0.1.279 (решение пользователя 2026-10-18 «Давай для unity убирать build
+  и run»): собирает скрипты и запускает игру редактор, ошибки его компиляции — в окне Unity.
 - Вставленный метод события занимает пустую строку, на которой набирали: отделяющая пустая строка до следующего члена не добавляется.
 - Unity генерирует проекты для нашего встроенного пакета (галочка «Embedded packages» генератора включена по умолчанию):
   `DotNetSupport.Unity.Editor` и `DotNetSupport.Unity.Editor.Tests` видны в solution. Не исправлено (п. 3 «Дальше»).
@@ -456,16 +465,17 @@ Unity Code Pro (VS Code поверх DotRush: тесты, отладка; тол
    `UNITY:editor-link`, `UNITY:editor-log`, `UNITY:external-editor`, `UNITY:tests`. Особенно то, чего робот не видит: настоящий
    двойной клик в окне Unity и вывод окна IDE вперёд, запуск закрытой IDE лаунчером, тесты PlayMode, macOS / Linux, другие версии Unity.
 2. **Отладчик Unity (шаг 5)** — свой клиент протокола Mono (решение пользователя 2026-10-18: встроенный клиент, без внешнего
-   бинарника). Сделано: 0.1.274 (режим, клиент), 0.1.275 (подключение, точки, кадры, шаги), 0.1.276 (переменные). Дальше:
-   вычисление выражений своим разбором C# поверх `INVOKE_METHOD` (свойства, методы, `ToString()` в строке значения), условия и счётчики
-   точек, исключения (`EXCEPTION`), отладка тестов Unity, подключение к плееру (UDP multicast `225.0.0.222`).
+   бинарника). Сделано: 0.1.274 (режим, клиент), 0.1.275 (подключение, точки, кадры, шаги), 0.1.276 (переменные), 0.1.277
+   (вычисления в рантайме), 0.1.278 (проверка на Unity 2023). Дальше: условия, счётчики и лог-сообщения точек (вычислитель готов),
+   исключения (`EXCEPTION`), отладка тестов Unity, подключение к плееру (UDP multicast `225.0.0.222`), generic-вызовы
+   (`GetComponent<T>()`), приведения, `new`, изменение значений.
 3. **Проекты встроенного пакета в solution**: не показывать `DotNetSupport.Unity.Editor*` (скрыть в модели solution или снимать для
    нашего пакета галочку «Embedded packages» генератора — выяснить, можно ли точечно).
 4. **Тесты**: вкладка Explorer окна Unit Tests (тесты Unity в проводнике), повтор упавших, отладка тестов (после отладчика).
 5. **Batchmode при закрытом редакторе** (сборка плеера, тесты): второй Unity не откроет проект, пока открыт первый
    (`Temp/UnityLockfile`) — только когда редактор закрыт.
 6. Мелочи из 0.1.255: уведомление «C# solution build scripts found» на чужие `.sln` в `Assets` (как `Mono.Cecil.sln` у FishNet) — пока
-   показывается; Build / Run у solution Unity — кнопки на месте («Известные мелочи»).
+   показывается. (Build / Run у solution Unity убраны в 0.1.279.)
 7. **Проверка** без площадки в репозитории: проекты Unity лежат у пользователя (`~/My project`, `~/nine-to-fire`, `~/TOP DOWN SHOOTER`);
    копия для песочницы WSL — `tools/ui-robot/wsl/copy-unity.sh` (переписывает пути `HintPath` на `/mnt/c/...`, так же как сделал бы
    Unity под Linux), пробы — скрипты робота `index_probe.js`, `msbuild_probe.js`, `references_probe.js`, `errors_at.js`,

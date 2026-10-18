@@ -32,7 +32,8 @@ class BuildSolutionBar : SplitButtonAction(), DumbAware {
     override fun update(e: AnActionEvent) {
         val project = e.project
         val solution = project?.let(::solution)
-        e.presentation.isEnabledAndVisible = solution != null
+        // a solution the plugin does not build (Unity's) has no hammer on the toolbar
+        e.presentation.isEnabledAndVisible = solution != null && DotNetBuildAvailability.unavailable(solution) == null
         if (project == null || solution == null) return
         e.presentation.icon = AllIcons.Actions.Compile
         e.presentation.text = "Build Solution"
@@ -76,7 +77,7 @@ class CancelBuildAction : DumbAwareAction() {
 
     override fun update(e: AnActionEvent) {
         val project = e.project
-        e.presentation.isVisible = project != null && BuildSolutionBar.solution(project) != null
+        e.presentation.isVisible = project != null && BuildSolutionBar.solution(project)?.let { DotNetBuildAvailability.unavailable(it) == null } == true
         e.presentation.isEnabled = project != null && DotNetBuildService.getInstance(project).isBuilding
     }
 
