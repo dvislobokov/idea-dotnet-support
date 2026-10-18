@@ -393,6 +393,8 @@ class NativeCSharpInheritanceLineMarkerProvider : LineMarkerProvider {
         val session = CSharpSemanticSession(project)
         for (leaf in elements) {
             if (leaf.firstChild != null || !CSharpLeaves.isIdentifier(leaf)) continue
+            // in C# injected into another file only what the file writes: the glue's `override BuildRenderTree` is nowhere in it
+            if (!io.github.dotnetsupport.lang.semantic.CSharpInjections.isWritten(leaf.containingFile, leaf.textRange)) continue
             ProgressManager.checkCanceled()
             val declaration = CSharpSolutionSearch.declarationNamedBy(leaf) ?: continue
             if (declaration is CSharpBaseTypeDeclaration) {

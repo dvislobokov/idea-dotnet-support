@@ -3,7 +3,19 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.268
+
+- Razor: Find Usages and rename of a component found no C# naming its class when the class was the build's (`typeof(Counter)` in a
+  `.cs` file) — now they are found and renamed.
+- Razor: Shift+F6 on a use of a parameter inside `@code` said "is not a symbol the built-in rename knows" once the project was built,
+  and on a name inside `@code` it could end in an IDE error — the rename of the C# in a Razor file asks the new name in a dialog now.
+- Razor: opening a component reported an IDE error ("Range must be inside file offsets") — the gutter marked a method the file does not
+  write.
+
+
+
 ## 0.1.267
+
 
 - Razor: Find Usages of a component — on its tag, on its `.razor` file or on its C# class — lists its tags in the markup and the C# that
   names it; Find Usages of a parameter — on the attribute or on the property — lists the attributes setting it (`Step="2"`,

@@ -219,11 +219,11 @@ Solution для живой проверки плагина: отладчика (
       `@rendermode`…), без уже стоящих `Step` / `CountChanged`; `@k` + Enter — `@key=""`, каретка в кавычках
 - [x] (робот в WSL, 0.1.265) `TYPE:razor-tag-goto`: Ctrl+B на `Counter` — открывается `Counter.razor`; на имени атрибута `Step` — свойство
       `Step` в `@code`
-- [ ] (0.1.267; сначала собрать solution) `TYPE:razor-component-usages`: Alt+F7 на `Counter` — теги здесь и в `RazorHighlighting.razor`, C# в
+- [x] (робот в WSL, 0.1.268; сначала собрать solution) `TYPE:razor-component-usages`: Alt+F7 на `Counter` — теги здесь и в `RazorHighlighting.razor`, C# в
       `RazorGeneratedTypes.cs` и `RazorCSharp.razor`; на `Step` — `@Step` и `count += Step` в `Counter.razor`, атрибуты, `nameof(Counter.Step)`
-- [ ] (0.1.267) `TYPE:razor-component-rename`: Shift+F6 на `Counter` → `Tally` без вопроса «какой rename» — файл `Tally.razor`, теги, C#;
+- [x] (робот в WSL, 0.1.268) `TYPE:razor-component-rename`: Shift+F6 на `Counter` → `Tally` без вопроса «какой rename» — файл `Tally.razor`, теги, C#;
       Ctrl+Z возвращает всё вместе с именем файла; то же из Solution на `Counter.razor`
-- [ ] (0.1.267) `TYPE:razor-parameter-rename`: Shift+F6 на атрибуте `Step` → `By` — свойство, `@By`, атрибуты в двух файлах, `nameof(Counter.By)`;
+- [x] (робот в WSL, 0.1.268) `TYPE:razor-parameter-rename`: Shift+F6 на атрибуте `Step` → `By` — свойство, `@By`, атрибуты в двух файлах, `nameof(Counter.By)`;
       Ctrl+Z
 
 ### Unity (UNITY_PLAN.md, 0.1.255–0.1.257; вживую человеком не проверено) — `Unity/Assets/Scripts/Player.cs`, `Spawner.cs`

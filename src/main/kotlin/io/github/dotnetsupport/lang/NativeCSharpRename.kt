@@ -341,32 +341,45 @@ object NativeCSharpRename {
  */
 class NativeCSharpRenameHandler : RenameHandler {
     override fun isAvailableOnDataContext(dataContext: DataContext): Boolean {
-        val editor = CommonDataKeys.EDITOR.getData(dataContext) ?: return false
         val file = CommonDataKeys.PSI_FILE.getData(dataContext) as? CSharpFile ?: return false
+        val editor = CommonDataKeys.EDITOR.getData(dataContext)?.let { editorOf(it, file) } ?: return false
         return NativeCSharpRename.serves(file) && NativeCSharpRename.identifierAt(file, editor.caretModel.offset) != null
     }
 
-    override fun invoke(project: Project, editor: Editor?, file: PsiFile?, dataContext: DataContext?) {
-        if (editor == null || file !is CSharpFile) return
+    override fun invoke(project: Project, hostEditor: Editor?, file: PsiFile?, dataContext: DataContext?) {
+        if (hostEditor == null || file !is CSharpFile) return
         PsiDocumentManager.getInstance(project).commitAllDocuments()
+        val editor = editorOf(hostEditor, file)
+        // C# injected into another file (a component's `@code`): its occurrences are pieces of the host, no template over them — a dialog
+        val injected = editor is com.intellij.injected.editor.EditorWindow || com.intellij.lang.injection.InjectedLanguageManager.getInstance(project).isInjectedFragment(file)
         val offset = editor.caretModel.offset
         when (val decision = NativeCSharpRename.decide(file, offset)) {
             is NativeCSharpRename.Native -> {
                 val name = dataContext?.let(PsiElementRenameHandler.DEFAULT_NAME::getData)
                 when {
                     name != null -> NativeCSharpRename.perform(project, editor, file, offset, name)
-                    editor.settings.isVariableInplaceRenameEnabled -> NativeCSharpInplaceRename(project, editor, decision.target).start()
+                    !injected && editor.settings.isVariableInplaceRenameEnabled -> NativeCSharpInplaceRename(project, editor, decision.target).start()
                     else -> Messages.showInputDialog(project, "Rename ${decision.target.symbol.name} to:", "Rename", null, decision.target.symbol.name, null)
                         ?.let { NativeCSharpRename.perform(project, editor, file, offset, it) }
                 }
             }
-            is NativeCSharpRename.Solution -> NativeCSharpSolutionRename.invoke(project, editor, file, decision.target, dataContext?.let(PsiElementRenameHandler.DEFAULT_NAME::getData))
+            is NativeCSharpRename.Solution -> NativeCSharpSolutionRename.invoke(project, editor, file, decision.target, dataContext?.let(PsiElementRenameHandler.DEFAULT_NAME::getData), dialog = injected)
             is NativeCSharpRename.Refuse -> NativeCSharpRename.showError(project, editor, decision.reason)
         }
     }
 
     override fun invoke(project: Project, elements: Array<out PsiElement>, dataContext: DataContext?) {}
+
+    /**
+     * The editor of [file]: for C# injected into another file the platform gives the host's editor — its caret and document are the host's,
+     * the offsets of the rename are the injected document's.
+     */
+    private fun editorOf(editor: Editor, file: PsiFile): Editor {
+        if (editor is com.intellij.injected.editor.EditorWindow || !com.intellij.lang.injection.InjectedLanguageManager.getInstance(file.project).isInjectedFragment(file)) return editor
+        return com.intellij.psi.impl.source.tree.injected.InjectedLanguageUtil.getInjectedEditorForInjectedFile(editor, file)
+    }
 }
+
 
 /**
  * The inplace rename of [target], as the platform's `VariableInplaceRenamer` does it: a template whose variable is the name under the caret

@@ -65,7 +65,13 @@ object CSharpSolutionSearch {
         val resolver = session.resolver(file)
         if (resolver.syntax.symbolAt(leaf) != null) return null
         val symbols = resolve(resolver, leaf) ?: return null
-        val symbol = symbols.singleOrNull() ?: symbols.distinctBy { it.declarations.firstOrNull() ?: it }.singleOrNull() ?: return null
+        val distinct = symbols.distinctBy { it.declarations.firstOrNull() ?: it }
+        // a member declared twice — in the document of C# a file's markup makes (a component's `@code`) and in the output of the source
+        // generator that makes the same class for the build — is the one of the name's own file, else the one a generator did not make
+        val symbol = distinct.singleOrNull()
+            ?: distinct.filter { s -> s.declarations.any { it.containingFile == file } }.singleOrNull()
+            ?: distinct.filter { s -> s.declarations.none { d -> d.containingFile?.let(::isGenerated) == true } }.singleOrNull()
+            ?: return null
         return targetOf(symbol)
     }
 
@@ -221,6 +227,10 @@ object CSharpSolutionSearch {
     }
 
     /** The words a usage of [target] is written as: its name; an attribute class also without `Attribute`. */
+    /** What a source generator made (the helper's output folder). */
+    private fun isGenerated(file: PsiFile): Boolean =
+        file.project.getServiceIfCreated(io.github.dotnetsupport.codeanalysis.CodeAnalysisService::class.java)?.isGenerated(file.viewProvider.virtualFile) == true
+
     fun words(target: CSharpSearchTarget): List<String> {
         val words = arrayListOf(target.name)
         if (target.isType && target.name.endsWith("Attribute") && target.name.length > "Attribute".length) words += target.name.removeSuffix("Attribute")

@@ -315,6 +315,16 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
       `RazorComponentUsagesTest`; площадка — `TYPE:razor-component-usages`, `-component-rename`, `-parameter-rename`. Не сделано: Find Usages
       члена `@code`, начатый из `.cs` (имя там — член вывода генератора), не видит его использований в `@code`; Code Vision не считает
       атрибуты разметки.
+      Проверено роботом в WSL на площадке (0.1.268): Alt+F7 на `<Counter` — 2 тега и 4 места C# (`typeof`, `nameof`, параметр метода,
+      `new Counter()` в разметке), на атрибуте `Step` — 6 мест; Shift+F6 на теге, на атрибуте, на `Step` в `@code` и на `Counter.razor` в
+      Solution — без вопроса «какой rename», файл и все места, Ctrl+Z возвращает всё (и после Ctrl+S). Найдено и исправлено в 0.1.268:
+      класс компонента в выводе генератора лежит в папке помощника вне проекта — разрешение из объявления `.razor` его не видит, ищется
+      stub-индексом в `CSharpSourceScope`; член, объявленный и документом C# `.razor`, и выводом генератора, разрешался в оба — rename
+      отказывал («not a symbol the built-in rename knows»), теперь берётся объявление своего файла (`CSharpSolutionSearch.targetAt`);
+      rename в `@code` — платформа даёт `EditorWindow`, inplace-шаблон над кусками падал («Invalid offsets»), для внедрённого C# — диалог;
+      гутер ставил «Overrides member» на `BuildRenderTree` склейки — ошибка IDE при каждом открытии компонента (маркеры только на тексте
+      файла). Ограничение: второй rename того же компонента до перезапуска генератора не находит C# (он ещё ссылается на старый класс вывода).
+
     - [ ] Часть 3: tag helpers `.cshtml` (`asp-*`): completion, Ctrl+B, Find Usages; заглушка сборки MVC для тестов.
 
 - [ ] **R6. Ошибки** (2). Синтаксис Razor (RZ1xxx) — свой парсер; RZ9xxx / RZ10xxx (неизвестный параметр, неизвестный компонент как

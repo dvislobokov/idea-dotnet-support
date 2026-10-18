@@ -792,7 +792,11 @@
     Shift+F6 на теге переименовывает компонент (файл `.razor` с вложенными, теги, code-behind, C#), на атрибуте — параметр; rename класса
     или свойства в C# пишет и разметку (`RazorTagHelperUsages`, `RazorRename.kt`, участник rename ядра). Поиск C# теперь читает C# внутри
     разметки (`CSharpInjections`: документ файла Razor без склейки между кусками) — часть R4. Сценарий — `RazorComponents.razor`, маркеры
-    `TYPE:razor-component-usages`, `-component-rename`, `-parameter-rename`. Дальше — tag helpers `.cshtml` (`asp-*`)
+    `TYPE:razor-component-usages`, `-component-rename`, `-parameter-rename` (проверено роботом в WSL). 0.1.268 — найденное там: C#,
+    называющий класс компонента через вывод генератора (папка помощника вне проекта), член, объявленный и `@code`, и выводом генератора
+    (rename отказывал), rename внутри `@code` (inplace-шаблон над кусками падал — теперь диалог), «Overrides member» на склейке (ошибка
+    IDE при открытии компонента). Дальше — tag helpers `.cshtml` (`asp-*`)
+
 
   - [x] Unity, индекс ассетов (0.1.260) — «Used in Boot.unity» над скриптом, «Event handler» / «Animation event» над методом,
     «Set by Unity: 5» над полем, Find Usages в сценах, сцены и префабы как YAML со ссылками `guid` / `m_MethodName` в код, «Missing

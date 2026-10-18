@@ -195,7 +195,7 @@ object RazorTagHelperUsages {
         if (!manager.isInjectedFragment(file)) return null
         val host = RazorTagHelperEditor.razorFile(manager.getTopLevelFile(file)) ?: return null
         val (typeName, name) = parameterOf(property) ?: return null
-        return RazorTagHelperEditor.sourceDeclarations(host, typeName)
+        return csharpTypeDeclarations(host, typeName)
             .filter { it.containingFile?.viewProvider?.virtualFile?.let(RazorTagHelpers::isRazorOutput) == true }
             .flatMap { (it as? io.github.dotnetsupport.csharp.lang.psi.CSharpTypeDeclaration)?.members.orEmpty() }
             .filterIsInstance<CSharpPropertyDeclaration>().firstOrNull { it.identifier?.text?.removePrefix("@") == name }
@@ -209,10 +209,25 @@ object RazorTagHelperUsages {
     }
 
     /** The class of the component of [file] in the C# files: its code-behind, the source generator's output; empty when the C# has none. */
-    fun componentDeclarations(file: RazorFile): List<PsiElement> {
-        val typeName = componentName(file) ?: return emptyList()
-        return RazorTagHelperEditor.sourceDeclarations(file, typeName).filter { it.containingFile?.viewProvider?.virtualFile?.isInLocalFileSystem == true }
+    fun componentDeclarations(file: RazorFile): List<PsiElement> = componentName(file)?.let { csharpTypeDeclarations(file, it) }.orEmpty()
+
+    /**
+     * The declarations of the class [typeName] in the C# files: of the sources (a code-behind) and of the generators' output — the folder of
+     * the helper is outside the project (the scope of the C# sources has it), where the resolution from a `.razor` file does not look.
+     */
+    fun csharpTypeDeclarations(file: RazorFile, typeName: String): List<PsiElement> {
+        val project = file.project
+        val found = LinkedHashSet<PsiElement>()
+        RazorTagHelperEditor.sourceDeclarations(file, typeName).filterTo(found) { it.containingFile?.viewProvider?.virtualFile?.isInLocalFileSystem == true }
+        val simpleName = typeName.substringAfterLast('.')
+        com.intellij.psi.stubs.StubIndex.getInstance().processElements(io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubIndexKeys.TYPE_NAMES, simpleName, project,
+            io.github.dotnetsupport.codeanalysis.CSharpSourceScope.of(project), io.github.dotnetsupport.csharp.lang.psi.CSharpElement::class.java) { element ->
+            if (element is CSharpBaseTypeDeclaration && qualifiedName(element) == typeName) found += element
+            true
+        }
+        return found.toList()
     }
+
 
     /** The names of the C# that name the class of the component of [file] (`typeof(Counter)`, `Counter counter`). */
     fun componentCSharpUsages(file: RazorFile, scope: SearchScope): List<PsiElement> {

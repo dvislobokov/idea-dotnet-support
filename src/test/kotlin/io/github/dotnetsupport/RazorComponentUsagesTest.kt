@@ -199,6 +199,46 @@ class RazorComponentUsagesTest : BasePlatformTestCase() {
         assertTrue(home, home.contains("<Greeting Heading=\"a\">") && home.contains("@bind-Heading=\"name\"") && home.contains("<Web.Components.Greeting Heading=\"b\" />"))
     }
 
+    /** Found live in 0.1.267: Shift+F6 on a parameter's use in `@code` said "'Step' is not a symbol the built-in rename knows". */
+    fun testRenameAParameterFromTheCodeOfItsComponent() {
+        // with the generator's output: the C# document and `Greeting_razor.g.cs` both declare `Title`, the name resolves to both
+        solution(generated = true)
+        myFixture.configureFromTempProjectFile("$dir/Components/Greeting.razor")
+        myFixture.editor.caretModel.moveToOffset(myFixture.editor.document.text.indexOf("Title.ToUpper") + 1)
+        // as the IDE's rename action gives it (live in 0.1.268: an inplace template over the pieces failed, "Invalid offsets"): the injected
+        // file with the editor of the injection; the new name from the dialog, no template over the pieces
+        val injectedEditor = com.intellij.psi.impl.source.tree.injected.InjectedLanguageEditorUtil.getEditorForInjectedLanguageNoCommit(myFixture.editor, myFixture.file)
+        val injected = com.intellij.psi.PsiDocumentManager.getInstance(project).getPsiFile(injectedEditor.document)
+        assertTrue("$injected", injected is CSharpFile)
+        val context = com.intellij.openapi.actionSystem.impl.SimpleDataContext.builder().add(com.intellij.openapi.actionSystem.CommonDataKeys.PROJECT, project)
+            .add(com.intellij.openapi.actionSystem.CommonDataKeys.EDITOR, injectedEditor).add(com.intellij.openapi.actionSystem.CommonDataKeys.PSI_FILE, injected).build()
+        val handler = io.github.dotnetsupport.lang.NativeCSharpRenameHandler()
+        assertTrue(handler.isAvailableOnDataContext(context))
+        com.intellij.openapi.ui.TestDialogManager.setTestInputDialog { "Heading" }
+        try {
+            handler.invoke(project, injectedEditor, injected, context)
+
+        } finally {
+            com.intellij.openapi.ui.TestDialogManager.setTestInputDialog(null)
+        }
+
+        val greeting = text("Components/Greeting.razor")
+        assertTrue(greeting, greeting.contains("<h1>@Heading</h1>") && greeting.contains("public string Heading { get; set; }") && greeting.contains("Heading.ToUpper()"))
+        assertTrue(text("Pages/Home.razor"), text("Pages/Home.razor").contains("<Greeting Heading=\"a\">"))
+        assertTrue(text("Components/Use.cs"), text("Components/Use.cs").contains("nameof(Greeting.Heading)"))
+    }
+
+    /** Found live in 0.1.268: the gutter marked `override BuildRenderTree` of the glue — "Range must be inside file offsets" on every open. */
+    fun testTheGutterOfTheCSharpOfMarkupMarksWhatTheFileWrites() {
+        solution()
+        val injected = CSharpInjections.injectedFiles(razor("Components/Greeting.razor")).single()
+        val leaves = com.intellij.psi.SyntaxTraverser.psiTraverser(injected).toList()
+        val markers = ArrayList<com.intellij.codeInsight.daemon.LineMarkerInfo<*>>()
+        io.github.dotnetsupport.lang.NativeCSharpInheritanceLineMarkerProvider().collectSlowLineMarkers(leaves, markers)
+        assertTrue("the glue has an override", injected.text.contains("override void BuildRenderTree"))
+        for (marker in markers) assertTrue(marker.element?.text, CSharpInjections.isWritten(injected, marker.element!!.textRange))
+    }
+
     fun testTheRenameOfTheCSharpWritesTheMarkup() {
         solution()
         myFixture.configureFromTempProjectFile("$dir/Components/Panel.cs")
