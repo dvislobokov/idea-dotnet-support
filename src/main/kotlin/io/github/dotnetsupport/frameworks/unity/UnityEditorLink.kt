@@ -133,6 +133,7 @@ class UnityEditorConnection(private val project: Project) : Disposable {
         fun shown(link: UnityEditorLink.Link?) = link?.copy(state = link.state?.copy(heartbeat = 0))
         val changed = shown(fresh) != shown(link)
         link = fresh
+        upgradeLoaded(fresh)
         if (!changed) return
         // the editor imported or compiled: it has written the solution and the projects again (a renamed script is in them now), and the
         // IDE would notice only at its next look at the disk — 14 s on the probe, a renamed file was missing from the tree meanwhile
@@ -144,7 +145,22 @@ class UnityEditorConnection(private val project: Project) : Disposable {
         }, project.disposed)
     }
 
+    private var upgradeSentTo: Long? = null
+
+    /**
+     * The files of a new version of the package are on disk while the editor runs the old one (it looks at the disk when its window gets
+     * the focus): the old one imports the new on a refresh — no switch to Unity after an update of the plugin.
+     */
+    private fun upgradeLoaded(link: UnityEditorLink.Link?) {
+        val state = link?.state ?: return
+        if (link.status != UnityEditorLink.Status.LOADING || state.packageVersion == UnityEditorPackage.version) return
+        if (System.currentTimeMillis() - state.heartbeat > UnityEditorLink.HEARTBEAT_TIMEOUT_MS || upgradeSentTo == state.processId) return
+        upgradeSentTo = state.processId
+        synchronized(this) { UnityEditorLink.send(link.root, "refresh", sequence++) }
+    }
+
     /** The solution and the projects the editor generates beside `Assets/`, read from disk again. */
+
     private fun refreshProjectFiles(root: File) {
         val files = root.listFiles { file -> file.isFile && (file.extension.equals("csproj", true) || file.extension.equals("sln", true)) }.orEmpty().toList()
         if (files.isNotEmpty()) com.intellij.openapi.vfs.LocalFileSystem.getInstance().refreshIoFiles(files, true, false, null)

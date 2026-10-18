@@ -157,6 +157,8 @@ class UnityEditorStartup : ProjectActivity {
         val connection = UnityEditorConnection.getInstance(project)
         val root = connection.root()?.path?.let(::File) ?: return
         connection.start()
+        UnityConsoleService.getInstance(project).start(root)
+        ApplicationManager.getApplication().invokeLater({ if (!project.isDisposed) UnityLogToolWindowFactory.makeAvailable(project) }, project.disposed)
         UnityEditorNotifications.offer(project, root)
     }
 }

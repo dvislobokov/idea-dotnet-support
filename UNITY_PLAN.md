@@ -62,6 +62,25 @@ Rider делает через `com.unity.ide.rider`. Проба — пакет `
 
 ## Сделано
 
+- [x] 0.1.271 — шаг 2 «лог консоли Unity»: пакет 1.1.0, `ConsoleLog.cs` — `Application.logMessageReceivedThreaded` (сообщения
+  с любого потока в очередь, запись из `EditorApplication.update`, перед перезагрузкой домена и при выходе) и сообщения компилятора из
+  `CompilationPipeline.assemblyCompilationFinished` (с кодом и местом; их же текстовые копии из лога отбрасываются по виду
+  `file(l,c): error CSxxxx:`), маркеры `compile-started` и `play-started` (на `ExitingEditMode`, до `Awake`), файл
+  `Temp/DotNetSupport/console.jsonl` с первой строкой `start` (id файла, pid редактора), заново при 8 МБ. IDE: `UnityConsole`
+  (разбор, чтение с места остановки с недописанной строкой и началом заново, места стека, переход, `Packages/<имя>/…` →
+  `Library/PackageCache/<имя>@<hash>/…`, свёртка), `UnityConsoleService` (опрос 2 раза в секунду, до 20 000 сообщений, другой pid —
+  очистка, компиляция убирает ошибки прошлой, Clear on Play), окно **Unity** → «Log» (`UnityLogToolWindow`: список, детали со ссылками,
+  фильтры с числами, Collapse, поиск, Clear, Clear on Play, Autoscroll; доступно, как только solution оказался Unity), «Show Unity Log»
+  в меню .NET и во всплывающем меню строки состояния. Заодно: старая версия пакета, которую ещё держит редактор, получает `refresh`
+  после замены файлов — Unity берёт новую без фокуса (проверено: 1.0.0 → 1.1.0 за секунды). Проверено роботом с открытым Unity на
+  копии `nine-to-fire`: сообщение редактора, Play → Clear on Play убрал его, пришли `[Boot]` игры со стеком; ошибка в `HealthRules.cs`
+  → две ошибки CS1525 / CS1002 с местом, без дублей; Enter на ошибке → `HealthRules.cs 34:24`, на сообщении → `GameBootstrap.cs 127`;
+  исправление → ошибки ушли; снимок `build/ui-robot/unity-log.png`. Тест `UnityConsoleTest`. Человеком вживую не проверено.
+  Находки: в копии проекта с чужим `Library` стек называет файлы исходного проекта абсолютными путями (пока скрипт не
+  перекомпилирован) — переход берёт первое место внутри проекта; Unity генерирует `DotNetSupport.Unity.Editor.csproj` для встроенного
+  пакета (галочка «Embedded packages» генератора включена по умолчанию) — проект пакета виден в solution (не исправлено).
+
+
 - [x] 0.1.270 — шаг 1 «пакет и связь с открытым редактором»: пакет `io.github.dotnetsupport.unity` (`unity-package/`, в ресурсах
   плагина; `[InitializeOnLoad]` `IdeConnection`, опрос команд из `EditorApplication.update` каждые 0,2 с, `state.json` руками — модуль
   JsonUtility может быть выключен), `UnityEditorPackage` (установка с сохранением `.meta`, обновление молча, `.git/info/exclude`),

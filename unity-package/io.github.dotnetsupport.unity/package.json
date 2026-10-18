@@ -1,7 +1,7 @@
 {
   "name": "io.github.dotnetsupport.unity",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "displayName": "C# Project Support",
-  "description": "The link of the Unity editor with the IDE of C# Project Support: Play, Pause, Step and Stop from the IDE, the assets refreshed when the IDE saves. Installed and updated by the IDE.",
+  "description": "The link of the Unity editor with the IDE of C# Project Support: Play, Pause, Step and Stop from the IDE, the assets refreshed when the IDE saves, the console of the editor in the IDE. Installed and updated by the IDE.",
   "unity": "2021.3"
 }

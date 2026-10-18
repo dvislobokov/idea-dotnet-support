@@ -242,6 +242,8 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `UNITY:editor-link` (0.1.270, нужен открытый Unity): установка пакета по уведомлению, «Unity: edit mode» в строке состояния,
       Play / Pause / Step / Stop без фокуса на Unity, сохранение с ошибкой → «compiling» → «1 compile error», переименование видно в
       дереве сразу и уносит `.meta`, окно NuGet — «NuGet is not available for Unity projects»
+- [ ] `UNITY:editor-log` (0.1.271, нужен открытый Unity): окно Unity → Log — `Debug.Log` из игры со стеком и ссылкой на строку, переход
+      по Enter / двойному клику, Clear on Play, ошибка компиляции с кодом и местом без дублей и её исчезновение после исправления, Collapse
 
 - `Unity/Assets/Scripts/Checks.cs` (0.1.258, «плюшки»):
   - [ ] `UNITY:inspections`, `UNITY:signature`, `UNITY:compare-tag`, `UNITY:frame`, `UNITY:null-check`, `UNITY:get-component-type`:

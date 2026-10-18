@@ -21,8 +21,14 @@ using UnityEngine;
 // bar says "playing"; Pause, Step, Play again (Stop). Delete the `;` after `speed = 5f` below and Ctrl+S: Unity compiles at once, the status
 // bar says "compiling", then "1 compile error"; Ctrl+Z, Ctrl+S → "edit mode". Shift+F6 on Player.cs in the Solution view: the new name is
 // in the tree at once, Player.cs.meta goes with it (rename back). The NuGet window says "NuGet is not available for Unity projects".
+//
+// UNITY:editor-log (0.1.271) — with the editor connected, open the window "Unity" (the stripe, or .NET → Show Unity Log). EXPECT: Play,
+// walk into a trigger: "Debug.Log(other.name)" below gives a line with the info icon and the time; selected, the details show the stack
+// with `Assets/Scripts/Player.cs:44` as a link; Enter or a double click opens Player.cs on that line. Play again with "Clear on Play" on:
+// the old lines are gone. Delete the `;` after `speed = 5f` and Ctrl+S: two red lines "Assets/Scripts/Player.cs(…): error CS1002: ;
+// expected" (no copies), Enter opens the place; Ctrl+Z, Ctrl+S: they are gone. Clear keeps the errors of a compilation; the filters
+// (errors / warnings / messages) say their counts in their tooltips; Collapse makes identical lines one with "×N".
 public class Player : MonoBehaviour
-
 {
     [SerializeField] private float speed = 5f;
     public float jumpHeight = 2f;

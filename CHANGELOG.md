@@ -3,7 +3,16 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.271
+
+- Unity: the window **Unity** shows the log of the editor's console — messages, warnings, errors and exceptions with their stack, the errors
+  of the compilation with their code and place. Double-click or Enter opens the line of the code; the places of the stack are links. Filters
+  by severity with counts, Collapse, search, Clear (the errors of the last compilation stay, as in Unity) and Clear on Play. Open it from
+  the stripe, the .NET menu (Show Unity Log) or the status bar.
+- Unity: a new version of the editor package is taken by the open editor at once, without switching to it.
+
 ## 0.1.270
+
 
 - Unity: the IDE links with the open Unity editor. Play, Pause, Step and Stop the game from the IDE (the .NET menu, the main toolbar, the
   status bar); a script saved in the IDE is compiled by Unity at once, without switching to it. The link is a small package the IDE puts

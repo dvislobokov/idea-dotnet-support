@@ -18,7 +18,7 @@ namespace DotNetSupport.Unity.Editor
     internal static class IdeConnection
     {
         /// <summary>Of package.json: the IDE updates the package when its own is newer.</summary>
-        private const string PackageVersion = "1.0.0";
+        private const string PackageVersion = "1.1.0";
 
         private static readonly string Folder = Path.Combine(Path.GetDirectoryName(Application.dataPath) ?? ".", "Temp", "DotNetSupport");
         private static readonly string Commands = Path.Combine(Folder, "commands");
