@@ -46,6 +46,13 @@ class MonoTypes(private val connection: () -> MonoConnection) {
     private val toStrings = ConcurrentHashMap<Int, Int>()
     private val parameters = ConcurrentHashMap<Int, MonoParamInfo>()
 
+    /** The instance properties of [type] and its bases: what an object lists (the static ones, `Vector3.zero`, are its type's). */
+    fun instanceProperties(type: Int): List<MonoProperty> = properties(type).filter { !isStatic(it.getter) }
+
+    /** The static properties a type declares (`Vector3.zero`, `Time.deltaTime`). */
+    fun staticProperties(type: Int): List<MonoProperty> =
+        ownProperties.getOrPut(type) { connection().typeProperties(type).get(TIMEOUT_S, TimeUnit.SECONDS) }.filter { it.getter != 0 && it.name != "Item" && isStatic(it.getter) }
+
     /** The properties with a getter of [type] and its bases (an override once, the most derived), indexers left out. */
     fun properties(type: Int): List<MonoProperty> = chainProperties.getOrPut(type) {
         val seen = HashSet<String>()
@@ -152,7 +159,11 @@ class MonoTypes(private val connection: () -> MonoConnection) {
                 val constants = fields(type).filter { it.isStatic && it.isLiteral }
                 if (constants.isEmpty()) return@runCatching emptyMap()
                 val values = connection().staticValues(type, constants.map { it.id }).get(TIMEOUT_S, TimeUnit.SECONDS)
-                constants.zip(values).mapNotNull { (field, constant) -> MonoPresentation.primitiveText(constant)?.let { it to field.name } }.toMap()
+                // a constant of an enum comes as the enum itself (a struct of one field), its number inside
+                constants.zip(values).mapNotNull { (field, constant) ->
+                    val number = (constant as? MonoValue.Struct)?.fields?.singleOrNull() ?: constant
+                    MonoPresentation.primitiveText(number)?.let { it to field.name }
+                }.toMap()
             }.getOrDefault(emptyMap())
         }
         return MonoPresentation.primitiveText(value)?.let(names::get)
@@ -179,12 +190,37 @@ object MonoPresentation {
             U8 to "ulong", R4 to "float", R8 to "double", I to "nint", U to "nuint")
     }
 
-    /** `System.Int32` → `int`; a generic `List`1[[...]]` loses the assembly-qualified arguments the runtime writes. */
+    /**
+     * `System.Int32` → `int`; a generic type as C# writes it — the runtime writes `List`1[[System.String, mscorlib, Version=…]]`, which is
+     * `System.Collections.Generic.List<string>`; a nested type's `+` is a `.`.
+     */
     fun typeName(fullName: String): String {
         KEYWORDS[fullName]?.let { return it }
         if (fullName.endsWith("[]")) return typeName(fullName.removeSuffix("[]")) + "[]"
-        val generic = fullName.indexOf("[[")
-        return if (generic > 0) fullName.substring(0, generic) else fullName
+        val tick = fullName.indexOf('`')
+        val open = fullName.indexOf("[[")
+        if (tick < 0 || open < 0) return fullName.replace('+', '.')
+        val args = genericArguments(fullName.substring(open + 1, fullName.lastIndexOf(']')))
+        return fullName.substring(0, tick).replace('+', '.') + args.joinToString(", ", "<", ">") { typeName(it) }
+    }
+
+    /** `[System.String, mscorlib, …],[System.Int32, …]` → the full names of the arguments, brackets inside counted. */
+    private fun genericArguments(text: String): List<String> {
+        val result = ArrayList<String>()
+        var depth = 0
+        var start = -1
+        for ((i, c) in text.withIndex()) {
+            when (c) {
+                '[' -> { if (depth == 0) start = i + 1; depth++ }
+                ']' -> { depth--; if (depth == 0 && start >= 0) { result += text.substring(start, i); start = -1 } }
+            }
+        }
+        // each argument is assembly-qualified: the name is what comes before the first comma outside brackets
+        return result.map { arg ->
+            var d = 0
+            val cut = arg.indexOfFirst { c -> if (c == '[') d++ else if (c == ']') d--; c == ',' && d == 0 }
+            (if (cut < 0) arg else arg.substring(0, cut)).trim()
+        }
     }
 
     fun primitiveType(type: Int): String? = PRIMITIVES[type]
@@ -273,7 +309,7 @@ class MonoValueNode(
                         node.setPresentation(icon, XRegularValuePresentation("{$shown}", name), lengths.any { it > 0 })
                     } else {
                         val text = toStringText(typeId)
-                        node.setPresentation(icon, XRegularValuePresentation("{${name.substringAfterLast('.')}}" + (text?.let { " $it" } ?: ""), name), true)
+                        node.setPresentation(icon, XRegularValuePresentation("{${shortName(name)}}" + (text?.let { " $it" } ?: ""), name), true)
                     }
                 }
             }
@@ -293,6 +329,12 @@ class MonoValueNode(
             is MonoValue.TypeRef -> node.setPresentation(icon, XRegularValuePresentation("{${MonoPresentation.typeName(types.info(value.id).name.fullName)}}", "Type"), true)
             else -> node.setPresentation(icon, XRegularValuePresentation(value.toString(), null), false)
         }
+    }
+
+    /** `List<string>` of `System.Collections.Generic.List<string>`: the name without the namespace, the arguments kept. */
+    private fun shortName(name: String): String {
+        val generic = name.indexOf('<')
+        return if (generic < 0) name.substringAfterLast('.') else name.substring(0, generic).substringAfterLast('.') + name.substring(generic)
     }
 
     /** `ToString()` of the value when its type overrides it and calls are allowed; null otherwise or when the call fails. */
@@ -370,11 +412,13 @@ class MonoValueNode(
             if (frame != null && process.implicitEvaluation) {
                 val shown = HashSet<String>()
                 for (i in 0 until list.size()) shown += list.getName(i)
-                runCatching { process.types.properties(type) }.getOrDefault(emptyList())
+                runCatching { process.types.instanceProperties(type) }.getOrDefault(emptyList())
                     .filter { it.name !in shown && it.name !in UNSAFE }
                     .forEach { list.add(MonoPropertyNode(process, it, receiver, frame)) }
             }
-            if (process.types.staticFields(type).isNotEmpty()) list.addBottomGroup(StaticMembers(process, type, frame))
+            val statics = process.types.staticFields(type).isNotEmpty() ||
+                frame != null && process.implicitEvaluation && runCatching { process.types.staticProperties(type).isNotEmpty() }.getOrDefault(false)
+            if (statics) list.addBottomGroup(StaticMembers(process, type, frame))
             return list
         }
 
@@ -430,6 +474,9 @@ class StaticMembers(private val process: MonoDebugProcess, private val type: Int
         val values = if (fields.isEmpty()) emptyList() else process.connection.staticValues(type, fields.map { it.id }).get(MonoDebugProcess.TIMEOUT_S, TimeUnit.SECONDS)
         val list = XValueChildrenList()
         fields.zip(values).forEach { (field, value) -> MonoPresentation.fieldName(field.name)?.let { list.add(MonoValueNode(process, it, value, AllIcons.Nodes.Field, field.type, frame)) } }
+        if (frame != null && process.implicitEvaluation) {
+            runCatching { process.types.staticProperties(type) }.getOrDefault(emptyList()).forEach { list.add(MonoPropertyNode(process, it, MonoValue.Null, frame)) }
+        }
         node.addChildren(list, true)
     }
 }

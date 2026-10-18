@@ -115,7 +115,7 @@ class UnityInstallPackageAction : AnAction("Connect to Unity Editor…", "Instal
     override fun update(e: AnActionEvent) {
         val link = e.project?.let(UnityEditorConnection::getInstance)?.link
         e.presentation.isEnabledAndVisible = link != null && (link.status == Status.NO_PACKAGE || link.status == Status.OLD_PACKAGE ||
-            link.status == Status.NO_EDITOR && UnityEditorPackage.status(link.root) != UnityEditorPackage.Status.CURRENT)
+            link.status == Status.NO_EDITOR && UnityEditorPackage.status(link.root).let { it != UnityEditorPackage.Status.CURRENT && it != UnityEditorPackage.Status.NEWER })
     }
 
     override fun actionPerformed(e: AnActionEvent) {
@@ -133,7 +133,7 @@ object UnityEditorNotifications {
     /** At the opening of a Unity project: an old version of the package is replaced (the user agreed to it once), a missing one offered. */
     fun offer(project: Project, root: File) {
         when (UnityEditorPackage.status(root)) {
-            UnityEditorPackage.Status.CURRENT -> Unit
+            UnityEditorPackage.Status.CURRENT, UnityEditorPackage.Status.NEWER -> Unit
             UnityEditorPackage.Status.OUTDATED -> UnityEditorPackage.install(root)
             UnityEditorPackage.Status.MISSING -> {
                 if (PropertiesComponent.getInstance(project).getBoolean(DECLINED_KEY)) return

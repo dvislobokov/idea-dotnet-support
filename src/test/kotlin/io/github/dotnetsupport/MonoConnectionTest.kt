@@ -233,6 +233,7 @@ class MonoConnectionTest : TestCase() {
         assertFalse("the compilation of before the switch", UnityDebugger.ready(link("Debug", false, 500), 1_000))
         assertFalse("reloading the domain", UnityDebugger.ready(link("Debug", false, 2_000, UnityEditorLink.Status.BUSY), 1_000))
         assertTrue(UnityDebugger.ready(link("Debug", false, 2_000), 1_000))
+        assertTrue("a package of before 1.4.2 forgets the end at the reload: the compilation seen is enough", UnityDebugger.ready(link("Debug", false, 0), 1_000, sawCompiling = true))
     }
 
     fun testValuesAsTheAgentWritesThem() {
@@ -273,7 +274,10 @@ class MonoConnectionTest : TestCase() {
     fun testHowNamesAreShown() {
         assertEquals("int", MonoPresentation.typeName("System.Int32"))
         assertEquals("string[]", MonoPresentation.typeName("System.String[]"))
-        assertEquals("System.Collections.Generic.List`1", MonoPresentation.typeName("System.Collections.Generic.List`1[[System.Int32, mscorlib]]"))
+        assertEquals("System.Collections.Generic.List<int>", MonoPresentation.typeName("System.Collections.Generic.List`1[[System.Int32, mscorlib]]"))
+        assertEquals("System.Collections.Generic.Dictionary<string, System.Collections.Generic.List<int>>", MonoPresentation.typeName(
+            "System.Collections.Generic.Dictionary`2[[System.String, mscorlib, Version=4.0.0.0],[System.Collections.Generic.List`1[[System.Int32, mscorlib]], mscorlib, Version=4.0.0.0]]"))
+        assertEquals("a nested type", "Game.Outer.Inner", MonoPresentation.typeName("Game.Outer+Inner"))
         assertEquals("Game.Boot.GameBootstrap", MonoPresentation.typeName("Game.Boot.GameBootstrap"))
         assertEquals("speed", MonoPresentation.fieldName("speed"))
         assertEquals("the backing field of an auto-property", "Name", MonoPresentation.fieldName("<Name>k__BackingField"))

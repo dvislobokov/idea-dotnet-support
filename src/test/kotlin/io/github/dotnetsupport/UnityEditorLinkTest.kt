@@ -45,6 +45,13 @@ class UnityEditorLinkTest : BasePlatformTestCase() {
         UnityEditorPackage.install(root)
         assertEquals(UnityEditorPackage.Status.CURRENT, UnityEditorPackage.status(root))
         assertEquals("guid: 1", File(folder, "package.json.meta").readText())
+        // a later version in the project (another IDE put it there) is left alone
+        val newer = String(UnityEditorPackage.bundled("package.json")).replace(Regex(""""version"\s*:\s*"[^"]+""""), "\"version\": \"99.0.0\"")
+        File(folder, "package.json").writeText(newer)
+        assertEquals(UnityEditorPackage.Status.NEWER, UnityEditorPackage.status(root))
+        assertEquals("99.0.0", UnityEditorPackage.installedVersion(root))
+        assertTrue(UnityEditorPackage.compareVersions("1.4.10", "1.4.9") > 0)
+        assertEquals(0, UnityEditorPackage.compareVersions("1.4", "1.4.0"))
     }
 
     fun testTheStatusOfTheLink() {

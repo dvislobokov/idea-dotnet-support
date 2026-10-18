@@ -64,8 +64,10 @@ object UnityEditorLink {
         if (packageStatus == UnityEditorPackage.Status.MISSING) return Link(root, Status.NO_PACKAGE, null, pid)
         if (packageStatus == UnityEditorPackage.Status.OUTDATED) return Link(root, Status.OLD_PACKAGE, null, pid)
         val state = readState(File(folder(root), "state.json"))?.takeIf { it.processId == pid }
+        // a newer package than this IDE's is left in the project: the editor then reports that version
+        val expected = if (packageStatus == UnityEditorPackage.Status.NEWER) UnityEditorPackage.installedVersion(root) else UnityEditorPackage.version
         val status = when {
-            state == null || state.packageVersion != UnityEditorPackage.version -> Status.LOADING
+            state == null || state.packageVersion != expected -> Status.LOADING
             now - state.heartbeat > HEARTBEAT_TIMEOUT_MS -> Status.BUSY
             else -> Status.CONNECTED
         }

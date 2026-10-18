@@ -65,9 +65,19 @@ namespace DotNetSupport.Unity.Editor.Tests
         private static void Cancel()
         {
             var guid = SessionState.GetString(GuidKey, "");
-            if (guid.Length > 0) TestRunnerApi.CancelTestRun(guid);
+            if (guid.Length > 0) CancelTestRun(guid);
             var run = SessionState.GetString(RunKey, "");
             if (run.Length > 0) Finish(run, "cancelled");
+        }
+
+        // TestRunnerApi.CancelTestRun(string) is internal in the Test Framework of Unity 2023 (1.3.9) and public later (1.8.0 of Unity 6):
+        // called by reflection, so the package compiles with both (a direct call broke the compilation of a whole 2023 project)
+        private static void CancelTestRun(string guid)
+        {
+            var method = typeof(TestRunnerApi).GetMethod("CancelTestRun",
+                System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic, null, new[] { typeof(string) }, null);
+            if (method == null) Debug.LogWarning("[C# Project Support] this Test Framework cannot cancel a run: it goes on until it ends");
+            else method.Invoke(null, new object[] { guid });
         }
 
         private static void Finish(string run, string how)

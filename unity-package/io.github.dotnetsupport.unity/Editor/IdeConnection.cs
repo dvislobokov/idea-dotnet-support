@@ -21,11 +21,15 @@ namespace DotNetSupport.Unity.Editor
     internal static class IdeConnection
     {
         /// <summary>Of package.json: the IDE updates the package when its own is newer.</summary>
-        private const string PackageVersion = "1.4.0";
+        private const string PackageVersion = "1.4.2";
 
         private static readonly string Folder = Path.Combine(Path.GetDirectoryName(Application.dataPath) ?? ".", "Temp", "DotNetSupport");
         private static readonly string Commands = Path.Combine(Folder, "commands");
         private static readonly string StatePath = Path.Combine(Folder, "state.json");
+
+        // the end of the last compilation outlives the reload of the domain it causes (a static field does not: the IDE waiting for the
+        // compilation of a switch to Debug mode saw 0 forever, Unity 2023.1)
+        private const string CompiledAtKey = "DotNetSupport.CompiledAt";
 
         private static double lastPoll;
         private static double lastBeat;
@@ -37,6 +41,7 @@ namespace DotNetSupport.Unity.Editor
         // subscriptions of the old domain gone with it. Unity may load the domain a few times in a row: nothing here is harmful twice.
         static IdeConnection()
         {
+            long.TryParse(SessionState.GetString(CompiledAtKey, "0"), out compiledAt);
             EditorApplication.update += Update;
             EditorApplication.playModeStateChanged += _ => WriteState();
             EditorApplication.pauseStateChanged += _ => WriteState();
@@ -51,6 +56,7 @@ namespace DotNetSupport.Unity.Editor
             {
                 compiling = false;
                 compiledAt = Now();
+                SessionState.SetString(CompiledAtKey, compiledAt.ToString());
                 WriteState();
             };
             WriteState();

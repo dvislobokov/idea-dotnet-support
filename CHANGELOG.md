@@ -3,6 +3,16 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.278
+
+- Unity 2023: the editor package (1.4.2) compiles with the Test Framework of Unity 2023 (1.3.9), where cancelling a test run is not a
+  public API — before, the package broke the compilation of the whole project there.
+- Unity: Attach to Unity Editor no longer waits forever after switching the editor to Debug mode (the end of the compilation was lost
+  with the reload of the scripts).
+- Unity: the IDE does not put its own editor package over a newer one in the project (an older IDE or plugin used to downgrade it).
+- Unity debugger: enums show the name of their value, generic types read as C# writes them (`List<string>`), and static properties of
+  structs (`Vector3.zero`) are in the "Static members" group instead of failing among the instance ones.
+
 ## 0.1.277
 
 - Unity debugger: evaluation in the runtime — Evaluate, watches and the hover take C# expressions: properties (`transform.position`,

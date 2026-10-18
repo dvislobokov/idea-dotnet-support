@@ -16,7 +16,7 @@ object UnityEditorPackage {
     val FILES = listOf("package.json", "Editor/DotNetSupport.Unity.Editor.asmdef", "Editor/IdeConnection.cs", "Editor/ConsoleLog.cs", "Editor/ExternalEditor.cs", "Editor/IdeCommands.cs",
         "Editor/Tests/DotNetSupport.Unity.Editor.Tests.asmdef", "Editor/Tests/TestRuns.cs")
 
-    enum class Status { MISSING, OUTDATED, CURRENT }
+    enum class Status { MISSING, OUTDATED, CURRENT, NEWER }
 
     fun bundled(path: String): ByteArray =
         UnityIcons::class.java.getResourceAsStream("/unity-package/$NAME/$path")?.use { it.readBytes() } ?: error("the plugin carries no $NAME/$path")
@@ -26,10 +26,32 @@ object UnityEditorPackage {
 
     fun folder(root: File): File = File(root, "Packages/$NAME")
 
+    /**
+     * [Status.NEWER]: the project has a later version than this IDE carries (another IDE, a newer plugin, put it there) — left as it is: an
+     * older IDE writing its own over it took a fix away (seen 2026-10-18: a sandbox of 0.1.277 put 1.4.0 back over 1.4.1 in a Unity 2023
+     * project, and its compilation broke again).
+     */
     fun status(root: File): Status {
         val folder = folder(root)
         if (!folder.isDirectory) return Status.MISSING
-        return if (FILES.all { path -> File(folder, path).let { it.isFile && it.readBytes().contentEquals(bundled(path)) } }) Status.CURRENT else Status.OUTDATED
+        if (FILES.all { path -> File(folder, path).let { it.isFile && it.readBytes().contentEquals(bundled(path)) } }) return Status.CURRENT
+        val installed = installedVersion(root)
+        return if (installed != null && compareVersions(installed, version) > 0) Status.NEWER else Status.OUTDATED
+    }
+
+    /** The version of the package in the project (its package.json), null without one. */
+    fun installedVersion(root: File): String? =
+        runCatching { Regex(""""version"\s*:\s*"([^"]+)"""").find(File(folder(root), "package.json").readText())?.groupValues?.get(1) }.getOrNull()
+
+    /** `1.4.1` against `1.4.0`, part by part as numbers. */
+    fun compareVersions(a: String, b: String): Int {
+        val x = a.split('.').map { it.toIntOrNull() ?: 0 }
+        val y = b.split('.').map { it.toIntOrNull() ?: 0 }
+        for (i in 0 until maxOf(x.size, y.size)) {
+            val c = (x.getOrElse(i) { 0 }).compareTo(y.getOrElse(i) { 0 })
+            if (c != 0) return c
+        }
+        return 0
     }
 
     /** Writes the package into the project [root] (a new one, or the files of another version over the old), hides it from git. */

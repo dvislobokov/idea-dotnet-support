@@ -45,11 +45,13 @@ object UnityDebugger {
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Switching Unity to Debug mode", true) {
             override fun run(indicator: ProgressIndicator) {
                 val deadline = System.currentTimeMillis() + WAIT_MS
+                var sawCompiling = false
                 while (System.currentTimeMillis() < deadline) {
                     indicator.checkCanceled()
                     connection.update()
                     val now = connection.link
-                    if (now != null && ready(now, sentAt)) return start(project, now.editorProcessId!!)
+                    if (now?.state?.compiling == true) sawCompiling = true
+                    if (now != null && ready(now, sentAt, sawCompiling)) return start(project, now.editorProcessId!!)
                     Thread.sleep(500)
                 }
                 DotNetCli.notifyError(project, SESSION_NAME, "Unity has not finished compiling the scripts in Debug mode in ${WAIT_MS / 1000} s.")
@@ -57,10 +59,13 @@ object UnityDebugger {
         })
     }
 
-    /** Debug mode, the compilation it caused finished and the domain reloaded (the heartbeat is back). */
-    fun ready(link: UnityEditorLink.Link, sentAt: Long): Boolean {
+    /**
+     * Debug mode, the compilation it caused finished and the domain reloaded (the heartbeat is back): the end of the compilation is after
+     * the switch, or the IDE saw it compiling ([sawCompiling]) — a package before 1.4.2 forgets the end at the reload of the domain.
+     */
+    fun ready(link: UnityEditorLink.Link, sentAt: Long, sawCompiling: Boolean = false): Boolean {
         val state = link.state ?: return false
-        return link.status == UnityEditorLink.Status.CONNECTED && state.debugMode && !state.compiling && state.compiledAt >= sentAt
+        return link.status == UnityEditorLink.Status.CONNECTED && state.debugMode && !state.compiling && (state.compiledAt >= sentAt || sawCompiling)
     }
 
     private fun start(project: Project, editorProcessId: Long) {
