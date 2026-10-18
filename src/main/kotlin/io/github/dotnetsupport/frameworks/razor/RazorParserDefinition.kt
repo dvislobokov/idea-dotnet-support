@@ -72,7 +72,8 @@ class RazorParserDefinition : ParserDefinition {
     override fun createElement(node: ASTNode): PsiElement = when ((node.elementType as? RazorTreeNodeType)?.kind) {
         RazorSyntaxKind.RazorDocument -> RazorDocumentPsi(node)
         RazorSyntaxKind.RazorDirective, RazorSyntaxKind.RazorUsingDirective, RazorSyntaxKind.RazorDocumentationDirective -> RazorDirectivePsi(node)
-        RazorSyntaxKind.CSharpStatementLiteral, RazorSyntaxKind.CSharpExpressionLiteral -> RazorCodeLiteral(node)
+        // a markup literal too: the compiler maps C# over the value of a tag helper's attribute (`asp-for="Name"` → `__model => __model.Name`)
+        RazorSyntaxKind.CSharpStatementLiteral, RazorSyntaxKind.CSharpExpressionLiteral, RazorSyntaxKind.MarkupTextLiteral -> RazorCodeLiteral(node)
         else -> RazorElement(node)
     }
 
@@ -101,6 +102,28 @@ class RazorFileViewProvider(manager: PsiManager, file: VirtualFile, eventSystemE
     override fun getLanguages(): Set<Language> = setOf(RazorLanguage, HTMLLanguage.INSTANCE)
 
     override fun cloneInner(fileCopy: VirtualFile): MultiplePsiFilesPerDocumentFileViewProvider = RazorFileViewProvider(manager, fileCopy, false)
+
+    /**
+     * The platform prefers the HTML tree for the markup (an element of the template data language over the base one): in a literal of
+     * markup that hosts C# (`asp-for="Name"`) the leaf of the Razor tree is the answer, so the injection is found at the caret —
+     * completion, navigation and errors of the C# there ([RazorCSharpDocument.hostsMarkupAt]).
+     */
+    override fun findElementAt(offset: Int): PsiElement? = markupHostLeaf(offset) ?: super.findElementAt(offset)
+
+    override fun findElementAt(offset: Int, lang: Class<out Language>): PsiElement? =
+        (if (lang == Language::class.java) markupHostLeaf(offset) else null) ?: super.findElementAt(offset, lang)
+
+    private fun markupHostLeaf(offset: Int): PsiElement? {
+        // the Razor PSI made if need be: the copy completion makes of the file asks before anything else did (the cached one was null there)
+        val razor = getPsi(RazorLanguage) as? RazorFile ?: return null
+        if (!RazorCSharpDocument.hostsMarkupAt(razor, offset)) return null
+        for (at in listOf(offset, offset - 1)) {
+            if (at < 0) continue
+            val leaf = razor.node.findLeafElementAt(at)?.psi ?: continue
+            if ((leaf.parent as? RazorCodeLiteral)?.let(RazorCSharpDocument::isAttributeValueHost) == true) return leaf
+        }
+        return null
+    }
 
     override fun createFile(lang: Language): PsiFile? {
         val definition = LanguageParserDefinitions.INSTANCE.forLanguage(lang) ?: return null

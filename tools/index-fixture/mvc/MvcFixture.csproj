@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    A stand-in for the tag helpers of ASP.NET Core MVC in the tests of `.cshtml` (RazorCshtmlTagHelpersTest, RAZOR_PLAN.md R5e part 3): the
+    part of Microsoft.AspNetCore.Razor the compiler's discovery reads (ITagHelper, TagHelper, [HtmlTargetElement], [HtmlAttributeName],
+    [HtmlAttributeNotBound], [RestrictChildren]), ModelExpression and ViewContext, and some tag helpers of Microsoft.AspNetCore.Mvc.TagHelpers
+    with their real targets and attribute names (a, form, input, label, environment, partial) — in one assembly under the name of the last,
+    which `@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers` names. Not a part of the plugin; indexed into
+    `src/test/resources/index/AspNetCoreMvc.dnix` by tools/index-fixture/fixtures.sh.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Microsoft.AspNetCore.Mvc.TagHelpers</AssemblyName>
+    <RootNamespace>Microsoft.AspNetCore.Mvc.TagHelpers</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <NoWarn>$(NoWarn);CS0067;CS0649;CS0169;CS0414</NoWarn>
+    <Deterministic>true</Deterministic>
+    <DebugType>none</DebugType>
+    <PathMap>$(MSBuildProjectDirectory)=/fixture</PathMap>
+  </PropertyGroup>
+</Project>

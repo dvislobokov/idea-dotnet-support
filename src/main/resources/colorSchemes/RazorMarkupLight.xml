@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The tags of components and tag helpers and their bound attributes in Razor markup (RazorMarkupColorAnnotator) in the light schemes: bold,
+     in Rider's colors of a class and a property. Added to "Default", inherited by every scheme based on it. -->
+<list>
+  <option name="RAZOR_COMPONENT_ELEMENT">
+    <value><option name="FOREGROUND" value="6b2fba"/><option name="FONT_TYPE" value="1"/></value>
+  </option>
+  <option name="RAZOR_COMPONENT_ATTRIBUTE">
+    <value><option name="FOREGROUND" value="871094"/><option name="FONT_TYPE" value="1"/></value>
+  </option>
+</list>

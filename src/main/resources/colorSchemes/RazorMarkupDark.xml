@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The tags of components and tag helpers and their bound attributes in Razor markup (RazorMarkupColorAnnotator) in the dark schemes: bold,
+     in Rider's colors of a class and a property — the platform's class color is the plain text one, the tag would look like HTML.
+     Added to "Darcula", inherited by every scheme based on it. -->
+<list>
+  <option name="RAZOR_COMPONENT_ELEMENT">
+    <value><option name="FOREGROUND" value="c191ff"/><option name="FONT_TYPE" value="1"/></value>
+  </option>
+  <option name="RAZOR_COMPONENT_ATTRIBUTE">
+    <value><option name="FOREGROUND" value="66c3cc"/><option name="FONT_TYPE" value="1"/></value>
+  </option>
+</list>

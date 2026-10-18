@@ -5,6 +5,12 @@
         <csharpCodeGenerators implementation="io.github.dotnetsupport.frameworks.razor.RazorCodeGenerators"/>
         <!-- the rename of a component's class or a parameter writes its tags and attributes in the markup, the .razor file of a code-behind -->
         <csharpRenameParticipant implementation="io.github.dotnetsupport.frameworks.razor.RazorRenameParticipant"/>
+        <!-- R9: `@page "/route"` of components and Razor Pages in the Endpoints tool window -->
+        <endpointSource implementation="io.github.dotnetsupport.frameworks.razor.RazorEndpoints"/>
+        <!-- R8: line breakpoints on the C# of .razor / .cshtml files (the pdb maps it there through #line) -->
+        <breakpointLines implementation="io.github.dotnetsupport.frameworks.razor.RazorBreakpointLinesSource"/>
+        <!-- R4: the usages lens counts the tags and attributes of the markup (components, tag helpers, their parameters) -->
+        <csharpImplicitUsage implementation="io.github.dotnetsupport.frameworks.razor.RazorMarkupUsages"/>
     </extensions>
 
     <!-- R1: the language — Razor the base, HTML the template data, the C# coloured by the plugin's C# lexer -->
@@ -27,10 +33,24 @@
         <lang.inspectionSuppressor language="HTML" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorHtmlInspectionSuppressor"/>
         <!-- R3: the virtual C# document — one injection of the C# pieces of the file -->
         <multiHostInjector implementation="io.github.dotnetsupport.frameworks.razor.RazorCSharpInjector"/>
+        <!-- R6: the Razor compiler's diagnostics (RZ…) of the file -->
+        <annotator language="Razor" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorErrorsAnnotator"/>
+        <!-- R5e: the tags of components and tag helpers and the attributes setting their parameters in the colors of classes and properties -->
+        <annotator language="HTML" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorMarkupColorAnnotator"/>
+        <additionalTextAttributes scheme="Default" file="colorSchemes/RazorMarkupLight.xml"/>
+        <additionalTextAttributes scheme="Darcula" file="colorSchemes/RazorMarkupDark.xml"/>
+        <!-- R7: Enter indents by the C# blocks and the elements around the line; Reformat Code indents the lines the same way -->
+        <lineIndentProvider order="first" implementation="io.github.dotnetsupport.frameworks.razor.RazorLineIndentProvider"/>
+        <formattingService implementation="io.github.dotnetsupport.frameworks.razor.RazorFormattingService"/>
+        <!-- R9: Ctrl+Alt+Home between Counter.razor, .razor.cs, .razor.css, .razor.js (and .cshtml with its page model) -->
+        <gotoRelatedProvider implementation="io.github.dotnetsupport.frameworks.razor.RazorGotoRelatedProvider"/>
         <!-- R5e: the components and tag helpers in the markup -->
         <!-- before XmlCompletionContributor: on a repeated Ctrl+Space it completes tag names from the schemas and stops the others (none in Razor) -->
         <completion.contributor language="HTML" order="first, before xml" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorTagHelperCompletionContributor"/>
         <gotoDeclarationHandler implementation="io.github.dotnetsupport.frameworks.razor.RazorTagHelperGotoDeclarationHandler"/>
+        <!-- the list opens by itself in the value of an attribute that is C# (asp-for="Na"): HTML would keep it closed there -->
+        <completion.confidence language="HTML" order="first" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorAttributeValueCompletionConfidence"/>
+        <typedHandler order="first" implementation="io.github.dotnetsupport.frameworks.razor.RazorAttributeValueAutoPopup"/>
         <!-- R5e part 2: Find Usages of a component (its .razor file, its class) and of a parameter finds its tags and attributes;
              Alt+F7 / Shift+F6 on them in the markup search / rename the component or the parameter, not the HTML element -->
         <referencesSearch implementation="io.github.dotnetsupport.frameworks.razor.RazorMarkupReferencesSearcher"/>
@@ -41,4 +61,17 @@
         <renameHandler order="first" implementation="io.github.dotnetsupport.frameworks.razor.RazorMarkupRenameHandler"/>
         <vetoRenameCondition implementation="io.github.dotnetsupport.frameworks.razor.RazorMarkupVetoRename"/>
     </extensions>
+
+    <actions>
+        <!-- R9: the selected markup of a .razor file becomes a component beside it, the selection its tag -->
+        <action id="Razor.ExtractComponent" class="io.github.dotnetsupport.frameworks.razor.RazorExtractComponentAction"
+                text="Extract Component..." description="Move the selected markup into a new Razor component and use its tag instead">
+            <add-to-group group-id="RefactoringMenu" anchor="last"/>
+        </action>
+    </actions>
+
+    <projectListeners>
+        <!-- a Razor file made, renamed or moved: its class written at once by the plugin's port of the generator, not when the helper ran it -->
+        <listener class="io.github.dotnetsupport.frameworks.razor.RazorGeneratedAheadListener" topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+    </projectListeners>
 </idea-plugin>

@@ -79,7 +79,7 @@ class RazorStructureViewFactory : PsiStructureViewFactory {
             val masked = StringBuilder(text.length)
             for (i in text.indices) masked.append(if (text[i] == '\n' || text[i] == '\r') text[i] else ' ')
             for (block in blocks) {
-                PsiTreeUtil.findChildrenOfType(block, RazorCodeLiteral::class.java).filter { it.isValidHost }.forEach { code ->
+                PsiTreeUtil.findChildrenOfType(block, RazorCodeLiteral::class.java).filter { it.isCode && it.isValidHost }.forEach { code ->
                     for (i in code.textRange.startOffset until code.textRange.endOffset) masked.setCharAt(i, text[i])
                 }
             }

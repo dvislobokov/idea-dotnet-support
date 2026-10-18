@@ -3,6 +3,71 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.286
+
+- Razor: Find Usages of a member of a component's `@code` started in a `.cs` file also finds its uses in the `@code` and the markup of the
+  component.
+- Razor: the usages lens of a component, a tag helper and their parameters counts their tags and attributes in the markup
+  ("1 usage, 2 usages in markup").
+- Razor: the completion list opens by itself while the C# value of an attribute is typed (`asp-for="Na"`).
+- Razor: the name of a component's attribute is no longer also a C# usage of its parameter (Find Usages listed each attribute twice).
+- Razor: view components in `.cshtml` — `<vc:` completes their tags and their parameters, Ctrl+B goes to the class.
+- Razor: the tags of components, view components and tag helpers and the attributes setting their parameters are bold, in the colors
+  of a class and a property (Settings | Editor | Color Scheme | Razor).
+- Razor: the completion list offers each tag and attribute once (no second `embed`, `form` or `count` without its type).
+- Razor: Find Usages of a dictionary property of a tag helper finds the attributes of its prefix (`asp-route-id` of `RouteValues`).
+
+## 0.1.285
+
+- Razor: line breakpoints in `.razor` and `.cshtml` files — on an expression of the markup (`@count`), a statement (`@if`, `@foreach`,
+  `@{ }`) and the code of `@code`; the debugger stops there, shows the frame in the file and evaluates in the component.
+- Debugger: a stop the IDE could not show is logged and shown as a pause instead of leaving the program stopped unseen.
+
+## 0.1.284
+
+- Razor: Go to Related Symbol (Ctrl+Alt+Home) between a component's `.razor`, `.razor.cs`, `.razor.css`, `.razor.js` and a page's
+  `.cshtml` and `.cshtml.cs`.
+- Razor: the routes of components (`@page "/counter"`) and Razor Pages (their path under `Pages/`) in the Endpoints tool window.
+- Razor: Alt+Enter on an element named like a component of a namespace the file does not import — "Add @using …".
+- Razor: Refactor → Extract Component moves the selected markup into a new component beside the file and puts its tag in its place;
+  one Ctrl+Z takes both back.
+
+## 0.1.283
+
+- Razor: Enter indents the new line by the C# blocks and the elements around it — one level in `@code { }`, `@{ }`, `@if (…) { }`,
+  a method of `@code`, an element of the markup.
+- Razor: Reformat Code indents the lines of a `.razor` / `.cshtml` file the same way (comments, `<pre>`, `<script>` and `<style>` are
+  kept; the children of `html` and `body` follow Code Style | HTML, "Do not indent children of").
+
+## 0.1.282
+
+- Razor: the errors and warnings of the Razor compiler in `.razor` and `.cshtml` files as you type — an unclosed block (RZ1006), an
+  unknown component (RZ10012), a component without its `[EditorRequired]` parameter (RZ2012), the errors of directives, sections and
+  tag helpers — with the compiler's ids, messages and places.
+- Opening a `.razor` (or any file) of a project starts its source generators: the C# in the markup reports its errors without a `.cs`
+  of the project opened first.
+
+## 0.1.281
+
+- Razor views (`.cshtml`): the tag helpers of MVC (`asp-action`, `asp-for`, …) and of the project, in scope by `@addTagHelper` — completion
+  of their tags and attributes, Go to Declaration to the tag helper's class and property (MVC's in the view of the assembly), Find Usages
+  of a tag helper's class or property lists its tags and attributes in the views (Alt+F7 on a tag or an attribute too), and the rename of
+  a property writes its attributes (`MailTo` → `mail-to`); an attribute named by `[HtmlAttributeName]` keeps its name.
+- The HTML inspections no longer report the tags and attributes a tag helper binds as unknown ("Unknown html tag email", "Attribute
+  tooltip is not allowed here"), an `<input asp-for>` as lacking its label, or `@bind:event` as an unbound namespace prefix.
+- The value of a tag helper's attribute the compiler reads as C# (`asp-for="Name"`: `__model => __model.Name`) is C# in the editor:
+  completion of the model's members, navigation, errors. A Razor file open before the tag helpers of its project were found no longer
+  waits for an edit to get their C#.
+
+## 0.1.280
+
+- Razor: a renamed, new or moved component has its class at once — the plugin writes what the SDK's Razor generator makes of it with
+  its own port of the generator, where the generated files are, and removes the old one; the C# naming the new name no longer waits
+  for the generators (as a renamed Unity script).
+- The helper of generators and analyzers lists the files of a project again in place when a file appears, goes or is renamed: the
+  projects referencing it stay loaded and the generators keep their state. A renamed file of MudBlazor: 15.7 s to fresh generated files
+  before, 3.7–5.1 s now.
+
 ## 0.1.279
 
 - Unity: no Build and Run for a Unity solution — Unity compiles the scripts and runs the game in its editor. Build / Rebuild / Clean,

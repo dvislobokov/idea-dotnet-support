@@ -87,7 +87,7 @@ class RazorMarkupRenameHandler : RenameHandler {
     override fun isAvailableOnDataContext(dataContext: DataContext): Boolean {
         val editor = CommonDataKeys.EDITOR.getData(dataContext)
         val file = CommonDataKeys.PSI_FILE.getData(dataContext)
-        if (editor != null && file != null) return markupAt(editor, file)?.let(RazorTagHelperEditor::markupBinding) != null
+        if (editor != null && file != null) return markupAt(editor, file)?.let(RazorTagHelperEditor::markupBinding).let { it != null && it !is RazorTagHelperEditor.MarkupBinding.TagHelper }
         val element = CommonDataKeys.PSI_ELEMENT.getData(dataContext) as? RazorFile ?: return false
         val virtualFile = element.viewProvider.virtualFile
         return virtualFile.extension == "razor" && !virtualFile.nameWithoutExtension.equals("_Imports", ignoreCase = true)
@@ -140,5 +140,5 @@ class RazorMarkupRenameHandler : RenameHandler {
 class RazorMarkupVetoRename : com.intellij.openapi.util.Condition<PsiElement> {
     override fun value(element: PsiElement): Boolean =
         element.node?.elementType == XmlTokenType.XML_NAME && RazorTagHelperEditor.razorFile(element.containingFile) != null &&
-            !DumbService.isDumb(element.project) && RazorTagHelperEditor.markupBinding(element) != null
+            !DumbService.isDumb(element.project) && RazorTagHelperEditor.markupBinding(element).let { it != null && it !is RazorTagHelperEditor.MarkupBinding.TagHelper }
 }

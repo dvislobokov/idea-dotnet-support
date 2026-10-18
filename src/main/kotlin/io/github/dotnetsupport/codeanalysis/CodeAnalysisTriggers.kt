@@ -138,10 +138,10 @@ class CodeAnalysisWarmUpActivity : com.intellij.openapi.startup.ProjectActivity 
     }
 }
 
-/** A C# file opened in the editor: its project generates once and the file is analyzed. */
+/** A file opened in the editor: its project generates once and a C# file is analyzed ([CodeAnalysisService.opened]). */
 class CodeAnalysisEditorListener(private val project: Project) : FileEditorManagerListener {
     override fun fileOpened(source: FileEditorManager, file: VirtualFile) {
-        if (file.fileType != CSharpFileType || project.isDisposed) return
+        if (project.isDisposed) return
         ApplicationManager.getApplication().executeOnPooledThread { if (!project.isDisposed) CodeAnalysisService.getInstance(project).opened(file) }
     }
 }

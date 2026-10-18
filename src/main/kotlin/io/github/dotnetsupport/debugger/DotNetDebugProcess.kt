@@ -160,13 +160,23 @@ class DotNetDebugProcess(
         }
         val top = if (threadId == null) CompletableFuture.completedFuture(emptyList()) else stackTrace(threadId, 0, FIRST_FRAMES)
         threads.thenCombine(top) { list, frames -> list to frames }.whenComplete { result, error ->
-            if (error != null) return@whenComplete LOG.info("Cannot show the stop: ${errorText(error)}")
-            val (list, frames) = result
-            // the thread of the event, not a guess: .NET thread ids are the ones of the OS and come in no particular order
-            val active = threadId ?: list.firstOrNull()?.first
-            val context = DotNetSuspendContext(this, list.ifEmpty { listOfNotNull(active?.let { it to "Thread $it" }) }, active, frames)
-            if (reason == "exception" && threadId != null) printException(threadId)
-            reached(context, body)
+            if (error != null) {
+                LOG.warn("Cannot show the stop: ${errorText(error)}")
+                PluginLog.warn(DebugAdapterProcess.LOG_CATEGORY, "cannot show the stop (reason $reason): ${errorText(error)}")
+                return@whenComplete
+            }
+            try {
+                val (list, frames) = result
+                // the thread of the event, not a guess: .NET thread ids are the ones of the OS and come in no particular order
+                val active = threadId ?: list.firstOrNull()?.first
+                val context = DotNetSuspendContext(this, list.ifEmpty { listOfNotNull(active?.let { it to "Thread $it" }) }, active, frames)
+                if (reason == "exception" && threadId != null) printException(threadId)
+                reached(context, body)
+            } catch (e: Throwable) {
+                // whenComplete swallows it: the program would stay stopped with the IDE unaware of it
+                LOG.warn("Cannot show the stop", e)
+                PluginLog.warn(DebugAdapterProcess.LOG_CATEGORY, "cannot show the stop (reason $reason): ${errorText(e)}")
+            }
         }
     }
 
@@ -180,6 +190,14 @@ class DotNetDebugProcess(
         else context.topFrameId?.let { frame -> evaluate(expression, frame, "repl").handle { answer, error -> answer?.string("result") ?: error?.let(::errorText) } }
             ?: CompletableFuture.completedFuture(null)
         logged.thenAccept { value -> if (!session.breakpointReached(breakpoint, value, context)) resume(context) }
+            .exceptionally { error ->
+                // a failure here left the program stopped with the IDE unaware of it — the page hung (the WSL sandbox, 0.1.285, a breakpoint
+                // in a `.razor`): the stop is shown as a pause at least
+                LOG.warn("The stop at a breakpoint could not be shown: ${errorText(error)}", error)
+                PluginLog.warn(DebugAdapterProcess.LOG_CATEGORY, "the stop at a breakpoint could not be shown: ${errorText(error)}")
+                session.positionReached(context)
+                null
+            }
     }
 
     private fun printException(threadId: Int) {

@@ -1,0 +1,24 @@
+@page "/editor/related"
+@* RAZOR_PLAN.md, R9 — the actions and the navigation of Razor.
+
+   TYPE:razor-related — Ctrl+Alt+Home (Go to Related Symbol) here. EXPECT: RazorRelated.razor.cs and RazorRelated.razor.css; pick the .cs,
+   and there Ctrl+Alt+Home lists RazorRelated.razor and RazorRelated.razor.css.
+
+   TYPE:razor-endpoints — .NET → Endpoints (the tool window). EXPECT: under Blazor, GET /editor/related (RazorRelated.razor) beside the other
+   `@page` routes of the components (/, /editor/components, …) and GET /Privacy (Pages/Privacy.cshtml, a Razor Page: its route is its path).
+
+   TYPE:razor-add-using — on the empty line under `<p class="note">` type `<Counter />`. EXPECT: yellow, RZ10012 "unexpected name 'Counter'";
+   Alt+Enter offers "Add @using Playground.Blazor.Components.Pages" — the line goes under `@page`, the warning goes. Ctrl+Z twice.
+
+   TYPE:razor-extract — select the two lines `<h3 …>` and `<p class="note">…` and Refactor → Extract Component, name `Note`. EXPECT:
+   Note.razor beside this file with those two lines, here `<Note />` in their place; `Shown` is red in Note.razor (no parameters are made).
+   Ctrl+Z (with the caret on `<Note />`) takes both back. A selection that cuts this comment in two is refused.
+
+   BP:razor-markup — RAZOR_PLAN.md, R8: a line breakpoint on `<p class="note">Shown: @Shown</p>` (the gutter takes it there, not on `@page`
+   or `<h3>`), Debug the Blazor project, open http://localhost:5000/editor/related. EXPECT: the stop on that line, the frame
+   `RazorRelated.BuildRenderTree()` in RazorRelated.razor, `this` and `__builder` among the variables, Evaluate `Shown` → 1; F8 goes on
+   in the file; Resume renders the page. *@
+
+<h3 class="title">Related</h3>
+<p class="note">Shown: @Shown</p>
+

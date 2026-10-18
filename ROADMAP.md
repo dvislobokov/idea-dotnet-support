@@ -797,8 +797,23 @@
     (rename отказывал), rename внутри `@code` (inplace-шаблон над кусками падал — теперь диалог), «Overrides member» на склейке (ошибка
     IDE при открытии компонента). 0.1.269: переименованный / новый / удалённый `.razor` перезагружает проект в помощнике (генератор
     читал старый список файлов — класс нового имени не появлялся), память помощника (общий кэш сборок-ссылок и анализаторов, сборка мусора
-    после перезагрузки проектов: площадка в WSL 584 → 527 МБ, восемь переименований +43 МБ вместо +290 за два). Дальше — tag helpers
-    `.cshtml` (`asp-*`)
+    после перезагрузки проектов: площадка в WSL 584 → 527 МБ, восемь переименований +43 МБ вместо +290 за два). 0.1.280: класс
+    переименованного / нового `.razor` пишет сам плагин своим портом генератора сразу (`RazorGeneratedAhead`, как переименованный скрипт
+    Unity), помощник обновляет набор файлов проекта на месте, не перезагружая его и ссылающиеся проекты (MudBlazor: 15,7 → 3,7–5,1 с);
+    площадка — `TYPE:razor-component-rename`. 0.1.281 (R5e часть 3): tag helpers `.cshtml` — MVC (`asp-*`) и свои по `@addTagHelper`:
+    completion тегов и атрибутов, Ctrl+B на класс / свойство (сборки — в просмотр сборки), Alt+F7 на теге и атрибуте, Find Usages класса и
+    свойства находит теги и атрибуты, rename свойства пишет атрибут в HTML-регистре (`MailTo` → `mail-to`), имя из `[HtmlAttributeName]` и
+    тег tag helper не трогает; площадка — `Blazor/Editor/CshtmlTagHelpers.cshtml` (`TYPE:cshtml-*`). 0.1.282 (R6): ошибки компилятора Razor в редакторе (`RazorErrorsAnnotator`: RZ1006, RZ10012, RZ2012 и
+    остальные — id, текст и место компилятора), открытие `.razor` запускает генераторы проекта; площадка — `Blazor/Editor/Broken/RazorErrors.razor`
+    (`TYPE:razor-errors`). 0.1.283 (R7): Enter и Reformat Code в Razor — отступ строк по C#-блокам и элементам (`RazorIndent`:
+    C#-тень файла и правила отступов C# плагина); площадка — `Blazor/Editor/RazorTyping.razor`. 0.1.284 (R9): Ctrl+Alt+Home между файлами компонента и страницы, маршруты `@page` в
+    окне Endpoints (точка ядра `endpointSource`), «Add @using» для RZ10012, Refactor → Extract Component; площадка —
+    `Blazor/Editor/RazorRelated.razor`, `Blazor/Pages/Privacy.cshtml`. 0.1.285 (R8): точки останова в `.razor` / `.cshtml`
+    (точка ядра `breakpointLines`), остановка, кадр и Evaluate в компоненте; площадка — `BP:razor-markup`. 0.1.286 (R4): Find Usages члена `@code` из `.cs` находит `@code` и разметку, линза
+    использований считает разметку, автопопап в значении атрибута-C#, атрибут больше не находится дважды; хвосты R5e: view components
+    `<vc:…>` (completion тега и параметров, Ctrl+B), без дублей тегов и атрибутов в completion, теги и атрибуты компонентов и tag helpers
+    жирным в цветах класса и свойства (ключи на странице Razor), атрибуты-префиксы (`asp-route-id` → `RouteValues`) в Find Usages;
+    площадка — `TYPE:cshtml-view-component`
 
 
 

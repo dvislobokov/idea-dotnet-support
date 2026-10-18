@@ -1,0 +1,36 @@
+@page "/editor/typing"
+@* RAZOR_PLAN.md, R7 — typing and Reformat Code in a Razor file (indent of lines by the C# blocks and the elements around them).
+
+   TYPE:razor-enter-code — at the end of `private int count;` press Enter, type `void M()`, Enter, `{`, Enter. EXPECT: the `{` under
+   `void`, the closing `}` added under it, the caret 8 spaces in (4 more than the method). Ctrl+Z.
+
+   TYPE:razor-enter-markup — after `<p>Count: @count</p>` press Enter and type `@if (count > 0)`, Enter, `{`, Enter. EXPECT: the caret 4
+   spaces in, the `}` at column 0. Then type `<span>` + Enter: the caret 8 spaces in. Ctrl+Z. After `<ul>` press Enter: 4 spaces in.
+
+   TYPE:razor-new-code — on the empty last line type `@code {` and Enter. EXPECT: the caret 4 spaces in, `}` below at column 0. Ctrl+Z.
+
+   TYPE:razor-autoclose — on an empty line of the markup type `<Counter>`. EXPECT: `</Counter>` added after the caret (a component's tag
+   closes as an HTML one); type `@co` in a `<p>`: the completion list opens by itself with `count` first. Ctrl+Z.
+
+   TYPE:razor-reformat — Ctrl+Alt+L (Reformat Code). EXPECT: `<li>` 8 spaces in, `@foreach` and its braces 4 in `<ul>`, `Add`'s body 8 in;
+   nothing else moves (this file is formatted); the text in the lines stays as written. Mess up some indents and reformat again: they come
+   back. The children of `<html>` / `<body>` keep their indent (Settings | Editor | Code Style | HTML, "Do not indent children of"). *@
+
+<h3>Typing</h3>
+<p>Count: @count</p>
+<ul>
+    @foreach (var item in items)
+    {
+        <li>@item</li>
+    }
+</ul>
+
+@code {
+    private int count;
+    private readonly string[] items = ["a", "b"];
+
+    private void Add()
+    {
+        count++;
+    }
+}

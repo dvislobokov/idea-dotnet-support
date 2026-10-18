@@ -74,8 +74,20 @@ object RazorCSharpDocument {
         CachedValueProvider.Result.create(text, file)
     }, false)
 
-    /** [action] with the engine of [file]'s project and the item of [file] (its text as the PSI has it). */
-    private fun <T> withEngine(file: RazorFile, action: (RazorProjectEngine, RazorProjectItem, VirtualFile?) -> T?): T? {
+    /**
+     * The C# the SDK's source generator writes for [file] (its engine without [RazorIdeLayoutPass], the project's tag helpers): what
+     * [RazorGeneratedAhead] puts where the helper puts the generator's output; null when the file has no text.
+     */
+    fun compilerOutput(file: RazorFile): String? = withEngine(file, ide = false) { engine, item, projectFile ->
+        val tagHelpers = projectFile?.let { RazorTagHelperService.getInstance(file.project).tagHelpers(it) }
+        engine.process(item, tagHelpers).getCSharpDocument()?.generatedCode
+    }
+
+    /**
+     * [action] with the engine of [file]'s project and the item of [file] (its text as the PSI has it); [ide]: with [RazorIdeLayoutPass],
+     * the members of the class in the order of the file (the injection needs it), else the generator's own output.
+     */
+    private fun <T> withEngine(file: RazorFile, ide: Boolean = true, action: (RazorProjectEngine, RazorProjectItem, VirtualFile?) -> T?): T? {
         val text = file.text
         if (text.isEmpty()) return null
         // a copy of the file (completion works on one) has a virtual file without a parent: the project is the original's
@@ -87,9 +99,9 @@ object RazorCSharpDocument {
         val rootNamespace = options?.rootNamespace?.takeIf { it.isNotBlank() } ?: projectFile?.nameWithoutExtension ?: file.project.name
         val version = RazorGeneratorEngine.versionOf(options?.targetFramework ?: options?.targetFrameworks?.firstOrNull())
         // a folder deleted and made again is another file: the engine of the old one would read an invalid one
-        val engine = engines.compute(EngineKey(root?.path, rootNamespace, version)) { _, old ->
+        val engine = engines.compute(EngineKey(root?.path, rootNamespace, version, ide)) { _, old ->
             old?.takeIf { (it.fileSystem as HostFileSystem).root?.isValid != false }
-                ?: RazorGeneratorEngine.create(HostFileSystem(root), version, rootNamespace, "\n") { b -> b.features.add(RazorIdeLayoutPass()) }
+                ?: RazorGeneratorEngine.create(HostFileSystem(root), version, rootNamespace, "\n") { b -> if (ide) b.features.add(RazorIdeLayoutPass()) }
         }!!
         val fileSystem = engine.fileSystem as HostFileSystem
         fileSystem.current.set(Current("/$relative", virtualFile.path, text))
@@ -106,14 +118,43 @@ object RazorCSharpDocument {
      * chain in the order of the file (weighted by length, [RazorIdeLayoutPass] has put the members in order already) are the hosts, the
      * rest is glue text — the `@page` route before the `@using` lines, a mapping of the same expression written twice.
      */
-    fun places(file: RazorFile): List<Place> {
+    fun places(file: RazorFile): List<Place> = CachedValuesManager.getManager(file.project).getCachedValue(file, PLACES, {
+        CachedValueProvider.Result.create(computePlaces(file), file, RazorTagHelperService.getInstance(file.project).tracker)
+    }, false)
+
+    private val PLACES = com.intellij.openapi.util.Key.create<com.intellij.psi.util.CachedValue<List<Place>>>("razor.places")
+
+    /**
+     * Whether [offset] is in (or right at the end of) a literal of markup that hosts C# (`asp-for="Name"`): the view provider then answers
+     * `findElementAt` with the leaf of the Razor tree, so the platform finds the injection there — for the markup it prefers the HTML tree,
+     * whose element knows no injection ([RazorFileViewProvider.findElementAt]).
+     */
+    fun hostsMarkupAt(file: RazorFile, offset: Int): Boolean = places(file).any { isAttributeValueHost(it.host) && it.host.textRange.grown(1).contains(offset) }
+
+    /**
+     * A host of markup that is the value of an attribute: the C# the compiler reads there (`asp-for="Name"`, `Step="2"`). Not the name of
+     * an attribute, which the compiler maps too (`nameof(Counter.Step)`): a name stays markup to the editor — the XML target of Alt+F7 and
+     * Shift+F6, which [RazorTagHelperEditor] turns into the parameter.
+     */
+    fun isAttributeValueHost(host: RazorCodeLiteral): Boolean =
+        !host.isCode && host.isValid && (host.parent as? RazorElement)?.kind == io.github.dotnetsupport.razor.lang.syntax.RazorSyntaxKind.MarkupLiteralAttributeValue
+
+    private fun computePlaces(file: RazorFile): List<Place> {
         val generated = generate(file) ?: return emptyList()
         class Candidate(val mapping: SourceMapping, val host: RazorCodeLiteral, val range: TextRange)
         val candidates = ArrayList<Candidate?>()
+        val text = file.text
         for (mapping in generated.mappings) {
             val o = mapping.originalSpan
-            val host = if (o.filePath == generated.filePath) hostOf(file, o.absoluteIndex, o.length) else null
-            candidates += host?.let { Candidate(mapping, it, TextRange(o.absoluteIndex - it.textRange.startOffset, o.absoluteIndex - it.textRange.startOffset + o.length)) }
+            var length = o.length
+            var host = if (o.filePath == generated.filePath) hostOf(file, o.absoluteIndex, length) else null
+            if (host == null && o.filePath == generated.filePath) {
+                // the value of an attribute with whitespace after it (`asp-for="Name "`, completion's dummy identifier): the compiler maps the
+                // whitespace too, the literal of the tree ends before it — the host is the value, the whitespace is no C#
+                while (length > 0 && o.absoluteIndex + length <= text.length && text[o.absoluteIndex + length - 1].isWhitespace()) length--
+                if (length < o.length) host = hostOf(file, o.absoluteIndex, length)
+            }
+            candidates += host?.let { Candidate(mapping, it, TextRange(o.absoluteIndex - it.textRange.startOffset, o.absoluteIndex - it.textRange.startOffset + length)) }
         }
         val chosen = longestChain(candidates.map { c -> c?.let { it.mapping.originalSpan.absoluteIndex to it.mapping.originalSpan.length } })
         val places = ArrayList<Place>()
@@ -163,16 +204,21 @@ object RazorCSharpDocument {
     /** The C# literal of the PSI that holds [start]..[start]+[length] whole, when it is a host. */
     private fun hostOf(file: RazorFile, start: Int, length: Int): RazorCodeLiteral? {
         if (length <= 0) return null
-        val leaf = file.findElementAt(start) ?: return null
+        // the leaf of the Razor tree itself: `findElementAt` of the file answers from the HTML view for the markup, where the value of a
+        // tag helper's attribute is (`asp-for="Name"`)
+        val leaf = file.node.findLeafElementAt(start)?.psi ?: return null
         val host = PsiTreeUtil.getParentOfType(leaf, RazorCodeLiteral::class.java, false) ?: return null
         if (!host.isValidHost) return null
+        // markup hosts C# only as the value of an attribute: the compiler maps a parameter's name too (`nameof(Counter.Step)` over `Step=`),
+        // which would make the name of an attribute C# — a usage found twice, a rename written twice (the WSL sandbox, 0.1.285)
+        if (!host.isCode && !isAttributeValueHost(host)) return null
         return host.takeIf { it.textRange.contains(TextRange(start, start + length)) }
     }
 
     /** The text of the document as the C# parser sees it: the places glued, for tests and the trace. */
     fun text(file: RazorFile): String = places(file).joinToString("") { it.prefix + it.range.substring(it.host.text) + it.suffix }
 
-    private data class EngineKey(val root: String?, val rootNamespace: String, val version: RazorLanguageVersion)
+    private data class EngineKey(val root: String?, val rootNamespace: String, val version: RazorLanguageVersion, val ide: Boolean)
 
     /** One engine per project root, root namespace and version: the engine holds no document state, the file system reads the IDE's documents. */
     private val engines = ConcurrentHashMap<EngineKey, RazorProjectEngine>()

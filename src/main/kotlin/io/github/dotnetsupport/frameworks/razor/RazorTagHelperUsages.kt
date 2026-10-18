@@ -36,6 +36,8 @@ import io.github.dotnetsupport.lang.CSharpRenameParticipant
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSolutionSearch
 import io.github.dotnetsupport.lang.semantic.CSharpSymbol
+import io.github.dotnetsupport.msbuild.CompilationModel
+import io.github.dotnetsupport.razor.lang.discovery.HtmlConventions
 import io.github.dotnetsupport.razor.lang.syntax.TagHelperDescriptor
 import io.github.dotnetsupport.razor.lang.syntax.TagHelperKind
 import io.github.dotnetsupport.razor.lang.syntax.TagHelperMatchingConventions
@@ -48,8 +50,12 @@ import io.github.dotnetsupport.razor.lang.syntax.TagHelperMatchingConventions
  * shows them ([RazorMarkupReferencesSearcher]), rename writes over them ([RazorRenameParticipant]).
  */
 object RazorTagHelperUsages {
-    /** A place of markup: [range] of [file] (the Razor file of the view) names the component or parameter; [element] is the name's token. */
-    class Place(val file: RazorFile, val element: PsiElement, val range: TextRange)
+    /**
+     * A place of markup: [range] of [file] (the Razor file of the view) names the component or parameter; [element] is the name's token.
+     * [spelling]: how a rename writes the new name there (`mail-to` of `MailTo`); not [renamable]: found, but its name is no name of the C#
+     * (the tag of a tag helper, an attribute named by `[HtmlAttributeName]`).
+     */
+    class Place(val file: RazorFile, val element: PsiElement, val range: TextRange, val spelling: ((String) -> String)? = null, val renamable: Boolean = true)
 
     /** The CLR name of the component [element] is: a component's `.razor` file, a class of the C# (of the sources or an assembly's view). */
     fun componentOf(element: PsiElement): String? {
@@ -98,16 +104,40 @@ object RazorTagHelperUsages {
             val descriptors = descriptorsOf(context, tag)
             if (descriptors.any { it.kind == TagHelperKind.Component && RazorTagHelperEditor.typeNameOf(it) == typeName }) names(file, tag, simpleName, found)
         }
+        // the tags of a tag helper of `.cshtml` (`<email>` of EmailTagHelper): where it applies to the element, by its name and attributes
+        val tagNames = tagHelpersOf(project, typeName).flatMap { d -> d.tagMatchingRules.map { it.tagName } }.filter { it != TagHelperMatchingConventions.ELEMENT_CATCH_ALL_NAME }.distinct()
+        for (tagName in tagNames) forEachTag(project, wordOf(tagName), scope) { file, context, tag ->
+            if (!tag.name.removePrefix(context.prefix.orEmpty()).equals(tagName, ignoreCase = true)) return@forEachTag
+            if (context.tagHelpers.any { it.kind == TagHelperKind.ITagHelper && RazorTagHelperEditor.typeNameOf(it) == typeName && RazorTagHelperEditor.applies(context, it, tag) }) {
+                names(file, tag, tag.name, found, renamable = false)
+            }
+        }
+        // a tag helper of every element (`[HtmlTargetElement(Attributes = "tooltip")]`): the elements it applies to, by their start tag
+        val attributeWords = tagHelpersOf(project, typeName).flatMap { d -> d.tagMatchingRules.filter { it.tagName == TagHelperMatchingConventions.ELEMENT_CATCH_ALL_NAME } }
+            .flatMap { rule -> rule.attributes.map { it.name } }.filter { it.isNotEmpty() }.distinct()
+        for (attribute in attributeWords) forEachTag(project, wordOf(attribute), scope) { file, context, tag ->
+            val applies = context.tagHelpers.any { it.kind == TagHelperKind.ITagHelper && RazorTagHelperEditor.typeNameOf(it) == typeName && RazorTagHelperEditor.applies(context, it, tag) }
+            val name = XmlTagUtil.getStartTagNameElement(tag) ?: return@forEachTag
+            if (applies && found.none { it.file == file && it.element == name }) found += Place(file, name, name.textRange, renamable = false)
+        }
         return found
     }
+
+    /** The tag helpers of `.cshtml` of the class [typeName] the projects discovered (the names of their tags and attributes are theirs). */
+    private fun tagHelpersOf(project: Project, typeName: String): List<TagHelperDescriptor> =
+        RazorTagHelperService.getInstance(project).known().filter { it.kind == TagHelperKind.ITagHelper && RazorTagHelperEditor.typeNameOf(it) == typeName }.distinctBy { it.name }
+
+    /** The word of the index that a file naming [name] (`mail-to`, `asp-for`) has: its longest part. */
+    private fun wordOf(name: String): String = name.split(Regex("[^A-Za-z0-9_]+")).maxByOrNull { it.length } ?: name
 
     /**
      * The attributes and child content tags that set the parameter [property] of the component [typeName] — or of a component deriving from
      * it, when [typeName] is a class of the C# — in [scope].
      */
-    fun attributes(project: Project, typeName: String, property: String, scope: SearchScope, derived: Set<String> = emptySet()): List<Place> {
+    fun attributes(project: Project, typeName: String, property: String, scope: SearchScope, derived: Set<String> = emptySet(), explicitName: Boolean = false): List<Place> {
         val components = derived + typeName
         val found = ArrayList<Place>()
+        tagHelperAttributes(project, components, property, scope, explicitName, found)
         forEachTag(project, property, scope) { file, context, tag ->
             val descriptors = RazorTagHelperEditor.candidates(context, tag.name, tag.parentTag?.name)
                 .filter { (it.kind == TagHelperKind.Component || it.kind == TagHelperKind.Bind) && RazorTagHelperEditor.typeNameOf(it) in components }
@@ -130,16 +160,47 @@ object RazorTagHelperUsages {
         return found
     }
 
+    /**
+     * The attributes of the tag helpers of `.cshtml` [types] that set [property] (`mail-to`, `asp-for`), where the tag helper applies to the
+     * element. A rename writes the new property's name in HTML case there (`MailTo` → `mail-to`) — unless the attribute's name is not the
+     * property's ([explicitName]: `[HtmlAttributeName]`), which stays.
+     */
+    private fun tagHelperAttributes(project: Project, types: Set<String>, property: String, scope: SearchScope, explicitName: Boolean, found: MutableList<Place>) {
+        val bounds = types.flatMap { tagHelpersOf(project, it) }.flatMap { it.boundAttributes }.filter { it.propertyName == property }
+        // a dictionary property sets its items by the attributes of a prefix too: `RouteValues` by `asp-route-id`
+        val names = (bounds.map { it.name } + bounds.mapNotNull { it.indexerNamePrefix?.takeIf(String::isNotEmpty) }).distinct()
+        val seen = HashSet<Pair<RazorFile, TextRange>>()
+        for (attributeName in names) forEachTag(project, wordOf(attributeName), scope) { file, context, tag ->
+            val descriptors = context.tagHelpers.filter { it.kind == TagHelperKind.ITagHelper && RazorTagHelperEditor.typeNameOf(it) in types && RazorTagHelperEditor.applies(context, it, tag) }
+            if (descriptors.isEmpty()) return@forEachTag
+            for (attribute in tag.attributes) {
+                val name = attribute.nameElement ?: continue
+                val bound = descriptors.flatMap { it.boundAttributes }.firstOrNull { it.propertyName == property && it.name.equals(attribute.name, ignoreCase = !it.caseSensitive) }
+                if (bound == null) {
+                    // an item of the dictionary (`asp-route-id`): a usage, its name is the item's — no rename writes it
+                    val prefixed = descriptors.flatMap { it.boundAttributes }.any { b ->
+                        b.propertyName == property && b.indexerNamePrefix?.takeIf(String::isNotEmpty)?.let { attribute.name.startsWith(it, ignoreCase = !b.caseSensitive) } == true
+                    }
+                    if (prefixed && seen.add(file to name.textRange)) found += Place(file, name, name.textRange, renamable = false)
+                    continue
+                }
+                if (!seen.add(file to name.textRange)) continue
+                val conventional = !explicitName && bound.name == HtmlConventions.toHtmlCase(property)
+                found += Place(file, name, name.textRange, if (conventional) HtmlConventions::toHtmlCase else null, renamable = conventional)
+            }
+        }
+    }
+
     /** The descriptors an element is by its name (its tag in their rules, not `*`), the child content ones only in their parent. */
     private fun descriptorsOf(context: io.github.dotnetsupport.razor.lang.syntax.TagHelperDocumentContext, tag: XmlTag): List<TagHelperDescriptor> =
         RazorTagHelperEditor.candidates(context, tag.name, tag.parentTag?.name).filter { d -> d.tagMatchingRules.any { it.tagName != TagHelperMatchingConventions.ELEMENT_CATCH_ALL_NAME } }
 
     /** The start and end tag names of [tag], their last name ([name]: the part after the namespace of `<App.Components.Counter>`). */
-    private fun names(file: RazorFile, tag: XmlTag, name: String, found: MutableList<Place>) {
+    private fun names(file: RazorFile, tag: XmlTag, name: String, found: MutableList<Place>, renamable: Boolean = true) {
         for (element in listOfNotNull(XmlTagUtil.getStartTagNameElement(tag), XmlTagUtil.getEndTagNameElement(tag))) {
             val text = element.text
             if (!text.endsWith(name) || text.length > name.length && text[text.length - name.length - 1] != '.') continue
-            found += Place(file, element, TextRange.from(element.textRange.endOffset - name.length, name.length))
+            found += Place(file, element, TextRange.from(element.textRange.endOffset - name.length, name.length), renamable = renamable)
         }
     }
 
@@ -170,10 +231,16 @@ object RazorTagHelperUsages {
     /** The places that name [element] (a component, a parameter) in [scope]. */
     fun places(element: PsiElement, scope: SearchScope): List<Place> {
         val project = element.project
+        // the names of a tag helper's tags and attributes are its descriptors': those of its own project at least, discovered now if need be
+        element.containingFile?.virtualFile?.let { CompilationModel.getInstance(project).projectOf(it) }?.let { RazorTagHelperService.getInstance(project).tagHelpersNow(it) }
         componentOf(element)?.let { return tags(project, it, scope) }
         val (type, property) = parameterOf(element) ?: return emptyList()
-        return attributes(project, type, property, scope, derivedComponents(element))
+        return attributes(project, type, property, scope, derivedComponents(element), explicitName = hasExplicitName(element))
     }
+
+    /** A property of a tag helper named in the markup by `[HtmlAttributeName("…")]`: its attribute keeps that name on a rename. */
+    private fun hasExplicitName(property: PsiElement): Boolean =
+        Regex("""\bHtmlAttributeName(Attribute)?\s*\(\s*"""").containsMatchIn((property as? CSharpPropertyDeclaration)?.attributeLists?.joinToString(" ") { it.text }.orEmpty())
 
     /** The classes of the C# deriving from the owner of the parameter [property]: their tags set it too. */
     private fun derivedComponents(property: PsiElement): Set<String> {
@@ -199,6 +266,45 @@ object RazorTagHelperUsages {
             .filter { it.containingFile?.viewProvider?.virtualFile?.let(RazorTagHelpers::isRazorOutput) == true }
             .flatMap { (it as? io.github.dotnetsupport.csharp.lang.psi.CSharpTypeDeclaration)?.members.orEmpty() }
             .filterIsInstance<CSharpPropertyDeclaration>().firstOrNull { it.identifier?.text?.removePrefix("@") == name }
+    }
+
+    /**
+     * The member of a component's `.razor` (its C# document: `@code`) that a member of the generator's output [member] is — the other way
+     * of [generatedTwin]: Find Usages started in a `.cs` names the output's member, the code of `@code` names the document's (RAZOR_PLAN.md,
+     * R4: "Find Usages of a `@code` member started from a `.cs` misses its uses in `@code`").
+     */
+    fun sourceTwin(member: PsiElement): io.github.dotnetsupport.csharp.lang.psi.CSharpMemberDeclaration? {
+        if (member !is io.github.dotnetsupport.csharp.lang.psi.CSharpMemberDeclaration || member is CSharpBaseTypeDeclaration) return null
+        val file = member.containingFile?.viewProvider?.virtualFile ?: return null
+        if (!RazorTagHelpers.isRazorOutput(file)) return null
+        val owner = CSharpSolutionSearch.ownerType(member) ?: return null
+        val typeName = qualifiedName(owner) ?: return null
+        val name = io.github.dotnetsupport.csharp.lang.psi.CSharpDeclarationNames.name(member) ?: return null
+        val project = member.project
+        val razor = RazorTagHelperEditor.razorComponent(anyRazorFile(project) ?: return null, typeName) ?: return null
+        val manager = InjectedLanguageManager.getInstance(project)
+        val host = RazorCSharpDocument.places(razor).firstOrNull()?.host ?: return null
+        val injected = manager.getInjectedPsiFiles(host)?.firstOrNull()?.first as? CSharpFile ?: return null
+        // the member `@code` writes, not one of the glue (the class around, `BuildRenderTree`)
+        return PsiTreeUtil.findChildrenOfType(injected, io.github.dotnetsupport.csharp.lang.psi.CSharpMemberDeclaration::class.java).firstOrNull { candidate ->
+            if (candidate is CSharpBaseTypeDeclaration || io.github.dotnetsupport.csharp.lang.psi.CSharpDeclarationNames.name(candidate) != name) return@firstOrNull false
+            val nameElement = io.github.dotnetsupport.csharp.lang.psi.CSharpDeclarationNames.nameElement(candidate) ?: return@firstOrNull false
+            io.github.dotnetsupport.lang.semantic.CSharpInjections.isWritten(injected, nameElement.textRange)
+        }
+    }
+
+    /** Some Razor file of [project]: the context [RazorTagHelperEditor.razorComponent] resolves names in. */
+    private fun anyRazorFile(project: Project): RazorFile? {
+        val psi = PsiManager.getInstance(project)
+        return com.intellij.psi.search.FileTypeIndex.getFiles(RazorFileType, GlobalSearchScope.projectScope(project)).asSequence()
+            .mapNotNull { RazorTagHelperEditor.razorFile(psi.findFile(it)) }.firstOrNull()
+    }
+
+    /** The usages of [sourceTwin] in [scope]: the code of `@code` and of the markup naming the member a `.cs` searched in the output. */
+    fun sourceTwinUsages(member: PsiElement, scope: SearchScope): List<PsiElement> {
+        val twin = sourceTwin(member) ?: return emptyList()
+        val target = CSharpSolutionSearch.targetOf(twin) ?: return emptyList()
+        return CSharpSolutionSearch.usages(member.project, target, scope).filter { !it.implicit }.map { it.leaf }
     }
 
     /** The usages of [generatedTwin] in [scope]: the names of the C# that resolve to the generator's output. */
@@ -259,6 +365,12 @@ class RazorMarkupReference(element: PsiElement, range: TextRange, private val ta
 class RazorMarkupReferencesSearcher : QueryExecutorBase<PsiReference, ReferencesSearch.SearchParameters>(true) {
     override fun processQuery(parameters: ReferencesSearch.SearchParameters, consumer: Processor<in PsiReference>) {
         val target = parameters.elementToSearch
+        // a member of a component's `@code` searched in a `.cs` (it names the generator's output): its uses in the `.razor`
+        if (target is io.github.dotnetsupport.csharp.lang.psi.CSharpMemberDeclaration && target !is CSharpBaseTypeDeclaration) {
+            for (leaf in RazorTagHelperUsages.sourceTwinUsages(target, parameters.effectiveSearchScope)) {
+                if (!consumer.process(io.github.dotnetsupport.lang.CSharpSolutionReference(leaf, target))) return
+            }
+        }
         if (target !is RazorFile && target !is CSharpBaseTypeDeclaration && target !is CSharpPropertyDeclaration) return
         for (place in RazorTagHelperUsages.places(target, parameters.effectiveSearchScope)) {
             val range = place.range.shiftLeft(place.element.textRange.startOffset)
@@ -335,7 +447,7 @@ class RazorRenameParticipant : CSharpRenameParticipant {
     override fun occurrences(declaration: PsiElement, oldName: String): List<CSharpRenameParticipant.Occurrence> {
         if (declaration !is CSharpBaseTypeDeclaration && declaration !is CSharpPropertyDeclaration) return emptyList()
         val scope = GlobalSearchScope.projectScope(declaration.project)
-        return RazorTagHelperUsages.places(declaration, scope).map { CSharpRenameParticipant.Occurrence(it.file, it.range) } +
+        return RazorTagHelperUsages.places(declaration, scope).filter { it.renamable }.map { CSharpRenameParticipant.Occurrence(it.file, it.range, it.spelling) } +
             RazorTagHelperUsages.twinUsages(declaration, scope).map { CSharpRenameParticipant.Occurrence(it.containingFile, it.textRange) }
     }
 

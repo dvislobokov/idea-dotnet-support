@@ -61,6 +61,15 @@ object RazorTagHelperEditor {
         }
     }
 
+    /** Whether [descriptor] applies to [tag] as the compiler binds it: a rule with its name (or `*`), its parent and its required attributes. */
+    fun applies(context: TagHelperDocumentContext, descriptor: TagHelperDescriptor, tag: XmlTag): Boolean {
+        val prefix = context.prefix.orEmpty()
+        val attributes = tag.attributes.map { it.name to (it.value ?: "") }
+        return descriptor.tagMatchingRules.any { rule ->
+            TagHelperMatchingConventions.satisfiesRule(rule, tag.name.removePrefix(prefix), tag.parentTag?.name?.removePrefix(prefix), attributes)
+        }
+    }
+
     /** The descriptors an element named [tagName] is (its tag in their rules, not `*`): the component, the tag helper. */
     fun tagDescriptors(context: TagHelperDocumentContext, tagName: String): List<TagHelperDescriptor> {
         val name = tagName.removePrefix(context.prefix.orEmpty())
@@ -88,15 +97,20 @@ object RazorTagHelperEditor {
      * ([parameterDeclaration]). Null for HTML, a tag helper, a directive attribute of every element (`@onclick`).
      */
     fun markupTarget(element: PsiElement): PsiElement? = when (val binding = markupBinding(element)) {
-        is MarkupBinding.Component -> typeTarget(binding.file, binding.component)
+        is MarkupBinding.Component, is MarkupBinding.TagHelper -> typeTarget(binding.file, binding.component)
         is MarkupBinding.Parameter -> parameterDeclaration(binding.file, binding.component, binding.parameter)
         null -> null
     }
 
-    /** What a tag or attribute of the markup names, by the descriptors alone (cheap: the update of an action asks it). */
+    /**
+     * What a tag or attribute of the markup names, by the descriptors alone (cheap: the update of an action asks it). [component]: the
+     * component, or the tag helper of `.cshtml` ([TagHelperKind.ITagHelper]) whose attribute a [Parameter] is.
+     */
     sealed class MarkupBinding(val file: RazorFile, val component: TagHelperDescriptor) {
         class Component(file: RazorFile, component: TagHelperDescriptor) : MarkupBinding(file, component)
         class Parameter(file: RazorFile, component: TagHelperDescriptor, val parameter: BoundAttributeDescriptor) : MarkupBinding(file, component)
+        /** The tag of a tag helper (`<email>`, `<environment>`): searched as its class, not renamed with it — its name is no name of the C#. */
+        class TagHelper(file: RazorFile, tagHelper: TagHelperDescriptor) : MarkupBinding(file, tagHelper)
     }
 
     fun markupBinding(element: PsiElement): MarkupBinding? {
@@ -111,6 +125,8 @@ object RazorTagHelperEditor {
                 val descriptors = candidates(context, named.name, named.parentTag?.name)
                     .filter { d -> d.tagMatchingRules.any { it.tagName != TagHelperMatchingConventions.ELEMENT_CATCH_ALL_NAME } }
                 descriptors.firstOrNull { it.kind == TagHelperKind.Component }?.let { return MarkupBinding.Component(razor, it) }
+                // a tag helper bound to the element: `<a>` is the anchor tag helper's only with an `asp-*` attribute
+                descriptors.firstOrNull { it.kind == TagHelperKind.ITagHelper && applies(context, it, named) }?.let { return MarkupBinding.TagHelper(razor, it) }
                 val childContent = descriptors.firstOrNull { it.kind == TagHelperKind.ChildContent } ?: return null
                 val component = componentOf(childContent) ?: return null
                 val attribute = component.boundAttributes.firstOrNull { it.name == named.localName } ?: return null
@@ -118,10 +134,13 @@ object RazorTagHelperEditor {
             }
             is XmlAttribute -> {
                 val tag = named.parent ?: return null
+                // a tag helper's attribute (`asp-for`, `mail-to`), of every element too (`tooltip`): its property
                 val ownDescriptors = candidates(context, tag.name, tag.parentTag?.name).filter { d ->
-                    (d.kind == TagHelperKind.Component || d.kind == TagHelperKind.Bind) && d.tagMatchingRules.none { it.tagName == TagHelperMatchingConventions.ELEMENT_CATCH_ALL_NAME }
+                    d.kind == TagHelperKind.ITagHelper ||
+                        (d.kind == TagHelperKind.Component || d.kind == TagHelperKind.Bind) && d.tagMatchingRules.none { it.tagName == TagHelperMatchingConventions.ELEMENT_CATCH_ALL_NAME }
                 }
                 val (descriptor, attribute) = boundAttribute(ownDescriptors, named.name) ?: return null
+                if (descriptor.kind == TagHelperKind.ITagHelper) return MarkupBinding.Parameter(razor, descriptor, attribute)
                 val component = if (descriptor.kind == TagHelperKind.Component) descriptor else componentOf(descriptor) ?: return null
                 val parameter = component.boundAttributes.firstOrNull { it.propertyName == attribute.propertyName } ?: return null
                 MarkupBinding.Parameter(razor, component, parameter)
@@ -192,7 +211,7 @@ object RazorTagHelperEditor {
     }
 
     fun sourceDeclarations(file: RazorFile, qualifiedName: String): List<PsiElement> {
-        val context = RazorTagHelpers.declarationFile(file) ?: return emptyList()
+        val context = RazorTagHelpers.contextFile(file) ?: return emptyList()
         val syntax = CSharpSemanticSession(file.project).resolver(context).syntax
         for (arity in 0..8) syntax.typeInfo(qualifiedName, arity)?.let { info -> return info.targets() }
         return emptyList()
@@ -238,9 +257,20 @@ class RazorTagHelperCompletionContributor : CompletionContributor() {
         if (position.node?.elementType != XmlTokenType.XML_NAME) return
         val razor = RazorTagHelperEditor.razorFile(parameters.originalFile) ?: return
         val context = RazorTagHelperEditor.context(razor) ?: return
+        // each name once: HTML offers the elements it knows (`form`, `embed`: its item, with its insert handler, stays) and an unknown
+        // tag the attributes of its other elements in the file (`count` of `<vc:latest-news count="3">`: ours, with the type, stays)
         when (val parent = position.parent) {
-            is XmlTag -> if (parent.firstChild?.nextSibling == position || isTagName(parent, position)) tags(context, parent.parentTag?.name, result)
-            is XmlAttribute -> attributes(context, parent.parent, result)
+            is XmlTag -> if (parent.firstChild?.nextSibling == position || isTagName(parent, position)) {
+                val html = HashSet<String>()
+                result.runRemainingContributors(parameters) { html += it.lookupElement.lookupString; result.passResult(it) }
+                // the whole name typed is the prefix: XML matches only the part after a namespace prefix, `vc:` of a view component's tag
+                val typed = position.text.take((parameters.offset - position.textRange.startOffset).coerceIn(0, position.textLength))
+                tags(context, parent.parentTag?.name, if (':' in typed) result.withPrefixMatcher(typed) else result, html)
+            }
+            is XmlAttribute -> {
+                val given = attributes(context, parent.parent, result)
+                if (given.isNotEmpty()) result.runRemainingContributors(parameters) { if (it.lookupElement.lookupString !in given) result.passResult(it) }
+            }
         }
     }
 
@@ -250,7 +280,8 @@ class RazorTagHelperCompletionContributor : CompletionContributor() {
         return child == position
     }
 
-    private fun tags(context: TagHelperDocumentContext, parentTag: String?, result: CompletionResultSet) {
+    /** Adds the tags but those of [skip]. */
+    private fun tags(context: TagHelperDocumentContext, parentTag: String?, result: CompletionResultSet, skip: Set<String>) {
         val seen = HashSet<String>()
         for (descriptor in context.tagHelpers) {
             for (rule in descriptor.tagMatchingRules) {
@@ -258,8 +289,10 @@ class RazorTagHelperCompletionContributor : CompletionContributor() {
                 if (name == TagHelperMatchingConventions.ELEMENT_CATCH_ALL_NAME) continue
                 // a child content tag only inside its component
                 if (rule.parentTag != null && !rule.parentTag.equals(parentTag, ignoreCase = true)) continue
+                // a tag helper of an HTML element by its attributes (`<a asp-action>`, `<embed asp-…>`): HTML offers the element already
+                if (descriptor.kind == TagHelperKind.ITagHelper && rule.attributes.isNotEmpty()) continue
                 val tag = context.prefix.orEmpty() + name
-                if (!seen.add(tag)) continue
+                if (tag in skip || !seen.add(tag)) continue
                 val component = descriptor.kind == TagHelperKind.Component || descriptor.kind == TagHelperKind.ChildContent
                 val element = LookupElementBuilder.create(tag)
                     .withIcon(if (component) AllIcons.Nodes.Class else AllIcons.Nodes.Tag)
@@ -270,8 +303,9 @@ class RazorTagHelperCompletionContributor : CompletionContributor() {
         }
     }
 
-    private fun attributes(context: TagHelperDocumentContext, tag: XmlTag?, result: CompletionResultSet) {
-        tag ?: return
+    /** Adds the attributes, answers their names. */
+    private fun attributes(context: TagHelperDocumentContext, tag: XmlTag?, result: CompletionResultSet): Set<String> {
+        tag ?: return emptySet()
         val present = tag.attributes.mapNotNull { it.name.takeIf { n -> !n.contains(com.intellij.codeInsight.completion.CompletionUtilCore.DUMMY_IDENTIFIER_TRIMMED) } }.toSet()
         val seen = HashSet<String>()
         for (descriptor in RazorTagHelperEditor.candidates(context, tag.name, tag.parentTag?.name)) {
@@ -288,6 +322,7 @@ class RazorTagHelperCompletionContributor : CompletionContributor() {
                 result.addElement(PrioritizedLookupElement.withPriority(element, if (own) 10.0 else 0.0))
             }
         }
+        return seen
     }
 
     private companion object {
@@ -297,6 +332,34 @@ class RazorTagHelperCompletionContributor : CompletionContributor() {
             "System.String" to "string", "System.Boolean" to "bool", "System.Int32" to "int", "System.Object" to "object", "System.Double" to "double",
             "System.Int64" to "long", "System.Decimal" to "decimal", "System.Single" to "float",
         )
+    }
+}
+
+/**
+ * The completion list opens by itself while the value of an attribute the compiler reads as C# is typed (`asp-for="Na"`: the members of
+ * the model), as in C#: HTML keeps the list closed in a value of an attribute (the WSL sandbox, 0.1.285: only Ctrl+Space opened it).
+ */
+class RazorAttributeValueCompletionConfidence : com.intellij.codeInsight.completion.CompletionConfidence() {
+    override fun shouldSkipAutopopup(editor: Editor, contextElement: PsiElement, psiFile: PsiFile, offset: Int): com.intellij.util.ThreeState {
+        val razor = RazorTagHelperEditor.razorFile(psiFile) ?: return com.intellij.util.ThreeState.UNSURE
+        return if (RazorCSharpDocument.hostsMarkupAt(razor, offset)) com.intellij.util.ThreeState.NO else com.intellij.util.ThreeState.UNSURE
+    }
+}
+
+/**
+ * Typing in the value of an attribute that is C# (`asp-for="Na"`) opens the completion list as typing C# does: the typed-char handler of
+ * XML decides the auto-popup of a value of an attribute first and keeps it closed (the WSL sandbox, 0.1.285; the confidences all said
+ * "unsure" at the caret). An identifier char or `.` there schedules it.
+ */
+class RazorAttributeValueAutoPopup : com.intellij.codeInsight.editorActions.TypedHandlerDelegate() {
+    override fun checkAutoPopup(charTyped: Char, project: com.intellij.openapi.project.Project, editor: Editor, file: PsiFile): Result {
+        if (!(charTyped.isLetterOrDigit() || charTyped == '_' || charTyped == '.')) return Result.CONTINUE
+        val razor = RazorTagHelperEditor.razorFile(file)
+            ?: RazorTagHelperEditor.razorFile(com.intellij.lang.injection.InjectedLanguageManager.getInstance(project).getTopLevelFile(file)) ?: return Result.CONTINUE
+        val hostEditor = (editor as? com.intellij.injected.editor.EditorWindow)?.delegate ?: editor
+        if (!RazorCSharpDocument.hostsMarkupAt(razor, hostEditor.caretModel.offset)) return Result.CONTINUE
+        com.intellij.codeInsight.AutoPopupController.getInstance(project).scheduleAutoPopup(hostEditor)
+        return Result.STOP
     }
 }
 
@@ -315,8 +378,8 @@ class RazorTagHelperGotoDeclarationHandler : GotoDeclarationHandler {
             is XmlAttribute -> {
                 val tag = parent.parent ?: return null
                 val (descriptor, attribute) = RazorTagHelperEditor.boundAttribute(RazorTagHelperEditor.candidates(context, tag.name, tag.parentTag?.name), parent.name) ?: return null
-                // a directive attribute of every element (`@onclick`) has no property to go to
-                if (descriptor.tagMatchingRules.all { it.tagName == TagHelperMatchingConventions.ELEMENT_CATCH_ALL_NAME }) return null
+                // a directive attribute of every element (`@onclick`) has no property to go to; a tag helper of every element (`tooltip`) has
+                if (descriptor.kind != TagHelperKind.ITagHelper && descriptor.tagMatchingRules.all { it.tagName == TagHelperMatchingConventions.ELEMENT_CATCH_ALL_NAME }) return null
                 RazorTagHelperEditor.propertyTarget(razor, descriptor, attribute)?.let { arrayOf(it) }
             }
             else -> null

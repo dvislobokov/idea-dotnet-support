@@ -192,6 +192,41 @@ class CodeAnalysisTest : BasePlatformTestCase() {
         }
     }
 
+    /**
+     * Opening a `.razor` of a project the helper has not loaded generates it (no analysis: no C#); a project already generated asks nothing
+     * (the WSL sandbox, 0.1.282: the C# of the markup was silent until a `.cs` of the project was opened).
+     */
+    fun testOpeningAnotherFileOfAProjectGeneratesIt() {
+        val folder = com.intellij.openapi.util.io.FileUtil.createTempDirectory("openRazor", null)
+        val projectIo = java.io.File(folder, "Web.csproj").apply { writeText("<Project Sdk=\"Microsoft.NET.Sdk.Razor\"/>") }
+        val razorIo = java.io.File(folder, "Pages/Home.razor").apply { parentFile.mkdirs(); writeText("<p>@Undefined</p>") }
+        val lfs = com.intellij.openapi.vfs.LocalFileSystem.getInstance()
+        val projectFile = lfs.refreshAndFindFileByIoFile(projectIo)!!
+        val razor = lfs.refreshAndFindFileByIoFile(razorIo)!!
+        val service = CodeAnalysisService.getInstance(project)
+        val methods = java.util.Collections.synchronizedList(ArrayList<String>())
+        val connection = recordingHelper(methods)
+        service.setConnectionForTests(connection)
+        try {
+            service.opened(razor)
+            val deadline = System.currentTimeMillis() + 15_000
+            while (synchronized(methods) { "generate" !in methods } && System.currentTimeMillis() < deadline) {
+                com.intellij.util.ui.UIUtil.dispatchAllInvocationEvents()
+                Thread.sleep(50)
+            }
+            Thread.sleep(1_000)
+            assertEquals("the project generates, nothing is analyzed", listOf("generate"), synchronized(methods) { methods.toList() })
+            synchronized(methods) { methods.clear() }
+            service.opened(razor)
+            Thread.sleep(1_500)
+            assertEmpty("generated already: nothing more", synchronized(methods) { methods.toList() })
+        } finally {
+            service.setConnectionForTests(null)
+            service.putGeneratedForTests(projectFile.path, null)
+            connection.dispose()
+        }
+    }
+
     /** RAZOR_PLAN.md, R0: the helper names the additional files of the generators; editing one of them makes what they made stale. */
     fun testAdditionalFilesOfTheGenerators() {
         val answer = JsonParser.parseString("""{"project":"C:\\s\\A\\A.csproj","framework":"net10.0","files":[],"buildFiles":[],

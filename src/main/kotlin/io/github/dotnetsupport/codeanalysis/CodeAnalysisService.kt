@@ -114,6 +114,12 @@ class CodeAnalysisService(private val project: Project) : Disposable {
 
     fun generatedState(projectFile: VirtualFile): GeneratedState? = generated[key(projectFile.path)]
 
+    /** The generated state of the project whose folder holds [path] (the nearest one); works for a file that is gone, by its path. */
+    fun generatedStateUnder(path: String): GeneratedState? {
+        val file = key(path)
+        return generated.values.filter { file.startsWith(key(it.projectPath).substringBeforeLast('/') + "/") }.maxByOrNull { it.projectPath.length }
+    }
+
     /**
      * The generated files of [projectFile] and of the projects it references are there, no generator failed, and nothing of those projects
      * has been edited since they were made: what the generators declare is all in the index.
@@ -360,9 +366,22 @@ class CodeAnalysisService(private val project: Project) : Disposable {
         if (DotNetSettings.getInstance().runSourceGenerators) schedule(projectFile, generate = true, paths = emptyList())
     }
 
-    /** A C# file was opened: its project generates once, the file is analyzed when it has not been (the whole project under `fullSolution`). */
+    /**
+     * A C# file was opened: its project generates once, the file is analyzed when it has not been (the whole project under `fullSolution`).
+     * Another file of a project (a `.razor`, a `.xaml`): the project generates once — what its generators make is what the C# of that
+     * file resolves against, and the semantics of a project whose generators never ran stays silent (the WSL sandbox, 0.1.282: `@Undefined`
+     * in a `.razor` was no error until a `.cs` of the project was opened).
+     */
     fun opened(file: VirtualFile) {
-        if (file.fileType != CSharpFileType || isGenerated(file)) return
+        if (isGenerated(file)) return
+        if (file.fileType != CSharpFileType) {
+            if (!DotNetSettings.getInstance().runSourceGenerators || !file.isInLocalFileSystem) return
+            val projectFile = ReadAction.compute<VirtualFile?, RuntimeException> { io.github.dotnetsupport.msbuild.DotNetProjects.findOwningProject(file) } ?: return
+            if (!projectFile.extension.equals("csproj", ignoreCase = true) || generated[key(projectFile.path)] != null) return
+            remember(projectFile)
+            schedule(projectFile, generate = true, paths = emptyList())
+            return
+        }
         val projectFile = ReadAction.compute<VirtualFile?, RuntimeException> { CompilationModel.getInstance(project).projectOf(file) } ?: return
         remember(projectFile)
         val generate = DotNetSettings.getInstance().runSourceGenerators && generated[key(projectFile.path)] == null

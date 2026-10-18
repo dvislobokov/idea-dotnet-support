@@ -1,0 +1,21 @@
+@using Playground.Blazor.Components.Pages
+@* RAZOR_PLAN.md, R6 — the errors of the Razor compiler in the editor. Broken on purpose: Blazor.csproj leaves Editor/Broken out of the build
+   (the compiler would stop on it), the editor still takes it as a component of the project.
+
+   TYPE:razor-errors — open the file, wait for the highlighting. EXPECT, as `dotnet build` would report them with this file in the build:
+   - `<Nowhere />` yellow, RZ10012 "Found markup element with unexpected name 'Nowhere'. If this is intended to be a component, add a
+     @using directive for its namespace." over the whole element;
+   - `<Counter Step="2" />` nothing: a known component;
+   - `@Undefined` red, CS0103 "The name 'Undefined' does not exist in the current context" (the C# of the markup is the C#'s);
+   - the `@{` at the end red, RZ1006 "The code block is missing a closing "}" character…" at its start;
+   - nothing else: no HTML error, no "unknown html tag" on the components.
+   Then add `}` on the empty last line: RZ1006 goes at once (no save needed); Ctrl+Z. *@
+
+<h3>Errors</h3>
+<Counter Step="2" />
+<Nowhere />
+<p>@Undefined</p>
+
+@{
+    var unclosed = 1;
+

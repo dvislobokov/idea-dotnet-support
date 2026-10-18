@@ -169,6 +169,14 @@ class RazorComponentUsagesTest : BasePlatformTestCase() {
         assertTrue(home, home.contains("<Welcome @bind-Title=\"name\" />"))
         assertTrue(home, home.contains("<Web.Components.Welcome Title=\"b\" />"))
         assertFalse(home, home.contains("Greeting"))
+        // one Ctrl+Z in the editor of the markup takes it all back: the file's name, the tags, the C# (the WSL sandbox, 0.1.281: the file
+        // and the tags stayed `Tally` while the C# went back)
+        myFixture.performEditorAction("\$Undo")
+        assertNotNull("the file's name is back", myFixture.findFileInTempDir("$dir/Components/Greeting.razor"))
+        assertNull(myFixture.findFileInTempDir("$dir/Components/Welcome.razor"))
+        val undone = text("Pages/Home.razor")
+        assertTrue(undone, undone.contains("<Greeting Title=\"a\">") && !undone.contains("Welcome"))
+        assertTrue(text("Components/Greeting.razor.cs"), text("Components/Greeting.razor.cs").contains("public partial class Greeting"))
     }
 
     fun testTheCSharpNamingTheGeneratorsOutputFollows() {
@@ -186,6 +194,25 @@ class RazorComponentUsagesTest : BasePlatformTestCase() {
         myFixture.renameElementAtCaretUsingHandler("Welcome")
         val use = text("Components/Use.cs")
         assertTrue(use, use.contains("typeof(Welcome)") && use.contains("nameof(Welcome.Heading)"))
+    }
+
+    /**
+     * RAZOR_PLAN.md, R4: Find Usages of a `@code` member started in a `.cs` names the generator's output; the code of `@code` names the
+     * component's own document — its uses there are found through the twin (`Upper => Title.ToUpper()` of Greeting.razor).
+     */
+    fun testUsagesFromTheGeneratorsOutputFindTheCodeOfTheComponent() {
+        solution(generated = true)
+        val output = myFixture.psiManager.findFile(myFixture.findFileInTempDir("$dir/obj/generated/Microsoft.CodeAnalysis.Razor.Compiler/Components_Greeting_razor.g.cs")!!)!!
+        val title = com.intellij.psi.util.PsiTreeUtil.findChildrenOfType(output, CSharpPropertyDeclaration::class.java).first { it.identifier?.text == "Title" }
+        val twin = io.github.dotnetsupport.frameworks.razor.RazorTagHelperUsages.sourceTwin(title)
+        assertNotNull("the property of `@code`", twin)
+        val found = ReferencesSearch.search(title, GlobalSearchScope.projectScope(project)).findAll()
+            .map { com.intellij.lang.injection.InjectedLanguageManager.getInstance(project).getTopLevelFile(it.element.containingFile).name + ":" + it.element.text }
+        assertTrue(found.toString(), found.any { it.startsWith("Greeting.razor:") && it.endsWith("Title") })
+        // an attribute setting it is one usage, of the markup — not a second one by the `nameof(…)` the compiler maps over the name
+        val attributes = ReferencesSearch.search(title, GlobalSearchScope.projectScope(project)).findAll().filter { it.element.containingFile.name == "Home.razor" || com.intellij.lang.injection.InjectedLanguageManager.getInstance(project).getTopLevelFile(it.element.containingFile).name == "Home.razor" }
+        val byOffset = attributes.groupBy { com.intellij.lang.injection.InjectedLanguageManager.getInstance(project).injectedToHost(it.element, it.rangeInElement.shiftRight(it.element.textRange.startOffset).startOffset) }
+        assertTrue("each place once: ${byOffset.mapValues { it.value.size }}", byOffset.values.all { it.size == 1 })
     }
 
     fun testRenameAParameterFromItsAttribute() {

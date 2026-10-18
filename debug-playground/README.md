@@ -223,6 +223,27 @@ Solution для живой проверки плагина: отладчика (
       `RazorGeneratedTypes.cs` и `RazorCSharp.razor`; на `Step` — `@Step` и `count += Step` в `Counter.razor`, атрибуты, `nameof(Counter.Step)`
 - [x] (робот в WSL, 0.1.268) `TYPE:razor-component-rename`: Shift+F6 на `Counter` → `Tally` без вопроса «какой rename» — файл `Tally.razor`, теги, C#;
       Ctrl+Z возвращает всё вместе с именем файла; то же из Solution на `Counter.razor`
+- [x] (робот в WSL, 0.1.281) `Blazor/Editor/CshtmlTagHelpers.cshtml` — tag helpers вида: `TYPE:cshtml-asp-completion` (`asp-action`,
+      `asp-for`; в значении `asp-for` после `N` Ctrl+Space даёт `Name [string]`, Ctrl+B на `Name` ведёт в `Contact.Name`, `N` — CS1061
+      как у компилятора), `TYPE:cshtml-own-completion` (`<email`, `mail-to`, `tooltip`),
+      `TYPE:cshtml-goto` (класс, свойство, `AnchorTagHelper.Controller` в просмотре сборки), `TYPE:cshtml-usages` (Alt+F7 на теге и
+      атрибуте), `TYPE:cshtml-rename` (`mail-to` → `send-to` вместе со свойством, Ctrl+Z; `tooltip` и тег не трогаются); ничего жёлтого
+- [x] (робот в WSL, 0.1.286) `TYPE:cshtml-view-component` (`Blazor/Editor/CshtmlTagHelpers.cshtml`): `<vc:` + Ctrl+Space даёт
+      `vc:latest-news`, затем ` c` — `count` один раз, Ctrl+B на `latest-news` — `LatestNewsViewComponent`; теги `email`, `a asp-…`,
+      `form`, `vc:latest-news` и их атрибуты — жирные (цвета класса и свойства); в `asp-for="Na"` список открывается сам
+- [x] (робот в WSL, 0.1.285) `BP:razor-markup` (`Blazor/Editor/RazorRelated.razor`; проверено на `Counter.razor:4`): точка на строке
+      разметки с `@…`, остановка на запрос страницы, кадр `BuildRenderTree()` в `.razor`, Evaluate. В WSL второй сеанс отладки в той же
+      IDE теряет `stopped` — и для `.cs` тоже (не про Razor)
+- [x] (робот в WSL, 0.1.284) `Blazor/Editor/RazorRelated.razor`: `TYPE:razor-related` (Ctrl+Alt+Home ↔ `.razor.cs` / `.razor.css`),
+      `TYPE:razor-endpoints` (`/editor/related`, `/Privacy` в Endpoints), `TYPE:razor-add-using` (Alt+Enter на `<Counter />`),
+      `TYPE:razor-extract` (Extract Component, Ctrl+Z)
+- [x] (робот в WSL, 0.1.283) `Blazor/Editor/RazorTyping.razor`: `TYPE:razor-enter-code` (Enter после `{` метода — 8 пробелов),
+      `TYPE:razor-enter-markup` (`@if { }` — 4), `TYPE:razor-new-code` (`@code {` — 4), `TYPE:razor-autoclose`, `TYPE:razor-reformat`
+- [x] (робот в WSL, 0.1.282) `Blazor/Editor/Broken/RazorErrors.razor`, `TYPE:razor-errors`: RZ10012 на `<Nowhere />`, CS0103 на `@Undefined`,
+      RZ1006 на `@{` — сразу при открытии одного `.razor`; набрать `}` — RZ1006 уходит без сохранения
+- [x] (робот в WSL, 0.1.281) `TYPE:razor-component-rename`: сразу после переименования, не дожидаясь генератора, Ctrl+B на `Tally`
+      в `typeof(Tally)` ведёт в `Tally_razor.g.cs` (файл появился через 4 мс, помощник переписал его через 1,7 с), ничего не краснеет;
+      в журнале плагина — «its class written ahead of the generator»; Ctrl+Z возвращает файл, теги и C#
 - [x] (робот в WSL, 0.1.268) `TYPE:razor-parameter-rename`: Shift+F6 на атрибуте `Step` → `By` — свойство, `@By`, атрибуты в двух файлах, `nameof(Counter.By)`;
       Ctrl+Z
 

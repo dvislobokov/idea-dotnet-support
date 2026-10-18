@@ -1,0 +1,44 @@
+@model Playground.Blazor.Editor.Contact
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@addTagHelper *, Playground.Blazor
+@* RAZOR_PLAN.md, R5e part 3 — the tag helpers of a view: MVC's (`asp-*`) and the project's (Editor/TagHelpers.cs), in scope by `@addTagHelper`.
+
+   TYPE:cshtml-asp-completion — in `<a >` below, after `<a ` type `asp-`. EXPECT: the list has `asp-action`, `asp-controller`, `asp-area`,
+   `asp-page`, `asp-route-…`; in `<input >` after `<input ` type `asp-`: `asp-for`, `asp-format`; Enter on `asp-for` writes `asp-for=""` with
+   the caret in the quotes; type `N` there and Ctrl+Space: `Name` of the model (the value of `asp-for` is C# — `__model => __model.N`),
+   on the empty value nothing (no C# yet). Ctrl+Z.
+
+   TYPE:cshtml-own-completion — on the empty line under this comment type `<em`. EXPECT: `email` among the tags; then ` m`: `mail-to`.
+   Inside `<div >` of the last line type ` too`: `tooltip` (a tag helper of every element). Ctrl+Z.
+
+   TYPE:cshtml-goto — Ctrl+B on `email` of `<email mail-to=…>`. EXPECT: the class EmailTagHelper; on `mail-to`: the property MailTo; on
+   `tooltip`: the property Text; on `asp-controller`: the property Controller of AnchorTagHelper in the view of the assembly
+   Microsoft.AspNetCore.Mvc.TagHelpers. Ctrl+B on `href` of the plain `<a href>` is HTML's (the IDE opens its HTML schema).
+   Nothing yellow: `<email>`, `mail-to`, `tooltip`, `asp-*` are no unknown tags or attributes, `<input asp-for>` lacks no label.
+
+   TYPE:cshtml-usages — Alt+F7 on `email`. EXPECT: the class EmailTagHelper's usages: the 4 tag names of the two `<email>` elements here, in the
+   group "Tag in markup"; Alt+F7 on `mail-to`: its 2 attributes ("Attribute in markup"); Alt+F7 on `MailTo` in TagHelpers.cs: the same 2.
+
+   TYPE:cshtml-rename — Shift+F6 on `mail-to`, type `SendTo`, Enter. EXPECT: the property is `SendTo` in TagHelpers.cs, both attributes here
+   are `send-to`; Ctrl+Z takes it all back. Shift+F6 on `Text` in TagHelpers.cs (`TooltipTagHelper`): `tooltip` here stays — its name is
+   [HtmlAttributeName]'s. Shift+F6 on the tag `email` is the plain rename of one HTML tag (a tag helper's tag is no name of the C#).
+
+   TYPE:cshtml-view-component — on the empty line under this comment type `<vc:`. EXPECT: `vc:latest-news` (LatestNewsViewComponent of
+   TagHelpers.cs) among the tags; then ` c`: `count` (the parameter of `Invoke`). Ctrl+B on `latest-news` of the `<vc:latest-news>` below:
+   the class LatestNewsViewComponent; `count="x"` instead of `3` is CS1503 or CS0029 (the value is C# of type int). Ctrl+Z. *@
+
+<email mail-to="team@example.com">Write to us</email>
+<email mail-to="help@example.com"></email>
+
+<a asp-controller="Home" asp-action="Index">Home</a>
+<a href="/">plain</a>
+
+<form asp-action="Send">
+    <label asp-for="Name"></label>
+    <input asp-for="Name" />
+    <input asp-for="Email" />
+</form>
+
+<div tooltip="A hint">hover me</div>
+
+<vc:latest-news count="3" />

@@ -10,6 +10,22 @@ import io.github.dotnetsupport.view.resolveFile
 
 class FoundEndpoint(val endpoint: Endpoint, val file: VirtualFile)
 
+/**
+ * The endpoints a framework declares outside the C# (RAZOR_PLAN.md, R9: `@page "/counter"` of a Razor component or page): the core scans
+ * the C# itself and asks the sources about the other files of a project.
+ */
+interface EndpointSource {
+    /** Whether [file] (not a `.cs`) may declare endpoints: cheap, by its name. */
+    fun handles(file: VirtualFile): Boolean
+
+    /** The endpoints [text] (the text of [file]) declares; [projectDirectory] is the folder of its project (Razor Pages route by the path). */
+    fun endpoints(file: VirtualFile, text: CharSequence, projectDirectory: VirtualFile): List<Endpoint>
+
+    companion object {
+        val EP_NAME: com.intellij.openapi.extensions.ExtensionPointName<EndpointSource> = com.intellij.openapi.extensions.ExtensionPointName.create("io.github.dotnetsupport.endpointSource")
+    }
+}
+
 class EndpointsOfProject(val name: String, val projectFile: VirtualFile, val endpoints: List<FoundEndpoint>) {
     /** Where the application listens according to its first launch profile; null without `launchSettings.json`. */
     val baseUrl: String? get() = LaunchSettings.profiles(projectFile).firstNotNullOfOrNull { it.applicationUrls.firstOrNull() }
@@ -34,10 +50,16 @@ object EndpointsModel {
 
     fun endpointsIn(directory: VirtualFile, excluded: Set<VirtualFile> = emptySet()): List<FoundEndpoint> {
         val result = ArrayList<FoundEndpoint>()
+        val sources = EndpointSource.EP_NAME.extensionList
         VfsUtilCore.visitChildrenRecursively(directory, object : VirtualFileVisitor<Unit>() {
             override fun visitFile(file: VirtualFile): Boolean {
                 if (file.isDirectory) return file.name.lowercase() !in SKIPPED_DIRECTORIES && file !in excluded
-                if (!file.extension.equals("cs", ignoreCase = true)) return true
+                if (!file.extension.equals("cs", ignoreCase = true)) {
+                    val source = sources.firstOrNull { it.handles(file) } ?: return true
+                    val text = runCatching { VfsUtilCore.loadText(file) }.getOrNull() ?: return true
+                    source.endpoints(file, text, directory).mapTo(result) { FoundEndpoint(it, file) }
+                    return true
+                }
                 val text = runCatching { VfsUtilCore.loadText(file) }.getOrNull() ?: return true
                 EndpointScanner.scan(text).mapTo(result) { FoundEndpoint(it, file) }
                 return true

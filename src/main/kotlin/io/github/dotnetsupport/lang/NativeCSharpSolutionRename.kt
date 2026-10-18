@@ -40,6 +40,8 @@ object NativeCSharpSolutionRename {
         val symbols: List<CSharpSearchTarget>, val ranges: Map<PsiFile, List<TextRange>>, val oldName: String, val typeFiles: List<PsiFile>,
         /** What the frameworks insert beside the rename ([CSharpRenameParticipant]): `[FormerlySerializedAs("old")]` of Unity. */
         val insertions: List<CSharpRenameParticipant.Insertion> = emptyList(),
+        /** The ranges of [ranges] that spell the name otherwise ([CSharpRenameParticipant.Occurrence.spelling]): how the new name is written there. */
+        val spellings: Map<PsiFile, Map<TextRange, (String) -> String>> = emptyMap(),
     ) {
         val primary: CSharpSearchTarget get() = symbols.first()
     }
@@ -111,8 +113,12 @@ object NativeCSharpSolutionRename {
                 true
             }
         }
+        val spellings = LinkedHashMap<PsiFile, MutableMap<TextRange, (String) -> String>>()
         for (symbol in symbols) for (declaration in symbol.declarations) {
-            for (occurrence in CSharpRenameParticipant.occurrences(declaration, symbol.name)) ranges.getOrPut(occurrence.file) { LinkedHashSet() } += occurrence.range
+            for (occurrence in CSharpRenameParticipant.occurrences(declaration, symbol.name)) {
+                ranges.getOrPut(occurrence.file) { LinkedHashSet() } += occurrence.range
+                occurrence.spelling?.let { spellings.getOrPut(occurrence.file) { LinkedHashMap() }[occurrence.range] = it }
+            }
         }
         if (primary.isType) {
             for (declaration in primary.declarations) {
@@ -123,7 +129,7 @@ object NativeCSharpSolutionRename {
         }
         val insertions = symbols.flatMap { symbol -> symbol.declarations.flatMap { CSharpRenameParticipant.insertions(it, symbol.name) } }
             .distinctBy { Triple(it.file, it.offset, it.text) }
-        return Plan(symbols, ranges.mapValues { (_, set) -> set.sortedBy { it.startOffset } }, primary.name, typeFiles, insertions)
+        return Plan(symbols, ranges.mapValues { (_, set) -> set.sortedBy { it.startOffset } }, primary.name, typeFiles, insertions, spellings)
     }
 
     /** What a source generator made (its output folder): made again from the renamed sources, never edited. */
@@ -204,26 +210,31 @@ object NativeCSharpSolutionRename {
         if (conflicts.isNotEmpty() && !confirm(project, plan, conflicts)) return false
         val documents = PsiDocumentManager.getInstance(project)
         // by the file of the editor: C# injected into another file is written in its host, with the markup of that file around it
-        val edits = LinkedHashMap<PsiFile, MutableSet<Pair<TextRange, String?>>>()
-        fun edit(file: PsiFile, range: TextRange, insertion: String?) {
+        class Edit(val range: TextRange, val insertion: String?, val spelling: ((String) -> String)?)
+        val edits = LinkedHashMap<PsiFile, MutableList<Edit>>()
+        fun edit(file: PsiFile, range: TextRange, insertion: String?, spelling: ((String) -> String)? = null) {
             val host = CSharpInjections.hostFile(file) ?: return
             val base = host.viewProvider.getPsi(host.viewProvider.baseLanguage) ?: host
-            edits.getOrPut(base) { LinkedHashSet() } += CSharpInjections.toHost(file, range) to insertion
+            val inHost = CSharpInjections.toHost(file, range)
+            val list = edits.getOrPut(base) { ArrayList() }
+            if (list.none { it.range == inHost && it.insertion == insertion }) list += Edit(inHost, insertion, spelling)
         }
-        for ((file, ranges) in plan.ranges) for (range in ranges) edit(file, range, null)
+        for ((file, ranges) in plan.ranges) for (range in ranges) edit(file, range, null, plan.spellings[file]?.get(range))
         for (insertion in plan.insertions) edit(insertion.file, TextRange.from(insertion.offset, 0), insertion.text)
         val files = edits.keys.toList()
         WriteCommandAction.writeCommandAction(project, files).withName("Rename").run<RuntimeException> {
             for (file in files) {
                 val document = documents.getDocument(file) ?: continue
                 // the renamed ranges and the insertions of the frameworks, from the end of the text so the offsets before stay right
-                for ((range, insertion) in edits.getValue(file).sortedWith(compareByDescending<Pair<TextRange, String?>> { it.first.startOffset }.thenByDescending { it.second == null })) {
-                    if (insertion != null) {
-                        document.insertString(range.startOffset, insertion)
+                for (edit in edits.getValue(file).sortedWith(compareByDescending<Edit> { it.range.startOffset }.thenByDescending { it.insertion == null })) {
+                    val range = edit.range
+                    if (edit.insertion != null) {
+                        document.insertString(range.startOffset, edit.insertion)
                         continue
                     }
                     val old = document.charsSequence.subSequence(range.startOffset, range.endOffset).toString().removePrefix("@")
-                    val replacement = if (plan.primary.isType && old != plan.oldName && plan.oldName.endsWith("Attribute") && old == plan.oldName.removeSuffix("Attribute")) {
+                    val replacement = if (edit.spelling != null) edit.spelling.invoke(name)
+                    else if (plan.primary.isType && old != plan.oldName && plan.oldName.endsWith("Attribute") && old == plan.oldName.removeSuffix("Attribute")) {
                         NativeCSharpRename.written(name.removeSuffix("Attribute").ifEmpty { name })
                     } else written
                     document.replaceString(range.startOffset, range.endOffset, replacement)

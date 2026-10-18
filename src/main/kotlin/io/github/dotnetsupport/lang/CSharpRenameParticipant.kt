@@ -17,8 +17,11 @@ interface CSharpRenameParticipant {
     /** A text to insert at [offset] of [file] (in the text before the rename). */
     class Insertion(val file: CSharpFile, val offset: Int, val text: String)
 
-    /** A place of [file] (of any language) that names the symbol: the new name is written over [range]. */
-    class Occurrence(val file: PsiFile, val range: TextRange)
+    /**
+     * A place of [file] (of any language) that names the symbol: the new name is written over [range] — as [spelling] makes it of the new
+     * name when the place spells it otherwise (`mail-to` of a property `MailTo` in the markup of Razor).
+     */
+    class Occurrence(val file: PsiFile, val range: TextRange, val spelling: ((String) -> String)? = null)
 
     /** What to insert when [declaration] (a declaration of the renamed symbol) is renamed from [oldName]. */
     fun insertions(declaration: PsiElement, oldName: String): List<Insertion> = emptyList()

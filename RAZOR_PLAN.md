@@ -187,7 +187,7 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
   (`LF` в первой строке), `K14` — число ключевых слов зависит от набора директив (нормализуется); у `test/` опции — Roslyn-токенизатор,
   без edit handlers; несколько файлов MudBlazor в UTF-16 и с двойным BOM (читать как .NET: `RazorTestUtil.readText`). Не сделано в R2:
   PSI IDE ещё на плоском дереве R1 — переключение редактора на это дерево (замена `RazorParser` хоста, токены по дереву) идёт с R3a.
-- [ ] **R3. Виртуальный C#-документ** (3–4).
+- [x] **R3. Виртуальный C#-документ** (3–4; закрыт подшагами R3a, R3b, хвосты — в R4 / R5e, 0.1.286).
   - [x] R3a (0.1.252). **Решение: инъекция** (`MultiHostInjector` из многих кусков), не свой файл. Проба прошла: completion после `@cur`
     и `@Model.`, Go to Declaration из разметки в `@code` и в `.cs` проекта — и обработчиком на инъецированном листе, и действием на
     редакторе фрагмента (`RazorCSharpDocumentTest`). В ядре потребовалось два места, оба — платформенные понятия, не Razor:
@@ -238,10 +238,21 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
     Не переносить: языковой сервер Razor (completion, форматтер — на Roslyn Workspaces; это даёт инъекция платформы).
   - Гейт: имена и типы C#-выражений в разметке против `roslyndump semantics` на выводе `razordump designtime` — тот же порог, что у
     `semanticGate` для `.cs`; 0 ложных ошибок на трёх solution.
-- [ ] **R4. C# в разметке** (2). Completion (члены, `@` в разметке — выражения и директивы, параметры `@inject`), Go to Declaration,
+- [x] **R4. C# в разметке** (2). Completion (члены, `@` в разметке — выражения и директивы, параметры `@inject`), Go to Declaration,
   Find Usages и rename в обе стороны `.cs` ↔ `.razor`, цвета ссылок, quick documentation, parameter info, inlay hints. Учёт
   использований в разметке там, где хост решает «не используется» (серые члены, `CSharpSemanticWarnings`).
-- [ ] **R5. Компоненты и tag helpers** (3). Теги компонентов в completion (solution и сборки, с `@using` в области), атрибуты —
+  Состояние (2026-10-19, 0.1.286; проверено роботом в WSL): completion, Ctrl+B, цвета и quick documentation (Ctrl+Q на `@Step` —
+  `int Counter.Step { get; set; }`) идут через инъекцию с R3; Find Usages / rename `.razor` ↔ `.cs` — с R5e ч. 2. Закрыто в 0.1.286:
+  Find Usages члена `@code`, начатый в `.cs` (имя там — член вывода генератора), находит его использования в `@code` и разметке
+  (`RazorTagHelperUsages.sourceTwin` — обратный `generatedTwin`); линза использований C# считает разметку (`RazorMarkupUsages` через
+  `csharpImplicitUsage.usageNote`: «1 usage, 2 usages in markup», у tag helper всех элементов — элементы, к которым он применяется);
+  автопопап в значении атрибута-C# (`asp-for="Na"`: обработчик набора XML держал список закрытым — `RazorAttributeValueAutoPopup`).
+  Найдено в WSL: после превращения литералов разметки в хосты (0.1.281) имена атрибутов-параметров тоже стали C# (компилятор
+  отображает на них `nameof(Counter.Step)`) — каждое использование атрибута находилось дважды; хост разметки теперь только значение
+  атрибута. «Серые члены»: в ядре нет предупреждений о неиспользуемых членах (только локальные CS0168 / CS0219), учитывать нечего.
+  Не сделано: inlay hints во впрыснутом C# разметки не показываются; в окне Usages строка из разметки показывает текст куска
+  (`Step`), а не строку файла.
+- [x] **R5. Компоненты и tag helpers** (3; 0.1.286 — последние хвосты R5e). Теги компонентов в completion (solution и сборки, с `@using` в области), атрибуты —
   `[Parameter]` с типами, `@bind-Value` / `ValueChanged`, `EventCallback`, `RenderFragment` дочерним содержимым, generic-компоненты
   (`TItem` по аргументам), `@ref`; переход тег → `.razor` / тип сборки, Find Usages и rename компонента (файл и теги). Tag helpers
   для `.cshtml` после подъёма формата индекса: `asp-*`, свои, `@addTagHelper`. Гейт: `razordump` отдаёт привязки тегов
@@ -290,7 +301,7 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
     `FormTagHelper` и `RenderAtEndOfFormTagHelper` одного `<form>` от него зависит порядок полей). Тест `RazorTagHelpersTest` на фикстуре
     `AspNetCoreComponents.dnix` (`tools/index-fixture/components` — заглушка API компонентов под настоящим именем сборки). Найдено:
     движки документа держали `VirtualFile` корня проекта — после удаления и восстановления папки обращались к недействительному.
-  - [ ] **R5e. Редактор**: completion тегов и атрибутов, переход тег → компонент, Find Usages и rename, tag helpers `.cshtml`, площадка.
+  - [x] **R5e. Редактор** (0.1.286; проверено роботом в WSL): completion тегов и атрибутов, переход тег → компонент, Find Usages и rename, tag helpers `.cshtml`, площадка.
     - [x] Часть 1 (0.1.265): `RazorTagHelperEditor` — контекст tag helpers документа (`TagHelperDocumentContext` из того же прогона движка,
       что и документ C#, хранится в `RazorCSharpDocument.Generated`), кандидаты для тега по правилам сопоставления (полное имя — ниже,
       `ChildContent` — только внутри родителя), completion тегов и атрибутов (HTML-контрибутор), Ctrl+B тег → `.razor` / класс C# / тип
@@ -312,9 +323,8 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
       склейка документа — `nameof(…)` параметров, класс вокруг — не использование; область поиска члена внедрённого файла — проект,
       `UseScopeEnlarger`), правки внедрённого C# пишутся в хост, вывод генераторов не правится (его сделают заново). Свойство `@code` связано
       со своим двойником в выводе генератора Razor (`Counter_razor.g.cs`): `.cs` называют члены компонента там. Тест —
-      `RazorComponentUsagesTest`; площадка — `TYPE:razor-component-usages`, `-component-rename`, `-parameter-rename`. Не сделано: Find Usages
-      члена `@code`, начатый из `.cs` (имя там — член вывода генератора), не видит его использований в `@code`; Code Vision не считает
-      атрибуты разметки.
+      `RazorComponentUsagesTest`; площадка — `TYPE:razor-component-usages`, `-component-rename`, `-parameter-rename`. Find Usages
+      члена `@code`, начатый из `.cs`, и Code Vision по разметке — сделаны в 0.1.286 (R4).
       Проверено роботом в WSL на площадке (0.1.268): Alt+F7 на `<Counter` — 2 тега и 4 места C# (`typeof`, `nameof`, параметр метода,
       `new Counter()` в разметке), на атрибуте `Step` — 6 мест; Shift+F6 на теге, на атрибуте, на `Step` в `@code` и на `Counter.razor` в
       Solution — без вопроса «какой rename», файл и все места, Ctrl+Z возвращает всё (и после Ctrl+S). Найдено и исправлено в 0.1.268:
@@ -331,24 +341,105 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
       (`MetadataReference.CreateFromFile`, неуправляемая память, освобождает только финализатор) и ссылок на анализаторы; теперь общий кэш
       по пути и метке файла (`MetadataCache`, `AnalyzerLoader.Reference`) и полная сборка мусора после запроса, сбросившего проекты.
       Площадка в WSL: база 584 → 527 МБ, восемь переименований в `Lib` (40 перезагрузок проектов) — 527 → 570 МБ (было 584 → 872 за два).
+      0.1.280 (решение пользователя 2026-10-18: «как в Unity — сразу, не дожидаясь перекомпиляции»): класс созданного / переименованного /
+      перемещённого `.razor` пишет сам плагин (`RazorGeneratedAhead`: `RazorCSharpDocument.compilerOutput` — движок без
+      `RazorIdeLayoutPass`, имя файла по `GetIdentifierFromPath` генератора) в папку вывода генератора, вывод старого пути удаляется;
+      помощник потом пишет тот же файл (текст может отличаться переводами строк и контрольной суммой — один переиндекс). Помощник:
+      появившийся / ушедший / переименованный файл проекта больше не выбрасывает проект и ссылающиеся на него — design-time build,
+      и если командная строка отличается только файлами, документы и дополнительные тексты драйвера правятся на месте, состояние
+      генераторов остаётся (`UpdateFileSetAsync`; стенд — помощник по протоколу на MudBlazor: переименование `.cs` и `.razor` 15,7 с →
+      3,7–5,1 с до свежего вывода трёх проектов, вывод файл в файл тот же).
 
 
-    - [ ] Часть 3: tag helpers `.cshtml` (`asp-*`): completion, Ctrl+B, Find Usages; заглушка сборки MVC для тестов.
+    - [x] Часть 3 (0.1.281; проверено роботом в WSL): tag helpers `.cshtml` (`asp-*`). Заглушка MVC — `tools/index-fixture/mvc` (одна сборка под
+      именем `Microsoft.AspNetCore.Mvc.TagHelpers`: `ITagHelper`, атрибуты discovery, `ModelExpression`, tag helpers `a`, `form`, `input`,
+      `label`, `environment`, `partial` с настоящими целями и именами атрибутов) → `AspNetCoreMvc.dnix`. Discovery, контекст документа и
+      completion атрибутов работали уже с R5d / R5e ч. 1 (дескрипторы вида `ITagHelper` ничем не отличались). Сделано: разрешение имён типов
+      из `.cshtml` (`RazorTagHelpers.contextFile` — пустой лёгкий C#-файл проекта вида, у компонента — его объявление), Ctrl+B на атрибут
+      tag helper всех элементов (`tooltip` — правило `*`), привязка разметки к tag helper по правилам компилятора с обязательными атрибутами
+      (`RazorTagHelperEditor.applies`: `<a href>` — HTML, `<a asp-controller>` — `AnchorTagHelper`), `MarkupBinding.TagHelper` (Alt+F7 на теге
+      ищет класс, Shift+F6 на теге — обычный rename HTML: имя тега не имя C#), атрибут tag helper — `MarkupBinding.Parameter` (Alt+F7, Shift+F6
+      переименовывает свойство), `RazorTagHelperUsages`: теги и атрибуты tag helpers по их дескрипторам (`RazorTagHelperService.known()` и
+      `tagHelpersNow` — дескрипторы проекта считаются по запросу, если ни один вид не открывали), слово индекса — самая длинная часть имени
+      (`mail-to` → `mail`). Rename: точка ядра `CSharpRenameParticipant.Occurrence.spelling` — место пишет новое имя по-своему (`MailTo` →
+      `mail-to` по `HtmlConventions.toHtmlCase`); атрибут с именем из `[HtmlAttributeName("…")]` и теги находятся, но не переименовываются.
+      Тест — `RazorCshtmlTagHelpersTest`; площадка — `Blazor/Editor/CshtmlTagHelpers.cshtml` + `TagHelpers.cs` (`TYPE:cshtml-asp-completion`,
+      `-own-completion`, `-goto`, `-usages`, `-rename`). Проверено роботом в WSL на площадке: completion `asp-*` (автопопап и Ctrl+Space),
+      `<email`, `mail-to`, `tooltip`; Ctrl+B на теге, атрибутах и `asp-controller` (просмотр сборки); Alt+F7 на теге (4 имени тегов) и
+      атрибутах; Shift+F6 на `mail-to` → `send-to` вместе со свойством, Ctrl+Z возвращает; `Text` с `[HtmlAttributeName]` — `tooltip`
+      остаётся; Shift+F6 на теге — обычный rename HTML. Найдено и исправлено: инспекции HTML ругались «Unknown html tag email»,
+      «Attribute tooltip is not allowed here», «Missing associated label» на `<input asp-for>` — `RazorHtmlInspectionSuppressor` теперь
+      глушит по дескрипторам, которые привязаны к элементу (`applies`), а не по виду имени; в `RazorHighlighting.razor` XML считал
+      `@bind:event` префиксом пространства имён («Namespace '@bind' is not bound», ошибка) — `XmlUnboundNsPrefix` тоже глушится. Члены модели в значении `asp-for`: генератор пишет
+      `__model => __model.Name` с mapping на значение, но хостом инъекции был только C#-литерал — теперь `MarkupTextLiteral` тоже
+      `RazorCodeLiteral` (хост, если mapping на него есть; `RazorCSharpDocument.hostOf` ищет лист в дереве Razor, а не `findElementAt`
+      файла, который для разметки отвечает из HTML). Найдено по дороге: инъекция открытого файла, сделанная до прихода дескрипторов,
+      у платформы живёт до правки файла (кэш по счётчику изменений PSI) — `RazorTagHelperService` при новых дескрипторах сбрасывает кэши
+      инъекций открытых Razor-файлов и `dropPsiCaches`; `findElementAt` вида для разметки предпочитает дерево HTML, в чьём элементе
+      инъекции нет — `RazorFileViewProvider.findElementAt` отдаёт лист Razor в значении атрибута, которое хостит C#
+      (`hostsMarkupAt`; только значения, не имена атрибутов — те тоже отображены компилятором в `nameof(…)`, но остаются разметкой для
+      Alt+F7 и Shift+F6); копия файла для completion несёт пробел после dummy-идентификатора, компилятор отображает значение с ним —
+      хост без пробела. Проверено в WSL: в `asp-for="N"` Ctrl+Space даёт `Name [string]`, `N` — CS1061 как у компилятора, Ctrl+B на
+      `Name` — свойство модели; `RazorComponents.razor` без ошибок.
+      Хвосты закрыты в 0.1.286 (проверено роботом в WSL): автопопап в значении атрибута-C# (`RazorAttributeValueAutoPopup`: обработчик
+      набора XML держал список закрытым — все `CompletionConfidence` в месте каретки отвечали «не знаю»); view components — дескрипторы
+      были (`ViewComponentTagHelperProducer`), не работал completion: XML сравнивает только часть имени после `vc:` — префиксом стало
+      всё набранное имя (`LatestNewsViewComponent` площадки: `<vc:latest-news count="3">`, Ctrl+B на класс; в тестах по-прежнему нет —
+      в заглушке MVC их нет); дубли в completion — тег отдаёт HTML (его пункт со вставкой закрывающего тега), атрибут — мы (с типом;
+      HTML предлагал неизвестному тегу атрибуты его других элементов в файле), tag helper элемента HTML по атрибутам (`<embed asp-…>`)
+      тегов не предлагает; цвета — `RazorMarkupColorAnnotator`: тег компонента / view component / tag helper и привязанный атрибут
+      жирные, в цветах класса и свойства Rider (`colorSchemes/RazorMarkup*.xml`; цвет класса платформы — цвет текста, тег было не
+      отличить), ключи на странице цветов Razor; атрибуты-префиксы (`asp-route-id` → `RouteValues`) — использования в Find Usages, без
+      переименования; Ctrl+B на компонент сборки (`<Router>` → `Router.cs` просмотра сборки) работал и так.
 
-- [ ] **R6. Ошибки** (2). Синтаксис Razor (RZ1xxx) — свой парсер; RZ9xxx / RZ10xxx (неизвестный параметр, неизвестный компонент как
-  предупреждение RZ10012, `@bind` без пары) — своими проверками, сверка с `razordump diagnostics`; C#-ошибки в разметке — та же
-  семантика. Корпус `CompilerMessagesCoverageTest` пополнить RZ-кодами (примеры со страниц документации Razor) и
-  `debug-playground/Broken`. На время до R6 — RZ-ошибки из вывода помощника (R0) по `#line`, после сохранения.
-- [ ] **R7. Набор и формат** (2). Отступы (правила `csharpIndent` для C#-кусков, HTML — платформа), автозакрытие тегов компонентов,
-  `@` → popup completion, Enter в `@code { }`, Reformat (C# — свой форматтер по кускам, HTML — платформа; сверка с форматтером
-  Razor из сервера по снимкам `capture-5.12-razor` — по мере возможности).
-- [ ] **R8. Отладчик** (1). Точки останова в `.razor` / `.cshtml` (pdb ссылается на них через `#line`; `canPutAt` по строкам
-  C#-кусков), стек и шаги в `.razor`, Evaluate в контексте компонента. Hot Reload уже применяет «C# and Razor changes». Только
-  Blazor Server / SSR / MVC; WASM — вне плана.
-- [ ] **R9. Действия и навигация** (1–2). Extract Component, «Create component», Alt+Enter «Add @using», переход `.razor` ↔
-  `.razor.cs` ↔ `.razor.css`, Razor Pages в Endpoints (`@page "/route"`); ПКМ → New в папке проекта с Razor SDK (пользователь,
-  2026-10-17, как в Rider и как у Unity в `UNITY_PLAN.md`): после разделителя Razor Component, Razor Page (`.cshtml` + `.cshtml.cs` с
-  `PageModel`), MVC View, Layout, `_Imports.razor` — действия модуля `frameworks.razor` в группе New, видимые только там.
+- [x] **R6. Ошибки** (2026-10-18, 0.1.282; проверено роботом в WSL). Своих проверок не понадобилось: порт компилятора (R2 парсер, R3b
+  проходы, R5 дескрипторы) уже даёт диагностики компилятора — гейты сверяют их с ним (`RazorCodegenBaselineCorpusTest` по
+  `.diagnostics.txt`, `RazorCodegenCorpusTest.test*TagHelpers` по разделу `### diagnostics` razordump на eShop / MudBlazor / Nop.Web).
+  Это вместо корпуса `CompilerMessagesCoverageTest`: тот — по страницам документации C#, здесь оракул — сам компилятор Razor на
+  корпусе. Показ: `RazorErrorsAnnotator` (`RazorErrors.kt`) — диагностики C#-документа файла с его id, текстом, серьёзностью и
+  местом компилятора (RZ10012 — на весь элемент, как у компилятора); диагностики импортов — в их файле; пока дескрипторы проекта не
+  найдены, только синтаксис парсера (RZ1000–RZ2999), иначе каждый компонент был бы RZ10012. Ошибки C# в разметке — инъекции (как и
+  были). Найдено в WSL: семантика C# разметки молчала, пока не открыт `.cs` проекта (помощник запускал генераторы только на открытие
+  C#) — теперь открытие любого файла проекта, у которого нет прогона, запускает генерацию (`CodeAnalysisService.opened`). Тест —
+  `RazorErrorsTest`; площадка — `Blazor/Editor/Broken/RazorErrors.razor` (`TYPE:razor-errors`, `Editor/Broken` вне сборки).
+  Старый `RazorEditorTest.testNoErrorsOfHtmlNextToRazor` получил честное RZ1006: `<span>` без `</span>` в блоке `@if` делает `}`
+  разметкой — так и у компилятора.
+- [x] **R7. Набор и формат** (2026-10-19, 0.1.283; проверено роботом в WSL). Проба в WSL: автозакрытие тегов (и компонентов) и
+  автопопап на `@co` работали и так (HTML платформы, C# инъекции); Enter после `{` в `@code`, `@if` и методе давал отступ на уровень
+  меньше, Reformat Code не делал ничего. Сделано: `RazorIndent` — C#-тень файла (те же строки: код блоков `@code` / `@{ }` / `@if { }`
+  как есть, открывающий тег элемента — `x {`, закрывающий — `}`, тег без конца — `x;`, директивы, выражения разметки, текст и
+  комментарии — пусто; ведущие пробелы строки — исходные), отступ строки по правилам C# плагина (`CSharpIndentRules`, `.editorconfig`).
+  `RazorLineIndentProvider` — Enter (Razor, C# Razor и HTML файла Razor); `RazorFormattingService` — Reformat Code: переотступ строк
+  сверху вниз (пустые строки без пробелов; строки внутри комментариев, `<pre>`, `<textarea>`, `<script>`, `<style>` не трогаются;
+  дети элементов из Code Style | HTML «Do not indent children of» — `html`, `body`… — без отступа, как HTML IDE). Внутри строк текст
+  не меняется (пробелы C#, переносы атрибутов — нет: только отступы). Тест — `RazorIndentTest`; площадка — `Blazor/Editor/RazorTyping.razor`
+  (`TYPE:razor-enter-*`, `razor-new-code`, `razor-autoclose`, `razor-reformat`); Reformat на всех `.razor` / `.cshtml` площадки —
+  без изменений, кроме детей `<body>` в `App.razor` (по настройке HTML).
+- [x] **R8. Отладчик** (2026-10-19, 0.1.285; проверено роботом в WSL). Точки в `.razor` / `.cshtml`: отладчик шлёт их по пути файла,
+  как у `.cs` (pdb отображает C# генератора на файл через `#line`), стек и позиции кадров по пути работали и так. Сделано: точка ядра
+  `breakpointLines` (`BreakpointLinesSource`: строки файла фреймворка, где можно поставить точку) и `RazorBreakpointLinesSource`:
+  строки, где начинается source mapping C# (выражение разметки, оператор `@if` / `@foreach`, код `@{ }`), кроме директив (`@page`,
+  `@using`, `@inject`), а в `@code` / `@functions` — по правилам строк `.cs` (`CSharpBreakpointLines` над тенью блока). Проверено:
+  точка на `<p>Current count: @count</p>` подтверждена адаптером ровно на `@count`, остановка на запрос страницы (пререндер),
+  кадр `Counter.BuildRenderTree()` в `Counter.razor:4`, переменные `this` / `__builder`, Evaluate `count` → 0, повторная остановка
+  после Resume. Найдено и не про Razor: в WSL второй и следующие сеансы отладки в одной IDE — точка подтверждена, программа встаёт,
+  а события `stopped` адаптер не присылает (так же с точкой в `.cs`), после остановки сеанса остаются живые `dotnet-debugger`;
+  разбирать отдельно (`DAP_PLAN.md`). По дороге: остановку, которую не удалось показать, клиент глотал молча — теперь пишет в журнал
+  и показывает как паузу. Тест — `RazorBreakpointsTest`; площадка — `BP:razor-markup` в `Blazor/Editor/RazorRelated.razor`. Hot Reload
+  уже применяет «C# and Razor changes». Только Blazor Server / SSR / MVC; WASM — вне плана.
+- [x] **R9. Действия и навигация** (2026-10-19, 0.1.284; проверено роботом в WSL). New → «Razor and Blazor» (Component, Component with
+  Code-Behind, Razor Page с PageModel, View, Layout, `_Imports.razor`, `_ViewImports.cshtml`) уже было в ядре (`ItemTemplates`,
+  категория `RAZOR`, видна в проектах с Razor SDK). Сделано: Ctrl+Alt+Home между `X.razor` / `.razor.cs` / `.razor.css` / `.razor.js`
+  и `X.cshtml` / `.cshtml.cs` (`RazorGotoRelatedProvider`); маршруты в окне Endpoints — новая точка ядра `endpointSource`
+  (`EndpointSource`, ядро сканирует C# само и спрашивает источники о прочих файлах) с первой реализацией `RazorEndpoints`: каждый
+  `@page "/x"` компонента, у Razor Page — путь под `Pages/` (`Areas/<a>/Pages/…` → `/<a>/…`, `Index` — папка) плюс шаблон её `@page`
+  (или он сам, если начинается с `/`); Alt+Enter на RZ10012 — «Add @using Ns» по компонентам проекта с таким именем (`RazorAddUsing`:
+  строка после `@using` файла, иначе после ведущих директив); Refactor → Extract Component (`RazorExtractComponentAction`): выделенные
+  строки разметки → `Name.razor` рядом без общего отступа, на их месте `<Name />`, одна команда с глобальным undo (найдено в WSL: файл
+  создавался вне команды — Ctrl+Z его не убирал), выделение, которое режет комментарий / блок / тег, отклоняется (разбор куска своим
+  парсером без синтаксических ошибок; тоже найдено в WSL). Параметры из C#, который читает разметка, не создаются (как ограничение:
+  такие имена в новом компоненте красные). Тест — `RazorActionsTest`; площадка — `Blazor/Editor/RazorRelated.razor` (+ `.razor.cs`,
+  `.razor.css`) и `Blazor/Pages/Privacy.cshtml` (`TYPE:razor-related`, `-endpoints`, `-add-using`, `-extract`).
 
 Порядок: F0 → R0 → R0b → D6e `CSHARP_PSI_MIGRATION.md` (упрощение семантики: трасса «почему», харнесс по файлу, закат старых правил —
 решение 2026-10-15, до включения ошибок Razor и до R1) → R1 → R2 → R3 → R4 / R5 / R6 параллельно → R7, R8, R9. Каждый шаг полезен сам по себе: после R0 — веб-проекты без

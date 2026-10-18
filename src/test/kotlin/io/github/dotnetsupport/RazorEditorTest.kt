@@ -93,9 +93,10 @@ class RazorEditorTest : BasePlatformTestCase() {
         myFixture.enableInspections(
             com.intellij.codeInspection.htmlInspections.HtmlUnknownTagInspection(),
             com.intellij.codeInspection.htmlInspections.HtmlUnknownAttributeInspection(),
+            com.intellij.codeInsight.daemon.impl.analysis.XmlUnboundNsPrefixInspection(),
         )
-        // components and their parameters are not "unknown" (R5 knows them); an unknown tag of HTML still is
-        myFixture.configureByText("Counter.razor", counter.replace("<h1 class", "<foo></foo>\n<h1 class"))
+        // components and their parameters are not "unknown" (R5 knows them), `@bind:event` is no namespace prefix; an unknown tag of HTML still is
+        myFixture.configureByText("Counter.razor", counter.replace("<h1 class", "<foo></foo>\n<input @bind=\"name\" @bind:event=\"oninput\" />\n<h1 class"))
         val problems = myFixture.doHighlighting(HighlightSeverity.WARNING).filter { it.severity >= HighlightSeverity.WARNING }
             .map { myFixture.editor.document.text.substring(it.startOffset, it.endOffset) + ": " + it.description }
         assertEquals(listOf("foo: Unknown html tag foo", "foo: Unknown html tag foo"), problems)
@@ -106,9 +107,11 @@ class RazorEditorTest : BasePlatformTestCase() {
             "Page.cshtml",
             "@model Foo\n<div class=\"@(x ? \"a\" : \"b\")\" @attrs>\n@if (x) {\n<span>\n} else {\n<span class=\"b\">\n}\n</span></div>\n<input value=@Model.Name />",
         )
-        val errors = myFixture.doHighlighting(HighlightSeverity.ERROR).filter { it.severity == HighlightSeverity.ERROR }
+        val all = myFixture.doHighlighting(HighlightSeverity.ERROR).filter { it.severity == HighlightSeverity.ERROR }
             .map { myFixture.editor.document.text.substring(it.startOffset, it.endOffset) + ": " + it.description }
-        assertEquals(emptyList<String>(), errors)
+        // no error of HTML; the compiler's own: a start tag without its end tag in a code block makes `}` markup (RZ1006, as Razor reports it)
+        assertEquals(emptyList<String>(), all.filter { !it.contains(": RZ") })
+        assertEquals(all.toString(), listOf("RZ1006"), all.mapNotNull { Regex("RZ\\d+").find(it)?.value })
     }
 
     fun testFolding() {

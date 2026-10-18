@@ -42,6 +42,9 @@ class RazorTagHelperService(private val project: Project) : Disposable {
     private val entries = ConcurrentHashMap<String, Entry>()
     private val alarm = Alarm(Alarm.ThreadToUse.POOLED_THREAD, this)
 
+    /** The descriptors of every project discovered so far: what the names of a tag helper's tags and attributes are, for the search of them. */
+    fun known(): List<io.github.dotnetsupport.razor.lang.syntax.TagHelperDescriptor> = entries.values.flatMap { it.result.orEmpty() }
+
     /** Changes when the descriptors of a project change: what the C# documents of Razor files depend on. */
     val tracker = SimpleModificationTracker()
 
@@ -78,6 +81,19 @@ class RazorTagHelperService(private val project: Project) : Disposable {
         return entry.result
     }
 
+    /**
+     * The descriptors of [projectFile] now (in a read action, under the progress of a search): the last ones, else discovered here — Find
+     * Usages of a tag helper's property started in its `.cs` before any view of the project was opened.
+     */
+    fun tagHelpersNow(projectFile: VirtualFile): List<io.github.dotnetsupport.razor.lang.syntax.TagHelperDescriptor> {
+        tagHelpers(projectFile)?.let { return it }
+        val entry = entries[projectFile.path]
+        val found = RazorTagHelpers.discover(project, projectFile, cache = entry?.cache ?: RazorTagHelpers.Cache())
+        // the background run asked for above replaces it when it ends
+        if (entry != null && entry.result == null) entry.result = found
+        return found
+    }
+
     /** Discovers [entry]'s descriptors in the background — one run at a time: a change during a run makes another after it. */
     private fun schedule(entry: Entry) {
         if (!entry.running.compareAndSet(false, true)) return
@@ -104,12 +120,32 @@ class RazorTagHelperService(private val project: Project) : Disposable {
                 entry.result = found
                 entry.key = key
                 tracker.incModificationCount()
-                com.intellij.openapi.application.ApplicationManager.getApplication().invokeLater({ DaemonCodeAnalyzer.getInstance(project).restart() }, ModalityState.any(), project.disposed)
+                com.intellij.openapi.application.ApplicationManager.getApplication().invokeLater({
+                    // the C# injection of an open Razor file was made without these descriptors: the platform keeps it until the file
+                    // changes (a tag helper's attribute value is C# only with them: `asp-for="Name"` had no completion until an edit)
+                    if (project.isDisposed) return@invokeLater
+                    val psi = PsiManager.getInstance(project)
+                    val injections = com.intellij.lang.injection.InjectedLanguageManager.getInstance(project)
+                    for (file in com.intellij.openapi.fileEditor.FileEditorManager.getInstance(project).openFiles) {
+                        if (file.fileType == RazorFileType) psi.findFile(file)?.let(injections::dropFileCaches)
+                    }
+                    // the injection result is cached on the element by the PSI modification count: what the descriptors say of the C#
+                    // changed, so everything derived from the PSI is computed again, as after an edit
+                    com.intellij.openapi.application.WriteAction.run<RuntimeException> { (psi as com.intellij.psi.impl.PsiManagerEx).dropPsiCaches() }
+                    DaemonCodeAnalyzer.getInstance(project).restart()
+                }, ModalityState.nonModal(), project.disposed)   // a write-safe context: the PSI caches are dropped in a write action
             }
             .onProcessed {
                 entry.running.set(false)
                 if (entry.dirty && !project.isDisposed) schedule(entry)
             }
+    }
+
+    /** The descriptors of [projectFile] are there and nothing is pending: no run, no change waiting for one (tests wait for it before highlighting). */
+    @org.jetbrains.annotations.TestOnly
+    fun isSettledForTests(projectFile: VirtualFile): Boolean {
+        val entry = entries[projectFile.path] ?: return false
+        return entry.result != null && !entry.dirty && !entry.running.get() && alarm.isEmpty
     }
 
     override fun dispose() = Unit

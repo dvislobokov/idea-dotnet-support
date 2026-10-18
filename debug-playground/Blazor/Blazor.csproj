@@ -7,4 +7,10 @@
     <RootNamespace>Playground.Blazor</RootNamespace>
     <AssemblyName>Playground.Blazor</AssemblyName>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- broken on purpose for the editor (Editor/Broken/RazorErrors.razor, TYPE:razor-errors), not for the build -->
+    <Content Remove="Editor/Broken/**" />
+    <RazorComponent Remove="Editor/Broken/**" />
+    <None Include="Editor/Broken/**" />
+  </ItemGroup>
 </Project>

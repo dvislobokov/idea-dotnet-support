@@ -119,4 +119,16 @@ object RazorTagHelpers {
         (csharp as? PsiFileImpl)?.originalFile = file
         CachedValueProvider.Result.create(csharp, file)
     }, false)
+
+    private val CONTEXT_FILE = Key.create<com.intellij.psi.util.CachedValue<CSharpFile?>>("razor.context.file")
+
+    /**
+     * A C# file compiled in the project of [file], to resolve the names of types there: the declaration of a component, else (a view or a
+     * page of `.cshtml`, `_Imports.razor`) an empty light file whose original is [file].
+     */
+    fun contextFile(file: RazorFile): CSharpFile? = declarationFile(file) ?: CachedValuesManager.getManager(file.project).getCachedValue(file, CONTEXT_FILE, {
+        val csharp = PsiFileFactory.getInstance(file.project).createFileFromText(file.name + ".context.cs", CSharpLanguage, "", false, false) as? CSharpFile
+        (csharp as? PsiFileImpl)?.originalFile = file
+        CachedValueProvider.Result.create(csharp, file)
+    }, false)
 }

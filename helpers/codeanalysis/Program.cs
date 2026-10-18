@@ -139,7 +139,11 @@ internal sealed class LoadedProject(Target target, ProjectId id, CSharpCommandLi
 {
     public readonly Target Target = target;
     public readonly ProjectId Id = id;
-    public readonly CSharpCommandLineArguments Arguments = arguments;
+    public CSharpCommandLineArguments Arguments = arguments;
+    /** The command line of the design-time build the project was loaded with: a new one that differs in its files only is applied in place. */
+    public List<string> CommandLine = [];
+    /** A file of the project appeared, went or was renamed ([Projects.Invalidate]): its sources are listed again before the next request. */
+    public bool FileSetChanged;
     public readonly string Framework = framework;
     public readonly Dictionary<string, DateTime> Inputs = new(StringComparer.OrdinalIgnoreCase);
     public readonly Dictionary<string, (DocumentId Id, DateTime Stamp)> Sources = new(StringComparer.OrdinalIgnoreCase);
@@ -285,25 +289,42 @@ internal sealed class Projects
         return new { title, edits, created };
     }
 
+    /**
+     * A project file, a props file, an `.editorconfig` drops the projects reading it (and those referencing them): they load again. A source
+     * or another file of a project that appeared, went or was renamed (a `.cs`, a `.razor`) only marks the project: its files are listed
+     * again before the next request and applied in place ([UpdateFileSetAsync]) — the projects referencing it stay, and the generators keep
+     * their state (a renamed `.cs` of MudBlazor reloaded MudBlazor.Docs with it and ran its Razor generator from scratch: 14–15 s).
+     */
     public object Invalidate(List<string> paths)
     {
         var dropped = 0;
+        var marked = 0;
+        var full = paths.Select(p => Path.GetFullPath(p)).ToList();
         foreach (var project in loaded.Values.Distinct().ToList())
         {
+            if (!loaded.ContainsValue(project)) continue;   // already dropped with a project it references
             var directory = Path.GetDirectoryName(project.Target.ProjectPath)! + Path.DirectorySeparatorChar;
-            var touched = paths.Any(p =>
+            var under = full.Where(p => p.StartsWith(directory, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (full.Any(p => project.Inputs.ContainsKey(p) || IsDirectoryFile(p)) || under.Any(IsProjectInput))
             {
-                var full = Path.GetFullPath(p);
-                return project.Inputs.ContainsKey(full) || full.StartsWith(directory, StringComparison.OrdinalIgnoreCase) && !full.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)
-                    || full.EndsWith(".cs", StringComparison.OrdinalIgnoreCase) && full.StartsWith(directory, StringComparison.OrdinalIgnoreCase) && !project.Sources.ContainsKey(full)
-                    || Path.GetFileName(full).StartsWith("Directory.", StringComparison.OrdinalIgnoreCase);
-            });
-            if (!touched || !loaded.ContainsValue(project)) continue;   // already dropped with a project it references
-            Drop(project);
-            dropped++;
+                Drop(project);
+                dropped++;
+            }
+            else if (under.Count > 0)
+            {
+                project.FileSetChanged = true;
+                marked++;
+            }
         }
-        return new { dropped };
+        return new { dropped, marked };
     }
+
+    /** What MSBuild imports or reads as the project: a change of it is a change of the command line, not of a file it lists. */
+    private static bool IsProjectInput(string path) =>
+        IsDirectoryFile(path) || Path.GetExtension(path).ToLowerInvariant() is ".csproj" or ".props" or ".targets" or ".editorconfig" or ".globalconfig" or ".json" or ".sln" or ".slnx"
+            || Path.GetFileName(path).Equals(".editorconfig", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsDirectoryFile(string path) => Path.GetFileName(path).StartsWith("Directory.", StringComparison.OrdinalIgnoreCase);
 
     // ---- the compilation of a project
 
@@ -385,7 +406,8 @@ internal sealed class Projects
     {
         if (loaded.TryGetValue(target.Key, out var known))
         {
-            if (known.Inputs.All(i => Stamp(i.Key) == i.Value) && known.References.All(r => loaded.ContainsKey(r.Target.Key)))
+            if (known.Inputs.All(i => Stamp(i.Key) == i.Value) && known.References.All(r => loaded.ContainsKey(r.Target.Key))
+                && (!known.FileSetChanged || await UpdateFileSetAsync(known, cancellation)))
             {
                 SyncSources(known);
                 return known;
@@ -439,7 +461,7 @@ internal sealed class Projects
         var directory = Path.GetDirectoryName(target.ProjectPath)!;
         var arguments = CSharpCommandLineParser.Default.Parse(design.CommandLine, directory, sdkDirectory: null);
         var id = ProjectId.CreateNewId(target.ProjectPath);
-        var project = new LoadedProject(target, id, arguments, design.Framework ?? target.Framework ?? "") { DefaultFramework = design.DefaultFramework };
+        var project = new LoadedProject(target, id, arguments, design.Framework ?? target.Framework ?? "") { DefaultFramework = design.DefaultFramework, CommandLine = design.CommandLine };
         foreach (var input in design.Inputs.Append(target.ProjectPath)) project.Inputs[Path.GetFullPath(input)] = Stamp(input);
         foreach (var config in arguments.AnalyzerConfigPaths) project.Inputs[config] = Stamp(config);
 
@@ -518,7 +540,98 @@ internal sealed class Projects
         return project;
     }
 
-    /** Sources changed on disk since they were read are read again; a source that is gone loads the project again at the next request. */
+    /**
+     * The files of [project] listed again after one appeared, went or was renamed: the design-time build again (the tree of the project
+     * changed, so its cache misses), and when its command line differs from the one the project was loaded with in the sources and the
+     * additional files only, they are added and removed in place — the documents of the workspace, the additional texts of the driver,
+     * whose state stays (an unchanged `.razor` is not generated again), and the projects referencing this one stay loaded. False when
+     * anything else changed: the project loads again.
+     */
+    private async Task<bool> UpdateFileSetAsync(LoadedProject project, CancellationToken cancellation)
+    {
+        var watch = Stopwatch.StartNew();
+        project.FileSetChanged = false;
+        var design = await DesignOf(project.Target, cancellation);
+        var directory = Path.GetDirectoryName(project.Target.ProjectPath)!;
+        var arguments = CSharpCommandLineParser.Default.Parse(design.CommandLine, directory, sdkDirectory: null);
+        if (!SameButFiles(project.CommandLine, project.Arguments, design.CommandLine, arguments, directory) || design.Framework != null && design.Framework != project.Framework)
+        {
+            HelperProtocol.Log("info", $"{project.Name}: its command line changed with its files, it loads again");
+            return false;
+        }
+        var solution = workspace.CurrentSolution;
+        var sources = arguments.SourceFiles.Select(f => f.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var removed = project.Sources.Keys.Where(p => !sources.Contains(p)).ToList();
+        foreach (var path in removed)
+        {
+            solution = solution.RemoveDocument(project.Sources[path].Id);
+            project.Sources.Remove(path);
+        }
+        var added = sources.Where(p => !project.Sources.ContainsKey(p)).ToList();
+        foreach (var path in added)
+        {
+            var documentId = DocumentId.CreateNewId(project.Id, path);
+            solution = solution.AddDocument(Document(documentId, path));
+            project.Sources[path] = (documentId, Stamp(path));
+        }
+        // the additional files: the driver keeps its texts by identity, so an unchanged one stays the same object
+        var additional = arguments.AdditionalFiles.Select(f => f.Path).ToList();
+        var additionalSet = additional.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var goneTexts = project.AdditionalTexts.Where(t => !additionalSet.Contains(t.Path)).ToList();
+        foreach (var text in goneTexts)
+            if (project.Additional.Remove(text.Path, out var known) && solution.GetAdditionalDocument(known.Id) != null) solution = solution.RemoveAdditionalDocument(known.Id);
+        var kept = project.AdditionalTexts.Where(t => additionalSet.Contains(t.Path)).ToDictionary(t => t.Path, StringComparer.OrdinalIgnoreCase);
+        var newTexts = new List<AdditionalText>();
+        foreach (var path in additional.Where(p => !kept.ContainsKey(p)).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            newTexts.Add(new FileText(path));
+            if (!File.Exists(path)) continue;
+            var documentId = DocumentId.CreateNewId(project.Id, path);
+            solution = solution.AddAdditionalDocument(Document(documentId, path));
+            project.Additional[path] = (documentId, Stamp(path));
+        }
+        project.AdditionalTexts = additional.Select(p => kept.TryGetValue(p, out var text) ? text : newTexts.First(t => t.Path.Equals(p, StringComparison.OrdinalIgnoreCase))).ToList();
+        // the build wrote the generated `.editorconfig` again: the metadata of the new additional files (Razor's TargetPath) is there
+        foreach (var config in solution.GetProject(project.Id)!.AnalyzerConfigDocuments.Where(d => d.FilePath != null && Stamp(d.FilePath) != project.Inputs.GetValueOrDefault(d.FilePath)))
+            solution = solution.WithAnalyzerConfigDocumentText(config.Id, Read(config.FilePath!));
+        if (!workspace.TryApplyChanges(solution)) throw new HelperException($"{project.Name}: its new files could not be applied to the workspace");
+        project.Arguments = arguments;
+        project.CommandLine = design.CommandLine;
+        project.BuildFiles = BuildFiles(sources, design.IntermediateDirectory ?? Path.Combine(directory, "obj"));
+        project.Inputs.Clear();
+        foreach (var input in design.Inputs.Append(project.Target.ProjectPath)) project.Inputs[Path.GetFullPath(input)] = Stamp(input);
+        foreach (var config in arguments.AnalyzerConfigPaths) project.Inputs[config] = Stamp(config);
+        if (project.Driver != null)
+        {
+            if (goneTexts.Count > 0) project.Driver = project.Driver.RemoveAdditionalTexts([.. goneTexts]);
+            if (newTexts.Count > 0) project.Driver = project.Driver.AddAdditionalTexts([.. newTexts]);
+            project.Driver = project.Driver.WithUpdatedAnalyzerConfigOptions(workspace.CurrentSolution.GetProject(project.Id)!.AnalyzerOptions.AnalyzerConfigOptionsProvider);
+        }
+        HelperProtocol.Log("info", $"{project.Name}: files listed again in {watch.ElapsedMilliseconds} ms: sources +{added.Count} -{removed.Count}, additional files +{newTexts.Count} -{goneTexts.Count}");
+        return true;
+    }
+
+    /**
+     * Whether two command lines of the compiler differ in their sources and additional files only: everything else — options, references,
+     * analyzers, configs — in the same order.
+     */
+    internal static bool SameButFiles(List<string> before, CommandLineArguments parsedBefore, List<string> after, CommandLineArguments parsedAfter, string directory)
+    {
+        static List<string> Rest(List<string> line, CommandLineArguments parsed, string directory)
+        {
+            var sources = parsed.SourceFiles.Select(f => f.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            return line.Where(token =>
+            {
+                var option = token.TrimStart('"');
+                if (option.StartsWith("/additionalfile:", StringComparison.OrdinalIgnoreCase) || option.StartsWith("-additionalfile:", StringComparison.OrdinalIgnoreCase)) return false;
+                try { return !sources.Contains(Path.GetFullPath(token.Trim('"'), directory)); }
+                catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException) { return true; }
+            }).ToList();
+        }
+        return Rest(before, parsedBefore, directory).SequenceEqual(Rest(after, parsedAfter, directory), StringComparer.Ordinal);
+    }
+
+    /** Sources changed on disk since they were read are read again; a source that is gone lists the files of the project again at the next request. */
     private void SyncSources(LoadedProject project)
     {
         var solution = workspace.CurrentSolution;
@@ -527,7 +640,7 @@ internal sealed class Projects
         {
             var now = Stamp(path);
             if (now == stamp) continue;
-            if (now == DateTime.MinValue) { project.Inputs[path] = DateTime.MaxValue; continue; }
+            if (now == DateTime.MinValue) { project.FileSetChanged = true; continue; }
             solution = solution.WithDocumentText(documentId, Read(path), PreservationMode.PreserveIdentity);
             project.Sources[path] = (documentId, now);
             changed = true;

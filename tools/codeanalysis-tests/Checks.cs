@@ -45,6 +45,7 @@ public static class Checks
         Run(nameof(ImportsOfTheZip), ImportsOfTheZip);
         Run(nameof(TheOuterRootOfALinkedFile), TheOuterRootOfALinkedFile);
         Run(nameof(TheFilesOfACommandLine), TheFilesOfACommandLine);
+        Run(nameof(ACommandLineWithOtherFilesOnly), ACommandLineWithOtherFilesOnly);
         Console.WriteLine(failures == 0 ? "all checks passed" : $"{failures} check(s) failed");
         return failures == 0 ? 0 : 1;
     }
@@ -227,5 +228,19 @@ public static class Checks
         Expect(!all.Any(p => p.EndsWith("App.dll")), "not the output");
         var globbed = DesignTimeCache.CommandLineFiles(commandLine, directory, globbedOnly: true).ToList();
         Expect(globbed.Count == 2, "only the source and the additional file: " + string.Join(", ", globbed));
+    }
+
+    private static void ACommandLineWithOtherFilesOnly()
+    {
+        var directory = P("repo", "App");
+        List<string> Line(string razor, string source, params string[] more) =>
+            ["/noconfig", "/reference:" + P("refs", "A.dll"), "/analyzer:" + P("a", "G.dll"), .. more, "/additionalfile:" + razor, "/analyzerconfig:" + P("repo", ".editorconfig"), "Program.cs", source, "/out:obj/App.dll"];
+        bool Same(List<string> a, List<string> b) => Projects.SameButFiles(a, Microsoft.CodeAnalysis.CSharp.CSharpCommandLineParser.Default.Parse(a, directory, null),
+            b, Microsoft.CodeAnalysis.CSharp.CSharpCommandLineParser.Default.Parse(b, directory, null), directory);
+        var before = Line("Pages/Counter.razor", "Old.cs");
+        Expect(Same(before, Line("Pages/Tally.razor", "New.cs")), "a renamed source and a renamed additional file: the same command line");
+        Expect(Same(before, [.. Line("Pages/Counter.razor", "Old.cs"), "Added.cs"]), "a new source");
+        Expect(!Same(before, Line("Pages/Counter.razor", "Old.cs", "/define:EXTRA")), "another option");
+        Expect(!Same(before, Line("Pages/Counter.razor", "Old.cs", "/reference:" + P("refs", "B.dll"))), "another reference");
     }
 }

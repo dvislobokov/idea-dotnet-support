@@ -132,7 +132,7 @@ class RazorDirectivePsi(node: ASTNode) : RazorElement(node) {
         }
 
     /** The C# literals of the directive's tokens: `ILogger<Counter>` and `Logger` of `@inject`, `"/counter"` of `@page`. */
-    val tokens: List<RazorCodeLiteral> get() = PsiTreeUtil.findChildrenOfType(this, RazorCodeLiteral::class.java).filter { it.isValidHost && !it.isInsideBraces() }
+    val tokens: List<RazorCodeLiteral> get() = PsiTreeUtil.findChildrenOfType(this, RazorCodeLiteral::class.java).filter { it.isCode && it.isValidHost && !it.isInsideBraces() }
 
     /** The argument as written: `Scripts` of `@section Scripts`, `"/counter"` of `@page`, `ILogger<Counter> Logger` of `@inject`. */
     val argument: String?
@@ -159,12 +159,15 @@ class RazorDirectivePsi(node: ASTNode) : RazorElement(node) {
 }
 
 /**
- * A literal of C# tokens: a statement, an expression, a directive token, `using Foo`. The hosts of the injected C# document
- * ([RazorCSharpInjector]): the text goes into it as written ([isValidHost] for the ones with code, not for the whitespace of a directive).
+ * A literal of C# tokens: a statement, an expression, a directive token, `using Foo` — and a literal of markup text, where the compiler may
+ * map C# too (the value of a tag helper's attribute: `asp-for="Name"` becomes `__model => __model.Name`, R5e part 3). The hosts of the
+ * injected C# document ([RazorCSharpInjector]): the text goes into it as written ([isValidHost] for the ones with text, not for the
+ * whitespace of a directive); which of them host is the source mappings' say ([RazorCSharpDocument.places]).
  */
 class RazorCodeLiteral(node: ASTNode) : RazorElement(node), PsiLanguageInjectionHost {
     val span: RazorSpan get() = (node.firstChildNode?.elementType as? RazorTreeTokenType)?.span ?: RazorSpan.META
-    override fun isValidHost(): Boolean = span == RazorSpan.CODE && textLength > 0
+    val isCode: Boolean get() = span == RazorSpan.CODE
+    override fun isValidHost(): Boolean = (span == RazorSpan.CODE || span == RazorSpan.MARKUP) && textLength > 0
 
     override fun updateText(text: String): PsiLanguageInjectionHost {
         val type = node.firstChildNode?.elementType ?: return this

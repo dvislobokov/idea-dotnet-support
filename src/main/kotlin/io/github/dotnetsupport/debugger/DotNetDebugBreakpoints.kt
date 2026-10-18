@@ -54,6 +54,22 @@ class DotNetLineBreakpointProperties : XBreakpointProperties<DotNetLineBreakpoin
 
 typealias DotNetLineBreakpoint = XLineBreakpoint<DotNetLineBreakpointProperties>
 
+/**
+ * The lines a framework's file can have a line breakpoint on (RAZOR_PLAN.md, R8: the C# of a `.razor` / `.cshtml` file, which the pdb maps
+ * there through `#line`): the debugger sends them as it sends a `.cs` file's, by the path of the file.
+ */
+interface BreakpointLinesSource {
+    /** Whether [file] (not a `.cs`) is one of the framework's: cheap, by its name or type. */
+    fun handles(file: VirtualFile): Boolean
+
+    /** The zero-based lines of [file] with code a breakpoint stops on; asked for every line the mouse passes in the gutter: cache. */
+    fun lines(project: Project, file: VirtualFile): Set<Int>
+
+    companion object {
+        val EP_NAME: com.intellij.openapi.extensions.ExtensionPointName<BreakpointLinesSource> = com.intellij.openapi.extensions.ExtensionPointName.create("io.github.dotnetsupport.breakpointLines")
+    }
+}
+
 /** Line breakpoints in `.cs` files. The id is the one of the breakpoints users have saved: it must not change. */
 class CSharpLineBreakpointType : XLineBreakpointType<DotNetLineBreakpointProperties>("dotnet-line", ".NET Line Breakpoints") {
     override fun createBreakpointProperties(file: VirtualFile, line: Int): DotNetLineBreakpointProperties = DotNetLineBreakpointProperties()
@@ -65,7 +81,7 @@ class CSharpLineBreakpointType : XLineBreakpointType<DotNetLineBreakpointPropert
     override fun getEditorsProvider(breakpoint: DotNetLineBreakpoint, project: Project): XDebuggerEditorsProvider = DotNetEditorsProvider()
 
     override fun canPutAt(file: VirtualFile, line: Int, project: Project): Boolean {
-        if (file.fileType != CSharpFileType) return false
+        if (file.fileType != CSharpFileType) return BreakpointLinesSource.EP_NAME.extensionList.any { it.handles(file) && line in it.lines(project, file) }
         val document = FileDocumentManager.getInstance().getDocument(file) ?: return false
         // asked for every line the mouse passes in the gutter: one scan per change of the text
         val cached = document.getUserData(LINES)?.takeIf { it.first == document.modificationStamp }

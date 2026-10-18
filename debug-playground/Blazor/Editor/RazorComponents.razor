@@ -46,6 +46,8 @@
    component, not the HTML tag); `Components/Pages/Counter.razor` is `Tally.razor`, the tags here and in `RazorHighlighting.razor` are
    `<Tally …/>`, `RazorGeneratedTypes.cs` says `typeof(Tally)`, `nameof(Tally.Step)`, `Tally counter`, `RazorCSharp.razor` `new Tally()`.
    Ctrl+Z takes it all back, the file's name too. The same from the Solution view: Shift+F6 on `Counter.razor`.
+   EXPECT at once, before the generator ran again (0.1.280): Ctrl+B on `Tally` in `typeof(Tally)` of `RazorGeneratedTypes.cs` opens
+   `Tally_razor.g.cs`, `Tally` is not red there for a moment; the plugin's log (.NET → Plugin Logs) says "its class written ahead of the generator".
 
    TYPE:razor-parameter-rename — Shift+F6 on `Step` (the attribute name), type `By`, Enter. EXPECT: `[Parameter] public int By`, `Add @By`
    and `count += By` in `Counter.razor`, `By="@step"` here, `By="2"` in `RazorHighlighting.razor`, `nameof(Counter.By)` in

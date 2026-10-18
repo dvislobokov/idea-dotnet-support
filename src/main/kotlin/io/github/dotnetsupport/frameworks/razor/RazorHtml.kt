@@ -39,15 +39,25 @@ class RazorHtmlStructureFilter : HighlightInfoFilter {
 }
 
 /**
- * HTML does not know components (`<Counter />`, `<MudButton>`) and tag helpers (`<partial>`, `asp-for`): until Razor knows them (R5)
- * their tags and attributes are not "unknown".
+ * HTML does not know components (`<Counter />`, `<MudButton>`) and tag helpers (`<email>`, `asp-for`, `tooltip`): what the descriptors in
+ * scope of the file bind (R5e: the tag of a component or tag helper, an attribute one of them takes) is not "unknown", and an input a tag
+ * helper renders (`<input asp-for>`: its `id`, the `for` of `<label asp-for>`) does not lack its label (found in the WSL sandbox, 0.1.281).
+ * Before the descriptors are known, by the look of the names, as before R5.
  */
 class RazorHtmlInspectionSuppressor : InspectionSuppressor {
     override fun isSuppressedFor(element: PsiElement, toolId: String): Boolean {
         if (toolId !in TOOLS || element.containingFile?.viewProvider !is RazorFileViewProvider) return false
         val tag = PsiTreeUtil.getParentOfType(element, XmlTag::class.java, false) ?: return false
-        if (isComponentOrTagHelper(tag.name)) return true
         val attribute = PsiTreeUtil.getParentOfType(element, XmlAttribute::class.java, false)
+        val context = RazorTagHelperEditor.razorFile(element.containingFile)?.let(RazorTagHelperEditor::context)
+        if (context != null) {
+            val applying = context.tagHelpers.filter { RazorTagHelperEditor.applies(context, it, tag) }
+            if (toolId == "HtmlFormInputWithoutLabel") return applying.any { it.kind == io.github.dotnetsupport.razor.lang.syntax.TagHelperKind.ITagHelper }
+            if (attribute != null && RazorTagHelperEditor.boundAttribute(applying, attribute.name) != null) return true
+            if (RazorTagHelperEditor.tagDescriptors(context, tag.name).any { it in applying }) return true
+        }
+        if (toolId == "HtmlFormInputWithoutLabel") return false
+        if (isComponentOrTagHelper(tag.name)) return true
         return attribute != null && (attribute.name.startsWith("asp-") || attribute.name.startsWith("@"))
     }
 
@@ -57,7 +67,8 @@ class RazorHtmlInspectionSuppressor : InspectionSuppressor {
         name.firstOrNull()?.isUpperCase() == true || '.' in name || ':' in name || name.lowercase() in TAG_HELPERS
 
     private companion object {
-        val TOOLS = setOf("HtmlUnknownTag", "HtmlUnknownAttribute", "HtmlUnknownBooleanAttribute", "CheckEmptyScriptTag", "HtmlRequiredAltAttribute")
+        // XmlUnboundNsPrefix: `@bind:event="oninput"` is no namespace prefix (the WSL sandbox, 0.1.281: "Namespace '@bind' is not bound")
+        val TOOLS = setOf("HtmlUnknownTag", "HtmlUnknownAttribute", "HtmlUnknownBooleanAttribute", "CheckEmptyScriptTag", "HtmlRequiredAltAttribute", "HtmlFormInputWithoutLabel", "XmlUnboundNsPrefix")
         val TAG_HELPERS = setOf("partial", "environment", "cache", "distributed-cache", "component", "persist-component-state")
     }
 }

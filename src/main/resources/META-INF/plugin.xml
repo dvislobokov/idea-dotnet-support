@@ -52,6 +52,10 @@
         <extensionPoint qualifiedName="io.github.dotnetsupport.processAttacher" interface="io.github.dotnetsupport.run.DotNetProcessAttacher" dynamic="true"/>
         <!-- what a framework module knows of the C# the build makes of a project: the semantics stays silent where types may come from it -->
         <extensionPoint qualifiedName="io.github.dotnetsupport.csharpCodeGenerators" interface="io.github.dotnetsupport.lang.semantic.CSharpCodeGenerators" dynamic="true"/>
+        <!-- the endpoints a framework declares in files other than C# (`@page "/route"` of Razor): the Endpoints tool window lists them -->
+        <extensionPoint qualifiedName="io.github.dotnetsupport.endpointSource" interface="io.github.dotnetsupport.endpoints.EndpointSource" dynamic="true"/>
+        <!-- the lines of a framework's files a line breakpoint can be put on (the C# of `.razor`, mapped by the pdb through `#line`) -->
+        <extensionPoint qualifiedName="io.github.dotnetsupport.breakpointLines" interface="io.github.dotnetsupport.debugger.BreakpointLinesSource" dynamic="true"/>
         <!-- a declaration a framework uses without code (Unity's event functions, serialized fields): the usages lens says so instead of "no usages" -->
         <extensionPoint qualifiedName="io.github.dotnetsupport.csharpImplicitUsage" interface="io.github.dotnetsupport.lang.CSharpImplicitUsage" dynamic="true"/>
         <!-- what a framework writes beside a rename (Unity: [FormerlySerializedAs] on a serialized field the scenes set) -->

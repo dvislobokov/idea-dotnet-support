@@ -90,7 +90,8 @@ class RazorColorSettingsPage : ColorSettingsPage {
     override fun getDisplayName(): String = "Razor"
     override fun getIcon(): Icon = DotNetIcons.Razor
     override fun getHighlighter(): SyntaxHighlighter = RazorSyntaxHighlighter(RazorFileKind.COMPONENT)
-    override fun getAdditionalHighlightingTagToDescriptorMap(): Map<String, TextAttributesKey>? = null
+    override fun getAdditionalHighlightingTagToDescriptorMap(): Map<String, TextAttributesKey> =
+        mapOf("rzcomponent" to RazorMarkupColorAnnotator.ELEMENT, "rzparameter" to RazorMarkupColorAnnotator.ATTRIBUTE)
     override fun getColorDescriptors(): Array<ColorDescriptor> = ColorDescriptor.EMPTY_ARRAY
 
     override fun getAttributeDescriptors(): Array<AttributesDescriptor> = arrayOf(
@@ -103,6 +104,8 @@ class RazorColorSettingsPage : ColorSettingsPage {
         AttributesDescriptor("Directive attribute", RazorSyntaxHighlighter.DIRECTIVE_ATTRIBUTE),
         AttributesDescriptor("Directive attribute value", RazorSyntaxHighlighter.ATTRIBUTE_VALUE),
         AttributesDescriptor("Directive argument", RazorSyntaxHighlighter.DIRECTIVE_VALUE),
+        AttributesDescriptor("Component or tag helper", RazorMarkupColorAnnotator.ELEMENT),
+        AttributesDescriptor("Component parameter or tag helper attribute", RazorMarkupColorAnnotator.ATTRIBUTE),
     )
 
     override fun getDemoText(): String = """
@@ -112,6 +115,7 @@ class RazorColorSettingsPage : ColorSettingsPage {
 
         <h1 class="title">Count: @currentCount</h1>
         <button @onclick="Increment" @bind-Value:event="oninput">Click @(currentCount + 1)</button>
+        <<rzcomponent>Counter</rzcomponent> <rzparameter>Step</rzparameter>="2" />
 
         @if (currentCount > 3)
         {
