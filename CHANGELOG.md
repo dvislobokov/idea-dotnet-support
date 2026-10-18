@@ -3,6 +3,14 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.274
+
+- Unity: .NET → Switch Unity to Debug Mode / Release Mode switches the code optimization of the open Unity editor for this session, as
+  the bug button of Unity's status bar does, without switching to it (the editor package 1.4.0); the tooltip of the Unity status bar
+  widget names the mode. Debug mode is what a debugger needs: attaching to an editor in Release mode stops it at a modal dialog.
+- The first part of a debugger for Unity: the plugin's own client of the Mono soft debugger protocol (no adapter to install, no `dotnet`
+  needed), not yet reachable from the UI.
+
 ## 0.1.273
 
 - Unity: tests of the Unity Test Framework run in the open Unity editor from the IDE — ▶ next to a test method or class (`[Test]`,

@@ -802,6 +802,12 @@
 
 
 
+  - [x] Unity, режим Debug / Release редактора из IDE (0.1.274) — .NET → Switch Unity to Debug Mode / Release Mode (на сессию, как
+    кнопка жука в Unity), режим в подсказке виджета; заодно первая часть отладчика Unity — свой клиент протокола Mono Soft Debugger
+    (`debugger/mono/MonoConnection.kt`), из UI пока не вызывается. `UNITY_PLAN.md`, «Отладчик»; сценарий — `UNITY:debug-mode` в конце
+    `debug-playground/Unity/Assets/Scripts/Player.cs`. Переключение проверено на открытом Unity 6000.6 (команда в канал, без IDE), клиент —
+    на живом агенте Unity 6000.6 (редактор в Debug и процесс импорта ассетов: подключение, потоки, пауза и продолжение, отключение),
+    человеком вживую не проверено
   - [x] Unity, тесты в открытом редакторе (0.1.273) — ▶ у теста или класса в проекте Unity запускает его в Unity (EditMode / PlayMode по
     `.asmdef`), результаты в окне Unit Tests по мере прохождения, со стеком и сообщением; конфигурация «Unity Tests». `UNITY_PLAN.md`,
     «Шаги», шаг 4; сценарий — `UNITY:tests` в `debug-playground/Unity/Assets/Tests/Editor/MathTests.cs`. Проверено роботом с открытым Unity

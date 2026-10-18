@@ -36,7 +36,11 @@ object UnityEditorLink {
         val updating: Boolean, val compileErrors: Int, val compiledAt: Long, val heartbeat: Long,
         /** Whether Unity opens scripts in this IDE (step 3); null from a package before 1.2.0. */
         val ideIsEditor: Boolean? = null,
-    )
+        /** `Debug` / `Release`, the code optimization of the editor's session (a debugger needs Debug); null from a package before 1.4.0. */
+        val codeOptimization: String? = null,
+    ) {
+        val debugMode: Boolean get() = codeOptimization == "Debug"
+    }
 
     data class Link(val root: File, val status: Status, val state: EditorState?, val editorProcessId: Long?)
 
@@ -44,6 +48,13 @@ object UnityEditorLink {
     const val HEARTBEAT_TIMEOUT_MS = 6_000L
 
     fun folder(root: File): File = File(root, "Temp/DotNetSupport")
+
+    /**
+     * The port the Mono debugger agent of the editor listens on, at 127.0.0.1 (as Rider and Visual Studio find it; seen on Unity 6000.6:
+     * pid 28276 → 56276). Every Unity process has one by the same rule, the workers that import assets too: the pid is the editor's, of
+     * `Library/EditorInstance.json`.
+     */
+    fun debuggerPort(editorProcessId: Long): Int = 56000 + (editorProcessId % 1000).toInt()
 
     fun link(root: File, now: Long = System.currentTimeMillis(), isAlive: (Long) -> Boolean = ::isAlive): Link {
         val instance = readJson(File(root, "Library/EditorInstance.json"))
@@ -66,6 +77,7 @@ object UnityEditorLink {
             json.get("package").asString, json.get("unity").asString, json.get("processId").asLong, json.get("playing").asBoolean,
             json.get("paused").asBoolean, json.get("compiling").asBoolean, json.get("updating").asBoolean, json.get("compileErrors").asInt,
             json.get("compiledAt").asLong, json.get("heartbeat").asLong, json.get("ideIsEditor")?.takeIf { it.isJsonPrimitive }?.asBoolean,
+            json.get("codeOptimization")?.takeIf { it.isJsonPrimitive }?.asString,
         )
     }.getOrNull()
 

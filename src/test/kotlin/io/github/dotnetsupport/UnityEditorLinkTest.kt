@@ -73,6 +73,16 @@ class UnityEditorLinkTest : BasePlatformTestCase() {
         assertEquals(Status.OLD_PACKAGE, UnityEditorLink.link(root, 11_000, alive).status)
     }
 
+    fun testTheCodeOptimizationOfTheEditor() {
+        fun state(extra: String) = UnityEditorLink.stateOf(com.google.gson.JsonParser.parseString(
+            """{"package":"1.4.0","unity":"6000.6.0f1","processId":1,"playing":false,"paused":false,"compiling":false,"updating":false,"compileErrors":0,"compiledAt":0,$extra"heartbeat":1}""").asJsonObject)!!
+        assertTrue(state(""""codeOptimization":"Debug",""").debugMode)
+        assertFalse(state(""""codeOptimization":"Release",""").debugMode)
+        assertNull("a package before 1.4.0", state("").codeOptimization)
+        val link = UnityEditorLink.Link(File("."), Status.CONNECTED, state(""""codeOptimization":"Release",""").copy(unityVersion = "6000.6.0f1"), 1)
+        assertTrue(UnityEditorStatusWidget.describe(link), UnityEditorStatusWidget.describe(link).endsWith("Code optimization: Release."))
+    }
+
     fun testCommandsRunInTheOrderTheyWereSent() {
         val root = project()
         for ((i, command) in listOf("refresh", "play", "pause").withIndex()) UnityEditorLink.send(root, command, i.toLong())

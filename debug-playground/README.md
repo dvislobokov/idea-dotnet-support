@@ -247,6 +247,9 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `UNITY:external-editor` (0.1.272, нужен открытый Unity): предложение «Open scripts from Unity in this IDE?», IDE в Preferences |
       External Tools, двойной клик по скрипту и по строке консоли в Unity открывает файл в IDE на строке и выводит её окно вперёд, закрытая
       IDE запускается, новый скрипт попадает в `.csproj`, «Stop Opening Scripts from Unity Here» возвращает прежний редактор
+- [ ] `UNITY:debug-mode` (0.1.274, `Unity/Assets/Scripts/Player.cs`, в конце файла, нужен открытый Unity): .NET → Switch Unity to
+      Debug Mode — Unity перекомпилирует без фокуса, подсказка виджета «Code optimization: Debug.», значок жука в Unity включён,
+      настройка «Code Optimization On Startup» не меняется; обратно в Release
 - [ ] `UNITY:tests` (0.1.273, `Unity/Assets/Tests/Editor/MathTests.cs`, нужен открытый Unity): ▶ класса и метода запускает тесты в Unity,
       результаты в окне Unit Tests зелёные с длительностями; сломанная проверка — красный тест с сообщением и стеком; Stop отменяет прогон
 

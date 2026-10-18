@@ -1,9 +1,10 @@
 // The link of the Unity editor with the IDE of C# Project Support (UNITY_PLAN.md, "Интеграция с редактором"). Files in Temp/DotNetSupport of
 // the project, as Unity cleans Temp when it closes:
 //   commands/<n>.txt   the IDE -> the editor: one command per file (refresh, compile, play, stop, pause, step, use-as-editor,
-//                      restore-editor, open-asset <path> <line>; run-tests and cancel-tests of Tests/TestRuns.cs through IdeCommands), run
+//                      restore-editor, open-asset <path> <line>, debug-mode, release-mode; run-tests and cancel-tests of Tests/TestRuns.cs through IdeCommands), run
 //                      in the order of the names
-//   state.json         the editor -> the IDE: play mode, pause, compilation, the errors of the last compilation and a heartbeat every 2 s
+//   state.json         the editor -> the IDE: play mode, pause, compilation, the errors of the last compilation, the code optimization
+//                      and a heartbeat every 2 s
 // Files rather than a socket: they outlive the reload of the domain (every compilation), need no port, and the editor's update loop runs
 // while it is in the background (measured on Unity 6000.6: a command runs within half a second, Play in 2.3 s, unfocused), when it does
 // not look at the files of the project — so a save in the IDE becomes a refresh only through here.
@@ -20,7 +21,7 @@ namespace DotNetSupport.Unity.Editor
     internal static class IdeConnection
     {
         /// <summary>Of package.json: the IDE updates the package when its own is newer.</summary>
-        private const string PackageVersion = "1.3.0";
+        private const string PackageVersion = "1.4.0";
 
         private static readonly string Folder = Path.Combine(Path.GetDirectoryName(Application.dataPath) ?? ".", "Temp", "DotNetSupport");
         private static readonly string Commands = Path.Combine(Folder, "commands");
@@ -103,6 +104,15 @@ namespace DotNetSupport.Unity.Editor
                 case "step":
                     EditorApplication.Step();
                     break;
+                // the code optimization of this session, as the bug button of Unity's status bar: a debugger attaching in Release
+                // mode makes Unity stop at a modal "C# Debugger Attached" (UNITY_PLAN.md, "Отладчик"), so the IDE switches first;
+                // Unity compiles the scripts again
+                case "debug-mode":
+                    CompilationPipeline.codeOptimization = CodeOptimization.Debug;
+                    break;
+                case "release-mode":
+                    CompilationPipeline.codeOptimization = CodeOptimization.Release;
+                    break;
                 case "use-as-editor":
                     ExternalEditor.UseAsEditor();
                     break;
@@ -137,6 +147,7 @@ namespace DotNetSupport.Unity.Editor
             $"\"compileErrors\":{compileErrors}," +
             $"\"compiledAt\":{compiledAt}," +
             $"\"ideIsEditor\":{Flag(ExternalEditor.IsCurrent)}," +
+            $"\"codeOptimization\":\"{CompilationPipeline.codeOptimization}\"," +
             $"\"heartbeat\":{Now()}" +
             "}";
 

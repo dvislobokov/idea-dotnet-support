@@ -73,3 +73,9 @@ public class Player : MonoBehaviour
     public static bool InEditor => false;
 #endif
 }
+
+// UNITY:debug-mode (0.1.274) — with the editor connected (UNITY:editor-link), in Release mode (the bug icon at the right of Unity's status
+// bar is blue-grey). EXPECT: the tooltip of "Unity: edit mode" in the status bar ends with "Code optimization: Release."; .NET → Switch Unity
+// to Debug Mode → Unity compiles the scripts without being focused (the status bar says "compiling", ~25 s on nine-to-fire), then the
+// tooltip says "Code optimization: Debug.", the bug icon in Unity is on, and the action reads "Switch Unity to Release Mode". Preferences |
+// General → "Code Optimization On Startup" is not changed (the switch is for this session). Switch back to Release.

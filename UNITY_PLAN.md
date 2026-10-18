@@ -48,19 +48,80 @@ Rider делает через `com.unity.ide.rider`. Проба — пакет `
 
 ### Шаги (решение пользователя 2026-10-18: сначала открытый редактор, batchmode пока не трогать)
 
-1. **Пакет и связь с открытым редактором.** Пакет `io.github.dotnetsupport.unity` — исходники в ресурсах плагина (как индексатор), плагин
+Состояние на 2026-10-18: шаги 1–4 сделаны (0.1.270–0.1.273, подробности — «Сделано»), проверены роботом на одной копии `nine-to-fire`
+с Unity 6000.6 под Windows, человеком вживую — нет. Шаг 5 не начат (решение пользователя: пока не трогать).
+
+1. [x] 0.1.270 — **Пакет и связь с открытым редактором.** Пакет `io.github.dotnetsupport.unity` — исходники в ресурсах плагина (как индексатор), плагин
    кладёт его в `Packages/` проекта Unity по согласию пользователя (один раз на проект; «Не спрашивать»), обновляет при новой версии,
    прячет папку через `.git/info/exclude`. Канал — файлы в `Temp/DotNetSupport/` (переживают перезагрузку домена, без портов; `Temp`
    Unity чистит при закрытии): команды IDE → редактор, состояние редактора (Play / Pause / компиляция, сердцебиение) → IDE. Действия
    Play / Pause / Step / Stop / Refresh (меню .NET и панель инструментов), обновление ассетов при сохранении C# (не в Play mode), статус
    связи в строке состояния. Открыт ли редактор — `Library/EditorInstance.json` + живой процесс.
-2. **Лог консоли Unity** в окне IDE (сообщения, предупреждения, ошибки со стеком и переходом к строке), ошибки компиляции редактора.
-3. **Unity как внешний редактор кода**: пакет регистрируется через `CodeEditor.Register` — генерация `.csproj` без Rider, двойной клик в
-   Unity открывает файл в IDE на строке; выбор в Preferences — только по согласию пользователя.
-4. **Тесты в открытом редакторе** (Test Runner: EditMode / PlayMode) в окне Unit Tests.
-5. Позже: batchmode при закрытом редакторе (сборка плеера, тесты), отладчик (Mono).
+2. [x] 0.1.271 — **Лог консоли Unity** в окне IDE (сообщения, предупреждения, ошибки со стеком и переходом к строке), ошибки
+   компиляции редактора.
+3. [x] 0.1.272 — **Unity как внешний редактор кода**: пакет регистрируется через `CodeEditor.Register`, двойной клик в Unity открывает
+   файл в IDE на строке; выбор в Preferences — только по согласию пользователя. Отступление от замысла: `.csproj` генерирует не свой код,
+   а генератор пакета Rider (рефлексией), иначе Visual Studio — своего генератора нет.
+4. [x] 0.1.273 — **Тесты в открытом редакторе** (Test Runner: EditMode / PlayMode) в окне Unit Tests. PlayMode вживую не проверен.
+5. [ ] Позже: отладчик (Mono), batchmode при закрытом редакторе (сборка плеера, тесты).
+
+### Отладчик: проба протокола (2026-10-18, Unity 6000.6.0f1, копия `nine-to-fire`)
+
+Замысел (вопрос пользователя 2026-10-18): свой клиент протокола Mono Soft Debugger на Kotlin внутри плагина, без внешнего бинарника,
+вторым бэкендом пакета `debugger` рядом с `DapConnection`; образец — `Mono.Debugger.Soft/Connection.cs` (`mono/debugger-libs`, MIT).
+Проба — питоновский скрипт (рукопожатие, `VM.VERSION`, `SET_PROTOCOL_VERSION`, `ALL_THREADS`, `THREAD.GET_NAME`, `VM.DISPOSE`). Факты:
+- Редактор слушает `127.0.0.1:<56000 + pid % 1000>` (pid 28276 → 56276); свой порт по той же формуле у каждого процесса Unity, в том
+  числе у дочерних (импорт ассетов) — брать pid из `Library/EditorInstance.json`.
+- Рукопожатие `DWP-Handshake` — сразу; рантайм `mono 6.13.0 (Visual Studio built mono)`, протокол **2.58**. Сразу после рукопожатия
+  агент шлёт составное событие `VM_START` (политика остановки NONE — редактор не останавливается). 28 управляемых потоков, весь обмен — 1 с.
+- **В режиме Release** (Code Optimization; на старте — `ScriptDebugInfoEnabled_h…` = 0 в реестре настроек Unity) подключение
+  показывает в Unity **модальный диалог «C# Debugger Attached»** (Enable debugging for this session / for all projects / Cancel), и
+  главный цикл редактора стоит, пока его не закроют (сердцебиение пакета замерло). Протокол при этом работает. Значит, перед
+  подключением IDE переключает режим через пакет (`CompilationPipeline.codeOptimization = Debug`, с согласия пользователя; режим —
+  в `state.json`), а не ловит диалог. Текст диалога пишется в `Logs/Editor.log` проекта («# C# Debugger Attached … Debug Mode is
+  switched off in your project»).
+- **Cancel в этом диалоге убивает приёмник агента до перезапуска редактора**: в `Editor.log` — `debugger-agent: Unable to listen on 4064`
+  (агент печатает это, когда падает `accept` на слушающем сокете; число — дескриптор сокета), порт по-прежнему в LISTENING (два сокета
+  вместо одного), соединение принимается ядром, но рукопожатия нет (3 попытки по 5 с, соединения висят в CLOSE_WAIT). Перекомпиляция и
+  перезагрузка домена не помогают — агент нативный. Обычное `VM.DISPOSE` приёмник не убивает: процесс импорта ассетов той же копии
+  (Release, без диалога) принял второе подключение через 1,5 с после `DISPOSE` первого (клиент плагина, оба раза `VM_START`, 9 потоков,
+  2–20 мс), слушающий сокет остался один. Та же строка `Unable to listen` бывает и при закрытии редактора (`Editor-prev.log`).
+  Вывод для IDE: никогда не оставлять пользователя с этим диалогом — сначала `debug-mode`, потом подключение. Проверено после
+  перезапуска редактора (закрыт по WM_CLOSE, открыт `Unity.exe -projectPath`, ~4,5 мин до пакета): `debug-mode`, затем два подключения
+  подряд — без диалога и без `Unable to listen`. Запущенный без Hub редактор пишет лог в `%LOCALAPPDATA%\Unity\Editor\Editor.log`,
+  а не в `Logs/Editor.log` проекта (Hub передаёт `-logFile`).
+- Режим через пакет (0.1.274, команда `debug-mode`): Unity без фокуса перекомпилировал за ~25 с, `codeOptimization` в `state.json` стал
+  `Debug`; настройка «на старте» (`ScriptDebugInfoEnabled_h…`) не изменилась — переключение на сессию.
+- Процессы импорта ассетов (`AssetImportWorkerN`) — тоже `Unity.exe` со своим агентом (`--debugger-agent=…,address=127.0.0.1:56604`
+  в `Logs/AssetImportWorkerN.log`): подключаться только к pid редактора.
+- Установлен ещё Unity 2023.1.22f1 — проверить на нём (обещано пользователю).
+
+### Где мы против открытых инструментов (оценка 2026-10-18)
+
+Сравнение — с открытыми наборами, не с Rider и Visual Studio: DotRush (VS Code, Roslyn + отладчик Unity на форке отладчика Mono),
+Unity Code Pro (VS Code поверх DotRush: тесты, отладка; только Windows x64, Unity 6+), связки Neovim (`nvim-unity`,
+`com.remzisenel.ide.neovim`, `unity-nvim-adapter`: открыть файл из Unity и сгенерировать `.csproj`, язык — OmniSharp / Roslyn LS).
+- **Сильнее:** понимание проекта Unity (индекс ассетов, линзы «Used in…» / «Set by Unity», Find Usages в сценах,
+  `[FormerlySerializedAs]` при переименовании, `.meta` за файлом, `.asmdef`, инспекции, шаблоны) — у открытых этого почти нет; связь с
+  редактором целиком (Play / Pause / Step, лог с переходом, внешний редактор, Test Runner) — у каждого из них в лучшем случае часть.
+- **Слабее:** нет отладчика (у DotRush и Unity Code Pro есть — для многих главный критерий); свой парсер и семантика вместо Roslyn —
+  риск ложных и пропущенных ошибок выше (меряем `CompilerMessagesCoverageTest` и харнессами); нет обкатки живыми пользователями
+  (macOS / Linux, старые Unity, PlayMode, настоящий двойной клик не проверены).
+- Отсюда порядок важности: отладчик Mono → живая проверка человеком по сценариям `UNITY:*` → проводник тестов и повтор упавших.
 
 ## Сделано
+
+- [x] 0.1.274 — первый шаг к отладчику (решение пользователя 2026-10-18 «Давай начнем с чего-то простого»): пакет 1.4.0, команды
+  `debug-mode` / `release-mode` (`CompilationPipeline.codeOptimization`, на сессию) и `codeOptimization` в `state.json`; IDE: действие
+  «Switch Unity to Debug Mode» / «… to Release Mode» (меню .NET, всплывающее меню виджета), режим в подсказке виджета,
+  `UnityEditorLink.debuggerPort`. Свой клиент протокола — `debugger/mono/MonoConnection.kt`: рукопожатие, пакеты, ответы по id, коды
+  ошибок по имени, разбор составных событий, `negotiate` (`VERSION` + `SET_PROTOCOL_VERSION`), потоки, `SUSPEND` / `RESUME` / `DISPOSE`;
+  из UI пока не вызывается. Тест `MonoConnectionTest` (поддельный агент на сокете отвечает, как Unity 6000.6 в пробе). Переключение
+  режима проверено на открытом Unity копии командой в канал (без песочницы IDE); клиент проверен на живых агентах: процесса импорта
+  ассетов той же копии и — после перезапуска редактора и `debug-mode` — самого редактора: два подключения подряд по 4–19 мс, 23
+  потока с именами, `SUSPEND` + `RESUME` всего рантайма, `DISPOSE`; диалога нет, редактор работает дальше. Сценарий `UNITY:debug-mode` (конец `Player.cs`).
+  Человеком вживую не проверено.
+
 
 - [x] 0.1.273 — шаг 4 «тесты в открытом редакторе»: пакет 1.3.0, своя сборка `DotNetSupport.Unity.Editor.Tests` (`Editor/Tests`,
   ссылки на `UnityEditor.TestRunner` / `UnityEngine.TestRunner` / `nunit.framework.dll`, собирается только при `com.unity.test-framework`
@@ -264,26 +325,42 @@ Rider делает через `com.unity.ide.rider`. Проба — пакет `
 - Build / Run у solution Unity — кнопки на месте. `dotnet build` проекта Unity работает (старый формат, все ссылки по `HintPath`) и
   полезен как проверка ошибок; запускает игру редактор («Open in Unity Editor»). Оставлено как есть.
 - Вставленный метод события занимает пустую строку, на которой набирали: отделяющая пустая строка до следующего члена не добавляется.
+- Unity генерирует проекты для нашего встроенного пакета (галочка «Embedded packages» генератора включена по умолчанию):
+  `DotNetSupport.Unity.Editor` и `DotNetSupport.Unity.Editor.Tests` видны в solution. Не исправлено (п. 3 «Дальше»).
+- Unity дописывает пакет в `Packages/packages-lock.json` — принято решением пользователя, при установке предупреждаем.
+- Выбор внешнего редактора в Unity — общий на машину (`HKCU\Software\Unity Technologies\Unity Editor 5.x\kScriptsDefaultApp_h…`):
+  после живых проверок вернуть пользователю его выбор (с 2026-10-18 пользователь сам поставил IntelliJ IDEA — не менять), командой `restore-editor` или действием
+  «Stop Opening Scripts from Unity Here».
+- Пакет: каждое изменение — новая версия (`package.json` и `PackageVersion` в `IdeConnection.cs`), новый файл — в
+  `UnityEditorPackage.FILES`.
 
 ## Дальше — по порядку (модуль `frameworks.unity`)
 
-1. ~~Распознавание, панель Solution, New → Unity~~ — 0.1.255. Осталось из него: уведомление «C# solution build scripts found» на чужие
-   `.sln` в `Assets` (сторонние пакеты кладут свои solution'ы в `Assets/...`, как `Mono.Cecil.sln` у FishNet) — пока показывается;
-   Build / Run для solution Unity — кнопки на месте, `dotnet build` проекта Unity не нужен (собирает редактор). New → Razor тем же
-   приёмом — `RAZOR_PLAN.md`, R9. Проект Unity = `ProjectSettings/ProjectVersion.txt` + `Assets/`. Узел solution с
-   иконкой Unity и версией редактора; при Show All Files скрывать `Library`, `Temp`, `Logs`, `obj`, `UserSettings`, `*.csproj.user`,
-   `.meta` (переключатель «Show .meta files» в меню панели, как в Rider); `.asmdef` с иконкой. Уведомления «C# solution build scripts
-   found» и «Several solutions» не считать `.sln` внутри `Library/PackageCache`. Кнопки Build / Run для solution Unity — спрятать или
-   заменить на «Open in Unity» (редактор по `ProjectVersion.txt` через Unity Hub: `Hub/Editor/<версия>/Editor/Unity.exe -projectPath`).
-2. ~~Семантика~~ — 0.1.256. Серых «неиспользуемых» членов плагин не рисует (только локальные и недостижимый код), поэтому
-   подавление свелось к линзе; если появится серый для членов — спрашивать ту же `csharpImplicitUsage`.
-3. ~~Completion и генерация~~ — 0.1.257. Дальше по желанию: `GetComponent<T>` — T из компонентов; строки осей `Input`, тэгов и
-   слоёв из `ProjectSettings/InputManager.asset` / `TagManager.asset`; отладчик Unity (Mono) — отдельный большой шаг.
-4. **Проверка** без площадки в репозитории: проекты Unity лежат у пользователя (`~/My project`, `~/nine-to-fire`, `~/TOP DOWN SHOOTER`);
+Пройдено: распознавание, панель Solution, New → Unity (0.1.255), семантика (0.1.256), completion и генерация (0.1.257), плюшки
+(0.1.258: инспекции, gutter, строки тэгов / слоёв / осей, `GetComponent<`), `.asmdef` (0.1.259), индекс ассетов (0.1.260), шаги 1–4
+связи с редактором (0.1.270–0.1.273). Дальше, по важности (порядок не утверждён пользователем — спросить перед началом):
+
+1. **Живая проверка человеком** по сценариям `UNITY:*` площадки (`debug-playground/Unity`, чек-лист — `README.md` площадки):
+   `UNITY:editor-link`, `UNITY:editor-log`, `UNITY:external-editor`, `UNITY:tests`. Особенно то, чего робот не видит: настоящий
+   двойной клик в окне Unity и вывод окна IDE вперёд, запуск закрытой IDE лаунчером, тесты PlayMode, macOS / Linux, другие версии Unity.
+2. **Отладчик Unity (шаг 5)** — протокол Mono (не DAP), свой клиент или мост; у открытых наборов (DotRush) — форк отладчика Mono.
+   Решение пользователя 2026-10-18: пока не начинать. Самый большой разрыв с открытыми инструментами.
+3. **Проекты встроенного пакета в solution**: не показывать `DotNetSupport.Unity.Editor*` (скрыть в модели solution или снимать для
+   нашего пакета галочку «Embedded packages» генератора — выяснить, можно ли точечно).
+4. **Тесты**: вкладка Explorer окна Unit Tests (тесты Unity в проводнике), повтор упавших, отладка тестов (после отладчика).
+5. **Batchmode при закрытом редакторе** (сборка плеера, тесты): второй Unity не откроет проект, пока открыт первый
+   (`Temp/UnityLockfile`) — только когда редактор закрыт.
+6. Мелочи из 0.1.255: уведомление «C# solution build scripts found» на чужие `.sln` в `Assets` (как `Mono.Cecil.sln` у FishNet) — пока
+   показывается; Build / Run у solution Unity — кнопки на месте («Известные мелочи»).
+7. **Проверка** без площадки в репозитории: проекты Unity лежат у пользователя (`~/My project`, `~/nine-to-fire`, `~/TOP DOWN SHOOTER`);
    копия для песочницы WSL — `tools/ui-robot/wsl/copy-unity.sh` (переписывает пути `HintPath` на `/mnt/c/...`, так же как сделал бы
    Unity под Linux), пробы — скрипты робота `index_probe.js`, `msbuild_probe.js`, `references_probe.js`, `errors_at.js`,
    `complete_at_line.js`, `doc_at.js`, `lenses.js` (линзы файла), `parse_keys.js` (символы `#if` и версия языка файла). Перед проверкой
    «IDE error» — убрать `~/robot/sandbox/log/idea.log` и `system/{caches,index}` песочницы, иначе считаются старые ошибки. Тесты — на
    статике (`ProjectsInOneFolderTest`, `UnityProjectsTest`, `UnityCompletionTest`, Unity-случай `CSharpCodeLensTest`): настоящий
    Unity в тестах не нужен. Живой набор в песочнице: `caret_at.js` ставит каретку и фокус, затем `screen.sh type` / `key`.
-5. Не делать (пока): отладчик Unity (Mono), шейдеры, UXML/USS, профайлер, `.unity`/`.prefab` (YAML — платформа и так подсвечивает).
+   Связь с редактором проверяется под Windows: открытый пользователем Unity 6000.6 на копии `~/unity-probe/nine-to-fire-probe`,
+   песочница `runIdeForUiTests`, скрипт робота `tools/ui-robot/scripts/unity_editor_link.js` (с `__SEND__` шлёт любую команду пакета,
+   например `open-asset <путь> <строка>`). Правки робота в копии откатывать её git (переименование через VFS однажды сменило GUID в
+   `.meta`); после проверки — вернуть внешний редактор Unity, какой был (сейчас — IDEA, выбор пользователя).
+8. Не делать (пока): шейдеры, UXML/USS, профайлер.

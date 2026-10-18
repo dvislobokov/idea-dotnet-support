@@ -89,6 +89,25 @@ class UnityRefreshAction : UnityEditorAction("Refresh Assets in Unity", "Import 
     override fun actionPerformed(e: AnActionEvent) = send(e, "refresh")
 }
 
+/**
+ * The code optimization of the editor's session, as the bug button of Unity's status bar: a debugger needs Debug, and attaching in Release
+ * makes Unity stop at a modal dialog (UNITY_PLAN.md, "Отладчик"). Unity compiles the scripts again after the switch.
+ */
+class UnityDebugModeAction : UnityEditorAction("Switch Unity to Debug Mode", "Compile the scripts in the Unity editor for debugging", AllIcons.Actions.StartDebugger) {
+    override fun isEnabled(link: UnityEditorLink.Link): Boolean = link.state?.codeOptimization != null && link.state.compiling.not()
+
+    override fun update(e: AnActionEvent, link: UnityEditorLink.Link) {
+        val debug = link.state?.debugMode == true
+        e.presentation.text = if (debug) "Switch Unity to Release Mode" else "Switch Unity to Debug Mode"
+        e.presentation.description = if (debug) "Compile the scripts in the Unity editor with optimizations (no debugging)" else "Compile the scripts in the Unity editor for debugging"
+    }
+
+    override fun actionPerformed(e: AnActionEvent) {
+        val debug = e.project?.let(UnityEditorConnection::getInstance)?.link?.state?.debugMode == true
+        send(e, if (debug) "release-mode" else "debug-mode")
+    }
+}
+
 /** Puts the package of the link into the Unity project (or a new version of it over the old one), after the user agreed. */
 class UnityInstallPackageAction : AnAction("Connect to Unity Editor…", "Install the package that links the Unity editor with the IDE into the project", UnityIcons.Unity), DumbAware {
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
@@ -236,7 +255,8 @@ class UnityEditorStatusWidget(private val project: Project) : StatusBarWidget, S
             Status.LOADING -> "The Unity editor has not loaded the package of the link yet: it does when its window gets the focus."
             Status.BUSY -> "The Unity editor does not answer for a while: it imports, compiles or reloads the scripts."
             Status.CONNECTED -> "Unity ${link.state?.unityVersion} is linked with the IDE: Play, Pause, Step, and the scripts the IDE saves are compiled at once." +
-                if (link.state?.ideIsEditor == true) " Unity opens scripts in this IDE." else ""
+                (if (link.state?.ideIsEditor == true) " Unity opens scripts in this IDE." else "") +
+                link.state?.codeOptimization?.let { " Code optimization: $it." }.orEmpty()
         }
     }
 }
