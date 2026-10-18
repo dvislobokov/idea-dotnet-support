@@ -786,8 +786,14 @@
     с имени атрибута — на параметр (`RazorTagHelperEditor`: по контексту tag helpers документа). Сценарий — `RazorComponents.razor`,
     маркеры `TYPE:razor-tag-completion`, `-attribute-completion`, `-tag-goto` (проверено роботом в WSL). 0.1.266: повторный Ctrl+Space
     над открытым списком тегов давал «No suggestions» — платформенный `XmlCompletionContributor` на повторном вызове дополняет имена тегов
-    по схемам и останавливает остальных (в Razor схемы компонентов не знают); наш контрибутор теперь перед ним. Дальше — R5e, часть 2:
-    Find Usages и rename компонентов и параметров, tag helpers `.cshtml`
+    по схемам и останавливает остальных (в Razor схемы компонентов не знают); наш контрибутор теперь перед ним
+  - [x] R5e, часть 2 (0.1.267) — Find Usages и rename компонентов и параметров: Alt+F7 на теге / `.razor` / классе — теги в разметке и C#,
+    называющий класс; на атрибуте / свойстве — атрибуты (`Step="2"`, `@bind-Value`), теги дочернего содержимого, использования в C#;
+    Shift+F6 на теге переименовывает компонент (файл `.razor` с вложенными, теги, code-behind, C#), на атрибуте — параметр; rename класса
+    или свойства в C# пишет и разметку (`RazorTagHelperUsages`, `RazorRename.kt`, участник rename ядра). Поиск C# теперь читает C# внутри
+    разметки (`CSharpInjections`: документ файла Razor без склейки между кусками) — часть R4. Сценарий — `RazorComponents.razor`, маркеры
+    `TYPE:razor-component-usages`, `-component-rename`, `-parameter-rename`. Дальше — tag helpers `.cshtml` (`asp-*`)
+
   - [x] Unity, индекс ассетов (0.1.260) — «Used in Boot.unity» над скриптом, «Event handler» / «Animation event» над методом,
     «Set by Unity: 5» над полем, Find Usages в сценах, сцены и префабы как YAML со ссылками `guid` / `m_MethodName` в код, «Missing
     script», `[FormerlySerializedAs]` при переименовании поля. Сценарий — `debug-playground/Unity/Assets/Scripts/Door.cs`

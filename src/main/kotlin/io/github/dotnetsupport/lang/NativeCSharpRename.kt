@@ -129,7 +129,10 @@ object NativeCSharpRename {
         }
         if (target.declarations.isEmpty()) return Refuse("'${target.name}' is declared in a referenced assembly and cannot be renamed")
         val index = ProjectFileIndex.getInstance(project)
-        val outside = target.declarations.firstOrNull { declaration ->
+        // a part a source generator made (the class of a `.razor` file beside its code-behind) is made again from the renamed sources
+        val outside = target.declarations.filterNot { it.containingFile?.let(NativeCSharpSolutionRename::isGenerated) == true }.ifEmpty {
+            return Refuse("'${target.name}' is declared by a source generator and cannot be renamed")
+        }.firstOrNull { declaration ->
             val virtualFile = declaration.containingFile?.viewProvider?.virtualFile
             virtualFile == null || !virtualFile.isWritable || virtualFile.isInLocalFileSystem && !index.isInContent(virtualFile)
         }

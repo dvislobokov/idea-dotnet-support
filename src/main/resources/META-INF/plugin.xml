@@ -326,6 +326,8 @@
         <targetElementEvaluator language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpTargetElementEvaluator"/>
         <lang.findUsagesProvider language="C#" implementationClass="io.github.dotnetsupport.lang.CSharpFindUsagesProvider"/>
         <referencesSearch implementation="io.github.dotnetsupport.lang.CSharpReferencesSearcher"/>
+        <!-- a member of C# injected into another file (the @code of a component) is used across the project, not in its document alone -->
+        <useScopeEnlarger implementation="io.github.dotnetsupport.lang.semantic.CSharpInjections$UseScopeEnlarger"/>
         <definitionsScopedSearch implementation="io.github.dotnetsupport.lang.CSharpDefinitionsSearcher"/>
         <usageTypeProvider implementation="io.github.dotnetsupport.lang.CSharpUsageTypeProvider"/>
         <!-- Go to Super, Type / Call Hierarchy and the gutter of overrides on the native resolver (NativeCSharpHierarchies.kt) -->

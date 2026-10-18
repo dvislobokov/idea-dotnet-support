@@ -3,7 +3,18 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.267
+
+- Razor: Find Usages of a component — on its tag, on its `.razor` file or on its C# class — lists its tags in the markup and the C# that
+  names it; Find Usages of a parameter — on the attribute or on the property — lists the attributes setting it (`Step="2"`,
+  `@bind-Value`), its child content tags and its uses in C#, in `.cs` files and in the C# of the markup.
+- Razor: Shift+F6 on the tag of a component renames the component: its `.razor` file with the files nested under it, the tags, the class
+  of the code-behind and the C# that names it. On the attribute of a parameter it renames the parameter with every attribute and use.
+  The rename of a component's class or of a parameter's property in C# writes the markup too.
+- C#: Find Usages and rename find the uses in the C# of Razor files (`@code`, `@Model.Name`, the expressions of the markup).
+
 ## 0.1.266
+
 
 - Razor: Ctrl+Space pressed again over the open list of tags kept saying "No suggestions" — the components stay in the list now.
 - Razor: the types beside the attributes in completion read as in code, `EventCallback<MouseEventArgs>` instead of `MouseEventArgs>`.

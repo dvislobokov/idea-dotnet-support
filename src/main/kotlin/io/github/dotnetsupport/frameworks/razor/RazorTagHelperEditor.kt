@@ -82,6 +82,66 @@ object RazorTagHelperEditor {
 
     // ---- navigation
 
+    /**
+     * The declaration a tag or attribute of the markup ([element], or its name's token) names: a component's tag — the component ([typeTarget]),
+     * a child content tag (`<ChildContent>` in its component) and an attribute setting a parameter — the parameter's property
+     * ([parameterDeclaration]). Null for HTML, a tag helper, a directive attribute of every element (`@onclick`).
+     */
+    fun markupTarget(element: PsiElement): PsiElement? = when (val binding = markupBinding(element)) {
+        is MarkupBinding.Component -> typeTarget(binding.file, binding.component)
+        is MarkupBinding.Parameter -> parameterDeclaration(binding.file, binding.component, binding.parameter)
+        null -> null
+    }
+
+    /** What a tag or attribute of the markup names, by the descriptors alone (cheap: the update of an action asks it). */
+    sealed class MarkupBinding(val file: RazorFile, val component: TagHelperDescriptor) {
+        class Component(file: RazorFile, component: TagHelperDescriptor) : MarkupBinding(file, component)
+        class Parameter(file: RazorFile, component: TagHelperDescriptor, val parameter: BoundAttributeDescriptor) : MarkupBinding(file, component)
+    }
+
+    fun markupBinding(element: PsiElement): MarkupBinding? {
+        val named = if (element.node?.elementType == XmlTokenType.XML_NAME) element.parent else element
+        val razor = razorFile(named?.containingFile) ?: return null
+        val context = context(razor) ?: return null
+        fun componentOf(descriptor: TagHelperDescriptor): TagHelperDescriptor? =
+            context.tagHelpers.firstOrNull { it.kind == TagHelperKind.Component && !it.isFullyQualifiedNameMatch && typeNameOf(it) == typeNameOf(descriptor) }
+                ?: context.tagHelpers.firstOrNull { it.kind == TagHelperKind.Component && typeNameOf(it) == typeNameOf(descriptor) }
+        return when (named) {
+            is XmlTag -> {
+                val descriptors = candidates(context, named.name, named.parentTag?.name)
+                    .filter { d -> d.tagMatchingRules.any { it.tagName != TagHelperMatchingConventions.ELEMENT_CATCH_ALL_NAME } }
+                descriptors.firstOrNull { it.kind == TagHelperKind.Component }?.let { return MarkupBinding.Component(razor, it) }
+                val childContent = descriptors.firstOrNull { it.kind == TagHelperKind.ChildContent } ?: return null
+                val component = componentOf(childContent) ?: return null
+                val attribute = component.boundAttributes.firstOrNull { it.name == named.localName } ?: return null
+                MarkupBinding.Parameter(razor, component, attribute)
+            }
+            is XmlAttribute -> {
+                val tag = named.parent ?: return null
+                val ownDescriptors = candidates(context, tag.name, tag.parentTag?.name).filter { d ->
+                    (d.kind == TagHelperKind.Component || d.kind == TagHelperKind.Bind) && d.tagMatchingRules.none { it.tagName == TagHelperMatchingConventions.ELEMENT_CATCH_ALL_NAME }
+                }
+                val (descriptor, attribute) = boundAttribute(ownDescriptors, named.name) ?: return null
+                val component = if (descriptor.kind == TagHelperKind.Component) descriptor else componentOf(descriptor) ?: return null
+                val parameter = component.boundAttributes.firstOrNull { it.propertyName == attribute.propertyName } ?: return null
+                MarkupBinding.Parameter(razor, component, parameter)
+            }
+            else -> null
+        }
+    }
+
+    /**
+     * The declaration of a parameter as the C# sees it: a property of a C# file, the property of the C# document of a `.razor` file (`@code`:
+     * its search and rename are the C#'s), the property in an assembly's view.
+     */
+    fun parameterDeclaration(file: RazorFile, descriptor: TagHelperDescriptor, attribute: BoundAttributeDescriptor): PsiElement? {
+        val target = propertyTarget(file, descriptor, attribute) ?: return null
+        val host = target.containingFile as? RazorFile ?: return target
+        if (target is PsiFile) return null
+        val leaf = com.intellij.lang.injection.InjectedLanguageManager.getInstance(file.project).findInjectedElementAt(host, target.textRange.startOffset)
+        return PsiTreeUtil.getParentOfType(leaf, CSharpPropertyDeclaration::class.java)
+    }
+
     /** The declaration of the component or tag helper [descriptor] describes: its `.razor` file, its class of the sources, its type in an assembly. */
     fun typeTarget(file: RazorFile, descriptor: TagHelperDescriptor): PsiElement? {
         val typeName = typeNameOf(descriptor) ?: return null
@@ -114,7 +174,7 @@ object RazorTagHelperEditor {
     }
 
     /** The CLR name of the type a descriptor is of: a view component's own class, a child content's component; type arguments dropped. */
-    private fun typeNameOf(descriptor: TagHelperDescriptor): String? {
+    fun typeNameOf(descriptor: TagHelperDescriptor): String? {
         val raw = when {
             descriptor.metadata is ViewComponentMetadata -> (descriptor.metadata as ViewComponentMetadata).originalTypeName
             descriptor.kind == TagHelperKind.ChildContent -> descriptor.typeName.substringBeforeLast('.')
@@ -131,7 +191,7 @@ object RazorTagHelperEditor {
         return sourceDeclarations(file, qualifiedName).firstOrNull { it.containingFile?.viewProvider?.virtualFile?.let(RazorTagHelpers::isRazorOutput) != true }
     }
 
-    private fun sourceDeclarations(file: RazorFile, qualifiedName: String): List<PsiElement> {
+    fun sourceDeclarations(file: RazorFile, qualifiedName: String): List<PsiElement> {
         val context = RazorTagHelpers.declarationFile(file) ?: return emptyList()
         val syntax = CSharpSemanticSession(file.project).resolver(context).syntax
         for (arity in 0..8) syntax.typeInfo(qualifiedName, arity)?.let { info -> return info.targets() }
@@ -139,7 +199,7 @@ object RazorTagHelperEditor {
     }
 
     /** The `.razor` file whose component is [qualifiedName] (its declaration names it). */
-    private fun razorComponent(file: RazorFile, qualifiedName: String): RazorFile? {
+    fun razorComponent(file: RazorFile, qualifiedName: String): RazorFile? {
         val project = file.project
         val psi = PsiManager.getInstance(project)
         for (virtualFile in FileTypeIndex.getFiles(RazorFileType, GlobalSearchScope.projectScope(project))) {

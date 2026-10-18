@@ -275,10 +275,10 @@ object CSharpSolutionSearch {
         }
         fun inScope(element: PsiElement): Boolean = when (scope) {
             is LocalSearchScope -> scope.containsRange(element.containingFile, element.textRange)
-            is GlobalSearchScope -> element.containingFile?.virtualFile?.let(scope::contains) ?: true
+            is GlobalSearchScope -> CSharpInjections.hostFile(element.containingFile)?.virtualFile?.let(scope::contains) ?: true
             else -> true
         }
-        fun report(leaf: PsiElement?): Boolean = leaf == null || !inScope(leaf) || consumer(Usage(leaf, implicit = true))
+        fun report(leaf: PsiElement?): Boolean = leaf == null || !inScope(leaf) || !CSharpInjections.isWritten(leaf.containingFile, leaf.textRange) || consumer(Usage(leaf, implicit = true))
         val files: List<CSharpFile> = when (target.name) {
             "GetEnumerator" -> filesWithWord(project, "foreach", scope)
             "Dispose" -> filesWithWord(project, "using", scope)
@@ -414,7 +414,7 @@ object CSharpSolutionSearch {
         }
         fun inScope(leaf: PsiElement): Boolean = when (scope) {
             is LocalSearchScope -> scope.containsRange(leaf.containingFile, leaf.textRange)
-            is GlobalSearchScope -> leaf.containingFile?.virtualFile?.let(scope::contains) ?: true
+            is GlobalSearchScope -> CSharpInjections.hostFile(leaf.containingFile)?.virtualFile?.let(scope::contains) ?: true
             else -> true
         }
         val own = typeTarget.keys
@@ -434,7 +434,7 @@ object CSharpSolutionSearch {
                 val resolver = session.resolver(file)
                 for (creation in SyntaxTraverser.psiTraverser(file).filter(CSharpImplicitObjectCreationExpression::class.java)) {
                     val keyword = creation.newKeyword ?: continue
-                    if (!inScope(keyword)) continue
+                    if (!inScope(keyword) || !CSharpInjections.isWritten(file, keyword.textRange)) continue
                     val created = createdByPlace(resolver, creation) as? SemanticType.Source ?: continue
                     if (created.info.targets().none { CSharpSearchTarget.Key.of(it) in own }) continue
                     if (calls(creation.argumentList?.arguments?.size ?: 0) && !consumer(Usage(keyword))) return false
@@ -474,7 +474,9 @@ object CSharpSolutionSearch {
         val files = LinkedHashSet<CSharpFile>()
         val global = scope as? GlobalSearchScope ?: GlobalSearchScope.projectScope(project)
         PsiSearchHelper.getInstance(project).processAllFilesWithWord(word, global, { file ->
-            (file as? CSharpFile)?.takeIf { it.compilationUnit != null }?.let(files::add)
+            if (file is CSharpFile) file.takeIf { it.compilationUnit != null }?.let(files::add)
+            // the C# a file of another language holds (the markup of a Razor file): its document of C#, searched as a file of its own
+            else files += CSharpInjections.injectedFiles(file)
             true
         }, true)
         return files.toList()
@@ -488,7 +490,7 @@ object CSharpSolutionSearch {
         while (at >= 0) {
             val leaf = file.findElementAt(at)
             if (leaf != null && leaf.textRange.startOffset == at && CSharpLeaves.isIdentifier(leaf) && leaf.text.removePrefix("@") == word &&
-                (scope !is LocalSearchScope || scope.containsRange(file, leaf.textRange)) && matches(resolver, leaf, target)
+                (scope !is LocalSearchScope || scope.containsRange(file, leaf.textRange)) && CSharpInjections.isWritten(file, leaf.textRange) && matches(resolver, leaf, target)
             ) {
                 if (!consumer(Usage(leaf))) return false
             }

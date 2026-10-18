@@ -11,6 +11,7 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.stubs.StubIndex
 import com.intellij.refactoring.BaseRefactoringProcessor
@@ -18,6 +19,7 @@ import com.intellij.refactoring.ui.ConflictsDialog
 import com.intellij.util.containers.MultiMap
 import io.github.dotnetsupport.csharp.lang.psi.*
 import io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubIndexKeys
+import io.github.dotnetsupport.lang.semantic.CSharpInjections
 import io.github.dotnetsupport.lang.semantic.CSharpSearchTarget
 import io.github.dotnetsupport.lang.semantic.CSharpSemanticSession
 import io.github.dotnetsupport.lang.semantic.CSharpSolutionSearch
@@ -27,13 +29,15 @@ import org.jetbrains.annotations.TestOnly
  * Rename of the types and members of the solution without the language server (CSHARP_PSI_MIGRATION.md, task C4b; feature `RENAME`): every
  * declaration (the parts of a partial type, its constructors and finalizer), every usage the search of [CSharpSolutionSearch] finds (`nameof`,
  * doc comment `cref` and the short name of an attribute among them), the members that override or implement the member and the ones it
- * overrides or implements when the user says so (Rider asks the same), the file named after a type. Conflicts — another member or type of
- * the new name in the same place — are shown as the platform shows them.
+ * overrides or implements when the user says so (Rider asks the same), the file named after a type, what the frameworks name it by
+ * ([CSharpRenameParticipant]: the tags and attributes of Razor's markup, the `.razor` file of a component). A usage in C# injected into
+ * another file is written in its host; what a source generator made is not renamed (it is made again). Conflicts — another member or type
+ * of the new name in the same place — are shown as the platform shows them.
  */
 object NativeCSharpSolutionRename {
     /** What is renamed: the symbols (the member and, if asked, its hierarchy) and every range per file, the declarations included. */
     class Plan(
-        val symbols: List<CSharpSearchTarget>, val ranges: Map<CSharpFile, List<TextRange>>, val oldName: String, val typeFiles: List<CSharpFile>,
+        val symbols: List<CSharpSearchTarget>, val ranges: Map<PsiFile, List<TextRange>>, val oldName: String, val typeFiles: List<PsiFile>,
         /** What the frameworks insert beside the rename ([CSharpRenameParticipant]): `[FormerlySerializedAs("old")]` of Unity. */
         val insertions: List<CSharpRenameParticipant.Insertion> = emptyList(),
     ) {
@@ -82,13 +86,14 @@ object NativeCSharpSolutionRename {
 
     /** Every range to rename for [symbols]: in a read action, under the progress of the caller. */
     fun plan(project: Project, symbols: List<CSharpSearchTarget>): Plan {
-        val ranges = LinkedHashMap<CSharpFile, MutableSet<TextRange>>()
+        val ranges = LinkedHashMap<PsiFile, MutableSet<TextRange>>()
         fun add(element: PsiElement?) {
             val file = element?.containingFile as? CSharpFile ?: return
+            if (isGenerated(file)) return
             ranges.getOrPut(file) { LinkedHashSet() } += element.textRange
         }
         val session = CSharpSemanticSession(project)
-        val typeFiles = ArrayList<CSharpFile>()
+        val typeFiles = ArrayList<PsiFile>()
         val primary = symbols.first()
         for (symbol in symbols) {
             for (declaration in symbol.declarations) {
@@ -106,15 +111,25 @@ object NativeCSharpSolutionRename {
                 true
             }
         }
+        for (symbol in symbols) for (declaration in symbol.declarations) {
+            for (occurrence in CSharpRenameParticipant.occurrences(declaration, symbol.name)) ranges.getOrPut(occurrence.file) { LinkedHashSet() } += occurrence.range
+        }
         if (primary.isType) {
             for (declaration in primary.declarations) {
                 val file = declaration.containingFile as? CSharpFile ?: continue
-                if (file.viewProvider.virtualFile.nameWithoutExtension == primary.name && file !in typeFiles) typeFiles += file
+                if (!isGenerated(file) && file.viewProvider.virtualFile.nameWithoutExtension == primary.name && file !in typeFiles) typeFiles += file
+                for (named in CSharpRenameParticipant.namedFiles(declaration, primary.name)) if (named !in typeFiles) typeFiles += named
             }
         }
         val insertions = symbols.flatMap { symbol -> symbol.declarations.flatMap { CSharpRenameParticipant.insertions(it, symbol.name) } }
             .distinctBy { Triple(it.file, it.offset, it.text) }
         return Plan(symbols, ranges.mapValues { (_, set) -> set.sortedBy { it.startOffset } }, primary.name, typeFiles, insertions)
+    }
+
+    /** What a source generator made (its output folder): made again from the renamed sources, never edited. */
+    fun isGenerated(file: PsiFile): Boolean {
+        val virtualFile = file.viewProvider.virtualFile
+        return file.project.getServiceIfCreated(io.github.dotnetsupport.codeanalysis.CodeAnalysisService::class.java)?.isGenerated(virtualFile) == true
     }
 
     private fun nameOf(declaration: PsiElement): PsiElement? = when (declaration) {
@@ -188,14 +203,21 @@ object NativeCSharpSolutionRename {
         }, "Checking Conflicts of ${plan.oldName}", true, project)
         if (conflicts.isNotEmpty() && !confirm(project, plan, conflicts)) return false
         val documents = PsiDocumentManager.getInstance(project)
-        val files = (plan.ranges.keys + plan.insertions.map { it.file }).distinct()
+        // by the file of the editor: C# injected into another file is written in its host, with the markup of that file around it
+        val edits = LinkedHashMap<PsiFile, MutableSet<Pair<TextRange, String?>>>()
+        fun edit(file: PsiFile, range: TextRange, insertion: String?) {
+            val host = CSharpInjections.hostFile(file) ?: return
+            val base = host.viewProvider.getPsi(host.viewProvider.baseLanguage) ?: host
+            edits.getOrPut(base) { LinkedHashSet() } += CSharpInjections.toHost(file, range) to insertion
+        }
+        for ((file, ranges) in plan.ranges) for (range in ranges) edit(file, range, null)
+        for (insertion in plan.insertions) edit(insertion.file, TextRange.from(insertion.offset, 0), insertion.text)
+        val files = edits.keys.toList()
         WriteCommandAction.writeCommandAction(project, files).withName("Rename").run<RuntimeException> {
             for (file in files) {
                 val document = documents.getDocument(file) ?: continue
                 // the renamed ranges and the insertions of the frameworks, from the end of the text so the offsets before stay right
-                val edits = plan.ranges[file].orEmpty().map { it to null as String? } +
-                    plan.insertions.filter { it.file == file }.map { TextRange.from(it.offset, 0) to it.text }
-                for ((range, insertion) in edits.sortedWith(compareByDescending<Pair<TextRange, String?>> { it.first.startOffset }.thenByDescending { it.second == null })) {
+                for ((range, insertion) in edits.getValue(file).sortedWith(compareByDescending<Pair<TextRange, String?>> { it.first.startOffset }.thenByDescending { it.second == null })) {
                     if (insertion != null) {
                         document.insertString(range.startOffset, insertion)
                         continue
@@ -208,9 +230,11 @@ object NativeCSharpSolutionRename {
                 }
                 documents.commitDocument(document)
             }
+            // `Old.cs` → `New.cs`, `Old.razor.cs` → `New.razor.cs`
             for (file in plan.typeFiles) {
                 val virtualFile = file.viewProvider.virtualFile
-                val target = "$name.${virtualFile.extension ?: "cs"}"
+                if (!virtualFile.name.startsWith(plan.oldName + ".")) continue
+                val target = name + virtualFile.name.substring(plan.oldName.length)
                 if (virtualFile.isValid && virtualFile.parent?.findChild(target) == null) virtualFile.rename(this, target)
             }
         }
@@ -230,9 +254,10 @@ object NativeCSharpSolutionRename {
 
     /**
      * Shift+F6 on a type or member: the hierarchy question, the search under a progress, then the new name — inplace over the occurrences in
-     * this editor (the rest follows on Enter), from [name] when given (tests, the dialog of the platform), or from a dialog.
+     * this editor (the rest follows on Enter), from [name] when given (tests, the dialog of the platform), or from a dialog — always with
+     * [dialog] (the editor is not of [file]: the markup of Razor naming a parameter).
      */
-    fun invoke(project: Project, editor: Editor, file: CSharpFile, target: CSharpSearchTarget, name: String?) {
+    fun invoke(project: Project, editor: Editor, file: CSharpFile, target: CSharpSearchTarget, name: String?, dialog: Boolean = false) {
         val family = ProgressManager.getInstance().runProcessWithProgressSynchronously<List<CSharpSearchTarget>, RuntimeException>({
             ReadAction.compute<List<CSharpSearchTarget>, RuntimeException> { family(project, target) }
         }, "Searching for the Hierarchy of ${target.name}", true, project)
@@ -245,7 +270,7 @@ object NativeCSharpSolutionRename {
         val offset = editor.caretModel.offset
         when {
             name != null -> apply(project, editor, plan, name)
-            editor.settings.isVariableInplaceRenameEnabled && here.isNotEmpty() -> {
+            !dialog && editor.settings.isVariableInplaceRenameEnabled && here.isNotEmpty() -> {
                 val primary = here.firstOrNull { it.containsOffset(offset) } ?: here.first()
                 NativeCSharpInplaceRename(project, editor, file, here, primary, plan.oldName) { newName -> apply(project, editor, plan, newName) }.start()
             }

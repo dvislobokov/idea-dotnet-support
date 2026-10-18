@@ -3,6 +3,8 @@
 <idea-plugin package="io.github.dotnetsupport.frameworks.razor">
     <extensions defaultExtensionNs="io.github.dotnetsupport">
         <csharpCodeGenerators implementation="io.github.dotnetsupport.frameworks.razor.RazorCodeGenerators"/>
+        <!-- the rename of a component's class or a parameter writes its tags and attributes in the markup, the .razor file of a code-behind -->
+        <csharpRenameParticipant implementation="io.github.dotnetsupport.frameworks.razor.RazorRenameParticipant"/>
     </extensions>
 
     <!-- R1: the language — Razor the base, HTML the template data, the C# coloured by the plugin's C# lexer -->
@@ -29,5 +31,14 @@
         <!-- before XmlCompletionContributor: on a repeated Ctrl+Space it completes tag names from the schemas and stops the others (none in Razor) -->
         <completion.contributor language="HTML" order="first, before xml" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorTagHelperCompletionContributor"/>
         <gotoDeclarationHandler implementation="io.github.dotnetsupport.frameworks.razor.RazorTagHelperGotoDeclarationHandler"/>
+        <!-- R5e part 2: Find Usages of a component (its .razor file, its class) and of a parameter finds its tags and attributes;
+             Alt+F7 / Shift+F6 on them in the markup search / rename the component or the parameter, not the HTML element -->
+        <referencesSearch implementation="io.github.dotnetsupport.frameworks.razor.RazorMarkupReferencesSearcher"/>
+        <!-- the names of the markup are tokens of XML: the evaluator of XML is asked, this one extends it -->
+        <targetElementEvaluator language="XML" order="first" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorHtmlTargetElementEvaluator"/>
+        <findUsagesHandlerFactory order="first" implementation="io.github.dotnetsupport.frameworks.razor.RazorMarkupFindUsagesHandlerFactory"/>
+        <usageTypeProvider implementation="io.github.dotnetsupport.frameworks.razor.RazorMarkupUsageTypeProvider"/>
+        <renameHandler order="first" implementation="io.github.dotnetsupport.frameworks.razor.RazorMarkupRenameHandler"/>
+        <vetoRenameCondition implementation="io.github.dotnetsupport.frameworks.razor.RazorMarkupVetoRename"/>
     </extensions>
 </idea-plugin>

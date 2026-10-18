@@ -300,7 +300,23 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
       имена тегов по схемам и зовёт `stopHere()` — в Razor без единого пункта; контрибутор зарегистрирован `first, before xml`. Площадка
       получила `@using Microsoft.AspNetCore.Components.Web`: `_Imports.razor` папки `Components` не доходит до `Editor`, и без него
       `@onclick` там не обработчик события — как у компилятора.
-    - [ ] Часть 2: Find Usages и rename компонентов (файл и теги) и параметров, tag helpers `.cshtml` (`asp-*`).
+    - [x] Часть 2 (0.1.267): Find Usages и rename компонентов (файл и теги) и параметров. `RazorTagHelperUsages`: места разметки по
+      дескрипторам документа, как у Ctrl+B — теги компонента (начальный и конечный, последнее имя у `<App.X.Counter>`), атрибуты параметра
+      (`Step`, `Value` у `@bind-Value[:after]`, у наследников C#-класса тоже), теги `ChildContent` в своём компоненте; `ReferencesSearch`
+      (`RazorMarkupReferencesSearcher`), Alt+F7 на теге / атрибуте (`RazorMarkupFindUsagesHandlerFactory`; на атрибуте цель даёт наследник
+      `XmlTargetElementEvaluator`, зарегистрированный для XML: имя в разметке — токен XML, а платформенный атрибут целью не берёт), группы
+      «Tag / Attribute in markup». Rename: Shift+F6 на теге / атрибуте / файле `.razor` (`RazorMarkupRenameHandler`; `XmlTagRenameHandler`
+      отступает через `vetoRenameCondition`, иначе платформа спрашивала бы, какой rename), компонент `.razor` — файл и вложенные
+      (`.razor.cs`, `.razor.css`), теги, code-behind, C#; параметр и класс C# — rename C# ядра, разметку пишет `CSharpRenameParticipant`
+      (получил `occurrences` и `namedFiles`). Ядро: поиск C# читает C#, внедрённый в другие файлы (`CSharpInjections`: только текст кусков,
+      склейка документа — `nameof(…)` параметров, класс вокруг — не использование; область поиска члена внедрённого файла — проект,
+      `UseScopeEnlarger`), правки внедрённого C# пишутся в хост, вывод генераторов не правится (его сделают заново). Свойство `@code` связано
+      со своим двойником в выводе генератора Razor (`Counter_razor.g.cs`): `.cs` называют члены компонента там. Тест —
+      `RazorComponentUsagesTest`; площадка — `TYPE:razor-component-usages`, `-component-rename`, `-parameter-rename`. Не сделано: Find Usages
+      члена `@code`, начатый из `.cs` (имя там — член вывода генератора), не видит его использований в `@code`; Code Vision не считает
+      атрибуты разметки.
+    - [ ] Часть 3: tag helpers `.cshtml` (`asp-*`): completion, Ctrl+B, Find Usages; заглушка сборки MVC для тестов.
+
 - [ ] **R6. Ошибки** (2). Синтаксис Razor (RZ1xxx) — свой парсер; RZ9xxx / RZ10xxx (неизвестный параметр, неизвестный компонент как
   предупреждение RZ10012, `@bind` без пары) — своими проверками, сверка с `razordump diagnostics`; C#-ошибки в разметке — та же
   семантика. Корпус `CompilerMessagesCoverageTest` пополнить RZ-кодами (примеры со страниц документации Razor) и
