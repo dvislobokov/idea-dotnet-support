@@ -8,6 +8,9 @@ import io.github.dotnetsupport.debugger.mono.MonoEventSet
 import io.github.dotnetsupport.debugger.mono.MonoEvents
 import io.github.dotnetsupport.debugger.mono.MonoException
 import io.github.dotnetsupport.debugger.mono.MonoModifier
+import io.github.dotnetsupport.debugger.mono.MonoPresentation
+import io.github.dotnetsupport.debugger.mono.MonoValue
+import io.github.dotnetsupport.debugger.mono.MonoValues
 import io.github.dotnetsupport.debugger.mono.MonoProtocol
 import io.github.dotnetsupport.debugger.mono.MonoReader
 import io.github.dotnetsupport.debugger.mono.MonoSequencePoint
@@ -225,6 +228,83 @@ class MonoConnectionTest : TestCase() {
         assertFalse("the compilation of before the switch", UnityDebugger.ready(link("Debug", false, 500), 1_000))
         assertFalse("reloading the domain", UnityDebugger.ready(link("Debug", false, 2_000, UnityEditorLink.Status.BUSY), 1_000))
         assertTrue(UnityDebugger.ready(link("Debug", false, 2_000), 1_000))
+    }
+
+    fun testValuesAsTheAgentWritesThem() {
+        val e = MonoProtocol.ElementType
+        // the fields of GameBootstrap and the locals of HasArg as Unity 6000.6 wrote them (probe5): objects, a string, nulls, a string[], an int
+        val bytes = MonoWriter().byte(e.CLASS).id(68).byte(e.STRING).id(70).byte(e.NULL).byte(e.SZARRAY).id(73).byte(e.I4).int(0)
+            .byte(e.BOOLEAN).int(1).byte(e.R4).int(java.lang.Float.floatToIntBits(1.5f)).byte(e.R8).long(java.lang.Double.doubleToLongBits(-2.0))
+            .byte(e.CHAR).int('x'.code).byte(e.U8).long(-1)
+            .byte(e.VALUETYPE).byte(0).id(9).int(3).byte(e.R4).int(java.lang.Float.floatToIntBits(1f)).byte(e.R4).int(0).byte(e.R4).int(java.lang.Float.floatToIntBits(3f))
+            .byte(e.VALUETYPE).byte(1).id(12).int(1).byte(e.I4).int(2)
+            // m_CachedPtr of UnityEngine.Object: an IntPtr, a struct of one pointer, which 2.46 writes with the pointed type
+            .byte(e.VALUETYPE).byte(0).id(0x41).int(1).byte(e.PTR).long(0x23b3a0e2410).id(0x43).toByteArray()
+        val reader = MonoReader(bytes)
+        val values = List(13) { MonoValues.read(reader, MonoVersion("mono", 2, 58)) }
+        assertEquals("read to the last byte", 0, reader.remaining)
+        assertEquals(MonoValue.Ref(e.CLASS, 68), values[0])
+        assertEquals(MonoValue.Ref(e.STRING, 70), values[1])
+        assertEquals("null is one byte", MonoValue.Null, values[2])
+        assertEquals(MonoValue.Ref(e.SZARRAY, 73), values[3])
+        assertEquals(listOf("0", "true", "1.5", "-2", "'x'", "18446744073709551615"), values.subList(4, 10).map { MonoPresentation.primitiveText(it) })
+        val vector = values[10] as MonoValue.Struct
+        assertFalse(vector.isEnum)
+        assertEquals(listOf("1", "0", "3"), vector.fields.map { MonoPresentation.primitiveText(it) })
+        assertTrue((values[11] as MonoValue.Struct).isEnum)
+        assertEquals(MonoValue.Pointer(e.PTR, 0x23b3a0e2410, 0x43), (values[12] as MonoValue.Struct).fields.single())
+    }
+
+    fun testStringsOfTheAgent() {
+        val version = MonoVersion("mono", 2, 58)
+        assertEquals("Playground", MonoValues.readString(MonoReader(MonoWriter().byte(0).string("Playground").toByteArray()), version))
+        // UTF-16 of the runtime, little-endian: a lone surrogate UTF-8 cannot hold
+        val utf16 = MonoWriter().byte(1).int(2).byte('a'.code).byte(0).byte(0x00).byte(0xD8).toByteArray()
+        assertEquals("a\uD800", MonoValues.readString(MonoReader(utf16), version))
+        assertEquals("before 2.41: a plain string", "x", MonoValues.readString(MonoReader(MonoWriter().string("x").toByteArray()), MonoVersion("mono", 2, 40)))
+        assertEquals("""a\"b\n""", MonoPresentation.escape("a\"b\n", '"'))
+    }
+
+    fun testHowNamesAreShown() {
+        assertEquals("int", MonoPresentation.typeName("System.Int32"))
+        assertEquals("string[]", MonoPresentation.typeName("System.String[]"))
+        assertEquals("System.Collections.Generic.List`1", MonoPresentation.typeName("System.Collections.Generic.List`1[[System.Int32, mscorlib]]"))
+        assertEquals("Game.Boot.GameBootstrap", MonoPresentation.typeName("Game.Boot.GameBootstrap"))
+        assertEquals("speed", MonoPresentation.fieldName("speed"))
+        assertEquals("the backing field of an auto-property", "Name", MonoPresentation.fieldName("<Name>k__BackingField"))
+        assertEquals("a local hoisted into a state machine", "lobby", MonoPresentation.fieldName("<lobby>5__2"))
+        assertEquals("this", MonoPresentation.fieldName("<>4__this"))
+        assertNull("the compiler's own", MonoPresentation.fieldName("<>1__state"))
+        assertNull(MonoPresentation.fieldName("<>t__builder"))
+        assertTrue(MonoPresentation.isCompilerGenerated("Game.Boot.GameBootstrap/<JoinAndConnectAsync>d__18"))
+        assertFalse(MonoPresentation.isCompilerGenerated("Game.Boot.GameBootstrap"))
+        assertTrue(MonoPresentation.isHiddenLocal("CS$4$0000"))
+        assertFalse(MonoPresentation.isHiddenLocal("args"))
+    }
+
+    fun testTheLocalsAndParametersOfAMethod() {
+        // HasArg(string name) of nine-to-fire as Unity 6000.6 answered (probe5): two scopes, `args` alive in 0..53, `i` in 7..47
+        val agent = FakeAgent({ set, command, body ->
+            when {
+                set == MonoProtocol.Sets.METHOD && command == MonoProtocol.Method.GET_LOCALS_INFO ->
+                    MonoWriter().int(2).int(0).int(53).int(7).int(33).int(2).id(5).id(6).string("args").string("i").int(0).int(53).int(7).int(47).toByteArray()
+                set == MonoProtocol.Sets.METHOD && command == MonoProtocol.Method.GET_PARAM_INFO ->
+                    MonoWriter().int(0).int(1).int(0).id(2).id(3).string("name").toByteArray()
+                else -> unity(set, command, body)
+            }
+        })
+        val socket = MonoConnection.connect("127.0.0.1", agent.server.localPort)
+        val connection = MonoConnection(socket.getInputStream(), socket.getOutputStream(), Events()).apply { start("test") }
+        connection.negotiate().get(5, TimeUnit.SECONDS)
+        val locals = connection.localsInfo(22).get(5, TimeUnit.SECONDS)
+        assertEquals(listOf("args", "i"), locals.names)
+        assertEquals("at the breakpoint (IL 12) both live", listOf(0, 1), locals.liveAt(12))
+        assertEquals("before the loop only args", listOf(0), locals.liveAt(3))
+        val params = connection.paramInfo(22).get(5, TimeUnit.SECONDS)
+        assertEquals(listOf("name"), params.names)
+        assertEquals(listOf(3), params.types)
+        connection.close()
+        socket.close()
     }
 
     fun testThePortOfTheEditorsAgent() {

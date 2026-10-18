@@ -3,6 +3,14 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.276
+
+- Unity debugger: the variables of a frame — `this`, the parameters, the locals alive at the stop (and the locals of iterators, async
+  methods and lambdas, which the compiler keeps in fields); the fields of objects and structs with their base classes', static members
+  as a group, the elements of arrays, strings, enums by name, a small struct of numbers in one line (`{x = 1, y = 2, z = 3}`). Evaluate,
+  watches and the hover in the editor take names of variables and fields (`_session.State`, `args.Length`); other expressions are not
+  evaluated yet.
+
 ## 0.1.275
 
 - Unity: a debugger for the scripts in the open Unity editor — .NET → Attach to Unity Editor (also next to Play / Pause / Step in the

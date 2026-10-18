@@ -87,4 +87,7 @@ public class Player : MonoBehaviour
 // the IDE stops at line 46, "Main Thread" active, the frame "Player.Update  Player.cs:46"; the breakpoint has a check mark. Step Over goes
 // to line 47; Resume lets the game go on; Pause shows the main thread in Unity's own code (grey frames, no source). Edit and save any
 // script while attached: after Unity's compilation the breakpoint still stops (placed again in the new domain). Stop detaches: the editor
-// goes on, and Attach works again. Variables are not shown yet ("The Unity debugger does not show variables yet").
+// goes on, and Attach works again.
+// Variables (0.1.276) at the stop in Update: `this` with its fields (speed = 5, jumpHeight = 2, notSerialized = 0, then the fields of
+// MonoBehaviour and UnityEngine.Object, m_CachedPtr as an address 0x…); hover `speed` in the editor shows 5; a watch `this.speed` gives 5,
+// `transform` says it cannot be found (a property: evaluation in the runtime is not there yet), `speed * 2` says only names are evaluated.

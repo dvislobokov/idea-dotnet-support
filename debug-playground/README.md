@@ -249,7 +249,8 @@ Solution для живой проверки плагина: отладчика (
       IDE запускается, новый скрипт попадает в `.csproj`, «Stop Opening Scripts from Unity Here» возвращает прежний редактор
 - [ ] `UNITY:debugger` (0.1.275, `Unity/Assets/Scripts/Player.cs`, в конце файла, нужен открытый Unity со сценой, где есть Player):
       .NET → Attach to Unity Editor — согласие на Debug mode, вкладка «Unity Editor», без диалога в Unity; Play — остановка на строке 46
-      (Main Thread, кадр `Player.Update  Player.cs:46`), Step Over → 47, Resume, Pause, точка работает после перекомпиляции, Stop отпускает редактор
+      (Main Thread, кадр `Player.Update  Player.cs:46`), Step Over → 47, Resume, Pause, точка работает после перекомпиляции, Stop отпускает редактор; переменные (0.1.276): `this` с полями,
+      наведение на `speed` и watch `this.speed` — 5, выражение — честный отказ
 - [ ] `UNITY:debug-mode` (0.1.274, `Unity/Assets/Scripts/Player.cs`, в конце файла, нужен открытый Unity): .NET → Switch Unity to
       Debug Mode — Unity перекомпилирует без фокуса, подсказка виджета «Code optimization: Debug.», значок жука в Unity включён,
       настройка «Code Optimization On Startup» не меняется; обратно в Release

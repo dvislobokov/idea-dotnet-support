@@ -84,7 +84,67 @@ object MonoProtocol {
         const val GET_NAME = 1
         const val GET_DECLARING_TYPE = 2
         const val GET_DEBUG_INFO = 3
+        const val GET_PARAM_INFO = 4
+        const val GET_LOCALS_INFO = 5
     }
+
+    object TypeValues {
+        const val GET_FIELDS = 3
+        const val GET_VALUES = 4
+    }
+
+    object StackFrame {
+        const val GET_VALUES = 1
+        const val GET_THIS = 2
+    }
+
+    object ObjectRef {
+        const val GET_TYPE = 1
+        const val GET_VALUES = 2
+    }
+
+    object StringRef {
+        const val GET_VALUE = 1
+    }
+
+    object ArrayRef {
+        const val GET_LENGTH = 1
+        const val GET_VALUES = 2
+    }
+
+    /** The element types of values (`MonoTypeEnum`), and the three ids of the protocol for what is no type. */
+    object ElementType {
+        const val VOID = 0x01
+        const val BOOLEAN = 0x02
+        const val CHAR = 0x03
+        const val I1 = 0x04
+        const val U1 = 0x05
+        const val I2 = 0x06
+        const val U2 = 0x07
+        const val I4 = 0x08
+        const val U4 = 0x09
+        const val I8 = 0x0a
+        const val U8 = 0x0b
+        const val R4 = 0x0c
+        const val R8 = 0x0d
+        const val STRING = 0x0e
+        const val PTR = 0x0f
+        const val FNPTR = 0x1b
+        const val VALUETYPE = 0x11
+        const val CLASS = 0x12
+        const val ARRAY = 0x14
+        const val I = 0x18
+        const val U = 0x19
+        const val OBJECT = 0x1c
+        const val SZARRAY = 0x1d
+        const val NULL = 0xf0
+        const val TYPE = 0xf1
+        const val PARENT_VTYPE = 0xf2
+    }
+
+    /** `FieldAttributes`: what a field of `TYPE.GET_FIELDS` is. */
+    const val FIELD_STATIC = 0x10
+    const val FIELD_LITERAL = 0x40
 
     object EventRequest {
         const val SET = 1
@@ -249,6 +309,90 @@ sealed class MonoModifier(val kind: Int) {
 
 data class MonoTypeName(val namespace: String, val name: String, val fullName: String)
 
+/** What `TYPE.GET_INFO` says of a type (the reply goes on with nested types and more; that is not read). [baseType] 0: none. */
+data class MonoTypeInfo(
+    val name: MonoTypeName, val baseType: Int, val elementType: Int, val rank: Int, val flags: Int,
+) {
+    val isValueType: Boolean get() = flags and 8 != 0
+    val isEnum: Boolean get() = flags and 16 != 0
+    val isPrimitive: Boolean get() = flags and 4 != 0
+}
+
+data class MonoField(val id: Int, val name: String, val type: Int, val attributes: Int) {
+    val isStatic: Boolean get() = attributes and MonoProtocol.FIELD_STATIC != 0
+    val isLiteral: Boolean get() = attributes and MonoProtocol.FIELD_LITERAL != 0
+}
+
+data class MonoParamInfo(val names: List<String>, val types: List<Int>)
+
+/** The locals of a method: [ranges] — the IL offsets each one lives in (from, to). */
+data class MonoLocalsInfo(val names: List<String>, val types: List<Int>, val ranges: List<Pair<Int, Int>>) {
+    fun liveAt(ilOffset: Int): List<Int> = names.indices.filter { ilOffset >= ranges[it].first && ilOffset < ranges[it].second }
+}
+
+/**
+ * A value as the agent writes it (`buffer_add_value_full` of `debugger-agent.c`; read byte for byte against Unity 6000.6): the element
+ * type, then an int (32-bit and smaller kinds, boolean and char among them), a long (64-bit, `IntPtr`), a long and the id of the
+ * pointed type for a pointer (2.46: `UnityEngine.Object.m_CachedPtr` is an `IntPtr` holding one), an object id (strings, classes, arrays,
+ * boxed objects), the fields of a struct, or nothing for null.
+ */
+sealed class MonoValue {
+    data class Primitive(val type: Int, val value: Any) : MonoValue()
+    /** A string, an object or an array: [type] its element type ([MonoProtocol.ElementType.STRING], `CLASS`, `SZARRAY`…), [id] the object. */
+    data class Ref(val type: Int, val id: Int) : MonoValue()
+    data class Struct(val isEnum: Boolean, val type: Int, val fields: List<MonoValue>) : MonoValue()
+    /** A pointer; [pointee] the type it points to (protocol 2.46 writes it), 0 when not written. */
+    data class Pointer(val type: Int, val address: Long, val pointee: Int = 0) : MonoValue()
+    data class TypeRef(val id: Int) : MonoValue()
+    data class ParentStruct(val index: Int) : MonoValue()
+    data object Null : MonoValue()
+    data object Void : MonoValue()
+}
+
+object MonoValues {
+    fun read(reader: MonoReader, version: MonoVersion?): MonoValue {
+        val e = MonoProtocol.ElementType
+        return when (val type = reader.byte()) {
+            e.BOOLEAN -> MonoValue.Primitive(type, reader.int() != 0)
+            e.CHAR -> MonoValue.Primitive(type, reader.int().toChar())
+            e.I1 -> MonoValue.Primitive(type, reader.int().toByte())
+            e.U1 -> MonoValue.Primitive(type, reader.int() and 0xFF)
+            e.I2 -> MonoValue.Primitive(type, reader.int().toShort())
+            e.U2 -> MonoValue.Primitive(type, reader.int() and 0xFFFF)
+            e.I4 -> MonoValue.Primitive(type, reader.int())
+            e.U4 -> MonoValue.Primitive(type, reader.int().toLong() and 0xFFFFFFFFL)
+            e.I8 -> MonoValue.Primitive(type, reader.long())
+            e.U8 -> MonoValue.Primitive(type, java.lang.Long.toUnsignedString(reader.long()))
+            e.R4 -> MonoValue.Primitive(type, java.lang.Float.intBitsToFloat(reader.int()))
+            e.R8 -> MonoValue.Primitive(type, java.lang.Double.longBitsToDouble(reader.long()))
+            e.I, e.U -> MonoValue.Pointer(type, reader.long())
+            e.PTR, e.FNPTR -> MonoValue.Pointer(type, reader.long(), if (version == null || version.atLeast(2, 46)) reader.id() else 0)
+            e.STRING, e.CLASS, e.ARRAY, e.OBJECT, e.SZARRAY -> MonoValue.Ref(type, reader.id())
+            e.VALUETYPE -> {
+                val isEnum = reader.byte() == 1
+                val klass = reader.id()
+                MonoValue.Struct(isEnum, klass, List(reader.int()) { read(reader, version) })
+            }
+            e.NULL -> MonoValue.Null
+            e.TYPE -> MonoValue.TypeRef(reader.id())
+            e.PARENT_VTYPE -> MonoValue.ParentStruct(reader.int())
+            e.VOID -> MonoValue.Void
+            else -> throw java.io.IOException("A value of element type 0x${type.toString(16)} this client does not know")
+        }
+    }
+
+    /**
+     * `STRING_REF.GET_VALUE`: from protocol 2.41 a byte says the text is UTF-16 (a string UTF-8 cannot hold: a lone surrogate) — then the
+     * count of chars and the chars as the runtime keeps them, little-endian — else a string of the protocol (seen on Unity 6000.6: 0, then UTF-8).
+     */
+    fun readString(reader: MonoReader, version: MonoVersion?): String {
+        if (version != null && !version.atLeast(2, 41)) return reader.string()
+        if (reader.byte() != 1) return reader.string()
+        val chars = CharArray(reader.int()) { (reader.byte() or (reader.byte() shl 8)).toChar() }
+        return String(chars)
+    }
+}
+
 object MonoDebugInfos {
     /**
      * The reply of `METHOD.GET_DEBUG_INFO` (`Method_GetDebugInfo` of `Connection.cs`): the source files of the method (2.13; with an MD5
@@ -408,6 +552,78 @@ class MonoConnection(
 
     fun debugInfo(method: Int): CompletableFuture<MonoDebugInfo> =
         command(MonoProtocol.Sets.METHOD, MonoProtocol.Method.GET_DEBUG_INFO, MonoWriter().id(method).toByteArray()).thenApply { MonoDebugInfos.read(it, version) }
+
+    fun typeInfo(type: Int): CompletableFuture<MonoTypeInfo> =
+        command(MonoProtocol.Sets.TYPE, MonoProtocol.Type.GET_INFO, MonoWriter().id(type).toByteArray()).thenApply { reply ->
+            val name = MonoTypeName(reply.string(), reply.string(), reply.string())
+            reply.id(); reply.id() // assembly, module
+            val base = reply.id()
+            val element = reply.id()
+            reply.int() // token
+            val rank = reply.byte()
+            reply.int() // attributes
+            MonoTypeInfo(name, base, element, rank, reply.byte())
+        }
+
+    /** The fields a type declares (not the inherited ones), static and literal among them. */
+    fun typeFields(type: Int): CompletableFuture<List<MonoField>> =
+        command(MonoProtocol.Sets.TYPE, MonoProtocol.TypeValues.GET_FIELDS, MonoWriter().id(type).toByteArray())
+            .thenApply { reply -> List(reply.int()) { MonoField(reply.id(), reply.string(), reply.id(), reply.int()) } }
+
+    /** The values of static fields of [type] (a literal one gives its constant). */
+    fun staticValues(type: Int, fields: List<Int>): CompletableFuture<List<MonoValue>> =
+        command(MonoProtocol.Sets.TYPE, MonoProtocol.TypeValues.GET_VALUES, MonoWriter().id(type).int(fields.size).apply { fields.forEach { id(it) } }.toByteArray())
+            .thenApply { reply -> List(fields.size) { MonoValues.read(reply, version) } }
+
+    fun paramInfo(method: Int): CompletableFuture<MonoParamInfo> =
+        command(MonoProtocol.Sets.METHOD, MonoProtocol.Method.GET_PARAM_INFO, MonoWriter().id(method).toByteArray()).thenApply { reply ->
+            reply.int() // calling convention
+            val count = reply.int()
+            reply.int() // generic parameters
+            reply.id() // return type
+            val types = List(count) { reply.id() }
+            MonoParamInfo(List(count) { reply.string() }, types)
+        }
+
+    /** `METHOD.GET_LOCALS_INFO`: the scopes (2.43, deltas), then the types, the names and the live ranges of the locals. */
+    fun localsInfo(method: Int): CompletableFuture<MonoLocalsInfo> =
+        command(MonoProtocol.Sets.METHOD, MonoProtocol.Method.GET_LOCALS_INFO, MonoWriter().id(method).toByteArray()).thenApply { reply ->
+            if (version?.atLeast(2, 43) != false) repeat(reply.int()) { reply.int(); reply.int() }
+            val count = reply.int()
+            val types = List(count) { reply.id() }
+            val names = List(count) { reply.string() }
+            MonoLocalsInfo(names, types, List(count) { reply.int() to reply.int() })
+        }
+
+    /** Values of a frame of a suspended thread: a local by its index, a parameter by `-index - 1`. */
+    fun frameValues(thread: Int, frame: Int, positions: List<Int>): CompletableFuture<List<MonoValue>> =
+        command(MonoProtocol.Sets.STACK_FRAME, MonoProtocol.StackFrame.GET_VALUES,
+            MonoWriter().id(thread).id(frame).int(positions.size).apply { positions.forEach { int(it) } }.toByteArray())
+            .thenApply { reply -> List(positions.size) { MonoValues.read(reply, version) } }
+
+    /** `this` of a frame; [MonoValue.Null] in a static method. */
+    fun frameThis(thread: Int, frame: Int): CompletableFuture<MonoValue> =
+        command(MonoProtocol.Sets.STACK_FRAME, MonoProtocol.StackFrame.GET_THIS, MonoWriter().id(thread).id(frame).toByteArray()).thenApply { MonoValues.read(it, version) }
+
+    fun objectType(obj: Int): CompletableFuture<Int> =
+        command(MonoProtocol.Sets.OBJECT_REF, MonoProtocol.ObjectRef.GET_TYPE, MonoWriter().id(obj).toByteArray()).thenApply { it.id() }
+
+    fun objectValues(obj: Int, fields: List<Int>): CompletableFuture<List<MonoValue>> =
+        command(MonoProtocol.Sets.OBJECT_REF, MonoProtocol.ObjectRef.GET_VALUES, MonoWriter().id(obj).int(fields.size).apply { fields.forEach { id(it) } }.toByteArray())
+            .thenApply { reply -> List(fields.size) { MonoValues.read(reply, version) } }
+
+    fun stringValue(obj: Int): CompletableFuture<String> =
+        command(MonoProtocol.Sets.STRING_REF, MonoProtocol.StringRef.GET_VALUE, MonoWriter().id(obj).toByteArray()).thenApply { MonoValues.readString(it, version) }
+
+    /** The lengths of the dimensions of an array (with their lower bounds). */
+    fun arrayLengths(obj: Int): CompletableFuture<List<Int>> =
+        command(MonoProtocol.Sets.ARRAY_REF, MonoProtocol.ArrayRef.GET_LENGTH, MonoWriter().id(obj).toByteArray())
+            .thenApply { reply -> List(reply.int()) { reply.int().also { reply.int() } } }
+
+    /** [count] elements from [index], the array taken as flat. */
+    fun arrayValues(obj: Int, index: Int, count: Int): CompletableFuture<List<MonoValue>> =
+        command(MonoProtocol.Sets.ARRAY_REF, MonoProtocol.ArrayRef.GET_VALUES, MonoWriter().id(obj).int(index).int(count).toByteArray())
+            .thenApply { reply -> List(count) { MonoValues.read(reply, version) } }
 
     /** An event request; the future ends with its id, which the events it causes carry. */
     fun request(kind: Int, suspendPolicy: Int, vararg modifiers: MonoModifier): CompletableFuture<Int> {

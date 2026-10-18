@@ -44,6 +44,7 @@ class MonoDebugProcess(session: XDebugSession, private val host: String, private
     private val editors = DotNetEditorsProvider()
     val breakpoints = MonoLineBreakpointHandler(this)
     private val methods = ConcurrentHashMap<Int, MonoMethodInfo>()
+    val types = MonoTypes { connection }
     private val shutdown = AtomicBoolean()
     private val stopped = AsyncPromise<Any>()
     private var socket: Socket? = null
@@ -170,10 +171,11 @@ class MonoDebugProcess(session: XDebugSession, private val host: String, private
             if (same != null) active = same
             else listed = listOf(current to (if (current == mainThread) "Main Thread" else "")) + named
         }
-        return MonoSuspendContext(this, listed, active, top?.let(::stackFrame), stepping)
+        // the frame ids belong to the thread the frames were read from: its variables are read through it
+        return MonoSuspendContext(this, listed, active, top?.let { frame -> stackFrame(stepping ?: return@let null, frame) }, stepping)
     }
 
-    fun stackFrame(frame: MonoFrame): MonoStackFrame = MonoStackFrame(frame, method(frame.method))
+    fun stackFrame(thread: Int, frame: MonoFrame): MonoStackFrame = MonoStackFrame(this, thread, frame, method(frame.method))
 
     /** The name, type and line table of a method, asked once (the ids of the agent are new for the methods of a reloaded domain). */
     fun method(id: Int): MonoMethodInfo = methods.getOrPut(id) {
