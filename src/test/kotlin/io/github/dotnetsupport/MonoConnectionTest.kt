@@ -6,7 +6,12 @@ import io.github.dotnetsupport.debugger.mono.MonoConnection
 import io.github.dotnetsupport.debugger.mono.MonoDebugInfos
 import io.github.dotnetsupport.debugger.mono.MonoEventSet
 import io.github.dotnetsupport.debugger.mono.MonoEvents
+import io.github.dotnetsupport.debugger.mono.MonoEvaluationException
 import io.github.dotnetsupport.debugger.mono.MonoException
+import io.github.dotnetsupport.debugger.mono.MonoExpr
+import io.github.dotnetsupport.debugger.mono.MonoExpressionParser
+import io.github.dotnetsupport.debugger.mono.MonoInterpreter
+import io.github.dotnetsupport.debugger.mono.MonoInvokeResult
 import io.github.dotnetsupport.debugger.mono.MonoModifier
 import io.github.dotnetsupport.debugger.mono.MonoPresentation
 import io.github.dotnetsupport.debugger.mono.MonoValue
@@ -305,6 +310,61 @@ class MonoConnectionTest : TestCase() {
         assertEquals(listOf(3), params.types)
         connection.close()
         socket.close()
+    }
+
+    fun testExpressionsAreParsedAsCSharpReadsThem() {
+        fun parse(text: String) = MonoExpressionParser(text).parse()
+        assertEquals(MonoExpr.Member(MonoExpr.Member(MonoExpr.Name("transform"), "position"), "x"), parse("transform.position.x"))
+        assertEquals(MonoExpr.Call(MonoExpr.This, "Describe", listOf(MonoExpr.Literal(3))), parse("this.Describe(3)"))
+        assertEquals(MonoExpr.Call(null, "Describe", listOf(MonoExpr.Literal("a\"b"), MonoExpr.Literal(1.5f))), parse("""Describe("a\"b", 1.5f)"""))
+        assertEquals(MonoExpr.Index(MonoExpr.Name("args"), listOf(MonoExpr.Binary("-", MonoExpr.Name("i"), MonoExpr.Literal(1)))), parse("args[i - 1]"))
+        assertEquals("* before +", MonoExpr.Binary("+", MonoExpr.Literal(1), MonoExpr.Binary("*", MonoExpr.Literal(2), MonoExpr.Literal(3))), parse("1 + 2 * 3"))
+        assertEquals("<= is one operator", MonoExpr.Binary("<=", MonoExpr.Name("a"), MonoExpr.Literal(2L)), parse("a <= 2L"))
+        assertEquals(MonoExpr.Binary("&&", MonoExpr.Unary("!", MonoExpr.Name("a")), MonoExpr.Binary("!=", MonoExpr.Name("b"), MonoExpr.Literal(null))), parse("!a && b != null"))
+        assertEquals(MonoExpr.Conditional(MonoExpr.Name("c"), MonoExpr.Literal('x'), MonoExpr.Literal(0x10)), parse("c ? 'x' : 0x10"))
+        assertEquals(MonoExpr.Literal(2.5), parse("(2.5)"))
+        for (bad in listOf("a = 1", "a.", "f(1,", "1 +")) {
+            assertTrue(bad, runCatching { parse(bad) }.exceptionOrNull() is MonoEvaluationException)
+        }
+    }
+
+    fun testArgumentsOnTheWire() {
+        val e = MonoProtocol.ElementType
+        fun bytes(value: MonoValue) = MonoWriter().also { MonoValues.write(it, value) }.toByteArray().toList()
+        assertEquals("an object goes as OBJECT, whatever the agent wrote it as", MonoWriter().byte(e.OBJECT).id(68).toByteArray().toList(), bytes(MonoValue.Ref(e.CLASS, 68)))
+        assertEquals(listOf(e.NULL.toByte()), bytes(MonoValue.Null))
+        assertEquals(MonoWriter().byte(e.I4).int(-3).toByteArray().toList(), bytes(MonoValue.Primitive(e.I4, -3)))
+        assertEquals(MonoWriter().byte(e.BOOLEAN).int(1).toByteArray().toList(), bytes(MonoValue.Primitive(e.BOOLEAN, true)))
+        assertEquals(MonoWriter().byte(e.R4).int(java.lang.Float.floatToIntBits(2f)).toByteArray().toList(), bytes(MonoValue.Primitive(e.R4, 2f)))
+        assertEquals("a Vector3 as the agent wrote it", MonoWriter().byte(e.VALUETYPE).byte(0).id(78).int(1).byte(e.R4).int(0).toByteArray().toList(),
+            bytes(MonoValue.Struct(false, 78, listOf(MonoValue.Primitive(e.R4, 0f)))))
+        assertTrue(runCatching { bytes(MonoValue.Text("x")) }.isFailure)
+    }
+
+    fun testAnInvocation() {
+        val e = MonoProtocol.ElementType
+        val agent = FakeAgent({ set, command, body ->
+            if (set == MonoProtocol.Sets.VM && command == MonoProtocol.Vm.INVOKE_METHOD) {
+                body.id(); body.int()
+                val method = body.id()
+                // what Unity 6000.6 answered to get_name and to a throwing getter
+                if (method == 1) MonoWriter().byte(1).byte(e.STRING).id(97).toByteArray() else MonoWriter().byte(0).byte(e.CLASS).id(5).toByteArray()
+            } else unity(set, command, body)
+        })
+        val socket = MonoConnection.connect("127.0.0.1", agent.server.localPort)
+        val connection = MonoConnection(socket.getInputStream(), socket.getOutputStream(), Events()).apply { start("test") }
+        connection.negotiate().get(5, TimeUnit.SECONDS)
+        val (id, returned) = connection.invoke(51, 1, MonoValue.Ref(e.CLASS, 67), emptyList(), MonoProtocol.InvokeFlags.DISABLE_BREAKPOINTS)
+        assertTrue(id > 0)
+        assertEquals(MonoInvokeResult(false, MonoValue.Ref(e.STRING, 97)), returned.get(5, TimeUnit.SECONDS))
+        assertEquals(MonoInvokeResult(true, MonoValue.Ref(e.CLASS, 5)), connection.invoke(51, 2, MonoValue.Null, emptyList(), 0).second.get(5, TimeUnit.SECONDS))
+        connection.close()
+        socket.close()
+    }
+
+    fun testTheUsingsOfAFile() {
+        assertEquals(listOf("System.Collections.Generic", "UnityEngine", "Game.Net"),
+            MonoInterpreter.usings("using System.Collections.Generic;\nusing UnityEngine;\nusing static UnityEngine.Mathf;\n  global using Game.Net;\nnamespace X {}"))
     }
 
     fun testThePortOfTheEditorsAgent() {

@@ -91,3 +91,7 @@ public class Player : MonoBehaviour
 // Variables (0.1.276) at the stop in Update: `this` with its fields (speed = 5, jumpHeight = 2, notSerialized = 0, then the fields of
 // MonoBehaviour and UnityEngine.Object, m_CachedPtr as an address 0x…); hover `speed` in the editor shows 5; a watch `this.speed` gives 5,
 // `transform` says it cannot be found (a property: evaluation in the runtime is not there yet), `speed * 2` says only names are evaluated.
+// Evaluation in the runtime (0.1.277): `this` reads "{Player} Player (Player)" (its ToString), its properties are listed (transform,
+// gameObject, enabled…); watches `transform.position` → (x, y, z) of the object, `speed * 2` → 10, `name.ToUpper()` → "PLAYER",
+// `Mathf.Max(2, 7)` → 7, `Vector3.one * 2` → (2.00, 2.00, 2.00), `Time.frameCount` → a number, `transform.Find("x")` → null,
+// `ResetSpeed()` → Void (speed becomes 5), `speed / 0` → Infinity, `GetComponent<Rigidbody>()` → refused (generics are not parsed).

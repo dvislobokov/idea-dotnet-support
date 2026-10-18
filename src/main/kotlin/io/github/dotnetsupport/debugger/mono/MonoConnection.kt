@@ -64,8 +64,33 @@ object MonoProtocol {
         const val RESUME = 4
         const val EXIT = 5
         const val DISPOSE = 6
+        const val INVOKE_METHOD = 7
         const val SET_PROTOCOL_VERSION = 8
+        const val ABORT_INVOKE = 9
         const val GET_TYPES_FOR_SOURCE_FILE = 11
+        const val GET_TYPES = 12
+    }
+
+    object AppDomain {
+        const val GET_ASSEMBLIES = 3
+        const val CREATE_STRING = 5
+    }
+
+    /** How an invocation runs: breakpoints off inside it, only the thread of the stop resumed, a virtual call. */
+    object InvokeFlags {
+        const val DISABLE_BREAKPOINTS = 1
+        const val SINGLE_THREADED = 2
+        const val VIRTUAL = 16
+    }
+
+    /** `BindingFlags` of `TYPE.GET_METHODS_BY_NAME_FLAGS`. */
+    object Binding {
+        const val DECLARED_ONLY = 2
+        const val INSTANCE = 4
+        const val STATIC = 8
+        const val PUBLIC = 16
+        const val NON_PUBLIC = 32
+        const val ALL = INSTANCE or STATIC or PUBLIC or NON_PUBLIC
     }
 
     object Thread {
@@ -77,7 +102,9 @@ object MonoProtocol {
     object Type {
         const val GET_INFO = 1
         const val GET_METHODS = 2
+        const val GET_PROPERTIES = 9
         const val GET_SOURCE_FILES_2 = 13
+        const val GET_METHODS_BY_NAME_FLAGS = 15
     }
 
     object Method {
@@ -86,7 +113,11 @@ object MonoProtocol {
         const val GET_DEBUG_INFO = 3
         const val GET_PARAM_INFO = 4
         const val GET_LOCALS_INFO = 5
+        const val GET_INFO = 6
     }
+
+    /** `MethodAttributes.Static`. */
+    const val METHOD_STATIC = 0x10
 
     object TypeValues {
         const val GET_FIELDS = 3
@@ -96,6 +127,7 @@ object MonoProtocol {
     object StackFrame {
         const val GET_VALUES = 1
         const val GET_THIS = 2
+        const val GET_DOMAIN = 4
     }
 
     object ObjectRef {
@@ -311,7 +343,7 @@ data class MonoTypeName(val namespace: String, val name: String, val fullName: S
 
 /** What `TYPE.GET_INFO` says of a type (the reply goes on with nested types and more; that is not read). [baseType] 0: none. */
 data class MonoTypeInfo(
-    val name: MonoTypeName, val baseType: Int, val elementType: Int, val rank: Int, val flags: Int,
+    val name: MonoTypeName, val baseType: Int, val elementType: Int, val rank: Int, val flags: Int, val assembly: Int = 0,
 ) {
     val isValueType: Boolean get() = flags and 8 != 0
     val isEnum: Boolean get() = flags and 16 != 0
@@ -323,7 +355,13 @@ data class MonoField(val id: Int, val name: String, val type: Int, val attribute
     val isLiteral: Boolean get() = attributes and MonoProtocol.FIELD_LITERAL != 0
 }
 
-data class MonoParamInfo(val names: List<String>, val types: List<Int>)
+data class MonoProperty(val id: Int, val name: String, val getter: Int, val setter: Int, val attributes: Int)
+
+/** The end of an invocation: the value it returned, or the exception it threw ([threw]). */
+data class MonoInvokeResult(val threw: Boolean, val value: MonoValue)
+
+/** The parameters of a method: names, types, and the type it returns. */
+data class MonoParamInfo(val names: List<String>, val types: List<Int>, val returnType: Int = 0)
 
 /** The locals of a method: [ranges] — the IL offsets each one lives in (from, to). */
 data class MonoLocalsInfo(val names: List<String>, val types: List<Int>, val ranges: List<Pair<Int, Int>>) {
@@ -345,6 +383,8 @@ sealed class MonoValue {
     data class Pointer(val type: Int, val address: Long, val pointee: Int = 0) : MonoValue()
     data class TypeRef(val id: Int) : MonoValue()
     data class ParentStruct(val index: Int) : MonoValue()
+    /** A string the IDE made (a literal of an expression, a concatenation): not in the runtime until it is passed to it. */
+    data class Text(val text: String) : MonoValue()
     data object Null : MonoValue()
     data object Void : MonoValue()
 }
@@ -378,6 +418,40 @@ object MonoValues {
             e.PARENT_VTYPE -> MonoValue.ParentStruct(reader.int())
             e.VOID -> MonoValue.Void
             else -> throw java.io.IOException("A value of element type 0x${type.toString(16)} this client does not know")
+        }
+    }
+
+    /**
+     * A value sent to the agent (`decode_value`): an object goes as `OBJECT` and its id whatever it is (as `Mono.Debugger.Soft` sends it:
+     * with `CLASS`, which the agent itself writes, an invocation on it is INVALID_ARGUMENT - seen on Unity 6000.6), null as `NULL`, a
+     * struct with its fields. A [MonoValue.Text] must be made a string of the runtime first.
+     */
+    fun write(writer: MonoWriter, value: MonoValue) {
+        val e = MonoProtocol.ElementType
+        when (value) {
+            is MonoValue.Ref -> writer.byte(e.OBJECT).id(value.id)
+            is MonoValue.Null -> writer.byte(e.NULL)
+            is MonoValue.Struct -> {
+                writer.byte(e.VALUETYPE).byte(if (value.isEnum) 1 else 0).id(value.type).int(value.fields.size)
+                value.fields.forEach { write(writer, it) }
+            }
+            is MonoValue.Pointer -> writer.byte(value.type).long(value.address)
+            is MonoValue.Primitive -> {
+                writer.byte(value.type)
+                when (val v = value.value) {
+                    is Boolean -> writer.int(if (v) 1 else 0)
+                    is Char -> writer.int(v.code)
+                    is Byte -> writer.int(v.toInt())
+                    is Short -> writer.int(v.toInt())
+                    is Int -> writer.int(v)
+                    is Long -> if (value.type == e.U4) writer.int(v.toInt()) else writer.long(v)
+                    is Float -> writer.int(java.lang.Float.floatToIntBits(v))
+                    is Double -> writer.long(java.lang.Double.doubleToLongBits(v))
+                    is String -> writer.long(java.lang.Long.parseUnsignedLong(v))
+                    else -> throw IllegalArgumentException("A primitive of ${v.javaClass.simpleName} cannot be sent")
+                }
+            }
+            else -> throw IllegalArgumentException("$value cannot be sent to the runtime")
         }
     }
 
@@ -481,10 +555,12 @@ class MonoConnection(
     }
 
     /** Sends a command; the future ends with the body of the reply, with [MonoException] for an error code, [MonoClosedException] when gone. */
-    fun command(set: Int, command: Int, body: ByteArray = ByteArray(0)): CompletableFuture<MonoReader> {
+    fun command(set: Int, command: Int, body: ByteArray = ByteArray(0)): CompletableFuture<MonoReader> = send(set, command, body).second
+
+    private fun send(set: Int, command: Int, body: ByteArray): Pair<Int, CompletableFuture<MonoReader>> {
         val name = MonoProtocol.commandName(set, command)
         val future = CompletableFuture<MonoReader>()
-        if (closed.get()) return future.apply { completeExceptionally(MonoClosedException("The debuggee is gone ($name)")) }
+        if (closed.get()) return 0 to future.apply { completeExceptionally(MonoClosedException("The debuggee is gone ($name)")) }
         val id = ids.getAndIncrement()
         pending[id] = name to future
         val packet = ByteBuffer.allocate(MonoProtocol.HEADER + body.size)
@@ -499,7 +575,7 @@ class MonoConnection(
             pending.remove(id)
             future.completeExceptionally(MonoClosedException("The debuggee is gone ($name): ${e.message}"))
         }
-        return future
+        return id to future
     }
 
     /** `VM.VERSION`, then `SET_PROTOCOL_VERSION` with the lower of the agent's and [MonoProtocol.MAJOR].[MonoProtocol.MINOR]. */
@@ -547,6 +623,10 @@ class MonoConnection(
     fun methodName(method: Int): CompletableFuture<String> =
         command(MonoProtocol.Sets.METHOD, MonoProtocol.Method.GET_NAME, MonoWriter().id(method).toByteArray()).thenApply { it.string() }
 
+    /** The `MethodAttributes` of a method (the reply goes on with more). */
+    fun methodAttributes(method: Int): CompletableFuture<Int> =
+        command(MonoProtocol.Sets.METHOD, MonoProtocol.Method.GET_INFO, MonoWriter().id(method).toByteArray()).thenApply { it.int() }
+
     fun declaringType(method: Int): CompletableFuture<Int> =
         command(MonoProtocol.Sets.METHOD, MonoProtocol.Method.GET_DECLARING_TYPE, MonoWriter().id(method).toByteArray()).thenApply { it.id() }
 
@@ -556,13 +636,14 @@ class MonoConnection(
     fun typeInfo(type: Int): CompletableFuture<MonoTypeInfo> =
         command(MonoProtocol.Sets.TYPE, MonoProtocol.Type.GET_INFO, MonoWriter().id(type).toByteArray()).thenApply { reply ->
             val name = MonoTypeName(reply.string(), reply.string(), reply.string())
-            reply.id(); reply.id() // assembly, module
+            val assembly = reply.id()
+            reply.id() // module
             val base = reply.id()
             val element = reply.id()
             reply.int() // token
             val rank = reply.byte()
             reply.int() // attributes
-            MonoTypeInfo(name, base, element, rank, reply.byte())
+            MonoTypeInfo(name, base, element, rank, reply.byte(), assembly)
         }
 
     /** The fields a type declares (not the inherited ones), static and literal among them. */
@@ -580,9 +661,9 @@ class MonoConnection(
             reply.int() // calling convention
             val count = reply.int()
             reply.int() // generic parameters
-            reply.id() // return type
+            val returnType = reply.id()
             val types = List(count) { reply.id() }
-            MonoParamInfo(List(count) { reply.string() }, types)
+            MonoParamInfo(List(count) { reply.string() }, types, returnType)
         }
 
     /** `METHOD.GET_LOCALS_INFO`: the scopes (2.43, deltas), then the types, the names and the live ranges of the locals. */
@@ -624,6 +705,50 @@ class MonoConnection(
     fun arrayValues(obj: Int, index: Int, count: Int): CompletableFuture<List<MonoValue>> =
         command(MonoProtocol.Sets.ARRAY_REF, MonoProtocol.ArrayRef.GET_VALUES, MonoWriter().id(obj).int(index).int(count).toByteArray())
             .thenApply { reply -> List(count) { MonoValues.read(reply, version) } }
+
+    /**
+     * Calls [method] on [thread] (suspended at an event) with [receiver] ([MonoValue.Null] for a static one) and [args]; the first of the
+     * pair is the id of the command, for [abortInvoke]. Reply: a byte (1 - returned, else threw), then the value or the exception.
+     */
+    fun invoke(thread: Int, method: Int, receiver: MonoValue, args: List<MonoValue>, flags: Int): Pair<Int, CompletableFuture<MonoInvokeResult>> {
+        val body = MonoWriter().id(thread).int(flags).id(method)
+        MonoValues.write(body, receiver)
+        body.int(args.size)
+        args.forEach { MonoValues.write(body, it) }
+        val (id, future) = send(MonoProtocol.Sets.VM, MonoProtocol.Vm.INVOKE_METHOD, body.toByteArray())
+        return id to future.thenApply { reply -> MonoInvokeResult(reply.byte() != 1, MonoValues.read(reply, version)) }
+    }
+
+    fun abortInvoke(thread: Int, invoke: Int): CompletableFuture<MonoReader> =
+        command(MonoProtocol.Sets.VM, MonoProtocol.Vm.ABORT_INVOKE, MonoWriter().id(thread).int(invoke).toByteArray())
+
+    /** The properties a type declares: their getters and setters (0: none). */
+    fun typeProperties(type: Int): CompletableFuture<List<MonoProperty>> =
+        command(MonoProtocol.Sets.TYPE, MonoProtocol.Type.GET_PROPERTIES, MonoWriter().id(type).toByteArray())
+            .thenApply { reply -> List(reply.int()) { MonoProperty(reply.id(), reply.string(), reply.id(), reply.id(), reply.int()) } }
+
+    /** The methods named [name] of [type] by [flags] ([MonoProtocol.Binding]; without DECLARED_ONLY the inherited ones too). */
+    fun methodsByName(type: Int, name: String, flags: Int): CompletableFuture<List<Int>> =
+        command(MonoProtocol.Sets.TYPE, MonoProtocol.Type.GET_METHODS_BY_NAME_FLAGS, MonoWriter().id(type).string(name).int(flags).int(1).toByteArray())
+            .thenApply { reply -> List(reply.int()) { reply.id() } }
+
+    /** The loaded types of a full name (`UnityEngine.Time`), in all the domains. */
+    fun typesByName(fullName: String): CompletableFuture<List<Int>> =
+        command(MonoProtocol.Sets.VM, MonoProtocol.Vm.GET_TYPES, MonoWriter().string(fullName).byte(0).toByteArray())
+            .thenApply { reply -> List(reply.int()) { reply.id() } }
+
+    fun frameDomain(thread: Int, frame: Int): CompletableFuture<Int> =
+        command(MonoProtocol.Sets.STACK_FRAME, MonoProtocol.StackFrame.GET_DOMAIN, MonoWriter().id(thread).id(frame).toByteArray()).thenApply { it.id() }
+
+    /** The assemblies loaded in [domain]. */
+    fun domainAssemblies(domain: Int): CompletableFuture<List<Int>> =
+        command(MonoProtocol.Sets.APPDOMAIN, MonoProtocol.AppDomain.GET_ASSEMBLIES, MonoWriter().id(domain).toByteArray())
+            .thenApply { reply -> List(reply.int()) { reply.id() } }
+
+    /** A string of the runtime, made in [domain]: what an argument of an invocation must be. */
+    fun createString(domain: Int, text: String): CompletableFuture<MonoValue.Ref> =
+        command(MonoProtocol.Sets.APPDOMAIN, MonoProtocol.AppDomain.CREATE_STRING, MonoWriter().id(domain).string(text).toByteArray())
+            .thenApply { MonoValue.Ref(MonoProtocol.ElementType.STRING, it.id()) }
 
     /** An event request; the future ends with its id, which the events it causes carry. */
     fun request(kind: Int, suspendPolicy: Int, vararg modifiers: MonoModifier): CompletableFuture<Int> {

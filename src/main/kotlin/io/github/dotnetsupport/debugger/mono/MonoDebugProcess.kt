@@ -186,6 +186,55 @@ class MonoDebugProcess(session: XDebugSession, private val host: String, private
 
     fun debugInfo(method: Int): MonoDebugInfo? = method(method).debugInfo
 
+    private val invokeLock = Any()
+    private val assemblies = ConcurrentHashMap<Int, Set<Int>>()
+
+    /** The assemblies of a domain, asked once per domain (a reloaded domain of Unity is a new one). */
+    fun domainAssemblies(domain: Int): Set<Int> = assemblies.getOrPut(domain) { connection.domainAssemblies(domain).get(TIMEOUT_S, TimeUnit.SECONDS).toSet() }
+
+    /** Whether values may call into the runtime by themselves (getters, `ToString()`): Settings | .NET | Debugger, as for the DAP debugger. */
+    val implicitEvaluation: Boolean get() = io.github.dotnetsupport.settings.DotNetSettings.getInstance().debugAllowImplicitEvaluation
+
+    /**
+     * Calls [method] in the runtime on the thread of [frame] — one invocation at a time (the agent takes one per thread), with breakpoints
+     * off and only that thread resumed (the editor's other threads stay stopped); a call not done in [INVOKE_TIMEOUT_S] is aborted. An
+     * exception it throws becomes a [MonoEvaluationException] with its type and message.
+     */
+    fun invoke(frame: MonoFrameRef, method: Int, receiver: MonoValue, args: List<MonoValue>): MonoValue {
+        synchronized(invokeLock) {
+            var flags = MonoProtocol.InvokeFlags.DISABLE_BREAKPOINTS or MonoProtocol.InvokeFlags.SINGLE_THREADED
+            if (receiver is MonoValue.Ref) flags = flags or MonoProtocol.InvokeFlags.VIRTUAL
+            val (id, future) = connection.invoke(frame.thread, method, receiver, args, flags)
+            val result = try {
+                future.get(INVOKE_TIMEOUT_S, TimeUnit.SECONDS)
+            } catch (e: java.util.concurrent.TimeoutException) {
+                runCatching { connection.abortInvoke(frame.thread, id).get(TIMEOUT_S, TimeUnit.SECONDS) }
+                throw MonoEvaluationException("The evaluation has not finished in $INVOKE_TIMEOUT_S s and was aborted")
+            } catch (e: java.util.concurrent.ExecutionException) {
+                // the agent takes an argument only of the method's own application domain: strings Unity made at the start (the command
+                // line) live in the root one, the scripts' in theirs (seen: `string.Equals(args[1], name)` in Unity 6000.6)
+                if ((e.cause as? MonoException)?.code == 102) {
+                    throw MonoEvaluationException("The runtime refused the arguments: an object of another application domain, or of a type the method does not take")
+                }
+                throw MonoEvaluationException(errorText(e))
+            }
+            if (!result.threw) return result.value
+            throw MonoEvaluationException(exceptionText(frame, result.value))
+        }
+    }
+
+    /** `System.NullReferenceException: Object reference not set…` of a thrown exception (its `Message` read by a call of its own). */
+    private fun exceptionText(frame: MonoFrameRef, exception: MonoValue): String {
+        val ref = exception as? MonoValue.Ref ?: return "An exception was thrown"
+        val type = runCatching { types.info(connection.objectType(ref.id).get(TIMEOUT_S, TimeUnit.SECONDS)).name.fullName }.getOrDefault("Exception")
+        val message = runCatching {
+            val getter = types.method(connection.objectType(ref.id).get(TIMEOUT_S, TimeUnit.SECONDS), "get_Message", 0) ?: return@runCatching null
+            val (_, future) = connection.invoke(frame.thread, getter, ref, emptyList(), MonoProtocol.InvokeFlags.DISABLE_BREAKPOINTS or MonoProtocol.InvokeFlags.SINGLE_THREADED)
+            (future.get(INVOKE_TIMEOUT_S, TimeUnit.SECONDS).value as? MonoValue.Ref)?.let { connection.stringValue(it.id).get(TIMEOUT_S, TimeUnit.SECONDS) }
+        }.getOrNull()
+        return if (message.isNullOrBlank()) type else "$type: $message"
+    }
+
     // --- commands of the IDE ---
 
     override fun resume(context: XSuspendContext?) = onWorker { resumeQuietly() }
@@ -279,6 +328,7 @@ class MonoDebugProcess(session: XDebugSession, private val host: String, private
 
     companion object {
         const val TIMEOUT_S = 10L
+        const val INVOKE_TIMEOUT_S = 5L
         private const val SHORT_TIMEOUT_S = 3L
 
         fun errorText(error: Throwable): String {

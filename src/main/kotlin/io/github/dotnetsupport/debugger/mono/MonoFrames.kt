@@ -74,11 +74,23 @@ class MonoStackFrame(private val process: MonoDebugProcess, val thread: Int, val
 
     private val variables: List<MonoVariable> by lazy { variables() }
 
-    override fun getEvaluator(): XDebuggerEvaluator = MonoEvaluator(process) { variables }
+    private val ref = MonoFrameRef(thread, frame.id)
+
+    /** The type of the frame's method: what a bare name or call of an expression falls back to. */
+    private val ownType: Int? by lazy { runCatching { process.connection.declaringType(frame.method).get(MonoDebugProcess.TIMEOUT_S, TimeUnit.SECONDS) }.getOrNull() }
+
+    /** Where a bare type name of an expression is looked for: the namespace of the method and its parents, the `using`s of its file, Unity's, System's. */
+    private val namespaces: List<String> by lazy {
+        val own = method.type.namespace.split('.').filter { it.isNotEmpty() }.let { parts -> parts.indices.reversed().map { parts.subList(0, it + 1).joinToString(".") } }
+        val usings = runCatching { point?.file?.let { java.io.File(it).readText() }?.let(MonoInterpreter::usings) }.getOrNull().orEmpty()
+        (own + usings + listOf("UnityEngine", "System", "System.Collections.Generic", "System.Linq")).distinct()
+    }
+
+    override fun getEvaluator(): XDebuggerEvaluator = MonoEvaluator(process, ref, { ownType }, { namespaces }) { variables }
 
     override fun computeChildren(node: XCompositeNode) = MonoValueNode.background(node) {
         val list = XValueChildrenList()
-        variables.forEach { list.add(MonoValueNode(process, it.name, it.value, it.icon, it.type)) }
+        variables.forEach { list.add(MonoValueNode(process, it.name, it.value, it.icon, it.type, ref)) }
         node.addChildren(list, true)
     }
 

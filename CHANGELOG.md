@@ -3,6 +3,18 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.277
+
+- Unity debugger: evaluation in the runtime — Evaluate, watches and the hover take C# expressions: properties (`transform.position`,
+  `gameObject.activeSelf`), method calls with arguments (`_levelScene.ToUpper()`, `HasArg("-host")`, `Mathf.Max(2, 7)`), static members
+  of a type by its name (`Time.frameCount`, `Application.isPlaying`, `string.IsNullOrEmpty(name)`), indexers (`args[i]`, `list[0]`),
+  operators of numbers, strings and of Unity's structs (`Vector3.one * 2`), `?:`, `&&`, `||`. The calls run on the thread of the stop with
+  breakpoints off and are aborted after 5 s; an exception they throw is shown with its message.
+- The line of an object's value shows its `ToString()` when its type overrides it (`GameBootstrap (Game.Boot.GameBootstrap)`,
+  `(0.00, 0.00, 0.00)` of a Vector3), and objects list their properties, read when shown — both only with "Allow property evaluation and
+  other implicit function calls" on (Settings | .NET | Debugger). Properties of Unity that copy what they return (`material`, `mesh`) or
+  only throw are not read by themselves.
+
 ## 0.1.276
 
 - Unity debugger: the variables of a frame — `this`, the parameters, the locals alive at the stop (and the locals of iterators, async
