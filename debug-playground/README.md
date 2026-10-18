@@ -247,6 +247,9 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `UNITY:external-editor` (0.1.272, нужен открытый Unity): предложение «Open scripts from Unity in this IDE?», IDE в Preferences |
       External Tools, двойной клик по скрипту и по строке консоли в Unity открывает файл в IDE на строке и выводит её окно вперёд, закрытая
       IDE запускается, новый скрипт попадает в `.csproj`, «Stop Opening Scripts from Unity Here» возвращает прежний редактор
+- [ ] `UNITY:debugger` (0.1.275, `Unity/Assets/Scripts/Player.cs`, в конце файла, нужен открытый Unity со сценой, где есть Player):
+      .NET → Attach to Unity Editor — согласие на Debug mode, вкладка «Unity Editor», без диалога в Unity; Play — остановка на строке 46
+      (Main Thread, кадр `Player.Update  Player.cs:46`), Step Over → 47, Resume, Pause, точка работает после перекомпиляции, Stop отпускает редактор
 - [ ] `UNITY:debug-mode` (0.1.274, `Unity/Assets/Scripts/Player.cs`, в конце файла, нужен открытый Unity): .NET → Switch Unity to
       Debug Mode — Unity перекомпилирует без фокуса, подсказка виджета «Code optimization: Debug.», значок жука в Unity включён,
       настройка «Code Optimization On Startup» не меняется; обратно в Release

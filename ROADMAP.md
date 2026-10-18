@@ -802,6 +802,12 @@
 
 
 
+  - [x] Unity, отладчик скриптов в открытом редакторе (0.1.275) — .NET → Attach to Unity Editor (и кнопка рядом с Play / Pause / Step):
+    при Release спрашивает и переключает в Debug, потом подключается своим клиентом протокола Mono; точки на строках `.cs` (и в коде,
+    который загрузится позже, и заново после каждой компиляции Unity), потоки и кадры со строкой, Pause, Resume, шаги, Run to Cursor,
+    Stop отключается, не трогая редактор. Переменных, условий и счётчиков пока нет. `UNITY_PLAN.md`, «Отладчик»; сценарий —
+    `UNITY:debugger` в конце `debug-playground/Unity/Assets/Scripts/Player.cs`. Проверено роботом с открытым Unity 6000.6 на копии
+    `nine-to-fire` (снимок `build/ui-robot/unity-debugger.png`); человеком вживую не проверено
   - [x] Unity, режим Debug / Release редактора из IDE (0.1.274) — .NET → Switch Unity to Debug Mode / Release Mode (на сессию, как
     кнопка жука в Unity), режим в подсказке виджета; заодно первая часть отладчика Unity — свой клиент протокола Mono Soft Debugger
     (`debugger/mono/MonoConnection.kt`), из UI пока не вызывается. `UNITY_PLAN.md`, «Отладчик»; сценарий — `UNITY:debug-mode` в конце

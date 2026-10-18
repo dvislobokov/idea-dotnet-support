@@ -65,6 +65,7 @@ object MonoProtocol {
         const val EXIT = 5
         const val DISPOSE = 6
         const val SET_PROTOCOL_VERSION = 8
+        const val GET_TYPES_FOR_SOURCE_FILE = 11
     }
 
     object Thread {
@@ -72,6 +73,45 @@ object MonoProtocol {
         const val GET_NAME = 2
         const val GET_STATE = 3
     }
+
+    object Type {
+        const val GET_INFO = 1
+        const val GET_METHODS = 2
+        const val GET_SOURCE_FILES_2 = 13
+    }
+
+    object Method {
+        const val GET_NAME = 1
+        const val GET_DECLARING_TYPE = 2
+        const val GET_DEBUG_INFO = 3
+    }
+
+    object EventRequest {
+        const val SET = 1
+        const val CLEAR = 2
+    }
+
+    object StepSize {
+        const val MIN = 0
+        const val LINE = 1
+    }
+
+    object StepDepth {
+        const val INTO = 0
+        const val OVER = 1
+        const val OUT = 2
+    }
+
+    /** What a step does not stop in: static constructors, `[DebuggerHidden]`, `[DebuggerStepThrough]` (as Rider steps). */
+    object StepFilter {
+        const val STATIC_CTOR = 1
+        const val DEBUGGER_HIDDEN = 2
+        const val DEBUGGER_STEP_THROUGH = 4
+        const val DEBUGGER_NON_USER_CODE = 8
+    }
+
+    /** The line of a sequence point the compiler hides (`#line hidden`): no line of the source. */
+    const val HIDDEN_LINE = 0xfeefee
 
     /** The command of the agent carrying events: a composite of one or more. */
     const val EVENT_COMPOSITE = 100
@@ -160,6 +200,76 @@ data class MonoEvent(
 )
 
 data class MonoEventSet(val suspendPolicy: Int, val events: List<MonoEvent>)
+
+/** A frame of a suspended thread: [ilOffset] in [method]; [flags] 1 — a frame of a debugger invoke, 2 — a native transition. */
+data class MonoFrame(val id: Int, val method: Int, val ilOffset: Int, val flags: Int)
+
+/** A sequence point: 1-based [line] and [column] of the source at [ilOffset]; [file] null when the runtime gave none. */
+data class MonoSequencePoint(val ilOffset: Int, val line: Int, val file: String?, val column: Int, val endLine: Int, val endColumn: Int)
+
+/** The line table of a method, as the runtime read it from the symbols of its assembly; no points — no symbols. */
+data class MonoDebugInfo(val maxIlOffset: Int, val points: List<MonoSequencePoint>) {
+    val lines: List<MonoSequencePoint> get() = points.filter { it.line != MonoProtocol.HIDDEN_LINE && it.line > 0 }
+
+    /** The statement the IL offset of a frame is in: the last point at or before it. */
+    fun at(ilOffset: Int): MonoSequencePoint? = lines.filter { it.ilOffset <= ilOffset }.maxByOrNull { it.ilOffset }
+}
+
+/** A filter of an event request (`EVENT_REQUEST.SET`), encoded as the agent reads it. */
+sealed class MonoModifier(val kind: Int) {
+    abstract fun write(writer: MonoWriter, version: MonoVersion?)
+
+    /** Stop after [count] hits (and then the request is done). */
+    class Count(private val count: Int) : MonoModifier(1) {
+        override fun write(writer: MonoWriter, version: MonoVersion?) { writer.int(count) }
+    }
+
+    class ThreadOnly(private val thread: Int) : MonoModifier(3) {
+        override fun write(writer: MonoWriter, version: MonoVersion?) { writer.id(thread) }
+    }
+
+    /** The place of a breakpoint. */
+    class LocationOnly(private val method: Int, private val ilOffset: Long) : MonoModifier(7) {
+        override fun write(writer: MonoWriter, version: MonoVersion?) { writer.id(method).long(ilOffset) }
+    }
+
+    /** A step of [thread] by [size] ([MonoProtocol.StepSize]) and [depth] ([MonoProtocol.StepDepth]); the filter from protocol 2.16. */
+    class Step(private val thread: Int, private val size: Int, private val depth: Int, private val filter: Int) : MonoModifier(10) {
+        override fun write(writer: MonoWriter, version: MonoVersion?) {
+            writer.id(thread).int(size).int(depth)
+            if (version == null || version.atLeast(2, 16)) writer.int(filter)
+        }
+    }
+
+    /** Types of these source files (the agent matches a full path or a file name, any case — seen on Unity 6000.6). */
+    class SourceFiles(private val files: Collection<String>) : MonoModifier(12) {
+        override fun write(writer: MonoWriter, version: MonoVersion?) { writer.int(files.size); files.forEach { writer.string(it) } }
+    }
+}
+
+data class MonoTypeName(val namespace: String, val name: String, val fullName: String)
+
+object MonoDebugInfos {
+    /**
+     * The reply of `METHOD.GET_DEBUG_INFO` (`Method_GetDebugInfo` of `Connection.cs`): the source files of the method (2.13; with an MD5
+     * hash from 2.14), then the points — IL offset, line, the index of the file (2.12), column (2.19), end line and column (2.32). Read
+     * byte for byte against Unity 6000.6 (protocol 2.58).
+     */
+    fun read(reply: MonoReader, version: MonoVersion?): MonoDebugInfo {
+        fun atLeast(minor: Int) = version == null || version.atLeast(2, minor)
+        val maxIl = reply.int()
+        val files = if (atLeast(13)) List(reply.int()) { reply.string().also { if (atLeast(14)) repeat(16) { reply.byte() } } } else listOf(reply.string())
+        val points = List(reply.int()) {
+            val il = reply.int()
+            val line = reply.int()
+            val file = if (atLeast(12)) reply.int().let { files.getOrNull(it) } else files.firstOrNull()
+            val column = if (atLeast(19)) reply.int() else 0
+            val (endLine, endColumn) = if (atLeast(32)) reply.int() to reply.int() else -1 to -1
+            MonoSequencePoint(il, line, file, column, endLine, endColumn)
+        }
+        return MonoDebugInfo(maxIl, points)
+    }
+}
 
 object MonoEvents {
     /**
@@ -264,6 +374,51 @@ class MonoConnection(
     fun threadName(thread: Int): CompletableFuture<String> =
         command(MonoProtocol.Sets.THREAD, MonoProtocol.Thread.GET_NAME, MonoWriter().id(thread).toByteArray()).thenApply { it.string() }
 
+    /**
+     * The frames of a suspended [thread], the top first — all of them: the agent knows no other range (start 0, length 1 is
+     * NOT_IMPLEMENTED, seen on Unity 6000.6).
+     */
+    fun frames(thread: Int): CompletableFuture<List<MonoFrame>> =
+        command(MonoProtocol.Sets.THREAD, MonoProtocol.Thread.GET_FRAME_INFO, MonoWriter().id(thread).int(0).int(-1).toByteArray())
+            .thenApply { reply -> List(reply.int()) { MonoFrame(reply.id(), reply.id(), reply.int(), reply.byte()) } }
+
+    /** The loaded types with code in [path] (all the domains). */
+    fun typesForSourceFile(path: String, ignoreCase: Boolean = true): CompletableFuture<List<Int>> =
+        command(MonoProtocol.Sets.VM, MonoProtocol.Vm.GET_TYPES_FOR_SOURCE_FILE, MonoWriter().string(path).byte(if (ignoreCase) 1 else 0).toByteArray())
+            .thenApply { reply -> List(reply.int()) { reply.id() } }
+
+    /** Namespace, name and full name of a type (the reply goes on with more; what is not read is dropped). */
+    fun typeName(type: Int): CompletableFuture<MonoTypeName> =
+        command(MonoProtocol.Sets.TYPE, MonoProtocol.Type.GET_INFO, MonoWriter().id(type).toByteArray())
+            .thenApply { reply -> MonoTypeName(reply.string(), reply.string(), reply.string()) }
+
+    /** The full paths of the source files of a type, as its assembly was compiled. */
+    fun typeSourceFiles(type: Int): CompletableFuture<List<String>> =
+        command(MonoProtocol.Sets.TYPE, MonoProtocol.Type.GET_SOURCE_FILES_2, MonoWriter().id(type).toByteArray())
+            .thenApply { reply -> List(reply.int()) { reply.string() } }
+
+    fun methods(type: Int): CompletableFuture<List<Int>> =
+        command(MonoProtocol.Sets.TYPE, MonoProtocol.Type.GET_METHODS, MonoWriter().id(type).toByteArray()).thenApply { reply -> List(reply.int()) { reply.id() } }
+
+    fun methodName(method: Int): CompletableFuture<String> =
+        command(MonoProtocol.Sets.METHOD, MonoProtocol.Method.GET_NAME, MonoWriter().id(method).toByteArray()).thenApply { it.string() }
+
+    fun declaringType(method: Int): CompletableFuture<Int> =
+        command(MonoProtocol.Sets.METHOD, MonoProtocol.Method.GET_DECLARING_TYPE, MonoWriter().id(method).toByteArray()).thenApply { it.id() }
+
+    fun debugInfo(method: Int): CompletableFuture<MonoDebugInfo> =
+        command(MonoProtocol.Sets.METHOD, MonoProtocol.Method.GET_DEBUG_INFO, MonoWriter().id(method).toByteArray()).thenApply { MonoDebugInfos.read(it, version) }
+
+    /** An event request; the future ends with its id, which the events it causes carry. */
+    fun request(kind: Int, suspendPolicy: Int, vararg modifiers: MonoModifier): CompletableFuture<Int> {
+        val body = MonoWriter().byte(kind).byte(suspendPolicy).byte(modifiers.size)
+        for (modifier in modifiers) modifier.write(body.byte(modifier.kind), version)
+        return command(MonoProtocol.Sets.EVENT_REQUEST, MonoProtocol.EventRequest.SET, body.toByteArray()).thenApply { it.int() }
+    }
+
+    fun clearRequest(kind: Int, id: Int): CompletableFuture<MonoReader> =
+        command(MonoProtocol.Sets.EVENT_REQUEST, MonoProtocol.EventRequest.CLEAR, MonoWriter().byte(kind).int(id).toByteArray())
+
     fun suspend(): CompletableFuture<MonoReader> = command(MonoProtocol.Sets.VM, MonoProtocol.Vm.SUSPEND)
     fun resume(): CompletableFuture<MonoReader> = command(MonoProtocol.Sets.VM, MonoProtocol.Vm.RESUME)
 
@@ -271,6 +426,8 @@ class MonoConnection(
     fun dispose(): CompletableFuture<MonoReader> = command(MonoProtocol.Sets.VM, MonoProtocol.Vm.DISPOSE)
 
     fun close() = fail("The debugger connection was closed")
+
+    val isClosed: Boolean get() = closed.get()
 
     private fun readLoop() {
         val data = DataInputStream(input)

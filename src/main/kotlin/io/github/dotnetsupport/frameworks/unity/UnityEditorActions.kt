@@ -93,7 +93,7 @@ class UnityRefreshAction : UnityEditorAction("Refresh Assets in Unity", "Import 
  * The code optimization of the editor's session, as the bug button of Unity's status bar: a debugger needs Debug, and attaching in Release
  * makes Unity stop at a modal dialog (UNITY_PLAN.md, "Отладчик"). Unity compiles the scripts again after the switch.
  */
-class UnityDebugModeAction : UnityEditorAction("Switch Unity to Debug Mode", "Compile the scripts in the Unity editor for debugging", AllIcons.Actions.StartDebugger) {
+class UnityDebugModeAction : UnityEditorAction("Switch Unity to Debug Mode", "Compile the scripts in the Unity editor for debugging", AllIcons.Actions.Compile) {
     override fun isEnabled(link: UnityEditorLink.Link): Boolean = link.state?.codeOptimization != null && link.state.compiling.not()
 
     override fun update(e: AnActionEvent, link: UnityEditorLink.Link) {

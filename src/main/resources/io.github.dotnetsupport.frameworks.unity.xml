@@ -90,6 +90,7 @@
         <action id="Unity.Pause" class="io.github.dotnetsupport.frameworks.unity.UnityPauseAction"/>
         <action id="Unity.Step" class="io.github.dotnetsupport.frameworks.unity.UnityStepAction"/>
         <action id="Unity.RefreshAssets" class="io.github.dotnetsupport.frameworks.unity.UnityRefreshAction"/>
+        <action id="Unity.AttachDebugger" class="io.github.dotnetsupport.frameworks.unity.UnityAttachDebuggerAction"/>
         <action id="Unity.DebugMode" class="io.github.dotnetsupport.frameworks.unity.UnityDebugModeAction"/>
         <action id="Unity.InstallEditorPackage" class="io.github.dotnetsupport.frameworks.unity.UnityInstallPackageAction"/>
         <action id="Unity.UseAsExternalEditor" class="io.github.dotnetsupport.frameworks.unity.UnityUseAsExternalEditorAction"/>
@@ -101,6 +102,7 @@
             <reference ref="Unity.Pause"/>
             <reference ref="Unity.Step"/>
             <reference ref="Unity.RefreshAssets"/>
+            <reference ref="Unity.AttachDebugger"/>
             <reference ref="Unity.DebugMode"/>
             <reference ref="Unity.InstallEditorPackage"/>
             <reference ref="Unity.ShowLog"/>
@@ -113,6 +115,7 @@
             <reference ref="Unity.Play"/>
             <reference ref="Unity.Pause"/>
             <reference ref="Unity.Step"/>
+            <reference ref="Unity.AttachDebugger"/>
             <add-to-group group-id="MainToolbarRight" anchor="before" relative-to-action="NewUiRunWidget"/>
         </group>
 

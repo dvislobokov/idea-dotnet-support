@@ -1,14 +1,19 @@
 package io.github.dotnetsupport
 
+import io.github.dotnetsupport.debugger.mono.MonoBreakpointLocations
 import io.github.dotnetsupport.debugger.mono.MonoClosedException
 import io.github.dotnetsupport.debugger.mono.MonoConnection
+import io.github.dotnetsupport.debugger.mono.MonoDebugInfos
 import io.github.dotnetsupport.debugger.mono.MonoEventSet
 import io.github.dotnetsupport.debugger.mono.MonoEvents
 import io.github.dotnetsupport.debugger.mono.MonoException
+import io.github.dotnetsupport.debugger.mono.MonoModifier
 import io.github.dotnetsupport.debugger.mono.MonoProtocol
 import io.github.dotnetsupport.debugger.mono.MonoReader
+import io.github.dotnetsupport.debugger.mono.MonoSequencePoint
 import io.github.dotnetsupport.debugger.mono.MonoVersion
 import io.github.dotnetsupport.debugger.mono.MonoWriter
+import io.github.dotnetsupport.frameworks.unity.UnityDebugger
 import io.github.dotnetsupport.frameworks.unity.UnityEditorLink
 import junit.framework.TestCase
 import java.io.DataInputStream
@@ -151,6 +156,75 @@ class MonoConnectionTest : TestCase() {
         assertEquals(12L, set.events[0].location)
         assertEquals("Debugger: hello", set.events[1].message)
         assertEquals(3, set.events[2].code)
+    }
+
+    fun testTheDebugInfoOfAMethod() {
+        // GameBootstrap.Start of nine-to-fire as Unity 6000.6 answered it (protocol 2.58): one file with its hash, points with columns and ends
+        val file = """C:\Users\dvislobokov\unity-probe\nine-to-fire-probe\Assets\Game\Boot\GameBootstrap.cs"""
+        val reply = MonoWriter().int(16).int(1).string(file).apply { repeat(16) { byte(it) } }.int(3)
+            .int(0).int(61).int(0).int(9).int(61).int(10)
+            .int(1).int(62).int(0).int(13).int(62).int(30)
+            .int(8).int(MonoProtocol.HIDDEN_LINE).int(0).int(0).int(MonoProtocol.HIDDEN_LINE).int(0).toByteArray()
+        val reader = MonoReader(reply)
+        val info = MonoDebugInfos.read(reader, MonoVersion("mono", 2, 58))
+        assertEquals("read to the last byte", 0, reader.remaining)
+        assertEquals(16, info.maxIlOffset)
+        assertEquals(listOf(61, 62), info.lines.map { it.line })
+        assertEquals(file, info.points[1].file)
+        assertEquals("a hidden point is no statement: the frame stays on the last line", 62, info.at(12)!!.line)
+        assertEquals(61, info.at(0)!!.line)
+    }
+
+    fun testWhereABreakpointGoes() {
+        fun points(vararg lines: Int, at: Int = 0) = lines.mapIndexed { i, line -> MonoSequencePoint(at + i * 4, line, "A.cs", 1, line, 2) }
+        val awake = 3 to points(47, 48, 50, 51, 59)
+        val start = 4 to points(61, 62, 63, 64)
+        val lambda = 9 to points(50, at = 100)
+        assertEquals("the statement of the line", listOf(3 to 4L), MonoBreakpointLocations.choose(48, listOf(awake, start)))
+        assertEquals("a line without a statement: the next one in the same method", listOf(3 to 8L), MonoBreakpointLocations.choose(49, listOf(awake, start)))
+        assertEquals("between two methods: nowhere", emptyList<Pair<Int, Long>>(), MonoBreakpointLocations.choose(60, listOf(awake, start)))
+        assertEquals("a lambda on the line: the statement holding it", listOf(3 to 8L), MonoBreakpointLocations.choose(50, listOf(lambda, awake)))
+        assertEquals("no code of the file", emptyList<Pair<Int, Long>>(), MonoBreakpointLocations.choose(10, listOf(awake)))
+        assertTrue(MonoBreakpointLocations.samePath("""C:\Game\Assets\Player.cs""", "c:/game/assets/player.cs"))
+        assertFalse(MonoBreakpointLocations.samePath("""C:\Game\Assets\Player.cs""", "C:/Other/Assets/Player.cs"))
+    }
+
+    fun testTheModifiersOfARequest() {
+        fun bytes(modifier: MonoModifier, version: MonoVersion?) = MonoWriter().also { modifier.write(it, version) }.toByteArray().toList()
+        assertEquals("thread, size, depth and the filter of 2.16", MonoWriter().id(39).int(1).int(1).int(7).toByteArray().toList(),
+            bytes(MonoModifier.Step(39, MonoProtocol.StepSize.LINE, MonoProtocol.StepDepth.OVER, 7), MonoVersion("mono", 2, 58)))
+        assertEquals("no filter before 2.16", MonoWriter().id(39).int(1).int(1).toByteArray().toList(),
+            bytes(MonoModifier.Step(39, MonoProtocol.StepSize.LINE, MonoProtocol.StepDepth.OVER, 7), MonoVersion("mono", 2, 15)))
+        assertEquals(MonoWriter().int(2).string("A.cs").string("B.cs").toByteArray().toList(), bytes(MonoModifier.SourceFiles(listOf("A.cs", "B.cs")), null))
+        assertEquals(MonoWriter().id(3).long(1).toByteArray().toList(), bytes(MonoModifier.LocationOnly(3, 1), null))
+    }
+
+    fun testAnEventRequestOnTheWire() {
+        val bodies = LinkedBlockingQueue<ByteArray>()
+        val agent = FakeAgent({ set, command, body ->
+            if (set == MonoProtocol.Sets.EVENT_REQUEST && command == MonoProtocol.EventRequest.SET) {
+                bodies += ByteArray(body.remaining).also { for (i in it.indices) it[i] = body.byte().toByte() }
+                MonoWriter().int(12).toByteArray()
+            } else unity(set, command, body)
+        })
+        val socket = MonoConnection.connect("127.0.0.1", agent.server.localPort)
+        val connection = MonoConnection(socket.getInputStream(), socket.getOutputStream(), Events()).apply { start("test") }
+        connection.negotiate().get(5, TimeUnit.SECONDS)
+        assertEquals(12, connection.request(MonoProtocol.EventKind.BREAKPOINT, MonoProtocol.SuspendPolicy.ALL, MonoModifier.LocationOnly(3, 1)).get(5, TimeUnit.SECONDS))
+        // what the probe sent and Unity took: kind, policy, one modifier of kind 7, method, IL offset
+        assertEquals(MonoWriter().byte(10).byte(2).byte(1).byte(7).id(3).long(1).toByteArray().toList(), bodies.poll(5, TimeUnit.SECONDS)!!.toList())
+        connection.close()
+        socket.close()
+    }
+
+    fun testUnityIsReadyToAttachAfterTheSwitch() {
+        fun link(mode: String, compiling: Boolean, compiledAt: Long, status: UnityEditorLink.Status = UnityEditorLink.Status.CONNECTED) = UnityEditorLink.Link(
+            java.io.File("."), status, UnityEditorLink.EditorState("1.4.0", "6000.6.0f1", 1, false, false, compiling, false, 0, compiledAt, 0, null, mode), 1)
+        assertFalse("still Release", UnityDebugger.ready(link("Release", false, 2_000), 1_000))
+        assertFalse("compiling", UnityDebugger.ready(link("Debug", true, 0), 1_000))
+        assertFalse("the compilation of before the switch", UnityDebugger.ready(link("Debug", false, 500), 1_000))
+        assertFalse("reloading the domain", UnityDebugger.ready(link("Debug", false, 2_000, UnityEditorLink.Status.BUSY), 1_000))
+        assertTrue(UnityDebugger.ready(link("Debug", false, 2_000), 1_000))
     }
 
     fun testThePortOfTheEditorsAgent() {

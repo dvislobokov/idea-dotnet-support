@@ -79,3 +79,12 @@ public class Player : MonoBehaviour
 // to Debug Mode → Unity compiles the scripts without being focused (the status bar says "compiling", ~25 s on nine-to-fire), then the
 // tooltip says "Code optimization: Debug.", the bug icon in Unity is on, and the action reads "Switch Unity to Release Mode". Preferences |
 // General → "Code Optimization On Startup" is not changed (the switch is for this session). Switch back to Release.
+
+// UNITY:debugger (0.1.275) — with the editor connected (UNITY:editor-link), a breakpoint on `transform.position += …` in Update above
+// (line 46), the editor in Release mode. EXPECT: .NET → Attach to Unity Editor (or the bug button next to Play / Pause / Step) asks
+// "Switch to Debug Mode", Unity compiles without being focused, then the Debug window has a tab "Unity Editor" and the console says
+// "Attached to Unity Editor (mono 6.13.0 …, protocol 2.58)" — no dialog "C# Debugger Attached" in Unity. Play with a Player in the scene:
+// the IDE stops at line 46, "Main Thread" active, the frame "Player.Update  Player.cs:46"; the breakpoint has a check mark. Step Over goes
+// to line 47; Resume lets the game go on; Pause shows the main thread in Unity's own code (grey frames, no source). Edit and save any
+// script while attached: after Unity's compilation the breakpoint still stops (placed again in the new domain). Stop detaches: the editor
+// goes on, and Attach works again. Variables are not shown yet ("The Unity debugger does not show variables yet").

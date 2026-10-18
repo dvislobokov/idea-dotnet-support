@@ -3,6 +3,14 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.275
+
+- Unity: a debugger for the scripts in the open Unity editor — .NET → Attach to Unity Editor (also next to Play / Pause / Step in the
+  toolbar) switches the editor to Debug mode first when it is in Release (with your consent, for this session), then attaches. Line
+  breakpoints in `.cs` files, also in code Unity loads later and again after every compilation of the scripts; the threads and their
+  frames with the source line; Pause, Resume, Step Over / Into / Out, Run to Cursor; Stop detaches and the editor goes on. The plugin's
+  own client of the Mono debugger protocol: nothing to install. Variables, conditions and hit counts are not supported yet.
+
 ## 0.1.274
 
 - Unity: .NET → Switch Unity to Debug Mode / Release Mode switches the code optimization of the open Unity editor for this session, as
