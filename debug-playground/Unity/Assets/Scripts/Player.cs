@@ -24,10 +24,17 @@ using UnityEngine;
 //
 // UNITY:editor-log (0.1.271) — with the editor connected, open the window "Unity" (the stripe, or .NET → Show Unity Log). EXPECT: Play,
 // walk into a trigger: "Debug.Log(other.name)" below gives a line with the info icon and the time; selected, the details show the stack
-// with `Assets/Scripts/Player.cs:44` as a link; Enter or a double click opens Player.cs on that line. Play again with "Clear on Play" on:
+// with `Assets/Scripts/Player.cs:51` as a link; Enter or a double click opens Player.cs on that line. Play again with "Clear on Play" on:
 // the old lines are gone. Delete the `;` after `speed = 5f` and Ctrl+S: two red lines "Assets/Scripts/Player.cs(…): error CS1002: ;
 // expected" (no copies), Enter opens the place; Ctrl+Z, Ctrl+S: they are gone. Clear keeps the errors of a compilation; the filters
 // (errors / warnings / messages) say their counts in their tooltips; Collapse makes identical lines one with "×N".
+//
+// UNITY:external-editor (0.1.272) — with the editor connected and another external editor chosen in Unity. EXPECT: the IDE asks once
+// "Open scripts from Unity in this IDE?"; Use This IDE (or .NET → Open Scripts from Unity in This IDE) → Unity's Preferences | External
+// Tools shows "<IDE> (C# Project Support)". Double-click Player.cs in Unity's Project window: the IDE comes to the front with Player.cs;
+// a double click on a console line of Debug.Log below opens this file at that line. Assets → Open C# Project brings the IDE up. A new
+// script made in Unity appears in Assembly-CSharp.csproj (the Rider or Visual Studio package generates it). Close the IDE and double-click
+// a script: the IDE starts with the project and the file. .NET → Stop Opening Scripts from Unity Here gives Unity its old editor back.
 public class Player : MonoBehaviour
 {
     [SerializeField] private float speed = 5f;

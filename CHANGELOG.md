@@ -3,7 +3,15 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.272
+
+- Unity: the IDE can be Unity's external script editor — Preferences | External Tools of Unity lists it, and the IDE offers it once
+  (Open Scripts from Unity in This IDE; Stop Opening Scripts from Unity Here gives Unity back the editor it had). A double click on a
+  script or on a line of Unity's console then opens it in the IDE at the line, or starts the IDE when it is closed. Unity keeps
+  generating the projects: with the generator of its Rider or Visual Studio package.
+
 ## 0.1.271
+
 
 - Unity: the window **Unity** shows the log of the editor's console — messages, warnings, errors and exceptions with their stack, the errors
   of the compilation with their code and place. Double-click or Enter opens the line of the code; the places of the stack are links. Filters

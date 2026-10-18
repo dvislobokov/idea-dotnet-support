@@ -244,6 +244,9 @@ Solution для живой проверки плагина: отладчика (
       дереве сразу и уносит `.meta`, окно NuGet — «NuGet is not available for Unity projects»
 - [ ] `UNITY:editor-log` (0.1.271, нужен открытый Unity): окно Unity → Log — `Debug.Log` из игры со стеком и ссылкой на строку, переход
       по Enter / двойному клику, Clear on Play, ошибка компиляции с кодом и местом без дублей и её исчезновение после исправления, Collapse
+- [ ] `UNITY:external-editor` (0.1.272, нужен открытый Unity): предложение «Open scripts from Unity in this IDE?», IDE в Preferences |
+      External Tools, двойной клик по скрипту и по строке консоли в Unity открывает файл в IDE на строке и выводит её окно вперёд, закрытая
+      IDE запускается, новый скрипт попадает в `.csproj`, «Stop Opening Scripts from Unity Here» возвращает прежний редактор
 
 - `Unity/Assets/Scripts/Checks.cs` (0.1.258, «плюшки»):
   - [ ] `UNITY:inspections`, `UNITY:signature`, `UNITY:compare-tag`, `UNITY:frame`, `UNITY:null-check`, `UNITY:get-component-type`:

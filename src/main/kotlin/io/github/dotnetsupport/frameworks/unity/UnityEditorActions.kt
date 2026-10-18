@@ -235,7 +235,8 @@ class UnityEditorStatusWidget(private val project: Project) : StatusBarWidget, S
             Status.OLD_PACKAGE -> "The package of the link in the project is of another version: .NET → Connect to Unity Editor updates it."
             Status.LOADING -> "The Unity editor has not loaded the package of the link yet: it does when its window gets the focus."
             Status.BUSY -> "The Unity editor does not answer for a while: it imports, compiles or reloads the scripts."
-            Status.CONNECTED -> "Unity ${link.state?.unityVersion} is linked with the IDE: Play, Pause, Step, and the scripts the IDE saves are compiled at once."
+            Status.CONNECTED -> "Unity ${link.state?.unityVersion} is linked with the IDE: Play, Pause, Step, and the scripts the IDE saves are compiled at once." +
+                if (link.state?.ideIsEditor == true) " Unity opens scripts in this IDE." else ""
         }
     }
 }

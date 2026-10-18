@@ -34,6 +34,8 @@ object UnityEditorLink {
     data class EditorState(
         val packageVersion: String, val unityVersion: String, val processId: Long, val playing: Boolean, val paused: Boolean, val compiling: Boolean,
         val updating: Boolean, val compileErrors: Int, val compiledAt: Long, val heartbeat: Long,
+        /** Whether Unity opens scripts in this IDE (step 3); null from a package before 1.2.0. */
+        val ideIsEditor: Boolean? = null,
     )
 
     data class Link(val root: File, val status: Status, val state: EditorState?, val editorProcessId: Long?)
@@ -63,7 +65,7 @@ object UnityEditorLink {
         EditorState(
             json.get("package").asString, json.get("unity").asString, json.get("processId").asLong, json.get("playing").asBoolean,
             json.get("paused").asBoolean, json.get("compiling").asBoolean, json.get("updating").asBoolean, json.get("compileErrors").asInt,
-            json.get("compiledAt").asLong, json.get("heartbeat").asLong,
+            json.get("compiledAt").asLong, json.get("heartbeat").asLong, json.get("ideIsEditor")?.takeIf { it.isJsonPrimitive }?.asBoolean,
         )
     }.getOrNull()
 
@@ -115,6 +117,9 @@ class UnityEditorConnection(private val project: Project) : Disposable {
 
     private var sequence = 0L
     private var poll: ScheduledFuture<*>? = null
+    private var commands: ScheduledFuture<*>? = null
+    private var ideWrittenAt = 0L
+    private var offered = false
     private var refreshPending: ScheduledFuture<*>? = null
 
     /** The Unity project of the solution (its folder holds the solution Unity generates); null in any other project. */
@@ -123,6 +128,8 @@ class UnityEditorConnection(private val project: Project) : Disposable {
     fun start() {
         if (poll != null || root() == null) return
         poll = AppExecutorUtil.getAppScheduledExecutorService().scheduleWithFixedDelay(::update, 0, 1, TimeUnit.SECONDS)
+        // a double click in Unity opens the file here: looked for four times a second, so the IDE answers as an editor does
+        commands = AppExecutorUtil.getAppScheduledExecutorService().scheduleWithFixedDelay(::takeCommands, 250, 250, TimeUnit.MILLISECONDS)
     }
 
     fun update() {
@@ -134,7 +141,12 @@ class UnityEditorConnection(private val project: Project) : Disposable {
         val changed = shown(fresh) != shown(link)
         link = fresh
         upgradeLoaded(fresh)
+        if (root != null && fresh != null && fresh.status != UnityEditorLink.Status.NO_EDITOR) writeIde(root)
         if (!changed) return
+        if (fresh?.status == UnityEditorLink.Status.CONNECTED && !offered && fresh.state?.ideIsEditor == false) {
+            offered = true
+            ApplicationManager.getApplication().invokeLater({ if (!project.isDisposed) UnityExternalEditor.offer(project, fresh) }, project.disposed)
+        }
         // the editor imported or compiled: it has written the solution and the projects again (a renamed script is in them now), and the
         // IDE would notice only at its next look at the disk — 14 s on the probe, a renamed file was missing from the tree meanwhile
         if (fresh?.status == UnityEditorLink.Status.CONNECTED) root?.let(::refreshProjectFiles)
@@ -157,6 +169,25 @@ class UnityEditorConnection(private val project: Project) : Disposable {
         if (System.currentTimeMillis() - state.heartbeat > UnityEditorLink.HEARTBEAT_TIMEOUT_MS || upgradeSentTo == state.processId) return
         upgradeSentTo = state.processId
         synchronized(this) { UnityEditorLink.send(link.root, "refresh", sequence++) }
+    }
+
+    /**
+     * `ide.json` for the package (step 3), every 2 s while an editor has the project open: Temp is the editor's, it removes it when it
+     * closes, and the IDE does not make it then.
+     */
+    private fun writeIde(root: File) {
+        val now = System.currentTimeMillis()
+        if (now - ideWrittenAt < 2_000) return
+        ideWrittenAt = now
+        runCatching {
+            UnityExternalEditor.writeIde(root, UnityExternalEditor.ideJson(ProcessHandle.current().pid(), UnityExternalEditor.launcher(), UnityExternalEditor.ideName(), now))
+        }
+    }
+
+    private fun takeCommands() {
+        if (project.isDisposed) return
+        val root = link?.takeIf { it.status != UnityEditorLink.Status.NO_EDITOR }?.root ?: return
+        UnityExternalEditor.takeCommands(root).forEach { UnityExternalEditor.open(project, it) }
     }
 
     /** The solution and the projects the editor generates beside `Assets/`, read from disk again. */
@@ -192,6 +223,7 @@ class UnityEditorConnection(private val project: Project) : Disposable {
 
     override fun dispose() {
         poll?.cancel(false)
+        commands?.cancel(false)
         refreshPending?.cancel(false)
     }
 

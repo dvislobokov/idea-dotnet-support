@@ -1,6 +1,7 @@
 // The link of the Unity editor with the IDE of C# Project Support (UNITY_PLAN.md, "Интеграция с редактором"). Files in Temp/DotNetSupport of
 // the project, as Unity cleans Temp when it closes:
-//   commands/<n>.txt   the IDE -> the editor: one command per file (refresh, compile, play, stop, pause, step), run in the order of the names
+//   commands/<n>.txt   the IDE -> the editor: one command per file (refresh, compile, play, stop, pause, step, use-as-editor,
+//                      restore-editor, open-asset <path> <line>), run in the order of the names
 //   state.json         the editor -> the IDE: play mode, pause, compilation, the errors of the last compilation and a heartbeat every 2 s
 // Files rather than a socket: they outlive the reload of the domain (every compilation), need no port, and the editor's update loop runs
 // while it is in the background (measured on Unity 6000.6: a command runs within half a second, Play in 2.3 s, unfocused), when it does
@@ -18,7 +19,7 @@ namespace DotNetSupport.Unity.Editor
     internal static class IdeConnection
     {
         /// <summary>Of package.json: the IDE updates the package when its own is newer.</summary>
-        private const string PackageVersion = "1.1.0";
+        private const string PackageVersion = "1.2.0";
 
         private static readonly string Folder = Path.Combine(Path.GetDirectoryName(Application.dataPath) ?? ".", "Temp", "DotNetSupport");
         private static readonly string Commands = Path.Combine(Folder, "commands");
@@ -101,6 +102,15 @@ namespace DotNetSupport.Unity.Editor
                 case "step":
                     EditorApplication.Step();
                     break;
+                case "use-as-editor":
+                    ExternalEditor.UseAsEditor();
+                    break;
+                case "restore-editor":
+                    ExternalEditor.RestoreEditor();
+                    break;
+                case var open when open.StartsWith("open-asset "):
+                    ExternalEditor.OpenAsset(open.Substring("open-asset ".Length));
+                    break;
                 default:
                     Debug.LogWarning("[C# Project Support] unknown command from the IDE: " + command);
                     break;
@@ -125,6 +135,7 @@ namespace DotNetSupport.Unity.Editor
             $"\"updating\":{Flag(EditorApplication.isUpdating)}," +
             $"\"compileErrors\":{compileErrors}," +
             $"\"compiledAt\":{compiledAt}," +
+            $"\"ideIsEditor\":{Flag(ExternalEditor.IsCurrent)}," +
             $"\"heartbeat\":{Now()}" +
             "}";
 

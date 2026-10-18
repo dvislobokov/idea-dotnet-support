@@ -62,6 +62,24 @@ Rider делает через `com.unity.ide.rider`. Проба — пакет `
 
 ## Сделано
 
+- [x] 0.1.272 — шаг 3 «IDE как внешний редактор Unity»: пакет 1.2.0, `ExternalEditor.cs` — `IExternalCodeEditor` через
+  `CodeEditor.Register` (в Preferences | External Tools — «IntelliJ IDEA 2026.1.4 (C# Project Support)», путь — лаунчер IDE из
+  `ide.json`, запомнен в EditorPrefs на время, пока IDE закрыта); `OpenProject` — при живом `ide.json` команда в
+  `Temp/DotNetSupport/ide-commands/` + `AllowSetForegroundWindow(pid IDE)` на Windows, иначе запуск лаунчера с папкой проекта,
+  `--line` / `--column` и файлом; генерация проектов (`SyncIfNeeded` / `SyncAll`, кнопка «Regenerate project files» в OnGUI) —
+  генератором пакета Rider (`Packages.Rider.Editor.ProjectGeneration.ProjectGeneration`, internal — рефлексией), иначе Visual Studio
+  (`GeneratorFactory.GetInstance(Legacy)`); без них — предупреждение на странице настроек. Выбор — только по согласию: уведомление один
+  раз («Use This IDE» / «Don't ask again») и действия меню .NET «Open Scripts from Unity in This IDE» / «Stop Opening Scripts from Unity
+  Here» (команды `use-as-editor` / `restore-editor`; настройка Unity общая на машину, прежний редактор хранится в EditorPrefs). IDE:
+  `UnityExternalEditor` (`ide.json` раз в 2 с, пока редактор открыт, — `Temp` чужой, IDE его без Unity не создаёт; команды 4 раза в
+  секунду → `OpenFileDescriptor` + `ProjectUtil.focusProjectWindow`), `ideIsEditor` в состоянии. Проверено роботом с открытым Unity на
+  копии `nine-to-fire`: `use-as-editor` → Unity записал IDEA в `kScriptsDefaultApp`; `open-asset Assets/Game/Boot/GameBootstrap.cs 57`
+  (команда для проверки: `AssetDatabase.OpenAsset`, тот же путь, что двойной клик) → в IDE `GameBootstrap.cs 57:1`; новый скрипт → в
+  `Game.Boot.csproj` через 5 с, удалённый — убран через 5 с (генератор Rider); `restore-editor` → снова Rider; уведомление показано;
+  0 SEVERE. Тест `UnityExternalEditorTest`. Не проверено: настоящий двойной клик в окне Unity и вывод окна IDE на передний план
+  (робот окно Unity не трогает), запуск закрытой IDE лаунчером, macOS / Linux. Человеком вживую не проверено.
+
+
 - [x] 0.1.271 — шаг 2 «лог консоли Unity»: пакет 1.1.0, `ConsoleLog.cs` — `Application.logMessageReceivedThreaded` (сообщения
   с любого потока в очередь, запись из `EditorApplication.update`, перед перезагрузкой домена и при выходе) и сообщения компилятора из
   `CompilationPipeline.assemblyCompilationFinished` (с кодом и местом; их же текстовые копии из лога отбрасываются по виду

@@ -89,6 +89,8 @@
         <action id="Unity.Step" class="io.github.dotnetsupport.frameworks.unity.UnityStepAction"/>
         <action id="Unity.RefreshAssets" class="io.github.dotnetsupport.frameworks.unity.UnityRefreshAction"/>
         <action id="Unity.InstallEditorPackage" class="io.github.dotnetsupport.frameworks.unity.UnityInstallPackageAction"/>
+        <action id="Unity.UseAsExternalEditor" class="io.github.dotnetsupport.frameworks.unity.UnityUseAsExternalEditorAction"/>
+        <action id="Unity.RestoreExternalEditor" class="io.github.dotnetsupport.frameworks.unity.UnityRestoreExternalEditorAction"/>
         <action id="Unity.ShowLog" class="io.github.dotnetsupport.frameworks.unity.UnityShowLogAction" text="Show Unity Log"
                 description="The console of the Unity editor: its messages and the errors of its compilation" icon="/icons/unity/unity.svg"/>
         <group id="Unity.EditorActions">
@@ -98,6 +100,8 @@
             <reference ref="Unity.RefreshAssets"/>
             <reference ref="Unity.InstallEditorPackage"/>
             <reference ref="Unity.ShowLog"/>
+            <reference ref="Unity.UseAsExternalEditor"/>
+            <reference ref="Unity.RestoreExternalEditor"/>
             <reference ref="Unity.OpenInEditor"/>
             <add-to-group group-id="DotNet.MainMenu" anchor="last"/>
         </group>
