@@ -101,6 +101,7 @@ internal sealed class Host
         }
         finally
         {
+            projects.CollectDropped();
             gate.Release();
         }
     }
@@ -115,6 +116,7 @@ internal sealed class Host
         workingSet = Environment.WorkingSet,
         managed = GC.GetTotalMemory(false),
         projects = projects.Count,
+        assemblies = MetadataCache.Count,
     };
 }
 
@@ -401,8 +403,26 @@ internal sealed class Projects
         return project;
     }
 
+    /** Projects were dropped since the last request ended: their compilations and drivers are garbage now. */
+    private bool dropped;
+
+    /**
+     * A full collection once a request dropped projects (a renamed source file, a changed project file — rare): the compilations of the
+     * old ones are the whole heap of a project, and the workstation GC let them pile up (the playground, eight renames in Lib: +170 MB).
+     */
+    public void CollectDropped()
+    {
+        if (!dropped) return;
+        dropped = false;
+        GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+        GC.WaitForPendingFinalizers();
+        GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+    }
+
     private void Drop(LoadedProject project)
     {
+        dropped = true;
+
         foreach (var key in loaded.Where(e => e.Value == project).Select(e => e.Key).ToList()) loaded.Remove(key);
         var solution = workspace.CurrentSolution;
         if (solution.GetProject(project.Id) != null) workspace.TryApplyChanges(solution.RemoveProject(project.Id));
@@ -444,7 +464,7 @@ internal sealed class Projects
                     HelperProtocol.Log("warn", $"{project.Name}: the referenced {Path.GetFileName(source.Project)} is taken from its assembly: {e.Message}");
                 }
             }
-            if (File.Exists(path)) metadata.Add(MetadataReference.CreateFromFile(path, reference.Properties));
+            if (File.Exists(path)) metadata.Add(MetadataCache.Reference(path, reference.Properties));
         }
 
         var documents = new List<DocumentInfo>();
@@ -480,11 +500,10 @@ internal sealed class Projects
         // Razor's generator of the SDK of the project is built against the Roslyn of that SDK, no newer than the helper's (the newest SDK)
         foreach (var path in analyzerPaths.Where(File.Exists))
         {
-            var reference = new AnalyzerFileReference(path, AnalyzerLoader.Instance);
-            reference.AnalyzerLoadFailed += (_, e) => HelperProtocol.Log("warn", $"{project.Name}: {Path.GetFileName(path)}: {e.Message}");
-            generators.AddRange(reference.GetGenerators(LanguageNames.CSharp));
+            var reference = AnalyzerLoader.Instance.Reference(path);
+            generators.AddRange(reference.Generators);
             if (!design.LiveAnalyzers) continue;
-            analyzers.AddRange(reference.GetAnalyzers(LanguageNames.CSharp));
+            analyzers.AddRange(reference.Analyzers);
             project.Fixers.AddRange(AnalyzerLoader.Instance.Fixers(path));
         }
         project.Generators = [.. generators];
@@ -720,6 +739,35 @@ internal sealed class Projects
     private const int MaxDiagnosticsWithFixes = 300;
 }
 
+/**
+ * The metadata of the referenced assemblies, one copy for every project and every load of a project: a reference read by
+ * `MetadataReference.CreateFromFile` is the whole image in native memory, freed by a finalizer only — ten projects of one solution held ten
+ * copies of the same reference packs, and each reload of a project (a renamed source file, a changed project file) one more, which the GC
+ * did not see (the WSL sandbox, 2026-10-18: the helper of the playground from 590 to 870 MB in a few renames, its managed heap 35 MB).
+ * Keyed by the path, its time stamp and length: a rebuilt assembly is read again, the compilations of the old one keep theirs.
+ */
+internal static class MetadataCache
+{
+    private static readonly ConcurrentDictionary<string, (DateTime Stamp, long Length, AssemblyMetadata Metadata)> Cache = new(StringComparer.OrdinalIgnoreCase);
+
+    public static int Count => Cache.Count;
+
+    public static MetadataReference Reference(string path, MetadataReferenceProperties properties)
+    {
+        var info = new FileInfo(path);
+        var (stamp, length) = (info.LastWriteTimeUtc, info.Length);
+        var entry = Cache.AddOrUpdate(path, p => (stamp, length, Read(p)), (p, old) => old.Stamp == stamp && old.Length == length ? old : (stamp, length, Read(p)));
+        return entry.Metadata.GetReference(aliases: properties.Aliases, embedInteropTypes: properties.EmbedInteropTypes, filePath: path);
+    }
+
+    /** The image read into memory and the file closed, as CreateFromFile reads it: an assembly of the solution can still be built. */
+    private static AssemblyMetadata Read(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        return AssemblyMetadata.CreateFromStream(stream, System.Reflection.PortableExecutable.PEStreamOptions.PrefetchEntireImage);
+    }
+}
+
 /** An additional file of the project (`<AdditionalFiles>`), read when a generator or an analyzer asks. */
 internal sealed class FileText(string path) : AdditionalText
 {
@@ -749,7 +797,30 @@ internal sealed class AnalyzerLoader : IAnalyzerAssemblyLoader
     private readonly ConcurrentDictionary<string, Assembly> assemblies = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, List<CodeFixProvider>> fixers = new(StringComparer.OrdinalIgnoreCase);
 
+    private readonly ConcurrentDictionary<string, Loaded> references = new(StringComparer.OrdinalIgnoreCase);
+
+    /** The generators and analyzers of C# of an analyzer assembly. */
+    public sealed record Loaded(DateTime Stamp, long Length, ImmutableArray<ISourceGenerator> Generators, ImmutableArray<DiagnosticAnalyzer> Analyzers);
+
+    /**
+     * The generators and analyzers of [path], read once per version of the file for every project and every load of one: a new
+     * AnalyzerFileReference reads the metadata of its assembly again, and a reload of the projects of a solution (400 analyzer assemblies
+     * each) piled those copies up (MetadataCache says the same of the references). The instances are stateless, as Roslyn shares them.
+     */
+    public Loaded Reference(string path)
+    {
+        var info = new FileInfo(path);
+        var (stamp, length) = (info.LastWriteTimeUtc, info.Length);
+        if (references.TryGetValue(path, out var known) && known.Stamp == stamp && known.Length == length) return known;
+        var reference = new AnalyzerFileReference(path, this);
+        reference.AnalyzerLoadFailed += (_, e) => HelperProtocol.Log("warn", $"{Path.GetFileName(path)}: {e.Message}");
+        var loaded = new Loaded(stamp, length, reference.GetGenerators(LanguageNames.CSharp), reference.GetAnalyzers(LanguageNames.CSharp));
+        references[path] = loaded;
+        return loaded;
+    }
+
     public void AddDependencyLocation(string fullPath) { }
+
 
     public Assembly LoadFromPath(string fullPath) => assemblies.GetOrAdd(fullPath, path =>
     {

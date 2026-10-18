@@ -27,8 +27,11 @@ import io.github.dotnetsupport.view.resolveFile
 
 /** What a change of files on disk asks of [CodeAnalysisService]: pure, so it is tested without the VFS. */
 object CodeAnalysisEvents {
-    /** [SAVED_FILE]: another file saved by the IDE — an additional file of the generators of a project, if the helper said so. */
-    enum class Kind { SAVED_SOURCE, PROJECT_INPUT, SOURCE_SET, GENERATOR_INPUT, SAVED_FILE, NONE }
+    /**
+     * [SAVED_FILE]: another file saved by the IDE — an additional file of the generators of a project, if the helper said so. [FILE_SET]:
+     * another file appeared, went or moved — the set of additional files of a project, if its generators take files like it.
+     */
+    enum class Kind { SAVED_SOURCE, PROJECT_INPUT, SOURCE_SET, GENERATOR_INPUT, SAVED_FILE, FILE_SET, NONE }
 
     private val PROJECT_INPUTS = setOf("csproj", "props", "targets", "editorconfig", "globalconfig", "json")
 
@@ -49,6 +52,9 @@ object CodeAnalysisEvents {
             // what the targets of the build make C# of (XAML, protobuf, resources): their outputs are stale until made again
             extension in BuildGeneratedSources.INPUT_EXTENSIONS -> Kind.GENERATOR_INPUT
             contentChange && fromSave -> Kind.SAVED_FILE
+            // a `.razor` renamed (or made, deleted, moved): the generators would go on reading the old list of files — the class of the
+            // renamed component never made (the WSL sandbox, 0.1.268)
+            !contentChange -> Kind.FILE_SET
             else -> Kind.NONE
         }
     }
@@ -72,7 +78,13 @@ class CodeAnalysisFileListener(private val project: Project) : BulkFileListener 
                     if (event is VFileMoveEvent) inputs += event.oldPath
                     if (event is VFilePropertyChangeEvent && event.isRename) inputs += event.oldPath
                 }
+                CodeAnalysisEvents.Kind.FILE_SET -> {
+                    val old = (event as? VFileMoveEvent)?.oldPath ?: (event as? VFilePropertyChangeEvent)?.takeIf { it.isRename }?.oldPath
+                    if (event is VFilePropertyChangeEvent && !event.isRename) continue
+                    if (service.takesFilesLike(event.path) || old != null && service.takesFilesLike(old)) inputs += listOfNotNull(event.path, old)
+                }
                 CodeAnalysisEvents.Kind.GENERATOR_INPUT -> generatorInputs += event.path
+
                 CodeAnalysisEvents.Kind.SAVED_FILE -> savedFiles += event.path
                 CodeAnalysisEvents.Kind.NONE -> Unit
             }

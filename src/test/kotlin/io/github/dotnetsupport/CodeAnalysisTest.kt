@@ -115,6 +115,9 @@ class CodeAnalysisTest : BasePlatformTestCase() {
         assertEquals(CodeAnalysisEvents.Kind.SAVED_FILE, CodeAnalysisEvents.kind("C:/s/A/Pages/Counter.razor", contentChange = true, fromSave = true))
         assertEquals(CodeAnalysisEvents.Kind.NONE, CodeAnalysisEvents.kind("C:/s/A/Pages/Counter.razor", contentChange = true, fromSave = false))
         assertEquals(CodeAnalysisEvents.Kind.NONE, CodeAnalysisEvents.kind("C:/s/A/obj/Debug/x.razor", contentChange = true, fromSave = true))
+        // a `.razor` made, deleted, renamed or moved: the set of additional files, if the generators of its project take such files
+        assertEquals(CodeAnalysisEvents.Kind.FILE_SET, CodeAnalysisEvents.kind("C:/s/A/Pages/Tally.razor", contentChange = false, fromSave = false))
+        assertEquals(CodeAnalysisEvents.Kind.NONE, CodeAnalysisEvents.kind("C:/s/A/obj/Debug/Tally.razor", contentChange = false, fromSave = false))
     }
 
     /** The projects warmed up when the solution opens: the ones worked in last time, most recent first, a few, still in the solution. */
@@ -211,6 +214,13 @@ class CodeAnalysisTest : BasePlatformTestCase() {
             service.putGeneratedForTests(projectFile.path, run.copy(files = listOf(made), additionalFiles = listOf(razor.path.uppercase())))
             assertEquals("the path, whatever its case", projectFile, service.projectOfGeneratorInput(razor.path))
             assertNull(service.projectOfGeneratorInput(projectFile.path))
+            // found live (0.1.268): a renamed `.razor` left the generators reading the old list — the class of the new name was never made;
+            // a file of their kind in the project's folder made, deleted or moved loads the project again in the helper
+            assertTrue(service.takesFilesLike("${projectFile.parent.path}/Pages/Tally.razor"))
+            assertTrue("in any folder of the project", service.takesFilesLike("${projectFile.parent.path}/Shared/Nav.RAZOR"))
+            assertFalse("a kind the generators do not take", service.takesFilesLike("${projectFile.parent.path}/Pages/notes.txt"))
+            assertFalse("outside the project", service.takesFilesLike("${folder.parentFile.path}/Other/Tally.razor"))
+
             assertEquals(setOf("Microsoft.NET.Sdk.Razor.SourceGenerators.RazorSourceGenerator"), service.generators(projectFile))
             assertFalse(service.generatedState(projectFile)!!.stale)
             // typing in a .cs of the project: Razor's generator reads no C#, what it made stays fresh and the errors go on (0.1.198)

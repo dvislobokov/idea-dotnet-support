@@ -150,7 +150,21 @@ class CodeAnalysisService(private val project: Project) : Disposable {
         return LocalFileSystem.getInstance().findFileByPath(state.projectPath)
     }
 
+    /**
+     * [path] is in the folder of a project whose generators take additional files with its extension (a `.razor` of a Blazor project, by
+     * what the helper said at the last run): a file of that kind made, deleted, renamed or moved changes what they read.
+     */
+    fun takesFilesLike(path: String): Boolean {
+        if (generated.isEmpty()) return false
+        val key = key(path)
+        val extension = key.substringAfterLast('/').substringAfterLast('.', "").takeIf { it.isNotEmpty() } ?: return false
+        return generated.values.any { state ->
+            key.startsWith(key(state.projectPath).substringBeforeLast('/') + "/") && state.inputs.any { it.endsWith(".$extension") }
+        }
+    }
+
     /** The type names of the source generators the helper loaded for [projectFile] at its last run; empty before one. */
+
     fun generators(projectFile: VirtualFile): Set<String> = generated[key(projectFile.path)]?.run?.generators?.toSet().orEmpty()
 
     /** Under the folder of the generated files of the solution: what the helper writes there is no change of the project. */

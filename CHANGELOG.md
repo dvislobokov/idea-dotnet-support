@@ -3,7 +3,16 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.269
+
+- Source generators: a renamed, new, deleted or moved `.razor` reaches the generators at once — a renamed component got no class until
+  the solution was opened again, and the C# naming it stayed red.
+- Source generators and analyzers use much less memory: the projects of a solution share one copy of the referenced assemblies, and a
+  project loaded again (a renamed file, an edited project file) no longer leaves its old copy behind — the helper of a solution of ten
+  projects grew from 590 to 870 MB in a few renames, it stays near 450 MB now.
+
 ## 0.1.268
+
 
 - Razor: Find Usages and rename of a component found no C# naming its class when the class was the build's (`typeof(Counter)` in a
   `.cs` file) — now they are found and renamed.
