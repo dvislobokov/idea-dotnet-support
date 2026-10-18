@@ -1,3 +1,18 @@
+pluginManagement {
+    // Inside the company the plugin is built on Jenkins (it sets JENKINS_URL in every build): the Gradle plugins come from its own
+    // repositories there; outside, from the Gradle Plugin Portal as before. The URLs are placeholders.
+    fun checkJenkinsUrl(): Boolean = !System.getenv("JENKINS_URL").isNullOrBlank()
+
+    repositories {
+        if (checkJenkinsUrl()) {
+            maven("https://nexus.example.com/repository/gradle-plugins/")
+            maven("https://nexus.example.com/repository/maven-central/")
+        } else {
+            gradlePluginPortal()
+        }
+    }
+}
+
 rootProject.name = "idea-dotnet-support"
 
 // csharp-psi (native C# PSI, CSHARP_PSI_MIGRATION.md; moved from ../csharp-psi at step 7): library modules composed into the plugin jar

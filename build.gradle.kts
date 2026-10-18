@@ -14,10 +14,24 @@ plugins {
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 
+/** The build runs on the company's Jenkins (it sets JENKINS_URL in every build): the dependencies come from its own repositories. */
+fun checkJenkinsUrl(): Boolean = !providers.environmentVariable("JENKINS_URL").orNull.isNullOrBlank()
+
 repositories {
-    mavenCentral()
-    intellijPlatform {
-        defaultRepositories()
+    if (checkJenkinsUrl()) {
+        // placeholders of the internal repositories
+        maven("https://nexus.example.com/repository/maven-central/")
+        maven("https://nexus.example.com/repository/intellij-releases/")
+        maven("https://nexus.example.com/repository/intellij-dependencies/")
+        intellijPlatform {
+            // the bundled plugins of the IDE (JSON, YAML) are made into this local repository by the IntelliJ Platform Gradle Plugin
+            localPlatformArtifacts()
+        }
+    } else {
+        mavenCentral()
+        intellijPlatform {
+            defaultRepositories()
+        }
     }
 }
 
