@@ -802,7 +802,12 @@
 
 
 
-  - [x] Unity, индекс ассетов (0.1.260) — «Used in Boot.unity» над скриптом, «Event handler» / «Animation event» над методом,
+  - [x] Unity, связь с открытым редактором (0.1.270) — пакет в `Packages/` по согласию (скрыт от git), Play / Pause / Step / Stop из IDE
+    (меню .NET, панель инструментов, строка состояния), компиляция в Unity при сохранении скрипта без переключения окна, статус редактора;
+    NuGet для проектов Unity недоступен с объяснением; переименованный скрипт сразу виден в дереве. `UNITY_PLAN.md`, «Шаги», шаг 1.
+    Проверено роботом с открытым Unity на копии `nine-to-fire`; панель и виджет глазами человеком не проверены
+  - [x] Unity, индекс ассетов (0.1.260)
+ — «Used in Boot.unity» над скриптом, «Event handler» / «Animation event» над методом,
     «Set by Unity: 5» над полем, Find Usages в сценах, сцены и префабы как YAML со ссылками `guid` / `m_MethodName` в код, «Missing
     script», `[FormerlySerializedAs]` при переименовании поля. Сценарий — `debug-playground/Unity/Assets/Scripts/Door.cs`
   - [x] Unity, `.asmdef` / `.asmref` (0.1.259) — JSON со схемой Unity Assembly Definition, `"references"` по имени и по

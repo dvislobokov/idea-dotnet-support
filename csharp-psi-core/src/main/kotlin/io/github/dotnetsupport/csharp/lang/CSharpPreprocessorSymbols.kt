@@ -44,14 +44,20 @@ object CSharpPreprocessorSymbols {
         while (psi != null && seen.add(psi)) {
             psi.getUserData(KEY)?.let { return it }
             // the file being indexed: its PSI is over a light copy of the content, `getVirtualFile` is the indexed file (stubs, step 8)
-            psi.virtualFile?.getUserData(KEY)?.let { return it }
+            psi.virtualFile?.let { indexed -> indexed.getUserData(KEY)?.let { return it }; saved(indexed)?.let { return it } }
             var virtualFile: VirtualFile? = psi.viewProvider.virtualFile
             while (virtualFile != null && seen.add(virtualFile)) {
                 virtualFile.getUserData(KEY)?.let { return it }
+                saved(virtualFile)?.let { return it }
                 virtualFile = (virtualFile as? LightVirtualFile)?.originalFile
             }
             psi = psi.originalFile
         }
         return IDE_DEFAULT
     }
+
+    /** What the host put on [file] in an earlier session ([CSharpSavedParseOptions]): the parse the index has; none put — the defaults. */
+    private fun saved(file: VirtualFile): Set<String>? =
+        if (file is LightVirtualFile) null else CSharpSavedParseOptions.of(file)?.let { it.symbols ?: IDE_DEFAULT }
+
 }

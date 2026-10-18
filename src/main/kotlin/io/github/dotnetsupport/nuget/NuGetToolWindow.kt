@@ -69,6 +69,13 @@ import javax.swing.event.DocumentEvent
 class NuGetToolWindowFactory : ToolWindowFactory, DumbAware {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val manager = toolWindow.contentManager
+        NuGetAvailability.unavailable(project)?.let { reason ->
+            // a Unity project: why there is nothing here, in place of the tabs
+            val text = com.intellij.ui.components.JBLabel("<html><div style='width:420px'>${reason.replace("&", "&amp;").replace("<", "&lt;")}</div></html>")
+                .apply { border = com.intellij.util.ui.JBUI.Borders.empty(16); verticalAlignment = javax.swing.SwingConstants.TOP }
+            manager.addContent(manager.factory.createContent(JPanel(BorderLayout()).apply { add(text, BorderLayout.NORTH) }, PACKAGES, false))
+            return
+        }
         val packages = NuGetPanel(project, toolWindow)
         manager.addContent(manager.factory.createContent(packages, PACKAGES, false))
         // a changed source list changes what the search finds
@@ -778,12 +785,13 @@ private class PackageIcons(private val onLoaded: () -> Unit) {
     }
 }
 
-/** "Manage NuGet Packages" on a project of the Solution view. */
+/** "Manage NuGet Packages" on a project of the Solution view; not in a solution NuGet does nothing for ([NuGetAvailability]). */
 class ManageNuGetPackagesAction : AnAction(), DumbAware {
     override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
 
     override fun update(e: AnActionEvent) {
-        e.presentation.isEnabledAndVisible = e.project != null && SolutionContext.fromSelection(e)?.projectFile != null
+        val project = e.project
+        e.presentation.isEnabledAndVisible = project != null && NuGetAvailability.unavailable(project) == null && SolutionContext.fromSelection(e)?.projectFile != null
     }
 
     override fun actionPerformed(e: AnActionEvent) {
@@ -795,3 +803,26 @@ class ManageNuGetPackagesAction : AnAction(), DumbAware {
         }
     }
 }
+
+/**
+ * Whether NuGet does anything for the solution of [Project]: a framework may say it does not ([SolutionLayout.nuGetUnavailable]: Unity
+ * generates its projects and restores no NuGet packages) — the window says why, the menu is off, nothing is restored by itself.
+ */
+object NuGetAvailability {
+    fun unavailable(project: Project): String? =
+        io.github.dotnetsupport.solution.SolutionService.getInstance(project).solutionFiles().firstNotNullOfOrNull { solution ->
+            solution.parent?.let(io.github.dotnetsupport.solution.SolutionLayout::nuGetUnavailable)
+        }
+}
+
+/** .NET → NuGet: off, with the reason, in a solution NuGet does nothing for. */
+class NuGetActionGroup : com.intellij.openapi.actionSystem.DefaultActionGroup(), DumbAware {
+    override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
+
+    override fun update(e: AnActionEvent) {
+        val reason = e.project?.let(NuGetAvailability::unavailable)
+        e.presentation.isEnabled = reason == null
+        e.presentation.description = reason ?: "NuGet packages of the solution"
+    }
+}
+

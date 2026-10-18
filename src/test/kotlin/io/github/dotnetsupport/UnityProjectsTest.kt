@@ -54,6 +54,9 @@ class UnityProjectsTest : BasePlatformTestCase() {
         // the project's either (FishNet's Mono.Cecil.sln): only the root's solution, no chooser
         myFixture.addFileToProject("u/Assets/FishNet/CodeGenerating/cecil-0.11.4/Mono.Cecil.sln", "")
         assertEquals(listOf("u.slnx"), SolutionFinder.find(root).solutions.map { it.name })
+        // NuGet does nothing here: Unity generates the projects and restores no packages (the window says why, the menu is off)
+        assertEquals(UnityProjects.NUGET_UNAVAILABLE, io.github.dotnetsupport.solution.SolutionLayout.nuGetUnavailable(root))
+        assertNull(io.github.dotnetsupport.solution.SolutionLayout.nuGetUnavailable(root.findChild("Assets")!!))
     }
 
     fun testTheSolutionViewHidesTheCachesAndTheMetaFiles() {

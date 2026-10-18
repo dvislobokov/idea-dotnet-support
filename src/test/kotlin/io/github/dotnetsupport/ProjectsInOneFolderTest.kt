@@ -20,8 +20,13 @@ class ProjectsInOneFolderTest : BasePlatformTestCase() {
         val loose = myFixture.addFileToProject("unity1/Assets/Loose.cs", "class Loose {}")
         assertEquals(boot.virtualFile, DotNetProjects.findOwningProject(hotkeys.virtualFile))
         assertEquals(net.virtualFile, DotNetProjects.findOwningProject(combat.virtualFile))
-        // listed by none: the first project of the folder, as before
-        assertEquals(DotNetProjects.findOwningProject(loose.virtualFile), boot.virtualFile.parent.children.first { DotNetProjects.isProjectFile(it) })
+        // listed by none: the first project by name, whatever order the folder has (a script made in Assets/ before Unity lists it)
+        assertEquals(boot.virtualFile, DotNetProjects.findOwningProject(loose.virtualFile))
+        // listed by none in a folder Unity writes itself: the sources of its packages are in no project (they used to get the first one,
+        // and a project Unity added gave thousands of them other `#if` symbols — 101 IDE errors, 2026-10-18)
+        myFixture.addFileToProject("unity1/ProjectSettings/ProjectVersion.txt", "m_EditorVersion: 6000.6.0f1\n")
+        val packaged = myFixture.addFileToProject("unity1/Library/PackageCache/com.unity.inputsystem@1/Runtime/InputSystem.cs", "class InputSystem {}")
+        assertNull(DotNetProjects.findOwningProject(packaged.virtualFile))
         // a directory has no single project among several
         assertNotNull(DotNetProjects.findOwningProject(hotkeys.virtualFile.parent))
     }

@@ -146,6 +146,19 @@ class MsBuildEvaluationTest : BasePlatformTestCase() {
             // Show All Files brings back what the project does not list
             SolutionViewSettings.setShowAllFiles(project, true)
             assertEquals(listOf("Dependencies", "Empty", "Form1.cs", "Leg.csproj", "Old", "Program.cs", "Shared", "Stray.cs", "Views"), names(structure, children))
+            SolutionViewSettings.setShowAllFiles(project, false)
+
+            // renamed by the IDE: at its new name at once, before the project file says so (Unity writes it a second later, the IDE
+            // noticed that seconds later still — the script was missing from the tree meanwhile, 2026-10-18)
+            val program = projectFile.parent.findChild("Program.cs")!!
+            com.intellij.openapi.application.WriteAction.run<Throwable> { program.rename(this, "Main.cs") }
+            assertEquals(listOf("Dependencies", "Empty", "Form1.cs", "Main.cs", "Shared", "Views"), names(structure, children))
+            // the project file has caught up: what it says counts again
+            evaluation.putForTests(projectFile, MsBuildEvaluationResult.parse(JsonParser.parseString("""{"items": {"Compile": [{"include": "$directory/Main.cs"}]}}""")))
+            assertEquals(listOf("Dependencies", "Main.cs"), names(structure, children))
+            evaluation.putForTests(projectFile, MsBuildEvaluationResult.parse(JsonParser.parseString("""{"items": {"Compile": [{"include": "$directory/Form1.cs"}]}}""")))
+            assertEquals("no move left over", listOf("Dependencies", "Form1.cs"), names(structure, children))
+
         } finally {
             evaluation.putForTests(projectFile, null)
         }

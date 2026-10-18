@@ -49,6 +49,14 @@ class MsBuildEvaluation(private val project: Project) : Disposable {
     private class Files(val stamp: Long, val globals: Map<String, String>, val files: EvaluatedFiles?, val imports: Set<String>, @Volatile var stale: Boolean = false)
 
     private val files = ConcurrentHashMap<String, Files>()
+
+    /**
+     * What the IDE moved or renamed in a project of the old format (by project: old path to new, relative, lower case) while the project
+     * file still has the old path: the tree shows the item at its new place at once. Unity writes its projects again a second later and the
+     * IDE notices that later still — the renamed script was missing from the tree for seconds (2026-10-18). Dropped once an evaluation of
+     * the project has the new path or no longer the old one.
+     */
+    private val moves = ConcurrentHashMap<String, MutableMap<String, String>>()
     private val pending: MutableSet<String> = ConcurrentHashMap.newKeySet()
     private val executor = AppExecutorUtil.createBoundedApplicationPoolExecutor("MsBuildEvaluation", 2)
     @Volatile private var connection: HelperConnection? = null
@@ -132,7 +140,26 @@ class MsBuildEvaluation(private val project: Project) : Disposable {
         val known = files[key]
         val globals = globals()
         if (known == null || known.stale || known.stamp != projectFile.modificationStamp || known.globals != globals) schedule(projectFile, globals)
-        return known?.files
+        val moved = moves[key]?.takeIf { it.isNotEmpty() }?.let { HashMap(it) } ?: return known?.files
+        return known?.files?.moved(moved)
+    }
+
+    /** The IDE moved or renamed [oldPath] to [newPath] (a file or a folder): the projects of the old format that have it show it there now. */
+    fun moved(oldPath: String, newPath: String) {
+        var any = false
+        for ((projectPath, known) in files) {
+            val evaluated = known.files ?: continue
+            val base = EvaluatedFiles.normalize(projectPath).substringBeforeLast('/').lowercase() + "/"
+            val old = EvaluatedFiles.normalize(oldPath).lowercase().takeIf { it.startsWith(base) }?.removePrefix(base) ?: continue
+            val new = EvaluatedFiles.normalize(newPath).lowercase().takeIf { it.startsWith(base) }?.removePrefix(base) ?: continue
+            val projectMoves = moves.getOrPut(projectPath) { ConcurrentHashMap() }
+            // a move of what was moved before: from where the project file has it
+            val origin = projectMoves.entries.firstOrNull { it.value == old }?.key ?: old
+            if (!evaluated.contains(origin) && !evaluated.containsDirectory(origin)) continue
+            projectMoves[origin] = new
+            any = true
+        }
+        if (any) refreshTree()
     }
 
     /** The global properties the tree evaluates with: the configuration of the toolbar and the global properties of the build options. */
@@ -168,6 +195,8 @@ class MsBuildEvaluation(private val project: Project) : Disposable {
         }
         val evaluated = EvaluatedFiles.of(projectFile.parent.path, result)
         files[projectFile.path] = Files(stamp, globals, evaluated, result.imports.mapTo(HashSet()) { key(it) })
+        // the project file has caught up with a move (or changed otherwise): it says where the item is now
+        moves[projectFile.path]?.entries?.removeIf { (old, new) -> evaluated.contains(new) || !evaluated.contains(old) && !evaluated.containsDirectory(old) }
         PluginLog.info(LOG_CATEGORY, "${projectFile.name}: the files of the project are the evaluated items (${result.items.values.sumOf { it.size }}), ${result.milliseconds} ms" +
             if (result.reused) ", the evaluation reused" else "")
         refreshTree()
@@ -211,8 +240,15 @@ class MsBuildEvaluation(private val project: Project) : Disposable {
     /** Puts an answer of the helper for [projectFile] as if it had come from it: for the tests of the tree, which never start the helper. */
     @TestOnly
     fun putForTests(projectFile: VirtualFile, result: MsBuildEvaluationResult?) {
-        if (result == null) files.remove(projectFile.path)
-        else files[projectFile.path] = Files(projectFile.modificationStamp, globals(), EvaluatedFiles.of(projectFile.parent.path, result), result.imports.mapTo(HashSet()) { key(it) })
+        if (result == null) {
+            files.remove(projectFile.path)
+            moves.remove(projectFile.path)
+            return
+        }
+        val evaluated = EvaluatedFiles.of(projectFile.parent.path, result)
+        files[projectFile.path] = Files(projectFile.modificationStamp, globals(), evaluated, result.imports.mapTo(HashSet()) { key(it) })
+        moves[projectFile.path]?.entries?.removeIf { (old, new) -> evaluated.contains(new) || !evaluated.contains(old) && !evaluated.containsDirectory(old) }
+
     }
 
     /** Refreshes the evaluations a change of files on disk can affect. */
@@ -220,6 +256,15 @@ class MsBuildEvaluation(private val project: Project) : Disposable {
         override fun after(events: List<VFileEvent>) {
             if (project.isDisposed) return
             val evaluation = project.getServiceIfCreated(MsBuildEvaluation::class.java) ?: return
+            // what the IDE moved or renamed itself (not found by a look at the disk): shown at its new place before the project file says so
+            for (event in events) {
+                if (event.isFromRefresh) continue
+                when {
+                    event is VFileMoveEvent -> evaluation.moved(event.oldPath, event.path)
+                    event is VFilePropertyChangeEvent && event.isRename -> evaluation.moved(event.oldPath, event.path)
+                }
+            }
+
             val paths = events.flatMap { event ->
                 when (event) {
                     // the content of a source does not change what the project is made of; of a project, props or targets it does

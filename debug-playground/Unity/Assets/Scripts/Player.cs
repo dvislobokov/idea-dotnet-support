@@ -14,7 +14,15 @@ using UnityEngine;
 // Update, no namespace (no assembly definition, no root namespace, and a Scripts folder is no namespace — as Unity writes it). In
 // Assets/Gameplay (with Gameplay.asmdef, rootNamespace Demo.Gameplay) the same gives `namespace Demo.Gameplay` as a block (LangVersion 9).
 // Delete the new files afterwards.
+//
+// UNITY:editor-link (0.1.270) — open this folder in the Unity editor too, then switch back to the IDE. EXPECT: a notification offers the
+// editor package; Install puts Packages/io.github.dotnetsupport.unity (not in `git status`, Packages/packages-lock.json gains a line);
+// the status bar says "Unity: edit mode", the toolbar has Play / Pause / Step. Play → the editor plays without being focused, the status
+// bar says "playing"; Pause, Step, Play again (Stop). Delete the `;` after `speed = 5f` below and Ctrl+S: Unity compiles at once, the status
+// bar says "compiling", then "1 compile error"; Ctrl+Z, Ctrl+S → "edit mode". Shift+F6 on Player.cs in the Solution view: the new name is
+// in the tree at once, Player.cs.meta goes with it (rename back). The NuGet window says "NuGet is not available for Unity projects".
 public class Player : MonoBehaviour
+
 {
     [SerializeField] private float speed = 5f;
     public float jumpHeight = 2f;

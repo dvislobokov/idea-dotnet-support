@@ -74,6 +74,8 @@ class NuGetAutoRestore(private val project: Project) : Disposable {
 
     private fun restoreIfNeeded() {
         if (project.isDisposed) return
+        // Unity rewrites its projects at every compilation and restores no NuGet packages: no `dotnet restore` after each of them
+        if (NuGetAvailability.unavailable(project) != null) return
         val solution = SolutionService.getInstance(project).solutionFiles().firstOrNull() ?: return
         // `dotnet add package` of the plugin has restored already: the assets are newer than the project file it changed
         if (SmartRestore.isUpToDate(project, solution)) return

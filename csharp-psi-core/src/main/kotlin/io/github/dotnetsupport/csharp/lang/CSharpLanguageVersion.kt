@@ -183,16 +183,22 @@ object CSharpLanguageLevel {
         while (psi != null && seen.add(psi)) {
             psi.getUserData(KEY)?.let { return it }
             // the file being indexed (stubs, step 8): see CSharpPreprocessorSymbols.forFile
-            psi.virtualFile?.getUserData(KEY)?.let { return it }
+            psi.virtualFile?.let { indexed -> indexed.getUserData(KEY)?.let { return it }; saved(indexed)?.let { return it } }
             var virtualFile: VirtualFile? = psi.viewProvider.virtualFile
             while (virtualFile != null && seen.add(virtualFile)) {
                 virtualFile.getUserData(KEY)?.let { return it }
+                saved(virtualFile)?.let { return it }
                 virtualFile = (virtualFile as? LightVirtualFile)?.originalFile
             }
             psi = psi.originalFile
         }
         return IDE_DEFAULT
     }
+
+    /** The version put on [file] in an earlier session ([CSharpSavedParseOptions]); saved without one — the default. */
+    private fun saved(file: VirtualFile): CSharpLanguageVersion? =
+        if (file is LightVirtualFile) null else CSharpSavedParseOptions.of(file)?.let { it.level ?: IDE_DEFAULT }
+
 
     /** The version a parser over [builder] uses: [KEY] on the builder, else [IDE_DEFAULT]. */
     @JvmStatic

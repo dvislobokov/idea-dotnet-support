@@ -55,7 +55,15 @@
         <codeInsight.lineMarkerProvider language="C#" implementationClass="io.github.dotnetsupport.frameworks.unity.UnityEventFunctionLineMarkerProvider"/>
         <!-- `Upd` in the body of a MonoBehaviour → `private void Update() { }`: the event functions of the class's Unity base -->
         <completion.contributor language="C#" order="first" implementationClass="io.github.dotnetsupport.frameworks.unity.UnityEventFunctionCompletion"/>
+        <!-- the link with the Unity editor (UNITY_PLAN.md, "Интеграция с редактором"): the package in Packages/, the state of the editor in
+             the status bar, Play / Pause / Step / Refresh, the editor refreshing what the IDE saves -->
+        <postStartupActivity implementation="io.github.dotnetsupport.frameworks.unity.UnityEditorStartup"/>
+        <statusBarWidgetFactory id="DotNet.UnityEditor" implementation="io.github.dotnetsupport.frameworks.unity.UnityEditorStatusWidgetFactory"/>
     </extensions>
+
+    <projectListeners>
+        <listener class="io.github.dotnetsupport.frameworks.unity.UnityEditorSaveListener" topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+    </projectListeners>
 
     <actions>
         <!-- New → Unity ▸ the entities of Unity, a submenu beside the categories of .NET items, in the folders of a Unity project only -->
@@ -72,5 +80,28 @@
             <add-to-group group-id="DotNet.MainMenu" anchor="last"/>
             <add-to-group group-id="DotNet.SolutionViewPopup" anchor="last"/>
         </action>
+        <!-- the editor of a Unity project from the IDE, as Rider's Play / Pause / Step: in the .NET menu, the popup of the status bar widget
+             and the main toolbar before the Run widget; hidden in other projects -->
+        <action id="Unity.Play" class="io.github.dotnetsupport.frameworks.unity.UnityPlayAction"/>
+        <action id="Unity.Pause" class="io.github.dotnetsupport.frameworks.unity.UnityPauseAction"/>
+        <action id="Unity.Step" class="io.github.dotnetsupport.frameworks.unity.UnityStepAction"/>
+        <action id="Unity.RefreshAssets" class="io.github.dotnetsupport.frameworks.unity.UnityRefreshAction"/>
+        <action id="Unity.InstallEditorPackage" class="io.github.dotnetsupport.frameworks.unity.UnityInstallPackageAction"/>
+        <group id="Unity.EditorActions">
+            <reference ref="Unity.Play"/>
+            <reference ref="Unity.Pause"/>
+            <reference ref="Unity.Step"/>
+            <reference ref="Unity.RefreshAssets"/>
+            <reference ref="Unity.InstallEditorPackage"/>
+            <reference ref="Unity.OpenInEditor"/>
+            <add-to-group group-id="DotNet.MainMenu" anchor="last"/>
+        </group>
+        <group id="Unity.EditorToolbar">
+            <reference ref="Unity.Play"/>
+            <reference ref="Unity.Pause"/>
+            <reference ref="Unity.Step"/>
+            <add-to-group group-id="MainToolbarRight" anchor="before" relative-to-action="NewUiRunWidget"/>
+        </group>
+
     </actions>
 </idea-plugin>

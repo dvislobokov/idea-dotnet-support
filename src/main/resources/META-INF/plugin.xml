@@ -720,7 +720,7 @@
                     text="Measure Build Performance" description="Rebuild with the MSBuild performance summary: the slowest targets and tasks"/>
             <reference ref="DotNet.Publish"/>
             <separator/>
-            <group id="DotNet.NuGet" text="NuGet" popup="true" icon="/icons/nuget.svg">
+            <group id="DotNet.NuGet" class="io.github.dotnetsupport.nuget.NuGetActionGroup" text="NuGet" popup="true" icon="/icons/nuget.svg">
                 <action id="DotNet.NuGet.QuickList" class="io.github.dotnetsupport.nuget.NuGetQuickListAction" text="NuGet Quick List"
                         description="Popup with the NuGet actions">
                     <keyboard-shortcut keymap="$default" first-keystroke="alt shift N"/>

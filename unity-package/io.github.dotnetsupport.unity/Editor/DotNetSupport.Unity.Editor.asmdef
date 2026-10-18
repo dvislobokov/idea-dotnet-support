@@ -1,0 +1,6 @@
+{
+  "name": "DotNetSupport.Unity.Editor",
+  "rootNamespace": "DotNetSupport.Unity.Editor",
+  "includePlatforms": ["Editor"],
+  "autoReferenced": false
+}

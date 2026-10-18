@@ -25,6 +25,12 @@ interface SolutionLayout {
      */
     fun isForeignSolution(solution: VirtualFile): Boolean = false
 
+    /**
+     * Why NuGet does nothing for the solution in [solutionDirectory] (shown in the NuGet window, its menu off, no automatic restore); null
+     * when it does. Unity generates its projects and restores no NuGet packages: a package added would be gone at the next generation.
+     */
+    fun nuGetUnavailable(solutionDirectory: VirtualFile): String? = null
+
     companion object {
         val EP_NAME: ExtensionPointName<SolutionLayout> = ExtensionPointName.create("io.github.dotnetsupport.solutionLayout")
 
@@ -34,5 +40,8 @@ interface SolutionLayout {
             EP_NAME.extensionList.firstNotNullOfOrNull { it.namespaceFor(directory, projectFile, rootNamespace) }
 
         fun isForeignSolution(solution: VirtualFile): Boolean = EP_NAME.extensionList.any { it.isForeignSolution(solution) }
+
+        fun nuGetUnavailable(solutionDirectory: VirtualFile): String? = EP_NAME.extensionList.firstNotNullOfOrNull { it.nuGetUnavailable(solutionDirectory) }
+
     }
 }

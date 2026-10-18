@@ -1140,12 +1140,17 @@ public sealed class AttributeTypeProvider : SignatureProvider, ICustomAttributeT
     public PrimitiveTypeCode GetUnderlyingEnumType(Sig type) =>
         type is NamedSig named && _enums.TryGetValue(named.Name, out var code) ? code : PrimitiveTypeCode.Int32;
 
-    /// <summary>`Name, Assembly, Version=…` → the type; `List`1[[System.Int32, …]]` and `T[]` as well.</summary>
-    public Sig GetTypeFromSerializedName(string name)
+    /// <summary>
+    /// `Name, Assembly, Version=…` → the type; `List`1[[System.Int32, …]]` and `T[]` as well. A `Type` argument that is null (`[A(null)]` of
+    /// a `Type` parameter) comes as a null name: the value is null — an assembly of Unity has one, and the indexer used to fail on it whole.
+    /// </summary>
+    public Sig GetTypeFromSerializedName(string? name)
     {
+        if (name == null) return null!;
         var at = 0;
         return Parse(name, ref at);
     }
+
 
     private static Sig Parse(string text, ref int at)
     {

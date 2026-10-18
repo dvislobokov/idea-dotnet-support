@@ -24,6 +24,7 @@ import com.intellij.util.indexing.FileBasedIndex
 import io.github.dotnetsupport.csharp.lang.CSharpLanguageLevel
 import io.github.dotnetsupport.csharp.lang.CSharpLanguageVersion
 import io.github.dotnetsupport.csharp.lang.CSharpPreprocessorSymbols
+import io.github.dotnetsupport.csharp.lang.CSharpSavedParseOptions
 import io.github.dotnetsupport.msbuild.CompilationModel
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
@@ -101,7 +102,7 @@ class CSharpParseOptions(private val project: Project) : Disposable {
     }
 
     private fun mayParseDifferently(file: VirtualFile, level: CSharpLanguageVersion?): Boolean {
-        val old = file.getUserData(CSharpLanguageLevel.KEY)
+        val old = current(file).second
         if (listOf(level, old).any { it != null && it.effective() != CSharpLanguageLevel.IDE_DEFAULT.effective() }) return true
         val text = FileDocumentManager.getInstance().getCachedDocument(file)?.charsSequence ?: runCatching { LoadTextUtil.loadText(file) }.getOrNull() ?: return true
         return CONDITIONAL.containsMatchIn(text)
@@ -170,10 +171,32 @@ class CSharpParseOptions(private val project: Project) : Disposable {
             val changed = differs(file, symbols, level)
             file.putUserData(CSharpPreprocessorSymbols.KEY, symbols)
             file.putUserData(CSharpLanguageLevel.KEY, level)
+            // kept for the next session: its first parse is the one the index on disk has (CSharpSavedParseOptions)
+            if (changed || CSharpSavedParseOptions.of(file) == null) CSharpSavedParseOptions.save(file, symbols, level)
             return changed
         }
 
-        private fun differs(file: VirtualFile, symbols: Set<String>?, level: CSharpLanguageVersion?): Boolean =
-            file.getUserData(CSharpPreprocessorSymbols.KEY) != symbols || file.getUserData(CSharpLanguageLevel.KEY) != level
+        /**
+         * What [file] is parsed with now: the keys of this session, else what was put in an earlier one — the index was made with that, so
+         * a value equal to it changes nothing (no reparse, no reindex at every opening of the project).
+         */
+        private fun current(file: VirtualFile): Pair<Set<String>?, CSharpLanguageVersion?> {
+            val symbols = file.getUserData(CSharpPreprocessorSymbols.KEY)
+            val level = file.getUserData(CSharpLanguageLevel.KEY)
+            if (symbols != null || level != null) return symbols to level
+            val saved = CSharpSavedParseOptions.of(file) ?: return null to null
+            return saved.symbols to saved.level
+        }
+
+        /**
+         * Nothing put in this session nor saved before (a file indexed by a version of the plugin that did not save them): what the index
+         * has is unknown, the file is parsed and indexed again once.
+         */
+        private fun differs(file: VirtualFile, symbols: Set<String>?, level: CSharpLanguageVersion?): Boolean {
+            if (file.getUserData(CSharpPreprocessorSymbols.KEY) == null && file.getUserData(CSharpLanguageLevel.KEY) == null && CSharpSavedParseOptions.of(file) == null) return true
+            return current(file) != (symbols to level)
+        }
+
+
     }
 }

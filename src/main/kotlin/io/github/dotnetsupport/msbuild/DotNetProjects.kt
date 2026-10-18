@@ -22,12 +22,29 @@ object DotNetProjects {
                 if (candidates.size == 1) return candidates.first()
                 val relative = VfsUtilCore.getRelativePath(file, directory, '/')?.lowercase() ?: return candidates.first()
                 // a directory: the project with a file of it among its items (Build 'X' of the folder `Assets/Game/Boot` builds Game.Boot)
-                return candidates.firstOrNull { project -> compileItems(project).let { items -> if (file.isDirectory) items.any { it.startsWith("$relative/") } else relative in items } }
-                    ?: candidates.first()
+                candidates.firstOrNull { project -> compileItems(project).let { items -> if (file.isDirectory) items.any { it.startsWith("$relative/") } else relative in items } }
+                    ?.let { return it }
+                // none lists it, in a folder a framework writes itself (Unity's Library/: the sources of its packages, which Unity
+                // compiles on its own): it is in none of them. It used to get the first project of the folder — a new project there
+                // (Unity adds one for a package) gave thousands of those files other `#if` symbols, all of them parsed and indexed
+                // again, and the PSI met the stubs of the old symbols until the index caught up (101 IDE errors after a compilation)
+                if (!file.isDirectory && inGeneratedDirectory(file, directory)) return null
+                // elsewhere (a script just made in Assets/, before Unity lists it) the first by name: the same whatever order the folder has
+                return candidates.minBy { it.name.lowercase() }
             }
             directory = directory.parent
         }
         return null
+    }
+
+    /** A folder between [file] and [top] (the folder of the projects) is one a framework generates ([io.github.dotnetsupport.solution.SolutionLayout]). */
+    private fun inGeneratedDirectory(file: VirtualFile, top: VirtualFile): Boolean {
+        var directory = file.parent
+        while (directory != null && directory != top) {
+            if (io.github.dotnetsupport.solution.SolutionLayout.isGeneratedDirectory(directory)) return true
+            directory = directory.parent
+        }
+        return false
     }
 
     private val compileItemsCache = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, Set<String>>>()

@@ -65,6 +65,10 @@ class AssemblyIndexTest {
         assertEquals(listOf("System.ObsoleteAttribute", "Fixture.TaggedAttribute"), value.attributeData.map { it.typeName })
         assertEquals("old", value.attributeData[0].arguments.single().value)
         assertEquals("System.Int32", ((value.attributeData[1].arguments[1].value as IndexedTypeRef.ArrayOf).element as IndexedTypeRef.Named).fullName)
+        // a `Type` argument that is null: the indexer failed on the whole assembly (an assembly of Unity, found 2026-10-18)
+        val untyped = fixture.allTypes.single { it.name == "TaggedWithoutType" }.attributeData.single()
+        assertEquals("no type", untyped.arguments[0].value)
+        assertNull(untyped.arguments[1].value)
     }
 
     @Test

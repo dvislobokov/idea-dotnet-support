@@ -239,6 +239,10 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `TYPE:unity-event-function`: `OnColl` → OnCollisionEnter… с «(Collision other)», Enter пишет метод с телом; `public OnDis` → `public void OnDisable()`
 - [ ] `UNITY:editor-messages` (`Spawner.cs`, ScriptableObject): `OnVal` → OnValidate, Update не предлагается
 - [ ] `UNITY:defines`: ветка `#if UNITY_EDITOR` — живой код, `#else` серая
+- [ ] `UNITY:editor-link` (0.1.270, нужен открытый Unity): установка пакета по уведомлению, «Unity: edit mode» в строке состояния,
+      Play / Pause / Step / Stop без фокуса на Unity, сохранение с ошибкой → «compiling» → «1 compile error», переименование видно в
+      дереве сразу и уносит `.meta`, окно NuGet — «NuGet is not available for Unity projects»
+
 - `Unity/Assets/Scripts/Checks.cs` (0.1.258, «плюшки»):
   - [ ] `UNITY:inspections`, `UNITY:signature`, `UNITY:compare-tag`, `UNITY:frame`, `UNITY:null-check`, `UNITY:get-component-type`:
         инспекции Unity и их Alt+Enter

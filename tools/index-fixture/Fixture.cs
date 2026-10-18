@@ -284,3 +284,9 @@ public class Tagged<[Tagged("param", typeof(string), AttributeTargets.GenericPar
     [Obsolete("old"), Tagged("property", typeof(int[]), (AttributeTargets)0, new int[0], null)]
     public T? Value { get; set; }
 }
+
+/// <summary>A `Type` argument that is null: its serialized name is null (an assembly of Unity has one; the indexer failed on it).</summary>
+[Tagged("no type", null, AttributeTargets.Class, null, null)]
+public class TaggedWithoutType
+{
+}

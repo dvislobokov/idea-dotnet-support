@@ -3,7 +3,24 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.270
+
+- Unity: the IDE links with the open Unity editor. Play, Pause, Step and Stop the game from the IDE (the .NET menu, the main toolbar, the
+  status bar); a script saved in the IDE is compiled by Unity at once, without switching to it. The link is a small package the IDE puts
+  into `Packages/` of the Unity project when you agree (hidden from git; Unity notes it in `Packages/packages-lock.json`), and updates.
+  The status bar shows what the editor does: edit mode, playing, paused, compiling.
+- Unity: a script renamed or moved in the IDE stays in the Solution view at its new name at once (it was missing for seconds, until Unity
+  wrote its projects again and the IDE noticed); the sources of Unity's packages in `Library/PackageCache` belong to no project (they took
+  the first project of the folder and its `#if` symbols, and the opening of a project raised IDE errors "PSI and index do not match").
+- Unity: NuGet is not available for Unity projects — the NuGet window says why (Unity generates the projects and restores no packages;
+  its packages come from the Package Manager), the NuGet menu is off and packages are not restored automatically.
+- C#: the `#if` symbols and the language version of a file are kept between sessions of the IDE, so the first parse after a restart is
+  the one the index has (IDE errors "PSI and index do not match" at the opening of a project whose files changed their symbols).
+- The indexer of assemblies no longer fails on an attribute with a `typeof` argument of `null` (an assembly of Unity's packages).
+
+
 ## 0.1.269
+
 
 - Source generators: a renamed, new, deleted or moved `.razor` reaches the generators at once — a renamed component got no class until
   the solution was opened again, and the C# naming it stayed red.

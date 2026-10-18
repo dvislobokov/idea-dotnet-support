@@ -361,7 +361,12 @@ tasks.processResources {
         include("Program.cs", "CodeMetrics.csproj")
         into("metrics")
     }
+    // the package of the link with the Unity editor: the plugin writes it into Packages/ of a Unity project (frameworks/unity/UnityEditorPackage)
+    from("unity-package") {
+        into("unity-package")
+    }
     // and the logger of live test results, loaded by `dotnet test` (testing/LiveTestEvents.kt)
+
     from("testlogger") {
         include("TestLogger.cs", "DotNetSupport.TestLogger.csproj")
         into("testlogger")

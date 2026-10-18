@@ -19,6 +19,11 @@ object UnityIcons {
 object UnityProjects {
     const val PROJECT_VERSION_FILE = "ProjectSettings/ProjectVersion.txt"
 
+    /** Why the NuGet window and menu say nothing for a Unity project ([io.github.dotnetsupport.solution.SolutionLayout.nuGetUnavailable]). */
+    const val NUGET_UNAVAILABLE = "NuGet is not available for Unity projects: Unity generates the projects and restores no NuGet packages, so a " +
+        "package added here would be gone at the next generation. Unity's packages come from its Package Manager (Packages/manifest.json); " +
+        "a .NET library goes into Assets/Plugins as a DLL, or through NuGetForUnity."
+
     /** The folders Unity writes and rewrites itself: caches, build output, logs — not a part of the project to anyone. */
     val GENERATED_DIRECTORIES: Set<String> = setOf("Library", "Temp", "Logs", "obj", "UserSettings")
 
@@ -72,6 +77,9 @@ object UnityProjects {
  */
 class UnitySolutionLayout : SolutionLayout {
     override fun isGeneratedDirectory(directory: VirtualFile): Boolean = UnityProjects.isGeneratedDirectory(directory)
+
+    override fun nuGetUnavailable(solutionDirectory: VirtualFile): String? = if (UnityProjects.isUnityRoot(solutionDirectory)) UnityProjects.NUGET_UNAVAILABLE else null
+
 
     /** Unity writes its solution into the root of the project; a `.sln` deeper down (`Assets/<package>/...`) is a package's own. */
     override fun isForeignSolution(solution: VirtualFile): Boolean {

@@ -83,7 +83,29 @@ class EvaluatedFiles(
 
     fun dependentParent(relativePath: String): String? = dependentUpon[normalize(relativePath).lowercase()]
 
+    /**
+     * These files with [moves] (old path to new, relative, lower case; a folder moves what is under it) done: the items of the project at
+     * their new places, before the project file says so (MsBuildEvaluation.moved).
+     */
+    fun moved(moves: Map<String, String>): EvaluatedFiles {
+        fun place(path: String): String {
+            for ((old, new) in moves) {
+                if (path == old) return new
+                if (path.startsWith("$old/")) return new + path.substring(old.length)
+            }
+            return path
+        }
+        val placed = files.mapTo(HashSet(), ::place)
+        val folders = HashSet(directories.map(::place))
+        for (file in placed) {
+            var directory = file.substringBeforeLast('/', "")
+            while (directory.isNotEmpty() && folders.add(directory)) directory = directory.substringBeforeLast('/', "")
+        }
+        return EvaluatedFiles(placed, folders, linked, dependentUpon.entries.associate { (file, parent) -> place(file) to parent })
+    }
+
     companion object {
+
         /** The item types whose items are files the Solution view shows, plus the empty folders a project keeps (`Folder`). */
         val ITEM_TYPES: List<String> = MsBuildProject.FILE_ITEMS.toList() + "Folder"
 
