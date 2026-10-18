@@ -1,0 +1,30 @@
+{
+    "name": "DotNetSupport.Unity.Editor.Tests",
+    "rootNamespace": "DotNetSupport.Unity.Editor.Tests",
+    "references": [
+        "DotNetSupport.Unity.Editor",
+        "UnityEditor.TestRunner",
+        "UnityEngine.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "DOTNETSUPPORT_TEST_FRAMEWORK"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.test-framework",
+            "expression": "1.1.0",
+            "define": "DOTNETSUPPORT_TEST_FRAMEWORK"
+        }
+    ],
+    "noEngineReferences": false
+}

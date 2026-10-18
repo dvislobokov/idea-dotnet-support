@@ -34,7 +34,8 @@ class DotNetTestRunner : GenericProgramRunner<RunnerSettings>() {
     /** Debug is the same run with the test host waiting for a debugger, so it needs somebody to attach one. */
     override fun canRun(executorId: String, profile: RunProfile): Boolean =
         profile is DotNetRunConfiguration && profile.options.command == DotNetCommand.TEST &&
-            (executorId == DefaultRunExecutor.EXECUTOR_ID || executorId == DefaultDebugExecutor.EXECUTOR_ID && DotNetProcessAttacher.find() != null)
+            (executorId == DefaultRunExecutor.EXECUTOR_ID || executorId == DefaultDebugExecutor.EXECUTOR_ID && DotNetProcessAttacher.find() != null) ||
+            profile is UnitTestsRunProfile && executorId == DefaultRunExecutor.EXECUTOR_ID
 
     override fun doExecute(state: RunProfileState, environment: ExecutionEnvironment): RunContentDescriptor? {
         com.intellij.openapi.application.WriteIntentReadAction.run { FileDocumentManager.getInstance().saveAllDocuments() }
@@ -77,6 +78,12 @@ class DotNetTestRunner : GenericProgramRunner<RunnerSettings>() {
             .firstOrNull { it.displayName == name && it.processHandler?.isProcessTerminated != false }
     }
 }
+
+/**
+ * A run configuration of tests that another runner executes (a framework's own test runner, as the Unity editor's): [DotNetTestRunner]
+ * shows its runs in the Unit Tests window too.
+ */
+interface UnitTestsRunProfile : RunProfile
 
 /** Title and icon of the Unit Tests tool window, see [DotNetTestRunner]. */
 object UnitTestsWindowDecoration {

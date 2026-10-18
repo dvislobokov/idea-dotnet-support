@@ -58,6 +58,8 @@
         <!-- the link with the Unity editor (UNITY_PLAN.md, "Интеграция с редактором"): the package in Packages/, the state of the editor in
              the status bar, Play / Pause / Step / Refresh, the editor refreshing what the IDE saves -->
         <postStartupActivity implementation="io.github.dotnetsupport.frameworks.unity.UnityEditorStartup"/>
+        <configurationType implementation="io.github.dotnetsupport.frameworks.unity.UnityTestConfigurationType"/>
+        <runConfigurationProducer implementation="io.github.dotnetsupport.frameworks.unity.UnityTestConfigurationProducer"/>
         <statusBarWidgetFactory id="DotNet.UnityEditor" implementation="io.github.dotnetsupport.frameworks.unity.UnityEditorStatusWidgetFactory"/>
         <toolWindow id="Unity" anchor="bottom" icon="/icons/unity/unity.svg" doNotActivateOnStart="true"
                     factoryClass="io.github.dotnetsupport.frameworks.unity.UnityLogToolWindowFactory"/>

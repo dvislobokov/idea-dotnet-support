@@ -247,6 +247,8 @@ Solution для живой проверки плагина: отладчика (
 - [ ] `UNITY:external-editor` (0.1.272, нужен открытый Unity): предложение «Open scripts from Unity in this IDE?», IDE в Preferences |
       External Tools, двойной клик по скрипту и по строке консоли в Unity открывает файл в IDE на строке и выводит её окно вперёд, закрытая
       IDE запускается, новый скрипт попадает в `.csproj`, «Stop Opening Scripts from Unity Here» возвращает прежний редактор
+- [ ] `UNITY:tests` (0.1.273, `Unity/Assets/Tests/Editor/MathTests.cs`, нужен открытый Unity): ▶ класса и метода запускает тесты в Unity,
+      результаты в окне Unit Tests зелёные с длительностями; сломанная проверка — красный тест с сообщением и стеком; Stop отменяет прогон
 
 - `Unity/Assets/Scripts/Checks.cs` (0.1.258, «плюшки»):
   - [ ] `UNITY:inspections`, `UNITY:signature`, `UNITY:compare-tag`, `UNITY:frame`, `UNITY:null-check`, `UNITY:get-component-type`:

@@ -1,7 +1,8 @@
 // The link of the Unity editor with the IDE of C# Project Support (UNITY_PLAN.md, "Интеграция с редактором"). Files in Temp/DotNetSupport of
 // the project, as Unity cleans Temp when it closes:
 //   commands/<n>.txt   the IDE -> the editor: one command per file (refresh, compile, play, stop, pause, step, use-as-editor,
-//                      restore-editor, open-asset <path> <line>), run in the order of the names
+//                      restore-editor, open-asset <path> <line>; run-tests and cancel-tests of Tests/TestRuns.cs through IdeCommands), run
+//                      in the order of the names
 //   state.json         the editor -> the IDE: play mode, pause, compilation, the errors of the last compilation and a heartbeat every 2 s
 // Files rather than a socket: they outlive the reload of the domain (every compilation), need no port, and the editor's update loop runs
 // while it is in the background (measured on Unity 6000.6: a command runs within half a second, Play in 2.3 s, unfocused), when it does
@@ -19,7 +20,7 @@ namespace DotNetSupport.Unity.Editor
     internal static class IdeConnection
     {
         /// <summary>Of package.json: the IDE updates the package when its own is newer.</summary>
-        private const string PackageVersion = "1.2.0";
+        private const string PackageVersion = "1.3.0";
 
         private static readonly string Folder = Path.Combine(Path.GetDirectoryName(Application.dataPath) ?? ".", "Temp", "DotNetSupport");
         private static readonly string Commands = Path.Combine(Folder, "commands");
@@ -112,7 +113,7 @@ namespace DotNetSupport.Unity.Editor
                     ExternalEditor.OpenAsset(open.Substring("open-asset ".Length));
                     break;
                 default:
-                    Debug.LogWarning("[C# Project Support] unknown command from the IDE: " + command);
+                    if (!IdeCommands.TryRun(command)) Debug.LogWarning("[C# Project Support] unknown command from the IDE: " + command);
                     break;
             }
             WriteState();

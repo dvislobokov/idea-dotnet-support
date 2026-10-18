@@ -62,6 +62,23 @@ Rider делает через `com.unity.ide.rider`. Проба — пакет `
 
 ## Сделано
 
+- [x] 0.1.273 — шаг 4 «тесты в открытом редакторе»: пакет 1.3.0, своя сборка `DotNetSupport.Unity.Editor.Tests` (`Editor/Tests`,
+  ссылки на `UnityEditor.TestRunner` / `UnityEngine.TestRunner` / `nunit.framework.dll`, собирается только при `com.unity.test-framework`
+  ≥ 1.1.0 — `versionDefines` + `defineConstraints`), команды через публичный `IdeCommands` основной сборки: `run-tests <run> <mode>` +
+  строки `group:<regex>` / `assembly:<имя>` → `TestRunnerApi.Execute`, `cancel-tests` → `CancelTestRun`; колбэки
+  (`RegisterTestCallback` в `[InitializeOnLoad]`, прогон в `SessionState` — переживает перезагрузку домена Play mode; чужие прогоны окна
+  Test Runner не пишутся) пишут `Temp/DotNetSupport/tests/<run>/events.jsonl` в формате логгера `dotnet test` (`testStart` / `result` /
+  `runComplete`). IDE: конфигурация «Unity Tests» (`UnityTestRunConfiguration`: режим, фильтры; процесс-заглушка до `runComplete`,
+  ухода редактора или Stop), дерево — `TrxEventsConverter` ядра с пустой папкой TRX, переход — `DotNetTestLocator` по `Assets`;
+  `UnityTestConfigurationProducer` заменяет `dotnet test` у ▶ в проекте Unity, режим — по `includePlatforms` ближайшего `.asmdef`
+  (или папке `Editor`), фильтр — `^Класс\.` / `^Класс\.Метод(\(|$)`. Ядро: маркер `UnitTestsRunProfile` (окно Unit Tests берёт такие
+  запуски), `[UnityTest]` в `TestDiscovery`. Проверено роботом с открытым Unity на копии `nine-to-fire`: ▶ класса `HealthRulesTests` →
+  6 тестов зелёные в окне Unit Tests с длительностями; сломанная проверка и ▶ метода → один тест красный, «Expected: 76 But was: 75» и
+  стек с `HealthRulesTests.cs:11` (снимок `build/ui-robot/unity-tests.png`). Тест `UnityTestsTest`. Не сделано: проводник Unit Tests
+  (вкладка Explorer) тесты Unity не показывает, повтор упавших, отладка тестов, Play mode вживую не проверен (в проекте нет таких тестов).
+  Человеком вживую не проверено.
+
+
 - [x] 0.1.272 — шаг 3 «IDE как внешний редактор Unity»: пакет 1.2.0, `ExternalEditor.cs` — `IExternalCodeEditor` через
   `CodeEditor.Register` (в Preferences | External Tools — «IntelliJ IDEA 2026.1.4 (C# Project Support)», путь — лаунчер IDE из
   `ide.json`, запомнен в EditorPrefs на время, пока IDE закрыта); `OpenProject` — при живом `ide.json` команда в

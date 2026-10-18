@@ -13,7 +13,8 @@ object UnityEditorPackage {
     const val NAME = "io.github.dotnetsupport.unity"
 
     /** The files of the package, as the build of the plugin carries them. */
-    val FILES = listOf("package.json", "Editor/DotNetSupport.Unity.Editor.asmdef", "Editor/IdeConnection.cs", "Editor/ConsoleLog.cs", "Editor/ExternalEditor.cs")
+    val FILES = listOf("package.json", "Editor/DotNetSupport.Unity.Editor.asmdef", "Editor/IdeConnection.cs", "Editor/ConsoleLog.cs", "Editor/ExternalEditor.cs", "Editor/IdeCommands.cs",
+        "Editor/Tests/DotNetSupport.Unity.Editor.Tests.asmdef", "Editor/Tests/TestRuns.cs")
 
     enum class Status { MISSING, OUTDATED, CURRENT }
 

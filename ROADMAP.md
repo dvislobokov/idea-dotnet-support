@@ -802,7 +802,11 @@
 
 
 
-  - [x] Unity, IDE как внешний редактор (0.1.272) — Unity открывает скрипты и строки своей консоли в IDE на нужной строке (или запускает
+  - [x] Unity, тесты в открытом редакторе (0.1.273) — ▶ у теста или класса в проекте Unity запускает его в Unity (EditMode / PlayMode по
+    `.asmdef`), результаты в окне Unit Tests по мере прохождения, со стеком и сообщением; конфигурация «Unity Tests». `UNITY_PLAN.md`,
+    «Шаги», шаг 4; сценарий — `UNITY:tests` в `debug-playground/Unity/Assets/Tests/Editor/MathTests.cs`. Проверено роботом с открытым Unity
+  - [x] Unity, IDE как внешний редактор (0.1.272)
+ — Unity открывает скрипты и строки своей консоли в IDE на нужной строке (или запускает
     закрытую IDE), проекты генерирует пакет Rider / Visual Studio; выбор по согласию, возврат прежнего редактора. `UNITY_PLAN.md`, «Шаги»,
     шаг 3; сценарий — `UNITY:external-editor` в `debug-playground/Unity/Assets/Scripts/Player.cs`. Проверено роботом с открытым Unity
   - [x] Unity, лог консоли (0.1.271)

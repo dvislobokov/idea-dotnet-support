@@ -3,7 +3,15 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.273
+
+- Unity: tests of the Unity Test Framework run in the open Unity editor from the IDE — ▶ next to a test method or class (`[Test]`,
+  `[TestCase]`, `[UnityTest]`) in a Unity project runs it there, in edit mode or play mode as its assembly definition says; the results
+  come into the Unit Tests window as they are made, with the message, the stack and the output of a failed test. Stop cancels the run.
+  A saved run configuration "Unity Tests" takes a mode and filters.
+
 ## 0.1.272
+
 
 - Unity: the IDE can be Unity's external script editor — Preferences | External Tools of Unity lists it, and the IDE offers it once
   (Open Scripts from Unity in This IDE; Stop Opening Scripts from Unity Here gives Unity back the editor it had). A double click on a

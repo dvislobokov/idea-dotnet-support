@@ -24,7 +24,8 @@ class TestTarget(val className: String, val methodName: String?, val nameRange: 
  * There is no symbol resolution, so inherited tests and custom attributes derived from the known ones are not seen.
  */
 object TestDiscovery {
-    private val ATTRIBUTES = listOf("Fact", "Theory", "Test", "TestCase", "TestCaseSource", "TestMethod", "DataTestMethod")
+    // UnityTest: the coroutine test of the Unity Test Framework (NUnit's extension), run by the editor
+    private val ATTRIBUTES = listOf("Fact", "Theory", "Test", "TestCase", "TestCaseSource", "TestMethod", "DataTestMethod", "UnityTest")
         .flatMap { listOf(it, it + "Attribute") }.toSet()
 
     /** Cheap check before tokenizing a file that obviously has no tests. */
