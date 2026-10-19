@@ -284,6 +284,7 @@ object NativeCSharpCompletion {
                     locals()
                     members()
                     staticImports()
+                    items += NativeCSharpMemberCompletion.staticImportItems(place, file, matcher)
                     nestedTypes()
                     solutionTypes()
                     if (analysis.typeRole.keywords) importedTypes()   // the filtered places of 0.1.88 (throw new, base list, event, constraint) keep to their own types

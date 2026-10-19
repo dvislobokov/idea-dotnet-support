@@ -159,6 +159,20 @@ object CSharpPostfixTemplates {
         val namedType: NamedType? by lazy(namedTypeOf)
     }
 
+    private val DIRECTIVE_HEAD = Regex("""(?:global\s+)?using(?:\s+static)?(?:\s+@?\w+\s*=)?|namespace""")
+
+    /**
+     * Whether the name that ends at [start] is the target of a `using` / `using static` / `using X =` or the name of a `namespace`: a
+     * namespace there, no value — no templates (`using Microsoft.` listed `.arg`, `.await`…, the user's check 2026-10-19). The preprocessor
+     * lines between the keyword and the name are skipped: Razor's document has `#line` there (`@using X` is `using \n#line …\nX`).
+     */
+    fun inDirectiveName(text: CharSequence, start: Int): Boolean {
+        var from = start
+        while (from > 0 && text[from - 1] != ';' && text[from - 1] != '{' && text[from - 1] != '}') from--
+        val head = text.subSequence(from, start).lineSequence().filterNot { it.trimStart().startsWith("#") || it.trimStart().startsWith("//") }.joinToString(" ").trim()
+        return DIRECTIVE_HEAD.matches(head)
+    }
+
     /** The templates that take a type name: `.new` and `.inject` of a class, `.typeof` of any type (as Rider). */
     val OF_TYPES = setOf(".new", ".inject", ".typeof")
 
@@ -170,7 +184,7 @@ object CSharpPostfixTemplates {
     fun site(file: PsiFile, document: Document, offset: Int): Site? {
         cached?.let { if (it.document === document && it.stamp == document.modificationStamp && it.offset == offset) return it.site }
         val text = document.immutableCharSequence
-        val site = CSharpExpressions.postfixRange(text, offset)?.let { range ->
+        val site = CSharpExpressions.postfixRange(text, offset)?.takeUnless { inDirectiveName(text, it.startOffset) }?.let { range ->
             Site(
                 text.substring(range.startOffset, range.endOffset), CSharpExpressions.startsStatement(text, range.startOffset),
                 CSharpPostfixMembers.atMemberLevel(text, range.startOffset),

@@ -230,7 +230,8 @@ class ComponentRenderModeDirectivePass(private val csharpLanguageVersion: Int = 
         assert(namespace.children.size == childCount + 1) // Debug.Assert
     }
 
-    private companion object {
+    companion object {
+        /** The nested attribute class of the mode (the IDE's layout maps its expression: `RazorIdeLayoutPass` of the plugin). */
         const val GENERATED_RENDER_MODE_ATTRIBUTE_NAME = "__PrivateComponentRenderModeAttribute"
     }
 }

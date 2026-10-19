@@ -120,7 +120,7 @@ object NativeCSharpUsingCompletion {
         val qualifier = place.usingQualifier
         val result = ArrayList<LookupElement>()
         val libraries = libraryIndexes(file)
-        val namespaces = StubIndex.getInstance().getAllKeys(CSharpStubIndexKeys.NAMESPACES, project) + libraries.flatMap { it.namespaces }
+        val namespaces = solutionNamespaces(project) + libraries.flatMap { it.namespaces }
         for (name in childNamespaces(qualifier, namespaces)) {
             if (!matcher.prefixMatches(name)) continue
             result += element(name, AllIcons.Nodes.Package, null, NativeCSharpCompletion.TYPE + 1, null)
@@ -148,6 +148,16 @@ object NativeCSharpUsingCompletion {
         return result
     }
 
+    /**
+     * The namespaces the C# files of [project] declare. Not `getAllKeys`: the index is shared by the projects of the IDE, its keys are of
+     * every project opened before (`using Microsoft.` in a Blazor project offered `Unity`, the user's check 2026-10-19).
+     */
+    fun solutionNamespaces(project: Project): Set<String> {
+        val result = HashSet<String>()
+        StubIndex.getInstance().processAllKeys(CSharpStubIndexKeys.NAMESPACES, { result += it; true }, GlobalSearchScope.allScope(project), null)
+        return result
+    }
+
     /** The next segment of each of [namespaces] under [qualifier]: `System.Collections.Generic` under `System` is `Collections`. */
     fun childNamespaces(qualifier: String, namespaces: Collection<String>): Set<String> {
         val result = java.util.TreeSet<String>(String.CASE_INSENSITIVE_ORDER)
@@ -172,7 +182,10 @@ object NativeCSharpUsingCompletion {
     }
 
     private fun libraryIndexes(file: CSharpFile): List<io.github.dotnetsupport.index.AssemblyIndex> {
-        val virtualFile = file.originalFile.virtualFile ?: return emptyList()
+        // an injected document (the C# of a Razor file) has a window for a file, with no folder: its project is its host file's
+        // (`@using Microsoft.` gave no `AspNetCore`, the user's check 2026-10-19)
+        val host = io.github.dotnetsupport.lang.semantic.CSharpInjections.hostFile(file.originalFile) ?: file
+        val virtualFile = host.originalFile.virtualFile ?: host.virtualFile ?: return emptyList()
         val projectFile = DotNetProjects.findOwningProject(virtualFile) ?: return emptyList()
         return AssemblyIndexService.getInstance(file.project).indexes(projectFile)
     }

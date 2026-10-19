@@ -4,6 +4,11 @@ import io.github.dotnetsupport.razor.lang.codegen.IntermediateNodePassBase
 import io.github.dotnetsupport.razor.lang.codegen.RazorCodeDocument
 import io.github.dotnetsupport.razor.lang.codegen.RazorOptimizationPass
 import io.github.dotnetsupport.razor.lang.codegen.components.ComponentInjectIntermediateNode
+import io.github.dotnetsupport.razor.lang.codegen.components.ComponentRenderModeDirectivePass
+import io.github.dotnetsupport.razor.lang.intermediate.CSharpCodeIntermediateNode
+import io.github.dotnetsupport.razor.lang.intermediate.CSharpIntermediateToken
+import io.github.dotnetsupport.razor.lang.intermediate.ClassDeclarationIntermediateNode
+import io.github.dotnetsupport.razor.lang.syntax.SourceSpan
 import io.github.dotnetsupport.razor.lang.codegen.mvc.InjectIntermediateNode
 import io.github.dotnetsupport.razor.lang.intermediate.DocumentIntermediateNode
 import io.github.dotnetsupport.razor.lang.intermediate.IntermediateNode
@@ -28,6 +33,7 @@ class RazorIdeLayoutPass : IntermediateNodePassBase(), RazorOptimizationPass {
     override fun executeCore(codeDocument: RazorCodeDocument, documentNode: DocumentIntermediateNode) {
         val path = codeDocument.source.filePath ?: return
         val clazz = documentNode.findPrimaryClass() ?: return
+        mapRenderMode(codeDocument, clazz, documentNode)
         val method = documentNode.findPrimaryMethod() ?: return
         val methodIndex = clazz.children.indexOf(method)
         if (methodIndex < 0) return
@@ -82,6 +88,35 @@ class RazorIdeLayoutPass : IntermediateNodePassBase(), RazorOptimizationPass {
         clazz.children.clear()
         clazz.children.addAll(result)
     }
+
+    /**
+     * `@rendermode InteractiveServer`: below Razor 11 the compiler writes the mode without a mapping (hot reload), so in a .NET 8 / 9
+     * project its line had no C# in the editor — no completion of `@rendermode Inter` (the WSL sandbox, 0.1.295). The editor's document maps
+     * it at every version: the mode's token and its node get the directive token's span, as Razor 11 does; the output of the compiler is
+     * untouched (this pass is the IDE's). Before the layout below, which puts the attribute class at the directive's place in the file. The
+     * directive's node is gone by now (`DirectiveRemovalOptimizationPass`): the span is the mode's text right after `@rendermode`.
+     */
+    private fun mapRenderMode(codeDocument: RazorCodeDocument, clazz: IntermediateNode, documentNode: DocumentIntermediateNode) {
+        val holder = (clazz.children + documentNode.findPrimaryNamespace()?.children.orEmpty())
+            .firstOrNull { it is ClassDeclarationIntermediateNode && it.name == ComponentRenderModeDirectivePass.GENERATED_RENDER_MODE_ATTRIBUTE_NAME } ?: return
+        val text = codeDocument.source.text
+        for (code in holder.children) for (inner in code.children) {
+            if (inner !is CSharpCodeIntermediateNode || inner.source != null) continue
+            val mode = inner.children.singleOrNull() as? CSharpIntermediateToken ?: continue
+            val content = mode.content
+            if (mode.source != null || content.isBlank()) continue
+            val start = RENDER_MODE.findAll(text).map { it.range.last + 1 }
+                .firstOrNull { it + content.length <= text.length && text.subSequence(it, it + content.length).toString() == content } ?: return
+            val line = (0 until start).count { text[it] == '\n' }
+            val column = start - (text.lastIndexOf('\n', start - 1) + 1)
+            val source = SourceSpan(codeDocument.source.filePath, start, line, column, content.length)
+            inner.source = source
+            mode.source = source
+            return
+        }
+    }
+
+    private val RENDER_MODE = Regex("""@rendermode[ \t]+""")
 
     private fun isInject(node: IntermediateNode): Boolean = node is InjectIntermediateNode || node is ComponentInjectIntermediateNode
 

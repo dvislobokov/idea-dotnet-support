@@ -3,6 +3,14 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.295
+
+- C#: completion offers the static members of a library type imported with `using static` (`using static System.Math;` → `Abs`); in
+  Razor, `@rendermode Inter` → `InteractiveServer`.
+- C#: no postfix templates (`.arg`, `.await`…) after `using X.` and `namespace X.`; no namespaces of other projects opened in the IDE.
+- Razor: `@using Microsoft.` offers the namespaces of the project's assemblies (`AspNetCore`, `JSInterop`…) as in a `.cs` file.
+- Razor: the mode of `@rendermode` is C# in the editor in .NET 8 / 9 projects too (completion, navigation).
+
 ## 0.1.294
 
 - Razor: completion of the directives after `@` at the start of a line (`inject`, `code`, `page`, `using`, `layout`...) and of the

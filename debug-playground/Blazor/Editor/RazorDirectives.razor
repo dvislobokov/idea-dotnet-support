@@ -1,4 +1,5 @@
 @page "/editor/directives"
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
 @inject NavigationManager Navigation
 @implements IDisposable
 @* RAZOR_PLAN.md, R4 (0.1.294, the user's check 2026-10-19): completion of Razor itself next to the C# of the page.
@@ -15,7 +16,13 @@
    TYPE:razor-head-after-inject — at the end of the `@implements IDisposable` line above (after the `@inject` line) press Enter and type
    `@using System.Text.J`, then on the next line `@attribute [Obso`; then delete `posable` of `IDisposable` and Ctrl+Space. EXPECT: the namespaces
    (`Json`), `Obsolete`, `IDisposable`: these lines come after an `@inject`, the generator writes them before the members — before 0.1.294
-   they had no completion at all. Ctrl+Z. *@
+   they had no completion at all. Ctrl+Z.
+
+   TYPE:razor-rendermode — on a new line after the `@implements` line type `@rendermode Inter`. EXPECT: `InteractiveServer`,
+   `InteractiveAuto`, `InteractiveWebAssembly` — the static members of `RenderMode` the `@using static` above imports (before 0.1.295 the
+   members of a library type of `using static` were never offered, in a .cs neither: `using static System.Math;` and `Ab` gives `Abs` now).
+   Then `@using Microsoft.` EXPECT: `AspNetCore`, `Extensions`, `JSInterop`… as in a .cs of the project (before 0.1.295 the assemblies of the
+   project were not looked at in a Razor file), no `.arg` / `.await` (the postfix templates are not offered after `using`). Ctrl+Z. *@
 
 <h3>Razor directives</h3>
 

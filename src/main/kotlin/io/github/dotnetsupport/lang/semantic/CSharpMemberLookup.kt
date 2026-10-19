@@ -6,7 +6,6 @@ import io.github.dotnetsupport.csharp.lang.psi.CSharpMemberAccessExpression
 import io.github.dotnetsupport.csharp.lang.psi.CSharpMemberBindingExpression
 import io.github.dotnetsupport.csharp.lang.psi.CSharpQualifiedName
 import io.github.dotnetsupport.csharp.lang.psi.CSharpSimpleName
-import io.github.dotnetsupport.csharp.lang.psi.stubs.CSharpStubIndexKeys
 import io.github.dotnetsupport.index.IndexedMemberKind
 import io.github.dotnetsupport.index.IndexedType
 import io.github.dotnetsupport.lang.Member
@@ -73,7 +72,7 @@ class CSharpMemberLookup(private val resolver: CSharpNameResolver) {
 
     private fun namespace(name: String, sink: Sink) {
         val project = resolver.file.project
-        val all = com.intellij.psi.stubs.StubIndex.getInstance().getAllKeys(CSharpStubIndexKeys.NAMESPACES, project) + resolver.assemblies.namespaces
+        val all = NativeCSharpUsingCompletion.solutionNamespaces(project) + resolver.assemblies.namespaces
         for (child in NativeCSharpUsingCompletion.childNamespaces(name, all)) sink.add(child, CSharpSymbol.Namespace(CSharpNameResolver.join(name, child)), overloads = false)
         for ((type, arity) in NativeCSharpUsingCompletion.solutionTypesIn(resolver.file, name, sink.matcher)) {
             for (symbol in resolver.typesIn(name, type, arity)) sink.add(type, symbol, overloads = false)

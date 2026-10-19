@@ -189,6 +189,8 @@ Solution для живой проверки плагина: отладчика (
 - [ ] (0.1.294) `TYPE:razor-inject-name`: `@inject IJSRuntime ` + Ctrl+Space — `JSRuntime`, `Runtime`, ничего из C#
 - [ ] (0.1.294) `TYPE:razor-head-after-inject`: после строки `@inject` — `@using System.Text.J` даёт `Json`, `@attribute [Obso` —
       `Obsolete`, `@implements IDisp` — `IDisposable` (до 0.1.294 после `@inject` пусто)
+- [ ] (0.1.295) `TYPE:razor-rendermode`: `@rendermode Inter` — `InteractiveServer`, `InteractiveAuto`, `InteractiveWebAssembly`;
+      `@using Microsoft.` — `AspNetCore`, `JSInterop`, как в `.cs`, без `.arg` / `.await`
 - [x] (робот в WSL, 0.1.288) `TYPE:razor-inlay-hints` (`Blazor/Editor/RazorCSharp.razor`): `left:` `right:` у `@Sum(2, 3)`, тип у
       `var total`, `right:` у `1` в `Sum(count, 1)`; у `@count` разметки подсказок нет
 - [ ] `TYPE:razor-errors-after-generation` (0.1.196, R0b; свежесть при наборе — 0.1.198): после того как генератор отработал (дерево:

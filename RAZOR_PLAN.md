@@ -286,6 +286,16 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
   (`isDocumentCompiled` = false: в её классе нет членов), ошибки этих строк по-прежнему не показываются; (4) имя после типа `@inject` —
   из типа по словам (`IJSRuntime` → `JSRuntime`, `Runtime`). Найдено попутно: `getInjectionHost` документа из многих кусков отдаёт первый
   хост (маршрут `@page`), хост каретки — по `injectedToHost`. Тест `RazorCompletionTest`, площадка — `RazorDirectives.razor`.
+  0.1.295 (робот в песочнице после 0.1.294): `@rendermode Inter` был пуст — члены библиотечного типа `using static` (`RenderMode` из
+  `_Imports.razor`) completion не давал вовсе, и в `.cs` тоже (`using static System.Math;` → `Ab` пусто): синтаксис знал члены типов
+  решения, теперь `NativeCSharpMemberCompletion.staticImportItems` (семантика, без методов расширения). `@using Microsoft.` в Razor не
+  давал `AspNetCore`: сборки проекта для `using` искались по `virtualFile` впрыснутого документа — окну без папки; теперь по файлу-хосту.
+  Там же чужие пространства имён (`Unity` в Blazor-проекте): ключи stub-индекса общие для проектов IDE, теперь `processAllKeys` по
+  области проекта. Постфиксные шаблоны после `using X.` / `namespace X.` (и в `.cs`) — больше нет (`CSharpPostfixTemplates.inDirectiveName`).
+  Робот в WSL нашёл ещё: в проекте net9 `@rendermode Inter` пуст и после этого — компилятор до Razor 11 пишет режим без `#line` (hot
+  reload; порт повторяет его, оракул гейта — SDK 10), у строки нет C# в редакторе. `RazorIdeLayoutPass.mapRenderMode` отображает его в
+  документе IDE на любой версии (место — текст после `@rendermode`: узел директивы к этому проходу уже снят `DirectiveRemovalOptimizationPass`);
+  вывод компилятора прежний. Тест `testTheRenderModeOfANet9ProjectIsCSharpOfTheEditor`.
 - [x] **R5. Компоненты и tag helpers** (3; 0.1.286 — последние хвосты R5e). Теги компонентов в completion (solution и сборки, с `@using` в области), атрибуты —
   `[Parameter]` с типами, `@bind-Value` / `ValueChanged`, `EventCallback`, `RenderFragment` дочерним содержимым, generic-компоненты
   (`TItem` по аргументам), `@ref`; переход тег → `.razor` / тип сборки, Find Usages и rename компонента (файл и теги). Tag helpers

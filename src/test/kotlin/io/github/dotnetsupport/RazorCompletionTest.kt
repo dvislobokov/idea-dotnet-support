@@ -89,6 +89,56 @@ class RazorCompletionTest : BasePlatformTestCase() {
         assertTrue(io.github.dotnetsupport.frameworks.razor.RazorCSharpDocument.places(file).any { it.host.text == "Services" })
     }
 
+    /**
+     * The static members of a library type of `using static` by simple name — `@rendermode InteractiveServer` of `RenderMode` that a Blazor
+     * `_Imports.razor` imports, `Abs` of `using static System.Math;` (the sandbox 2026-10-19: none came, only the solution's types had them).
+     */
+    fun testUsingStaticOfALibraryType() {
+        val math = items("MathStatic.cs", "using static System.Math;\nclass C { static object M => Ab<caret>; }\n")
+        assertTrue(math.toString(), "Abs" in math || math.single().contains("Abs("))
+        items("ConsoleStatic.cs", "using static System.Console;\nclass C { void M() { WriteL<caret> } }\n")
+        assertTrue(myFixture.editor.document.text, myFixture.editor.document.text.contains("WriteLine("))
+        // not the extension methods: `using static` brings them as extensions only
+        val linq = items("LinqStatic.cs", "using static System.Linq.Enumerable;\nclass C { static object M => Whe<caret>; }\n")
+        assertTrue(linq.toString(), linq.none { it == "Where" || it.contains("Where(") })
+        val mode = items("Mode.razor", "@using static System.Math\n@inject System.IServiceProvider Services\n@rendermode Ab<caret>\n<p>@Services</p>\n")
+        assertTrue(mode.toString(), "Abs" in mode || razorText().contains("@rendermode Abs"))
+    }
+
+    /**
+     * `@rendermode` of a .NET 9 project: the compiler writes the mode without a mapping below Razor 11 (hot reload), the editor's document
+     * maps it — `@rendermode Inter` had no completion in the WSL sandbox (0.1.295) while `@Inter` in the markup had.
+     */
+    fun testTheRenderModeOfANet9ProjectIsCSharpOfTheEditor() {
+        myFixture.addFileToProject("Mode9/Mode9.csproj", "<Project Sdk=\"Microsoft.NET.Sdk.Web\"><PropertyGroup><TargetFramework>net9.0</TargetFramework></PropertyGroup></Project>")
+        val text = "@inject System.IServiceProvider Services\n@rendermode InteractiveServer\n<p>@Services</p>\n@code { int count; }\n"
+        val file = myFixture.addFileToProject("Mode9/Mode.razor", text).viewProvider.getPsi(io.github.dotnetsupport.frameworks.razor.RazorLanguage) as io.github.dotnetsupport.frameworks.razor.RazorFile
+        val document = io.github.dotnetsupport.frameworks.razor.RazorCSharpDocument
+        val compiled = document.compilerOutput(file)!!
+        assertTrue(compiled, Regex("""ModeImpl => InteractiveServer""").containsMatchIn(compiled))
+        val hosts = document.places(file).map { it.range.substring(it.host.text) }
+        assertEquals(listOf("System.IServiceProvider", "Services", "InteractiveServer", "Services", " int count; "), hosts)
+        myFixture.configureFromExistingVirtualFile(myFixture.addFileToProject("Mode9/Abs.razor", "@using static System.Math\n@inject System.IServiceProvider Services\n@rendermode Ab<caret>\n<p>@Services</p>\n").virtualFile)
+        myFixture.completeBasic()
+        assertTrue(razorText(), (myFixture.lookupElementStrings ?: emptyList()).contains("Abs") || razorText().contains("@rendermode Abs"))
+    }
+
+    /** A namespace after `using`: no postfix templates (`using Microsoft.` listed `.arg`, `.await`, `.cast`… in .cs and Razor). */
+    fun testNoPostfixTemplatesInAUsing() {
+        for ((name, text) in listOf("PostfixUsing.cs" to "using System.<caret>\nclass C { }\n", "PostfixUsing.razor" to "@using System.<caret>\n<p>x</p>\n")) {
+            val found = items(name, text)
+            assertTrue("$name: $found", found.none { it.startsWith(".") || it in setOf("arg", "await", "cast", "not", "par") })
+            assertTrue("$name: $found", "Linq" in found)
+        }
+        fun inName(text: String, name: String) = io.github.dotnetsupport.lang.CSharpPostfixTemplates.inDirectiveName(text, text.lastIndexOf(name))
+        assertTrue(inName("using \n#nullable restore\n#line (1,8)-(1,17) \"/A.razor\"\nMicrosoft", "Microsoft"))
+        assertTrue(inName("namespace Shop", "Shop"))
+        assertTrue(inName("using Alias = System", "System"))
+        assertFalse(inName("using (var x = stream", "stream"))
+        assertFalse(inName("using var x = stream", "stream"))
+        assertFalse(inName("void M() { var x = stream", "stream"))
+    }
+
     fun testTheNameOfAnInject() {
         val items = items("Inject.razor", "@inject System.IServiceProvider <caret>\n<p>x</p>\n")
         assertEquals(setOf("ServiceProvider", "Provider"), items.toSet())

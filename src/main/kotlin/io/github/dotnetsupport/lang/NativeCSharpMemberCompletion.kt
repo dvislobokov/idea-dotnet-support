@@ -65,6 +65,30 @@ object NativeCSharpMemberCompletion {
     }
 
     /**
+     * The static members of the library types of `using static` by simple name: `using static System.Math;` → `Abs`, `@rendermode Inter` →
+     * `InteractiveServer` of `RenderMode` imported by a Blazor `_Imports.razor` (the user's check 2026-10-19: neither came — the syntax lists
+     * the members of the solution's types only). Not the extension methods: `using static` brings them as extensions alone (C# §14.5.4).
+     */
+    fun staticImportItems(place: NativeCSharpCompletionPlace, file: CSharpFile, matcher: PrefixMatcher): List<LookupElement> {
+        val name = place.name ?: return emptyList()
+        val resolver = CSharpSemanticSession(file.project).resolver(file)
+        val types = resolver.staticTypes(name).filterIsInstance<SemanticType.Library>()
+        if (types.isEmpty()) return emptyList()
+        val lookup = CSharpMemberLookup(resolver)
+        val text = CSharpSymbolText(resolver)
+        val result = ArrayList<LookupElement>()
+        for (type in types) {
+            for (entry in lookup.entries(CSharpNameResolver.Qualifier.Type(type), name, false, matcher)) {
+                ProgressManager.checkCanceled()
+                val symbols = entry.symbols.filterNot(resolver::isExtension)
+                if (symbols.isEmpty()) continue
+                for (row in byArity(CSharpMemberLookup.Entry(entry.name, symbols, entry.inaccessible))) element(row, text, resolver, false, null, file)?.let { result += it }
+            }
+        }
+        return result
+    }
+
+    /**
      * One row per name and arity, as Rider lists `AddSingleton(Type, Type)`, `AddSingleton<TService>()` and `AddSingleton<TService, TImplementation>()`
      * apart (0.1.148): one row per name hid every generic form behind `(+ N)` of the first overload of the assembly.
      */
