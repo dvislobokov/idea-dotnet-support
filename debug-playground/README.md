@@ -181,6 +181,8 @@ Solution для живой проверки плагина: отладчика (
       `Step`, `CountChanged`
 - [x] (робот в WSL, 0.1.288) `TYPE:razor-edit-regenerates`: в `Counter.razor` добавить `[Parameter] public int Max { get; set; }`, не
       сохраняя → примерно через секунду `nameof(Counter.` предлагает `Max`, Ctrl+B ведёт в `Counter_razor.g.cs`
+- [x] (робот в WSL, 0.1.289) `TYPE:razor-code-completion` и `TYPE:razor-errors` (`Blazor/Editor/RazorCSharp.razor`): после
+      `Navigation.` — члены `NavigationManager`; `Navigation.Nope` — CS1061, `count = true` — CS0029 (до 0.1.289 `@code` молчал)
 - [x] (робот в WSL, 0.1.288) `TYPE:razor-inlay-hints` (`Blazor/Editor/RazorCSharp.razor`): `left:` `right:` у `@Sum(2, 3)`, тип у
       `var total`, `right:` у `1` в `Sum(count, 1)`; у `@count` разметки подсказок нет
 - [ ] `TYPE:razor-errors-after-generation` (0.1.196, R0b; свежесть при наборе — 0.1.198): после того как генератор отработал (дерево:

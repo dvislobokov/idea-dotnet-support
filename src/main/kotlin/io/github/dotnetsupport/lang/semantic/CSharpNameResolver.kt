@@ -716,17 +716,30 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
         return found
     }
 
+    /**
+     * The constraint clauses of a type: its own, or those of another of its parts — C# lets one part of a partial type say them for all
+     * (a component's `@typeparam T` beside its `.razor.cs` with `where T : struct`: MudBlazor's HeatMap was CS1503 "cannot convert from
+     * 'T' to 'T?'", 0.1.289).
+     */
+    internal fun typeConstraintClauses(owner: CSharpTypeDeclaration): List<io.github.dotnetsupport.csharp.lang.psi.CSharpTypeParameterConstraintClause> {
+        val own = owner.constraintClauses
+        if (own.isNotEmpty() || owner.modifiers.none { it.text == "partial" }) return own
+        val parts = syntax.declaredType(owner)?.parts.orEmpty()
+        return parts.asSequence().mapNotNull { it.element() as? CSharpTypeDeclaration }.filter { it !== owner }.map { it.constraintClauses }.firstOrNull { it.isNotEmpty() } ?: own
+    }
+
     internal fun constraintsOf(parameter: SemanticType.Parameter): List<SemanticType> {
         val owner = parameter.owner ?: return emptyList()
         val clauses = when (owner) {
-            is CSharpTypeDeclaration -> owner.constraintClauses
+            is CSharpTypeDeclaration -> typeConstraintClauses(owner)
             is CSharpMethodDeclaration -> owner.constraintClauses
             is CSharpLocalFunctionStatement -> owner.constraintClauses
             is CSharpDelegateDeclaration -> owner.constraintClauses
             else -> return emptyList()
         }
         val clause = clauses.firstOrNull { it.nameElement?.identifier?.text == parameter.name } ?: return emptyList()
-        val resolver = (owner.containingFile as? CSharpFile)?.let(session::reachable) ?: return emptyList()
+        // the file of the clause: another part's names resolve where that part is
+        val resolver = (clause.containingFile as? CSharpFile)?.let(session::reachable) ?: return emptyList()
         return clause.constraints.filterIsInstance<CSharpTypeConstraint>().mapNotNull { it.type?.let(resolver::resolveType) }
     }
 
@@ -1046,7 +1059,7 @@ class CSharpNameResolver internal constructor(val file: CSharpFile, internal val
 
     private fun constraintClause(parameter: SemanticType.Parameter): CSharpTypeParameterConstraintClause? {
         val clauses = when (val owner = parameter.owner) {
-            is CSharpTypeDeclaration -> owner.constraintClauses
+            is CSharpTypeDeclaration -> typeConstraintClauses(owner)
             is CSharpMethodDeclaration -> owner.constraintClauses
             is CSharpLocalFunctionStatement -> owner.constraintClauses
             is CSharpDelegateDeclaration -> owner.constraintClauses

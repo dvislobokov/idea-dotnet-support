@@ -79,13 +79,13 @@ object NativeCSharpImportCompletion {
      * [bonus]: what the expected type and name add to an item.
      */
     fun types(
-        place: NativeCSharpCompletionPlace, file: CSharpFile, matcher: PrefixMatcher, taken: Set<String>, syntax: NativeCSharpResolver = NativeCSharpResolver(file),
+        place: NativeCSharpCompletionPlace, file: CSharpFile, matcher: PrefixMatcher, taken: Set<String>, syntax: NativeCSharpResolver = NativeCSharpResolver.seeing(file),
         bonus: (String) -> Double = { 0.0 }, mlBonus: (String) -> Double = bonus,
         accepts: (IndexedType) -> Boolean = { true }, acceptsSource: (TypeInfo) -> Boolean = { true },
     ): List<LookupElement> = Collector(place, file, matcher, taken, syntax, bonus, attributes = false, mlBonus, accepts, acceptsSource).collect().filterNot(CSharpCompletionExclusions::excludes)
 
     /** The attributes at `[`: of the assemblies the place sees, then the ones not imported, by the name without `Attribute`. */
-    fun attributes(place: NativeCSharpCompletionPlace, file: CSharpFile, matcher: PrefixMatcher, taken: Set<String>, syntax: NativeCSharpResolver = NativeCSharpResolver(file)): List<LookupElement> =
+    fun attributes(place: NativeCSharpCompletionPlace, file: CSharpFile, matcher: PrefixMatcher, taken: Set<String>, syntax: NativeCSharpResolver = NativeCSharpResolver.seeing(file)): List<LookupElement> =
         Collector(place, file, matcher, taken, syntax, { 0.0 }, attributes = true).collect().filterNot(CSharpCompletionExclusions::excludes)
 
     private class Collector(

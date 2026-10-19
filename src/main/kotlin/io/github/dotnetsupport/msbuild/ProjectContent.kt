@@ -96,6 +96,9 @@ class ProjectContent(private val project: MsBuildProject, private val evaluated:
         path.endsWith(".cs", ignoreCase = true) -> "Compile"
         path.endsWith(".resx", ignoreCase = true) -> "EmbeddedResource"
         project.isWebSdk && path.startsWith("wwwroot/", ignoreCase = true) -> "Content"
+        // the Web and Razor SDKs take Razor files as Content: `<Content Remove="Plugins\**">` leaves out nopCommerce's copied plugin views
+        (project.isWebSdk || project.sdk.orEmpty().contains("Razor", ignoreCase = true) || project.sdk.orEmpty().contains("Blazor", ignoreCase = true)) &&
+            (path.endsWith(".cshtml", ignoreCase = true) || path.endsWith(".razor", ignoreCase = true)) -> "Content"
         else -> "None"
     }
 

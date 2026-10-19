@@ -101,6 +101,58 @@ class CSharpSemanticErrorsTest : BasePlatformTestCase() {
         """)))
     }
 
+    /**
+     * A name declared verbatim (`@Required`, `@class`) is the name without the `@`: the resx generator of MudBlazor declares every resource so
+     * (`public const string @MudFormComponent_Required`), and each use was CS0117 once partial types were checked (the harness, 0.1.289).
+     */
+    fun testVerbatimDeclarationsAreTheirNames() {
+        val text = """
+            static class Strings
+            {
+                public const string @Required = "Required";
+                public static int @class = 1;
+                public static string @Text(int @value) => @value.ToString();
+            }
+            class Use
+            {
+                string A() => Strings.Required + Strings.@Required + Strings.@class + Strings.Text(1) + Strings.Text(@value: 2);
+                string B() => Strings.Missing;
+            }
+        """.trimIndent()
+        assertEquals("only the name that is not there", listOf("Missing CS0117"), codes(text))
+    }
+
+    /**
+     * `T` to `T?` is a conversion whatever the part that says `where T : struct` (a Razor component: `@typeparam T` in the `.razor`, the
+     * constraints in its `.razor.cs`) — MudBlazor's HeatMap was CS1503 "cannot convert from 'T' to 'T?'" (the harness, 0.1.289).
+     */
+    fun testTToNullableTAcrossPartsOfAGenericType() {
+        val text = """
+            using System.Collections.Generic;
+            partial class Heat<T> where T : struct
+            {
+                private readonly List<(T value, string color)> legends = new();
+                string Format(T? value) => value?.ToString() ?? "";
+            }
+            partial class Heat<T>
+            {
+                string M(T x, int i) => Format(x) + Format(legends[i].value) + Missing;
+            }
+            class Box<U>
+            {
+                string Show(U? value) => "";
+                string N(U y) => Show(y);
+            }
+        """.trimIndent()
+        // the generators have run (as the helper's run tells the IDE): a partial type is complete, its members are checked
+        CSharpSemanticEnvironment.setGeneratedKnownForTests(true)
+        try {
+            assertEquals("only the name that is not there", listOf("Missing CS0103"), codes(text))
+        } finally {
+            CSharpSemanticEnvironment.setGeneratedKnownForTests(null)
+        }
+    }
+
     fun testMembersThatAreNotThere() {
         assertEquals(listOf(
             "Nope -> CS1061: 'Calc' does not contain a definition for 'Nope' and no accessible extension method 'Nope' accepting a first argument of type 'Calc' could be found (are you missing a using directive or an assembly reference?)",

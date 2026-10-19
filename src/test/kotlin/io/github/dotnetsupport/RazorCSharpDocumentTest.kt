@@ -135,6 +135,37 @@ class RazorCSharpDocumentTest : BasePlatformTestCase() {
         assertTrue(types.toString(), types.any { it.first.contains("int") && it.second.startsWith("total = Sum") })
     }
 
+    /**
+     * The C# of a Razor file its project leaves out is not checked, as the compiler does not compile it: the views nopCommerce's build copies
+     * into `Nop.Web/Plugins` (`<Content Remove="Plugins\**" />`) gave 467 errors (the harness, 0.1.289). The same code elsewhere is checked.
+     */
+    fun testTheCSharpOfAnExcludedRazorFileIsNotChecked() {
+        myFixture.addFileToProject("Shop89/Shop89.csproj", "<Project Sdk=\"Microsoft.NET.Sdk.Web\"><ItemGroup><Content Remove=\"Plugins\\**\" /></ItemGroup></Project>")
+        val code = "@{\n    int x = \"a\";\n}\n"
+        fun problems(path: String): List<String> {
+            val file = razor(myFixture.addFileToProject(path, code))
+            val host = RazorCSharpDocument.places(file).first().host
+            val injected = com.intellij.lang.injection.InjectedLanguageManager.getInstance(project).getInjectedPsiFiles(host)!!.first().first as io.github.dotnetsupport.lang.CSharpFile
+            return io.github.dotnetsupport.lang.semantic.CSharpSemanticChecks(io.github.dotnetsupport.lang.semantic.CSharpSemanticSession(project).resolver(injected)).run().map { it.code }
+        }
+        assertTrue("a view of the project", "CS0029" in problems("Shop89/Views/Home/Index.cshtml"))
+        val (excluded, trace) = io.github.dotnetsupport.lang.semantic.SemanticTrace.collectForTests { problems("Shop89/Plugins/Misc.Forums/Views/Index.cshtml") }
+        assertEmpty("a view the project leaves out", excluded)
+        assertTrue(trace.toString(), trace.any { "the build does not compile it" in it })
+    }
+
+    /**
+     * An `@inject` between a code block and the markup does not split the render method: the markup still sees the locals of the block
+     * (nopCommerce's ProductReview/List.cshtml was CS0103 for `hideSearchBlock`, the harness, 0.1.289).
+     */
+    fun testAnInjectAfterACodeBlockKeepsOneRenderMethod() {
+        val text = "@{\n    const string b = \"x\";\n    var c = 1;\n}\n@inject System.IServiceProvider sp\n<div class=\"@(c > 0 ? \"y\" : \"\")\" data-x=\"@b\"></div>\n"
+        val file = razor(myFixture.configureByText("Inject89.cshtml", text))
+        val document = RazorCSharpDocument.text(file)
+        assertFalse(document, "ExecuteAsync__2" in document)
+        assertTrue(document, document.indexOf("var c = 1;") < document.indexOf("c > 0") && document.indexOf("c > 0") < document.indexOf("IServiceProvider sp"))
+    }
+
     fun testTheInjectedFileIsTheDocument() {
         val file = razor(myFixture.configureByText("Counter.razor", counter))
         val host = PsiTreeUtil.findChildrenOfType(file, RazorCodeLiteral::class.java).first { it.text == "currentCount" }

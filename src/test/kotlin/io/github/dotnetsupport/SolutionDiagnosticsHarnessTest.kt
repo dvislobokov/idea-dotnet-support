@@ -63,6 +63,9 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
         // with the generated files loaded no generator can make a type the harness does not see: the errors of Razor projects are not
         // quieted (as the IDE quiets them while RazorCodeGenerators.errorsAfterGeneration is off)
         if (withGenerated) CSharpSemanticEnvironment.setGeneratesForTests(false)
+        // and the generators have run, as the helper's run tells the IDE (D4): a partial type is complete — every Razor component is one, and
+        // without it the C# of a Razor file reported no unknown name (the control Razor file gave no CS0103, 0.1.289)
+        if (withGenerated) CSharpSemanticEnvironment.setGeneratedKnownForTests(true)
         // the background pass over the solution (Problems → Project Errors, `fullSolution` by default since 0.1.212) would check the same
         // files beside the harness and share its caches: the trace of a run then depended on who came first (7 lines of MudBlazor came and
         // went) and the run took a third longer — the harness is the only pass here
@@ -72,6 +75,7 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
     override fun tearDown() {
         try {
             CSharpSemanticEnvironment.setGeneratesForTests(null)
+            CSharpSemanticEnvironment.setGeneratedKnownForTests(null)
             AnalysisScopes.set(AnalysisScopes.COMPILER, AnalysisScopes.FULL_SOLUTION)
             CSharpSemanticEnvironment.setAssembliesForTests(null)
             CSharpSyntaxTrees.forceNativeTreeForTests(null)
@@ -111,8 +115,9 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
         for ((csproj, found) in references) summary.append("# ${csproj.parentFile.name}: ${found.framework}, ${found.libraries.joinToString { "${it.kind} ${it.presentableName}" }}\n")
         val unmatched = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
         CSharpSemanticEnvironment.setAssembliesForTests { file ->
-            // a light file (the declaration of a component) is compiled where its original is
-            val path = file.originalFile.viewProvider.virtualFile.path
+            // a light file (the declaration of a component) is compiled where its original is; the C# of a Razor file where the Razor file is
+            val top = com.intellij.lang.injection.InjectedLanguageManager.getInstance(file.project).getTopLevelFile(file) ?: file
+            val path = top.originalFile.viewProvider.virtualFile.path
             projectOf(path.removePrefix("/src/"))?.let(sets::get) ?: null.also { unmatched += path }
         }
         val files = HashMap<String, CSharpFile>()
@@ -131,6 +136,8 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
         io.github.dotnetsupport.solution.SolutionService.getInstance(project).solutionFilesChanged()
         val projectFiles = HashMap<File, com.intellij.openapi.vfs.VirtualFile>()
         val razorProjects = ArrayList<File>()
+        // the Razor files by their path: the C# of each is checked as the editor checks it (its injected document), below
+        val razorFiles = java.util.TreeMap<String, com.intellij.psi.PsiFile>()
         for (csproj in projects) {
             val projectFolder = csproj.parentFile.relativeTo(root).invariantSeparatorsPath
             // the project file itself: the semantics finds the project of a file by it, as in the IDE (CompilationModel.projectOf)
@@ -138,7 +145,7 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
             // its Razor files: the declarations of its components are its sources for the tag helper discovery (RAZOR_PLAN.md, R5c)
             val razor = csproj.parentFile.walkTopDown().onEnter { it.name != "bin" && it.name != "obj" && it.name != "node_modules" }
                 .filter { it.isFile && (it.extension == "razor" || it.extension == "cshtml") }.toList()
-            for (f in razor) myFixture.addFileToProject(f.relativeTo(root).invariantSeparatorsPath, f.readText().replace("\r\n", "\n"))
+            for (f in razor) f.relativeTo(root).invariantSeparatorsPath.let { path -> razorFiles[path] = myFixture.addFileToProject(path, f.readText().replace("\r\n", "\n")) }
             if (razor.isNotEmpty()) razorProjects += csproj
             csproj.parentFile.walkTopDown().onEnter { it.name != "bin" && (it.name != "obj" || it.parentFile == null) }
                 .filter { it.isFile && it.extension == "cs" && "${File.separator}obj${File.separator}" !in it.path }.forEach { f ->
@@ -193,6 +200,7 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
             }
         }
         report.append("# calls: $calls in the sources, resolved to one method $resolved, with a type $typed\n")
+        razorDiagnostics(razorFiles, razorProjects, projectFiles, sets, report)
         if (onlyFile == null) tagHelperGate(root, razorProjects, projectFiles, references, sets, report)
         val traced = trace.distinct().sorted()
         File(out.parentFile, out.nameWithoutExtension + ".trace.txt").apply { parentFile?.mkdirs() }.writeText(traced.joinToString("\n", postfix = "\n"))
@@ -208,6 +216,53 @@ class SolutionDiagnosticsHarnessTest : BasePlatformTestCase() {
         assertTrue("the control file must report CS1061 and CS0103 (assemblies: ${CSharpSemanticEnvironment.assemblies(probe).indexes.size}, indexes that did not open: ${failedOpens.size}): $controlCodes",
             "CS1061" in controlCodes && "CS0103" in controlCodes)
         assertEmpty("every index of the assemblies must open", failedOpens)
+    }
+
+    /**
+     * The C# of the Razor files, as the editor checks it (0.1.289: until then the generator's output of a file was a second part of its
+     * class and the semantics of `@code` was silent — nothing to measure): the injected C# document of each `.razor` / `.cshtml`, made with
+     * the tag helpers of its project (its assemblies given to the service, the discovery awaited), checked by [CSharpSemanticChecks]; a
+     * problem is reported where it meets the text of the file — the platform shows those of an injection there only, not the ones of the
+     * generator's glue — at the line of the Razor file. The lines go to the report with the `.cs` ones; `# razor:` counts them.
+     */
+    private fun razorDiagnostics(
+        razorFiles: Map<String, com.intellij.psi.PsiFile>, razorProjects: List<File>, projectFiles: Map<File, com.intellij.openapi.vfs.VirtualFile>,
+        sets: Map<String, AssemblyIndexSet>, report: StringBuilder,
+    ) {
+        val service = io.github.dotnetsupport.frameworks.razor.RazorTagHelperService.getInstance(project)
+        // a control: errors the compiler surely reports in the C# of a Razor file of the first Razor project say these checks are not silent
+        val control = razorProjects.firstOrNull()?.let { csproj ->
+            val path = projectFiles[csproj]!!.parent.path.removePrefix("/src/") + "/HarnessControl.razor"
+            path to myFixture.addFileToProject(path, "<p>@undefinedInMarkup</p>\n@code {\n    void M() { int x = \"a\"; }\n}\n")
+        }
+        for (csproj in razorProjects) {
+            val projectFile = projectFiles[csproj] ?: continue
+            sets[csproj.parentFile.name]?.let { io.github.dotnetsupport.index.AssemblyIndexService.getInstance(project).set(projectFile, it.indexes, isComplete = true) }
+            service.tagHelpers(projectFile)
+            com.intellij.testFramework.PlatformTestUtil.waitWithEventsDispatching("the tag helpers of ${csproj.name}", { service.isSettledForTests(projectFile) }, 600)
+        }
+        val manager = com.intellij.lang.injection.InjectedLanguageManager.getInstance(project)
+        var documents = 0
+        var problems = 0
+        val controlCodes = ArrayList<String>()
+        for ((path, file) in razorFiles + listOfNotNull(control)) {
+            if (onlyFile != null && !path.endsWith(onlyFile)) continue
+            val razor = file.viewProvider.getPsi(io.github.dotnetsupport.frameworks.razor.RazorLanguage) as? io.github.dotnetsupport.frameworks.razor.RazorFile ?: continue
+            val host = io.github.dotnetsupport.frameworks.razor.RazorCSharpDocument.places(razor).firstOrNull()?.host ?: continue
+            val injected = manager.getInjectedPsiFiles(host)?.firstNotNullOfOrNull { it.first as? CSharpFile } ?: continue
+            documents++
+            val text = file.viewProvider.document?.text ?: file.text
+            for (p in CSharpSemanticChecks(CSharpSemanticSession(project).resolver(injected)).run().filter { !it.warning }.sortedBy { it.range.startOffset }) {
+                val written = manager.intersectWithAllEditableFragments(injected, p.range).firstOrNull() ?: continue
+                val at = manager.injectedToHost(injected, written)
+                val line = text.substring(0, at.startOffset.coerceAtMost(text.length)).count { it == '\n' } + 1
+                if (path == control?.first) { controlCodes += p.code; continue }
+                report.append("$path:$line ${p.code} [${text.substring(at.startOffset.coerceAtMost(text.length), at.endOffset.coerceAtMost(text.length)).take(40)}] ${p.message.take(160)}\n")
+                problems++
+            }
+        }
+        report.append("# razor: ${razorFiles.size} files, $documents C# documents checked, $problems problems; control ${controlCodes.sorted()}\n")
+        if (control != null) assertTrue("the control Razor file must report CS0103 and CS0029: $controlCodes", "CS0103" in controlCodes && "CS0029" in controlCodes)
     }
 
     /**

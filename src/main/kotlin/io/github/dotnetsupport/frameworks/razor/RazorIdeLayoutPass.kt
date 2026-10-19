@@ -16,6 +16,11 @@ import io.github.dotnetsupport.razor.lang.intermediate.MethodDeclarationIntermed
  * its place in the file — a member whose source lies between two statements of the render method splits the method there, the rest of
  * the statements go to a second method of the same shape (`BuildRenderTree__2`), as a design-time document did. The C# stays valid, the
  * output of the compiler's gates is untouched (the pass is not part of the engine of the gates).
+ *
+ * An `@inject` between statements does not split the method: the locals of a code block before it were not seen by the markup after it
+ * (nopCommerce's ProductReview/List.cshtml, `@inject IStoreService storeService` after `@{ var hideSearchBlock = … }`: CS0103 for
+ * `hideSearchBlock` — the harness, 0.1.289). Its property goes after the method without a mapping to the file: the class is the same, the
+ * pieces stay in the order of the file; its line has no C# of its own in the editor then (no completion in the type of such an `@inject`).
  */
 class RazorIdeLayoutPass : IntermediateNodePassBase(), RazorOptimizationPass {
     override val order: Int get() = Int.MAX_VALUE / 2 // after every optimization pass of the compiler
@@ -27,11 +32,20 @@ class RazorIdeLayoutPass : IntermediateNodePassBase(), RazorOptimizationPass {
         val methodIndex = clazz.children.indexOf(method)
         if (methodIndex < 0) return
         val members = clazz.children.toList()
-        val placed = members.filter { it !== method }.mapNotNull { m -> firstOffset(m, path)?.let { m to it } }.sortedBy { it.second }
-        if (placed.isEmpty()) return
-        val unmappedBefore = members.subList(0, methodIndex).filter { m -> placed.none { it.first === m } }
-        val unmappedAfter = members.subList(methodIndex + 1, members.size).filter { m -> placed.none { it.first === m } }
         val statements = method.children.toList()
+        val statementOffsets = statements.mapNotNull { firstOffset(it, path) }
+        val first = statementOffsets.minOrNull()
+        val last = statementOffsets.maxOrNull()
+        // an `@inject` that would split the method: unmapped, after it
+        val unmapped = HashMap<IntermediateNode, IntermediateNode>()
+        val placed = members.filter { it !== method }.mapNotNull { m ->
+            val offset = firstOffset(m, path) ?: return@mapNotNull null
+            if (first != null && last != null && offset > first && offset < last && isInject(m)) { unmapped[m] = withoutMapping(m); null } else m to offset
+        }.sortedBy { it.second }
+        if (placed.isEmpty() && unmapped.isEmpty()) return
+        val unmappedBefore = members.subList(0, methodIndex).filter { m -> placed.none { it.first === m } && m !in unmapped }
+        val unmappedAfter = members.subList(methodIndex + 1, members.size).filter { m -> placed.none { it.first === m } && m !in unmapped } +
+            members.mapNotNull { unmapped[it] }
         method.children.clear()
 
         val result = ArrayList<IntermediateNode>(unmappedBefore)
@@ -67,6 +81,15 @@ class RazorIdeLayoutPass : IntermediateNodePassBase(), RazorOptimizationPass {
         result += unmappedAfter
         clazz.children.clear()
         clazz.children.addAll(result)
+    }
+
+    private fun isInject(node: IntermediateNode): Boolean = node is InjectIntermediateNode || node is ComponentInjectIntermediateNode
+
+    /** [node] with no mapping to the file: its C# is written as glue. */
+    private fun withoutMapping(node: IntermediateNode): IntermediateNode = when (node) {
+        is InjectIntermediateNode -> node.also { it.typeSource = null; it.memberSource = null; it.source = null }
+        is ComponentInjectIntermediateNode -> ComponentInjectIntermediateNode(node.typeName, node.memberName, null, null)
+        else -> node
     }
 
     /** The first offset of [path] a node or its descendants map to; null when nothing maps. */

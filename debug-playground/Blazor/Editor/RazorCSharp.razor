@@ -14,7 +14,14 @@
    `Navigation` in `Navigation.Uri`: the `@inject` line of this file.
 
    TYPE:razor-errors — in `Increase` below `count += 1;` type `count = "x";`. EXPECT: `"x"` red with CS0029 after a moment, as in a
-   `.cs` file; Ctrl+Z takes it away. Not checked live yet.
+   `.cs` file; Ctrl+Z takes it away. Checked by the robot in WSL (0.1.289; before it, `@code` was silent in a project the generator
+   had run for).
+
+   TYPE:razor-code-completion — in `Increase` below `count += 1;` type `var u = Navigation.` EXPECT: the members of NavigationManager
+   (`BaseUri`, `Uri`, `NavigateTo`…) first, the postfix templates after; `cou` — `count [int]`; in `@code` outside a method
+   `protected override ` — `OnInitialized`, `OnInitializedAsync`, `OnParametersSet`…; `[Para` — `Parameter`; `Coun` — `Counter` of
+   Playground.Blazor.Components.Pages and of System.Diagnostics.Metrics only, none of the Broken project, which Blazor does not
+   reference (0.1.289; the same in a .cs file of Blazor). Ctrl+Z.
 
    TYPE:razor-inlay-hints — look at `@Sum(2, 3)` below and at `Twice` in `@code`. EXPECT: the hints of C# as in a `.cs` file (Settings |
    Editor | Inlay Hints | Razor): `left:` `right:` before `2` and `3`, `right:` before `1` in `Sum(count, 1)` (none before `count`: hints of

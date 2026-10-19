@@ -816,7 +816,10 @@
     `<vc:…>` (completion тега и параметров, Ctrl+B), без дублей тегов и атрибутов в completion, теги и атрибуты компонентов и tag helpers
     жирным в цветах класса и свойства (ключи на странице Razor), атрибуты-префиксы (`asp-route-id` → `RouteValues`) в Find Usages;
     площадка — `TYPE:cshtml-view-component`. 0.1.288: inlay hints C# в разметке (`TYPE:razor-inlay-hints`), правка `.razor` пишет класс
-    через ~секунду (`TYPE:razor-edit-regenerates`)
+    через ~секунду (`TYPE:razor-edit-regenerates`). 0.1.289: семантика и completion `@code` в проекте со сгенерированными классами —
+    вывод генератора самого файла больше не вторая часть его класса (`TYPE:razor-code-completion`, `TYPE:razor-errors`); completion и
+    «Import type» C# — только типы проектов, которые проект файла видит (свой и по ссылкам), а не всех проектов solution
+    (`NativeCSharpResolver.seeing`, тест `NativeImportCompletionTest.testTypesOfAProjectNotReferencedAreNotOffered`)
 
 
 

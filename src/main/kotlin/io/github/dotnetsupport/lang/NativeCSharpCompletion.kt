@@ -209,7 +209,8 @@ object NativeCSharpCompletion {
         val items = ArrayList<LookupElement>()
         val excluded = HashSet<String>()
         private val added = HashSet<String>()
-        private val resolver by lazy { NativeCSharpResolver(file) }
+        // the projects this one sees only: the types of every project of the solution were offered (0.1.289)
+        private val resolver by lazy { NativeCSharpResolver.seeing(file) }
         private val at: PsiElement get() = place.name ?: place.leaf
         // the semantics of the place (0.1.88): the expected type where the tree alone does not say it
         private val analysis by lazy { NativeCSharpExpectedCompletion.Analysis(place, file) }

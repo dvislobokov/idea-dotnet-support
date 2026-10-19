@@ -200,6 +200,44 @@ class RazorComponentUsagesTest : BasePlatformTestCase() {
      * RAZOR_PLAN.md, R4: Find Usages of a `@code` member started in a `.cs` names the generator's output; the code of `@code` names the
      * component's own document — its uses there are found through the twin (`Upper => Title.ToUpper()` of Greeting.razor).
      */
+    /**
+     * The generator's output of a Razor file is that file's own C# again: the resolver of its document does not take it as another part of
+     * the class — every member of `@code` was there twice ("no best of [Sum(int, int), Sum(int, int)]"), the semantics of `@code` silent,
+     * no members after `Navigation.` (the WSL sandbox, 0.1.288). The code-behind stays a part.
+     */
+    fun testTheGeneratorsOutputOfTheFileIsNoSecondPartOfItsClass() {
+        solution(generated = true)
+        val output = myFixture.findFileInTempDir("$dir/obj/generated/Microsoft.CodeAnalysis.Razor.Compiler/Components_Greeting_razor.g.cs")!!
+        val greeting = razor("Components/Greeting.razor")
+        val host = io.github.dotnetsupport.frameworks.razor.RazorCSharpDocument.places(greeting).first().host
+        val injected = com.intellij.lang.injection.InjectedLanguageManager.getInstance(project).getInjectedPsiFiles(host)!!.first().first as io.github.dotnetsupport.lang.CSharpFile
+        fun parts() = io.github.dotnetsupport.lang.NativeCSharpResolver(injected).typeInfo("Web.Components.Greeting", 0)!!.parts
+            .map { it.element()!!.containingFile.let { f -> com.intellij.lang.injection.InjectedLanguageManager.getInstance(project).getTopLevelFile(f).name } }.sorted()
+        assertEquals("without a framework that names it: the output is a part too", listOf("Components_Greeting_razor.g.cs", "Greeting.razor", "Greeting.razor.cs"), parts())
+        com.intellij.testFramework.ExtensionTestUtil.maskExtensions(io.github.dotnetsupport.lang.semantic.CSharpCodeGenerators.EP_NAME, listOf(object : io.github.dotnetsupport.lang.semantic.CSharpCodeGenerators {
+            override fun mayGenerateTypes(project: io.github.dotnetsupport.lang.semantic.CSharpProjectFacts) = false
+            override fun isDocumentOutput(document: com.intellij.psi.PsiFile, other: com.intellij.openapi.vfs.VirtualFile) = document.originalFile == injected && other == output
+        }), testRootDisposable)
+        assertEquals("the document's own output is not", listOf("Greeting.razor", "Greeting.razor.cs"), parts())
+    }
+
+    /**
+     * The SDK's output of a project with `EmitCompilerGeneratedFiles` (`obj/…/generated/…/RazorSourceGenerator/Components/Greeting_razor.g.cs`,
+     * as the solution harness reads it) is the document's own as well — told by the Razor module itself, by the generator's folder and hint name.
+     */
+    fun testTheSdksOutputOfTheFileIsNoSecondPartOfItsClass() {
+        solution()
+        myFixture.addFileToProject("$dir/obj/Debug/net10.0/generated/Microsoft.CodeAnalysis.Razor.Compiler/${io.github.dotnetsupport.frameworks.razor.RazorCodeGenerators.GENERATOR}/Components/Greeting_razor.g.cs",
+            "using Microsoft.AspNetCore.Components;\nnamespace Web.Components\n{\n    public partial class Greeting : ComponentBase\n    {\n        [Parameter] public string Title { get; set; } = \"\";\n    }\n}\n")
+        val greeting = razor("Components/Greeting.razor")
+        val host = io.github.dotnetsupport.frameworks.razor.RazorCSharpDocument.places(greeting).first().host
+        val manager = com.intellij.lang.injection.InjectedLanguageManager.getInstance(project)
+        val injected = manager.getInjectedPsiFiles(host)!!.first().first as io.github.dotnetsupport.lang.CSharpFile
+        val parts = io.github.dotnetsupport.lang.NativeCSharpResolver(injected).typeInfo("Web.Components.Greeting", 0)!!.parts
+            .map { manager.getTopLevelFile(it.element()!!.containingFile).name }.sorted()
+        assertEquals(listOf("Greeting.razor", "Greeting.razor.cs"), parts)
+    }
+
     fun testUsagesFromTheGeneratorsOutputFindTheCodeOfTheComponent() {
         solution(generated = true)
         val output = myFixture.psiManager.findFile(myFixture.findFileInTempDir("$dir/obj/generated/Microsoft.CodeAnalysis.Razor.Compiler/Components_Greeting_razor.g.cs")!!)!!

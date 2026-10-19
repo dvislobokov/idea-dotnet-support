@@ -127,6 +127,24 @@ class NativeImportCompletionTest : BasePlatformTestCase() {
         assertTrue(created, created.contains("new Invoice87(|)"))
     }
 
+    /**
+     * The types of a project the file's project does not reference are not offered (the WSL sandbox, 0.1.289: Blazor offered the `Counter`s
+     * of the playground's Broken project, and "Import type" would have added a `using` the compiler does not find); a referenced one's are.
+     */
+    fun testTypesOfAProjectNotReferencedAreNotOffered() {
+        myFixture.addFileToProject("Refs89/App89/App89.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\"><ItemGroup><ProjectReference Include=\"../Lib89/Lib89.csproj\" /></ItemGroup></Project>")
+        myFixture.addFileToProject("Refs89/Lib89/Lib89.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\" />")
+        myFixture.addFileToProject("Refs89/Other89/Other89.csproj", "<Project Sdk=\"Microsoft.NET.Sdk\" />")
+        myFixture.addFileToProject("Refs89/Lib89/Gadget.cs", "namespace Lib89.Parts;\npublic class Gadget89 { }\n")
+        myFixture.addFileToProject("Refs89/Other89/Gadget.cs", "namespace Other89.Parts;\npublic class Gadget89 { }\n")
+        myFixture.addFileToProject("Refs89/App89/Use.cs", "namespace App89;\nclass Use\n{\n    void Run()\n    {\n        Gadget<caret>\n    }\n}\n")
+        myFixture.configureFromTempProjectFile("Refs89/App89/Use.cs")
+        myFixture.completeBasic()
+        val shown = myFixture.lookupElements?.filter { it.getUserData(NativeCSharpCompletion.NATIVE) == true }?.map(::shown).orEmpty()
+        assertTrue(shown.toString(), "Gadget89 (in Lib89.Parts)" in shown)
+        assertFalse(shown.toString(), shown.any { "Other89" in it })
+    }
+
     fun testNothingNotImportedWithoutALetter() {
         myFixture.addFileToProject("Neighbours87/Quiet/Quiet87.cs", "namespace Quiet87;\npublic class Hushed87 { }\n")
         assertFalse(rows(body("<caret>")).any { it.contains("(in ") })

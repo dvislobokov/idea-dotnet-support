@@ -3,6 +3,21 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.289
+
+- Razor: the C# of `@code` and of the markup is checked and completed again in a project the generator has run for (that is, almost
+  always): the generator's output of the file was taken for a second part of its class, every member of `@code` was there twice, and
+  the semantics gave up — no errors in `@code` (`Navigation.Nope`, `count = true`), no members after `Navigation.`.
+- C#: completion and "Import type" offer the types of the projects the file's project sees only — its own and the ones it references; the
+  types of every project of the solution were offered (a `Counter` of a project not referenced, with a `using` the compiler would not find).
+- C#: a member declared verbatim (`public const string @Required`, as the resx source generator writes every resource) is found by its
+  name — each use was a false CS0117 once the generators had run.
+- C#: the constraints of a generic partial type written in one part hold in all its parts (`where T : struct` in a component's `.razor.cs`
+  and `T?` in its `.razor`: no false CS1503 "cannot convert from 'T' to 'T?'").
+- Razor: the C# of a view its project leaves out (`<Content Remove="Plugins\**">`, the plugin views nopCommerce copies into `Nop.Web`) is
+  not checked, and the Solution view shows such Razor files as excluded.
+- Razor: an `@inject` between a code block and the markup no longer hides the code block's variables from the markup after it.
+
 ## 0.1.288
 
 - Razor: inlay hints of C# in the markup and in `@code` — parameter names and types, by the C# options (Settings | Editor | Inlay Hints |

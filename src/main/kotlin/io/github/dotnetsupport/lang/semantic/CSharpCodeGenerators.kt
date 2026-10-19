@@ -17,6 +17,22 @@ interface CSharpCodeGenerators {
      */
     fun readsOnlyAdditionalFiles(generatorTypeName: String): Boolean = false
 
+    /**
+     * Whether [other] is a file the build generates from [document] that is the same code as [document] itself: the C# document of a Razor
+     * file (an injection) and the generator's `Counter_razor.g.cs` of it — the helper's output, or the SDK's in `obj/…/generated` of a
+     * project with `EmitCompilerGeneratedFiles`. The resolver of [document] does not take the declarations of such a file as other parts of
+     * its types — they are its own ones a second time (every member of `@code` was "no best of [Sum(int, int), Sum(int, int)]", the
+     * semantics of `@code` silent, no members after `Navigation.`: the WSL sandbox, 0.1.288). Asked once per file of a part, per resolver.
+     */
+    fun isDocumentOutput(document: com.intellij.psi.PsiFile, other: com.intellij.openapi.vfs.VirtualFile): Boolean = false
+
+    /**
+     * Whether the build compiles [document] (an injected C# document of the module's files): false for a file its project leaves out — the
+     * views nopCommerce's build copies into `Nop.Web/Plugins/…` (`<Content Remove="Plugins\**">`) gave 467 errors no compiler reports
+     * (the harness, 0.1.289). The semantics reports nothing in a document the build does not compile. Null: not the module's document.
+     */
+    fun isDocumentCompiled(document: com.intellij.psi.PsiFile): Boolean? = null
+
     companion object {
         val EP_NAME: ExtensionPointName<CSharpCodeGenerators> = ExtensionPointName.create("io.github.dotnetsupport.csharpCodeGenerators")
     }

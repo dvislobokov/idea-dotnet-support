@@ -185,12 +185,24 @@ class NativeCSharpResolver(val file: CSharpFile, private val visible: ((VirtualF
         stubParts(project, virtualFile, name, scope = sourceScope).filter(::visiblePart)
     }
 
-    /** Whether the file [part] is declared in is seen from this one ([visible]); yes when it is not known. */
+    /**
+     * Whether the file [part] is declared in is seen from this one ([visible]); yes when it is not known. Not the build's output of this
+     * very document ([io.github.dotnetsupport.lang.semantic.CSharpCodeGenerators.documentOutput]): its declarations are this file's own.
+     */
     private fun visiblePart(part: TypePart): Boolean {
-        val visible = visible ?: return true
+        val visible = visible
+        if (!injected && visible == null) return true
         val other = part.element()?.containingFile?.viewProvider?.virtualFile ?: return true
-        return visible(other)
+        if (injected && ownOutputs.getOrPut(other) { isOwnOutput(other) }) return false
+        return visible?.invoke(other) ?: true
     }
+
+    // only an injected document (a Razor file's C#) has the build's output of itself among the files of the solution
+    private val injected: Boolean by lazy { com.intellij.lang.injection.InjectedLanguageManager.getInstance(project).isInjectedFragment(file.originalFile) }
+    private val ownOutputs = HashMap<VirtualFile, Boolean>()
+
+    private fun isOwnOutput(other: VirtualFile): Boolean = io.github.dotnetsupport.lang.semantic.CSharpCodeGenerators.EP_NAME.extensionList
+        .any { runCatching { it.isDocumentOutput(file.originalFile, other) }.getOrDefault(false) }
 
     /** The scope of the stub index, made once: completion reads thousands of names through it (0.1.172). */
     private val sourceScope by lazy { io.github.dotnetsupport.codeanalysis.CSharpSourceScope.of(project) }
@@ -281,7 +293,9 @@ class NativeCSharpResolver(val file: CSharpFile, private val visible: ((VirtualF
         if (!visited.add(type.key) || depth > 6) return
         // the parts of one type together: overloads in two parts are all targets
         val own = LinkedHashMap<String, Member>()
-        for (part in type.parts) part.members { name, member -> own[name]?.merge(member) ?: own.put(name, member) }
+        // `@Required` declares `Required` (the `@` only lets a keyword be a name): the resx generator of MudBlazor declares every resource
+        // so, and each use was CS0117 (the harness, 0.1.289)
+        for (part in type.parts) part.members { written, member -> val name = written.removePrefix("@"); own[name]?.merge(member) ?: own.put(name, member) }
         for ((name, member) in own) {
             val nearer = map[name]
             // C# §12.5: the overloads of a base class stay beside the derived class's methods of the name (`Add(T)` of the base
@@ -370,6 +384,17 @@ class NativeCSharpResolver(val file: CSharpFile, private val visible: ((VirtualF
     private fun Member.nestedType(): TypeInfo? = nestedType?.let { typeInfo(it, nestedArity) }
 
     companion object {
+        /**
+         * A resolver that sees the sources of the projects [file]'s project sees — its own and the ones it references
+         * ([io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment.sees]), as the semantics' resolver does. For completion: with
+         * the plain one the types of every project of the solution were offered (`Counter` of a project the Blazor one does not reference,
+         * "Import type" adding a `using` of a namespace the compiler would not find; the WSL sandbox, 0.1.289).
+         */
+        fun seeing(file: CSharpFile): NativeCSharpResolver {
+            val seen = HashMap<VirtualFile, Boolean>()
+            return NativeCSharpResolver(file) { other -> seen.getOrPut(other) { io.github.dotnetsupport.lang.semantic.CSharpSemanticEnvironment.sees(file, other) } }
+        }
+
         /**
          * The parts of the types named [name] in the files of the solution other than [virtualFile] (null: all): from the stubs; from the PSI
          * where the AST is loaded anyway. [files] collects the files of every declaration of that name, the ones of [virtualFile] included.

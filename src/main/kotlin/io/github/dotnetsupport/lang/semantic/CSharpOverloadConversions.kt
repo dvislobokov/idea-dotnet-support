@@ -34,11 +34,24 @@ import io.github.dotnetsupport.lang.semantic.roslyn.RoslynMethodTypeInferrer
 
 // ---- identity
 
+/**
+ * Two declarations of one partial type: the type parameters of its parts are the same ones (`T` of a component's `@typeparam` and of its
+ * `.razor.cs`, which alone says `where T : struct` — MudBlazor's HeatMap was CS1503 "cannot convert from 'T' to 'T?'", 0.1.289).
+ */
+internal fun CSharpOverloads.samePartialType(a: com.intellij.psi.PsiElement?, b: com.intellij.psi.PsiElement?): Boolean {
+    if (a == null || b == null) return false
+    if (a !is io.github.dotnetsupport.csharp.lang.psi.CSharpBaseTypeDeclaration || b !is io.github.dotnetsupport.csharp.lang.psi.CSharpBaseTypeDeclaration) return false
+    val name = r.syntax.qualifiedName(a) ?: return false
+    return name == r.syntax.qualifiedName(b) &&
+        io.github.dotnetsupport.lang.TypePart.typeParameters(a) == io.github.dotnetsupport.lang.TypePart.typeParameters(b)
+}
+
 /** Whether [a] and [b] are the same type (tuple element names aside); null when a part of either is not known. */
 internal fun CSharpOverloads.same(a: SemanticType?, b: SemanticType?): Boolean? {
     if (a == null || b == null) return null
     if (a is SemanticType.Parameter || b is SemanticType.Parameter) {
-        if (a is SemanticType.Parameter && b is SemanticType.Parameter && a.ofMethod == b.ofMethod && a.owner == b.owner && a.name == b.name && a.index == b.index) return true
+        if (a is SemanticType.Parameter && b is SemanticType.Parameter && a.ofMethod == b.ofMethod && a.name == b.name && a.index == b.index &&
+            (a.owner == b.owner || !a.ofMethod && samePartialType(a.owner, b.owner))) return true
         // a type parameter of a library method that inference left open may stand for anything
         if (isOpen(a) || isOpen(b)) return null
         return false

@@ -350,7 +350,7 @@ internal class CSharpGenericChecks(private val checks: CSharpSemanticChecks, pri
     }
 
     private fun clausesOf(declaration: PsiElement): List<CSharpTypeParameterConstraintClause>? = when (declaration) {
-        is CSharpTypeDeclaration -> declaration.constraintClauses
+        is CSharpTypeDeclaration -> r.typeConstraintClauses(declaration)
         is CSharpDelegateDeclaration -> declaration.constraintClauses
         else -> null
     }

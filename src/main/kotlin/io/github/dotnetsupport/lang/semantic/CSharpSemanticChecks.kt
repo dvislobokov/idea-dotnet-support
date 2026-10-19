@@ -68,6 +68,11 @@ class CSharpSemanticChecks(private val resolver: CSharpNameResolver) {
     fun run(): List<CSharpSemanticProblem> {
         val unit = file.compilationUnit ?: return emptyList()
         if (file.name.endsWith(".csx")) return emptyList()
+        // the C# of a file the build does not compile (a Razor view its project leaves out): nothing the compiler would report
+        if (CSharpCodeGenerators.EP_NAME.extensionList.any { runCatching { it.isDocumentCompiled(file.originalFile) }.getOrNull() == false }) {
+            SemanticTrace.trace { "checks of ${CSharpInjections.hostFile(file)?.name ?: file.name}: none — the build does not compile it (left out of its project)" }
+            return emptyList()
+        }
         // a file outside the projects of the solution is compiled with nothing we know: its extension methods, partial parts, global usings
         if (!inSources()) return emptyList()
         if (!CSharpSemanticEnvironment.referencesComplete(file) || resolver.libraryType(OBJECT) == null) return emptyList()
