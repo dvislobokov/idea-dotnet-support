@@ -1,5 +1,7 @@
 package io.github.dotnetsupport.msbuild
 
+import com.intellij.openapi.util.SystemInfo
+import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 
@@ -17,6 +19,10 @@ object DotNetProjects {
         if (isProjectFile(file)) return file
         var directory = if (file.isDirectory) file else file.parent
         while (directory != null) {
+            // a project in the home folder (`dotnet new console` run in ~) owns nothing by the walk: the plugin's own files under
+            // ~/Library/Caches got it, and MSBuild's `**/*` over the whole home read every app's data (the macOS "data of other apps"
+            // prompt) and never finished; such a project is opened by its own file only
+            if (isHomeOrAbove(directory)) return null
             val candidates = directory.children.filter(::isProjectFile)
             if (candidates.isNotEmpty()) {
                 if (candidates.size == 1) return candidates.first()
@@ -36,6 +42,25 @@ object DotNetProjects {
         }
         return null
     }
+
+    /** The user's home folder or one of its parents, on the local disk. */
+    fun isHomeOrAbove(directory: VirtualFile): Boolean {
+        if (!directory.isInLocalFileSystem) return false
+        val home = testHome ?: homePath ?: return false
+        val path = directory.path.trimEnd('/')
+        val ignoreCase = !SystemInfo.isFileSystemCaseSensitive
+        return home.equals(path, ignoreCase) || home.startsWith("$path/", ignoreCase)
+    }
+
+    private val homePath: String? by lazy {
+        System.getProperty("user.home")?.takeIf { it.isNotBlank() }?.let { FileUtil.toSystemIndependentName(it).trimEnd('/') }
+    }
+
+    @Volatile private var testHome: String? = null
+
+    /** Makes [path] the home folder for a test; null restores the real one. */
+    @org.jetbrains.annotations.TestOnly
+    fun setHomeForTests(path: String?) { testHome = path?.let { FileUtil.toSystemIndependentName(it).trimEnd('/') } }
 
     /** A folder between [file] and [top] (the folder of the projects) is one a framework generates ([io.github.dotnetsupport.solution.SolutionLayout]). */
     private fun inGeneratedDirectory(file: VirtualFile, top: VirtualFile): Boolean {

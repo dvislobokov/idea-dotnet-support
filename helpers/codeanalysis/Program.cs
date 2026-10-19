@@ -1019,13 +1019,17 @@ internal static class DesignTime
         HelperProtocol.Log("info", $"design-time cache of {name} ({target.Framework ?? "default framework"}) not used: {stale} ({watch.ElapsedMilliseconds} ms)");
         var started = DateTime.UtcNow;
         var directory = Path.GetDirectoryName(target.ProjectPath)!;
-        var before = DesignTimeCache.Take(target.ProjectPath, [], [], [], RealDisk.Instance);
+        // a project in the home folder (or above it) is not cached: its tree is the whole home, which is not walked (on macOS that reads
+        // the data of every app and the system asks the user about it)
+        var broad = DesignTimeCache.Broad(directory);
+        var before = broad ? null : DesignTimeCache.Take(target.ProjectPath, [], [], [], RealDisk.Instance);
         var binlog = Path.Combine(Path.GetTempPath(), $"codeanalysis-{Guid.NewGuid():N}.binlog");
         var zip = Path.ChangeExtension(binlog, ".ProjectImports.zip");
         try
         {
             var (result, exitCode) = await RunAsync(target, binlog, cancellation);
             if (exitCode != 0) { HelperProtocol.Log("info", $"design-time build of {name} not cached: MSBuild exited with {exitCode}"); return result; }
+            if (before == null) { HelperProtocol.Log("info", $"design-time build of {name} not cached: the project is in the home folder or above it"); return result; }
             if (!File.Exists(zip)) { HelperProtocol.Log("warn", $"design-time build of {name} not cached: MSBuild wrote no list of imports"); return result; }
             try
             {
@@ -1178,6 +1182,7 @@ internal static class DesignTime
         foreach (var a in args) info.ArgumentList.Add(a);
         var watch = Stopwatch.StartNew();
         using var process = Process.Start(info) ?? throw new HelperException("dotnet msbuild could not be started");
+        using var tracked = HelperProtocol.Track(process);
         await using var registration = cancellation.Register(() => { try { process.Kill(true); } catch (Exception) { } });
         var errors = process.StandardError.ReadToEndAsync(cancellation);
         var output = await process.StandardOutput.ReadToEndAsync(cancellation);

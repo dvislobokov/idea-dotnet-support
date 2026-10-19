@@ -190,6 +190,18 @@ internal static class DesignTimeCache
 
     // ---- what a build read
 
+    /**
+     * Whether [folder] is the user's home or above it (a volume root): a tree too wide to walk — on macOS a walk of the home reads every
+     * app's data under ~/Library/Containers, and the system asks the user whether the IDE may.
+     */
+    public static bool Broad(string folder, string? home = null)
+    {
+        home ??= System.Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile);
+        var trimmed = folder.TrimEnd('\\', '/');
+        if (trimmed.Length == 0 || Path.GetPathRoot(folder) is { } root && Same(root, folder)) return true;
+        return !string.IsNullOrEmpty(home) && (Same(home, trimmed) || Under(home, trimmed));
+    }
+
     /** Every folder from [directory] up to the root of its volume. */
     public static IEnumerable<string> Ancestors(string directory)
     {
@@ -253,7 +265,10 @@ internal static class DesignTimeCache
         foreach (var source in sources)
         {
             if (Under(source, directory) || skipped.Any(s => Under(source, s)) || immutable.Any(i => Under(source, i))) continue;
-            Tree(OuterRoot(source, directory), -1, skipped);
+            // a file whose outer root would be the home or above it (`~/Library`): only its own folder is watched
+            var outer = OuterRoot(source, directory);
+            if (Broad(Path.GetDirectoryName(outer) ?? outer)) outer = Path.GetDirectoryName(source)!;
+            Tree(outer, Broad(outer) ? 0 : -1, skipped);
         }
         // `dotnet` picks the SDK by global.json among the installed ones; the reference packs and the workloads are folders per version
         var dotnet = System.Environment.ProcessPath is { } host && Path.GetFileNameWithoutExtension(host).Equals("dotnet", StringComparison.OrdinalIgnoreCase) ? Path.GetDirectoryName(host) : null;
@@ -337,12 +352,30 @@ internal static class DesignTimeCache
      * The files a command line of the compiler names: sources, references, analyzers, additional files, configs, key files; with
      * [globbedOnly] the sources and the additional files, what the globs of a project give (the configs are probed up the tree instead).
      */
+    /**
+     * Whether an argument of the compiler is an option (`/name`, `/name:value`, `/name+`, `-name…`) rather than a file: on Unix a source
+     * is an absolute path that starts with `/` as well (`/Users/me/App/Program.cs`), and was taken for an option without a value — the
+     * sources outside the folder of a project were never watched there. A `/` before any `:` makes a path (`/reference:/usr/…` is an
+     * option); an option's name is letters and digits up to `:`, `+` or `-`.
+     */
+    public static bool IsOption(string argument)
+    {
+        if (argument.StartsWith('-')) return true;
+        if (!argument.StartsWith('/')) return false;
+        var colon = argument.IndexOf(':');
+        var slash = argument.IndexOf('/', 1);
+        if (slash >= 0 && (colon < 0 || slash < colon)) return false;
+        var end = argument.IndexOfAny([':', '+', '-'], 1);
+        var name = end < 0 ? argument[1..] : argument[1..end];
+        return name.Length > 0 && name.All(char.IsLetterOrDigit);
+    }
+
     public static IEnumerable<string> CommandLineFiles(List<string> commandLine, string directory, bool globbedOnly = false)
     {
         foreach (var argument in commandLine)
         {
             string? value;
-            if (!argument.StartsWith('/') && !argument.StartsWith('-')) value = argument;
+            if (!IsOption(argument)) value = argument;
             else
             {
                 var colon = argument.IndexOf(':');

@@ -58,7 +58,40 @@ public static class HelperProtocol
             }));
             tasks.RemoveAll(t => t.IsCompleted);
         }
-        await Task.WhenAll(tasks);
+        // the plugin is gone (the IDE closed or died): what still runs is cancelled and given a moment; a request that does not stop (an
+        // evaluation over a whole home folder) used to keep the helper and its `dotnet msbuild` alive for hours after the IDE
+        foreach (var source in running.Values) try { source.Cancel(); } catch (ObjectDisposedException) { }
+        await Task.WhenAny(Task.WhenAll(tasks), Task.Delay(TimeSpan.FromSeconds(3)));
+        if (tasks.Any(t => !t.IsCompleted)) Exit();
+    }
+
+    private static readonly ConcurrentDictionary<System.Diagnostics.Process, bool> Children = new();
+
+    /** A process the helper started for a request: killed with its tree when the helper ends before it. Dispose the result when it exits. */
+    public static IDisposable Track(System.Diagnostics.Process process)
+    {
+        Children[process] = true;
+        return new Untrack(process);
+    }
+
+    private sealed class Untrack(System.Diagnostics.Process process) : IDisposable
+    {
+        public void Dispose() => Children.TryRemove(process, out _);
+    }
+
+    // the children outlive the helper otherwise, whichever way it ends: the end of stdin, or the plugin stopping it (SIGTERM)
+    static HelperProtocol() => AppDomain.CurrentDomain.ProcessExit += (_, _) => KillChildren();
+
+    private static void KillChildren()
+    {
+        foreach (var child in Children.Keys) try { child.Kill(true); } catch (Exception) { }
+    }
+
+    /** Ends the helper now, its children with it. */
+    public static void Exit(int code = 0)
+    {
+        KillChildren();
+        Environment.Exit(code);
     }
 
     /** A line for the journal of the plugin (category of the helper): "info", "warn" or "error". */

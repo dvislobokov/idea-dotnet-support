@@ -31,6 +31,29 @@ class ProjectsInOneFolderTest : BasePlatformTestCase() {
         assertNotNull(DotNetProjects.findOwningProject(hotkeys.virtualFile.parent))
     }
 
+    fun testAProjectInTheHomeFolderOwnsNothingBelowIt() {
+        // `dotnet new console` once run in ~ left ~/<user>.csproj: the plugin's files under ~/Library/Caches got it as their project, and
+        // MSBuild's `**/*` over the home read every app's data on macOS ("data of other apps" prompts, helpers that never ended; 2026-10-19)
+        val home = Files.createTempDirectory("home").toFile().canonicalFile
+        try {
+            File(home, "user.csproj").writeText("<Project Sdk=\"Microsoft.NET.Sdk\" />")
+            File(home, "Library/Caches/IDE/dotnet-support/generated/Gen.cs").also { it.parentFile.mkdirs(); it.writeText("class Gen {}") }
+            File(home, "work/App/App.csproj").also { it.parentFile.mkdirs(); it.writeText("<Project Sdk=\"Microsoft.NET.Sdk\" />") }
+            File(home, "work/App/Program.cs").writeText("class Program {}")
+            val fs = com.intellij.openapi.vfs.LocalFileSystem.getInstance()
+            val root = fs.refreshAndFindFileByIoFile(home)!!
+            com.intellij.openapi.vfs.VfsUtil.markDirtyAndRefresh(false, true, true, root)
+            DotNetProjects.setHomeForTests(home.path)
+            assertNull(DotNetProjects.findOwningProject(root.findFileByRelativePath("Library/Caches/IDE/dotnet-support/generated/Gen.cs")!!))
+            assertEquals(root.findFileByRelativePath("work/App/App.csproj"), DotNetProjects.findOwningProject(root.findFileByRelativePath("work/App/Program.cs")!!))
+            // opened by its own file, it is a project as any other
+            assertEquals(root.findChild("user.csproj"), DotNetProjects.findOwningProject(root.findChild("user.csproj")!!))
+        } finally {
+            DotNetProjects.setHomeForTests(null)
+            home.deleteRecursively()
+        }
+    }
+
     fun testAnAbsoluteHintPathIsTakenAsItIs() {
         val editor = Files.createTempDirectory("unity-editor").toFile()
         try {

@@ -3,6 +3,18 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.290
+
+- macOS: no more "would like to access data from other apps" prompts. A project file in the home folder (`dotnet new console` once
+  run in `~` leaves `~/<user>.csproj`) was taken as the project of the plugin's own files under `~/Library/Caches`, and MSBuild's
+  globs over that project walked the whole home, the data of every app under `~/Library/Containers` included. A project in the home
+  folder or above it now owns no file by the folders a file is in, and the design-time cache never walks the home folder.
+- The plugin's .NET helpers end with the IDE: a request that would not stop (such an evaluation) kept the helper and its
+  `dotnet msbuild` running for hours after the IDE was closed. When the IDE goes, a helper cancels what runs and exits within seconds,
+  killing the processes it started.
+- macOS, Linux: the cache of design-time builds watches the sources a project takes from outside its folder: their absolute paths
+  (`/Users/me/Shared/X.cs`) were read as options of the compiler, and a new file next to them did not load the project again.
+
 ## 0.1.289
 
 - Razor: the C# of `@code` and of the markup is checked and completed again in a project the generator has run for (that is, almost
