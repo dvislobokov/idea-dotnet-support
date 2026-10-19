@@ -4,7 +4,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.ex.ActionUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
@@ -19,11 +18,9 @@ import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.components.ActionLink
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
-import com.intellij.ui.components.panels.VerticalLayout
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import io.github.dotnetsupport.cli.DotNetTool
-import io.github.dotnetsupport.edition.DotNetEdition
 import java.awt.BasicStroke
 import java.awt.BorderLayout
 import java.awt.Color
@@ -89,20 +86,11 @@ class MonitorPanel(private val project: Project, parent: Disposable) : JPanel(Bo
     private val queue = TimeSeriesChart("Thread pool queue", ChartFormats::number, null, "work items" to CPU_COLOR)
     private val charts = listOf(cpu, memory, allocations, gcPause, gcCount, requests, duration, errors, queue)
 
-    /** What GIGA IDE without Pro shows (DotNetEdition): CPU, memory and GC; the rest is a feature of Pro. */
-    private val freeCharts = setOf(cpu, memory, gcPause, gcCount)
-    private val column = JPanel(GridLayout(0, 1, 0, JBUI.scale(10))).apply { border = JBUI.Borders.empty(4, 8, 8, 8) }
-    // two short lines: the window is narrow (GIGA IDE, 2026-10-17: one line was cut at "Available i")
-    private val proNote = JPanel(VerticalLayout(JBUI.scale(2))).apply {
-        add(JBLabel("Allocation rate, requests, exceptions, thread pool:").apply { foreground = UIUtil.getContextHelpForeground() })
-        add(JPanel(FlowLayout(FlowLayout.LEFT, 0, 0)).apply {
-            add(JBLabel(DotNetEdition.PRO_ONLY + ".  ").apply { foreground = UIUtil.getContextHelpForeground() })
-            DotNetEdition.activationAction()?.let { action ->
-                add(ActionLink("Activate PRO mode") { ActionUtil.invokeAction(action, this, "DotNetMonitor", null, null) })
-            }
-        })
+    // every chart: the edition does not limit them (the plugin is fully available for now, the user's decision 2026-10-19)
+    private val column = JPanel(GridLayout(0, 1, 0, JBUI.scale(10))).apply {
+        border = JBUI.Borders.empty(4, 8, 8, 8)
+        charts.forEach { add(it) }
     }
-    private var shownFree: Boolean? = null
 
     init {
         Disposer.register(parent, this)
@@ -140,7 +128,6 @@ class MonitorPanel(private val project: Project, parent: Disposable) : JPanel(Bo
             add(snapshots, BorderLayout.CENTER)
             add(notes, BorderLayout.SOUTH)
         }
-        applyEdition()
         // NORTH: the charts keep their height instead of stretching over a tall panel
         val content = JPanel(BorderLayout()).apply { add(column, BorderLayout.NORTH) }
         add(top, BorderLayout.NORTH)
@@ -191,28 +178,10 @@ class MonitorPanel(private val project: Project, parent: Disposable) : JPanel(Bo
         started.start()
     }
 
-    /**
-     * The charts of the edition: all of them, or in GIGA IDE without Pro the free ones and a line about Pro in place of the rest. Asked again
-     * with every sample, so the charts come back when Pro is activated while the window is open.
-     */
-    internal fun applyEdition() {
-        val free = DotNetEdition.isFree()
-        if (free == shownFree) return
-        shownFree = free
-        column.removeAll()
-        charts.filter { !free || it in freeCharts }.forEach { column.add(it) }
-        if (free) column.add(proNote)
-        column.revalidate()
-        column.repaint()
-    }
-
     /** The titles of the charts shown, in their order (for the tests). */
     internal fun shownCharts(): List<String> = column.components.mapNotNull { (it as? TimeSeriesChart)?.title }
 
-    internal val isProNoteShown: Boolean get() = proNote.parent == column
-
     private fun show(target: MonitorTarget, sample: MonitorSample) {
-        applyEdition()
         if (session?.target != target) return
         val runtime = sample.runtime
         cpu.add(sample.cpuPercent)

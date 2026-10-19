@@ -3,6 +3,10 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.293
+
+- The plugin is fully available in GIGA IDE without Pro: the allocation profiler and every chart of the .NET Monitor work in any mode.
+
 ## 0.1.292
 
 - macOS: the New Solution dialog no longer asks for the data of other apps. Its `dotnet new list` / `--help` ran in the working

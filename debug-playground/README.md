@@ -771,16 +771,12 @@ Shift+F6, новое имя, Enter — сверить с `EXPECT`, затем о
 - [ ] `TYPE:appsettings-base`: `Logging`, `Kestrel`, `AllowedHosts`, `ConnectionStrings` рядом с секциями кода — и с включёнными Remote JSON Schemas (из SchemaStore), и с выключенными (своя база); уровни логирования для `Default`
 - [ ] `TYPE:appsettings-code-change`: новое свойство в `ShopOptions` появляется в дополнении через секунду, без сохранения `.cs`
 
-## Издания: GIGA IDE без Pro (0.1.261) — `Console: Leak`, `Console/Allocations.cs`
+## Издания: GIGA IDE без Pro (0.1.293) — `Console: Leak`, `Console/Allocations.cs`
 
-В GIGA IDE 2026.1, режим Pro не активирован (Help → Activate PRO mode есть, ключа нет):
-- [ ] Run `Console: Leak`, окно .NET Monitor: графики только CPU, Memory, Time in GC, GC collections; под ними строка «Allocation rate, requests,
-      exceptions and the thread pool: Available in GIGA IDE Pro» и ссылка «Activate PRO mode», которая открывает диалог активации GIGA IDE
-- [ ] меню .NET → «Show Allocations in Editor» видно, но выключено, в подсказке «Available in GIGA IDE Pro: Help | Activate PRO mode»;
-      в ПКМ редактора `Allocations.cs` пункта нет
-- [ ] после активации Pro (не закрывая окно монитора) через секунду возвращаются все девять графиков; пункт аллокаций включается
-- [ ] в IntelliJ IDEA (не GIGA IDE) всё как раньше: девять графиков, пункт аллокаций включён
-- [ ] сборка `-PeditionChecks=false` при старте показывает уведомление «Edition checks are off», и в GIGA IDE без Pro работает всё
+С 0.1.293 платного нет (решение пользователя 2026-10-19): в GIGA IDE 2026.1 без Pro (Help → Activate PRO mode есть, ключа нет):
+- [ ] Run `Console: Leak`, окно .NET Monitor: все девять графиков, строки «Available in GIGA IDE Pro» нет
+- [ ] меню .NET → «Show Allocations in Editor» включено, в ПКМ редактора `Allocations.cs` пункт есть, числа в конце строк пишутся
+- [ ] сборка `-PeditionChecks=false` при старте по-прежнему показывает уведомление «Edition checks are off»
 
 ## Редактор: аллокации по строкам — `Console/Allocations.cs`
 

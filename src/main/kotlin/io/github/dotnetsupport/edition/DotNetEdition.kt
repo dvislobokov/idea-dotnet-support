@@ -20,6 +20,9 @@ import java.util.concurrent.atomic.AtomicBoolean
  * asked by reflection through the class loader of its plugin `com.gigaide.pro` (`PluginVerificationService.getWorkMode()`): the plugin
  * depends on nothing of GIGA IDE and loads the same everywhere. Asked anew every time (Pro is activated while the IDE runs); only the method
  * found is kept. A development build made with `-PeditionChecks=false` carries the resource `edition/unlocked` and is Pro everywhere.
+ *
+ * For now nothing asks [DotNetEdition.isFree] / [DotNetEdition.isPro]: the plugin is fully available in every mode (the user's decision
+ * 2026-10-19, 0.1.293). The mode is still read and kept here for when the paid features come back.
  */
 enum class EditionMode {
     /** GIGA IDE in Pro mode, for a person or a company. */

@@ -37,7 +37,6 @@ import com.intellij.openapi.util.text.StringUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.ui.JBColor
 import com.intellij.util.ui.JBUI
-import io.github.dotnetsupport.edition.DotNetEdition
 import io.github.dotnetsupport.cli.DotNetCli
 import io.github.dotnetsupport.cli.DotNetHelper
 import io.github.dotnetsupport.cli.PluginLog
@@ -75,14 +74,10 @@ class AllocationsService(private val project: Project) : Disposable {
     /** The file of a path the watcher names; another one in the tests, whose files are not on the disk. */
     @Volatile var resolver: (String) -> VirtualFile? = { path -> com.intellij.openapi.vfs.LocalFileSystem.getInstance().findFileByPath(path) }
 
-    /** The switch, and off in GIGA IDE without Pro whatever it says: the profiler of allocations is a feature of Pro (DotNetEdition). */
+    /** The switch (the edition does not limit it: the plugin is fully available for now, the user's decision 2026-10-19). */
     var isEnabled: Boolean
-        get() = PropertiesComponent.getInstance(project).getBoolean(ENABLED_KEY, false) && !DotNetEdition.isFree()
+        get() = PropertiesComponent.getInstance(project).getBoolean(ENABLED_KEY, false)
         set(value) {
-            if (value && DotNetEdition.isFree()) {
-                PluginLog.info(LOG_CATEGORY, "allocations in the editor are not switched on: GIGA IDE without Pro")
-                return
-            }
             PropertiesComponent.getInstance(project).setValue(ENABLED_KEY, value, false)
             PluginLog.info(LOG_CATEGORY, "allocations in the editor are switched ${if (value) "on" else "off"}")
             if (!value) return stop()
@@ -102,10 +97,6 @@ class AllocationsService(private val project: Project) : Disposable {
 
     fun attach(target: MonitorTarget, announce: Boolean = false) {
         if (ApplicationManager.getApplication().isUnitTestMode) return
-        if (DotNetEdition.isFree()) {
-            PluginLog.info(LOG_CATEGORY, "$target is not listened to: the profiler of allocations needs GIGA IDE Pro")
-            return
-        }
         stop()
         this.target = target
         PluginLog.info(LOG_CATEGORY, "the program to listen to is $target")
@@ -389,7 +380,7 @@ object AllocationTotals {
 class AllocationsLinePainter : EditorLinePainter() {
     override fun getLineExtensions(project: Project, file: VirtualFile, lineNumber: Int): Collection<LineExtensionInfo>? {
         val service = project.getServiceIfCreated(AllocationsService::class.java) ?: return null
-        if (service.last == null || DotNetEdition.isFree()) return null
+        if (service.last == null) return null
         val shown = service.shownAt(file, lineNumber) ?: return null
         val line = shown.line
         val total = shown.total
@@ -420,18 +411,14 @@ class ToggleAllocationsAction : ToggleAction(), DumbAware {
 
     override fun update(e: AnActionEvent) {
         super.update(e)
-        // GIGA IDE without Pro: in the main menu it stays, off, and says why; the menu of the editor does not offer it
-        val free = DotNetEdition.isFree()
-        e.presentation.isEnabled = e.project != null && !free
-        e.presentation.description = if (free) "${DotNetEdition.PRO_ONLY}: Help | Activate PRO mode" else templatePresentation.description
+        e.presentation.isEnabled = e.project != null
         // in the menu of the editor: only where the numbers are written
-        if (e.isFromContextMenu) e.presentation.isEnabledAndVisible = !free && e.project != null && e.getData(CommonDataKeys.VIRTUAL_FILE)?.extension.equals("cs", ignoreCase = true)
+        if (e.isFromContextMenu) e.presentation.isEnabledAndVisible = e.project != null && e.getData(CommonDataKeys.VIRTUAL_FILE)?.extension.equals("cs", ignoreCase = true)
     }
 
     override fun isSelected(e: AnActionEvent): Boolean = e.project?.let { AllocationsService.getInstance(it).isEnabled } == true
 
     override fun setSelected(e: AnActionEvent, state: Boolean) {
-        if (state && DotNetEdition.isFree()) return
         AllocationsService.getInstance(e.project ?: return).isEnabled = state
     }
 }
