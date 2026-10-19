@@ -3,6 +3,16 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.287
+
+- Debugger: breakpoints in lambdas — on a line with lambdas the gutter offers the line or one of them (`.Where(n => n % 2 == 0)`), and the
+  breakpoint stops inside that lambda only.
+- Debugger: function breakpoints — "+" in the Breakpoints dialog adds ".NET Function Breakpoint" by the name of a method
+  (`Namespace.Class.Method`, `Class.Method` or `Method`), with a condition and a hit count.
+- Debugger: the Modules tab of the debug window lists the loaded assemblies, their paths and whether their symbols are loaded.
+- Debugger: Debug of tests on Microsoft.Testing.Platform (MSTest runner, xunit.v3, TUnit) stops at their breakpoints; before, the tests ran
+  without the debugger. xunit.v3 projects with `TestingPlatformDotnetTestSupport` are recognized as Microsoft.Testing.Platform projects.
+
 ## 0.1.286
 
 - Razor: Find Usages of a member of a component's `@code` started in a `.cs` file also finds its uses in the `@code` and the markup of the

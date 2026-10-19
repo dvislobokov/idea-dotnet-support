@@ -19,6 +19,15 @@ import com.intellij.xdebugger.breakpoints.XLineBreakpoint
 import com.intellij.xdebugger.breakpoints.XLineBreakpointType
 import com.intellij.xdebugger.breakpoints.ui.XBreakpointCustomPropertiesPanel
 import com.intellij.xdebugger.evaluation.XDebuggerEditorsProvider
+import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.project.ProjectLocator
+import com.intellij.openapi.util.TextRange
+import com.intellij.openapi.util.text.StringUtil
+import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
+import com.intellij.xdebugger.XSourcePosition
+import io.github.dotnetsupport.csharp.lang.psi.CSharpAnonymousFunctionExpression
 import io.github.dotnetsupport.lang.CSharpBreakpointLines
 import io.github.dotnetsupport.lang.CSharpFileType
 import io.github.dotnetsupport.run.DotNetExceptionBreakpoints
@@ -36,6 +45,8 @@ class DotNetLineBreakpointProperties : XBreakpointProperties<DotNetLineBreakpoin
     class State {
         @JvmField var hitCondition: String = ""
         @JvmField var logMessage: String = ""
+        /** -1: the line; else the lambda of the line it stops in, by its order on the line (as Java's lambda breakpoints: survives edits of the text). */
+        @JvmField var lambdaOrdinal: Int = -1
     }
 
     private var state = State()
@@ -47,6 +58,10 @@ class DotNetLineBreakpointProperties : XBreakpointProperties<DotNetLineBreakpoin
     var logMessage: String
         get() = state.logMessage
         set(value) { state.logMessage = value }
+
+    var lambdaOrdinal: Int
+        get() = state.lambdaOrdinal
+        set(value) { state.lambdaOrdinal = value }
 
     override fun getState(): State = state
     override fun loadState(state: State) { this.state = state }
@@ -89,6 +104,44 @@ class CSharpLineBreakpointType : XLineBreakpointType<DotNetLineBreakpointPropert
         return line in cached.second
     }
 
+    /**
+     * A line with lambdas offers where to stop, as in Rider: the line, or inside one of its lambdas (`.Where(n => n % 2 == 0)`). The adapter
+     * binds a breakpoint with a column to the sequence point there — the body of the lambda (`dap-probe/FINDINGS.md`: column breakpoints
+     * on a line with two lambdas stop in the right lambda). A line without lambdas has no variants: a click puts the line breakpoint.
+     */
+    override fun computeVariants(project: Project, position: XSourcePosition): List<XLineBreakpointVariant> {
+        val lambdas = CSharpBreakpointLambdas.on(project, position.file, position.line)
+        if (lambdas.isEmpty()) return emptyList()
+        return listOf<XLineBreakpointVariant>(LineVariant()) + lambdas.mapIndexed { ordinal, lambda -> LambdaVariant(ordinal, lambda) }
+    }
+
+    /** A lambda's breakpoint marks the body it stops in; a line's marks nothing beyond the line. */
+    override fun getHighlightRange(breakpoint: DotNetLineBreakpoint): TextRange? {
+        val ordinal = breakpoint.properties?.lambdaOrdinal?.takeIf { it >= 0 } ?: return null
+        val file = breakpoint.sourcePosition?.file ?: return null
+        val project = ProjectLocator.getInstance().guessProjectForFile(file) ?: return null
+        return CSharpBreakpointLambdas.on(project, file, breakpoint.line).getOrNull(ordinal)?.body
+    }
+
+    override fun getDisplayText(breakpoint: DotNetLineBreakpoint): String {
+        val ordinal = breakpoint.properties?.lambdaOrdinal ?: -1
+        return if (ordinal < 0) super.getDisplayText(breakpoint) else "${super.getDisplayText(breakpoint)}, lambda ${ordinal + 1}"
+    }
+
+    private inner class LineVariant : XLineBreakpointVariant() {
+        override fun getText(): String = "Line"
+        override fun getIcon(): Icon = AllIcons.Debugger.Db_set_breakpoint
+        override fun getHighlightRange(): TextRange? = null
+        override fun createProperties(): DotNetLineBreakpointProperties = DotNetLineBreakpointProperties()
+    }
+
+    private inner class LambdaVariant(private val ordinal: Int, private val lambda: CSharpBreakpointLambdas.Lambda) : XLineBreakpointVariant() {
+        override fun getText(): String = "\u03bb " + StringUtil.shortenTextWithEllipsis(lambda.text.replace(WHITESPACE, " "), 60, 0)
+        override fun getIcon(): Icon = AllIcons.Nodes.Lambda
+        override fun getHighlightRange(): TextRange = lambda.body
+        override fun createProperties(): DotNetLineBreakpointProperties = DotNetLineBreakpointProperties().also { it.lambdaOrdinal = ordinal }
+    }
+
     override fun createCustomPropertiesPanel(project: Project): XBreakpointCustomPropertiesPanel<DotNetLineBreakpoint> = PropertiesPanel()
 
     private class PropertiesPanel : XBreakpointCustomPropertiesPanel<DotNetLineBreakpoint>() {
@@ -125,6 +178,7 @@ class CSharpLineBreakpointType : XLineBreakpointType<DotNetLineBreakpointPropert
 
     private companion object {
         val LINES: Key<Pair<Long, Set<Int>>> = Key.create("io.github.dotnetsupport.debugger.breakpointLines")
+        val WHITESPACE = Regex("\\s+")
     }
 }
 
@@ -176,7 +230,7 @@ class DotNetLineBreakpointHandler(private val process: DotNetDebugProcess) :
     private fun send(path: String): CompletableFuture<*> {
         val breakpoints = byFile[path].orEmpty().filter { it.isEnabled }.sortedBy { it.line }
         val extra = temporary[path]?.takeIf { line -> breakpoints.none { it.line == line } }
-        val list = breakpoints.map { breakpointJson(it.line, it.conditionExpression?.expression, it.properties?.hitCondition, it.properties?.logMessage) } +
+        val list = breakpoints.map { breakpointJson(it.line, it.conditionExpression?.expression, it.properties?.hitCondition, it.properties?.logMessage, columnOf(it)) } +
             listOfNotNull(extra?.let { breakpointJson(it, null, null, null) })
         val source = json("path" to path, "name" to path.substringAfterLast('/').substringAfterLast('\\'))
         return process.connection.request("setBreakpoints", json("source" to source, "breakpoints" to list), DotNetDebugProcess.REQUEST_TIMEOUT_MS)
@@ -189,6 +243,17 @@ class DotNetLineBreakpointHandler(private val process: DotNetDebugProcess) :
             .exceptionally { error -> breakpoints.forEach { process.session.setBreakpointInvalid(it, DotNetDebugProcess.errorText(error)) }; null }
     }
 
+    /** The 0-based column of the body of a lambda's breakpoint, as the text is now; null for a line's (or a lambda no longer there). */
+    private fun columnOf(breakpoint: DotNetLineBreakpoint): Int? {
+        val ordinal = breakpoint.properties?.lambdaOrdinal?.takeIf { it >= 0 } ?: return null
+        return ReadAction.compute<Int?, RuntimeException> {
+            val file = breakpoint.sourcePosition?.file ?: return@compute null
+            val document = FileDocumentManager.getInstance().getDocument(file) ?: return@compute null
+            val body = CSharpBreakpointLambdas.on(process.session.project, file, breakpoint.line).getOrNull(ordinal)?.body ?: return@compute null
+            body.startOffset - document.getLineStartOffset(breakpoint.line)
+        }
+    }
+
     private fun mark(ide: DotNetLineBreakpoint, dap: JsonObject) {
         if (dap.bool("verified") == true) process.session.setBreakpointVerified(ide)
         else process.session.setBreakpointInvalid(ide, dap.string("message") ?: "The debugger has not bound the breakpoint (yet)")
@@ -196,12 +261,48 @@ class DotNetLineBreakpointHandler(private val process: DotNetDebugProcess) :
 
     companion object {
         /** One breakpoint of `setBreakpoints`: the line of the protocol is 1-based; the empty parts are left out. */
-        fun breakpointJson(line: Int, condition: String?, hitCondition: String?, logMessage: String?): Map<String, Any> = buildMap {
+        @JvmOverloads fun breakpointJson(line: Int, condition: String?, hitCondition: String?, logMessage: String?, column: Int? = null): Map<String, Any> = buildMap {
             put("line", line + 1)
+            column?.let { put("column", it + 1) }
             condition?.trim()?.takeIf { it.isNotEmpty() }?.let { put("condition", it) }
             HitCondition.normalize(hitCondition)?.takeIf { HitCondition.isValid(it) }?.let { put("hitCondition", it) }
             logMessage?.trim()?.takeIf { it.isNotEmpty() }?.let { put("logMessage", it) }
         }
+    }
+}
+
+/**
+ * The lambdas (and anonymous methods) that start on a line of a `.cs` file, in their order on the line, with the range of the body a
+ * breakpoint in them stops at. From the file's tree of csharp-psi; the heuristic tree has no expressions, and then a line has none.
+ */
+object CSharpBreakpointLambdas {
+    class Lambda(val text: String, val body: TextRange)
+
+    fun on(project: Project, file: VirtualFile, line: Int): List<Lambda> {
+        if (file.fileType != CSharpFileType) return emptyList()
+        val document = FileDocumentManager.getInstance().getDocument(file) ?: return emptyList()
+        if (line < 0 || line >= document.lineCount) return emptyList()
+        val psi = PsiDocumentManager.getInstance(project).getPsiFile(document) ?: return emptyList()
+        return on(psi, document.getLineStartOffset(line), document.getLineEndOffset(line))
+    }
+
+    /** The lambdas of [psi] starting in [start, end) with the body starting there too: a body on the next line is not this line's. */
+    fun on(psi: PsiFile, start: Int, end: Int): List<Lambda> {
+        val found = java.util.TreeMap<Int, Lambda>()
+        var offset = start
+        while (offset < end) {
+            val leaf = psi.findElementAt(offset) ?: break
+            var element: PsiElement? = leaf
+            while (element != null && element !is PsiFile) {
+                if (element is CSharpAnonymousFunctionExpression && element.textRange.startOffset in start until end) {
+                    val body = (element.expressionBody ?: element.block)?.textRange
+                    if (body != null && body.startOffset in start until end) found.putIfAbsent(element.textRange.startOffset, Lambda(element.text, body))
+                }
+                element = element.parent
+            }
+            offset = maxOf(leaf.textRange.endOffset, offset + 1)
+        }
+        return found.values.toList()
     }
 }
 

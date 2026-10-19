@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Broken", "Broken\Broken.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Blazor", "Blazor\Blazor.csproj", "{3DDF76E0-9DD1-41B6-8FF1-9376BB38C13F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestsMtp", "TestsMtp\TestsMtp.csproj", "{58E8D1BF-2185-4634-B03C-C2CF66448016}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -153,6 +155,18 @@ Global
 		{3DDF76E0-9DD1-41B6-8FF1-9376BB38C13F}.Release|x64.Build.0 = Release|Any CPU
 		{3DDF76E0-9DD1-41B6-8FF1-9376BB38C13F}.Release|x86.ActiveCfg = Release|Any CPU
 		{3DDF76E0-9DD1-41B6-8FF1-9376BB38C13F}.Release|x86.Build.0 = Release|Any CPU
+		{58E8D1BF-2185-4634-B03C-C2CF66448016}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58E8D1BF-2185-4634-B03C-C2CF66448016}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58E8D1BF-2185-4634-B03C-C2CF66448016}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{58E8D1BF-2185-4634-B03C-C2CF66448016}.Debug|x64.Build.0 = Debug|Any CPU
+		{58E8D1BF-2185-4634-B03C-C2CF66448016}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{58E8D1BF-2185-4634-B03C-C2CF66448016}.Debug|x86.Build.0 = Debug|Any CPU
+		{58E8D1BF-2185-4634-B03C-C2CF66448016}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58E8D1BF-2185-4634-B03C-C2CF66448016}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58E8D1BF-2185-4634-B03C-C2CF66448016}.Release|x64.ActiveCfg = Release|Any CPU
+		{58E8D1BF-2185-4634-B03C-C2CF66448016}.Release|x64.Build.0 = Release|Any CPU
+		{58E8D1BF-2185-4634-B03C-C2CF66448016}.Release|x86.ActiveCfg = Release|Any CPU
+		{58E8D1BF-2185-4634-B03C-C2CF66448016}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

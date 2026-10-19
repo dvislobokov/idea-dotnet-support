@@ -80,7 +80,10 @@ data class MsBuildProject(
     val usesTestingPlatform: Boolean
         get() = testingPlatformProperties.any { it.equals("EnableMSTestRunner", ignoreCase = true) || it.equals("UseMicrosoftTestingPlatformRunner", ignoreCase = true) } ||
             sdk.equals("MSTest.Sdk", ignoreCase = true) ||
-            packages.any { it.name.equals("TUnit", ignoreCase = true) || it.name.equals("Microsoft.Testing.Platform", ignoreCase = true) || it.name.equals("Microsoft.Testing.Platform.MSBuild", ignoreCase = true) }
+            packages.any { it.name.equals("TUnit", ignoreCase = true) || it.name.equals("Microsoft.Testing.Platform", ignoreCase = true) || it.name.equals("Microsoft.Testing.Platform.MSBuild", ignoreCase = true) } ||
+            // xunit.v3 brings the platform's MSBuild targets itself: with `TestingPlatformDotnetTestSupport` alone `dotnet test` runs it on the
+            // platform (seen live, xunit.v3 3.2.2: "MTP0001: VSTest-specific properties ... will be ignored")
+            testingPlatformDotnetTestSupport && packages.any { it.name.equals("xunit.v3", ignoreCase = true) }
 
     /** `TestingPlatformDotnetTestSupport`: `dotnet test` of SDK 8 / 9 hands the arguments after `--` to the platform instead of running VSTest. */
     val testingPlatformDotnetTestSupport: Boolean

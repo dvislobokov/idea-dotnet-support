@@ -13,6 +13,7 @@ Solution для живой проверки плагина: отладчика (
 | `Web` | ASP.NET Core: профили `http` / `https` / `no browser`, `launchBrowser`, `launchUrl`, переменные профиля, точка останова в обработчике |
 | `MultiTarget` | `net9.0;net10.0`: отладчик запускает фреймворк, выбранный в тулбаре (или первый при «Default») |
 | `Tests` | xUnit: отладка тестов (`BP:test`, `BP:theory`); результаты по ходу прогона (`LiveResultsTests`, маркеры `LIVE:`) |
+| `TestsMtp` | xunit.v3 на Microsoft.Testing.Platform: отладка тестов платформы (`BP:mtp-test`) |
 | `AspireHost` | Aspire 13.6 AppHost, запускает только `Web` (без контейнеров и Docker): Debug AppHost подключает отладчик к `Web` сам (`BP:aspire-service`). Пакеты Aspire берутся из nuget.org при restore, workload не нужен |
 | `NetFramework/NetFramework.sln` | **отдельное** решение .NET Framework старого формата (без SDK, `v4.8.1`): `LegacyWpf` (WPF: .NET SDK собирает его без XAML и падает с CS5001) и `LegacyConsole` (`packages.config`, Newtonsoft.Json по `HintPath` из `..\packages`). Нужны Visual Studio или Build Tools 2022 и targeting pack 4.8.1; в основное решение не входит, чтобы `DebugPlayground.sln` собирался без них |
 | `Broken` | не компилируется, **в solution не входит** (ломал бы Build Solution): конфигурацию «.NET Project» для `Broken.csproj` создать руками. `SyntaxErrors.cs` — синтаксические ошибки для редактора (`TYPE:diag-*`), `SemanticErrors.cs` — семантические (`TYPE:sem-*`, 0.1.74), `SemanticErrors2.cs` — ошибки и предупреждения D2 (`TYPE:sem2-*`, 0.1.78); все три из компиляции исключены |
@@ -28,6 +29,11 @@ Solution для живой проверки плагина: отладчика (
 - [ ] F8 / F7 / Shift+F8 (`BP:stepping`), Resume; вывод программы в консоли; Stop — в диспетчере задач нет `dotnet-debugger`
 - [ ] точки останова ставятся на строках с кодом и не ставятся на `using`, комментариях, заголовках методов (`Scenarios.cs`, `Program.cs`)
 - [ ] `BP:lambda`, `BP:iterator`, `BP:property`, `BP:lib`, `BP:lib-expression-body`
+- [x] (робот в WSL, 0.1.287) `BP:lambda-variants` (`Console/Scenarios.cs`, сценарий `closures`): клик по полю ставит точку на строку и
+      показывает в строке точки у `n % 2` и `n * 10`; точка у `n * 10` останавливает дважды внутри лямбды (`n` = 2, 4), точка строки — один
+      раз в `Closures()`. Run → View Breakpoints → «+» → .NET Function Breakpoint `Scenarios.Closures` — остановка на входе в метод
+      (`Scenarios.cs:147`). Во время остановки вкладка Modules рядом с Variables: `System.Private.CoreLib.dll`, `Playground.Console.dll`
+      («Symbols loaded.»), …
 - [ ] `Broken`: Debug → ошибки CS0029 / CS0103 в окне Build и в редакторе, сессия отладки не остаётся открытой
 - [ ] `Broken/SyntaxErrors.cs`, `TYPE:diag-semicolon` — `int x = 1` →
   одна красная отметка за концом строки, подсказка `CS1002: ; expected`, второй такой же от сервера нет; `TYPE:diag-paren`, `-expression`,
@@ -84,6 +90,8 @@ Solution для живой проверки плагина: отладчика (
 ### Этап 5 — attach и тесты (2026-09-21 пройден UI-роботом, кроме диалога Attach to Process и окна Unit Tests)
 - [ ] `Console: Wait` запустить через Run; Run | Attach to Process → в группе «.NET» есть `Playground.Console`, нет `dotnet-debugger` и уже отлаживаемых
 - [ ] точка в цикле `Wait` срабатывает; Stop отсоединяет — программа продолжает печатать `tick`, в том числе если Stop нажат на точке останова
+- [x] (робот в WSL, 0.1.287) `TestsMtp/PlatformTests.cs` (Microsoft.Testing.Platform, xunit.v3): `BP:mtp-test` — Debug теста
+      останавливается на точке без остановки во внешнем коде, Resume → «Tests passed: 1», сеанс закрывается сам
 - [ ] `Tests/PricingTests.cs`: Debug у ▶ возле теста → остановка на `BP:test` (без промежуточной остановки во внешнем коде), F7 в `Lib`; Resume → тест зелёный, сессия закрывается сама
 - [ ] `BP:theory` — остановка на каждую строку `InlineData`; окно Unit Tests → «Debug Selected Tests»
 
@@ -232,8 +240,8 @@ Solution для живой проверки плагина: отладчика (
       `vc:latest-news`, затем ` c` — `count` один раз, Ctrl+B на `latest-news` — `LatestNewsViewComponent`; теги `email`, `a asp-…`,
       `form`, `vc:latest-news` и их атрибуты — жирные (цвета класса и свойства); в `asp-for="Na"` список открывается сам
 - [x] (робот в WSL, 0.1.285) `BP:razor-markup` (`Blazor/Editor/RazorRelated.razor`; проверено на `Counter.razor:4`): точка на строке
-      разметки с `@…`, остановка на запрос страницы, кадр `BuildRenderTree()` в `.razor`, Evaluate. В WSL второй сеанс отладки в той же
-      IDE теряет `stopped` — и для `.cs` тоже (не про Razor)
+      разметки с `@…`, остановка на запрос страницы, кадр `BuildRenderTree()` в `.razor`, Evaluate. Второй и третий сеансы подряд (Stop и Debug, Stop and Rerun)
+      останавливаются так же (робот в WSL, 2026-10-19)
 - [x] (робот в WSL, 0.1.284) `Blazor/Editor/RazorRelated.razor`: `TYPE:razor-related` (Ctrl+Alt+Home ↔ `.razor.cs` / `.razor.css`),
       `TYPE:razor-endpoints` (`/editor/related`, `/Privacy` в Endpoints), `TYPE:razor-add-using` (Alt+Enter на `<Counter />`),
       `TYPE:razor-extract` (Extract Component, Ctrl+Z)

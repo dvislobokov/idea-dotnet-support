@@ -57,7 +57,13 @@ Windows и Linux — в `dap-probe/FINDINGS.md`, там же скрипты, к�
    completion в выражениях. `restart` адаптера не используется намеренно: он перезапускает программу без сборки, то есть со старым кодом;
    Rerun платформы в окне Debug останавливает сессию, собирает проект задачей «Build .NET Project» и начинает новую — как Restart в Rider.
 4. **Отладка тестов — сделано.** `VSTEST_HOST_DEBUG=1` → attach к тестовому хосту через `DotNetProcessAttacher`; Debug у ▶, у конфигурации `dotnet test`
-   и в окне Unit Tests. Не проверено: проекты на Microsoft.Testing.Platform.
+   и в окне Unit Tests. Microsoft.Testing.Platform — с 0.1.287 (проверено роботом в WSL, xunit.v3 3.2.2 + `TestingPlatformDotnetTestSupport`,
+   площадка `TestsMtp`, `BP:mtp-test`): `TESTINGPLATFORM_WAIT_ATTACH_DEBUGGER=1`, приложение ждёт отладчик. Строку «Waiting for debugger to
+   attach... Process Id: N» `dotnet test` SDK 8 / 9 отдаёт только после конца приложения (MSBuild её держит), поэтому плагин ищет приложение
+   среди потомков `dotnet test` (`TestingPlatformDebug`: `--internal-msbuild-node` / `--dotnet-test-pipe`, или имя сборки) и подключается;
+   после подключения платформа, как хост VSTest, зовёт `Debugger.Break()` — эта остановка пропускается. Найдено по дороге: xunit.v3 с одним
+   `TestingPlatformDotnetTestSupport` плагин считал VSTest-проектом (а `dotnet test` гнал его через платформу, «MTP0001: VSTest-specific
+   properties ... ignored») — `MsBuildProject.usesTestingPlatform`.
 5. **Полировка — сделано (2026-09-22, проверено UI-роботом).**
    - Значения в редакторе (`computeInlineDebuggerData`).
    - Async-стек: адаптер отдаёт его в `stackTrace` после кадра с подсказкой `label` («[Async Call Stack]»); кадр-метка не показывается, а
@@ -72,10 +78,20 @@ Windows и Linux — в `dap-probe/FINDINGS.md`, там же скрипты, к�
    - Set Next Statement: действие `DotNet.Debugger.SetNextStatement` в контекстном меню редактора (после Run to Cursor): `gotoTargets` по строке
      каретки → `goto` для потока остановки → адаптер присылает `stopped` с причиной `goto`. Пустой список целей (другой метод) — сообщение, позиция
      не меняется. Своего действия у платформы нет; горячая клавиша Rider (Ctrl+Shift+F10) в раскладке IDEA занята, поэтому без клавиши.
-   - **Не сделано:** второй адаптер (netcoredbg) — отложен.
+   - Точки останова в лямбдах (0.1.287, проверено роботом в WSL, `BP:lambda-variants`): у строки с лямбдами платформа предлагает варианты
+     (`computeVariants`: «Line» и каждая лямбда, телом которой начинается на строке; в 2026.1 — inline-точками в строке), точка лямбды хранит
+     её номер на строке (`lambdaOrdinal`, как у Java) и уходит адаптеру с колонкой начала тела — он ставит её на точку следования в лямбде.
+     Лямбды — из дерева csharp-psi (`CSharpBreakpointLambdas`); у эвристического дерева выражений нет, там вариантов нет.
+   - Точки останова на методе по имени (0.1.287, проверено роботом в WSL): тип «.NET Function Breakpoints», «+» в диалоге Breakpoints,
+     `setFunctionBreakpoints` (`Namespace.Class.Method`, `Class.Method`, `Method`; условие и hit count). Платформа помечает «verified» только
+     строчные точки — отказ адаптера пишется в консоль.
+   - Вкладка Modules (0.1.287, проверено роботом в WSL): загруженные сборки по событиям `module` адаптера с самого старта программы — номер
+     загрузки, имя, состояние символов, путь. Версии и «user code» `dotnet-debugger` не присылает — колонок нет.
+   - **Не сделано:** второй адаптер (netcoredbg) — отложен; Smart Step Into и возвращаемые значения — сначала узнать, умеет ли адаптер.
 6. **.NET Framework — сделано (0.1.69, адаптер 0.2.0, проверено UI-роботом).** Debug проекта старого формата — `program` = `TargetPath`,
    рабочая папка — папка вывода; 32-битные программы и процессы адаптер не отлаживает, плагин отказывает им сам до запуска адаптера
    (`run/DebugBitness`, PE-заголовок / `IsWow64Process`); attach к net4x без ключа реестра. Подробности и факты — `NET_FRAMEWORK_PLAN.md`, п. 4.
+   32-битные программы отлаживать не собираемся (решение пользователя 2026-10-19): отказ до адаптера — окончательное поведение, а не обход.
 
 Узкое место то же, что всюду: UX отладки проверяется только в живой IDE (UI-робот — `tools/ui-robot`, сценарии — `debug-playground`).
 
@@ -100,7 +116,16 @@ Windows и Linux — в `dap-probe/FINDINGS.md`, там же скрипты, к�
 - Настоящий адаптер в тестах — только если найден (`DAP_ADAPTER` или установленный tool); иначе тест пропускается.
 - UX — вручную в GoLand после каждого слоя.
 
-## Открыто: потерянная остановка в WSL (найдено 2026-10-19, проверка R8 Razor роботом)
+## Закрыто: потерянная остановка в WSL (найдено 2026-10-19, проверка R8 Razor роботом; разобрано в тот же день — не ошибка плагина)
+
+Разбор: Stop + новый Debug трижды подряд и Stop and Rerun кнопкой (в том числе со старым сеансом, стоящим на точке) — каждый сеанс
+останавливается на точке, после Stop процессов адаптера, помощника и программы не остаётся. «Потерю» делал робот: `robot.py run` запускал
+конфигурацию через `ProgramRunnerUtil.executeConfiguration`, а этот путь платформы (2026.1, `ExecutionManagerImpl.executeConfiguration`)
+сразу зовёт runner и не проходит `restartRunProfile` — запущенный экземпляр не останавливается и не спрашивается «Stop and Rerun». Вторая
+программа падала на занятом порту («Failed to bind to address http://127.0.0.1:5000: address already in use»), запрос уходил в первую — в
+старый сеанс; так же и у Run (`stop_all.js` останавливает только сеансы отладки). Ещё одна ловушка проверки: `curl … &` в вызове `wsl`
+умирает вместе с ним — страница не запрашивалась вовсе. Исправлено в роботе: `run` идёт путём кнопки (`ExecutionUtil.runConfiguration`),
+скрипты `run_like_toolbar.js`, `running_probe.js` (что платформа знает о запущенных экземплярах). Ниже — исходная запись.
 
 В песочнице WSL (Linux, `dotnet-debugger` из `~/.dotnet/tools`) первый сеанс отладки после старта IDE останавливается на точке
 нормально, а второй и следующие (после Stop того же run configuration) — нет: `setBreakpoints` отвечает, событие `breakpoint`

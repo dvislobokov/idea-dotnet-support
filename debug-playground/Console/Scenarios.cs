@@ -149,6 +149,8 @@ public static class Scenarios
         Func<int, int> add = x => x + captured; // BP:lambda — put it on this line: stops when the lambda runs, `captured` is visible inside
         int Local(int y) => y * captured;
         Console.WriteLine($"{add(1)} {Local(2)}");
+        var evens = new[] { 1, 2, 3, 4 }.Where(n => n % 2 == 0).Select(n => n * 10).ToArray(); // BP:lambda-variants — click the gutter of this line: a popup offers "Line", "λ n => n % 2 == 0", "λ n => n * 10"; pick the second lambda. EXPECT: the breakpoint marks `n * 10`, Debug "closures" stops there twice with `n` = 2, then 4 (not at `n % 2`); a "Line" breakpoint stops once, before the query runs
+        Console.WriteLine($"evens {evens.Length}");
         foreach (var item in Numbers()) Console.WriteLine($"iterator {item}");
     }
 

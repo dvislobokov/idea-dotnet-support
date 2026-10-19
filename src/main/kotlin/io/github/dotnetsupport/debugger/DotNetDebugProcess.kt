@@ -13,6 +13,7 @@ import com.intellij.util.concurrency.AppExecutorUtil
 import com.intellij.xdebugger.XDebugProcess
 import com.intellij.xdebugger.XDebugSession
 import com.intellij.xdebugger.XSourcePosition
+import com.intellij.xdebugger.breakpoints.XBreakpoint
 import com.intellij.xdebugger.breakpoints.XBreakpointHandler
 import com.intellij.xdebugger.evaluation.XDebuggerEditorsProvider
 import com.intellij.xdebugger.frame.XSuspendContext
@@ -46,6 +47,9 @@ class DotNetDebugProcess(
     private val handler = DebuggeeProcessHandler()
     private val lineBreakpoints = DotNetLineBreakpointHandler(this)
     private val exceptionBreakpoints = DotNetExceptionBreakpointHandler(this)
+    private val functionBreakpoints = DotNetFunctionBreakpointHandler(this)
+    /** The Modules tab: kept from the first `module` event, which comes before the tab is ever shown. */
+    val modules = DotNetDebugModules()
     private val editors = DotNetEditorsProvider()
     private val terminal = DebugTerminal(this::print)
 
@@ -75,7 +79,7 @@ class DotNetDebugProcess(
     }
 
     override fun getEditorsProvider(): XDebuggerEditorsProvider = editors
-    override fun getBreakpointHandlers(): Array<XBreakpointHandler<*>> = arrayOf(lineBreakpoints, exceptionBreakpoints)
+    override fun getBreakpointHandlers(): Array<XBreakpointHandler<*>> = arrayOf(lineBreakpoints, exceptionBreakpoints, functionBreakpoints)
     override fun doGetProcessHandler(): ProcessHandler = handler
 
     /**
@@ -83,6 +87,15 @@ class DotNetDebugProcess(
      * of the program never showed). The output of the program comes as `output` events, which the handler turns into its text.
      */
     override fun createConsole(): ExecutionConsole = super.createConsole().also { (it as? ConsoleView)?.attachToProcess(handler) }
+
+    /** The tab "Modules" next to Threads & Variables and Console, as the Modules window of Rider and Visual Studio. */
+    override fun createTabLayouter(): com.intellij.xdebugger.ui.XDebugTabLayouter = object : com.intellij.xdebugger.ui.XDebugTabLayouter() {
+        override fun registerAdditionalContent(ui: com.intellij.execution.ui.RunnerLayoutUi) {
+            val content = ui.createContent("DotNetModules", modules.component(), "Modules", DotNetDebugModules.ICON, null)
+            content.isCloseable = false
+            ui.addContent(content, 0, com.intellij.execution.ui.layout.PlaceInGrid.center, false)
+        }
+    }
 
     override fun sessionInitialized() {
         handler.startNotify()
@@ -113,6 +126,7 @@ class DotNetDebugProcess(
             "output" -> output(body)
             "process" -> body.int("systemProcessId")?.let { debuggee(it.toLong()) }
             "breakpoint" -> body.getAsJsonObject("breakpoint")?.let(lineBreakpoints::update)
+            "module" -> modules.event(body)
             "exited" -> { exitCode = body.int("exitCode"); programEnded = true }
             "terminated" -> { programEnded = true; AppExecutorUtil.getAppExecutorService().execute { shutdown(detach = false, programGone = true) } }
         }
@@ -140,7 +154,7 @@ class DotNetDebugProcess(
     private fun configure() {
         // first: a breakpoint set while the lists below are on their way sends its file itself instead of waiting for the next change
         configured = true
-        CompletableFuture.allOf(lineBreakpoints.sendAll(), exceptionBreakpoints.send())
+        CompletableFuture.allOf(lineBreakpoints.sendAll(), exceptionBreakpoints.send(), functionBreakpoints.send())
             .handle { _, _ -> null }
             .thenCompose { connection.request("configurationDone") }
             .exceptionally { error -> LOG.info("configurationDone: ${errorText(error)}"); null }
@@ -182,7 +196,7 @@ class DotNetDebugProcess(
 
     /** A breakpoint of the IDE when the stop is one: the platform then logs, counts and decides whether to stay suspended. */
     private fun reached(context: DotNetSuspendContext, body: JsonObject) {
-        val breakpoint = body.getAsJsonArray("hitBreakpointIds")?.firstNotNullOfOrNull { lineBreakpoints.find(it.asInt) }
+        val breakpoint: XBreakpoint<*>? = body.getAsJsonArray("hitBreakpointIds")?.firstNotNullOfOrNull { lineBreakpoints.find(it.asInt) ?: functionBreakpoints.find(it.asInt) }
             ?: if (body.string("reason") == "exception") exceptionBreakpoints.first() else null
         if (breakpoint == null) return session.positionReached(context)
         val expression = breakpoint.logExpressionObject?.expression?.takeIf { it.isNotBlank() }

@@ -30,6 +30,11 @@ class TestingPlatformTest {
         assertTrue(xunit3.isTestProject); assertTrue(xunit3.usesTestingPlatform); assertEquals(TestFramework.XUNIT, xunit3.testFramework)
         // the runner without TestingPlatformDotnetTestSupport: `dotnet test` still goes through the VSTest bridge
         assertEquals(TestMode.VSTEST, TestingPlatform.mode(xunit3, runnerConfigured = false))
+        // xunit.v3 with TestingPlatformDotnetTestSupport alone: on the platform (its MSBuild targets come with the package; the playground's TestsMtp)
+        val xunit3Support = project("""<PropertyGroup><OutputType>Exe</OutputType><TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport></PropertyGroup><ItemGroup><PackageReference Include="xunit.v3" Version="3.2.2" /></ItemGroup>""")
+        assertTrue(xunit3Support.usesTestingPlatform)
+        assertEquals(TestMode.TESTING_PLATFORM_AFTER_SEPARATOR, TestingPlatform.mode(xunit3Support, runnerConfigured = false))
+        assertFalse("without it: VSTest", project("""<ItemGroup><PackageReference Include="xunit.v3" Version="3.2.2" /></ItemGroup>""").usesTestingPlatform)
 
         val tunit = project("""<ItemGroup><PackageReference Include="TUnit" Version="0.25.0" /></ItemGroup>""")
         assertTrue(tunit.isTestProject); assertTrue(tunit.usesTestingPlatform); assertEquals(TestFramework.TUNIT, tunit.testFramework)

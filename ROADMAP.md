@@ -388,7 +388,9 @@
   пакеты платформы), три режима `dotnet test` (VSTest; MTP с `TestingPlatformDotnetTestSupport` — опции после `--`; раннер SDK 10 по `global.json`
   `test.runner` или `dotnet.config` — `--project` и опции напрямую), TRX `--report-trx` / `--report-xunit-trx` в наш каталог, фильтры по
   фреймворку (MSTest — VSTest-выражение, xunit.v3 — `--filter-class` / `--filter-method`, TUnit — `--treenode-filter`), покрытие `--coverage`.
-  Отладки MTP-тестов нет (нет хоста, ждущего отладчик; `TESTINGPLATFORM_LAUNCH_ATTACH_DEBUGGER` — только JIT-отладчик Windows) — нотификация.
+  Отладка MTP-тестов — с 0.1.287: `TESTINGPLATFORM_WAIT_ATTACH_DEBUGGER=1`, плагин находит приложение среди потомков `dotnet test` и
+  подключается (`DAP_PLAN.md`, слой 4; площадка `TestsMtp`, `BP:mtp-test`). Отладчик 0.1.287: точки в лямбдах (`BP:lambda-variants`),
+  точки на методе по имени, вкладка Modules (`DAP_PLAN.md`, слой 5).
   Факты: `dotnet test --help` в обоих режимах SDK 10.0.401, имена опций из `Microsoft.Testing.Platform.dll` 1.5. Вживую не проверено
 
 ## Заход 4 — проект и окружение

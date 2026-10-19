@@ -84,7 +84,7 @@ robot_js exit_ide.js; wsl -d Ubuntu -- bash tools/ui-robot/wsl/stop-ide.sh
 | `open DIR` | открыть проект в песочнице |
 | `openfile FILE [LINE]` | открыть файл, каретка на строке (с 1) |
 | `breakpoint FILE LINE` | переключить точку останова на строке (с 1) |
-| `run "NAME" [Debug]` | запустить run configuration по имени |
+| `run "NAME" [Debug]` | запустить run configuration по имени — как кнопка на панели (`ExecutionUtil.runConfiguration`): если она уже запущена, платформа спросит «Stop and Rerun» (до 2026-10-19 робот запускал в обход, и второй запуск оставлял две программы на одном порту) |
 | `action ID` | действие IDE по id: `StepOver`, `StepInto`, `StepOut`, `Resume`, `Pause`, `Stop`, `Exit`, `ViewBreakpoints`… |
 | `find XPATH` | компоненты по XPath и их тексты |
 | `click XPATH` | клик по первому совпадению |

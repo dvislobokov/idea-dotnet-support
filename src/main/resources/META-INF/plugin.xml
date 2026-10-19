@@ -462,6 +462,7 @@
         <programRunner implementation="io.github.dotnetsupport.run.DotNetCompoundDebugRunner"/>
         <xdebugger.breakpointType implementation="io.github.dotnetsupport.debugger.CSharpLineBreakpointType"/>
         <xdebugger.breakpointType implementation="io.github.dotnetsupport.debugger.DotNetExceptionBreakpointType"/>
+        <xdebugger.breakpointType implementation="io.github.dotnetsupport.debugger.DotNetFunctionBreakpointType"/>
         <xdebugger.attachDebuggerProvider implementation="io.github.dotnetsupport.debugger.DotNetAttachDebuggerProvider"/>
         <!-- names of the stopped program in Evaluate, watches and breakpoint conditions; first, and it stops the others there -->
         <!-- the case of what is typed does not matter in C#: the first of all, the ones after it get its matcher -->

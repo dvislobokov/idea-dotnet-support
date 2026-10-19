@@ -206,16 +206,18 @@ def command_breakpoint(args):
 
 def command_run(args):
     debug = len(args) > 1 and args[1].lower() == "debug"
+    # as the toolbar button: ExecutionUtil.runConfiguration goes through the platform's rerun ("Stop and Rerun" of a running instance);
+    # ProgramRunnerUtil.executeConfiguration starts the runner directly, and a second start left two programs on one port (DAP_PLAN.md)
     script = IN_PROJECT + """
         importClass(com.intellij.execution.RunManager)
-        importClass(com.intellij.execution.ProgramRunnerUtil)
+        importClass(com.intellij.execution.runners.ExecutionUtil)
         importClass(com.intellij.execution.executors.DefaultDebugExecutor)
         importClass(com.intellij.execution.executors.DefaultRunExecutor)
         const name = %s
         const settings = RunManager.getInstance(project).getAllSettings().stream().filter(function (s) { return s.getName() == name }).findFirst().orElse(null)
         if (settings == null) throw new java.lang.IllegalArgumentException("No run configuration " + name)
         const executor = %s
-        later(function () { ProgramRunnerUtil.executeConfiguration(settings, executor) })
+        later(function () { ExecutionUtil.runConfiguration(settings, executor) })
     """ % (js_string(args[0]), "DefaultDebugExecutor.getDebugExecutorInstance()" if debug else "DefaultRunExecutor.getRunExecutorInstance()")
     call("/js/execute", script_body(script))
     print("started", args[0], "with", "Debug" if debug else "Run")

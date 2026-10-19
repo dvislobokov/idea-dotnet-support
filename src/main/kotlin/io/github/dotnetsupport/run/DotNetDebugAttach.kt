@@ -39,6 +39,26 @@ object TestHostDebug {
     }
 }
 
+/**
+ * Microsoft.Testing.Platform under `dotnet test` with `TESTINGPLATFORM_WAIT_ATTACH_DEBUGGER=1`: the test application waits until a debugger
+ * is attached. It prints "Waiting for debugger to attach... Process Id: N", but `dotnet test` of SDK 8 / 9 passes that on only when the
+ * application has ended (seen live: MSBuild buffers it), so the application is found among the processes `dotnet test` starts instead.
+ * Once attached, it calls `Debugger.Break()`, as the VSTest host does ([TestHostDebug.isInitialBreak]).
+ */
+object TestingPlatformDebug {
+    const val VARIABLE = "TESTINGPLATFORM_WAIT_ATTACH_DEBUGGER"
+
+    // what `dotnet test` starts the application with: `--internal-msbuild-node <pipe>` (SDK 8 / 9), `--server dotnettestcli --dotnet-test-pipe` (SDK 10)
+    private val PLATFORM_OPTIONS = listOf("--internal-msbuild-node", "--dotnet-test-pipe", "dotnettestcli")
+
+    /** Whether a process `dotnet test` has started is a test application waiting for its debugger, by its command line. */
+    fun isTestApplication(commandLine: String, assemblyNames: Set<String>): Boolean {
+        if (PLATFORM_OPTIONS.any { commandLine.contains(it, ignoreCase = true) }) return true
+        // started without those (another SDK): by the name of its program, `Shop.Tests.exe` / `dotnet Shop.Tests.dll`
+        return assemblyNames.any { name -> Regex("""(?i)(^|[\\/"\s])${Regex.escape(name)}(\.exe|\.dll)?("|\s|$)""").containsMatchIn(commandLine) }
+    }
+}
+
 /** Which processes of the machine "Attach to Process" offers the .NET debugger for. */
 object DotNetProcesses {
     private val HOSTS = setOf("dotnet", "dotnet.exe", "testhost", "testhost.exe")
