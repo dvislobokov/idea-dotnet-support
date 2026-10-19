@@ -44,4 +44,13 @@ class CommandStreamingTest : BasePlatformTestCase() {
         assertTrue(recorder.text.isNotBlank())
         assertFalse(succeeded)
     }
+
+    /** A command of the plugin without a folder runs in the temporary directory, not in the IDE's (the home folder on macOS, 0.1.292). */
+    fun testACommandWithoutAFolderRunsInTheTemporaryDirectory() {
+        if (DotNetCli.findExecutable() == null) return
+        val directory = DotNetCli.commandLine(null, "new", "list").workDirectory
+        assertNotNull(directory)
+        assertEquals(java.io.File(System.getProperty("java.io.tmpdir")).canonicalFile, directory.canonicalFile)
+        assertEquals(java.io.File("C:/work").path, DotNetCli.commandLine("C:/work", "build").workDirectory.path)
+    }
 }

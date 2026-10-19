@@ -65,7 +65,18 @@ object DotNetCli {
      */
     @Throws(ExecutionException::class)
     fun commandLine(workDirectory: String?, vararg arguments: String): GeneralCommandLine =
-        userCommandLine(workDirectory, *arguments).withEnvironment(PluginData.processEnvironment())
+        userCommandLine(workDirectory ?: neutralDirectory(), *arguments).withEnvironment(PluginData.processEnvironment())
+
+    /**
+     * Where a command of the plugin with no folder of its own runs — not the working directory of the IDE, which is the home folder on
+     * macOS: `dotnet new list` / `--help` look for a project there and above to check the constraints of the templates, and a stray
+     * `~/<user>.csproj` (`dotnet new console` once run in ~) was evaluated with its globs over the whole home at every opening of the New
+     * Solution dialog (the macOS "data of other apps" prompts, 0.1.292). The temporary directory: outside the home on macOS and Linux.
+     */
+    fun neutralDirectory(): String? = runCatching {
+        val directory = if (PluginData.isRelocated) PluginData.tmp() else java.nio.file.Path.of(System.getProperty("java.io.tmpdir"))
+        java.nio.file.Files.createDirectories(directory).toString()
+    }.getOrNull()
 
     /**
      * A `dotnet` command that runs the program of the user (a run configuration, the tests): the environment of the IDE as it is, so that

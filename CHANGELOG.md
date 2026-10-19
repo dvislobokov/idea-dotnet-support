@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.292
+
+- macOS: the New Solution dialog no longer asks for the data of other apps. Its `dotnet new list` / `--help` ran in the working
+  directory of the IDE — the home folder on macOS — where `dotnet new` looks for a project to check the constraints of the templates,
+  and a stray `~/<user>.csproj` was evaluated with its globs over the whole home. The plugin's own `dotnet` commands without a folder
+  of their own run in the temporary directory now.
+
 ## 0.1.291
 
 - C#: no IDE error when the caret stands at the very start of a file whose first line is empty ("Add a partial part" took the line
