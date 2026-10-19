@@ -48,6 +48,8 @@ class RazorCodeGenerators : CSharpCodeGenerators {
     override fun isDocumentCompiled(document: com.intellij.psi.PsiFile): Boolean? {
         val manager = com.intellij.lang.injection.InjectedLanguageManager.getInstance(document.project)
         if (!manager.isInjectedFragment(document)) return null
+        // a piece of the head of the class in an injection of its own: its class has none of the members, the document checks the piece
+        if ((manager.getInjectionHost(document) as? RazorCodeLiteral)?.let(RazorCSharpDocument::isHeadHost) == true) return false
         val razor = RazorTagHelperEditor.razorFile(manager.getTopLevelFile(document))?.viewProvider?.virtualFile ?: return null
         val owning = io.github.dotnetsupport.msbuild.DotNetProjects.findOwningProject(razor)?.takeIf { it.extension.equals("csproj", ignoreCase = true) } ?: return null
         val relative = com.intellij.openapi.vfs.VfsUtilCore.getRelativePath(razor, owning.parent, '/') ?: return null

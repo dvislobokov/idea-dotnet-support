@@ -276,6 +276,16 @@ JavaScript — плагины IDE, в IDEA Community их нет; где они 
   разметки (`RazorIdeLayoutPass`: локальные блока не видны разметке после — теперь такой `@inject` идёт после метода без привязки к
   тексту). Итог на корпусе: eShop 48 документов, MudBlazor 2013, nopCommerce 1193 — ошибок нет, только скрытые CS8019 / CS8933.
   Не сделано: в окне Usages строка из разметки показывает текст куска (`Step`), а не строку файла.
+  0.1.294 (проверка пользователя 2026-10-19 в песочнице, «completion для @inject и прочих вещей»): (1) после `@` в начале строки разметки —
+  директивы вида файла (`RazorDirectives.forFileKind` + `using`, у `.cshtml` ещё `addTagHelper`…) и операторы (`if`, `foreach`…): C#
+  документа видел в `@inj` выражение `inj` (`RazorCSharpCompletion`); (2) клей генератора не в списке — `__builder`, `BuildRenderTree` /
+  `ExecuteAsync` и их части `__2` (после точки — только `__`-имена: у библиотеки может быть свой `ExecuteAsync`); (3) голова класса после
+  члена — `@using`, `@implements`, `@inherits`, `@attribute`, `@layout`, `@rendermode` после `@inject`: генератор пишет их до членов,
+  куски документа идут в порядке файла, и такой кусок становился клеем без completion. Теперь каждый — своя инъекция
+  (`RazorCSharpDocument.headPlaces`: документ до головы класса с куском на месте и пустым телом), семантика её не проверяет
+  (`isDocumentCompiled` = false: в её классе нет членов), ошибки этих строк по-прежнему не показываются; (4) имя после типа `@inject` —
+  из типа по словам (`IJSRuntime` → `JSRuntime`, `Runtime`). Найдено попутно: `getInjectionHost` документа из многих кусков отдаёт первый
+  хост (маршрут `@page`), хост каретки — по `injectedToHost`. Тест `RazorCompletionTest`, площадка — `RazorDirectives.razor`.
 - [x] **R5. Компоненты и tag helpers** (3; 0.1.286 — последние хвосты R5e). Теги компонентов в completion (solution и сборки, с `@using` в области), атрибуты —
   `[Parameter]` с типами, `@bind-Value` / `ValueChanged`, `EventCallback`, `RenderFragment` дочерним содержимым, generic-компоненты
   (`TItem` по аргументам), `@ref`; переход тег → `.razor` / тип сборки, Find Usages и rename компонента (файл и теги). Tag helpers

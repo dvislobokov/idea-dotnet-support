@@ -29,7 +29,8 @@ interface CSharpCodeGenerators {
     /**
      * Whether the build compiles [document] (an injected C# document of the module's files): false for a file its project leaves out — the
      * views nopCommerce's build copies into `Nop.Web/Plugins/…` (`<Content Remove="Plugins\**">`) gave 467 errors no compiler reports
-     * (the harness, 0.1.289). The semantics reports nothing in a document the build does not compile. Null: not the module's document.
+     * (the harness, 0.1.289); false for a piece of a document injected on its own for completion, whose class has none of the members
+     * (0.1.294). The semantics reports nothing in a document the build does not compile. Null: not the module's document.
      */
     fun isDocumentCompiled(document: com.intellij.psi.PsiFile): Boolean? = null
 

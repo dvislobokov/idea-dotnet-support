@@ -1,0 +1,26 @@
+@page "/editor/directives"
+@inject NavigationManager Navigation
+@implements IDisposable
+@* RAZOR_PLAN.md, R4 (0.1.294, the user's check 2026-10-19): completion of Razor itself next to the C# of the page.
+
+   TYPE:razor-directives — on the empty line under `<h3>` below type `@inj`. EXPECT: `inject` (bold, «directive») is the only item and
+   Enter writes `@inject ` with the caret after the space; on an empty line `@` and Ctrl+Space: the directives (`code`, `page`, `using`,
+   `layout`, `implements`, `inherits`, `attribute`, `typeparam`, `rendermode`…) and the statements (`if`, `foreach`…) with the members
+   of the page (`Navigation`), but no `__builder` and no `BuildRenderTree`. In `<p>@` (not at the start of a line) — the statements and the
+   members, no directives. Ctrl+Z.
+
+   TYPE:razor-inject-name — on the same empty line type `@inject IJSRuntime ` and Ctrl+Space. EXPECT: `JSRuntime` and `Runtime`, nothing
+   of C#. Ctrl+Z.
+
+   TYPE:razor-head-after-inject — at the end of the `@implements IDisposable` line above (after the `@inject` line) press Enter and type
+   `@using System.Text.J`, then on the next line `@attribute [Obso`; then delete `posable` of `IDisposable` and Ctrl+Space. EXPECT: the namespaces
+   (`Json`), `Obsolete`, `IDisposable`: these lines come after an `@inject`, the generator writes them before the members — before 0.1.294
+   they had no completion at all. Ctrl+Z. *@
+
+<h3>Razor directives</h3>
+
+<p>@Navigation.Uri</p>
+
+@code {
+    public void Dispose() { }
+}

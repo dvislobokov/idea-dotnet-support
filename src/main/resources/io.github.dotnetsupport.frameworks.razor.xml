@@ -55,6 +55,8 @@
         <!-- before XmlCompletionContributor: on a repeated Ctrl+Space it completes tag names from the schemas and stops the others (none in Razor) -->
         <completion.contributor language="HTML" order="first, before xml" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorTagHelperCompletionContributor"/>
         <gotoDeclarationHandler implementation="io.github.dotnetsupport.frameworks.razor.RazorTagHelperGotoDeclarationHandler"/>
+        <!-- R4: the directives after `@`, the name of an `@inject`, none of the generator's glue (__builder, BuildRenderTree) -->
+        <completion.contributor language="C#" order="first, before dotnetCaseInsensitive" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorCSharpCompletion"/>
         <!-- the list opens by itself in the value of an attribute that is C# (asp-for="Na"): HTML would keep it closed there -->
         <completion.confidence language="HTML" order="first" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorAttributeValueCompletionConfidence"/>
         <typedHandler order="first" implementation="io.github.dotnetsupport.frameworks.razor.RazorAttributeValueAutoPopup"/>

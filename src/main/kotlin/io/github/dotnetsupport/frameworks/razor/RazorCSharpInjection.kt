@@ -118,11 +118,30 @@ object RazorCSharpDocument {
      * chain in the order of the file (weighted by length, [RazorIdeLayoutPass] has put the members in order already) are the hosts, the
      * rest is glue text — the `@page` route before the `@using` lines, a mapping of the same expression written twice.
      */
-    fun places(file: RazorFile): List<Place> = CachedValuesManager.getManager(file.project).getCachedValue(file, PLACES, {
+    fun places(file: RazorFile): List<Place> = layout(file).places
+
+    /**
+     * The C# of the head of the class the file writes after a member — `@implements IDisposable`, `@using`, `@attribute [Authorize]`,
+     * `@layout` after an `@inject` (the user's check 2026-10-19: no completion there): the generator writes the usings and the head of the
+     * class before the members, so these cannot be places of the document, whose pieces go in the order of the file. Each is a C# injection
+     * of its own — the document up to the head of the class with its piece in place and an empty body — for completion and navigation;
+     * it is not checked (its class has none of the members: [RazorCodeGenerators.isDocumentCompiled]), the document has its text as glue.
+     */
+    fun headPlaces(file: RazorFile): List<Place> = layout(file).heads
+
+    /** Whether [host] is one of [headPlaces]: an injection of its own, not a place of the document. */
+    fun isHeadHost(host: RazorCodeLiteral): Boolean {
+        val file = host.containingFile as? RazorFile ?: return false
+        return layout(file).heads.any { it.host == host }
+    }
+
+    private class Layout(val places: List<Place>, val heads: List<Place>)
+
+    private fun layout(file: RazorFile): Layout = CachedValuesManager.getManager(file.project).getCachedValue(file, LAYOUT, {
         CachedValueProvider.Result.create(computePlaces(file), file, RazorTagHelperService.getInstance(file.project).tracker)
     }, false)
 
-    private val PLACES = com.intellij.openapi.util.Key.create<com.intellij.psi.util.CachedValue<List<Place>>>("razor.places")
+    private val LAYOUT = com.intellij.openapi.util.Key.create<com.intellij.psi.util.CachedValue<Layout>>("razor.places")
 
     /**
      * Whether [offset] is in (or right at the end of) a literal of markup that hosts C# (`asp-for="Name"`): the view provider then answers
@@ -139,8 +158,8 @@ object RazorCSharpDocument {
     fun isAttributeValueHost(host: RazorCodeLiteral): Boolean =
         !host.isCode && host.isValid && (host.parent as? RazorElement)?.kind == io.github.dotnetsupport.razor.lang.syntax.RazorSyntaxKind.MarkupLiteralAttributeValue
 
-    private fun computePlaces(file: RazorFile): List<Place> {
-        val generated = generate(file) ?: return emptyList()
+    private fun computePlaces(file: RazorFile): Layout {
+        val generated = generate(file) ?: return Layout(emptyList(), emptyList())
         class Candidate(val mapping: SourceMapping, val host: RazorCodeLiteral, val range: TextRange)
         val candidates = ArrayList<Candidate?>()
         val text = file.text
@@ -169,10 +188,39 @@ object RazorCSharpDocument {
             places += Place(pending.toString(), candidate.host, candidate.range, "")
             pending.setLength(0)
         }
-        if (places.isEmpty()) return emptyList()
+        if (places.isEmpty()) return Layout(emptyList(), emptyList())
         pending.append(generated.code, at, generated.code.length)
         places.last().suffix = pending.toString()
-        return places
+        return Layout(places, headPlaces(generated.code, candidates.withIndex().filter { (i, c) -> c != null && i !in chosen }.map { it.value!! }.map { it.mapping to (it.host to it.range) }, places))
+    }
+
+    /**
+     * The places of the head of the class left out of the document ([headPlaces]): a C# host of its own (not a string — the route of
+     * `@page`; not a host of the document) whose generated text lies before the body of the class. Its document: the code up to it, its
+     * piece, the code after it up to the opening brace of the class, the braces closed.
+     */
+    private fun headPlaces(code: String, left: List<Pair<SourceMapping, Pair<RazorCodeLiteral, TextRange>>>, places: List<Place>): List<Place> {
+        if (left.isEmpty()) return emptyList()
+        val body = classBody(code) ?: return emptyList()
+        // the braces open at the body of the class, each on its own line in the generator's output: the namespace's, the class's
+        val open = code.substring(0, body).lineSequence().sumOf { line -> when (line.trim()) { "{" -> 1; "}" -> -1; else -> 0 } }
+        val used = places.mapTo(HashSet()) { it.host }
+        val heads = ArrayList<Place>()
+        for ((mapping, place) in left) {
+            val (host, range) = place
+            val g = mapping.generatedSpan
+            if (g.absoluteIndex + g.length > body || !host.isCode || host in used || range.substring(host.text).startsWith("\"")) continue
+            used += host
+            heads += Place(code.substring(0, g.absoluteIndex), host, range, code.substring(g.absoluteIndex + g.length, body) + "\n" + "}\n".repeat(open))
+        }
+        return heads
+    }
+
+    /** The end of the line with the opening brace of the primary class in the generated [code] (the brace is alone on its line); null if none. */
+    private fun classBody(code: String): Int? {
+        val declaration = Regex("""(?m)^[ \t]*(?:\w+[ \t]+)*class[ \t]+\w""").find(code) ?: return null
+        val brace = Regex("""(?m)^[ \t]*\{[ \t]*$""").find(code, declaration.range.last) ?: return null
+        return brace.range.last + 1
     }
 
     /** The indices of the heaviest chain of [spans] (start, length; null — not a candidate) whose spans follow each other without overlap. */
@@ -267,5 +315,11 @@ class RazorCSharpInjector : MultiHostInjector {
         registrar.startInjecting(CSharpLanguage)
         for (place in places) registrar.addPlace(place.prefix, place.suffix, place.host, place.range)
         registrar.doneInjecting()
+        // the head of the class written after a member: an injection each ([RazorCSharpDocument.headPlaces])
+        for (place in RazorCSharpDocument.headPlaces(file)) {
+            registrar.startInjecting(CSharpLanguage)
+            registrar.addPlace(place.prefix, place.suffix, place.host, place.range)
+            registrar.doneInjecting()
+        }
     }
 }

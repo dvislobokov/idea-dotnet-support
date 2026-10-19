@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.294
+
+- Razor: completion of the directives after `@` at the start of a line (`inject`, `code`, `page`, `using`, `layout`...) and of the
+  statements (`if`, `foreach`...); names for the property of an `@inject` (`IJSRuntime` → `JSRuntime`, `Runtime`).
+- Razor: `@using`, `@implements`, `@inherits`, `@attribute`, `@layout` and `@rendermode` written after an `@inject` have completion too.
+- Razor: the generator's own members (`__builder`, `BuildRenderTree`) are no longer offered.
+
 ## 0.1.293
 
 - The plugin is fully available in GIGA IDE without Pro: the allocation profiler and every chart of the .NET Monitor work in any mode.
