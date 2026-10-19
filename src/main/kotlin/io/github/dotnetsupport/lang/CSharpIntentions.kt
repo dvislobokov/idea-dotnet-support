@@ -60,7 +60,8 @@ abstract class CSharpIntention : IntentionAction, PriorityAction, DumbAware {
         }
         // the heuristic tree: a line that declares a type
         val text = text(file)
-        val start = text.lastIndexOf('\n', (offset - 1).coerceAtLeast(0)) + 1
+        // at offset 0 the line starts there: searching from 0 found the `\n` of an empty first line, and the line was (1, 0)
+        val start = if (offset == 0) 0 else text.lastIndexOf('\n', offset - 1) + 1
         val end = text.indexOf('\n', offset).let { if (it < 0) text.length else it }
         return TYPE_LINE.containsMatchIn(text.subSequence(start, end))
     }

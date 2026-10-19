@@ -91,6 +91,20 @@ class EditorExtrasTest : BasePlatformTestCase() {
         }
     }
 
+    /** The caret at the start of a file whose first line is empty: the line of the caret was (1, 0) — an IDE error in the sandbox, 2026-10-19. */
+    fun testPartialPartAtTheStartOfAFileThatBeginsWithAnEmptyLine() {
+        for (native in listOf(true, false)) {
+            io.github.dotnetsupport.lang.CSharpSyntaxTrees.forceNativeTreeForTests(native)
+            try {
+                myFixture.configureByText("EmptyFirstLine$native.cs", "\n\nvar app = 1;\n")
+                myFixture.editor.caretModel.moveToOffset(0)
+                assertFalse(AddPartialPartIntention().isAvailable(project, myFixture.editor, myFixture.file))
+            } finally {
+                io.github.dotnetsupport.lang.CSharpSyntaxTrees.forceNativeTreeForTests(null)
+            }
+        }
+    }
+
     fun testFileIntentionsAvailability() {
         myFixture.addFileToProject("it/App/App.csproj", """<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><RootNamespace>App</RootNamespace></PropertyGroup></Project>""")
         myFixture.configureFromExistingVirtualFile(myFixture.addFileToProject("it/App/Models/Order.cs", "namespace App;\n\npublic class Or<caret>der { }\npublic class Line { }\n").virtualFile)

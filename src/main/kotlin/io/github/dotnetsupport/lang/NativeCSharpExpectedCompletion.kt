@@ -439,7 +439,7 @@ object NativeCSharpExpectedCompletion {
         val lineEnd = text.indexOf('\n', end).let { if (it < 0) text.length else it }
         if (text.subSequence(end, lineEnd).isNotBlank()) return
         if (CSharpCalls.inInitializer(text, end)) return
-        val lineStart = text.lastIndexOf('\n', (end - 1).coerceAtLeast(0)) + 1
+        val lineStart = if (end == 0) 0 else text.lastIndexOf('\n', end - 1) + 1
         val line = text.subSequence(lineStart, end).toString()
         val tokens = CSharpExpressions.tokenize(line)
         val first = tokens.firstOrNull() ?: return

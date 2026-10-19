@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.291
+
+- C#: no IDE error when the caret stands at the very start of a file whose first line is empty ("Add a partial part" took the line
+  of the caret as (1, 0)).
+
 ## 0.1.290
 
 - macOS: no more "would like to access data from other apps" prompts. A project file in the home folder (`dotnet new console` once
