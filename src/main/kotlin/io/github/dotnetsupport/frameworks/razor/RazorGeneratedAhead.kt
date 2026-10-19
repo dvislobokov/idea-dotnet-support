@@ -79,6 +79,50 @@ object RazorGeneratedAhead {
         }, ModalityState.nonModal())
     }
 
+    /**
+     * An edit of a Razor file (RAZOR_PLAN.md, R4 tails): its class written again when what C# sees of it changed — a member of `@code`, a
+     * parameter, `@inherits`, `@typeparam`, `@inject` — so a `.cs` names a new `[Parameter]` at once, not when the helper ran the generator
+     * again. The markup alone (the body of `BuildRenderTree`) is not written: no `.cs` sees it, and every keystroke would refresh the output.
+     * Not on the EDT; the document is the one committed.
+     */
+    fun applyEdit(project: Project, file: VirtualFile) {
+        if (project.isDisposed || !file.isValid) return
+        val output = outputOf(CodeAnalysisService.getInstance(project), file.path) ?: return
+        val text = ReadAction.nonBlocking<String?> {
+            if (project.isDisposed || !file.isValid) return@nonBlocking null
+            (PsiManager.getInstance(project).findFile(file) as? RazorFile)?.let(RazorCSharpDocument::compilerOutput)
+        }.withDocumentsCommitted(project).executeSynchronously() ?: return
+        val before = runCatching { output.readText(Charsets.UTF_8) }.getOrNull()
+        if (before != null && shape(before) == shape(text)) return
+        write(output, text)
+        PluginLog.info(LOG_CATEGORY, "${file.name}: its class written again after an edit (${output.name})")
+        // the file itself: a refresh of its folder sees new and gone files, not new text of one that is there (seen live: Ctrl+B found nothing)
+        LocalFileSystem.getInstance().refreshAndFindFileByIoFile(output)?.let { VfsUtil.markDirtyAndRefresh(false, false, false, it) }
+        ApplicationManager.getApplication().invokeLater({
+            if (!project.isDisposed) DaemonCodeAnalyzer.getInstance(project).restart("a Razor class written after an edit")
+        }, ModalityState.nonModal())
+    }
+
+    /**
+     * What C# sees of a generated class: its text without the bodies of the render methods (the writer brackets each method with
+     * `#pragma warning disable 1998` / `restore 1998`; their signatures do not change), without `#line`, which moves with the markup, and
+     * without `#pragma checksum` of the whole file (seen: an edit of the markup changed nothing else).
+     */
+    fun shape(generated: String): String {
+        val kept = StringBuilder()
+        var inMethod = false
+        for (line in generated.lineSequence()) {
+            val trimmed = line.trim()
+            when {
+                trimmed == "#pragma warning disable 1998" -> inMethod = true
+                trimmed == "#pragma warning restore 1998" -> inMethod = false
+                inMethod || trimmed.startsWith("#line") || trimmed.startsWith("#pragma checksum") -> Unit
+                else -> kept.append(trimmed).append('\n')
+            }
+        }
+        return kept.toString()
+    }
+
     /** Where the helper puts the generator's output of the Razor file at [path]; null when the helper has not run Razor's generator for its project. */
     fun outputOf(service: CodeAnalysisService, path: String): File? {
         val state = service.generatedStateUnder(path) ?: return null
@@ -108,6 +152,51 @@ object RazorGeneratedAhead {
     }
 
     private const val LOG_CATEGORY = CodeAnalysisService.LOG_CATEGORY
+}
+
+/**
+ * Edits of Razor files (the document, saved or not): [RazorGeneratedAhead.applyEdit] after a pause in typing, in the background — the class
+ * of a file whose helper output is known (nothing is done for a project the helper has not generated).
+ */
+class RazorGeneratedAheadEditListener : com.intellij.openapi.editor.event.DocumentListener {
+    override fun documentChanged(event: com.intellij.openapi.editor.event.DocumentEvent) {
+        val file = com.intellij.openapi.fileEditor.FileDocumentManager.getInstance().getFile(event.document) ?: return
+        if (!file.name.endsWith(".razor", ignoreCase = true) && !file.name.endsWith(".cshtml", ignoreCase = true)) return
+        val project = com.intellij.openapi.project.ProjectLocator.getInstance().guessProjectForFile(file) ?: return
+        if (project.getServiceIfCreated(CodeAnalysisService::class.java)?.generatedCount.let { it == null || it == 0 }) return
+        project.getService(RazorGeneratedAheadEdits::class.java).schedule(file)
+    }
+}
+
+/** The Razor files edited since the last pause in typing; written [DELAY_MS] after the last edit. */
+@com.intellij.openapi.components.Service(com.intellij.openapi.components.Service.Level.PROJECT)
+class RazorGeneratedAheadEdits(private val project: Project) : com.intellij.openapi.Disposable {
+    private val pending = java.util.concurrent.ConcurrentHashMap.newKeySet<VirtualFile>()
+    private val alarm = com.intellij.util.Alarm(com.intellij.util.Alarm.ThreadToUse.POOLED_THREAD, this)
+
+    fun schedule(file: VirtualFile) {
+        pending.add(file)
+        alarm.cancelAllRequests()
+        alarm.addRequest(::flush, DELAY_MS)
+    }
+
+    private fun flush() {
+        val files = pending.toList().also { pending.removeAll(it.toSet()) }
+        for (file in files) {
+            if (project.isDisposed) return
+            runCatching { RazorGeneratedAhead.applyEdit(project, file) }
+                .onFailure { if (it !is com.intellij.openapi.progress.ProcessCanceledException) PluginLog.warn(CodeAnalysisService.LOG_CATEGORY, "a Razor class after an edit: $it") }
+        }
+    }
+
+    @org.jetbrains.annotations.TestOnly
+    fun isIdleForTests(): Boolean = pending.isEmpty() && alarm.isEmpty
+
+    override fun dispose() = Unit
+
+    private companion object {
+        const val DELAY_MS = 700
+    }
 }
 
 /** Razor files made, deleted, renamed or moved in the IDE: [RazorGeneratedAhead] writes their classes in the background. */

@@ -815,7 +815,8 @@
     использований считает разметку, автопопап в значении атрибута-C#, атрибут больше не находится дважды; хвосты R5e: view components
     `<vc:…>` (completion тега и параметров, Ctrl+B), без дублей тегов и атрибутов в completion, теги и атрибуты компонентов и tag helpers
     жирным в цветах класса и свойства (ключи на странице Razor), атрибуты-префиксы (`asp-route-id` → `RouteValues`) в Find Usages;
-    площадка — `TYPE:cshtml-view-component`
+    площадка — `TYPE:cshtml-view-component`. 0.1.288: inlay hints C# в разметке (`TYPE:razor-inlay-hints`), правка `.razor` пишет класс
+    через ~секунду (`TYPE:razor-edit-regenerates`)
 
 
 

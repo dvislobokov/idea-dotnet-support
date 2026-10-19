@@ -27,9 +27,11 @@ public static class RazorGeneratedTypes
     public static Type Root = typeof(App);
     public static string Parameter = nameof(Counter.Step);
 
-    // TYPE:razor-edit-regenerates — in Components/Pages/Counter.razor add `[Parameter] public int Max { get; set; }` to @code and save
-    // (Ctrl+S). Then on the empty line below type `public static string Max = nameof(Counter.` EXPECT: completion offers `Max` a few seconds
-    // after the save; Ctrl+B on it opens the new property in Counter_razor.g.cs. Ctrl+Z in both files, save.
+    // TYPE:razor-edit-regenerates — in Components/Pages/Counter.razor add `[Parameter] public int Max { get; set; }` to @code, do not save.
+    // Then on the empty line below type `public static string Max = nameof(Counter.` EXPECT: completion offers `Max` about a second after
+    // the edit (0.1.288: the plugin writes the class itself after a pause in typing; before, only the helper did, after a save); Ctrl+B on
+    // it opens the new property in Counter_razor.g.cs. An edit of the markup of Counter.razor alone does not write the class again (the
+    // plugin's log, .NET → Plugin Logs: no "written again after an edit"). Ctrl+Z in both files.
 
     public static Task Click(Counter counter) => counter.CountChanged.InvokeAsync(1);
 }

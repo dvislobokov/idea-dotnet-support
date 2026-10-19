@@ -111,6 +111,30 @@ class RazorCSharpDocumentTest : BasePlatformTestCase() {
         assertTrue(text, text.contains("    string Title() => \"x\";\n"))
     }
 
+    /**
+     * RAZOR_PLAN.md, R4: the inlay hints of the C# of a Razor file are shown in the markup and in `@code` — at text the user wrote only:
+     * `@currentCount` is `__builder.AddContent(3, currentCount)` of the generator, whose `sequence:` / `textContent:` are not the user's.
+     */
+    fun testInlayHintsOfTheCSharpOfTheFile() {
+        val text = """
+            <p>Count: @currentCount, sum @Sum(2, 3)</p>
+            @code {
+                private int currentCount;
+                private int Sum(int left, int right) => left + right;
+                private void Twice() { var total = Sum(currentCount, 1); }
+            }
+        """.trimIndent()
+        val file = razor(myFixture.configureByText("Hints.razor", text))
+        val options = io.github.dotnetsupport.lang.NativeCSharpInlayHints.Options(hideObvious = false)
+        fun hints(kind: io.github.dotnetsupport.lang.NativeCSharpInlayHints.Kind) =
+            io.github.dotnetsupport.frameworks.razor.RazorInlayHintsProvider.hintsOf(file, options, kind).map { (offset, hint) -> hint.text to text.substring(offset).take(12) }
+        val parameters = hints(io.github.dotnetsupport.lang.NativeCSharpInlayHints.Kind.PARAMETER)
+        assertEquals(listOf("left:" to "2, 3)</p>\n@c", "right:" to "3)</p>\n@code", "left:" to "currentCount", "right:" to "1); }\n}"), parameters.map { it.first to it.second })
+        assertTrue("no hint of the generator's glue: $parameters", parameters.none { it.second.startsWith("currentCount, s") })
+        val types = hints(io.github.dotnetsupport.lang.NativeCSharpInlayHints.Kind.TYPE)
+        assertTrue(types.toString(), types.any { it.first.contains("int") && it.second.startsWith("total = Sum") })
+    }
+
     fun testTheInjectedFileIsTheDocument() {
         val file = razor(myFixture.configureByText("Counter.razor", counter))
         val host = PsiTreeUtil.findChildrenOfType(file, RazorCodeLiteral::class.java).first { it.text == "currentCount" }

@@ -44,6 +44,13 @@
         <formattingService implementation="io.github.dotnetsupport.frameworks.razor.RazorFormattingService"/>
         <!-- R9: Ctrl+Alt+Home between Counter.razor, .razor.cs, .razor.css, .razor.js (and .cshtml with its page model) -->
         <gotoRelatedProvider implementation="io.github.dotnetsupport.frameworks.razor.RazorGotoRelatedProvider"/>
+        <!-- an edit of a Razor file: its class written again after a pause when what C# sees of it changed (RazorGeneratedAhead.applyEdit) -->
+        <editorFactoryDocumentListener implementation="io.github.dotnetsupport.frameworks.razor.RazorGeneratedAheadEditListener"/>
+        <!-- R4: the inlay hints of the C# of the file (parameter names, types) by the options of C#; the providers of C# never see an injection -->
+        <codeInsight.declarativeInlayProvider language="Razor" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorParameterHintsProvider" isEnabledByDefault="true"
+                                              group="PARAMETERS_GROUP" providerId="dotnet.razor.parameters" bundle="messages.DotNetBundle" nameKey="inlay.provider.razor.parameters"/>
+        <codeInsight.declarativeInlayProvider language="Razor" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorTypeHintsProvider" isEnabledByDefault="true"
+                                              group="TYPES_GROUP" providerId="dotnet.razor.types" bundle="messages.DotNetBundle" nameKey="inlay.provider.razor.types"/>
         <!-- R5e: the components and tag helpers in the markup -->
         <!-- before XmlCompletionContributor: on a repeated Ctrl+Space it completes tag names from the schemas and stops the others (none in Razor) -->
         <completion.contributor language="HTML" order="first, before xml" implementationClass="io.github.dotnetsupport.frameworks.razor.RazorTagHelperCompletionContributor"/>

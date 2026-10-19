@@ -14,11 +14,17 @@
    `Navigation` in `Navigation.Uri`: the `@inject` line of this file.
 
    TYPE:razor-errors — in `Increase` below `count += 1;` type `count = "x";`. EXPECT: `"x"` red with CS0029 after a moment, as in a
-   `.cs` file; Ctrl+Z takes it away. Not checked live yet. *@
+   `.cs` file; Ctrl+Z takes it away. Not checked live yet.
+
+   TYPE:razor-inlay-hints — look at `@Sum(2, 3)` below and at `Twice` in `@code`. EXPECT: the hints of C# as in a `.cs` file (Settings |
+   Editor | Inlay Hints | Razor): `left:` `right:` before `2` and `3`, `right:` before `1` in `Sum(count, 1)` (none before `count`: hints of
+   other arguments are off by default, as in C#), the type at `var
+   total`; none at `@count` of the markup (the generator's `AddContent(…, count)` is not the user's call). *@
 
 <h3>C# in the markup</h3>
 <p>Count: @count, at @Navigation.Uri</p>
 <p>Step of the counter: @(new Counter().Step)</p>
+<p>Sum: @Sum(2, 3)</p>
 <ul>
 
 </ul>
@@ -29,5 +35,13 @@
     private void Increase()
     {
         count += 1;
+    }
+
+    private int Sum(int left, int right) => left + right;
+
+    private int Twice()
+    {
+        var total = Sum(count, 1);
+        return total * 2;
     }
 }

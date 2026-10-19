@@ -3,6 +3,13 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.288
+
+- Razor: inlay hints of C# in the markup and in `@code` — parameter names and types, by the C# options (Settings | Editor | Inlay Hints |
+  Razor); none in the code the Razor generator adds around the markup.
+- Razor: an edit of a component (saved or not) updates its class for the C# of the project about a second later — a new `[Parameter]` is
+  completed and found by Ctrl+B in `.cs` files without waiting for the generator.
+
 ## 0.1.287
 
 - Debugger: breakpoints in lambdas — on a line with lambdas the gutter offers the line or one of them (`.Where(n => n % 2 == 0)`), and the

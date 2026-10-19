@@ -179,8 +179,10 @@ Solution для живой проверки плагина: отладчика (
 - [x] (робот в WSL, 0.1.196: генератор за 4 с, дерево, Ctrl+B на `Counter` и `Step`, файл только для чтения) `TYPE:razor-component-types`: Ctrl+B на `Counter` → `Counter_razor.g.cs` (только чтение), на `Step` → свойство там; Solution view:
       Blazor → Dependencies → Analyzers → Microsoft.CodeAnalysis.Razor.Compiler со списком `*_razor.g.cs`; `nameof(Counter.` → в completion
       `Step`, `CountChanged`
-- [ ] `TYPE:razor-edit-regenerates`: в `Counter.razor` добавить `[Parameter] public int Max { get; set; }`, Ctrl+S → через пару секунд
-      `nameof(Counter.` предлагает `Max`, Ctrl+B ведёт в `Counter_razor.g.cs`
+- [x] (робот в WSL, 0.1.288) `TYPE:razor-edit-regenerates`: в `Counter.razor` добавить `[Parameter] public int Max { get; set; }`, не
+      сохраняя → примерно через секунду `nameof(Counter.` предлагает `Max`, Ctrl+B ведёт в `Counter_razor.g.cs`
+- [x] (робот в WSL, 0.1.288) `TYPE:razor-inlay-hints` (`Blazor/Editor/RazorCSharp.razor`): `left:` `right:` у `@Sum(2, 3)`, тип у
+      `var total`, `right:` у `1` в `Sum(count, 1)`; у `@count` разметки подсказок нет
 - [ ] `TYPE:razor-errors-after-generation` (0.1.196, R0b; свежесть при наборе — 0.1.198): после того как генератор отработал (дерево:
       Dependencies → .NET 9.0 → Analyzers → Microsoft.CodeAnalysis.Razor.Compiler → RazorSourceGenerator), набрать
       `public static object Probe = Counter.Nope + UndefinedThing();` — без сохранения `Nope` красный CS0117, `UndefinedThing` красный CS0103,
