@@ -1,4 +1,3 @@
-import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.intellij.platform.gradle.tasks.GenerateLexerTask
 
@@ -10,19 +9,9 @@ plugins {
     alias(libs.plugins.intellij.platform.grammarkit)
 }
 
-repositories {
-    mavenCentral()
-    intellijPlatform {
-        defaultRepositories()
-    }
-}
-
-// Like the root project: the installed IDE from localIdePath when it exists (nothing is downloaded), otherwise IntelliJ IDEA of platformVersion.
-val localIde: File? = providers.gradleProperty("localIdePath").orNull?.let(::file)?.takeIf { it.exists() }
-
+// The repositories and the IDE (IntelliJ IDEA Community, `platformIde`) come from the root build.gradle.kts.
 dependencies {
     intellijPlatform {
-        if (localIde != null) local(localIde) else intellijIdea(providers.gradleProperty("platformVersion"))
         testFramework(TestFrameworkType.Platform)
     }
     testImplementation(libs.junit)
@@ -98,11 +87,7 @@ tasks.test {
 intellijPlatformTesting {
     testIde {
         fun gate(name: String, text: String, pattern: String, classes: String) = register(name) {
-            if (localIde != null) localPath = localIde
-            else {
-                type = IntelliJPlatformType.IntellijIdea
-                version = providers.gradleProperty("platformVersion")
-            }
+            @Suppress("UNCHECKED_CAST") (project.extra["platformIde"] as (Any) -> Unit)(this)
             task {
                 description = text
                 group = "verification"

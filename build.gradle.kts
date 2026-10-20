@@ -1,4 +1,8 @@
+import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.extensions.IntelliJPlatformDependenciesExtension
+import org.jetbrains.intellij.platform.gradle.extensions.IntelliJPlatformRepositoriesExtension
+import org.jetbrains.intellij.platform.gradle.extensions.IntelliJPlatformTestingExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
@@ -17,32 +21,74 @@ version = providers.gradleProperty("pluginVersion").get()
 /** The build runs on the company's Jenkins (it sets JENKINS_URL in every build): the dependencies come from its own repositories. */
 fun checkJenkinsUrl(): Boolean = !providers.environmentVariable("JENKINS_URL").orNull.isNullOrBlank()
 
-repositories {
+/**
+ * The repositories of every project of the build: the root and its subprojects take them from here, so moving the build into the company's
+ * network changes this one place.
+ */
+fun RepositoryHandler.buildRepositories() {
     if (checkJenkinsUrl()) {
-        // placeholders of the internal repositories
+        // placeholders of the internal repositories; intellij-releases carries com.jetbrains.intellij.idea:ideaIC (platformIde) and the JBR
         maven("https://nexus.example.com/repository/maven-central/")
         maven("https://nexus.example.com/repository/intellij-releases/")
         maven("https://nexus.example.com/repository/intellij-dependencies/")
-        intellijPlatform {
-            // the bundled plugins of the IDE (JSON, YAML) are made into this local repository by the IntelliJ Platform Gradle Plugin
-            localPlatformArtifacts()
-        }
     } else {
         mavenCentral()
-        intellijPlatform {
-            defaultRepositories()
-        }
+    }
+}
+
+/** And the IntelliJ ones, for the projects of the IntelliJ Platform Gradle Plugin. */
+fun RepositoryHandler.intellijRepositories() {
+    val platform = (this as ExtensionAware).extensions.getByType<IntelliJPlatformRepositoriesExtension>()
+    // on Jenkins: the bundled plugins of the IDE (JSON, YAML), made into this local repository by the IntelliJ Platform Gradle Plugin
+    if (checkJenkinsUrl()) platform.localPlatformArtifacts() else platform.defaultRepositories()
+}
+
+repositories {
+    buildRepositories()
+    intellijRepositories()
+}
+
+/**
+ * The IDE the plugin is built and tested against (the user's decision 2026-10-05: the public build, nothing paid): IntelliJ IDEA Community
+ * (IC), never the unified IntelliJ IDEA of 2025.3+ (IU), which has the paid modules in it. `localIdePath` when that folder exists (an
+ * installed IDE, or another one to check: `-PlocalIdePath=C:/Program Files/JetBrains/<IDE>`); otherwise IC of `platformVersion` from the
+ * IntelliJ repository (`useInstaller = false`: `com.jetbrains.intellij.idea:ideaIC`, which JetBrains still publishes there — the installers
+ * of 2025.3+ are IU only), with a JBR of its own, as that archive has none. A local IDE of product code IU fails the build.
+ */
+val localIde: File? = providers.gradleProperty("localIdePath").orNull?.takeIf { it.isNotBlank() }?.let(::file)?.takeIf { it.isDirectory }
+val platformVersion: String = providers.gradleProperty("platformVersion").get()
+
+localIde?.let { ide ->
+    val info = listOf("product-info.json", "Contents/Resources/product-info.json").map { File(ide, it) }.firstOrNull { it.isFile }
+    val code = info?.let { Regex(""""productCode"\s*:\s*"(\w+)"""").find(it.readText())?.groupValues?.get(1) }
+    if (code == "IU") throw GradleException(
+        "$ide is the unified IntelliJ IDEA (product code IU, with the paid modules): the plugin is built and tested on IntelliJ IDEA Community (IC). " +
+            "Point localIdePath to an IC installation, or to nothing, and the build takes IC of platformVersion from the IntelliJ repository."
+    )
+}
+
+/** Adds the IDE of the build to the IntelliJ Platform dependencies of a project. */
+fun IntelliJPlatformDependenciesExtension.platformIde() {
+    if (localIde != null) local(localIde.path)
+    else {
+        intellijIdeaCommunity(platformVersion) { useInstaller = false }
+        jetbrainsRuntime()
+    }
+}
+
+/** The same IDE for a task of `intellijPlatformTesting` (the gates and the harnesses). */
+fun IntelliJPlatformTestingExtension.CommonParameters<*>.platformIde() {
+    if (localIde != null) localPath = localIde
+    else {
+        type = IntelliJPlatformType.IntellijIdeaCommunity
+        version = platformVersion
+        useInstaller = false
     }
 }
 
 dependencies {
     intellijPlatform {
-        val localIde = providers.gradleProperty("localIdePath").orNull
-        if (localIde != null && file(localIde).exists()) {
-            local(localIde)
-        } else {
-            intellijIdea(providers.gradleProperty("platformVersion"))
-        }
+        platformIde()
         testFramework(TestFrameworkType.Platform)
         // JSON (a plugin since 2024.3): only the content module io.github.dotnetsupport.jsonschema needs it, see its descriptor
         bundledPlugin("com.intellij.modules.json")
@@ -78,8 +124,19 @@ kotlin {
     }
 }
 
-// The csharp-psi modules compile like the plugin: Java 21 bytecode, Kotlin API 2.3 (the stdlib of the platform).
+// The subprojects take the repositories and the IDE from here (buildRepositories, platformIde; their gates call `extra["platformIde"]`),
+// and the csharp-psi modules compile like the plugin: Java 21 bytecode, Kotlin API 2.3 (the stdlib of the platform).
 subprojects {
+    repositories {
+        buildRepositories()
+    }
+    extra["platformIde"] = { parameters: Any -> (parameters as IntelliJPlatformTestingExtension.CommonParameters<*>).platformIde() }
+    plugins.withId("org.jetbrains.intellij.platform.module") {
+        repositories {
+            intellijRepositories()
+        }
+        dependencies.extensions.getByType<IntelliJPlatformDependenciesExtension>().platformIde()
+    }
     plugins.withId("org.jetbrains.kotlin.jvm") {
         extensions.configure<JavaPluginExtension> {
             sourceCompatibility = JavaVersion.VERSION_21
@@ -126,12 +183,7 @@ tasks.test {
     filter { excludeTestsMatching(formatOraclePattern) }
 }
 intellijPlatformTesting.testIde.register("formatOracle") {
-    val localIde = providers.gradleProperty("localIdePath").orNull?.let(::file)?.takeIf { it.exists() }
-    if (localIde != null) localPath = localIde
-    else {
-        type = org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdea
-        version = providers.gradleProperty("platformVersion")
-    }
+    platformIde()
     task {
         description = "Compares the native C# formatter with dotnet format whitespace (tools/csharp-psi/format-oracle.sh)."
         group = "verification"
@@ -163,12 +215,7 @@ tasks.test {
     filter { excludeTestsMatching(semanticGatePattern) }
 }
 intellijPlatformTesting.testIde.register("semanticGate") {
-    val localIde = providers.gradleProperty("localIdePath").orNull?.let(::file)?.takeIf { it.exists() }
-    if (localIde != null) localPath = localIde
-    else {
-        type = org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdea
-        version = providers.gradleProperty("platformVersion")
-    }
+    platformIde()
     task {
         description = "Compares the resolver of C# names and types with Roslyn (roslyndump semantics), per layer and category."
         group = "verification"
@@ -207,12 +254,7 @@ val harnessNames = harnessSolutions.map { "harness_${it.first}" }
 for ((index, solution) in harnessSolutions.withIndex()) {
     val (name, folder) = solution
     intellijPlatformTesting.testIde.register("harness_$name") {
-        val localIde = providers.gradleProperty("localIdePath").orNull?.let(::file)?.takeIf { it.exists() }
-        if (localIde != null) localPath = localIde
-        else {
-            type = org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdea
-            version = providers.gradleProperty("platformVersion")
-        }
+        platformIde()
         task {
             description = "The C# checks over the solution $name ($folder): SolutionDiagnosticsHarnessTest."
             group = "verification"
@@ -306,12 +348,7 @@ tasks.test {
     filter { excludeTestsMatching(mlDatasetPattern) }
 }
 intellijPlatformTesting.testIde.register("mlDataset") {
-    val localIde = providers.gradleProperty("localIdePath").orNull?.let(::file)?.takeIf { it.exists() }
-    if (localIde != null) localPath = localIde
-    else {
-        type = org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdea
-        version = providers.gradleProperty("platformVersion")
-    }
+    platformIde()
     task {
         description = "Exports ML ranker training examples (*MlDatasetExport) from C# repositories: -Pml.repos=<list> -Pml.lm=<lm.cml> [-Pml.data -Pml.out -Pml.perFile -Pml.maxFiles -Pml.cache -Pml.names -Pml.seed -Pml.heap]."
         group = "verification"

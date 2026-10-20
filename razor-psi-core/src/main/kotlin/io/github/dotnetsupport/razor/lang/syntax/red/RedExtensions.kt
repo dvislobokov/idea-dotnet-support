@@ -34,11 +34,18 @@ private fun RedToken?.valid(): RazorToken? = this?.takeIf { !it.isMissing }?.tok
 private val legacyChildrenCache = java.util.WeakHashMap<RedNode, List<RedNode>>()
 
 /**
+ * The cache under one lock, made inside it: the highlighting passes ask from several threads at once, and an unguarded WeakHashMap broke
+ * its chains under them (a test hung in `get` forever); one list per tag, so its red nodes stay the same objects for every caller.
+ */
+private inline fun RedNode.cachedLegacyChildren(make: () -> List<RedNode>): List<RedNode> =
+    synchronized(legacyChildrenCache) { legacyChildrenCache.getOrPut(this, make) }
+
+/**
  * `LegacyChildren` of a start tag: the tag as the literals the legacy tree had — `<` and the name as a text literal, a `!` as meta code,
  * the attributes, `/` and `>` as a literal; red nodes over green ones made here, parented to the tag.
  */
 val BaseMarkupStartTagSyntax.legacyChildren: List<RedNode>
-    get() = legacyChildrenCache.getOrPut(this) {
+    get() = cachedLegacyChildren {
         val nodes = ArrayList<RazorNode>()
         val tokens = ArrayList<RazorToken>()
         var acceptsAnyHandler: SpanEditHandler? = null
@@ -75,7 +82,7 @@ val BaseMarkupStartTagSyntax.legacyChildren: List<RedNode>
 
 /** `LegacyChildren` of an end tag: `</`, a `!` as meta code, the name, the misc content and `>` as literals. */
 val BaseMarkupEndTagSyntax.legacyChildren: List<RedNode>
-    get() = legacyChildrenCache.getOrPut(this) {
+    get() = cachedLegacyChildren {
         val nodes = ArrayList<RazorNode>()
         val tokens = ArrayList<RazorToken>()
         val editHandler = editHandler

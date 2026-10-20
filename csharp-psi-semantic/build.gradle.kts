@@ -6,23 +6,10 @@ plugins {
     alias(libs.plugins.intellij.platform.module)
 }
 
-repositories {
-    mavenCentral()
-    intellijPlatform {
-        defaultRepositories()
-    }
-}
-
+// The repositories and the IDE (IntelliJ IDEA Community, `platformIde`) come from the root build.gradle.kts.
 dependencies {
     implementation(project(":csharp-psi-core"))
     intellijPlatform {
-        // Like the root project: the installed IDE from localIdePath when it exists (nothing is downloaded), otherwise IntelliJ IDEA of platformVersion.
-        val localIde = providers.gradleProperty("localIdePath").orNull
-        if (localIde != null && file(localIde).exists()) {
-            local(localIde)
-        } else {
-            intellijIdea(providers.gradleProperty("platformVersion"))
-        }
         testFramework(TestFrameworkType.Platform)
     }
     testImplementation(libs.junit)

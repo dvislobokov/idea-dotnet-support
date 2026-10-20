@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.296
+
+- Razor: the highlighting of a `.cshtml` file could hang forever when several passes read the same tags at once; fixed.
+- Build: without a local IDE the build takes the public IntelliJ IDEA Community (`ideaIC`) from the IntelliJ repository instead of the
+  unified IntelliJ IDEA; the repositories and the IDE are chosen in one place for all the subprojects.
+
 ## 0.1.295
 
 - C#: completion offers the static members of a library type imported with `using static` (`using static System.Math;` → `Abs`); in

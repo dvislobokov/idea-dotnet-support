@@ -1,4 +1,3 @@
-import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 // razor-psi-core (RAZOR_PLAN.md, R2): the port of the Razor compiler's parser (HtmlMarkupParser, CSharpCodeParser, the tokenizers) and
@@ -10,20 +9,10 @@ plugins {
     alias(libs.plugins.intellij.platform.module)
 }
 
-repositories {
-    mavenCentral()
-    intellijPlatform {
-        defaultRepositories()
-    }
-}
-
-// Like the root project: the installed IDE from localIdePath when it exists (nothing is downloaded), otherwise IntelliJ IDEA of platformVersion.
-val localIde: File? = providers.gradleProperty("localIdePath").orNull?.let(::file)?.takeIf { it.exists() }
-
+// The repositories and the IDE (IntelliJ IDEA Community, `platformIde`) come from the root build.gradle.kts.
 dependencies {
     implementation(project(":csharp-psi-core"))
     intellijPlatform {
-        if (localIde != null) local(localIde) else intellijIdea(providers.gradleProperty("platformVersion"))
         testFramework(TestFrameworkType.Platform)
     }
     testImplementation(libs.junit)
@@ -74,11 +63,7 @@ tasks.test {
 intellijPlatformTesting {
     testIde {
         register("corpusTest") {
-            if (localIde != null) localPath = localIde
-            else {
-                type = IntelliJPlatformType.IntellijIdea
-                version = providers.gradleProperty("platformVersion")
-            }
+            @Suppress("UNCHECKED_CAST") (project.extra["platformIde"] as (Any) -> Unit)(this)
             task {
                 description = "Runs the corpus gates (*CorpusTest): the trees of .corpus/razor against tools/razor/razordump and the compiler's baselines."
                 group = "verification"
