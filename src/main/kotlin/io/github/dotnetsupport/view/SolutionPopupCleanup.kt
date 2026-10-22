@@ -22,17 +22,18 @@ class SolutionPopupCleanup : DynamicActionConfigurationCustomizer {
         val popup = actionManager.getAction(POPUP) as? DefaultActionGroup ?: return
         for ((id, before) in WRAPPED) {
             // by id: a child may still be a stub of an action not created yet
+            // the stub itself goes into the wrapper: turning it into the action here reads its text through UISettings before the IDE sets up
+            // the scale of the UI ("JreHiDpiUtil: Must be not computed before that call"); the wrapper's group unstubs it when it is shown
             val child = popup.childActionsOrStubs.firstOrNull { actionManager.getId(it) == id } ?: continue
-            val action = actionManager.getAction(id) ?: continue
             popup.remove(child, actionManager)
-            popup.addAction(HideOnSolutionNodes(action), Constraints(Anchor.BEFORE, before), actionManager)
+            popup.addAction(HideOnSolutionNodes(child), Constraints(Anchor.BEFORE, before), actionManager)
         }
     }
 
     override fun unregisterActions(actionManager: ActionManager) {
         val popup = actionManager.getAction(POPUP) as? DefaultActionGroup ?: return
         for (wrapper in popup.childActionsOrStubs.filterIsInstance<HideOnSolutionNodes>()) {
-            val before = WRAPPED.firstOrNull { actionManager.getAction(it.first) === wrapper.inner }?.second
+            val before = WRAPPED.firstOrNull { it.first == actionManager.getId(wrapper.inner) }?.second
             popup.remove(wrapper, actionManager)
             popup.addAction(wrapper.inner, before?.let { Constraints(Anchor.BEFORE, it) } ?: Constraints.FIRST, actionManager)
         }

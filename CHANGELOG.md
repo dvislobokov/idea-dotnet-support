@@ -3,6 +3,12 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.299
+
+- No `NoSuchMethodError` on `JsonReader.setStrictness` in GIGA IDE: `launchSettings.json`, `global.json`, `.slnf` and the other JSON
+  files are read in a way every gson version supports, so Run, Debug and the generated run configurations work there again.
+- No "JreHiDpiUtil: Must be not computed before that call" error at the start from the clean-up of the Project view popup.
+
 ## 0.1.298
 
 - The code of the GIGA IDE editions is removed: the plugin no longer looks at GIGA IDE Pro at all (it has been fully available since

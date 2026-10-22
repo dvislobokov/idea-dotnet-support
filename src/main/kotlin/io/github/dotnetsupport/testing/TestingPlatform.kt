@@ -2,8 +2,6 @@ package io.github.dotnetsupport.testing
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.google.gson.Strictness
-import com.google.gson.stream.JsonReader
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import io.github.dotnetsupport.msbuild.MsBuildProject
@@ -115,7 +113,7 @@ object TestingPlatform {
 
     fun isRunnerInGlobalJson(text: String): Boolean {
         val root = try {
-            JsonParser.parseReader(JsonReader(StringReader(text)).apply { strictness = Strictness.LENIENT }) as? JsonObject
+            JsonParser.parseReader(StringReader(text)) as? JsonObject
         } catch (_: Exception) {
             null
         }

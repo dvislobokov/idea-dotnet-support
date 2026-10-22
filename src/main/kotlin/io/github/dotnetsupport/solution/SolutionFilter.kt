@@ -2,8 +2,6 @@ package io.github.dotnetsupport.solution
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.google.gson.Strictness
-import com.google.gson.stream.JsonReader
 import java.io.StringReader
 
 /**
@@ -33,7 +31,7 @@ class SolutionFilter(val solutionPath: String, val projects: List<String>) {
         /** `{ "solution": { "path": "..\\All.sln", "projects": [ "src\\App\\App.csproj" ] } }`; null when the text is not a filter. */
         fun parse(text: CharSequence): SolutionFilter? {
             val root = try {
-                JsonParser.parseReader(JsonReader(StringReader(text.toString().replace(TRAILING_COMMA, "$1"))).apply { strictness = Strictness.LENIENT }) as? JsonObject
+                JsonParser.parseReader(StringReader(text.toString().replace(TRAILING_COMMA, "$1"))) as? JsonObject
             } catch (_: Exception) {
                 null
             }

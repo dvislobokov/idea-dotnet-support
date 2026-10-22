@@ -2,8 +2,6 @@ package io.github.dotnetsupport.run
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.google.gson.Strictness
-import com.google.gson.stream.JsonReader
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import java.io.File
@@ -26,8 +24,9 @@ object LaunchSettings {
     fun profiles(json: String): List<Profile> {
         val root = try {
             // launchSettings.json is JSONC: the lenient reader takes the comments, trailing commas have to go.
+            // parseReader(Reader) is lenient in every gson; no Strictness: it is gson 2.11+, and GIGA Pro's gson 2.10 can win the class loading.
             val text = json.replace(TRAILING_COMMA, "$1")
-            JsonParser.parseReader(JsonReader(StringReader(text)).apply { strictness = Strictness.LENIENT }) as? JsonObject
+            JsonParser.parseReader(StringReader(text)) as? JsonObject
         } catch (_: Exception) {
             null
         }

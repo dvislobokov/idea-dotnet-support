@@ -1,6 +1,7 @@
 package io.github.dotnetsupport
 
 import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionStub
 import com.intellij.openapi.actionSystem.ActionUiKind
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
@@ -38,6 +39,8 @@ class SolutionViewPopupTest : BasePlatformTestCase() {
         val popup = actions.getAction("ProjectViewPopupMenu") as DefaultActionGroup
         val wrappers = popup.childActionsOrStubs.filterIsInstance<HideOnSolutionNodes>()
         assertEquals(listOf("CutCopyPasteGroup", "RenameElement"), wrappers.map { actions.getId(it.inner) })
+        // the wrapper may hold a stub (taken before the UI scale is set up); shown, it gives the real action
+        for (wrapper in wrappers) assertTrue(wrapper.getChildren(null).none { it is ActionStub })
 
         val sln = myFixture.addFileToProject("popup/App.sln", "").virtualFile
         val slnProject = SlnProject("App", "App/App.csproj", "{1}")
