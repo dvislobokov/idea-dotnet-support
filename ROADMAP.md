@@ -461,7 +461,8 @@
   Time in GC / GC collections (строка «Available in GIGA IDE Pro» со ссылкой на активацию); вне GIGA IDE работает всё. Режим —
   `edition/DotNetEdition` (рефлексией из плагина `com.gigaide.pro`); сборка разработки `-PeditionChecks=false`, проверка zip выпуска
   `tools/release/check-zip.sh`. Тест `DotNetEditionTest`; сценарий — раздел «Издания» в `debug-playground/README.md`.
-  **0.1.293** (решение пользователя 2026-10-19): проверки сняты, плагин пока полностью доступен и без Pro; `DotNetEdition` оставлен
+  **0.1.293** (решение пользователя 2026-10-19): проверки сняты, плагин пока полностью доступен и без Pro; `DotNetEdition` оставлен.
+  **0.1.298** (2026-10-22): `DotNetEdition`, `-PeditionChecks`, `check-zip.sh` и тест удалены целиком
 - [ ] Monitor: свои `Meter` приложения по имени, запросы/с, EF Core и Kestrel, пауза и масштаб времени, строка состояния в Services
 - [x] ★ Thread Dump в .NET Monitor (`dotnet-stack report`): потоки с кодом приложения наверху, одинаковые стеки свёрнуты, кадры проекта кликабельны (тип ищется по имени файла, метод — в файле; async, лямбды, конструкторы разворачиваются в исходные имена)
 - [x] ★ Heap Snapshot в .NET Monitor (`dotnet-gcdump report`): куча по типам (объекты, байты), фильтр, сравнение с любым более ранним снимком того же процесса — Δ объектов и Δ байт, поиск утечек

@@ -143,8 +143,7 @@ python robot.py action Exit && python robot.py click "//div[@class='MyDialog']//
 - **GIGA IDE** (`giga/start-giga.sh <zip>`): песочница GIGA IDE 2026.1 со своими config/system/plugins в `~/giga-sandbox`, робот на 8584
   (`ROBOT_PORT=8584`; вывод робота — с `PYTHONIOENCODING=utf-8`). Окно на рабочем столе — только API и снимки компонентов. Первый старт
   показывает тур темы Islands: закрыть `clicktext "//div[@class='MyDialog']" Skip` до любого js, ждущего EDT (иначе робот виснет).
-  `edition_probe.js`: режим GIGA IDE (`PluginVerificationService`) и ответ `DotNetEdition`; `action_state.js` (`__ID__`): видимость,
-  доступность и описание действия, как их покажет главное меню.
+  `action_state.js` (`__ID__`): видимость, доступность и описание действия, как их покажет главное меню.
 - `modules_probe.js` (`__FILE__`): модули проекта и их корни, индексируемый ли файл (папка без модуля в IDEA — содержимое без индекса);
   `solution_finder_probe.js`: что `SolutionFinder` видит в корне проекта; `meta_guid_probe.js` (`__META__`): что индекс GUID `.meta`
   хранит для файла и находит по GUID; `missing_script_probe.js` (`__FILE__`, `__GUID__`): включена ли инспекция «Missing script»,

@@ -784,7 +784,6 @@ Shift+F6, новое имя, Enter — сверить с `EXPECT`, затем о
 С 0.1.293 платного нет (решение пользователя 2026-10-19): в GIGA IDE 2026.1 без Pro (Help → Activate PRO mode есть, ключа нет):
 - [ ] Run `Console: Leak`, окно .NET Monitor: все девять графиков, строки «Available in GIGA IDE Pro» нет
 - [ ] меню .NET → «Show Allocations in Editor» включено, в ПКМ редактора `Allocations.cs` пункт есть, числа в конце строк пишутся
-- [ ] сборка `-PeditionChecks=false` при старте по-прежнему показывает уведомление «Edition checks are off»
 
 ## Редактор: аллокации по строкам — `Console/Allocations.cs`
 

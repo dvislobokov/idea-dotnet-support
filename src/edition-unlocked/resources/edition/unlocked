@@ -1,2 +1,0 @@
-A development build of C# Project Support made with -PeditionChecks=false: the edition checks are off (edition/DotNetEdition.kt).
-This file must never be in a build given to the users; tools/release/check-zip.sh refuses a zip that has it.

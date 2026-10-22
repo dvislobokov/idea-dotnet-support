@@ -4,7 +4,7 @@
 .gigaide/
 .intellijPlatform/
 .kotlin/
-# build output; the zip of a release goes into dist/ (tools/release/check-zip.sh), not from here
+# build output; the zip of a release goes into dist/, not from here
 /build/
 out/
 *.iml

@@ -3,6 +3,11 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.298
+
+- The code of the GIGA IDE editions is removed: the plugin no longer looks at GIGA IDE Pro at all (it has been fully available since
+  0.1.293).
+
 ## 0.1.297
 
 - IDEs with an older Kotlin library (GIGA IDE 2026.1): project files, the EF Core window, the index of assemblies and the analysis of C#

@@ -1,5 +1,5 @@
 // The state of the action __ID__ as the main menu would show it: its update run with the context of the last open project, then
-// visible / enabled / text / description of the presentation (edition/DotNetEdition: an action of Pro is off in GIGA IDE without Pro).
+// visible / enabled / text / description of the presentation, as the main menu shows the action.
 importClass(com.intellij.openapi.project.ProjectManager)
 importClass(com.intellij.openapi.actionSystem.ActionManager)
 importClass(com.intellij.openapi.actionSystem.AnActionEvent)
