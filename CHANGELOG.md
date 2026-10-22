@@ -3,6 +3,10 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.301
+
+- The plugin has an icon of its own in Settings | Plugins: the C# of the plugin in white on the purple of .NET, lighter in dark themes.
+
 ## 0.1.300
 
 - The passwords of private NuGet feeds are kept in the keychain of the system (the Secret Service on Linux, the Keychain on macOS, the

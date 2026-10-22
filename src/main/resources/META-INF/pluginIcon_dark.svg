@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+  <!-- pluginIcon.svg for dark themes: a lighter purple, so the square does not sink into a dark background. -->
+  <defs>
+    <linearGradient id="back" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8C66F5"/>
+      <stop offset="1" stop-color="#5F37D6"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="36" height="36" rx="8" fill="url(#back)"/>
+  <path d="M18.2 13.4A7.6 7.6 0 1 0 18.2 26.6" fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M25.2 12.6 23.6 27.4M30.8 12.6 29.2 27.4M21.4 17.3h12.2M20.6 22.7h12.2" fill="none" stroke="#FFFFFF" stroke-width="2.3" stroke-linecap="round"/>
+</svg>
