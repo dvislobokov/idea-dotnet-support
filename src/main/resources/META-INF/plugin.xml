@@ -433,6 +433,8 @@
         <postStartupActivity implementation="io.github.dotnetsupport.sdk.DotNetFileTypeCheckActivity"/>
         <editorNotificationProvider implementation="io.github.dotnetsupport.sdk.DotNetFileTypeNotificationProvider"/>
         <postStartupActivity implementation="io.github.dotnetsupport.run.DevCertCheckActivity"/>
+        <!-- the NuGet credential provider kept up to date, clear-text passwords of nuget.config offered a move to the keychain -->
+        <postStartupActivity implementation="io.github.dotnetsupport.nuget.NuGetKeychainStartup"/>
 
         <configurationType implementation="io.github.dotnetsupport.run.DotNetConfigurationType"/>
         <configurationType implementation="io.github.dotnetsupport.publish.DotNetPublishConfigurationType"/>

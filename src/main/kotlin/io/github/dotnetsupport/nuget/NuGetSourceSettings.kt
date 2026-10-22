@@ -13,6 +13,7 @@ import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.panel
+import io.github.dotnetsupport.cli.PluginLog
 import java.awt.Dimension
 import javax.swing.JComponent
 
@@ -26,10 +27,13 @@ class NuGetSourceSettings(
     val allowInsecureConnections: Boolean,
     val disableTlsCertificateValidation: Boolean,
 ) {
-    /** `dotnet nuget add source` / `update source` for these settings; the flags the CLI has no option for are written by [NuGetConfigEditor]. */
-    fun cliArguments(isNew: Boolean): List<String> = buildList {
+    /**
+     * `dotnet nuget add source` / `update source` for these settings; the flags the CLI has no option for are written by [NuGetConfigEditor].
+     * The user and the password go to `nuget.config` only when they cannot go to the keychain of the OS ([NuGetKeychain]).
+     */
+    fun cliArguments(isNew: Boolean, credentialsInConfig: Boolean): List<String> = buildList {
         addAll(if (isNew) listOf("add", "source", url, "--name", name) else listOf("update", "source", name, "--source", url))
-        if (!user.isNullOrEmpty() && !password.isNullOrEmpty()) {
+        if (credentialsInConfig && !user.isNullOrEmpty() && !password.isNullOrEmpty()) {
             addAll(listOf("--username", user, "--password", password))
             // nuget.config passwords are encrypted with DPAPI, which exists on Windows only
             if (!SystemInfo.isWindows) add("--store-password-in-clear-text")
@@ -73,13 +77,76 @@ object NuGetConfigEditor {
         }
 
     private fun escapeXml(value: String): String = value.replace("&", "&amp;").replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;")
+
+    /** A source's entry of `<packageSourceCredentials>` with a `ClearTextPassword`. */
+    data class CredentialEntry(val sourceName: String, val user: String, val password: String)
+
+    private val CREDENTIALS_SECTION = Regex("""(?s)<packageSourceCredentials\b[^>]*>(.*?)</packageSourceCredentials\s*>""")
+    private val ELEMENT = Regex("""(?s)<([\w.\-]+)\b[^>]*?(?:/>|>(.*?)</\1\s*>)""")
+    private val ADD = Regex("""<add\b([^>]*?)/?>""")
+    private val ATTRIBUTE = Regex("""([\w:]+)\s*=\s*"([^"]*)"""")
+
+    /**
+     * The users and passwords kept in clear text in this config. A value with `%NAME%` in it is a reference to an environment variable (as
+     * CI writes them), not a password, and is left out; so is an encrypted `Password` (Windows), which is no clear text.
+     */
+    fun clearTextCredentials(config: String): List<CredentialEntry> =
+        CREDENTIALS_SECTION.findAll(config).flatMap { section -> ELEMENT.findAll(section.groupValues[1]) }.mapNotNull { element ->
+            val values = ADD.findAll(element.groupValues[2]).associate { add ->
+                val attributes = ATTRIBUTE.findAll(add.groupValues[1]).associate { it.groupValues[1].lowercase() to unescapeXml(it.groupValues[2]) }
+                (attributes["key"] ?: "").lowercase() to (attributes["value"] ?: "")
+            }
+            val user = values["username"] ?: return@mapNotNull null
+            val password = values["cleartextpassword"]?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+            if (ENVIRONMENT_REFERENCE.containsMatchIn(password)) null else CredentialEntry(decodeName(element.groupValues[1]), user, password)
+        }.toList()
+
+    private val ENVIRONMENT_REFERENCE = Regex("""%[^%\s]+%""")
+
+    /**
+     * The config without the credentials of [sourceName] (its element in `<packageSourceCredentials>`, with the indentation before it), and
+     * without the section when nothing is left in it. The rest of the file stays as it is.
+     */
+    fun removeCredentials(config: String, sourceName: String): String {
+        val name = encodeName(sourceName)
+        val section = CREDENTIALS_SECTION.findAll(config).firstOrNull { s -> ELEMENT.findAll(s.groupValues[1]).any { it.groupValues[1].equals(name, ignoreCase = true) } }
+            ?: return config
+        val body = section.groups[1]!!
+        val element = ELEMENT.findAll(body.value).first { it.groupValues[1].equals(name, ignoreCase = true) }
+        val start = body.range.first + element.range.first
+        val lineStart = config.lastIndexOf('\n', start - 1).let { if (it >= 0 && config.substring(it + 1, start).isBlank()) it else start }
+        val without = config.removeRange(lineStart, body.range.first + element.range.last + 1)
+        // the section left with whitespace only goes too
+        // the section starts where it did: what was removed is inside it
+        val emptied = CREDENTIALS_SECTION.find(without, section.range.first)?.takeIf { it.groupValues[1].isBlank() } ?: return without
+        val sectionStart = without.lastIndexOf('\n', emptied.range.first - 1).let { if (it >= 0 && without.substring(it + 1, emptied.range.first).isBlank()) it else emptied.range.first }
+        return without.removeRange(sectionStart, emptied.range.last + 1)
+    }
+
+    /** The element name NuGet gives a source in `<packageSourceCredentials>` (`XmlConvert.EncodeLocalName`): `My Feed` → `My_x0020_Feed`. */
+    fun encodeName(name: String): String = buildString {
+        name.forEachIndexed { i, c ->
+            val valid = c.isLetter() || c == '_' || i > 0 && (c.isDigit() || c == '.' || c == '-')
+            if (valid) append(c) else append("_x%04X_".format(c.code))
+        }
+    }
+
+    private fun decodeName(name: String): String = Regex("_x([0-9A-Fa-f]{4})_").replace(name) { it.groupValues[1].toInt(16).toChar().toString() }
+
+    private fun unescapeXml(value: String): String = Regex("&(#x[0-9A-Fa-f]+|#[0-9]+|amp|lt|gt|quot|apos);").replace(value) {
+        when (val entity = it.groupValues[1]) {
+            "amp" -> "&"; "lt" -> "<"; "gt" -> ">"; "quot" -> "\""; "apos" -> "'"
+            else -> (if (entity.startsWith("#x")) entity.drop(2).toInt(16) else entity.drop(1).toInt()).toChar().toString()
+        }
+    }
 }
 
 /**
- * Credentials of private feeds for the requests the plugin makes itself (search, versions, icons). The CLI does not
- * use them: it reads `nuget.config`, where `dotnet nuget add source --password` stores its own encrypted copy.
+ * Credentials of private feeds for the requests the plugin makes itself (search, versions, icons). Where [NuGetKeychain] works they are
+ * the ones of the keychain of the OS, which the CLI gets through the credential provider of the plugin; elsewhere they are a copy in the
+ * password storage of the IDE, and the CLI reads its own from `nuget.config`. A copy stored there by an older version is still read.
  *
- * The password storage is asked only about a source that needs it ([NuGetCredentialPolicy]): asked on every request to nuget.org, it
+ * The storage is asked only about a source that needs it ([NuGetCredentialPolicy]): asked on every request to nuget.org, it
  * failed on Linux without a keychain (libsecret / KWallet) with an "IDE error occurred" blaming the plugin (DEV_JOURNEY 3.2).
  */
 object NuGetCredentialStore {
@@ -96,7 +163,13 @@ object NuGetCredentialStore {
         com.intellij.ide.util.PropertiesComponent.getInstance().setList(KNOWN_KEY, updated.sorted())
     }
 
-    val policy = NuGetCredentialPolicy(lookup = { PasswordSafe.instance.get(attributes(it))?.takeIf { c -> !c.userName.isNullOrEmpty() } }, known = ::known)
+    val policy = NuGetCredentialPolicy(lookup = { lookup(it) }, known = ::known)
+
+    private fun lookup(sourceUrl: String): Credentials? {
+        val keychain = if (NuGetKeychain.isReady()) runCatching { NuGetKeychain.get(sourceUrl) }
+            .onFailure { PluginLog.warn(NuGetClient.LOG_CATEGORY, "the keychain of the OS for $sourceUrl", it) }.getOrNull() else null
+        return keychain ?: PasswordSafe.instance.get(attributes(sourceUrl))?.takeIf { c -> !c.userName.isNullOrEmpty() }
+    }
 
     /** Slow when the storage is asked: it may ask for a master password. Not for EDT. Null without asking for a source that needs no credentials. */
     fun get(sourceUrl: String): Credentials? = policy.get(sourceUrl)
@@ -107,14 +180,27 @@ object NuGetCredentialStore {
     /** The feed answered 401 / 403: from now on the storage is asked about it. */
     fun unauthorized(sourceUrl: String) = policy.unauthorized(sourceUrl)
 
-    fun set(sourceUrl: String, user: String?, password: String?) {
+    /**
+     * Stores (or, without a user and a password, forgets) the credentials of [sourceUrl]: in the keychain of the OS when [keychain], where
+     * the CLI finds them too, else in the password storage of the IDE. Not for EDT. Throws [NuGetKeychainException] when the keychain refuses.
+     */
+    fun set(sourceUrl: String, user: String?, password: String?, keychain: Boolean = false) {
         val credentials = if (user.isNullOrEmpty() || password.isNullOrEmpty()) null else Credentials(user, password)
         // nothing stored and nothing to store: the storage is not touched (a new feed without a password)
         if (credentials == null && NuGetCredentialPolicy.key(sourceUrl) !in known() && policy.cached(sourceUrl) == null) return policy.forget(sourceUrl)
-        PasswordSafe.instance.set(attributes(sourceUrl), credentials)
+        if (keychain) {
+            if (credentials != null) NuGetKeychain.store(sourceUrl, user!!, password!!) else NuGetKeychain.erase(sourceUrl)
+            // the copy of an older version must not outlive the one in the keychain
+            if (NuGetCredentialPolicy.key(sourceUrl) in known()) PasswordSafe.instance.set(attributes(sourceUrl), null)
+        } else {
+            PasswordSafe.instance.set(attributes(sourceUrl), credentials)
+        }
         setKnown(sourceUrl, credentials != null)
         policy.remember(sourceUrl, credentials)
     }
+
+    /** Whether the plugin keeps credentials of any source: then the provider is kept up to date in NuGet's folder at the start. */
+    fun hasAny(): Boolean = known().isNotEmpty()
 }
 
 /**
@@ -208,8 +294,9 @@ class NuGetSourceDialog(project: Project, private val existing: NuGetSource?, pr
         row("Allow insecure connections:") { cell(allowInsecure).comment("HTTP feeds") }
         row("Disable TLS certificate validation:") { cell(disableTls) }
         row {
-            val storage = if (SystemInfo.isWindows) "<b>nuget.config</b> (encrypted for your Windows account)" else "<b>nuget.config</b> in <b>clear text</b>: password encryption is Windows-only"
-            comment("Credentials are saved to $storage, where the <code>dotnet</code> CLI reads them, and to the IDE password storage for the package search.")
+            val fallback = if (SystemInfo.isWindows) "to <b>nuget.config</b>, encrypted for your Windows account" else "to <b>nuget.config</b> in clear text, after asking"
+            comment("Credentials are saved to the keychain of the system, not to nuget.config: every <code>dotnet</code> command finds them there, in the IDE " +
+                "and in a terminal, through the NuGet credential provider the IDE installs. Where there is no keychain, they go $fallback.")
         }
     }.apply { preferredSize = Dimension(560, preferredSize.height) }
 

@@ -321,6 +321,22 @@ Solution для живой проверки плагина: отладчика (
   - [ ] в `"references"` Ctrl+Space в пустой строке `""` предлагает `Demo.Gameplay`; Ctrl+B на `"Demo.Gameplay"` и на `"GUID:5a1c…"`
         открывает `Gameplay.asmdef`; `"Demo.Missing"` жёлтое — «No assembly definition 'Demo.Missing' in the project»
 
+## NuGet: пароли в связке ключей (0.1.300; вживую в IDE не проверено, провайдер проверен на Windows и в Linux-контейнере)
+
+Фид под Basic-auth: `uv run --no-project python tools/nuget-auth-feed/feed.py` (`http://127.0.0.1:5555/v3/index.json`, user `probe`,
+password `probe-password`, пакет `DotNetSupport.AuthFeedProbe` 1.0.0; каждый запрос печатается с 200 / 401).
+- [ ] окно NuGet → Sources → New feed: URL фида, Allow insecure connections, user и password → в `dotnet nuget config paths` (первый файл) у
+      источника **нет** `<packageSourceCredentials>`; в `~/.nuget/plugins/netcore/CredentialProvider.DotNetSupport/` есть dll и `.build`;
+      запись «C# Project Support NuGet» в связке (Windows: Credential Manager → `DotNetSupport.NuGet:http://127.0.0.1:5555/v3/index.json`)
+- [ ] поиск `AuthFeedProbe` в окне NuGet находит пакет; установка в `Console` проходит (restore IDE), фид печатает `401`, затем `200`
+- [ ] то же в обычном терминале вне IDE: `dotnet add debug-playground/Console package DotNetSupport.AuthFeedProbe` — без вопросов о пароле;
+      после проверки `dotnet remove … package DotNetSupport.AuthFeedProbe`
+- [ ] Edit feed с неверным паролем → `dotnet restore` в терминале: `warning : The feed … refused the user and password C# Project Support keeps…`,
+      затем обычный NU1301 401, и restore не висит
+- [ ] Linux без Secret Service (WSL, SSH): New feed с паролем → вопрос «Save in Clear Text?» с причиной; Cancel ничего не меняет
+- [ ] пароль открытым текстом, вписанный руками в `nuget.config` solution (`<add key="ClearTextPassword" value="…"/>`), → при открытии
+      solution уведомление «NuGet passwords in clear text» → Move to Keychain: из файла уходит только элемент источника; `%TOKEN%` не предлагается
+
 ## Solution view
 
 ### Reload Solution / Reload Project

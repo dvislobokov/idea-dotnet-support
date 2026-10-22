@@ -11,6 +11,12 @@
 | `diagnostics/` | DiagnosticsHelper | ClrMD (какой CLR в процессе, дампы); дальше — TraceEvent, `allocwatch` |
 | `codeanalysis/` | CodeAnalysisHelper | source generators и анализаторы Roslyn с code fixes без сервера (0.1.77, пакет `codeanalysis`): `generate`, `analyze`, `fix`, `invalidate`, `info`. Roslyn — не пакет, а сборки SDK из `DotnetTools/dotnet-format` (HintPath, первая сборка без сети), поэтому собирается под каждый SDK отдельно (`perSdk`); проект — design-time `dotnet msbuild -t:Compile -getItem:CscCommandLineArgs`, отсюда **SDK ≥ 8**. Один на solution, выход после простоя |
 
+Рядом лежит то, что не работает постоянно, но собирается тем же `cli/DotNetHelper`:
+
+| Папка | Программа | Что в ней |
+|---|---|---|
+| `credentialprovider/` | CredentialProvider.DotNetSupport | credential provider NuGet (0.1.300, `nuget/NuGetKeychain`): пароли фидов в связке ключей ОС, `Keyring.cs` — libsecret / Security.framework / Credential Manager через P/Invoke, `NuGetPlugin.cs` — протокол плагинов NuGet. Без пакетов (иначе сборке нужен фид, пароль которого он хранит). Плагин копирует сборку в `~/.nuget/plugins/netcore/CredentialProvider.DotNetSupport/`, там его находит любой `dotnet`; сам плагин зовёт его командами `store` / `get` / `erase` / `check` (JSON на stdin, пароль не в командной строке). Живая проверка — `tools/nuget-auth-feed/feed.py` |
+
 Почему три, а не один: `Microsoft.Build` грузится из SDK и тянет свои `NuGet.*` (конфликт с клиентом NuGet в том же процессе), для
 проектов .NET Framework нужен процесс на net472 с MSBuild из Visual Studio, а подключение к чужим процессам падает чаще всего —
 пусть падает отдельно. Свой restore у каждого: несобравшийся пакет одного не ломает остальные.

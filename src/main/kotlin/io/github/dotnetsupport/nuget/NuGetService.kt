@@ -623,16 +623,61 @@ class NuGetService(private val project: Project) {
     private fun declaringConfig(sourceName: String): File? =
         configPaths().map(::File).firstOrNull { NuGetConfigEditor.declares(it.readText(), sourceName) }
 
+    /** Takes the credentials of [sourceName] out of every `nuget.config` that applies to the solution, the rest of each file as it was. Blocking. */
+    fun removeConfigCredentials(sourceName: String) {
+        for (file in configPaths().map(::File)) {
+            val text = file.readText()
+            val updated = NuGetConfigEditor.removeCredentials(text, sourceName)
+            if (updated == text) continue
+            file.writeText(updated)
+            PluginLog.info(NuGetClient.LOG_CATEGORY, "the credentials of $sourceName are taken out of $file: they are in the keychain of the OS now")
+            LocalFileSystem.getInstance().findFileByIoFile(file)?.let { VfsUtil.markDirtyAndRefresh(true, false, false, it) }
+        }
+    }
+
+    /** A user and a password in clear text in a `nuget.config` of the solution ([NuGetConfigEditor.clearTextCredentials]), with the URL of its source. */
+    data class ClearTextCredentials(val file: File, val sourceName: String, val url: String, val user: String, val password: String)
+
+    /** The clear-text credentials of the sources the solution sees; those of a source no config declares are left alone. Blocking. */
+    fun clearTextCredentials(): List<ClearTextCredentials> {
+        val found = configPaths().map(::File).flatMap { file -> NuGetConfigEditor.clearTextCredentials(file.readText()).map { file to it } }
+        if (found.isEmpty()) return emptyList()
+        val urls = sourceList().associate { it.name.lowercase() to it.url }
+        return found.mapNotNull { (file, entry) -> urls[entry.sourceName.lowercase()]?.let { ClearTextCredentials(file, entry.sourceName, it, entry.user, entry.password) } }
+    }
+
     /** "Allow insecure connections" and "Disable TLS certificate validation" of a source, from the config file that declares it. Blocking. */
     fun sourceFlags(sourceName: String): Pair<Boolean, Boolean> {
         val config = declaringConfig(sourceName)?.readText() ?: return false to false
         return NuGetConfigEditor.flag(config, sourceName, NuGetConfigEditor.ALLOW_INSECURE) to NuGetConfigEditor.flag(config, sourceName, NuGetConfigEditor.DISABLE_TLS)
     }
 
-    /** Adds or updates a source: the CLI for what it supports, then the attributes it has no options for, then the IDE copy of the credentials. */
+    /**
+     * Adds or updates a source: the CLI for what it supports, then the attributes it has no options for, then the credentials. These go to
+     * the keychain of the OS ([NuGetKeychain]), which every `dotnet` finds through the credential provider of the plugin; where it cannot be
+     * used, to `nuget.config` (Windows encrypts them there; elsewhere they are clear text, and the user is asked first).
+     */
     fun saveSource(settings: NuGetSourceSettings, existing: NuGetSource?, onSuccess: () -> Unit) {
+        val withCredentials = !settings.user.isNullOrEmpty() && !settings.password.isNullOrEmpty()
+        ApplicationManager.getApplication().executeOnPooledThread {
+            // only a feed with a password builds the provider and asks the keychain
+            val keychain = if (withCredentials) NuGetKeychain.availability() else null
+            ApplicationManager.getApplication().invokeLater({
+                if (keychain is NuGetKeychain.Availability.Unavailable && !com.intellij.openapi.util.SystemInfo.isWindows) {
+                    val answer = com.intellij.openapi.ui.Messages.showOkCancelDialog(project,
+                        "The password cannot go to the keychain of the system: ${keychain.reason}.\n\n" +
+                            "Save it to nuget.config in clear text? Whoever can read the file can read the password.",
+                        "NuGet Feed Password", "Save in Clear Text", "Cancel", com.intellij.openapi.ui.Messages.getWarningIcon())
+                    if (answer != com.intellij.openapi.ui.Messages.OK) return@invokeLater
+                }
+                saveSource(settings, existing, keychain is NuGetKeychain.Availability.Ready, onSuccess)
+            }, ModalityState.any(), project.disposed)
+        }
+    }
+
+    private fun saveSource(settings: NuGetSourceSettings, existing: NuGetSource?, keychain: Boolean, onSuccess: () -> Unit) {
         val commands = buildList {
-            add(settings.cliArguments(isNew = existing == null))
+            add(settings.cliArguments(isNew = existing == null, credentialsInConfig = !keychain))
             if (settings.isEnabled != (existing?.isEnabled ?: true)) add(listOf(if (settings.isEnabled) "enable" else "disable", "source", settings.name))
         }
         val title = (if (existing == null) "Adding" else "Updating") + " NuGet feed ${settings.name}"
@@ -650,7 +695,15 @@ class NuGetService(private val project: Project) {
                     }
                 }
                 // an edit that leaves the credentials empty keeps the stored ones
-                if (settings.password != null || existing == null) NuGetCredentialStore.set(settings.url, settings.user, settings.password)
+                if (settings.password != null || existing == null) {
+                    // the keychain replaces what nuget.config had for the source: NuGet would take that first
+                    if (keychain) removeConfigCredentials(settings.name)
+                    try {
+                        NuGetCredentialStore.set(settings.url, settings.user, settings.password, keychain)
+                    } catch (e: NuGetKeychainException) {
+                        DotNetCli.notifyError(project, "The password of ${settings.name} is not saved", e.message ?: "")
+                    }
+                }
                 ApplicationManager.getApplication().invokeLater(onSuccess, project.disposed)
             }
         }

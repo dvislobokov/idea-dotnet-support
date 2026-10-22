@@ -3,6 +3,16 @@
 Every feature is a new version `0.1.x`. The build puts these sections into the change notes of the plugin
 (Settings | Plugins → What's New) and fails when there is no section for the current `pluginVersion`.
 
+## 0.1.300
+
+- The passwords of private NuGet feeds are kept in the keychain of the system (the Secret Service on Linux, the Keychain on macOS, the
+  Credential Manager on Windows), not in `nuget.config`. The IDE installs its NuGet credential provider into
+  `~/.nuget/plugins/netcore/`, so every `dotnet restore` finds them, in the IDE and in any terminal; `nuget.config` keeps only the URL of
+  the feed. Where there is no keychain (Linux without a Secret Service, an SDK older than 8, `NUGET_PLUGIN_PATHS` set), the password goes to
+  `nuget.config` as before, and on Linux and macOS only after a question, since it is clear text there.
+- Passwords in clear text in a `nuget.config` of the solution are offered a move to the keychain when the solution opens.
+- A stored password the feed refuses is named in the output of the restore, with where to change it.
+
 ## 0.1.299
 
 - No `NoSuchMethodError` on `JsonReader.setStrictness` in GIGA IDE: `launchSettings.json`, `global.json`, `.slnf` and the other JSON

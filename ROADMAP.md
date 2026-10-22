@@ -367,6 +367,18 @@
   вкладке Log окна NuGet; заголовок списка говорит «N of M feeds did not answer». Источники из `dotnet nuget list source` — в журнале как есть.
   Вживую не проверено
 - [x] Диалог фида как в Rider (New / Edit): Name, URL, User, Password, Enabled, Allow insecure connections, Disable TLS certificate validation; учётные данные — в `nuget.config` через CLI и в хранилище паролей IDE для поиска по приватным фидам; пароли замаскированы в логах и прогрессе
+- [x] 0.1.300 — пароли фидов в связке ключей ОС, а не в `nuget.config` (просьба пользователя 2026-10-22: «не ломать системные или
+  пользовательские nuget конфиги», «чтобы в обычном терминале работало тоже»). Свой credential provider NuGet
+  (`helpers/credentialprovider`: протокол плагинов NuGet 2.0.0 вручную, без пакетов — иначе его сборке нужен был бы фид, пароль которого он
+  хранит; связка — libsecret / Security.framework / Credential Manager через P/Invoke). Плагин собирает его под SDK машины и кладёт в
+  `~/.nuget/plugins/netcore/CredentialProvider.DotNetSupport/`, где NuGet ищет провайдеры сам: после 401 фида пароль находят restore IDE,
+  DotNetHelper и любой терминал (`nuget/NuGetKeychain`). В `nuget.config` — только URL; при правке фида его прежние учётные данные из
+  файлов solution убираются. Где связки нет (Linux без Secret Service, SDK < 8, `NUGET_PLUGIN_PATHS` задан) — как раньше, на Linux / macOS
+  открытый текст только после вопроса. Пароли открытым текстом в `nuget.config` solution при открытии предлагается перенести
+  (`NuGetKeychainStartup`, `%ENV%`-ссылки и зашифрованные `Password` не трогаются). Неверный сохранённый пароль — строка `warning` в выводе
+  restore, без зацикливания. Проверено вживую: Windows (restore из `~/.nuget/plugins`, неверный пароль), Linux — в контейнере с
+  gnome-keyring; macOS не проверен. Тест `NuGetSourcesTest`, фид для проверки — `tools/nuget-auth-feed/feed.py`, чек-лист — `debug-playground/README.md`
+  («NuGet: пароли в связке ключей»)
 - [ ] Окно NuGet: README пакета, правка версий в `Directory.Packages.props` при CPM, выбор файла конфигурации для нового фида (сейчас — куда пишет CLI, т.е. пользовательский)
 - [x] 0.1.4 — Уязвимые и устаревшие (deprecated) пакеты в окне NuGet (`dotnet list package --vulnerable | --deprecated --format json`, два вызова —
   флаги взаимоисключающие): пометка в строке списка (severity для уязвимых, «Deprecated») и строка в карточке со ссылкой на advisory. Outdated уже
