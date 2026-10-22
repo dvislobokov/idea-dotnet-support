@@ -210,7 +210,7 @@ data class MsBuildProject(
         }
 
         private fun Element.descendants(): Sequence<Element> =
-            sequenceOf(this) + children.asSequence().flatMap { it.descendants() }
+            listOf(this).asSequence() + children.asSequence().flatMap { it.descendants() }
 
         private fun includes(item: Element): List<String> = splitList(item.getAttributeValue("Include"))
 

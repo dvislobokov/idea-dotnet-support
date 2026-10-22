@@ -120,6 +120,7 @@ object DotNetCli {
             CapturingProcessHandler(commandLine).also(::closeInput).runProcess(timeoutMs)
         } catch (e: ExecutionException) {
             DotNetLogs.commandFinished("run", "cannot start: ${e.message}", failed = true)
+            ExecDenied.report(null, e)
             throw e
         }
         DotNetLogs.commandFinished("run", resultText(result, System.currentTimeMillis() - started), failed = result.exitCode != 0 || result.isTimeout, lastLines = lastLines(result, 20))
@@ -204,7 +205,7 @@ object DotNetCli {
                     } catch (e: ExecutionException) {
                         DotNetLogs.commandFinished(title, "cannot start: ${e.message}", failed = true)
                         output.text(e.message.orEmpty() + "\n", true)
-                        notifyError(project, title, e.message.orEmpty())
+                        if (!ExecDenied.report(project, e)) notifyError(project, title, e.message.orEmpty())
                         return false
                     } finally {
                         heartbeat.cancel(false)

@@ -8,6 +8,7 @@ import com.intellij.execution.process.ProcessListener
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
+import io.github.dotnetsupport.cli.ExecDenied
 import io.github.dotnetsupport.cli.PluginLog
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -55,6 +56,7 @@ class CSharpierServer : Disposable {
         result
     } catch (e: Exception) {
         PluginLog.warn(LOG_CATEGORY, "CSharpier could not be started for ${file.name}", e)
+        ExecDenied.report(null, e)
         FormatResult.Failed(e.message ?: "CSharpier could not be started.")
     }
 

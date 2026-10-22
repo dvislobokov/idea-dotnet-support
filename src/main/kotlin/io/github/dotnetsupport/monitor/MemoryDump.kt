@@ -3,6 +3,7 @@ package io.github.dotnetsupport.monitor
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.process.OSProcessUtil
 import com.intellij.openapi.Disposable
+import io.github.dotnetsupport.cli.ExecDenied
 import io.github.dotnetsupport.cli.PluginLog
 import java.io.File
 import java.io.InputStreamReader
@@ -167,6 +168,7 @@ class DumpAnalyzer(tool: File, val dump: File) : Disposable {
             .withEnvironment("DOTNET_CLI_UI_LANGUAGE", "en").withRedirectErrorStream(true).createProcess()
     } catch (e: Exception) {
         PluginLog.warn(DotNetCounters.LOG_CATEGORY, "`dotnet-dump analyze ${dump.name}` could not be started", e)
+        ExecDenied.report(null, e)
         throw e
     }
     private val waiting = ArrayDeque<CompletableFuture<String>>()

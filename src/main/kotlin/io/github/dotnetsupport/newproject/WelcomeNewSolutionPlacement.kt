@@ -15,10 +15,12 @@ import com.intellij.openapi.actionSystem.impl.DynamicActionConfigurationCustomiz
  *   the screen shows flat.
  * The action is put after New Project in the group that holds it, when the actions are registered (also on a dynamic load of the
  * plugin); the IDE without a known New Project gets it at the end of the group, under "⋮". Get from VCS goes there instead.
+ * Lookups take stubs: this runs before the IDE sets up the scale of the UI, and turning a stub into the action reads its text through
+ * UISettings, which then logs "JreHiDpiUtil: Must be not computed before that call" at every start.
  */
 class WelcomeNewSolutionPlacement : DynamicActionConfigurationCustomizer {
     override fun registerActions(actionManager: ActionManager) {
-        val action = actionManager.getAction(ACTION) ?: return
+        val action = actionManager.getActionOrStub(ACTION) ?: return
         val (group, anchor) = target(actionManager) ?: return
         val holder = actionManager.getAction(group) as? DefaultActionGroup ?: return
         if (holder.childActionsOrStubs.any { actionManager.getId(it) == ACTION }) return
@@ -26,17 +28,17 @@ class WelcomeNewSolutionPlacement : DynamicActionConfigurationCustomizer {
     }
 
     override fun unregisterActions(actionManager: ActionManager) {
-        val action = actionManager.getAction(ACTION) ?: return
+        val action = actionManager.getActionOrStub(ACTION) ?: return
         for (group in groups(actionManager, QUICK_START)) (actionManager.getAction(group) as? DefaultActionGroup)?.remove(action, actionManager)
     }
 
     private fun target(actionManager: ActionManager): Pair<String, String?>? =
-        target(QUICK_START) { group -> (actionManager.getAction(group) as? DefaultActionGroup)?.childActionsOrStubs?.mapNotNull { actionManager.getId(it) } }
+        target(QUICK_START) { group -> (actionManager.getActionOrStub(group) as? DefaultActionGroup)?.childActionsOrStubs?.mapNotNull { actionManager.getId(it) } }
 
     /** The group and its nested groups, as the Welcome screen flattens them. */
     private fun groups(actionManager: ActionManager, root: String): List<String> =
-        listOf(root) + (actionManager.getAction(root) as? DefaultActionGroup)?.childActionsOrStubs.orEmpty()
-            .mapNotNull { actionManager.getId(it) }.filter { it != ACTION && actionManager.getAction(it) is DefaultActionGroup }.flatMap { groups(actionManager, it) }
+        listOf(root) + (actionManager.getActionOrStub(root) as? DefaultActionGroup)?.childActionsOrStubs.orEmpty()
+            .mapNotNull { actionManager.getId(it) }.filter { it != ACTION && actionManager.getActionOrStub(it) is DefaultActionGroup }.flatMap { groups(actionManager, it) }
 
     companion object {
         const val ACTION = "DotNet.NewSolution.Welcome"

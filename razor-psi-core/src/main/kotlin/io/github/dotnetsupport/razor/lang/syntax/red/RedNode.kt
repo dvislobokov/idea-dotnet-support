@@ -81,7 +81,7 @@ abstract class RedNode(val green: RazorNode, val parent: RedNode?, val position:
         return result.asSequence()
     }
 
-    fun descendantNodesAndSelf(descendIntoChildren: ((RedNode) -> Boolean)? = null): Sequence<RedNode> = sequenceOf(this) + descendantNodes(descendIntoChildren)
+    fun descendantNodesAndSelf(descendIntoChildren: ((RedNode) -> Boolean)? = null): Sequence<RedNode> = listOf(this).asSequence() + descendantNodes(descendIntoChildren)
 
     /** `DescendantTokens`: the tokens below in order. */
     fun descendantTokens(): Sequence<RedToken> {

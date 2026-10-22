@@ -9,6 +9,7 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.cli.ExecDenied
 import io.github.dotnetsupport.solution.SolutionService
 
 /**
@@ -34,7 +35,7 @@ class OpenInUnityAction : AnAction(UnityIcons.Unity), DumbAware {
             return
         }
         runCatching { GeneralCommandLine(editor.path, "-projectPath", root.path).withWorkDirectory(root.path).createProcess() }
-            .onFailure { DotNetCli.notifyError(project, "Open in Unity Editor", it.message ?: it.toString()) }
+            .onFailure { if (!ExecDenied.report(project, it)) DotNetCli.notifyError(project, "Open in Unity Editor", it.message ?: it.toString()) }
     }
 
     private fun rootOf(project: Project, e: AnActionEvent): VirtualFile? =

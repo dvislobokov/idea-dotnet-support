@@ -33,6 +33,7 @@ import io.github.dotnetsupport.DotNetIcons
 import io.github.dotnetsupport.aspire.AspireHosts
 import io.github.dotnetsupport.cli.DiagnosticsHelperService
 import io.github.dotnetsupport.cli.DotNetCli
+import io.github.dotnetsupport.cli.ExecDenied
 import io.github.dotnetsupport.cli.DotNetTool
 import io.github.dotnetsupport.cli.PluginLog
 import io.github.dotnetsupport.run.BuiltBeforeLaunch
@@ -78,6 +79,7 @@ class DotNetDebugRunner : AsyncProgramRunner<RunnerSettings>() {
                     DebugAdapterProcess(DebugAdapterProcess.commandLine(adapterPath, log))
                 } catch (e: Exception) {
                     PluginLog.error(DebugAdapterProcess.LOG_CATEGORY, "cannot start the debug adapter $adapterPath", e)
+                    ExecDenied.report(project, e)
                     throw e
                 }
                 PluginLog.info(DebugAdapterProcess.LOG_CATEGORY, "adapter started, pid ${adapter.pid}")

@@ -74,7 +74,7 @@ class CSharpDeclarationInfo(
     /** `Total(decimal discount): decimal`, `Name: string`, `Order`. */
     val presentation: String get() = name + parameters.orEmpty() + type?.let { ": $it" }.orEmpty()
 
-    fun flatten(): Sequence<CSharpDeclarationInfo> = sequenceOf(this) + children.asSequence().flatMap { it.flatten() }
+    fun flatten(): Sequence<CSharpDeclarationInfo> = listOf(this).asSequence() + children.asSequence().flatMap { it.flatten() }
 }
 
 class CSharpFileStructure(val declarations: List<CSharpDeclarationInfo>, /** The block of using directives at the top of the file. */ val usings: TextRange?) {
